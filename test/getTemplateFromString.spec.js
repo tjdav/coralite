@@ -1,11 +1,18 @@
 import { strictEqual, fail } from 'node:assert'
 import { describe, it } from 'node:test'
-import { getTemplateFromHTML } from '../lib/index.js'
+import { getTemplateFromString } from '../lib/index.js'
 
-describe('getTemplateFromHTML', function () {
+describe('getTemplateFromString', function () {
   it('should correctly extract templates from HTML', function () {
     const html = `<template id="template1">Template 1</template>`;
-    const templates = getTemplateFromHTML(html);
+    const templates = getTemplateFromString(html);
+  
+    strictEqual(templates['template1'], 'Template 1');
+  })
+
+  it('should correctly extract properties from template', function () {
+    const html = `<template id="template1">Hello {{ name }}!</template>`;
+    const templates = getTemplateFromString(html);
   
     strictEqual(templates['template1'], 'Template 1');
   })
@@ -14,7 +21,7 @@ describe('getTemplateFromHTML', function () {
     const html = '<template>Template Without ID</template>';
 
     try {
-      getTemplateFromHTML(html)
+      getTemplateFromString(html)
       fail('Expected an error')
     } catch (error) {
       strictEqual(error.message, 'Template requires an id attribute but found none at index: 29');
@@ -28,7 +35,23 @@ describe('getTemplateFromHTML', function () {
     `;
 
     try {
-      getTemplateFromHTML(html)
+      getTemplateFromString(html)
+      fail('Expected an error')
+    } catch (error) {
+      strictEqual(error.message, 'Unexpected number of templates found, only one is permitted');
+    }
+  })
+
+  it('should correctly extract script tag', { skip: true }, function () {
+    const html = `
+      <template id="template1">Template 1</template>
+      <script>
+
+      </script>
+    `;
+
+    try {
+      getTemplateFromString(html)
       fail('Expected an error')
     } catch (error) {
       strictEqual(error.message, 'Unexpected number of templates found, only one is permitted');
