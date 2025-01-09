@@ -1,0 +1,19 @@
+<template id="tjd-author">
+  <span>{{ name }}</span>
+  <time datetime="{{ datetime }}">
+    {{ localeDate }}
+  </time>
+</template>
+
+<script>
+  defineComponent({
+    localeDate () {
+      return new Date(this.dateTime).toLocaleDateString('en-AU', {
+        weekday: 'short',
+        year: '2-digit',
+        month: 'short',
+        day: 'numeric'
+      })
+    }
+  })
+</script>
