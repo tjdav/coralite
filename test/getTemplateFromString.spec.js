@@ -1,4 +1,4 @@
-import { strictEqual, fail } from 'node:assert'
+import { strictEqual, fail, deepStrictEqual } from 'node:assert'
 import { describe, it } from 'node:test'
 import { getTemplateFromString } from '../lib/index.js'
 
@@ -7,14 +7,21 @@ describe('getTemplateFromString', function () {
     const html = `<template id="template1">Template 1</template>`;
     const templates = getTemplateFromString(html);
   
-    strictEqual(templates['template1'], 'Template 1');
+    strictEqual(templates.template1.data, 'Template 1');
   })
 
   it('should correctly extract properties from template', function () {
-    const html = `<template id="template1">Hello {{ name }}!</template>`;
+    const html = `<template id="template1">Hello {{ name }}! <code>import { name } from 'lib.js'</code></template>`;
     const templates = getTemplateFromString(html);
   
-    strictEqual(templates['template1'], 'Template 1');
+    strictEqual(templates.template1.data, `Hello {{ name }}! <code>import { name } from 'lib.js'</code>`)
+    deepStrictEqual(templates.template1.props, [
+      {
+        name: 'name',
+        startIndex: 6,
+        endIndex: 16
+      }
+    ]);
   })
 
   it('should throw an error when no id attribute is found on a template tag', function () {
