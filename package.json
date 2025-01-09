@@ -6,7 +6,7 @@
   "type": "module",
   "keywords": [],
   "author": "Thomas David",
-  "license": "AGPL-3.0-only",
+  "license": "MPL-2.0",
   "devDependencies": {
     "@types/node": "^22.10.5"
   }
