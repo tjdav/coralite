@@ -2,7 +2,7 @@
 
 import { getHTML, getArgs, getTemplateFromString, mergeTemplateToPage } from './lib/index.js'
 
-/** @import { CoraliteData } from './lib/getTemplateFromString.js' */
+/** @import { CoraliteComponent } from './lib/component.js' */
 
 const args = getArgs()
 const templatesHTML = await getHTML(args.templates)
