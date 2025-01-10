@@ -7,7 +7,13 @@
   "keywords": [],
   "author": "Thomas David",
   "license": "MPL-2.0",
+  "scripts": {
+    "format": "eslint --cache --fix .",
+    "lint": "eslint --cache ."
+  },
   "devDependencies": {
+    "@stylistic/eslint-plugin-js": "^2.12.1",
+    "@stylistic/eslint-plugin-plus": "^2.12.1",
     "@types/node": "^22.10.5"
   }
 }
