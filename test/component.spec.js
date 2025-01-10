@@ -23,7 +23,7 @@ describe('Component', function () {
         firstname: 'Thomas',
         lastname: 'david'
       })
-  
+
       strictEqual(result, 'Hello Thomas david!')
     })
 
@@ -53,7 +53,7 @@ describe('Component', function () {
       }, () => ({
         date: 'today'
       }))
-  
+
       strictEqual(result, 'Hello Thomas david! [today]')
     })
   })

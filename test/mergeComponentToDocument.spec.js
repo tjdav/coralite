@@ -31,8 +31,8 @@ describe('getPropsFromString', function () {
           }
         ]
       }
-    });
-    
+    })
+
     deepEqual(metadata, [
       {
         content: 'page description',
@@ -42,6 +42,6 @@ describe('getPropsFromString', function () {
         content: 'width=device-width, initial-scale=1.0',
         name: 'viewport'
       }
-    ]);
+    ])
   })
 })

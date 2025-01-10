@@ -2,7 +2,7 @@ import { deepEqual } from 'node:assert'
 import { describe, it } from 'node:test'
 import { getMetadataFromDocument } from '../lib/index.js'
 
-describe('getPropsFromString', function () {
+describe('Get metadata from document', function () {
   it('should extract meta name and content values from document', function () {
     const html = `
     <!DOCTYPE html>
@@ -17,8 +17,8 @@ describe('getPropsFromString', function () {
     </body>
     </html>`
 
-    const metadata = getMetadataFromDocument(html);
-    
+    const metadata = getMetadataFromDocument(html)
+
     deepEqual(metadata, [
       {
         content: 'page description',
@@ -28,7 +28,7 @@ describe('getPropsFromString', function () {
         content: 'width=device-width, initial-scale=1.0',
         name: 'viewport'
       }
-    ]);
+    ])
   })
 
   it('should extract only meta name and content values within the head tag', function () {
@@ -46,8 +46,8 @@ describe('getPropsFromString', function () {
     </body>
     </html>`
 
-    const metadata = getMetadataFromDocument(html);
-    
+    const metadata = getMetadataFromDocument(html)
+
     deepEqual(metadata, [
       {
         content: 'page description',
@@ -57,6 +57,6 @@ describe('getPropsFromString', function () {
         content: 'width=device-width, initial-scale=1.0',
         name: 'viewport'
       }
-    ]);
+    ])
   })
 })
