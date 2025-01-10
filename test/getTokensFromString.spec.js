@@ -1,11 +1,11 @@
 import { deepStrictEqual, strictEqual } from 'node:assert'
 import { describe, it } from 'node:test'
-import { getPropsFromString } from '../lib/index.js'
+import { getTokensFromString } from '../lib/index.js'
 
-describe('getPropsFromString', function () {
-  it('should extract name property from string', function () {
+describe('Get tokens from string', function () {
+  it('should extract name token', function () {
     const string = `<template id="template1">Hello {{ name }}! Wassup? <code>import { red } from 'lib.js'</code></template>`
-    const props = getPropsFromString(string);
+    const props = getTokensFromString(string);
     
     strictEqual(props.length, 1)
     deepStrictEqual(props[0], {
