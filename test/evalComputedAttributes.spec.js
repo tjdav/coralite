@@ -1,9 +1,9 @@
-import { strictEqual, fail, deepStrictEqual } from 'node:assert'
+import { deepStrictEqual } from 'node:assert'
 import { describe, it } from 'node:test'
-import { parseProperties } from '../lib/parseProperties.js'
+import { evalComputedAttributes } from '../lib/evalComputedAttributes.js'
 
-describe('Parse properties', function () {
-  it('should process locateDate property', function () {
+describe('Eval computed attributes', function () {
+  it('should process locateDate attribute', function () {
     const script = `{
       localeDate () {
         return new Date(this.dateTime).toLocaleDateString('en-AU', {
@@ -15,7 +15,7 @@ describe('Parse properties', function () {
       }
     }`
 
-    const props = parseProperties(script, {
+    const props = evalComputedAttributes(script, {
       dateTime: '2025-01-08T20:23:07.645Z'
     })
 
