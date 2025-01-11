@@ -4,34 +4,36 @@ import { getComponentFromString } from '../lib/index.js'
 
 describe('getComponentFromString', function () {
   it('should correctly extract templates from HTML', function () {
-    const html = `<template id="template1">Template 1</template>`;
-    const templates = getComponentFromString(html);
-  
-    strictEqual(templates.template1.data, 'Template 1');
+    const html = `<template id="template1">Template 1</template>`
+    const component = getComponentFromString(html)
+
+    strictEqual(component.content, 'Template 1')
+    strictEqual(component.id, 'template1')
   })
 
   it('should correctly extract properties from template', function () {
-    const html = `<template id="template1">Hello {{ name }}! <code>import { name } from 'lib.js'</code></template>`;
-    const templates = getComponentFromString(html);
-  
-    strictEqual(templates.template1.data, `Hello {{ name }}! <code>import { name } from 'lib.js'</code>`)
-    deepStrictEqual(templates.template1.props, [
+    const html = `<template id="template1">Hello {{ name }}! <code>import { name } from 'lib.js'</code></template>`
+    const component = getComponentFromString(html)
+
+    strictEqual(component.id, 'template1')
+    strictEqual(component.content, `Hello {{ name }}! <code>import { name } from 'lib.js'</code>`)
+    deepStrictEqual(component.tokens, [
       {
         name: 'name',
         startIndex: 6,
         endIndex: 16
       }
-    ]);
+    ])
   })
 
   it('should throw an error when no id attribute is found on a template tag', function () {
-    const html = '<template>Template Without ID</template>';
+    const html = '<template>Template Without ID</template>'
 
     try {
       getComponentFromString(html)
       fail('Expected an error')
     } catch (error) {
-      strictEqual(error.message, 'Template requires an id attribute but found none at index: 29');
+      strictEqual(error.message, 'No template found')
     }
   })
 
@@ -39,14 +41,11 @@ describe('getComponentFromString', function () {
     const html = `
       <template id="template1">Template 1</template>
       <template id="template2">Template 2</template>
-    `;
+    `
+    const component = getComponentFromString(html)
 
-    try {
-      getComponentFromString(html)
-      fail('Expected an error')
-    } catch (error) {
-      strictEqual(error.message, 'Unexpected number of templates found, only one is permitted');
-    }
+    strictEqual(component.content, 'Template 1')
+    strictEqual(component.id, 'template1')
   })
 
   it('should correctly extract script tag', { skip: true }, function () {
@@ -55,13 +54,13 @@ describe('getComponentFromString', function () {
       <script>
 
       </script>
-    `;
+    `
 
     try {
       getComponentFromString(html)
       fail('Expected an error')
     } catch (error) {
-      strictEqual(error.message, 'Unexpected number of templates found, only one is permitted');
+      strictEqual(error.message, 'Unexpected number of templates found, only one is permitted')
     }
   })
 })
