@@ -1,6 +1,6 @@
 import { deepStrictEqual } from 'node:assert'
 import { describe, it } from 'node:test'
-import evalComputedTokens from '../lib/evalComputedTokens.js'
+import evalComputedTokens from '../lib/eval-computed-tokens.js'
 
 describe('Eval computed attributes', function () {
   it('should process locateDate attribute', function () {
