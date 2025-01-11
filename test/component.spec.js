@@ -6,7 +6,9 @@ describe('Component', function () {
   describe('Render', function () {
     it('should process tokens', function () {
       const result = render({
-        data: 'Hello {{ firstname }} {{ lastname }}!',
+        id: 'custom-element',
+        customElements: [],
+        content: 'Hello {{ firstname }} {{ lastname }}!',
         tokens: [
           {
             name: 'firstname',
@@ -18,7 +20,8 @@ describe('Component', function () {
             startIndex: 22,
             endIndex: 36
           }
-        ]
+        ],
+        computedTokens: () => ({})
       }, {
         firstname: 'Thomas',
         lastname: 'david'
@@ -29,7 +32,9 @@ describe('Component', function () {
 
     it('should process computed tokens', function () {
       const result = render({
-        data: 'Hello {{ firstname }} {{ lastname }}! [{{ date }}]',
+        id: 'custom-element',
+        customElements: [],
+        content: 'Hello {{ firstname }} {{ lastname }}! [{{ date }}]',
         tokens: [
           {
             name: 'firstname',
@@ -46,13 +51,14 @@ describe('Component', function () {
             startIndex: 39,
             endIndex: 49
           }
-        ]
+        ],
+        computedTokens: () => ({
+          date: 'today'
+        })
       }, {
         firstname: 'Thomas',
         lastname: 'david'
-      }, () => ({
-        date: 'today'
-      }))
+      })
 
       strictEqual(result, 'Hello Thomas david! [today]')
     })
