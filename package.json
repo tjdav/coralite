@@ -1,7 +1,7 @@
 {
   "name": "coralite",
   "version": "0.1.0",
-  "description": "",
+  "description": "HTML modules static site generator",
   "main": "index.js",
   "type": "module",
   "keywords": [],
@@ -15,5 +15,11 @@
     "@stylistic/eslint-plugin-js": "^2.12.1",
     "@stylistic/eslint-plugin-plus": "^2.12.1",
     "@types/node": "^22.10.5"
+  },
+  "exports": {
+    "./component": "./lib/component.js"
+  },
+  "dependencies": {
+    "commander": "^13.0.0"
   }
 }
