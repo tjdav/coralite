@@ -1,23 +1,39 @@
-import { deepStrictEqual, strictEqual } from 'node:assert'
+import { deepStrictEqual } from 'node:assert'
 import { describe, it } from 'node:test'
 import { getScriptFromString } from '../lib/index.js'
 
 describe('getScriptFromString', function () {
-  it('should parse defineProps from script', function () {
+  it('should eval computed tokens from script', function () {
     const string = `
-    <template id="template1">Hello {{ name }} Wassup? <code>import { red } from 'lib.js'</code></template>
-    <script>
-      defineProps({
-        name () {
-          return this.name + '!!!!!'
+    <div id="coralite-author">
+      <span>{{ name }}</span>
+      <time datetime="{{ datetime }}">
+        {{ localeDate }}
+      </time>
+    </div>
+
+    <script type="module">
+      import { computedTokens } from 'coralite:component'
+      
+      computedTokens({
+        localeDate () {
+          return new Date(this.datetime).toLocaleDateString('en-AU', {
+            weekday: 'short',
+            year: '2-digit',
+            month: 'short',
+            day: 'numeric'
+          })
         }
       })
     </script>
     `
-    const result = getScriptFromString(string, {
-      name: 'Thomas'
-    });
-    
-    deepStrictEqual(result.name, 'Thomas!!!!!');
+    const script = getScriptFromString(string)
+
+    deepStrictEqual(script({
+      name: 'Thomas',
+      datetime: '2025-01-08T20:23:07.645Z'
+    }), {
+      localeDate: 'Wed, 8 Jan 25'
+    })
   })
 })
