@@ -1,6 +1,6 @@
 import { deepEqual } from 'node:assert'
 import { describe, it } from 'node:test'
-import { getMetadataFromDocument } from '../lib/index.js'
+import getMetadataFromDocument from '../lib/getMetadataFromDocument.js'
 
 describe('Get metadata from document', function () {
   it('should extract meta name and content values from document', function () {
