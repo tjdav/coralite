@@ -1,0 +1,26 @@
+<template id="coralite-posts">
+  {{ posts }}
+</template>
+
+<script type="module">
+  import { computedTokens } from 'coralite/component'
+  
+  computedTokens({
+    posts () {
+      return this.aggregate({
+        path: this.posts,
+        componentId: 'coralite-post',
+        pages: 10,
+        sortBy: 'published_date',
+        tokens: {
+          aliases: {
+            datetime: ['published_time']
+          },
+          values: {
+            image: 'default.png'
+          }
+        }
+      })
+    }
+  })
+</script>

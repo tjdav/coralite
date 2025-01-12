@@ -1,14 +1,16 @@
-<template id="tjd-author">
+<template id="coralite-author">
   <span>{{ name }}</span>
   <time datetime="{{ datetime }}">
     {{ localeDate }}
   </time>
 </template>
 
-<script>
-  defineComponent({
+<script type="module">
+  import { computedTokens } from 'coralite/component'
+  
+  computedTokens({
     localeDate () {
-      return new Date(this.dateTime).toLocaleDateString('en-AU', {
+      return new Date(this.datetime).toLocaleDateString('en-AU', {
         weekday: 'short',
         year: '2-digit',
         month: 'short',
