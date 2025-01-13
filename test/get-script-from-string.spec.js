@@ -3,7 +3,7 @@ import { describe, it } from 'node:test'
 import { getScriptFromString } from '../lib/index.js'
 
 describe('getScriptFromString', function () {
-  it('should eval computed tokens from script', function () {
+  it('should eval computed tokens from script', async function () {
     const string = `
     <div id="coralite-author">
       <span>{{ name }}</span>
@@ -27,9 +27,9 @@ describe('getScriptFromString', function () {
       })
     </script>
     `
-    const script = getScriptFromString(string)
+    const computedTokens = getScriptFromString(string)
 
-    deepStrictEqual(script({
+    deepStrictEqual(await computedTokens({
       name: 'Thomas',
       datetime: '2025-01-08T20:23:07.645Z'
     }), {
