@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import { getHTML, getComponentFromString, mergeComponentToDocument, getSubDirectory } from './lib/index.js'
+import { getHTML, getComponentFromString, mergeComponentToDocument, getSubDirectory } from '../lib/index.js'
 import { Command } from 'commander'
 import { resolve, join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
-/** @import { CoraliteComponent } from './lib/component.js' */
+/** @import { CoraliteComponent } from '../lib/component.js' */
 
-const pkg = JSON.parse(readFileSync(`./package.json`, 'utf-8'))
+const pkg = JSON.parse(readFileSync(`../package.json`, 'utf-8'))
 const program = new Command()
 
 program
