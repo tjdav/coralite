@@ -30,7 +30,7 @@ describe('getScriptFromString', function () {
     const computedTokens = getScriptFromString(string)
 
     deepStrictEqual(await computedTokens({
-      name: 'Thomas',
+      name: 'Nemo',
       datetime: '2025-01-08T20:23:07.645Z'
     }), {
       localeDate: 'Wed, 8 Jan 25'
