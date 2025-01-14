@@ -8,7 +8,7 @@
   computedTokens({
     posts () {
       return this.aggregate({
-        path: this.posts,
+        path: this.tokens.posts,
         componentId: 'coralite-post',
         pages: 10,
         sortBy: 'published_date',
