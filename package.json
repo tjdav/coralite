@@ -2,22 +2,30 @@
   "name": "coralite",
   "version": "0.1.0",
   "description": "HTML modules static site generator",
-  "main": "index.js",
+  "main": "./lib/coralite.js",
   "type": "module",
   "keywords": [],
-  "author": "Thomas David",
+  "homepage": "https://coraltie.io",
+  "author": {
+    "name": "Thomas David",
+    "url": "https://thomasjackdavid.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tjdav/coralite"
+  },
   "license": "MPL-2.0",
   "scripts": {
     "format": "eslint --cache --fix .",
     "lint": "eslint --cache ."
   },
+  "bin": {
+    "coralite": "./bin/coralite.js"
+  },
   "devDependencies": {
     "@stylistic/eslint-plugin-js": "^2.12.1",
     "@stylistic/eslint-plugin-plus": "^2.12.1",
     "@types/node": "^22.10.5"
-  },
-  "exports": {
-    "./component": "./lib/component.js"
   },
   "dependencies": {
     "commander": "^13.0.0"
