@@ -1,18 +1,17 @@
 import { strictEqual } from 'node:assert'
 import { beforeEach, describe, it } from 'node:test'
-import { render } from '../lib/component.js'
+import { render } from 'coralite'
 import { getComponentFromString, getHTML } from '#lib'
 
 /**
- * @import {HTMLData} from '../lib/get-html.js'
- * @import {CoraliteComponent} from '../lib/component.js'
+ * @import {HTMLData, CoraliteComponent} from '#types'
  */
 
 describe('Component', function () {
   describe('Render', async function () {
     const path = {
-      pages: './fixtures/pages',
-      components: './fixtures/components'
+      pages: './test/fixtures/pages',
+      components: './test/fixtures/components'
     }
     /** @type {Object.<string, CoraliteComponent>} */
     const components = {}
@@ -31,7 +30,7 @@ describe('Component', function () {
       }
     })
 
-    it('should process tokens', { skip: true }, async function () {
+    it('should process tokens', async function () {
       const result = await render(components['coralite-title'], {
         values: {
           title: 'Heading'
@@ -43,7 +42,7 @@ describe('Component', function () {
       strictEqual(result.trim(), '<h1>Heading</h1>')
     })
 
-    it('should process tokens without values', { skip: true }, async function () {
+    it('should process tokens without values', async function () {
       const result = await render(components['coralite-title'], {
         values: {},
         path,
@@ -54,7 +53,7 @@ describe('Component', function () {
       strictEqual(result.trim(), '<h1></h1>')
     })
 
-    it('should process computed tokens', { skip: true }, async function () {
+    it('should process computed tokens', async function () {
       const result = await render(components['coralite-author'], {
         values: {
           name: 'Nemo',
@@ -72,7 +71,7 @@ describe('Component', function () {
 `)
     })
 
-    it('should process computed tokens without values', { skip: true }, async function () {
+    it('should process computed tokens without values', async function () {
       const result = await render(components['coralite-author'], {
         values: {},
         path,
