@@ -4,6 +4,5 @@
     "module": "NodeNext",
     "target": "ES2020",
     "moduleResolution": "nodenext",
-    "resolveJsonModule": true
   }
 }
