@@ -22,6 +22,14 @@
   "bin": {
     "coralite": "./bin/coralite.js"
   },
+  "imports": {
+    "#lib": "./lib/index.js",
+    "#types": "./types/index.js"
+  },
+  "exports": {
+    "default": "./lib/component.js",
+    "types": "./types/index.js"
+  },
   "devDependencies": {
     "@stylistic/eslint-plugin-js": "^2.12.1",
     "@stylistic/eslint-plugin-plus": "^2.12.1",

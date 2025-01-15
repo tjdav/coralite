@@ -4,7 +4,8 @@ import { getHTML, getComponentFromString, mergeComponentToDocument, getSubDirect
 import { Command } from 'commander'
 import { resolve, join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
-/** @import { CoraliteComponent } from '../lib/component.js' */
+
+/** @import { CoraliteComponent } from '#types' */
 
 const pkg = JSON.parse(readFileSync(`./package.json`, 'utf-8'))
 const program = new Command()
