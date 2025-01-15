@@ -4,7 +4,15 @@
   "description": "HTML modules static site generator",
   "main": "./lib/coralite.js",
   "type": "module",
-  "keywords": [],
+  "keywords": [
+    "static-site-generator",
+    "components",
+    "templates",
+    "coralite",
+    "blog",
+    "site-engine",
+    "documentation-tool"
+  ],
   "homepage": "https://coraltie.io",
   "author": {
     "name": "Thomas David",
@@ -12,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tjdav/coralite"
+    "url": "git+https://github.com/tjdav/coralite.git"
   },
   "license": "MPL-2.0",
   "scripts": {
