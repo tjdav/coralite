@@ -1,6 +1,6 @@
 import { deepStrictEqual } from 'node:assert'
 import { describe, it } from 'node:test'
-import { getScriptFromString } from '../lib/index.js'
+import { getScriptFromString } from '#lib'
 
 describe('getScriptFromString', function () {
   it('should eval computed tokens from script', async function () {
