@@ -1,9 +1,9 @@
 import { deepStrictEqual } from 'node:assert'
 import { describe, it } from 'node:test'
-import evalComputedTokens from '../../lib/eval-computed-tokens.js'
+import { evalComputedTokens } from '#lib'
 
 describe('Eval computed attributes', function () {
-  it('should process locateDate attribute', function () {
+  it('should process locateDate attribute', async function () {
     const script = `{
       localeDate () {
         return new Date(this.dateTime).toLocaleDateString('en-AU', {
@@ -15,7 +15,7 @@ describe('Eval computed attributes', function () {
       }
     }`
 
-    const props = evalComputedTokens(script, {
+    const props = await evalComputedTokens(script, {
       dateTime: '2025-01-08T20:23:07.645Z'
     })
 
