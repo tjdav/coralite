@@ -1,6 +1,6 @@
 import { strictEqual, fail, deepStrictEqual } from 'node:assert'
 import { describe, it } from 'node:test'
-import { getComponentFromString } from '../lib/index.js'
+import { getComponentFromString } from '#lib'
 
 describe('getComponentFromString', function () {
   it('should correctly extract templates from HTML', function () {
@@ -19,9 +19,8 @@ describe('getComponentFromString', function () {
     strictEqual(component.content, `Hello {{ name }}! <code>import { name } from 'lib.js'</code>`)
     deepStrictEqual(component.tokens, [
       {
-        name: 'name',
-        startIndex: 6,
-        endIndex: 16
+        content: '{{ name }}',
+        name: 'name'
       }
     ])
   })
