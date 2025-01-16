@@ -25,7 +25,8 @@
   "license": "MPL-2.0",
   "scripts": {
     "format": "eslint --cache --fix .",
-    "lint": "eslint --cache ."
+    "lint": "eslint --cache .",
+    "test-unit": "node --test test/lib/*"
   },
   "bin": {
     "coralite": "./bin/coralite.js"
