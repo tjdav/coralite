@@ -1,13 +1,15 @@
 /**
+ * Callback function for computing tokens based on provided arguments.
  * @callback coraliteComputedTokens
- * @param {Object} thisArgs
- * @returns {Promise<Object<string, string>>}
+ * @param {Object} thisArgs - The object containing data for the computation.
+ * @returns {Promise<Object<string, string>>} A promise resolving to an object with token names as keys and their respective contents as values.
  */
 
 /**
+ * Represents a single Coralite token with a name and content position.
  * @typedef {Object} CoraliteToken
- * @property {string} name - Token name
- * @property {string} content - End position of token
+ * @property {string} name - The unique identifier of the token.
+ * @property {string} content - The token value
  */
 
 /**
@@ -17,43 +19,49 @@
  */
 
 /**
+ * Represents a Coralite component
  * @typedef {Object} CoraliteComponent
- * @property {string} id
- * @property {string} content
- * @property {CoraliteToken[]} tokens
- * @property {coraliteComputedTokens} computedTokens
- * @property {CoraliteCustomElement[]} customElements
+ * @property {string} id - A unique identifier for the component.
+ * @property {string} content - The component's raw HTML content.
+ * @property {CoraliteToken[]} tokens - Array of tokens found in the component's content.
+ * @property {coraliteComputedTokens} computedTokens - Function to compute additional token values based on provided arguments.
+ * @property {CoraliteCustomElement[]} customElements - List of custom elements within this component.
  */
 
 /**
+ * Result object containing custom element content and found custom elements.
  * @typedef {Object} CoraliteCustomElementResult
- * @property {string} content - Content body
- * @property {CoraliteCustomElement[]} customElements - Custom elements found in content body
+ * @property {string} content - The HTML string representing the content body with embedded custom elements.
+ * @property {CoraliteCustomElement[]} customElements - Array of found custom elements within the content body.
  */
 
 /**
+ * Represents a single attribute for a custom element, including its name, value, and associated tokens.
  * @typedef {Object} CoraliteCustomElementAttribute
- * @property {string} name - Attribute name
- * @property {string} value - Attribute value
- * @property {CoraliteToken[]} tokens - List of tokens used in attribute value
+ * @property {string} name - The attribute's name (e.g., 'data-*').
+ * @property {string} value - The attribute's value within the component content.
+ * @property {CoraliteToken[]} tokens - Array of tokens used in constructing this attribute's value.
  */
 
 /**
+ * Represents a custom element with its ID, attributes, and content.
  * @typedef {Object} CoraliteCustomElement
- * @property {string} id - Custom element ID
- * @property {CoraliteCustomElementAttribute[]} attributes - Custom element attributes
- * @property {string} content
+ * @property {string} id - The unique identifier for the custom element within its component.
+ * @property {CoraliteCustomElementAttribute[]} attributes - Array of attributes associated with this custom element.
+ * @property {string} content - The inner HTML content of the custom element.
  */
 
 /**
+ * Represents data about an HTML file, including its path and content.
  * @typedef {Object} HTMLData
- * @property {string} parentPath - The path to the parent directory of the file.
- * @property {string} name - The file name.
- * @property {string} content - HTML string
+ * @property {string} parentPath  - Path to the directory containing this file (e.g., '../my-component').
+ * @property {string} name - The file's name without extension (e.g., 'my-component').
+ * @property {string} content - The raw HTML string contents of the file.
  */
 
 /**
+ * Represents the paths to Coralite pages and components within a project.
  * @typedef {Object} CoralitePath
- * @property {string} pages
- * @property {string} components
+ * @property {string} pages - Path to the directory containing page files (e.g., 'pages').
+ * @property {string} components - Path to the directory containing component files (e.g., 'components').
  */
