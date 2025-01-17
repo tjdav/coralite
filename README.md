@@ -2,10 +2,6 @@
 
 coralite is a static site generator library built around the emerging [HTML modules proposal](https://github.com/WICG/webcomponents/blob/gh-pages/proposals/html-modules-explainer.md).
 
-# Coralite CLI Usage Guide
-
-Coralite is a powerful command-line interface (CLI) tool designed to simplify website creation and management. This guide will walk you through the usage of the Coralite CLI, providing details on required and optional options.
-
 ## Installation
 
 Before using the Coralite CLI, ensure that it's installed on your system. You can install it globally using **npm**:
