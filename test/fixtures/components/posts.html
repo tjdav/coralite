@@ -3,24 +3,27 @@
 </template>
 
 <script type="module">
-  import { computedTokens } from 'coralite/component'
-  
-  computedTokens({
-    posts () {
-      return this.aggregate({
-        path: this.tokens.posts,
-        componentId: 'coralite-post',
-        pages: 10,
-        sortBy: 'published_date',
-        tokens: {
-          aliases: {
-            datetime: ['published_time']
-          },
-          values: {
-            image: 'default.png'
+  import { defineComponent, tokens, aggregate } from 'coralite'
+
+  export default defineComponent({
+    id: 'coralite-posts',
+    tokens: {
+      posts () {
+        return aggregate({
+          path: tokens.path,
+          componentId: 'coralite-post',
+          pages: 10,
+          sortBy: 'published_time',
+          tokens: {
+            aliases: {
+              datetime: ['published_time']
+            },
+            values: {
+              image: 'default.png'
+            }
           }
-        }
-      })
+        })
+      }
     }
   })
 </script>

@@ -6,16 +6,19 @@
 </template>
 
 <script type="module">
-  import { computedTokens } from 'coralite/component'
-  
-  computedTokens({
-    localeDate () {
-      return new Date(this.tokens.datetime).toLocaleDateString('en-AU', {
-        weekday: 'short',
-        year: '2-digit',
-        month: 'short',
-        day: 'numeric'
-      })
+  import { defineComponent, tokens } from 'coralite'
+
+  export default defineComponent({
+    id: 'coralite-author',
+    tokens: {
+      localeDate () {
+        return new Date(tokens.datetime).toLocaleDateString('en-AU', {
+          weekday: 'short',
+          year: '2-digit',
+          month: 'short',
+          day: 'numeric'
+        })
+      }
     }
   })
 </script>
