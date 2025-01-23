@@ -86,10 +86,23 @@
  */
 
 /**
+ * @typedef {Object} CoraliteDirective
+ * @property {'directive'} type - Node type
+ * @property {string} data - Raw HTML Doctype
+ * @property {string} name - Doctype name
+ */
+
+/**
+ * @typedef {Object} CoraliteDocumentRoot
+ * @property {'root'} type - Node type
+ * @property {(CoraliteDirective | CoraliteElement | CoraliteTextNode)[]} children - Document list
+ */
+
+/**
  * @typedef {Object} CoraliteDocument
  * @property {string} name - Document file name
  * @property {string} parentPath - Parent file path
- * @property {(CoraliteElement | CoraliteTextNode)[]} nodes - Array of elements and text nodes in the document
+ * @property {CoraliteDocumentRoot} root - Array of elements and text nodes in the document
  * @property {CoraliteElement[]} customElements - Custom elements defined in the document
  * @property {Object.<string, CoraliteSlotElement[]>} customElementSlots - Slots with their respective elements
  * @property {CoralitePath} path - Document's file path
