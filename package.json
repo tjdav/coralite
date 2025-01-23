@@ -50,7 +50,6 @@
     "node": ">=18"
   },
   "dependencies": {
-    "acorn": "^8.14.0",
     "commander": "^13.0.0",
     "dom-serializer": "^2.0.0",
     "htmlparser2": "^10.0.0"

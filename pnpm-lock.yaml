@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      acorn:
-        specifier: ^8.14.0
-        version: 8.14.0
       commander:
         specifier: ^13.0.0
         version: 13.0.0
