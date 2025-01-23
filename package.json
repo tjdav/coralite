@@ -42,6 +42,9 @@
     "@stylistic/eslint-plugin-plus": "^2.12.1",
     "@types/node": "^22.10.5"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "acorn": "^8.14.0",
     "commander": "^13.0.0",
