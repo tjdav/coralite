@@ -1,11 +1,14 @@
 #!/usr/bin/env node
 
-import { getHTML, getComponentFromString, mergeComponentToDocument, getSubDirectory } from '../lib/index.js'
+import { render } from 'dom-serializer'
+import { getHTML, parseHTMLDocument, parseModule, createComponent, getSubDirectory } from '#lib'
 import { Command } from 'commander'
-import { resolve, join } from 'node:path'
+import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 
-/** @import { CoraliteComponent } from '#types' */
+/**
+ * @import { CoraliteModule } from '#types'
+ */
 
 const pkg = JSON.parse(readFileSync(`./package.json`, 'utf-8'))
 const program = new Command()
@@ -19,7 +22,7 @@ program
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
   .option('-d, --dry', 'Run in dry-run mode')
 
-program.parse()
+program.parse(process.argv)
 program.on('error', (err) => {
   console.error(err)
 })
@@ -39,22 +42,42 @@ const htmlPages = await getHTML({
   recursive: true
 })
 
-/** @type {Object.<string, CoraliteComponent>} */
+/** @type {Object.<string, CoraliteModule>} */
 const components = {}
 
+// create components
 for (let i = 0; i < htmlComponents.length; i++) {
   const html = htmlComponents[i]
-  const component = getComponentFromString(html.content)
+  const component = parseModule(html.content)
+
   components[component.id] = component
 }
 
 for (let i = 0; i < htmlPages.length; i++) {
   const html = htmlPages[i]
-
-  const content = await mergeComponentToDocument(html, components, {
-    pages: resolve(pagesPath),
-    components: resolve(componentsPath)
+  const document = parseHTMLDocument(html, {
+    pages: pagesPath,
+    components: componentsPath
   })
+
+  for (let i = 0; i < document.customElements.length; i++) {
+    const customElement = document.customElements[i]
+    const component = await createComponent({
+      id: customElement.name,
+      values: customElement.attribs,
+      customElementSlots: document.customElementSlots,
+      components,
+      document
+    })
+
+    // replace custom element with component
+    customElement.parent.children.splice(customElement.parentChildIndex, 1, ...component.children)
+    component.parent = customElement.parent
+  }
+
+  // render document
+  // @ts-ignore
+  const content = render(document.root)
 
   if (!dryRun) {
     // get pages sub directory

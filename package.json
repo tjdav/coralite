@@ -28,15 +28,13 @@
     "lint": "eslint --cache .",
     "test-unit": "node --test test/lib/*"
   },
-  "bin": {
-    "coralite": "./bin/coralite.js"
-  },
+  "bin": "bin/coralite.js",
   "imports": {
     "#lib": "./lib/index.js",
     "#types": "./types/index.js"
   },
   "exports": {
-    "default": "./lib/component.js",
+    "default": "./lib/coralite.js",
     "types": "./types/index.js"
   },
   "devDependencies": {
@@ -45,6 +43,10 @@
     "@types/node": "^22.10.5"
   },
   "dependencies": {
-    "commander": "^13.0.0"
+    "acorn": "^8.14.0",
+    "commander": "^13.0.0",
+    "dom-serializer": "^2.0.0",
+    "eval-estree-expression": "^2.0.3",
+    "htmlparser2": "^10.0.0"
   }
 }
