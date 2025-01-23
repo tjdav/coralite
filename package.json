@@ -24,6 +24,7 @@
   },
   "license": "MPL-2.0",
   "scripts": {
+    "commitmsg": "commitlint -e",
     "format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
     "test-unit": "node --test test/lib/*"
@@ -38,6 +39,8 @@
     "types": "./types/index.js"
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
     "@stylistic/eslint-plugin-js": "^2.12.1",
     "@stylistic/eslint-plugin-plus": "^2.12.1",
     "@types/node": "^22.10.5"
