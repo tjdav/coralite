@@ -22,10 +22,6 @@ program
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
   .option('-d, --dry', 'Run in dry-run mode')
 
-if (!process.env.NODE_OPTIONS.includes('--experimental-vm-modules')) {
-  console.log('--experimental-vm-modules')
-}
-
 program.parse(process.argv)
 program.on('error', (err) => {
   console.error(err)
