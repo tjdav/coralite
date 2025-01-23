@@ -81,7 +81,7 @@ for (let i = 0; i < htmlPages.length; i++) {
 
   // render document
   // @ts-ignore
-  const content = render(document.nodes)
+  const content = render(document.root)
 
   if (!dryRun) {
     // get pages sub directory
