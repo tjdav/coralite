@@ -1,6 +1,6 @@
 {
   "name": "coralite",
-  "version": "0.1.1",
+  "version": "0.0.0-development",
   "description": "HTML modules static site generator",
   "main": "./lib/coralite.js",
   "type": "module",
@@ -20,14 +20,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tjdav/coralite.git"
+    "url": "https://github.com/tjdav/coralite.git"
   },
   "license": "MPL-2.0",
   "scripts": {
     "commitmsg": "commitlint -e",
     "format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
-    "test-unit": "node --test test/lib/*"
+    "test-unit": "node --test test/lib/*",
+    "semantic-release": "semantic-release"
   },
   "bin": "bin/coralite.js",
   "imports": {
@@ -43,7 +44,8 @@
     "@commitlint/config-conventional": "^19.6.0",
     "@stylistic/eslint-plugin-js": "^2.12.1",
     "@stylistic/eslint-plugin-plus": "^2.12.1",
-    "@types/node": "^22.10.5"
+    "@types/node": "^22.10.5",
+    "semantic-release": "^24.2.1"
   },
   "engines": {
     "node": ">=18"
