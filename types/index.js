@@ -6,10 +6,10 @@
  */
 
 /**
- * Represents the paths to Coralite pages and components within a project.
+ * Represents the paths to Coralite pages and templates within a project.
  * @typedef {Object} CoralitePath
  * @property {string} pages - The path to the root pages directory
- * @property {string} components - The path to the root components directory
+ * @property {string} templates - The path to the root templates directory
  */
 
 /**
@@ -117,6 +117,5 @@
  * @property {string} parentPath - Parent file path
  * @property {CoraliteDocumentRoot} root - Array of elements and text nodes in the document
  * @property {CoraliteElement[]} customElements - Custom elements defined in the document
- * @property {Object.<string, CoraliteSlotElement[]>} customElementSlots - Slots with their respective elements
  * @property {CoralitePath} path - Document's file path
  */
