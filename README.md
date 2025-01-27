@@ -25,7 +25,7 @@ pnpm add -D coralite
 
 ## Requirements
 
-Coralite uses **ECMAScript Modules** which requires to run Node.js with the **`--experimental-vm`** option enabled.
+Coralite uses **ECMAScript Modules** which requires to run Node.js with the **`--experimental-vm-modules`** option enabled.
 
 ```bash
 node --experimental-vm-modules node_modules/coralite/bin/coralite.js [options]
