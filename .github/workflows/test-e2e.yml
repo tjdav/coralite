@@ -28,11 +28,11 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
-    - name: Compile html from fixtures
+    - name: Build HTML from templates
       run: pnpm run html
 
-    - name: Install Playwright Browsers
-      run: pnpm exec playwright install --with-deps
+    - name: Install Playwright Browser
+      run: pnpm exec playwright install firefox --with-deps
 
     - name: Run Playwright tests
       run: pnpm exec playwright test
