@@ -17,7 +17,7 @@ program
   .name(pkg.name)
   .description(pkg.description)
   .version(pkg.version)
-  .requiredOption('-c, --components <path>', 'Path to components directory')
+  .requiredOption('-t, --templates <path>', 'Path to templates directory')
   .requiredOption('-p, --pages <path>', 'Path to pages directory')
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
   .option('-d, --dry', 'Run in dry-run mode')
@@ -28,13 +28,13 @@ program.on('error', (err) => {
 })
 
 const options = program.opts()
-const componentsPath = options.components
+const templatesPath = options.templates
 const pagesPath = options.pages
 const outputDir = options.output
 const dryRun = options.dry
 
-const htmlComponents = await getHTML({
-  path: componentsPath,
+const htmlTemplates = await getHTML({
+  path: templatesPath,
   recursive: true
 })
 const htmlPages = await getHTML({
@@ -45,9 +45,9 @@ const htmlPages = await getHTML({
 /** @type {Object.<string, CoraliteModule>} */
 const coraliteModules = {}
 
-// create components
-for (let i = 0; i < htmlComponents.length; i++) {
-  const html = htmlComponents[i]
+// create templates
+for (let i = 0; i < htmlTemplates.length; i++) {
+  const html = htmlTemplates[i]
   const coraliteModule = parseModule(html.content)
 
   coraliteModules[coraliteModule.id] = coraliteModule
@@ -57,12 +57,12 @@ for (let i = 0; i < htmlPages.length; i++) {
   const html = htmlPages[i]
   const document = parseHTMLDocument(html, {
     pages: pagesPath,
-    components: componentsPath
+    templates: templatesPath
   })
 
   for (let i = 0; i < document.customElements.length; i++) {
     const customElement = document.customElements[i]
-    const component = await createComponent({
+    const template = await createComponent({
       id: customElement.name,
       values: customElement.attribs,
       element: customElement,
@@ -70,9 +70,9 @@ for (let i = 0; i < htmlPages.length; i++) {
       document
     })
 
-    // replace custom element with component
-    customElement.parent.children.splice(customElement.parentChildIndex, 1, ...component.children)
-    component.parent = customElement.parent
+    // replace custom element with template
+    customElement.parent.children.splice(customElement.parentChildIndex, 1, ...template.children)
+    template.parent = customElement.parent
   }
 
   // render document
