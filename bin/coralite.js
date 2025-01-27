@@ -43,14 +43,14 @@ const htmlPages = await getHTML({
 })
 
 /** @type {Object.<string, CoraliteModule>} */
-const components = {}
+const coraliteModules = {}
 
 // create components
 for (let i = 0; i < htmlComponents.length; i++) {
   const html = htmlComponents[i]
-  const component = parseModule(html.content)
+  const coraliteModule = parseModule(html.content)
 
-  components[component.id] = component
+  coraliteModules[coraliteModule.id] = coraliteModule
 }
 
 for (let i = 0; i < htmlPages.length; i++) {
@@ -65,8 +65,8 @@ for (let i = 0; i < htmlPages.length; i++) {
     const component = await createComponent({
       id: customElement.name,
       values: customElement.attribs,
-      customElementSlots: document.customElementSlots,
-      components,
+      element: customElement,
+      components: coraliteModules,
       document
     })
 
