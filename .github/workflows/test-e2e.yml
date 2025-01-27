@@ -36,8 +36,6 @@ jobs:
 
     - name: Run Playwright tests
       run: pnpm exec playwright test
-      env:
-        DEBUG: 'pw:webserver'
 
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
