@@ -80,7 +80,15 @@
  */
 
 /**
- * @typedef {CoraliteDirective | CoraliteElement | CoraliteTextNode} CoraliteAnyNode
+ * @typedef {Object} CoraliteComment
+ * @property {'comment'} type - Comment type
+ * @property {string} data - Additional attributes for the text node
+ * @property {CoraliteAnyNode} parent - Parent element of the text node
+ */
+
+
+/**
+ * @typedef {CoraliteDirective | CoraliteElement | CoraliteTextNode | CoraliteDocumentRoot | CoraliteComment} CoraliteAnyNode
  */
 
 /**
