@@ -23,6 +23,19 @@ yarn add -D coralite
 pnpm add -D coralite
 ```
 
+## Requirements
+
+Coralite uses **ECMAScript Modules** which requires to run Node.js with the **`--experimental-vm`** option enabled.
+
+```bash
+node --experimental-vm-modules node_modules/coralite/bin/coralite.js [options]
+```
+or using NODE_OPTIONS
+
+```bash
+NODE_OPTIONS=--experimental-vm-modules coralite [options]
+```
+
 ## Basic Syntax
 
 Coralite is executed using the following command:
