@@ -76,7 +76,7 @@
  * @typedef {Object} CoraliteTextNode
  * @property {'text'} type - Text node type
  * @property {string} data - Additional attributes for the text node
- * @property {CoraliteElement} parent - Parent element of the text node
+ * @property {CoraliteAnyNode} parent - Parent element of the text node
  */
 
 /**
