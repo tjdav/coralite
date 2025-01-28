@@ -2,7 +2,7 @@
 
 coralite is a static site generator library built around the emerging [HTML modules proposal](https://github.com/WICG/webcomponents/blob/gh-pages/proposals/html-modules-explainer.md).
 
-[Getting started: Basic templating](./docs/getting-started.md)
+[Getting started: Basic templating](./docs/basic-templating.md)
 
 ## Installation
 

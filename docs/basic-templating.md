@@ -1,24 +1,6 @@
-# Getting Started with Coralite
+# Getting Started: Basic templating
 
 This guide will walk you through creating your first page using Coralite, a static site generator built around HTML modules.
-
-## Prerequisites
-
-Before you begin, make sure you have Node.js installed on your system and install Coralite using npm:
-
-```bash
-npm install -g coralite
-# or
-yarn global add coralite
-# or
-pnpm add -g coralite
-```
-
-Note: Coralite requires Node.js to be run with the `--experimental-vm-modules` flag. You can set this up by either:
-
-```bash
-NODE_OPTIONS=--experimental-vm-modules coralite [options]
-```
 
 ## Project Structure
 
