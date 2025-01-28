@@ -62,7 +62,7 @@ for (let i = 0; i < htmlPages.length; i++) {
 
   for (let i = 0; i < document.customElements.length; i++) {
     const customElement = document.customElements[i]
-    const template = await createComponent({
+    const component = await createComponent({
       id: customElement.name,
       values: customElement.attribs,
       element: customElement,
@@ -70,9 +70,13 @@ for (let i = 0; i < htmlPages.length; i++) {
       document
     })
 
+    for (let i = 0; i < component.children.length; i++) {
+      // update component parent
+      component.children[i].parent = customElement.parent
+    }
+    const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
     // replace custom element with template
-    customElement.parent.children.splice(customElement.parentChildIndex, 1, ...template.children)
-    template.parent = customElement.parent
+    customElement.parent.children.splice(index, 1, ...component.children)
   }
 
   // render document
