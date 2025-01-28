@@ -1,7 +1,15 @@
 <template id="coralite-head">
-  <slot name="meta">default meta</slot>
-  <slot name="css">default css</slot>
-  <slot name="script">default script</slot>
+  <slot name="meta">
+    <meta name="meta" content="default">
+  </slot>
+  <slot name="css">
+    <link href="styles.css" rel="stylesheet">
+  </slot>
+  <slot name="script">
+    <script>
+      console.log('hello')
+    </script>
+  </slot>
   <slot name="empty"></slot>
-  <slot>default value</slot>
+  <slot></slot>
 </template>
