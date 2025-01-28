@@ -18,6 +18,9 @@
  * @property {Object.<string, string[]>} [aliases] - Token aliases and their possible values
  */
 
+/**
+ * @typedef {Object.<string, (string | (CoraliteTextNode | CoraliteElement)[])>} CoraliteModuleValues
+ */
 
 /**
  * @typedef {Object} CoraliteModule
@@ -50,9 +53,8 @@
 
 /**
  * @typedef {Object} CoraliteTextNodeToken
- * @property {'text'} type - Type of text node ('text')
- * @property {string} data - Text node raw data
- * @property {CoraliteElement} parent - Parent element of the text node
+ * @property {CoraliteTextNode} textNode - Text node that contains the token
+ * @property {CoraliteToken[]} tokens - Array of associated tokens
  */
 
 /**
@@ -67,8 +69,9 @@
  * @property {string} name - Tag name
  * @property {Object.<string, string>} attribs - Element attributes
  * @property {CoraliteAnyNode[]} children - Child nodes of the element
- * @property {CoraliteElement | CoraliteDocumentRoot} parent - Parent element
+ * @property {CoraliteContentNode} parent - Parent element
  * @property {number} [parentChildIndex] - Position in parent's child list
+ * @property {Object[]} [slots]
  */
 
 
@@ -76,19 +79,20 @@
  * @typedef {Object} CoraliteTextNode
  * @property {'text'} type - Text node type
  * @property {string} data - Additional attributes for the text node
- * @property {CoraliteAnyNode} parent - Parent element of the text node
+ * @property {CoraliteContentNode} parent - Parent element of the text node
  */
 
 /**
  * @typedef {Object} CoraliteComment
  * @property {'comment'} type - Comment type
  * @property {string} data - Additional attributes for the text node
- * @property {CoraliteAnyNode} parent - Parent element of the text node
+ * @property {CoraliteContentNode} parent - Parent element of the text node
  */
 
 
 /**
- * @typedef {CoraliteDirective | CoraliteElement | CoraliteTextNode | CoraliteDocumentRoot | CoraliteComment} CoraliteAnyNode
+ * @typedef {CoraliteElement | CoraliteTextNode | CoraliteComment} CoraliteAnyNode
+ * @typedef {CoraliteElement | CoraliteDocumentRoot} CoraliteContentNode
  */
 
 /**
@@ -108,7 +112,7 @@
 /**
  * @typedef {Object} CoraliteDocumentRoot
  * @property {'root'} type - Node type
- * @property {CoraliteAnyNode[]} children - Document list
+ * @property {(CoraliteAnyNode | CoraliteDirective)[]} children - Document list
  */
 
 /**
