@@ -2,6 +2,8 @@
 
 coralite is a static site generator library built around the emerging [HTML modules proposal](https://github.com/WICG/webcomponents/blob/gh-pages/proposals/html-modules-explainer.md).
 
+[Getting started: Basic templating](./docs/getting-started.md)
+
 ## Installation
 
 Before using the Coralite CLI, ensure that it's installed on your system. You can install it globally using **npm**:
@@ -50,7 +52,7 @@ Replace `[options]` with the desired flags and arguments.
 
 To generate a website using Coralite, you must provide three essential options:
 
-- **-c or --templates**: The path to your templates directory containing reusable UI elements (e.g., `-c ./src/templates`).
+- **-t or --templates**: The path to your templates directory containing reusable UI elements (e.g., `-c ./src/templates`).
 - **-p or --pages**: The path to your pages directory where static HTML files reside (e.g., `-p ./src/pages`).
 - **--output or -o**: The output directory for the generated site (e.g., `--output ./dist`).
 
