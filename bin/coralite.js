@@ -10,7 +10,8 @@ import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
  * @import { CoraliteModule } from '#types'
  */
 
-const pkg = JSON.parse(readFileSync(`./package.json`, 'utf-8'))
+const pkgPath = new URL('../package.json', import.meta.url)
+const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
 const program = new Command()
 
 program
