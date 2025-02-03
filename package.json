@@ -25,7 +25,7 @@
   "license": "MPL-2.0",
   "scripts": {
     "commitmsg": "commitlint -e",
-    "format": "eslint --cache --fix .",
+    "lint-format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
     "test-unit": "node --test test/lib/*",
     "test-e2e": "playwright test",
