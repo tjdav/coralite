@@ -51,10 +51,10 @@ test('has aggregate content', async ({ page }) => {
 test('has named slots', async ({ page }) => {
   await page.goto('/blog/index.html')
 
-  const metaName = page.locator('meta[name="name"]');
-  const metaDescription = page.locator('meta[name="description"]');
-  const metaDefaultHello = page.locator('meta[name="default-hello"]');
-  const metaDefaultWorld = page.locator('meta[name="default-world"]');
+  const metaName = page.locator('meta[name="name"]')
+  const metaDescription = page.locator('meta[name="description"]')
+  const metaDefaultHello = page.locator('meta[name="default-hello"]')
+  const metaDefaultWorld = page.locator('meta[name="default-world"]')
 
   // named slots
   await expect(metaName).toHaveAttribute('content', 'coralite')
