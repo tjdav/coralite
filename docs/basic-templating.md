@@ -19,7 +19,30 @@ my-coralite-site/
 
 ## Creating Templates
 
-Coralite uses HTML templates with mustache-style tokens for dynamic content. Let's create two basic templates:
+Before creating the template files, there are few things to take note of:
+
+1. Every template must have an `id` attribute that matches its usage in pages:
+  ```html
+  <template id="coralite-header">
+  ```
+
+2. Custom element names in pages must match template IDs:
+  ```html
+  <coralite-header title="My Title">
+  ```
+
+3. Data can be passed via attributes and accessed using double curly bracket syntax:
+  ```html
+  <!-- In your page -->
+  <coralite-header title="Hello World">
+  
+  <!-- In your template -->
+  <h1>{{ title }}</h1>
+   ```
+
+4. Templates can pass nested elements via `slots`
+
+Let's create two basic templates:
 
 ### 1. Header Template (src/templates/header.html)
 
@@ -64,13 +87,6 @@ Create your main page in `src/pages/index.html`:
 </html>
 ```
 
-## Template Features
-
-1. **Dynamic Content**: Use `{{ variableName }}` syntax to insert dynamic content passed through component attributes.
-2. **Slots**: 
-   - Named slots: Use `slot="name"` to target specific areas in your template
-   - Default slots: Content without a slot attribute goes into the default `<slot>`
-
 ## Building Your Site
 
 Generate your site using the Coralite CLI:
@@ -85,27 +101,6 @@ To preview changes without generating files, use the dry-run mode:
 coralite --templates ./src/templates --pages ./src/pages --output ./dist --dry
 ```
 
-## Template Tips
-
-1. Every template must have an `id` attribute that matches its usage in pages:
-   ```html
-   <template id="coralite-header">
-   ```
-
-2. Component names in pages must match template IDs:
-   ```html
-   <coralite-header title="My Title">
-   ```
-
-3. Data can be passed via attributes and accessed using mustache syntax:
-   ```html
-   <!-- In your page -->
-   <coralite-header title="Hello World">
-   
-   <!-- In your template -->
-   <h1>{{ title }}</h1>
-   ```
-
 ## Next Steps
 
 - Try creating more complex templates with multiple slots
@@ -116,13 +111,13 @@ coralite --templates ./src/templates --pages ./src/pages --output ./dist --dry
 ## Common Issues
 
 1. If your templates aren't rendering, ensure:
-   - Template IDs match the component names in your pages
-   - All required attributes are provided
-   - The Node.js `--experimental-vm-modules` flag is enabled
+  - Template IDs match the component names in your pages
+  - All required attributes are provided
+  - The Node.js `--experimental-vm-modules` flag is enabled
 
 2. Missing content might indicate:
-   - Incorrect slot names
-   - Missing slot definitions in templates
-   - Malformed template syntax
+  - Incorrect slot names
+  - Missing slot definitions in templates
+  - Malformed template syntax
 
 Remember to keep your templates modular and reusable for the best development experience with Coralite!
