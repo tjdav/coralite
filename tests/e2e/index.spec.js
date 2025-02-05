@@ -48,7 +48,7 @@ test('has aggregate content', async ({ page }) => {
   `)
 })
 
-test('has named slots', async ({ page }) => {
+test('has named slots within head', async ({ page }) => {
   await page.goto('/blog/index.html')
 
   const metaName = page.locator('meta[name="name"]')
@@ -62,5 +62,16 @@ test('has named slots', async ({ page }) => {
   // default slots
   await expect(metaDefaultHello).toHaveAttribute('content', 'hello')
   await expect(metaDefaultWorld).toHaveAttribute('content', 'world')
+})
+
+
+test('has named slots within body', async ({ page }) => {
+  await page.goto('/about.html')
+
+  await expect(page.locator('body')).toMatchAriaSnapshot(`
+    - heading "Title" [level=1]
+    - text: test
+    - contentinfo: Footer
+  `)
 })
 
