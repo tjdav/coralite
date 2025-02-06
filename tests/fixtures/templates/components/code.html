@@ -1,0 +1,145 @@
+<template id="coralite-code">
+  <pre>
+    <code><slot></slot></code>
+  </pre>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  /**
+   * @param {string} className
+   * @param {Object} parent
+   * @param {string} [data]
+   */
+  function createCodeNode (className, parent, data) {
+    const node =  {
+      type: 'tag',
+      name: 'span',
+      attribs: {
+        class: 'code ' + className
+      },
+      children: [],
+      parent
+    }
+
+    if (data) {
+      node.children.push({
+        type: 'text',
+        data: data
+      })
+    }
+
+    return node
+  }
+
+  /**
+   * @param {Object} node
+   * @param {Object} parent
+   * @param {Array<Object>} children
+   * @param {string} whitespace 
+   */
+  function createCodeTagNode (node, parent, children, whitespace) {
+    const tag = {
+      type: 'tag',
+      name: 'span',
+      attribs: {
+        class: 'code html-tag'
+      },
+      children: [],
+      parent
+    }
+    const tagName = {
+      type: 'text',
+      data: node.name,
+      parent: tag
+    }
+
+    tag.children.push(
+      createCodeNode('html-tag-text', tag, '<'),
+      tagName
+    )
+
+    // add tag to code list
+    children.push(
+      tag
+    )
+
+    for (const name in node.attribs) {
+      if (Object.prototype.hasOwnProperty.call(node.attribs, name)) {
+        tag.children.push(
+          {
+            type: 'text',
+            data: ' ',
+            parent
+          },
+          createCodeNode('html-attr-name', tag, name),
+          createCodeNode('html-attr-equals', tag, '='),
+          createCodeNode('html-attr-text', tag, '"'),
+          createCodeNode('html-attr-value', tag, node.attribs[name]),
+          createCodeNode('html-attr-text', tag, '"')
+        )
+      }
+    }
+
+    // closing arrow bracket
+    tag.children.push(
+      createCodeNode('html-tag-text', tag, '>')
+    )
+
+    if (node.children) {
+      for (let i = 0; i < node.children.length; i++) {
+        const childNode = node.children[i];
+        
+        if (childNode.type === 'tag') {
+          createCodeTagNode(childNode, parent, children, whitespace)
+        } else {
+          if (childNode.type === 'text' && !childNode.data.trim()) {
+            childNode.data = childNode.data.replace(whitespace, '')
+          }
+
+          children.push(childNode)
+        }
+      }
+    }
+
+    // closing tag
+    children.push(
+      createCodeNode('html-tag-text', tag, '</'),
+      tagName,
+      createCodeNode('html-tag-text', tag, '>')
+    )
+  }
+
+  export default defineComponent({
+    slots: {
+      default (content) {
+        const children = []
+        let whitespace = ''
+        // get whitespace
+        if (content[0].type === 'text' && !content[0].data.trim()) {
+          whitespace = content[0].data.split('\n')[1]
+        }
+
+        for (let i = 0; i < content.length; i++) {
+          const node = content[i]
+
+          if (node.type !== 'text') {
+            if (node.type === 'tag') {
+              createCodeTagNode(node, node.parent, children, whitespace)
+            }
+          } else if (node.type === 'text') {
+            // remove whitespace
+            if (!node.data.trim()) {
+              node.data = node.data.replace(whitespace, '')
+            }
+
+            children.push(node)
+          }
+        }
+
+        return children
+      }
+    }
+  })
+</script>

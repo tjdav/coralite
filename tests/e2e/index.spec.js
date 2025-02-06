@@ -64,7 +64,6 @@ test('has named slots within head', async ({ page }) => {
   await expect(metaDefaultWorld).toHaveAttribute('content', 'world')
 })
 
-
 test('has named slots within body', async ({ page }) => {
   await page.goto('/about.html')
 
@@ -75,3 +74,10 @@ test('has named slots within body', async ({ page }) => {
   `)
 })
 
+test('computed slots has been successful', async ({ page }) => {
+  await page.goto('/code.html')
+
+  await expect(page.locator('body')).toMatchAriaSnapshot(`
+    - code: <div> <h1>code</h1> </div>
+  `)
+})
