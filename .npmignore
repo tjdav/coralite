@@ -1,3 +1,7 @@
+docs
+.github
+tests
+
 # Dependencies
 node_modules
 jspm_packages
