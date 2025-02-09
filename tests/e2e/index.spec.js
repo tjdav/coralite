@@ -78,6 +78,6 @@ test('computed slots has been successful', async ({ page }) => {
   await page.goto('/code.html')
 
   await expect(page.locator('body')).toMatchAriaSnapshot(`
-    - code: <div> <h1>code</h1> </div>
+    - code: <div> <!-- Multiline Comments --> <h1>code</h1> </div>
   `)
 })
