@@ -11,7 +11,7 @@
       posts () {
         return aggregate({
           path: tokens.path,
-          componentId: 'coralite-post',
+          template: { item: 'coralite-post' },
           pages: 10,
           sortBy: 'published_time',
           tokens: {
