@@ -123,3 +123,8 @@
  * @property {CoraliteElement[]} customElements - Custom elements defined in the document
  * @property {CoralitePath} path - Document's file path
  */
+
+/**
+ * @typedef {Object} CoraliteAggregateTemplate - Templates used to display the result
+ * @property {string} item - Unique identifier for the component used for each document
+ */
