@@ -1,17 +1,12 @@
 #!/usr/bin/env node
 
-import { render } from 'dom-serializer'
-import { getHTML, parseHTMLDocument, parseModule, createComponent, getSubDirectory } from '#lib'
+import { getSubDirectory, getPkg, coralite } from '#lib'
 import { Command } from 'commander'
 import { join } from 'node:path'
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import kleur from 'kleur'
 
-/**
- * @import { CoraliteModule } from '#types'
- */
-
-const pkgPath = new URL('../package.json', import.meta.url)
-const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'))
+const pkg = await getPkg()
 const program = new Command()
 
 program
@@ -21,7 +16,7 @@ program
   .requiredOption('-t, --templates <path>', 'Path to templates directory')
   .requiredOption('-p, --pages <path>', 'Path to pages directory')
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
-  .option('-d, --dry', 'Run in dry-run mode')
+  .option('-d, --dry-run', 'Run in dry-run mode')
 
 program.parse(process.argv)
 program.on('error', (err) => {
@@ -29,81 +24,40 @@ program.on('error', (err) => {
 })
 
 const options = program.opts()
-const templatesPath = options.templates
-const pagesPath = options.pages
-const outputDir = options.output
-const dryRun = options.dry
+const pages = options.pages
+const output = options.output
 
-const htmlTemplates = await getHTML({
-  path: templatesPath,
-  recursive: true
-})
-const htmlPages = await getHTML({
-  path: pagesPath,
-  recursive: true
+const documents = await coralite({
+  templates: options.templates,
+  pages,
 })
 
-/** @type {Object.<string, CoraliteModule>} */
-const coraliteModules = {}
+if (options.dryRun) {
+  const PAD = '  '
+  const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
 
-// create templates
-for (let i = 0; i < htmlTemplates.length; i++) {
-  const html = htmlTemplates[i]
-  const coraliteModule = parseModule(html.content)
+  for (let i = 0; i < documents.length; i++) {
+    const document = documents[i]
 
-  coraliteModules[coraliteModule.id] = coraliteModule
-}
-
-for (let i = 0; i < htmlPages.length; i++) {
-  const html = htmlPages[i]
-  const document = parseHTMLDocument(html, {
-    pages: pagesPath,
-    templates: templatesPath
-  })
-
-  for (let i = 0; i < document.customElements.length; i++) {
-    const customElement = document.customElements[i]
-    const component = await createComponent({
-      id: customElement.name,
-      values: customElement.attribs,
-      element: customElement,
-      components: coraliteModules,
-      document
-    })
-
-    for (let i = 0; i < component.children.length; i++) {
-      // update component parent
-      component.children[i].parent = customElement.parent
-    }
-    const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
-    // replace custom element with template
-    customElement.parent.children.splice(index, 1, ...component.children)
+    process.stdout.write('\n' + PAD + kleur.green('Document is ready!\n\n'))
+    process.stdout.write(PAD + `${kleur.bold('- Path:')}      ${join(document.item.parentPath, document.item.name)}\n`)
+    process.stdout.write(PAD + `${kleur.bold('- Built in:')}      ${Math.floor(document.duration)}ms\n\n`)
+    process.stdout.write(border + kleur.inverse(' Content start ') + border + '\n\n')
+    process.stdout.write(document.html)
+    process.stdout.write('\n\n' + border + kleur.inverse(' Content end ') + border + '\n')
   }
-
-  // render document
-  // @ts-ignore
-  const content = render(document.root)
-
-  if (!dryRun) {
+} else {
+  for (let i = 0; i < documents.length; i++) {
+    const document = documents[i]
     // get pages sub directory
-    const subDir = getSubDirectory(pagesPath, html.parentPath)
-    const dir = join(outputDir, subDir)
+    const subDir = getSubDirectory(pages, document.item.parentPath)
+    const dir = join(output, subDir)
 
-    try {
-      if (!existsSync(dir)) {
-        // create directory
-        mkdirSync(dir)
-      }
-
-      writeFileSync(join(dir, html.name), content)
-      // file written successfully
-    } catch (err) {
-      console.error(err)
+    if (!existsSync(dir)) {
+    // create directory
+      mkdirSync(dir)
     }
-  } else {
-    console.log('Document')
-    console.log('Path: ' + join(html.parentPath, html.name))
-    console.log('Content')
-    console.log(content)
+
+    writeFileSync(join(dir, document.item.name), document.html)
   }
 }
