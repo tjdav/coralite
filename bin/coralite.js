@@ -16,6 +16,7 @@ program
   .requiredOption('-t, --templates <path>', 'Path to templates directory')
   .requiredOption('-p, --pages <path>', 'Path to pages directory')
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
+  .option('-i, --ignore-attribute <key=value...>', 'Ignore elements by attribute name value pair', [])
   .option('-d, --dry-run', 'Run in dry-run mode')
 
 program.parse(process.argv)
@@ -26,10 +27,22 @@ program.on('error', (err) => {
 const options = program.opts()
 const pages = options.pages
 const output = options.output
+const ignoreByAttribute = []
+
+for (let i = 0; i < options.ignoreAttribute.length; i++) {
+  const pair = options.ignoreAttribute[i].split('=')
+
+  if (pair.length !== 2) {
+    throw new Error('Ignore attribute "' + pair[0] + '" expected a value but found none')
+  }
+
+  ignoreByAttribute.push(pair)
+}
 
 const documents = await coralite({
   templates: options.templates,
   pages,
+  ignoreByAttribute
 })
 
 if (options.dryRun) {
