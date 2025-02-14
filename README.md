@@ -64,10 +64,10 @@ coralite --templates ./src/templates --pages ./src/pages --output ./dist
 
 ## Optional Options
 
-### -d or --dry
+### -d or --dry-run
 
 Run the CLI in dry-run mode to preview the actions that would be performed without actually generating the website. This is useful for debugging or when you want to check potential issues before committing changes:
 
 ```bash
-coralite --templates ./src/templates --pages ./src/pages --output ./dist --dry
+coralite --templates ./src/templates --pages ./src/pages --output ./dist --dry-run
 ```
