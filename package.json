@@ -40,8 +40,14 @@
     "#types": "./types/index.js"
   },
   "exports": {
-    "default": "./lib/coralite.js",
-    "types": "./types/index.js"
+    ".": {
+      "default": "./lib/coralite.js",
+      "types": "./types/index.js"
+    },
+    "./utils": {
+      "default": "./lib/index.js",
+      "types": "./types/index.js"
+    }
   },
   "devDependencies": {
     "@commitlint/cli": "^19.6.1",
