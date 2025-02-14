@@ -98,7 +98,7 @@ coralite --templates ./src/templates --pages ./src/pages --output ./dist
 To preview changes without generating files, use the dry-run mode:
 
 ```bash
-coralite --templates ./src/templates --pages ./src/pages --output ./dist --dry
+coralite --templates ./src/templates --pages ./src/pages --output ./dist --dry-run
 ```
 
 ## Next Steps
