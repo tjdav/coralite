@@ -72,6 +72,7 @@
  * @property {CoraliteContentNode} parent - Parent element
  * @property {number} [parentChildIndex] - Position in parent's child list
  * @property {Object[]} [slots]
+ * @property {boolean} [remove] - Mark element to be removed from stack
  */
 
 
