@@ -129,3 +129,10 @@
  * @typedef {Object} CoraliteAggregateTemplate - Templates used to display the result
  * @property {string} item - Unique identifier for the component used for each document
  */
+
+/**
+ * @typedef {Object} CoraliteResult
+ * @property {CoraliteDocument} item - The document object from the rendering process
+ * @property {string} html - Raw HTML content of the render process as a string
+ * @property {number} duration - The duration of the render process in milliseconds
+ */
