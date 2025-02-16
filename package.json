@@ -1,6 +1,6 @@
 {
   "name": "coralite",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "HTML modules static site generator",
   "main": "./lib/coralite.js",
   "type": "module",
@@ -56,6 +56,7 @@
     "@stylistic/eslint-plugin-js": "^2.12.1",
     "@stylistic/eslint-plugin-plus": "^2.12.1",
     "@types/node": "^22.10.5",
+    "highlight.js": "^11.11.1",
     "kleur": "^4.1.5",
     "sirv-cli": "^3.0.0"
   },
