@@ -3,10 +3,10 @@
 coralite is a static site generator library built around the emerging [HTML modules proposal](https://github.com/WICG/webcomponents/blob/gh-pages/proposals/html-modules-explainer.md).
 
 - Getting started
-  [Basic templating](./docs/basic-templating.md)
+  - [Basic templating](./docs/basic-templating.md)
 - Reference
-  [Coralite CLI](./docs/coralite-cli.md)
-  [Coralite](./docs/coralite.md)
+  - [Coralite CLI](./docs/coralite-cli.md)
+  - [Coralite](./docs/coralite.md)
 
 ## Installation
 
