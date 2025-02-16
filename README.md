@@ -2,7 +2,11 @@
 
 coralite is a static site generator library built around the emerging [HTML modules proposal](https://github.com/WICG/webcomponents/blob/gh-pages/proposals/html-modules-explainer.md).
 
-[Getting started: Basic templating](./docs/basic-templating.md)
+- Getting started
+  [Basic templating](./docs/basic-templating.md)
+- Reference
+  [Coralite CLI](./docs/coralite-cli.md)
+  [Coralite](./docs/coralite.md)
 
 ## Installation
 
@@ -15,6 +19,7 @@ yarn global add coralite
 # or
 pnpm add -g coralite
 ```
+
 You can also install coralite as a development dependency:
 
 ```bash
@@ -32,6 +37,7 @@ Coralite uses **ECMAScript Modules** which requires to run Node.js with the **`-
 ```bash
 node --experimental-vm-modules node_modules/coralite/bin/coralite.js [options]
 ```
+
 or using NODE_OPTIONS
 
 ```bash
