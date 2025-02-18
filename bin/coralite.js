@@ -1,10 +1,13 @@
-#!/usr/bin/env node
+#!/usr/bin/env node --experimental-vm-modules
 
 import { getSubDirectory, getPkg, coralite } from '#lib'
 import { Command } from 'commander'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import kleur from 'kleur'
+
+// Remove all Node warnings before doing anything else
+process.removeAllListeners('warning')
 
 const pkg = await getPkg()
 const program = new Command()
