@@ -36,6 +36,9 @@ importers:
       '@types/node':
         specifier: ^22.10.5
         version: 22.10.5
+      coralite:
+        specifier: 'link:'
+        version: 'link:'
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
