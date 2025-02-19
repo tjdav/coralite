@@ -92,13 +92,13 @@ Create your main page in `src/pages/index.html`:
 Generate your site using the Coralite CLI:
 
 ```bash
-coralite --templates ./src/templates --pages ./src/pages --output ./dist
+coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist
 ```
 
 To preview changes without generating files, use the dry-run mode:
 
 ```bash
-coralite --templates ./src/templates --pages ./src/pages --output ./dist --dry-run
+coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist --dry-run
 ```
 
 ## Next Steps
@@ -119,5 +119,3 @@ coralite --templates ./src/templates --pages ./src/pages --output ./dist --dry-r
   - Incorrect slot names
   - Missing slot definitions in templates
   - Malformed template syntax
-
-Remember to keep your templates modular and reusable for the best development experience with Coralite!
