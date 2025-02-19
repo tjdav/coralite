@@ -37,12 +37,12 @@ The Coralite CLI accepts several options to configure its behavior. Here's a det
 - **`-i, --ignore-attribute <key=value...>`** (optional)
   - Description: Ignore elements by attribute name-value pair during parsing. Multiple pairs can be provided separated by spaces.
   - Examples:
-    - Ignore `<div data-ignore>` elements: `--ignore-attribute data-ignore=true`
+    - Ignore `<div data-ignore="true">` elements: `--ignore-attribute data-ignore=true`
     - Ignore multiple elements: `--ignore-attribute data-ignore=true class=test-only`
 
 - **`-d, --dry-run`** (optional)
   - Description: Run the CLI in dry-run mode. This displays information about generated documents and their content without actually writing files to the output directory.
-  - Example: `coralite -t ./templates -p ./pages -o ./dist --dry-run`
+  - Example: `coralite -t ./path/to/templates -p ./path/to/pages -o ./dist --dry-run`
 
 ## Examples
 

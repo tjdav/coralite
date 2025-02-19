@@ -36,8 +36,8 @@ async function coralite(options: {
 
 ### `ignoreByAttribute` (optional)
 
-- **Type:** `Array<Array<string>>`
-- **Description:** An optional 2D array of element names and their respective attributes to ignore during parsing. For example, `[['div', 'data-ignore']]` ignores `<div>` elements with a `data-ignore` attribute.
+- **Type:** `Array<Array<string, string>>`
+- **Description:** An optional 2D array of element names and their respective attributes to ignore during parsing. For example, `[['data-ignore', 'true']]` ignores elements with a `data-ignore="true"` attribute.
 - **Default:** `undefined`
 
 ## Returns
@@ -65,7 +65,7 @@ The `coralite` function returns a promise that resolves to an array of objects, 
 coralite({
   templates: './path/to/templates',
   pages: './path/to/pages',
-  ignoreByAttribute: [['div', 'data-ignore']],
+  ignoreByAttribute: [['data-ignore', 'true']],
 })
   .then((documents) => {
     console.log(documents)
