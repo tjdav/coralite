@@ -123,6 +123,7 @@
  * @property {CoraliteDocumentRoot} root - Array of elements and text nodes in the document
  * @property {CoraliteElement[]} customElements - Custom elements defined in the document
  * @property {CoralitePath} path - Document's file path
+ * @property {IgnoreByAttribute} ignoreByAttribute - An array of attribute names and values to ignore by element type.
  */
 
 /**
@@ -135,4 +136,8 @@
  * @property {CoraliteDocument} item - The document object from the rendering process
  * @property {string} html - Raw HTML content of the render process as a string
  * @property {number} duration - The duration of the render process in milliseconds
+ */
+
+/**
+ * @typedef {Array<Array<string, string>>} IgnoreByAttribute - An array of attribute names and values to ignore by element type.
  */
