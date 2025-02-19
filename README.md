@@ -30,20 +30,6 @@ yarn add -D coralite
 pnpm add -D coralite
 ```
 
-## Requirements
-
-Coralite uses **ECMAScript Modules** which requires to run Node.js with the **`--experimental-vm-modules`** option enabled.
-
-```bash
-node --experimental-vm-modules node_modules/coralite/bin/coralite.js [options]
-```
-
-or using NODE_OPTIONS
-
-```bash
-NODE_OPTIONS=--experimental-vm-modules coralite [options]
-```
-
 ## Basic Syntax
 
 Coralite is executed using the following command:
@@ -65,7 +51,7 @@ To generate a website using Coralite, you must provide three essential options:
 Here's an example of how these options might look:
 
 ```bash
-coralite --templates ./src/templates --pages ./src/pages --output ./dist
+coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist
 ```
 
 ## Optional Options
@@ -75,5 +61,20 @@ coralite --templates ./src/templates --pages ./src/pages --output ./dist
 Run the CLI in dry-run mode to preview the actions that would be performed without actually generating the website. This is useful for debugging or when you want to check potential issues before committing changes:
 
 ```bash
-coralite --templates ./src/templates --pages ./src/pages --output ./dist --dry-run
+coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist --dry-run
+```
+
+## Troubleshooting
+
+
+Coralite uses **ECMAScript Modules** which requires to run Node.js with the **`--experimental-vm-modules`** option enabled.
+
+```bash
+node --experimental-vm-modules node_modules/coralite/bin/coralite.js [options]
+```
+
+or using NODE_OPTIONS
+
+```bash
+NODE_OPTIONS=--experimental-vm-modules coralite [options]
 ```
