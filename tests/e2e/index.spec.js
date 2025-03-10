@@ -32,17 +32,17 @@ test('has aggregate content', async ({ page }) => {
   await expect(page.locator('body')).toMatchAriaSnapshot(`
     - text: Hello
     - banner: This is the mighty header
-    - heading "Post 1" [level=2]
+    - heading "Great Barrier Reef" [level=2]
     - text: Nemo
     - time: Wed, 8 Jan 25
     - img "Photo of a cat"
-    - text: short description
+    - text: The Great Barrier Reef—largest, comprising over 2,900 individual reefs and 900 islands stretching for over 2,600 kilometers
     - banner: This is the mighty header
-    - heading "Post 2" [level=2]
+    - heading "Mesoamerican Barrier Reef System" [level=2]
     - text: Nemo
     - time: Thu, 9 Jan 25
     - img "Photo of a dog"
-    - text: short description
+    - text: The Mesoamerican Barrier Reef System—second largest, stretching 1,000 kilometers
     - banner: This is the mighty header
     - text: world
   `)

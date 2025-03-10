@@ -13,6 +13,9 @@
           path: tokens.path,
           template: { item: 'coralite-post' },
           pages: 10,
+          filter (meta) {
+            return (meta.name === 'country' && (meta.content === 'au' || meta.content === 'mx'))
+          },
           sortBy: 'published_time',
           tokens: {
             aliases: {
