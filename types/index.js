@@ -141,3 +141,12 @@
 /**
  * @typedef {Array<Array<string, string>>} IgnoreByAttribute - An array of attribute names and values to ignore by element type.
  */
+
+/**
+ * @typedef {Object} CoraliteAggregate – Configuration object for the aggregation process
+ * @property {string} path - The path to aggregate, relative to pages directory
+ * @property {CoraliteAggregateTemplate | string} template - Templates used to display the result
+ * @property {Function} [filter] - A function to filter out unwanted elements from the aggregated content.
+ * @property {boolean} [recursive] - Whether to recursively search subdirectories
+ * @property {CoraliteTokenOptions} [tokens] - Token configuration options
+ */
