@@ -19,7 +19,7 @@
  */
 
 /**
- * @typedef {Object.<string, (string | string[] | (CoraliteTextNode | CoraliteElement)[])>} CoraliteModuleValues
+ * @typedef {Object.<string, (string | string[] | (CoraliteDirective | CoraliteAnyNode)[])>} CoraliteModuleValues
  */
 
 /**
