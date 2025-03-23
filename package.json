@@ -20,7 +20,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/tjdav/coralite.git"
+    "url": "https://codeberg.org/tjdavid/coralite.git"
   },
   "license": "AGPL-3.0-or-later",
   "scripts": {
