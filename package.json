@@ -22,7 +22,7 @@
     "type": "git",
     "url": "https://github.com/tjdav/coralite.git"
   },
-  "license": "MPL-2.0",
+  "license": "AGPL-3.0-or-later",
   "scripts": {
     "commitmsg": "commitlint -e",
     "lint-format": "eslint --cache --fix .",
