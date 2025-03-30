@@ -148,12 +148,19 @@
  */
 
 /**
+ * @callback CoraliteAggregateSort
+ * @param {Object.<string, string>} a - Aggregated HTML page metadata
+ * @param {Object.<string, string>} b - Aggregated HTML page metadata
+ */
+
+/**
  * @typedef {Object} CoraliteAggregate – Configuration object for the aggregation process
  * @property {string} path - The path to aggregate, relative to pages directory
  * @property {CoraliteAggregateTemplate | string} template - Templates used to display the result
  * @property {CoraliteAggregateFilter} [filter] - Callback to filter out unwanted elements from the aggregated content.
  * @property {boolean} [recursive] - Whether to recursively search subdirectories
  * @property {CoraliteTokenOptions} [tokens] - Token configuration options
+ * @property {CoraliteAggregateSort} [sort] - Sort aggregated pages
  * @property {number} [limit] - Specifies the maximum number of results to retrieve.
  * @property {number} [offset] - Specifies the starting index for the results list.
  */
