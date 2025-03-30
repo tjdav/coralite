@@ -154,4 +154,6 @@
  * @property {CoraliteAggregateFilter} [filter] - Callback to filter out unwanted elements from the aggregated content.
  * @property {boolean} [recursive] - Whether to recursively search subdirectories
  * @property {CoraliteTokenOptions} [tokens] - Token configuration options
+ * @property {number} [limit] - Specifies the maximum number of results to retrieve.
+ * @property {number} [offset] - Specifies the starting index for the results list.
  */
