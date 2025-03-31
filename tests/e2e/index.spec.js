@@ -86,8 +86,12 @@ test('has nested component', async ({ page }) => {
   await page.goto('/nested-components.html')
 
   await expect(page.locator('body')).toMatchAriaSnapshot(`
-    - banner:
-      - text: This is the mighty header
-      - heading "Nested title" [level=1]
+    - document:
+      - banner:
+        - text: This is the mighty header
+        - banner: This is the mighty header
+      - banner:
+        - text: This is the mighty header
+        - heading "Nested title" [level=1]
   `)
 })
