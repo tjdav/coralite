@@ -81,3 +81,13 @@ test('computed slots has been successful', async ({ page }) => {
     - code: <div> <!-- Multiline Comments --> <h1>code</h1> </div>
   `)
 })
+
+test('has nested component', async ({ page }) => {
+  await page.goto('/nested-components.html')
+
+  await expect(page.locator('body')).toMatchAriaSnapshot(`
+    - banner:
+      - text: This is the mighty header
+      - heading "Nested title" [level=1]
+  `)
+})
