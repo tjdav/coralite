@@ -3,15 +3,15 @@
 </template>
 
 <script type="module">
-  import { defineComponent, tokens, aggregate } from 'coralite'
+  import { defineComponent, aggregate } from 'coralite'
 
   export default defineComponent({
     id: 'coralite-posts',
     tokens: {
-      posts () {
+      posts (values) {
         return aggregate({
-          path: tokens.path,
-          template: { item: 'coralite-post' },
+          path: values.path,
+          template: 'coralite-post',
           pages: 10,
           filter (meta) {
             return (meta.name === 'country' && (meta.content === 'au' || meta.content === 'mx'))
