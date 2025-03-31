@@ -1,3 +1,18 @@
+# 🎁 Release notes (`v0.6.9`)
+
+## Changes
+- e79d7c9 (HEAD -> main, tag: v0.6.9, origin/main) fix: aggregation limit is offset by offset - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 6f8253f test: cover nested document root components - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 77d0e36 feat: create nested custom elements on  document root - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 2c176e5 chore: update changelog - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- f5a3639 chore: version bump - (*[Thomas David](https://codeberg.org/tjdavid)*)
+
+## Metadata
+```
+This version -------- v0.6.9
+Previous version ---- v0.6.8
+Total commits ------- 5
+```
 # 🎁 Release notes (`v0.6.8`)
 
 ## Changes
