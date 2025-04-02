@@ -1,3 +1,19 @@
+# 🎁 Release notes (`v0.7.0`)
+
+## Changes
+- d7b183d (HEAD -> main, tag: v0.7.0, origin/main) fix: use type helper to confirm child is a node - (*Thomas David*)
+- b574569 feat: check if slot is a node - (*Thomas David*)
+- de05e38 feat: type helper functions - (*Thomas David*)
+- 24f3935 test: cover nested components attributes - (*Thomas David*)
+- 8dc8f5d fix: apply nested custom component attribute values - (*Thomas David*)
+- 3fa3eb5 chore: version bump - (*Thomas David*)
+
+## Metadata
+```
+This version -------- v0.7.0
+Previous version ---- v0.6.9
+Total commits ------- 6
+```
 # 🎁 Release notes (`v0.6.9`)
 
 ## Changes
