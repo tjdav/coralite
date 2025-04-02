@@ -85,11 +85,12 @@ test('computed slots has been successful', async ({ page }) => {
 test('has nested component', async ({ page }) => {
   await page.goto('/nested-components.html')
 
-  await expect(page.locator('body')).toMatchAriaSnapshot(`
-    - document:
+  await expect(page.locator('html')).toMatchAriaSnapshot(`
+    - document: 
       - banner:
         - text: This is the mighty header
         - banner: This is the mighty header
+      - text: circle square
       - banner:
         - text: This is the mighty header
         - heading "Nested title" [level=1]
