@@ -1,4 +1,4 @@
-#!/usr/bin/env node --experimental-vm-modules
+#!/usr/bin/env node --experimental-vm-modules --experimental-import-meta-resolve
 
 import { getSubDirectory, getPkg, coralite } from '#lib'
 import { Command } from 'commander'
