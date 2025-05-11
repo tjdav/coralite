@@ -158,13 +158,13 @@
 
 /**
  * @callback CoraliteAggregateFilter
- * @param {Object.<string, string>} metadata - Aggregated HTML page metadata
+ * @param {CoraliteToken} metadata - Aggregated HTML page metadata
  */
 
 /**
  * @callback CoraliteAggregateSort
- * @param {Object.<string, string>} a - Aggregated HTML page metadata
- * @param {Object.<string, string>} b - Aggregated HTML page metadata
+ * @param {Object.<string, (string | CoraliteToken[])>} a - Aggregated HTML page metadata
+ * @param {Object.<string, (string | CoraliteToken[])>} b - Aggregated HTML page metadata
  */
 
 /**
