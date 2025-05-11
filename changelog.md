@@ -1,12 +1,66 @@
+# 🎁 Release notes (`v0.8.0`)
+
+## Changes
+- 25c4669 (HEAD -> main, tag: v0.8.0, origin/main) feat(aggregate): add pagination support - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 1268e3c fix(aggregate): handle non-array metadata values correctly - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 42c3ae0 fix(aggregate): handle string and non-array limit values correctly - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 0538a80 fix(aggregate): Handle offset parsing robustly for numeric conversion - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 4d2fe56 feat(aggregate): Add metadata-based page filtering using options.filter - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 176c7f3 feat(lib/html-module): add support for custom sort function in aggregate - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 3acfb99 feat(lib/html-module): add pagination support with token validation - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 41b0e10 refactor(lib): integrate htmlparser2 and dom-serializer for improved HTML parsing - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 0c7fb5e refactor(html-module): update aggregate to use component element children and return Aggregation object - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 6bb83d3 refactor: restructure document rendering logic and add HTMLData type support - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 8d4b43c refactor: move coralite rendering logic to new renderDocument function - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- c81786e types: add pagination configuration to CoraliteAggregate - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- c8ddec4 feat(metadata): Update metadata token prefix to '$' - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- ee57e18 feat: add parsePagination function for handling pagination templates - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 4471482 types: add Aggregation typedef and update imports - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 2772969 docs: Improve JSDoc clarity for parseHTMLDocument function - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 37e79db refactor: restructure html file path properties - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- dab3a61 refactor: Export createTextNode function - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- c538186 fix: handle custom element creation with proper tag validation - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 58d101d refactor: update addMetadata to support non-array values as array of objects - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- d0fa67c docs: update parseHTMLMeta parameters and example documentation - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- de8035e fix: correct path calculation in parseScript function - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- b9c94ee refactor(parse): use scriptResult.values instead of computedValues when merging values - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 7b0be0c fix: correct script parsing path resolution and module identifier - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 803aa3e refactor(parse): refactor aggregate method to use helper and collect documents - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 2c77b44 fix: add warning when component is not found - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 885fd6c refactor(parseModule): remove html parameter and introduce lineOffset property - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 84c8a74 types: allow string or CoraliteToken[] as meta value types - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 0b9ce81 refactor: merge html.path into path object in parseHTMLDocument - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 1964a60 types: update JSDoc types for aggregate callbacks - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 2205c1a types: Refactor types to introduce CoraliteFilePath and improve module interface definitions - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- c37fa7c docs: add CoraliteComponent import - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 281e07e refactor: rename getHTML to getHtmlFiles and add getHtmlFile function - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- f91251a types: Update return type of createComponent to CoraliteComponent - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- d6fab1e refactor: use cleanKeys for consistent naming conventions - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- dfe3b06 docs: update aggregate comments - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 6a495f3 feat: add document data to  component - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 17afeb4 feat: require experimental-import-meta-resolve for dynamic imports - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 34ccd76 feat: dynamic module linker - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 828bcaa feat: add console to script context - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 47ab7db chore: version bump - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 4c7f361 fix kleur dependencies - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 2f88f2d chore: update changelong - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- aedf75f chore: version bump - (*[Thomas David](https://codeberg.org/tjdavid)*)
+
+## Metadata
+```
+This version -------- v0.8.0
+Previous version ---- v0.7.0
+Total commits ------- 44
+```
 # 🎁 Release notes (`v0.7.0`)
 
 ## Changes
-- d7b183d (HEAD -> main, tag: v0.7.0, origin/main) fix: use type helper to confirm child is a node - (*Thomas David*)
-- b574569 feat: check if slot is a node - (*Thomas David*)
-- de05e38 feat: type helper functions - (*Thomas David*)
-- 24f3935 test: cover nested components attributes - (*Thomas David*)
-- 8dc8f5d fix: apply nested custom component attribute values - (*Thomas David*)
-- 3fa3eb5 chore: version bump - (*Thomas David*)
+- d7b183d (HEAD -> main, tag: v0.7.0, origin/main) fix: use type helper to confirm child is a node - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- b574569 feat: check if slot is a node - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- de05e38 feat: type helper functions - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 24f3935 test: cover nested components attributes - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 8dc8f5d fix: apply nested custom component attribute values - (*[Thomas David](https://codeberg.org/tjdavid)*)
+- 3fa3eb5 chore: version bump - (*[Thomas David](https://codeberg.org/tjdavid)*)
 
 ## Metadata
 ```
