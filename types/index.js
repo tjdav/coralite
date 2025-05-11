@@ -1,8 +1,16 @@
 /**
  * @typedef {Object} HTMLData
- * @property {string} parentPath  - Path to the directory containing this file (e.g., '../my-component').
- * @property {string} name - The file's name without extension (e.g., 'my-component').
- * @property {string} content - The raw HTML string contents of the file.
+ * @property {CoraliteFilePath} path
+ * @property {string} [content] - The raw HTML string contents of the file.
+ */
+
+/**
+ * @typedef {Object} CoraliteFilePath
+ * @property {string} pathname - relative path
+ * @property {string} dirname -
+ * @property {string} filename - The file name
+ * @property {string} page - Path to the template directory
+ * @property {string} pageName - Pathname to template
  */
 
 /**
@@ -23,13 +31,16 @@
  */
 
 /**
+ * Represents a module in the Coralite framework.
  * @typedef {Object} CoraliteModule
- * @property {string} id - Unique module identifier
- * @property {CoraliteElement} template - Module's rendering template
- * @property {string|undefined} script - Module's JavaScript raw code
- * @property {CoraliteDocumentTokens} tokens - Tokens generated from the module's markup
- * @property {CoraliteElement[]} customElements - Custom elements defined in the module
- * @property {Object.<string, Object.<string,CoraliteModuleSlotElement>>} slotElements - Custom slot elements and their configurations
+ * @property {string} id - Unique module identifier used to reference this module within the application.
+ * @property {CoraliteFilePath} [path] - Template paths associated with this module, if any.
+ * @property {number} [lineOffset] - Optional offset value for line numbering purposes within the template.
+ * @property {CoraliteElement} template - Module's rendering template which defines its structure and layout.
+ * @property {string|undefined} script - Module's JavaScript raw code used for logic or behavior associated with this module.
+ * @property {CoraliteDocumentTokens} tokens - Tokens generated from the module's markup, containing metadata or variable information.
+ * @property {CoraliteElement[]} customElements - Custom elements defined in the module, allowing extension of HTML capabilities.
+ * @property {Object.<string, Object.<string,CoraliteModuleSlotElement>>} slotElements - Custom slot elements and their configurations, enabling flexible content insertion points within components.
  */
 
 /**
@@ -81,7 +92,6 @@
  * @property {boolean} [remove] - Mark element to be removed from stack
  */
 
-
 /**
  * @typedef {Object} CoraliteTextNode
  * @property {'text'} type - Text node type
@@ -124,11 +134,9 @@
 
 /**
  * @typedef {Object} CoraliteDocument
- * @property {string} name - Document file name
- * @property {string} parentPath - Parent file path
  * @property {CoraliteDocumentRoot} root - Array of elements and text nodes in the document
  * @property {CoraliteElement[]} customElements - Custom elements defined in the document
- * @property {CoralitePath} path - Document's file path
+ * @property {CoralitePath & CoraliteFilePath} path - Document's file path
  * @property {IgnoreByAttribute} ignoreByAttribute - An array of attribute names and values to ignore by element type.
  */
 
