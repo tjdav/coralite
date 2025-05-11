@@ -64,6 +64,12 @@
  */
 
 /**
+ * @typedef {Object} CoraliteComponent
+ * @property {CoraliteElement} element - The primary HTML element representing this component, including its structure and attributes.
+ * @property {CoraliteDocument[]} [documents] - CoraliteDocument documents used to append to page render list.
+ */
+
+/**
  * @typedef {Object} CoraliteElement
  * @property {'tag'} type - Element type
  * @property {string} name - Tag name
