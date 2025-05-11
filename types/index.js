@@ -171,6 +171,10 @@
  * @typedef {Object} CoraliteAggregate – Configuration object for the aggregation process
  * @property {string} path - The path to aggregate, relative to pages directory
  * @property {CoraliteAggregateTemplate | string} template - Templates used to display the result
+ * @property {Object} [pagination]
+ * @property {string} pagination.token - The token name that was used by the aggregation function
+ * @property {string} pagination.template - Pagination template ID
+ * @property {string} pagination.path - Pagination page infix (e.g. 'page' will result in 'page/1')
  * @property {CoraliteAggregateFilter} [filter] - Callback to filter out unwanted elements from the aggregated content.
  * @property {boolean} [recursive] - Whether to recursively search subdirectories
  * @property {CoraliteTokenOptions} [tokens] - Token configuration options
