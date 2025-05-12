@@ -22,6 +22,9 @@
     "type": "git",
     "url": "https://codeberg.org/tjdavid/coralite.git"
   },
+  "bugs": {
+    "url": "https://codeberg.org/tjdavid/coralite/issues"
+  },
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "commitmsg": "commitlint -e",
