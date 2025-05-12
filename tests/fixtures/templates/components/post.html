@@ -1,7 +1,7 @@
 <template id="coralite-post">
-  <h2>{{ meta_title }}</h2>
-  <coralite-author name="{{ meta_author }}" datetime="{{ meta_published_time }}"></coralite-author>
-  <img src="{{ meta_image }}" alt="{{ meta_image_alt }}">
-  {{ meta_description }}
+  <h2>{{ $title }}</h2>
+  <coralite-author name="{{ $author }}" datetime="{{ $published_time }}"></coralite-author>
+  <img src="{{ $image }}" alt="{{ $image_alt }}">
+  {{ $description }}
   <coralite-header></coralite-header>
 </template>
