@@ -37,7 +37,9 @@
     "html": "coralite -t tests/fixtures/templates -p tests/fixtures/pages -o dist -i 'data-dev=true'",
     "server": "sirv dist --dev --port 3000"
   },
-  "bin": "bin/coralite.js",
+  "bin": {
+    "coralite": "bin/coralite.js"
+  },
   "imports": {
     "#lib": "./lib/index.js",
     "#types": "./types/index.js"
