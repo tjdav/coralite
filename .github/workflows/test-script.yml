@@ -51,5 +51,8 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
+    - name: Add symlink
+      run: pnpm link
+
     - name: Build HTML from templates
       run: pnpm run html
