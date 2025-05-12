@@ -1,6 +1,6 @@
 #!/usr/bin/env node --experimental-vm-modules --experimental-import-meta-resolve
 
-import { getSubDirectory, getPkg, coralite } from '#lib'
+import { getPkg, coralite } from '#lib'
 import { Command } from 'commander'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
@@ -56,8 +56,8 @@ if (options.dryRun) {
     const document = documents[i]
 
     process.stdout.write('\n' + PAD + kleur.green('Document is ready!\n\n'))
-    process.stdout.write(PAD + `${kleur.bold('- Path:')}      ${join(document.item.parentPath, document.item.name)}\n`)
-    process.stdout.write(PAD + `${kleur.bold('- Built in:')}      ${Math.floor(document.duration)}ms\n\n`)
+    process.stdout.write(PAD + `${kleur.bold('- Path:')}      ${document.item.path.pathname}\n`)
+    process.stdout.write(PAD + `${kleur.bold('- Built in:')}  ${Math.floor(document.duration)}ms\n\n`)
     process.stdout.write(border + kleur.inverse(' Content start ') + border + '\n\n')
     process.stdout.write(document.html)
     process.stdout.write('\n\n' + border + kleur.inverse(' Content end ') + border + '\n')
@@ -65,15 +65,13 @@ if (options.dryRun) {
 } else {
   for (let i = 0; i < documents.length; i++) {
     const document = documents[i]
-    // get pages sub directory
-    const subDir = getSubDirectory(pages, document.item.parentPath)
-    const dir = join(output, subDir)
+    const dir = join(output, document.item.path.dirname)
 
     if (!existsSync(dir)) {
     // create directory
       mkdirSync(dir)
     }
 
-    writeFileSync(join(dir, document.item.name), document.html)
+    writeFileSync(join(output, document.item.path.pathname), document.html)
   }
 }
