@@ -1,113 +1,153 @@
-# coralite
+# Coralite library documentation
 
-The `coralite` function is the core processing engine of Coralite. It takes a configuration object and returns an array of objects, each representing one page rendered with its respective HTML content along with other metadata such as document title or render time in milliseconds (ms). 
+Coralite is designed to work with a structured project layout containing `templates` (reusable components) and `pages` (content to be rendered). Below are typical directory structures and file examples that illustrate how Coralite processes HTML files.
 
-## Signature
+---
 
-```typescript
-async function coralite(options: {
-  templates: string
-  pages: string
-  ignoreByAttribute?: Array<Array<string, string>>
-}): Promise<
-  Array<{
-    document: CoraliteDocument
-    html: string
-    duration: number
-  }>
->
+## 📁 Project Structure Example
+
+A basic Coralite project might look like this:
+
+```
+my-coralite-project/
+│
+├── src/  
+│   ├── templates/                // ✅ Templates used for rendering
+│   │   ├── header.html           // Reusable template component
+│   │   └── layout.html           // Base layout template
+│   │
+│   └── pages/                    // ✅ Pages to be rendered using templates
+│       ├── index.html            // Main page with dynamic content
+│       └── about.html            // Another page that uses templates
+│
+├── assets/                       // 📁 Optional: static files (CSS, images)
+│   └── styles.css                // CSS file referenced by pages or templates
+│
+└── package.json                  // Project metadata and dependencies
 ```
 
-## Parameters
+---
 
-- **`options`** (`Object`): An object containing configuration options for the `coralite` function.
+## 📄 Template File Example (`src/templates/header.html`)
 
-### `templates`
+```html
+<!-- header.html - A reusable template component -->
+<template id="coralite-header">
+  <header>
+    <h1>{{ title }}</h1> <!-- Dynamic token placeholder -->
+    <nav>
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/about">About</a></li>
+      </ul>
+    </nav>
+  </header>
+</template>
+```
 
-- **Type:** `string`
-- **Description:** The file system path to the directory containing Coralite templates. These templates are used to create components during the rendering process.
-- **Required:** Yes
+This template defines a reusable header component with a dynamic `{{ title }}` token that will be replaced during rendering.
 
-### `pages`
+---
 
-- **Type:** `string`
-- **Description:** The file system path to the directory containing pages that will be rendered using the provided templates.
-- **Required:** Yes
+## 📄 Page File Example (`src/pages/index.html`)
 
-### `ignoreByAttribute` (optional)
+```html
+<!-- index.html - A page to be rendered using templates -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Homepage</title>
+</head>  
+<article data-page="home">
+  <!-- Custom element - the attributes will be available as tokens in the template -->
+  <coralite-module title="Hello world"></coralite-module>
 
-- **Type:** `Array<Array<string, string>>`
-- **Description:** An optional 2D array of element names and their respective attributes to ignore during parsing. For example, `[['data-ignore', 'true']]` ignores elements with a `data-ignore="true"` attribute.
-- **Default:** `undefined`
+  <section>
+    <h2>Welcome</h2>
+    <p>This is the homepage content.</p>
+  </section>
+</article>
+</body>
+</html>
+```
 
-## Returns
+This page includes a `coralite-header` element that references the `header.html` template and defines its own content.
 
-The `coralite` function returns a promise that resolves to an array of objects, each containing the following properties:
+---
 
-### `document`
+## 📌 Ignored Element Example
 
-- **Type:** `CoraliteDocument`
-- **Description:** An object representing the parsed HTML document with metadata about custom elements used in it. See [Coralite Document](#coralitedocument) for more details.
+If you want to exclude certain elements during rendering, use the `ignoreByAttribute` option:
 
-### `html`
+```html
+<!-- ignored-element.html -->
+<div data-dev="true">This element will be ignored by Coralite.</div>
+```
 
-- **Type:** `string`
-- **Description:** The rendered HTML content as a string.
-
-### `duration`
-
-- **Type:** `number`
-- **Description:** The time taken (in milliseconds) to render the document and its components.
-
-## Examples
+Then include it in your configuration:
 
 ```javascript
 coralite({
-  templates: './path/to/templates',
-  pages: './path/to/pages',
-  ignoreByAttribute: [['data-ignore', 'true']],
+  templates: './src/templates',
+  pages: './src/pages',
+  ignoreByAttribute: [['data-dev', 'true']]
 })
-  .then((documents) => {
-    console.log(documents)
-  })
+.then(...)
 ```
 
-## Coralite Document
+---
 
-The `CoraliteDocument` object is a part of the return value from the `coralite` function. It contains metadata about custom elements used in the rendered HTML document.
+## 📁 Recursive Template Example
 
-### Signature
+Coralite can also process nested directories if enabled via the `recursive` option in advanced configurations. For example:
 
-```typescript
-type CoraliteDocument = {
-  item: {
-    name: string
-    parentPath: string
-  }
-  duration: number
-}
+```
+src/
+├── templates/
+│   └── components/
+│       ├── button.html
+│       └── card.html
+└── pages/
+    └── blog/
+        └── post-1.html
 ```
 
-### Properties
+Coralite will process all HTML files in `templates` and `pages`, including subdirectories.
 
-#### `item`
+---
 
-- **Type:** `{ name: string; parentPath: string }`
-- **Description:** An object containing information about the rendered page item.
-  - `name` (`string`): The name of the rendered page (e.g., `index.html`, etc.).
-  - `parentPath` (`string`): The file system path to the directory containing the rendered page, relative to the `pages` option provided when calling `coralite`.
+## Usage Example  
+```javascript
+coralite({
+  templates: './src/templates',
+  pages: './src/pages',
+  ignoreByAttribute: [['data-dev', 'true']]
+})
+.then(documents => {
+  documents.forEach(({ document, html, duration }) => {
+    console.log(`Rendered ${document.title} in ${duration}ms.`);
+    console.log(html);
+  });
+})
+.catch(console.error);
+```
 
-#### `duration`
+---
 
-- **Type:** `number`
-- **Description:** The time taken (in milliseconds) to render the document and its components.
+## Parameters  
 
-## Technical Details
+| Name              | Type                      | Required | Description                                                                 |
+|-------------------|---------------------------|----------|-----------------------------------------------------------------------------|
+| `templates`       | `string`                  | ✅ Yes   | Absolute or relative path to the directory containing Coralite templates.   |
+| `pages`           | `string`                  | ✅ Yes   | Absolute or relative path to the directory containing pages to render.      |
+| `ignoreByAttribute` | `[string, string][]`    | ❌ No    | Array of attribute name/value pairs to exclude elements that contain any of the attributes during rendering (e.g., `[['data-dev', 'true']]`). |
 
-Under the hood, the `coralite` function performs the following tasks:
+---
 
-1. Reads HTML files from the specified `pages` directory.
-2. Parses each page's content using the provided templates to create custom elements.
-3. Renders each page using the created components and generates an HTML string.
-4. Calculates the duration it took to render each document.
-5. Optionally, ignores specific elements based on the `ignoreByAttribute` option during parsing.
+## Return Value  
+
+- **Type**: `Promise<Array<CoraliteResult>>`  
+- **Description**: Resolves to an array of objects containing:  
+  - `document`: The rendered [`CoraliteDocument`](./typedef.md#coralite-document) object.  
+  - `html`: Raw HTML string output.  
+  - `duration`: Render time in milliseconds.  
