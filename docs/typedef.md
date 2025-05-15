@@ -34,6 +34,7 @@ This document serves as a comprehensive reference for the type definitions used 
 28. [CoraliteAggregate](#coralite-aggregate)
 
 ### `HTMLData` {#html-data}
+Represents HTML file data including path and raw content.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -43,6 +44,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteFilePath` {#coralite-file-path}
+Represents a file's path structure within the project.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -55,6 +57,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
   
 ### `CoralitePath` {#coralite-path}
+Defines root directories for pages and templates in a Coralite project.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -64,6 +67,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteTokenOptions` {#coralite-token-options}
+Configuration options for token handling during processing.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -72,8 +76,8 @@ This document serves as a comprehensive reference for the type definitions used 
 
 ---
 
-
 ### `CoraliteModuleValues` {#coralite-module-values}
+A collection of module values associated with a module.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -82,6 +86,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteModuleValue` {#coralite-module-value}
+Represents a single value that a module can store or process.
 
 | Type | Description |
 |------------------------------------------------------------------------------------------|----------------------------------------------|
@@ -92,6 +97,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteModule` {#coralite-module}
+A module within the Coralite library, containing metadata and rendering logic
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -107,6 +113,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteDocumentTokens` {#coralite-document-tokens}
+Holds tokenized metadata extracted from document attributes and text nodes.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -116,6 +123,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
   
 ### `CoraliteToken` {#coralite-token}
+A representation of a token with name and value.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -125,6 +133,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteAttributeToken` {#coralite-attribute-token}
+Represents an HTML attribute token linked to its parent element.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -132,13 +141,10 @@ This document serves as a comprehensive reference for the type definitions used 
 | `element` | [`CoraliteElement`](#coralite-element) | Corresponding HTML element for the attribute. |
 | `tokens` | [`CoraliteToken[]`](#coralite-token) | Array of associated tokens. |
 
-  
-
----
-
-  
+---  
 
 ### `CoraliteTextNodeToken` {#coralite-text-node-token}
+Represents a text node token with associated metadata.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -148,6 +154,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteModuleSlotElement` {#coralite-module-slot-element}
+Defines a slot element and its configuration within a module.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -157,6 +164,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteComponent` {#coralite-component}
+A Coralite component containing an HTML structure and associated documents.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -166,6 +174,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteElement` {#coralite-element}
+Represents a standard HTML element in the Coralite content tree.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -180,8 +189,8 @@ This document serves as a comprehensive reference for the type definitions used 
 
 ---
 
-
 ### `CoraliteTextNode` {#coralite-text-node}
+Represents a text node within the Coralite content tree.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -189,13 +198,11 @@ This document serves as a comprehensive reference for the type definitions used 
 | `data` | `string` | Additional attributes for the text node. |
 | `parent` | [`CoraliteContentNode`](#coralite-content-node) | Parent element of this text node. |
 
-  
 
 ---
-
-  
-
+ 
 ### `CoraliteComment` {#coralite-comment}
+Represents an HTML comment within the Coralite content tree.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -206,6 +213,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteAnyNode` {#coralite-any-node}
+Union type representing any content node (element, text, or comment).
 
 | Type | Description |
 |------------------------------------------------------------------------------------------|----------------------------------------------|
@@ -214,6 +222,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteContentNode` {#coralite-content-node}
+Union type representing nodes that can be part of a document's content hierarchy.
 
 | Type | Description |
 |------------------------------------------------------------------------------------------|----------------------------------------------|
@@ -222,6 +231,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteSlotElement` {#coralite-slot-element}
+Defines a slot with its associated HTML element and custom component.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -232,6 +242,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteDirective` {#coralite-directive}
+Represents a directive found in HTML content, like a DOCTYPE declaration.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -242,6 +253,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteDocumentRoot` {#coralite-document-root}
+Represents the root node of a document containing all content nodes.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -251,6 +263,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---  
 
 ### `CoraliteDocument` {#coralite-document}
+Represents a complete Coralite document with metadata and rendering structure.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -262,6 +275,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---  
 
 ### `CoraliteAggregateTemplate` {#coralite-aggregate-template}
+Configuration for templates used to render aggregated results.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -270,6 +284,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteResult` {#coralite-result}
+Represents a rendered output document with metadata and statistics.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
@@ -280,6 +295,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `IgnoreByAttribute` {#ignore-by-attribute}
+An array of attribute name-value pairs to exclude from processing.
 
 | Type | Description |
 |------------------------------------------------------------------------------------------|----------------------------------------------|
@@ -288,6 +304,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteAggregateFilter` {#coralite-aggregate-filter}
+Callback function for filtering aggregated content based on metadata.
 
 | Signature | Description |
 |----------|---------------------|
@@ -296,6 +313,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteAggregateSort` {#coralite-aggregate-sort}
+Callback function for sorting aggregated results based on metadata.
 
 | Signature | Description |
 |----------|---------------------|
@@ -304,6 +322,7 @@ This document serves as a comprehensive reference for the type definitions used 
 ---
 
 ### `CoraliteAggregate` {#coralite-aggregate}
+Configuration object for content aggregation processes.
 
 | Property | Type | Description |
 |----------|---------------------|----------------------------------------------|
