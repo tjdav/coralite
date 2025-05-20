@@ -3,13 +3,13 @@
 </template>
 
 <script type="module">
-  import { defineComponent, aggregate } from 'coralite'
+  import { defineComponent, aggregation } from 'coralite'
 
   export default defineComponent({
     id: 'coralite-posts',
     values: {
       posts (values) {
-        return aggregate({
+        return aggregation({
           path: values.path,
           template: 'coralite-post',
           pages: 10,
