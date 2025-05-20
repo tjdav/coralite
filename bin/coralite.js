@@ -1,16 +1,18 @@
 #!/usr/bin/env node --experimental-vm-modules --experimental-import-meta-resolve
 
-import { getPkg, coralite } from '#lib'
+import { getPkg, Coralite } from '#lib'
 import { Command } from 'commander'
 import { join } from 'node:path'
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import kleur from 'kleur'
+import { loadConfig } from '../lib/loader.js'
 
 // Remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
 
 const pkg = await getPkg()
 const program = new Command()
+const config = await loadConfig()
 
 program
   .name(pkg.name)
@@ -32,6 +34,13 @@ const pages = options.pages
 const output = options.output
 const ignoreByAttribute = []
 
+const coraliteOptions = {
+  templates: options.templates,
+  pages,
+  ignoreByAttribute,
+  plugins: []
+}
+
 for (let i = 0; i < options.ignoreAttribute.length; i++) {
   const pair = options.ignoreAttribute[i].split('=')
 
@@ -42,11 +51,12 @@ for (let i = 0; i < options.ignoreAttribute.length; i++) {
   ignoreByAttribute.push(pair)
 }
 
-const documents = await coralite({
-  templates: options.templates,
-  pages,
-  ignoreByAttribute
-})
+if (config && config.plugins) {
+  coraliteOptions.plugins = coraliteOptions.plugins.concat(config.plugins)
+}
+
+const coralite = new Coralite(coraliteOptions)
+const documents = await coralite.compile()
 
 if (options.dryRun) {
   const PAD = '  '
