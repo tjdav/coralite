@@ -10,7 +10,7 @@
 
   export default defineComponent({
     id: 'coralite-author',
-    tokens: {
+    values: {
       localeDate (values) {
         return new Date(values.datetime).toLocaleDateString('en-AU', {
           weekday: 'short',
