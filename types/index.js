@@ -171,7 +171,7 @@
  * @typedef {Object} CoraliteResult
  * @property {CoraliteDocument} item - The document object from the rendering process
  * @property {string} html - Raw HTML content of the render process as a string
- * @property {number} duration - The duration of the render process in milliseconds
+ * @property {number} [duration] - The duration of the render process in milliseconds
  */
 
 /**
@@ -207,4 +207,23 @@
  * @property {CoraliteAggregateSort} [sort] - Sort aggregated pages
  * @property {number} [limit] - Specifies the maximum number of results to retrieve.
  * @property {number} [offset] - Specifies the starting index for the results list.
+ */
+
+/**
+ * @typedef {Object} CoraliteDocumentCallbackResult
+ * @property {*} [result]
+ */
+
+/** @typedef {(CoraliteDocumentCallbackResult & HTMLData)} CoraliteDocumentCollectionItem */
+
+/**
+ * @typedef {Object} CoraliteDocumentSetCallbackResult
+ * @property {*} value
+ * @property {string} [id]
+ */
+
+/**
+ * @callback CoraliteDocumentSetCallback
+ * @param {CoraliteDocumentCollectionItem} value
+ * @returns {CoraliteDocumentSetCallbackResult}
  */
