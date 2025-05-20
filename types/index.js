@@ -89,13 +89,6 @@
  */
 
 /**
- * A Coralite component containing an HTML structure and associated documents.
- * @typedef {Object} CoraliteComponent
- * @property {CoraliteElement} element - The primary HTML element representing this component, including its structure and attributes.
- * @property {CoraliteDocument[]} [documents] - CoraliteDocument documents used to append to page render list.
- */
-
-/**
  * Represents a standard HTML element in the Coralite content tree.
  * @typedef {Object} CoraliteElement
  * @property {'tag'} type - Element type
