@@ -47,14 +47,14 @@
  * @property {number} [lineOffset] - Optional offset value for line numbering purposes within the template.
  * @property {CoraliteElement} template - Module's rendering template which defines its structure and layout.
  * @property {string|undefined} script - Module's JavaScript raw code used for logic or behavior associated with this module.
- * @property {CoraliteDocumentTokens} tokens - Tokens generated from the module's markup, containing metadata or variable information.
+ * @property {CoraliteDocumentValues} values - Values generated from the module's markup, containing metadata or variable information.
  * @property {CoraliteElement[]} customElements - Custom elements defined in the module, allowing extension of HTML capabilities.
  * @property {Object.<string, Object.<string,CoraliteModuleSlotElement>>} slotElements - Custom slot elements and their configurations, enabling flexible content insertion points within components.
  */
 
 /**
  * Holds tokenized metadata extracted from document attributes and text nodes.
- * @typedef {Object} CoraliteDocumentTokens
+ * @typedef {Object} CoraliteDocumentValues
  * @property {CoraliteAttributeToken[]} attributes - Array of attribute tokens from the document
  * @property {CoraliteTextNodeToken[]} textNodes - Array of text node tokens from the document
  */
@@ -86,13 +86,6 @@
  * @typedef {Object} CoraliteModuleSlotElement
  * @property {string} name - Slot element identifier
  * @property {CoraliteElement} element - Corresponding HTML element for the slot
- */
-
-/**
- * A Coralite component containing an HTML structure and associated documents.
- * @typedef {Object} CoraliteComponent
- * @property {CoraliteElement} element - The primary HTML element representing this component, including its structure and attributes.
- * @property {CoraliteDocument[]} [documents] - CoraliteDocument documents used to append to page render list.
  */
 
 /**
@@ -178,7 +171,7 @@
  * @typedef {Object} CoraliteResult
  * @property {CoraliteDocument} item - The document object from the rendering process
  * @property {string} html - Raw HTML content of the render process as a string
- * @property {number} duration - The duration of the render process in milliseconds
+ * @property {number} [duration] - The duration of the render process in milliseconds
  */
 
 /**
@@ -214,4 +207,23 @@
  * @property {CoraliteAggregateSort} [sort] - Sort aggregated pages
  * @property {number} [limit] - Specifies the maximum number of results to retrieve.
  * @property {number} [offset] - Specifies the starting index for the results list.
+ */
+
+/**
+ * @typedef {Object} CoraliteDocumentCallbackResult
+ * @property {*} [result]
+ */
+
+/** @typedef {(CoraliteDocumentCallbackResult & HTMLData)} CoraliteDocumentCollectionItem */
+
+/**
+ * @typedef {Object} CoraliteDocumentSetCallbackResult
+ * @property {*} value
+ * @property {string} [id]
+ */
+
+/**
+ * @callback CoraliteDocumentSetCallback
+ * @param {CoraliteDocumentCollectionItem} value
+ * @returns {CoraliteDocumentSetCallbackResult}
  */

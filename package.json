@@ -42,7 +42,8 @@
   },
   "imports": {
     "#lib": "./lib/index.js",
-    "#types": "./types/index.js"
+    "#types": "./types/index.js",
+    "#plugins": "./plugins/index.js"
   },
   "exports": {
     ".": {
@@ -52,6 +53,9 @@
     "./utils": {
       "default": "./lib/index.js",
       "types": "./types/index.js"
+    },
+    "./plugins": {
+      "default": "./plugins/index.js"
     }
   },
   "devDependencies": {
