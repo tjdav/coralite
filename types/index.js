@@ -47,14 +47,14 @@
  * @property {number} [lineOffset] - Optional offset value for line numbering purposes within the template.
  * @property {CoraliteElement} template - Module's rendering template which defines its structure and layout.
  * @property {string|undefined} script - Module's JavaScript raw code used for logic or behavior associated with this module.
- * @property {CoraliteDocumentTokens} tokens - Tokens generated from the module's markup, containing metadata or variable information.
+ * @property {CoraliteDocumentValues} values - Values generated from the module's markup, containing metadata or variable information.
  * @property {CoraliteElement[]} customElements - Custom elements defined in the module, allowing extension of HTML capabilities.
  * @property {Object.<string, Object.<string,CoraliteModuleSlotElement>>} slotElements - Custom slot elements and their configurations, enabling flexible content insertion points within components.
  */
 
 /**
  * Holds tokenized metadata extracted from document attributes and text nodes.
- * @typedef {Object} CoraliteDocumentTokens
+ * @typedef {Object} CoraliteDocumentValues
  * @property {CoraliteAttributeToken[]} attributes - Array of attribute tokens from the document
  * @property {CoraliteTextNodeToken[]} textNodes - Array of text node tokens from the document
  */
