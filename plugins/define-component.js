@@ -50,8 +50,17 @@ export default createPlugin({
               } else {
                 for (let i = 0; i < result.customElements.length; i++) {
                   const customElement = result.customElements[i]
+                  // Create a component instance from the custom element and its attributes
+                  const component = await this.createComponent({
+                    id: customElement.name,
+                    values,
+                    element: customElement,
+                    document
+                  })
 
-                  replaceCustomElementWithTemplate(customElement, values, document, this.createComponent)
+                  if (component) {
+                    replaceCustomElementWithTemplate(customElement, values, component)
+                  }
                 }
 
                 results[key] = children
@@ -76,8 +85,17 @@ export default createPlugin({
             if (result.root.children.length) {
               for (let i = 0; i < result.customElements.length; i++) {
                 const customElement = result.customElements[i]
+                // Create a component instance from the custom element and its attributes
+                const component = await this.createComponent({
+                  id: customElement.name,
+                  values,
+                  element: customElement,
+                  document
+                })
 
-                replaceCustomElementWithTemplate(customElement, values, document, this.createComponent)
+                if (component) {
+                  replaceCustomElementWithTemplate(customElement, values, component)
+                }
               }
 
               results[key] = result.root.children
@@ -167,30 +185,19 @@ export default createPlugin({
  *
  * @param {CoraliteElement} coraliteElement - The custom element to be replaced.
  * @param {Object} values - A map of component names to their modules.
- * @param {CoraliteDocument} document - The document containing the element.
+ * @param {CoraliteElement} element - The target element to replace the tokens with.
  */
-async function replaceCustomElementWithTemplate (coraliteElement, values, document, createComponent) {
+async function replaceCustomElementWithTemplate (coraliteElement, values, element) {
   values = Object.assign(values, coraliteElement.attribs)
-  // Create a component instance from the custom element and its attributes
-  const component = await createComponent({
-    id: coraliteElement.name,
-    values,
-    element: coraliteElement,
-    document
-  })
 
-  if (component) {
-    const { element } = component
-
-    // Update parent references for new children to maintain the correct structure in the document
-    for (let i = 0; i < element.children.length; i++) {
-      element.children[i].parent = coraliteElement.parent
-    }
-
-    // Determine the index of the original custom element within its parent's child list
-    const index = coraliteElement.parent.children.indexOf(coraliteElement, coraliteElement.parentChildIndex)
-
-    // Replace the custom element with its template children in the document structure
-    coraliteElement.parent.children.splice(index, 1, ...element.children)
+  // Update parent references for new children to maintain the correct structure in the document
+  for (let i = 0; i < element.children.length; i++) {
+    element.children[i].parent = coraliteElement.parent
   }
+
+  // Determine the index of the original custom element within its parent's child list
+  const index = coraliteElement.parent.children.indexOf(coraliteElement, coraliteElement.parentChildIndex)
+
+  // Replace the custom element with its template children in the document structure
+  coraliteElement.parent.children.splice(index, 1, ...element.children)
 }
