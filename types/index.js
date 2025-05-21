@@ -210,20 +210,34 @@
  */
 
 /**
- * @typedef {Object} CoraliteDocumentCallbackResult
- * @property {*} [result]
- */
-
-/** @typedef {(CoraliteDocumentCallbackResult & HTMLData)} CoraliteDocumentCollectionItem */
-
-/**
- * @typedef {Object} CoraliteDocumentSetCallbackResult
- * @property {*} value
- * @property {string} [id]
+ * @typedef {Object} CoraliteCollectionCallbackResult
+ * @property {*} [result] - Result value returned from event handlers
  */
 
 /**
- * @callback CoraliteDocumentSetCallback
- * @param {CoraliteDocumentCollectionItem} value
- * @returns {CoraliteDocumentSetCallbackResult}
+ * A document object with both HTMLData properties and result handling capabilities
+ * @typedef {(CoraliteCollectionCallbackResult & HTMLData)} CoraliteCollectionItem
+ */
+
+/**
+ * @typedef {Object} CoraliteCollectionEventResult
+ * @property {*} value - The processed value
+ * @property {string} [id] - Optional identifier for the item
+ */
+
+/**
+ * @callback CoraliteCollectionEventSet
+ * @param {CoraliteCollectionItem} value - Item to be set
+ * @returns {CoraliteCollectionEventResult} Returns a result object with processed value and optional ID
+ */
+
+/**
+ * @callback CoraliteCollectionEventDelete
+ * @param {CoraliteCollectionItem} value - Item or pathname to delete
+ */
+
+/**
+ * @callback CoraliteCollectionEventUpdate
+ * @param {CoraliteCollectionItem} newValue - New item value
+ * @param {CoraliteCollectionItem} oldValue - Original item value
  */
