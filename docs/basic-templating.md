@@ -106,14 +106,14 @@ coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist
 - Try creating more complex templates with multiple slots
 - Explore nested components by using one component inside another
 - Use the dry-run mode to debug template issues
-- Check the [full documentation](https://github.com/tjdav/coralite) for advanced features
+- Check the [full documentation](https://codeberg.org/tjdavid/coralite/src/branch/main/docs) for advanced features
 
 ## Common Issues
 
 1. If your templates aren't rendering, ensure:
   - Template IDs match the component names in your pages
   - All required attributes are provided
-  - The Node.js `--experimental-vm-modules` flag is enabled
+  - The Node.js `--experimental-vm-modules` and `--experimental-import-meta-resolve` flag is enabled
 
 2. Missing content might indicate:
   - Incorrect slot names
