@@ -56,14 +56,14 @@ if (config && config.plugins) {
 }
 
 const coralite = new Coralite(coraliteOptions)
-const documents = await coralite.compile()
+const collection = await coralite.compile()
 
 if (options.dryRun) {
   const PAD = '  '
   const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
 
-  for (let i = 0; i < documents.length; i++) {
-    const document = documents[i]
+  for (let i = 0; i < collection.length; i++) {
+    const document = collection[i]
 
     process.stdout.write('\n' + PAD + kleur.green('Document is ready!\n\n'))
     process.stdout.write(PAD + `${kleur.bold('- Path:')}      ${document.item.path.pathname}\n`)
@@ -73,8 +73,8 @@ if (options.dryRun) {
     process.stdout.write('\n\n' + border + kleur.inverse(' Content end ') + border + '\n')
   }
 } else {
-  for (let i = 0; i < documents.length; i++) {
-    const document = documents[i]
+  for (let i = 0; i < collection.length; i++) {
+    const document = collection[i]
     const dir = join(output, document.item.path.dirname)
 
     if (!existsSync(dir)) {
