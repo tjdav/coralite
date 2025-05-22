@@ -15,7 +15,7 @@ npm install -g coralite
 The basic command structure for the Coralite CLI is as follows:
 
 ```bash
-node --experimental-vm-modules coralite [options]
+coralite [options]
 ```
 
 ## Options
