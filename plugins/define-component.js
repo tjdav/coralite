@@ -59,7 +59,7 @@ export default createPlugin({
                   })
 
                   if (component) {
-                    replaceCustomElementWithTemplate(customElement, values, component)
+                    replaceCustomElementWithTemplate(customElement, component)
                   }
                 }
 
@@ -94,7 +94,7 @@ export default createPlugin({
                 })
 
                 if (component) {
-                  replaceCustomElementWithTemplate(customElement, values, component)
+                  replaceCustomElementWithTemplate(customElement, component)
                 }
               }
 
@@ -184,12 +184,9 @@ export default createPlugin({
  * Replaces a custom element with its template content.
  *
  * @param {CoraliteElement} coraliteElement - The custom element to be replaced.
- * @param {Object} values - A map of component names to their modules.
  * @param {CoraliteElement} element - The target element to replace the tokens with.
  */
-async function replaceCustomElementWithTemplate (coraliteElement, values, element) {
-  values = Object.assign(values, coraliteElement.attribs)
-
+async function replaceCustomElementWithTemplate (coraliteElement, element) {
   // Update parent references for new children to maintain the correct structure in the document
   for (let i = 0; i < element.children.length; i++) {
     element.children[i].parent = coraliteElement.parent
