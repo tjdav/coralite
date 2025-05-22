@@ -1,18 +1,19 @@
 /**
  * Represents HTML file data including path and raw content.
  * @typedef {Object} HTMLData
- * @property {CoraliteFilePath} path
- * @property {string} [content] - The raw HTML string contents of the file.
+ * @property {'page'|'template'} [type] - The type of HTML file. 'page' for main pages, 'template' for reusable components.
+ * @property {CoraliteFilePath} path - The file's path information within the project structure.
+ * @property {string} [content] - The raw HTML string contents of the file (optional, may be omitted for templates).
  */
 
 /**
  * Represents a file's path structure within the project.
  * @typedef {Object} CoraliteFilePath
- * @property {string} pathname - relative path
- * @property {string} dirname -
- * @property {string} filename - The file name
- * @property {string} page - Path to the template directory
- * @property {string} pageName - Pathname to template
+ * @property {string} pathname - Full relative path from the project root to the file.
+ * @property {string} dirname - Directory name containing the file.
+ * @property {string} filename - The base file name (including extension).
+ * @property {string} page - Path to the template directory (used for organizing related templates).
+ * @property {string} pageName - Full relative path to the template file within its directory.
  */
 
 /**
@@ -211,6 +212,7 @@
 
 /**
  * @typedef {Object} CoraliteCollectionCallbackResult
+ * @property {'page'|'template'} [type] - Document type
  * @property {*} [result] - Result value returned from event handlers
  */
 
@@ -222,6 +224,7 @@
 /**
  * @typedef {Object} CoraliteCollectionEventResult
  * @property {*} value - The processed value
+ * @property {'page'|'template'} [type] - Document type
  * @property {string} [id] - Optional identifier for the item
  */
 
