@@ -84,13 +84,16 @@ export const aggregation = createPlugin({
 
     if (!pages.length) {
       // Retrieve HTML pages from specified path
-      const documents = await getHtmlFiles({ path: dirname })
+      const collection = await getHtmlFiles({
+        type: 'page',
+        path: dirname
+      })
 
-      if (!documents.list.length) {
-        throw new Error('Aggregation found no documents: "' + dirname + '"')
+      if (!collection.list.length) {
+        throw new Error('Aggregation found no documents in "' + dirname + '"')
       }
 
-      pages = documents.list
+      pages = collection.list
     }
 
     let result = []
