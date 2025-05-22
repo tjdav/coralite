@@ -7,7 +7,7 @@ import {
 } from '#lib'
 
 /**
- * @import { CoraliteDocument, CoraliteElement, CoraliteModule, CoraliteModuleValues } from '#types'
+ * @import { CoraliteElement, CoraliteModuleValues } from '#types'
  */
 
 export default createPlugin({
@@ -178,7 +178,6 @@ export default createPlugin({
     return results
   }
 })
-
 
 /**
  * Replaces a custom element with its template content.
