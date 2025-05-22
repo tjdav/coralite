@@ -80,7 +80,7 @@ export default createPlugin({
           const key = computedTokenKey[i]
 
           if (typeof computedValue === 'string') {
-            const result = parseHTML(computedValue[i], excludeByAttribute)
+            const result = parseHTML(computedValue, excludeByAttribute)
 
             if (result.root.children.length) {
               for (let i = 0; i < result.customElements.length; i++) {
