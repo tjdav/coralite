@@ -87,12 +87,11 @@ If you want to exclude certain elements during rendering, use the `ignoreByAttri
 Then include it in your configuration:
 
 ```javascript
-coralite({
+new Coralite({
   templates: './src/templates',
   pages: './src/pages',
   ignoreByAttribute: [['data-dev', 'true']]
 })
-.then(...)
 ```
 
 ---
@@ -116,38 +115,13 @@ Coralite will process all HTML files in `templates` and `pages`, including subdi
 
 ---
 
-## Usage Example  
-```javascript
-coralite({
-  templates: './src/templates',
-  pages: './src/pages',
-  ignoreByAttribute: [['data-dev', 'true']]
-})
-.then(documents => {
-  documents.forEach(({ document, html, duration }) => {
-    console.log(`Rendered ${document.title} in ${duration}ms.`);
-    console.log(html);
-  });
-})
-.catch(console.error);
-```
+## Parameters Table  
+
+| **Name**           | **Type**                                                                 | **Description**                                                                                     | **Example**                                      |
+|--------------------|--------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------|--------------------------------------------------|
+| `templates`        | String                                                                  | Path to the directory containing Coralite templates.                                                | `'./path/to/templates'`                                 |
+| `pages`            | String                                                                  | Path to the directory containing pages that will be rendered using the provided templates.         | `'./path/to/pages'`                                     |
+| `plugins`          | Array of plugin objects (optional, defaults to empty array)             | Array of plugin modules for extending functionality. Each plugin must implement specific methods. | `[myPlugin]`                                    |
+| `ignoreByAttribute`| Array of attribute name-value pairs (optional)                          | Elements to ignore based on exact attribute name-value matches.                                     | `[['data-ignore', 'true']]`                     |
 
 ---
-
-## Parameters  
-
-| Name              | Type                      | Required | Description                                                                 |
-|-------------------|---------------------------|----------|-----------------------------------------------------------------------------|
-| `templates`       | `string`                  | ✅ Yes   | Absolute or relative path to the directory containing Coralite templates.   |
-| `pages`           | `string`                  | ✅ Yes   | Absolute or relative path to the directory containing pages to render.      |
-| `ignoreByAttribute` | `[string, string][]`    | ❌ No    | Array of attribute name/value pairs to exclude elements that contain any of the attributes during rendering (e.g., `[['data-dev', 'true']]`). |
-
----
-
-## Return Value  
-
-- **Type**: `Promise<Array<CoraliteResult>>`  
-- **Description**: Resolves to an array of objects containing:  
-  - `document`: The rendered [`CoraliteDocument`](./typedef.md#coralite-document) object.  
-  - `html`: Raw HTML string output.  
-  - `duration`: Render time in milliseconds.  
