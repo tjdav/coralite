@@ -20,10 +20,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://codeberg.org/tjdavid/coralite.git"
+    "url": "https://codeberg.org/mightysmile/coralite.git"
   },
   "bugs": {
-    "url": "https://codeberg.org/tjdavid/coralite/issues"
+    "url": "https://codeberg.org/mightysmile/coralite/issues"
   },
   "license": "AGPL-3.0-or-later",
   "scripts": {
