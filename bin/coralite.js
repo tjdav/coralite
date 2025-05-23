@@ -78,8 +78,10 @@ if (options.dryRun) {
     const dir = join(output, document.item.path.dirname)
 
     if (!existsSync(dir)) {
-    // create directory
-      mkdirSync(dir)
+      // create directory
+      mkdirSync(dir, {
+        recursive: true
+      })
     }
 
     writeFileSync(join(output, document.item.path.pathname), document.html)
