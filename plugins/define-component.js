@@ -10,7 +10,7 @@ import {
  * @import { CoraliteElement, CoraliteModuleValues } from '#types'
  */
 
-export default createPlugin({
+export const defineComponent = createPlugin({
   name: 'defineComponent',
   /**
    * @param {Object} options
