@@ -1,1 +1,1 @@
-export * from './aggregation.js'
+export * from './define-component.js'
