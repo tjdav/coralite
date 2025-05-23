@@ -1,6 +1,7 @@
 docs
 .github
 tests
+scripts
 
 # Dependencies
 node_modules
