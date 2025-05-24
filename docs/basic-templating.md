@@ -92,13 +92,13 @@ Create your main page in `src/pages/index.html`:
 Generate your site using the Coralite CLI:
 
 ```bash
-coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist
+coralite --templates path/to/templates --pages path/to/pages --output dist
 ```
 
 To preview changes without generating files, use the dry-run mode:
 
 ```bash
-coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist --dry-run
+coralite --templates path/to/templates --pages path/to/pages --output dist --dry-run
 ```
 
 ## Next Steps

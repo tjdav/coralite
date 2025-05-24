@@ -49,13 +49,13 @@ The Coralite CLI accepts several options to configure its behavior. Here's a det
 1. **Generate a site with default options:**
 
 ```bash
-coralite -t ./path/to/templates -p ./path/to/pages -o ./dist
+coralite -t path/to/templates -p path/to/pages -o dist
 ```
 
 2. **Ignore specific elements during parsing and run in dry-run mode:**
 
 ```bash
-coralite -t ./path/to/templates -p ./path/to/pages -o ./dist --ignore-attribute data-ignore=true --dry-run
+coralite -t path/to/templates -p path/to/pages -o dist --ignore-attribute data-ignore=true --dry-run
 ```
 
 ## Technical Details
