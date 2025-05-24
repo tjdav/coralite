@@ -1,6 +1,6 @@
 # Coralite Type Reference
 
-This document serves as a comprehensive reference for the type definitions used within the Coralite. It outlines the structure, properties, and relationships of core types involved in parsing, rendering, and managing HTML documents, templates, modules, and aggregation processes. The following sections provide detailed breakdowns of each type, with tables and internal links for easy navigation.
+This document serves as a comprehensive reference for the type definitions used within the Coralite. It outlines the structure, properties, and relationships of core types involved in parsing, rendering, and managing HTML documents, templates, and modules. The following sections provide detailed breakdowns of each type, with tables and internal links for easy navigation.
 
 # Table of Contents
 
@@ -37,13 +37,6 @@ This document serves as a comprehensive reference for the type definitions used 
 ## Directives and Slots
 - [CoraliteDirective](#coralite-directive)
 - [CoraliteModuleSlotElement](#coralite-module-slot-element)
-
-## Aggregation and Collection Types
-- [CoraliteAggregate](#coralite-aggregate)
-- [CoraliteAggregateTemplate](#coralite-aggregate-template)
-- [CoraliteTokenOptions](#coralite-token-options)
-- [CoraliteAggregateFilter](#coralite-aggregate-filter)
-- [CoraliteAggregateSort](#coralite-aggregate-sort)
 
 ## Collection and Event Types
 - [CoraliteCollectionItem](#coralite-collection-item)
@@ -270,30 +263,6 @@ Defines a slot with its associated HTML element and custom component.
 
 ---
 
-### Aggregation and Collection Types {#aggregation-and-collection-types}
-
-#### `CoraliteAggregate` {#coralite-aggregate}
-Configuration object for content aggregation processes.
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `path` | `string` | Path to aggregate (relative to pages directory). |
-| `template` | `CoraliteAggregateTemplate \| string` | Templates used to display the result. |
-| `pagination` | `Object` | Pagination configuration object (optional). |
-| `filter` | [`CoraliteAggregateFilter`](#coralite-aggregate-filter) | Callback to filter aggregated content (optional). |
-| `recursive` | `boolean` | Whether to recursively search subdirectories (optional). |
-| `tokens` | [`CoraliteTokenOptions`](#coralite-token-options) | Token configuration options (optional). |
-| `sort` | [`CoraliteAggregateSort`](#coralite-aggregate-sort) | Sort aggregated pages (optional). |
-| `limit` | `number` | Maximum number of results to retrieve (optional). |
-| `offset` | `number` | Starting index for the results list (optional). |
-
-#### `CoraliteAggregateTemplate` {#coralite-aggregate-template}
-Configuration for templates used to render aggregated results.
-
-| Property | Type | Description |
-|----------|------|-------------|
-| `item` | `string` | Unique identifier for the component used for each document. |
-
 #### `CoraliteTokenOptions` {#coralite-token-options}
 Configuration options for token handling during processing.
 
@@ -301,23 +270,6 @@ Configuration options for token handling during processing.
 |----------|------|-------------|
 | `default` | `Object.<string, string>` | Default token values for properties not explicitly set (optional). |
 | `aliases` | `Object.<string, string[]>` | Token aliases and their possible values (optional). |
-
-#### `CoraliteAggregateFilter` {#coralite-aggregate-filter}
-Callback function for filtering aggregated content based on metadata.
-
-| Parameter | Type | Description |
-|----------|------|-------------|
-| `metadata` | [`CoraliteToken`](#coralite-token) | Aggregated HTML page metadata. |
-
-#### `CoraliteAggregateSort` {#coralite-aggregate-sort}
-Callback function for sorting aggregated results based on metadata.
-
-| Parameters | Type | Description |
-|-----------|------|-------------|
-| `a` | `Object.<string, (string \| `[`CoraliteToken`](#coralite-token)`[])>` | Aggregated HTML page metadata. |
-| `b` | `Object.<string, (string \| `[`CoraliteToken`](#coralite-token)`[])>` | Aggregated HTML page metadata. |
-
----
 
 ### Collection and Event Types {#collection-and-event-types}
 
