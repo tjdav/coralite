@@ -209,3 +209,33 @@
  * @param {CoraliteCollectionItem} newValue - New item value
  * @param {CoraliteCollectionItem} oldValue - Original item value
  */
+
+/**
+ * @typedef {Object} CoralitePluginContext
+ * @property {Object.<string, string|string[]|CoraliteAnyNode[]>} values - Key-value pairs of data relevant to plugin execution
+ * @property {CoraliteDocument} document - The HTML file data being processed by the plugin
+ * @property {CoraliteModule} module - The module context the plugin is operating within (contains template/script)
+ * @property {CoraliteElement} element - The specific HTML element the plugin is applied to (if applicable)
+ * @property {Object} path - File path information for the current document/module being processed
+ * @property {[string, string][]} excludeByAttribute - List of attribute name-value pairs to ignore during processing by element type
+ */
+
+/**
+ * @callback CoralitePluginModule
+ * @param {Object} options - Configuration options passed to the plugin
+ * @param {CoralitePluginContext} context - Runtime context providing access to values, document data, module info, and path details
+ */
+
+/**
+ * @typedef {Object} CoralitePlugin
+ * @property {string} name - Unique identifier/name of the plugin
+ * @property {CoralitePluginModule} [method] - Execution function that processes content using plugin logic
+ * @property {string[]} [templates=[]] - List of custom templates to be included in the coralite instance
+ */
+
+/**
+ * @typedef {Object} CoralitePluginInstance
+ * @property {string} name - Unique identifier/name of the plugin
+ * @property {CoralitePluginModule} [method] - Execution function that processes content using plugin logic
+ * @property {HTMLData[]} [templates=[]] - List of custom templates to be included in the coralite instance
+ */
