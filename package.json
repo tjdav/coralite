@@ -55,7 +55,11 @@
       "types": "./types/index.js"
     },
     "./plugins": {
-      "default": "./plugins/index.js"
+      "default": "./plugins/index.js",
+      "types": "./types/index.js"
+    },
+    "./types": {
+      "default": "./types/index.js"
     }
   },
   "devDependencies": {
