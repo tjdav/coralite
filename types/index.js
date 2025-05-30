@@ -217,6 +217,7 @@
  * @property {CoraliteElement} element - The specific HTML element the plugin is applied to (if applicable)
  * @property {Object} path - File path information for the current document/module being processed
  * @property {[string, string][]} excludeByAttribute - List of attribute name-value pairs to ignore during processing by element type
+ * @property {string} id - Unique identifier for the value context.
  */
 
 /**
