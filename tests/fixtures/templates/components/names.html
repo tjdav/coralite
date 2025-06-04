@@ -1,0 +1,16 @@
+<template id="coralite-names">
+  {{ names }}
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  import names from '../../data/names.json' with { type: 'json' }
+
+  export default defineComponent({
+    tokens: {
+      names () {
+        return names.join(',')
+      }
+    }
+  })
+</script>

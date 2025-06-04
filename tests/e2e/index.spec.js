@@ -58,3 +58,12 @@ test('has nested component', async ({ page }) => {
         - heading "Nested title" [level=1]
   `)
 })
+
+test('has cast names from local json file', async ({ page }) => {
+  await page.goto('/cast.html')
+
+  await expect(page.locator('html')).toMatchAriaSnapshot(`
+    - document: 
+      - text: Nemo,Squirt,Dory,Crush
+  `)
+})
