@@ -128,7 +128,7 @@ Represents a complete Coralite document with metadata and rendering structure.
 | `root`             | [`CoraliteDocumentRoot`](#coralite-document-root)   | Array of elements and text nodes in the document.                           |
 | `customElements`   | [`CoraliteElement[]`](#coralite-element)     | Custom elements defined in the document.                                    |
 | `path`             | [`CoralitePath & CoraliteFilePath`](#coralite-file-path)  | Document's file path.                                                       |
-| `ignoreByAttribute`| [`IgnoreByAttribute`](#ignore-by-attribute)   | An array of attribute names and values to ignore by element type.          |
+| `ignoreByAttribute`| [`IgnoreByAttribute[]`](#ignore-by-attribute)   | An array of attribute names and values to ignore by element type.          |
 
 ---
 

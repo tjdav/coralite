@@ -90,7 +90,10 @@ Then include it in your configuration:
 new Coralite({
   templates: 'src/templates',
   pages: 'src/pages',
-  ignoreByAttribute: [['data-dev', 'true']]
+  ignoreByAttribute: [{
+    name: 'data-dev',
+    value: 'true'
+  }]
 })
 ```
 
@@ -122,6 +125,6 @@ Coralite will process all HTML files in `templates` and `pages`, including subdi
 | `templates`        | String                                                                  | Path to the directory containing Coralite templates.                                                | `'path/to/templates'`                                 |
 | `pages`            | String                                                                  | Path to the directory containing pages that will be rendered using the provided templates.         | `'path/to/pages'`                                     |
 | `plugins`          | Array of plugin objects (optional, defaults to empty array)             | Array of plugin modules for extending functionality. Each plugin must implement specific methods. | `[myPlugin]`                                    |
-| `ignoreByAttribute`| Array of attribute name-value pairs (optional)                          | Elements to ignore based on exact attribute name-value matches.                                     | `[['data-ignore', 'true']]`                     |
+| `ignoreByAttribute`| Array of attribute name-value pairs (optional)                          | Elements to ignore based on exact attribute name-value matches.                                     | `[{ name: 'data-ignore', value: 'true' }]`                     |
 
 ---
