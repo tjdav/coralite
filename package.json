@@ -30,7 +30,6 @@
     "commitmsg": "commitlint -e",
     "lint-format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
-    "test-unit": "node --test test/lib/*",
     "test-e2e": "playwright test",
     "test-e2e-report": "playwright show-report",
     "test-e2e-ui": "playwright test --ui",
