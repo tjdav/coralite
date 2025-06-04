@@ -3,7 +3,7 @@
 coralite is a static site generator library built around the emerging [HTML modules proposal](https://github.com/WICG/webcomponents/blob/gh-pages/proposals/html-modules-explainer.md).
 
 <p style="text-align:center;">
-  <img src="./docs/images/logo.png" alt="Animated gif of how to use Coralite" style="max-width: 100%; width: auto;filter: drop-shadow(rgba(0,0,0,0.2) 0px 0px 0.75rem)">
+  <img src="https://codeberg.org/tjdavid/coralite/media/branch/main/docs/images/logo.png" alt="Coralite logo" style="max-width: 100%; width: auto;filter: drop-shadow(rgba(0,0,0,0.2) 0px 0px 0.75rem)">
 </p>
 
 - Getting started
