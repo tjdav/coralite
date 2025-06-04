@@ -1,5 +1,6 @@
 docs
 .github
+.woodpecker
 tests
 scripts
 
