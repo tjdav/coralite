@@ -157,7 +157,7 @@
  * @property {CoraliteDocumentRoot} root - Array of elements and text nodes in the document
  * @property {CoraliteElement[]} customElements - Custom elements defined in the document
  * @property {CoralitePath & CoraliteFilePath} path - Document's file path
- * @property {IgnoreByAttribute} ignoreByAttribute - An array of attribute names and values to ignore by element type.
+ * @property {IgnoreByAttribute[]} ignoreByAttribute - An array of attribute names and values to ignore by element type.
  */
 
 
@@ -170,8 +170,9 @@
  */
 
 /**
- * An array of attribute name-value pairs to exclude from processing.
- * @typedef {Array<Array<string, string>>} IgnoreByAttribute - An array of attribute names and values to ignore by element type.
+ * @typedef {Object} IgnoreByAttribute
+ * @property {string} name - Name of attribute
+ * @property {string} value - Value of attribute
  */
 
 /**

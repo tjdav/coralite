@@ -48,7 +48,10 @@ for (let i = 0; i < options.ignoreAttribute.length; i++) {
     throw new Error('Ignore attribute "' + pair[0] + '" expected a value but found none')
   }
 
-  ignoreByAttribute.push(pair)
+  ignoreByAttribute.push({
+    name: pair[0],
+    value: pair[1]
+  })
 }
 
 if (config && config.plugins) {
