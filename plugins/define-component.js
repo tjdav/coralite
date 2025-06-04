@@ -13,10 +13,18 @@ import {
 export const defineComponent = createPlugin({
   name: 'defineComponent',
   /**
-   * @param {Object} options
-   * @param {Object.<string, (string | function)>} options.values
-   * @param {Object.<string, Function>} options.slots
-   * @returns {Promise<CoraliteModuleValues>}
+   * This function defines a component plugin for the Coralite framework.
+   * It is used to register components with their associated tokens and slots.
+   *
+   * @param {Object} options - Configuration options for the component
+   * @param {Object.<string, (string | function)>} options.tokens -
+   *   Computed tokens that will be available in the template. These can be
+   *   strings or functions that return values.
+   * @param {Object.<string, Function>} options.slots -
+   *   Computed slots for the component. These are functions that define
+   *   how content should be rendered within the component.
+   * @returns {Promise<CoraliteModuleValues>} A promise resolving to the module values
+   *   associated with this component.
    */
   async method (options, { values, document, element, excludeByAttribute }) {
     /** @type {CoraliteModuleValues} */
@@ -24,10 +32,10 @@ export const defineComponent = createPlugin({
     const computedValueCollection = []
     const computedTokenKey = []
 
-    if (options.values) {
-      for (const key in options.values) {
-        if (Object.prototype.hasOwnProperty.call(options.values, key)) {
-          const token = options.values[key]
+    if (options.tokens) {
+      for (const key in options.tokens) {
+        if (Object.prototype.hasOwnProperty.call(options.tokens, key)) {
+          const token = options.tokens[key]
 
           if (typeof token === 'function') {
             const result = token(values) || ''
