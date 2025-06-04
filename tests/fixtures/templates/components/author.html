@@ -7,12 +7,12 @@
 
 <script type="module">
   import { defineComponent } from 'coralite'
-
+  
   export default defineComponent({
     id: 'coralite-author',
-    values: {
-      localeDate (values) {
-        return new Date(values.datetime).toLocaleDateString('en-AU', {
+    tokens: {
+      localeDate (attributes) {
+        return new Date(attributes.datetime).toLocaleDateString('en-AU', {
           weekday: 'short',
           year: '2-digit',
           month: 'short',

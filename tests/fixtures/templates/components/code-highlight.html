@@ -17,13 +17,13 @@
   import hljs from 'highlight.js'
 
   export default defineComponent({
-    values: {
+    tokens: {
       popovertarget () {
         return 'copy-' + Math.random().toString(16).substring(2)
       }
     },
     slots: {
-      default (content, values) {
+      default (content, attributes) {
         let result = []
         let endIndex = content.length
         let startIndex = 0
@@ -44,7 +44,7 @@
           if (node.type === 'text' && node.data.trim()) {
             const rawCode = hljs.highlight(
               node.data,
-              { language: values.language }
+              { language: attributes.language }
             ).value
 
             const nodes = parseHTML(rawCode)
