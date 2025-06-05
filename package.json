@@ -72,7 +72,7 @@
     "sirv-cli": "^3.0.0"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=18.19.0"
   },
   "dependencies": {
     "commander": "^13.0.0",
