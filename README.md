@@ -72,14 +72,16 @@ coralite --templates path/to/templates --pages path/to/pages --output dist --dry
 ## Troubleshooting
 
 
-Coralite uses **ECMAScript Modules** which requires to run Node.js with the **`--experimental-vm-modules`** option enabled.
+Coralite uses **ECMAScript Modules** and **Import meta resolve** which requires to run Node.js with the **`--experimental-vm-modules`** and **`--experimental-import-meta-resolve`** option enabled.
 
 ```bash
-node --experimental-vm-modules node_modules/coralite/bin/coralite.js [options]
+node --experimental-vm-modules --experimental-import-meta-resolve node_modules/coralite/bin/coralite.js [options]
 ```
+
+If you require your templates to import 
 
 or using NODE_OPTIONS
 
 ```bash
-NODE_OPTIONS=--experimental-vm-modules coralite [options]
+NODE_OPTIONS="--experimental-vm-modules --experimental-import-meta-resolve" coralite [options]
 ```
