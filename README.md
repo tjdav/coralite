@@ -49,14 +49,14 @@ Replace `[options]` with the desired flags and arguments.
 
 To generate a website using Coralite, you must provide three essential options:
 
-- **-t or --templates**: The path to your templates directory containing reusable UI elements (e.g., `-c ./src/templates`).
-- **-p or --pages**: The path to your pages directory where static HTML files reside (e.g., `-p ./src/pages`).
-- **--output or -o**: The output directory for the generated site (e.g., `--output ./dist`).
+- **-t or --templates**: The path to your templates directory containing reusable UI elements (e.g., `-t src/templates`).
+- **-p or --pages**: The path to your pages directory where static HTML files reside (e.g., `-p src/pages`).
+- **--output or -o**: The output directory for the generated site (e.g., `--output dist`).
 
 Here's an example of how these options might look:
 
 ```bash
-coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist
+coralite --templates path/to/templates --pages path/to/pages --output dist
 ```
 
 ## Optional Options
@@ -66,7 +66,7 @@ coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist
 Run the CLI in dry-run mode to preview the actions that would be performed without actually generating the website. This is useful for debugging or when you want to check potential issues before committing changes:
 
 ```bash
-coralite --templates ./path/to/templates --pages ./path/to/pages --output ./dist --dry-run
+coralite --templates path/to/templates --pages path/to/pages --output dist --dry-run
 ```
 
 ## Troubleshooting
