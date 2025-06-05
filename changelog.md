@@ -1,11 +1,31 @@
 # 🎁 Complete Release History
 
+## Release: `v0.11.1`
+
+### Changes from `v0.11.0` to `v0.11.1`
+
+- c0ab58b (HEAD -> main, tag: v0.11.1, origin/main) docs: add experimental-import-meta-resolve flag to Node.js runtime options - ([Thomas David](https://codeberg.org/tjdavid))
+- 5675297 chore: bump version - ([Thomas David](https://codeberg.org/tjdavid))
+- 9ca30e8 build: update minimum required Node.js version - ([Thomas David](https://codeberg.org/tjdavid))
+- 7b40a42 fix: script identifier path - ([Thomas David](https://codeberg.org/tjdavid))
+- a9300f7 docs: update example commands in readme.md - ([Thomas David](https://codeberg.org/tjdavid))
+- b128309 npmignore codeberg ci - ([Thomas David](https://codeberg.org/tjdavid))
+- 398737d docs: use absolute path for logo - ([Thomas David](https://codeberg.org/tjdavid))
+- 68eb2c7 docs: update readme image to logo.png - ([Thomas David](https://codeberg.org/tjdavid))
+
+### Metadata
+```
+This version -------- v0.11.1
+Previous version ---- v0.11.0
+Total commits ------- 8
+```
+
 ## Release: `v0.11.0`
 
 ### Changes from `v0.10.0` to `v0.11.0`
 
-- 56f6474 (HEAD -> main, tag: v0.11.0) chore: bump version to 0.11.0 - ([Thomas David](https://codeberg.org/tjdavid))
-- 29b2c6a (origin/main) chore: Remove unused test-unit script - ([Thomas David](https://codeberg.org/tjdavid))
+- 56f6474 (tag: v0.11.0) chore: bump version to 0.11.0 - ([Thomas David](https://codeberg.org/tjdavid))
+- 29b2c6a chore: Remove unused test-unit script - ([Thomas David](https://codeberg.org/tjdavid))
 - 38a7c85 test: add test for cast names from local JSON file - ([Thomas David](https://codeberg.org/tjdavid))
 - 7605e09 docs: update ignoreByAttribute config format to use objects - ([Thomas David](https://codeberg.org/tjdavid))
 - 8e13c2d types: update ignoreByAttribute to use object structure - ([Thomas David](https://codeberg.org/tjdavid))
@@ -1138,6 +1158,6 @@ Total commits ------- 86
 
 ## Summary
 ```
-Total releases ------ 25
-Total commits ------- 457
+Total releases ------ 26
+Total commits ------- 465
 ```
