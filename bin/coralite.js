@@ -41,6 +41,7 @@ const coraliteOptions = {
   plugins: []
 }
 
+// Process ignore-attribute key=value pairs
 for (let i = 0; i < options.ignoreAttribute.length; i++) {
   const pair = options.ignoreAttribute[i].split('=')
 
@@ -54,14 +55,18 @@ for (let i = 0; i < options.ignoreAttribute.length; i++) {
   })
 }
 
+// Merge plugins from config file into coraliteOptions
 if (config && config.plugins) {
   coraliteOptions.plugins = coraliteOptions.plugins.concat(config.plugins)
 }
 
+// Initializes Coralite with the provided options and compiles documents
 const coralite = new Coralite(coraliteOptions)
-const collection = await coralite.compile()
+// Compiles all pages using Coralite
+const documents = await coralite.compile()
 
 if (options.dryRun) {
+  // Print document details without saving files
   const PAD = '  '
   const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
 
