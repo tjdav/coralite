@@ -1,10 +1,31 @@
 # 🎁 Complete Release History
 
+## Release: `v0.11.2`
+
+### Changes from `v0.11.1` to `v0.11.2`
+
+- b9d8c37 (HEAD -> main, tag: v0.11.2) chore: bump version - ([Thomas David](https://codeberg.org/tjdavid))
+- e427d7d (origin/main) style: update comment formatting consistency - ([Thomas David](https://codeberg.org/tjdavid))
+- 707c462 types: add ts-ignore for script.namespace.default - ([Thomas David](https://codeberg.org/tjdavid))
+- 3e4df9a fix: correctly skip directive nodes in replaceToken function - ([Thomas David](https://codeberg.org/tjdavid))
+- bed8aa6 docs: update parameter names and type annotations - ([Thomas David](https://codeberg.org/tjdavid))
+- c065e9a fix: Improve error messages for template directory and module export issues - ([Thomas David](https://codeberg.org/tjdavid))
+- a76bc28 feat: add save method to export processed documents as HTML files - ([Thomas David](https://codeberg.org/tjdavid))
+- cc65461 refactor: use coralite.save instead of manual file operations - ([Thomas David](https://codeberg.org/tjdavid))
+- 48f180f docs: add inline comments - ([Thomas David](https://codeberg.org/tjdavid))
+
+### Metadata
+```
+This version -------- v0.11.2
+Previous version ---- v0.11.1
+Total commits ------- 9
+```
+
 ## Release: `v0.11.1`
 
 ### Changes from `v0.11.0` to `v0.11.1`
 
-- c0ab58b (HEAD -> main, tag: v0.11.1, origin/main) docs: add experimental-import-meta-resolve flag to Node.js runtime options - ([Thomas David](https://codeberg.org/tjdavid))
+- c0ab58b (tag: v0.11.1) docs: add experimental-import-meta-resolve flag to Node.js runtime options - ([Thomas David](https://codeberg.org/tjdavid))
 - 5675297 chore: bump version - ([Thomas David](https://codeberg.org/tjdavid))
 - 9ca30e8 build: update minimum required Node.js version - ([Thomas David](https://codeberg.org/tjdavid))
 - 7b40a42 fix: script identifier path - ([Thomas David](https://codeberg.org/tjdavid))
@@ -1158,6 +1179,6 @@ Total commits ------- 86
 
 ## Summary
 ```
-Total releases ------ 26
-Total commits ------- 465
+Total releases ------ 27
+Total commits ------- 474
 ```
