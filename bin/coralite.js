@@ -5,7 +5,7 @@ import { Command } from 'commander'
 import kleur from 'kleur'
 import { loadConfig } from '../lib/loader.js'
 
-// Remove all Node warnings before doing anything else
+// remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
 
 const pkg = await getPkg()
@@ -39,7 +39,7 @@ const coraliteOptions = {
   plugins: []
 }
 
-// Process ignore-attribute key=value pairs
+// process ignore-attribute key=value pairs
 for (let i = 0; i < options.ignoreAttribute.length; i++) {
   const pair = options.ignoreAttribute[i].split('=')
 
@@ -53,18 +53,18 @@ for (let i = 0; i < options.ignoreAttribute.length; i++) {
   })
 }
 
-// Merge plugins from config file into coraliteOptions
+// merge plugins from config file into coraliteOptions
 if (config && config.plugins) {
   coraliteOptions.plugins = coraliteOptions.plugins.concat(config.plugins)
 }
 
-// Initializes Coralite with the provided options and compiles documents
+// initializes Coralite with the provided options and compiles documents
 const coralite = new Coralite(coraliteOptions)
-// Compiles all pages using Coralite
+// compiles all pages using Coralite
 const documents = await coralite.compile()
 
 if (options.dryRun) {
-  // Print document details without saving files
+  // print document details without saving files
   const PAD = '  '
   const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
 
@@ -79,6 +79,6 @@ if (options.dryRun) {
     process.stdout.write('\n\n' + border + kleur.inverse(' Content end ') + border + '\n')
   }
 } else {
-  // Save the generated documents to output directory
+  // save the generated documents to output directory
   await coralite.save(documents, output)
 }
