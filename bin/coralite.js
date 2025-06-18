@@ -1,4 +1,4 @@
-#!/usr/bin/env node --experimental-vm-modules --experimental-import-meta-resolve
+#!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
 import { getPkg, Coralite } from '#lib'
 import { Command } from 'commander'
