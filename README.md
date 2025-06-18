@@ -7,11 +7,11 @@ coralite is a static site generator library built around the emerging [HTML modu
 </p>
 
 - Getting started
-  - [Basic templating](./docs/basic-templating.md)
+  - [Basic templating](https://codeberg.org/tjdavid/coralite/src/branch/main/docs/basic-templating.md)
 - Reference
-  - [Coralite CLI](./docs/coralite-cli.md)
-  - [Coralite](./docs/coralite.md)
-  - [Types](./docs/types.md)
+  - [Coralite CLI](https://codeberg.org/tjdavid/coralite/src/branch/main/docs/coralite-cli.md)
+  - [Coralite](https://codeberg.org/tjdavid/coralite/src/branch/main/docs/coralite.md)
+  - [Types](https://codeberg.org/tjdavid/coralite/src/branch/main/docs/types.md)
 
 ## Installation
 
