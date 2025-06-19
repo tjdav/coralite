@@ -3,7 +3,9 @@
 coralite is a static site generator library built around the emerging [HTML modules proposal](https://github.com/WICG/webcomponents/blob/gh-pages/proposals/html-modules-explainer.md).
 
 <p style="text-align:center;">
-  <img src="https://codeberg.org/tjdavid/coralite/media/branch/main/docs/images/logo.png" alt="Coralite logo" style="max-width: 100%; width: auto;filter: drop-shadow(rgba(0,0,0,0.2) 0px 0px 0.75rem)">
+  <a href="https://youtu.be/wUWwH9QZUTs" target="_blank">
+    <img src="https://codeberg.org/tjdavid/coralite/media/branch/main/docs/images/intro.png" alt="Coralite logo" style="max-width: 100%; width: auto;filter: drop-shadow(rgba(0,0,0,0.2) 0px 0px 0.75rem)">
+  </a>
 </p>
 
 - Getting started
@@ -78,7 +80,7 @@ Coralite uses **ECMAScript Modules** and **Import meta resolve** which requires 
 node --experimental-vm-modules --experimental-import-meta-resolve node_modules/coralite/bin/coralite.js [options]
 ```
 
-If you require your templates to import 
+If you require your templates to import
 
 or using NODE_OPTIONS
 
