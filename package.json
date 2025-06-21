@@ -1,6 +1,6 @@
 {
   "name": "coralite",
-  "version": "0.11.3",
+  "version": "0.11.4",
   "description": "HTML modules static site generator",
   "main": "./lib/coralite.js",
   "type": "module",
