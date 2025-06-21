@@ -1,5 +1,22 @@
 # 🎁 Complete Release History
 
+## Release: `v0.11.4`
+
+### Changes from `v0.11.3` to `v0.11.4`
+
+- 62e1511 (HEAD -> main, tag: v0.11.4) chore: version bump - ([Thomas David](https://codeberg.org/tjdavid))
+- 3454a17 (origin/main) refactor: handle non-array objects as arrays in text node replacement - ([Thomas David](https://codeberg.org/tjdavid))
+- 7da3839 chore: update changelog - ([Thomas David](https://codeberg.org/tjdavid))
+- 451f8c0 docs: update README image alt text and add video description - ([Thomas David](https://codeberg.org/tjdavid))
+- e53142f fix: intro gif path - ([Thomas David](https://codeberg.org/tjdavid))
+
+### Metadata
+```
+This version -------- v0.11.4
+Previous version ---- v0.11.3
+Total commits ------- 5
+```
+
 ## Release: `v0.11.3`
 
 ### Changes from `v0.11.2` to `v0.11.3`
@@ -1196,6 +1213,6 @@ Total commits ------- 86
 
 ## Summary
 ```
-Total releases ------ 28
-Total commits ------- 479
+Total releases ------ 29
+Total commits ------- 484
 ```
