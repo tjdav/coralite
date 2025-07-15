@@ -58,8 +58,10 @@ if (config && config.plugins) {
   coraliteOptions.plugins = coraliteOptions.plugins.concat(config.plugins)
 }
 
-// initializes Coralite with the provided options and compiles documents
+// Create coralite instance
 const coralite = new Coralite(coraliteOptions)
+// initializes Coralite with the provided options and compiles documents
+await coralite.initialise()
 // compiles all pages using Coralite
 const documents = await coralite.compile()
 
