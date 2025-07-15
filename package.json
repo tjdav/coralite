@@ -33,7 +33,7 @@
     "test-e2e": "playwright test",
     "test-e2e-report": "playwright show-report",
     "test-e2e-ui": "playwright test --ui",
-    "html": "coralite -t tests/fixtures/templates -p tests/fixtures/pages -o dist -i 'data-dev=true'",
+    "html": "./bin/coralite.js -t tests/fixtures/templates -p tests/fixtures/pages -o dist -i 'data-dev=true'",
     "server": "sirv dist --dev --port 3000"
   },
   "bin": {
