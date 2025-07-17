@@ -37,21 +37,26 @@ export const defineComponent = createPlugin({
         if (Object.prototype.hasOwnProperty.call(options.tokens, key)) {
           const token = options.tokens[key]
 
+          // check if the token is a function to compute its value
           if (typeof token === 'function') {
             const result = token(values) || ''
 
+            // handle asynchronous results from the function
             if (typeof result.then === 'function') {
               computedValueCollection.push(result)
               computedTokenKey.push(key)
             } else {
+              // assign the computed value to the results object
               results[key] = result
             }
           }
 
+          // if the token is a string, parse it as HTML and process its contents
           if (typeof results[key] === 'string') {
             const result = parseHTML(results[key], excludeByAttribute)
             const children = result.root.children
 
+            // check if there are any child nodes in the parsed HTML
             if (children.length) {
               if (children.length === 1 && children[0].type === 'text') {
                 results[key] = children[0].data
@@ -87,6 +92,7 @@ export const defineComponent = createPlugin({
           const computedValue = computedValues[i]
           const key = computedTokenKey[i]
 
+          // if the computed value is a string, parse it as HTML and process its contents
           if (typeof computedValue === 'string') {
             const result = parseHTML(computedValue, excludeByAttribute)
 
@@ -109,6 +115,7 @@ export const defineComponent = createPlugin({
               results[key] = result.root.children
             }
           } else {
+            // assign the computed value to the results object
             results[key] = computedValue
           }
         }
