@@ -236,7 +236,7 @@
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginPageCreateCallback
+ * @callback CoralitePluginPageSetCallback
  * @param {Object} param
  * @param {ParseHTMLResult} param.elements
  * @param {CoraliteFilePath & Object.<string, any>} param.values
@@ -274,10 +274,10 @@
  * @property {string} name - Unique identifier/name of the plugin
  * @property {CoralitePluginModule} [method] - Execution function that processes content using plugin logic
  * @property {string[]} [templates=[]] - List of custom templates to be included in the coralite instance
- * @property {CoralitePluginPageCreateCallback} [onPageCreate] - Async callback triggered when a page is created
+ * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
- * @property {CoralitePluginTemplateCallback} [onTemplateCreate] - Async callback triggered when a template is created
+ * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
  */
@@ -287,17 +287,17 @@
  * @property {string} name - Unique identifier/name of the plugin
  * @property {CoralitePluginModule} [method] - Execution function that processes content using plugin logic
  * @property {HTMLData[]} [templates=[]] - List of custom templates to be included in the coralite instance
- * @property {CoralitePluginPageCreateCallback} [onPageCreate] - Async callback triggered when a page is created
+ * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
- * @property {CoralitePluginTemplateCallback} [onTemplateCreate] - Async callback triggered when a template is created
+ * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
  */
 
-
 /**
  * @typedef {Object} ParseHTMLResult
- * @property {CoraliteDocumentRoot} root
- * @property {CoraliteElement[]} customElements
+ * @property {CoraliteDocumentRoot} root - The root element of the parsed HTML document.
+ * @property {CoraliteElement[]} customElements - An array of custom elements identified during parsing.
+ * @property {CoraliteElement[]} tempElements - An array of temporary elements created during the parsing process.
  */
