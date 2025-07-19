@@ -1,11 +1,76 @@
 # 🎁 Complete Release History
 
+## Release: `v0.13.0`
+
+### Changes from `v0.12.0` to `v0.13.0`
+
+- 8e2857e (HEAD -> main, tag: v0.13.0, origin/main) chore: version bump - ([Thomas David](https://codeberg.org/tjdavid))
+- ff4f4d0 refactor: update hook names to match onPageSet and onTemplateSet - ([Thomas David](https://codeberg.org/tjdavid))
+- 068131e fix: include temp elements for hooks and remove it for compile - ([Thomas David](https://codeberg.org/tjdavid))
+- fa76692 refactor: update plugin hooks - ([Thomas David](https://codeberg.org/tjdavid))
+    BREAKING CHANGE: Plugin hooks now use onPageSet and onTemplateSet instead of onPageCreate and onTemplateCreate.
+
+- 0183b90 types: update callback names for page and template events - ([Thomas David](https://codeberg.org/tjdavid))
+
+### Metadata
+```
+This version -------- v0.13.0
+Previous version ---- v0.12.0
+Total commits ------- 5
+```
+
+## Release: `v0.12.0`
+
+### Changes from `v0.11.4` to `v0.12.0`
+
+- d7ac85d (tag: v0.12.0) Merge pull request 'Add plugin hook support' (#2) from hooks into main - ([Thomas David](https://codeberg.org/tjdavid))
+    Reviewed-on: https://codeberg.org/tjdavid/coralite/pulls/2
+
+- 2bc30cb (origin/hooks, hooks) docs: lowercase inline comments - ([Thomas David](https://codeberg.org/tjdavid))
+- e103ed2 refactor: use pluginHooks[i] directly instead of callback variable - ([Thomas David](https://codeberg.org/tjdavid))
+- bd7c93d fix: await trigger plugin hook in onPageUpdate - ([Thomas David](https://codeberg.org/tjdavid))
+- 84ccf7f fix: include existing page data values on set - ([Thomas David](https://codeberg.org/tjdavid))
+- 6501b5f fix: await updateItem in setItem method - ([Thomas David](https://codeberg.org/tjdavid))
+- 48e8355 refactor: format export strings with newlines - ([Thomas David](https://codeberg.org/tjdavid))
+- 129c976 refactor: use self instead of this in module linker - ([Thomas David](https://codeberg.org/tjdavid))
+- ef312e2 refactor: add newline after export statement in plugin exports - ([Thomas David](https://codeberg.org/tjdavid))
+- f8de684 refactor: update import order and fix path resolution - ([Thomas David](https://codeberg.org/tjdavid))
+- 27e49b9 feat: add method to register plugin hooks - ([Thomas David](https://codeberg.org/tjdavid))
+- 7fe6ad7 feat: add plugin hook trigger method - ([Thomas David](https://codeberg.org/tjdavid))
+- 5abc9ce refactor: update module linker to use new source modules configuration - ([Thomas David](https://codeberg.org/tjdavid))
+- 698feef refactor: update context and source context id in evaluate method - ([Thomas David](https://codeberg.org/tjdavid))
+- 3d0bb65 refactor: add async to addRenderQueue method - ([Thomas David](https://codeberg.org/tjdavid))
+- 0fc1e13 fix: use _options.path.pages instead of this.path.pages in warning message - ([Thomas David](https://codeberg.org/tjdavid))
+- 618e763 refactor: use _options.path.templates instead of this.path.templates - ([Thomas David](https://codeberg.org/tjdavid))
+- 186f2b0 types: add jsdoc to Coralite initalise method - ([Thomas David](https://codeberg.org/tjdavid))
+- bc7962d refactor: fix pages path handling in compile method - ([Thomas David](https://codeberg.org/tjdavid))
+- 75ac81f refactor: add async support for template and page file handlers - ([Thomas David](https://codeberg.org/tjdavid))
+- 94b67b1 refactor: add plugin hook support to constructor - ([Thomas David](https://codeberg.org/tjdavid))
+- 1c2705f refactor: initialise options with path and plugins - ([Thomas David](https://codeberg.org/tjdavid))
+- 461c07e fix: check node version requirement - ([Thomas David](https://codeberg.org/tjdavid))
+- 3443e67 refactor: update import to use coralite/plugins - ([Thomas David](https://codeberg.org/tjdavid))
+- 7be5b07 types: add async callbacks for plugin events - ([Thomas David](https://codeberg.org/tjdavid))
+- 14fb827 refactor: remove metadata and custom elements collection - ([Thomas David](https://codeberg.org/tjdavid))
+- d5282d8 feat: add event handlers for page and template lifecycle events - ([Thomas David](https://codeberg.org/tjdavid))
+- 8685865 refactor: return promise from getHtmlFiles function - ([Thomas David](https://codeberg.org/tjdavid))
+- 734b5d4 feat: initialize coralite instance and compile documents - ([Thomas David](https://codeberg.org/tjdavid))
+- d01cdb8 refactor: add async to setItem and deleteItem methods - ([Thomas David](https://codeberg.org/tjdavid))
+- 35f33e3 build: use absolute path for coralite script - ([Thomas David](https://codeberg.org/tjdavid))
+- 498d075 fix: only parse attribute tokens inside template tag - ([Thomas David](https://codeberg.org/tjdavid))
+
+### Metadata
+```
+This version -------- v0.12.0
+Previous version ---- v0.11.4
+Total commits ------- 32
+```
+
 ## Release: `v0.11.4`
 
 ### Changes from `v0.11.3` to `v0.11.4`
 
-- 62e1511 (HEAD -> main, tag: v0.11.4) chore: version bump - ([Thomas David](https://codeberg.org/tjdavid))
-- 3454a17 (origin/main) refactor: handle non-array objects as arrays in text node replacement - ([Thomas David](https://codeberg.org/tjdavid))
+- 62e1511 (tag: v0.11.4) chore: version bump - ([Thomas David](https://codeberg.org/tjdavid))
+- 3454a17 refactor: handle non-array objects as arrays in text node replacement - ([Thomas David](https://codeberg.org/tjdavid))
 - 7da3839 chore: update changelog - ([Thomas David](https://codeberg.org/tjdavid))
 - 451f8c0 docs: update README image alt text and add video description - ([Thomas David](https://codeberg.org/tjdavid))
 - e53142f fix: intro gif path - ([Thomas David](https://codeberg.org/tjdavid))
@@ -89,7 +154,7 @@ Total commits ------- 8
 - e03b4e1 style: fix trailing comma in jsconfig.json moduleResolution - ([Thomas David](https://codeberg.org/tjdavid))
 - a0c66cc refactor(fixtures): replace values with tokens and attributes in component definitions - ([Thomas David](https://codeberg.org/tjdavid))
 - 5405757 refactor(define-component): rename options.values to options.tokens - ([Thomas David](https://codeberg.org/tjdavid))
-    The parameter name in the defineComponent plugin’s options object has been changed from `values` to `tokens` to more accurately reflect its purpose of representing computed tokens available in templates.
+    The parameter name in the defineComponent plugin's options object has been changed from `values` to `tokens` to more accurately reflect its purpose of representing computed tokens available in templates.
     
     BREAKING CHANGE: Users must update their code to use `options.tokens` instead of `options.values` when defining components.
 
@@ -116,7 +181,7 @@ Total commits ------- 11
 - b0d0705 fix: resolve template identifier - ([Thomas David](https://codeberg.org/tjdavid))
 - 7179b8e fix: extract onFileSet handler to handle unset updates - ([Thomas David](https://codeberg.org/tjdavid))
 - a81f38e fix: ensure existing values are preserved when merging custom element attribs - ([Thomas David](https://codeberg.org/tjdavid))
-- 0dd0caa fix: restrict documentValue.type assignment to ‘page’ or ‘template’ types - ([Thomas David](https://codeberg.org/tjdavid))
+- 0dd0caa fix: restrict documentValue.type assignment to 'page' or 'template' types - ([Thomas David](https://codeberg.org/tjdavid))
 - 0426edb chore: update version and repository information - ([Thomas David](https://codeberg.org/tjdavid))
 - 25696d5 types: add types configuration for plugins and types directory - ([Thomas David](https://codeberg.org/tjdavid))
 - d83d39c types: add values to HTMLData and remove page/pageName from FilePath - ([Thomas David](https://codeberg.org/tjdavid))
@@ -140,10 +205,10 @@ Total commits ------- 11
 
 - ee8bc43 refactor: update Coralite onFileSet handler to use data parameter and add metadata fields - ([Thomas David](https://codeberg.org/tjdavid))
 - 032b934 feat: add metadata extraction to parseHTML - ([Thomas David](https://codeberg.org/tjdavid))
-    Extracts metadata from HTML into a new ‘meta’ field in the return value.
+    Extracts metadata from HTML into a new 'meta' field in the return value.
     Removed the separate parseHTMLMeta function.
     
-    BREAKING CHANGE: The parseHTMLMeta function has been removed. Use the ‘meta’
+    BREAKING CHANGE: The parseHTMLMeta function has been removed. Use the 'meta'
     property in the parseHTML return value instead.
 
 - 3531662 feat(core): Introduce context ID for scoped component value management - ([Thomas David](https://codeberg.org/tjdavid))
@@ -159,11 +224,11 @@ Total commits ------- 11
     absolute path resolution for module imports.
 
 - 470c799 docs: remove aggregation and collection types from reference - ([Thomas David](https://codeberg.org/tjdavid))
-- d2b26cf docs: update cli path examples to use relative paths without leading ’./' - ([Thomas David](https://codeberg.org/tjdavid))
+- d2b26cf docs: update cli path examples to use relative paths without leading './' - ([Thomas David](https://codeberg.org/tjdavid))
 - 1cb3fd7 fix: use recursive directory creation in output path handling - ([Thomas David](https://codeberg.org/tjdavid))
 - ac5d34c fix: prevent TypeError when template is undefined - ([Thomas David](https://codeberg.org/tjdavid))
 - 52e6def chore: add script to generate changelog from git history - ([Thomas David](https://codeberg.org/tjdavid))
-- 865611d chore: add ‘scripts’ directory to .npmignore - ([Thomas David](https://codeberg.org/tjdavid))
+- 865611d chore: add 'scripts' directory to .npmignore - ([Thomas David](https://codeberg.org/tjdavid))
 - 1c02905 chore: update repository and bug tracker URLs in package.json - ([Thomas David](https://codeberg.org/tjdavid))
 
 ### Metadata
@@ -189,7 +254,7 @@ Total commits ------- 31
 - 9e05433 docs: update type reference page - ([Thomas David](https://codeberg.org/tjdavid))
 - 812e3a7 docs: simplify CLI command example by removing unnecessary node flag - ([Thomas David](https://codeberg.org/tjdavid))
 - d70d77a docs: Update documentation link and Node.js flags - ([Thomas David](https://codeberg.org/tjdavid))
-    - Changed full documentation link to Codeberg’s main branch URL
+    - Changed full documentation link to Codeberg's main branch URL
     - Added --experimental-import-meta-resolve flag to Node.js requirements
 
 - d5bf40d docs: enhance Coralite constructor documentation with plugin usage example - ([Thomas David](https://codeberg.org/tjdavid))
@@ -220,13 +285,13 @@ Total commits ------- 31
     BREAKING CHANGE: Users relying on `parseHTMLDocument` will need to use `parseHTML` directly for similar functionality.
 
 - 1cf47c9 feat: add document type option to getHtmlFiles - ([Thomas David](https://codeberg.org/tjdavid))
-    Allow specifying ‘page’ or ‘template’ as document type when retrieving HTML files. Adds ‘type’ parameter to function options and stores it in each item’s metadata.
+    Allow specifying 'page' or 'template' as document type when retrieving HTML files. Adds 'type' parameter to function options and stores it in each item's metadata.
 
 - 10f83fe feat: Add support for setting document type from hook result - ([Thomas David](https://codeberg.org/tjdavid))
-- 5606870 types: add ‘type’ field to HTMLData and event result types - ([Thomas David](https://codeberg.org/tjdavid))
-    Add a ‘type’ property (‘page’ | ‘template’) to distinguish between main pages and reusable templates in HTMLData. Update CoraliteCollectionCallbackResult and CoraliteCollectionEventResult to include optional ‘type’ for document categorization. Improve JSDoc descriptions for path-related properties in CoraliteFilePath.
+- 5606870 types: add 'type' field to HTMLData and event result types - ([Thomas David](https://codeberg.org/tjdavid))
+    Add a 'type' property ('page' | 'template') to distinguish between main pages and reusable templates in HTMLData. Update CoraliteCollectionCallbackResult and CoraliteCollectionEventResult to include optional 'type' for document categorization. Improve JSDoc descriptions for path-related properties in CoraliteFilePath.
     
-    BREAKING CHANGE: Existing code expecting HTMLData without a ‘type’ field may need adjustments to handle the new optional property.
+    BREAKING CHANGE: Existing code expecting HTMLData without a 'type' field may need adjustments to handle the new optional property.
 
 - 2f08966 refactor: remove unused documents array declaration - ([Thomas David](https://codeberg.org/tjdavid))
 - 69becec docs: add @private JSDoc tags to Coralite methods - ([Thomas David](https://codeberg.org/tjdavid))
@@ -245,10 +310,10 @@ Total commits ------- 31
 
 - 9cc36bb types: Rename CoraliteDocumentCollectionItem to CoraliteCollectionItem - ([Thomas David](https://codeberg.org/tjdavid))
 - 3406e6b feat: add type field to templates and pages configuration - ([Thomas David](https://codeberg.org/tjdavid))
-    Add ‘type’ property to distinguish between template and page files in the configuration objects.
+    Add 'type' property to distinguish between template and page files in the configuration objects.
 
 - fca20e0 fix: trim pages prefix from path when compiling - ([Thomas David](https://codeberg.org/tjdavid))
-    When processing paths during compilation, trim the ‘pages’ directory prefix if present to ensure accurate lookups in getListByPath.
+    When processing paths during compilation, trim the 'pages' directory prefix if present to ensure accurate lookups in getListByPath.
 
 - 1115fc8 fix(components): Fix component path resolution in createComponent and _evaluate - ([Thomas David](https://codeberg.org/tjdavid))
 - 05c4a75 refactor(coralite): remove path duplication in Coralite constructor - ([Thomas David](https://codeberg.org/tjdavid))
@@ -264,7 +329,7 @@ Total commits ------- 31
     file updates separately.
 
 - 69f3cbb docs: remove @template T from getHTML function - ([Thomas David](https://codeberg.org/tjdavid))
-- 07cd45c refactor: update parameter name from ‘filename’ to ‘pathname’ in getHtmlFile - ([Thomas David](https://codeberg.org/tjdavid))
+- 07cd45c refactor: update parameter name from 'filename' to 'pathname' in getHtmlFile - ([Thomas David](https://codeberg.org/tjdavid))
 - 29bfd15 refactor(html): update to use CoraliteCollection with event-based file handling - ([Thomas David](https://codeberg.org/tjdavid))
     Replace Documents class with CoraliteCollection and introduce event-driven callbacks
     (onFileSet, onFileUpdate, onFileDelete) for managing HTML files. This changes the API
@@ -286,11 +351,11 @@ Total commits ------- 31
     computedValue[i] would process individual characters instead of the full string,
     leading to unexpected behavior.
 
-- ec5e429 refactor: Remove unused ‘values’ parameter from replaceCustomElementWithTemplate - ([Thomas David](https://codeberg.org/tjdavid))
-    The ‘values’ parameter was removed from the function signature and call-sites since it was never used.
+- ec5e429 refactor: Remove unused 'values' parameter from replaceCustomElementWithTemplate - ([Thomas David](https://codeberg.org/tjdavid))
+    The 'values' parameter was removed from the function signature and call-sites since it was never used.
 
 - a421f4f refactor(types): rename document-related types to collection-based equivalents - ([Thomas David](https://codeberg.org/tjdavid))
-    Refactor type definitions and callback interfaces to use ‘collection’ terminology instead of ‘document’ to align with updated data handling patterns.
+    Refactor type definitions and callback interfaces to use 'collection' terminology instead of 'document' to align with updated data handling patterns.
     
     - Renamed CoraliteDocumentCallbackResult → CoraliteCollectionCallbackResult
     - Updated CoraliteDocumentSetCallback → CoraliteCollectionEventSet
@@ -306,7 +371,7 @@ Total commits ------- 31
     to be updated to use the new event-based system.
 
 - bd0174a refactor: update replaceCustomElementWithTemplate to use component instance directly - ([Thomas David](https://codeberg.org/tjdavid))
-- a0280b6 Merge pull request ‘plugin-system’ (#1) from plugin-system into main - ([Thomas David](https://codeberg.org/tjdavid))
+- a0280b6 Merge pull request 'plugin-system' (#1) from plugin-system into main - ([Thomas David](https://codeberg.org/tjdavid))
     Reviewed-on: https://codeberg.org/tjdavid/coralite/pulls/1
 
 - b80c1ba (origin/plugin-system, plugin-system) fix: correct usage of aggregation function in posts component - ([Thomas David](https://codeberg.org/tjdavid))
@@ -335,8 +400,8 @@ Total commits ------- 31
     storing metadata/variable information rather than raw tokens.
     
     BREAKING CHANGE: Any references to CoraliteDocumentTokens or
-    the ‘tokens’ property in module definitions must be updated to
-    CoraliteDocumentValues and ‘values’ respectively.
+    the 'tokens' property in module definitions must be updated to
+    CoraliteDocumentValues and 'values' respectively.
 
 - fca9de9 feat: Integrate config-based plugins using Coralite class API - ([Thomas David](https://codeberg.org/tjdavid))
     Update coralite.js to use the Coralite class constructor and compile method,
@@ -350,12 +415,12 @@ Total commits ------- 31
 
 - 7b51352 feat: add export for aggregation plugin - ([Thomas David](https://codeberg.org/tjdavid))
 - 2a29bdc refactor: rename coralite import and adjust export paths - ([Thomas David](https://codeberg.org/tjdavid))
-    Update import statement to use PascalCase ‘Coralite’ and modify export paths to include new modules while removing deprecated ones.
+    Update import statement to use PascalCase 'Coralite' and modify export paths to include new modules while removing deprecated ones.
 
 - 6b1df93 refactor: remove unused imports and dependencies from parse.js - ([Thomas David](https://codeberg.org/tjdavid))
     Simplify the file by eliminating redundant import statements and type references that are no longer required. This reduces complexity and improves maintainability without altering functionality.
     
-    - Removed imports from ‘html-module.js’, ‘node:vm’, ‘type-helper.js’, ‘node:path’, and ‘utils.js’
+    - Removed imports from 'html-module.js', 'node:vm', 'type-helper.js', 'node:path', and 'utils.js'
     - Updated JSDoc type references to remove obsolete types
 
 - 350e28b refactor: remove legacy component parsing and token replacement logic - ([Thomas David](https://codeberg.org/tjdavid))
@@ -379,7 +444,7 @@ Total commits ------- 31
 
 - 7fee5f3 feat(coralite.config.js): add aggregation plugin to Coralite config - ([Thomas David](https://codeberg.org/tjdavid))
 - 744d9ea feat: add isCoralitePageItem type check function - ([Thomas David](https://codeberg.org/tjdavid))
-    Add a helper function to determine if an object is a CoralitePageItem by checking for the presence of ‘path’ and string content properties.
+    Add a helper function to determine if an object is a CoralitePageItem by checking for the presence of 'path' and string content properties.
 
 - d666a83 refactor(html): move to synchronous file handling and introduce Documents class - ([Thomas David](https://codeberg.org/tjdavid))
     Refactor HTML file loading logic to use synchronous methods (readdirSync, readFileSync)
@@ -406,7 +471,7 @@ Total commits ------- 31
     plugin method is a function before returning the plugin structure.
 
 - 203e7ae feat: Add config loader for coralite.config.js - ([Thomas David](https://codeberg.org/tjdavid))
-    This commit introduces a function to load configuration from coralite.config.js in the current working directory. The function checks if the file exists, imports it asynchronously, and returns its default export. If the file isn’t found or fails to load, it returns null or throws an error respectively.
+    This commit introduces a function to load configuration from coralite.config.js in the current working directory. The function checks if the file exists, imports it asynchronously, and returns its default export. If the file isn't found or fails to load, it returns null or throws an error respectively.
 
 - 3a62f69 refactor: Replace document rendering with component-based creation and token replacement - ([Thomas David](https://codeberg.org/tjdavid))
     Refactor core rendering logic to use a component-based approach with dynamic value substitution and slot handling. Introduce `createComponent` for modular processing, `_evaluate` for script execution, and `replaceToken` for attribute/text node replacements.
@@ -454,7 +519,7 @@ Total commits ------- 31
 
 - 239e77b docs: add return type annotation to parseHTML function - ([Thomas David](https://codeberg.org/tjdavid))
 - 6046562 feat: add page path metadata to values in aggregate function - ([Thomas David](https://codeberg.org/tjdavid))
-    Enhance context available for rendering by including $pathname, $filename, and $dirname from current page’s path metadata.
+    Enhance context available for rendering by including $pathname, $filename, and $dirname from current page's path metadata.
 
 - 4a1aef3 fix(parse): update  computed tokens promise check for thenable objects - ([Thomas David](https://codeberg.org/tjdavid))
 
@@ -525,7 +590,7 @@ Total commits ------- 12
     Fixes edge case where offset was not properly converted from string to number.
 
 - 4d2fe56 feat(aggregate): Add metadata-based page filtering using options.filter - ([Thomas David](https://codeberg.org/tjdavid))
-    Allow filtering pages by checking metadata against the provided function in options.filter. Processes each page’s metadata and applies the filter to determine inclusion.
+    Allow filtering pages by checking metadata against the provided function in options.filter. Processes each page's metadata and applies the filter to determine inclusion.
 
 - 176c7f3 feat(lib/html-module): add support for custom sort function in aggregate - ([Thomas David](https://codeberg.org/tjdavid))
 - 3acfb99 feat(lib/html-module): add pagination support with token validation - ([Thomas David](https://codeberg.org/tjdavid))
@@ -539,14 +604,14 @@ Total commits ------- 12
     Refactor the main rendering logic into a modular `renderDocument` function with improved parameters for handling recursive rendering of head sections and accumulating results.
 
 - c81786e types: add pagination configuration to CoraliteAggregate - ([Thomas David](https://codeberg.org/tjdavid))
-- c8ddec4 feat(metadata): Update metadata token prefix to ’$' - ([Thomas David](https://codeberg.org/tjdavid))
+- c8ddec4 feat(metadata): Update metadata token prefix to '$' - ([Thomas David](https://codeberg.org/tjdavid))
     BREAKING CHANGE: This change is a breaking change for existing configurations relying on the previous `'meta_'` prefix. All references to metadata tokens must be updated to use the new `$` prefix to maintain compatibility with this version.
 
 - ee57e18 feat: add parsePagination function for handling pagination templates - ([Thomas David](https://codeberg.org/tjdavid))
     Implement a function to parse HTML content into a structured document, allowing customization of pagination elements through template and attribute configurations.
 
 - 4471482 types: add Aggregation typedef and update imports - ([Thomas David](https://codeberg.org/tjdavid))
-    Introduce a new Aggregation type definition with nodes and documents properties, and update import statements to include additional types from ’#types’.
+    Introduce a new Aggregation type definition with nodes and documents properties, and update import statements to include additional types from '#types'.
 
 - 2772969 docs: Improve JSDoc clarity for parseHTMLDocument function - ([Thomas David](https://codeberg.org/tjdavid))
 - 37e79db refactor: restructure html file path properties - ([Thomas David](https://codeberg.org/tjdavid))
@@ -591,7 +656,7 @@ Total commits ------- 12
     document rendering.
 
 - 885fd6c refactor(parseModule): remove html parameter and introduce lineOffset property - ([Thomas David](https://codeberg.org/tjdavid))
-    BREAKING CHANGE: The ‘html’ option has been removed from parseModule’s parameters. Consumers relying on this should update their code accordingly.
+    BREAKING CHANGE: The 'html' option has been removed from parseModule's parameters. Consumers relying on this should update their code accordingly.
 
 - 84c8a74 types: allow string or CoraliteToken[] as meta value types - ([Thomas David](https://codeberg.org/tjdavid))
     Update `parseHTMLMeta` to accept both string and CoraliteToken[] values for metadata entries instead of only arrays.
@@ -610,7 +675,7 @@ Total commits ------- 12
     and update sort parameters to accept CoraliteToken arrays.
 
 - 2205c1a types: Refactor types to introduce CoraliteFilePath and improve module interface definitions - ([Thomas David](https://codeberg.org/tjdavid))
-    Update HTMLData and CoraliteModule interfaces to use CoraliteFilePath, add new properties for better structure, and enhance documentation. Modify CoraliteDocument’s path to combine CoralitePath with CoraliteFilePath.
+    Update HTMLData and CoraliteModule interfaces to use CoraliteFilePath, add new properties for better structure, and enhance documentation. Modify CoraliteDocument's path to combine CoralitePath with CoraliteFilePath.
 
 - c37fa7c docs: add CoraliteComponent import - ([Thomas David](https://codeberg.org/tjdavid))
 - 281e07e refactor: rename getHTML to getHtmlFiles and add getHtmlFile function - ([Thomas David](https://codeberg.org/tjdavid))
@@ -623,7 +688,7 @@ Total commits ------- 12
 
 - d6fab1e refactor: use cleanKeys for consistent naming conventions - ([Thomas David](https://codeberg.org/tjdavid))
     Use cleanKeys to convert object keys to camel case format when processing
-    component values and custom attributes. Introduces ‘head’ parameter to control
+    component values and custom attributes. Introduces 'head' parameter to control
     cleaning behavior during recursion.
     
     BREAKING CHANGE: All templates using kebab-case tokens (e.g., `my-token`) must now use camelCase equivalents (e.g., `myToken`). Existing templates with kebab-case will no longer work as expected and require migration.
@@ -992,7 +1057,7 @@ Total commits ------- 28
 - 1c77286 (origin/default-slots, default-slots) types: add jsdoc documentation for the element option in parseModule function - ([Thomas David](https://codeberg.org/tjdavid))
 - 5d19343 types: remove unused types - ([Thomas David](https://codeberg.org/tjdavid))
 - a523568 feat: refactor component initialization naming - ([Thomas David](https://codeberg.org/tjdavid))
-    Refactor: Renamed ‘components’ to ‘coraliteModules’ for better naming consistency.
+    Refactor: Renamed 'components' to 'coraliteModules' for better naming consistency.
 
 - 2a116c1 Fix: correct attribute handling in component parsing - ([Thomas David](https://codeberg.org/tjdavid))
 - ebe6299 refactor: update parseModule function signature with new element parameter replacing customElementSlots - ([Thomas David](https://codeberg.org/tjdavid))
@@ -1045,11 +1110,11 @@ Total commits ------- 7
     ### Overview of Changes:
     
     1. **Switch to HTML Parsing:**
-       - The decision to replace regex with HTML parsing provides a more robust and compatible approach for processing structured data. This change is expected to enhance the library’s ability to handle complex document formats effectively.
+       - The decision to replace regex with HTML parsing provides a more robust and compatible approach for processing structured data. This change is expected to enhance the library's ability to handle complex document formats effectively.
     
     2. **New Features and Improvements:**
        - **getHTML Functionality:** Enhanced to support non-recursive requests, improving its utility in various web scraping scenarios.
-       - **Page Aggregation:** Introduction of a new feature to aggregate data from multiple pages, expanding the library’s analytical capabilities.
+       - **Page Aggregation:** Introduction of a new feature to aggregate data from multiple pages, expanding the library's analytical capabilities.
        - **Improved Module Parsing:** Significant rework of module parsing and component creation for better handling of complex components.
     
     3. **Code Improvements:**
@@ -1059,13 +1124,13 @@ Total commits ------- 7
        - Several older features and unused files (e.g., `remove unused files` commit) are being deprecated or removed as part of this refactor.
 
 - 90df901 (origin/slots, slots) docs: revert readme - ([Thomas David](https://codeberg.org/tjdavid))
-- b7b2b1c Merge branch ‘main’ into slots - ([Thomas David](https://codeberg.org/tjdavid))
+- b7b2b1c Merge branch 'main' into slots - ([Thomas David](https://codeberg.org/tjdavid))
 - 427bb48 types: add parse root and directives - ([Thomas David](https://codeberg.org/tjdavid))
 - ea4fd35 test: update coralite-posts attribute - ([Thomas David](https://codeberg.org/tjdavid))
 - 272581c test: add slots to fixtures - ([Thomas David](https://codeberg.org/tjdavid))
 - 6e2cdba fix: remove unused code - ([Thomas David](https://codeberg.org/tjdavid))
 - 6943970 feat: parse html directives - ([Thomas David](https://codeberg.org/tjdavid))
-- a4c6790 fix: createTextNode type to ‘text’ - ([Thomas David](https://codeberg.org/tjdavid))
+- a4c6790 fix: createTextNode type to 'text' - ([Thomas David](https://codeberg.org/tjdavid))
 - 861c932 refactor: move html module functions to html-modules.js - ([Thomas David](https://codeberg.org/tjdavid))
 - fbf58d6 feat: placeholder html module coralite exports - ([Thomas David](https://codeberg.org/tjdavid))
 - b91d020 types: Update JSDoc comments for Coralite types - ([Thomas David](https://codeberg.org/tjdavid))
@@ -1213,6 +1278,6 @@ Total commits ------- 86
 
 ## Summary
 ```
-Total releases ------ 29
-Total commits ------- 484
+Total releases ------ 31
+Total commits ------- 521
 ```
