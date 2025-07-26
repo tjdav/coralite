@@ -1,10 +1,27 @@
 # 🎁 Complete Release History
 
+## Release: `v0.14.0`
+
+### Changes from `v0.13.0` to `v0.14.0`
+
+- 6abb375 (HEAD -> main, tag: v0.14.0) chore: version bump - ([Thomas David](https://codeberg.org/tjdavid))
+- 7af76fd refactor(plugin): use _plugins instead of options.plugins - ([Thomas David](https://codeberg.org/tjdavid))
+- 187b3dd (origin/main) refactor(coralite): update options and source context references - ([Thomas David](https://codeberg.org/tjdavid))
+- e8efcde fix(plugin): check if method is null before validating type - ([Thomas David](https://codeberg.org/tjdavid))
+- a607a43 refactor: add conditional check for plugin method - ([Thomas David](https://codeberg.org/tjdavid))
+
+### Metadata
+```
+This version -------- v0.14.0
+Previous version ---- v0.13.0
+Total commits ------- 5
+```
+
 ## Release: `v0.13.0`
 
 ### Changes from `v0.12.0` to `v0.13.0`
 
-- 8e2857e (HEAD -> main, tag: v0.13.0, origin/main) chore: version bump - ([Thomas David](https://codeberg.org/tjdavid))
+- 8e2857e (tag: v0.13.0) chore: version bump - ([Thomas David](https://codeberg.org/tjdavid))
 - ff4f4d0 refactor: update hook names to match onPageSet and onTemplateSet - ([Thomas David](https://codeberg.org/tjdavid))
 - 068131e fix: include temp elements for hooks and remove it for compile - ([Thomas David](https://codeberg.org/tjdavid))
 - fa76692 refactor: update plugin hooks - ([Thomas David](https://codeberg.org/tjdavid))
@@ -1278,6 +1295,6 @@ Total commits ------- 86
 
 ## Summary
 ```
-Total releases ------ 31
-Total commits ------- 521
+Total releases ------ 32
+Total commits ------- 526
 ```
