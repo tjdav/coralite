@@ -3,6 +3,7 @@ docs
 .woodpecker
 tests
 scripts
+.continue
 
 # Dependencies
 node_modules
