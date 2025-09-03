@@ -7,8 +7,6 @@ settings:
 overrides:
   coralite: workspace:*
 
-packageExtensionsChecksum: sha256-BLDZCgUIohvBXMHo3XFOlGLzGXRyK3sDU0nMBRk9APY=
-
 importers:
 
   .:
