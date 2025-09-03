@@ -48,12 +48,6 @@ export function Coralite ({
   plugins = [],
   ignoreByAttribute
 }) {
-  const version = process.versions.node.split('.')
-
-  if (version[0] >= '18' && version[1] >= '19') {
-    throw new Error('Node version does not meet the minimum requirement of >=18.19.0.')
-  }
-
   const path = {
     templates,
     pages
