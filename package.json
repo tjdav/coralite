@@ -1,83 +1,46 @@
 {
-  "name": "coralite",
-  "version": "0.14.2",
-  "description": "HTML modules static site generator",
-  "main": "./lib/coralite.js",
+  "name": "coralite-monorepo",
+  "private": true,
   "type": "module",
-  "keywords": [
-    "static-site-generator",
-    "components",
-    "templates",
-    "coralite",
-    "blog",
-    "site-engine",
-    "documentation-tool"
-  ],
-  "homepage": "https://coralite.io",
-  "author": {
-    "name": "Thomas David",
-    "url": "https://thomasjackdavid.com"
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   },
+  "homepage": "https://coralite.io/",
   "repository": {
     "type": "git",
-    "url": "https://codeberg.org/tjdavid/coralite.git"
+    "url": "git@codeberg.org/tjdavid/coralite.git"
   },
-  "bugs": {
-    "url": "https://codeberg.org/tjdavid/coralite/issues"
-  },
-  "license": "AGPL-3.0-or-later",
+  "keywords": [
+    "frontend",
+    "ssg-tool",
+    "dev-server",
+    "build-tool",
+    "coralite"
+  ],
   "scripts": {
-    "commitmsg": "commitlint -e",
-    "lint-format": "eslint --cache --fix .",
+    "preinstall": "npx only-allow pnpm",
+    "postinstall": "simple-git-hooks",
+    "format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
-    "test-e2e": "playwright test",
-    "test-e2e-report": "playwright show-report",
-    "test-e2e-ui": "playwright test --ui",
-    "html": "./bin/coralite.js -t tests/fixtures/templates -p tests/fixtures/pages -o dist -i 'data-dev=true'",
-    "server": "sirv dist --dev --port 3000"
-  },
-  "bin": {
-    "coralite": "bin/coralite.js"
-  },
-  "imports": {
-    "#lib": "./lib/index.js",
-    "#types": "./types/index.js",
-    "#plugins": "./plugins/index.js"
-  },
-  "exports": {
-    ".": {
-      "default": "./lib/coralite.js",
-      "types": "./types/index.js"
-    },
-    "./utils": {
-      "default": "./lib/index.js",
-      "types": "./types/index.js"
-    },
-    "./plugins": {
-      "default": "./plugins/index.js",
-      "types": "./types/index.js"
-    },
-    "./types": {
-      "default": "./types/index.js"
-    }
+    "docs": "pnpm --filter=docs run docs",
+    "docs-build": "pnpm --filter=docs run docs-build",
+    "docs-serve": "pnpm --filter=docs run docs-serve",
+    "build": "pnpm -r --filter='./packages/coralite' run build"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.6.1",
-    "@commitlint/config-conventional": "^19.6.0",
-    "@playwright/test": "^1.50.0",
     "@stylistic/eslint-plugin-js": "^2.12.1",
     "@stylistic/eslint-plugin-plus": "^2.12.1",
     "@types/node": "^22.10.5",
-    "highlight.js": "^11.11.1",
-    "sirv-cli": "^3.0.0"
+    "lint-staged": "^16.1.6",
+    "simple-git-hooks": "^2.13.1"
   },
-  "engines": {
-    "node": ">=18.19.0"
+  "simple-git-hooks": {
+    "pre-commit": "pnpm exec lint-staged --concurrent false"
   },
-  "dependencies": {
-    "commander": "^13.0.0",
-    "dom-serializer": "^2.0.0",
-    "htmlparser2": "^10.0.0",
-    "kleur": "^4.1.5"
-  }
+  "lint-staged": {
+    "packages/*/{src,types}/**/*.js": [
+      "eslint --cache --fix"
+    ]
+  },
+  "packageManager": "pnpm@10.15.1"
 }
