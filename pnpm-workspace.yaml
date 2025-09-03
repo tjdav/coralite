@@ -1,0 +1,10 @@
+packages:
+  - 'packages/*'
+  - website
+overrides:
+  coralite: 'workspace:*'
+peerDependencyRules:
+  allowedVersions:
+    coralite: "*"
+onlyBuiltDependencies:
+  - simple-git-hooks
