@@ -22,10 +22,9 @@
     "postinstall": "simple-git-hooks",
     "format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
-    "docs": "pnpm --filter=docs run docs",
-    "docs-build": "pnpm --filter=docs run docs-build",
-    "docs-serve": "pnpm --filter=docs run docs-serve",
-    "build": "pnpm -r --filter='./packages/coralite' run build"
+    "test-e2e": "pnpm --filter='./packages/coralite' run test-e2e",
+    "build-html": "pnpm --filter='./packages/coralite' run html",
+    "publish": "pnpm --filter='./packages/coralite' publish"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin-js": "^2.12.1",
