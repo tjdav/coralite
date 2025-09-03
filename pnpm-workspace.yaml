@@ -1,17 +1,10 @@
 packages:
   - 'packages/*'
-  - docs
+  - website
 overrides:
   coralite: 'workspace:*'
 peerDependencyRules:
   allowedVersions:
     coralite: "*"
-packageExtensions:
-  sass-embedded:
-    peerDependencies:
-      source-map-js: "*"
-    peerDependenciesMeta:
-      source-map-js:
-        optional: true
 onlyBuiltDependencies:
   - simple-git-hooks
