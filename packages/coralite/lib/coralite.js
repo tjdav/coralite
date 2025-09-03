@@ -64,7 +64,7 @@ export function Coralite ({
     templates,
     pages,
     ignoreByAttribute,
-    path,
+    path
   }
 
   // plugins
@@ -124,7 +124,7 @@ export function Coralite ({
       // add an export for each plugin in the generated modules.
       source.modules.plugins.export += `export const ${name} = coralite.plugins.${name};\n`
       source.modules.plugins.default += name + ', '
-        
+
       // extend the source context with a reference to the plugin method.
       source.context.plugins[name] = function (options) {
         return callback(options, source.contextInstances[source.currentSourceContextId])
@@ -426,10 +426,10 @@ Coralite.prototype.compile = async function (path) {
 
   for (let i = 0; i < this._currentRenderQueue.length; i++) {
     const document = structuredClone(this._currentRenderQueue[i].result)
-    
+
     for (let i = 0; i < document.tempElements.length; i++) {
-      const element = document.tempElements[i];
-      
+      const element = document.tempElements[i]
+
       // remove elements marked for removal from the parent's children
       element.parent.children = element.parent.children.filter(item => !item.remove)
     }

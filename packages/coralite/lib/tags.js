@@ -204,7 +204,7 @@ export const RESERVED_ELEMENT_NAMES = {
   'missing-glyph': true
 }
 
-const CUSTOM_ELEMENT_TAG = /^[a-z](?:[-.\w\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD])*?-(?:[-.\w\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD])*$/;
+const CUSTOM_ELEMENT_TAG = /^[a-z](?:[-.\w\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD])*?-(?:[-.\w\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u037D\u037F-\u1FFF\u200C-\u200D\u203F-\u2040\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD])*$/
 
 /**
  * Validates a custom element name
@@ -213,27 +213,27 @@ const CUSTOM_ELEMENT_TAG = /^[a-z](?:[-.\w\u00B7\u00C0-\u00D6\u00D8-\u00F6\u00F8
  * @returns {boolean} - True if valid, false otherwise
  * @throws {Error} - If the element name is reserved
  */
-export function isValidCustomElementName(name, maxLength = 100) {
+export function isValidCustomElementName (name, maxLength = 100) {
   // Check if string is empty or not a string
   if (!name || typeof name !== 'string') {
-    return false;
+    return false
   }
-  
+
   // Check against reserved names first (case-insensitive)
   if (RESERVED_ELEMENT_NAMES[name.toLowerCase()]) {
     throw new Error('Element name is reserved: "'+ name +'"')
   }
-  
+
   // Length check to prevent ReDoS
   if (name.length > maxLength) {
-    return false;
+    return false
   }
 
   // check for obviously invalid patterns that could cause backtracking
   if (name.includes('--') || name.startsWith('-') || name.endsWith('-')) {
-    return false;
+    return false
   }
 
   // Test against the regex
-  return CUSTOM_ELEMENT_TAG.test(name);
+  return CUSTOM_ELEMENT_TAG.test(name)
 }
