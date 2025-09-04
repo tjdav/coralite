@@ -71,40 +71,39 @@ app
       res.end()
     })
   })
+  .get(/(.*)/, async (req, res) => {
+    let path = req.path
+    const extension = extname(path)
 
-app.get(/(.*)/, async (req, res) => {
-  let path = req.path
-  const extension = extname(path)
-
-  if (!extension) {
-    if ('/' === path) {
-      path = 'index.html'
-    } else if (path.endsWith('/')) {
-      path = path.slice(0, path.length -1) + '.html'
-    } else {
-      path += '.html'
+    if (!extension) {
+      if ('/' === path) {
+        path = 'index.html'
+      } else if (path.endsWith('/')) {
+        path = path.slice(0, path.length -1) + '.html'
+      } else {
+        path += '.html'
+      }
     }
-  }
 
-  try {
-    await access(path)
-    const data = await readFile(path, 'utf8')
-
-    res.send(data)
-  } catch {
     try {
-      const filePath = join(config.pages, path)
+      await access(path)
+      const data = await readFile(path, 'utf8')
 
-      // check if page src file exists
-      await access(filePath, constants.R_OK)
-      const start = process.hrtime()
-      let duration, dash = colours.gray(' ─ ')
-      // build page
-      await buildHTML.compile(filePath)
+      res.send(data)
+    } catch {
+      try {
+        const filePath = join(config.pages, path)
 
-      const data = await readFile(filePath, 'utf8')
-      // inject the script before </body>
-      const injectedHtml = data.replace(/<\/body>/i, `
+        // check if page src file exists
+        await access(filePath, constants.R_OK)
+        const start = process.hrtime()
+        let duration, dash = colours.gray(' ─ ')
+        // build page
+        await buildHTML.compile(filePath)
+
+        const data = await readFile(filePath, 'utf8')
+        // inject the script before </body>
+        const injectedHtml = data.replace(/<\/body>/i, `
 <script>
   const eventSource = new EventSource('/_/rebuild');
   eventSource.onmessage = function(event) {
@@ -115,15 +114,15 @@ app.get(/(.*)/, async (req, res) => {
 </script>
 </body>`)
 
-      // prints time and path to the file that has been changed or added.
-      duration = process.hrtime(start)
-      process.stdout.write(toTime() + colours.bgGreen('Compiled HTML') + dash + toMS(duration) + dash + path + '\n')
-      res.send(injectedHtml)
-    } catch(error) {
-      res.sendStatus(404)
+        // prints time and path to the file that has been changed or added.
+        duration = process.hrtime(start)
+        process.stdout.write(toTime() + colours.bgGreen('Compiled HTML') + dash + toMS(duration) + dash + path + '\n')
+        res.send(injectedHtml)
+      } catch(error) {
+        res.sendStatus(404)
+      }
     }
-  }
-})
+  })
 
 // watch for file changes
 const watcher = chokidar.watch(watchPath, {
