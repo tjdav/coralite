@@ -1,10 +1,14 @@
 packages:
-  - 'packages/*'
+  - packages/*
   - website
+
+onlyBuiltDependencies:
+  - '@parcel/watcher'
+  - simple-git-hooks
+
 overrides:
-  coralite: 'workspace:*'
+  coralite: workspace:*
+
 peerDependencyRules:
   allowedVersions:
-    coralite: "*"
-onlyBuiltDependencies:
-  - simple-git-hooks
+    coralite: '*'
