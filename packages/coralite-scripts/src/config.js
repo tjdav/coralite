@@ -42,8 +42,8 @@ export function defineConfig (options) {
   }
 
   // Validate assets path
-  if (!options.assets || typeof options.assets !== 'string') {
-    throw new Error('Configuration must contain a valid "assets" property')
+  if (!options.public || typeof options.public !== 'string') {
+    throw new Error('Configuration must contain a valid "public" property')
   }
 
   return options

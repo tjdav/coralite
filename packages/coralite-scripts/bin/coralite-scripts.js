@@ -19,8 +19,22 @@ const clients = new Set()
 
 const buildHTML = await html(config)
 
+const watchPath = [
+  config.public,
+  config.pages,
+  config.templates
+]
+
+if (config.sass && config.sass.input && config.sass.output) {
+  watchPath.push(config.sass.input)
+
+  app.use('/css', express.static(join(config.output, 'css'), {
+    cacheControl: false
+  }))
+}
+
 app
-  .use('/assets', express.static(config.assets, {
+  .use(express.static(config.public, {
     cacheControl: false
   }))
   .get('/_/rebuild', (req, res) => {
@@ -43,72 +57,59 @@ app
       res.end()
     })
   })
-  .get(/(.*)/, async (req, res) => {
-    let path = req.path
-    const extension = extname(path)
 
-    if (!extension) {
-      if ('/' === path) {
-        path = 'index.html'
-      } else if (path.endsWith('/')) {
-        path = path.slice(0, path.length -1) + '.html'
-      } else {
-        path += '.html'
-      }
+app.get(/(.*)/, async (req, res) => {
+  let path = req.path
+  const extension = extname(path)
+
+  if (!extension) {
+    if ('/' === path) {
+      path = 'index.html'
+    } else if (path.endsWith('/')) {
+      path = path.slice(0, path.length -1) + '.html'
+    } else {
+      path += '.html'
     }
+  }
 
+  try {
+    await access(path)
+    const data = await readFile(path, 'utf8')
+
+    res.send(data)
+  } catch {
     try {
-      await access(path)
-      const data = await readFile(path, 'utf8')
+      const filePath = join(config.pages, path)
 
-      res.send(data)
-    } catch {
-      try {
-        const filePath = join(config.pages, path)
+      // check if page src file exists
+      await access(filePath, constants.R_OK)
+      const start = process.hrtime()
+      let duration, dash = colours.gray(' ─ ')
+      // build page
+      await buildHTML.compile(filePath)
 
-        // check if page src file exists
-        await access(filePath, constants.R_OK)
-        const start = process.hrtime()
-        let duration, dash = colours.gray(' ─ ')
-        // build page
-        await buildHTML.compile(filePath)
-
-        const data = await readFile(filePath, 'utf8')
-        // inject the script before </body>
-        const injectedHtml = data.replace(/<\/body>/i, `
+      const data = await readFile(filePath, 'utf8')
+      // inject the script before </body>
+      const injectedHtml = data.replace(/<\/body>/i, `
 <script>
   const eventSource = new EventSource('/_/rebuild');
   eventSource.onmessage = function(event) {
-  if (event.data === 'connected') return;
+    if (event.data === 'connected') return;
     // Reload page when file changes
     location.reload()
   }
-  eventSource.onerror = function(err) {
-  console.error('SSE error:', err);
-}
 </script>
 </body>`)
 
-        // prints time and path to the file that has been changed or added.
-        duration = process.hrtime(start)
-        process.stdout.write(toTime() + colours.bgGreen('Compiled HTML') + dash + toMS(duration) + dash + path + '\n')
-        res.send(injectedHtml)
-      } catch(error) {
-        res.sendStatus(404)
-      }
+      // prints time and path to the file that has been changed or added.
+      duration = process.hrtime(start)
+      process.stdout.write(toTime() + colours.bgGreen('Compiled HTML') + dash + toMS(duration) + dash + path + '\n')
+      res.send(injectedHtml)
+    } catch(error) {
+      res.sendStatus(404)
     }
-  })
-
-
-const watchPath = [
-  config.assets,
-  config.pages,
-  config.templates
-]
-
-if (config.sass && config.sass.input && config.sass.output) {
-  watchPath.push(config.sass.input)
-}
+  }
+})
 
 // watch for file changes
 const watcher = chokidar.watch(watchPath, {

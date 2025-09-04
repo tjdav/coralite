@@ -5,7 +5,7 @@
 
 /**
  * @typedef {Object} CoraliteScriptBaseConfig
- * @property {string} assets - The path to the directory containing static assets.
+ * @property {string} public - The path to the directory containing static assets.
  * @property {Object} [server] - Server configuration options.
  * @property {number} server.port - The port number on which the development server will run.
  * @property {Object} [sass] - Sass compilation configuration.
