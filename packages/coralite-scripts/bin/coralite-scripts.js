@@ -6,6 +6,7 @@ import localAccess from 'local-access'
 import chokidar from 'chokidar'
 import loadConfig from '../src/load-config.js'
 import html from '../src/build-html.js'
+import buildSass from '../src/build-sass.js'
 import { toMS, toTime } from '../src/build-utils.js'
 import { extname, join } from 'path'
 import { readFile, access, constants } from 'fs/promises'
@@ -99,31 +100,48 @@ app
   })
 
 
-// watch for file changes
-const watcher = chokidar.watch([
+const watchPath = [
   config.assets,
   config.pages,
   config.templates
-], {
+]
+
+if (config.sass && config.sass.input && config.sass.output) {
+  watchPath.push(config.sass.input)
+}
+
+// watch for file changes
+const watcher = chokidar.watch(watchPath, {
   persistent: true
 })
 
 watcher
-  .on('change', async () => {
+  .on('change', async (path) => {
+    if (path.endsWith('.scss') || path.endsWith('.sass')) {
+      const start = process.hrtime()
+      let duration, dash = colours.gray(' ─ ')
+      // rebuild CSS and send notification
+      await buildSass(config.sass)
+
+      // prints time and path to the file that has been changed or added.
+      duration = process.hrtime(start)
+      process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(duration) + dash + path + '\n')
+    }
+
     clients.forEach(client => {
       client.write(`data: reload\n\n`)
     })
   })
   .on('add', async (path) => {
-    if (path.endsWith('.html')) {
+    if (path.endsWith('.scss') || path.endsWith('.sass')) {
       const start = process.hrtime()
       let duration, dash = colours.gray(' ─ ')
-      // broadcast to all connected clients
-      await buildHTML.compile(path)
+      // rebuild CSS and send notification
+      await buildSass(config.sass)
 
       // prints time and path to the file that has been changed or added.
       duration = process.hrtime(start)
-      process.stdout.write(toTime() + colours.bgGreen('Compiled HTML') + dash + toMS(duration) + dash + path + '\n')
+      process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(duration) + dash + path + '\n')
     }
   })
 
