@@ -7,7 +7,7 @@ import chokidar from 'chokidar'
 import loadConfig from '../src/load-config.js'
 import html from '../src/build-html.js'
 import buildSass from '../src/build-sass.js'
-import { toMS, toTime } from '../src/build-utils.js'
+import { toCode, toMS, toTime } from '../src/build-utils.js'
 import { extname, join } from 'path'
 import { readFile, access, constants } from 'fs/promises'
 
@@ -24,6 +24,20 @@ const watchPath = [
   config.pages,
   config.templates
 ]
+
+app.use(function (req, res, next){
+  const start = process.hrtime()
+
+  res.on('finish', function (){
+    const dash = colours.gray(' ─ ')
+    const duration = process.hrtime(start)
+    const uri = req.originalUrl || req.url
+
+    // log the response time and status code
+    process.stdout.write(toTime() + toCode(res.statusCode) + dash + toMS(duration) + dash + uri + '\n')
+  })
+  next()
+})
 
 if (config.sass && config.sass.input) {
   watchPath.push(config.sass.input)
