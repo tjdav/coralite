@@ -25,7 +25,7 @@ const watchPath = [
   config.templates
 ]
 
-if (config.sass && config.sass.input && config.sass.output) {
+if (config.sass && config.sass.input) {
   watchPath.push(config.sass.input)
 
   app.use('/css', express.static(join(config.output, 'css'), {
