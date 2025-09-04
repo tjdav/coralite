@@ -41,10 +41,6 @@ export function defineConfig (options) {
     throw new Error('Configuration "sass.input" must be a string')
   }
 
-  if (options.sass?.output && typeof options.sass.output !== 'string') {
-    throw new Error('Configuration "sass.output" must be a string')
-  }
-
   // Validate assets path
   if (!options.assets || typeof options.assets !== 'string') {
     throw new Error('Configuration must contain a valid "assets" property')

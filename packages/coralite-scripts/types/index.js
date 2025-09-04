@@ -10,7 +10,6 @@
  * @property {number} server.port - The port number on which the development server will run.
  * @property {Object} [sass] - Sass compilation configuration.
  * @property {string} sass.input - The path to the input Sass file or directory.
- * @property {string} sass.output - The path to the output CSS file or directory.
  * @property {Options<'async'>} [sass.options] - Additional options passed to the Sass compiler.
  */
 
