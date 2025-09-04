@@ -122,7 +122,10 @@ watcher
       const start = process.hrtime()
       let duration, dash = colours.gray(' ─ ')
       // rebuild CSS and send notification
-      await buildSass(config.sass)
+      await buildSass({
+        ...config.sass,
+        output: join(config.output, 'css')
+      })
 
       // prints time and path to the file that has been changed or added.
       duration = process.hrtime(start)
@@ -138,7 +141,10 @@ watcher
       const start = process.hrtime()
       let duration, dash = colours.gray(' ─ ')
       // rebuild CSS and send notification
-      await buildSass(config.sass)
+      await buildSass({
+        ...config.sass,
+        output: join(config.output, 'css')
+      })
 
       // prints time and path to the file that has been changed or added.
       duration = process.hrtime(start)
