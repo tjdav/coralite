@@ -25,9 +25,11 @@ const watchPath = [
   config.templates
 ]
 
+// middleware to log request information including response time and status code
 app.use(function (req, res, next){
   const start = process.hrtime()
 
+  // when the response is finished, calculate duration and log details
   res.on('finish', function (){
     const dash = colours.gray(' ─ ')
     const duration = process.hrtime(start)
@@ -39,6 +41,7 @@ app.use(function (req, res, next){
   next()
 })
 
+// check if Sass is configured and add its input directory to watchPath for file changes.
 if (config.sass && config.sass.input) {
   watchPath.push(config.sass.input)
 
@@ -72,9 +75,11 @@ app
     })
   })
   .get(/(.*)/, async (req, res) => {
+    // extract the requested path and its extension.
     let path = req.path
     const extension = extname(path)
 
+    // if no extension is present, assume it's a HTML file and append '.html'.
     if (!extension) {
       if ('/' === path) {
         path = 'index.html'
@@ -86,23 +91,25 @@ app
     }
 
     try {
+      // first attempt to read the file directly.
       await access(path)
       const data = await readFile(path, 'utf8')
 
       res.send(data)
     } catch {
       try {
+        // if that fails, try reading from pages directory.
         const filePath = join(config.pages, path)
 
-        // check if page src file exists
+        // check if page source file exists and is readable
         await access(filePath, constants.R_OK)
         const start = process.hrtime()
         let duration, dash = colours.gray(' ─ ')
-        // build page
-        await buildHTML.compile(filePath)
 
+        // build the HTML for this page using the built-in compiler.
+        await buildHTML.compile(filePath)
         const data = await readFile(filePath, 'utf8')
-        // inject the script before </body>
+        // inject a script to enable live reload via Server-Sent Events
         const injectedHtml = data.replace(/<\/body>/i, `
 <script>
   const eventSource = new EventSource('/_/rebuild');
@@ -119,6 +126,7 @@ app
         process.stdout.write(toTime() + colours.bgGreen('Compiled HTML') + dash + toMS(duration) + dash + path + '\n')
         res.send(injectedHtml)
       } catch(error) {
+        // if all attempts fail, respond with a 404.
         res.sendStatus(404)
       }
     }
