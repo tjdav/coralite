@@ -1,4 +1,4 @@
-import sass from 'sass'
+import * as sass from 'sass'
 import fs from 'fs/promises'
 import path from 'path'
 
@@ -22,7 +22,6 @@ export default async function buildSass ({
     loadPaths: ['node_modules'],
     silenceDeprecations: [
       'color-functions',
-      'mixed-decls',
       'import',
       'global-builtin'
     ]
