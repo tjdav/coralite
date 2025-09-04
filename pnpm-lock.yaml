@@ -59,7 +59,7 @@ importers:
         version: 3.0.1
 
   packages/coralite-scripts:
-    devDependencies:
+    dependencies:
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
