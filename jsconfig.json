@@ -3,6 +3,7 @@
     "checkJs": true,
     "module": "NodeNext",
     "target": "ES2022",
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+    "resolveJsonModule": true
   }
 }
