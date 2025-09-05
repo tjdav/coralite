@@ -1,4 +1,6 @@
 import path from 'node:path'
+import { getHtmlFile } from './html.js'
+import { access } from 'node:fs/promises'
 
 /**
  * @import {
@@ -72,10 +74,14 @@ function CoraliteCollection (options = { rootDir: '/' }) {
 /**
  * Adds or updates an HTMLData object in the collection and associated lists.
  * If the item already exists, it will be updated in all views.
- * @param {HTMLData} value - The HTMLData object to be added or updated.
+ * @param {HTMLData|string} value - The HTMLData object to be added or updated.
  * @returns {Promise<CoraliteCollectionItem>} The modified document
  */
 CoraliteCollection.prototype.setItem = async function (value) {
+  if (typeof value === 'string') {
+    value = await this._loadByPath(value)
+  }
+
   const pathname = value.path.pathname
   const dirname = value.path.dirname
   const originalValue = this.collection[pathname]
@@ -167,10 +173,14 @@ CoraliteCollection.prototype.deleteItem = async function (value) {
 /**
  * Updates an existing HTMLData object in the collection.
  * If the document does not exist, it will be added using the set method.
- * @param {CoraliteCollectionItem} value - The HTMLData object to be updated or added.
+ * @param {CoraliteCollectionItem|string} value - The HTMLData object to be updated or added.
  * @throws {Error} If invalid input is provided
  */
 CoraliteCollection.prototype.updateItem = async function (value) {
+  if (typeof value === 'string') {
+    value = await this._loadByPath(value)
+  }
+
   if (value && value.path) {
     const originalValue = this.collection[value.path.pathname]
 
