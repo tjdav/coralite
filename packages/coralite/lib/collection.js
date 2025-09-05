@@ -14,10 +14,10 @@ import path from 'node:path'
  * Maintains three views: flat list, path-based grouping, and ID lookup.
  * @constructor
  * @param {Object} [options={}]
- * @param {string} [options.rootDir= '/']
- * @param {CoraliteCollectionEventSet} [options.onSet]
- * @param {CoraliteCollectionEventUpdate} [options.onUpdate]
- * @param {CoraliteCollectionEventDelete} [options.onDelete]
+ * @param {string} [options.rootDir='/'] - The root directory path for the collection
+ * @param {CoraliteCollectionEventSet} [options.onSet] - Event handler for when documents are set
+ * @param {CoraliteCollectionEventUpdate} [options.onUpdate] - Event handler for when documents are updated
+ * @param {CoraliteCollectionEventDelete} [options.onDelete] - Event handler for when documents are deleted
  */
 function CoraliteCollection (options = { rootDir: '/' }) {
   let rootDir = options.rootDir
