@@ -213,4 +213,38 @@ CoraliteCollection.prototype.getListByPath = function (dirname) {
   }
 }
 
+/**
+ * Loads a collection item by its file path.
+ *
+ * @param {string} filepath - The path to the collection item file
+ * @returns {Promise<HTMLData>} A promise that resolves to the loaded item object
+ * @throws {Error} If the file cannot be found at either the provided path or within the root directory
+ */
+CoraliteCollection.prototype._loadByPath = async function (filepath) {
+  try {
+    await access(filepath)
+  } catch {
+    try {
+      filepath = path.join(this.rootDir, filepath)
+
+      await access(filepath)
+    } catch {
+      throw new Error('Could not find collection item: ' + filepath)
+    }
+  }
+
+  const content = await getHtmlFile(filepath)
+  const pathname = filepath.replace(new RegExp(`^${this.rootDir}`), '')
+
+  return {
+    type: 'page',
+    content,
+    path: {
+      pathname: pathname,
+      dirname: path.dirname(pathname),
+      filename: path.basename(pathname)
+    }
+  }
+}
+
 export default CoraliteCollection
