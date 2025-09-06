@@ -25,6 +25,7 @@
     "test-e2e": "pnpm --filter='./packages/coralite' run test-e2e",
     "build-html": "pnpm --filter='./packages/coralite' run html",
     "publish": "pnpm --filter='./packages/coralite' publish",
+    "publish-scripts": "pnpm --filter='./packages/coralite-scripts' publish",
     "release": "coralite-release",
     "changelog": "coralite-changelog"
   },
