@@ -24,7 +24,9 @@
     "lint": "eslint --cache .",
     "test-e2e": "pnpm --filter='./packages/coralite' run test-e2e",
     "build-html": "pnpm --filter='./packages/coralite' run html",
-    "publish": "pnpm --filter='./packages/coralite' publish"
+    "publish": "pnpm --filter='./packages/coralite' publish",
+    "release": "coralite-release",
+    "changelog": "coralite-changelog"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin-js": "^2.12.1",
@@ -41,5 +43,8 @@
       "eslint --cache --fix"
     ]
   },
-  "packageManager": "pnpm@10.15.1"
+  "packageManager": "pnpm@10.15.1",
+  "dependencies": {
+    "coralite-release": "link:packages/coralite-release"
+  }
 }
