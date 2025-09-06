@@ -1,0 +1,26 @@
+{
+  "name": "coralite-release",
+  "type": "module",
+  "private": "true",
+  "bin": {
+    "coralite-release": "./bin/index.js"
+  },
+  "author": {
+    "name": "Thomas David",
+    "url": "https://thomasjackdavid.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://codeberg.org/tjdavid/coralite.git",
+    "directory": "packages/coralite-release"
+  },
+  "bugs": {
+    "url": "https://codeberg.org/tjdavid/coralite/issues"
+  },
+  "license": "AGPL-3.0-only",
+  "devDependencies": {
+    "@clack/prompts": "^0.11.0",
+    "commander": "^13.1.0",
+    "glob": "^11.0.3"
+  }
+}
