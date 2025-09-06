@@ -21,6 +21,7 @@
   "devDependencies": {
     "@clack/prompts": "^0.11.0",
     "commander": "^13.1.0",
-    "glob": "^11.0.3"
+    "glob": "^11.0.3",
+    "simple-git": "^3.28.0"
   }
 }

@@ -2,9 +2,9 @@
 
 import { program } from 'commander'
 import * as prompts from '@clack/prompts'
-import { execSync } from 'child_process'
 import { readFileSync, writeFileSync } from 'fs'
 import { globSync } from 'glob'
+import { simpleGit } from 'simple-git'
 
 // Define available release types
 const RELEASE_TYPES = ['major', 'minor', 'patch', 'prerelease']
@@ -22,11 +22,31 @@ program
   .option('--no-git-tag', 'Skip creating git tag')
   .option('--no-git-commit', 'Skip git commit (only update package.json files)')
   .action(async (type, options) => {
+    const git = simpleGit()
+
     try {
       // Validate release type
       if (!RELEASE_TYPES.includes(type)) {
         prompts.log.error(`Invalid release type: ${type}. Must be one of: ${RELEASE_TYPES.join(', ')}`)
         process.exit(1)
+      }
+
+      // Check if working directory is clean
+      const status = await git.status()
+      if (status.files.length > 0) {
+        prompts.log.warn('You have uncommitted changes:')
+
+        status.files.forEach(file => console.log(`  ${file.path}`))
+
+        const proceed = await prompts.confirm({
+          message: 'Continue anyway? (Changes won’t be committed)',
+          initialValue: false
+        })
+
+        if (prompts.isCancel(proceed) || !proceed) {
+          prompts.log.info('Release cancelled')
+          process.exit(0)
+        }
       }
 
       // Get all package.json files
@@ -99,11 +119,11 @@ program
       // Git commit if not disabled
       if (!options.noGitCommit) {
         try {
-          execSync('git add packages/*/package.json', { stdio: 'inherit' })
-          execSync(`git commit -m "${commitMessage}"`, { stdio: 'inherit' })
-          prompts.log.success('Committed version changes')
+          await git.add('packages/*/package.json')
+          await git.commit(commitMessage)
+          prompts.log.success('✅ Committed version changes')
         } catch (error) {
-          prompts.log.error('Failed to commit changes')
+          prompts.log.error('Failed to commit changes: ' + error.message)
           if (!options.yes) {
             const continueWithoutCommit = await prompts.confirm({
               message: 'Continue with tag creation anyway?',
@@ -120,10 +140,10 @@ program
       if (!options.noGitTag) {
         const tagName = `v${packages[0].newVersion}`
         try {
-          execSync(`git tag -a ${tagName} -m "${commitMessage}"`, { stdio: 'inherit' })
-          prompts.log.success(`Created git tag: ${tagName}`)
+          await git.tag(['-a', tagName, '-m', commitMessage])
+          prompts.log.success(`🔖 Created git tag: ${tagName}`)
         } catch (error) {
-          prompts.log.error(`Failed to create git tag: ${tagName}`)
+          prompts.log.error(`Failed to create git tag: ${tagName} — ${error.message}`)
           process.exit(1)
         }
       }
