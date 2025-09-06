@@ -4,7 +4,7 @@
   "description": "Configuration and scripts for Create Coralite.",
   "type": "module",
   "bin": {
-    "coralite-scripts": "./bin/coralite-scripts.js"
+    "coralite-scripts": "./bin/index.js"
   },
   "keywords": [
     "coralite",
