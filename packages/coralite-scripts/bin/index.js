@@ -152,9 +152,13 @@ const watcher = chokidar.watch(watchPath, {
 
 watcher
   .on('change', async (path) => {
-    if (path.endsWith('.scss') || path.endsWith('.sass')) {
-      const start = process.hrtime()
-      let duration, dash = colours.gray(' ─ ')
+    const start = process.hrtime()
+    let duration, dash = colours.gray(' ─ ')
+
+    if (path.startsWith(config.templates)) {
+      // update template file
+      await coralite.templates.setItem(path)
+    } else if (path.endsWith('.scss') || path.endsWith('.sass')) {
       // rebuild CSS and send notification
       await buildSass({
         ...config.sass,
