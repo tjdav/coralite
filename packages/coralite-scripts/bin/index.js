@@ -5,19 +5,26 @@ import colours from 'kleur'
 import localAccess from 'local-access'
 import chokidar from 'chokidar'
 import loadConfig from '../src/load-config.js'
-import html from '../src/build-html.js'
 import buildSass from '../src/build-sass.js'
 import { toCode, toMS, toTime } from '../src/build-utils.js'
 import { extname, join } from 'path'
 import { readFile, access, constants } from 'fs/promises'
+import Coralite from 'coralite'
 
 const config = await loadConfig()
 const app = express()
 const port = config.server?.port || 3000
+
 // track active connections.
 const clients = new Set()
 
-const buildHTML = await html(config)
+// start coralite
+const coralite = new Coralite({
+  templates: config.templates,
+  pages: config.pages,
+  plugins: config.plugins
+})
+await coralite.initialise()
 
 const watchPath = [
   config.public,
@@ -97,37 +104,43 @@ app
 
       res.send(data)
     } catch {
-      try {
-        // if that fails, try reading from pages directory.
+      if (!path.endsWith('.html')) {
+        res.sendStatus(404)
+      } else {
         const filePath = join(config.pages, path)
 
-        // check if page source file exists and is readable
-        await access(filePath, constants.R_OK)
+        try {
+
+          // if that fails, try reading from pages directory.
+
+          // check if page source file exists and is readable
+          await access(filePath, constants.R_OK)
+        } catch {
+          res.sendStatus(404)
+        }
+
         const start = process.hrtime()
         let duration, dash = colours.gray(' ─ ')
 
+        await coralite.pages.setItem(filePath)
         // build the HTML for this page using the built-in compiler.
-        await buildHTML.compile(filePath)
-        const data = await readFile(filePath, 'utf8')
+        const documents = await coralite.compile(path)
         // inject a script to enable live reload via Server-Sent Events
-        const injectedHtml = data.replace(/<\/body>/i, `
-<script>
-  const eventSource = new EventSource('/_/rebuild');
-  eventSource.onmessage = function(event) {
-    if (event.data === 'connected') return;
-    // Reload page when file changes
-    location.reload()
-  }
-</script>
+        const injectedHtml = documents[0].html.replace(/<\/body>/i, `\n
+  <script>
+    const eventSource = new EventSource('/_/rebuild');
+    eventSource.onmessage = function(event) {
+      if (event.data === 'connected') return;
+      // Reload page when file changes
+      location.reload()
+    }
+  </script>
 </body>`)
 
         // prints time and path to the file that has been changed or added.
         duration = process.hrtime(start)
         process.stdout.write(toTime() + colours.bgGreen('Compiled HTML') + dash + toMS(duration) + dash + path + '\n')
         res.send(injectedHtml)
-      } catch(error) {
-        // if all attempts fail, respond with a 404.
-        res.sendStatus(404)
       }
     }
   })
