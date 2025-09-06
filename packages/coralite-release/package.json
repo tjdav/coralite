@@ -3,7 +3,8 @@
   "type": "module",
   "private": "true",
   "bin": {
-    "coralite-release": "./bin/index.js"
+    "coralite-release": "./bin/release.js",
+    "coralite-changelog": "./bin/changelog.js"
   },
   "author": {
     "name": "Thomas David",
