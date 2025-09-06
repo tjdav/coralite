@@ -10,6 +10,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      coralite-release:
+        specifier: link:packages/coralite-release
+        version: link:packages/coralite-release
     devDependencies:
       '@stylistic/eslint-plugin-js':
         specifier: ^2.12.1
