@@ -1,4 +1,6 @@
 import path from 'node:path'
+import { getHtmlFile } from './html.js'
+import { access } from 'node:fs/promises'
 
 /**
  * @import {
@@ -14,11 +16,22 @@ import path from 'node:path'
  * Maintains three views: flat list, path-based grouping, and ID lookup.
  * @constructor
  * @param {Object} [options={}]
- * @param {CoraliteCollectionEventSet} [options.onSet]
- * @param {CoraliteCollectionEventUpdate} [options.onUpdate]
- * @param {CoraliteCollectionEventDelete} [options.onDelete]
+ * @param {string} [options.rootDir='/'] - The root directory path for the collection
+ * @param {CoraliteCollectionEventSet} [options.onSet] - Event handler for when documents are set
+ * @param {CoraliteCollectionEventUpdate} [options.onUpdate] - Event handler for when documents are updated
+ * @param {CoraliteCollectionEventDelete} [options.onDelete] - Event handler for when documents are deleted
  */
-function CoraliteCollection (options = {}) {
+function CoraliteCollection (options = { rootDir: '/' }) {
+  let rootDir = options.rootDir
+
+  if (rootDir[rootDir.length -1] !== '/') {
+    rootDir += '/'
+  }
+
+  /**
+   * Root directory where collection items are located
+   */
+  this.rootDir = rootDir
   /**
    * An array of HTMLData objects representing the list of documents.
    * @type {CoraliteCollectionItem[]}
@@ -61,10 +74,14 @@ function CoraliteCollection (options = {}) {
 /**
  * Adds or updates an HTMLData object in the collection and associated lists.
  * If the item already exists, it will be updated in all views.
- * @param {HTMLData} value - The HTMLData object to be added or updated.
+ * @param {HTMLData|string} value - The HTMLData object to be added or updated.
  * @returns {Promise<CoraliteCollectionItem>} The modified document
  */
 CoraliteCollection.prototype.setItem = async function (value) {
+  if (typeof value === 'string') {
+    value = await this._loadByPath(value)
+  }
+
   const pathname = value.path.pathname
   const dirname = value.path.dirname
   const originalValue = this.collection[pathname]
@@ -156,10 +173,14 @@ CoraliteCollection.prototype.deleteItem = async function (value) {
 /**
  * Updates an existing HTMLData object in the collection.
  * If the document does not exist, it will be added using the set method.
- * @param {CoraliteCollectionItem} value - The HTMLData object to be updated or added.
+ * @param {CoraliteCollectionItem|string} value - The HTMLData object to be updated or added.
  * @throws {Error} If invalid input is provided
  */
 CoraliteCollection.prototype.updateItem = async function (value) {
+  if (typeof value === 'string') {
+    value = await this._loadByPath(value)
+  }
+
   if (value && value.path) {
     const originalValue = this.collection[value.path.pathname]
 
@@ -199,6 +220,40 @@ CoraliteCollection.prototype.getListByPath = function (dirname) {
 
   if (list) {
     return list.slice()
+  }
+}
+
+/**
+ * Loads a collection item by its file path.
+ *
+ * @param {string} filepath - The path to the collection item file
+ * @returns {Promise<HTMLData>} A promise that resolves to the loaded item object
+ * @throws {Error} If the file cannot be found at either the provided path or within the root directory
+ */
+CoraliteCollection.prototype._loadByPath = async function (filepath) {
+  try {
+    await access(filepath)
+  } catch {
+    try {
+      filepath = path.join(this.rootDir, filepath)
+
+      await access(filepath)
+    } catch {
+      throw new Error('Could not find collection item: ' + filepath)
+    }
+  }
+
+  const content = await getHtmlFile(filepath)
+  const pathname = filepath.replace(new RegExp(`^${this.rootDir}`), '')
+
+  return {
+    type: 'page',
+    content,
+    path: {
+      pathname: pathname,
+      dirname: path.dirname(pathname),
+      filename: path.basename(pathname)
+    }
   }
 }
 

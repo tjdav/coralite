@@ -10,6 +10,10 @@ overrides:
 importers:
 
   .:
+    dependencies:
+      coralite-release:
+        specifier: link:packages/coralite-release
+        version: link:packages/coralite-release
     devDependencies:
       '@stylistic/eslint-plugin-js':
         specifier: ^2.12.1
@@ -58,6 +62,21 @@ importers:
         specifier: ^3.0.0
         version: 3.0.1
 
+  packages/coralite-release:
+    devDependencies:
+      '@clack/prompts':
+        specifier: ^0.11.0
+        version: 0.11.0
+      commander:
+        specifier: ^13.1.0
+        version: 13.1.0
+      glob:
+        specifier: ^11.0.3
+        version: 11.0.3
+      simple-git:
+        specifier: ^3.28.0
+        version: 3.28.0
+
   packages/coralite-scripts:
     dependencies:
       chokidar:
@@ -82,11 +101,7 @@ importers:
         specifier: ^1.91.0
         version: 1.92.0
 
-  packages/create-coralite:
-    devDependencies:
-      '@clack/prompts':
-        specifier: ^0.11.0
-        version: 0.11.0
+  packages/create-coralite: {}
 
 packages:
 
@@ -242,6 +257,12 @@ packages:
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
     engines: {node: '>=12'}
+
+  '@kwsites/file-exists@1.1.1':
+    resolution: {integrity: sha512-m9/5YGR18lIwxSFDwfE3oA7bWuq9kdau6ugN4H2rJeyhFQZcG9AgSHkQtSD15a8WvTgfz9aikZMrKPHvbpqFiw==}
+
+  '@kwsites/promise-deferred@1.1.1':
+    resolution: {integrity: sha512-GaHYm+c0O9MjZRu0ongGBRbinu8gVAMd2UZjji6jVmqKtZluZnptXGWhz1E8j8D2HJ3f/yMxKAUC0b+57wncIw==}
 
   '@parcel/watcher-android-arm64@2.5.1':
     resolution: {integrity: sha512-KF8+j9nNbUN8vzOFDpRMsaKBHZ/mcjEjMToVMJOhTozkDonQFFrRcfdLWn6yWKCmJKmdVxSgHiYvTCef4/qcBA==}
@@ -1329,6 +1350,9 @@ packages:
     resolution: {integrity: sha512-WszCLXwT4h2k1ufIXAgsbiTOazqqevFCIncOuUBZJ91DdvWcC5+OFkluWRQPrcuSYd8fjq+o2y1QfWqYMoAToQ==}
     hasBin: true
 
+  simple-git@3.28.0:
+    resolution: {integrity: sha512-Rs/vQRwsn1ILH1oBUy8NucJlXmnnLeLCfcvbSehkPzbv3wwoFWIdtfd6Ndo6ZPhlPsCZ60CPI4rxurnwAa+a2w==}
+
   sirv-cli@3.0.1:
     resolution: {integrity: sha512-ICXaF2u6IQhLZ0EXF6nqUF4YODfSQSt+mGykt4qqO5rY+oIiwdg7B8w2PVDBJlQulaS2a3J8666CUoDoAuCGvg==}
     engines: {node: '>=18'}
@@ -1707,6 +1731,14 @@ snapshots:
       strip-ansi-cjs: strip-ansi@6.0.1
       wrap-ansi: 8.1.0
       wrap-ansi-cjs: wrap-ansi@7.0.0
+
+  '@kwsites/file-exists@1.1.1':
+    dependencies:
+      debug: 4.4.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@kwsites/promise-deferred@1.1.1': {}
 
   '@parcel/watcher-android-arm64@2.5.1':
     optional: true
@@ -2737,6 +2769,14 @@ snapshots:
   signal-exit@4.1.0: {}
 
   simple-git-hooks@2.13.1: {}
+
+  simple-git@3.28.0:
+    dependencies:
+      '@kwsites/file-exists': 1.1.1
+      '@kwsites/promise-deferred': 1.1.1
+      debug: 4.4.1
+    transitivePeerDependencies:
+      - supports-color
 
   sirv-cli@3.0.1:
     dependencies:

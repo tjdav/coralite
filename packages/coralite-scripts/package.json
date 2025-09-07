@@ -1,10 +1,10 @@
 {
   "name": "coralite-scripts",
-  "version": "0.0.2",
+  "version": "0.15.0",
   "description": "Configuration and scripts for Create Coralite.",
   "type": "module",
   "bin": {
-    "coralite-scripts": "./bin/coralite-scripts.js"
+    "coralite-scripts": "./bin/index.js"
   },
   "keywords": [
     "coralite",
@@ -41,7 +41,7 @@
   "license": "AGPL-3.0-only",
   "dependencies": {
     "chokidar": "^4.0.3",
-    "coralite": "^0.14.2",
+    "coralite": "^0.15.0",
     "express": "^5.1.0",
     "html-validate": "^10.0.0",
     "kleur": "^4.1.5",

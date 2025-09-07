@@ -40,6 +40,7 @@ export async function getHtmlFiles ({
 }) {
   try {
     const collection = new CoraliteCollection({
+      rootDir: path,
       onSet: onFileSet,
       onUpdate: onFileUpdate,
       onDelete: onFileDelete
@@ -58,7 +59,7 @@ export async function getHtmlFiles ({
         && !exclude.includes(file.name)
       ) {
         const parentPath = file.parentPath || file.path
-        const dirname = parentPath.replace(path, '')
+        const dirname = parentPath.replace(new RegExp(`^${path}`), '')
         const name = file.name
         const content = readFileSync(join(parentPath, file.name), { encoding: 'utf8' })
 
