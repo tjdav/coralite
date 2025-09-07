@@ -101,7 +101,17 @@ importers:
         specifier: ^1.91.0
         version: 1.92.0
 
-  packages/create-coralite: {}
+  packages/create-coralite:
+    dependencies:
+      '@clack/prompts':
+        specifier: ^0.11.0
+        version: 0.11.0
+      commander:
+        specifier: ^13.1.0
+        version: 13.1.0
+      kleur:
+        specifier: ^4.1.5
+        version: 4.1.5
 
 packages:
 

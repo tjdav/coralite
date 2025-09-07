@@ -1,0 +1,34 @@
+<template id="coralite-counter">
+  <button
+    id="counter"
+    type="button"
+    data-count="{{ initCount }}"
+    data-count-step="{{ stepCount }}">
+      count is 0
+  </button>
+
+  <script>
+    const button = document.getElementById('button')
+    const stepCount = button.dataset.step
+    let count = button.dataset.count
+
+    button.addEventListener('click', () => {
+      button.textContent = 'count is ' + count + stepCount
+    })
+  </script>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    tokens: {
+      initCount (values) {
+        return values.count || '0'
+      },
+      stepCount (values) {
+        return values.stepCount || '0'
+      }
+    }
+  })
+</script>
