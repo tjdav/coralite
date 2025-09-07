@@ -1,0 +1,21 @@
+<template id="coralite-footer">
+  <footer class="text-center">
+    Made by {{ capitaliseName }}
+  </footer>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    tokens: {
+      capitaliseName ({ name }) {
+        if (name) {
+          return name[0].toUpperCase() + name.slice(1)
+        }
+
+        return ''
+      }
+    }
+  })
+</script>

@@ -1,0 +1,11 @@
+{
+  "name": "coralite-project",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "coralite-scripts"
+  },
+  "devDependencies": {
+    "coralite-scripts": "^0.15.0"
+  }
+}
