@@ -112,6 +112,20 @@ program
       // Update package.json files
       for (const pkg of packages) {
         pkg.data.version = pkg.newVersion
+
+        // update coralite dependency
+        for (const key in pkg.data.dependencies) {
+          if (key === 'coralite') {
+            pkg.data.dependencies[key] = '^' + pkg.newVersion
+          }
+        }
+
+        for (const key in pkg.data.devDependencies) {
+          if (key === 'coralite') {
+            pkg.data.dependencies[key] = '^' + pkg.newVersion
+          }
+        }
+
         writeFileSync(pkg.path, JSON.stringify(pkg.data, null, 2) + '\n')
         prompts.log.success(`Updated ${pkg.path}: ${pkg.version} → ${pkg.newVersion}`)
       }
@@ -139,6 +153,7 @@ program
       // Create git tag if not disabled
       if (!options.noGitTag) {
         const tagName = `v${packages[0].newVersion}`
+
         try {
           await git.tag(['-a', tagName, '-m', commitMessage])
           prompts.log.success(`🔖 Created git tag: ${tagName}`)
