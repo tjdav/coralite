@@ -179,6 +179,7 @@ export function parseModule (string, { ignoreByAttribute }) {
   const slotElements = {}
   /** @type {CoraliteDocumentValues} */
   const documentValues = {
+    refs: [],
     attributes: [],
     textNodes: []
   }
@@ -244,13 +245,21 @@ export function parseModule (string, { ignoreByAttribute }) {
         if (attributeNames.length) {
           for (let i = 0; i < attributeNames.length; i++) {
             const name = attributeNames[i]
-            const tokens = getTokensFromString(attributes[name])
+            const value = attributes[name]
+            const tokens = getTokensFromString(value)
 
             // store attribute tokens
             if (tokens.length) {
               documentValues.attributes.push({
                 name,
                 tokens,
+                element
+              })
+            }
+
+            if (name === 'ref') {
+              documentValues.refs.push({
+                name: value,
                 element
               })
             }

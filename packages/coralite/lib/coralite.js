@@ -1,5 +1,5 @@
 import { cleanKeys, getHtmlFiles, parseHTML, parseModule } from '#lib'
-import { defineComponent } from '#plugins'
+import { defineComponent, refs } from '#plugins'
 import render from 'dom-serializer'
 import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -22,7 +22,9 @@ import { isCoraliteElement, isCoralitePageItem } from './type-helper.js'
  *  CoraliteDocumentRoot,
  *  CoralitePluginInstance,
  *  CoraliteCollectionEventSet,
- *  IgnoreByAttribute} from '#types'
+ *  IgnoreByAttribute,
+ *  CoraliteScriptTextContent,
+ *  CoraliteDocumentResult} from '#types'
  * @import CoraliteCollection from './collection.js'
  * @import {Module} from 'node:vm'
  */
@@ -102,7 +104,7 @@ export function Coralite ({
     }
   }
 
-  // place core defineComponent plugin first
+  // place core plugin first
   plugins.unshift(defineComponent)
 
   const source = this._source
@@ -152,9 +154,25 @@ export function Coralite ({
   }
 
   source.modules.plugins.default = source.modules.plugins.default.substring(0, source.modules.plugins.default.length - 2) + ' }'
-  // global values
-  this.values = {}
 
+  /** @type {Object.<string, CoraliteModuleValues>} */
+  this.values = {}
+  this._scripts = {
+    /**
+     * @param {string} id
+     * @param {CoraliteScriptTextContent} item
+     */
+    add (id, item) {
+      if (!this.content[id]) {
+        // @ts-ignore
+        this.content[id] = {}
+      }
+
+      this.content[id][item.id] = item
+    },
+    /** @type {Object.<string, Object.<string, CoraliteScriptTextContent>>} */
+    content: {}
+  }
   /** @type {CoraliteCollectionItem[]} */
   this._currentRenderQueue = []
 }
@@ -419,6 +437,7 @@ Coralite.prototype.compile = async function (path) {
   const results = []
 
   for (let i = 0; i < this._currentRenderQueue.length; i++) {
+    /** @type {CoraliteDocument & CoraliteDocumentResult} */
     const document = structuredClone(this._currentRenderQueue[i].result)
 
     for (let i = 0; i < document.tempElements.length; i++) {
@@ -448,7 +467,8 @@ Coralite.prototype.compile = async function (path) {
         values: this.values[contextId],
         element: customElement,
         document,
-        contextId
+        contextId,
+        index: i
       })
 
       if (component) {
@@ -461,6 +481,63 @@ Coralite.prototype.compile = async function (path) {
         // replace custom element with component
         customElement.parent.children.splice(index, 1, ...component.children)
       }
+    }
+
+    if (this._scripts.content[document.path.pathname]) {
+      const scripts = this._scripts.content[document.path.pathname]
+      // open script
+      let scriptTextContent = `(() => { const $refs = ${refs};`
+
+      // add scripts
+      for (const key in scripts) {
+        if (Object.prototype.hasOwnProperty.call(scripts, key)) {
+          const script = scripts[key]
+          scriptTextContent += `(() => {
+            ${script.content}
+            o.refs = $refs(${script.refs});
+            cb.script(o);
+          })();`
+        }
+      }
+
+      // close script
+      scriptTextContent += '})();'
+
+      /** @type {CoraliteElement} */
+      let bodyElement
+
+      for (let i = 0; i < document.root.children.length; i++) {
+        const rootNode = document.root.children[i]
+
+        if (rootNode.type === 'tag' && rootNode.name === 'html') {
+          for (let i = 0; i < rootNode.children.length; i++) {
+            const node = rootNode.children[i]
+
+            if (node.type === 'tag' && node.name === 'body') {
+              bodyElement = node
+            }
+          }
+        }
+      }
+
+      /** @type {CoraliteElement} */
+      const scriptElement = {
+        type: 'tag',
+        name: 'script',
+        parent: bodyElement,
+        attribs: {
+          type: 'module'
+        },
+        children: []
+      }
+
+      scriptElement.children.push({
+        type: 'text',
+        data: scriptTextContent,
+        parent: scriptElement
+      })
+
+      bodyElement.children.push(scriptElement)
     }
 
     // render document
@@ -477,8 +554,10 @@ Coralite.prototype.compile = async function (path) {
     results.push(result)
   }
 
+  // reset core values
   this._currentRenderQueue = []
   this.values = {}
+  this._scripts.content = {}
 
   return results
 }
@@ -584,6 +663,7 @@ Coralite.prototype.addRenderQueue = async function (value) {
  * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
  * @param {CoraliteDocument} options.document - Current document being processed
  * @param {string} [options.contextId] - Context Id
+ * @param {number} [options.index] - Context index
  * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
  * @returns {Promise<CoraliteElement | void>}
  *
@@ -612,7 +692,8 @@ Coralite.prototype.createComponent = async function ({
   values = {},
   element,
   document,
-  contextId
+  contextId,
+  index
 }, head = true) {
   const templateItem = this.templates.getItem(id)
 
@@ -652,6 +733,33 @@ Coralite.prototype.createComponent = async function ({
 
     values = Object.assign(values, scriptResult)
     this.values[contextId] = values
+
+    if (typeof scriptResult.scriptTextContent === 'string') {
+      let refs = '{'
+
+      for (let i = 0; i < module.values.refs.length; i++) {
+        const ref = module.values.refs[i]
+        const id = `${module.id}__${ref.name}-${index}`
+
+        // map ref name id pair
+        refs += `"${ref.name}": '${id}',`
+
+        // set data ref selector
+        ref.element.attribs['data-coralite-ref'] = id
+
+        // clean up ref attribute
+        delete ref.element.attribs.ref
+      }
+
+      refs = refs.slice(0, refs.length -1) + '}'
+
+      this._scripts.add(document.path.pathname, {
+        id: contextId,
+        document,
+        refs,
+        content: scriptResult.scriptTextContent
+      })
+    }
   }
 
   // replace tokens in the template with their values from `values` object and store them into computed value array for later use if needed (e.g., to be injected back).
@@ -749,7 +857,8 @@ Coralite.prototype.createComponent = async function ({
       values: this.values[childContextId],
       element: customElement,
       document,
-      contextId: childContextId
+      contextId: childContextId,
+      index
     }, false)
     const children = customElement.parent.children
 
@@ -831,7 +940,8 @@ Coralite.prototype.createComponent = async function ({
               values: this.values[slotContextId],
               element: node,
               document,
-              contextId: slotContextId
+              contextId: slotContextId,
+              index
             }, false)
 
             if (component) {

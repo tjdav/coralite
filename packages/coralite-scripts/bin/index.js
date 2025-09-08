@@ -150,6 +150,26 @@ const watcher = chokidar.watch(watchPath, {
   persistent: true
 })
 
+let initWatcher = true
+
+if (config.sass) {
+  (async () => {
+    const start = process.hrtime()
+    let duration, dash = colours.gray(' ─ ')
+
+    process.stdout.write(toTime() + colours.bgYellow('Compiling SASS...') + '\n')
+    // rebuild CSS and send notification
+    await buildSass({
+      ...config.sass,
+      output: join(config.output, 'css')
+    })
+    initWatcher = false
+    // prints time and path to the file that has been changed or added.
+    duration = process.hrtime(start)
+    process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(duration) + dash + '\n')
+  })()
+}
+
 watcher
   .on('change', async (path) => {
     const start = process.hrtime()
@@ -175,7 +195,7 @@ watcher
     })
   })
   .on('add', async (path) => {
-    if (path.endsWith('.scss') || path.endsWith('.sass')) {
+    if (!initWatcher && (path.endsWith('.scss') || path.endsWith('.sass'))) {
       const start = process.hrtime()
       let duration, dash = colours.gray(' ─ ')
       // rebuild CSS and send notification

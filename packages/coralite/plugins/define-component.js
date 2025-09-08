@@ -10,6 +10,11 @@ import {
  * @import { CoraliteElement, CoraliteModuleValues } from '#types'
  */
 
+/**
+ * @callback CoraliteModuleScript
+ * @param {CoraliteModuleValues} values
+ */
+
 export const defineComponent = createPlugin({
   name: 'defineComponent',
   /**
@@ -23,6 +28,7 @@ export const defineComponent = createPlugin({
    * @param {Object.<string, Function>} options.slots -
    *   Computed slots for the component. These are functions that define
    *   how content should be rendered within the component.
+   * @param {CoraliteModuleScript} [options.script] - Script that will be added below the element.
    * @returns {Promise<CoraliteModuleValues>} A promise resolving to the module values
    *   associated with this component.
    */
@@ -188,6 +194,19 @@ export const defineComponent = createPlugin({
           element.slots = elementSlots
         }
       }
+    }
+
+    if (typeof options.script === 'function') {
+      const scriptTextContent = options.script.toString().trim()
+      let cb = 'const cb = { '
+
+      if (!scriptTextContent.startsWith('script')) {
+        cb += 'script: '
+      }
+
+      cb += scriptTextContent + '}'
+
+      results.scriptTextContent = `${cb}; const o = { values: ${JSON.stringify(results)} };`
     }
 
     return results

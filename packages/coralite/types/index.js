@@ -57,10 +57,11 @@
  */
 
 /**
- * Holds tokenized metadata extracted from document attributes and text nodes.
+ * Holds tokenized metadata extracted from document attributes, element references and text nodes.
  * @typedef {Object} CoraliteDocumentValues
- * @property {CoraliteAttributeToken[]} attributes - Array of attribute tokens from the document
- * @property {CoraliteTextNodeToken[]} textNodes - Array of text node tokens from the document
+ * @property {CoraliteRef[]} refs - List of element references
+ * @property {CoraliteAttributeToken[]} attributes - List of attribute tokens from the document
+ * @property {CoraliteTextNodeToken[]} textNodes - List of text node tokens from the document
  */
 
 /**
@@ -77,6 +78,13 @@
  * @property {CoraliteElement} element - Corresponding HTML element for the attribute
  * @property {CoraliteToken[]} tokens - Array of associated tokens
  */
+
+/**
+ * @typedef {Object} CoraliteRef
+ * @property {string} name - Ref identifier
+ * @property {CoraliteElement} element - Corresponding HTML element for the attribute
+ */
+
 
 /**
  * Represents a text node token with associated metadata.
@@ -111,6 +119,7 @@
  * @property {'text'} type - Text node type
  * @property {string} data - Additional attributes for the text node
  * @property {CoraliteContentNode} parent - Parent element of the text node
+ * @property {boolean} [remove] - Mark element to be removed from stack
  */
 
 /**
@@ -119,6 +128,7 @@
  * @property {'comment'} type - Comment type
  * @property {string} data - Additional attributes for the text node
  * @property {CoraliteContentNode} parent - Parent element of the text node
+ * @property {boolean} [remove] - Mark element to be removed from stack
  */
 
 
@@ -146,6 +156,7 @@
  * @property {'directive'} type - Node type
  * @property {string} data - Raw HTML Doctype
  * @property {string} name - Doctype name
+ * @property {boolean} [remove] - Mark element to be removed from stack
  */
 
 /**
@@ -164,6 +175,11 @@
  * @property {IgnoreByAttribute[]} ignoreByAttribute - An array of attribute names and values to ignore by element type.
  */
 
+/**
+ * @typedef {Object} CoraliteDocumentResult
+ * @property {CoraliteModuleValues} values
+ * @property {CoraliteElement[]} tempElements
+ */
 
 /**
  * Represents a rendered output document with metadata and statistics.
@@ -308,4 +324,12 @@
  * @property {string} templates - The path to the directory containing Coralite templates.
  * @property {string} pages - The path to the directory containing pages that will be rendered using the provided templates.
  * @property {CoralitePluginInstance[]} [plugins] - Optional array of plugin instances to extend Coralite functionality.
+ */
+
+/**
+ * @typedef {Object} CoraliteScriptTextContent
+ * @property {string} id
+ * @property {CoraliteDocument} document - Coralite document with metadata and rendering structure.
+ * @property {string} refs - Array of reference identifiers.
+ * @property {string} content - The script content as a string.
  */
