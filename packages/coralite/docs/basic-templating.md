@@ -106,7 +106,7 @@ coralite --templates path/to/templates --pages path/to/pages --output dist --dry
 - Try creating more complex templates with multiple slots
 - Explore nested components by using one component inside another
 - Use the dry-run mode to debug template issues
-- Check the [full documentation](https://codeberg.org/tjdavid/coralite/src/branch/main/docs) for advanced features
+- Check the [full documentation](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs) for advanced features
 
 ## Common Issues
 
