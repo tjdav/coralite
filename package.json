@@ -26,6 +26,7 @@
     "build-html": "pnpm --filter='./packages/coralite' run html",
     "publish": "pnpm --filter='./packages/coralite' publish",
     "publish-scripts": "pnpm --filter='./packages/coralite-scripts' publish",
+    "publish-create": "pnpm --filter='./packages/create-coralite' publish",
     "release": "coralite-release",
     "changelog": "coralite-changelog"
   },
