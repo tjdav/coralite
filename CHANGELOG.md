@@ -48,8 +48,8 @@
 
 ### 🔗 Pull Requests
 
-- [#7](https://codeberg.org/tjdavid/coralite/pull/7)
-- [#8](https://codeberg.org/tjdavid/coralite/pull/8)
+- [#7](https://codeberg.org/tjdavid/coralite/pulls/7)
+- [#8](https://codeberg.org/tjdavid/coralite/pulls/8)
 
 ## v0.15.0
 
@@ -135,8 +135,8 @@
 
 ### 🔗 Pull Requests
 
-- [#3](https://codeberg.org/tjdavid/coralite/pull/3)
-- [#4](https://codeberg.org/tjdavid/coralite/pull/4)
-- [#5](https://codeberg.org/tjdavid/coralite/pull/5)
-- [#6](https://codeberg.org/tjdavid/coralite/pull/6)
+- [#3](https://codeberg.org/tjdavid/coralite/pulls/3)
+- [#4](https://codeberg.org/tjdavid/coralite/pulls/4)
+- [#5](https://codeberg.org/tjdavid/coralite/pulls/5)
+- [#6](https://codeberg.org/tjdavid/coralite/pulls/6)
 
