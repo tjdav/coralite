@@ -741,8 +741,14 @@ Coralite.prototype.createComponent = async function ({
         const ref = module.values.refs[i]
         const id = `${module.id}__${ref.name}-${index}`
 
+        // map ref name id pair
         refs += `"${ref.name}": '${id}',`
+
+        // set data ref selector
         ref.element.attribs['data-coralite-ref'] = id
+
+        // clean up ref attribute
+        delete ref.element.attribs.ref
       }
 
       refs = refs.slice(0, refs.length -1) + '}'
