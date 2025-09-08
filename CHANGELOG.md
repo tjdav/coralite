@@ -1,5 +1,56 @@
 # Changelog
 
+## v0.16.0
+
+> Comparing `v0.15.0` to `v0.16.0`
+
+**Summary:** 22 commits, 2 pull requests
+
+### ✨ Features
+
+- add refs plugin exports (core) ([4b04115](https://codeberg.org/tjdavid/coralite/commit/4b04115b661432cdaf16526decde401ea5556c51))
+- add script option to defineComponent plugin with callback handling (core) ([04322d4](https://codeberg.org/tjdavid/coralite/commit/04322d483fefa035f159a852be7434fa28853de0))
+- add script execution support with refs management and cleanup (core) ([a81a0ef](https://codeberg.org/tjdavid/coralite/commit/a81a0efb857631ed4ab123bb2e0cdf82a5f3420a))
+- add refs plugin for DOM element referencing functionality (coralite) ([d99db6a](https://codeberg.org/tjdavid/coralite/commit/d99db6a0853641a2ff32d2a8afd269a4ac417632))
+- collect ref elements (core) ([4324359](https://codeberg.org/tjdavid/coralite/commit/4324359d4a53b9cb61869e4658d940d032de51e1))
+- init create coralite script ([a52d77c](https://codeberg.org/tjdavid/coralite/commit/a52d77cdebcfa0bb094c985bb8c0fe1f4427270c))
+- add publish-scripts command for coralite-scripts ([a14e544](https://codeberg.org/tjdavid/coralite/commit/a14e544fa38623cbafe8d5099d41e9cf8846e4d9))
+
+### 🐛 Bug Fixes
+
+- SCSS watch trigger condition ([a4a03fc](https://codeberg.org/tjdavid/coralite/commit/a4a03fcdf7cedee4e2b243d8d27b507338488a9b))
+- update coralite dependency versions in package.json (coralite-release) ([f3bc73a](https://codeberg.org/tjdavid/coralite/commit/f3bc73a8a368db555912cf5babaf9d4025ad683c))
+
+### 📚 Documentation
+
+- add README.md ([b5af9be](https://codeberg.org/tjdavid/coralite/commit/b5af9be71b9150ce953d6d754694700a10dd0207))
+- update README image path for coralite intro gif ([6cb4554](https://codeberg.org/tjdavid/coralite/commit/6cb4554f56b6931d74015c4f141438cf3ea76917))
+- update type definitions for coralite document values and add remove flag support ([fb9650a](https://codeberg.org/tjdavid/coralite/commit/fb9650a8d0ddac3016746bc0f5a284a1a1dae86e))
+- add README for create-coralite package with installation and CLI options ([33223ba](https://codeberg.org/tjdavid/coralite/commit/33223ba72e185ef453429e23a3242b1dc2c1d0f1))
+- add README for coralite-release package with CLI documentation ([595f959](https://codeberg.org/tjdavid/coralite/commit/595f959ebe958d4e8e1605f882c0faa965c4152b))
+- update changelog ([ddcccfe](https://codeberg.org/tjdavid/coralite/commit/ddcccfef61940e84eb551738ad036361412b5beb))
+
+### ♻️ Code Refactoring
+
+- cleanup ref attributes (core) ([7f916f3](https://codeberg.org/tjdavid/coralite/commit/7f916f3bf3f0159dd475372f46a49458fe27d3ce))
+
+### 🧹 Chores
+
+- update coralite to v0.15.0 (deps) ([5115415](https://codeberg.org/tjdavid/coralite/commit/5115415e8f13df7812fdca74b55a71673e3ce435))
+- enable JSON module resolution in jsconfig.json ([58d50ac](https://codeberg.org/tjdavid/coralite/commit/58d50ac49647b89511afa7361bdf9f34a3001ca9))
+
+### 🔨 Other Changes
+
+- release: version 0.16.0 ([0ddc175](https://codeberg.org/tjdavid/coralite/commit/0ddc175e8e903be1a38a0c70fa81fc97e4a5ee37))
+- Merge pull request 'Add JavaScript Support to Components and Refs Management' (#8) from javascript-support into main ([#8](https://codeberg.org/tjdavid/coralite/pulls/8)) ([97a7b04](https://codeberg.org/tjdavid/coralite/commit/97a7b040cd8eb4ccd14519bd84afbbf147a9d7bb))
+- Merge pull request 'create-coralite' (#7) from create-coralite into main ([#7](https://codeberg.org/tjdavid/coralite/pulls/7)) ([5e15a1e](https://codeberg.org/tjdavid/coralite/commit/5e15a1e9e0624e52fb74c6aa8ad60c9f116eaae4))
+- Merge branch 'main' of ssh://codeberg.org/tjdavid/coralite into create-coralite ([35a55ca](https://codeberg.org/tjdavid/coralite/commit/35a55cadcd34b02f2f8f4ca0b4fa3b5e2d7e035f))
+
+### 🔗 Pull Requests
+
+- [#7](https://codeberg.org/tjdavid/coralite/pull/7)
+- [#8](https://codeberg.org/tjdavid/coralite/pull/8)
+
 ## v0.15.0
 
 > Comparing `v0.14.2` to `v0.15.0`
