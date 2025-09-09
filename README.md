@@ -9,85 +9,26 @@ coralite is a static site generator library built around the emerging [HTML modu
   <div>Watch the full video on <a href="https://youtu.be/wUWwH9QZUTs" target="_blank">how to build a website using Coralite.</a></div>
 </p>
 
-- Getting started
-  - [Basic templating](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/basic-templating.md)
+## Packages
+
+- [Coralite CLI](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite) - HTML modules static site generator.
+- [Coralite create](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/create-coralite) - Coralite scaffolding script.
+- [Coralite scripts](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite-scripts) - Configuration and scripts for Create Coralite.
+
+## Getting started
+
+```bash
+npm create coralite@latest
+# or
+yarn create coralite
+# or
+pnpm create coralite
+```
+
+## Documentation
+- [Basic templating](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/basic-templating.md)
 - Reference
-  - [Coralite CLI](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite-cli.md)
-  - [Coralite](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite.md)
-  - [Javascript](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/javascript.md)
-  - [Types](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/types.md)
-
-## Installation
-
-Before using the Coralite CLI, ensure that it's installed on your system. You can install it globally using **npm**:
-
-```bash
-npm install -g coralite
-# or
-yarn global add coralite
-# or
-pnpm add -g coralite
-```
-
-You can also install coralite as a development dependency:
-
-```bash
-npm install --save-dev coralite
-# or
-yarn add -D coralite
-# or
-pnpm add -D coralite
-```
-
-## Basic Syntax
-
-Coralite is executed using the following command:
-
-```bash
-coralite [options]
-```
-
-For more information about the 
-
-Replace `[options]` with the desired flags and arguments.
-
-## Required Options
-
-To generate a website using Coralite, you must provide three essential options:
-
-- **-t or --templates**: The path to your templates directory containing reusable UI elements (e.g., `-t src/templates`).
-- **-p or --pages**: The path to your pages directory where static HTML files reside (e.g., `-p src/pages`).
-- **--output or -o**: The output directory for the generated site (e.g., `--output dist`).
-
-Here's an example of how these options might look:
-
-```bash
-coralite --templates path/to/templates --pages path/to/pages --output dist
-```
-
-## Optional Options
-
-### -d or --dry-run
-
-Run the CLI in dry-run mode to preview the actions that would be performed without actually generating the website. This is useful for debugging or when you want to check potential issues before committing changes:
-
-```bash
-coralite --templates path/to/templates --pages path/to/pages --output dist --dry-run
-```
-
-## Troubleshooting
-
-
-Coralite uses **ECMAScript Modules** and **Import meta resolve** which requires to run Node.js with the **`--experimental-vm-modules`** and **`--experimental-import-meta-resolve`** option enabled.
-
-```bash
-node --experimental-vm-modules --experimental-import-meta-resolve node_modules/coralite/bin/coralite.js [options]
-```
-
-If you require your templates to import
-
-or using NODE_OPTIONS
-
-```bash
-NODE_OPTIONS="--experimental-vm-modules --experimental-import-meta-resolve" coralite [options]
-```
+- [Coralite CLI](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite-cli.md)
+- [Coralite](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite.md)
+- [Javascript](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/javascript.md)
+- [Types](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/types.md)
