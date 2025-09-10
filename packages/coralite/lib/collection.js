@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { getHtmlFile } from './html.js'
 import { access } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 
 /**
  * @import {
@@ -16,22 +17,21 @@ import { access } from 'node:fs/promises'
  * Maintains three views: flat list, path-based grouping, and ID lookup.
  * @constructor
  * @param {Object} [options={}]
- * @param {string} [options.rootDir='/'] - The root directory path for the collection
+ * @param {string} [options.rootDir=''] - The root directory path for the collection
  * @param {CoraliteCollectionEventSet} [options.onSet] - Event handler for when documents are set
  * @param {CoraliteCollectionEventUpdate} [options.onUpdate] - Event handler for when documents are updated
  * @param {CoraliteCollectionEventDelete} [options.onDelete] - Event handler for when documents are deleted
  */
-function CoraliteCollection (options = { rootDir: '/' }) {
-  let rootDir = options.rootDir
-
-  if (rootDir[rootDir.length -1] !== '/') {
-    rootDir += '/'
-  }
-
+function CoraliteCollection (options = { rootDir: '' }) {
   /**
    * Root directory where collection items are located
    */
-  this.rootDir = rootDir
+  this.rootDir = path.join(options.rootDir)
+
+  if (!existsSync(this.rootDir)) {
+    throw new Error('Root directory was not found: ' + this.rootDir)
+  }
+
   /**
    * An array of HTMLData objects representing the list of documents.
    * @type {CoraliteCollectionItem[]}
@@ -207,6 +207,10 @@ CoraliteCollection.prototype.updateItem = async function (value) {
  * @returns {CoraliteCollectionItem | undefined} The found item or undefined
  */
 CoraliteCollection.prototype.getItem = function (id) {
+  if (!this.collection[id]) {
+    id = path.join(this.rootDir, id)
+  }
+
   return this.collection[id]
 }
 
@@ -244,15 +248,14 @@ CoraliteCollection.prototype._loadByPath = async function (filepath) {
   }
 
   const content = await getHtmlFile(filepath)
-  const pathname = filepath.replace(new RegExp(`^${this.rootDir}`), '')
 
   return {
     type: 'page',
     content,
     path: {
-      pathname: pathname,
-      dirname: path.dirname(pathname),
-      filename: path.basename(pathname)
+      pathname: filepath,
+      dirname: path.dirname(filepath),
+      filename: path.basename(filepath)
     }
   }
 }
