@@ -26,9 +26,12 @@ pnpm create coralite
 ```
 
 ## Documentation
-- [Basic templating](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/basic-templating.md)
-- Reference
+
+## Guides
+- [Templating](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/basic-templating.md)
+- [Javascript](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/javascript.md)
+## References
 - [Coralite CLI](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite-cli.md)
 - [Coralite](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite.md)
-- [Javascript](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/javascript.md)
+
 - [Types](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/types.md)
