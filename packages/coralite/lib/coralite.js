@@ -395,12 +395,7 @@ Coralite.prototype.compile = async function (path) {
     this._currentRenderQueue = []
 
     for (let i = 0; i < path.length; i++) {
-      let pathname = path[i]
-
-      if (pathname.startsWith(this.options.path.pages)) {
-        pathname = pathname.substring(this.options.path.pages.length - 1)
-      }
-
+      const pathname = path[i]
       const result = this.pages.getListByPath(pathname)
 
       if (Array.isArray(result)) {
@@ -414,10 +409,6 @@ Coralite.prototype.compile = async function (path) {
       }
     }
   } else if (typeof path === 'string') {
-    if (path.startsWith(this.options.path.pages)) {
-      path = path.substring(this.options.pages.length - 1)
-    }
-
     const result = this.pages.getListByPath(path)
     this._currentRenderQueue = []
 
