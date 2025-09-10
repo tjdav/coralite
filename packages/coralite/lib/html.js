@@ -1,4 +1,4 @@
-import { extname, join } from 'node:path'
+import { dirname, extname, join } from 'node:path'
 import { readdirSync, readFileSync } from 'node:fs'
 import CoraliteCollection from './collection.js'
 
@@ -58,18 +58,17 @@ export async function getHtmlFiles ({
         && extname(file.name).toLowerCase() === '.html'
         && !exclude.includes(file.name)
       ) {
-        const parentPath = file.parentPath || file.path
-        const dirname = parentPath.replace(new RegExp(`^${path}`), '')
+        const pathname = join(file.parentPath, file.name)
         const name = file.name
-        const content = readFileSync(join(parentPath, file.name), { encoding: 'utf8' })
+        const content = readFileSync(pathname, { encoding: 'utf8' })
 
         await collection.setItem({
           type,
           content,
           path: {
-            pathname: join(dirname, name),
+            pathname: pathname,
             filename: name,
-            dirname
+            dirname: dirname(pathname)
           }
         })
       }
