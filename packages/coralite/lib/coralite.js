@@ -1,9 +1,8 @@
 import { cleanKeys, getHtmlFiles, parseHTML, parseModule } from '#lib'
 import { defineComponent, refs } from '#plugins'
 import render from 'dom-serializer'
-import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { createContext, SourceTextModule } from 'node:vm'
 import { isCoraliteElement, isCoralitePageItem } from './type-helper.js'
 
@@ -51,8 +50,8 @@ export function Coralite ({
   ignoreByAttribute
 }) {
   const path = {
-    templates,
-    pages
+    templates: join(templates),
+    pages: join(pages)
   }
 
   // instance options
