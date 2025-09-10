@@ -31,8 +31,7 @@
   },
   "exports": {
     ".": {
-      "default": "./src/index.js",
-      "types": "./types/index.js"
+      "default": "./libs/index.js"
     },
     "./types": {
       "default": "./types/index.js"
@@ -41,6 +40,7 @@
   "license": "AGPL-3.0-only",
   "dependencies": {
     "chokidar": "^4.0.3",
+    "commander": "^14.0.0",
     "coralite": "^0.16.0",
     "express": "^5.1.0",
     "html-validate": "^10.0.0",
