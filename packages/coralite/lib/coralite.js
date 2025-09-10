@@ -561,7 +561,8 @@ Coralite.prototype.save = async function (documents, output) {
   try {
     // create a list of promises for writing each document's HTML file
     const writePromises = documents.map(async (document) => {
-      const dir = join(output, document.item.path.dirname)
+      const dirname = document.item.path.dirname.replace(new RegExp(`^${this.options.path.pages}`), '')
+      const dir = join(output, dirname)
       const filename = join(dir, document.item.path.filename)
 
       // ensure the directory exists
