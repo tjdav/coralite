@@ -988,16 +988,6 @@ Coralite.prototype._evaluate = async function ({
     coralite: context
   })
   const template = this.templates.getItem(module.id)
-  let parentPath = template.path.dirname
-
-  // resolve the parent path of the template
-  if (!existsSync(parentPath)) {
-    parentPath = resolve(join(this.options.path.templates, template.path.dirname))
-
-    if (!existsSync(parentPath)) {
-      throw new Error('Template directory not found: ' + parentPath)
-    }
-  }
 
   // create a new source text module with the provided script content, configuration options, and context
   const script = new SourceTextModule(module.script, {
@@ -1005,11 +995,11 @@ Coralite.prototype._evaluate = async function ({
       meta.url = process.cwd()
     },
     lineOffset: module.lineOffset,
-    identifier: join(parentPath, template.path.filename),
+    identifier: template.path.pathname,
     context: contextifiedObject
   })
 
-  const linker = this._moduleLinker(parentPath)
+  const linker = this._moduleLinker(template.path.pathname)
 
   await script.link(linker)
 
