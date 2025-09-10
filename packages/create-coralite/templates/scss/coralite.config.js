@@ -5,7 +5,8 @@ export default defineConfig({
   output: 'dist',
   pages: 'src/pages',
   templates: 'src/templates',
-  sass: {
+  styles: {
     input: 'src/scss'
+    type: 'scss'
   }
 })
