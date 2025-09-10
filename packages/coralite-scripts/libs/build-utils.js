@@ -16,10 +16,18 @@ export function toTime () {
 
 /**
  * Creates a formatted timestamp in milliseconds with ANSI colors and bold white string for better readability of logs or console output.
- * @param {[number, number]} hrtime - High Resolution Time in microseconds since epoch, used to calculate time difference between two points of execution or the start/stopwatch function call respectively.
+ * @param {[number, number] | number } hrtime - High Resolution Time in microseconds since epoch, used to calculate time difference between two points of execution or the start/stopwatch function call respectively.
  */
 export function toMS (hrtime) {
-  return colours.white().bold(`${(hrtime[1] / 1e6).toFixed(2)}ms`)
+  let number
+
+  if (Array.isArray(hrtime)) {
+    number = (hrtime[1] / 1e6).toFixed(2) + 'ms'
+  } else {
+    number = hrtime.toFixed(2) + 'ms'
+  }
+
+  return colours.white().bold(number)
 }
 
 /**
