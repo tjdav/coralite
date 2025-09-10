@@ -2,9 +2,6 @@
   "name": "coralite-monorepo",
   "private": true,
   "type": "module",
-  "engines": {
-    "node": "^20.19.0 || >=22.12.0"
-  },
   "homepage": "https://coralite.io/",
   "repository": {
     "type": "git",
@@ -28,7 +25,9 @@
     "publish-scripts": "pnpm --filter='./packages/coralite-scripts' publish",
     "publish-create": "pnpm --filter='./packages/create-coralite' publish",
     "release": "coralite-release",
-    "changelog": "coralite-changelog"
+    "changelog": "coralite-changelog",
+    "website-build": "pnpm --filter='./website' run build",
+    "website-dev": "pnpm --filter='./website' run start"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin-js": "^2.12.1",
@@ -36,6 +35,9 @@
     "@types/node": "^22.10.5",
     "lint-staged": "^16.1.6",
     "simple-git-hooks": "^2.13.1"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm exec lint-staged --concurrent false"
