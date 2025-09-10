@@ -1,5 +1,6 @@
 import { join } from 'path'
 import { access } from 'fs/promises'
+import { pathToFileURL } from 'url'
 
 /**
  * @import {CoraliteScriptConfig} from '#types'
@@ -18,12 +19,12 @@ import { access } from 'fs/promises'
  * ```
  */
 async function loadConfig () {
-  const configPath = join(process.cwd(), 'coralite.config.js')
+  const configPath = pathToFileURL(join(process.cwd(), 'coralite.config.js'))
 
   try {
     await access(configPath)
 
-    const config = await import(configPath)
+    const config = await import(configPath.toString())
 
     if (config.default) {
       return config.default
