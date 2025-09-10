@@ -3,9 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "coralite-scripts"
+    "start": "coralite-scripts --dev",
+    "build": "coralite-scripts --build"
   },
   "devDependencies": {
-    "coralite-scripts": "^0.16.0"
+    "coralite-scripts": "^0.17.0"
   }
 }
