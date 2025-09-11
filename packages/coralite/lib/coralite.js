@@ -5,6 +5,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { createContext, SourceTextModule } from 'node:vm'
 import { isCoraliteElement, isCoralitePageItem } from './type-helper.js'
+import { pathToFileURL } from 'node:url'
 
 /**
  * @import {
@@ -1044,7 +1045,7 @@ Coralite.prototype._moduleLinker = function (path) {
       })
     } else if (specifier.startsWith('.')) {
       // handle relative path
-      specifier = resolve(path.dirname, specifier)
+      specifier = pathToFileURL(resolve(path.dirname, specifier)).href
     } else {
       // handle modules
       specifier = import.meta.resolve(specifier, import.meta.url)
