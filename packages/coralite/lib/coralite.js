@@ -910,33 +910,36 @@ Coralite.prototype.createComponent = async function ({
 
         for (let i = startIndex; i > -1; i--) {
           const node = slotNodes[i]
-          const component = this.templates.getItem(node.name)
 
-          if (component) {
-            const slotContextId = contextId + slotName + i + node.name
-            const currentValues = this.values[slotContextId] || {}
-
-            if (typeof node.attribs === 'object') {
-              this.values[slotContextId] = {
-                ...currentValues,
-                ...values,
-                ...node.attribs
-              }
-            } else {
-              this.values[slotContextId] = Object.assign(currentValues, values)
-            }
-
-            const component = await this.createComponent({
-              id: node.name,
-              values: this.values[slotContextId],
-              element: node,
-              document,
-              contextId: slotContextId,
-              index
-            }, false)
+          if (node.name) {
+            const component = this.templates.getItem(node.name)
 
             if (component) {
-              slotNodes.splice(i, 1, ...component.children)
+              const slotContextId = contextId + slotName + i + node.name
+              const currentValues = this.values[slotContextId] || {}
+
+              if (typeof node.attribs === 'object') {
+                this.values[slotContextId] = {
+                  ...currentValues,
+                  ...values,
+                  ...node.attribs
+                }
+              } else {
+                this.values[slotContextId] = Object.assign(currentValues, values)
+              }
+
+              const component = await this.createComponent({
+                id: node.name,
+                values: this.values[slotContextId],
+                element: node,
+                document,
+                contextId: slotContextId,
+                index
+              }, false)
+
+              if (component) {
+                slotNodes.splice(i, 1, ...component.children)
+              }
             }
           }
         }
