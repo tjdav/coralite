@@ -1,6 +1,6 @@
 {
   "name": "coralite-scripts",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "Configuration and scripts for Create Coralite.",
   "type": "module",
   "bin": {
@@ -41,7 +41,7 @@
   "dependencies": {
     "chokidar": "^4.0.3",
     "commander": "^14.0.0",
-    "coralite": "^0.16.0",
+    "coralite": "^0.17.0",
     "express": "^5.1.0",
     "html-validate": "^10.0.0",
     "kleur": "^4.1.5",
