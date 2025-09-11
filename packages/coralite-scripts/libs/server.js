@@ -119,14 +119,14 @@ async function server (config, options) {
         if (!path.endsWith('.html')) {
           res.sendStatus(404)
         } else {
-          const filePath = join(config.pages, path)
+          const pathname = join(config.pages, path)
 
           try {
 
             // if that fails, try reading from pages directory.
 
             // check if page source file exists and is readable
-            await access(filePath, constants.R_OK)
+            await access(pathname, constants.R_OK)
           } catch {
             res.sendStatus(404)
           }
@@ -134,9 +134,9 @@ async function server (config, options) {
           const start = process.hrtime()
           let duration, dash = colours.gray(' ─ ')
 
-          await coralite.pages.setItem(filePath)
+          await coralite.pages.setItem(pathname)
           // build the HTML for this page using the built-in compiler.
-          const documents = await coralite.compile(path)
+          const documents = await coralite.compile(pathname)
           // inject a script to enable live reload via Server-Sent Events
           const injectedHtml = documents[0].html.replace(/<\/body>/i, `\n
   <script>

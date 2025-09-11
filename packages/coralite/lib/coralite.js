@@ -1,7 +1,6 @@
 import { cleanKeys, getHtmlFiles, parseHTML, parseModule } from '#lib'
 import { defineComponent, refs } from '#plugins'
 import render from 'dom-serializer'
-import { existsSync } from 'node:fs'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { createContext, SourceTextModule } from 'node:vm'
@@ -24,7 +23,8 @@ import { isCoraliteElement, isCoralitePageItem } from './type-helper.js'
  *  CoraliteCollectionEventSet,
  *  IgnoreByAttribute,
  *  CoraliteScriptTextContent,
- *  CoraliteDocumentResult} from '#types'
+ *  CoraliteDocumentResult,
+ *  CoraliteFilePath} from '#types'
  * @import CoraliteCollection from './collection.js'
  * @import {Module} from 'node:vm'
  */
@@ -51,8 +51,8 @@ export function Coralite ({
   ignoreByAttribute
 }) {
   const path = {
-    templates,
-    pages
+    templates: join(templates),
+    pages: join(pages)
   }
 
   // instance options
@@ -396,12 +396,7 @@ Coralite.prototype.compile = async function (path) {
     this._currentRenderQueue = []
 
     for (let i = 0; i < path.length; i++) {
-      let pathname = path[i]
-
-      if (pathname.startsWith(this.options.path.pages)) {
-        pathname = pathname.substring(this.options.path.pages.length - 1)
-      }
-
+      const pathname = path[i]
       const result = this.pages.getListByPath(pathname)
 
       if (Array.isArray(result)) {
@@ -415,10 +410,6 @@ Coralite.prototype.compile = async function (path) {
       }
     }
   } else if (typeof path === 'string') {
-    if (path.startsWith(this.options.path.pages)) {
-      path = path.substring(this.options.pages.length - 1)
-    }
-
     const result = this.pages.getListByPath(path)
     this._currentRenderQueue = []
 
@@ -571,7 +562,8 @@ Coralite.prototype.save = async function (documents, output) {
   try {
     // create a list of promises for writing each document's HTML file
     const writePromises = documents.map(async (document) => {
-      const dir = join(output, document.item.path.dirname)
+      const dirname = document.item.path.dirname.replace(new RegExp(`^${this.options.path.pages}`), '')
+      const dir = join(output, dirname)
       const filename = join(dir, document.item.path.filename)
 
       // ensure the directory exists
@@ -698,7 +690,7 @@ Coralite.prototype.createComponent = async function ({
   const templateItem = this.templates.getItem(id)
 
   if (!templateItem) {
-    return console.warn('Could not find component "' + id + '" used in document "' + join(this.options.path.pages, document.path.pathname) + '"')
+    return console.warn('Could not find component "' + id + '" used in document "' + document.path.pathname + '"')
   }
 
   if (head) {
@@ -919,33 +911,36 @@ Coralite.prototype.createComponent = async function ({
 
         for (let i = startIndex; i > -1; i--) {
           const node = slotNodes[i]
-          const component = this.templates.getItem(node.name)
 
-          if (component) {
-            const slotContextId = contextId + slotName + i + node.name
-            const currentValues = this.values[slotContextId] || {}
-
-            if (typeof node.attribs === 'object') {
-              this.values[slotContextId] = {
-                ...currentValues,
-                ...values,
-                ...node.attribs
-              }
-            } else {
-              this.values[slotContextId] = Object.assign(currentValues, values)
-            }
-
-            const component = await this.createComponent({
-              id: node.name,
-              values: this.values[slotContextId],
-              element: node,
-              document,
-              contextId: slotContextId,
-              index
-            }, false)
+          if (node.name) {
+            const component = this.templates.getItem(node.name)
 
             if (component) {
-              slotNodes.splice(i, 1, ...component.children)
+              const slotContextId = contextId + slotName + i + node.name
+              const currentValues = this.values[slotContextId] || {}
+
+              if (typeof node.attribs === 'object') {
+                this.values[slotContextId] = {
+                  ...currentValues,
+                  ...values,
+                  ...node.attribs
+                }
+              } else {
+                this.values[slotContextId] = Object.assign(currentValues, values)
+              }
+
+              const component = await this.createComponent({
+                id: node.name,
+                values: this.values[slotContextId],
+                element: node,
+                document,
+                contextId: slotContextId,
+                index
+              }, false)
+
+              if (component) {
+                slotNodes.splice(i, 1, ...component.children)
+              }
             }
           }
         }
@@ -997,16 +992,6 @@ Coralite.prototype._evaluate = async function ({
     coralite: context
   })
   const template = this.templates.getItem(module.id)
-  let parentPath = template.path.dirname
-
-  // resolve the parent path of the template
-  if (!existsSync(parentPath)) {
-    parentPath = resolve(join(this.options.path.templates, template.path.dirname))
-
-    if (!existsSync(parentPath)) {
-      throw new Error('Template directory not found: ' + parentPath)
-    }
-  }
 
   // create a new source text module with the provided script content, configuration options, and context
   const script = new SourceTextModule(module.script, {
@@ -1014,11 +999,11 @@ Coralite.prototype._evaluate = async function ({
       meta.url = process.cwd()
     },
     lineOffset: module.lineOffset,
-    identifier: join(parentPath, template.path.filename),
+    identifier: template.path.pathname,
     context: contextifiedObject
   })
 
-  const linker = this._moduleLinker(parentPath)
+  const linker = this._moduleLinker(template.path)
 
   await script.link(linker)
 
@@ -1036,7 +1021,7 @@ Coralite.prototype._evaluate = async function ({
 }
 
 /**
- * @param {string} path
+ * @param {CoraliteFilePath} path
  */
 Coralite.prototype._moduleLinker = function (path) {
   const source = this._source
@@ -1047,42 +1032,48 @@ Coralite.prototype._moduleLinker = function (path) {
    * @param {{ attributes: ImportAttributes }} extra - The type for the with property of the optional second argument to import().
    */
   return async (specifier, referencingModule, extra) => {
-    if (specifier === 'coralite') {
-      return new SourceTextModule(source.modules.coralite.export + source.modules.coralite.default, {
+    const originalSpecifier = specifier
+
+    if (specifier == 'coralite/plugins') {
+      return new SourceTextModule(source.modules.plugins.export + source.modules.plugins.default, {
         context: referencingModule.context
       })
-    } else if (specifier == 'coralite/plugins') {
-      return new SourceTextModule(source.modules.plugins.export + source.modules.plugins.default, {
+    } else if (specifier === 'coralite') {
+      return new SourceTextModule(source.modules.coralite.export + source.modules.coralite.default, {
         context: referencingModule.context
       })
     } else if (specifier.startsWith('.')) {
       // handle relative path
-      specifier = join(path, specifier)
+      specifier = resolve(path.dirname, specifier)
     } else {
       // handle modules
-      specifier = import.meta.resolve(specifier, new URL('file://' + path))
+      specifier = import.meta.resolve(specifier, import.meta.url)
     }
 
-    const module = await import(specifier, { with: extra.attributes })
-    let exportModule = ''
+    try {
+      const module = await import(specifier, { with: extra.attributes })
+      let exportModule = ''
 
-    for (const key in module) {
-      if (Object.prototype.hasOwnProperty.call(module, key)) {
-        const name = 'globalThis["' + specifier + '"].'
+      for (const key in module) {
+        if (Object.prototype.hasOwnProperty.call(module, key)) {
+          const name = 'globalThis["' + originalSpecifier + '"].'
 
-        if (key === 'default') {
-          exportModule += 'export default ' + name + key + ';\n'
-        } else {
-          exportModule += 'export const ' + key + ' = ' + name + key + ';\n'
+          if (key === 'default') {
+            exportModule += 'export default ' + name + key + ';\n'
+          } else {
+            exportModule += 'export const ' + key + ' = ' + name + key + ';\n'
+          }
         }
+
+        referencingModule.context[originalSpecifier] = module
       }
 
-      referencingModule.context[specifier] = module
+      return new SourceTextModule(exportModule, {
+        context: referencingModule.context
+      })
+    } catch(error) {
+      throw new Error(error)
     }
-
-    return new SourceTextModule(exportModule, {
-      context: referencingModule.context
-    })
   }
 }
 

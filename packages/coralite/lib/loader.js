@@ -1,25 +1,37 @@
 import { join } from 'path'
-import { existsSync } from 'fs'
+import { access } from 'fs/promises'
+import { pathToFileURL } from 'url'
 
 /**
- * Loads configuration from coralite.config.js in the current working directory.
- * @returns {Promise<Object | null>} The config object or null if file not found.
+ * @import {CoraliteConfig} from '#types'
  */
-export async function loadConfig () {
-  const configPath = join(process.cwd(), 'coralite.config.js')
 
-  if (existsSync(configPath)) {
-    try {
-      const config = await import(configPath)
+/**
+ * Loads the configuration for the Coralite project.
+ *
+ * @returns {Promise<CoraliteConfig>} The configuration object containing path settings or an empty promise if no config found
+ *
+ * @example
+ * ```js
+ * import loadConfig from './loadConfig.js'
+ *
+ * const config = await loadConfig()
+ * ```
+ */
+async function loadConfig () {
+  const configPath = pathToFileURL(join(process.cwd(), 'coralite.config.js'))
 
-      if (config.default) {
-        return config.default
-      }
-    } catch (error) {
-      console.error('Failed to load configuration file:', configPath)
-      throw error
+  try {
+    await access(configPath)
+
+    const config = await import(configPath.href)
+
+    if (config.default) {
+      return config.default
     }
+  } catch (error) {
+    return
   }
-
-  return null
 }
+
+export default loadConfig

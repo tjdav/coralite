@@ -3,7 +3,7 @@
 import { getPkg, Coralite } from '#lib'
 import { Command } from 'commander'
 import kleur from 'kleur'
-import { loadConfig } from '../lib/loader.js'
+import loadConfig from '../lib/loader.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
