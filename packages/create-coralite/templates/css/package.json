@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "coralite-scripts --dev",
-    "build": "coralite-scripts --build"
+    "start": "coralite-scripts dev",
+    "build": "coralite-scripts build"
   },
   "devDependencies": {
     "coralite-scripts": "^0.17.0"
