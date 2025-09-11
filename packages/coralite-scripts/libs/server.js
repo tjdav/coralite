@@ -7,6 +7,7 @@ import { toCode, toMS, toTime } from './build-utils.js'
 import { extname, join } from 'path'
 import { readFile, access, constants } from 'fs/promises'
 import Coralite from 'coralite'
+import buildCSS from './build-css.js'
 
 /**
  * @import {CoraliteScriptConfig, CoraliteScriptOptions} from '#types'
@@ -58,10 +59,8 @@ async function server (config, options) {
     next()
   })
 
-  let hasSASS = false
   // check if Sass is configured and add its input directory to watchPath for file changes.
-  if (config.styles && (config.styles.type === 'sass' || config.styles.type === 'scss')) {
-    hasSASS = true
+  if (config.styles) {
     watchPath.push(config.styles.input)
 
     app.use('/css', express.static(join(config.output, 'css'), {
@@ -164,7 +163,7 @@ async function server (config, options) {
 
   let initWatcher = true
 
-  if (hasSASS) {
+  if (config.styles.type === 'sass' || config.styles.type === 'scss') {
     (async () => {
       const start = process.hrtime()
 
@@ -184,11 +183,25 @@ async function server (config, options) {
         process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(result.duration) + dash + result.input + '\n')
       }
     })()
+  } else if (config.styles.type === 'css') {
+    (async () => {
+      const start = process.hrtime()
+
+      await buildCSS({
+        input: config.styles.input,
+        output: join(config.output, 'css'),
+        plugins: config.cssPlugins,
+        start
+      })
+
+      initWatcher = false
+    })()
   }
 
   watcher
     .on('change', async (path) => {
       const start = process.hrtime()
+      let dash = colours.gray(' ─ ')
 
       if (path.startsWith(config.templates)) {
       // update template file
@@ -201,13 +214,25 @@ async function server (config, options) {
           output: join(config.output, 'css'),
           start
         })
-        let dash = colours.gray(' ─ ')
 
         // prints time and path to the file that has been changed or added.
         for (let i = 0; i < results.length; i++) {
           const result = results[i]
 
           process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(result.duration) + dash + result.input + '\n')
+        }
+      } else if (path.endsWith('.css')) {
+        const results = await buildCSS({
+          input: config.styles.input,
+          output: join(config.output, 'css'),
+          plugins: config.cssPlugins,
+          start
+        })
+
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i]
+
+          process.stdout.write(toTime() + colours.bgGreen('Compiled CSS') + dash + toMS(result.duration) + dash + result.input + '\n')
         }
       }
 
