@@ -24,13 +24,13 @@ async function loadConfig () {
   try {
     await access(configPath)
 
-    const config = await import(configPath.toString())
+    const config = await import(configPath.href)
 
     if (config.default) {
       return config.default
     }
   } catch (error) {
-    console.error('Failed to load configuration file:', configPath)
+    console.error('Failed to load configuration file:', configPath.pathname)
     console.error(error)
   }
 
