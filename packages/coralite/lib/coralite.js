@@ -52,8 +52,8 @@ export function Coralite ({
   ignoreByAttribute
 }) {
   const path = {
-    templates: join(templates),
-    pages: join(pages)
+    templates: normalize(templates),
+    pages: normalize(pages)
   }
 
   // instance options
