@@ -2,7 +2,7 @@ import { cleanKeys, getHtmlFiles, parseHTML, parseModule } from '#lib'
 import { defineComponent, refs } from '#plugins'
 import render from 'dom-serializer'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join, normalize, relative, resolve } from 'node:path'
 import { createContext, SourceTextModule } from 'node:vm'
 import { isCoraliteElement, isCoralitePageItem } from './type-helper.js'
 import { pathToFileURL } from 'node:url'
@@ -563,7 +563,7 @@ Coralite.prototype.save = async function (documents, output) {
   try {
     // create a list of promises for writing each document's HTML file
     const writePromises = documents.map(async (document) => {
-      const dirname = document.item.path.dirname.replace(new RegExp(`^${this.options.path.pages}`), '')
+      const dirname = relative(this.options.path.pages, document.item.path.dirname)
       const dir = join(output, dirname)
       const filename = join(dir, document.item.path.filename)
 
