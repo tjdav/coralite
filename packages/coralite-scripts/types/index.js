@@ -12,6 +12,7 @@
  * @property {'css' | 'sass' | 'scss'} styles.type - The style processing type to use for styling files.
  * @property {string} styles.input - The path to the main stylesheet file to process.
  * @property {Options<'async'>} [sassOptions] - Additional options passed to the Sass compiler.
+ * @property {import('postcss').AcceptedPlugin[]} [cssPlugins] - Postcss plugins.
  */
 
 /**
