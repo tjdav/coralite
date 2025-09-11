@@ -207,7 +207,7 @@ CoraliteCollection.prototype.updateItem = async function (value) {
  * @returns {CoraliteCollectionItem | undefined} The found item or undefined
  */
 CoraliteCollection.prototype.getItem = function (id) {
-  if (!this.collection[id]) {
+  if (!this.collection[id] && id.endsWith('html')) {
     id = path.join(this.rootDir, id)
   }
 
