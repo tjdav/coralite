@@ -23,7 +23,8 @@ import { isCoraliteElement, isCoralitePageItem } from './type-helper.js'
  *  CoraliteCollectionEventSet,
  *  IgnoreByAttribute,
  *  CoraliteScriptTextContent,
- *  CoraliteDocumentResult} from '#types'
+ *  CoraliteDocumentResult,
+ *  CoraliteFilePath} from '#types'
  * @import CoraliteCollection from './collection.js'
  * @import {Module} from 'node:vm'
  */
@@ -1020,7 +1021,7 @@ Coralite.prototype._evaluate = async function ({
 }
 
 /**
- * @param {string} path
+ * @param {CoraliteFilePath} path
  */
 Coralite.prototype._moduleLinker = function (path) {
   const source = this._source
