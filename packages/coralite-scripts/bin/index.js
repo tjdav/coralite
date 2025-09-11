@@ -1,7 +1,7 @@
 #!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
 import loadConfig from '../libs/load-config.js'
-import { Command } from 'commander'
+import { Command, Argument } from 'commander'
 import server from '../libs/server.js'
 import colours from 'kleur'
 import buildHTML from '../libs/build-html.js'
@@ -19,8 +19,7 @@ program
   .name('Coralite scripts')
   .description(pkg.description)
   .version(pkg.version)
-  .option('-d --dev', 'Start development server')
-  .option('-b --build', 'Build coralite site')
+  .addArgument(new Argument('<mode>', 'Run mode: dev (development server) or build (production compilation)').choices(['dev', 'build']).default('dev'))
   .option('-v --verbose', 'Enable verbose logging output')
 
 program.parse(process.argv)
@@ -29,11 +28,12 @@ program.on('error', (err) => {
 })
 
 const options = program.opts()
+const mode = program.args[0]
 const config = await loadConfig()
 
-if (options.dev) {
+if (mode === 'dev') {
   await server(config, options)
-} else {
+} else if (mode === 'build') {
   const start = process.hrtime()
   const PAD = '  '
   const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
