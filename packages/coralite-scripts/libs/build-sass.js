@@ -22,7 +22,7 @@ import path from 'path'
  * @param {[number, number]} [options.start]
  * @returns {Promise<BuildSassResult[]>} Resolves when all files are compiled
  */
-export default async function buildSass ({
+async function buildSass ({
   input,
   output,
   options = {
@@ -72,3 +72,5 @@ export default async function buildSass ({
     throw error
   }
 }
+
+export default buildSass
