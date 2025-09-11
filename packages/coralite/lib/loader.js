@@ -30,11 +30,8 @@ async function loadConfig () {
       return config.default
     }
   } catch (error) {
-    console.error('Failed to load configuration file:', configPath.pathname)
-    console.error(error)
+    return
   }
-
-  return null
 }
 
 export default loadConfig
