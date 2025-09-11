@@ -2,7 +2,7 @@ import { cleanKeys, getHtmlFiles, parseHTML, parseModule } from '#lib'
 import { defineComponent, refs } from '#plugins'
 import render from 'dom-serializer'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { createContext, SourceTextModule } from 'node:vm'
 import { isCoraliteElement, isCoralitePageItem } from './type-helper.js'
 
@@ -1002,7 +1002,7 @@ Coralite.prototype._evaluate = async function ({
     context: contextifiedObject
   })
 
-  const linker = this._moduleLinker(template.path.pathname)
+  const linker = this._moduleLinker(template.path)
 
   await script.link(linker)
 
@@ -1031,42 +1031,48 @@ Coralite.prototype._moduleLinker = function (path) {
    * @param {{ attributes: ImportAttributes }} extra - The type for the with property of the optional second argument to import().
    */
   return async (specifier, referencingModule, extra) => {
-    if (specifier === 'coralite') {
-      return new SourceTextModule(source.modules.coralite.export + source.modules.coralite.default, {
+    const originalSpecifier = specifier
+
+    if (specifier == 'coralite/plugins') {
+      return new SourceTextModule(source.modules.plugins.export + source.modules.plugins.default, {
         context: referencingModule.context
       })
-    } else if (specifier == 'coralite/plugins') {
-      return new SourceTextModule(source.modules.plugins.export + source.modules.plugins.default, {
+    } else if (specifier === 'coralite') {
+      return new SourceTextModule(source.modules.coralite.export + source.modules.coralite.default, {
         context: referencingModule.context
       })
     } else if (specifier.startsWith('.')) {
       // handle relative path
-      specifier = join(path, specifier)
+      specifier = resolve(path.dirname, specifier)
     } else {
       // handle modules
-      specifier = import.meta.resolve(specifier, new URL('file://' + path))
+      specifier = import.meta.resolve(specifier, import.meta.url)
     }
 
-    const module = await import(specifier, { with: extra.attributes })
-    let exportModule = ''
+    try {
+      const module = await import(specifier, { with: extra.attributes })
+      let exportModule = ''
 
-    for (const key in module) {
-      if (Object.prototype.hasOwnProperty.call(module, key)) {
-        const name = 'globalThis["' + specifier + '"].'
+      for (const key in module) {
+        if (Object.prototype.hasOwnProperty.call(module, key)) {
+          const name = 'globalThis["' + originalSpecifier + '"].'
 
-        if (key === 'default') {
-          exportModule += 'export default ' + name + key + ';\n'
-        } else {
-          exportModule += 'export const ' + key + ' = ' + name + key + ';\n'
+          if (key === 'default') {
+            exportModule += 'export default ' + name + key + ';\n'
+          } else {
+            exportModule += 'export const ' + key + ' = ' + name + key + ';\n'
+          }
         }
+
+        referencingModule.context[originalSpecifier] = module
       }
 
-      referencingModule.context[specifier] = module
+      return new SourceTextModule(exportModule, {
+        context: referencingModule.context
+      })
+    } catch(error) {
+      throw new Error(error)
     }
-
-    return new SourceTextModule(exportModule, {
-      context: referencingModule.context
-    })
   }
 }
 
