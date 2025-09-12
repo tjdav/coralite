@@ -2,7 +2,7 @@ import { cleanKeys, getHtmlFiles, parseHTML, parseModule } from '#lib'
 import { defineComponent, refs } from '#plugins'
 import render from 'dom-serializer'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { join, normalize, relative, resolve } from 'node:path'
+import { dirname, join, normalize, relative, resolve } from 'node:path'
 import { createContext, SourceTextModule } from 'node:vm'
 import { isCoraliteElement, isCoralitePageItem } from './type-helper.js'
 import { pathToFileURL } from 'node:url'
@@ -278,9 +278,22 @@ Coralite.prototype.initialise = async function () {
       item.add(data.path.pathname)
     }
 
+    // Determine the root path based on the data type
+    let rootPath = this.options.path.pages
+
+    if (data.type === 'template') {
+      rootPath = this.options.path.templates
+    }
+
+    // Convert relative file path to a URL pathname format
+    const urlPathname = pathToFileURL(join('/', relative(rootPath, data.path.pathname))).pathname
+
+    // define a set of context values for template rendering
     const values = {
-      $pathname: data.path.pathname,
-      $dirname: data.path.dirname,
+      $url_pathname: urlPathname,
+      $url_dirname: pathToFileURL(dirname(urlPathname)).pathname,
+      $file_pathname: data.path.pathname,
+      $file_dirname: data.path.dirname,
       $filename: data.path.filename,
       ...data.values
     }
