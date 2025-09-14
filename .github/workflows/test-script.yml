@@ -26,8 +26,8 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
-    - name: Add symlink
-      run: pnpm link . --global
+    - name: Build Coralite
+      run: pnpm run build-coralite
 
     - name: Build HTML from templates
       run: pnpm --filter coralite run build-html
@@ -51,7 +51,7 @@ jobs:
 
     - name: Install dependencies
       run: pnpm install
-
+    
     - name: Build Coralite
       run: pnpm run build-coralite
 

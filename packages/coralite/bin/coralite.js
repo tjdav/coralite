@@ -1,21 +1,21 @@
 #!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
-import { getPkg, Coralite } from '#lib'
+import { Coralite } from '../dist/lib/index.js'
 import { Command } from 'commander'
 import kleur from 'kleur'
-import loadConfig from '../lib/loader.js'
+import { pathToFileURL } from 'node:url'
+import { join } from 'node:path'
+import { existsSync } from 'node:fs'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
 
-const pkg = await getPkg()
 const program = new Command()
-const config = await loadConfig()
 
 program
-  .name(pkg.name)
-  .description(pkg.description)
-  .version(pkg.version)
+  .name('Coralite')
+  .description('HTML modules static site generator CLI tool')
+  .version('0.18.0')
   .requiredOption('-t, --templates <path>', 'Path to templates directory')
   .requiredOption('-p, --pages <path>', 'Path to pages directory')
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
@@ -26,6 +26,18 @@ program.parse(process.argv)
 program.on('error', (err) => {
   console.error(err)
 })
+
+const configPath = pathToFileURL(join(process.cwd(), 'coralite.config.js'))
+let config
+
+// check if the configuration file exists at the specified path
+if (existsSync(configPath.href)) {
+  const data = await import(configPath.href)
+
+  if (data.default) {
+    config = data.default
+  }
+}
 
 const options = program.opts()
 const pages = options.pages
