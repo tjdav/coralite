@@ -1,5 +1,144 @@
 # Changelog
 
+## v0.18.0
+
+> Comparing `v0.17.0` to `v0.18.0`
+
+**Summary:** 25 commits, 2 pull requests
+
+### ✨ Features
+
+- export core modules and update import paths (coralite) ([bf4c2e4](https://codeberg.org/tjdavid/coralite/commit/bf4c2e4030f6a7a6c4a4d155abe4899b49a0c298))
+- add type exports (core) ([37f0820](https://codeberg.org/tjdavid/coralite/commit/37f0820b54529680fe39c1cc96bd07987dc29e8a))
+- add default export for Coralite (core) ([c359796](https://codeberg.org/tjdavid/coralite/commit/c35979605211b1e457d9b48c86d9a8134165ea68))
+- add tsconfig.json for coralite (config) ([bc4a132](https://codeberg.org/tjdavid/coralite/commit/bc4a1328708bf07ab489cf4894110dc9de35e9b8))
+
+### 🐛 Bug Fixes
+
+- correct banner structure in test ([0138a43](https://codeberg.org/tjdavid/coralite/commit/0138a43b8fb184a1caa8d98244e3aa162157920c))
+- update coralite imports to use the core package instead of plugins ([537b98d](https://codeberg.org/tjdavid/coralite/commit/537b98dc7604115b8bb077c07c8f5a607b36370b))
+- update code highlight component import path corallite/utils to coralite ([1a5b26d](https://codeberg.org/tjdavid/coralite/commit/1a5b26de38231b8d10a6350c3a3e5d5190ce55ab))
+- correct nested-components fixture header tag name corallite-header → coralite-title ([5635682](https://codeberg.org/tjdavid/coralite/commit/5635682ea29635c3f142a6f61e595de8fb0c8215))
+- reduce css template image sizes ([b77c8a1](https://codeberg.org/tjdavid/coralite/commit/b77c8a1f416e1e842624d4210c05e66cf8dc1c54))
+
+### ♻️ Code Refactoring
+
+- simplify config loading and remove getPkg utility (coralite) ([813039f](https://codeberg.org/tjdavid/coralite/commit/813039fc527f48d92b2460d338e6ba577c5d76b8))
+- update e2e workflow to use filter syntax for coralite package. (ci) ([8080368](https://codeberg.org/tjdavid/coralite/commit/80803684ac2c53ab308e1da2562e63dbdc06b4ae))
+- update path handling for template rendering with url pathname conversion ([aa68dea](https://codeberg.org/tjdavid/coralite/commit/aa68deaa6546194aec06388d7d2ce25f1a577868))
+
+### 🧹 Chores
+
+- update npm ignore and files (config) ([07b4e29](https://codeberg.org/tjdavid/coralite/commit/07b4e295e0b6b8ab9a0f1c4960ca9b3884c9a938))
+- update workflow to use build-coralite script instead of symlink step (ci) ([3ec1beb](https://codeberg.org/tjdavid/coralite/commit/3ec1bebee0fb93450651e3829983b623e85caee9))
+- add build coralite ([814e916](https://codeberg.org/tjdavid/coralite/commit/814e916bdb57cf87a656a002c84a5227e0f50d4b))
+- update test workflow to use coralite filter for build-html command (ci) ([7188b7d](https://codeberg.org/tjdavid/coralite/commit/7188b7d9851437d5af350fce92cc7db86bd1a3b2))
+- add esbuild and premove (deps) ([86e3f2f](https://codeberg.org/tjdavid/coralite/commit/86e3f2fbf89bdc456c1d25ddad12ae76c6d45b65))
+- update package.json with new build scripts and dependencies ([349f91e](https://codeberg.org/tjdavid/coralite/commit/349f91efc26e5ca700889b72ff2df81a2470c644))
+- update node engine requirement to ^20.19.0 || >=22.12.0 (config) ([179b64e](https://codeberg.org/tjdavid/coralite/commit/179b64e7fb20e56a4e68ff5d075fdfb21f341d6e))
+- add typescript to workspace (deps) ([68ef5d4](https://codeberg.org/tjdavid/coralite/commit/68ef5d4e741af00fd0226842c34550218437749c))
+- remove unused test-e2e and build-html scripts from package.json (config) ([187ba24](https://codeberg.org/tjdavid/coralite/commit/187ba24d92102c7126573c0067cf744d4f6cac73))
+- update jsconfig.json module resolution to nodenext and add exclude patterns (config) ([5b96c23](https://codeberg.org/tjdavid/coralite/commit/5b96c23669d581a199f6fbd17a2730202866a29e))
+
+### 🔨 Other Changes
+
+- release: version 0.18.0 ([91a753a](https://codeberg.org/tjdavid/coralite/commit/91a753afa3f7bbf71effcefa4ee5036729c648c3))
+- Merge pull request 'remove-config-loader-dep' (#12) from remove-config-loader-dep into main ([#12](https://codeberg.org/tjdavid/coralite/pulls/12)) ([633dc0a](https://codeberg.org/tjdavid/coralite/commit/633dc0a54cfee8ad982bf2499eb2d7a0c9d6ab4c))
+- Merge pull request 'create-types' (#11) from create-types into main ([#11](https://codeberg.org/tjdavid/coralite/pulls/11)) ([69cb2b1](https://codeberg.org/tjdavid/coralite/commit/69cb2b17d58ea47552d412a76f63590fe77cd770))
+
+### 🔗 Pull Requests
+
+- [#11](https://codeberg.org/tjdavid/coralite/pull/11)
+- [#12](https://codeberg.org/tjdavid/coralite/pull/12)
+
+
+
+## v0.17.0
+
+> Comparing `v0.16.0` to `v0.17.0`
+
+**Summary:** 56 commits, 2 pull requests
+
+### ✨ Features
+
+- add script template to create templates (create-coralite) ([1a19dcd](https://codeberg.org/tjdavid/coralite/commit/1a19dcdbe26ef719eafb581f06b757d00ef9686e))
+- add CSS to CSS template ([5c63280](https://codeberg.org/tjdavid/coralite/commit/5c632805a0308089338ac0f5bffeda5549db7890))
+- add CSS build support and improve style handling logic (server) ([432e72d](https://codeberg.org/tjdavid/coralite/commit/432e72de2da71dc72aa93ee5aac4fac4055cc597))
+- add CSS building functionality with PostCSS support (coralite-scripts) ([33de412](https://codeberg.org/tjdavid/coralite/commit/33de412519e9be843b28b26d864d2568fa2d0679))
+- include post css for development script ([4d23c15](https://codeberg.org/tjdavid/coralite/commit/4d23c1526ac770ca4d770c430f6fa3c16bbf9ee1))
+- update CLI to use mode argument instead of dev/build flags (coralite-scripts) ([b1c2b78](https://codeberg.org/tjdavid/coralite/commit/b1c2b789e698889c75def2e76c016489e09c266b))
+- add publish-create script for create-coralite package publishing ([c9485e4](https://codeberg.org/tjdavid/coralite/commit/c9485e49d61fa83532d5647138b67d0a4f993390))
+
+### 🐛 Bug Fixes
+
+- update path handling in save method to use relative() function instead of regex replacement ([8c6e7cc](https://codeberg.org/tjdavid/coralite/commit/8c6e7ccf3d28ccb61500c1da02c53d3c1fc1520a))
+- update module linker to use file URL for relative paths (core) ([f43feff](https://codeberg.org/tjdavid/coralite/commit/f43feff198db170dc3f5fd142c9a744ae8a96344))
+- resolve correct path for module linker (module_linker) ([08cfec7](https://codeberg.org/tjdavid/coralite/commit/08cfec774833da7605f36124469838de84b75cfc))
+- simplify config loading error handling in loader.js ([68a0786](https://codeberg.org/tjdavid/coralite/commit/68a0786d1e618dde8ab17a4d38036816977d67be))
+- only get item if html file extension if not found (collection) ([1695ee6](https://codeberg.org/tjdavid/coralite/commit/1695ee6f4aba852dd6aa07f626687117ad98c623))
+- update config loading to use href instead of toString() for path resolution (config-loader) ([a766b93](https://codeberg.org/tjdavid/coralite/commit/a766b93f7e39dabfbb07be9788d67391ed1e6b85))
+- only attempt to create slot components from elements ([516a4f6](https://codeberg.org/tjdavid/coralite/commit/516a4f6b2332031cf09ec2da04a6bd4b1e3e4c0b))
+- refactor file path handling in server.js to use pathname instead of filePath variable ([58e4c58](https://codeberg.org/tjdavid/coralite/commit/58e4c58df1f9b9a8b9419704b1ae9262ce6bdd86))
+- make config loading with async fs access and URL handling ([6a01252](https://codeberg.org/tjdavid/coralite/commit/6a012528baeb5ef9973ee1bd0f570dc7d7c15877))
+- update config loading to use pathToFileURL for ES module support ([bc8cb3b](https://codeberg.org/tjdavid/coralite/commit/bc8cb3bdfda8ee53e072146574f5ad1cfdda8206))
+- path resolve for html getter ([fb06faa](https://codeberg.org/tjdavid/coralite/commit/fb06faa53740989663f3bed6d6d2c8d295b62640))
+- remove redundant path.join from component warning message (createComponent) ([83fd9c5](https://codeberg.org/tjdavid/coralite/commit/83fd9c5d4e0eb538972a39569d6a5bbb698028ab))
+- normalize document paths when saving HTML files (save) ([16e465e](https://codeberg.org/tjdavid/coralite/commit/16e465e40f9c757c5374e767d18c6301aae3a866))
+- avoid over formatting the pathname (compile) ([959048b](https://codeberg.org/tjdavid/coralite/commit/959048b10952cfa724f10dd002aa180999138352))
+- correct the path separators ([5216bdb](https://codeberg.org/tjdavid/coralite/commit/5216bdb0ac69620c14f7ac4ab1f3534c7ef09c25))
+- normalise rootDir ([5dc5d6b](https://codeberg.org/tjdavid/coralite/commit/5dc5d6b77b6f4371500bf72ef6d41ee0ab4fd5e7))
+- update create-coralite version from 0.16.1 to 0.16.0 (deps) ([1909b6e](https://codeberg.org/tjdavid/coralite/commit/1909b6e04faeeadd77c1712e21b30d531fdb0970))
+
+### 📚 Documentation
+
+- update type definitions with cssPlugins property for Postcss support ([dd5b03a](https://codeberg.org/tjdavid/coralite/commit/dd5b03a28e3fbc3971d5d3d0b237437345584121))
+- update README with new guides and references structure ([d55d636](https://codeberg.org/tjdavid/coralite/commit/d55d636f0a79dae174a06f3906508ff4811c1b1d))
+- update definitions for config and options types ([f10e28e](https://codeberg.org/tjdavid/coralite/commit/f10e28e42fc5c134e250e0d96b310c997b551c76))
+- update README with new package structure and setup instructions ([2581a53](https://codeberg.org/tjdavid/coralite/commit/2581a533cd762b87d5071fa95e1ae5ddab5ec14c))
+- add javascript usage documentation for coralite components ([900e9f7](https://codeberg.org/tjdavid/coralite/commit/900e9f70705d42e54957acb510f62e49a2a8ea02))
+- update documentation links to packages/coralite path ([ed591a6](https://codeberg.org/tjdavid/coralite/commit/ed591a607d1d13e4fae12c862918fc741893079a))
+- update CHANGELOG.md pull request links to new format v0.15.0 ([587b0f7](https://codeberg.org/tjdavid/coralite/commit/587b0f7565e17691ef7eb741050809774db150b3))
+
+### ♻️ Code Refactoring
+
+- convert buildSass to named function and export default properly (core) ([204d296](https://codeberg.org/tjdavid/coralite/commit/204d296bc4c0c5b47cb3b776f4001c22af81c491))
+- use normalize instead of join for template and page paths ([5d5948a](https://codeberg.org/tjdavid/coralite/commit/5d5948a2bffc1067dbf9439b91080b4174e6b6d1))
+- update type definitions for module linker path parameter ([8b9484f](https://codeberg.org/tjdavid/coralite/commit/8b9484f275ef057567499695b42da71ddd475f56))
+- simplify template path resolution in _evaluate method (core) ([386ab55](https://codeberg.org/tjdavid/coralite/commit/386ab55706f0f4e54f6587211742d4d7878361d3))
+- rename css config from `css` to `styles` with type field for both css and scss templates (core) ([2916e89](https://codeberg.org/tjdavid/coralite/commit/2916e89213c00376bf161b71ceb57ed2d3594206))
+- move development server with hot-reloading and SASS support to server.js ([83ff4c7](https://codeberg.org/tjdavid/coralite/commit/83ff4c7eb0f53f33877bcbb63d517b136df3b2a7))
+- restructure package files and update config types (coralite-scripts) ([e36434f](https://codeberg.org/tjdavid/coralite/commit/e36434f84739bdf88c0500a0db3466846d42fca1))
+
+### 🧹 Chores
+
+- update coralite-scripts commands to remove --dev and --build flags (config) ([5d99018](https://codeberg.org/tjdavid/coralite/commit/5d9901881a05be30c50e957c606516ba64eda8d3))
+- correct scss style configuration order ([58fb0e8](https://codeberg.org/tjdavid/coralite/commit/58fb0e80373e62f09b345fe70e7a409adea0a600))
+- update coralite-scripts commands to remove --dev and --build flags (config) ([e3cab93](https://codeberg.org/tjdavid/coralite/commit/e3cab9319f5d2175e8145e653e95399e4eab8360))
+- update html script to use node with experimental modules flags ([572656d](https://codeberg.org/tjdavid/coralite/commit/572656d455c9ae4308a2a4b561ab3992e35418c6))
+- update loadConfig import to fix module resolution (deps) ([51c93dc](https://codeberg.org/tjdavid/coralite/commit/51c93dc621228e3e3ea5710007448efc65bef5f5))
+- reorder engine property (deps) ([8c64007](https://codeberg.org/tjdavid/coralite/commit/8c640073d3f2933bee709f214fc002a288f25cd9))
+- update coralite-scripts to v0.17.0 and update start/build scripts (deps) ([37ee2ff](https://codeberg.org/tjdavid/coralite/commit/37ee2ff78e67e34b32ef03f916f72a30e79d0ac9))
+- update exports path and add commander dependency v14.0.0 (coralite-scripts) ([3ab004a](https://codeberg.org/tjdavid/coralite/commit/3ab004a9d589697c7597fc34d03ca2937ac4f024))
+- update commander to v14.0.0 and add coralite-scripts to website importer (deps) ([c110eef](https://codeberg.org/tjdavid/coralite/commit/c110eef512f118e1af8d71744c5c956b3ef7002b))
+- add licenses ([9464dc9](https://codeberg.org/tjdavid/coralite/commit/9464dc90803acc4dc0ddfe4dd424ac9e0eb6def5))
+- add licenses ([172cfa4](https://codeberg.org/tjdavid/coralite/commit/172cfa4530086b01db21fa40fb7f7c918b1cb3bc))
+- update changelog ([4deae2c](https://codeberg.org/tjdavid/coralite/commit/4deae2c1a52289ad0e61e34fbd9d2df9a20afaf4))
+- update create-coralite version to 0.16.1 (deps) ([49a7db1](https://codeberg.org/tjdavid/coralite/commit/49a7db10157faea84788a1a3615bd676bec99b82))
+- update coralite-scripts to v0.16.0 in templates (deps) ([b0ef816](https://codeberg.org/tjdavid/coralite/commit/b0ef816fa63cee4cd6a0b407caeae560c8955daa))
+
+### 🔨 Other Changes
+
+- release: version 0.17.0 ([a7eb90e](https://codeberg.org/tjdavid/coralite/commit/a7eb90ee01e75f983e14f9b80691bece7a0bed7a))
+- Merge pull request 'Fix Windows path resolution' (#10) from fix-windows-path-resolve into main ([#10](https://codeberg.org/tjdavid/coralite/pulls/10)) ([f0cb3a4](https://codeberg.org/tjdavid/coralite/commit/f0cb3a42ab1e0af194b31122b5ac3e3bdd4fb24a))
+- Merge pull request 'build-scripts' (#9) from build-scripts into main ([#9](https://codeberg.org/tjdavid/coralite/pulls/9)) ([e6cde4c](https://codeberg.org/tjdavid/coralite/commit/e6cde4c3ac2945f42ccfc4b12e58ba1c61fa7b14))
+- Merge remote-tracking branch 'origin/main' into build-scripts ([9a6ff49](https://codeberg.org/tjdavid/coralite/commit/9a6ff494a0dd5d159a240dc0d0f89148d01c5e92))
+
+### 🔗 Pull Requests
+
+- [#9](https://codeberg.org/tjdavid/coralite/pull/9)
+- [#10](https://codeberg.org/tjdavid/coralite/pull/10)
+
+
 ## v0.16.0
 
 > Comparing `v0.15.0` to `v0.16.0`
