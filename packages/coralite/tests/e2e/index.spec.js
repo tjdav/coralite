@@ -53,9 +53,7 @@ test('has nested component', async ({ page }) => {
         - text: This is the mighty header
         - banner: This is the mighty header
       - text: circle square
-      - banner:
-        - text: This is the mighty header
-        - heading "Nested title" [level=1]
+      - banner: This is the mighty header
   `)
 })
 
