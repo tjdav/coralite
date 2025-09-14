@@ -13,6 +13,11 @@
     "configuration",
     "scripts"
   ],
+  "files": [
+    "bin",
+    "libs",
+    "types"
+  ],
   "homepage": "https://coralite.io/docs/create-scripts",
   "author": {
     "name": "Thomas David",

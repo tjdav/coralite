@@ -16,6 +16,11 @@
     "boilerplate",
     "project-scaffold"
   ],
+  "files": [
+    "bin",
+    "lib",
+    "templates"
+  ],
   "type": "module",
   "repository": {
     "type": "git",

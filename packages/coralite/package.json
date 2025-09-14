@@ -39,6 +39,10 @@
     "build-types": "tsc",
     "build-html": "node --experimental-vm-modules --experimental-import-meta-resolve ./bin/coralite.js -t tests/fixtures/templates -p tests/fixtures/pages -o dist -i 'data-dev=true'"
   },
+  "files": [
+    "dist",
+    "bin"
+  ],
   "bin": {
     "coralite": "bin/coralite.js"
   },
