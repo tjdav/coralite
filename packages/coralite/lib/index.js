@@ -8,3 +8,5 @@ export * from './config.js'
 export * from './type-helper.js'
 
 export { Coralite }
+
+export default Coralite
