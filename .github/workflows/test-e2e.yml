@@ -27,17 +27,17 @@ jobs:
     - name: Install dependencies
       run: pnpm install
 
-    - name: Add symlink
-      run: pnpm link . --global
+    - name: Build Coralite
+      run: pnpm run build-coralite
 
     - name: Build HTML from templates
-      run: pnpm run build-html
+      run: pnpm  --filter coralite run build-html
 
     - name: Install Playwright Browser
-      run: pnpm --filter='./packages/coralite' exec playwright install firefox --with-deps
+      run: pnpm --filter coralite exec playwright install firefox --with-deps
 
     - name: Run Playwright tests
-      run: pnpm run test-e2e
+      run: pnpm --filter coralite run test-e2e
 
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}

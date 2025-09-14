@@ -95,7 +95,7 @@ script ({ values, refs }) {
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite/plugins'
+  import { defineComponent } from 'coralite'
 
   export default defineComponent({
     tokens: {
