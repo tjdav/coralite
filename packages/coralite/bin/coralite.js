@@ -31,7 +31,7 @@ const configPath = pathToFileURL(join(process.cwd(), 'coralite.config.js'))
 let config
 
 // check if the configuration file exists at the specified path
-if (existsSync(configPath.href)) {
+if (existsSync(configPath)) {
   const data = await import(configPath.href)
 
   if (data.default) {
