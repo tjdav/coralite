@@ -2,7 +2,6 @@
   "name": "coralite",
   "version": "0.17.0",
   "description": "HTML modules static site generator",
-  "main": "./lib/coralite.js",
   "type": "module",
   "keywords": [
     "static-site-generator",
@@ -50,18 +49,15 @@
   },
   "exports": {
     ".": {
-      "default": "./lib/coralite.js",
-      "types": "./types/index.js"
-    },
-    "./utils": {
-      "default": "./lib/index.js",
-      "types": "./types/index.js"
+      "types": "./dist/lib/index.d.ts",
+      "default": "./dist/lib/index.js"
     },
     "./plugins": {
-      "default": "./plugins/index.js",
-      "types": "./types/index.js"
+      "types": "./dist/plugins/index.d.ts",
+      "default": "./plugins/index.js"
     },
     "./types": {
+      "types": "./dist/types/index.d.ts",
       "default": "./types/index.js"
     }
   },
