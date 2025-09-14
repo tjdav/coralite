@@ -1,4 +1,4 @@
-import { cleanKeys, getHtmlFiles, parseHTML, parseModule } from '#lib'
+import { cleanKeys, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule } from '#lib'
 import { defineComponent, refs } from '#plugins'
 import render from 'dom-serializer'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -86,8 +86,31 @@ export function Coralite ({
         + 'export const path = coralite.path;\n'
         + 'export const excludeByAttribute = coralite.excludeByAttribute;\n'
         + 'export const templates = coralite.templates;\n'
-        + 'export const pages = coralite.pages;\n',
-        default: 'export default { values, document, path, excludeByAttribute, templates, pages }'
+        + 'export const pages = coralite.pages;\n'
+        + 'export const defineComponent = coralite.defineComponent;\n'
+        + 'export const refs = coralite.refs;\n'
+        + 'export const getHtmlFiles = coralite.getHtmlFiles;\n'
+        + 'export const getHtmlFile = coralite.getHtmlFile;\n'
+        + 'export const createTextNode = coralite.createTextNode;\n'
+        + 'export const createElement = coralite.createElement;\n'
+        + 'export const parseModule = coralite.parseModule;\n'
+        + 'export const parseHTML = coralite.parseHTML;\n',
+        default: 'export default {\n'
+        + '  values,\n'
+        + '  document,\n'
+        + '  path,\n'
+        + '  excludeByAttribute,\n'
+        + '  templates,\n'
+        + '  pages,\n'
+        + '  parseModule,\n'
+        + '  parseHTML,\n'
+        + '  getHtmlFiles,\n'
+        + '  getHtmlFile,\n'
+        + '  createTextNode,\n'
+        + '  createElement,\n'
+        + '  defineComponent,\n'
+        + '  refs\n'
+        + '};'
       },
       plugins: {
         export: '',
@@ -96,6 +119,15 @@ export function Coralite ({
     },
     currentContextId: '',
     contextInstances: {},
+    contextModules: {
+      parseHTML,
+      parseModule,
+      getHtmlFiles,
+      getHtmlFile,
+      createElement,
+      createTextNode,
+      refs
+    },
     context: {
       plugins: {},
       path,
@@ -109,7 +141,6 @@ export function Coralite ({
   plugins.unshift(defineComponent)
 
   const source = this._source
-
   // iterate over each plugin and register its hooks and modules in the Coralite source context.
   for (let i = 0; i < plugins.length; i++) {
     const plugin = plugins[i]
@@ -155,6 +186,9 @@ export function Coralite ({
   }
 
   source.modules.plugins.default = source.modules.plugins.default.substring(0, source.modules.plugins.default.length - 2) + ' }'
+
+  // add defineComponent to module context
+  source.contextModules.defineComponent = source.context.plugins.defineComponent
 
   /** @type {Object.<string, CoraliteModuleValues>} */
   this.values = {}
@@ -990,6 +1024,7 @@ Coralite.prototype._evaluate = async function ({
   this._source.currentSourceContextId = contextId
 
   const context = {
+    ...this._source.contextModules,
     ...this._source.context,
     document,
     values,
