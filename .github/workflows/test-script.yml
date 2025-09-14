@@ -30,7 +30,7 @@ jobs:
       run: pnpm link . --global
 
     - name: Build HTML from templates
-      run: pnpm run build-html
+      run: pnpm --filter coralite run build-html
   macos:
     runs-on: macos-15
 
@@ -56,4 +56,4 @@ jobs:
       run: pnpm link . --global
 
     - name: Build HTML from templates
-      run: pnpm run build-html
+      run: pnpm --filter coralite run build-html
