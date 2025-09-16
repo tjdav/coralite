@@ -16,8 +16,14 @@
   "files": [
     "bin",
     "libs",
-    "types"
+    "types",
+    "dist"
   ],
+  "scripts": {
+    "build": "premove dist && pnpm build-lib && pnpm build-types",
+    "build-lib": "esbuild ./libs/index.js --bundle --format=esm --outdir=dist/libs --platform=node",
+    "build-types": "tsc"
+  },
   "homepage": "https://coralite.io/docs/create-scripts",
   "author": {
     "name": "Thomas David",
@@ -31,12 +37,10 @@
   "bugs": {
     "url": "https://codeberg.org/tjdavid/coralite/issues"
   },
-  "imports": {
-    "#types": "./types/index.js"
-  },
   "exports": {
     ".": {
-      "default": "./libs/index.js"
+      "types": "./dist/types/index.js",
+      "default": "./dist/libs/index.js"
     },
     "./types": {
       "default": "./types/index.js"
