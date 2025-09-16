@@ -284,7 +284,13 @@ Coralite.prototype.initialise = async function () {
         item = pageCustomElements[name]
 
         const template = this.templates.getItem(name)
-        if (template && template.result.customElements.length) {
+
+        if (
+          template &&
+          template.result &&
+          template.result.customElements &&
+          template.result.customElements.length
+        ) {
           const stack = [template.result.customElements]
 
           while (stack.length > 0) {
@@ -299,7 +305,12 @@ Coralite.prototype.initialise = async function () {
                 // process nested elements recursively
                 const template = this.templates.getItem(element.name)
 
-                if (template.result.customElements.length) {
+                if (
+                  template &&
+                  template.result &&
+                  template.result.customElements &&
+                  template.result.customElements.length
+                ) {
                   // push nested custom elements to stack for processing
                   stack.push(template.result.customElements)
                 }
