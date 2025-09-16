@@ -7,7 +7,7 @@ import {
 } from '#lib'
 
 /**
- * @import { CoraliteElement, CoraliteModuleValues } from '#types'
+ * @import { CoraliteElement, CoraliteModuleValues } from '../types/index.js'
  */
 
 /**

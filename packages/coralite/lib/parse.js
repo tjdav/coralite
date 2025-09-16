@@ -12,7 +12,7 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  *  CoraliteDocumentRoot,
  *  CoraliteContentNode,
  *  IgnoreByAttribute,
- *  ParseHTMLResult} from '#types'
+ *  ParseHTMLResult} from '../types/index.js'
  */
 
 /**

@@ -10,7 +10,7 @@ import Coralite from 'coralite'
 import buildCSS from './build-css.js'
 
 /**
- * @import {CoraliteScriptConfig, CoraliteScriptOptions} from '#types'
+ * @import {CoraliteScriptConfig, CoraliteScriptOptions} from '../types/index.js'
  */
 
 /**

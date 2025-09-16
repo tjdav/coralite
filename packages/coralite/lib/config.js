@@ -1,5 +1,5 @@
 /**
- * @import {CoraliteConfig} from '#types'
+ * @import {CoraliteConfig} from '../types/index.js'
  */
 
 /**

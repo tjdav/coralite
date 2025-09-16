@@ -3,7 +3,7 @@ import { access } from 'fs/promises'
 import { pathToFileURL } from 'url'
 
 /**
- * @import {CoraliteScriptConfig} from '#types'
+ * @import {CoraliteScriptConfig} from '../types/index.js'
  */
 
 /**

@@ -1,7 +1,7 @@
 import Coralite from 'coralite'
 
 /**
- * @import {CoraliteScriptConfig} from '#types'
+ * @import {CoraliteScriptConfig} from '../types/index.js'
  * @import {CoraliteResult} from 'coralite/types'
  */
 

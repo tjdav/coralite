@@ -1,6 +1,6 @@
 /**
  * @import Coralite from './coralite.js'
- * @import { CoralitePlugin, CoralitePluginInstance } from '#types'
+ * @import { CoralitePlugin } from '../types/index.js'
  */
 
 import { basename, dirname } from 'path'
