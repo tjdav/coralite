@@ -1,5 +1,50 @@
 # Changelog
 
+## v0.18.2
+
+> Comparing `v0.18.1` to `v0.18.2`
+
+**Summary:** 16 commits, 2 pull requests
+
+### ✨ Features
+
+- add CLI testing workflow ([220de0a](https://codeberg.org/tjdavid/coralite/commit/220de0aa481d179c389c8ba8a793361d58044722))
+- add build scripts and dist output support (coralite-scripts) ([997ce8e](https://codeberg.org/tjdavid/coralite/commit/997ce8ef6ddebae8ef3ae85ea9c5a037d7f83110))
+
+### 🐛 Bug Fixes
+
+- update type imports to use relative paths instead of #types alias ([d67447a](https://codeberg.org/tjdavid/coralite/commit/d67447aaa2b2c2749e43bad1ce2e6da522e69f40))
+
+### ♻️ Code Refactoring
+
+- add path aliases for lib and plugins modules (core) ([ea2150e](https://codeberg.org/tjdavid/coralite/commit/ea2150effaf12fbb73a92031c8422ef2d6ff9146))
+- remove minify-whitespace from esbuild commands (build) ([78c7b88](https://codeberg.org/tjdavid/coralite/commit/78c7b8857dada4634320bfce5306c1286018c455))
+
+### 🔧 Continuous Integration
+
+- add end-to-end testing workflow with Playwright setup ([5ece5a4](https://codeberg.org/tjdavid/coralite/commit/5ece5a495590472290e39fd2eccf5faede2e0425))
+
+### 🧹 Chores
+
+- remove deprecated GitHub Actions workflows and release configuration files (ci) ([a1b11d3](https://codeberg.org/tjdavid/coralite/commit/a1b11d34fe6345192b77305949e794c3e430cb46))
+- update build commands in e2e and script test workflows (ci) ([7277d16](https://codeberg.org/tjdavid/coralite/commit/7277d16502638e6684ebb81fb7dd8dbb9447aeef))
+- add esbuild  and premove to workspace (deps) ([82b13ee](https://codeberg.org/tjdavid/coralite/commit/82b13ee751a9541d62f27c2be6f7c92f39041800))
+- update package.json build scripts for coralite and coralite-scripts packages (config) ([80e9484](https://codeberg.org/tjdavid/coralite/commit/80e9484a18010d7d36d67efb565436e833367d56))
+- remove unused #types import alias from package.json (config) ([7571a5e](https://codeberg.org/tjdavid/coralite/commit/7571a5e97ae2eac2d80b4646be4ed5e4618acdf7))
+
+### 🔨 Other Changes
+
+- release: version 0.18.2 ([61be599](https://codeberg.org/tjdavid/coralite/commit/61be599b67672657e49ad19b112c1bd7a64a431c))
+- Merge pull request 'Add export types support for coralite-script #14' (#15) from coralite-script-types into main ([#14](https://codeberg.org/tjdavid/coralite/pulls/14)) ([968c4bb](https://codeberg.org/tjdavid/coralite/commit/968c4bba4a87174baf624b771ddc235c1c5bf8d3))
+- Merge pull request 'resolve-types' (#13) from resolve-types into main ([#13](https://codeberg.org/tjdavid/coralite/pulls/13)) ([6bef32a](https://codeberg.org/tjdavid/coralite/commit/6bef32a630cfe4ff1ad5ceb7d9cb32d6ab32b532))
+- release: version 0.18.1 ([c070d75](https://codeberg.org/tjdavid/coralite/commit/c070d7540daccaf0bd1c120b70389d6a479e7a8a))
+- release: version 0.18.1 ([b73d837](https://codeberg.org/tjdavid/coralite/commit/b73d83772e3fc3d90a7fc27cd89e06f21b258b8f))
+
+### 🔗 Pull Requests
+
+- [#13](https://codeberg.org/tjdavid/coralite/pull/13)
+- [#14](https://codeberg.org/tjdavid/coralite/pull/14)
+
 ## v0.18.0
 
 > Comparing `v0.17.0` to `v0.18.0`
