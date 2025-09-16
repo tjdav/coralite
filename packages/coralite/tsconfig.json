@@ -10,6 +10,10 @@
     "target": "ES2022",
     "moduleResolution": "nodenext",
     "esModuleInterop": true,
+    "paths": {
+      "#lib": ["./lib/index.js"],
+      "#plugins": ["./plugins/index.js"]
+    }
   },
   "include": ["lib/index.js"],
   "exclude": ["node_modules"]
