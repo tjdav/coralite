@@ -25,7 +25,8 @@ import { pathToFileURL } from 'node:url'
  *  IgnoreByAttribute,
  *  CoraliteScriptTextContent,
  *  CoraliteDocumentResult,
- *  CoraliteFilePath} from '../types/index.js'
+ *  CoraliteFilePath,
+ *  CoraliteValues} from '../types/index.js'
  * @import CoraliteCollection from './collection.js'
  * @import {Module} from 'node:vm'
  */
@@ -335,6 +336,7 @@ Coralite.prototype.initialise = async function () {
     const urlPathname = pathToFileURL(join('/', relative(rootPath, data.path.pathname))).pathname
 
     // define a set of context values for template rendering
+    /** @type {CoraliteValues} */
     const values = {
       $urlPathname: urlPathname,
       $urlDirname: pathToFileURL(dirname(urlPathname)).pathname,
