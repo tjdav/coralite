@@ -21,7 +21,7 @@
     "lint": "eslint --cache .",
     "build": "pnpm --filter coralite run build",
     "build-scripts": "pnpm --filter coralite-scripts run build",
-    "publish": "pnpm build-coralite && pnpm --filter='./packages/coralite' publish",
+    "publish": "pnpm run build && pnpm --filter='./packages/coralite' publish",
     "publish-scripts": "pnpm --filter='./packages/coralite-scripts' publish",
     "publish-create": "pnpm --filter='./packages/create-coralite' publish",
     "release": "coralite-release",
