@@ -33,7 +33,9 @@
     "@stylistic/eslint-plugin-js": "^2.12.1",
     "@stylistic/eslint-plugin-plus": "^2.12.1",
     "@types/node": "^22.10.5",
+    "esbuild": "^0.25.9",
     "lint-staged": "^16.1.6",
+    "premove": "^4.0.0",
     "simple-git-hooks": "^2.13.1",
     "typescript": "^5.9.2"
   },
