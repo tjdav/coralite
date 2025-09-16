@@ -25,7 +25,7 @@ import { pathToFileURL } from 'node:url'
  *  IgnoreByAttribute,
  *  CoraliteScriptTextContent,
  *  CoraliteDocumentResult,
- *  CoraliteFilePath} from '#types'
+ *  CoraliteFilePath} from '../types/index.js'
  * @import CoraliteCollection from './collection.js'
  * @import {Module} from 'node:vm'
  */
@@ -149,6 +149,7 @@ export function Coralite ({
     if (typeof plugin.method === 'function') {
       const name = plugin.name
       const callback = plugin.method.bind(this)
+
       // add an export for each plugin in the generated modules.
       source.modules.plugins.export += `export const ${name} = coralite.plugins.${name};\n`
       source.modules.plugins.default += name + ', '
@@ -324,10 +325,10 @@ Coralite.prototype.initialise = async function () {
 
     // define a set of context values for template rendering
     const values = {
-      $url_pathname: urlPathname,
-      $url_dirname: pathToFileURL(dirname(urlPathname)).pathname,
-      $file_pathname: data.path.pathname,
-      $file_dirname: data.path.dirname,
+      $urlPathname: urlPathname,
+      $urlDirname: pathToFileURL(dirname(urlPathname)).pathname,
+      $filePathname: data.path.pathname,
+      $fileDirname: data.path.dirname,
       $filename: data.path.filename,
       ...data.values
     }

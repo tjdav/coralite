@@ -9,7 +9,7 @@ import { existsSync } from 'node:fs'
  *  CoraliteCollectionEventSet,
  *  CoraliteCollectionEventUpdate,
  *  CoraliteCollectionItem,
- *  HTMLData } from '#types'
+ *  HTMLData } from '../types/index.js'
  */
 
 /**

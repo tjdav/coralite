@@ -6,7 +6,7 @@ import CoraliteCollection from './collection.js'
  * @import { HTMLData,
  *  CoraliteCollectionEventSet,
  *  CoraliteCollectionEventUpdate,
- *  CoraliteCollectionEventDelete } from '#types'
+ *  CoraliteCollectionEventDelete } from '../types/index.js'
  */
 
 /**
