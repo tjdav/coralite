@@ -1,0 +1,23 @@
+name: Test CLI
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  linux:
+    runs-on: codeberg-tiny-lazy
+    container:
+      image: "guergeiro/pnpm:22-10-slim"
+    steps:
+    - name: Checkout
+      uses: https://code.forgejo.org/actions/checkout@v4
+
+    - name: Install dependencies
+      run: pnpm install
+
+    - name: Build Coralite
+      run: pnpm run build
+
+    - name: Build HTML from templates
+      run: pnpm --filter coralite run build-html
