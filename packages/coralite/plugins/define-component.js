@@ -7,12 +7,7 @@ import {
 } from '#lib'
 
 /**
- * @import { CoraliteElement, CoraliteModuleValues } from '../types/index.js'
- */
-
-/**
- * @callback CoraliteModuleScript
- * @param {CoraliteModuleValues} values
+ * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleValues } from '../types/index.js'
  */
 
 export const defineComponent = createPlugin({
@@ -22,10 +17,10 @@ export const defineComponent = createPlugin({
    * It is used to register components with their associated tokens and slots.
    *
    * @param {Object} options - Configuration options for the component
-   * @param {Object.<string, (string | function)>} options.tokens -
+   * @param {Object.<string, (string | function)>} [options.tokens] -
    *   Computed tokens that will be available in the template. These can be
    *   strings or functions that return values.
-   * @param {Object.<string, Function>} options.slots -
+   * @param {Object.<string, Function>} [options.slots] -
    *   Computed slots for the component. These are functions that define
    *   how content should be rendered within the component.
    * @param {CoraliteModuleScript} [options.script] - Script that will be added below the element.
