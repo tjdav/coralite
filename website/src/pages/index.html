@@ -12,19 +12,25 @@
   <main id="content">
     <section class="hero text-center">
       <div class="hero-bg-overlay"></div>
-      <img class="hero-bg" src="/images/hero-background.avif" alt="" fetchpriority="high">
+      <picture>
+        <source media="(max-width: 420px)" srcset="/images/hero-bg-sm.avif">
+        <source media="(min-width: 420px)" srcset="/images/hero-bg.avif">
+        <img class="hero-bg" src="/images/hero-bg.avif" alt="">
+      </picture>
 
       <div class="hero-container">
+        <img class="content-img d-none d-md-flex" width="100" src="/images/logo-icon.svg" alt="Coralite logo" loading="lazy">
+
         <h1 class="hero-title">Build for the Web, With the Web</h1>
 
         <div class="hero-body">
           <p class="hero-subtitle"><strong>Coralite</strong> is a static site generator built around <strong>HTML modules</strong> and the <strong>Native Web</strong>.</p>
-          <p>
+          <div class="hero-buttons gap">
             <a href="/docs/guide" class="button button-primary">Get Started</a>
-            <a href="https://codeberg.org/tjdavid/coralite" target="_blank" class="button button-outline-secondary">
+            <a href="https://codeberg.org/tjdavid/coralite" target="_blank" class="button button-secondary">
               Source Code
             </a>
-          </p>
+          </div>
         </div>
       </div>
       <picture>
