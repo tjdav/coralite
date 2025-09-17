@@ -7,9 +7,7 @@
     "start": "coralite-scripts dev"
   },
   "devDependencies": {
-    "coralite-scripts": "link:../packages/coralite-scripts"
-  },
-  "dependencies": {
-    "coralite-plugin-aggregation": "^0.5.2"
+    "coralite-plugin-aggregation": "^0.5.2",
+    "coralite-scripts": "^0.18.3"
   }
 }
