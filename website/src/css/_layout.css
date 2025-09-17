@@ -29,6 +29,10 @@
   border-bottom: 3px dotted var(--secondary);
 }
 
+.justify-content-center {
+  justify-content: center;
+}
+
 /* Medium screen and larger */
 @media screen and (min-width: 768px){
   .column-md-3 {
