@@ -1,0 +1,75 @@
+<template id="coralite-author">
+  <div class="post-author">
+    <a href="{{ url }}" target="_blank">
+      {{ img }}
+      <span>{{ fullName }}</span>
+    </a> -
+    <time datetime="{{ date-time }}"> {{ localeDate }}</time>
+  </div>
+</template>
+
+<script type="module">
+  import { values, defineComponent } from 'coralite'
+
+  const authors = {
+    thomas: {
+      url: 'https://thomasjackdavid.com',
+      img: {
+        avif: '/images/thomas-avatar.avif',
+        webp: '/images/thomas-avatar.webp',
+        default: '/images/thomas-avatar.png'
+      },
+      name: 'Thomas David'
+    }
+  }
+
+  const currentAuthor = authors[values.name]
+
+  export default defineComponent({
+    tokens: {
+      url () {
+        if (!currentAuthor) {
+          return ""
+        }
+        return currentAuthor.url
+      },
+      img () {
+        if (!currentAuthor) {
+          return ""
+        }
+
+        let picture = '<picture>'
+
+        if (currentAuthor.img.avif) {
+          picture += `<source srcset="${currentAuthor.img.avif}" type="image/avif">`
+        }
+        
+        if (currentAuthor.img.avif) {
+          picture += `<source srcset="${currentAuthor.img.avif}" type="image/avif">`
+        }
+
+        if (!currentAuthor.img.default) {
+          throw new Error('Author image expects a default image')
+        }
+
+        picture += `<img class="post-author-img" src="${currentAuthor.img.default}" alt="Photo of ${currentAuthor.name}"></picture>`
+
+        return picture
+      },
+      fullName () {
+        if (!currentAuthor) {
+          return ""
+        }
+        
+        return currentAuthor.name
+      },
+      localeDate (values) {
+        return new Date(values.dateTime).toLocaleDateString('en-AU', {
+          year: '2-digit',
+          month: 'short',
+          day: 'numeric',
+        })
+      }
+    }
+  })
+</script>

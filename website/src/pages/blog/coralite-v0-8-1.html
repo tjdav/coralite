@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.8.1" description="Upgrade to Coralite v0.8.1: Enhanced parser reliability, CI/CD workflow improvements with pnpm link, and streamlined HTML module static site generator code structure. Explore the changelog for key updates."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-05-12T10:20:53+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.8.1</h1>
+    <coralite-author name="thomas" date-time="2025-05-12T10:20:53+02:00"></coralite-author>
+
+    <p>Coralite’s v0.8.1 release introduces critical improvements to its HTML module static site generator, focusing on robustness in CI/CD pipelines, parser reliability, and code maintainability.</p>
+    
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li>Enhanced the parser with a safety check to verify the presence of slot attributes before assigning them to named slots, preventing runtime errors during template processing. </li>  
+    </ul>  
+    <coralite-heading level="h2" text="Infrastructure Improvements"></coralite-heading>
+
+    <ul>  
+      <li>Added a new CI workflow step to execute <code>pnpm link</code>, ensuring consistent package linking across build and test environments.</li>  
+      <li>Resolved symlink-related issues on Linux by updating compatibility checks in CI configurations.</li>  
+    </ul>  
+    <coralite-heading level="h2" text="Code Refactoring"></coralite-heading>
+
+    <ul>  
+      <li>Simplified directory handling by replacing custom functions with standard <code>document.path</code> properties for better consistency.</li>  
+      <li>Standardised template variable notation to use <code>$prefix</code> syntax, improving readability and maintainability of templates.</li>  
+      <li>Removed redundant utility functions, streamlining the codebase for future enhancements.</li>  
+    </ul>  
+    <coralite-heading level="h2" text="Administrative Updates"></coralite-heading>
+
+    <ul>  
+      <li>Updated package metadata with a dedicated bugs reporting URL for user feedback.</li>  
+      <li>Refactored bin path configurations to align with modern module structures.</li>  
+    </ul>  
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.8.1</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.8.1" target="_blank">git v0.8.1 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

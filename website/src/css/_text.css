@@ -1,0 +1,5 @@
+.text-bg-dark {
+  color: var(--body-bg);
+  background-color: var(--dark);
+  background-image: var(--gradient-dark);
+}

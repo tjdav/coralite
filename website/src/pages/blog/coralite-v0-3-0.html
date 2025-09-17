@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.3.0" description="Coralite v0.3.0 enhances HTML module static site generation with improved slot handling, refactored naming for clarity, and updated documentation."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-01-27T10:53:33+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.3.0</h1>
+
+    <coralite-author name="thomas" date-time="2025-01-27T10:53:33+01:00"></coralite-author>
+
+    <p>Coralite’s latest release of its HTML module static site generator introduces critical refinements to component handling, metadata parsing, and developer tooling, with a focus on improving consistency and extensibility in custom element workflows.</p>
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li>Rename core module references from <code>components</code> to <code>coraliteModules</code> for clearer naming conventions and reduced ambiguity in large-scale projects.</li>  
+      <li>Add support for default slots and dynamic content insertion in custom elements, enabling more flexible template rendering through enhanced attribute parsing logic.</li>  
+      <li>Update JSDoc documentation across key files (e.g., <code>parse.js</code>) to improve clarity and maintainability of the codebase for contributors.</li>  
+      <li>Refactor <code>parseModule()</code> function signature to use a <code>element</code> parameter, replacing deprecated <code>customElementSlots</code> for backward compatibility with modern HTML module standards.</li>  
+    </ul>
+    
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.3.0</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.3.0" target="_blank">git v0.3.0 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

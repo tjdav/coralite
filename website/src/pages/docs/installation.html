@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <coralite-meta title="Coralite Installation Guide: Set Up Your Static Site Generator with HTML, CSS & JavaScript" description="Learn how to install Coralite, a static site generator that uses standard HTML, CSS, and JavaScript. No special syntax required – build fast, developer-friendly websites effortlessly."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Installation</h1>
+
+    <p>First things first, you will need at least <a href="https://nodejs.org/" target="_blank">node</a> version <strong>18.8.0</strong> and above installed.</p>
+
+    <p>After <a href="https://docs.npmjs.com/cli/v6/commands/npm-init" target="_blank">initialising</a> your project, install coralite as a dev dependency:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite</coralite-code-highlight>
+
+    <h2 id="build-script">Build script</h2>
+
+    <p>To prepare the development environment, we'll add the build command to the <strong>"script"</strong> property in our <code>package.json</code> file.</p>
+
+    <p>Here is an example of what your <code>package.json</code> file should look like</p>
+
+    <p>For more information about the CLI options check out the <a href="/docs/coralite-cli.html">CLI reference page</a></p>
+
+    <coralite-code-highlight language="JSON">{
+  "name": "my-coralite-site",
+  "scripts": {
+    "build": "coralite -t src/templates -p src/pages -o dist"
+  },
+  "dependencies": {
+    "coralite": "^0.14.0"
+  }
+}</coralite-code-highlight>
+
+    <h2>ECMAScript Modules</h2>
+
+    <p>
+      Coralite depends on <a href="https://nodejs.org/api/vm.html#class-vmmodule" target="_blank">ECMAScript Modules</a> which is only available with the 
+      <code>--experimental-vm-modules</code> command flag enabled
+    </p>
+
+    <p>There are two ways to add this command flag</p>
+
+    <p>Set the command flag after running node:</p>
+
+    <coralite-code-highlight language="bash">node --experimental-vm-modules coralite</coralite-code-highlight>
+
+    <p>Or set flag via environment variable. If you are running Windows, use <a href="https://github.com/kentcdodds/cross-env" target="_blank">cross-env</a> to be able to set environment variables, otherwise use the following:</p>
+
+    <coralite-code-highlight language="bash">NODE_OPTIONS="--experimental-vm-modules" coralite</coralite-code-highlight>
+
+    <h2>Resolve relative modules</h2>
+
+    <p>In order to support relative imports you must enable the experimental <code>--experimental-import-meta-resolve</code> option</p>
+
+    <hr>
+
+    <p>Next, follow the <a href="getting-started.html">getting started</a> guide to discover how build your first web page with coralite!</p>
+  </main>
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+</html>

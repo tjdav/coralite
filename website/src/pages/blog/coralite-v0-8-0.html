@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.8.0" description="Coralite v0.8.0 introduces robust pagination, enhanced metadata handling, and improved HTML parsing for static site generation. Upgrade now with breaking change notes."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-05-11T19:27:38+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.8.0</h1>
+    <coralite-author name="thomas" date-time="2025-05-11T19:27:38+02:00"></coralite-author>
+
+    <coralite-author name="thomas" date-time="2025-01-15T15:14:26+01:00"></coralite-author>
+
+    <p>Coralite’s v0.8.0 release introduces robust pagination support, improved HTML parsing, and metadata enhancements while addressing critical type handling and breaking changes to ensure compatibility with modern workflows.</p>
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>
+      <li>Introduced full pagination system with dynamic attribute generation, document handling, and template rendering based on configuration (BREAKING CHANGE: replaces previous sort function logic).</li>
+      <li>Enhanced metadata processing to support filtering via options.filter and updated token prefix from ‘meta_’ to ’$' (BREAKING CHANGE: requires configuration updates for existing metadata tokens).</li>
+      <li>Integrated htmlparser2 and dom-serializer for improved HTML parsing reliability and consistency in document rendering.</li>
+      <li>Refactored aggregation logic with Aggregation typedef, structured data collection, and enhanced type safety through CoraliteFilePath and HTMLData interfaces.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Breaking Changes"></coralite-heading>
+
+    <ul>
+      <li><strong>Metadata Token Prefix:</strong> All references to metadata tokens must now use the ’$' prefix instead of ‘meta_’.</li>
+      <li><strong>Function Parameter Removal:</strong> The ‘html’ parameter has been removed from parseModule’s interface (BREAKING CHANGE: update dependent code accordingly).</li>
+      <li><strong>Return Type Change:</strong> createComponent now returns a CoraliteComponent object instead of a raw CoraliteElement. Access the element property on the returned object.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.8.0</coralite-code-highlight>
+    
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.8.0" target="_blank">git v0.8.0 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <coralite-meta title="Coralite Getting Started Tutorials: Build Your First Static Site with HTML & JS" description="Explore beginner-friendly Coralite tutorials to create static websites using native web technologies. Learn core concepts and hands-on practices for site development."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Getting Started</h1>
+
+    <p>This guide will walk you through creating your first web page using Coralite, a static site generator built around HTML modules.</p>
+
+    <p>
+      Coralite templates represent a simpler form of web components. They allow you to create custom elements using "template" and "slot" elements,
+      but they do not use the Shadow DOM, as they're server-side rendered and there is no hydration.
+    </p>
+  
+    <h2>Project Structure</h2>
+
+    <p>Create a new project directory with the following structure:</p>
+
+    <coralite-code type="Project Structure">
+    <pre>
+  my-coralite-site/
+  ├── src/
+  │   ├── templates/
+  │   │   ├── header.html
+  │   │   ├── body.html
+  │   │   └── footer.html
+  │   └── pages/
+  │       └── index.html
+  └── dist/</pre>
+  </coralite-code>
+
+    <h2>Creating Templates</h2>
+
+    <h3>Header template</h3>
+
+    <p>
+      Every template must have an "id" attribute that matches its usage in pages, in this case our header template has the id of "<code>coralite-header</code>".
+      Take note in the example below the use of double curly braces <code>{{ title }}</code> will display the attribute value
+    </p>
+
+    <p>
+      Just like Web Components can pass data to templates through both attribute values and slots so can Coralite templates, however,
+      Coralite templates use a special syntax with double curly braces to display the attribute values.
+    </p>
+
+    <coralite-code-html>
+      <!-- my-coralite-site/src/templates/header.html -->
+      <template id="coralite-header">
+        <h1>{{ title }}</h1>
+      </template>
+    </coralite-code-html>
+  
+    <h3>Use Header Template</h3>
+
+    <p>In order to use the template in pages, the custom element name must match the <strong>template id.</strong></p>
+
+    <coralite-code-html>
+      <!-- my-coralite-site/src/pages/index.html -->
+      <html lang="en">
+      <head>
+        <title>My coralite site</title>
+      </head>
+      <body>
+        <coralite-header title="My Title"></coralite-header>
+      </body>
+      </html>
+    </coralite-code-html>
+
+    <h3>Building your site</h3>
+
+    <p>To manually build the example, run the following command:</p>
+
+    <coralite-code language="bash">coralite -t src/templates -p src/pages -o dist</coralite-code>
+
+    <p>If you've followed the <a href="./installation.html#build-script">build script</a> step on the installation guide, run the build script:</p>
+
+    <coralite-code language="bash">npm run build</coralite-code>
+    
+  </main>
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+</html>

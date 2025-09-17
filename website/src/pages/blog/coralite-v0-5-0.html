@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.5.0" description="Discover the latest updates in Coralite v0.5.0, including named slot manipulation for components, improved npm workflow configurations, and expanded test coverage to enhance static site generation capabilities."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-02-06T15:30:19+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.5.0</h1>
+
+    <coralite-author name="thomas" date-time="2025-02-06T15:30:19+01:00"></coralite-author>
+
+    <p>Coralite’s latest release introduces enhanced capabilities for manipulating named slot content within components and improved test coverage, reinforcing the stability of its HTML module static site generator.</p>
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li>Introduced support for programmatically manipulating named slot content through the <code>defineComponent</code> function, enabling greater flexibility in component composition and rendering logic. </li>
+      <li>Expanded test coverage to include comprehensive testing of slot functions within <code>defineComponent</code>, ensuring robustness in edge cases such as nested or conditional slot usage. </li>
+      <li>Updated build configurations to automatically ignore unused files during npm package generation, improving performance and reducing unnecessary dependencies. </li>  
+      <li>Implemented additional test scenarios for named slot handling within the <code>&lt;body&gt;</code> element, addressing potential rendering inconsistencies in complex layouts. </li>  
+    </ul>
+     
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.5.0</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.5.0" target="_blank">git v0.5.0 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.6.5" description="Coralite v0.6.5 introduces enhanced data aggregation and filtering capabilities for developers using the static site generator, with improved type definitions and expanded test coverage"></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-03-10T15:57:22+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.6.5</h1>
+
+    <coralite-author name="thomas" date-time="2025-03-10T15:57:22+01:00"></coralite-author>
+
+    <p>Coralite latest release, v0.6.5, introduces enhanced data aggregation and filtering capabilities for developers using the static site generator, with improved type definitions and expanded test coverage.</p>
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li><strong>New feature:</strong> Added a filter parameter to the aggregate function, enabling precise data processing through <code>CoraliteAggregate</code> (<a href="#aggregate-filter">see below</a>). </li>  
+      <li><strong>Type definitions:</strong> Introduced and updated <code>CoraliteAggregate</code> typedefs in documentation and global types files for consistency across modules.</li>  
+      <li><strong>Test coverage:</strong> Expanded test suite to cover edge cases in the aggregate filter option, ensuring robustness during data aggregation workflows. </li>  
+    </ul>
+
+    <coralite-heading level="h2" text="Infrastructure and Tooling"></coralite-heading>
+
+    <ul>  
+      <li>Removed Windows compatibility checks from CI pipelines due to unavailability of testing environments.</li>  
+      <li>Bumped version number to v0.6.5 for release tracking.</li>  
+    </ul>
+
+    <coralite-heading level="h2" text="Aggregate Filter Implementation"></coralite-heading>
+
+    <p>The <code>CoraliteAggregate</code> filter parameter allows developers to specify conditions for data aggregation, improving flexibility in processing structured content. This feature is documented in the <a href="#aggregate-filter">type definitions</a>.</p>
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.6.5</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.5" target="_blank">git v0.6.5 changelog</a>. </p>  
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

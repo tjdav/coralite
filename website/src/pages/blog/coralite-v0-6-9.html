@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.6.9" description="Coralite v0.6.9 enhances static site generation with nested custom elements, fixed aggregation issues, and expanded test coverage for reliability"></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-03-31T16:10:24+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.6.9</h1>
+    <coralite-author name="thomas" date-time="2025-03-31T16:10:24+02:00"></coralite-author>
+
+    <p>Coralite’s latest release introduces improvements for handling nested document structures and refining component rendering logic, with updates focused on stability and test coverage.</p>  
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li><strong>Fix</strong>: Resolved an issue where aggregation limits were incorrectly offset by the <code>offset</code> parameter, ensuring accurate data handling in complex document hierarchies.</li>  
+      <li><strong>Test</strong>: Added test coverage for nested document root components to validate rendering consistency across multi-level structures.</li>  
+      <li><strong>Feature</strong>: Enabled creation of nested custom elements directly on the document root, expanding flexibility in component organisation and reuse.</li>  
+      <li><strong>Chore</strong>: Updated changelog documentation to reflect all changes for improved transparency and traceability.</li>  
+    </ul>  
+    
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.6.9</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.9" target="_blank">git v0.6.9 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

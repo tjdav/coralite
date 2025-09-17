@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.4.1" description="Explore Coralite v0.4.1 updates including improved TypeScript definitions, parsing logic refinements, and build tool optimizations for enhanced static site generation."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-01-28T10:59:43+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.4.1</h1>
+
+    <coralite-author name="thomas" date-time="2025-01-28T10:59:43+01:00"></coralite-author>
+
+    <p>Coralite’s latest release of its HTML module static site generator introduces critical refactoring and type improvements, with a focus on refining internal parsing logic and enhancing developer tooling for consistency.</p>
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li>Updated <code>.npmignore</code> patterns to exclude unnecessary files from package distributions, improving deployment efficiency. </li>  
+      <li>Enhanced type definitions by introducing <code>CoraliteModuleValues</code>, ensuring precise typing for module value tokens and aligning function parameters with new type structures. </li>  
+      <li>Refactored parsing logic to handle string values in attribute and text replacements more reliably, avoiding edge-case failures during template rendering. </li>  
+      <li>Reorganized code structure by moving parse stack management into internal functions, improving maintainability and reducing external dependencies. </li>  
+      <li>Improved comment handling using the spread operator for cleaner syntax and better compatibility with modern JS environments. </li>  
+      <li>Resolved an issue where text node creation inadvertently omitted original content, ensuring full fidelity in DOM rendering. </li>  
+      <li>Fixed a bug related to custom element replacement logic, addressing inconsistencies during module compilation. </li>  
+    </ul>  
+    
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.4.1</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.4.1" target="_blank">git v0.4.1 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

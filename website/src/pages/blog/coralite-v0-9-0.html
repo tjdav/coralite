@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.9.0" description="Coralite v0.9.0 introduces component-based architecture, plugin integration, and event-driven file handling in its HTML module static site generator. Learn about key improvements and breaking changes."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-05-23T11:00:14+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.9.0</h1>
+    
+    <coralite-author name="thomas" date-time="2025-05-23T11:00:14+02:00"></coralite-author>
+
+    <p>Coralite v0.9.0 introduces foundational features for building and rendering static websites, with a focus on component-based architecture, plugin integration, and metadata extraction.</p>
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>
+      <li>Introduced support for defining and processing custom HTML elements using the <code>Coralite</code> class API through the new <code>defineComponent()</code> plugin. This enables dynamic attribute replacements during template processing.</li>
+      <li>Refactored internal logic to use a component-based architecture, removing legacy parsing methods such as <code>renderDocument()</code> and replacing them with <code>createComponent()</code> for modular and extensible rendering.</li>
+      <li>Introduced event-driven file handling using new callbacks (<code>onFileSet</code>, <code>onFileUpdate</code>, <code>onFileDelete</code>) to support dynamic updates and maintain consistency between pages and custom elements.</li>
+      <li>Refactored the internal data structure from <code>Documents</code> to a new <code>CoraliteCollection</code> class, providing methods for managing HTMLData objects in a structured way. This change introduces more consistent type definitions and API patterns across modules.</li>
+      <li>Added support for plugins through configuration using <code>coralite.config.js</code>, allowing developers to extend Coralite’s functionality dynamically with custom plugin definitions and aggregation capabilities.</li>
+      <li>Implemented a new <code>compile()</code> method in the <code>Coralite</code> class, supporting dynamic path resolution and asynchronous processing of components for enhanced rendering performance.</li>
+      <li>Introduced metadata tracking for HTML documents, including the addition of a <code>type</code> field to differentiate between main pages (<code>’page’</code>) and reusable templates (<code>’template’</code>).</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+
+    <ul>
+      <li><strong>Improved Type Definitions:</strong> Updated TypeScript interfaces to better reflect the current data handling patterns, including renaming of document-related types to align with the new collection-based architecture.</li>
+      <li><strong>Simplified API:</strong> Removed redundant or unused functions and parameters (e.g., <code>parseHTMLDocument()</code> is no longer used and has been replaced by a more general <code>parseHTML()</code>). This reduces redundancy while improving clarity in the codebase.</li>
+      <li><strong>Better Documentation:</strong> Extended documentation to include project structure examples, usage patterns for templates and pages, ignored element handling, and recursive template directory support. A new type definitions reference document has been added for easier navigation of core types.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Breaking Changes"></coralite-heading>
+
+    <ul>
+      <li>The <code>coralite()</code> function is now a class constructor that must be instantiated using the new <code>Coralite(…).compile()</code> API.</li>
+      <li>The <code>onFileLoaded</code> callback has been removed in favor of event-based handlers (<code>onFileSet</code>, <code>onFileUpdate</code>, and <code>onFileDelete</code>). Existing implementations using the old callback must be updated to use these new hooks.</li>
+      <li>The <code>CoraliteDocumentTokens</code> typedef has been renamed to <code>CoraliteDocumentValues</code>, and references to <code>’tokens’</code> have been updated to <code>’values’</code> in module definitions and type declarations.</li>
+      <li>The <code>CoraliteComponent</code> typedef was removed from the codebase. Any code relying on this type must be adjusted accordingly.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+    
+    <coralite-code-highlight language="bash">npm install coralite@0.9.0</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.9.0" target="_blank">git v0.9.0 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

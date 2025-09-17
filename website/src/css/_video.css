@@ -1,0 +1,30 @@
+.video {
+  position: relative;
+  padding: var(--spacer-1);
+}
+
+.video-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: -1;
+  width: 75%;
+}
+
+.video-player {
+  border: 0;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16/9;
+  border-radius: var(--border-radius);
+}
+
+.video-title {
+  text-shadow: 1px 1px 1px light-dark(var(--light), var(--dark));
+}
+
+@media screen and (min-width: 768px){
+  .video {
+    padding: var(--spacer-5);
+  }
+}

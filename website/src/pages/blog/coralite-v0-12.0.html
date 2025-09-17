@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta
+    type="article"
+    title="Coralite v0.12.0"
+    description="Coralite v0.12.0 now supports plugin hooks for custom extensions during page and template lifecycle events, with improved codebase refactoring and enhanced type definitions."
+    seo-title="Coralite v0.12.0: Plugin Hook Support, Code Refactoring, and Type Definitions"
+    seo-description="Discover the latest updates in Coralite v0.12.0, including plugin hook support, codebase refactoring, and enhanced type definitions. Learn more about these improvements for the Coralite for static site generation."
+  ></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2025-07-17T06:18:46+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.12.0</h1>
+    <coralite-author name="thomas" date-time="2025-07-17T06:18:46+02:00"></coralite-author>
+
+    <p>Coralite’s latest release introduces plugin hook support, codebase refactoring, and improved type definitions while enhancing the framework's flexibility and robustness.</p>  
+
+    <coralite-heading level="h2" text="New Features"></coralite-heading>
+
+    <ul>  
+      <li>Add plugin hook support to allow custom extensions during page and template lifecycle events.</li>  
+      <li>Added method to register plugin hooks, enabling developers to define custom functions that can be triggered at specific points in the build process.</li>  
+    </ul>  
+
+    <coralite-heading level="h2" text="Codebase Improvements"></coralite-heading>
+
+    <ul>  
+      <li>Refactored module linker to use new source modules configuration for better path resolution and performance.</li>  
+      <li>Added async support for template and page file handlers, ensuring that asynchronous operations are handled correctly during rendering.</li>  
+    </ul>  
+
+    <coralite-heading level="h2" text="Codebase Optimisations"></coralite-heading>
+
+    <ul>  
+      <li>Removed metadata and custom elements collection to reduce memory usage and improve performance.</li>  
+      <li>Updated CI workflows for release note generation, ensuring consistency across versions.</li>  
+    </ul>  
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.12.0</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.12.0" target="_blank">git v0.12.0 changelog</a></p>
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

@@ -1,0 +1,29 @@
+<template id="coralite-navbar">
+  <div class="top-bar text-bg-dark">
+    <div class="container">
+    </div>
+  </div>
+  <header class="navbar">
+    <nav class="container">
+      <a class="navbar-brand" href="/" aria-current="page">
+        <img class="navbar-logo" src="/images/logo-light.svg" alt="Coralite logo" height="48">
+      </a>
+      <button class="button navbar-toggler" type="button" popovertarget="navbarNav" popovertargetaction="toggle" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div id="navbarNav" class="offcanvas" tabindex="-1" popover="auto">
+        <div class="offcanvas-header">
+          <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
+          <button type="button" class="button-close" popovertarget="navbarNav" popovertargetaction="hide" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+          <ul class="nav">
+            <li><a class="nav-link" href="/blog.html">Blog</a></li>
+            <li><a class="nav-link" href="/docs/guide">Get started</a></li>
+            <li><a class="nav-link" href="/docs/reference">Reference</a></li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+  </header>
+</template>

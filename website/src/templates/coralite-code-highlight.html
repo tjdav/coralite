@@ -1,0 +1,75 @@
+<template id="coralite-code-highlight">
+  <div class="code">
+    <div class="code-toolbar">
+      <span class="code-language">{{ language }}</span>
+      <button ref="popover-button" popovertarget="{{ popovertarget }}" type="button" class="button button-icon">
+        Copy to clipboard
+      </button>
+      <div id="{{ popovertarget }}" popover>Code copied!</div>
+    </div>
+    <pre ref="code-body" class="code-body"><code class="language-{{languageClass}}"><slot></slot></code></pre>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent, parseHTML } from 'coralite'
+  import code from 'highlight.js'
+
+  code.configure({
+    classPrefix: 'code-'
+  })
+
+  export default defineComponent({
+    tokens: {
+      popovertarget () {
+        return 'copy-' + Math.random().toString(16).substring(2)
+      },
+      languageClass (attributes) {
+        return attributes.language.toLowerCase()
+      }
+    },
+    slots: {
+      default (content, values) {
+        let result = []
+        let endIndex = content.length
+        let startIndex = 0
+        const firstNode = content[0]
+        const lastNode = content[endIndex - 1]
+
+        if (firstNode.type === 'text' && !firstNode.data.trim()) {
+          // skip first new line
+          startIndex = 1
+        }
+
+        if (lastNode.type === 'text' && !lastNode.data.trim()) {
+          endIndex = content.length - 1
+        }
+
+        for (let i = startIndex; i < endIndex; i++) {
+          const node = content[i];
+
+          if (node.type === 'text' && node.data.trim()) {
+            const rawCode = code.highlight(
+              node.data,
+              { language: values.language.toLowerCase(),  }
+            ).value
+
+            const nodes = parseHTML(rawCode)
+
+            result = result.concat(nodes.root.children)
+          }
+        }
+
+        return result
+      }
+    },
+    script ({ refs }) {
+      const popoverButton = refs('popover-button')
+      const codeBody = refs('code-body')
+
+      popoverButton.addEventListener('click', () => {
+        navigator.clipboard.writeText(codeBody.textContent)
+      })
+    }
+  })
+</script>

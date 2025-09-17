@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.6.2" description="Coralite v0.6.2 introduces Node.js v18 compatibility fixes, version bumps, and dependency updates to ensure stable builds."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-02-16T15:32:17+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.6.2</h1>
+
+    <coralite-author name="thomas" date-time="2025-02-16T15:32:17+01:00"></coralite-author>
+
+    <p>Coralite’s latest release, <strong>v0.6.2</strong>, introduces critical stability improvements and compatibility fixes to enhance reliability across environments. This update addresses dependency management, version alignment, and Node.js v18-specific requirements.</p>  
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li><strong>Lock file updates</strong>: Resolved inconsistencies in dependency resolution by updating lock files to ensure deterministic builds across platforms. </li>  
+      <li><strong>Version bump</strong>: Updated package version to align with internal release tracking and external expectations for v0.6.2.</li>  
+      <li><strong>Node.js v18 compatibility</strong>: Fixed runtime errors in environments using Node.js v18 by explicitly referencing <code>globalThis</code> for the <code>crypto</code> module, ensuring consistent behaviour across versions.</li>  
+    </ul> 
+     
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.6.2</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.2" target="_blank">git v0.6.2 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

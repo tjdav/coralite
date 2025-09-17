@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <coralite-meta title="Coralite | HTML modules static site generator" description="Build with HTML Modules. Coralite is static site generator that uses native web technologies. No special syntax, build websites using standard HTML, CSS, and JavaScript."></coralite-meta>
+  <link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
+  <link rel="prefetch" href="/images/hero-background-sm.avif" as="image" media="(max-width: 420px)">
+  <link rel="prefetch" href="/images/hero-background-md.avif" as="image" media="(min-width: 421px)">
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main id="content">
+    <section class="hero text-center">
+      <div class="hero-bg-overlay"></div>
+      <picture>
+        <source media="(max-width: 420px)" srcset="/images/hero-bg-sm.avif">
+        <source media="(min-width: 420px)" srcset="/images/hero-bg.avif">
+        <img class="hero-bg" src="/images/hero-bg.avif" alt="">
+      </picture>
+
+      <div class="hero-container">
+        <img class="content-img d-none d-md-flex" width="100" src="/images/logo-icon.svg" alt="Coralite logo" loading="lazy">
+
+        <h1 class="hero-title">Build for the Web, With the Web</h1>
+
+        <div class="hero-body">
+          <p class="hero-subtitle"><strong>Coralite</strong> is a static site generator built around <strong>HTML modules</strong> and the <strong>Native Web</strong>.</p>
+          <div class="hero-buttons gap">
+            <a href="/docs/guide" class="button button-primary">Get Started</a>
+            <a href="https://codeberg.org/tjdavid/coralite" target="_blank" class="button button-secondary">
+              Source Code
+            </a>
+          </div>
+        </div>
+      </div>
+      <picture>
+        <source media="(max-width: 420px)" srcset="/images/hero-border-sm.avif">
+        <source media="(min-width: 421px)" srcset="/images/hero-border-lg.avif">
+        <img class="hero-border-bottom" src="/images/hero-border-lg.avif" alt="Orange water painting of coral">
+      </picture>
+    </section>
+
+    <section class="container video">
+      <h2 class="text-center video-title">How does it work?</h2>
+      <img class="video-bg" src="/images/bg-water.avif" alt="Water">
+      <iframe loading="lazy" class="video-player" width="560" height="315" src="https://www.youtube-nocookie.com/embed/wUWwH9QZUTs?si=jkFm2J5XQ8aLK6SM?cc_load_policy=1" title="Building Modular HTML Sites with Coralite" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+    </section>
+
+    <section class="container p-1 p-md-5 position-relative">
+      <h2>Features</h2>
+      <div class="grid column-md-2 gap divider">
+        <p>The core purpose of Coralite is static site generator that prioritises native web technologies. Unlike many modern frameworks that require special syntax or additional plugins, Coralite lets developers build websites using standard HTML, CSS, and JavaScript. </p>
+
+        <div class="grid column-3 gap">
+          <img class="content-img" src="/images/icon-html.avif" alt="HTML" loading="lazy">
+          <img class="content-img" src="/images/icon-css.avif" alt="CSS" loading="lazy">
+          <img class="content-img" src="/images/icon-js.avif" alt="JavaScript" loading="lazy">
+        </div>
+      </div>
+
+      <div class="grid column-md-3 gap">
+        <div>
+          <h3>Templating</h3>
+          <p>The template system in Coralite is built around custom elements, providing a flexible foundation for creating reusable page components. What sets this template system apart is its use of standard HTML syntax - there’s no need to learn special template languages or markup formats.</p>
+        </div>
+        <div>
+          <h3>Data handling</h3>
+          <p>Coralite handles data through three main approaches: attributes, slots, and computed tokens. Attributes let you pass simple data (like text) to your templates using HTML attributes. Slots are more powerful, allowing you to pass complex HTML content into specific places in your templates. </p>
+        </div>
+        <div>
+          <h3>Aggregation</h3>
+          <p>Coralite’s aggregation system makes it easy to collect and display content from multiple web pages automatically. Rather than manually updating lists of content (like blog posts) on your website, Coralite reads basic information from each page and automatically creates organised lists or indexes using that information. It’s like having an automated assistant that keeps your website’s table of contents up to date whenever you add new content.</p>
+        </div>
+      </div>
+    </section>
+    <coralite-footer></coralite-footer>
+  </main>
+</body>
+</html>
