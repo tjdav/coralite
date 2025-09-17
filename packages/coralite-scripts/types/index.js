@@ -25,3 +25,5 @@
  * @property {boolean} [build] - Build coralite site for production deployment
  * @property {boolean} [verbose] - Enable verbose logging output
  */
+
+export default {}

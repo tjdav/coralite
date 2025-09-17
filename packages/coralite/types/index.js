@@ -359,3 +359,5 @@
  * @param {CoraliteValues} values
  * @param {CoraliteRef} refs
  */
+
+export default {}
