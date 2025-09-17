@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.18.3
+
+> Comparing `v0.18.2` to `v0.18.3`
+
+**Summary:** 13 commits
+
+### ✨ Features
+
+- implement configurable step value for counter component (counter) ([3303301](https://codeberg.org/tjdavid/coralite/commit/330330166ba67bc746ed76cca99251f87490e742))
+- update ref resolution type definition (refs) ([1ee5eda](https://codeberg.org/tjdavid/coralite/commit/1ee5eda1f9124cf930361f232d0734d1d081ac38))
+- add CoralitePathValues and CoraliteValues typedefs (coralite) ([9d92284](https://codeberg.org/tjdavid/coralite/commit/9d92284a460fae8902ed4606dc26e270cfb11443))
+
+### 🐛 Bug Fixes
+
+- remove types build ([c36452c](https://codeberg.org/tjdavid/coralite/commit/c36452ccab0ca51ef67e97a385a3a4275f1efd18))
+- add an export to jsdoc type files ([df59ce9](https://codeberg.org/tjdavid/coralite/commit/df59ce9d49d1d75f510fd2c73b3bfc9fd19729bf))
+- remove unused CoraliteModuleScript callback and update tokens/slots param descriptions ([9d0a5c8](https://codeberg.org/tjdavid/coralite/commit/9d0a5c8fb7d85486e8877f55468bac567193ae95))
+- add null safety checks for customElements access in initialise method ([2ae462f](https://codeberg.org/tjdavid/coralite/commit/2ae462fd3114a88576a89db13a879bc83e722edb))
+
+### 📚 Documentation
+
+- add CoraliteValues type definition to initialise method ([f9964d4](https://codeberg.org/tjdavid/coralite/commit/f9964d4c742aebdbe476fcf7013c4dc15afbc728))
+
+### 🧹 Chores
+
+- update publish script to use run build command instead of build-coralite (config) ([b81c8fd](https://codeberg.org/tjdavid/coralite/commit/b81c8fd16ad6d760b972f3ee79a0fa067a58ccfe))
+- update changelog ([e7ce7c0](https://codeberg.org/tjdavid/coralite/commit/e7ce7c009eb3a59433e7cc94a7dadb92226f5889))
+
+### 🔨 Other Changes
+
+- release: version 0.18.3 ([7e35779](https://codeberg.org/tjdavid/coralite/commit/7e3577984b82dfdc548940d2eb7c61e402cc53a3))
+- release: version 0.18.2 ([b2c1ec0](https://codeberg.org/tjdavid/coralite/commit/b2c1ec00e82a8e0e2f4129fb7681d42a67bafa1a))
+- release: version 0.18.2 ([61be599](https://codeberg.org/tjdavid/coralite/commit/61be599b67672657e49ad19b112c1bd7a64a431c))
+
+
 ## v0.18.2
 
 > Comparing `v0.18.1` to `v0.18.2`
