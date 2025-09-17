@@ -1,6 +1,6 @@
 {
   "name": "coralite-scripts",
-  "version": "0.18.3",
+  "version": "0.18.2",
   "description": "Configuration and scripts for Create Coralite.",
   "type": "module",
   "bin": {
@@ -16,8 +16,13 @@
   "files": [
     "bin",
     "libs",
-    "types"
+    "types",
+    "dist"
   ],
+  "scripts": {
+    "build": "premove dist && pnpm build-types",
+    "build-types": "tsc"
+  },
   "homepage": "https://coralite.io/docs/create-scripts",
   "author": {
     "name": "Thomas David",
@@ -33,6 +38,7 @@
   },
   "exports": {
     ".": {
+      "types": "./dist/libs/index.d.ts",
       "default": "./libs/index.js"
     },
     "./types": {
@@ -43,7 +49,7 @@
   "dependencies": {
     "chokidar": "^4.0.3",
     "commander": "^14.0.0",
-    "coralite": "^0.18.3",
+    "coralite": "^0.18.2",
     "express": "^5.1.0",
     "html-validate": "^10.0.0",
     "kleur": "^4.1.5",
