@@ -34,6 +34,20 @@
  */
 
 /**
+ * @typedef {Object} CoralitePathValues
+ * @property {string} $urlPathname - The URL pathname
+ * @property {string} $urlDirname - The directory name of the URL
+ * @property {string} $filePathname - The file path name
+ * @property {string} $fileDirname - The directory name of the file
+ * @property {string} $filename - The filename
+ * @property {Object<string, string>} [data.values] - Additional values from data
+ */
+
+/**
+ * @typedef {CoralitePathValues | Object.<string, string>} CoraliteValues
+ */
+
+/**
  * A collection of module values associated with a module.
  * @typedef {Object.<string, CoraliteModuleValue>} CoraliteModuleValues
  */
@@ -332,4 +346,16 @@
  * @property {CoraliteDocument} document - Coralite document with metadata and rendering structure.
  * @property {string} refs - Array of reference identifiers.
  * @property {string} content - The script content as a string.
+ */
+
+/**
+ * @callback CoraliteRef
+ * @param {string} id - The identifier for the ref, corresponding to a key in the refs object
+ * @returns {HTMLElement | null} The DOM element referenced by this ID, or null if not found
+ */
+
+/**
+ * @callback CoraliteModuleScript
+ * @param {CoraliteValues} values
+ * @param {CoraliteRef} refs
  */
