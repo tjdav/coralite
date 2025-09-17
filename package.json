@@ -33,6 +33,7 @@
     "@stylistic/eslint-plugin-js": "^2.13.0",
     "@stylistic/eslint-plugin-plus": "^2.13.0",
     "@types/node": "^22.18.5",
+    "coralite-release": "link:packages/coralite-release",
     "esbuild": "^0.25.9",
     "lint-staged": "^16.1.6",
     "premove": "^4.0.0",
@@ -50,8 +51,5 @@
       "eslint --cache --fix"
     ]
   },
-  "packageManager": "pnpm@10.15.1",
-  "dependencies": {
-    "coralite-release": "link:packages/coralite-release"
-  }
+  "packageManager": "pnpm@10.17.0"
 }
