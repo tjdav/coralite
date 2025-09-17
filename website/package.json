@@ -1,0 +1,15 @@
+{
+  "name": "website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "coralite-scripts build",
+    "start": "coralite-scripts dev"
+  },
+  "devDependencies": {
+    "coralite-scripts": "link:../packages/coralite-scripts"
+  },
+  "dependencies": {
+    "coralite-plugin-aggregation": "^0.5.2"
+  }
+}

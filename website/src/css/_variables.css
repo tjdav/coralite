@@ -1,0 +1,55 @@
+:root {
+  color-scheme: light dark;
+
+  /* colours */
+  --green-light: #d0ff00;
+  --green-dark: #667d00;
+  --pink-dark: #d63384;
+  --pink-light: #e685b5;
+  --primary: light-dark(var(--green-dark), var(--green-light));
+  --secondary-dark: rgb(49, 26, 75);
+  --secondary: #754aaa;
+  --light: #f9f9f9;
+  --dark: rgb(49, 26, 75);
+  --darker: rgb(14, 7, 19);
+  --body-bg: light-dark(var(--light), var(--darker));
+  --body-colour: light-dark(var(--darker), var(--light));
+  --gradient-dark: linear-gradient(var(--secondary-dark), var(--darker));
+  --code-colour: light-dark(var(--pink-dark), var(--pink-light));
+
+  /* spacing */
+  --spacer-base: 1rem;
+  --spacer-1: calc(var(--spacer-base) - .3rem);
+  --spacer-2: var(--spacer-base);
+  --spacer-3: calc(var(--spacer-base) + .3rem);
+  --spacer-4: calc(var(--spacer-base) + 1rem);
+  --spacer-5: calc(var(--spacer-base) + 2rem);
+
+  --padding-x: 1rem;
+  --padding-y: .5rem;
+
+  /* fonts */
+  --font-body: "LilGrotesk", "Lucida Sans", "Lucida Sans Regular", "Lucida Grande", "Lucida Sans Unicode", geneva, verdana, sans-serif;
+  --font-heading: "Young Serif", cambria, cochin, georgia, times, "Times New Roman", serif;
+  --font-monospace: "JetBrain mono", "Courier New", courier, monospace;
+  --font-size: 20px;
+
+  /* text */
+  --line-height: 1.5;
+  --heading-line-height: 1.2;
+
+  /* border */
+  --border-radius: .5rem;
+
+  /* breakpoint */
+  --breakpoint-y-sm: 825px;
+
+  /* animation */
+  --transition: transform .3s ease-in-out;
+
+  /* shadow */
+  --box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+  --box-shadow-sm: 0 .125rem .25rem rgba(0, 0, 0, .075);
+  --box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, .175);
+  --box-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, .075);
+}

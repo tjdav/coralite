@@ -1,0 +1,10 @@
+.nav {
+  display: flex;
+  gap: var(--spacer-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.nav-link {
+  color: rgba(255, 255, 255, .9);
+}

@@ -1,0 +1,22 @@
+<template id="coralite-heading">
+  {{ heading }}
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    tokens: {
+      heading (values) {
+        const text = values.text
+        const level = values.level
+        const id = text.toLowerCase().replaceAll(' ', '-')
+
+        return `<${level} id="${id}">
+          ${text}
+          <a href="#${id}" class="anchor-link" aria-label="Link to this section: ${text}">#</a>
+        </${level}>`
+      }
+    }
+  })
+</script>

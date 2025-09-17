@@ -1,0 +1,15 @@
+.input {
+  display: inline-block;
+  padding: calc(var(--padding-y) - .2rem) var(--padding-x);
+  font-size: var(--spacer-1);
+  line-height: 1.5;
+  color: var(--body-colour);
+  border: 3px solid var(--secondary);
+  border-radius: var(--border-radius);
+  transition: box-shadow 250ms;
+
+  &:focus {
+    outline: 0;
+    box-shadow: 0 0 0 .25rem var(--secondary);
+  }
+}

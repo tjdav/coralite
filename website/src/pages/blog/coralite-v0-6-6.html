@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.6.6" description="Coralite v0.6.6 enhances HTML parsing, template processing, and developer tools for static site generators, improving reliability and flexibility in website creation."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-03-22T09:04:33+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.6.6</h1>
+
+    <coralite-author name="thomas" date-time="2025-03-22T09:04:33+01:00"></coralite-author>
+
+    <p>Coralite’s latest release introduces improvements in template processing and HTML parsing, enhancing reliability and flexibility for developers using the HTML module static site generator.</p>  
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li>Enhanced HTML parsing capabilities through a reusable <code>parseHTML</code> utility function, enabling consistent token extraction and rendering across templates. This includes support for parsing HTML within tokens and appending rendered content to custom element slots.</li>  
+      <li>Resolved an issue where computed slot token parameters incorrectly excluded attribute values, ensuring accurate data handling during template processing.</li>  
+      <li>Exported the current document context to template rendering pipelines, improving access to contextual metadata for dynamic content generation.</li>  
+      <li>Updated type definitions in <code>CoraliteModuleValues</code> to align with recent API changes, enhancing code clarity and type safety across modules.</li>  
+    </ul>  
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.6.6</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.6.6" target="_blank">git v0.6.6 changelog</a>.</p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

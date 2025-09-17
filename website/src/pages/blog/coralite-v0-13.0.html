@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article"
+    title="Coralite v0.13.0"
+    description="Coralite v0.13.0 introduces updated plugin hooks using onPageSet and onTemplateSet, along with codebase optimizations for better performance and maintainability."
+    seo-title="Coralite v0.13.0: Plugin Hook Updates and Codebase Improvements"
+    seo-description="Discover the key updates in Coralite v0.13.0, including plugin hook changes to onPageSet and onTemplateSet, codebase optimizations, and improved maintainability for developers. Learn how these changes enhance performance and clarity in static site generation."
+  ></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2025-07-18T03:55:24+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.13.0</h1>
+
+    <coralite-author name="thomas" date-time="2025-07-18T03:55:24+02:00"></coralite-author>
+
+    <p>Coralite’s latest release, version 0.13.0, focuses on improving plugin compatibility and refining internal processing logic for better performance and clarity.</p>  
+
+    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+
+    <ul>  
+      <li>Plugin hooks have been updated to use <code>onPageSet</code> and <code>onTemplateSet</code> instead of the previous <code>onPageCreate</code> and <code>onTemplateCreate</code>. This change ensures consistency with internal event handling mechanisms.</li>  
+      <li>Temporary elements for hooks are now included during compilation, providing better debugging capabilities while removing them in production.</li>  
+    </ul>  
+
+    <coralite-heading level="h2" text="Codebase Optimisations"></coralite-heading>
+
+    <ul>  
+      <li>The plugin hook system has been refactored for improved maintainability and clarity, aligning with the new event naming conventions.</li>  
+      <li>Type definitions have been updated to reflect the new callback names for page and template events, ensuring type safety in plugin development.</li>  
+    </ul>  
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.13.0</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.13.0" target="_blank">git v0.13.0 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

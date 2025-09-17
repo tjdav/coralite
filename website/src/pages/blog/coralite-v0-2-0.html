@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.2.0" description="Discover Coralite v0.2.0 updates, including improved HTML parsing, page aggregation support, and enhanced JSDoc documentation for better developer experience."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-01-23T16:10:48+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.2.0</h1>
+
+    <coralite-author name="thomas" date-time="2025-01-23T16:10:48+01:00"></coralite-author>
+
+    <p>Coralite’s latest release of its HTML module static site generator introduces significant improvements in processing structured data, component architecture, and developer tooling. This update replaces legacy regex-based parsing with HTML-centric methods, enhances module handling for complex components, and improves documentation across the codebase.</p>  
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <p>The release prioritises robustness in document processing by shifting from regex to dedicated HTML parsing. This change enables more accurate extraction of metadata and structured content while supporting advanced features such as non-recursive requests in <code>getHTML</code>, page aggregation, and improved slot handling for component rendering.</p>  
+
+    <ul>  
+      <li>Replaced regex-based parsing with HTML-centric methods to enhance compatibility with complex document structures. This improves reliability when processing nested or dynamic content.</li>  
+      <li><code>getHTML</code> now supports non-recursive requests by default, simplifying integration for use cases requiring targeted data extraction without deep traversal.</li>  
+      <li>Introduced page aggregation functionality to dynamically combine metadata from multiple sources, expanding Coralite’s capabilities in content management and analysis workflows.</li>  
+      <li>Rewrote module parsing logic to support ES modules and slot-based component creation. This enables more flexible rendering of reusable components with dynamic slots.</li>  
+    </ul>
+
+    <coralite-heading level="h2" text="Code Improvements and Documentation"></coralite-heading>
+
+    <p>The update includes extensive updates to JSDoc comments across core functions, ensuring clarity for developers working with Coralite’s APIs. Specific improvements include:</p>  
+
+    <ul>  
+      <li>Detailed documentation for <code>parseModule</code>, <code>createComponent</code>, and <code>getHTML</code>, with example usage scenarios added to clarify implementation details.</li>  
+      <li>Refactored code organisation, including the relocation of HTML module functions into a dedicated <code>html-modules.js</code> file for improved maintainability.</li>  
+      <li>Removed deprecated files and legacy features to streamline the codebase and reduce maintenance overhead.</li>  
+    </ul>  
+
+    <coralite-heading level="h2" text="Build and Configuration Updates"></coralite-heading>
+
+    <p>The release updates build configurations to target ES2022, ensuring compatibility with modern JavaScript environments. A dedicated executable file is now used for CLI operations, alongside updated package.json dependencies for HTML parsing and other enhancements.</p>  
+    
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.2.0</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.2.0" target="_blank">git v0.2.0 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

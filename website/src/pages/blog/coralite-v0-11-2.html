@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.11.2" description="Coralite v0.11.2 introduces enhanced static site generation with improved HTML module functionality, bug fixes, and usability improvements for developers."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-06-15T09:13:46+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.11.2</h1>
+    <coralite-author name="thomas" date-time="2025-06-15T09:13:46+02:00"></coralite-author>
+
+    <p>Coralite’s latest release, version 0.11.2, introduces several enhancements and bug fixes to improve the HTML module static site generator’s reliability, usability, and maintainability.</p>
+
+    <coralite-heading level="h2" text="Key Improvements and Fixes"></coralite-heading>
+
+    <ul>
+      <li>Introduced a new <code>save</code> method in the Coralite API to allow developers to export processed documents as HTML files directly from the module, streamlining output management.</li>
+      <li>Refactored internal file operations to use the standard <code>coralite.save()</code> method instead of manual file handling, reducing redundancy and improving consistency across the codebase.</li>
+      <li>Improved error messages for common issues such as missing template directories or incorrect module exports, aiding in faster debugging and resolution.</li>
+      <li>Updated parameter names and type annotations in documentation to enhance clarity and accuracy for developers using the tool.</li>
+      <li>Enhanced comment formatting consistency across the codebase for better readability and maintainability.</li>
+      <li>Added a TypeScript ignore directive (<code>// @ts-ignore</code>) for specific module exports to address compatibility issues during type checking.</li>
+      <li>Fixed an issue in the <code>replaceToken</code> function where directive nodes were not being correctly skipped, ensuring more accurate template processing and rendering.</li>
+    </ul>
+    
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+    <coralite-code-highlight language="bash">npm install coralite@0.11.2</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.11.2" target="_blank">git v0.11.2 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

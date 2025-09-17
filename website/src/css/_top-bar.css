@@ -1,0 +1,22 @@
+.top-bar {
+  height: 6vh;
+  max-height: 128px;
+  overflow: hidden;
+  color: var(--light);
+  background-color: var(--dark);
+  background-image: var(--gradient-dark);
+
+  & .container {
+    position: relative;
+    height: 100%;
+    background-image: url("/images/top-bar-coral-1.avif"), url("/images/top-bar-coral-2.avif");
+    background-repeat: no-repeat, no-repeat;
+    background-position: 10% center, 90% center;
+  }
+}
+
+@media screen and (max-height: 825px) {
+  .top-bar {
+    height: 5vh;
+  }
+}

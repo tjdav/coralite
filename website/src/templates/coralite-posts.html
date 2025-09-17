@@ -1,0 +1,22 @@
+<template id="coralite-posts">
+  {{ posts }}
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  import { aggregation } from 'coralite/plugins'
+
+  export default defineComponent({
+    tokens: {
+      posts () {
+        return aggregation({
+          path: ['blog'],
+          template: 'coralite-post',
+          sort (a, b) {
+            return new Date(b.$published_time) - new Date(a.$published_time)
+          }
+        })
+      }
+    }
+  })
+</script>

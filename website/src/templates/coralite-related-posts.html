@@ -1,0 +1,43 @@
+<template id="coralite-related-posts">
+  <h3>Related posts</h3>
+
+  {{ posts }}
+
+  <p><a href="/blog">More blog posts</a></p>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  import { aggregation } from 'coralite/plugins'
+
+  export default defineComponent({
+    tokens: {
+      async posts () {
+        const postItems = await aggregation({
+          path: ['blog'],
+          template: 'coralite-related-post',
+          limit: 3,
+          sort (a, b) {
+            return new Date(b.$published_time) - new Date(a.$published_time)
+          }
+        })
+
+        if (postItems.length) {
+          const ul = {
+            type: 'tag',
+            name: 'ul',
+            children: postItems
+          }
+
+          for (let i = 0; i < postItems.length; i++) {
+            const item = postItems[i]
+
+            item.parent = ul
+          }
+
+          return ul
+        }
+      }
+    }
+  })
+</script>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.2.1" description="Coralite v0.2.1 introduces enhanced layout parsing, native SVG support, and code optimizations for static site generation. Discover improvements in performance and flexibility."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-01-23T21:36:45+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.2.1</h1>
+
+    <coralite-author name="thomas" date-time="2025-01-23T21:36:45+01:00"></coralite-author>
+
+    <p>Coralite’s latest release introduces enhancements to layout component parsing, SVG tag support, and codebase cleanup while improving test coverage for critical functions.</p>  
+
+    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+
+    <ul>  
+      <li>Improved root element parsing to enable hierarchical layout components, resolving compatibility issues with nested structures.</li>  
+      <li>Expanded HTML rendering capabilities by including native <code>&#60;svg&#62;</code> tag support for embedded vector graphics.</li>  
+      <li>Enhanced test coverage with new unit tests for the `getHTML` function, ensuring robustness during template processing.</li>  
+    </ul>  
+
+    <coralite-heading level="h2" text="Codebase Optimisations"></coralite-heading>
+
+    <ul>  
+      <li>Removed unused dependencies (`acorn`, `eval-estree-expression`) and outdated configuration files to reduce maintenance overhead.</li>  
+      <li>Updated CI workflows for release note generation, ensuring consistency across versions.</li>  
+    </ul>  
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.2.1</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.2.1" target="_blank">git v0.2.1 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

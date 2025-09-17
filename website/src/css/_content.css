@@ -1,0 +1,35 @@
+.content {
+  padding: var(--spacer-3);
+
+  & > h2:not(:first-child) {
+    margin-top: var(--spacer-5);
+  }
+
+  & > h3 {
+    margin-top: var(--spacer-4);
+  }
+
+  & > h4 {
+    margin-top: var(--spacer-3);
+  }
+}
+
+.content-img {
+  max-width: 100%;
+  height: auto;
+}
+
+.content-border {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  z-index: -1;
+  width: 110%;
+  transform: translate(-50%, -50%);
+}
+
+@media screen and (min-width: 768px){
+  .content {
+    padding: var(--spacer-5);
+  }
+}

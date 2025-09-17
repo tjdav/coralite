@@ -1,0 +1,28 @@
+.p-1 {
+  padding: var(--spacer-1);
+}
+
+
+.p-5 {
+  padding: var(--spacer-5);
+}
+
+.py-5 {
+  padding-right: var(--spacer-5);
+  padding-left: var(--spacer-5);
+}
+
+.px-5 {
+  padding-top: var(--spacer-5);
+  padding-bottom: var(--spacer-5);
+}
+
+.mb-4 {
+  margin-bottom: var(--spacer-5);
+}
+
+@media screen and (min-width: 768px){
+  .p-md-5 {
+    padding: var(--spacer-5);
+  }
+}

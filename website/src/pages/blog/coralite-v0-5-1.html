@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.5.1" description="Coralite v0.5.1 introduces enhanced template handling, improved test coverage, and new security features for the HTML module static site generator."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-02-10T09:52:11+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.5.1</h1>
+
+    <coralite-author name="thomas" date-time="2025-02-10T09:52:11+01:00"></coralite-author>
+
+    <p>Coralite’s latest update introduces enhancements to the HTML module static site generator, improving template handling and security features through contextification improvements.</p>
+
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li>Implemented support for aggregate templates accepting string inputs via the <code>evalComputedTokens</code> function, enabling more flexible template composition.</li>  
+      <li>Expanded test coverage to include slot comment handling in template aggregation processes.</li>  
+      <li>Resolved inconsistencies in template aggregate tests by updating validation logic for edge cases.</li>  
+      <li>Integrated <code>Crypto</code> module into contextified objects, enhancing cryptographic operations within templates.</li>  
+    </ul>
+    
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.5.1</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.5.1" target="_blank">git v0.5.1 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>

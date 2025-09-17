@@ -1,0 +1,53 @@
+<template id="coralite-meta">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="canonical" href="{{ canonical }}">
+
+  <!-- metadata -->
+  <meta name="pageTitle" content="{{ title }}">
+  <meta name="pageDescription" content="{{ description }}">
+  <meta name="title" content="{{ metaSeoTitle }}">
+  <meta name="description" content="{{ metaSeoDescription }}">
+
+  <!-- OG metadata -->
+  <meta property="og:type" content="{{ ogType }}">
+  <meta property="og:title" content="{{ metaSeoTitle }}">
+  <meta property="og:description" content="{{ metaSeoDescription }}">
+  <meta property="og:image" content="https://coralite.io/images/social.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  
+  <link rel="icon" href="/favicon.ico">
+
+  <title>{{ title }} | Coralite</title>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    tokens: {
+      ogType (values) {
+        return values.type || "website"
+      },
+      metaSeoTitle (values) {
+        return values.seoTitle || values.title
+      },
+      metaSeoDescription (values) {
+        return values.seoDescription || values.description
+      },
+      canonical (values) {
+        let result = 'https://coralite.io'
+
+        // return root path
+        if (values.$urlPathname === '/index.html' ) {
+          return result
+        }
+
+        let nameSplit = values.$urlPathname.split('.html')
+        // remove .html file extension.
+        return result + nameSplit.slice(0, nameSplit.length - 1).join('')
+      }
+    }
+  })
+</script>

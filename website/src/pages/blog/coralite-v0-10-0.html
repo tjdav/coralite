@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.10.0" description="Coralite v0.10.0 introduces major updates to its HTML module static site generator, including enhanced metadata extraction, context-aware component scoping, plugin template support, and refined type system improvements."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2025-05-30T14:57:56+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.10.0</h1>
+    <coralite-author name="thomas" date-time="2025-05-30T14:57:56+02:00"></coralite-author>
+
+    <p>Coralite v0.10.0 introduces foundational improvements for building and rendering static websites, with a focus on component-based architecture, metadata extraction, and type system refinements.</p>  
+      
+    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+
+    <ul>  
+      <li>Introduced support for templates within plugins (feat: add support for templates in plugins) to enable dynamic content generation during site rendering. </li>  
+      <li>Added metadata extraction from HTML into a dedicated <code>meta</code> field via the <code>parseHTML</code> function, replacing the deprecated <code>parseHTMLMeta</code> utility (BREAKING CHANGE).</li>  
+      <li>Implemented context-aware scoping for component values using unique context IDs derived from path, element name, and position to isolate value management and improve modularity (feat: introduce context ID for scoped component value management) (BREAKING CHANGE).</li>  
+    </ul>  
+    
+    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+
+    <ul>  
+      <li>Refactored type definitions to include an <code>id</code> property in the value context type and standardised plugin and types directory configurations (types: add id property, types configuration for plugins). </li>
+      <li>Enhanced file handling by validating template paths at runtime and preventing mutations of original pages lists during processing. </li>
+      <li>Improved tracking of custom elements during file updates to avoid duplicates and ensure accurate removal of outdated references. </li>
+    </ul>  
+
+    <coralite-heading level="h2" text="Breaking Changes"></coralite-heading>
+
+    <ul>  
+      <li>The <code>parseHTMLMeta</code> function has been removed; use the <code>meta</code> property in <code>parseHTML</code> return values instead (BREAKING CHANGE). </li>  
+      <li>Updated plugin parameter types from <code>CoralitePlugin[]</code> to <code>CoralitePluginInstance[]</code>; existing code using the legacy type must be adjusted (BREAKING CHANGE). </li>  
+      <li>Component value overrides may require modification when using nested components due to context-aware scoping refactoring (BREAKING CHANGE). </li>  
+    </ul> 
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.10.0</coralite-code-highlight>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.10.0" target="_blank">git v0.10.0 changelog</a></p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  <coralite-hot-reload></coralite-hot-reload>
+</body>
+
+</html>
