@@ -2,6 +2,10 @@
   display: flex;
 }
 
+.d-none {
+  display: none;
+}
+
 .visibility-hidden {
   position: absolute;
   width: 1px;
@@ -10,4 +14,12 @@
   clip: rect(0 0 0 0);
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+
+
+@media (min-width: 768px) {
+  .d-md-flex {
+    display: flex;
+  }
 }
