@@ -10,10 +10,15 @@
   export default defineComponent({
     script ({ values, refs }) {
       const button = refs('count-button')
-      let count = 1
+      const step = values.step ? parseInt(values.step) : 1
+      let count = 0
       
       button.addEventListener('click', () => {
-        button.textContent = `Count is ${count++}`
+        // increment the counter by the specified step value
+        count += step
+
+        // update the button's text content to reflect the new count value
+        button.textContent = `Count is ${count}`
       })
     }
   })
