@@ -5,10 +5,10 @@ packages:
 onlyBuiltDependencies:
   - '@parcel/watcher'
   - simple-git-hooks
+  - esbuild
+  - playwright-firefox
 
-overrides:
-  coralite: workspace:*
-
-peerDependencyRules:
-  allowedVersions:
-    coralite: '*'
+packageExtensions:
+  coralite-scripts:
+    optionalDependencies:
+      coralite: npm:coralite@0.18.3
