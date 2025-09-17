@@ -7,34 +7,21 @@
   border-radius: var(--border-radius);
   transition: background-color 250ms;
 
-  border-width: 2px;
-  border-style: solid;
+
 }
 
 .button-primary {
   color: var(--dark);
   background-color: var(--primary);
-  border-color: var(--primary);
 
   &:hover {
-    background-color: hsl(from var(--primary) h s 40%);
+    background-color: hsl(from var(--primary) h s 20%);
   }
 }
 
 .button-secondary {
   color: var(--light);
   background-color: var(--secondary);
-  border-color: hsl(from var(--secondary) h s 40%);
-
-  &:hover {
-    background-color: hsl(from var(--secondary) h s 40%);
-  }
-}
-
-.button-outline-secondary {
-  color: var(--light);
-  border-color: hsl(from var(--secondary) h s 40%);;
-  background-color: hsl(from var(--secondary) h s 15%);
 
   &:hover {
     background-color: hsl(from var(--secondary) h s 40%);
