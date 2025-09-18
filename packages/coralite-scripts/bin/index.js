@@ -9,6 +9,7 @@ import pkg from '../package.json' with { type: 'json'}
 import buildSass from '../libs/build-sass.js'
 import { join } from 'node:path'
 import { deleteDirectoryRecursive, copyDirectory, toMS, toTime } from '../libs/build-utils.js'
+import buildCSS from '../libs/build-css.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -59,18 +60,33 @@ if (mode === 'dev') {
     copyDirectory(publicDir, config.output)
   }
 
-  if (config.styles && (config.styles.type === 'sass' || config.styles.type === 'scss')) {
-    const results = await buildSass({
-      input: config.styles.input,
-      options: config.sassOptions,
-      output: join(config.output, 'css'),
-      start
-    })
+  if (config.styles) {
+    if (config.styles.type === 'sass' || config.styles.type === 'scss') {
+      const results = await buildSass({
+        input: config.styles.input,
+        output: join(config.output, 'css'),
+        options: config.sassOptions,
+        start
+      })
 
-    for (let i = 0; i < results.length; i++) {
-      const result = results[i]
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i]
 
-      process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
+        process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
+      }
+    } else if (config.styles.type === 'css') {
+      const results = await buildCSS({
+        input: config.styles.input,
+        output: join(config.output, 'css'),
+        plugins: config.cssPlugins,
+        start
+      })
+
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i]
+
+        process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
+      }
     }
   }
 }
