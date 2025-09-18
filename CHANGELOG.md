@@ -1,5 +1,61 @@
 # Changelog
 
+## v0.18.4
+
+> Comparing `v0.18.3` to `v0.18.4`
+
+**Summary:** 28 commits, 2 pull requests
+
+### ✨ Features
+
+- add public directory copy functionality for dev mode (coralite-scripts) ([0c778db](https://codeberg.org/tjdavid/coralite/commit/0c778db2689b6886085d7a22d6a7d5667b225388))
+- add recursive directory deletion utility function (coralite-scripts) ([6f1d31f](https://codeberg.org/tjdavid/coralite/commit/6f1d31f7c3e31847794c87c1239f1473f7560b7f))
+- add copyDirectory utility function for recursive directory copying (coralite-scripts) ([f4e03c8](https://codeberg.org/tjdavid/coralite/commit/f4e03c8d4e3ace24289e49c29dc31f5d90e22e81))
+- add layout utils ([39cde04](https://codeberg.org/tjdavid/coralite/commit/39cde045dbeaa10c1a895a65bd7dcf2b13964de0))
+- add display utils ([529d5db](https://codeberg.org/tjdavid/coralite/commit/529d5db692f9456f3987ed1c3ba4dc4b881a8248))
+- add sticky navbar ([c53ad54](https://codeberg.org/tjdavid/coralite/commit/c53ad545993bc504e2a216d344a404704473aa98))
+- logo svg ([6ed7e63](https://codeberg.org/tjdavid/coralite/commit/6ed7e63527161204ffb4364f85cccdaba1fbeb06))
+- hero background ([142d004](https://codeberg.org/tjdavid/coralite/commit/142d00429c5d91044ea11406e8d1503ed0d6206c))
+- transfer from coralite.io ([2d5f6e2](https://codeberg.org/tjdavid/coralite/commit/2d5f6e254189656fce753e07b3b3928bccc57894))
+- export types ([f6311d1](https://codeberg.org/tjdavid/coralite/commit/f6311d1c9c79e1f164bf19bf0dc23a0a5bc3c68c))
+
+### 🐛 Bug Fixes
+
+- clean up output directory before compilation ([9aef2c5](https://codeberg.org/tjdavid/coralite/commit/9aef2c5b726335defa033ecfa85de2ae15b6cb79))
+- remove unused custom hot reload element ([53f7b0d](https://codeberg.org/tjdavid/coralite/commit/53f7b0dfc95668467ae49687139a44a0a0a8c143))
+- update hero markup for responsive fix ([ee114b0](https://codeberg.org/tjdavid/coralite/commit/ee114b04a9dce837a1fd6ee207bf86e614f03632))
+- make hero section responsive ([d92021a](https://codeberg.org/tjdavid/coralite/commit/d92021ae96ebac23870770dd8ee17f101f7af593))
+- remove unused border on buttons ([b96c216](https://codeberg.org/tjdavid/coralite/commit/b96c216ea8053375df6f138c6d49ee0f904ea55f))
+
+### 🧹 Chores
+
+- remove redundant hrtime initialization in build mode ([02ef64b](https://codeberg.org/tjdavid/coralite/commit/02ef64bd7a7eb05dc2262ad6d1e4b575bee43b4b))
+- update lock file ([104b45e](https://codeberg.org/tjdavid/coralite/commit/104b45e5b75c37ad4316c6a77d00fb4361f58f3e))
+- update lock file ([dbbc34d](https://codeberg.org/tjdavid/coralite/commit/dbbc34ded47db7a759ac1d4c76191b16cbcf8e89))
+- update coralite-scripts to v0.18.3 and add coralite-plugin-aggregation dependency (deps) ([ed267a6](https://codeberg.org/tjdavid/coralite/commit/ed267a6bc254c15f6c26b57982dd4c52ba761e28))
+- update pnpm workspace dependencies esbuild and playwright-firefox to v0.18.3 (config) ([82acee4](https://codeberg.org/tjdavid/coralite/commit/82acee4befc2397094e9dde5f1da1869c02fe79f))
+- update pnpm to v10.17.0 and add coralite-release dependency (deps) ([e8a19b9](https://codeberg.org/tjdavid/coralite/commit/e8a19b923e8573ab87b8fd3e8ce01fdae24ff210))
+- update stylistic eslint plugins and @types/node to latest versions (deps) ([4a551ce](https://codeberg.org/tjdavid/coralite/commit/4a551ced17375486396048d31f0de6e9ffb306a7))
+- build scripts before publish ([de2955c](https://codeberg.org/tjdavid/coralite/commit/de2955c4d873878b11763c42d8f8097b3e064952))
+- update changelog ([2db0e84](https://codeberg.org/tjdavid/coralite/commit/2db0e84b49cd351ee0122586680e7b9d079a02d6))
+
+### ⏪ Reverts
+
+- version number ([01b95f2](https://codeberg.org/tjdavid/coralite/commit/01b95f2048ce39f5f6c1ea807a16084b54d575fa))
+
+### 🔨 Other Changes
+
+- release: version 0.18.4 ([ae0acc5](https://codeberg.org/tjdavid/coralite/commit/ae0acc530e0b60f3215dea64e3a8d17fb115bd65))
+- Merge pull request 'Coralite scripts clean up build files' (#17) from build-include-public-files into main ([#17](https://codeberg.org/tjdavid/coralite/pulls/17)) ([88cf0da](https://codeberg.org/tjdavid/coralite/commit/88cf0dafaf2e17c1052511bd1b224bb233a3ab33))
+- Merge pull request 'website' (#16) from website into main ([#16](https://codeberg.org/tjdavid/coralite/pulls/16)) ([b328121](https://codeberg.org/tjdavid/coralite/commit/b3281218277d68ba0a04e2960517acddcc4e9719))
+
+### 🔗 Pull Requests
+
+- [#16](https://codeberg.org/tjdavid/coralite/pull/16)
+- [#17](https://codeberg.org/tjdavid/coralite/pull/17)
+
+---
+
 ## v0.18.3
 
 > Comparing `v0.18.2` to `v0.18.3`
@@ -34,6 +90,7 @@
 - release: version 0.18.2 ([b2c1ec0](https://codeberg.org/tjdavid/coralite/commit/b2c1ec00e82a8e0e2f4129fb7681d42a67bafa1a))
 - release: version 0.18.2 ([61be599](https://codeberg.org/tjdavid/coralite/commit/61be599b67672657e49ad19b112c1bd7a64a431c))
 
+---
 
 ## v0.18.2
 
@@ -79,6 +136,8 @@
 
 - [#13](https://codeberg.org/tjdavid/coralite/pull/13)
 - [#14](https://codeberg.org/tjdavid/coralite/pull/14)
+
+---
 
 ## v0.18.0
 
@@ -131,7 +190,7 @@
 - [#11](https://codeberg.org/tjdavid/coralite/pull/11)
 - [#12](https://codeberg.org/tjdavid/coralite/pull/12)
 
-
+---
 
 ## v0.17.0
 
@@ -218,6 +277,7 @@
 - [#9](https://codeberg.org/tjdavid/coralite/pull/9)
 - [#10](https://codeberg.org/tjdavid/coralite/pull/10)
 
+---
 
 ## v0.16.0
 
@@ -269,6 +329,8 @@
 
 - [#7](https://codeberg.org/tjdavid/coralite/pulls/7)
 - [#8](https://codeberg.org/tjdavid/coralite/pulls/8)
+
+---
 
 ## v0.15.0
 
