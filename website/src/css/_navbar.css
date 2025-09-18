@@ -1,6 +1,5 @@
 .navbar {
   background-color: var(--secondary);
-  box-shadow: 0 .5rem 1rem #00000026,inset 0 -1px #ffffff26;
   position: sticky;
   top: 0;
   z-index: 5;
