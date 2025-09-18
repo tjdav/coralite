@@ -8,7 +8,7 @@ import buildHTML from '../libs/build-html.js'
 import pkg from '../package.json' with { type: 'json'}
 import buildSass from '../libs/build-sass.js'
 import { join } from 'node:path'
-import { toMS, toTime } from '../libs/build-utils.js'
+import { deleteDirectoryRecursive, copyDirectory, toMS, toTime } from '../libs/build-utils.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -41,6 +41,8 @@ if (mode === 'dev') {
   // log the response time and status code
   process.stdout.write('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
   process.stdout.write(border + colours.inverse(` LOGS `) + border + '\n\n')
+  // delete old output files
+  deleteDirectoryRecursive(config.output)
 
   const documents = await buildHTML(config)
   const dash = colours.gray(' ─ ')
