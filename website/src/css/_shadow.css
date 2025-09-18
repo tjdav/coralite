@@ -1,0 +1,11 @@
+.box-shadow {
+  box-shadow: 0 .5rem 1rem #00000026,inset 0 -1px #ffffff26;
+}
+
+.drop-shadow {
+  filter: drop-shadow(0 5px 0.75rem #00000080)
+}
+
+.drop-shadow-neon {
+  filter: drop-shadow(5px 5px 0.75rem #ff00d763) drop-shadow(-5px -5px 0.75rem #d0ff0063)
+}
