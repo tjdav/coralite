@@ -62,7 +62,6 @@
   background-image: radial-gradient(circle at bottom, rgba(49, 26, 75, .3), rgba(14, 7, 19, 0.50));
   border-top-left-radius: var(--border-radius);
   border-top-right-radius: var(--border-radius);
-  box-shadow: 0 .5rem 1rem #00000026,inset 0 -1px #ffffff26;
   border-width: 0 1px 0 1px;
   border-style: solid;
   border-color: #ffffff2e;
