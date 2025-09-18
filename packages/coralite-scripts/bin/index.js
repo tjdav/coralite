@@ -8,7 +8,7 @@ import buildHTML from '../libs/build-html.js'
 import pkg from '../package.json' with { type: 'json'}
 import buildSass from '../libs/build-sass.js'
 import { join } from 'node:path'
-import { toMS, toTime } from '../libs/build-utils.js'
+import { deleteDirectoryRecursive, copyDirectory, toMS, toTime } from '../libs/build-utils.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -34,14 +34,16 @@ const config = await loadConfig()
 if (mode === 'dev') {
   await server(config, options)
 } else if (mode === 'build') {
-  const start = process.hrtime()
   const PAD = '  '
   const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
 
   // log the response time and status code
   process.stdout.write('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
   process.stdout.write(border + colours.inverse(` LOGS `) + border + '\n\n')
+  // delete old output files
+  deleteDirectoryRecursive(config.output)
 
+  const start = process.hrtime()
   const documents = await buildHTML(config)
   const dash = colours.gray(' ─ ')
 
@@ -49,6 +51,12 @@ if (mode === 'dev') {
     const document = documents[i]
 
     process.stdout.write(toTime() + toMS(document.duration) + dash + document.item.path.pathname + '\n')
+  }
+
+  const publicDir = config.public
+
+  if (publicDir) {
+    copyDirectory(publicDir, config.output)
   }
 
   if (config.styles && (config.styles.type === 'sass' || config.styles.type === 'scss')) {
