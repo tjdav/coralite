@@ -1,4 +1,6 @@
 import colours from 'kleur'
+import fs from 'node:fs'
+import path from 'node:path'
 
 /**
  * Creates current time in format [HH:MM:SS].mmm (milliseconds), colored with ANSI colors, and formatted as bold white string for better readability of logs or console output
@@ -73,3 +75,34 @@ export function copyDirectory (src, dest) {
   }
 }
 
+/**
+ * Recursively deletes a directory and all its contents
+ * @param {string} dirPath - The path to the directory to delete
+ */
+export function deleteDirectoryRecursive (dirPath) {
+  // Check if directory exists before attempting deletion
+  if (!fs.existsSync(dirPath)) {
+    console.log(`Directory ${dirPath} does not exist`)
+    return
+  }
+
+  // Read all files in the directory
+  const files = fs.readdirSync(dirPath)
+
+  // Iterate through each file/directory in the target directory
+  for (const file of files) {
+    const filePath = path.join(dirPath, file)
+    const stat = fs.statSync(filePath)
+
+    // If current item is a directory, recursively delete it
+    if (stat.isDirectory()) {
+      deleteDirectoryRecursive(filePath)
+    } else {
+      // If current item is a file, delete it directly
+      fs.unlinkSync(filePath)
+    }
+  }
+
+  // Remove the now-empty directory
+  fs.rmdirSync(dirPath)
+}
