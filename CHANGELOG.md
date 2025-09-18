@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.18.5
+
+> Comparing `v0.18.4` to `v0.18.5`
+
+**Summary:** 7 commits
+
+### 🐛 Bug Fixes
+
+- build css (coralite-scripts) ([a5c306b](https://codeberg.org/tjdavid/coralite/commit/a5c306bddcd8c7ac9b0d1209556cc6d3c1cb3d8a))
+
+### 🧹 Chores
+
+- update lockfile ([6626089](https://codeberg.org/tjdavid/coralite/commit/662608986d3d2946838f20539e9ad9ef664b914c))
+- update coralite-scripts to v0.18.4 (deps) ([7e46282](https://codeberg.org/tjdavid/coralite/commit/7e462826ffc5cb9709d5c9de4272059466a9c0f4))
+- update changelog ([b16abd8](https://codeberg.org/tjdavid/coralite/commit/b16abd82786201d48c9e589b79a9dac12eecf0a3))
+
+---
 ## v0.18.4
 
 > Comparing `v0.18.3` to `v0.18.4`
