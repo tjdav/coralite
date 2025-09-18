@@ -53,6 +53,12 @@ if (mode === 'dev') {
     process.stdout.write(toTime() + toMS(document.duration) + dash + document.item.path.pathname + '\n')
   }
 
+  const publicDir = config.public
+
+  if (publicDir) {
+    copyDirectory(publicDir, config.output)
+  }
+
   if (config.styles && (config.styles.type === 'sass' || config.styles.type === 'scss')) {
     const results = await buildSass({
       input: config.styles.input,
