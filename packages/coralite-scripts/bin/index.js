@@ -34,7 +34,6 @@ const config = await loadConfig()
 if (mode === 'dev') {
   await server(config, options)
 } else if (mode === 'build') {
-  const start = process.hrtime()
   const PAD = '  '
   const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
 
@@ -44,6 +43,7 @@ if (mode === 'dev') {
   // delete old output files
   deleteDirectoryRecursive(config.output)
 
+  const start = process.hrtime()
   const documents = await buildHTML(config)
   const dash = colours.gray(' ─ ')
 
