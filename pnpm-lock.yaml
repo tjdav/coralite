@@ -139,8 +139,8 @@ importers:
         specifier: ^0.5.2
         version: 0.5.2
       coralite-scripts:
-        specifier: ^0.18.3
-        version: 0.18.3
+        specifier: ^0.18.4
+        version: 0.18.4
 
 packages:
 
@@ -742,12 +742,17 @@ packages:
   coralite-plugin-aggregation@0.5.2:
     resolution: {integrity: sha512-Fk/JncPfLB3Ue0YJYBYPKp2wzYIP8iJ/k4P7Q498E+UhY6xOA6deD7EQAoOstlD5EexS4QjQmec0wGT8a5Zi0w==}
 
-  coralite-scripts@0.18.3:
-    resolution: {integrity: sha512-gf/e1IYuHBSCuAOVYg0+TXLTbAtyTtmPcHpham5Gd18HrFQpfFHXxBo5udaWC1zqiVy67og4StrjTugWEPuGBg==}
+  coralite-scripts@0.18.4:
+    resolution: {integrity: sha512-yHJIMeXMMHeM2vPlEUI83tx0mST7nCRsn+DE2AOSoDkNrcnMAJw9djn9Mv9/QR8vqcaImvdB6TP4WfqSPAhN4w==}
     hasBin: true
 
   coralite@0.18.3:
     resolution: {integrity: sha512-0C6IacDqBF0cFP9TFERYamkfceIqivjach9KGYCfWPHUIjoDFVmHV2d1Ug/REqKH9wYsyNak3O/At1xfQzM8qQ==}
+    engines: {node: ^20.19.0 || >=22.12.0}
+    hasBin: true
+
+  coralite@0.18.4:
+    resolution: {integrity: sha512-XT+j72vODgT6BgTc2JFSDHkEoCvfccDCtwF2ngUJTGyGtGlADY+blbWUAzx/bQo3Miybu4HCV9OBaWZ9GBnquw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
@@ -2298,7 +2303,7 @@ snapshots:
       dom-serializer: 2.0.0
       htmlparser2: 10.0.0
 
-  coralite-scripts@0.18.3:
+  coralite-scripts@0.18.4:
     dependencies:
       chokidar: 4.0.3
       commander: 14.0.1
@@ -2309,7 +2314,7 @@ snapshots:
       postcss: 8.5.6
       sass: 1.92.0
     optionalDependencies:
-      coralite: 0.18.3
+      coralite: 0.18.4
     transitivePeerDependencies:
       - jest
       - jest-diff
@@ -2318,6 +2323,14 @@ snapshots:
       - vitest
 
   coralite@0.18.3:
+    dependencies:
+      commander: 13.1.0
+      dom-serializer: 2.0.0
+      htmlparser2: 10.0.0
+      kleur: 4.1.5
+    optional: true
+
+  coralite@0.18.4:
     dependencies:
       commander: 13.1.0
       dom-serializer: 2.0.0
