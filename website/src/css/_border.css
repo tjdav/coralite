@@ -1,0 +1,14 @@
+.border {
+  border-style: solid;
+  border-color: var(--secondary);
+  border-width: 0;
+}
+
+.border-bottom-5 {
+  border-top-width: 5px;
+}
+
+.border-top-5 {
+  border-top-width: 5px;
+}
+
