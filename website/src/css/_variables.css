@@ -6,16 +6,16 @@
   --green-dark: #667d00;
   --pink-dark: #d63384;
   --pink-light: #e685b5;
-  --primary: light-dark(var(--green-dark), var(--green-light));
+  --primary: var(--green-light);
   --secondary-dark: rgb(49, 26, 75);
   --secondary: #754aaa;
   --light: #f9f9f9;
   --dark: rgb(49, 26, 75);
   --darker: rgb(14, 7, 19);
-  --body-bg: light-dark(var(--light), var(--darker));
-  --body-colour: light-dark(var(--darker), var(--light));
+  --body-bg: var(--darker);
+  --body-colour: var(--light);
   --gradient-dark: linear-gradient(var(--secondary-dark), var(--darker));
-  --code-colour: light-dark(var(--pink-dark), var(--pink-light));
+  --code-colour: var(--pink-light);
 
   /* spacing */
   --spacer-base: 1rem;
@@ -52,4 +52,8 @@
   --box-shadow-sm: 0 .125rem .25rem rgba(0, 0, 0, .075);
   --box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, .175);
   --box-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, .075);
+
+  /* Ray */
+  --ray-colour: var(--secondary);
+  --ray-bg: var(var(--ray-colour));
 }
