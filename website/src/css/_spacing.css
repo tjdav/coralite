@@ -7,14 +7,19 @@
   padding: var(--spacer-5);
 }
 
+.py-3 {
+  padding-top: var(--spacer-3);
+  padding-bottom: var(--spacer-3);
+}
+
 .py-5 {
-  padding-right: var(--spacer-5);
-  padding-left: var(--spacer-5);
+  padding-top: var(--spacer-5);
+  padding-bottom: var(--spacer-5);
 }
 
 .px-5 {
-  padding-top: var(--spacer-5);
-  padding-bottom: var(--spacer-5);
+  padding-left: var(--spacer-5);
+  padding-right: var(--spacer-5);
 }
 
 .mb-4 {
