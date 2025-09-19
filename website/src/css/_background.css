@@ -1,3 +1,13 @@
 .bg-body {
   background-color: var(--body-bg);
 }
+
+
+.bg-glass {
+  color: var(--light);
+  backdrop-filter: blur(10px);
+  background-image: radial-gradient(circle at bottom, rgba(49, 26, 75, .3), rgba(14, 7, 19, 0.50));
+  border-width: 0 1px 0 1px;
+  border-style: solid;
+  border-color: #ffffff2e;
+}
