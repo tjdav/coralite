@@ -4,10 +4,17 @@
   "type": "module",
   "scripts": {
     "build": "coralite-scripts build",
-    "start": "coralite-scripts dev"
+    "start": "coralite-scripts dev",
+    "lint-css": "stylelint 'src/css/*.css'",
+    "lint-css-fix": "stylelint --fix 'src/css/*.css'"
   },
   "devDependencies": {
     "coralite-plugin-aggregation": "^0.5.2",
-    "coralite-scripts": "^0.18.5"
+    "coralite-scripts": "^0.18.5",
+    "stylelint": "^16.24.0",
+    "stylelint-config-twbs-bootstrap": "^16.1.0"
+  },
+  "stylelint": {
+    "extends": "stylelint-config-twbs-bootstrap"
   }
 }
