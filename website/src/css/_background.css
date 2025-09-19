@@ -2,6 +2,9 @@
   background-color: var(--body-bg);
 }
 
+.bg-dark {
+  background-image: linear-gradient(180deg,rgb(49, 20, 66) 0%, rgba(49, 20, 66, 0.58) 50%, rgba(49, 20, 66, 0) 100%)
+}
 
 .bg-glass {
   color: var(--light);
@@ -10,4 +13,11 @@
   border-width: 0 1px 0 1px;
   border-style: solid;
   border-color: #ffffff2e;
+}
+
+@media (prefers-color-scheme: light) {
+  .bg-dark {
+    background-color: rgb(49, 20, 66);
+    background-image: none;
+  }
 }
