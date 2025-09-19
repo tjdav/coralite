@@ -15,5 +15,5 @@
 }
 
 .video-title {
-  text-shadow: 1px 1px 1px light-dark(var(--light), var(--dark));
+  text-shadow: 1px 1px 1px var(--dark);
 }
