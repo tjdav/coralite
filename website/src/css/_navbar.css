@@ -1,9 +1,9 @@
 .navbar {
-  background-color: var(--secondary);
   position: sticky;
   top: 0;
   z-index: 5;
-  
+  background-color: var(--secondary);
+
   .container {
     display: flex;
     align-items: center;

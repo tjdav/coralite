@@ -1,6 +1,6 @@
 .border {
-  border-style: solid;
   border-color: var(--secondary);
+  border-style: solid;
   border-width: 0;
 }
 

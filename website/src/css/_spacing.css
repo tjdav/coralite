@@ -18,8 +18,8 @@
 }
 
 .px-5 {
-  padding-left: var(--spacer-5);
   padding-right: var(--spacer-5);
+  padding-left: var(--spacer-5);
 }
 
 .mb-4 {

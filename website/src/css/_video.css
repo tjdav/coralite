@@ -1,4 +1,3 @@
-
 .video-bg {
   position: absolute;
   top: 0;
@@ -8,10 +7,10 @@
 }
 
 .video-player {
-  border: 0;
   width: 100%;
   height: auto;
   aspect-ratio: 16/9;
+  border: 0;
   border-radius: var(--border-radius);
 }
 
