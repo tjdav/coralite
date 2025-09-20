@@ -1,0 +1,76 @@
+.rays {
+  --ray:
+    repeating-linear-gradient(
+      100deg,
+      var(--secondary) 0%,
+      var(--secondary) 7%,
+      transparent 10%,
+      transparent 12%,
+      var(--secondary) 16%
+    );
+
+  --rainbow:
+    repeating-linear-gradient(
+      100deg,
+      #60a5fa 10%,
+      #e879f9 15%,
+      #60a5fa 20%,
+      #5eead4 25%,
+      #60a5fa 30%
+    );
+
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  background-image: var(--ray), var(--rainbow);
+  filter: blur(10px) invert(100%);
+  background-position: 50% 50%, 50% 50%;
+  background-size: 300%, 200%;
+  mask-image: radial-gradient(ellipse at 100% 0%, #000 40%, transparent 70%);
+
+  &::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background-image: var(--ray), var(--rainbow);
+    background-attachment: fixed;
+    background-size: 200%, 100%;
+    mix-blend-mode: difference;
+    animation: smooth-bg 60s linear infinite;
+  }
+}
+
+.ray-title{
+  position: relative;
+
+  &::before {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    margin: auto;
+    text-shadow: 0 0 1px #fff;
+    pointer-events: none;
+    content: attr(data-text);
+    background: var(--secondary);
+    background-color: var(--secondary);
+    background-clip: text;
+    backdrop-filter: blur(19px) brightness(12.5);
+    mask: linear-gradient(#000 0 0) luminance;
+    mask: linear-gradient(#000 0 0) luminance, alpha;
+    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1px var(--secondary);
+  }
+}
+
+@keyframes smooth-bg {
+  from {
+    background-position: 50% 50%, 50% 50%;
+  }
+  to {
+    background-position: 350% 50%, 350% 50%;
+  }
+}
