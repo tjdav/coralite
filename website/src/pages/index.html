@@ -49,30 +49,36 @@
       </div>
     </section>
 
-    <section class="container p-1 p-md-5 position-relative">
-      <h2>Features</h2>
-      <div class="grid column-md-2 gap divider">
-        <p>The core purpose of Coralite is static site generator that prioritises native web technologies. Unlike many modern frameworks that require special syntax or additional plugins, Coralite lets developers build websites using standard HTML, CSS, and JavaScript. </p>
+    <section class="py-5 bg-dark border border-top-5 position-relative">
+      <div class="rays"></div>
+      <div class="overlay z-2 bg-gradient-dark"></div>
+      <div class="container position-relative z-2">
+        <h2 class="text-center mb-4">Features</h2>
+        <div class="grid gap divider">
+          <div class="column-12 column-md-4 d-flex align-items-center justify-content-center">
+            <img class="content-img" src="/images/progressive_enhancement.avif" alt="Progressive enhancement" loading="lazy">
+          </div>
 
-        <div class="grid column-3 gap">
-          <img class="content-img" src="/images/icon-html.avif" alt="HTML" loading="lazy">
-          <img class="content-img" src="/images/icon-css.avif" alt="CSS" loading="lazy">
-          <img class="content-img" src="/images/icon-js.avif" alt="JavaScript" loading="lazy">
+          <div class="grid gap column-12 column-md-8">
+            <div class="column-12 column-md-6 d-flex">
+              <coralite-card icon="filetype-html" title="Build with HTML Modules" text="Build your entire website with modular components using only native web technologies. This provides a simple, stable, and maintainable foundation without third-party libraries."></coralite-card>
+            </div>
+
+             <div class="column-12 column-md-6 d-flex">
+              <coralite-card icon="triangle" title="Progressive Enhancement" text="Ensures that all basic content and functionality are accessible, even on browsers without JavaScript. JavaScript is treated as an optional enhancement, not a requirement."></coralite-card>
+            </div>
+
+            <div class="column-12 column-md-6 d-flex">
+              <coralite-card icon="universal" title="Accessibility and Security First" text="By leveraging native HTML elements, sites inherit strong accessibility features out-of-the-box. A small footprint with no third-party library dependencies creates a more secure website."></coralite-card>
+            </div>
+
+            <div class="column-12 column-md-6 d-flex">
+              <coralite-card icon="plugin" title="Powerful Plugin System" text="Extend and customize the build process with a plugin API. Use hooks to manage content, create aggregations like blog posts with pagination, or transform final HTML and CSS output."></coralite-card>
+            </div>
+          </div>
         </div>
       </div>
-
-      <div class="grid column-md-3 gap">
-        <div>
-          <h3>Templating</h3>
-          <p>The template system in Coralite is built around custom elements, providing a flexible foundation for creating reusable page components. What sets this template system apart is its use of standard HTML syntax - there’s no need to learn special template languages or markup formats.</p>
-        </div>
-        <div>
-          <h3>Data handling</h3>
-          <p>Coralite handles data through three main approaches: attributes, slots, and computed tokens. Attributes let you pass simple data (like text) to your templates using HTML attributes. Slots are more powerful, allowing you to pass complex HTML content into specific places in your templates. </p>
-        </div>
-        <div>
-          <h3>Aggregation</h3>
-          <p>Coralite’s aggregation system makes it easy to collect and display content from multiple web pages automatically. Rather than manually updating lists of content (like blog posts) on your website, Coralite reads basic information from each page and automatically creates organised lists or indexes using that information. It’s like having an automated assistant that keeps your website’s table of contents up to date whenever you add new content.</p>
+    </section>
         </div>
       </div>
     </section>
