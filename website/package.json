@@ -10,6 +10,7 @@
   },
   "devDependencies": {
     "coralite-plugin-aggregation": "^0.5.2",
+    "coralite-plugin-inline-css": "^0.4.0",
     "coralite-scripts": "^0.18.5",
     "stylelint": "^16.24.0",
     "stylelint-config-twbs-bootstrap": "^16.1.0"
