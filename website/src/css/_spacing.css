@@ -26,6 +26,10 @@
 }
 
 .mb-4 {
+  margin-bottom: var(--spacer-4);
+}
+
+.mb-5 {
   margin-bottom: var(--spacer-5);
 }
 
