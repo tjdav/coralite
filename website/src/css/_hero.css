@@ -23,16 +23,6 @@
   object-fit: cover;
 }
 
-.hero-bg-overlay {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 2;
-  background-image: linear-gradient(180deg, rgb(49, 20, 66) 0%, rgba(49, 20, 66, .58) 40%, rgba(49, 20, 66, 0) 100%);
-}
-
 .hero-container {
   z-index: 2;
   display: flex;
