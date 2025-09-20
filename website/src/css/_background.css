@@ -15,9 +15,10 @@
   border-width: 0 1px;
 }
 
-@media (prefers-color-scheme: light) {
-  .bg-dark {
-    background-color: rgb(49, 20, 66);
-    background-image: none;
-  }
+.bg-gradient-light {
+  background-image: linear-gradient(180deg, rgb(49, 20, 66) 0%, rgba(49, 20, 66, .58) 40%, rgba(49, 20, 66, 0) 100%);
+}
+
+.bg-gradient-dark {
+  background-image: linear-gradient(180deg, rgb(49, 20, 66) 0%, rgba(49, 20, 66, .58) 40%, rgb(14, 7, 19) 100%);
 }
