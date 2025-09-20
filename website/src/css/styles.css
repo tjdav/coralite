@@ -1,7 +1,7 @@
 @import url("./_variables.css");
 
 /* components */
-@import url("./_fonts.css");
+@import url("./_font.css");
 @import url("./_base.css");
 @import url("./_input.css");
 @import url("./_text.css");
