@@ -8,7 +8,7 @@
   --pink-light: #e685b5;
   --primary: var(--green-light);
   --secondary-dark: rgb(49, 26, 75);
-  --secondary: #754aaa;
+  --secondary: #639;
   --light: #f9f9f9;
   --dark: rgb(49, 26, 75);
   --darker: rgb(14, 7, 19);
@@ -52,8 +52,4 @@
   --box-shadow-sm: 0 .125rem .25rem rgba(0, 0, 0, .075);
   --box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, .175);
   --box-shadow-inset: inset 0 1px 2px rgba(0, 0, 0, .075);
-
-  /* Ray */
-  --ray-colour: var(--secondary);
-  --ray-bg: var(var(--ray-colour));
 }
