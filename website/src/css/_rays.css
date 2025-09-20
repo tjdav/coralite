@@ -39,7 +39,7 @@
     background-attachment: fixed;
     background-size: 200%, 100%;
     mix-blend-mode: difference;
-    animation: smooth-bg 60s linear infinite;
+    animation: none;
   }
 }
 
@@ -72,5 +72,11 @@
   }
   to {
     background-position: 350% 50%, 350% 50%;
+  }
+}
+
+@media screen and (min-width: 576px) {
+  .rays::after {
+    animation: smooth-bg 60s linear infinite;
   }
 }
