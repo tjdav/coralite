@@ -2,6 +2,9 @@
   padding: var(--spacer-1);
 }
 
+.pb-1 {
+  padding-bottom: var(--spacer-1);
+}
 
 .p-5 {
   padding: var(--spacer-5);
