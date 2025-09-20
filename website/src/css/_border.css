@@ -1,14 +1,42 @@
 .border {
-  border-color: var(--secondary);
+  border-color: var(--primary);
   border-style: solid;
   border-width: 0;
 }
 
+.border-secondary {
+  border-color: var(--primary);
+}
+
+.border-secondary-dark {
+  border-color: var(--secondary-dark);
+}
+
+.border-light {
+  border-color: rgba(var(--light), .5);
+}
+
+.border-5 {
+  border-width: 5px;
+}
+
+.border-bottom-1 {
+  border-bottom-width: 1px;
+}
+
 .border-bottom-5 {
-  border-top-width: 5px;
+  border-bottom-width: 5px;
 }
 
 .border-top-5 {
   border-top-width: 5px;
+}
+
+.rounded {
+  border-radius: var(--border-radius);
+}
+
+.rounded-circle {
+  border-radius: 50%;
 }
 
