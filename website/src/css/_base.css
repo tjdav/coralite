@@ -29,6 +29,7 @@ a {
   text-decoration-thickness: 2px;
   text-decoration-style: dotted;
   text-decoration-color: var(--secondary);
+  text-underline-offset: .25em;
 
   &:hover {
     text-decoration-color: hsl(from var(--secondary) h 60% l);
