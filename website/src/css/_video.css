@@ -1,9 +1,5 @@
 .video-bg {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: -1;
-  width: 65%;
+  background-image: radial-gradient(circle, rgb(38, 18, 97) 0%, rgb(32, 44, 90) 50%, rgb(14, 7, 19) 100%);
 }
 
 .video-player {
