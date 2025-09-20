@@ -13,6 +13,10 @@
   }
 }
 
+.navbar-toggler {
+  background-color: var(--secondary-dark);
+}
+
 .navbar-toggler-icon {
   display: inline-block;
   width: 1.5em;
