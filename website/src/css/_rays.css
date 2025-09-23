@@ -25,6 +25,9 @@
   bottom: 0;
   left: 0;
   z-index: 2;
+}
+
+.rays-animated {
   background-image: var(--ray), var(--rainbow);
   filter: blur(10px) invert(100%);
   background-position: 50% 50%, 50% 50%;
@@ -39,30 +42,18 @@
     background-attachment: fixed;
     background-size: 200%, 100%;
     mix-blend-mode: difference;
-    animation: none;
+    animation: smooth-bg 60s linear infinite;
   }
 }
 
-.ray-title{
-  position: relative;
+.rays-static {
+  background-image: url("/images/static_rays-sm.avif");
+  background-size: cover;
+}
 
-  &::before {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    display: flex;
-    margin: auto;
-    text-shadow: 0 0 1px #fff;
-    pointer-events: none;
-    content: attr(data-text);
-    background: var(--secondary);
-    background-color: var(--secondary);
-    background-clip: text;
-    backdrop-filter: blur(19px) brightness(12.5);
-    mask: linear-gradient(#000 0 0) luminance;
-    mask: linear-gradient(#000 0 0) luminance, alpha;
-    -webkit-text-fill-color: transparent;
-    -webkit-text-stroke: 1px var(--secondary);
+@media screen and (min-width: 420px) {
+  .rays-static {
+    background-image: url("/images/static_rays.avif");
   }
 }
 
@@ -72,11 +63,5 @@
   }
   to {
     background-position: 350% 50%, 350% 50%;
-  }
-}
-
-@media screen and (min-width: 576px) {
-  .rays::after {
-    animation: smooth-bg 60s linear infinite;
   }
 }
