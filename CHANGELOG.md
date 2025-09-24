@@ -1,5 +1,103 @@
 # Changelog
 
+## v0.18.6
+
+> Comparing `v0.18.5` to `v0.18.6`
+
+**Summary:** 76 commits
+
+### ✨ Features
+
+- add automatic port finding with fallback to configured port 3000 (server) ([1c5e091](https://codeberg.org/tjdavid/coralite/commit/1c5e091096c734c6833eef6678e04f64f62d9f53))
+- add styles directory creation and build support (server) ([96b35ca](https://codeberg.org/tjdavid/coralite/commit/96b35cac8ee913f3a034f1ca3e9b9d0d7b20d98d))
+- handle template and page on change and unlink ([791c52b](https://codeberg.org/tjdavid/coralite/commit/791c52bea71880b581e0a8f003b2382c8796cf8c))
+- add no-cache middleware to prevent caching of server responses (ui) ([fb1136e](https://codeberg.org/tjdavid/coralite/commit/fb1136e83091df7824c7f6a1336f35bfda652987))
+- add static rays (website) ([0645c65](https://codeberg.org/tjdavid/coralite/commit/0645c65189d6a76df79b119d392b4bf8b7b9ba6a))
+- add skip to content link (website) ([40204c4](https://codeberg.org/tjdavid/coralite/commit/40204c4676e6ae25769d04f5a8cbf9275d523708))
+- add inline-css plugin with minification and at-import support v1.0.0 (config) ([6fabdd2](https://codeberg.org/tjdavid/coralite/commit/6fabdd26f885ec3ea6d84d91a436989997a4da3d))
+- add coralite-plugin-inline-css v0.4.0 and update dependencies (deps) ([188f619](https://codeberg.org/tjdavid/coralite/commit/188f6198bda302463942618bb1ba36c35008466b))
+- add link to license (website) ([a144ec6](https://codeberg.org/tjdavid/coralite/commit/a144ec62425dbd4ac2b6e7fedc2f244c3d9e6bab))
+- add drop shadow to offcanvas (website) ([4982eca](https://codeberg.org/tjdavid/coralite/commit/4982ecafcfd87508f88a12c804e2cf57e9bda26e))
+- add card template (website) ([5ac0eb1](https://codeberg.org/tjdavid/coralite/commit/5ac0eb13aee21e508ccfb3d3bc8c8f85d54d8303))
+- add starter section (website) ([2c5a9a4](https://codeberg.org/tjdavid/coralite/commit/2c5a9a4c29854e288e153fea0fc735429599dda8))
+- add author section (website) ([2464647](https://codeberg.org/tjdavid/coralite/commit/24646476aa8782ef6591cc2e9df0d5647fec65c3))
+- add feature section (website) ([9f320f8](https://codeberg.org/tjdavid/coralite/commit/9f320f86943749ff6bb2d92e745116a982e86509))
+- add new video background (website) ([731b976](https://codeberg.org/tjdavid/coralite/commit/731b9767698f0b1c33d7319e29009b0f4ce6891e))
+- add ray effect to hero (website) ([832afdd](https://codeberg.org/tjdavid/coralite/commit/832afdddebc21a581f69538d110a8b9646468124))
+- add padding bottom util (website) ([4a824f9](https://codeberg.org/tjdavid/coralite/commit/4a824f91f0327c3d782063dbda2d332587640e1c))
+- add ray effect (website) ([d689fe7](https://codeberg.org/tjdavid/coralite/commit/d689fe7296dc0af50ccf6d771276c6f182af054e))
+- make navbar toggler dark secondary (website) ([970fe0d](https://codeberg.org/tjdavid/coralite/commit/970fe0d591479eca9a1189c7d2533017076d6aaa))
+- make secondary color rebecapurple (website) ([f06c348](https://codeberg.org/tjdavid/coralite/commit/f06c348cc5d8238310a91dc160189c86c39b35e5))
+- add position classes (website) ([a963a8e](https://codeberg.org/tjdavid/coralite/commit/a963a8ea65df28ae7112b026f775cde3697075aa))
+- add video background (website) ([cd3193b](https://codeberg.org/tjdavid/coralite/commit/cd3193b1333c1f5ec0eadcf45783b13664730ea9))
+- add icon class (website) ([0163244](https://codeberg.org/tjdavid/coralite/commit/01632445092a22dbed48a456ed0a87a938e06f63))
+- add flex alignment class (website) ([52a292a](https://codeberg.org/tjdavid/coralite/commit/52a292a1ce429ddcf70d8ae04ea47127d07a0cd1))
+- add card component (website) ([ff0c668](https://codeberg.org/tjdavid/coralite/commit/ff0c66812c47fa28dc2536c10e643d4b1be99ce0))
+- add more border utility classes (website) ([e83085b](https://codeberg.org/tjdavid/coralite/commit/e83085b7b2b8c91c01573ca723bb99a4266dbcef))
+- add gradient backgrounds ([402f1f2](https://codeberg.org/tjdavid/coralite/commit/402f1f22c0f7f390e1f8a690f21a23c3afefd22b))
+- progressive enhancement image ([b89e655](https://codeberg.org/tjdavid/coralite/commit/b89e65540135bd5cffe53e112ab890ece82f5990))
+- author photo ([0d2cae4](https://codeberg.org/tjdavid/coralite/commit/0d2cae45d035f77038a64854f8bd6ea467e42a7e))
+- icon sprite ([4b16a7c](https://codeberg.org/tjdavid/coralite/commit/4b16a7c36660759cfa12333e8a76686e82a5648b))
+- normalise urls ([ed37b97](https://codeberg.org/tjdavid/coralite/commit/ed37b97dd60a7d317ce32dbefe7fd0097f722b20))
+- dark mode only variables ([f605df4](https://codeberg.org/tjdavid/coralite/commit/f605df4a3f778ffde01181ecad95095d8a007718))
+- dark mode only video ([9f7a8d5](https://codeberg.org/tjdavid/coralite/commit/9f7a8d5554b33ac7fbf7ccf57f1cd15f8210e3db))
+- dark mode only navbar ([654758f](https://codeberg.org/tjdavid/coralite/commit/654758f8daab292fcd6c066be25bbaff1e4a4b6c))
+- dark mode only hero ([53a5f0b](https://codeberg.org/tjdavid/coralite/commit/53a5f0bc526f552013433b2989e336a2a0bbd8d8))
+- dark mode only code ([cb78938](https://codeberg.org/tjdavid/coralite/commit/cb78938eab9b7469ed1b6d5d117333a74b01b547))
+- dark mode only buttons ([fc24c21](https://codeberg.org/tjdavid/coralite/commit/fc24c21f1ceb612d8d75b5cf9eee6d734d81c4ae))
+- add border utility classes with secondary color support (website) ([b532954](https://codeberg.org/tjdavid/coralite/commit/b5329546abbbf84f3653cf72a085d970d7e1d7a5))
+- add dark gradient background class with light mode media query v1.0.0 (website) ([b850702](https://codeberg.org/tjdavid/coralite/commit/b8507020d4ffb86e984911e007ac6c6ee2e0b0e3))
+- add bg-glass background style for hero section (website) ([21c8880](https://codeberg.org/tjdavid/coralite/commit/21c8880b1ac5359be57123c10787a43f4794234a))
+- add fetchpriority="high" to hero background image for performance optimization (ui) ([31d1417](https://codeberg.org/tjdavid/coralite/commit/31d141776f3fa19550e720345936d03bd4c8e2e0))
+- add stylelist to website ([53b9875](https://codeberg.org/tjdavid/coralite/commit/53b98751b602b1843e9b16fd62054822ca5d240d))
+- add neon shadow to logo (website) ([c34bdea](https://codeberg.org/tjdavid/coralite/commit/c34bdea9d592c0fe45996eba329e8485b0f5baa5))
+- add shadow utils (website) ([017aa56](https://codeberg.org/tjdavid/coralite/commit/017aa567d059bf1ae8e4e68ae598eab6d8426ebe))
+- add two coral borders to hero ([4ccb624](https://codeberg.org/tjdavid/coralite/commit/4ccb62423c4265820884be93996cb1977bdd4c0d))
+- add placeholder dot ([6528bf8](https://codeberg.org/tjdavid/coralite/commit/6528bf88131e3fe3cbe37c225b1b4cd306552bac))
+- add second coral border ([2db2224](https://codeberg.org/tjdavid/coralite/commit/2db22242fdadbf124455410ce43cfd8c267ed5be))
+
+### 🐛 Bug Fixes
+
+- margin bottom should match strength (website) ([a8318c5](https://codeberg.org/tjdavid/coralite/commit/a8318c5bab3bfe1120bf56d04fd3f4026869fe1d))
+- add html file extension to href (website) ([39f511b](https://codeberg.org/tjdavid/coralite/commit/39f511bb2b1417bbdd84664d7c2a926f281f2998))
+- remove duplicate padding for navbar (website) ([5aef7f5](https://codeberg.org/tjdavid/coralite/commit/5aef7f50414b50195729e3be3002463005ed0656))
+- increase h2 font size (website) ([8109769](https://codeberg.org/tjdavid/coralite/commit/81097697ee49a13a77d41036fa2b68aaa3015b57))
+- css lint ([a449a99](https://codeberg.org/tjdavid/coralite/commit/a449a99bb8591640ca75a4a0bd4d21ce6b06c0d2))
+- increase hero subtitle font-size (website) ([2ea7da1](https://codeberg.org/tjdavid/coralite/commit/2ea7da16d14b94aa8b33ff37a21bb3e0b40e8402))
+- hero body contrast for light mode (website) ([522fc00](https://codeberg.org/tjdavid/coralite/commit/522fc0098c436b9911e9b8582dff0b20d9da13d2))
+- use shadow util for navbar (website) ([d705598](https://codeberg.org/tjdavid/coralite/commit/d705598797ac7a2e0af66755e1a20b184b60bfdc))
+
+### 🎨 Styles
+
+- disable background animation on mobile devices and enable on larger screens (website) ([4f45c55](https://codeberg.org/tjdavid/coralite/commit/4f45c55e7620610a43c17795b2f1a7b71e84d49f))
+- add underline offset to links in base css (website) ([8611a60](https://codeberg.org/tjdavid/coralite/commit/8611a6099f95f0d73c99d2b9ced0199cfeac1475))
+- update video background width from 75% to 65% in _video.css ([3da2dc1](https://codeberg.org/tjdavid/coralite/commit/3da2dc14effe0253a36468c7cc8ff397c63c0ac5))
+- add border styles import to main CSS file ([4414566](https://codeberg.org/tjdavid/coralite/commit/441456699f59d9f586c8b1722bd2efbdecc6089c))
+- remove margin-bottom from hero section layout ([c611958](https://codeberg.org/tjdavid/coralite/commit/c61195868a1310b3fc27590d2ecddb6d208e9ba3))
+
+### ♻️ Code Refactoring
+
+- make hero bg generic (website) ([09e5df3](https://codeberg.org/tjdavid/coralite/commit/09e5df38e88e011e4ff383dc5499dd4709fb0e93))
+- rename _fonts.css to _font.css for consistency (css) ([1e849f7](https://codeberg.org/tjdavid/coralite/commit/1e849f720d9852e61485c640e67cf70812817389))
+- update spacing utilities from py-5/px-5 to py-3/py-5 in CSS variables (ui) ([8b7d4d3](https://codeberg.org/tjdavid/coralite/commit/8b7d4d3e6d617de5d20be408150f7137277cce2c))
+- remove hero background styles and border overrides (ui) ([6b9bf46](https://codeberg.org/tjdavid/coralite/commit/6b9bf46da83b42b734c2a3a341bc09ae195f79a3))
+- replace dot with base64 ([37e32ca](https://codeberg.org/tjdavid/coralite/commit/37e32ca40d09c13137a9b65b6efc08ba07287000))
+- change hero body shadow to drop shadow (website) ([9adf930](https://codeberg.org/tjdavid/coralite/commit/9adf930647363c14f438a3361fa2f1aa8460e985))
+
+### 🧹 Chores
+
+- update node engine to ^20.19.0 || >=22.19.0 and pnpm to 10.17.1 (deps) ([3b68231](https://codeberg.org/tjdavid/coralite/commit/3b68231f5e34037bcaeda52dc4d95e0399280a30))
+- remove prefetch links for hero background images (website) ([4cc0eb9](https://codeberg.org/tjdavid/coralite/commit/4cc0eb9933dd88a758819d875bd0a419a306cb66))
+- remove html-validate dependency (deps) ([81d94d9](https://codeberg.org/tjdavid/coralite/commit/81d94d983adc4bc1720b6c5821737029b2ff3f3e))
+- compress coral border ([fbdd39e](https://codeberg.org/tjdavid/coralite/commit/fbdd39e8ebb80b70f0a6f2c2126ea85099481a43))
+- update change log ([a78e04f](https://codeberg.org/tjdavid/coralite/commit/a78e04fe074a5fe6e3f0ac337180a35b34f60b38))
+- website coralite-scripts version bump ([cf1acd6](https://codeberg.org/tjdavid/coralite/commit/cf1acd6ba925318a196f3bcd6ea7fa3e8f73a906))
+
+### ⏪ Reverts
+
+- revert redirects (website) ([e54a7d2](https://codeberg.org/tjdavid/coralite/commit/e54a7d2c2d712fa5b52463e5e24553f0e5cb70a1))
+
+
 ## v0.18.5
 
 > Comparing `v0.18.4` to `v0.18.5`
