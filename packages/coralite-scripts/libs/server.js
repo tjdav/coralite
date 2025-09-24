@@ -4,7 +4,7 @@ import localAccess from 'local-access'
 import chokidar from 'chokidar'
 import buildSass from './build-sass.js'
 import { toCode, toMS, toTime } from './build-utils.js'
-import { extname, join } from 'path'
+import { extname, join, normalize } from 'path'
 import { readFile, access, constants } from 'fs/promises'
 import Coralite from 'coralite'
 import buildCSS from './build-css.js'
@@ -207,12 +207,22 @@ async function server (config, options) {
     })()
   }
 
+  const templatePath = normalize(config.templates)
+  const pagesPath = normalize(config.pages)
+
   watcher
+    .on('unlink', async (path) => {
+      if (path.startsWith(templatePath)) {
+        await coralite.templates.deleteItem(path)
+      } else if (path.startsWith(pagesPath)) {
+        await coralite.pages.deleteItem(path)
+      }
+    })
     .on('change', async (path) => {
       const start = process.hrtime()
       let dash = colours.gray(' ─ ')
 
-      if (path.startsWith(config.templates)) {
+      if (path.startsWith(templatePath)) {
       // update template file
         await coralite.templates.setItem(path)
       } else if (path.endsWith('.scss') || path.endsWith('.sass')) {
@@ -250,7 +260,10 @@ async function server (config, options) {
       })
     })
     .on('add', async (path) => {
-      if (!initWatcher && (path.endsWith('.scss') || path.endsWith('.sass'))) {
+      if (path.startsWith(templatePath)) {
+        // set template item
+        coralite.templates.setItem(path)
+      } else if (!initWatcher && (path.endsWith('.scss') || path.endsWith('.sass'))) {
         const start = process.hrtime()
         let dash = colours.gray(' ─ ')
 
