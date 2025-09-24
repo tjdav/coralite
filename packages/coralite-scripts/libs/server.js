@@ -9,6 +9,7 @@ import { readFile, access, constants } from 'fs/promises'
 import Coralite from 'coralite'
 import buildCSS from './build-css.js'
 import { existsSync, mkdirSync } from 'fs'
+import portfinder from 'portfinder'
 
 /**
  * @import {CoraliteScriptConfig, CoraliteScriptOptions} from '../types/index.js'
@@ -22,7 +23,7 @@ import { existsSync, mkdirSync } from 'fs'
  */
 async function server (config, options) {
   const app = express()
-  const port = config.server?.port || 3000
+  const startPort = config.server?.port && !isNaN(config.server.port) ? config.server.port : 3000
 
   // track active connections.
   const clients = new Set()
@@ -292,17 +293,27 @@ async function server (config, options) {
         }
       }
     })
+  
+  try {
+    const port = await portfinder.getPortPromise({
+      port: startPort,
+      stopPort: startPort + 333
+    })
 
-  app.listen(port, () => {
-  // @ts-ignore
-    const { local } = localAccess({ port })
-    const PAD = '  '
-    const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
-    // print server status
-    process.stdout.write('\n' + PAD + colours.green('Coralite is ready! 🚀\n\n'))
-    process.stdout.write(PAD + `${colours.bold('- Local:')}      ${local}\n\n`)
-    process.stdout.write(border + colours.inverse(' LOGS ') + border + '\n\n')
-  })
+    app.listen(port, () => {
+      // @ts-ignore
+      const access = localAccess({ port })
+      const PAD = '  '
+      const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
+      // print server status
+      process.stdout.write('\n' + PAD + colours.green('Coralite is ready! 🚀\n\n'))
+      process.stdout.write(PAD + `${colours.bold('- Local:')}      ${access.local}\n\n`)
+      process.stdout.write(PAD + `${colours.bold('- Network:')}    ${access.network}\n\n`)
+      process.stdout.write(border + colours.inverse(' LOGS ') + border + '\n\n')
+    })
+  } catch (error) {
+    throw error    
+  }
 }
 
 export default server
