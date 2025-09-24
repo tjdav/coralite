@@ -1,6 +1,6 @@
 {
   "name": "coralite",
-  "version": "0.18.5",
+  "version": "0.18.6",
   "description": "HTML modules static site generator",
   "type": "module",
   "keywords": [
