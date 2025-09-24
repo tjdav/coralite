@@ -40,6 +40,15 @@ async function server (config, options) {
     config.templates
   ]
 
+  // no cache middleware
+  app.use(function (req, res, next) {
+    res.setHeader("Surrogate-Control", "no-store");
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+    res.setHeader("Expires", "0");
+
+    next();
+  })
+
   // middleware to log request information including response time and status code
   app.use(function (req, res, next){
     const start = process.hrtime()
