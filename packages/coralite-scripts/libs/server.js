@@ -8,6 +8,7 @@ import { extname, join, normalize } from 'path'
 import { readFile, access, constants } from 'fs/promises'
 import Coralite from 'coralite'
 import buildCSS from './build-css.js'
+import { existsSync, mkdirSync } from 'fs'
 
 /**
  * @import {CoraliteScriptConfig, CoraliteScriptOptions} from '../types/index.js'
@@ -68,13 +69,58 @@ async function server (config, options) {
     next()
   })
 
+  let initWatcher = true
+
   // check if Sass is configured and add its input directory to watchPath for file changes.
   if (config.styles) {
-    watchPath.push(config.styles.input)
+    if (config.styles.input) {
+      if (!existsSync(config.styles.input)) {
+        mkdirSync(config.styles.input)
+      }
 
-    app.use('/css', express.static(join(config.output, 'css'), {
-      cacheControl: false
-    }))
+      watchPath.push(config.styles.input)
+
+      app.use('/css', express.static(join(config.output, 'css'), {
+        cacheControl: false
+      }))
+    } else {
+      /** @TODO add a link to docs */
+      throw new Error('Coralite config styles input must not be empty.')
+    }
+
+    if (config.styles.type === 'sass' || config.styles.type === 'scss') {
+      const start = process.hrtime()
+
+      // rebuild CSS and send notification
+      const results = await buildSass({
+        ...config.styles,
+        output: join(config.output, 'css'),
+        start
+      })
+
+      initWatcher = false
+      let dash = colours.gray(' ─ ')
+
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i]
+
+        process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(result.duration) + dash + result.input + '\n')
+      }
+    } else if (config.styles.type === 'css') {
+      const start = process.hrtime()
+
+      await buildCSS({
+        input: config.styles.input,
+        output: join(config.output, 'css'),
+        plugins: config.cssPlugins,
+        start
+      })
+
+      initWatcher = false
+    } else {
+      /** @TODO add a link to docs */
+      throw new Error('Coralite config styles type must not be empty')
+    }
   }
 
   app
@@ -169,43 +215,6 @@ async function server (config, options) {
   const watcher = chokidar.watch(watchPath, {
     persistent: true
   })
-
-  let initWatcher = true
-
-  if (config.styles.type === 'sass' || config.styles.type === 'scss') {
-    (async () => {
-      const start = process.hrtime()
-
-      // rebuild CSS and send notification
-      const results = await buildSass({
-        ...config.styles,
-        output: join(config.output, 'css'),
-        start
-      })
-
-      initWatcher = false
-      let dash = colours.gray(' ─ ')
-
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i]
-
-        process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(result.duration) + dash + result.input + '\n')
-      }
-    })()
-  } else if (config.styles.type === 'css') {
-    (async () => {
-      const start = process.hrtime()
-
-      await buildCSS({
-        input: config.styles.input,
-        output: join(config.output, 'css'),
-        plugins: config.cssPlugins,
-        start
-      })
-
-      initWatcher = false
-    })()
-  }
 
   const templatePath = normalize(config.templates)
   const pagesPath = normalize(config.pages)
