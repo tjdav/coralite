@@ -316,7 +316,7 @@
 /**
  * @typedef {Object} CoralitePluginInstance
  * @property {string} name - Unique identifier/name of the plugin
- * @property {CoralitePluginModule} [method] - Execution function that processes content using plugin logic
+ * @property {Function} [method] - Execution function that processes content using plugin logic
  * @property {HTMLData[]} [templates=[]] - List of custom templates to be included in the coralite instance
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
