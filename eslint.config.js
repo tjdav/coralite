@@ -3,10 +3,10 @@ import stylisticJs from '@stylistic/eslint-plugin'
 export default [
   {
     plugins: {
-      '@stylistic': stylisticJs,
+      '@stylistic/js': stylisticJs,
     },
     rules: {
-      '@stylistic/plus/curly-newline': ['error', 'always'],
+      '@stylistic/js/curly-newline': ['error', 'always'],
       '@stylistic/js/indent': [
         'error', 2, {
           SwitchCase: 1,
