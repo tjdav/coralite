@@ -68,6 +68,6 @@ pnpm create coralite
 - Path: [packages/create-coralite](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/create-coralite) within the larger Coralite repository.
 
 ### Official Documentation
-- Accessible at: [https://coralite.io/docs/create-coralite](https://coralite.io/docs/create-coralite)
+- Accessible at: [https://coralite.dev/docs/create-coralite](https://coralite.dev/docs/create-coralite)
 
 > **Recommended**: Visit documentation for advanced usage, template details, and project structure reference.
