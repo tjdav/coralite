@@ -228,10 +228,16 @@ Coralite.prototype.initialise = async function () {
         ignoreByAttribute: this.options.ignoreByAttribute
       })
 
+      // abort template add 
+      if (!template.isTemplate) {
+        return
+      }
+
       await this._triggerPluginHook('onTemplateSet', template)
 
       return {
         type: 'template',
+        // @ts-ignore
         id: template.id,
         value: template
       }
@@ -240,6 +246,11 @@ Coralite.prototype.initialise = async function () {
       const template = parseModule(value.content, {
         ignoreByAttribute: this.options.ignoreByAttribute
       })
+      
+      // abort template update
+      if (!template.isTemplate) {
+        return
+      }
 
       await this._triggerPluginHook('onTemplateUpdate', template)
 
