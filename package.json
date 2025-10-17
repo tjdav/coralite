@@ -2,7 +2,7 @@
   "name": "coralite-monorepo",
   "private": true,
   "type": "module",
-  "homepage": "https://coralite.io/",
+  "homepage": "https://coralite.dev/",
   "repository": {
     "type": "git",
     "url": "git@codeberg.org/tjdavid/coralite.git"

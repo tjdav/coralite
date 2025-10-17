@@ -27,7 +27,7 @@
     "url": "https://codeberg.org/tjdavid/coralite.git",
     "directory": "packages/create-coralite"
   },
-  "homepage": "https://coralite.io/docs/create-coralite",
+  "homepage": "https://coralite.dev/docs/create-coralite",
   "author": {
     "name": "Thomas David",
     "url": "https://thomasjackdavid.com"
