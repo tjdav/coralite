@@ -68,6 +68,7 @@
  * @property {CoraliteDocumentValues} values - Values generated from the module's markup, containing metadata or variable information.
  * @property {CoraliteElement[]} customElements - Custom elements defined in the module, allowing extension of HTML capabilities.
  * @property {Object.<string, Object.<string,CoraliteModuleSlotElement>>} slotElements - Custom slot elements and their configurations, enabling flexible content insertion points within components.
+ * @property {boolean} isTemplate - Indicates whether the module is a template
  */
 
 /**
