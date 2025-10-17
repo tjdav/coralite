@@ -139,7 +139,7 @@ function sortSlottedChildren (elements) {
  * @param {string} string - HTML content containing meta tags or module markup
  * @param {Object} options
  * @param {IgnoreByAttribute[]} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
- * @returns {CoraliteModule} - Parsed module information, including template, script, tokens, and slot configurations
+ * @returns {CoraliteModule | { isTemplate: boolean }} - Parsed module information, including template, script, tokens, and slot configurations
  *
  * @example
  * ```
@@ -348,7 +348,9 @@ export function parseModule (string, { ignoreByAttribute }) {
   }
 
   if (!template) {
-    throw new Error('Template element is missing')
+    return {
+      isTemplate: false
+    }
   }
 
   const scriptIndex = string.indexOf('<script')
@@ -362,7 +364,8 @@ export function parseModule (string, { ignoreByAttribute }) {
     values: documentValues,
     lineOffset,
     customElements,
-    slotElements
+    slotElements,
+    isTemplate: true
   }
 }
 
