@@ -93,6 +93,11 @@ CoraliteCollection.prototype.setItem = async function (value) {
     if (typeof this._onSet === 'function') {
       const result = await this._onSet(value)
 
+      // abort adding item
+      if (!result) {
+        return
+      }
+
       documentValue.result = result.value
 
       if (result.type === 'page' || result.type === 'template') {
@@ -189,7 +194,14 @@ CoraliteCollection.prototype.updateItem = async function (value) {
       await this.setItem(value)
     } else {
       if (typeof this._onUpdate === 'function') {
-        value.result = await this._onUpdate(value, originalValue)
+        const result =  await this._onUpdate(value, originalValue)
+
+        // abort update
+        if (!result) {
+          return
+        }
+
+        value.result = result
       }
 
       // update content
