@@ -1,6 +1,6 @@
 /**
  * @import Coralite from './coralite.js'
- * @import { CoralitePlugin } from '../types/index.js'
+ * @import { CoralitePlugin, HTMLData } from '../types/index.js'
  */
 
 import { basename, dirname } from 'path'
@@ -8,9 +8,9 @@ import { getHtmlFile } from './html.js'
 
 /**
  * Creates a new Coralite plugin instance based on provided configuration options.
- *
- * @param {CoralitePlugin & ThisType<Coralite>} options - Plugin configuration object
- *
+ * @template T
+ * @param {CoralitePlugin<T> & ThisType<Coralite> & { templates?: string[] }} options - Plugin configuration object
+ * @returns {CoralitePlugin<T> & { templates: HTMLData[] }} A configured plugin instance ready to be registered with Coralite
  * @example
  * const myPlugin = createPlugin({
  *   name: 'my-plugin',
@@ -37,6 +37,7 @@ export function createPlugin ({
   }
 
   // process template files and store metadata
+  /** @type {HTMLData[]} */
   const templateResults = []
   for (let i = 0; i < templates.length; i++) {
     const path = templates[i]

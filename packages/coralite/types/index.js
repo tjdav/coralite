@@ -259,8 +259,9 @@
  */
 
 /**
+ * @template T
  * @callback CoralitePluginModule
- * @param {Object} options - Configuration options passed to the plugin
+ * @param {T} options - Configuration options passed to the plugin
  * @param {CoralitePluginContext} context - Runtime context providing access to values, document data, module info, and path details
  */
 
@@ -300,10 +301,10 @@
  */
 
 /**
+ * @template T
  * @typedef {Object} CoralitePlugin
  * @property {string} name - Unique identifier/name of the plugin
- * @property {CoralitePluginModule} [method] - Execution function that processes content using plugin logic
- * @property {string[]} [templates=[]] - List of custom templates to be included in the coralite instance
+ * @property {CoralitePluginModule<T>} [method] - Execution function that processes content using plugin logic
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
