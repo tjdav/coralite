@@ -54,7 +54,7 @@
   "dependencies": {
     "chokidar": "^4.0.3",
     "commander": "^14.0.0",
-    "coralite": "^0.18.6",
+    "coralite": "workspace:*",
     "express": "^5.1.0",
     "kleur": "^4.1.5",
     "local-access": "^1.1.0",

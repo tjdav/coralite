@@ -4,8 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-packageExtensionsChecksum: sha256-6EIw3AHdhUuuUhRLl9qfJ72lJqX5tiJ8tpq8XN3E84U=
-
 importers:
 
   .:
@@ -95,6 +93,9 @@ importers:
       commander:
         specifier: ^14.0.0
         version: 14.0.1
+      coralite:
+        specifier: workspace:*
+        version: link:../coralite
       express:
         specifier: ^5.1.0
         version: 5.1.0
@@ -113,10 +114,6 @@ importers:
       sass:
         specifier: ^1.91.0
         version: 1.92.0
-    optionalDependencies:
-      coralite:
-        specifier: npm:coralite@0.18.3
-        version: 0.18.3
 
   packages/create-coralite:
     dependencies:
@@ -832,11 +829,6 @@ packages:
 
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
-
-  coralite@0.18.3:
-    resolution: {integrity: sha512-0C6IacDqBF0cFP9TFERYamkfceIqivjach9KGYCfWPHUIjoDFVmHV2d1Ug/REqKH9wYsyNak3O/At1xfQzM8qQ==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    hasBin: true
 
   cosmiconfig-typescript-loader@6.1.0:
     resolution: {integrity: sha512-tJ1w35ZRUiM5FeTzT7DtYWAFFv37ZLqSRkGi2oeCK1gPhvaWjkAtfXvLmvE1pRfxxp9aQo6ba/Pvg1dKj05D4g==}
@@ -2735,14 +2727,6 @@ snapshots:
       postcss: 8.5.6
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
-
-  coralite@0.18.3:
-    dependencies:
-      commander: 13.1.0
-      dom-serializer: 2.0.0
-      htmlparser2: 10.0.0
-      kleur: 4.1.5
-    optional: true
 
   cosmiconfig-typescript-loader@6.1.0(@types/node@22.18.5)(cosmiconfig@9.0.0(typescript@5.9.2))(typescript@5.9.2):
     dependencies:
