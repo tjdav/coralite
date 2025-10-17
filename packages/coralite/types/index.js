@@ -350,12 +350,6 @@
  */
 
 /**
- * @callback CoraliteRef
- * @param {string} id - The identifier for the ref, corresponding to a key in the refs object
- * @returns {HTMLElement | null} The DOM element referenced by this ID, or null if not found
- */
-
-/**
  * @callback CoraliteModuleScript
  * @param {CoraliteValues} values
  * @param {CoraliteRef} refs
