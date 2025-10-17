@@ -1,11 +1,9 @@
-import stylisticJs from '@stylistic/eslint-plugin-js'
-import stylisticPlus from '@stylistic/eslint-plugin-plus'
+import stylisticJs from '@stylistic/eslint-plugin'
 
 export default [
   {
     plugins: {
-      '@stylistic/js': stylisticJs,
-      '@stylistic/plus': stylisticPlus
+      '@stylistic': stylisticJs,
     },
     rules: {
       '@stylistic/plus/curly-newline': ['error', 'always'],

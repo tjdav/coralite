@@ -34,8 +34,7 @@
     "website-dev": "pnpm --filter='./website' run start"
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin-js": "^2.13.0",
-    "@stylistic/eslint-plugin-plus": "^2.13.0",
+    "@stylistic/eslint-plugin": "^5.4.0",
     "@types/node": "^22.18.5",
     "coralite-release": "link:packages/coralite-release",
     "esbuild": "^0.25.9",
