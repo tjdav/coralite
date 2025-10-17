@@ -3,12 +3,7 @@ packages:
   - website
 
 onlyBuiltDependencies:
-  - '@parcel/watcher'
+  - "@parcel/watcher"
   - simple-git-hooks
   - esbuild
   - playwright-firefox
-
-packageExtensions:
-  coralite-scripts:
-    optionalDependencies:
-      coralite: npm:coralite@0.18.3
