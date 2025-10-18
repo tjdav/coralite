@@ -133,8 +133,8 @@ importers:
   website:
     devDependencies:
       coralite-plugin-aggregation:
-        specifier: ^0.5.2
-        version: 0.5.2
+        specifier: ^0.5.3
+        version: 0.5.4(coralite@0.18.7)
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
@@ -827,11 +827,18 @@ packages:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
-  coralite-plugin-aggregation@0.5.2:
-    resolution: {integrity: sha512-Fk/JncPfLB3Ue0YJYBYPKp2wzYIP8iJ/k4P7Q498E+UhY6xOA6deD7EQAoOstlD5EexS4QjQmec0wGT8a5Zi0w==}
+  coralite-plugin-aggregation@0.5.4:
+    resolution: {integrity: sha512-ED6cCLbusLHWz641uTrDfwq2rQcx77F3dqO1ZY2teMppJMBPWrQRZwTAoebr2w/PBlXC3UbCYQhvKfhUygVuQg==}
+    peerDependencies:
+      coralite: ^0.18.7
 
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
+
+  coralite@0.18.7:
+    resolution: {integrity: sha512-uFrsIMEytSj7KQVmc6Av5utz/lNxRJIfde+7Kbmd6vEtMGbahfuUaG3vkTeHyKiR2C+APOSxQypD/2uxu+M8bw==}
+    engines: {node: ^20.19.0 || >=22.19.0}
+    hasBin: true
 
   cosmiconfig-typescript-loader@6.1.0:
     resolution: {integrity: sha512-tJ1w35ZRUiM5FeTzT7DtYWAFFv37ZLqSRkGi2oeCK1gPhvaWjkAtfXvLmvE1pRfxxp9aQo6ba/Pvg1dKj05D4g==}
@@ -2722,8 +2729,9 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.5.2:
+  coralite-plugin-aggregation@0.5.4(coralite@0.18.7):
     dependencies:
+      coralite: 0.18.7
       dom-serializer: 2.0.0
       htmlparser2: 10.0.0
 
@@ -2732,6 +2740,13 @@ snapshots:
       postcss: 8.5.6
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
+
+  coralite@0.18.7:
+    dependencies:
+      commander: 13.1.0
+      dom-serializer: 2.0.0
+      htmlparser2: 10.0.0
+      kleur: 4.1.5
 
   cosmiconfig-typescript-loader@6.1.0(@types/node@22.18.5)(cosmiconfig@9.0.0(typescript@5.9.2))(typescript@5.9.2):
     dependencies:
