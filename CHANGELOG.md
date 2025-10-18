@@ -1,5 +1,61 @@
 # Changelog
 
+## v0.18.7
+
+> Comparing `v0.18.6` to `v0.18.7`
+
+**Summary:** 27 commits
+
+### ✨ Features
+
+- update coralite dependencies to new version in package and template files ([b8506e4](https://codeberg.org/tjdavid/coralite/commit/b8506e4e8c1349550af989ce06956187aa9b70dc))
+- add abort support for onSet and onUpdate callbacks (collection) ([c3eda2a](https://codeberg.org/tjdavid/coralite/commit/c3eda2abf02b7b50c306eb9b65cc75a2bd7074dc))
+- enable JavaScript type checking with checkJs option ([3d654bc](https://codeberg.org/tjdavid/coralite/commit/3d654bc53b3526791f7ea35a9892dacc7e64957f))
+- make parseModule to return isTemplate flag on missing template (core) ([4213031](https://codeberg.org/tjdavid/coralite/commit/4213031fb653dda22e28e2c6549bb57fa0d58800))
+- add scaffolding command prompt to the footer ([904413c](https://codeberg.org/tjdavid/coralite/commit/904413ce2e33a5cb259f5202f9836dd345ebd7e6))
+
+### 🐛 Bug Fixes
+
+- invalid templates being added to collection ([9e9e9d4](https://codeberg.org/tjdavid/coralite/commit/9e9e9d413a1c20ce7a1ae98133d8accb2157e75b))
+- update social meta urls to coralite.dev ([047682f](https://codeberg.org/tjdavid/coralite/commit/047682fe07045ce235a465e27ab49a858a63e871))
+
+### 📚 Documentation
+
+- update docs url to coralite.dev ([eac5da2](https://codeberg.org/tjdavid/coralite/commit/eac5da2da96855086f858696c8181bf30c875a34))
+- update package.json author information ([3b003f2](https://codeberg.org/tjdavid/coralite/commit/3b003f2e87ddf699d1d1795c1b17871d802a3e12))
+
+### 🎨 Styles
+
+- update string formatting (config) ([1b3b46e](https://codeberg.org/tjdavid/coralite/commit/1b3b46ef2288d3378b4775acf323fa1bcade19b7))
+- update @stylistic plugin to js scope and fix rule path (eslint) ([d655fc6](https://codeberg.org/tjdavid/coralite/commit/d655fc69f3af9639ee7cf1c8da673d28f93e219e))
+
+### ✅ Tests
+
+- add empty template to fixtures ([a04b083](https://codeberg.org/tjdavid/coralite/commit/a04b0830a51489260f1d0a20a50d327db21eb897))
+
+### 🧹 Chores
+
+- update package json formatting (deps) ([b6483a9](https://codeberg.org/tjdavid/coralite/commit/b6483a9410a9e43fc31ab01396f04dbf2f516be0))
+- add eslint to workspace (deps) ([a8fb592](https://codeberg.org/tjdavid/coralite/commit/a8fb592bb166f2e1a33ff6135b081132f5d504a2))
+- update @parcel/watcher and fix package extension format (deps) ([c1bc24c](https://codeberg.org/tjdavid/coralite/commit/c1bc24c33e3cdd804ae3e9fe9326faf1c6a6a816))
+- update coralite to workspace:* (deps) ([c4c7dc1](https://codeberg.org/tjdavid/coralite/commit/c4c7dc178d9dbbd2076078748885f73897a0fa0c))
+- update pnpm to v10.18.3 (deps) ([2a9953a](https://codeberg.org/tjdavid/coralite/commit/2a9953a9b5c787f636693d1bb0c8f004f9996149))
+- update homepage URLs to coralite.dev (docs) ([e5705ef](https://codeberg.org/tjdavid/coralite/commit/e5705ef5c53b3dc97b288dd94dbda47d5f235288))
+- update stylistic-eslint to v5.4.0 (deps) ([cd6d031](https://codeberg.org/tjdavid/coralite/commit/cd6d031bc61d27636786b1468c3337950be5f530))
+- update website repository and author metadata (config) ([c97930e](https://codeberg.org/tjdavid/coralite/commit/c97930e9dc43f7ee3fb51689290a463180516d6d))
+- update changelog ([384f526](https://codeberg.org/tjdavid/coralite/commit/384f526ae74b7dcea66b5afdf5941b7f305f540b))
+
+### 🔨 Other Changes
+
+- release: version 0.18.7 ([f44aa2a](https://codeberg.org/tjdavid/coralite/commit/f44aa2a821d1b7b802932cc778cb253598168df9))
+- types: add isTemplate property to CoraliteModule interface ([94891d9](https://codeberg.org/tjdavid/coralite/commit/94891d91abd03f07ba38fbb3f5785983be2cf995))
+- types: update plugin method type to Function ([b80f42b](https://codeberg.org/tjdavid/coralite/commit/b80f42bb4ca8588bfe04d153241e2ea286b02df9))
+- types: remove duplicate CoraliteRef typedef ([dfdba01](https://codeberg.org/tjdavid/coralite/commit/dfdba011c879634e7aeadcd7d18aa3f38a37fe82))
+- types: update ref resolver return type to HTMLElement | null ([3096818](https://codeberg.org/tjdavid/coralite/commit/3096818c1faf9411bd96bcb3e36feb141d2787fa))
+- types: add generic types to plugin module and plugin interface ([f421087](https://codeberg.org/tjdavid/coralite/commit/f421087804c3802bfc820ccd4d5bb488f8aca7fa))
+
+---
+
 ## v0.18.6
 
 > Comparing `v0.18.5` to `v0.18.6`
