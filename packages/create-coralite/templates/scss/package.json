@@ -7,6 +7,6 @@
     "build": "coralite-scripts build"
   },
   "devDependencies": {
-    "coralite-scripts": "^0.18.6"
+    "coralite-scripts": "^0.18.7"
   }
 }
