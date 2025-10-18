@@ -228,7 +228,7 @@ Coralite.prototype.initialise = async function () {
         ignoreByAttribute: this.options.ignoreByAttribute
       })
 
-      // abort template add 
+      // abort template add
       if (!template.isTemplate) {
         return
       }
@@ -246,7 +246,7 @@ Coralite.prototype.initialise = async function () {
       const template = parseModule(value.content, {
         ignoreByAttribute: this.options.ignoreByAttribute
       })
-      
+
       // abort template update
       if (!template.isTemplate) {
         return
@@ -1145,7 +1145,7 @@ Coralite.prototype._moduleLinker = function (path) {
       return new SourceTextModule(exportModule, {
         context: referencingModule.context
       })
-    } catch(error) {
+    } catch (error) {
       throw new Error(error)
     }
   }
