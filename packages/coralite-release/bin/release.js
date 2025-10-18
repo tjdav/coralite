@@ -51,41 +51,51 @@ program
 
       // Get all package.json files
       const packageFiles = globSync('packages/*/package.json')
+      const packageTemplateFiles = globSync('packages/create-coralite/templates/*/package.json')
+      const packageJsonFiles = packageFiles.concat(packageTemplateFiles)
 
-      if (packageFiles.length === 0) {
+      if (packageJsonFiles.length === 0) {
         prompts.log.warn('No packages found in packages/ directory')
         process.exit(0)
       }
 
+      let newVersion
+      let oldVersion
       // Read current versions
       const packages = []
-      for (let i = 0; i < packageFiles.length; i++) {
-        const filepath = packageFiles[i]
+      for (let i = 0; i < packageJsonFiles.length; i++) {
+        const filepath = packageJsonFiles[i]
         const content = readFileSync(filepath, 'utf8')
         const pkg = JSON.parse(content)
 
-        if (!pkg.private) {
-          packages.push( {
-            path: filepath,
-            name: pkg.name,
-            version: pkg.version,
-            content,
-            data: pkg,
-            newVersion: calculateNewVersion(pkg.version, type, options.preid)
-          })
+        if (!newVersion && !pkg.private && pkg.version) {
+          oldVersion = pkg.version
+          newVersion = calculateNewVersion(pkg.version, type, options.preid)
         }
+
+        packages.push( {
+          private: pkg.private,
+          path: filepath,
+          name: pkg.name,
+          version: pkg.version,
+          content,
+          data: pkg,
+          newVersion
+        })
       }
 
       // Display summary
       prompts.log.info('Release Plan:')
       console.log('')
       packages.forEach(pkg => {
-        console.log(`  ${pkg.name}: ${pkg.version} → ${pkg.newVersion}`)
+        if (!pkg.private) {
+          console.log(`  ${pkg.name}: ${pkg.version} → ${pkg.newVersion}`)
+        }
       })
       console.log('')
 
       // Get custom message or use default
-      const defaultMessage = `release: version ${packages[0].newVersion}`
+      const defaultMessage = `release: version ${newVersion}`
       const commitMessage = options.message || defaultMessage
 
       console.log(`Commit message: "${commitMessage}"`)
@@ -111,29 +121,32 @@ program
 
       // Update package.json files
       for (const pkg of packages) {
-        pkg.data.version = pkg.newVersion
+        if (pkg.data.version) {
+          pkg.data.version = pkg.newVersion
+        }
 
         // update coralite dependency
         for (const key in pkg.data.dependencies) {
-          if (key === 'coralite') {
+          if (key.startsWith('coralite') && !pkg.data.dependencies[key].startsWith('workspace:')) {
             pkg.data.dependencies[key] = '^' + pkg.newVersion
           }
         }
 
         for (const key in pkg.data.devDependencies) {
-          if (key === 'coralite') {
-            pkg.data.dependencies[key] = '^' + pkg.newVersion
+          if (key.startsWith('coralite') && !pkg.data.devDependencies[key].startsWith('workspace:')) {
+            pkg.data.devDependencies[key] = '^' + pkg.newVersion
           }
         }
 
         writeFileSync(pkg.path, JSON.stringify(pkg.data, null, 2) + '\n')
-        prompts.log.success(`Updated ${pkg.path}: ${pkg.version} → ${pkg.newVersion}`)
+        prompts.log.success(`Updated ${pkg.path}: ${oldVersion} → ${pkg.newVersion}`)
       }
 
       // Git commit if not disabled
       if (!options.noGitCommit) {
         try {
           await git.add('packages/*/package.json')
+          await git.add('packages/create-coralite/templates/*/package.json')
           await git.commit(commitMessage)
           prompts.log.success('✅ Committed version changes')
         } catch (error) {
