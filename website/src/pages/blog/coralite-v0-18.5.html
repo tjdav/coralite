@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article"
+    title="Coralite v0.18.5 Release Notes"
+    description="Coralite v0.18.5 resolves a critical CSS build issue in coralite-scripts, ensuring proper compilation of type: 'css' files with plugin support. Upgrade now for stable, predictable stylesheet output in your static site builds."
+    seo-title="Coralite v0.18.5 Release: Fixed CSS Build Pipeline for Reliable Styling"
+    seo-description="Coralite v0.18.5 resolves a critical CSS build issue in coralite-scripts, ensuring proper compilation of type: 'css' files with plugin support. Upgrade now for stable, predictable stylesheet output in your static site builds."
+  ></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2025-09-18T08:32:53.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.18.5</h1>
+
+    <coralite-author name="thomas" date-time="2025-09-18T08:32:53.000Z"></coralite-author>
+
+    <p>Coralite v0.18.5 is a maintenance release focused on fixing a critical CSS build issue in <code>coralite-scripts</code>, ensuring consistent output during the build process.</p>
+
+    <coralite-heading level="h2" text="Bug Fixes"></coralite-heading>
+
+    <ul>
+      <li>Fixed a bug in the <code>coralite-scripts</code> build system that prevented correct processing of <code>type: 'css'</code> stylesheets. Prior to this fix, CSS files were not being compiled or output correctly, even when configured in the build settings.</li>
+      <li>The fix introduces a dedicated <code>buildCSS</code> function from <code>../libs/build-css.js</code> to handle raw CSS files, including support for plugins via the <code>cssPlugins</code> configuration option.</li>
+      <li>Build logic now properly distinguishes between Sass/SCSS and plain CSS inputs, ensuring that each is processed with the appropriate compiler—Sass for <code>sass</code> or <code>scss</code> types, and the new <code>buildCSS</code> function for <code>css</code> type.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Chores"></coralite-heading>
+
+    <ul>
+      <li>Upgraded <code>coralite-scripts</code> to version 0.18.5 to include recent improvements and bug fixes.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.18.5</coralite-code-highlight>
+
+    <p>For a full list of changes, view the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.18.5" target="_blank">v0.18.5 changelog on Codeberg</a>.</p>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
