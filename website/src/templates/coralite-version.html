@@ -1,0 +1,14 @@
+<template id="coralite-version">{{ version }}</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  import pkg from '../../../packages/coralite/package.json' with { type: 'json' }
+
+  export default defineComponent({
+    tokens: {
+      version() {
+        return pkg.version
+      }
+    }
+  })
+</script>
