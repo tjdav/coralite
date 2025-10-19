@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article"
+    title="Coralite v0.18.3 Release Notes"
+    seo-title="Coralite v0.18.3 Release: Configurable Counter Step & Enhanced Type Safety"
+    description="Coralite v0.18.3 introduces a configurable step value for the counter component, improved type definitions, null safety checks, and updated documentation."
+  ></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2025-09-17T05:47:35.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.18.3</h1>
+
+    <coralite-author name="thomas" date-time="2025-09-17T05:47:35.000Z"></coralite-author>
+
+    <p>Coralite v0.18.3 introduces configurable step values for the counter component, refines type definitions for improved developer experience, and includes several bug fixes and documentation updates to enhance stability and clarity.</p>
+
+    <coralite-heading level="h2" text="Key Features"></coralite-heading>
+
+    <ul>
+      <li>Added configurable <code>step</code> value to the <code>counter</code> component, allowing users to define custom increment/decrement intervals (e.g., 1, 5, 10) via component attributes or props. This functionality is now included as a template in the <code>coralite-scripts</code> scaffolding tool, providing an example implementation for developers to extend.</li>
+      <li>Updated type definitions for <code>ref</code> resolution to improve type safety and clarity in TypeScript environments.</li>
+      <li>Introduced two new type definitions: <code>CoralitePathValues</code> and <code>CoraliteValues</code> for better type consistency across the core library.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Bug Fixes"></coralite-heading>
+
+    <ul>
+      <li>Removed unnecessary types build step, reducing build complexity and potential errors.</li>
+      <li>Added missing exports to JSDoc type files to ensure proper type documentation generation.</li>
+      <li>Removed unused <code>CoraliteModuleScript</code> callback and updated documentation for <code>tokens</code> and <code>slots</code> parameters to improve code clarity.</li>
+      <li>Added null safety checks for <code>customElements</code> access in the <code>initialise</code> method to prevent runtime errors in environments where <code>customElements</code> is not available.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Documentation & Type Safety"></coralite-heading>
+
+    <ul>
+      <li>Added <code>CoraliteValues</code> type definition to the <code>initialise</code> method documentation, improving type guidance for developers using the API.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.18.3</coralite-code-highlight>
+
+    <p>For a complete list of changes, view the <a href="https://codeberg.org/tjdavid/coralite/src/tag/v0.18.3" target="_blank">v0.18.3 changelog on Codeberg</a>.</p>
+
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
