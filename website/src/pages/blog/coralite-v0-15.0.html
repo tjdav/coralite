@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article"
+    title="Coralite v0.15.0 Released Notes"
+    seo-title="Coralite v0.15.0 Released: Enhanced SASS Support, CLI Improvements & Collection Management"
+    description="Coralite v0.15.0 delivers major upgrades including SASS/SCSS compilation with watch mode, improved collection handling, a new `coralite-scripts` CLI, and better build tooling. Explore changelogs, upgrade instructions, and enhanced developer experience."
+  ></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2025-09-06T18:17:30.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.15.0</h1>
+
+    <coralite-author name="thomas" date-time="2025-09-06T18:17:30.000Z"></coralite-author>
+
+    <p>Coralite v0.15.0 introduces a suite of enhancements that strengthen project automation, improve developer workflow, and expand support for modern web tooling. This release centers on stabilizing the build pipeline, refining configuration, and delivering better tooling for content and asset management.</p>
+
+    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+
+    <p>This release brings significant upgrades to tooling, configuration, and runtime behavior. The core focus is on making Coralite more predictable, maintainable, and easier to use across different project types.</p>
+
+    <coralite-heading level="h3" text="New CLI and Automation"></coralite-heading>
+
+    <p>A new <code>coralite-release</code> package adds a dedicated CLI for version management and Git tagging. It simplifies the release process with built-in commands for version bumping, changelog generation, and tagging commits.</p>
+
+    <ul>
+      <li>Introduces <code>changelog</code> command to generate release notes from commit history and pull request metadata.</li>
+      <li>Uses <code>simple-git</code> for reliable Git operations, including status checks before actions.</li>
+      <li>Replaces outdated <code>coralite-run</code> binary with <code>coralite-scripts</code> as the primary CLI entry point.</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Enhanced Build and Asset Support"></coralite-heading>
+
+    <p>Support for SASS and SCSS compilation is now integrated directly into the build system with watch mode and source maps.</p>
+
+    <ul>
+      <li>Adds SASS compilation with file watching and rebuild on change.</li>
+      <li>Introduces SCSS build script with source map output for debugging.</li>
+      <li>Updates output path to <code>css/</code> directory and removes redundant checks.</li>
+      <li>Fixes import syntax to align with current SASS standards and removes deprecation warnings.</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Content and Collection Improvements"></coralite-heading>
+
+    <p>Collection handling has been overhauled to support more flexible file paths and clearer loading behavior.</p>
+
+    <ul>
+      <li>Adds <code>rootDir</code> option to <code>CoraliteCollection</code> constructor with trailing slash normalization.</li>
+      <li>Introduces <code>_loadByPath</code> method to load collection items by file path, improving dynamic content access.</li>
+      <li>Supports string paths for collection item handling, making configuration more intuitive.</li>
+      <li>Normalizes collection root directory paths to prevent inconsistencies.</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Developer Experience and Tooling"></coralite-heading>
+
+    <p>Improvements to configuration, logging, and documentation make Coralite more approachable and reliable.</p>
+
+    <ul>
+      <li>Adds <code>defineConfig</code> utility and full TypeScript type definitions for better IDE support.</li>
+      <li>Introduces response time logging middleware to help identify performance bottlenecks.</li>
+      <li>Enhances JSDoc comments with parameter descriptions and default values.</li>
+      <li>Updates workflow to use <code>build-html</code> script instead of direct <code>html</code> invocation.</li>
+      <li>Removes outdated Node.js version checks to reduce friction in diverse environments.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Notable Fixes"></coralite-heading>
+
+    <p>Several critical issues were resolved to improve stability and correctness.</p>
+
+    <ul>
+      <li>Reverts version from 0.15.0 to 0.14.2 due to unintended release tagging issues.</li>
+      <li>Fixes static asset serving and HTML rendering logic to ensure correct output.</li>
+      <li>Moves <code>coralite</code> from <code>devDependencies</code> to <code>dependencies</code> to ensure proper runtime availability.</li>
+      <li>Renames binary from <code>coralite-run</code> to <code>coralite-scripts</code> for consistency and clarity.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Documentation and Community"></coralite-heading>
+
+    <p>Documentation has been expanded to support new features and improve onboarding.</p>
+
+    <ul>
+      <li>Added detailed README for <code>coralite-scripts</code>.</li>
+      <li>Improved JSDoc with full parameter and default value descriptions.</li>
+      <li>Added inline comments to clarify internal logic and usage patterns.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the stable version of Coralite v0.15.0, run:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.18.1</coralite-code-highlight>
+
+    <p>Ensure your project’s <code>package.json</code> includes <code>coralite-scripts</code> as the entry point, and update any scripts referencing <code>coralite-run</code> to use <code>coralite-scripts</code> instead.</p>
+
+    <p>For full details, view the <a href="https://codeberg.org/tjdavid/coralite/compare/v0.14.2...v0.15.0" target="_blank">full changelog</a>.</p>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
