@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article"
+    title="Coralite v0.18.0 Release Notes"
+    seo-title="Coralite v0.18.0 Released: Improved Type Safety, Module Structure & Bug Fixes"
+    description="Coralite v0.18.0 enhances developer experience with better TypeScript support, consistent imports, and corrected rendering issues. Upgrade now for improved stability, performance, and maintainability."
+  ></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2025-09-14T13:25:56.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.18.0</h1>
+
+    <coralite-author name="thomas" date-time="2025-09-14T13:25:56.000Z"></coralite-author>
+
+    <p>Coralite v0.18.0 delivers a focused update to improve module structure, type safety, and consistency across the project. This release centers on internal refactoring for better developer experience, with clear improvements in how libraries are imported and typed.</p>
+
+    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+
+    <p>The primary changes in this release aim to streamline how developers interact with Coralite’s core functionality. By reorganizing exports and aligning import paths, we reduce friction when building and maintaining applications.</p>
+
+    <ul>
+      <li><code>core</code> modules are now properly exported, enabling direct access to foundational utilities without needing to reference plugins.</li>
+      <li>Type exports have been added to the core package, improving TypeScript support and reducing type inference errors in IDEs.</li>
+      <li>A default export has been added for <code>Coralite</code>, simplifying usage in common scenarios where a single entry point is preferred.</li>
+      <li>A <code>tsconfig.json</code> file has been introduced to the <code>coralite</code> package, ensuring consistent TypeScript compilation across projects.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Bug Fixes"></coralite-heading>
+
+    <p>Several fixes ensure consistency in rendering, imports, and performance. These updates address subtle but impactful issues that could affect development workflows.</p>
+
+    <ul>
+      <li>The banner structure in test environments has been corrected to render properly and avoid layout inconsistencies.</li>
+      <li>Imports within the codebase now consistently use the <code>coralite</code> core package instead of outdated plugin references.</li>
+      <li>The code highlight component now imports from the correct path: <code>coralite/utils</code> instead of <code>corallite/utils</code>.</li>
+      <li>Fixed a typo in the <code>nested-components</code> fixture: <code>corallite-header</code> has been renamed to <code>coralite-title</code> for consistency.</li>
+      <li>Reduced image sizes in CSS templates to improve load performance and reduce bundle size.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+
+    <p>Upgrading to v0.18.0 is straightforward. Depending on your project setup, you’ll need to update one or both of the following packages:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.18.1</coralite-code-highlight>
+
+    <p>If you’re using <code>coralite-scripts</code> for scaffolding, update that as well:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite-scripts@0.18.1</coralite-code-highlight>
+
+    <p>After upgrading, review any import paths in your code. The changes to core exports and module structure may require minor adjustments to ensure compatibility.</p>
+
+    <p>For a full list of changes, including detailed commit messages, <a href="https://codeberg.org/tjdavid/coralite/compare/v0.17.0...v0.18.0" target="_blank">view the full changelog</a>.</p>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
