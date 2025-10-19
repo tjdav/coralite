@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article"
+    title="Coralite v0.18.6 Release Notes"
+    seo-title="Coralite v0.18.6 Released: Faster Dev, Better UX, and Enhanced UI Toolkit"
+    description="Coralite v0.18.6 introduces auto-port detection, improved accessibility, dark mode enhancements, and a powerful new UI toolkit with utility classes, inline CSS support, and performance optimizations. Upgrade now for a smoother development experience."
+  ></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2025-09-24T13:53:35.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.18.6</h1>
+
+    <coralite-author name="thomas" date-time="2025-09-24T13:53:35.000Z"></coralite-author>
+
+    <p>Coralite v0.18.6 delivers a focused update to the core framework, emphasizing developer experience, accessibility, and visual polish. This release includes new tooling for faster local development, improved styling consistency, and enhancements to the default website template that reflect real-world usage patterns.</p>
+
+    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+
+    <ul>
+      <li><code>auto-port</code> detection with fallback to port 3000 ensures quicker local server startup, reducing friction during development.</li>
+      <li>Support for a dedicated <code>styles/</code> directory enables structured, scalable styling without requiring custom build steps.</li>
+      <li>Improved file handling for templates and pages now respects changes and unlinks properly, reducing stale state issues.</li>
+      <li>Added <code>no-cache</code> middleware by default in the UI layer to ensure server responses are not cached, improving reliability during development.</li>
+      <li>Performance gains through <code>fetchpriority="high"</code> on the hero background image, prioritizing critical assets for faster perceived load times.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="New Features & UI Enhancements"></coralite-heading>
+
+    <p>Significant refinements to the default website template now make it more usable out of the box:</p>
+
+    <ul>
+      <li>Added <code>skip-to-content</code> link for improved keyboard navigation and screen reader support.</li>
+      <li>Introduced a full set of utility classes: position, flex alignment, border, shadow, and padding—enabling rapid, consistent layout construction.</li>
+      <li>Expanded visual language with new effects: neon shadows on the logo, ray animations in the hero, and glass-like background styles.</li>
+      <li>Added a card component and template, author section, feature highlights, and video backgrounds—ready for content-driven sites.</li>
+      <li>Enhanced dark mode support with media query-based styles and dedicated dark-only variants for navbars, buttons, and code blocks.</li>
+      <li>Introduced inline CSS processing with minification and <code>@import</code> support via the new <code>coralite-plugin-inline-css</code> (v1.0.0).</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Stability & Accessibility"></coralite-heading>
+
+    <ul>
+      <li>Fixed inconsistent spacing by aligning <code>margin-bottom</code> with visual strength and removing redundant padding in the navbar.</li>
+      <li>Corrected URL resolution by ensuring all <code>href</code> attributes include the <code>.html</code> extension.</li>
+      <li>Improved contrast in the hero section for light mode, enhancing readability.</li>
+      <li>Updated font sizes for headings and subtitles to improve hierarchy and legibility.</li>
+      <li>Added underline offset to links in base CSS for better visual feedback.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Code Quality & Maintainability"></coralite-heading>
+
+    <ul>
+      <li>Refactored the hero background to be generic, allowing reuse across different sections.</li>
+      <li>Renamed <code>_fonts.css</code> to <code>_font.css</code> for consistency with naming conventions.</li>
+      <li>Updated spacing utilities to use <code>py-3</code> and <code>py-5</code> in CSS variables, aligning with modern spacing systems.</li>
+      <li>Replaced inline dot elements with base64-encoded SVGs to reduce HTTP requests.</li>
+      <li>Improved performance by disabling background animations on mobile devices and enabling them only on larger screens.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+
+    <p>Update your project with one of the following commands:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.18.6</coralite-code-highlight>
+
+    <p>Or update the scaffolding tool:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite-scripts@0.18.6</coralite-code-highlight>
+
+    <p>For full details on changes, view the <a href="https://codeberg.org/tjdavid/coralite/compare/v0.18.5...v0.18.6" target="_blank">full changelog</a>.</p>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
