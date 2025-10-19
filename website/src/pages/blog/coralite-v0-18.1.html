@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article"
+    title="Coralite v0.18.1 Release Notes"
+    seo-title="Coralite v0.18.1 Released: Fixes for JS Config and CLI Path Handling"
+    description="Coralite v0.18.1 improves project setup stability with fixes for `jsconfig.json` module casing and CLI config file path resolution. Upgrade now for a more reliable development experience."
+  ></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2025-09-14T16:17:22.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.18.1</h1>
+
+    <coralite-author name="thomas" date-time="2025-09-14T16:17:22.000Z"></coralite-author>
+
+    <p>Coralite v0.18.1 is a targeted update focused on stability and configuration correctness. This release addresses two critical issues that impact project setup and module resolution, ensuring a smoother experience for developers using the framework.</p>
+
+    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+
+    <ul>
+      <li>Fixed incorrect module resolution in <code>jsconfig.json</code> by correcting the <code>module</code> property from <code>NodeNext</code> to <code>nodenext</code> (lowercase), aligning with Node.js’s expected configuration format.</li>
+      <li>Resolved path handling for configuration files in the Coralite CLI, ensuring that config files are correctly located and loaded regardless of project structure or invocation context.</li>
+    </ul>
+
+    <p>These changes improve the reliability of project scaffolding and development tooling, reducing configuration-related errors during setup and build processes.</p>
+
+    <coralite-heading level="h2" text="Upgrade Instructions"></coralite-heading>
+
+    <p>To update your project, run one of the following commands depending on your needs:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.18.1</coralite-code-highlight>
+
+    <p>If you’re using <code>coralite-scripts</code> for project scaffolding, update it as well:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite-scripts@0.18.1</coralite-code-highlight>
+
+    <p>For full details on changes, view the <a href="https://codeberg.org/tjdavid/coralite/compare/v0.18.0...v0.18.1" target="_blank">full changelog</a>.</p>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
