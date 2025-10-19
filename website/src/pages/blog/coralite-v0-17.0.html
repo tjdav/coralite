@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article"
+    title="Coralite v0.17.0 Release Notes"
+    seo-title="Coralite v0.17.0 Released: Enhanced CSS, PostCSS Support & Improved Developer Experience"
+    description="Coralite v0.17.0 delivers robust PostCSS integration, unified path handling, and a simplified CLI with mode-based workflows. Upgrade for better CSS/SCSS support, stable module resolution, and clearer documentation."
+  ></coralite-meta>
+
+  <meta property="article:published_time" name="published_time" content="2025-09-11T10:48:02.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+<link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.17.0</h1>
+
+    <coralite-author name="thomas" date-time="2025-09-11T10:48:02.000Z"></coralite-author>
+
+    <p>Coralite v0.17.0 introduces significant improvements to CSS handling, refactors core configuration logic, and enhances developer tooling. This release focuses on stability, clarity, and better support for modern web workflows—especially around styling and module resolution.</p>
+
+    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+
+    <p>Developers now have full PostCSS integration with built-in support for plugins. The build system can process CSS and SCSS files through PostCSS, enabling advanced preprocessing without external tooling. This improves consistency across development and production builds.</p>
+
+    <p>Path handling across the project has been unified and corrected. The system now uses standard URL and file path resolution methods, reducing bugs related to incorrect file references—especially on Windows systems or in environments with symbolic links.</p>
+
+    <p>CLI behavior has been simplified. Instead of separate <code>dev</code> and <code>build</code> flags, the new <code>mode</code> argument provides a single, clear way to control runtime behavior. This makes configuration more predictable and easier to extend.</p>
+
+    <coralite-heading level="h2" text="New Features"></coralite-heading>
+
+    <ul>
+      <li>Added CSS support in the <code>create-coralite</code> template generator, allowing new projects to include styles out of the box.</li>
+      <li>Implemented PostCSS integration in <code>coralite-scripts</code>, with plugin configuration via the <code>cssPlugins</code> option in the config.</li>
+      <li>Added <code>styles</code> as a unified config field for both CSS and SCSS templates—replacing the older <code>css</code> key for improved clarity.</li>
+      <li>Introduced a new <code>publish-create</code> script to streamline publishing the <code>create-coralite</code> package.</li>
+      <li>Updated the development server to include hot-reloading and SASS support, now centralized in <code>server.js</code> for better maintainability.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Bug Fixes"></coralite-heading>
+
+    <p>This release resolves long-standing path resolution issues that affected module linking, file saving, and HTML output. These fixes ensure consistent behavior across operating systems and file system layouts.</p>
+
+    <ul>
+      <li>Replaced regex-based path manipulation with <code>path.relative()</code> and <code>path.normalize()</code> for accurate path resolution.</li>
+      <li>Fixed incorrect module path resolution by using <code>fileURLToPath</code> and <code>pathToFileURL</code> for ES module compatibility.</li>
+      <li>Resolved incorrect file extension handling during collection of HTML files.</li>
+      <li>Improved error handling during config loading, especially with asynchronous file system access.</li>
+      <li>Corrected how slot components are generated—now only from valid HTML elements.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Documentation & Type Safety"></coralite-heading>
+
+    <p>Documentation now includes clear guides for using Coralite components in JavaScript, with updated examples and structure. Type definitions have been expanded to reflect new options, especially around PostCSS and style configuration.</p>
+
+    <ul>
+      <li>Added <code>cssPlugins</code> type definition for PostCSS configuration.</li>
+      <li>Updated README with new setup instructions, package structure, and reference links.</li>
+      <li>Improved documentation links to point directly to <code>packages/coralite</code> for easier navigation.</li>
+      <li>Updated changelog formatting and PR links for consistency with previous releases.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Code Refactoring & Maintainability"></coralite-heading>
+
+    <p>Internal code has been restructured for clarity and long-term maintainability. Key changes include:</p>
+
+    <ul>
+      <li>Renamed <code>css</code> config option to <code>styles</code> to reflect broader support for CSS, SCSS, and PostCSS.</li>
+      <li>Moved the development server with hot-reloading and SASS support into <code>server.js</code> for better separation of concerns.</li>
+      <li>Replaced <code>path.join()</code> with <code>path.normalize()</code> in template and page path resolution for cross-platform consistency.</li>
+      <li>Improved function exports and naming, including proper default exports for <code>buildSass</code>.</li>
+      <li>Refactored <code>config-loader</code> to use <code>href</code> instead of <code>toString()</code> for accurate path resolution.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to Coralite v0.17.0, run:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.17.0</coralite-code-highlight>
+
+    <p>For full details, <a href="https://codeberg.org/tjdavid/coralite/compare/v0.16.0...v0.17.0" target="_blank">view the full changelog</a>.</p>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
