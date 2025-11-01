@@ -1073,7 +1073,7 @@ Coralite.prototype._evaluate = async function ({
       meta.url = process.cwd()
     },
     lineOffset: module.lineOffset,
-    identifier: template.path.pathname,
+    identifier: resolve(template.path.pathname),
     context: contextifiedObject
   })
 
