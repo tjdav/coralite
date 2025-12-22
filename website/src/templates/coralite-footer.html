@@ -7,10 +7,8 @@
 
       <div class="d-flex gap justify-content-center">
         <label for="install-npm" class="visibility-hidden">Install coralite commandline</label>
-        <input id="install-npm" class="input hero-input" type="text" value="npm create coralite@latest" readonly
-          onfocus="this.select()">
-        <button type="button" popovertarget="popover-copy" class="button button-secondary" aria-label="Copy code"
-          onclick="copyInput()">
+        <input ref="code" class="input hero-input" type="text" value="npm create coralite@latest" readonly>
+        <button ref="popoverBtn" type="button" class="button button-secondary" aria-label="Copy code">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
             <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
               <rect width="8" height="4" x="8" y="2" rx="1" ry="1" />
@@ -19,7 +17,7 @@
             </g>
           </svg>
         </button>
-        <div popover id="popover-copy">Copied commandline!</div>
+        <div ref="popoverTarget" popover>Copied commandline!</div>
       </div>
     </div>
   </section>
@@ -31,3 +29,32 @@
     </p>
   </footer>
 </template>
+
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    script ({ refs }) {
+      const button = refs('popoverBtn')
+      const popoverTarget = refs('popoverTarget')
+      const codeTarget = refs('code')
+      const popoverId = 'code__' + Math.random().toString(16).substring(2)
+
+      popoverTarget.setAttribute('id', popoverId)
+      button.setAttribute('popovertarget', popoverId)
+
+      codeTarget.addEventListener('focus', () => {
+        codeTarget.select()
+      })
+
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(codeTarget.value)
+        } catch (error) {
+          console.error(error.message)
+        }
+      })
+    }
+  })
+</script>

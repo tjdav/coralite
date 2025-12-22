@@ -2,13 +2,13 @@
   <div class="code">
     <div class="code-toolbar">
       <span class="code-language">{{ language }}</span>
-      <button popovertarget="{{ popovertarget }}" type="button" class="button button-icon" onclick="navigator.clipboard.writeText(this.parentElement.parentElement.children[1].children[0].textContent)">
+      <button ref="popoverBtn" type="button" class="button button-icon">
         Copy to clipboard
       </button>
-      <div id="{{ popovertarget }}" popover>Code copied!</div>
+      <div ref="popoverTarget" popover>Code copied!</div>
     </div>
     <div class="code-body">
-      <pre><code><slot></slot></code></pre>
+      <pre ref="code"><code><slot></slot></code></pre>
     </div>
   </div>
 </template>
@@ -17,11 +17,6 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    tokens: {
-      popovertarget () {
-        return 'copy-' + Math.random().toString(16).substring(2)
-      }
-    },
     slots: {
       default (content) {
         let result = []
@@ -45,6 +40,23 @@
 
         return result
       }
+    },
+    script ({ refs }) {
+      const button = refs('popoverBtn')
+      const popoverTarget = refs('popoverTarget')
+      const codeTarget = refs('code')
+      const popoverId = 'copy__' + Math.random().toString(16).substring(2)
+
+      popoverTarget.setAttribute('id', popoverId)
+      button.setAttribute('popovertarget', popoverTarget.id)
+
+      button.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(codeTarget.textContent)
+        } catch (error) {
+          console.error(error.message)
+        }
+      })
     }
   })
 </script>

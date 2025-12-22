@@ -2,12 +2,12 @@
   <div class="code">
     <div class="code-toolbar">
       <span class="code-language">{{ language }}</span>
-      <button ref="popover-button" popovertarget="{{ popovertarget }}" type="button" class="button button-icon">
+      <button ref="popoverBtn" popovertarget="{{ popovertarget }}" type="button" class="button button-icon">
         Copy to clipboard
       </button>
-      <div id="{{ popovertarget }}" popover>Code copied!</div>
+      <div ref="popoverTarget" popover>Code copied!</div>
     </div>
-    <pre ref="code-body" class="code-body"><code class="language-{{languageClass}}"><slot></slot></code></pre>
+    <pre ref="code" class="code-body"><code class="language-{{languageClass}}"><slot></slot></code></pre>
   </div>
 </template>
 
@@ -19,17 +19,16 @@
     classPrefix: 'code-'
   })
 
+  const allowedCustomTags = ['coralite-version']
+
   export default defineComponent({
     tokens: {
-      popovertarget () {
-        return 'copy-' + Math.random().toString(16).substring(2)
-      },
-      languageClass (attributes) {
+      languageClass(attributes) {
         return attributes.language.toLowerCase()
       }
     },
     slots: {
-      default (content, values) {
+      default(content, values) {
         let result = []
         let endIndex = content.length
         let startIndex = 0
@@ -57,7 +56,7 @@
             const nodes = parseHTML(rawCode)
 
             result = result.concat(nodes.root.children)
-          } else if (node.type === 'tag') {
+          } else if (node.type === 'tag' && allowedCustomTags.includes(node.name)) {
             result.push(node)
           }
         }
@@ -65,9 +64,14 @@
         return result
       }
     },
-    script ({ refs }) {
-      const popoverButton = refs('popover-button')
-      const codeBody = refs('code-body')
+    script({ refs }) {
+      const popoverButton = refs('popoverBtn')
+      const popoverTarget = refs('popoverTarget')
+      const codeBody = refs('code')
+      const popoverId = 'copy-' + Math.random().toString(16).substring(2)
+
+      popoverTarget.setAttribute('id', popoverId)
+      popoverButton.setAttribute('popovertarget', popoverId) 
 
       popoverButton.addEventListener('click', () => {
         navigator.clipboard.writeText(codeBody.textContent)
