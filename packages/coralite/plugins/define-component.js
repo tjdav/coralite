@@ -201,7 +201,22 @@ export const defineComponent = createPlugin({
 
       cb += scriptTextContent + '}'
 
-      results.scriptTextContent = `${cb}; const o = { values: ${JSON.stringify(results)} };`
+      // include values used in script
+      const args = {}
+      for (const key in results) {
+        if (!Object.hasOwn(results, key)) continue
+
+        if (scriptTextContent.includes(key)) {
+          args[key] = results[key]
+        }
+      }
+
+      const values = JSON.stringify(args)
+
+      results.scriptTextContent = `${cb}; const o = { values: ${values} };`
+    } else {
+      // remove custom element parent script
+      delete results.scriptTextContent
     }
 
     return results
