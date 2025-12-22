@@ -19,6 +19,8 @@
     classPrefix: 'code-'
   })
 
+  const allowedCustomTags = ['coralite-version']
+
   export default defineComponent({
     tokens: {
       languageClass(attributes) {
@@ -26,7 +28,7 @@
       }
     },
     slots: {
-      default (content, values) {
+      default(content, values) {
         let result = []
         let endIndex = content.length
         let startIndex = 0
@@ -54,7 +56,7 @@
             const nodes = parseHTML(rawCode)
 
             result = result.concat(nodes.root.children)
-          } else if (node.type === 'tag') {
+          } else if (node.type === 'tag' && allowedCustomTags.includes(node.name)) {
             result.push(node)
           }
         }
