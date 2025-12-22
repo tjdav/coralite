@@ -33,5 +33,6 @@ pnpm create coralite
 ## References
 - [Coralite CLI](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite-cli.md)
 - [Coralite](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite.md)
+- [Coralite Website](https://coralite.dev)
 
 - [Types](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/types.md)
