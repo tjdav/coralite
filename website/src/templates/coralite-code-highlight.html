@@ -2,12 +2,12 @@
   <div class="code">
     <div class="code-toolbar">
       <span class="code-language">{{ language }}</span>
-      <button ref="popover-button" popovertarget="{{ popovertarget }}" type="button" class="button button-icon">
+      <button ref="popoverBtn" popovertarget="{{ popovertarget }}" type="button" class="button button-icon">
         Copy to clipboard
       </button>
-      <div id="{{ popovertarget }}" popover>Code copied!</div>
+      <div ref="popoverTarget" popover>Code copied!</div>
     </div>
-    <pre ref="code-body" class="code-body"><code class="language-{{languageClass}}"><slot></slot></code></pre>
+    <pre ref="code" class="code-body"><code class="language-{{languageClass}}"><slot></slot></code></pre>
   </div>
 </template>
 
@@ -21,10 +21,7 @@
 
   export default defineComponent({
     tokens: {
-      popovertarget () {
-        return 'copy-' + Math.random().toString(16).substring(2)
-      },
-      languageClass (attributes) {
+      languageClass(attributes) {
         return attributes.language.toLowerCase()
       }
     },
@@ -65,9 +62,14 @@
         return result
       }
     },
-    script ({ refs }) {
-      const popoverButton = refs('popover-button')
-      const codeBody = refs('code-body')
+    script({ refs }) {
+      const popoverButton = refs('popoverBtn')
+      const popoverTarget = refs('popoverTarget')
+      const codeBody = refs('code')
+      const popoverId = 'copy-' + Math.random().toString(16).substring(2)
+
+      popoverTarget.setAttribute('id', popoverId)
+      popoverButton.setAttribute('popovertarget', popoverId) 
 
       popoverButton.addEventListener('click', () => {
         navigator.clipboard.writeText(codeBody.textContent)
