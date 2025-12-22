@@ -214,6 +214,9 @@ export const defineComponent = createPlugin({
       const values = JSON.stringify(args)
 
       results.scriptTextContent = `${cb}; const o = { values: ${values} };`
+    } else {
+      // remove custom element parent script
+      delete results.scriptTextContent
     }
 
     return results
