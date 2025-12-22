@@ -10,7 +10,10 @@
       heading (values) {
         const text = values.text
         const level = values.level
-        const id = text.toLowerCase().replaceAll(' ', '-')
+        const id = text
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9-]/g, '')
 
         return `<${level} id="${id}">
           ${text}
