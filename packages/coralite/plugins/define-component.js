@@ -27,16 +27,26 @@ export const defineComponent = createPlugin({
    * @returns {Promise<CoraliteModuleValues>} A promise resolving to the module values
    *   associated with this component.
    */
-  async method (options, { values, document, element, excludeByAttribute }) {
+  async method ({
+    tokens,
+    slots,
+    script
+  },
+  {
+    values,
+    document,
+    element,
+    excludeByAttribute
+  }) {
     /** @type {CoraliteModuleValues} */
     const results = { ...values }
     const computedValueCollection = []
     const computedTokenKey = []
 
-    if (options.tokens) {
-      for (const key in options.tokens) {
-        if (Object.prototype.hasOwnProperty.call(options.tokens, key)) {
-          const token = options.tokens[key]
+    if (typeof tokens === 'object' && tokens !== null) {
+      for (const key in tokens) {
+        if (Object.prototype.hasOwnProperty.call(tokens, key)) {
+          const token = tokens[key]
 
           // check if the token is a function to compute its value
           if (typeof token === 'function') {
