@@ -129,10 +129,10 @@ export const defineComponent = createPlugin({
     }
 
     // process computed slots
-    if (options.slots) {
-      for (const name in options.slots) {
-        if (Object.prototype.hasOwnProperty.call(options.slots, name)) {
-          const computedSlot = options.slots[name]
+    if (slots) {
+      for (const name in slots) {
+        if (Object.prototype.hasOwnProperty.call(slots, name)) {
+          const computedSlot = slots[name]
           // slot content to compute
           const slotContent = []
           // new slot elements
@@ -194,8 +194,8 @@ export const defineComponent = createPlugin({
       }
     }
 
-    if (typeof options.script === 'function') {
-      const scriptTextContent = options.script.toString().trim()
+    if (typeof script === 'function') {
+      const scriptTextContent = script.toString().trim()
       let cb = 'const cb = { '
 
       if (!scriptTextContent.startsWith('script')) {
