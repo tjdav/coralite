@@ -53,7 +53,7 @@ export const defineComponent = createPlugin({
             const result = token(values) || ''
 
             // handle asynchronous results from the function
-            if (typeof result.then === 'function') {
+            if (result instanceof Promise) {
               computedValueCollection.push(result)
               computedTokenKey.push(key)
             } else {
