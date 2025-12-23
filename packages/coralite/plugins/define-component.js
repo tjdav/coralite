@@ -93,42 +93,38 @@ export const defineComponent = createPlugin({
     }
 
     if (computedValueCollection.length) {
-      try {
-        const computedValues = await Promise.all(computedValueCollection)
+      const computedValues = await Promise.all(computedValueCollection)
 
-        for (let i = 0; i < computedValues.length; i++) {
-          const computedValue = computedValues[i]
-          const key = computedTokenKey[i]
+      for (let i = 0; i < computedValues.length; i++) {
+        const computedValue = computedValues[i]
+        const key = computedTokenKey[i]
 
-          // if the computed value is a string, parse it as HTML and process its contents
-          if (typeof computedValue === 'string') {
-            const result = parseHTML(computedValue, excludeByAttribute)
+        // if the computed value is a string, parse it as HTML and process its contents
+        if (typeof computedValue === 'string') {
+          const result = parseHTML(computedValue, excludeByAttribute)
 
-            if (result.root.children.length) {
-              for (let i = 0; i < result.customElements.length; i++) {
-                const customElement = result.customElements[i]
-                // create a component instance from the custom element and its attributes
-                const component = await this.createComponent({
-                  id: customElement.name,
-                  values,
-                  element: customElement,
-                  document
-                })
+          if (result.root.children.length) {
+            for (let i = 0; i < result.customElements.length; i++) {
+              const customElement = result.customElements[i]
+              // create a component instance from the custom element and its attributes
+              const component = await this.createComponent({
+                id: customElement.name,
+                values,
+                element: customElement,
+                document
+              })
 
-                if (component) {
-                  replaceCustomElementWithTemplate(customElement, component)
-                }
+              if (component) {
+                replaceCustomElementWithTemplate(customElement, component)
               }
-
-              results[key] = result.root.children
             }
-          } else {
-            // assign the computed value to the results object
-            results[key] = computedValue
+
+            results[key] = result.root.children
           }
+        } else {
+          // assign the computed value to the results object
+          results[key] = computedValue
         }
-      } catch (error) {
-        console.log(error)
       }
     }
 
