@@ -60,11 +60,8 @@ export const defineComponent = createPlugin({
               // assign the computed value to the results object
               results[key] = result
             }
-          }
-
-          // if the token is a string, parse it as HTML and process its contents
-          if (typeof results[key] === 'string') {
-            const result = parseHTML(results[key], excludeByAttribute)
+          } else if (typeof token === 'string') {
+            const result = parseHTML(token, excludeByAttribute)
             const children = result.root.children
 
             // check if there are any child nodes in the parsed HTML
