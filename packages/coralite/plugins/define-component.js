@@ -27,34 +27,41 @@ export const defineComponent = createPlugin({
    * @returns {Promise<CoraliteModuleValues>} A promise resolving to the module values
    *   associated with this component.
    */
-  async method (options, { values, document, element, excludeByAttribute }) {
+  async method ({
+    tokens,
+    slots,
+    script
+  },
+  {
+    values,
+    document,
+    element,
+    excludeByAttribute
+  }) {
     /** @type {CoraliteModuleValues} */
     const results = { ...values }
     const computedValueCollection = []
     const computedTokenKey = []
 
-    if (options.tokens) {
-      for (const key in options.tokens) {
-        if (Object.prototype.hasOwnProperty.call(options.tokens, key)) {
-          const token = options.tokens[key]
+    if (typeof tokens === 'object' && tokens !== null) {
+      for (const key in tokens) {
+        if (Object.prototype.hasOwnProperty.call(tokens, key)) {
+          const token = tokens[key]
 
           // check if the token is a function to compute its value
           if (typeof token === 'function') {
             const result = token(values) || ''
 
             // handle asynchronous results from the function
-            if (typeof result.then === 'function') {
+            if (result instanceof Promise) {
               computedValueCollection.push(result)
               computedTokenKey.push(key)
             } else {
               // assign the computed value to the results object
               results[key] = result
             }
-          }
-
-          // if the token is a string, parse it as HTML and process its contents
-          if (typeof results[key] === 'string') {
-            const result = parseHTML(results[key], excludeByAttribute)
+          } else if (typeof token === 'string') {
+            const result = parseHTML(token, excludeByAttribute)
             const children = result.root.children
 
             // check if there are any child nodes in the parsed HTML
@@ -86,50 +93,46 @@ export const defineComponent = createPlugin({
     }
 
     if (computedValueCollection.length) {
-      try {
-        const computedValues = await Promise.all(computedValueCollection)
+      const computedValues = await Promise.all(computedValueCollection)
 
-        for (let i = 0; i < computedValues.length; i++) {
-          const computedValue = computedValues[i]
-          const key = computedTokenKey[i]
+      for (let i = 0; i < computedValues.length; i++) {
+        const computedValue = computedValues[i]
+        const key = computedTokenKey[i]
 
-          // if the computed value is a string, parse it as HTML and process its contents
-          if (typeof computedValue === 'string') {
-            const result = parseHTML(computedValue, excludeByAttribute)
+        // if the computed value is a string, parse it as HTML and process its contents
+        if (typeof computedValue === 'string') {
+          const result = parseHTML(computedValue, excludeByAttribute)
 
-            if (result.root.children.length) {
-              for (let i = 0; i < result.customElements.length; i++) {
-                const customElement = result.customElements[i]
-                // create a component instance from the custom element and its attributes
-                const component = await this.createComponent({
-                  id: customElement.name,
-                  values,
-                  element: customElement,
-                  document
-                })
+          if (result.root.children.length) {
+            for (let i = 0; i < result.customElements.length; i++) {
+              const customElement = result.customElements[i]
+              // create a component instance from the custom element and its attributes
+              const component = await this.createComponent({
+                id: customElement.name,
+                values,
+                element: customElement,
+                document
+              })
 
-                if (component) {
-                  replaceCustomElementWithTemplate(customElement, component)
-                }
+              if (component) {
+                replaceCustomElementWithTemplate(customElement, component)
               }
-
-              results[key] = result.root.children
             }
-          } else {
-            // assign the computed value to the results object
-            results[key] = computedValue
+
+            results[key] = result.root.children
           }
+        } else {
+          // assign the computed value to the results object
+          results[key] = computedValue
         }
-      } catch (error) {
-        console.log(error)
       }
     }
 
     // process computed slots
-    if (options.slots) {
-      for (const name in options.slots) {
-        if (Object.prototype.hasOwnProperty.call(options.slots, name)) {
-          const computedSlot = options.slots[name]
+    if (slots) {
+      for (const name in slots) {
+        if (Object.prototype.hasOwnProperty.call(slots, name)) {
+          const computedSlot = slots[name]
           // slot content to compute
           const slotContent = []
           // new slot elements
@@ -191,8 +194,8 @@ export const defineComponent = createPlugin({
       }
     }
 
-    if (typeof options.script === 'function') {
-      const scriptTextContent = options.script.toString().trim()
+    if (typeof script === 'function') {
+      const scriptTextContent = script.toString().trim()
       let cb = 'const cb = { '
 
       if (!scriptTextContent.startsWith('script')) {
