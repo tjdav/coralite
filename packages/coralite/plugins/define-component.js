@@ -182,7 +182,6 @@ export const defineComponent = createPlugin({
               } else {
                 throw new Error('Unexpected slot value, expected a node but found: '
                   + '\n result: ' + JSON.stringify(node)
-                  + '\n component: "' + module.id + '"'
                   + '\n path: "' + document.path.pathname +'"')
               }
             }
