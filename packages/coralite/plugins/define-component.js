@@ -50,7 +50,7 @@ export const defineComponent = createPlugin({
 
           // check if the token is a function to compute its value
           if (typeof token === 'function') {
-            const result = token(values) || ''
+            const result = token(values)
 
             // handle asynchronous results from the function
             if (result instanceof Promise) {
