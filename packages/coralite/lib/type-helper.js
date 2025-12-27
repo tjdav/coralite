@@ -156,8 +156,25 @@ function isRemovableNode (obj) {
 }
 
 export {
-  isCoralitePageItem,
+  // Core type guards
   isCoraliteElement,
   isCoraliteTextNode,
-  isCoraliteComment
+  isCoraliteComment,
+  isCoraliteDirective,
+  isCoraliteDocumentRoot,
+  isCoraliteSlotElement,
+  isCoraliteCollectionItem,
+
+  // Utility type guards
+  isCoraliteNode,
+
+  // Structure validation
+  hasValidElementStructure,
+  hasValidTextNodeStructure,
+  hasValidCommentStructure,
+
+  // Node property checks
+  isValidChildNode,
+  isParentNode,
+  isRemovableNode
 }
