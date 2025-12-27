@@ -13,27 +13,27 @@ function isObject (obj) {
 
 /**
  * Checks if an object is a CoraliteElement.
- * @param {Object} obj - The object to check.
- * @returns {boolean} True if the object is a CoraliteElement, false otherwise.
+ * @param {any} obj - The object to check.
+ * @returns {obj is CoraliteElement} True if the object is a CoraliteElement, false otherwise.
  */
 function isCoraliteElement (obj) {
   return isObject(obj) && obj.type === 'tag'
 }
 
 /**
-* Checks if an object is a CoraliteTextNode.
-* @param {Object} obj - The object to check.
-* @returns {boolean} True if the object is a CoraliteTextNode, false otherwise.
-*/
+ * Checks if an object is a CoraliteTextNode.
+ * @param {any} obj - The object to check.
+ * @returns {obj is CoraliteTextNode} True if the object is a CoraliteTextNode, false otherwise.
+ */
 function isCoraliteTextNode (obj) {
   return isObject(obj) && obj.type === 'text'
 }
 
 /**
-* Checks if an object is a CoraliteComment.
-* @param {Object} obj - The object to check.
-* @returns {boolean} True if the object is a CoraliteComment, false otherwise.
-*/
+ * Checks if an object is a CoraliteComment.
+ * @param {any} obj - The object to check.
+ * @returns {obj is CoraliteComment} True if the object is a CoraliteComment, false otherwise.
+ */
 function isCoraliteComment (obj) {
   return isObject(obj) && obj.type === 'comment'
 }
