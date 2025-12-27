@@ -55,6 +55,19 @@ function isCoraliteDirective (obj) {
 function isCoraliteDocumentRoot (obj) {
   return isObject(obj) && obj.type === 'root'
 }
+
+/**
+ * Checks if an object is a CoraliteSlotElement.
+ * @param {any} obj - The object to check.
+ * @returns {obj is CoraliteSlotElement} True if the object is a CoraliteSlotElement, false otherwise.
+ */
+function isCoraliteSlotElement (obj) {
+  return isObject(obj) &&
+         typeof obj.name === 'string' &&
+         isCoraliteElement(obj.element) &&
+         (obj.customElement === undefined || isCoraliteElement(obj.customElement))
+}
+
 }
 
 export {
