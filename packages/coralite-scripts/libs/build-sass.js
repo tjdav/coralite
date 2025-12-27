@@ -49,13 +49,11 @@ async function buildSass ({
       const filePath = path.join(input, file)
       const outputFile = path.join(output, file.replace('.scss', '.css'))
 
+      const fileStart = process.hrtime()
+
       const result = await sass.compileAsync(filePath, options)
 
-      results.push({
-        input: filePath,
-        output: outputFile,
-        duration: process.hrtime(start)
-      })
+      const duration = process.hrtime(fileStart)
 
       // write the compiled CSS
       await fs.writeFile(outputFile, result.css)
@@ -65,6 +63,12 @@ async function buildSass ({
         const sourceMapPath = outputFile + '.map'
         await fs.writeFile(sourceMapPath, JSON.stringify(result.sourceMap))
       }
+
+      results.push({
+        input: filePath,
+        output: outputFile,
+        duration
+      })
     }
 
     return results

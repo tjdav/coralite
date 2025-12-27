@@ -38,10 +38,14 @@ async function buildCSS ({
       const outputFile = path.join(output, file)
       const css = await fs.readFile(filePath)
 
+      const fileStart = process.hrtime()
+
       const result = await postcss(plugins).process(css, {
         from: filePath,
         to: outputFile
       })
+
+      const duration = process.hrtime(fileStart)
 
       await fs.writeFile(outputFile, result.css)
 
@@ -52,7 +56,7 @@ async function buildCSS ({
       results.push({
         input: filePath,
         output: outputFile,
-        duration: process.hrtime(start)
+        duration
       })
     }
 
