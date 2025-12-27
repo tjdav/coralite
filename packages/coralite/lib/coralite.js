@@ -4,7 +4,7 @@ import render from 'dom-serializer'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
 import { createContext, SourceTextModule } from 'node:vm'
-import { isCoraliteElement, isCoralitePageItem } from './type-helper.js'
+import { isCoraliteElement, isCoraliteCollectionItem } from './type-helper.js'
 import { pathToFileURL } from 'node:url'
 
 /**
@@ -713,7 +713,7 @@ Coralite.prototype.addRenderQueue = async function (value) {
     }
 
     this._currentRenderQueue.push(document)
-  } else if (isCoralitePageItem(value)) {
+  } else if (isCoraliteCollectionItem(value)) {
     const document = await this.pages.setItem(value)
 
     // add render queue
