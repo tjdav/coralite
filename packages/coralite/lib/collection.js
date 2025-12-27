@@ -144,43 +144,73 @@ CoraliteCollection.prototype.setItem = async function (value) {
  * @throws {Error} If invalid input is provided
  */
 CoraliteCollection.prototype.deleteItem = async function (value) {
-  let pathname = value
-  let dirname = ''
+  if (!value) {
+    throw new Error('Valid pathname must be provided')
+  }
+
+  let pathname
+  let dirname
   let valuesByPath
+  let originalValue
 
   if (typeof value !== 'string' && value.path) {
     // if the input is an HTMLData object, extract its pathname and directory name
     pathname = value.path.pathname
     dirname = value.path.dirname
     valuesByPath = this.listByPath[dirname]
-  } else if (pathname && typeof pathname == 'string') {
+    originalValue = value
+  } else if (typeof value === 'string') {
     // if the input is a string, use it as the pathname and determine the directory name
+    pathname = value
     dirname = path.dirname(pathname)
     valuesByPath = this.listByPath[dirname]
+    originalValue = this.collection[pathname]
   } else {
     throw new Error('Valid pathname must be provided')
   }
 
-  if (!valuesByPath) {
-    throw new Error('Valid dirname must be provided: "' + dirname + '"')
+  if (!originalValue) {
+    // item not found, nothing to delete
+    return
   }
 
-  const originalValue = this.collection[pathname]
-
-  if (originalValue) {
-    if (typeof this._onDelete === 'function') {
-      await this._onDelete(originalValue)
+  if (!valuesByPath) {
+    // directory list doesn't exist, but we still need to clean up collection
+    // This can happen if the item was stored under a different ID
+    for (const key in this.collection) {
+      if (this.collection[key] === originalValue) {
+        delete this.collection[key]
+      }
     }
+    return
+  }
 
-    // remove the document from the collection
-    delete this.collection[pathname]
+  if (typeof this._onDelete === 'function') {
+    await this._onDelete(originalValue)
+  }
 
-    // find and remove the document from the list and by-path grouping
-    const listIndex = this.list.indexOf(originalValue)
-    const pathIndex = valuesByPath.indexOf(originalValue)
+  // remove the document from the collection
+  // also check if it's stored under a different ID (from hook result)
+  for (const key in this.collection) {
+    if (this.collection[key] === originalValue) {
+      delete this.collection[key]
+    }
+  }
 
+  // find and remove the document from the list and by-path grouping
+  const listIndex = this.list.indexOf(originalValue)
+  const pathIndex = valuesByPath.indexOf(originalValue)
+
+  if (listIndex !== -1) {
     this.list.splice(listIndex, 1)
+  }
+  if (pathIndex !== -1) {
     valuesByPath.splice(pathIndex, 1)
+  }
+
+  // clean up empty directory arrays
+  if (valuesByPath.length === 0) {
+    delete this.listByPath[dirname]
   }
 }
 
