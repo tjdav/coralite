@@ -105,6 +105,16 @@ function hasValidElementStructure (obj) {
          Array.isArray(obj.children)
 }
 
+/**
+ * Checks if an object has a valid CoraliteTextNode structure with required properties.
+ * @param {any} obj - The object to check.
+ * @returns {boolean} True if the object has valid CoraliteTextNode structure.
+ */
+function hasValidTextNodeStructure (obj) {
+  return isCoraliteTextNode(obj) &&
+         typeof obj.data === 'string'
+}
+
 }
 
 export {
