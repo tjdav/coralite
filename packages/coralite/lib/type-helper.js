@@ -146,6 +146,13 @@ function isParentNode (obj) {
   return isObject(obj) && Array.isArray(obj.children)
 }
 
+/**
+ * Checks if an object is a removable node (has remove property set to true).
+ * @param {any} obj - The object to check.
+ * @returns {boolean} True if the object has remove property set to true.
+ */
+function isRemovableNode (obj) {
+  return isObject(obj) && obj.remove === true
 }
 
 export {
