@@ -125,6 +125,18 @@ function hasValidCommentStructure (obj) {
          typeof obj.data === 'string'
 }
 
+/**
+ * Safely checks if a value is a valid child node for a CoraliteElement.
+ * @param {any} obj - The object to check.
+ * @returns {boolean} True if the object is a valid child node.
+ */
+function isValidChildNode (obj) {
+  return isCoraliteElement(obj) ||
+         isCoraliteTextNode(obj) ||
+         isCoraliteComment(obj) ||
+         isCoraliteDirective(obj)
+}
+
 }
 
 export {
