@@ -115,6 +115,16 @@ function hasValidTextNodeStructure (obj) {
          typeof obj.data === 'string'
 }
 
+/**
+ * Checks if an object has a valid CoraliteComment structure with required properties.
+ * @param {any} obj - The object to check.
+ * @returns {boolean} True if the object has valid CoraliteComment structure.
+ */
+function hasValidCommentStructure (obj) {
+  return isCoraliteComment(obj) &&
+         typeof obj.data === 'string'
+}
+
 }
 
 export {
