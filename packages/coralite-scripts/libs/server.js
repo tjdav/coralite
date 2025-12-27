@@ -214,7 +214,9 @@ async function server (config, options) {
 
   // watch for file changes
   const watcher = chokidar.watch(watchPath, {
-    persistent: true
+    persistent: true,
+    // Add ignoreInitial to prevent initial scan events
+    ignoreInitial: true
   })
 
   const templatePath = normalize(config.templates)
