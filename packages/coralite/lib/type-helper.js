@@ -47,9 +47,14 @@ function isCoraliteDirective (obj) {
   return isObject(obj) && obj.type === 'directive'
 }
 
+/**
+ * Checks if an object is a CoraliteDocumentRoot.
+ * @param {any} obj - The object to check.
+ * @returns {obj is CoraliteDocumentRoot} True if the object is a CoraliteDocumentRoot, false otherwise.
  */
-function isCoralitePageItem (obj) {
-  return isObject(obj) && obj.hasOwnProperty('path') && typeof obj.content === 'string'
+function isCoraliteDocumentRoot (obj) {
+  return isObject(obj) && obj.type === 'root'
+}
 }
 
 export {
