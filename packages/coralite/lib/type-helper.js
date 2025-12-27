@@ -39,9 +39,14 @@ function isCoraliteComment (obj) {
 }
 
 /**
- * Determines whether the given object is a CoralitePageItem.
- * @param {Object} obj - The object to check.
- * @returns {boolean} True if the object is a CoralitePageItem, false otherwise.
+ * Checks if an object is a CoraliteDirective.
+ * @param {any} obj - The object to check.
+ * @returns {obj is CoraliteDirective} True if the object is a CoraliteDirective, false otherwise.
+ */
+function isCoraliteDirective (obj) {
+  return isObject(obj) && obj.type === 'directive'
+}
+
  */
 function isCoralitePageItem (obj) {
   return isObject(obj) && obj.hasOwnProperty('path') && typeof obj.content === 'string'
