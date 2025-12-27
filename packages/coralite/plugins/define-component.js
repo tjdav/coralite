@@ -50,7 +50,7 @@ export const defineComponent = createPlugin({
 
           // check if the token is a function to compute its value
           if (typeof token === 'function') {
-            const result = token(values) || ''
+            const result = token(values)
 
             // handle asynchronous results from the function
             if (result instanceof Promise) {
@@ -182,7 +182,6 @@ export const defineComponent = createPlugin({
               } else {
                 throw new Error('Unexpected slot value, expected a node but found: '
                   + '\n result: ' + JSON.stringify(node)
-                  + '\n component: "' + module.id + '"'
                   + '\n path: "' + document.path.pathname +'"')
               }
             }
