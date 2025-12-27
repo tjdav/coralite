@@ -44,11 +44,11 @@ async function server (config, options) {
 
   // no cache middleware
   app.use(function (req, res, next) {
-    res.setHeader("Surrogate-Control", "no-store");
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-    res.setHeader("Expires", "0");
+    res.setHeader('Surrogate-Control', 'no-store')
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    res.setHeader('Expires', '0')
 
-    next();
+    next()
   })
 
   // middleware to log request information including response time and status code
@@ -214,11 +214,85 @@ async function server (config, options) {
 
   // watch for file changes
   const watcher = chokidar.watch(watchPath, {
-    persistent: true
+    persistent: true,
+    // Add ignoreInitial to prevent initial scan events
+    ignoreInitial: true
   })
 
   const templatePath = normalize(config.templates)
   const pagesPath = normalize(config.pages)
+
+  // Debouncing and compilation state management
+  let compileTimeout = null
+  let isCompiling = false
+  const pendingChanges = new Set()
+
+  // Helper function to debounce compilations
+  const debounceCompile = () => {
+    if (compileTimeout) {
+      clearTimeout(compileTimeout)
+    }
+    compileTimeout = setTimeout(async () => {
+      if (isCompiling || pendingChanges.size === 0) return
+
+      isCompiling = true
+      const start = process.hrtime()
+      let dash = colours.gray(' ─ ')
+
+      // Process all pending changes
+      const changes = Array.from(pendingChanges)
+      pendingChanges.clear()
+
+      // Group changes by type
+      const templateChanges = changes.filter(p => p.startsWith(templatePath))
+      const sassChanges = changes.filter(p => p.endsWith('.scss') || p.endsWith('.sass'))
+      const cssChanges = changes.filter(p => p.endsWith('.css'))
+
+      try {
+        // Handle template changes
+        for (const path of templateChanges) {
+          await coralite.templates.setItem(path)
+        }
+
+        // Handle SASS changes - rebuild all SASS files once
+        if (sassChanges.length > 0) {
+          const results = await buildSass({
+            input: config.styles.input,
+            options: config.sassOptions,
+            output: join(config.output, 'css'),
+            start
+          })
+
+          for (const result of results) {
+            process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(result.duration) + dash + result.input + '\n')
+          }
+        }
+
+        // Handle CSS changes - rebuild all CSS files once
+        if (cssChanges.length > 0) {
+          const results = await buildCSS({
+            input: config.styles.input,
+            output: join(config.output, 'css'),
+            plugins: config.cssPlugins,
+            start
+          })
+
+          for (const result of results) {
+            process.stdout.write(toTime() + colours.bgGreen('Compiled CSS') + dash + toMS(result.duration) + dash + result.input + '\n')
+          }
+        }
+
+        // Notify clients to reload
+        if (templateChanges.length > 0 || sassChanges.length > 0 || cssChanges.length > 0) {
+          clients.forEach(client => {
+            client.write(`data: reload\n\n`)
+          })
+        }
+      } finally {
+        isCompiling = false
+      }
+    }, 100) // 100ms debounce
+  }
 
   watcher
     .on('unlink', async (path) => {
@@ -229,71 +303,21 @@ async function server (config, options) {
       }
     })
     .on('change', async (path) => {
-      const start = process.hrtime()
-      let dash = colours.gray(' ─ ')
-
-      if (path.startsWith(templatePath)) {
-      // update template file
-        await coralite.templates.setItem(path)
-      } else if (path.endsWith('.scss') || path.endsWith('.sass')) {
-      // rebuild CSS and send notification
-        const results = await buildSass({
-          input: config.styles.input,
-          options: config.sassOptions,
-          output: join(config.output, 'css'),
-          start
-        })
-
-        // prints time and path to the file that has been changed or added.
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i]
-
-          process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(result.duration) + dash + result.input + '\n')
-        }
-      } else if (path.endsWith('.css')) {
-        const results = await buildCSS({
-          input: config.styles.input,
-          output: join(config.output, 'css'),
-          plugins: config.cssPlugins,
-          start
-        })
-
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i]
-
-          process.stdout.write(toTime() + colours.bgGreen('Compiled CSS') + dash + toMS(result.duration) + dash + result.input + '\n')
-        }
-      }
-
-      clients.forEach(client => {
-        client.write(`data: reload\n\n`)
-      })
+      // Add to pending changes and trigger debounced compilation
+      pendingChanges.add(path)
+      debounceCompile()
     })
     .on('add', async (path) => {
       if (path.startsWith(templatePath)) {
         // set template item
         coralite.templates.setItem(path)
-      } else if (!initWatcher && (path.endsWith('.scss') || path.endsWith('.sass'))) {
-        const start = process.hrtime()
-        let dash = colours.gray(' ─ ')
-
-        // rebuild CSS and send notification
-        const results = await buildSass({
-          input: config.styles.input,
-          options: config.sassOptions,
-          output: join(config.output, 'css'),
-          start
-        })
-
-        // prints time and path to the file that has been changed or added.
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i]
-
-          process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(result.duration) + dash + result.input + '\n')
-        }
+      } else if (path.endsWith('.scss') || path.endsWith('.sass')) {
+        // Add to pending changes and trigger debounced compilation
+        pendingChanges.add(path)
+        debounceCompile()
       }
     })
-  
+
   try {
     const port = await portfinder.getPortPromise({
       port: startPort,
@@ -312,7 +336,7 @@ async function server (config, options) {
       process.stdout.write(border + colours.inverse(' LOGS ') + border + '\n\n')
     })
   } catch (error) {
-    throw error    
+    throw error
   }
 }
 
