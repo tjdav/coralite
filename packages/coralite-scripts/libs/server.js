@@ -44,11 +44,11 @@ async function server (config, options) {
 
   // no cache middleware
   app.use(function (req, res, next) {
-    res.setHeader("Surrogate-Control", "no-store");
-    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
-    res.setHeader("Expires", "0");
+    res.setHeader('Surrogate-Control', 'no-store')
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate')
+    res.setHeader('Expires', '0')
 
-    next();
+    next()
   })
 
   // middleware to log request information including response time and status code
@@ -293,7 +293,7 @@ async function server (config, options) {
         }
       }
     })
-  
+
   try {
     const port = await portfinder.getPortPromise({
       port: startPort,
@@ -312,7 +312,7 @@ async function server (config, options) {
       process.stdout.write(border + colours.inverse(' LOGS ') + border + '\n\n')
     })
   } catch (error) {
-    throw error    
+    throw error
   }
 }
 
