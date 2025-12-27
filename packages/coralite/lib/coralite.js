@@ -462,7 +462,6 @@ Coralite.prototype.initialise = async function () {
  * @return {Promise<Array<CoraliteResult>>}
  */
 Coralite.prototype.compile = async function (path) {
-  const startTime = performance.now()
   this._currentRenderQueue = this.pages.list.slice()
 
   if (Array.isArray(path)) {
@@ -501,6 +500,8 @@ Coralite.prototype.compile = async function (path) {
   const results = []
 
   for (let i = 0; i < this._currentRenderQueue.length; i++) {
+    const startTime = performance.now()
+
     /** @type {CoraliteDocument & CoraliteDocumentResult} */
     const document = structuredClone(this._currentRenderQueue[i].result)
 
@@ -608,11 +609,8 @@ Coralite.prototype.compile = async function (path) {
     const rawHTML = this._render(document.root)
     const result = {
       item: document,
-      html: rawHTML
-    }
-
-    if (startTime) {
-      result.duration = performance.now() - startTime
+      html: rawHTML,
+      duration: performance.now() - startTime
     }
 
     results.push(result)
