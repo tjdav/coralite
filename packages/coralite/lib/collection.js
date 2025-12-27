@@ -225,31 +225,65 @@ CoraliteCollection.prototype.updateItem = async function (value) {
     value = await this._loadByPath(value)
   }
 
-  if (value && value.path) {
-    const originalValue = this.collection[value.path.pathname]
+  if (!value || !value.path) {
+    throw new Error('Valid HTMLData object must be provided')
+  }
 
-    if (!originalValue) {
-      // if the document does not exist, add it using the set method
-      await this.setItem(value)
-    } else {
-      if (typeof this._onUpdate === 'function') {
-        const result =  await this._onUpdate(value, originalValue)
+  const pathname = value.path.pathname
+  const originalValue = this.collection[pathname]
 
-        // abort update
-        if (!result) {
-          return
-        }
+  if (!originalValue) {
+    // if the document does not exist, add it using the set method
+    return await this.setItem(value)
+  }
 
-        value.result = result
+  if (typeof this._onUpdate === 'function') {
+    const result = await this._onUpdate(value, originalValue)
+
+    // abort update
+    if (!result) {
+      return originalValue
+    }
+
+    // handle callback result
+    if (result && typeof result === 'object') {
+      // if result has a value property, use it
+      if (result.value !== undefined) {
+        originalValue.result = result.value
+      } else {
+        originalValue.result = result
       }
 
-      // update content
-      originalValue.content = value.content
-      originalValue.result = value.result
+      // update type if provided
+      if (result.type === 'page' || result.type === 'template') {
+        originalValue.type = result.type
+      }
+    } else {
+      originalValue.result = result
     }
-  } else {
-    throw new Error('Unexpected type')
   }
+
+  // update core properties
+  if (value.content !== undefined) {
+    originalValue.content = value.content
+  }
+
+  // update path information if it changed
+  if (value.path && value.path !== originalValue.path) {
+    originalValue.path = value.path
+  }
+
+  // update type if explicitly set
+  if (value.type) {
+    originalValue.type = value.type
+  }
+
+  // update any additional properties from value
+  if (value.values !== undefined) {
+    originalValue.values = value.values
+  }
+
+  return originalValue
 }
 
 /**
