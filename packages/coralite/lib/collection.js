@@ -82,6 +82,10 @@ CoraliteCollection.prototype.setItem = async function (value) {
     value = await this._loadByPath(value)
   }
 
+  if (!value || !value.path) {
+    throw new Error('Valid HTMLData object must be provided')
+  }
+
   const pathname = value.path.pathname
   const dirname = value.path.dirname
   const originalValue = this.collection[pathname]
