@@ -2,6 +2,10 @@
  * @import { CoraliteCollectionItem, CoraliteComment, CoraliteDirective, CoraliteDocumentRoot, CoraliteElement, CoraliteTextNode, CoraliteAnyNode, CoraliteSlotElement } from '../types/index.js'
  */
 
+/**
+ * Check if value is a non-null object
+ * @param {any} obj - The value to check
+ * @returns {boolean} True if the value is a non-null object
  */
 function isObject (obj) {
   return typeof obj === 'object' && obj !== null
