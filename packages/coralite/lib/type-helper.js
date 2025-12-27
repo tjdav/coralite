@@ -80,6 +80,18 @@ function isCoraliteCollectionItem (obj) {
          typeof obj.content === 'string'
 }
 
+/**
+ * Checks if an object is any Coralite node type (Element, TextNode, Comment, Directive, or DocumentRoot).
+ * @param {any} obj - The object to check.
+ * @returns {obj is CoraliteAnyNode | CoraliteDirective | CoraliteDocumentRoot} True if the object is any Coralite node type.
+ */
+function isCoraliteNode (obj) {
+  return isCoraliteElement(obj) ||
+         isCoraliteTextNode(obj) ||
+         isCoraliteComment(obj) ||
+         isCoraliteDirective(obj) ||
+         isCoraliteDocumentRoot(obj)
+}
 }
 
 export {
