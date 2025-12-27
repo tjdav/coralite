@@ -68,6 +68,18 @@ function isCoraliteSlotElement (obj) {
          (obj.customElement === undefined || isCoraliteElement(obj.customElement))
 }
 
+/**
+ * Determines whether the given object is a CoraliteCollectionItem.
+ * @param {any} obj - The object to check.
+ * @returns {obj is CoraliteCollectionItem} True if the object is a CoraliteCollectionItem, false otherwise.
+ */
+function isCoraliteCollectionItem (obj) {
+  return isObject(obj) &&
+         'path' in obj &&
+         isObject(obj.path) &&
+         typeof obj.content === 'string'
+}
+
 }
 
 export {
