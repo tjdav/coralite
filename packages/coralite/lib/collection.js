@@ -82,6 +82,10 @@ CoraliteCollection.prototype.setItem = async function (value) {
     value = await this._loadByPath(value)
   }
 
+  if (!value || !value.path) {
+    throw new Error('Valid HTMLData object must be provided')
+  }
+
   const pathname = value.path.pathname
   const dirname = value.path.dirname
   const originalValue = this.collection[pathname]
@@ -119,8 +123,13 @@ CoraliteCollection.prototype.setItem = async function (value) {
     }
 
     // add to both directory-specific and general lists
-    this.listByPath[dirname].push(documentValue)
-    this.list.push(documentValue)
+    // check if already added to avoid duplicates
+    if (!this.listByPath[dirname].includes(documentValue)) {
+      this.listByPath[dirname].push(documentValue)
+    }
+    if (!this.list.includes(documentValue)) {
+      this.list.push(documentValue)
+    }
   } else {
     await this.updateItem(value)
   }
@@ -135,43 +144,73 @@ CoraliteCollection.prototype.setItem = async function (value) {
  * @throws {Error} If invalid input is provided
  */
 CoraliteCollection.prototype.deleteItem = async function (value) {
-  let pathname = value
-  let dirname = ''
+  if (!value) {
+    throw new Error('Valid pathname must be provided')
+  }
+
+  let pathname
+  let dirname
   let valuesByPath
+  let originalValue
 
   if (typeof value !== 'string' && value.path) {
     // if the input is an HTMLData object, extract its pathname and directory name
     pathname = value.path.pathname
     dirname = value.path.dirname
     valuesByPath = this.listByPath[dirname]
-  } else if (pathname && typeof pathname == 'string') {
+    originalValue = value
+  } else if (typeof value === 'string') {
     // if the input is a string, use it as the pathname and determine the directory name
+    pathname = value
     dirname = path.dirname(pathname)
     valuesByPath = this.listByPath[dirname]
+    originalValue = this.collection[pathname]
   } else {
     throw new Error('Valid pathname must be provided')
   }
 
-  if (!valuesByPath) {
-    throw new Error('Valid dirname must be provided: "' + dirname + '"')
+  if (!originalValue) {
+    // item not found, nothing to delete
+    return
   }
 
-  const originalValue = this.collection[pathname]
-
-  if (originalValue) {
-    if (typeof this._onDelete === 'function') {
-      await this._onDelete(originalValue)
+  if (!valuesByPath) {
+    // directory list doesn't exist, but we still need to clean up collection
+    // This can happen if the item was stored under a different ID
+    for (const key in this.collection) {
+      if (this.collection[key] === originalValue) {
+        delete this.collection[key]
+      }
     }
+    return
+  }
 
-    // remove the document from the collection
-    delete this.collection[pathname]
+  if (typeof this._onDelete === 'function') {
+    await this._onDelete(originalValue)
+  }
 
-    // find and remove the document from the list and by-path grouping
-    const listIndex = this.list.indexOf(originalValue)
-    const pathIndex = valuesByPath.indexOf(originalValue)
+  // remove the document from the collection
+  // also check if it's stored under a different ID (from hook result)
+  for (const key in this.collection) {
+    if (this.collection[key] === originalValue) {
+      delete this.collection[key]
+    }
+  }
 
+  // find and remove the document from the list and by-path grouping
+  const listIndex = this.list.indexOf(originalValue)
+  const pathIndex = valuesByPath.indexOf(originalValue)
+
+  if (listIndex !== -1) {
     this.list.splice(listIndex, 1)
+  }
+  if (pathIndex !== -1) {
     valuesByPath.splice(pathIndex, 1)
+  }
+
+  // clean up empty directory arrays
+  if (valuesByPath.length === 0) {
+    delete this.listByPath[dirname]
   }
 }
 
@@ -186,31 +225,65 @@ CoraliteCollection.prototype.updateItem = async function (value) {
     value = await this._loadByPath(value)
   }
 
-  if (value && value.path) {
-    const originalValue = this.collection[value.path.pathname]
+  if (!value || !value.path) {
+    throw new Error('Valid HTMLData object must be provided')
+  }
 
-    if (!originalValue) {
-      // if the document does not exist, add it using the set method
-      await this.setItem(value)
-    } else {
-      if (typeof this._onUpdate === 'function') {
-        const result =  await this._onUpdate(value, originalValue)
+  const pathname = value.path.pathname
+  const originalValue = this.collection[pathname]
 
-        // abort update
-        if (!result) {
-          return
-        }
+  if (!originalValue) {
+    // if the document does not exist, add it using the set method
+    return await this.setItem(value)
+  }
 
-        value.result = result
+  if (typeof this._onUpdate === 'function') {
+    const result = await this._onUpdate(value, originalValue)
+
+    // abort update
+    if (!result) {
+      return originalValue
+    }
+
+    // handle callback result
+    if (result && typeof result === 'object') {
+      // if result has a value property, use it
+      if (result.value !== undefined) {
+        originalValue.result = result.value
+      } else {
+        originalValue.result = result
       }
 
-      // update content
-      originalValue.content = value.content
-      originalValue.result = value.result
+      // update type if provided
+      if (result.type === 'page' || result.type === 'template') {
+        originalValue.type = result.type
+      }
+    } else {
+      originalValue.result = result
     }
-  } else {
-    throw new Error('Unexpected type')
   }
+
+  // update core properties
+  if (value.content !== undefined) {
+    originalValue.content = value.content
+  }
+
+  // update path information if it changed
+  if (value.path && value.path !== originalValue.path) {
+    originalValue.path = value.path
+  }
+
+  // update type if explicitly set
+  if (value.type) {
+    originalValue.type = value.type
+  }
+
+  // update any additional properties from value
+  if (value.values !== undefined) {
+    originalValue.values = value.values
+  }
+
+  return originalValue
 }
 
 /**
