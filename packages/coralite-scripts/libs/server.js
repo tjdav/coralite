@@ -244,6 +244,7 @@ async function server (config, options) {
       pendingChanges.clear()
 
       // Group changes by type
+      const pagesChanges = changes.filter(p => p.startsWith(pagesPath))
       const templateChanges = changes.filter(p => p.startsWith(templatePath))
       const sassChanges = changes.filter(p => p.endsWith('.scss') || p.endsWith('.sass'))
       const cssChanges = changes.filter(p => p.endsWith('.css'))
@@ -283,7 +284,10 @@ async function server (config, options) {
         }
 
         // Notify clients to reload
-        if (templateChanges.length > 0 || sassChanges.length > 0 || cssChanges.length > 0) {
+        if (pagesChanges.length > 0
+          || templateChanges.length > 0
+          || sassChanges.length > 0
+          || cssChanges.length > 0) {
           clients.forEach(client => {
             client.write(`data: reload\n\n`)
           })
