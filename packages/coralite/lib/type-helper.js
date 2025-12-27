@@ -137,6 +137,15 @@ function isValidChildNode (obj) {
          isCoraliteDirective(obj)
 }
 
+/**
+ * Checks if an object is a parent node (has children property).
+ * @param {any} obj - The object to check.
+ * @returns {boolean} True if the object has a children property.
+ */
+function isParentNode (obj) {
+  return isObject(obj) && Array.isArray(obj.children)
+}
+
 }
 
 export {
