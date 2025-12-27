@@ -123,8 +123,13 @@ CoraliteCollection.prototype.setItem = async function (value) {
     }
 
     // add to both directory-specific and general lists
-    this.listByPath[dirname].push(documentValue)
-    this.list.push(documentValue)
+    // check if already added to avoid duplicates
+    if (!this.listByPath[dirname].includes(documentValue)) {
+      this.listByPath[dirname].push(documentValue)
+    }
+    if (!this.list.includes(documentValue)) {
+      this.list.push(documentValue)
+    }
   } else {
     await this.updateItem(value)
   }
