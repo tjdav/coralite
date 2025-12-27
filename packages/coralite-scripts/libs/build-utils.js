@@ -106,3 +106,70 @@ export function deleteDirectoryRecursive (dirPath) {
   // Remove the now-empty directory
   fs.rmdirSync(dirPath)
 }
+
+
+/**
+ * Prettified error display using kleur
+ * @param {string} message - Error message
+ * @param {unknown} [error] - Optional error object
+ */
+export function displayError (message, error) {
+  const dash = colours.gray(' ─ ')
+  process.stdout.write(toTime() + colours.bgRed().white(' ERROR ') + dash + colours.red(message) + '\n')
+  if (error) {
+    const indent = '    '
+    let errorDetails = ''
+
+    if (error instanceof Error) {
+      errorDetails = error.stack || error.message
+    } else if (typeof error === 'string') {
+      errorDetails = error
+    } else if (typeof error === 'object' && error !== null) {
+      errorDetails = JSON.stringify(error, null, 2)
+    } else {
+      errorDetails = String(error)
+    }
+
+    const errorLines = errorDetails.split('\n')
+    let firstLine = true
+
+    const errorResult = errorLines.reduce((previousValue, currentValue) => {
+      if (firstLine) {
+        previousValue += colours.red(indent + currentValue + '\n')
+        firstLine = false
+      } else {
+        previousValue += colours.grey(indent + currentValue + '\n')
+      }
+
+      return previousValue
+    }, '')
+    process.stdout.write(errorResult + '\n')
+  }
+}
+
+/**
+ * Prettified warning display using kleur
+ * @param {string} message - Warning message
+ */
+export function displayWarning (message) {
+  const dash = colours.gray(' ─ ')
+  process.stdout.write(toTime() + colours.bgYellow().black(' WARNING ') + dash + colours.yellow(message) + '\n')
+}
+
+/**
+ * Prettified success display using kleur
+ * @param {string} message - Success message
+ */
+export function displaySuccess (message) {
+  const dash = colours.gray(' ─ ')
+  process.stdout.write(toTime() + colours.bgGreen().white(' SUCCESS ') + dash + colours.green(message) + '\n')
+}
+
+/**
+ * Prettified info display using kleur
+ * @param {string} message - Info message
+ */
+export function displayInfo (message) {
+  const dash = colours.gray(' ─ ')
+  process.stdout.write(toTime() + colours.bgBlue().white(' INFO ') + dash + colours.blue(message) + '\n')
+}
