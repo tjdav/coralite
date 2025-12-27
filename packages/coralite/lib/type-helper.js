@@ -92,6 +92,19 @@ function isCoraliteNode (obj) {
          isCoraliteDirective(obj) ||
          isCoraliteDocumentRoot(obj)
 }
+
+/**
+ * Checks if an object has a valid CoraliteElement structure with required properties.
+ * @param {any} obj - The object to check.
+ * @returns {boolean} True if the object has valid CoraliteElement structure.
+ */
+function hasValidElementStructure (obj) {
+  return isCoraliteElement(obj) &&
+         typeof obj.name === 'string' &&
+         isObject(obj.attribs) &&
+         Array.isArray(obj.children)
+}
+
 }
 
 export {
