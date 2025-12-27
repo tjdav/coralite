@@ -1,6 +1,7 @@
 /**
- * Check if value is an object
- * @param {Object} obj - The object to check
+ * @import { CoraliteCollectionItem, CoraliteComment, CoraliteDirective, CoraliteDocumentRoot, CoraliteElement, CoraliteTextNode, CoraliteAnyNode, CoraliteSlotElement } from '../types/index.js'
+ */
+
  */
 function isObject (obj) {
   return typeof obj === 'object' && obj !== null
