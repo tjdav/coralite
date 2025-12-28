@@ -46,20 +46,58 @@ export async function getHtmlFiles ({
       onDelete: onFileDelete
     })
 
-    const files = readdirSync(path, {
-      recursive,
-      withFileTypes: true
-    })
+    let files
+    try {
+      files = readdirSync(path, {
+        recursive,
+        withFileTypes: true
+      })
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        throw error
+      }
+      throw error
+    }
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
 
+      // Skip hidden files starting with dot
+      if (file.name.startsWith('.')) {
+        continue
+      }
+
+      // Handle directory exclusion for recursive mode
+      if (file.isDirectory() && recursive) {
+        const relativeDirPath = join(file.parentPath.replace(path + '/', ''), file.name)
+        if (exclude.includes(relativeDirPath) || exclude.includes(file.name)) {
+          continue
+        }
+      }
+
       if (file.isFile()
         && extname(file.name).toLowerCase() === '.html'
-        && !exclude.includes(file.name)
       ) {
         const pathname = join(file.parentPath, file.name)
         const name = file.name
+
+        // Calculate relative path from root for exclusion checking
+        const relativePath = pathname.replace(path + '/', '')
+
+        // Check if file should be excluded by: filename, relative path, or full path
+        const shouldExclude = exclude.includes(name) ||
+                             exclude.includes(relativePath) ||
+                             exclude.includes(pathname) ||
+                             exclude.some(excludePath => {
+                               // Handle directory-based exclusions
+                               const excludeDir = excludePath.endsWith('/') ? excludePath.slice(0, -1) : excludePath
+                               return relativePath.startsWith(excludeDir + '/')
+                             })
+
+        if (shouldExclude) {
+          continue
+        }
+
         const content = readFileSync(pathname, { encoding: 'utf8' })
 
         await collection.setItem({
