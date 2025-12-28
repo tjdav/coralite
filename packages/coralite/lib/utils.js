@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises'
-
 /**
  * Converts a kebab-case string to camelCase
  * @param {string} str - The kebab-case string to convert
@@ -30,5 +28,3 @@ export function cleanKeys (object) {
 
   return result
 }
-
-
