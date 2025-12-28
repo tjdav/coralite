@@ -3,7 +3,7 @@ import stylisticJs from '@stylistic/eslint-plugin'
 export default [
   {
     plugins: {
-      '@stylistic/js': stylisticJs,
+      '@stylistic/js': stylisticJs
     },
     rules: {
       '@stylistic/js/curly-newline': ['error', 'always'],
@@ -61,7 +61,7 @@ export default [
       '@stylistic/js/quotes': [
         'error', 'single', {
           avoidEscape: true,
-          allowTemplateLiterals: true
+          allowTemplateLiterals: 'always'
         }
       ],
       '@stylistic/js/comma-dangle': ['error', 'never'],
