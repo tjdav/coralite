@@ -973,10 +973,10 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.strictEqual(result.scriptTextContent, undefined)
+      assert.strictEqual(result.__script__, undefined)
     })
 
-    it('should generate scriptTextContent for function script', async () => {
+    it('should generate __script__ for function script', async () => {
       const options = {
         script: function (values) {
           console.log(values.title)
@@ -989,12 +989,13 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.ok(result.scriptTextContent.includes('const cb = { script:'))
-      assert.ok(result.scriptTextContent.includes('console.log(values.title)'))
-      assert.ok(result.scriptTextContent.includes('const o = { values:'))
-      assert.ok(result.scriptTextContent.includes('"title":"Test Title"'))
-      // count is not used in the script, so it shouldn't be included
-      assert.ok(!result.scriptTextContent.includes('"count":5'))
+      assert.ok(result.__script__)
+      assert.strictEqual(typeof result.__script__.fn, 'function')
+      assert.deepStrictEqual(result.__script__.values, { title: 'Test Title' })
+
+      // Verify the function content
+      const fnString = result.__script__.fn.toString()
+      assert.ok(fnString.includes('console.log(values.title)'))
     })
 
     it('should include only values used in script', async () => {
@@ -1015,10 +1016,10 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.ok(result.scriptTextContent.includes('"title":"Test Title"'))
-      // count is not used in the script, so it shouldn't be included
-      assert.ok(!result.scriptTextContent.includes('"count":5'))
-      assert.ok(!result.scriptTextContent.includes('unused'))
+      assert.ok(result.__script__)
+      assert.deepStrictEqual(result.__script__.values, { title: 'Test Title' })
+      assert.ok(!('count' in result.__script__.values))
+      assert.ok(!('unused' in result.__script__.values))
     })
 
     it('should handle script with no values used', async () => {
@@ -1034,7 +1035,8 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.ok(result.scriptTextContent.includes('const o = { values: {} }'))
+      assert.ok(result.__script__)
+      assert.deepStrictEqual(result.__script__.values, {})
     })
 
     it('should handle script starting with "script" keyword', async () => {
@@ -1050,12 +1052,16 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      // Should not duplicate "script" keyword - the function name is preserved
-      assert.ok(result.scriptTextContent.includes('function script (values)'))
-      assert.ok(result.scriptTextContent.includes('const cb = { script: function script (values)'))
+      assert.ok(result.__script__)
+      assert.strictEqual(typeof result.__script__.fn, 'function')
+      assert.deepStrictEqual(result.__script__.values, { title: 'Test Title' })
+
+      // Verify the function name is preserved
+      const fnString = result.__script__.fn.toString()
+      assert.ok(fnString.includes('function script (values)'))
     })
 
-    it('should remove scriptTextContent when script is undefined', async () => {
+    it('should remove __script__ when script is undefined', async () => {
       const options = {
         script: function (values) {
           return values.title
@@ -1069,7 +1075,7 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.ok(result1.scriptTextContent)
+      assert.ok(result1.__script__)
 
       // Second call without script
       const options2 = {
@@ -1082,7 +1088,7 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.strictEqual(result2.scriptTextContent, undefined)
+      assert.strictEqual(result2.__script__, undefined)
     })
 
     it('should handle complex script function', async () => {
@@ -1100,10 +1106,18 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.ok(result.scriptTextContent.includes('const cb = { script:'))
-      assert.ok(result.scriptTextContent.includes('const title = values.title'))
-      assert.ok(result.scriptTextContent.includes('const count = values.count'))
-      assert.ok(result.scriptTextContent.includes('return `${title}: ${count * 2}`'))
+      assert.ok(result.__script__)
+      assert.strictEqual(typeof result.__script__.fn, 'function')
+      assert.deepStrictEqual(result.__script__.values, {
+        title: 'Test Title',
+        count: 5
+      })
+
+      // Verify the function content
+      const fnString = result.__script__.fn.toString()
+      assert.ok(fnString.includes('const title = values.title'))
+      assert.ok(fnString.includes('const count = values.count'))
+      assert.ok(fnString.includes('return `${title}: ${count * 2}`'))
     })
   })
 
