@@ -27,13 +27,7 @@
  */
 
 /**
- * Configuration options for token handling during processing.
- * @typedef {Object} CoraliteTokenOptions
- * @property {Object.<string, string>} [default] - Default token values for properties not explicitly set
- * @property {Object.<string, string[]>} [aliases] - Token aliases and their possible values
- */
-
-/**
+ * Represents URL and file path values available during template rendering.
  * @typedef {Object} CoralitePathValues
  * @property {string} $urlPathname - The URL pathname
  * @property {string} $urlDirname - The directory name of the URL
