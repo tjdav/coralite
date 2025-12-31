@@ -1,0 +1,83 @@
+<template id="coralite-dynamic-content">
+  <div class="dynamic-container">
+    <div ref="content-area" class="content-area">
+      <p>Initial content</p>
+    </div>
+    <div class="controls">
+      <button ref="add-btn" type="button">Add Item</button>
+      <button ref="remove-btn" type="button">Remove Last</button>
+      <button ref="clear-btn" type="button">Clear All</button>
+    </div>
+    <div ref="counter-display" class="counter">Items: 0</div>
+    <div ref="log-display" class="log"></div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    script ({ values, instanceId }, { refs }) {
+      const contentArea = refs('content-area')
+      const addBtn = refs('add-btn')
+      const removeBtn = refs('remove-btn')
+      const clearBtn = refs('clear-btn')
+      const counterDisplay = refs('counter-display')
+      const logDisplay = refs('log-display')
+
+      const prefix = values.prefix || 'Item'
+      let items = []
+      let logEntries = []
+
+      const updateDisplay = () => {
+        if (counterDisplay) {
+          counterDisplay.textContent = `Items: ${items.length}`
+        }
+        
+        if (contentArea) {
+          contentArea.innerHTML = ''
+          items.forEach((item, index) => {
+            const p = document.createElement('p')
+            p.textContent = `${prefix} ${index + 1}: ${item}`
+            p.setAttribute('data-item', index)
+            contentArea.appendChild(p)
+          })
+        }
+
+        if (logDisplay) {
+          logDisplay.textContent = logEntries.slice(-3).join(' | ')
+        }
+      }
+
+      if (addBtn) {
+        addBtn.addEventListener('click', () => {
+          const timestamp = new Date().toLocaleTimeString()
+          items.push(`Added at ${timestamp}`)
+          logEntries.push(`+${items.length}`)
+          updateDisplay()
+        })
+      }
+
+      if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+          if (items.length > 0) {
+            items.pop()
+            logEntries.push(`-${items.length}`)
+            updateDisplay()
+          }
+        })
+      }
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          items = []
+          logEntries.push('C')
+          updateDisplay()
+        })
+      }
+
+      // Initialize
+      updateDisplay()
+    }
+  })
+</script>

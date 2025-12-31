@@ -1,0 +1,88 @@
+<template id="coralite-state-manager">
+  <div class="state-manager">
+    <div ref="state-display" class="state-display">
+      <p>State: <span ref="state-value">-</span></p>
+      <p>Instance ID: <span ref="instance-id">-</span></p>
+      <p>Template ID: <span ref="template-id">-</span></p>
+    </div>
+    <div class="actions">
+      <button ref="update-btn" type="button">Update State</button>
+      <button ref="reset-btn" type="button">Reset</button>
+      <button ref="toggle-btn" type="button">Toggle</button>
+    </div>
+    <div ref="history" class="history"></div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    script ({ values, instanceId, templateId }, { refs }) {
+      const stateDisplay = refs('state-display')
+      const stateValue = refs('state-value')
+      const instanceIdDisplay = refs('instance-id')
+      const templateIdDisplay = refs('template-id')
+      const updateBtn = refs('update-btn')
+      const resetBtn = refs('reset-btn')
+      const toggleBtn = refs('toggle-btn')
+      const history = refs('history')
+
+      // Initialize state from values
+      let state = {
+        value: values.initialValue || 'default',
+        count: values.count || 0,
+        active: values.active || false
+      }
+
+      const historyLog = []
+
+      const updateDisplay = () => {
+        if (stateValue) {
+          stateValue.textContent = JSON.stringify(state)
+        }
+        if (instanceIdDisplay) {
+          instanceIdDisplay.textContent = instanceId
+        }
+        if (templateIdDisplay) {
+          templateIdDisplay.textContent = templateId
+        }
+        if (history) {
+          history.textContent = historyLog.slice(-5).join(' | ')
+        }
+      }
+
+      if (updateBtn) {
+        updateBtn.addEventListener('click', () => {
+          state.count++
+          state.value = `updated-${state.count}`
+          historyLog.push(`U${state.count}`)
+          updateDisplay()
+        })
+      }
+
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          state = {
+            value: values.initialValue || 'default',
+            count: 0,
+            active: false
+          }
+          historyLog.push('R')
+          updateDisplay()
+        })
+      }
+
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+          state.active = !state.active
+          historyLog.push(state.active ? 'T1' : 'T0')
+          updateDisplay()
+        })
+      }
+
+      // Initial display
+      updateDisplay()
+    }
+  })
+</script>
