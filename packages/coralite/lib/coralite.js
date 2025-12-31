@@ -26,7 +26,8 @@ import { pathToFileURL } from 'node:url'
  *  CoraliteDocumentResult,
  *  CoraliteFilePath,
  *  CoraliteValues,
- *  CoraliteScriptContent} from '../types/index.js'
+ *  CoraliteScriptContent,
+ *  InstanceContext} from '../types/index.js'
  * @import CoraliteCollection from './collection.js'
  * @import {Module} from 'node:vm'
  */
