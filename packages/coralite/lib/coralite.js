@@ -16,7 +16,6 @@ import { pathToFileURL } from 'node:url'
  *  CoraliteResult,
  *  CoraliteModuleValues,
  *  CoraliteDocument,
- *  CoraliteDirective,
  *  CoraliteModuleValue,
  *  CoraliteCollectionItem,
  *  CoraliteDocumentRoot,
@@ -1048,7 +1047,7 @@ Coralite.prototype.createComponent = async function ({
  * @param {CoraliteDocument} data.document - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  *
- * @returns {Promise<Object.<string, string | (CoraliteDirective | CoraliteAnyNode)[]>>}
+ * @returns {Promise<CoraliteModuleValues>}
  */
 Coralite.prototype._evaluate = async function ({
   module,
