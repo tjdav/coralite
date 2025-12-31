@@ -10,6 +10,49 @@ import {
  * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleValues } from '../types/index.js'
  */
 
+/**
+ * Process a token value - parse HTML strings and handle custom elements
+ * @param {any} value - The value to process
+ * @param {Object} context - Processing context
+ * @returns {Promise<any>} - Processed value
+ */
+async function processTokenValue (value, { excludeByAttribute, values, document, createComponent }) {
+  // If not a string, return as-is
+  if (typeof value !== 'string') {
+    return value
+  }
+
+  // Parse HTML string
+  const result = parseHTML(value, excludeByAttribute)
+
+  // If no children, return undefined (for empty HTML)
+  if (!result.root.children.length) {
+    return undefined
+  }
+
+  // Process custom elements
+  for (let i = 0; i < result.customElements.length; i++) {
+    const customElement = result.customElements[i]
+    const component = await createComponent({
+      id: customElement.name,
+      values,
+      element: customElement,
+      document
+    })
+
+    if (component) {
+      replaceCustomElementWithTemplate(customElement, component)
+    }
+  }
+
+  // For static strings, optimize single text nodes
+  if (result.root.children.length === 1 && result.root.children[0].type === 'text') {
+    return result.root.children[0].data
+  }
+
+  return result.root.children
+}
+
 export const defineComponent = createPlugin({
   name: 'defineComponent',
   /**
@@ -40,90 +83,25 @@ export const defineComponent = createPlugin({
   }) {
     /** @type {CoraliteModuleValues} */
     const results = { ...values }
-    const computedValueCollection = []
-    const computedTokenKey = []
 
     if (typeof tokens === 'object' && tokens !== null) {
       for (const key in tokens) {
         if (Object.prototype.hasOwnProperty.call(tokens, key)) {
           const token = tokens[key]
+          let result = token
 
           // check if the token is a function to compute its value
           if (typeof token === 'function') {
-            const result = token(values)
-
-            // handle asynchronous results from the function
-            if (result instanceof Promise) {
-              computedValueCollection.push(result)
-              computedTokenKey.push(key)
-            } else {
-              // assign the computed value to the results object
-              results[key] = result
-            }
-          } else if (typeof token === 'string') {
-            const result = parseHTML(token, excludeByAttribute)
-            const children = result.root.children
-
-            // check if there are any child nodes in the parsed HTML
-            if (children.length) {
-              if (children.length === 1 && children[0].type === 'text') {
-                results[key] = children[0].data
-              } else {
-                for (let i = 0; i < result.customElements.length; i++) {
-                  const customElement = result.customElements[i]
-                  // create a component instance from the custom element and its attributes
-                  const component = await this.createComponent({
-                    id: customElement.name,
-                    values,
-                    element: customElement,
-                    document
-                  })
-
-                  if (component) {
-                    replaceCustomElementWithTemplate(customElement, component)
-                  }
-                }
-
-                results[key] = children
-              }
-            }
+            result = token(values)
           }
-        }
-      }
-    }
 
-    if (computedValueCollection.length) {
-      const computedValues = await Promise.all(computedValueCollection)
-
-      for (let i = 0; i < computedValues.length; i++) {
-        const computedValue = computedValues[i]
-        const key = computedTokenKey[i]
-
-        // if the computed value is a string, parse it as HTML and process its contents
-        if (typeof computedValue === 'string') {
-          const result = parseHTML(computedValue, excludeByAttribute)
-
-          if (result.root.children.length) {
-            for (let i = 0; i < result.customElements.length; i++) {
-              const customElement = result.customElements[i]
-              // create a component instance from the custom element and its attributes
-              const component = await this.createComponent({
-                id: customElement.name,
-                values,
-                element: customElement,
-                document
-              })
-
-              if (component) {
-                replaceCustomElementWithTemplate(customElement, component)
-              }
-            }
-
-            results[key] = result.root.children
-          }
-        } else {
-          // assign the computed value to the results object
-          results[key] = computedValue
+          // process the string token using unified token processor
+          results[key] = await processTokenValue(result, {
+            excludeByAttribute,
+            values,
+            document,
+            createComponent: this.createComponent.bind(this)
+          })
         }
       }
     }
@@ -159,13 +137,32 @@ export const defineComponent = createPlugin({
 
           // append new slot nodes
           if (typeof result === 'string') {
-            elementSlots.push({
-              name,
-              node: {
-                type: 'text',
-                data: result
-              }
+            // process string result through unified processor
+            const processedResult = await processTokenValue(result, {
+              excludeByAttribute,
+              values: results,
+              document,
+              createComponent: this.createComponent.bind(this)
             })
+
+            if (Array.isArray(processedResult)) {
+              // multiple nodes from parsed HTML
+              for (let i = 0; i < processedResult.length; i++) {
+                elementSlots.push({
+                  name,
+                  node: processedResult[i]
+                })
+              }
+            } else {
+              // single text node
+              elementSlots.push({
+                name,
+                node: {
+                  type: 'text',
+                  data: processedResult
+                }
+              })
+            }
           } else if (Array.isArray(result)) {
             for (let index = 0; index < result.length; index++) {
               const node = result[index]
