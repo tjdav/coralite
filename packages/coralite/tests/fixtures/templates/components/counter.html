@@ -1,0 +1,47 @@
+<template id="coralite-counter">
+  <div class="counter-container">
+    <button ref="count-button" type="button" class="counter-btn">
+      Count is <span ref="count-display">0</span>
+    </button>
+    <div ref="status-message" class="status"></div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    script ({ values }, { refs }) {
+      const button = refs('count-button')
+      const display = refs('count-display')
+      const status = refs('status-message')
+      
+      const step = values.step ? parseInt(values.step) : 1
+      const max = values.max ? parseInt(values.max) : null
+      let count = 0
+      
+      if (button && display) {
+        button.addEventListener('click', () => {
+          // increment the counter by the specified step value
+          count += step
+
+          // check if max is reached
+          if (max !== null && count >= max) {
+            count = max
+            if (status) {
+              status.textContent = `Max value ${max} reached!`
+              status.style.color = 'red'
+            }
+            button.disabled = true
+          } else if (status) {
+            status.textContent = `Count increased by ${step}`
+            status.style.color = 'green'
+          }
+
+          // update the button's text content to reflect the new count value
+          display.textContent = count
+        })
+      }
+    }
+  })
+</script>

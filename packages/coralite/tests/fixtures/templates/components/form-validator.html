@@ -1,0 +1,107 @@
+<template id="coralite-form-validator">
+  <form ref="form" class="validation-form">
+    <div class="form-group">
+      <label ref="email-label">Email:</label>
+      <input ref="email-input" type="email" name="email" required>
+      <span ref="email-error" class="error"></span>
+    </div>
+    <div class="form-group">
+      <label ref="password-label">Password:</label>
+      <input ref="password-input" type="password" name="password" required>
+      <span ref="password-error" class="error"></span>
+    </div>
+    <button ref="submit-btn" type="submit">Submit</button>
+    <div ref="success-message" class="success"></div>
+  </form>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    script ({ values }, { refs }) {
+      const form = refs('form')
+      const emailInput = refs('email-input')
+      const passwordInput = refs('password-input')
+      const emailError = refs('email-error')
+      const passwordError = refs('password-error')
+      const successMessage = refs('success-message')
+      const submitBtn = refs('submit-btn')
+
+      const minLength = values.minLength ? parseInt(values.minLength) : 8
+
+      // Email validation
+      if (emailInput && emailError) {
+        emailInput.addEventListener('blur', () => {
+          const email = emailInput.value
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+          
+          if (!email) {
+            emailError.textContent = 'Email is required'
+            emailError.style.color = 'red'
+          } else if (!emailRegex.test(email)) {
+            emailError.textContent = 'Invalid email format'
+            emailError.style.color = 'red'
+          } else {
+            emailError.textContent = '✓ Valid email'
+            emailError.style.color = 'green'
+          }
+        })
+      }
+
+      // Password validation
+      if (passwordInput && passwordError) {
+        passwordInput.addEventListener('input', () => {
+          const password = passwordInput.value
+          
+          if (password.length === 0) {
+            passwordError.textContent = ''
+          } else if (password.length < minLength) {
+            passwordError.textContent = `Password must be at least ${minLength} characters`
+            passwordError.style.color = 'red'
+          } else {
+            passwordError.textContent = '✓ Strong password'
+            passwordError.style.color = 'green'
+          }
+        })
+      }
+
+      // Form submission
+      if (form && submitBtn && successMessage) {
+        form.addEventListener('submit', (e) => {
+          e.preventDefault()
+          
+          const email = emailInput.value
+          const password = passwordInput.value
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+          
+          if (!emailRegex.test(email)) {
+            emailError.textContent = 'Please fix email errors'
+            emailError.style.color = 'red'
+            return
+          }
+          
+          if (password.length < minLength) {
+            passwordError.textContent = `Password must be at least ${minLength} characters`
+            passwordError.style.color = 'red'
+            return
+          }
+
+          // Success
+          successMessage.textContent = `Form submitted successfully! Email: ${email}`
+          successMessage.style.color = 'green'
+          submitBtn.disabled = true
+          
+          // Reset after delay
+          setTimeout(() => {
+            form.reset()
+            successMessage.textContent = ''
+            emailError.textContent = ''
+            passwordError.textContent = ''
+            submitBtn.disabled = false
+          }, 3000)
+        })
+      }
+    }
+  })
+</script>

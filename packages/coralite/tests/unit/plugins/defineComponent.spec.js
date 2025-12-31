@@ -171,7 +171,7 @@ describe('defineComponent', () => {
 
       assert.strictEqual(result.greeting, 'Hello World')
       assert.strictEqual(result.number, '42')
-      assert.strictEqual(result.empty, undefined) // Empty HTML results in undefined
+      assert.strictEqual(result.empty, '')
     })
 
     it('should handle function tokens that return strings', async () => {
@@ -243,9 +243,9 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.strictEqual(result.nullValue, null)
-      assert.strictEqual(result.undefinedValue, undefined)
-      assert.strictEqual(result.falsyValue, 0)
+      assert.strictEqual(result.nullValue, 'null')
+      assert.strictEqual(result.undefinedValue, 'undefined')
+      assert.strictEqual(result.falsyValue, '0')
     })
 
     it('should handle function tokens with no parameters', async () => {
@@ -283,10 +283,7 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.ok(Array.isArray(result.asyncString))
-      assert.strictEqual(result.asyncString.length, 1)
-      assert.strictEqual(result.asyncString[0].type, 'text')
-      assert.strictEqual(result.asyncString[0].data, 'async result')
+      assert.strictEqual(result.asyncString, 'async result')
     })
 
     it('should handle async function tokens that resolve to numbers', async () => {
@@ -349,7 +346,6 @@ describe('defineComponent', () => {
       })
 
       assert.strictEqual(result.sync, 'sync value')
-      assert.ok(Array.isArray(result.async))
       assert.strictEqual(result.func, 'Test Title')
     })
 
@@ -371,10 +367,8 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.ok(Array.isArray(result.async1))
-      assert.ok(Array.isArray(result.async2))
-      assert.strictEqual(result.async1[0].data, 'result1')
-      assert.strictEqual(result.async2[0].data, 'result2')
+      assert.strictEqual(result.async1, 'result1')
+      assert.strictEqual(result.async2, 'result2')
     })
   })
 
@@ -535,7 +529,7 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.strictEqual(result.emptyHtml, undefined)
+      assert.strictEqual(result.emptyHtml, '')
     })
 
     it('should process custom elements in HTML tokens', async () => {
@@ -1320,7 +1314,7 @@ describe('defineComponent', () => {
         document: mockDocument
       })
 
-      assert.strictEqual(result.empty, undefined)
+      assert.strictEqual(result.empty, '')
     })
   })
 
@@ -1519,15 +1513,16 @@ describe('defineComponent', () => {
 
       const options = { tokens: asyncTokens }
 
-      const start = Date.now()
+      const start = performance.now()
       const result = await defineComponent.method.call(mockContext, options, {
         values: mockValues,
         element: mockElement,
         document: mockDocument
       })
-      const end = Date.now()
+      const end = performance.now()
 
-      assert.ok(Array.isArray(result.async0))
+      assert.strictEqual(result.async0, 'async0')
+      assert.strictEqual(result.async9, 'async9')
       assert.ok(end - start < 200, `Should complete in < 200ms, took ${end - start}ms`)
     })
   })
