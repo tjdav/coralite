@@ -257,6 +257,7 @@
 
 /**
  * @template T
+ * @this {ThisType<Coralite>}
  * @callback CoralitePluginModule
  * @param {T} options - Configuration options passed to the plugin
  * @param {CoralitePluginContext} context - Runtime context providing access to values, document data, module info, and path details
