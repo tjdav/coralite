@@ -10,6 +10,26 @@ import {
  * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleValues } from '../types/index.js'
  */
 
+
+/**
+ * Replaces a custom element with its template content.
+ *
+ * @param {CoraliteElement} coraliteElement - The custom element to be replaced.
+ * @param {CoraliteElement} element - The target element to replace the tokens with.
+ */
+async function replaceCustomElementWithTemplate (coraliteElement, element) {
+  // update parent references for new children to maintain the correct structure in the document
+  for (let i = 0; i < element.children.length; i++) {
+    element.children[i].parent = coraliteElement.parent
+  }
+
+  // determine the index of the original custom element within its parent's child list
+  const index = coraliteElement.parent.children.indexOf(coraliteElement, coraliteElement.parentChildIndex)
+
+  // replace the custom element with its template children in the document structure
+  coraliteElement.parent.children.splice(index, 1, ...element.children)
+}
+
 /**
  * Process a token value - parse HTML strings and handle custom elements
  * @param {any} value - The value to process
@@ -217,21 +237,3 @@ export const defineComponent = createPlugin({
   }
 })
 
-/**
- * Replaces a custom element with its template content.
- *
- * @param {CoraliteElement} coraliteElement - The custom element to be replaced.
- * @param {CoraliteElement} element - The target element to replace the tokens with.
- */
-async function replaceCustomElementWithTemplate (coraliteElement, element) {
-  // update parent references for new children to maintain the correct structure in the document
-  for (let i = 0; i < element.children.length; i++) {
-    element.children[i].parent = coraliteElement.parent
-  }
-
-  // determine the index of the original custom element within its parent's child list
-  const index = coraliteElement.parent.children.indexOf(coraliteElement, coraliteElement.parentChildIndex)
-
-  // replace the custom element with its template children in the document structure
-  coraliteElement.parent.children.splice(index, 1, ...element.children)
-}
