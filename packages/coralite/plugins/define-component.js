@@ -10,14 +10,13 @@ import {
  * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleValues } from '../types/index.js'
  */
 
-
 /**
  * Replaces a custom element with its template content.
  *
  * @param {CoraliteElement} coraliteElement - The custom element to be replaced.
  * @param {CoraliteElement} element - The target element to replace the tokens with.
  */
-async function replaceCustomElementWithTemplate (coraliteElement, element) {
+function replaceCustomElementWithTemplate (coraliteElement, element) {
   // update parent references for new children to maintain the correct structure in the document
   for (let i = 0; i < element.children.length; i++) {
     element.children[i].parent = coraliteElement.parent
