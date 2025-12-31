@@ -162,14 +162,6 @@
  */
 
 /**
- * Defines a slot with its associated HTML element and custom component.
- * @typedef {Object} CoraliteSlotElement
- * @property {string} name - Slot's unique identifier
- * @property {CoraliteElement} customElement - Custom component for the slot
- * @property {CoraliteElement} element - Corresponding HTML element for the slot
- */
-
-/**
  * Represents a directive found in HTML content, like a DOCTYPE declaration.
  * @typedef {Object} CoraliteDirective
  * @property {'directive'} type - Node type
@@ -372,26 +364,6 @@
  * @property {CoraliteDocument} document - Coralite document with metadata and rendering structure.
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object} refs - Array of reference identifiers.
- */
-
-/**
- * @template CoraliteScriptTContext - The shape of the instance context (refs, state, etc.)
- * @template {any[]} CoraliteScriptTArgs - The arguments the final helper function accepts
- * @template CoraliteScriptTReturn - The return value of the helper function
- */
-
-/**
- * @typedef {Object} CoraliteScriptGlobalHelper
- * @property {'global'} type
- * @property {string} [description]
- * @property {(...args: CoraliteScriptTArgs) => CoraliteScriptTReturn} method - Direct utility function
- */
-
-/**
- * @typedef {Object} CoraliteScriptInstanceHelper
- * @property {'instance'} type
- * @property {string} [description]
- * @property {(context: CoraliteScriptContent) => (...args: CoraliteScriptTArgs) => CoraliteScriptTReturn} method - Factory function
  */
 
 /**
