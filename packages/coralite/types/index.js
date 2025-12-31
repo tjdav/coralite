@@ -266,35 +266,38 @@
 /**
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageSetCallback
+ * @description Async callback triggered when a page is created. Called with elements, values, and data.
  * @param {Object} param
- * @param {ParseHTMLResult} param.elements
- * @param {CoraliteFilePath & Object.<string, any>} param.values
- * @param {CoraliteCollectionItem} param.data
+ * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
+ * @param {CoraliteFilePath & Object.<string, any>} param.values - Values associated with the page path
+ * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
  * @async
  */
 
 /**
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageUpdateCallback
+ * @description Async callback triggered when a page is updated. Called with elements, new and old values.
  * @param {Object} param
- * @param {CoraliteElement[]} param.elements
- * @param {CoraliteCollectionItem} param.newValue
- * @param {CoraliteCollectionItem} param.oldValue
+ * @param {CoraliteElement[]} param.elements - Updated HTML elements from the page
+ * @param {CoraliteCollectionItem} param.newValue - The updated data item
+ * @param {CoraliteCollectionItem} param.oldValue - The previous data item before update
  * @async
  */
 
 /**
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageDeleteCallback
- * @param {CoraliteCollectionItem} value
+ * @description Async callback triggered when a page is deleted. Called with the deleted data.
+ * @param {CoraliteCollectionItem} value - The data item being deleted
  * @async
  */
-
 
 /**
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginTemplateCallback
- * @param {CoraliteModule} template
+ * @description Async callback triggered for template-related events (set, update, delete).
+ * @param {CoraliteModule} template - The template module that was set, updated, or deleted
  * @async
  */
 
