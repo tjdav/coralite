@@ -64,7 +64,7 @@
         return result
       }
     },
-    script({ refs }) {
+    script(context, { refs }) {
       const popoverButton = refs('popoverBtn')
       const popoverTarget = refs('popoverTarget')
       const codeBody = refs('code')
