@@ -195,15 +195,9 @@ export const defineComponent = createPlugin({
 
     if (typeof script === 'function') {
       const scriptTextContent = script.toString().trim()
-      let cb = 'const cb = { '
-
-      if (!scriptTextContent.startsWith('script')) {
-        cb += 'script: '
-      }
-
-      cb += scriptTextContent + '}'
 
       // include values used in script
+      /** @type {CoraliteModuleValues} */
       const args = {}
       for (const key in results) {
         if (!Object.hasOwn(results, key)) continue
@@ -213,12 +207,13 @@ export const defineComponent = createPlugin({
         }
       }
 
-      const values = JSON.stringify(args)
-
-      results.scriptTextContent = `${cb}; const o = { values: ${values} };`
+      results.__script__ = {
+        fn: script,
+        values: args
+      }
     } else {
       // remove custom element parent script
-      delete results.scriptTextContent
+      delete results.__script__
     }
 
     return results
