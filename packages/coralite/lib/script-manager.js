@@ -142,13 +142,12 @@ ScriptManager.prototype.compileAllInstances = async function (instances) {
   // Add instance
   code += '\n// Instances\n'
   for (const [instanceId, instanceData] of Object.entries(instances)) {
-    const values = JSON.stringify(instanceData.templateId)
     // Create context for instance helpers
     const context = {
       instanceId,
       templateId: instanceData.templateId,
       refs: instanceData.refs,
-      values,
+      values: instanceData.values,
       document: instances[instanceId].document || {}
     }
 
