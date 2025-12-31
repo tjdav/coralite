@@ -27,13 +27,7 @@
  */
 
 /**
- * Configuration options for token handling during processing.
- * @typedef {Object} CoraliteTokenOptions
- * @property {Object.<string, string>} [default] - Default token values for properties not explicitly set
- * @property {Object.<string, string[]>} [aliases] - Token aliases and their possible values
- */
-
-/**
+ * Represents URL and file path values available during template rendering.
  * @typedef {Object} CoralitePathValues
  * @property {string} $urlPathname - The URL pathname
  * @property {string} $urlDirname - The directory name of the URL
@@ -44,6 +38,7 @@
  */
 
 /**
+ * Union type representing values available for token replacement in templates.
  * @typedef {CoralitePathValues | Object.<string, string>} CoraliteValues
  */
 
@@ -155,21 +150,15 @@
 
 
 /**
- * Union type representing any content node (element, text, or comment).
+ * Union type representing any content node in the Coralite content tree.
+ * Can be an HTML element, text node, or comment node.
  * @typedef {CoraliteElement | CoraliteTextNode | CoraliteComment} CoraliteAnyNode
  */
 
 /**
  * Union type representing nodes that can be part of a document's content hierarchy.
+ * Includes both standard HTML elements and the document root node.
  * @typedef {CoraliteElement | CoraliteDocumentRoot} CoraliteContentNode
- */
-
-/**
- * Defines a slot with its associated HTML element and custom component.
- * @typedef {Object} CoraliteSlotElement
- * @property {string} name - Slot's unique identifier
- * @property {CoraliteElement} customElement - Custom component for the slot
- * @property {CoraliteElement} element - Corresponding HTML element for the slot
  */
 
 /**
@@ -199,8 +188,8 @@
 
 /**
  * @typedef {Object} CoraliteDocumentResult
- * @property {CoraliteModuleValues} values
- * @property {CoraliteElement[]} tempElements
+ * @property {CoraliteModuleValues} values - The module values extracted from the document
+ * @property {CoraliteElement[]} tempElements - Temporary elements created during processing
  */
 
 /**
@@ -268,6 +257,7 @@
 
 /**
  * @template T
+ * @this {ThisType<Coralite>}
  * @callback CoralitePluginModule
  * @param {T} options - Configuration options passed to the plugin
  * @param {CoralitePluginContext} context - Runtime context providing access to values, document data, module info, and path details
@@ -276,35 +266,38 @@
 /**
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageSetCallback
+ * @description Async callback triggered when a page is created. Called with elements, values, and data.
  * @param {Object} param
- * @param {ParseHTMLResult} param.elements
- * @param {CoraliteFilePath & Object.<string, any>} param.values
- * @param {CoraliteCollectionItem} param.data
+ * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
+ * @param {CoraliteFilePath & Object.<string, any>} param.values - Values associated with the page path
+ * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
  * @async
  */
 
 /**
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageUpdateCallback
+ * @description Async callback triggered when a page is updated. Called with elements, new and old values.
  * @param {Object} param
- * @param {CoraliteElement[]} param.elements
- * @param {CoraliteCollectionItem} param.newValue
- * @param {CoraliteCollectionItem} param.oldValue
+ * @param {CoraliteElement[]} param.elements - Updated HTML elements from the page
+ * @param {CoraliteCollectionItem} param.newValue - The updated data item
+ * @param {CoraliteCollectionItem} param.oldValue - The previous data item before update
  * @async
  */
 
 /**
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageDeleteCallback
- * @param {CoraliteCollectionItem} value
+ * @description Async callback triggered when a page is deleted. Called with the deleted data.
+ * @param {CoraliteCollectionItem} value - The data item being deleted
  * @async
  */
-
 
 /**
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginTemplateCallback
- * @param {CoraliteModule} template
+ * @description Async callback triggered for template-related events (set, update, delete).
+ * @param {CoraliteModule} template - The template module that was set, updated, or deleted
  * @async
  */
 
@@ -375,26 +368,6 @@
  * @property {CoraliteDocument} document - Coralite document with metadata and rendering structure.
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object} refs - Array of reference identifiers.
- */
-
-/**
- * @template CoraliteScriptTContext - The shape of the instance context (refs, state, etc.)
- * @template {any[]} CoraliteScriptTArgs - The arguments the final helper function accepts
- * @template CoraliteScriptTReturn - The return value of the helper function
- */
-
-/**
- * @typedef {Object} CoraliteScriptGlobalHelper
- * @property {'global'} type
- * @property {string} [description]
- * @property {(...args: CoraliteScriptTArgs) => CoraliteScriptTReturn} method - Direct utility function
- */
-
-/**
- * @typedef {Object} CoraliteScriptInstanceHelper
- * @property {'instance'} type
- * @property {string} [description]
- * @property {(context: CoraliteScriptContent) => (...args: CoraliteScriptTArgs) => CoraliteScriptTReturn} method - Factory function
  */
 
 /**
