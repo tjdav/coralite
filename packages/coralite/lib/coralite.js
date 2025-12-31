@@ -1096,7 +1096,7 @@ Coralite.prototype._evaluate = async function ({
   await script.evaluate()
 
   // @ts-ignore
-  if (script.namespace.default) {
+  if (script.namespace.default != null) {
     // @ts-ignore
     return await script.namespace.default
   }
