@@ -38,6 +38,7 @@
  */
 
 /**
+ * Union type representing values available for token replacement in templates.
  * @typedef {CoralitePathValues | Object.<string, string>} CoraliteValues
  */
 
@@ -149,12 +150,14 @@
 
 
 /**
- * Union type representing any content node (element, text, or comment).
+ * Union type representing any content node in the Coralite content tree.
+ * Can be an HTML element, text node, or comment node.
  * @typedef {CoraliteElement | CoraliteTextNode | CoraliteComment} CoraliteAnyNode
  */
 
 /**
  * Union type representing nodes that can be part of a document's content hierarchy.
+ * Includes both standard HTML elements and the document root node.
  * @typedef {CoraliteElement | CoraliteDocumentRoot} CoraliteContentNode
  */
 
@@ -193,8 +196,8 @@
 
 /**
  * @typedef {Object} CoraliteDocumentResult
- * @property {CoraliteModuleValues} values
- * @property {CoraliteElement[]} tempElements
+ * @property {CoraliteModuleValues} values - The module values extracted from the document
+ * @property {CoraliteElement[]} tempElements - Temporary elements created during processing
  */
 
 /**
