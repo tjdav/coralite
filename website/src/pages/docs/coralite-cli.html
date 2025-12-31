@@ -17,11 +17,11 @@
       usage examples.
     </p>
 
-    <h2>Command Structure</h2>
+    <coralite-heading level="h2" text="Command Structure"></coralite-heading>
     <p>The basic command structure for the Coralite CLI is as follows:</p>
     <coralite-code language="bash">coralite [options]</coralite-code>
 
-    <h2>Options</h2>
+    <coralite-heading level="h2" text="Options"></coralite-heading>
     <p>The Coralite CLI accepts several options to configure its behavior. Here's a detailed list of available options:
     </p>
 
@@ -73,10 +73,10 @@
       </li>
     </ul>
 
-    <h2>Configuration File Support</h2>
+    <coralite-heading level="h2" text="Configuration File Support"></coralite-heading>
     <p>The Coralite CLI automatically looks for a <code>coralite.config.js</code> file in the current working directory. If found, it will merge any plugins defined in the configuration file with the CLI options.</p>
 
-    <h2>Examples</h2>
+    <coralite-heading level="h2" text="Examples"></coralite-heading>
 
     <p><strong>1. Generate a site with default options:</strong></p>
 
@@ -90,7 +90,7 @@
     <p>When a <code>coralite.config.js</code> file exists in your project root, the CLI will automatically load plugins from it:</p>
     <coralite-code language="bash">coralite -t src/templates -p src/pages -o dist</coralite-code>
 
-    <h2>Technical Details</h2>
+    <coralite-heading level="h2" text="Technical Details"></coralite-heading>
     <p>Under the hood, the Coralite CLI does the following:</p>
     <ol>
       <li>Parses command-line options using the <code>commander</code> library.</li>

@@ -17,8 +17,7 @@
     
     <h2>Coralite constructor</h2>
 
-    <h3>Parameters</h3>
-
+    <coralite-heading level="h3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -64,7 +63,7 @@
       </table>
     </div>
 
-    <h3>Example useabe</h3>
+    <coralite-heading level="h3" text="Example Usage"></coralite-heading>
     <coralite-code-highlight language="JavaScript">const coralite = new Coralite({
   templates: './src/templates',
   pages: './src/pages',
@@ -75,9 +74,8 @@
   ]
 });</coralite-code-highlight>
 
-    <h2>Coralite compile method</h2>
-    <p>The compile method is used to compile and render HTML pages into final output documents. It processes page content, replaces custom elements with corresponding components, and returns compiled results along with performance metrics such as rendering duration.</p>
 
+    <coralite-heading level="h3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -99,7 +97,7 @@
       </table>
     </div>
 
-    <h3>Example usage</h3>
+    <coralite-heading level="h3" text="Example Usage"></coralite-heading>
     <p>Compile a single page by providing its file path:</p>
     <coralite-code-highlight language="JavaScript">coralite.compile('pages/home/index.html')
   .then(documents => {
@@ -129,10 +127,8 @@
     console.error('Error compiling all pages:', error)
   });</coralite-code-highlight>
 
-
-    <h2>Coralite compile method</h2>
-    <p>The compile method is used to compile and render HTML pages into final output documents. It processes page content, replaces custom elements with corresponding components, and returns compiled results along with performance metrics such as rendering duration.</p>
-
+    <coralite-heading level="h2" text="Save Method"></coralite-heading>
+    <coralite-heading level="h3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -160,8 +156,7 @@
       </table>
     </div>
 
-    <h3>Example usage</h3>
-
+    <coralite-heading level="h3" text="Example Usage"></coralite-heading>
     <coralite-code-highlight language="JavaScript">coralite.compile()
   .then(async (documents) => {
     // save documents to disk
