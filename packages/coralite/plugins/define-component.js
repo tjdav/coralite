@@ -111,16 +111,20 @@ export const defineComponent = createPlugin({
 
           // check if the token is a function to compute its value
           if (typeof token === 'function') {
-            result = token(values)
+            result = await token(values)
           }
 
-          // process the string token using unified token processor
-          results[key] = await processTokenValue(result, {
-            excludeByAttribute,
-            values,
-            document,
-            createComponent: this.createComponent.bind(this)
-          })
+          if (result) {
+            // process the string token using unified token processor
+            results[key] = await processTokenValue(result, {
+              excludeByAttribute,
+              values,
+              document,
+              createComponent: this.createComponent.bind(this)
+            })
+          } else {
+            results[key] = `${result}`
+          }
         }
       }
     }
