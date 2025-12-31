@@ -2,7 +2,8 @@
 <html lang="en">
 
 <head>
-  <coralite-meta title="Coralite CLI Technical Documentation: Command-Line Interface Reference Guide" description="Dive into comprehensive Coralite CLI documentation, covering command-line tools, parameters, and workflows. Designed for developers leveraging native web technologies in static site generation."></coralite-meta>
+  <coralite-meta title="Coralite CLI Technical Documentation: Command-Line Interface Reference Guide"
+    description="Dive into comprehensive Coralite CLI documentation, covering command-line tools, parameters, and workflows. Designed for developers leveraging native web technologies in static site generation."></coralite-meta>
   <link rel="stylesheet" href="/css/styles.css" inline-css>
 </head>
 
@@ -72,6 +73,9 @@
       </li>
     </ul>
 
+    <h2>Configuration File Support</h2>
+    <p>The Coralite CLI automatically looks for a <code>coralite.config.js</code> file in the current working directory. If found, it will merge any plugins defined in the configuration file with the CLI options.</p>
+
     <h2>Examples</h2>
 
     <p><strong>1. Generate a site with default options:</strong></p>
@@ -82,17 +86,24 @@
 
     <coralite-code language="bash">coralite -t src/templates -p src/pages -o dist --ignore-attribute data-ignore=true class=test-only --dry-run</coralite-code>
 
+    <p><strong>3. Using with a configuration file:</strong></p>
+    <p>When a <code>coralite.config.js</code> file exists in your project root, the CLI will automatically load plugins from it:</p>
+    <coralite-code language="bash">coralite -t src/templates -p src/pages -o dist</coralite-code>
+
     <h2>Technical Details</h2>
     <p>Under the hood, the Coralite CLI does the following:</p>
     <ol>
       <li>Parses command-line options using the <code>commander</code> library.</li>
       <li>Validates and processes provided options (e.g., splits ignore attribute key-value pairs).</li>
-      <li>Calls the core <code>coralite</code> function with the parsed options.</li>
-      <li>Based on the <code>--dry-run</code> option, either displays generated document information or writes rendered HTML files to the specified output directory.</li>
+      <li>Checks for and loads plugins from <code>coralite.config.js</code> if it exists.</li>
+      <li>Creates a Coralite instance with the combined options.</li>
+      <li>Initializes the Coralite instance and compiles all pages.</li>
+      <li>Based on the <code>--dry-run</code> option, either displays generated document information or writes rendered
+        HTML files to the specified output directory.</li>
     </ol>
   </main>
   <coralite-footer></coralite-footer>
-  
+
 </body>
 
 </html>
