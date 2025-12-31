@@ -49,7 +49,14 @@
 
 /**
  * A collection of module values associated with a module.
- * @typedef {Object.<string, CoraliteModuleValue>} CoraliteModuleValues
+ * @typedef {Object.<string, CoraliteModuleValue> & { __script__?: ScriptContent }} CoraliteModuleValues
+ */
+
+/**
+ * Coralite module script content
+ * @typedef {Object} ScriptContent
+ * @property {function} fn
+ * @property {Object.<string, CoraliteModuleValue>} values
  */
 
 /**
