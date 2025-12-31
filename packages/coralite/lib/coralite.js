@@ -1,5 +1,5 @@
-import { cleanKeys, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule } from '#lib'
-import { defineComponent, refs } from '#plugins'
+import { cleanKeys, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, ScriptManager } from '#lib'
+import { defineComponent, refsPlugin } from '#plugins'
 import render from 'dom-serializer'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
@@ -16,17 +16,17 @@ import { pathToFileURL } from 'node:url'
  *  CoraliteResult,
  *  CoraliteModuleValues,
  *  CoraliteDocument,
- *  CoraliteDirective,
  *  CoraliteModuleValue,
  *  CoraliteCollectionItem,
  *  CoraliteDocumentRoot,
  *  CoralitePluginInstance,
  *  CoraliteCollectionEventSet,
  *  IgnoreByAttribute,
- *  CoraliteScriptTextContent,
  *  CoraliteDocumentResult,
  *  CoraliteFilePath,
- *  CoraliteValues} from '../types/index.js'
+ *  CoraliteValues,
+ *  CoraliteScriptContent,
+ *  InstanceContext} from '../types/index.js'
  * @import CoraliteCollection from './collection.js'
  * @import {Module} from 'node:vm'
  */
@@ -78,6 +78,9 @@ export function Coralite ({
     }
   }
 
+  // Initialize script manager
+  this._scriptManager = new ScriptManager()
+
   // module source context
   this._source = {
     modules: {
@@ -89,7 +92,6 @@ export function Coralite ({
         + 'export const templates = coralite.templates;\n'
         + 'export const pages = coralite.pages;\n'
         + 'export const defineComponent = coralite.defineComponent;\n'
-        + 'export const refs = coralite.refs;\n'
         + 'export const getHtmlFiles = coralite.getHtmlFiles;\n'
         + 'export const getHtmlFile = coralite.getHtmlFile;\n'
         + 'export const createTextNode = coralite.createTextNode;\n'
@@ -110,7 +112,6 @@ export function Coralite ({
         + '  createTextNode,\n'
         + '  createElement,\n'
         + '  defineComponent,\n'
-        + '  refs\n'
         + '};'
       },
       plugins: {
@@ -126,8 +127,7 @@ export function Coralite ({
       getHtmlFiles,
       getHtmlFile,
       createElement,
-      createTextNode,
-      refs
+      createTextNode
     },
     context: {
       plugins: {},
@@ -139,7 +139,7 @@ export function Coralite ({
   }
 
   // place core plugin first
-  plugins.unshift(defineComponent)
+  plugins.unshift(defineComponent, refsPlugin)
 
   const source = this._source
   // iterate over each plugin and register its hooks and modules in the Coralite source context.
@@ -185,6 +185,11 @@ export function Coralite ({
     if (plugin.onTemplateUpdate) {
       this._addPluginHook('onTemplateUpdate', plugin.onTemplateUpdate)
     }
+
+    // register script plugin if provided
+    if (plugin.script) {
+      this._scriptManager.use(plugin.script)
+    }
   }
 
   source.modules.plugins.default = source.modules.plugins.default.substring(0, source.modules.plugins.default.length - 2) + ' }'
@@ -197,7 +202,7 @@ export function Coralite ({
   this._scripts = {
     /**
      * @param {string} id
-     * @param {CoraliteScriptTextContent} item
+     * @param {CoraliteScriptContent} item
      */
     add (id, item) {
       if (!this.content[id]) {
@@ -207,7 +212,7 @@ export function Coralite ({
 
       this.content[id][item.id] = item
     },
-    /** @type {Object.<string, Object.<string, CoraliteScriptTextContent>>} */
+    /** @type {Object.<string, Object.<string, CoraliteScriptContent>>} */
     content: {}
   }
   /** @type {CoraliteCollectionItem[]} */
@@ -550,23 +555,25 @@ Coralite.prototype.compile = async function (path) {
 
     if (this._scripts.content[document.path.pathname]) {
       const scripts = this._scripts.content[document.path.pathname]
-      // open script
-      let scriptTextContent = `(() => { const $refs = ${refs};`
 
-      // add scripts
+      // Build instances object for script manager
+      /** @type {Object.<string, InstanceContext>} */
+      const instances = {}
       for (const key in scripts) {
         if (Object.prototype.hasOwnProperty.call(scripts, key)) {
           const script = scripts[key]
-          scriptTextContent += `(() => {
-            ${script.content}
-            o.refs = $refs(${script.refs});
-            cb.script(o);
-          })();`
+          // extending script content with templateId and values
+          instances[script.id] = {
+            instanceId: script.id,
+            templateId: script.templateId,
+            values: script.values,
+            refs: script.refs
+          }
         }
       }
 
-      // close script
-      scriptTextContent += '})();'
+      // Use script manager to compile all instances
+      const scriptTextContent = await this._scriptManager.compileAllInstances(instances)
 
       /** @type {CoraliteElement} */
       let bodyElement
@@ -794,18 +801,18 @@ Coralite.prototype.createComponent = async function ({
       contextId
     })
 
-    values = Object.assign(values, scriptResult)
-    this.values[contextId] = values
+    if (scriptResult.__script__ != null) {
+      // Register template script with script manager
+      await this._scriptManager.registerTemplate(module.id, scriptResult.__script__.fn)
 
-    if (typeof scriptResult.scriptTextContent === 'string') {
-      let refs = '{'
+      const refs = {}
 
       for (let i = 0; i < module.values.refs.length; i++) {
         const ref = module.values.refs[i]
         const id = `${module.id}__${ref.name}-${index}`
 
         // map ref name id pair
-        refs += `"${ref.name}": '${id}',`
+        refs[ref.name] = id
 
         // set data ref selector
         ref.element.attribs['data-coralite-ref'] = id
@@ -814,15 +821,20 @@ Coralite.prototype.createComponent = async function ({
         delete ref.element.attribs.ref
       }
 
-      refs = refs.slice(0, refs.length -1) + '}'
-
+      // Store instance data for script manager
       this._scripts.add(document.path.pathname, {
         id: contextId,
+        templateId: module.id,
         document,
         refs,
-        content: scriptResult.scriptTextContent
+        values: scriptResult.__script__.values
       })
+
+      delete scriptResult.__script__
     }
+
+    values = Object.assign(values, scriptResult)
+    this.values[contextId] = values
   }
 
   // replace tokens in the template with their values from `values` object and store them into computed value array for later use if needed (e.g., to be injected back).
@@ -1035,7 +1047,7 @@ Coralite.prototype.createComponent = async function ({
  * @param {CoraliteDocument} data.document - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  *
- * @returns {Promise<Object.<string, string | (CoraliteDirective | CoraliteAnyNode)[]>>}
+ * @returns {Promise<CoraliteModuleValues>}
  */
 Coralite.prototype._evaluate = async function ({
   module,
@@ -1083,7 +1095,7 @@ Coralite.prototype._evaluate = async function ({
   await script.evaluate()
 
   // @ts-ignore
-  if (script.namespace.default) {
+  if (script.namespace.default != null) {
     // @ts-ignore
     return await script.namespace.default
   }

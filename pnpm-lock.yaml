@@ -38,18 +38,9 @@ importers:
 
   packages/coralite:
     dependencies:
-      commander:
-        specifier: ^13.0.0
-        version: 13.1.0
-      dom-serializer:
-        specifier: ^2.0.0
-        version: 2.0.0
-      htmlparser2:
-        specifier: ^10.0.0
-        version: 10.0.0
-      kleur:
-        specifier: ^4.1.5
-        version: 4.1.5
+      esbuild:
+        specifier: ^0.25.9
+        version: 0.25.9
     devDependencies:
       '@commitlint/cli':
         specifier: ^19.6.1
@@ -60,15 +51,27 @@ importers:
       '@playwright/test':
         specifier: ^1.50.0
         version: 1.55.0
-      esbuild:
-        specifier: ^0.25.9
-        version: 0.25.9
+      commander:
+        specifier: ^13.0.0
+        version: 13.1.0
+      dom-serializer:
+        specifier: ^2.0.0
+        version: 2.0.0
       highlight.js:
         specifier: ^11.11.1
         version: 11.11.1
+      htmlparser2:
+        specifier: ^10.0.0
+        version: 10.0.0
+      kleur:
+        specifier: ^4.1.5
+        version: 4.1.5
       premove:
         specifier: ^4.0.0
         version: 4.0.0
+      serialize-javascript:
+        specifier: ^7.0.2
+        version: 7.0.2
       sirv-cli:
         specifier: ^3.0.0
         version: 3.0.1
@@ -1788,6 +1791,10 @@ packages:
   send@1.2.0:
     resolution: {integrity: sha512-uaW0WwXKpL9blXE2o0bRhoL2EGXIrZxQ2ZQ4mgcfoBxdFmQold+qWsD2jLrfZ0trjKL6vOw0j//eAwcALFjKSw==}
     engines: {node: '>= 18'}
+
+  serialize-javascript@7.0.2:
+    resolution: {integrity: sha512-Y/agDAqbUWRYFWLF5pMT9Rb8wN5ERPMbQH7oq6R+4YgFdMNO4+ELo4PjFCW3H+2CbXirPr/XUgYT+3iXJfTbZQ==}
+    engines: {node: '>=20.0.0'}
 
   serve-static@2.2.0:
     resolution: {integrity: sha512-61g9pCh0Vnh7IutZjtLGGpTA355+OPn2TyDv/6ivP2h/AdAVX9azsoxmg2/M6nZeQZNYBEwIcsne1mJd9oQItQ==}
@@ -3668,6 +3675,8 @@ snapshots:
       statuses: 2.0.2
     transitivePeerDependencies:
       - supports-color
+
+  serialize-javascript@7.0.2: {}
 
   serve-static@2.2.0:
     dependencies:

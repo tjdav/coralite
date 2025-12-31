@@ -49,7 +49,14 @@
 
 /**
  * A collection of module values associated with a module.
- * @typedef {Object.<string, CoraliteModuleValue>} CoraliteModuleValues
+ * @typedef {Object.<string, CoraliteModuleValue> & { __script__?: ScriptContent }} CoraliteModuleValues
+ */
+
+/**
+ * Coralite module script content
+ * @typedef {Object} ScriptContent
+ * @property {function} fn
+ * @property {Object.<string, CoraliteModuleValue>} values
  */
 
 /**
@@ -306,6 +313,24 @@
  * @typedef {Object} CoralitePlugin
  * @property {string} name - Unique identifier/name of the plugin
  * @property {CoralitePluginModule<T>} [method] - Execution function that processes content using plugin logic
+ * @property {HTMLData[]} [templates] - Array of loaded template data
+ * @property {ScriptPlugin} [script] - Script plugin configuration
+ * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
+ * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
+ * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
+ * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
+ * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
+ * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ */
+
+/**
+ * @template T
+ * @typedef {Object} CoralitePluginResult
+ * @property {string} name - Unique identifier/name of the plugin
+ * @property {CoralitePluginModule<T>} [method] - Execution function that processes content using plugin logic
+ * @property {HTMLData[]} [templates] - Array of loaded template data
+ * @property {Object} [metadata] - Plugin metadata
+ * @property {Object} [script] - Script plugin configuration
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
@@ -319,6 +344,7 @@
  * @property {string} name - Unique identifier/name of the plugin
  * @property {Function} [method] - Execution function that processes content using plugin logic
  * @property {HTMLData[]} [templates=[]] - List of custom templates to be included in the coralite instance
+ * @property {ScriptPlugin} [script] - Script plugin configuration for extending script functionality
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
@@ -343,17 +369,56 @@
  */
 
 /**
- * @typedef {Object} CoraliteScriptTextContent
- * @property {string} id
+ * @typedef {Object} CoraliteScriptContent
+ * @property {string} id - Unique instance identifier
+ * @property {string} [templateId] - Template identifier for shared functions
  * @property {CoraliteDocument} document - Coralite document with metadata and rendering structure.
- * @property {string} refs - Array of reference identifiers.
- * @property {string} content - The script content as a string.
+ * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
+ * @property {Object} refs - Array of reference identifiers.
+ */
+
+/**
+ * @template CoraliteScriptTContext - The shape of the instance context (refs, state, etc.)
+ * @template {any[]} CoraliteScriptTArgs - The arguments the final helper function accepts
+ * @template CoraliteScriptTReturn - The return value of the helper function
+ */
+
+/**
+ * @typedef {Object} CoraliteScriptGlobalHelper
+ * @property {'global'} type
+ * @property {string} [description]
+ * @property {(...args: CoraliteScriptTArgs) => CoraliteScriptTReturn} method - Direct utility function
+ */
+
+/**
+ * @typedef {Object} CoraliteScriptInstanceHelper
+ * @property {'instance'} type
+ * @property {string} [description]
+ * @property {(context: CoraliteScriptContent) => (...args: CoraliteScriptTArgs) => CoraliteScriptTReturn} method - Factory function
  */
 
 /**
  * @callback CoraliteModuleScript
- * @param {CoraliteValues} values
- * @param {CoraliteRef} refs
+ * @param {CoraliteValues} values - The module's current values
+ * @param {CoraliteRef} refs - References template elements
+ */
+
+
+/**
+ * @typedef {Object} ScriptPlugin
+ * @property {function(any): void} [setup] - Called when plugin is registered
+ * @property {Object.<string, function>} [helpers] - Global or instance helpers to add to scripts
+ * @property {Object.<'register'|'beforeExecute'|'afterExecute'|'onScriptCompile', function>} [lifecycle] - Lifecycle hooks
+ * @property {function(string, Object): string} [transform] - Transform script content
+ */
+
+/**
+ * @typedef {Object} InstanceContext
+ * @property {string} instanceId - Unique instance identifier
+ * @property {string} templateId - Template identifier
+ * @property {Object} values - Instance values
+ * @property {Object} refs - Instance refs
+ * @property {Object} [document] - Document context
  */
 
 export default {}
