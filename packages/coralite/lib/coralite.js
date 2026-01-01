@@ -444,15 +444,19 @@ Coralite.prototype.initialise = async function () {
       return newValue
     },
     onFileDelete: async (value) => {
-      const customElements = value.result.customElements
-
       await this._triggerPluginHook('onPageDelete', value)
 
-      for (let i = 0; i < customElements.length; i++) {
-        const pageCustomElement = pageCustomElements[customElements[i]]
+      // remove page from custom element reference
+      if (value && value.result && value.result.customElements) {
+        const customElements = value.result.customElements
 
-        // remove page from custom element reference
-        pageCustomElement.delete(value.path.pathname)
+        for (let i = 0; i < customElements.length; i++) {
+          const pageCustomElement = pageCustomElements[customElements[i]]
+
+          if (pageCustomElement) {
+            pageCustomElement.delete(value.path.pathname)
+          }
+        }
       }
     }
   })
