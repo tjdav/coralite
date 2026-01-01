@@ -12,7 +12,8 @@
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
+  import { defineComponent, parseHTML } from 'coralite'
+  import code from 'highlight.js'
 
   /**
    * @param {string} className
@@ -44,7 +45,7 @@
    * @param {Object} node
    * @param {Object} parent
    */
-   function createCodeCommentNode (node, parent) {
+  function createCodeCommentNode (node, parent) {
     const comment = {
       type: 'tag',
       name: 'span',
@@ -112,7 +113,22 @@
       createCodeNode('html-tag-text', tag, '>')
     )
 
-    if (node.children) {
+    if (node.name === 'script') {
+      for (let i = 0; i < node.children.length; i++) {
+        const childNode = node.children[i];
+        
+        if (childNode.type === 'text' && childNode.data.trim()) {
+          const highlightCode = code.highlight(
+            childNode.data,
+            { language: 'javascript' }
+          )
+
+          const nodes = parseHTML(highlightCode.value)
+
+          tag.children = tag.children.concat(nodes.root.children)
+        }
+      }
+    } else if (node.children) {
       const lastIndex = node.children.length - 1
       let removeSpace = false
 
@@ -160,12 +176,11 @@
     )
   }
 
+  code.configure({
+    classPrefix: 'code-'
+  })
+
   export default defineComponent({
-    tokens: {
-      popovertarget () {
-        return 'copy-' + Math.random().toString(16).substring(2)
-      }
-    },
     slots: {
       default (content) {
         const children = []
