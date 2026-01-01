@@ -48,12 +48,12 @@
           const node = content[i];
 
           if (node.type === 'text' && node.data.trim()) {
-            const rawCode = code.highlight(
+            const highlightCode = code.highlight(
               node.data,
               { language: values.language.toLowerCase() }
-            ).value
+            )
 
-            const nodes = parseHTML(rawCode)
+            const nodes = parseHTML(highlightCode.value)
 
             result = result.concat(nodes.root.children)
           } else if (node.type === 'tag' && allowedCustomTags.includes(node.name)) {
