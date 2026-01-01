@@ -2,17 +2,18 @@
   <div class="code">
     <div class="code-toolbar">
       <span class="code-language">HTML</span>
-      <button popovertarget="{{ popovertarget }}" type="button" class="button button-icon" onclick="navigator.clipboard.writeText(this.parentElement.parentElement.children[1].children[0].textContent)">
+      <button ref="popoverBtn" type="button" class="button button-icon">
         Copy to clipboard
       </button>
-      <div id="{{ popovertarget }}" popover>Code copied!</div>
+      <div ref="popoverTarget" popover>Code copied!</div>
     </div>
-    <pre class="code-body"><code><slot></slot></code></pre>
+    <pre ref="code" class="code-body"><code class="language-html"><slot></slot></code></pre>
   </div>
 </template>
 
 <script type="module">
-  import { defineComponent } from 'coralite'
+  import { defineComponent, parseHTML } from 'coralite'
+  import code from 'highlight.js'
 
   /**
    * @param {string} className
@@ -44,7 +45,7 @@
    * @param {Object} node
    * @param {Object} parent
    */
-   function createCodeCommentNode (node, parent) {
+  function createCodeCommentNode (node, parent) {
     const comment = {
       type: 'tag',
       name: 'span',
@@ -112,7 +113,22 @@
       createCodeNode('html-tag-text', tag, '>')
     )
 
-    if (node.children) {
+    if (node.name === 'script') {
+      for (let i = 0; i < node.children.length; i++) {
+        const childNode = node.children[i];
+        
+        if (childNode.type === 'text' && childNode.data.trim()) {
+          const highlightCode = code.highlight(
+            childNode.data,
+            { language: 'javascript' }
+          )
+
+          const nodes = parseHTML(highlightCode.value)
+
+          tag.children = tag.children.concat(nodes.root.children)
+        }
+      }
+    } else if (node.children) {
       const lastIndex = node.children.length - 1
       let removeSpace = false
 
@@ -160,12 +176,11 @@
     )
   }
 
+  code.configure({
+    classPrefix: 'code-'
+  })
+
   export default defineComponent({
-    tokens: {
-      popovertarget () {
-        return 'copy-' + Math.random().toString(16).substring(2)
-      }
-    },
     slots: {
       default (content) {
         const children = []
@@ -207,6 +222,19 @@
 
         return children
       }
+    },
+    script(context, { refs }) {
+      const popoverButton = refs('popoverBtn')
+      const popoverTarget = refs('popoverTarget')
+      const codeBody = refs('code')
+      const popoverId = 'copy-' + Math.random().toString(16).substring(2)
+
+      popoverTarget.setAttribute('id', popoverId)
+      popoverButton.setAttribute('popovertarget', popoverId) 
+
+      popoverButton.addEventListener('click', () => {
+        navigator.clipboard.writeText(codeBody.textContent)
+      })
     }
   })
 </script>

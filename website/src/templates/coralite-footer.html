@@ -35,7 +35,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script ({ refs }) {
+    script (context, { refs }) {
       const button = refs('popoverBtn')
       const popoverTarget = refs('popoverTarget')
       const codeTarget = refs('code')
