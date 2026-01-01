@@ -62,14 +62,14 @@
 /**
  * A module within the Coralite library, containing metadata and rendering logic.
  * @typedef {Object} CoraliteModule
- * @property {string} id - Unique module identifier used to reference this module within the application.
+ * @property {string} [id] - Unique module identifier used to reference this module within the application.
  * @property {CoraliteFilePath} [path] - Template paths associated with this module, if any.
  * @property {number} [lineOffset] - Optional offset value for line numbering purposes within the template.
- * @property {CoraliteElement} template - Module's rendering template which defines its structure and layout.
- * @property {string|undefined} script - Module's JavaScript raw code used for logic or behavior associated with this module.
- * @property {CoraliteDocumentValues} values - Values generated from the module's markup, containing metadata or variable information.
- * @property {CoraliteElement[]} customElements - Custom elements defined in the module, allowing extension of HTML capabilities.
- * @property {Object.<string, Object.<string,CoraliteModuleSlotElement>>} slotElements - Custom slot elements and their configurations, enabling flexible content insertion points within components.
+ * @property {CoraliteElement} [template] - Module's rendering template which defines its structure and layout.
+ * @property {string|undefined} [script] - Module's JavaScript raw code used for logic or behavior associated with this module.
+ * @property {CoraliteDocumentValues} [values] - Values generated from the module's markup, containing metadata or variable information.
+ * @property {CoraliteElement[]} [customElements] - Custom elements defined in the module, allowing extension of HTML capabilities.
+ * @property {Object.<string, Object.<string,CoraliteModuleSlotElement>>} [slotElements] - Custom slot elements and their configurations, enabling flexible content insertion points within components.
  * @property {boolean} isTemplate - Indicates whether the module is a template
  */
 
