@@ -389,9 +389,9 @@
  * @typedef {Object} InstanceContext
  * @property {string} instanceId - Unique instance identifier
  * @property {string} templateId - Template identifier
- * @property {Object} values - Instance values
- * @property {Object} refs - Instance refs
- * @property {Object} [document] - Document context
+ * @property {Object.<string, CoraliteModuleValue>} values - Instance values
+ * @property {Object.<string, string>} refs - Instance refs
+ * @property {CoraliteDocument} [document] - Document context
  */
 
 export default {}
