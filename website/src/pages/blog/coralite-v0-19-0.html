@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article" 
+    title="Coralite v0.19.0 Released: Script System Refactor" 
+    description="Coralite v0.19.0 introduces a major script system refactor with helper functions, comprehensive type guards, and improved developer experience."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-01-01T15:25:56.157Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.19.0 Released: Script System Refactor</title>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.19.0</h1>
+
+    <coralite-author name="thomas" date-time="2026-01-01T15:25:56.157Z"></coralite-author>
+
+    <p>I am excited to announce Coralite v0.19.0, a major release focused on improving the script system architecture and developer experience. This update includes 157 commits and 24 pull requests, bringing significant enhancements to type safety, validation, and workflow efficiency.</p>
+
+    <coralite-heading level="h2" text="Breaking Change: Script Function Signature"></coralite-heading>
+
+    <p>The most significant change in v0.19.0 is the refactored script function signature. This is a <strong>breaking change</strong> that requires updating existing template scripts.</p>
+
+    <coralite-heading level="h3" text="Migration Guide"></coralite-heading>
+
+    <p><strong>Before v0.19.0:</strong></p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  tokens: {
+    greeting: ({ name }) => `Hello, ${name}!`
+  },
+  script: function(context) {
+    // refs was part of the context object
+    const refs = context.refs
+    const button = refs('actionBtn')
+    
+    button.addEventListener('click', () => {
+      console.log('Clicked!')
+    })
+  }
+})
+    </coralite-code-highlight>
+
+    <p><strong>After v0.19.0:</strong></p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  tokens: {
+    greeting: ({ name }) => `Hello, ${name}!`
+  },
+  script: function(context, helpers) {
+    // refs is now in the helpers parameter
+    const refs = helpers.refs
+    const button = refs('actionBtn')
+    
+    button.addEventListener('click', () => {
+      console.log('Clicked!')
+    })
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="h3" text="What Changed"></coralite-heading>
+
+    <ul>
+      <li><strong>context</strong> parameter now only contains instance data (values, etc.)</li>
+      <li><strong>helpers</strong> parameter contains helper functions like <code>refs()</code></li>
+      <li>This separation improves code organization and extensibility</li>
+    </ul>
+
+    <coralite-heading level="h2" text="New Type Guard Utilities"></coralite-heading>
+
+    <p>v0.19.0 introduces comprehensive type guard functions for validating Coralite nodes and elements. These utilities enhance type safety and make error handling more robust.</p>
+
+    <coralite-code-highlight language="javascript">
+import { 
+  isCoraliteNode,
+  isCoraliteElement,
+  isCoraliteTextNode,
+  isCoraliteComment,
+  isCoraliteCollectionItem,
+  isCoraliteDocumentRoot,
+  isCoraliteSlotElement
+} from 'coralite'
+
+// Validate before processing
+if (isCoraliteNode(element)) {
+  // Safe to work with Coralite node
+  console.log('Valid Coralite node')
+}
+
+// Check collection items
+if (isCoraliteCollectionItem(item)) {
+  // Safe to access collection properties
+  console.log('Valid collection item')
+}
+
+// Validate slot elements
+if (isCoraliteSlotElement(slot)) {
+  // Safe slot operations
+  console.log('Valid slot element')
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="h3" text="Script Helper System"></coralite-heading>
+
+    <p>Plugins can now provide script helpers using a factory pattern:</p>
+
+    <coralite-code-highlight language="javascript">
+const myScriptPlugin = createPlugin({
+  name: 'script-enhancer',
+  script: {
+    setup: (plugin) => {
+      console.log('Plugin registered:', plugin.name)
+    },
+    helpers: {
+      formatDate: (context) => {
+        // Factory receives context, returns helper function
+        return (date) => new Date(date).toLocaleDateString()
+      }
+    }
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Additional Features & Fixes"></coralite-heading>
+
+    <ul>
+      <li><strong>Script Content Support:</strong> Added <code>__script__</code> property to module values for better script handling</li>
+      <li><strong>File Exclusion:</strong> Improved hidden file and exclusion handling in HTML parsing</li>
+      <li><strong>Performance:</strong> Per-document compilation tracking for better build insights</li>
+      <li><strong>Collection Validation:</strong> Enhanced validation for collection items and deduplication</li>
+      <li><strong>Config Validation:</strong> Added validation to <code>defineConfig</code> function</li>
+    </ul>
+
+    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+
+    <p>Update your project with one of the following commands:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite@0.19.0</coralite-code-highlight>
+
+    <p>Or if you're using the scaffolding tool:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite-scripts@0.19.0</coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Get the Release"></coralite-heading>
+
+    <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/compare/v0.18.7...v0.19.0" target="_blank" rel="noopener">full changelog on Codeberg</a>.</p>
+
+    <p>Upgrade today to take advantage of the improved script system, enhanced type safety, and better developer experience in Coralite v0.19.0!</p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  
+</body>
+
+</html>
