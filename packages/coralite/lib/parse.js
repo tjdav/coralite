@@ -215,7 +215,7 @@ export function parseModule (string, { ignoreByAttribute }) {
         }
 
         if (!isValidCustomElementName(attributes.id)) {
-          throw new Error('Invalid template id: "' + originalName + '" it must match following the pattern https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
+          throw new Error('Invalid template id: "' + attributes.id + '" it must match following the pattern https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
         }
 
         templateId = attributes.id
@@ -442,7 +442,7 @@ export function createElement ({
       // store custom elements
       element.slots = []
     } else {
-      throw new Error('Invalid custom element tag name: "' + sanitisedName + '" https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
+      console.warn('Invalid custom element tag name: "' + sanitisedName + '" https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
     }
   }
 
