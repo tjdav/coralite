@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="defineComponent Plugin - Coralite Documentation"
+    description="Complete guide to the defineComponent plugin for creating dynamic templates with tokens, slots, and client-side scripts."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <!-- Introduction -->
+    <h1>defineComponent Plugin</h1>
+    <p>The <code>defineComponent</code> plugin is Coralite's core built-in plugin that enables dynamic template functionality. It provides the wrapper for tokens, slots, and script execution in templates that need data processing and client-side interactivity.</p>
+
+    <!-- Table of Contents -->
+    <nav aria-label="table of contents">
+      <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+      <ul>
+        <li><a href="#what-is-definecomponent">What is defineComponent</a></li>
+        <li><a href="#when-to-use">When to Use</a></li>
+        <li><a href="#basic-usage">Basic Usage</a></li>
+        <li><a href="#tokens">Tokens</a></li>
+        <li><a href="#slots">Slots</a></li>
+        <li><a href="#script">Script</a></li>
+        <li><a href="#complete-example">Complete Example</a></li>
+      </ul>
+    </nav>
+
+    <!-- What is defineComponent -->
+    <section id="what-is-definecomponent">
+      <coralite-heading level="h2" text="What is defineComponent"></coralite-heading>
+      <p><code>defineComponent</code> is a built-in Coralite plugin enables data processing, computed values, or client-side Javascript. It's available as a core plugin from both <code>coralite</code> and <code>coralite/plugins</code>:</p>
+
+      <coralite-code-highlight language="JavaScript">
+// Option 1: Import from coralite (core plugin)
+import { defineComponent } from 'coralite'
+
+// Option 2: Import from coralite/plugins (all plugins)
+import { defineComponent } from 'coralite/plugins'
+
+export default defineComponent({
+  // Component configuration
+})
+      </coralite-code-highlight>
+    </section>
+
+    <!-- When to Use -->
+    <section id="when-to-use">
+      <coralite-heading level="h2" text="When to Use defineComponent"></coralite-heading>
+      
+      <coralite-heading level="h3" text="Use defineComponent When:"></coralite-heading>
+      <ul>
+        <li>Your template needs computed tokens (functions that process data)</li>
+        <li>You need custom slot processing</li>
+        <li>You need client-side JavaScript execution</li>
+        <li>You need to use plugin methods inside the template</li>
+        <li>Your template requires dynamic data binding</li>
+      </ul>
+
+      <coralite-heading level="h3" text="Do NOT Use defineComponent When:"></coralite-heading>
+      <ul>
+        <li>Template only has simple token replacement (<code>{{ token }}</code>)</li>
+        <li>No script processing is needed</li>
+        <li>Template is purely static HTML</li>
+      </ul>
+
+      <coralite-heading level="h3" text="Template Type Comparison"></coralite-heading>
+      
+      <coralite-heading level="h4" text="Static Template (No defineComponent)"></coralite-heading>
+      <coralite-code-html>
+<template id="simple-component">
+  <div>
+    <h1>{{ title }}</h1>
+    <p>{{ description }}</p>
+  </div>
+</template>
+      </coralite-code-html>
+      <p><strong>No script tag needed</strong> - Coralite processes token replacements automatically.</p>
+
+      <coralite-heading level="h4" text="Dynamic Template (With defineComponent)"></coralite-heading>
+      <coralite-code-html>
+<template id="dynamic-component">
+  <div>
+    <h1>{{ greeting }}</h1>
+    <button type="button" ref="actionBtn">Click me</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  
+  export default defineComponent({
+    tokens: {
+      greeting: ({ name }) => `Hello, ${name}!`
+    },
+    script: (context, helpers) => {
+      const btn = helpers.refs('actionBtn')
+      btn.addEventListener('click', () => {
+        console.log('Button clicked!')
+      })
+    }
+  })
+</script>
+      </coralite-code-html>
+      <p><strong>Requires defineComponent</strong> as the default export.</p>
+    </section>
+
+    <!-- Basic Usage -->
+    <section id="basic-usage">
+      <coralite-heading level="h2" text="Basic Usage"></coralite-heading>
+      <p>Here's the minimal setup for a dynamic template:</p>
+
+      <coralite-code-html>
+<template id="my-component">
+  <div>
+    <h1>{{ title }}</h1>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  
+  export default defineComponent({
+    tokens: {
+      title: () => 'My Component Title'
+    }
+  })
+</script>
+      </coralite-code-html>
+    </section>
+
+    <!-- Tokens -->
+    <section id="tokens">
+      <coralite-heading level="h2" text="Tokens"></coralite-heading>
+      <p>Tokens are computed values that are processed at build time. They can be strings or functions that return values based on the template's context.</p>
+
+      <coralite-heading level="h3" text="Token Structure"></coralite-heading>
+      <coralite-code-highlight language="JavaScript">
+export default defineComponent({
+  tokens: {
+    // Static token (string)
+    staticValue: 'Hello World',
+    
+    // Computed token (function)
+    fullName: ({ firstName, lastName }) => `${firstName} ${lastName}`,
+    
+    // Token with data processing
+    formattedDate: ({ date }) => new Date(date).toLocaleDateString(),
+    
+    // Token with conditional logic
+    status: ({ isActive }) => isActive ? 'Active' : 'Inactive'
+  }
+})
+      </coralite-code-highlight>
+
+      <coralite-heading level="h3" text="Token Context"></coralite-heading>
+      <p>Token functions receive a <code>values</code> parameter containing:</p>
+      <ul>
+        <li><strong>Page metadata</strong>: Values from <code>&lt;meta&gt;</code> tags (prefixed with <code>$</code>)</li>
+        <li><strong>Element attributes</strong>: Values from custom element attributes</li>
+      </ul>
+
+      <coralite-code-html>
+<!-- Page: user.html -->
+<head>
+  <meta name="firstName" content="Alice">
+  <meta name="lastName" content="Smith">
+  <title>User Profile</title>
+</head>
+<body>
+  <user-profile age="25"></user-profile>
+</body>
+      </coralite-code-html>
+
+      <coralite-code-highlight language="JavaScript">
+// In defineComponent:
+export default defineComponent({
+  tokens: {
+    // values = { $firstName: "Alice", $lastName: "Smith", $title: "User Profile", age: "25" }
+    fullName: ({ $firstName, $lastName }) => `${$firstName} ${$lastName}`,
+    greeting: ({ age }) => `You are ${age} years old`
+  }
+})
+      </coralite-code-highlight>
+    </section>
+
+    <!-- Slots -->
+    <section id="slots">
+      <coralite-heading level="h2" text="Slots"></coralite-heading>
+      <p>Slots allow you to process and transform content that is passed between custom element tags.</p>
+
+      <coralite-heading level="h3" text="Basic Slot Processing"></coralite-heading>
+      <coralite-code-html>
+<template id="card-component">
+  <div class="card">
+    <div class="card-content">
+      {{ content }}
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  
+  export default defineComponent({
+    slots: {
+      content: (slotNodes, values) => {
+        // Transform slot content
+        return slotNodes
+      }
+    }
+  })
+</script>
+      </coralite-code-html>
+
+      <coralite-heading level="h3" text="Slot Function Parameters"></coralite-heading>
+      <ul>
+        <li><strong>slotNodes</strong>: Array of nodes from the slot content</li>
+        <li><strong>values</strong>: Current token values</li>
+      </ul>
+
+      <coralite-heading level="h3" text="Slot Example"></coralite-heading>
+      <coralite-code-html>
+<!-- Using the component -->
+<card-component>
+  <h2>Card Title</h2>
+  <p>Card content goes here</p>
+</card-component>
+      </coralite-code-html>
+
+      <coralite-code-highlight language="JavaScript">
+// In defineComponent:
+export default defineComponent({
+  slots: {
+    content: (slotNodes, values) => {
+      // Add classes or transform content
+      return slotNodes.map(node => {
+        if (node.type === 'tag' && node.name === 'h2') {
+          node.attribs.class = 'card-title'
+        }
+        return node
+      })
+    }
+  }
+})
+      </coralite-code-highlight>
+    </section>
+
+    <!-- Script -->
+    <section id="script">
+      <coralite-heading level="h2" text="Script"></coralite-heading>
+      <p>The script function provides client-side JavaScript execution. It gets serialized and runs in the browser after the page loads.</p>
+
+      <coralite-heading level="h3" text="Script Function Signature"></coralite-heading>
+      <coralite-code-highlight language="JavaScript">
+export default defineComponent({
+  script: (context, helpers) => {
+    // context: Contains processed token values
+    // helpers: Contains client-side helpers like refs
+    
+    // Return JavaScript code as string OR
+    return `
+      const btn = refs('actionBtn');
+      btn.addEventListener('click', () => {
+        console.log('Clicked!');
+      });
+    `
+    
+    // OR execute directly (less common)
+    // (code runs immediately)
+  }
+})
+      </coralite-code-highlight>
+
+      <coralite-heading level="h3" text="Script Context"></coralite-heading>
+      <ul>
+        <li><strong>context.values</strong>: Processed token values</li>
+        <li><strong>context.id</strong>: Unique instance identifier</li>
+      </ul>
+
+      <coralite-heading level="h3" text="Script Helpers"></coralite-heading>
+      <ul>
+        <li><strong>helpers.refs</strong>: DOM element access (see refs plugin documentation)</li>
+      </ul>
+
+      <coralite-heading level="h3" text="Script Example"></coralite-heading>
+      <coralite-code-html>
+<template id="counter">
+  <div>
+    <h2>Count: {{ count }}</h2>
+    <button type="button" ref="increment">+</button>
+    <button type="button" ref="decrement">-</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  
+  export default defineComponent({
+    tokens: {
+      count: ({ initial }) => parseInt(initial) || 0
+    },
+    script: (context, helpers) => {
+      const refs = helpers.refs
+      const increment = refs('increment')
+      const decrement = refs('decrement')
+      
+      let count = context.values.count
+      
+      increment.addEventListener('click', () => {
+        count++
+        document.querySelector('h2').textContent = `Count: ${count}`
+      })
+      
+      decrement.addEventListener('click', () => {
+        count--
+        document.querySelector('h2').textContent = `Count: ${count}`
+      })
+    }
+  })
+</script>
+      </coralite-code-html>
+    </section>
+
+    <!-- Complete Example -->
+    <section id="complete-example">
+      <coralite-heading level="h2" text="Complete Example"></coralite-heading>
+      <p>Here's a complete example showing all defineComponent features working together:</p>
+
+      <coralite-code-html>
+<!-- Page: product.html -->
+<head>
+  <meta name="name" content="Coralite Pro">
+  <meta name="price" content="99.99">
+  <meta name="inStock" content="true">
+  <title>Product Details</title>
+</head>
+<body>
+  <product-card 
+    discount="10" 
+    show-details="true"
+  ></product-card>
+</body>
+      </coralite-code-html>
+
+      <coralite-code-html>
+<!-- Template: product-card.html -->
+<template id="product-card">
+  <div class="product-card">
+    <h2>{{ productName }}</h2>
+    <p class="price">{{ displayPrice }}</p>
+    <div class="status">{{ stockStatus }}</div>
+    <div class="details">
+      {{ details }}
+    </div>
+    <button type="button" ref="buyBtn">Buy Now</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  
+  export default defineComponent({
+    tokens: {
+      // Computed token from page metadata
+      productName: ({ $name }) => $name,
+      
+      // Computed token with calculation
+      displayPrice: ({ $price, discount }) => {
+        const price = parseFloat($price)
+        const discountPercent = parseFloat(discount) || 0
+        const finalPrice = price * (1 - discountPercent / 100)
+        return `$${finalPrice.toFixed(2)}`
+      },
+      
+      // Conditional token
+      stockStatus: ({ $inStock }) => 
+        $inStock === 'true' ? 'In Stock' : 'Out of Stock'
+    },
+    
+    slots: {
+      details: (slotNodes, values) => {
+        // Only show details if show-details attribute is true
+        if (values.showDetails !== 'true') {
+          return []
+        }
+        return slotNodes
+      }
+    },
+    
+    script: (context, helpers) => {
+      const refs = helpers.refs
+      const buyBtn = refs('buyBtn')
+      
+      if (buyBtn) {
+        buyBtn.addEventListener('click', () => {
+          alert(`Thank you for purchasing ${context.values.productName}!`)
+        })
+      }
+    }
+  })
+</script>
+      </coralite-code-html>
+
+      <coralite-heading level="h3" text="Key Points"></coralite-heading>
+      <ul>
+        <li><strong>Tokens</strong> process page metadata and element attributes</li>
+        <li><strong>Slots</strong> control what content gets rendered</li>
+        <li><strong>Script</strong> adds interactivity after page load</li>
+        <li><strong>Helpers.refs</strong> provides safe DOM access</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
