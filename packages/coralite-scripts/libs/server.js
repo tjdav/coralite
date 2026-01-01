@@ -107,7 +107,7 @@ async function server (config, options) {
         for (let i = 0; i < results.length; i++) {
           const result = results[i]
 
-          process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(result.duration) + dash + result.input + '\n')
+          process.stdout.write(toTime() + colours.bgGreen(' Compiled SASS ') + dash + toMS(result.duration) + dash + result.input + '\n')
         }
       } else if (config.styles.type === 'css') {
         const start = process.hrtime()
@@ -206,7 +206,7 @@ async function server (config, options) {
 
             // prints time and path to the file that has been changed or added.
             duration = process.hrtime(start)
-            process.stdout.write(toTime() + colours.bgGreen('Compiled HTML') + dash + toMS(duration) + dash + path + '\n')
+            process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(duration) + dash + path + '\n')
             res.send(injectedHtml)
           }
         }
@@ -265,7 +265,7 @@ async function server (config, options) {
             })
 
             for (const result of results) {
-              process.stdout.write(toTime() + colours.bgGreen('Compiled SASS') + dash + toMS(result.duration) + dash + result.input + '\n')
+              process.stdout.write(toTime() + colours.bgGreen(' Compiled SASS ') + dash + toMS(result.duration) + dash + result.input + '\n')
             }
           }
 
@@ -279,7 +279,7 @@ async function server (config, options) {
             })
 
             for (const result of results) {
-              process.stdout.write(toTime() + colours.bgGreen('Compiled CSS') + dash + toMS(result.duration) + dash + result.input + '\n')
+              process.stdout.write(toTime() + colours.bgGreen(' Compiled CSS ') + dash + toMS(result.duration) + dash + result.input + '\n')
             }
           }
 
