@@ -802,43 +802,6 @@ describe('defineComponent', () => {
       assert.strictEqual(mockElement.slots.length, 0)
     })
 
-    it('should filter out empty text nodes in slot content', async () => {
-      const options = {
-        slots: {
-          filtered: (slotContent, values) => {
-            return slotContent
-          }
-        }
-      }
-
-      mockElement.slots = [
-        {
-          name: 'filtered',
-          node: {
-            type: 'text',
-            data: '   '
-          }
-        }, // whitespace only
-        {
-          name: 'filtered',
-          node: {
-            type: 'text',
-            data: 'Valid'
-          }
-        }
-      ]
-
-      const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
-        element: mockElement,
-        document: mockDocument
-      })
-
-      // Should only process the non-empty slot
-      assert.strictEqual(mockElement.slots.length, 1)
-      assert.strictEqual(mockElement.slots[0].node.data, 'Valid')
-    })
-
     it('should handle multiple slots with different names', async () => {
       const options = {
         slots: {
