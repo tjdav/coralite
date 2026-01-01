@@ -142,11 +142,6 @@ export const defineComponent = createPlugin({
           for (let i = 0; i < element.slots.length; i++) {
             const slot = element.slots[i]
 
-            // exclude empty strings
-            if (slot.node.type === 'text' && !slot.node.data.trim()) {
-              continue
-            }
-
             if (slot.name === name) {
               // slot content to compute
               slotContent.push(slot.node)
