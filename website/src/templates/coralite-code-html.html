@@ -2,12 +2,12 @@
   <div class="code">
     <div class="code-toolbar">
       <span class="code-language">HTML</span>
-      <button popovertarget="{{ popovertarget }}" type="button" class="button button-icon" onclick="navigator.clipboard.writeText(this.parentElement.parentElement.children[1].children[0].textContent)">
+      <button ref="popoverBtn" type="button" class="button button-icon">
         Copy to clipboard
       </button>
-      <div id="{{ popovertarget }}" popover>Code copied!</div>
+      <div ref="popoverTarget" popover>Code copied!</div>
     </div>
-    <pre class="code-body"><code><slot></slot></code></pre>
+    <pre ref="code" class="code-body"><code class="language-html"><slot></slot></code></pre>
   </div>
 </template>
 
@@ -207,6 +207,19 @@
 
         return children
       }
+    },
+    script(context, { refs }) {
+      const popoverButton = refs('popoverBtn')
+      const popoverTarget = refs('popoverTarget')
+      const codeBody = refs('code')
+      const popoverId = 'copy-' + Math.random().toString(16).substring(2)
+
+      popoverTarget.setAttribute('id', popoverId)
+      popoverButton.setAttribute('popovertarget', popoverId) 
+
+      popoverButton.addEventListener('click', () => {
+        navigator.clipboard.writeText(codeBody.textContent)
+      })
     }
   })
 </script>
