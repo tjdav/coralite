@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Coralite Scripts Reference: Development & Build Tool Documentation</title>
+  <coralite-meta title="Coralite Scripts Reference: Development & Build Tool Documentation"
+    description="Complete documentation for coralite-scripts package, including development server, build system, configuration API, and CLI commands for rapid Coralite site development."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <h1>Coralite Scripts</h1>
+    <p>
+      <strong>coralite-scripts</strong> is the official development and build tool for Coralite projects. It provides a complete development environment with live reloading, hot CSS updates, and a production build system optimized for static site generation.
+    </p>
+
+    <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+    <ul>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#installation">Installation & Setup</a></li>
+      <li><a href="#configuration">Configuration Reference</a></li>
+      <li><a href="#cli">CLI Commands</a></li>
+      <li><a href="#dev-server">Development Server Features</a></li>
+      <li><a href="#build-process">Build Process</a></li>
+      <li><a href="#api">API Reference</a></li>
+      <li><a href="#examples">Examples</a></li>
+      <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ul>
+
+    <coralite-heading level="h2" text="Overview"></coralite-heading>
+    <p>
+      coralite-scripts provides two main modes of operation:
+    </p>
+    <div class="grid gap">
+      <div class="column-12 column-md-6">
+        <coralite-card icon="play-fill" title="Development Mode"
+          text="Start a local server with live reload, hot CSS injection, and real-time file watching. Perfect for rapid development.">
+        </coralite-card>
+      </div>
+      <div class="column-12 column-md-6">
+        <coralite-card icon="gear-fill" title="Build Mode"
+          text="Compile your site for production with optimized HTML, CSS, and static assets.">
+        </coralite-card>
+      </div>
+    </div>
+
+    <coralite-heading level="h3" text="Key Features"></coralite-heading>
+    <ul>
+      <li><strong>Live Reload</strong> - Automatic browser refresh on HTML, template, and asset changes</li>
+      <li><strong>Hot CSS Updates</strong> - Instant CSS injection without page refresh via Server-Sent Events</li>
+      <li><strong>Sass/SCSS Support</strong> - Compile Sass files with source maps and auto-prefixing</li>
+      <li><strong>File Watching</strong> - Monitors all source directories for changes</li>
+      <li><strong>Production Optimization</strong> - Clean builds with optimized output</li>
+      <li><strong>Plugin Integration</strong> - Full support for Coralite plugins</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Installation & Setup"></coralite-heading>
+    <p>Install coralite-scripts as a dev dependency in your Coralite project:</p>
+
+    <coralite-code-highlight language="bash">npm install --save-dev coralite-scripts</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="Project Structure"></coralite-heading>
+    <p>Ensure your project follows the standard Coralite structure:</p>
+
+    <coralite-code-highlight language="text">my-coralite-site/
+├── src/
+│   ├── pages/        # Page templates (.html)
+│   ├── templates/    # Reusable components
+│   └── scss/         # Sass/SCSS files
+├── public/           # Static assets
+├── coralite.config.js # Configuration file
+└── package.json      # Scripts & dependencies</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="package.json Scripts"></coralite-heading>
+    <p>Add the following scripts to your <code>package.json</code>:</p>
+
+    <coralite-code-highlight language="json">{
+  "scripts": {
+    "dev": "coralite-scripts dev",
+    "build": "coralite-scripts build",
+    "start": "coralite-scripts dev"
+  }
+}</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="Configuration File"></coralite-heading>
+    <p>Create <code>coralite.config.js</code> in your project root:</p>
+
+    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+
+export default defineConfig({
+  output: './dist',
+  public: './public',
+  pages: './src/pages',
+  templates: './src/templates',
+  styles: {
+    type: 'scss',
+    input: './src/scss'
+  },
+  server: {
+    port: 3000
+  }
+})</coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Configuration Reference"></coralite-heading>
+    <p>The <code>defineConfig()</code> function validates and returns your configuration object. All properties are required unless marked as optional.</p>
+
+    <coralite-heading level="h3" text="Required Properties"></coralite-heading>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Property</th>
+            <th scope="col">Type</th>
+            <th scope="col">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row"><code>output</code></th>
+            <td><code>string</code></td>
+            <td>Output directory for compiled site (e.g., <code>'./dist'</code>)</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>public</code></th>
+            <td><code>string</code></td>
+            <td>Directory containing static assets to copy to output</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>pages</code></th>
+            <td><code>string</code></td>
+            <td>Directory containing page templates (.html files)</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>templates</code></th>
+            <td><code>string</code></td>
+            <td>Directory containing reusable template components</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="h3" text="Optional Properties"></coralite-heading>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Property</th>
+            <th scope="col">Type</th>
+            <th scope="col">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row"><code>server.port</code></th>
+            <td><code>number</code></td>
+            <td>Development server port (default: 3000)</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>styles.type</code></th>
+            <td><code>'css' | 'sass' | 'scss'</code></td>
+            <td>Style processing type</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>styles.input</code></th>
+            <td><code>string</code></td>
+            <td>Directory containing style files to compile</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>sassOptions</code></th>
+            <td><code>Options</code></td>
+            <td>Additional Sass compiler options</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>cssPlugins</code></th>
+            <td><code>AcceptedPlugin[]</code></td>
+            <td>PostCSS plugins array</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>plugins</code></th>
+            <td><code>CoralitePluginInstance[]</code></td>
+            <td>Coralite plugin instances</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="h3" text="Configuration Validation"></coralite-heading>
+    <p>The <code>defineConfig()</code> function performs validation and will throw errors for:</p>
+    <ul>
+      <li>Missing required properties</li>
+      <li>Invalid property types</li>
+      <li>Invalid style types (must be 'css', 'sass', or 'scss')</li>
+      <li>Invalid server port numbers</li>
+    </ul>
+
+    <coralite-heading level="h2" text="CLI Commands"></coralite-heading>
+    <p>coralite-scripts provides two main commands for development and production builds.</p>
+
+    <coralite-heading level="h3" text="Development Server"></coralite-heading>
+    <p>Start the development server with live reload and hot CSS updates:</p>
+
+    <coralite-code-highlight language="bash">npm run dev
+# or
+coralite-scripts dev</coralite-code-highlight>
+
+    <h4>Options</h4>
+    <ul>
+      <li><code>-v, --verbose</code> - Enable verbose logging output</li>
+    </ul>
+
+    <h4>What It Does</h4>
+    <ol>
+      <li>Initializes Coralite with your configuration</li>
+      <li>Compiles Sass/SCSS if configured</li>
+      <li>Starts Express server on configured port</li>
+      <li>Watches for file changes in pages, templates, and styles directories</li>
+      <li>Injects live reload scripts into HTML pages</li>
+      <li>Serves static assets from public directory</li>
+    </ol>
+
+    <coralite-heading level="h3" text="Production Build"></coralite-heading>
+    <p>Build your site for production deployment:</p>
+
+    <coralite-code-highlight language="bash">npm run build
+# or
+coralite-scripts build</coralite-code-highlight>
+
+    <h4>What It Does</h4>
+    <ol>
+      <li>Cleans the output directory</li>
+      <li>Compiles all pages with Coralite</li>
+      <li>Saves rendered HTML to output directory</li>
+      <li>Copies static assets from public directory</li>
+      <li>Compiles Sass/SCSS to CSS with source maps</li>
+      <li>Optimizes output for production</li>
+    </ol>
+
+    <coralite-heading level="h2" text="Development Server Features"></coralite-heading>
+
+    <coralite-heading level="h3" text="Live Reload"></coralite-heading>
+    <p>Automatic browser refresh when files change:</p>
+    <ul>
+      <li><strong>HTML Pages</strong> - Changes to <code>.html</code> files in pages directory</li>
+      <li><strong>Templates</strong> - Changes to template components</li>
+      <li><strong>Static Assets</strong> - Changes in public directory</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Hot CSS Updates"></coralite-heading>
+    <p>Instant CSS injection without page refresh:</p>
+    <ul>
+      <li>Sass/SCSS files are compiled automatically</li>
+      <li>CSS is injected via Server-Sent Events (SSE)</li>
+      <li>Page maintains current scroll position and state</li>
+      <li>Works with multiple browser tabs simultaneously</li>
+    </ul>
+
+    <coralite-heading level="h3" text="File Watching"></coralite-heading>
+    <p>Monitors the following directories for changes:</p>
+    <ul>
+      <li><code>config.pages</code> - Page templates</li>
+      <li><code>config.templates</code> - Reusable components</li>
+      <li><code>config.public</code> - Static assets</li>
+      <li><code>config.styles.input</code> - Sass/SCSS files</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Request Logging"></coralite-heading>
+    <p>Real-time terminal output showing:</p>
+    <ul>
+      <li>Request method and path</li>
+      <li>HTTP status code</li>
+      <li>Response time in milliseconds</li>
+      <li>Compilation time for dynamic pages</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Server-Sent Events (SSE)"></coralite-heading>
+    <p>The development server provides a <code>/_/rebuild</code> endpoint that clients can connect to for real-time updates. The server sends two types of messages:</p>
+    <ul>
+      <li><code>data: connected</code> - Initial connection confirmation</li>
+      <li><code>data: reload</code> - Trigger page reload</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Build Process"></coralite-heading>
+    <p>The production build process is optimized for performance and clean output.</p>
+
+    <coralite-heading level="h3" text="Build Steps"></coralite-heading>
+    <ol>
+      <li><strong>Clean Output</strong> - Deletes existing output directory</li>
+      <li><strong>Compile HTML</strong> - Processes all pages with Coralite</li>
+      <li><strong>Save Documents</strong> - Writes rendered HTML to disk</li>
+      <li><strong>Copy Assets</strong> - Copies static files from public directory</li>
+      <li><strong>Compile Styles</strong> - Processes Sass/SCSS or CSS</li>
+      <li><strong>Generate Source Maps</strong> - Creates .map files for debugging</li>
+    </ol>
+
+    <coralite-heading level="h3" text="Sass Compilation"></coralite-heading>
+    <p>When <code>styles.type</code> is set to 'sass' or 'scss':</p>
+    <ul>
+      <li>Compiles all <code>.scss</code> files (excluding partials starting with <code>_</code>)</li>
+      <li>Outputs to <code>output/css/</code> directory</li>
+      <li>Generates source maps by default</li>
+      <li>Includes <code>node_modules</code> in Sass load paths</li>
+      <li>Suppresses common deprecation warnings</li>
+    </ul>
+
+    <coralite-heading level="h3" text="CSS Processing"></coralite-heading>
+    <p>When <code>styles.type</code> is set to 'css':</p>
+    <ul>
+      <li>Processes CSS files through PostCSS</li>
+      <li>Supports custom PostCSS plugins via <code>cssPlugins</code></li>
+      <li>Outputs to <code>output/css/</code> directory</li>
+    </ul>
+
+    <coralite-heading level="h2" text="API Reference"></coralite-heading>
+
+    <coralite-heading level="h3" text="defineConfig(options)"></coralite-heading>
+    <p>Defines and validates the Coralite configuration for your project.</p>
+
+    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+
+const config = defineConfig({
+  output: './dist',
+  public: './public',
+  pages: './src/pages',
+  templates: './src/templates',
+  styles: {
+    type: 'scss',
+    input: './src/scss'
+  },
+  server: {
+    port: 3000
+  },
+  // Coralite plugins
+  plugins: [
+    // Your plugin instances
+  ],
+  // Sass options
+  sassOptions: {
+    // Custom Sass compiler options
+  },
+  // PostCSS plugins
+  cssPlugins: [
+    // Your PostCSS plugins
+  ]
+})</coralite-code-highlight>
+
+    <h4>Parameters</h4>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Parameter</th>
+            <th scope="col">Type</th>
+            <th scope="col">Required</th>
+            <th scope="col">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row"><code>options</code></th>
+            <td><code>CoraliteScriptConfig</code></td>
+            <td>Yes</td>
+            <td>Configuration object with required and optional properties</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Returns</h4>
+    <p><code>CoraliteScriptConfig</code> - The validated configuration object</p>
+
+    <h4>Throws</h4>
+    <ul>
+      <li><code>Error</code> - If configuration is not a valid object</li>
+      <li><code>Error</code> - If required properties are missing or invalid</li>
+      <li><code>Error</code> - If optional properties have invalid types or values</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Validation Rules"></coralite-heading>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">Property</th>
+            <th scope="col">Validation Rule</th>
+            <th scope="col">Error Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row"><code>output</code></th>
+            <td>Must be non-empty string</td>
+            <td>"Configuration must contain a valid "output" property"</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>templates</code></th>
+            <td>Must be non-empty string</td>
+            <td>"Configuration must contain a valid "templates" property"</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>pages</code></th>
+            <td>Must be non-empty string</td>
+            <td>"Configuration must contain a valid "pages" property"</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>public</code></th>
+            <td>Must be non-empty string</td>
+            <td>"Configuration must contain a valid "public" property"</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>server.port</code></th>
+            <td>Must be positive number</td>
+            <td>"Configuration "server.port" must be a positive number"</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>styles.type</code></th>
+            <td>Must be 'css', 'sass', or 'scss'</td>
+            <td>"Configuration "styles.type" must be equal to either "css", "sass" or "scss"</td>
+          </tr>
+          <tr>
+            <th scope="row"><code>styles.input</code></th>
+            <td>Must be non-empty string</td>
+            <td>"Configuration "styles.input" must be a string"</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="h2" text="Examples"></coralite-heading>
+
+    <coralite-heading level="h3" text="Basic Setup"></coralite-heading>
+    <p>Minimal configuration for a standard Coralite site:</p>
+
+    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+
+export default defineConfig({
+  output: './dist',
+  public: './public',
+  pages: './src/pages',
+  templates: './src/templates'
+})</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="Sass/SCSS Support"></coralite-heading>
+    <p>Configure Sass compilation with custom options:</p>
+
+    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+
+export default defineConfig({
+  output: './dist',
+  public: './public',
+  pages: './src/pages',
+  templates: './src/templates',
+  styles: {
+    type: 'scss',
+    input: './src/scss'
+  },
+  sassOptions: {
+    sourceMap: true,
+    loadPaths: ['node_modules', 'src/scss'],
+    silenceDeprecations: ['color-functions', 'import']
+  }
+})</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="With Coralite Plugins"></coralite-heading>
+    <p>Integrate Coralite plugins with coralite-scripts:</p>
+
+    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+import { defineComponent } from 'coralite/plugins'
+
+export default defineConfig({
+  output: './dist',
+  public: './public',
+  pages: './src/pages',
+  templates: './src/templates',
+  styles: {
+    type: 'scss',
+    input: './src/scss'
+  },
+  plugins: [
+    defineComponent({
+      // Your component definition
+    })
+  ]
+})</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="PostCSS Integration"></coralite-heading>
+    <p>Use PostCSS plugins for CSS processing:</p>
+
+    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+import autoprefixer from 'autoprefixer'
+import cssnano from 'cssnano'
+
+export default defineConfig({
+  output: './dist',
+  public: './public',
+  pages: './src/pages',
+  templates: './src/templates',
+  styles: {
+    type: 'css',
+    input: './src/css'
+  },
+  cssPlugins: [
+    autoprefixer(),
+    cssnano()
+  ]
+})</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="Custom Development Port"></coralite-heading>
+    <p>Configure a custom port for the development server:</p>
+
+    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+
+export default defineConfig({
+  output: './dist',
+  public: './public',
+  pages: './src/pages',
+  templates: './src/templates',
+  server: {
+    port: 8080
+  }
+})</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="Complete Configuration"></coralite-heading>
+    <p>Full-featured configuration with all options:</p>
+
+    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+import { defineComponent, defineCollection } from 'coralite/plugins'
+import autoprefixer from 'autoprefixer'
+
+export default defineConfig({
+  // Required paths
+  output: './dist',
+  public: './public',
+  pages: './src/pages',
+  templates: './src/templates',
+  
+  // Style processing
+  styles: {
+    type: 'scss',
+    input: './src/scss'
+  },
+  
+  // Sass options
+  sassOptions: {
+    sourceMap: true,
+    loadPaths: ['node_modules'],
+    silenceDeprecations: ['import']
+  },
+  
+  // PostCSS plugins
+  cssPlugins: [
+    autoprefixer()
+  ],
+  
+  // Development server
+  server: {
+    port: 3000
+  },
+  
+  // Coralite plugins
+  plugins: [
+    defineComponent({
+      // Component definitions
+    }),
+    defineCollection({
+      // Collection definitions
+    })
+  ]
+})</coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Troubleshooting"></coralite-heading>
+
+    <coralite-heading level="h3" text="Development Server Issues"></coralite-heading>
+
+    <h4>Server won't start</h4>
+    <p><strong>Problem:</strong> Port already in use</p>
+    <p><strong>Solution:</strong> Change the port in your config or kill the process using the port:</p>
+    <coralite-code-highlight language="bash">lsof -i :3000
+kill -9 [PID]</coralite-code-highlight>
+
+    <h4>Live reload not working</h4>
+    <p><strong>Problem:</strong> Browser not receiving SSE messages</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+      <li>Check browser console for connection errors</li>
+      <li>Verify file watching is working (check terminal logs)</li>
+      <li>Ensure no browser extensions are blocking SSE</li>
+      <li>Try a hard refresh (Ctrl+Shift+R)</li>
+    </ul>
+
+    <h4>Hot CSS not updating</h4>
+    <p><strong>Problem:</strong> CSS changes not reflected without page reload</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+      <li>Check that Sass compilation is working (look for compilation logs)</li>
+      <li>Verify CSS files are being served from <code>/css</code> route</li>
+      <li>Check browser network tab for CSS requests</li>
+      <li>Ensure styles are imported in HTML with correct path</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Build Issues"></coralite-heading>
+
+    <h4>Build fails with errors</h4>
+    <p><strong>Problem:</strong> Compilation errors during build</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+      <li>Check that all required directories exist</li>
+      <li>Verify template files are valid HTML</li>
+      <li>Check for syntax errors in Sass/SCSS files</li>
+      <li>Ensure all Coralite plugins are properly configured</li>
+    </ul>
+
+    <h4>Output directory not created</h4>
+    <p><strong>Problem:</strong> Build completes but no output</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+      <li>Check that <code>output</code> path is valid</li>
+      <li>Verify write permissions in output directory</li>
+      <li>Look for errors in build logs</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Configuration Issues"></coralite-heading>
+
+    <h4>Config validation errors</h4>
+    <p><strong>Problem:</strong> <code>defineConfig()</code> throws validation errors</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+      <li>Ensure all required properties are present</li>
+      <li>Check property types match expected types</li>
+      <li>Verify style type is one of: 'css', 'sass', 'scss'</li>
+      <li>Ensure server.port is a positive number</li>
+    </ul>
+
+    <h4>Plugins not loading</h4>
+    <p><strong>Problem:</strong> Coralite plugins not recognized</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+      <li>Verify plugins are imported correctly</li>
+      <li>Check that plugins are passed to <code>defineConfig()</code></li>
+      <li>Ensure plugins are compatible with your Coralite version</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Performance Issues"></coralite-heading>
+
+    <h4>Slow compilation times</h4>
+    <p><strong>Problem:</strong> Long wait times for changes to reflect</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+      <li>Reduce number of files being watched</li>
+      <li>Optimize Sass compilation with <code>silenceDeprecations</code></li>
+      <li>Use partials (<code>_</code> prefix) for Sass files not needed in output</li>
+      <li>Consider splitting large Sass files</li>
+    </ul>
+
+    <h4>High memory usage</h4>
+    <p><strong>Problem:</strong> Development server consuming too much memory</p>
+    <p><strong>Solutions:</strong></p>
+    <ul>
+      <li>Restart development server periodically</li>
+      <li>Reduce number of files in watched directories</li>
+      <li>Check for memory leaks in custom plugins</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Common Error Messages"></coralite-heading>
+
+    <coralite-code-highlight language="text">Error: Configuration must be a valid object
+→ Ensure you're passing an object to defineConfig()
+
+Error: Configuration must contain a valid "output" property
+→ Add the required 'output' property to your config
+
+Error: Configuration "server.port" must be a positive number
+→ Check that server.port is a number greater than 0
+
+Error: Configuration "styles.type" must be equal to either "css", "sass" or "scss"
+→ Use one of the supported style types
+
+Error: Failed to start server
+→ Check if port is available and required dependencies are installed</coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Best Practices"></coralite-heading>
+
+    <coralite-heading level="h3" text="Development Workflow"></coralite-heading>
+    <ol>
+      <li><strong>Use relative paths</strong> - Keep all paths relative to project root</li>
+      <li><strong>Organize Sass</strong> - Use partials for reusable styles</li>
+      <li><strong>Monitor logs</strong> - Watch terminal for compilation times and errors</li>
+      <li><strong>Test frequently</strong> - Use live reload to see changes instantly</li>
+      <li><strong>Keep public clean</strong> - Only include static assets in public directory</li>
+    </ol>
+
+    <coralite-heading level="h3" text="Production Builds"></coralite-heading>
+    <ol>
+      <li><strong>Clean builds</strong> - Always delete output directory before building</li>
+      <li><strong>Version control</strong> - Don't commit output directory</li>
+      <li><strong>Test locally</strong> - Run build and test output before deploying</li>
+      <li><strong>Optimize assets</strong> - Use PostCSS plugins for minification</li>
+      <li><strong>Check permissions</strong> - Ensure build output has correct permissions</li>
+    </ol>
+
+    <coralite-heading level="h3" text="Configuration Management"></coralite-heading>
+    <ol>
+      <li><strong>Environment variables</strong> - Use different configs for dev/prod if needed</li>
+      <li><strong>Version control</strong> - Commit coralite.config.js to repository</li>
+      <li><strong>Documentation</strong> - Comment complex configurations</li>
+      <li><strong>Validation</strong> - Let defineConfig() catch configuration errors early</li>
+    </ol>
+
+    <coralite-heading level="h2" text="Integration with Other Tools"></coralite-heading>
+
+    <coralite-heading level="h3" text="Git"></coralite-heading>
+    <p>Add to <code>.gitignore</code>:</p>
+    <coralite-code-highlight language="text">dist/
+node_modules/
+*.log</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="VS Code"></coralite-heading>
+    <p>Recommended extensions:</p>
+    <ul>
+      <li>Sass/SCSS syntax highlighting</li>
+      <li>HTML/CSS IntelliSense</li>
+      <li>ESLint for JavaScript</li>
+    </ul>
+
+    <coralite-heading level="h3" text="CI/CD"></coralite-heading>
+    <p>Example build script:</p>
+    <coralite-code-highlight language="bash">npm ci
+npm run build
+# Deploy dist/ directory</coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Performance Optimization"></coralite-heading>
+
+    <coralite-heading level="h3" text="Development"></coralite-heading>
+    <ul>
+      <li>Exclude unnecessary files from watching</li>
+      <li>Use Sass partials to avoid compiling unused styles</li>
+      <li>Limit number of active browser tabs during development</li>
+      <li>Restart server if memory usage becomes high</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Production"></coralite-heading>
+    <ul>
+      <li>Use PostCSS plugins for minification</li>
+      <li>Enable Sass compression for production</li>
+      <li>Remove source maps for production builds</li>
+      <li>Optimize images in public directory</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Support & Resources"></coralite-heading>
+    <ul>
+      <li><strong>Documentation:</strong> https://coralite.io/docs</li>
+      <li><strong>GitHub:</strong> https://codeberg.org/tjdavid/coralite</li>
+      <li><strong>Issues:</strong> https://codeberg.org/tjdavid/coralite/issues</li>
+      <li><strong>Community:</strong> Join our Discord for help and discussions</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Version Information"></coralite-heading>
+    <p>This documentation covers coralite-scripts version 0.18.7 and later.</p>
+
+    <p><em>Last updated: December 2025</em></p>
+  </main>
+
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
