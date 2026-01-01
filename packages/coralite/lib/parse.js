@@ -139,7 +139,7 @@ function sortSlottedChildren (elements) {
  * @param {string} string - HTML content containing meta tags or module markup
  * @param {Object} options
  * @param {IgnoreByAttribute[]} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
- * @returns {CoraliteModule | { isTemplate: boolean }} - Parsed module information, including template, script, tokens, and slot configurations
+ * @returns {CoraliteModule} - Parsed module information, including template, script, tokens, and slot configurations
  *
  * @example
  * ```
@@ -494,25 +494,84 @@ function findAttributesToIgnore (ignoreByAttribute, attributes) {
 }
 
 /**
- * Extract attributes from string
+ * Extract tokens from string
  * @param {string} string
  * @returns {CoraliteToken[]}
+ *
+ * @example
+ * getTokensFromString('Hello {{ name }} and {{ age }}')
+ * // Returns: [{ name: 'name', content: '{{ name }}' }, { name: 'age', content: '{{ age }}' }]
+ *
+ * Handles:
+ * - Multiple tokens in one string
+ * - Nested braces: {{ {{nested}} }} extracts both
+ * - Complex token names: {{ user.name }}, {{ items[0] }}
+ * - Empty tokens: {{}} (returns empty name)
+ * - Malformed tokens: {{unclosed, {{extra}} braces}}
  */
 function getTokensFromString (string) {
-  if (string.length > 100) {
-    console.warn(`Token "${string}" is too long`)
-  }
-
-  const matches = string.matchAll(/\{\{[^}]{0,100}?\}\}/g)
   const result = []
+  let i = 0
 
-  for (const match of matches) {
-    const token = match[0]
+  while (i < string.length) {
+    // Find opening braces
+    if (string[i] === '{' && string[i + 1] === '{') {
+      const tokenStart = i
+      i += 2 // Skip opening braces
 
-    result.push({
-      name: token.slice(2, token.length -2).trim(),
-      content: token
-    })
+      // Track brace depth for nested tokens
+      let depth = 1
+      let tokenEnd = -1
+
+      // Scan until we find matching closing braces
+      while (i < string.length && depth > 0) {
+        if (string[i] === '{' && string[i + 1] === '{') {
+          depth++
+          i += 2
+        } else if (string[i] === '}' && string[i + 1] === '}') {
+          depth--
+          if (depth === 0) {
+            tokenEnd = i + 2
+            break
+          }
+          i += 2
+        } else {
+          i++
+        }
+      }
+
+      // If we found a complete token
+      if (tokenEnd > 0) {
+        const fullToken = string.slice(tokenStart, tokenEnd)
+        const tokenContent = fullToken.slice(2, -2).trim()
+
+        // Add the full token
+        result.push({
+          name: tokenContent,
+          content: fullToken
+        })
+
+        // Also extract any nested tokens from the content
+        // This handles cases like {{ {{nested}} }} which should extract both
+        const nestedTokens = getTokensFromString(tokenContent)
+
+        // Add nested tokens that are different from the full token
+        for (const nested of nestedTokens) {
+          // Only add if it's not the same as what we just added
+          if (nested.content !== fullToken) {
+            result.push(nested)
+          }
+        }
+
+        // Continue scanning after this token
+        continue
+      }
+
+      // If token is unclosed, treat it as literal text and continue
+      i = tokenStart + 2
+    } else {
+      i++
+    }
   }
 
   return result
