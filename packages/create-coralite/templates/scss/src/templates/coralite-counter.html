@@ -8,7 +8,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script ({ values, refs }) {
+    script ({ values }, { refs }) {
       const button = refs('count-button')
       const step = values.step ? parseInt(values.step) : 1
       let count = 0
