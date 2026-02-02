@@ -51,9 +51,22 @@ import { availableParallelism } from 'node:os'
 export function Coralite ({
   templates,
   pages,
-  plugins = [],
+  plugins,
   ignoreByAttribute
 }) {
+  // Validate required parameters
+  if (!templates && typeof templates !== 'string') {
+    throw new Error('Coralite constructor requires "templates" option to be defined')
+  }
+
+  if (!templates && typeof templates !== 'string') {
+    throw new Error('Coralite constructor requires "pages" option to be defined')
+  }
+
+  if (!plugins) {
+    plugins = []
+  }
+
   const path = {
     templates: normalize(templates),
     pages: normalize(pages)
