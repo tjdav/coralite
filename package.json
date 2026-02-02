@@ -48,10 +48,10 @@
     "node": "^20.19.0 || >=22.19.0"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm exec lint-staged --concurrent false"
+    "pre-commit": "pnpm exec lint-staged"
   },
   "lint-staged": {
-    "packages/*/{src,types}/**/*.js": [
+    "packages/**/*.{js,ts,tsx}": [
       "eslint --cache --fix"
     ]
   },
