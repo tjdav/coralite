@@ -164,8 +164,10 @@ export function Coralite ({
     }
 
     // queue any templates provided by the plugin to be registered.
-    for (let i = 0; i < plugin.templates.length; i++) {
-      this._plugins.templates.push(plugin.templates[i])
+    if (plugin.templates && Array.isArray(plugin.templates)) {
+      for (let i = 0; i < plugin.templates.length; i++) {
+        this._plugins.templates.push(plugin.templates[i])
+      }
     }
 
     // add the plugin's hooks to the appropriate Coralite hook lists.
