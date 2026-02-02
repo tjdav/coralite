@@ -658,7 +658,7 @@ Coralite.prototype._generatePages = async function* (path) {
       let rawHTML = ''
       try {
         // render document
-        const rawHTML = this.transform(document.root)
+        rawHTML = this.transform(document.root)
       } finally {
         // Restore original document after rendering
         for (const item of restoreQueue) {
