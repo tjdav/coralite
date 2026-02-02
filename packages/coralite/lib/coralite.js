@@ -85,6 +85,7 @@ export function Coralite ({
 
   // module source context
   this._source = {
+    specifierImportURL: pathToFileURL(process.cwd()).href,
     modules: {
       coralite: {
         export: 'export const document = coralite.document;\n'
@@ -1236,16 +1237,14 @@ Coralite.prototype._evaluate = async function ({
   this._source.contextInstances[contextId] = context
   // create a new context object with the provided context and global objects
   const contextifiedObject = createContext({
-    console: globalThis.console,
-    crypto: globalThis.crypto,
     coralite: context
   })
   const template = this.templates.getItem(module.id)
-
+  const metaURL = this._source.specifierImportURL
   // create a new source text module with the provided script content, configuration options, and context
   const script = new SourceTextModule(module.script, {
     initializeImportMeta (meta) {
-      meta.url = process.cwd()
+      meta.url = metaURL
     },
     lineOffset: module.lineOffset,
     identifier: resolve(template.path.pathname),
@@ -1296,7 +1295,7 @@ Coralite.prototype._moduleLinker = function (path) {
       specifier = pathToFileURL(resolve(path.dirname, specifier)).href
     } else {
       // handle modules
-      specifier = import.meta.resolve(specifier, import.meta.url)
+      specifier = import.meta.resolve(specifier, this._source.specifierImportURL)
     }
 
     try {
