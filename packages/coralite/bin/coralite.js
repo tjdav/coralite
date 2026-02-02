@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
+#!/usr/bin/env node
 
 import { Coralite } from '../dist/lib/index.js'
 import { Command } from 'commander'
@@ -75,9 +75,10 @@ const coralite = new Coralite(coraliteOptions)
 // initializes Coralite with the provided options and compiles documents
 await coralite.initialise()
 // compiles all pages using Coralite
-const documents = await coralite.compile()
 
 if (options.dryRun) {
+  const documents = await coralite.build()
+
   // print document details without saving files
   const PAD = '  '
   const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
@@ -86,7 +87,7 @@ if (options.dryRun) {
     const document = documents[i]
 
     process.stdout.write('\n' + PAD + kleur.green('Document is ready!\n\n'))
-    process.stdout.write(PAD + `${kleur.bold('- Path:')}      ${document.item.path.pathname}\n`)
+    process.stdout.write(PAD + `${kleur.bold('- Path:')}      ${document.path.pathname}\n`)
     process.stdout.write(PAD + `${kleur.bold('- Built in:')}  ${Math.floor(document.duration)}ms\n\n`)
     process.stdout.write(border + kleur.inverse(' Content start ') + border + '\n\n')
     process.stdout.write(document.html)
@@ -94,5 +95,5 @@ if (options.dryRun) {
   }
 } else {
   // save the generated documents to output directory
-  await coralite.save(documents, output)
+  await coralite.save(output)
 }

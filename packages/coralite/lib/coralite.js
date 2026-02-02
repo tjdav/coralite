@@ -2,8 +2,8 @@ import { cleanKeys, cloneModuleInstance, convertEsmToCjs, createElement, createT
 import { defineComponent, refsPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
-import { createRequire } from 'node:module' // Replaces createContext, SourceTextModule
-import { transform } from 'esbuild' // reused from script-manager dependency
+import { createRequire } from 'node:module'
+import { transform } from 'esbuild'
 import { isCoraliteElement, isCoraliteCollectionItem } from './type-helper.js'
 import { pathToFileURL } from 'node:url'
 import { availableParallelism } from 'node:os'
@@ -77,6 +77,7 @@ export function Coralite ({
   this.options = {
     templates,
     pages,
+    plugins,
     ignoreByAttribute,
     path
   }
@@ -948,7 +949,8 @@ Coralite.prototype.createComponent = async function ({
   const templateItem = this.templates.getItem(id)
 
   if (!templateItem) {
-    return console.warn('Could not find component "' + id + '" used in document "' + document.path.pathname + '"')
+    console.warn('Could not find component "' + id + '" used in document "' + document.path.pathname + '"')
+    return
   }
 
   if (head) {
@@ -1321,7 +1323,11 @@ Coralite.prototype._evaluate = async function ({
 
 /**
  * @template {Object} T
+ *
  * Executes all plugin callbacks registered under the specified hook name.
+ *
+ * @internal
+ *
  * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'} name - The name of the hook to trigger.
  * @param {T} data - Data to pass to each callback function.
  * @return {Promise<Array<T>>} A promise that resolves to an array of results from all callbacks.
@@ -1342,10 +1348,17 @@ Coralite.prototype._triggerPluginHook = async function (name, data) {
 
 /**
  * Registers a callback function under the specified hook name.
+ *
+ * @internal
+ *
  * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'} name - The name of the hook to register the callback with.
  * @param {Function} callback - The callback function to be executed when the hook is triggered.
  */
 Coralite.prototype._addPluginHook = function (name, callback) {
+  if (typeof callback !== 'function') {
+    throw new Error(`Plugin hook "${name}" must be a function`)
+  }
+
   const pluginCallback = callback.bind(this)
 
   if (this._plugins.hooks[name]) {

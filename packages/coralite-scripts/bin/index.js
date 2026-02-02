@@ -1,4 +1,4 @@
-#!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
+#!/usr/bin/env node
 
 import loadConfig from '../libs/load-config.js'
 import { Command, Argument } from 'commander'
