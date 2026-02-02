@@ -216,6 +216,9 @@ export function Coralite ({
 
       this.content[id][item.id] = item
     },
+    restore () {
+      this.content = {}
+    },
     /** @type {Object.<string, Object.<string, CoraliteScriptContent>>} */
     content: {}
   }
@@ -471,214 +474,368 @@ Coralite.prototype.initialise = async function () {
  * Processes pages based on provided path(s), replacing custom elements with components,
  * and returns rendered results with performance metrics.
  *
+ * @internal
+ *
  * @param {string | string[]} [path] - Path to a single page or array of page paths relative to the pages directory. If omitted, compiles all pages.
- * @return {Promise<Array<CoraliteResult>>}
+ * @return {AsyncGenerator<CoraliteResult>}
  */
-Coralite.prototype.compile = async function (path) {
-  this._currentRenderQueue = this.pages.list.slice()
+Coralite.prototype._generatePages = async function* (path) {
+  let queue = []
 
   if (Array.isArray(path)) {
-    this._currentRenderQueue = []
+    // Remove path duplicates
+    const uniquePaths = new Set(path)
+    for (const path of uniquePaths) {
+      const result = this.pages.getListByPath(path) || this.pages.getItem(path)
 
-    for (let i = 0; i < path.length; i++) {
-      const pathname = path[i]
-      const result = this.pages.getListByPath(pathname)
-
-      if (Array.isArray(result)) {
-        this._currentRenderQueue = this._currentRenderQueue.concat(result)
-      } else {
-        const result = this.pages.getItem(pathname)
-
-        if (result) {
-          this._currentRenderQueue.push(result)
+      if (result) {
+        if (Array.isArray(result)) {
+          queue = queue.concat(result)
+        } else {
+          queue.push(result)
         }
       }
     }
   } else if (typeof path === 'string') {
-    const result = this.pages.getListByPath(path)
-    this._currentRenderQueue = []
+    const result = this.pages.getListByPath(path) || this.pages.getItem(path)
 
-    if (Array.isArray(result)) {
-      this._currentRenderQueue = this._currentRenderQueue.concat(result)
-    } else {
-      const result = this.pages.getItem(path)
-
-      if (result) {
-        this._currentRenderQueue.push(result)
+    if (result) {
+      if (Array.isArray(result)) {
+        queue = queue.concat(result)
+      } else {
+        queue.push(result)
       }
     }
+  } else {
+    // Slice creates a shallow copy of the list array, safe for iteration
+    queue = this.pages.list.slice()
   }
 
-  /** @type {CoraliteResult[]} */
-  const results = []
+  this._currentRenderQueue = queue
 
-  for (let i = 0; i < this._currentRenderQueue.length; i++) {
-    const startTime = performance.now()
+  try {
+    for (let q = 0; q < this._currentRenderQueue.length; q++) {
+      const restoreQueue = []
 
-    /** @type {CoraliteDocument & CoraliteDocumentResult} */
-    const document = structuredClone(this._currentRenderQueue[i].result)
+      // restore global state variables
+      this.values = {}
+      this._scripts.restore()
 
-    for (let i = 0; i < document.tempElements.length; i++) {
-      const element = document.tempElements[i]
+      const startTime = performance.now()
 
-      // remove elements marked for removal from the parent's children
-      element.parent.children = element.parent.children.filter(item => !item.remove)
-    }
+      /** @type {CoraliteDocument & CoraliteDocumentResult} */
+      const document = this._currentRenderQueue[q].result
 
-    for (let i = 0; i < document.customElements.length; i++) {
-      const customElement = document.customElements[i]
-      const contextId = document.path.pathname + i + customElement.name
-      const currentValues = this.values[contextId] || {}
+      // remove temporary elements
+      if (document.tempElements) {
+        for (const element of document.tempElements) {
+          if (element.parent && element.parent.children) {
+            // Store reference to the original children
+            restoreQueue.push({
+              parent: element.parent,
+              originalChildren: element.parent.children
+            })
 
-      if (typeof customElement.attribs === 'object') {
-        this.values[contextId] = {
-          ...currentValues,
-          ...document.values,
-          ...customElement.attribs
-        }
-      } else {
-        this.values[contextId] = Object.assign(currentValues, document.values)
-      }
-
-      const component = await this.createComponent({
-        id: customElement.name,
-        values: this.values[contextId],
-        element: customElement,
-        document,
-        contextId,
-        index: i
-      })
-
-      if (component) {
-        for (let i = 0; i < component.children.length; i++) {
-          // update component parent
-          component.children[i].parent = customElement.parent
-        }
-
-        const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
-        // replace custom element with component
-        customElement.parent.children.splice(index, 1, ...component.children)
-      }
-    }
-
-    if (this._scripts.content[document.path.pathname]) {
-      const scripts = this._scripts.content[document.path.pathname]
-
-      // Build instances object for script manager
-      /** @type {Object.<string, InstanceContext>} */
-      const instances = {}
-      for (const key in scripts) {
-        if (Object.prototype.hasOwnProperty.call(scripts, key)) {
-          const script = scripts[key]
-          // extending script content with templateId and values
-          instances[script.id] = {
-            instanceId: script.id,
-            templateId: script.templateId,
-            values: script.values,
-            refs: script.refs
+            // Swap in a filtered array
+            element.parent.children = element.parent.children.filter(
+              child => !child.remove
+            )
           }
         }
       }
 
-      // Use script manager to compile all instances
-      const scriptTextContent = await this._scriptManager.compileAllInstances(instances)
+      for (let i = 0; i < document.customElements.length; i++) {
+        const customElement = document.customElements[i]
+        const contextId = document.path.pathname + i + customElement.name
+        const currentValues = this.values[contextId] || {}
 
-      /** @type {CoraliteElement} */
-      let bodyElement
+        if (typeof customElement.attribs === 'object') {
+          this.values[contextId] = {
+            ...currentValues,
+            ...document.values,
+            ...customElement.attribs
+          }
+        } else {
+          this.values[contextId] = Object.assign(currentValues, document.values)
+        }
 
-      for (let i = 0; i < document.root.children.length; i++) {
-        const rootNode = document.root.children[i]
+        const component = await this.createComponent({
+          id: customElement.name,
+          values: this.values[contextId],
+          element: customElement,
+          document,
+          contextId,
+          index: i
+        })
 
-        if (rootNode.type === 'tag' && rootNode.name === 'html') {
-          for (let i = 0; i < rootNode.children.length; i++) {
-            const node = rootNode.children[i]
+        if (component) {
+          for (let i = 0; i < component.children.length; i++) {
+            // update component parent
+            component.children[i].parent = customElement.parent
+          }
 
-            if (node.type === 'tag' && node.name === 'body') {
-              bodyElement = node
+          const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
+          // replace custom element with component
+          customElement.parent.children.splice(index, 1, ...component.children)
+        }
+      }
+
+      if (this._scripts.content[document.path.pathname]) {
+        const scripts = this._scripts.content[document.path.pathname]
+
+        // Build instances object for script manager
+        /** @type {Object.<string, InstanceContext>} */
+        const instances = {}
+        for (const key in scripts) {
+          if (Object.prototype.hasOwnProperty.call(scripts, key)) {
+            const script = scripts[key]
+            // extending script content with templateId and values
+            instances[script.id] = {
+              instanceId: script.id,
+              templateId: script.templateId,
+              values: script.values,
+              refs: script.refs
             }
           }
         }
+
+        // Use script manager to compile all instances
+        const scriptTextContent = await this._scriptManager.compileAllInstances(instances)
+
+        /** @type {CoraliteElement} */
+        let bodyElement
+
+        findBodyLoop: for (let i = 0; i < document.root.children.length; i++) {
+          const rootNode = document.root.children[i]
+
+          if (rootNode.type === 'tag' && rootNode.name === 'html') {
+            for (let i = 0; i < rootNode.children.length; i++) {
+              const node = rootNode.children[i]
+
+              if (node.type === 'tag' && node.name === 'body') {
+                bodyElement = node
+                break findBodyLoop
+              }
+            }
+          }
+        }
+
+        /** @type {CoraliteElement} */
+        const scriptElement = {
+          type: 'tag',
+          name: 'script',
+          parent: bodyElement,
+          attribs: {
+            type: 'module'
+          },
+          children: []
+        }
+
+        scriptElement.children.push({
+          type: 'text',
+          data: scriptTextContent,
+          parent: scriptElement
+        })
+
+        bodyElement.children.push(scriptElement)
       }
 
-      /** @type {CoraliteElement} */
-      const scriptElement = {
-        type: 'tag',
-        name: 'script',
-        parent: bodyElement,
-        attribs: {
-          type: 'module'
-        },
-        children: []
+      let rawHTML = ''
+      try {
+        // render document
+        const rawHTML = this.transform(document.root)
+      } finally {
+        // Restore original document after rendering
+        for (const item of restoreQueue) {
+          item.parent.children = item.originalChildren
+        }
       }
 
-      scriptElement.children.push({
-        type: 'text',
-        data: scriptTextContent,
-        parent: scriptElement
-      })
+      yield {
+        path: document.path,
+        html: rawHTML,
+        duration: performance.now() - startTime
+      }
 
-      bodyElement.children.push(scriptElement)
+      // memory clean up
+      this._currentRenderQueue[q] = null
     }
+  } finally {
+    // Ensure cleanup on early termination (e.g., generator aborted)
+    this._currentRenderQueue = []
+    this.values = {}
+    this._scripts.restore()
+  }
+}
 
-    // render document
-    const rawHTML = this._render(document.root)
-    const result = {
-      item: document,
-      html: rawHTML,
-      duration: performance.now() - startTime
-    }
+/**
+ * @callback BuildPageHandler
+ * @param {CoraliteResult} result - The rendered output document for a specific page.
+ * @returns {Promise<any> | any} The transformed result to be collected (falsy values are filtered).
+ */
 
-    results.push(result)
+/**
+ * Compiles pages and collects the results with controlled concurrency.
+ * Can optionally transform each result via a callback before collecting.
+ *
+ * @overload
+ * @param {string | string[]} [path] - The target directory or an array of specific page paths to build.
+ * @returns {Promise<CoraliteResult[]>} A Promise that resolves to an array of build results.
+ *
+ * @overload
+ * @param {string | string[]} [path] - The target directory or an array of specific page paths to build.
+ * @param {Object} [options] - Configuration options for the build process.
+ * @param {number} [options.maxConcurrent=availableParallelism] - The maximum number of concurrent file write operations.
+ * @param {AbortSignal} [options.signal] - An AbortSignal to cancel the build operation.
+ * @returns {Promise<CoraliteResult[]>} A Promise that resolves to an array of build results.
+ *
+ * @overload
+ * @param {string | string[]} [path] - The target directory or an array of specific page paths to build.
+ * @param {BuildPageHandler} callback - A function invoked for each page to transform the result.
+ * @returns {Promise<any[]>} A Promise that resolves to an array of the transformed results.
+ *
+ * @overload
+ * @param {string | string[]} [path] - The target directory or an array of specific page paths to build.
+ * @param {Object} [options] - Configuration options for the build process.
+ * @param {number} [options.maxConcurrent=availableParallelism] - The maximum number of concurrent file write operations.
+ * @param {AbortSignal} [options.signal] - An AbortSignal to cancel the build operation.
+ * @param {BuildPageHandler} callback - A function invoked for each page to transform the result.
+ * @returns {Promise<any[]>} A Promise that resolves to an array of the transformed results.
+ *
+ * @example
+ * // Build and get all results
+ * const results = await coralite.build('./dist')
+ * // results is CoraliteResult[]
+ *
+ * // Build and transform results
+ * const titles = await coralite.build('./dist', (result) => {
+ *   return result.path
+ * })
+ */
+Coralite.prototype.build = async function (...args) {
+  let path = args[0]
+  let options
+  let callback
+
+  // add callback since there are no options
+  if (typeof args[1] === 'function') {
+    callback = args[1]
+  } else {
+    options = args[1]
+    callback = args[2]
   }
 
-  // reset core values
-  this._currentRenderQueue = []
-  this.values = {}
-  this._scripts.content = {}
+  // Add options with defaults
+  const signal = options?.signal
+  const maxConcurrent = options?.maxConcurrent || availableParallelism()
+
+  // Initialize the limiter
+  const limit = pLimit(maxConcurrent)
+  const executing = new Set()
+  const results = []
+
+  try {
+    for await (const result of this._generatePages(path)) {
+      // Check for immediate cancellation
+      if (signal?.aborted) throw signal.reason
+
+      // Backpressure - don't pull more data than we can process
+      if (executing.size >= limit.concurrency) {
+        await Promise.race(executing)
+      }
+
+      const task = limit(async () => {
+        // Exit early if build was cancelled while in queue
+        if (signal?.aborted) throw signal.reason
+
+        if (typeof callback === 'function') {
+          return await callback(result)
+        } else {
+          return result
+        }
+      })
+
+      executing.add(task)
+
+      // Clean up task
+      task.then((callbackResult) => {
+        if (callbackResult) {
+          results.push(callbackResult)
+        }
+
+        executing.delete(task)
+      }).catch(() => {
+        executing.delete(task)
+      })
+    }
+
+    await Promise.all(executing)
+
+    if (callback) {
+      return results
+    }
+
+  } catch (error) {
+    // Clean up - If one fails or we abort, wait for pending to settle
+    await Promise.allSettled(executing)
+
+    if (error.name === 'AbortError') {
+      console.warn('Build cancelled by user.')
+    }
+
+    throw new Error(`Build failed: ${error.message}`, { cause: error })
+  }
+}
+
+/**
+ * Compiles and saves pages to disk
+ *
+ * @param {string} output - Output directory path
+ * @param {string | string[]} [path] - Optional page path(s) to build
+ * @param {Object} [options] - Build configuration
+ * @param {number} [options.maxConcurrent=10] - Max concurrent file writes (min 1, max 100)
+ * @param {AbortSignal} [options.signal] - AbortSignal
+ * @returns {Promise<{ path: string, duration: number }[]>} Array of saved file paths
+ * @example
+ * // Build entire site with default concurrency (10 files)
+ * await coralite.build('./dist')
+ *
+ * // Build specific pages with custom concurrency
+ * await coralite.build('./dist', ['blog/*'], { maxConcurrent: 5 })
+ */
+Coralite.prototype.save = async function (output, path, options = {}) {
+  const signal = options?.signal
+
+  const results = await this.build(path, options, async (result) => {
+    const relDir = relative(this.options.path.pages, result.path.dirname)
+    const outDir = join(output, relDir)
+    const outFile = join(outDir, result.path.filename)
+
+    await mkdir(outDir, { recursive: true })
+
+    // Pass signal to writeFile so Node can stop the I/O immediately
+    await writeFile(outFile, result.html, { signal })
+
+    return {
+      path: outFile,
+      duration: result.duration
+    }
+  })
 
   return results
 }
 
 /**
- * Saves processed documents as HTML files to the specified output directory.
- * @param {Array<CoraliteResult>} documents - Array of document objects containing metadata and HTML content
- * @param {string} output - Base directory path where generated HTML files will be saved
- */
-Coralite.prototype.save = async function (documents, output) {
-  try {
-    // create a list of promises for writing each document's HTML file
-    const writePromises = documents.map(async (document) => {
-      const dirname = relative(this.options.path.pages, document.item.path.dirname)
-      const dir = join(output, dirname)
-      const filename = join(dir, document.item.path.filename)
-
-      // ensure the directory exists
-      await mkdir(dir, { recursive: true })
-
-      // write the HTML content to the file
-      await writeFile(filename, document.html)
-
-      return filename
-    })
-
-    // wait for all files to be written
-    const outputFiles = await Promise.all(writePromises)
-    return outputFiles
-  } catch (error) {
-    throw error
-  }
-}
-
-/**
  * Renders the provided node or array of nodes using the render function.
- * This method serves as an internal utility to handle the rendering process.
  *
  * @param {CoraliteDocumentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
  * @returns {string} returns raw HTML
  */
-Coralite.prototype._render = function (root) {
+Coralite.prototype.transform = function (root) {
   // @ts-ignore
-  return render(root)
+  return render(root, {
+    emptyAttrs: false
+  })
 }
 
 /**
