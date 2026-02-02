@@ -1,13 +1,14 @@
-import { cleanKeys, cloneModuleInstance, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, ScriptManager } from '#lib'
+import { cleanKeys, cloneModuleInstance, convertEsmToCjs, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, ScriptManager } from '#lib'
 import { defineComponent, refsPlugin } from '#plugins'
-import render from 'dom-serializer'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
-import { createContext, SourceTextModule } from 'node:vm'
+import { createRequire } from 'node:module' // Replaces createContext, SourceTextModule
+import { transform } from 'esbuild' // reused from script-manager dependency
 import { isCoraliteElement, isCoraliteCollectionItem } from './type-helper.js'
 import { pathToFileURL } from 'node:url'
-import pLimit from 'p-limit'
 import { availableParallelism } from 'node:os'
+import render from 'dom-serializer'
+import pLimit from 'p-limit'
 
 /**
  * @import {
@@ -1217,7 +1218,8 @@ Coralite.prototype.createComponent = async function ({
 }
 
 /**
- * Parses a Coralite module script and compiles it into JavaScript.
+ * Parses a Coralite module script and compiles it into JavaScript using esbuild.
+ * Replaces node:vm SourceTextModule for better performance and memory management.
  *
  * @param {Object} data
  * @param {CoraliteModule} data.module - The Coralite module to parse
@@ -1246,96 +1248,75 @@ Coralite.prototype._evaluate = async function ({
     module,
     id: contextId
   }
-
   this._source.contextInstances[contextId] = context
-  // create a new context object with the provided context and global objects
-  const contextifiedObject = createContext({
-    coralite: context
-  })
-  const template = this.templates.getItem(module.id)
-  const metaURL = this._source.specifierImportURL
-  // create a new source text module with the provided script content, configuration options, and context
-  const script = new SourceTextModule(module.script, {
-    initializeImportMeta (meta) {
-      meta.url = metaURL
-    },
-    lineOffset: module.lineOffset,
-    identifier: resolve(template.path.pathname),
-    context: contextifiedObject
-  })
 
-  const linker = this._moduleLinker(template.path)
+  // Retrieve Template and check cache
+  const templateItem = this.templates.getItem(module.id)
 
-  await script.link(linker)
+  if (!templateItem.result._compiledCode) {
+    // Transform ESM to CJS using esbuild
+    // We use CJS format so esbuild handles the import/export transformation
+    const { code } = await transform(module.script, {
+      loader: 'js',
+      format: 'esm',
+      target: 'node18',
+      platform: 'node'
+    })
 
-  // evaluate the module to execute its content
-  await script.evaluate()
+    const cjsCode = convertEsmToCjs(code)
 
-  // @ts-ignore
-  if (script.namespace.default != null) {
-    // @ts-ignore
-    return await script.namespace.default
+    // Wrap the transformed code in an async IIFE to support Top-Level Await (TLA)
+    templateItem.result._compiledCode = `
+      return (async () => {
+        ${cjsCode}
+      })();`
   }
 
-  // throw an error if no default export was found
-  throw new Error(`Module "${module.id}" has no default export`)
-}
+  // Create a require function anchored to the template's file path to resolve relative imports
+  const fileRequire = createRequire(resolve(templateItem.path.pathname))
 
-/**
- * @param {CoraliteFilePath} path
- */
-Coralite.prototype._moduleLinker = function (path) {
-  const source = this._source
-
-  /**
-   * @param {string} specifier - The specifier of the requested module
-   * @param {Module} referencingModule - The Module object link() is called on.
-   * @param {{ attributes: ImportAttributes }} extra - The type for the with property of the optional second argument to import().
-   */
-  return async (specifier, referencingModule, extra) => {
-    const originalSpecifier = specifier
-
-    if (specifier == 'coralite/plugins') {
-      return new SourceTextModule(source.modules.plugins.export + source.modules.plugins.default, {
-        context: referencingModule.context
-      })
-    } else if (specifier === 'coralite') {
-      return new SourceTextModule(source.modules.coralite.export + source.modules.coralite.default, {
-        context: referencingModule.context
-      })
-    } else if (specifier.startsWith('.')) {
-      // handle relative path
-      specifier = pathToFileURL(resolve(path.dirname, specifier)).href
-    } else {
-      // handle modules
-      specifier = import.meta.resolve(specifier, this._source.specifierImportURL)
-    }
-
-    try {
-      const module = await import(specifier, { with: extra.attributes })
-      let exportModule = ''
-
-      for (const key in module) {
-        if (Object.prototype.hasOwnProperty.call(module, key)) {
-          const name = 'globalThis["' + originalSpecifier + '"].'
-
-          if (key === 'default') {
-            exportModule += 'export default ' + name + key + ';\n'
-          } else {
-            exportModule += 'export const ' + key + ' = ' + name + key + ';\n'
-          }
-        }
-
-        referencingModule.context[originalSpecifier] = module
+  const customRequire = (id) => {
+    // Intercept 'coralite' import to return the current context
+    if (id === 'coralite') {
+      return {
+        ...context,
+        default: context
       }
-
-      return new SourceTextModule(exportModule, {
-        context: referencingModule.context
-      })
-    } catch (error) {
-      throw new Error(error)
     }
+    // Intercept 'coralite/plugins'
+    if (id === 'coralite/plugins') {
+      const plugins = this._source.context.plugins
+      return {
+        ...plugins,
+        default: plugins
+      }
+    }
+
+    return fileRequire(id)
   }
+
+  // Mock the CommonJS 'module' object to capture exports
+  const moduleMock = { exports: {} }
+
+  // Create the function. We pass 'coralite' explicitly to support the
+  // "export const document = coralite.document" pattern found in existing modules.
+  // Arguments: module, exports, require, coralite
+  const fn = new Function(
+    'module',
+    'exports',
+    'require',
+    'coralite',
+    templateItem.result._compiledCode
+  )
+
+  // Execute the function with our mocks and context
+  await fn(moduleMock, moduleMock.exports, customRequire, context)
+
+  if (moduleMock.exports.default != null) {
+    return moduleMock.exports.default
+  }
+
+  throw new Error(`Module "${module.id}" has no default export`)
 }
 
 /**
