@@ -6,6 +6,8 @@ import { dirname, join, normalize, relative, resolve } from 'node:path'
 import { createContext, SourceTextModule } from 'node:vm'
 import { isCoraliteElement, isCoraliteCollectionItem } from './type-helper.js'
 import { pathToFileURL } from 'node:url'
+import pLimit from 'p-limit'
+import { availableParallelism } from 'node:os'
 
 /**
  * @import {
@@ -792,7 +794,7 @@ Coralite.prototype.createComponent = async function ({
    * clone the component to avoid mutations during replacement process.
    * @type {CoraliteModule}
    */
-  const module = structuredClone(templateItem.result)
+  const module = cloneModuleInstance(templateItem.result)
   const result = module.template
 
   // merge values from component script
