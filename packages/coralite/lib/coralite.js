@@ -1,4 +1,4 @@
-import { cleanKeys, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, ScriptManager } from '#lib'
+import { cleanKeys, cloneModuleInstance, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, ScriptManager } from '#lib'
 import { defineComponent, refsPlugin } from '#plugins'
 import render from 'dom-serializer'
 import { mkdir, writeFile } from 'node:fs/promises'
