@@ -58,7 +58,7 @@ export function Coralite ({
     throw new Error('Coralite constructor requires "templates" option to be defined')
   }
 
-  if (!templates && typeof templates !== 'string') {
+  if (!pages && typeof pages !== 'string') {
     throw new Error('Coralite constructor requires "pages" option to be defined')
   }
 
