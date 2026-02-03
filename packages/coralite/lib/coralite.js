@@ -26,12 +26,10 @@ import pLimit from 'p-limit'
  *  CoraliteCollectionEventSet,
  *  IgnoreByAttribute,
  *  CoraliteDocumentResult,
- *  CoraliteFilePath,
  *  CoraliteValues,
  *  CoraliteScriptContent,
  *  InstanceContext} from '../types/index.js'
  * @import CoraliteCollection from './collection.js'
- * @import {Module} from 'node:vm'
  */
 
 /**
@@ -100,44 +98,8 @@ export function Coralite ({
 
   // module source context
   this._source = {
-    specifierImportURL: pathToFileURL(process.cwd()).href,
-    modules: {
-      coralite: {
-        export: 'export const document = coralite.document;\n'
-        + 'export const values = coralite.values;\n'
-        + 'export const path = coralite.path;\n'
-        + 'export const excludeByAttribute = coralite.excludeByAttribute;\n'
-        + 'export const templates = coralite.templates;\n'
-        + 'export const pages = coralite.pages;\n'
-        + 'export const defineComponent = coralite.defineComponent;\n'
-        + 'export const getHtmlFiles = coralite.getHtmlFiles;\n'
-        + 'export const getHtmlFile = coralite.getHtmlFile;\n'
-        + 'export const createTextNode = coralite.createTextNode;\n'
-        + 'export const createElement = coralite.createElement;\n'
-        + 'export const parseModule = coralite.parseModule;\n'
-        + 'export const parseHTML = coralite.parseHTML;\n',
-        default: 'export default {\n'
-        + '  values,\n'
-        + '  document,\n'
-        + '  path,\n'
-        + '  excludeByAttribute,\n'
-        + '  templates,\n'
-        + '  pages,\n'
-        + '  parseModule,\n'
-        + '  parseHTML,\n'
-        + '  getHtmlFiles,\n'
-        + '  getHtmlFile,\n'
-        + '  createTextNode,\n'
-        + '  createElement,\n'
-        + '  defineComponent,\n'
-        + '};'
-      },
-      plugins: {
-        export: '',
-        default: 'export default { '
-      }
-    },
     currentContextId: '',
+    currentSourceContextId: '',
     contextInstances: {},
     contextModules: {
       parseHTML,
@@ -168,10 +130,6 @@ export function Coralite ({
     if (typeof plugin.method === 'function') {
       const name = plugin.name
       const callback = plugin.method.bind(this)
-
-      // add an export for each plugin in the generated modules.
-      source.modules.plugins.export += `export const ${name} = coralite.plugins.${name};\n`
-      source.modules.plugins.default += name + ', '
 
       // extend the source context with a reference to the plugin method.
       source.context.plugins[name] = function (options) {
@@ -211,8 +169,6 @@ export function Coralite ({
       this._scriptManager.use(plugin.script)
     }
   }
-
-  source.modules.plugins.default = source.modules.plugins.default.substring(0, source.modules.plugins.default.length - 2) + ' }'
 
   // add defineComponent to module context
   source.contextModules.defineComponent = source.context.plugins.defineComponent
@@ -532,11 +488,6 @@ Coralite.prototype._generatePages = async function* (path) {
   try {
     for (let q = 0; q < this._currentRenderQueue.length; q++) {
       const restoreQueue = []
-
-      // restore global state variables
-      this.values = {}
-      this._scripts.restore()
-
       const startTime = performance.now()
 
       /** @type {CoraliteDocument & CoraliteDocumentResult} */
