@@ -33,7 +33,7 @@ describe('html.js', () => {
       const content = '<h1>Hello World</h1><p>Test content</p>'
       await writeFile(testFilePath, content)
 
-      const result = getHtmlFile(testFilePath)
+      const result = await getHtmlFile(testFilePath)
       assert.strictEqual(result, content)
     })
 
@@ -41,7 +41,7 @@ describe('html.js', () => {
       const content = '<div>Special chars: & < > " \' </div>'
       await writeFile(testFilePath, content)
 
-      const result = getHtmlFile(testFilePath)
+      const result = await getHtmlFile(testFilePath)
       assert.strictEqual(result, content)
     })
 
@@ -49,14 +49,14 @@ describe('html.js', () => {
       const content = '<h1>Hello 世界 🌍</h1><p>Emoji: 😀</p>'
       await writeFile(testFilePath, content)
 
-      const result = getHtmlFile(testFilePath)
+      const result = await getHtmlFile(testFilePath)
       assert.strictEqual(result, content)
     })
 
     it('should handle empty HTML files', async () => {
       await writeFile(testFilePath, '')
 
-      const result = getHtmlFile(testFilePath)
+      const result = await getHtmlFile(testFilePath)
       assert.strictEqual(result, '')
     })
 
@@ -68,7 +68,7 @@ describe('html.js', () => {
       </html>  `
       await writeFile(testFilePath, content)
 
-      const result = getHtmlFile(testFilePath)
+      const result = await getHtmlFile(testFilePath)
       assert.strictEqual(result, content)
     })
 
@@ -76,10 +76,16 @@ describe('html.js', () => {
       const txtFilePath = path.join(testDir, 'test.txt')
       await writeFile(txtFilePath, 'Some text content')
 
-      assert.throws(
-        () => getHtmlFile(txtFilePath),
-        { message: 'Unexpected filename extension ".txt"' }
-      )
+      try {
+        await getHtmlFile(txtFilePath)
+      } catch (error) {
+        assert.throws(
+          () => {
+            throw error
+          },
+          { message: 'Unexpected filename extension ".txt"' }
+        )
+      }
     })
 
     it('should throw error for HTML file with uppercase extension', async () => {
@@ -87,27 +93,39 @@ describe('html.js', () => {
       await writeFile(upperFilePath, '<h1>Test</h1>')
 
       // Should work because the function converts to lowercase
-      const result = getHtmlFile(upperFilePath)
+      const result = await getHtmlFile(upperFilePath)
       assert.strictEqual(result, '<h1>Test</h1>')
     })
 
     it('should throw error for non-existent file', async () => {
       const nonExistentPath = path.join(testDir, 'nonexistent.html')
 
-      assert.throws(
-        () => getHtmlFile(nonExistentPath),
-        { code: 'ENOENT' }
-      )
+      try {
+        await getHtmlFile(nonExistentPath)
+      } catch (error) {
+        assert.throws(
+          () => {
+            throw error
+          },
+          { code: 'ENOENT' }
+        )
+      }
     })
 
     it('should throw error for directory path', async () => {
       const subDir = path.join(testDir, 'subdir')
       await mkdir(subDir)
 
-      assert.throws(
-        () => getHtmlFile(subDir),
-        { message: 'Unexpected filename extension ""' }
-      )
+      try {
+        await getHtmlFile(subDir)
+      } catch (error) {
+        assert.throws(
+          () => {
+            throw error
+          },
+          { message: 'Unexpected filename extension ""' }
+        )
+      }
     })
 
     it('should handle file paths with spaces', async () => {
@@ -115,7 +133,7 @@ describe('html.js', () => {
       const content = '<h1>File with spaces</h1>'
       await writeFile(spacedFilePath, content)
 
-      const result = getHtmlFile(spacedFilePath)
+      const result = await getHtmlFile(spacedFilePath)
       assert.strictEqual(result, content)
     })
 
@@ -124,7 +142,7 @@ describe('html.js', () => {
       const content = '<h1>Special chars filename</h1>'
       await writeFile(specialFilePath, content)
 
-      const result = getHtmlFile(specialFilePath)
+      const result = await getHtmlFile(specialFilePath)
       assert.strictEqual(result, content)
     })
   })

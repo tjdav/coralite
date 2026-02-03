@@ -1,5 +1,6 @@
 import { dirname, extname, join } from 'node:path'
-import { readdirSync, readFileSync } from 'node:fs'
+import { readdir, readFile } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import CoraliteCollection from './collection.js'
 
 /**
@@ -48,7 +49,7 @@ export async function getHtmlFiles ({
 
     let files
     try {
-      files = readdirSync(path, {
+      files = await readdir(path, {
         recursive,
         withFileTypes: true
       })
@@ -98,7 +99,7 @@ export async function getHtmlFiles ({
           continue
         }
 
-        const content = readFileSync(pathname, { encoding: 'utf8' })
+        const content = await readFile(pathname, { encoding: 'utf8' })
 
         await collection.setItem({
           type,
@@ -123,12 +124,31 @@ export async function getHtmlFiles ({
  * @param {string} pathname - The path to the HTML file.
  * @throws {Error} If the file cannot be read.
  */
-export function getHtmlFile (pathname) {
+export function getHtmlFileSync (pathname) {
   try {
     const extension = extname(pathname).toLowerCase()
 
     if (extension === '.html') {
       return readFileSync(pathname, 'utf8')
+    }
+
+    throw new Error('Unexpected filename extension "' + extension +'"')
+  } catch (err) {
+    throw err
+  }
+}
+
+/**
+ * Reads an HTML file and returns its content as a string.
+ * @param {string} pathname - The path to the HTML file.
+ * @throws {Error} If the file cannot be read.
+ */
+export async function getHtmlFile (pathname) {
+  try {
+    const extension = extname(pathname).toLowerCase()
+
+    if (extension === '.html') {
+      return await readFile(pathname, 'utf8')
     }
 
     throw new Error('Unexpected filename extension "' + extension +'"')
