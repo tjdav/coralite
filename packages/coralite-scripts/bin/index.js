@@ -7,10 +7,11 @@ import colours from 'kleur'
 import pkg from '../package.json' with { type: 'json' }
 import buildSass from '../libs/build-sass.js'
 import { join, relative } from 'node:path'
-import { deleteDirectoryRecursive, copyDirectory, toMS, toTime } from '../libs/build-utils.js'
+import { deleteDirectoryRecursive, copyDirectory, toMS, toTime, displayError } from '../libs/build-utils.js'
 import buildCSS from '../libs/build-css.js'
 import { Coralite } from 'coralite'
 import { mkdir, writeFile } from 'node:fs/promises'
+import ora from 'ora'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -40,9 +41,14 @@ if (mode === 'dev') {
   const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
   const dash = colours.gray(' ─ ')
 
-  // log the response time and status code
-  process.stdout.write('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
-  process.stdout.write(border + colours.inverse(` LOGS `) + border + '\n\n')
+  if (options.verbose) {
+    // log the response time and status code
+    process.stdout.write('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
+    process.stdout.write(border + colours.inverse(` LOGS `) + border + '\n\n')
+  } else {
+    process.stdout.write('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
+  }
+
   // delete old output files
   deleteDirectoryRecursive(config.output)
 
@@ -55,53 +61,95 @@ if (mode === 'dev') {
   })
   await coralite.initialise()
 
-  // compile website
-  await coralite.build(null, async (result) => {
-    const relDir = relative(config.pages, result.path.dirname)
-    const outDir = join(config.output, relDir)
-    const outFile = join(outDir, result.path.filename)
+  let spinner
+  let pageCount = 0
 
-    await mkdir(outDir, { recursive: true })
-    await writeFile(outFile, result.html)
+  try {
+    if (!options.verbose) {
+      spinner = ora('Building pages...').start()
+    }
 
-    process.stdout.write(toTime() + toMS(result.duration) + dash + result.path.pathname + '\n')
+    // compile website
+    await coralite.build(null, async (result) => {
+      const relDir = relative(config.pages, result.path.dirname)
+      const outDir = join(config.output, relDir)
+      const outFile = join(outDir, result.path.filename)
 
-    return outFile
-  })
+      await mkdir(outDir, { recursive: true })
+      await writeFile(outFile, result.html)
 
-  const publicDir = config.public
-
-  if (publicDir) {
-    copyDirectory(publicDir, config.output)
-  }
-
-  if (config.styles) {
-    if (config.styles.type === 'sass' || config.styles.type === 'scss') {
-      const results = await buildSass({
-        input: config.styles.input,
-        output: join(config.output, 'css'),
-        options: config.sassOptions,
-        start
-      })
-
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i]
-
-        process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
+      if (options.verbose) {
+        process.stdout.write(toTime() + toMS(result.duration) + dash + result.path.pathname + '\n')
+      } else {
+        pageCount++
+        spinner.text = `Building pages... (${pageCount} completed)`
       }
-    } else if (config.styles.type === 'css') {
-      const results = await buildCSS({
-        input: config.styles.input,
-        output: join(config.output, 'css'),
-        plugins: config.cssPlugins,
-        start
-      })
 
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i]
+      return outFile
+    })
 
-        process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
+    if (!options.verbose) {
+      spinner.succeed(`Pages built (${pageCount} completed)`)
+    }
+
+    const publicDir = config.public
+
+    if (publicDir) {
+      if (!options.verbose) {
+        spinner = ora('Copying public directory...').start()
+      }
+      await copyDirectory(publicDir, config.output)
+      if (!options.verbose) {
+        spinner.succeed('Public directory copied')
       }
     }
+
+    if (config.styles) {
+      if (!options.verbose) {
+        spinner = ora('Building styles...').start()
+      }
+
+      if (config.styles.type === 'sass' || config.styles.type === 'scss') {
+        const results = await buildSass({
+          input: config.styles.input,
+          output: join(config.output, 'css'),
+          options: config.sassOptions,
+          start
+        })
+
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i]
+
+          if (options.verbose) {
+            process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
+          }
+        }
+      } else if (config.styles.type === 'css') {
+        const results = await buildCSS({
+          input: config.styles.input,
+          output: join(config.output, 'css'),
+          plugins: config.cssPlugins,
+          start
+        })
+
+        for (let i = 0; i < results.length; i++) {
+          const result = results[i]
+
+          if (options.verbose) {
+            process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
+          }
+        }
+      }
+
+      if (!options.verbose) {
+        spinner.succeed('Styles built')
+      }
+    }
+  } catch (error) {
+    if (spinner) {
+      spinner.fail('Build failed')
+    }
+    displayError('Build failed', error)
+    process.exit(1)
   }
 }
