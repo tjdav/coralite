@@ -1,11 +1,14 @@
-import { cleanKeys, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, ScriptManager } from '#lib'
+import { cleanKeys, cloneModuleInstance, convertEsmToCjs, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, replaceToken, ScriptManager } from '#lib'
 import { defineComponent, refsPlugin } from '#plugins'
-import render from 'dom-serializer'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
-import { createContext, SourceTextModule } from 'node:vm'
+import { createRequire } from 'node:module'
+import { transform } from 'esbuild'
 import { isCoraliteElement, isCoraliteCollectionItem } from './type-helper.js'
 import { pathToFileURL } from 'node:url'
+import { availableParallelism } from 'node:os'
+import render from 'dom-serializer'
+import pLimit from 'p-limit'
 
 /**
  * @import {
@@ -23,12 +26,10 @@ import { pathToFileURL } from 'node:url'
  *  CoraliteCollectionEventSet,
  *  IgnoreByAttribute,
  *  CoraliteDocumentResult,
- *  CoraliteFilePath,
  *  CoraliteValues,
  *  CoraliteScriptContent,
  *  InstanceContext} from '../types/index.js'
  * @import CoraliteCollection from './collection.js'
- * @import {Module} from 'node:vm'
  */
 
 /**
@@ -49,9 +50,22 @@ import { pathToFileURL } from 'node:url'
 export function Coralite ({
   templates,
   pages,
-  plugins = [],
+  plugins,
   ignoreByAttribute
 }) {
+  // Validate required parameters
+  if (!templates && typeof templates !== 'string') {
+    throw new Error('Coralite constructor requires "templates" option to be defined')
+  }
+
+  if (!templates && typeof templates !== 'string') {
+    throw new Error('Coralite constructor requires "pages" option to be defined')
+  }
+
+  if (!plugins) {
+    plugins = []
+  }
+
   const path = {
     templates: normalize(templates),
     pages: normalize(pages)
@@ -61,9 +75,13 @@ export function Coralite ({
   this.options = {
     templates,
     pages,
+    plugins,
     ignoreByAttribute,
     path
   }
+
+  /** @type {Object.<string, CoraliteModuleValues>} */
+  this.values = {}
 
   // plugins
   this._plugins = {
@@ -83,43 +101,8 @@ export function Coralite ({
 
   // module source context
   this._source = {
-    modules: {
-      coralite: {
-        export: 'export const document = coralite.document;\n'
-        + 'export const values = coralite.values;\n'
-        + 'export const path = coralite.path;\n'
-        + 'export const excludeByAttribute = coralite.excludeByAttribute;\n'
-        + 'export const templates = coralite.templates;\n'
-        + 'export const pages = coralite.pages;\n'
-        + 'export const defineComponent = coralite.defineComponent;\n'
-        + 'export const getHtmlFiles = coralite.getHtmlFiles;\n'
-        + 'export const getHtmlFile = coralite.getHtmlFile;\n'
-        + 'export const createTextNode = coralite.createTextNode;\n'
-        + 'export const createElement = coralite.createElement;\n'
-        + 'export const parseModule = coralite.parseModule;\n'
-        + 'export const parseHTML = coralite.parseHTML;\n',
-        default: 'export default {\n'
-        + '  values,\n'
-        + '  document,\n'
-        + '  path,\n'
-        + '  excludeByAttribute,\n'
-        + '  templates,\n'
-        + '  pages,\n'
-        + '  parseModule,\n'
-        + '  parseHTML,\n'
-        + '  getHtmlFiles,\n'
-        + '  getHtmlFile,\n'
-        + '  createTextNode,\n'
-        + '  createElement,\n'
-        + '  defineComponent,\n'
-        + '};'
-      },
-      plugins: {
-        export: '',
-        default: 'export default { '
-      }
-    },
     currentContextId: '',
+    currentSourceContextId: '',
     contextInstances: {},
     contextModules: {
       parseHTML,
@@ -138,6 +121,28 @@ export function Coralite ({
     }
   }
 
+  this._scripts = {
+    /**
+     * @param {string} id
+     * @param {CoraliteScriptContent} item
+     */
+    add (id, item) {
+      if (!this.content[id]) {
+        // @ts-ignore
+        this.content[id] = {}
+      }
+
+      this.content[id][item.id] = item
+    },
+    restore () {
+      this.content = {}
+    },
+    /** @type {Object.<string, Object.<string, CoraliteScriptContent>>} */
+    content: {}
+  }
+  /** @type {CoraliteCollectionItem[]} */
+  this._currentRenderQueue = []
+
   // place core plugin first
   plugins.unshift(defineComponent, refsPlugin)
 
@@ -151,10 +156,6 @@ export function Coralite ({
       const name = plugin.name
       const callback = plugin.method.bind(this)
 
-      // add an export for each plugin in the generated modules.
-      source.modules.plugins.export += `export const ${name} = coralite.plugins.${name};\n`
-      source.modules.plugins.default += name + ', '
-
       // extend the source context with a reference to the plugin method.
       source.context.plugins[name] = function (options) {
         return callback(options, source.contextInstances[source.currentSourceContextId])
@@ -162,8 +163,10 @@ export function Coralite ({
     }
 
     // queue any templates provided by the plugin to be registered.
-    for (let i = 0; i < plugin.templates.length; i++) {
-      this._plugins.templates.push(plugin.templates[i])
+    if (plugin.templates && Array.isArray(plugin.templates)) {
+      for (let i = 0; i < plugin.templates.length; i++) {
+        this._plugins.templates.push(plugin.templates[i])
+      }
     }
 
     // add the plugin's hooks to the appropriate Coralite hook lists.
@@ -192,31 +195,30 @@ export function Coralite ({
     }
   }
 
-  source.modules.plugins.default = source.modules.plugins.default.substring(0, source.modules.plugins.default.length - 2) + ' }'
-
   // add defineComponent to module context
   source.contextModules.defineComponent = source.context.plugins.defineComponent
 
-  /** @type {Object.<string, CoraliteModuleValues>} */
-  this.values = {}
-  this._scripts = {
-    /**
-     * @param {string} id
-     * @param {CoraliteScriptContent} item
-     */
-    add (id, item) {
-      if (!this.content[id]) {
-        // @ts-ignore
-        this.content[id] = {}
-      }
-
-      this.content[id][item.id] = item
-    },
-    /** @type {Object.<string, Object.<string, CoraliteScriptContent>>} */
-    content: {}
+  const propertyDescriptors = {
+    enumerable: false,
+    configurable: false,
+    writable: true
   }
-  /** @type {CoraliteCollectionItem[]} */
-  this._currentRenderQueue = []
+
+  const enumerablePropertyDescriptors = {
+    enumerable: true,
+    configurable: false,
+    writable: true
+  }
+
+  Object.defineProperties(this, {
+    options: { ...enumerablePropertyDescriptors },
+    values: { ...enumerablePropertyDescriptors },
+    _plugins: { ... propertyDescriptors },
+    _scriptManager: { ...propertyDescriptors },
+    _source: { ...propertyDescriptors },
+    _scripts: { ...propertyDescriptors },
+    _currentRenderQueue: { ...propertyDescriptors }
+  })
 }
 
 /**
@@ -467,214 +469,386 @@ Coralite.prototype.initialise = async function () {
  * Processes pages based on provided path(s), replacing custom elements with components,
  * and returns rendered results with performance metrics.
  *
+ * @internal
+ *
  * @param {string | string[]} [path] - Path to a single page or array of page paths relative to the pages directory. If omitted, compiles all pages.
- * @return {Promise<Array<CoraliteResult>>}
+ * @return {AsyncGenerator<CoraliteResult>}
  */
-Coralite.prototype.compile = async function (path) {
-  this._currentRenderQueue = this.pages.list.slice()
+Coralite.prototype._generatePages = async function* (path) {
+  let queue = []
 
   if (Array.isArray(path)) {
-    this._currentRenderQueue = []
+    // Remove path duplicates
+    const uniquePaths = new Set(path)
+    for (const path of uniquePaths) {
+      const result = this.pages.getListByPath(path) || this.pages.getItem(path)
 
-    for (let i = 0; i < path.length; i++) {
-      const pathname = path[i]
-      const result = this.pages.getListByPath(pathname)
-
-      if (Array.isArray(result)) {
-        this._currentRenderQueue = this._currentRenderQueue.concat(result)
-      } else {
-        const result = this.pages.getItem(pathname)
-
-        if (result) {
-          this._currentRenderQueue.push(result)
+      if (result) {
+        if (Array.isArray(result)) {
+          queue = queue.concat(result)
+        } else {
+          queue.push(result)
         }
       }
     }
   } else if (typeof path === 'string') {
-    const result = this.pages.getListByPath(path)
-    this._currentRenderQueue = []
+    const result = this.pages.getListByPath(path) || this.pages.getItem(path)
 
-    if (Array.isArray(result)) {
-      this._currentRenderQueue = this._currentRenderQueue.concat(result)
-    } else {
-      const result = this.pages.getItem(path)
-
-      if (result) {
-        this._currentRenderQueue.push(result)
+    if (result) {
+      if (Array.isArray(result)) {
+        queue = queue.concat(result)
+      } else {
+        queue.push(result)
       }
     }
+  } else {
+    // Slice creates a shallow copy of the list array, safe for iteration
+    queue = this.pages.list.slice()
   }
 
-  /** @type {CoraliteResult[]} */
-  const results = []
+  this._currentRenderQueue = queue
 
-  for (let i = 0; i < this._currentRenderQueue.length; i++) {
-    const startTime = performance.now()
+  try {
+    for (let q = 0; q < this._currentRenderQueue.length; q++) {
+      const restoreQueue = []
+      const startTime = performance.now()
 
-    /** @type {CoraliteDocument & CoraliteDocumentResult} */
-    const document = structuredClone(this._currentRenderQueue[i].result)
+      /** @type {CoraliteDocument & CoraliteDocumentResult} */
+      const document = this._currentRenderQueue[q].result
 
-    for (let i = 0; i < document.tempElements.length; i++) {
-      const element = document.tempElements[i]
+      // remove temporary elements
+      if (document.tempElements) {
+        for (const element of document.tempElements) {
+          if (element.parent && element.parent.children) {
+            // Store reference to the original children
+            restoreQueue.push({
+              parent: element.parent,
+              originalChildren: element.parent.children
+            })
 
-      // remove elements marked for removal from the parent's children
-      element.parent.children = element.parent.children.filter(item => !item.remove)
-    }
-
-    for (let i = 0; i < document.customElements.length; i++) {
-      const customElement = document.customElements[i]
-      const contextId = document.path.pathname + i + customElement.name
-      const currentValues = this.values[contextId] || {}
-
-      if (typeof customElement.attribs === 'object') {
-        this.values[contextId] = {
-          ...currentValues,
-          ...document.values,
-          ...customElement.attribs
-        }
-      } else {
-        this.values[contextId] = Object.assign(currentValues, document.values)
-      }
-
-      const component = await this.createComponent({
-        id: customElement.name,
-        values: this.values[contextId],
-        element: customElement,
-        document,
-        contextId,
-        index: i
-      })
-
-      if (component) {
-        for (let i = 0; i < component.children.length; i++) {
-          // update component parent
-          component.children[i].parent = customElement.parent
-        }
-
-        const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
-        // replace custom element with component
-        customElement.parent.children.splice(index, 1, ...component.children)
-      }
-    }
-
-    if (this._scripts.content[document.path.pathname]) {
-      const scripts = this._scripts.content[document.path.pathname]
-
-      // Build instances object for script manager
-      /** @type {Object.<string, InstanceContext>} */
-      const instances = {}
-      for (const key in scripts) {
-        if (Object.prototype.hasOwnProperty.call(scripts, key)) {
-          const script = scripts[key]
-          // extending script content with templateId and values
-          instances[script.id] = {
-            instanceId: script.id,
-            templateId: script.templateId,
-            values: script.values,
-            refs: script.refs
+            // Swap in a filtered array
+            element.parent.children = element.parent.children.filter(
+              child => !child.remove
+            )
           }
         }
       }
 
-      // Use script manager to compile all instances
-      const scriptTextContent = await this._scriptManager.compileAllInstances(instances)
+      for (let i = 0; i < document.customElements.length; i++) {
+        const customElement = document.customElements[i]
 
-      /** @type {CoraliteElement} */
-      let bodyElement
+        // Check if we have already backed up this parent in the current pass
+        let isParentRestored = false
+        for (let r = 0; r < restoreQueue.length; r++) {
+          if (restoreQueue[r].parent === customElement.parent) {
+            isParentRestored = true
+            break
+          }
+        }
 
-      for (let i = 0; i < document.root.children.length; i++) {
-        const rootNode = document.root.children[i]
+        if (!isParentRestored) {
+          restoreQueue.push({
+            parent: customElement.parent,
+            originalChildren: customElement.parent.children
+          })
+          // Create a shallow copy of the children array for mutation.
+          customElement.parent.children = [...customElement.parent.children]
+        }
 
-        if (rootNode.type === 'tag' && rootNode.name === 'html') {
-          for (let i = 0; i < rootNode.children.length; i++) {
-            const node = rootNode.children[i]
+        const contextId = document.path.pathname + i + customElement.name
+        const currentValues = this.values[contextId] || {}
 
-            if (node.type === 'tag' && node.name === 'body') {
-              bodyElement = node
+        if (typeof customElement.attribs === 'object') {
+          this.values[contextId] = {
+            ...currentValues,
+            ...document.values,
+            ...customElement.attribs
+          }
+        } else {
+          this.values[contextId] = Object.assign(currentValues, document.values)
+        }
+
+        const component = await this.createComponent({
+          id: customElement.name,
+          values: this.values[contextId],
+          element: customElement,
+          document,
+          contextId,
+          index: i
+        })
+
+        if (component) {
+          for (let i = 0; i < component.children.length; i++) {
+            // update component parent
+            component.children[i].parent = customElement.parent
+          }
+
+          const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
+          // replace custom element with component
+          customElement.parent.children.splice(index, 1, ...component.children)
+        }
+      }
+
+      if (this._scripts.content[document.path.pathname]) {
+        const scripts = this._scripts.content[document.path.pathname]
+
+        // Build instances object for script manager
+        /** @type {Object.<string, InstanceContext>} */
+        const instances = {}
+        for (const key in scripts) {
+          if (Object.prototype.hasOwnProperty.call(scripts, key)) {
+            const script = scripts[key]
+            // extending script content with templateId and values
+            instances[script.id] = {
+              instanceId: script.id,
+              templateId: script.templateId,
+              values: script.values,
+              refs: script.refs
             }
           }
         }
+
+        // Use script manager to compile all instances
+        const scriptTextContent = await this._scriptManager.compileAllInstances(instances)
+
+        /** @type {CoraliteElement} */
+        let bodyElement
+
+        findBodyLoop: for (let i = 0; i < document.root.children.length; i++) {
+          const rootNode = document.root.children[i]
+
+          if (rootNode.type === 'tag' && rootNode.name === 'html') {
+            for (let i = 0; i < rootNode.children.length; i++) {
+              const node = rootNode.children[i]
+
+              if (node.type === 'tag' && node.name === 'body') {
+                bodyElement = node
+                break findBodyLoop
+              }
+            }
+          }
+        }
+
+        /** @type {CoraliteElement} */
+        const scriptElement = {
+          type: 'tag',
+          name: 'script',
+          parent: bodyElement,
+          attribs: {
+            type: 'module'
+          },
+          children: []
+        }
+
+        scriptElement.children.push({
+          type: 'text',
+          data: scriptTextContent,
+          parent: scriptElement
+        })
+
+        bodyElement.children.push(scriptElement)
       }
 
-      /** @type {CoraliteElement} */
-      const scriptElement = {
-        type: 'tag',
-        name: 'script',
-        parent: bodyElement,
-        attribs: {
-          type: 'module'
-        },
-        children: []
+      let rawHTML = ''
+      try {
+        // render document
+        rawHTML = this.transform(document.root)
+      } finally {
+        // Restore original document after rendering
+        for (const item of restoreQueue) {
+          item.parent.children = item.originalChildren
+        }
       }
 
-      scriptElement.children.push({
-        type: 'text',
-        data: scriptTextContent,
-        parent: scriptElement
-      })
+      yield {
+        path: document.path,
+        html: rawHTML,
+        duration: performance.now() - startTime
+      }
 
-      bodyElement.children.push(scriptElement)
+      // memory clean up
+      this._currentRenderQueue[q] = null
+      // restore global state variables
+      this.values = {}
+      this._scripts.restore()
+      this._source.contextInstances = {}
     }
+  } finally {
+    // Ensure cleanup on early termination
+    this._currentRenderQueue = []
+    this.values = {}
+    this._scripts.restore()
+  }
+}
 
-    // render document
-    const rawHTML = this._render(document.root)
-    const result = {
-      item: document,
-      html: rawHTML,
-      duration: performance.now() - startTime
-    }
+/**
+ * @callback BuildPageHandler
+ * @param {CoraliteResult} result - The rendered output document for a specific page.
+ * @returns {Promise<any> | any} The transformed result to be collected (falsy values are filtered).
+ */
 
-    results.push(result)
+/**
+ * Compiles pages and collects the results with controlled concurrency.
+ * Can optionally transform each result via a callback before collecting.
+ *
+ * @overload
+ * @param {string | string[]} [path] - The target directory or an array of specific page paths to build.
+ * @returns {Promise<CoraliteResult[]>} A Promise that resolves to an array of build results.
+ *
+ * @overload
+ * @param {string | string[]} [path] - The target directory or an array of specific page paths to build.
+ * @param {Object} [options] - Configuration options for the build process.
+ * @param {number} [options.maxConcurrent=availableParallelism] - The maximum number of concurrent file write operations.
+ * @param {AbortSignal} [options.signal] - An AbortSignal to cancel the build operation.
+ * @returns {Promise<CoraliteResult[]>} A Promise that resolves to an array of build results.
+ *
+ * @overload
+ * @param {string | string[]} [path] - The target directory or an array of specific page paths to build.
+ * @param {BuildPageHandler} callback - A function invoked for each page to transform the result.
+ * @returns {Promise<any[]>} A Promise that resolves to an array of the transformed results.
+ *
+ * @overload
+ * @param {string | string[]} [path] - The target directory or an array of specific page paths to build.
+ * @param {Object} [options] - Configuration options for the build process.
+ * @param {number} [options.maxConcurrent=availableParallelism] - The maximum number of concurrent file write operations.
+ * @param {AbortSignal} [options.signal] - An AbortSignal to cancel the build operation.
+ * @param {BuildPageHandler} callback - A function invoked for each page to transform the result.
+ * @returns {Promise<any[]>} A Promise that resolves to an array of the transformed results.
+ *
+ * @example
+ * // Build and get all results
+ * const results = await coralite.build('./dist')
+ * // results is CoraliteResult[]
+ *
+ * // Build and transform results
+ * const titles = await coralite.build('./dist', (result) => {
+ *   return result.path
+ * })
+ */
+Coralite.prototype.build = async function (...args) {
+  let path = args[0]
+  let options
+  let callback
+
+  // add callback since there are no options
+  if (typeof args[1] === 'function') {
+    callback = args[1]
+  } else {
+    options = args[1]
+    callback = args[2]
   }
 
-  // reset core values
-  this._currentRenderQueue = []
-  this.values = {}
-  this._scripts.content = {}
+  // Add options with defaults
+  const signal = options?.signal
+  const maxConcurrent = options?.maxConcurrent || availableParallelism()
+
+  // Initialize the limiter
+  const limit = pLimit(maxConcurrent)
+  const executing = new Set()
+  const results = []
+
+  try {
+    for await (const result of this._generatePages(path)) {
+      // Check for immediate cancellation
+      if (signal?.aborted) throw signal.reason
+
+      // Backpressure - don't pull more data than we can process
+      if (executing.size >= limit.concurrency) {
+        await Promise.race(executing)
+      }
+
+      const task = limit(async () => {
+        // Exit early if build was cancelled while in queue
+        if (signal?.aborted) throw signal.reason
+
+        if (typeof callback === 'function') {
+          return await callback(result)
+        } else {
+          return result
+        }
+      })
+
+      executing.add(task)
+
+      // Clean up task
+      task.then((callbackResult) => {
+        if (callbackResult) {
+          results.push(callbackResult)
+        }
+
+        executing.delete(task)
+      }).catch(() => {
+        executing.delete(task)
+      })
+    }
+
+    await Promise.all(executing)
+
+    if (callback) {
+      return results
+    }
+
+  } catch (error) {
+    // Clean up - If one fails or we abort, wait for pending to settle
+    await Promise.allSettled(executing)
+
+    if (error.name === 'AbortError') {
+      console.warn('Build cancelled by user.')
+    }
+
+    throw new Error(`Build failed: ${error.message}`, { cause: error })
+  }
+}
+
+/**
+ * Compiles and saves pages to disk
+ *
+ * @param {string} output - Output directory path
+ * @param {string | string[]} [path] - Optional page path(s) to build
+ * @param {Object} [options] - Build configuration
+ * @param {number} [options.maxConcurrent=10] - Max concurrent file writes (min 1, max 100)
+ * @param {AbortSignal} [options.signal] - AbortSignal
+ * @returns {Promise<{ path: string, duration: number }[]>} Array of saved file paths
+ * @example
+ * // Build entire site with default concurrency (10 files)
+ * await coralite.build('./dist')
+ *
+ * // Build specific pages with custom concurrency
+ * await coralite.build('./dist', ['blog/*'], { maxConcurrent: 5 })
+ */
+Coralite.prototype.save = async function (output, path, options = {}) {
+  const signal = options?.signal
+
+  const results = await this.build(path, options, async (result) => {
+    const relDir = relative(this.options.path.pages, result.path.dirname)
+    const outDir = join(output, relDir)
+    const outFile = join(outDir, result.path.filename)
+
+    await mkdir(outDir, { recursive: true })
+
+    // Pass signal to writeFile so Node can stop the I/O immediately
+    await writeFile(outFile, result.html, { signal })
+
+    return {
+      path: outFile,
+      duration: result.duration
+    }
+  })
 
   return results
 }
 
 /**
- * Saves processed documents as HTML files to the specified output directory.
- * @param {Array<CoraliteResult>} documents - Array of document objects containing metadata and HTML content
- * @param {string} output - Base directory path where generated HTML files will be saved
- */
-Coralite.prototype.save = async function (documents, output) {
-  try {
-    // create a list of promises for writing each document's HTML file
-    const writePromises = documents.map(async (document) => {
-      const dirname = relative(this.options.path.pages, document.item.path.dirname)
-      const dir = join(output, dirname)
-      const filename = join(dir, document.item.path.filename)
-
-      // ensure the directory exists
-      await mkdir(dir, { recursive: true })
-
-      // write the HTML content to the file
-      await writeFile(filename, document.html)
-
-      return filename
-    })
-
-    // wait for all files to be written
-    const outputFiles = await Promise.all(writePromises)
-    return outputFiles
-  } catch (error) {
-    throw error
-  }
-}
-
-/**
  * Renders the provided node or array of nodes using the render function.
- * This method serves as an internal utility to handle the rendering process.
  *
  * @param {CoraliteDocumentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
  * @returns {string} returns raw HTML
  */
-Coralite.prototype._render = function (root) {
+Coralite.prototype.transform = function (root) {
   // @ts-ignore
-  return render(root)
+  return render(root, {
+    emptyAttrs: false
+  })
 }
 
 /**
@@ -772,7 +946,8 @@ Coralite.prototype.createComponent = async function ({
   const templateItem = this.templates.getItem(id)
 
   if (!templateItem) {
-    return console.warn('Could not find component "' + id + '" used in document "' + document.path.pathname + '"')
+    console.warn('Could not find component "' + id + '" used in document "' + document.path.pathname + '"')
+    return
   }
 
   if (head) {
@@ -792,7 +967,7 @@ Coralite.prototype.createComponent = async function ({
    * clone the component to avoid mutations during replacement process.
    * @type {CoraliteModule}
    */
-  const module = structuredClone(templateItem.result)
+  const module = cloneModuleInstance(templateItem.result)
   const result = module.template
 
   // merge values from component script
@@ -1042,7 +1217,8 @@ Coralite.prototype.createComponent = async function ({
 }
 
 /**
- * Parses a Coralite module script and compiles it into JavaScript.
+ * Parses a Coralite module script and compiles it into JavaScript using esbuild.
+ * Replaces node:vm SourceTextModule for better performance and memory management.
  *
  * @param {Object} data
  * @param {CoraliteModule} data.module - The Coralite module to parse
@@ -1071,103 +1247,84 @@ Coralite.prototype._evaluate = async function ({
     module,
     id: contextId
   }
-
   this._source.contextInstances[contextId] = context
-  // create a new context object with the provided context and global objects
-  const contextifiedObject = createContext({
-    console: globalThis.console,
-    crypto: globalThis.crypto,
-    coralite: context
-  })
-  const template = this.templates.getItem(module.id)
 
-  // create a new source text module with the provided script content, configuration options, and context
-  const script = new SourceTextModule(module.script, {
-    initializeImportMeta (meta) {
-      meta.url = process.cwd()
-    },
-    lineOffset: module.lineOffset,
-    identifier: resolve(template.path.pathname),
-    context: contextifiedObject
-  })
+  // Retrieve Template and check cache
+  const templateItem = this.templates.getItem(module.id)
 
-  const linker = this._moduleLinker(template.path)
+  if (!templateItem.result._compiledCode) {
+    // Transform ESM to CJS using esbuild
+    // We use CJS format so esbuild handles the import/export transformation
+    const { code } = await transform(module.script, {
+      loader: 'js',
+      format: 'esm',
+      target: 'node18',
+      platform: 'node'
+    })
 
-  await script.link(linker)
+    const cjsCode = convertEsmToCjs(code)
 
-  // evaluate the module to execute its content
-  await script.evaluate()
-
-  // @ts-ignore
-  if (script.namespace.default != null) {
-    // @ts-ignore
-    return await script.namespace.default
+    // Wrap the transformed code in an async IIFE to support Top-Level Await (TLA)
+    templateItem.result._compiledCode = `
+      return (async () => {
+        ${cjsCode}
+      })();`
   }
 
-  // throw an error if no default export was found
+  // Create a require function anchored to the template's file path to resolve relative imports
+  const fileRequire = createRequire(resolve(templateItem.path.pathname))
+
+  const customRequire = (id) => {
+    // Intercept 'coralite' import to return the current context
+    if (id === 'coralite') {
+      return {
+        ...context,
+        default: context
+      }
+    }
+    // Intercept 'coralite/plugins'
+    if (id === 'coralite/plugins') {
+      const plugins = this._source.context.plugins
+      return {
+        ...plugins,
+        default: plugins
+      }
+    }
+
+    return fileRequire(id)
+  }
+
+  // Mock the CommonJS 'module' object to capture exports
+  const moduleMock = { exports: {} }
+
+  // Create the function. We pass 'coralite' explicitly to support the
+  // "export const document = coralite.document" pattern found in existing modules.
+  // Arguments: module, exports, require, coralite
+  const fn = new Function(
+    'module',
+    'exports',
+    'require',
+    'coralite',
+    templateItem.result._compiledCode
+  )
+
+  // Execute the function with our mocks and context
+  await fn(moduleMock, moduleMock.exports, customRequire, context)
+
+  if (moduleMock.exports.default != null) {
+    return moduleMock.exports.default
+  }
+
   throw new Error(`Module "${module.id}" has no default export`)
 }
 
 /**
- * @param {CoraliteFilePath} path
- */
-Coralite.prototype._moduleLinker = function (path) {
-  const source = this._source
-
-  /**
-   * @param {string} specifier - The specifier of the requested module
-   * @param {Module} referencingModule - The Module object link() is called on.
-   * @param {{ attributes: ImportAttributes }} extra - The type for the with property of the optional second argument to import().
-   */
-  return async (specifier, referencingModule, extra) => {
-    const originalSpecifier = specifier
-
-    if (specifier == 'coralite/plugins') {
-      return new SourceTextModule(source.modules.plugins.export + source.modules.plugins.default, {
-        context: referencingModule.context
-      })
-    } else if (specifier === 'coralite') {
-      return new SourceTextModule(source.modules.coralite.export + source.modules.coralite.default, {
-        context: referencingModule.context
-      })
-    } else if (specifier.startsWith('.')) {
-      // handle relative path
-      specifier = pathToFileURL(resolve(path.dirname, specifier)).href
-    } else {
-      // handle modules
-      specifier = import.meta.resolve(specifier, import.meta.url)
-    }
-
-    try {
-      const module = await import(specifier, { with: extra.attributes })
-      let exportModule = ''
-
-      for (const key in module) {
-        if (Object.prototype.hasOwnProperty.call(module, key)) {
-          const name = 'globalThis["' + originalSpecifier + '"].'
-
-          if (key === 'default') {
-            exportModule += 'export default ' + name + key + ';\n'
-          } else {
-            exportModule += 'export const ' + key + ' = ' + name + key + ';\n'
-          }
-        }
-
-        referencingModule.context[originalSpecifier] = module
-      }
-
-      return new SourceTextModule(exportModule, {
-        context: referencingModule.context
-      })
-    } catch (error) {
-      throw new Error(error)
-    }
-  }
-}
-
-/**
  * @template {Object} T
+ *
  * Executes all plugin callbacks registered under the specified hook name.
+ *
+ * @internal
+ *
  * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'} name - The name of the hook to trigger.
  * @param {T} data - Data to pass to each callback function.
  * @return {Promise<Array<T>>} A promise that resolves to an array of results from all callbacks.
@@ -1188,80 +1345,21 @@ Coralite.prototype._triggerPluginHook = async function (name, data) {
 
 /**
  * Registers a callback function under the specified hook name.
+ *
+ * @internal
+ *
  * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'} name - The name of the hook to register the callback with.
  * @param {Function} callback - The callback function to be executed when the hook is triggered.
  */
 Coralite.prototype._addPluginHook = function (name, callback) {
+  if (typeof callback !== 'function') {
+    throw new Error(`Plugin hook "${name}" must be a function`)
+  }
+
   const pluginCallback = callback.bind(this)
 
   if (this._plugins.hooks[name]) {
     this._plugins.hooks[name].push(pluginCallback)
-  }
-}
-
-/**
- * Replaces a token in a Coralite node based on its type, attribute, and content.
- *
- * @param {Object} token - The token to replace.
- * @param {string} token.type - The type of the token ('attribute' or 'text').
- * @param {CoraliteElement|CoraliteTextNode} token.node - The node containing the token.
- * @param {string} [token.attribute] - The attribute name to replace within the node.
- * @param {string} token.content - The content of the token.
- * @param {CoraliteModuleValue} token.value - The value associated with the token.
- */
-function replaceToken ({
-  type,
-  node,
-  attribute,
-  content,
-  value
-}) {
-  if (
-    type === 'attribute'
-    && node.type === 'tag'
-    && typeof value === 'string'
-  ) {
-    node.attribs[attribute] = node.attribs[attribute].replace(content, value)
-  } else if (node.type === 'text') {
-    if (typeof value === 'object') {
-      if (!Array.isArray(value)) {
-        // handle single nodes
-        value = [value]
-      }
-
-      // inject nodes
-      const textSplit = node.data.split(content)
-      const childIndex = node.parent.children.indexOf(node)
-      const children = []
-
-      // append computed tokens in between token split
-      for (let i = 0; i < value.length; i++) {
-        const child = value[i]
-
-        if (typeof child !== 'string' && child.type !== 'directive') {
-          // update child parent
-          child.parent = node.parent
-          children.push(child)
-        }
-      }
-
-      // replace computed token
-      node.parent.children.splice(childIndex, 1,
-        {
-          type: 'text',
-          data: textSplit[0],
-          parent: node.parent
-        },
-        ...children,
-        {
-          type: 'text',
-          data: textSplit[1],
-          parent: node.parent
-        })
-    } else {
-      // replace token string
-      node.data = node.data.replace(content, value)
-    }
   }
 }
 

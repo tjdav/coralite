@@ -195,7 +195,7 @@
 /**
  * Represents a rendered output document with metadata and statistics.
  * @typedef {Object} CoraliteResult
- * @property {CoraliteDocument} item - The document object from the rendering process
+ * @property {CoraliteFilePath} path - Document's file path
  * @property {string} html - Raw HTML content of the render process as a string
  * @property {number} [duration] - The duration of the render process in milliseconds
  */

@@ -1,15 +1,16 @@
-#!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
+#!/usr/bin/env node
 
 import loadConfig from '../libs/load-config.js'
 import { Command, Argument } from 'commander'
 import server from '../libs/server.js'
 import colours from 'kleur'
-import buildHTML from '../libs/build-html.js'
-import pkg from '../package.json' with { type: 'json'}
+import pkg from '../package.json' with { type: 'json' }
 import buildSass from '../libs/build-sass.js'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import { deleteDirectoryRecursive, copyDirectory, toMS, toTime } from '../libs/build-utils.js'
 import buildCSS from '../libs/build-css.js'
+import { Coralite } from 'coralite'
+import { mkdir, writeFile } from 'node:fs/promises'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -37,6 +38,7 @@ if (mode === 'dev') {
 } else if (mode === 'build') {
   const PAD = '  '
   const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
+  const dash = colours.gray(' ─ ')
 
   // log the response time and status code
   process.stdout.write('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
@@ -45,14 +47,27 @@ if (mode === 'dev') {
   deleteDirectoryRecursive(config.output)
 
   const start = process.hrtime()
-  const documents = await buildHTML(config)
-  const dash = colours.gray(' ─ ')
+  // start coralite
+  const coralite = new Coralite({
+    templates: config.templates,
+    pages: config.pages,
+    plugins: config.plugins
+  })
+  await coralite.initialise()
 
-  for (let i = 0; i < documents.length; i++) {
-    const document = documents[i]
+  // compile website
+  await coralite.build(null, async (result) => {
+    const relDir = relative(config.pages, result.path.dirname)
+    const outDir = join(config.output, relDir)
+    const outFile = join(outDir, result.path.filename)
 
-    process.stdout.write(toTime() + toMS(document.duration) + dash + document.item.path.pathname + '\n')
-  }
+    await mkdir(outDir, { recursive: true })
+    await writeFile(outFile, result.html)
+
+    process.stdout.write(toTime() + toMS(result.duration) + dash + result.path.pathname + '\n')
+
+    return outFile
+  })
 
   const publicDir = config.public
 

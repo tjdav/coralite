@@ -29,9 +29,9 @@
   "scripts": {
     "lint-format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
-    "test-unit": "node --experimental-vm-modules --experimental-import-meta-resolve --test ./tests/unit/**/*.spec.js",
-    "test-unit-watch": "node --experimental-vm-modules --experimental-import-meta-resolve --test --watch ./tests/unit/**/*.spec.js",
-    "test-unit-coverage": "node --experimental-vm-modules --experimental-import-meta-resolve --experimental-test-coverage --test ./tests/unit/**/*.spec.js",
+    "test-unit": "node --test ./tests/unit/**/*.spec.js",
+    "test-unit-watch": "node --test --watch ./tests/unit/**/*.spec.js",
+    "test-unit-coverage": "node --experimental-test-coverage --test ./tests/unit/**/*.spec.js",
     "test-e2e": "playwright test",
     "test-e2e-report": "playwright show-report",
     "test-e2e-ui": "playwright test --ui",
@@ -40,7 +40,7 @@
     "build-lib": "esbuild ./lib/index.js --bundle --target=esnext --external:esbuild --format=esm --outdir=dist/lib --platform=node",
     "build-plugins": "esbuild ./plugins/*.js --format=esm --outdir=dist/plugins --platform=node",
     "build-types": "tsc",
-    "build-html": "node --experimental-vm-modules --experimental-import-meta-resolve ./bin/coralite.js -t tests/fixtures/templates -p tests/fixtures/pages -o dist -i 'data-dev=true'"
+    "build-html": "node ./bin/coralite.js -t tests/fixtures/templates -p tests/fixtures/pages -o dist -i 'data-dev=true'"
   },
   "files": [
     "dist",
@@ -71,19 +71,20 @@
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
     "@playwright/test": "^1.50.0",
-    "highlight.js": "^11.11.1",
-    "premove": "^4.0.0",
-    "sirv-cli": "^3.0.0",
-    "commander": "^13.0.0",
     "dom-serializer": "^2.0.0",
+    "esbuild": "^0.25.9",
+    "highlight.js": "^11.11.1",
     "htmlparser2": "^10.0.0",
     "kleur": "^4.1.5",
-    "serialize-javascript": "^7.0.2"
+    "premove": "^4.0.0",
+    "serialize-javascript": "^7.0.2",
+    "sirv-cli": "^3.0.0"
   },
   "engines": {
     "node": "^20.19.0 || >=22.19.0"
   },
   "dependencies": {
-    "esbuild": "^0.25.9"
+    "commander": "^13.1.0",
+    "p-limit": "^7.2.0"
   }
 }
