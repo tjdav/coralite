@@ -1,6 +1,7 @@
 import colours from 'kleur'
 import fs from 'node:fs'
 import path from 'node:path'
+import { cp } from 'node:fs/promises'
 
 /**
  * Creates current time in format [HH:MM:SS].mmm (milliseconds), colored with ANSI colors, and formatted as bold white string for better readability of logs or console output
@@ -53,26 +54,8 @@ export function toCode (code) {
  * @param {string} src - The source directory path to copy from
  * @param {string} dest - The destination directory path to copy to
  */
-export function copyDirectory (src, dest) {
-  // Create destination directory if it doesn't exist
-  if (!fs.existsSync(dest)) {
-    fs.mkdirSync(dest, { recursive: true })
-  }
-
-  // Read source directory contents
-  const entries = fs.readdirSync(src)
-
-  for (const entry of entries) {
-    const srcPath = path.join(src, entry)
-    const destPath = path.join(dest, entry)
-
-    // Check if it's a file or directory and copy accordingly
-    if (fs.statSync(srcPath).isDirectory()) {
-      copyDirectory(srcPath, destPath) // Recursive call for subdirectories
-    } else {
-      fs.copyFileSync(srcPath, destPath) // Copy files
-    }
-  }
+export async function copyDirectory (src, dest) {
+  await cp(src, dest, { recursive: true })
 }
 
 /**
