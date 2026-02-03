@@ -818,13 +818,18 @@ Coralite.prototype.build = async function (...args) {
  */
 Coralite.prototype.save = async function (output, path, options = {}) {
   const signal = options?.signal
+  const createdDir = {}
 
   const results = await this.build(path, options, async (result) => {
     const relDir = relative(this.options.path.pages, result.path.dirname)
     const outDir = join(output, relDir)
     const outFile = join(outDir, result.path.filename)
 
-    await mkdir(outDir, { recursive: true })
+    if (!createdDir[outDir]) {
+      await mkdir(outDir, { recursive: true })
+
+      createdDir[outDir] = true
+    }
 
     // Pass signal to writeFile so Node can stop the I/O immediately
     await writeFile(outFile, result.html, { signal })
