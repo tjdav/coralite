@@ -198,20 +198,26 @@ export function Coralite ({
   // add defineComponent to module context
   source.contextModules.defineComponent = source.context.plugins.defineComponent
 
-  const propertyDescriptorOptions = {
+  const propertyDescriptors = {
     enumerable: false,
     configurable: false,
     writable: true
   }
 
+  const enumerablePropertyDescriptors = {
+    enumerable: true,
+    configurable: false,
+    writable: true
+  }
+
   Object.defineProperties(this, {
-    options: { ...propertyDescriptorOptions },
-    values: { ...propertyDescriptorOptions },
-    _plugins: { ... propertyDescriptorOptions },
-    _scriptManager: { ...propertyDescriptorOptions },
-    _source: { ...propertyDescriptorOptions },
-    _scripts: { ...propertyDescriptorOptions },
-    _currentRenderQueue: { ...propertyDescriptorOptions }
+    options: { ...enumerablePropertyDescriptors },
+    values: { ...enumerablePropertyDescriptors },
+    _plugins: { ... propertyDescriptors },
+    _scriptManager: { ...propertyDescriptors },
+    _source: { ...propertyDescriptors },
+    _scripts: { ...propertyDescriptors },
+    _currentRenderQueue: { ...propertyDescriptors }
   })
 }
 
