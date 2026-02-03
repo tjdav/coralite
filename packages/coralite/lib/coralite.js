@@ -1,4 +1,4 @@
-import { cleanKeys, cloneModuleInstance, convertEsmToCjs, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, replaceToken, ScriptManager } from '#lib'
+import { cleanKeys, cloneModuleInstance, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, replaceToken, ScriptManager } from '#lib'
 import { defineComponent, refsPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
