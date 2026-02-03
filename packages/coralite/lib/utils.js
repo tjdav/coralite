@@ -1,5 +1,5 @@
 /**
- * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement} from '../types/index.js'
+ * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement, CoraliteModuleValue, CoraliteTextNode} from '../types/index.js'
  */
 
 /**
@@ -256,4 +256,72 @@ export function convertEsmToCjs (code) {
   )
 
   return cjsCode
+}
+
+
+
+/**
+ * Replaces a token in a Coralite node based on its type, attribute, and content.
+ *
+ * @param {Object} token - The token to replace.
+ * @param {string} token.type - The type of the token ('attribute' or 'text').
+ * @param {CoraliteElement|CoraliteTextNode} token.node - The node containing the token.
+ * @param {string} [token.attribute] - The attribute name to replace within the node.
+ * @param {string} token.content - The content of the token.
+ * @param {CoraliteModuleValue} token.value - The value associated with the token.
+ */
+export function replaceToken ({
+  type,
+  node,
+  attribute,
+  content,
+  value
+}) {
+  if (
+    type === 'attribute'
+    && node.type === 'tag'
+    && typeof value === 'string'
+  ) {
+    node.attribs[attribute] = node.attribs[attribute].replace(content, value)
+  } else if (node.type === 'text') {
+    if (typeof value === 'object') {
+      if (!Array.isArray(value)) {
+        // handle single nodes
+        value = [value]
+      }
+
+      // inject nodes
+      const textSplit = node.data.split(content)
+      const childIndex = node.parent.children.indexOf(node)
+      const children = []
+
+      // append computed tokens in between token split
+      for (let i = 0; i < value.length; i++) {
+        const child = value[i]
+
+        if (typeof child !== 'string' && child.type !== 'directive') {
+          // update child parent
+          child.parent = node.parent
+          children.push(child)
+        }
+      }
+
+      // replace computed token
+      node.parent.children.splice(childIndex, 1,
+        {
+          type: 'text',
+          data: textSplit[0],
+          parent: node.parent
+        },
+        ...children,
+        {
+          type: 'text',
+          data: textSplit[1],
+          parent: node.parent
+        })
+    } else {
+      // replace token string
+      node.data = node.data.replace(content, value)
+    }
+  }
 }
