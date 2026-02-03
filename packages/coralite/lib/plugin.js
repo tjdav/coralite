@@ -4,7 +4,7 @@
  */
 
 import { basename, dirname } from 'path'
-import { getHtmlFile } from './html.js'
+import { getHtmlFileSync } from './html.js'
 
 /**
  * Validates that a value is a non-empty string
@@ -64,7 +64,7 @@ function validateStringArray (value, paramName) {
  */
 function processTemplate (path) {
   try {
-    const content = getHtmlFile(path)
+    const content = getHtmlFileSync(path)
 
     const templateData = {
       content,
