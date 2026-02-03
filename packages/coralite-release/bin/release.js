@@ -59,43 +59,57 @@ program
         process.exit(0)
       }
 
-      let newVersion
-      let oldVersion
-      // Read current versions
+      // Read all packages
       const packages = []
-      for (let i = 0; i < packageJsonFiles.length; i++) {
-        const filepath = packageJsonFiles[i]
+      const releaseChoices = []
+
+      for (const filepath of packageJsonFiles) {
         const content = readFileSync(filepath, 'utf8')
         const pkg = JSON.parse(content)
 
-        if (!newVersion && !pkg.private && pkg.version) {
-          oldVersion = pkg.version
-          newVersion = calculateNewVersion(pkg.version, type, options.preid)
+        // Only add to choices if it's in packages/ directory (not templates)
+        // and it has a version field
+        if (packageFiles.includes(filepath) && pkg.version) {
+          releaseChoices.push({
+            value: pkg.name,
+            label: `${pkg.name} (${pkg.version})`,
+            version: pkg.version
+          })
         }
 
-        packages.push( {
+        packages.push({
           private: pkg.private,
           path: filepath,
           name: pkg.name,
           version: pkg.version,
           content,
-          data: pkg,
-          newVersion
+          data: pkg
         })
       }
+
+      // Select package to release
+      const selectedPackageName = await prompts.select({
+        message: 'Select package to release:',
+        options: releaseChoices
+      })
+
+      if (prompts.isCancel(selectedPackageName)) {
+        prompts.log.info('Release cancelled')
+        process.exit(0)
+      }
+
+      const selectedPkg = packages.find(p => p.name === selectedPackageName)
+      const oldVersion = selectedPkg.version
+      const newVersion = calculateNewVersion(oldVersion, type, options.preid)
 
       // Display summary
       prompts.log.info('Release Plan:')
       console.log('')
-      packages.forEach(pkg => {
-        if (!pkg.private) {
-          console.log(`  ${pkg.name}: ${pkg.version} → ${pkg.newVersion}`)
-        }
-      })
+      console.log(`  ${selectedPkg.name}: ${oldVersion} → ${newVersion}`)
       console.log('')
 
       // Get custom message or use default
-      const defaultMessage = `release: version ${newVersion}`
+      const defaultMessage = `release(${selectedPkg.name}): version ${newVersion}`
       const commitMessage = options.message || defaultMessage
 
       console.log(`Commit message: "${commitMessage}"`)
@@ -121,25 +135,36 @@ program
 
       // Update package.json files
       for (const pkg of packages) {
-        if (pkg.data.version) {
-          pkg.data.version = pkg.newVersion
+        let updated = false
+
+        // Update version if this is the selected package
+        if (pkg.name === selectedPackageName) {
+          pkg.data.version = newVersion
+          updated = true
+          prompts.log.success(`Updated ${pkg.name} version: ${oldVersion} → ${newVersion}`)
         }
 
-        // update coralite dependency
-        for (const key in pkg.data.dependencies) {
-          if (key.startsWith('coralite') && !pkg.data.dependencies[key].startsWith('workspace:')) {
-            pkg.data.dependencies[key] = '^' + pkg.newVersion
+        // Update dependencies
+        if (pkg.data.dependencies && pkg.data.dependencies[selectedPackageName]) {
+          if (!pkg.data.dependencies[selectedPackageName].startsWith('workspace:')) {
+            pkg.data.dependencies[selectedPackageName] = '^' + newVersion
+            updated = true
+            prompts.log.info(`Updated dependency in ${pkg.name}`)
           }
         }
 
-        for (const key in pkg.data.devDependencies) {
-          if (key.startsWith('coralite') && !pkg.data.devDependencies[key].startsWith('workspace:')) {
-            pkg.data.devDependencies[key] = '^' + pkg.newVersion
+        // Update devDependencies
+        if (pkg.data.devDependencies && pkg.data.devDependencies[selectedPackageName]) {
+          if (!pkg.data.devDependencies[selectedPackageName].startsWith('workspace:')) {
+            pkg.data.devDependencies[selectedPackageName] = '^' + newVersion
+            updated = true
+            prompts.log.info(`Updated devDependency in ${pkg.name}`)
           }
         }
 
-        writeFileSync(pkg.path, JSON.stringify(pkg.data, null, 2) + '\n')
-        prompts.log.success(`Updated ${pkg.path}: ${oldVersion} → ${pkg.newVersion}`)
+        if (updated) {
+          writeFileSync(pkg.path, JSON.stringify(pkg.data, null, 2) + '\n')
+        }
       }
 
       // Git commit if not disabled
@@ -165,7 +190,7 @@ program
 
       // Create git tag if not disabled
       if (!options.noGitTag) {
-        const tagName = `v${packages[0].newVersion}`
+        const tagName = `${selectedPackageName}-v${newVersion}`
 
         try {
           await git.tag(['-a', tagName, '-m', commitMessage])
