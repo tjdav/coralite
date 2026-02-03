@@ -80,6 +80,9 @@ export function Coralite ({
     path
   }
 
+  /** @type {Object.<string, CoraliteModuleValues>} */
+  this.values = {}
+
   // plugins
   this._plugins = {
     templates: [],
@@ -117,6 +120,28 @@ export function Coralite ({
       pages: this.pages
     }
   }
+
+  this._scripts = {
+    /**
+     * @param {string} id
+     * @param {CoraliteScriptContent} item
+     */
+    add (id, item) {
+      if (!this.content[id]) {
+        // @ts-ignore
+        this.content[id] = {}
+      }
+
+      this.content[id][item.id] = item
+    },
+    restore () {
+      this.content = {}
+    },
+    /** @type {Object.<string, Object.<string, CoraliteScriptContent>>} */
+    content: {}
+  }
+  /** @type {CoraliteCollectionItem[]} */
+  this._currentRenderQueue = []
 
   // place core plugin first
   plugins.unshift(defineComponent, refsPlugin)
@@ -173,29 +198,21 @@ export function Coralite ({
   // add defineComponent to module context
   source.contextModules.defineComponent = source.context.plugins.defineComponent
 
-  /** @type {Object.<string, CoraliteModuleValues>} */
-  this.values = {}
-  this._scripts = {
-    /**
-     * @param {string} id
-     * @param {CoraliteScriptContent} item
-     */
-    add (id, item) {
-      if (!this.content[id]) {
-        // @ts-ignore
-        this.content[id] = {}
-      }
-
-      this.content[id][item.id] = item
-    },
-    restore () {
-      this.content = {}
-    },
-    /** @type {Object.<string, Object.<string, CoraliteScriptContent>>} */
-    content: {}
+  const propertyDescriptorOptions = {
+    enumerable: false,
+    configurable: false,
+    writable: true
   }
-  /** @type {CoraliteCollectionItem[]} */
-  this._currentRenderQueue = []
+
+  Object.defineProperties(this, {
+    options: { ...propertyDescriptorOptions },
+    values: { ...propertyDescriptorOptions },
+    _plugins: { ... propertyDescriptorOptions },
+    _scriptManager: { ...propertyDescriptorOptions },
+    _source: { ...propertyDescriptorOptions },
+    _scripts: { ...propertyDescriptorOptions },
+    _currentRenderQueue: { ...propertyDescriptorOptions }
+  })
 }
 
 /**
