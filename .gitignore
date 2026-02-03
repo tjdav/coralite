@@ -72,3 +72,6 @@ playwright/.cache/
 # Debugging files
 *.heapprofile
 .bench-reports/
+
+# Test files
+.html
