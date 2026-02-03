@@ -562,6 +562,25 @@ Coralite.prototype._generatePages = async function* (path) {
 
       for (let i = 0; i < document.customElements.length; i++) {
         const customElement = document.customElements[i]
+
+        // Check if we have already backed up this parent in the current pass
+        let isParentRestored = false
+        for (let r = 0; r < restoreQueue.length; r++) {
+          if (restoreQueue[r].parent === customElement.parent) {
+            isParentRestored = true
+            break
+          }
+        }
+
+        if (!isParentRestored) {
+          restoreQueue.push({
+            parent: customElement.parent,
+            originalChildren: customElement.parent.children
+          })
+          // Create a shallow copy of the children array for mutation.
+          customElement.parent.children = [...customElement.parent.children]
+        }
+
         const contextId = document.path.pathname + i + customElement.name
         const currentValues = this.values[contextId] || {}
 
@@ -675,9 +694,13 @@ Coralite.prototype._generatePages = async function* (path) {
 
       // memory clean up
       this._currentRenderQueue[q] = null
+      // restore global state variables
+      this.values = {}
+      this._scripts.restore()
+      this._source.contextInstances = {}
     }
   } finally {
-    // Ensure cleanup on early termination (e.g., generator aborted)
+    // Ensure cleanup on early termination
     this._currentRenderQueue = []
     this.values = {}
     this._scripts.restore()
