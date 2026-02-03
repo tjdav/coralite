@@ -7,7 +7,7 @@ import {
 } from '#lib'
 
 /**
- * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleValues } from '../types/index.js'
+ * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleValue, CoraliteModuleValues, CoraliteValues } from '../types/index.js'
  */
 
 /**
@@ -86,13 +86,15 @@ export const defineComponent = createPlugin({
    *   Computed slots for the component. These are functions that define
    *   how content should be rendered within the component.
    * @param {CoraliteModuleScript} [options.script] - Script that will be added below the element.
+   * @param {CoraliteModuleSetup} [options.setup] - Setup function
    * @returns {Promise<CoraliteModuleValues>} A promise resolving to the module values
    *   associated with this component.
    */
   async method ({
     tokens,
     slots,
-    script
+    script,
+    setup
   },
   {
     values,
@@ -101,7 +103,13 @@ export const defineComponent = createPlugin({
     excludeByAttribute
   }) {
     /** @type {CoraliteModuleValues} */
-    const results = { ...values }
+    let results = { ...values }
+
+    if (setup) {
+      const initialValues = await setup(results)
+
+      results = Object.assign(results, initialValues)
+    }
 
     if (typeof tokens === 'object' && tokens !== null) {
       for (const key in tokens) {
@@ -212,7 +220,7 @@ export const defineComponent = createPlugin({
       const scriptTextContent = script.toString().trim()
 
       // include values used in script
-      /** @type {CoraliteModuleValues} */
+      /** @type {Object.<string, CoraliteModuleValue>} */
       const args = {}
       for (const key in results) {
         if (!Object.hasOwn(results, key)) continue
