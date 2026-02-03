@@ -1253,22 +1253,21 @@ Coralite.prototype._evaluate = async function ({
   const templateItem = this.templates.getItem(module.id)
 
   if (!templateItem.result._compiledCode) {
-    // Transform ESM to CJS using esbuild
-    // We use CJS format so esbuild handles the import/export transformation
-    const { code } = await transform(module.script, {
+    const paddingCount = Math.max(0, (module.lineOffset || 0) - 2)
+    const padding = '\n'.repeat(paddingCount)
+    const sourceFile = pathToFileURL(templateItem.path.pathname).href
+    // Transform using esbuild
+    const { code } = await transform(padding + module.script, {
       loader: 'js',
-      format: 'esm',
+      format: 'cjs',
       target: 'node18',
-      platform: 'node'
+      platform: 'node',
+      sourcemap: 'inline',
+      sourcefile: sourceFile,
+      sourcesContent: false
     })
 
-    const cjsCode = convertEsmToCjs(code)
-
-    // Wrap the transformed code in an async IIFE to support Top-Level Await (TLA)
-    templateItem.result._compiledCode = `
-      return (async () => {
-        ${cjsCode}
-      })();`
+    templateItem.result._compiledCode = code + `\n//# sourceURL=${sourceFile}`
   }
 
   // Create a require function anchored to the template's file path to resolve relative imports
@@ -1305,7 +1304,7 @@ Coralite.prototype._evaluate = async function ({
     'exports',
     'require',
     'coralite',
-    templateItem.result._compiledCode
+    templateItem.result._compiledCode.trim()
   )
 
   // Execute the function with our mocks and context
