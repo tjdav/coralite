@@ -376,6 +376,11 @@
  * @param {CoraliteRef} refs - References template elements
  */
 
+/**
+ * @callback CoraliteModuleSetup
+ * @param {CoraliteModuleValues} context
+ */
+
 
 /**
  * @typedef {Object} ScriptPlugin
