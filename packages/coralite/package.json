@@ -37,7 +37,7 @@
     "test-e2e-ui": "playwright test --ui",
     "server": "sirv dist --dev --port 3000",
     "build": "premove dist && pnpm build-lib && pnpm build-plugins && pnpm build-types",
-    "build-lib": "esbuild ./lib/index.js --bundle --target=esnext --external:esbuild --format=esm --outdir=dist/lib --platform=node",
+    "build-lib": "esbuild ./lib/index.js --bundle --target=esnext --external:esbuild --format=esm --outdir=dist/lib --platform=node --sourcemap",
     "build-plugins": "esbuild ./plugins/*.js --format=esm --outdir=dist/plugins --platform=node",
     "build-types": "tsc",
     "build-html": "node ./bin/coralite.js -t tests/fixtures/templates -p tests/fixtures/pages -o dist -i 'data-dev=true'"
