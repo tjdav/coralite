@@ -70,7 +70,7 @@ if (mode === 'dev') {
     }
 
     // compile website
-    await coralite.build(null, async (result) => {
+    await coralite.build(async (result) => {
       const relDir = relative(config.pages, result.path.dirname)
       const outDir = join(config.output, relDir)
       const outFile = join(outDir, result.path.filename)
