@@ -1261,9 +1261,10 @@ Coralite.prototype._evaluate = async function ({
   const templateItem = this.templates.getItem(module.id)
 
   if (!templateItem.result._compiledCode) {
-    const paddingCount = Math.max(0, (module.lineOffset || 0) - 2)
+    const paddingCount = Math.max(0, (module.lineOffset - 3 || 0))
     const padding = '\n'.repeat(paddingCount)
     const sourceFile = pathToFileURL(templateItem.path.pathname).href
+
     // Transform using esbuild
     const { code } = await transform(padding + module.script, {
       loader: 'js',
@@ -1271,8 +1272,7 @@ Coralite.prototype._evaluate = async function ({
       target: 'node18',
       platform: 'node',
       sourcemap: 'inline',
-      sourcefile: sourceFile,
-      sourcesContent: false
+      sourcefile: sourceFile
     })
 
     templateItem.result._compiledCode = code + `\n//# sourceURL=${sourceFile}`
