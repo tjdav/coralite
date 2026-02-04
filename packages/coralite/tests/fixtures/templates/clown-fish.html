@@ -1,0 +1,17 @@
+<template id="clown-fish">
+  <div class="clown-fish">
+    <h3>{{ name }}</h3>
+    <p>Stripes: {{ stripes }}</p>
+  </div>
+</template>
+<script type="module">
+    import { defineComponent } from 'coralite/plugins'
+
+    export default defineComponent({
+      tokens: {
+        stripes: ({ name }) => {
+          return name === 'Nemo' ? '3' : '2'
+        }
+      }
+    })
+</script>

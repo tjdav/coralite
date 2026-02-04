@@ -1,0 +1,20 @@
+<template id="ocean-currents">
+  <div class="currents">
+    <p>Direction: {{ direction }}</p>
+    <p>Speed: {{ speed }}</p>
+  </div>
+</template>
+<script type="module">
+    import { defineComponent } from 'coralite/plugins'
+
+    export default defineComponent({
+      setup: async () => {
+        // Simulate async
+        await new Promise(r => setTimeout(r, 10))
+        return {
+          direction: 'East Australian Current',
+          speed: 'Fast'
+        }
+      }
+    })
+</script>
