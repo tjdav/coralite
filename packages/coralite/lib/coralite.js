@@ -1169,11 +1169,11 @@ Coralite.prototype.createComponent = async function ({
       const slotIndex = slot.element.parent.children.indexOf(slot.element)
 
       // filter out whitespace only text nodes
-      slotNodes = slotNodes.filter(node => {
+      const emptySlot = slotNodes.filter(node => {
         return node.type !== 'text' || (node.data && node.data.trim().length > 0)
       })
 
-      if (!slotNodes.length) {
+      if (!emptySlot.length) {
         // set default content
         slotNodes = slot.element.children || []
       } else {
