@@ -200,7 +200,7 @@ export const defineComponent = createPlugin({
               ) {
                 elementSlots.push({
                   name,
-                  node: result[index]
+                  node
                 })
               } else {
                 throw new Error('Unexpected slot value, expected a node but found: '
