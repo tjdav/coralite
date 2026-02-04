@@ -14,6 +14,7 @@
 <script type="module">
   import { defineComponent, parseHTML } from 'coralite'
   import code from 'highlight.js'
+  import { indent, dedent } from '../utils/format.js'
 
   code.configure({
     classPrefix: 'code-'
@@ -48,8 +49,12 @@
           const node = content[i];
 
           if (node.type === 'text' && node.data.trim()) {
+            const content = dedent(node.data)
+            // re-indent with 2 spaces relative to the tag
+            const indentedContent = indent(content, '  ')
+
             const highlightCode = code.highlight(
-              node.data,
+              indentedContent,
               { language: values.language.toLowerCase() }
             )
 

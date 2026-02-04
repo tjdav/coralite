@@ -14,14 +14,15 @@
 <script type="module">
   import { defineComponent, parseHTML } from 'coralite'
   import code from 'highlight.js'
+  import { indent, dedent } from '../utils/format.js'
 
   /**
    * @param {string} className
    * @param {Object} parent
    * @param {string} [data]
    */
-  function createCodeNode (className, parent, data) {
-    const node =  {
+  function createCodeNode(className, parent, data) {
+    const node = {
       type: 'tag',
       name: 'span',
       attribs: {
@@ -45,7 +46,7 @@
    * @param {Object} node
    * @param {Object} parent
    */
-  function createCodeCommentNode (node, parent) {
+  function createCodeCommentNode(node, parent) {
     const comment = {
       type: 'tag',
       name: 'span',
@@ -72,7 +73,7 @@
    * @param {Array<Object>} children
    * @param {string} whitespace 
    */
-  function createCodeTagNode (node, parent, children, separator = { space: '' }) {
+  function createCodeTagNode(node, parent, children, separator = { space: '' }) {
     const tag = {
       type: 'tag',
       name: 'span',
@@ -91,6 +92,7 @@
     // add tag to code list
     children.push(tag)
 
+    // add attributes to tag
     for (const name in node.attribs) {
       if (Object.prototype.hasOwnProperty.call(node.attribs, name)) {
         tag.children.push(
@@ -115,11 +117,15 @@
 
     if (node.name === 'script') {
       for (let i = 0; i < node.children.length; i++) {
-        const childNode = node.children[i];
-        
+        const childNode = node.children[i]
+
         if (childNode.type === 'text' && childNode.data.trim()) {
+          const content = dedent(childNode.data)
+          // re-indent with 2 spaces relative to the tag
+          const indentedContent = indent(content, separator.space + '  ')
+
           const highlightCode = code.highlight(
-            childNode.data,
+            indentedContent,
             { language: 'javascript' }
           )
 
@@ -137,8 +143,8 @@
       }
 
       for (let i = 0; i < node.children.length; i++) {
-        const childNode = node.children[i];
-        
+        const childNode = node.children[i]
+
         if (childNode.type === 'tag') {
           // add tag
           createCodeTagNode(childNode, parent, children, separator)
@@ -182,9 +188,8 @@
 
   export default defineComponent({
     slots: {
-      default (content) {
+      default(content) {
         const children = []
-
         let endIndex = content.length
         let startIndex = 0
         const firstNode = content[0]
@@ -215,7 +220,7 @@
             if (!node.data.trim()) {
               node.data = node.data.replaceAll(' ', '')
             }
-            
+
             children.push(node)
           }
         }
@@ -230,7 +235,7 @@
       const popoverId = 'copy-' + Math.random().toString(16).substring(2)
 
       popoverTarget.setAttribute('id', popoverId)
-      popoverButton.setAttribute('popovertarget', popoverId) 
+      popoverButton.setAttribute('popovertarget', popoverId)
 
       popoverButton.addEventListener('click', () => {
         navigator.clipboard.writeText(codeBody.textContent)
