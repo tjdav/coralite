@@ -442,7 +442,8 @@ export function createElement ({
       // store custom elements
       element.slots = []
     } else {
-      console.warn('Invalid custom element tag name: "' + sanitisedName + '" https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
+      /** @TODO handle warnings  */
+      // console.warn('Invalid custom element tag name: "' + sanitisedName + '" https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
     }
   }
 
