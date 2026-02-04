@@ -1,0 +1,18 @@
+<template id="school-of-fish">
+  <div class="school">
+    <slot name="fish"></slot>
+  </div>
+</template>
+<script type="module">
+    import { defineComponent } from 'coralite/plugins'
+    import { isCoraliteElement, cloneModuleInstance } from 'coralite'
+
+    export default defineComponent({
+      slots: {
+        fish: (content) => {
+          // Clone the content 3 times
+           return [...content, ...content, ...content]
+        }
+      }
+    })
+</script>

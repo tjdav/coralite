@@ -1,0 +1,21 @@
+<template id="tank-cleaner">
+  <div class="cleaner">
+    <button ref="clean-btn">Clean Tank</button>
+    <span ref="status">Dirty</span>
+  </div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    script: ({ values }, { refs }) => {
+      const btn = refs('clean-btn')
+      const status = refs('status')
+      if (btn) {
+        btn.addEventListener('click', () => {
+          if (status) status.textContent = 'Clean'
+        })
+      }
+    }
+  })
+</script>
