@@ -696,6 +696,10 @@ Coralite.prototype._generatePages = async function* (path) {
  * @returns {Promise<CoraliteResult[]>} A Promise that resolves to an array of build results.
  *
  * @overload
+ * @param {BuildPageHandler} callback - A function invoked for each page to transform the result.
+ * @returns {Promise<CoraliteResult[]>} A Promise that resolves to an array of build results.
+ *
+ * @overload
  * @param {string | string[]} [path] - The target directory or an array of specific page paths to build.
  * @param {Object} [options] - Configuration options for the build process.
  * @param {number} [options.maxConcurrent=availableParallelism] - The maximum number of concurrent file write operations.
@@ -731,7 +735,10 @@ Coralite.prototype.build = async function (...args) {
   let callback
 
   // add callback since there are no options
-  if (typeof args[1] === 'function') {
+  if (typeof args[0] === 'function') {
+    path = null
+    callback = args[0]
+  } else if (typeof args[1] === 'function') {
     callback = args[1]
   } else {
     options = args[1]
