@@ -851,9 +851,7 @@ Coralite.prototype.save = async function (output, path, options = {}) {
  */
 Coralite.prototype.transform = function (root) {
   // @ts-ignore
-  return render(root, {
-    emptyAttrs: false
-  })
+  return render(root)
 }
 
 /**
