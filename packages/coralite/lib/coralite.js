@@ -213,7 +213,7 @@ export function Coralite ({
   Object.defineProperties(this, {
     options: { ...enumerablePropertyDescriptors },
     values: { ...enumerablePropertyDescriptors },
-    _plugins: { ... propertyDescriptors },
+    _plugins: { ...propertyDescriptors },
     _scriptManager: { ...propertyDescriptors },
     _source: { ...propertyDescriptors },
     _scripts: { ...propertyDescriptors },
@@ -1169,6 +1169,11 @@ Coralite.prototype.createComponent = async function ({
       let slotNodes = slotChildren[slotName]
       const slot = slots[slotName]
       const slotIndex = slot.element.parent.children.indexOf(slot.element)
+
+      // filter out whitespace only text nodes
+      slotNodes = slotNodes.filter(node => {
+        return node.type !== 'text' || (node.data && node.data.trim().length > 0)
+      })
 
       if (!slotNodes.length) {
         // set default content
