@@ -7,7 +7,7 @@
  * @param {string} str - The kebab-case string to convert
  * @returns {string} - The camelCase version of the string
  */
-function kebabToCamel (str) {
+export function kebabToCamel (str) {
   // replace each dash followed by a letter with the uppercase version of the letter
   return str.replace(/[-|:]([a-z])/g, function (match, letter) {
     return letter.toUpperCase()
