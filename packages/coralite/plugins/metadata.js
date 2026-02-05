@@ -1,4 +1,4 @@
-import { createPlugin, kebabToCamel } from '#lib'
+import { createPlugin } from '#lib'
 
 export const metadataPlugin = createPlugin({
   name: 'metadata',
@@ -24,7 +24,7 @@ export const metadataPlugin = createPlugin({
                   && element.attribs.name
                   && element.attribs.content
                 ) {
-                  const metaName = kebabToCamel('meta-' + element.attribs.name)
+                  const metaName = 'meta_' + element.attribs.name
 
                   values[metaName] = element.attribs.content
                 } else if (element.slots) {
@@ -50,7 +50,7 @@ export const metadataPlugin = createPlugin({
                         && element.attribs.name
                         && element.attribs.content
                       ) {
-                        const metaName = kebabToCamel('meta-' + element.attribs.name)
+                        const metaName = 'meta_' + element.attribs.name
 
                         values[metaName] = element.attribs.content
                       }
