@@ -4,7 +4,7 @@ import localAccess from 'local-access'
 import chokidar from 'chokidar'
 import buildSass from './build-sass.js'
 import { displayError, displayInfo, displaySuccess, toCode, toMS, toTime } from './build-utils.js'
-import { extname, join, normalize } from 'path'
+import { extname, join, normalize, relative, sep } from 'path'
 import { readFile, access, constants } from 'fs/promises'
 import Coralite from 'coralite'
 import buildCSS from './build-css.js'
@@ -28,6 +28,8 @@ async function server (config, options) {
 
     // track active connections.
     const clients = new Set()
+    const pageCache = new Map()
+    const memoryPageSource = new Map()
 
     // start coralite
     displayInfo('Initializing Coralite...')
@@ -165,6 +167,13 @@ async function server (config, options) {
           }
         }
 
+        const cacheKey = path.startsWith('/') ? path.slice(1) : path
+
+        if (pageCache.has(cacheKey)) {
+          res.send(pageCache.get(cacheKey))
+          return
+        }
+
         try {
           // first attempt to read the file directly.
           await access(path)
@@ -175,7 +184,7 @@ async function server (config, options) {
           if (!path.endsWith('.html')) {
             res.sendStatus(404)
           } else {
-            const pathname = join(config.pages, path)
+            let pathname = join(config.pages, path)
 
             try {
               // if that fails, try reading from pages directory.
@@ -183,31 +192,79 @@ async function server (config, options) {
               // check if page source file exists and is readable
               await access(pathname, constants.R_OK)
             } catch {
-              res.sendStatus(404)
+              // check if it is a known in memory page source
+              const cacheKey = path.startsWith('/') ? path.slice(1) : path
+              if (memoryPageSource.has(cacheKey)) {
+                pathname = memoryPageSource.get(cacheKey)
+              } else {
+                res.sendStatus(404)
+                return
+              }
             }
 
-            const start = process.hrtime()
-            let duration, dash = colours.gray(' ─ ')
+            try {
+              const start = process.hrtime()
+              let duration, dash = colours.gray(' ─ ')
 
-            await coralite.pages.setItem(pathname)
-            // build the HTML for this page using the built-in compiler.
-            const documents = await coralite.build(pathname, (result) => result)
-            // inject a script to enable live reload via Server-Sent Events
-            const injectedHtml = documents[0].html.replace(/<\/body>/i, `\n
-  <script>
-    const eventSource = new EventSource('/_/rebuild');
-    eventSource.onmessage = function(event) {
-      if (event.data === 'connected') return;
-      // Reload page when file changes
-      location.reload()
-    }
-  </script>
-</body>`)
+              let rebuildScript = '\n<script>\n'
+              rebuildScript += "    const eventSource = new EventSource('/_/rebuild');\n"
+              rebuildScript += '    eventSource.onmessage = function(event) {\n'
+              rebuildScript += "      if (event.data === 'connected') return;\n"
+              rebuildScript += '      // Reload page when file changes\n'
+              rebuildScript += '      location.reload()\n'
+              rebuildScript += '    }\n'
+              rebuildScript += '  </script>\n'
+              rebuildScript += '</body>\n'
 
-            // prints time and path to the file that has been changed or added.
-            duration = process.hrtime(start)
-            process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(duration) + dash + path + '\n')
-            res.send(injectedHtml)
+              await coralite.pages.setItem(pathname)
+              // build the HTML for this page using the built-in compiler.
+              const documents = await coralite.build(pathname, (result) => {
+                // inject a script to enable live reload via Server-Sent Events
+                const injectedHtml = result.html.replace(/<\/body>/i, rebuildScript)
+
+                const relPath = relative(config.pages, result.path.pathname)
+                const normalizedKey = relPath.split(sep).join('/')
+
+                // map in memory page to source
+                if (normalizedKey !== pathname) {
+                  memoryPageSource.set(normalizedKey, pathname)
+                }
+
+                // only cache pages that were out of scope of the initial page request
+                if (normalizedKey !== cacheKey) {
+                  pageCache.set(normalizedKey, injectedHtml)
+                }
+
+                return {
+                  path: result.path,
+                  html: injectedHtml,
+                  duration: result.duration
+                }
+              })
+
+              // prints time and path to the file that has been changed or added.
+              duration = process.hrtime(start)
+              process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(duration) + dash + path + '\n')
+
+              // find the document that matches the request path
+              const doc = documents.find(doc => {
+                const relPath = relative(config.pages, doc.path.pathname)
+                const normalizedKey = relPath.split(sep).join('/')
+                return normalizedKey === cacheKey
+              })
+
+              if (doc) {
+                res.send(doc.html)
+              } else {
+                res.sendStatus(404)
+              }
+            } catch (error) {
+              // If headers haven't been sent, send 500
+              if (!res.headersSent) {
+                res.status(500).send(error.message)
+              }
+              displayError('Request processing failed', error)
+            }
           }
         }
       })
@@ -234,6 +291,8 @@ async function server (config, options) {
       }
       compileTimeout = setTimeout(async () => {
         if (isCompiling || pendingChanges.size === 0) return
+
+        pageCache.clear()
 
         isCompiling = true
         const start = process.hrtime()
