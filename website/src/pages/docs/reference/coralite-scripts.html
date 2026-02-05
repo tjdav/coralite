@@ -88,21 +88,23 @@
     <coralite-heading level="h3" text="Configuration File"></coralite-heading>
     <p>Create <code>coralite.config.js</code> in your project root:</p>
 
-    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+    <coralite-code-highlight language="javascript">
+      import { defineConfig } from 'coralite-scripts'
 
-export default defineConfig({
-  output: './dist',
-  public: './public',
-  pages: './src/pages',
-  templates: './src/templates',
-  styles: {
-    type: 'scss',
-    input: './src/scss'
-  },
-  server: {
-    port: 3000
-  }
-})</coralite-code-highlight>
+      export default defineConfig({
+        output: './dist',
+        public: './public',
+        pages: './src/pages',
+        templates: './src/templates',
+        styles: {
+          type: 'scss',
+          input: './src/scss'
+        },
+        server: {
+          port: 3000
+        }
+      })
+    </coralite-code-highlight>
 
     <coralite-heading level="h2" text="Configuration Reference"></coralite-heading>
     <p>The <code>defineConfig()</code> function validates and returns your configuration object. All properties are required unless marked as optional.</p>
@@ -318,33 +320,35 @@ coralite-scripts build</coralite-code-highlight>
     <coralite-heading level="h3" text="defineConfig(options)"></coralite-heading>
     <p>Defines and validates the Coralite configuration for your project.</p>
 
-    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+    <coralite-code-highlight language="javascript">
+      import { defineConfig } from 'coralite-scripts'
 
-const config = defineConfig({
-  output: './dist',
-  public: './public',
-  pages: './src/pages',
-  templates: './src/templates',
-  styles: {
-    type: 'scss',
-    input: './src/scss'
-  },
-  server: {
-    port: 3000
-  },
-  // Coralite plugins
-  plugins: [
-    // Your plugin instances
-  ],
-  // Sass options
-  sassOptions: {
-    // Custom Sass compiler options
-  },
-  // PostCSS plugins
-  cssPlugins: [
-    // Your PostCSS plugins
-  ]
-})</coralite-code-highlight>
+      const config = defineConfig({
+        output: './dist',
+        public: './public',
+        pages: './src/pages',
+        templates: './src/templates',
+        styles: {
+          type: 'scss',
+          input: './src/scss'
+        },
+        server: {
+          port: 3000
+        },
+        // Coralite plugins
+        plugins: [
+          // Your plugin instances
+        ],
+        // Sass options
+        sassOptions: {
+          // Custom Sass compiler options
+        },
+        // PostCSS plugins
+        cssPlugins: [
+          // Your PostCSS plugins
+        ]
+      })
+    </coralite-code-highlight>
 
     <h4>Parameters</h4>
     <div class="table-responsive">
@@ -433,142 +437,154 @@ const config = defineConfig({
     <coralite-heading level="h3" text="Basic Setup"></coralite-heading>
     <p>Minimal configuration for a standard Coralite site:</p>
 
-    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+    <coralite-code-highlight language="javascript">
+      import { defineConfig } from 'coralite-scripts'
 
-export default defineConfig({
-  output: './dist',
-  public: './public',
-  pages: './src/pages',
-  templates: './src/templates'
-})</coralite-code-highlight>
+      export default defineConfig({
+        output: './dist',
+        public: './public',
+        pages: './src/pages',
+        templates: './src/templates'
+      })
+    </coralite-code-highlight>
 
     <coralite-heading level="h3" text="Sass/SCSS Support"></coralite-heading>
     <p>Configure Sass compilation with custom options:</p>
 
-    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+    <coralite-code-highlight language="javascript">
+      import { defineConfig } from 'coralite-scripts'
 
-export default defineConfig({
-  output: './dist',
-  public: './public',
-  pages: './src/pages',
-  templates: './src/templates',
-  styles: {
-    type: 'scss',
-    input: './src/scss'
-  },
-  sassOptions: {
-    sourceMap: true,
-    loadPaths: ['node_modules', 'src/scss'],
-    silenceDeprecations: ['color-functions', 'import']
-  }
-})</coralite-code-highlight>
+      export default defineConfig({
+        output: './dist',
+        public: './public',
+        pages: './src/pages',
+        templates: './src/templates',
+        styles: {
+          type: 'scss',
+          input: './src/scss'
+        },
+        sassOptions: {
+          sourceMap: true,
+          loadPaths: ['node_modules', 'src/scss'],
+          silenceDeprecations: ['color-functions', 'import']
+        }
+      })
+    </coralite-code-highlight>
 
     <coralite-heading level="h3" text="With Coralite Plugins"></coralite-heading>
     <p>Integrate Coralite plugins with coralite-scripts:</p>
 
-    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
-import { defineComponent } from 'coralite/plugins'
+    <coralite-code-highlight language="javascript">
+      import { defineConfig } from 'coralite-scripts'
+      import { defineComponent } from 'coralite/plugins'
 
-export default defineConfig({
-  output: './dist',
-  public: './public',
-  pages: './src/pages',
-  templates: './src/templates',
-  styles: {
-    type: 'scss',
-    input: './src/scss'
-  },
-  plugins: [
-    defineComponent({
-      // Your component definition
-    })
-  ]
-})</coralite-code-highlight>
+      export default defineConfig({
+        output: './dist',
+        public: './public',
+        pages: './src/pages',
+        templates: './src/templates',
+        styles: {
+          type: 'scss',
+          input: './src/scss'
+        },
+        plugins: [
+          defineComponent({
+            // Your component definition
+          })
+        ]
+      })
+    </coralite-code-highlight>
 
     <coralite-heading level="h3" text="PostCSS Integration"></coralite-heading>
     <p>Use PostCSS plugins for CSS processing:</p>
 
-    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
-import autoprefixer from 'autoprefixer'
-import cssnano from 'cssnano'
+    <coralite-code-highlight language="javascript">
+      import { defineConfig } from 'coralite-scripts'
+      import autoprefixer from 'autoprefixer'
+      import cssnano from 'cssnano'
 
-export default defineConfig({
-  output: './dist',
-  public: './public',
-  pages: './src/pages',
-  templates: './src/templates',
-  styles: {
-    type: 'css',
-    input: './src/css'
-  },
-  cssPlugins: [
-    autoprefixer(),
-    cssnano()
-  ]
-})</coralite-code-highlight>
+      export default defineConfig({
+        output: './dist',
+        public: './public',
+        pages: './src/pages',
+        templates: './src/templates',
+        styles: {
+          type: 'css',
+          input: './src/css'
+        },
+        cssPlugins: [
+          autoprefixer(),
+          cssnano()
+        ]
+      })
+    </coralite-code-highlight>
 
     <coralite-heading level="h3" text="Custom Development Port"></coralite-heading>
     <p>Configure a custom port for the development server:</p>
 
-    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
+    <coralite-code-highlight language="javascript">
+      import { defineConfig } from 'coralite-scripts'
 
-export default defineConfig({
-  output: './dist',
-  public: './public',
-  pages: './src/pages',
-  templates: './src/templates',
-  server: {
-    port: 8080
-  }
-})</coralite-code-highlight>
+      export default defineConfig({
+        output: './dist',
+        public: './public',
+        pages: './src/pages',
+        templates: './src/templates',
+        server: {
+          port: 8080
+        }
+      })
+    </coralite-code-highlight>
 
     <coralite-heading level="h3" text="Complete Configuration"></coralite-heading>
     <p>Full-featured configuration with all options:</p>
 
-    <coralite-code-highlight language="javascript">import { defineConfig } from 'coralite-scripts'
-import { defineComponent, defineCollection } from 'coralite/plugins'
-import autoprefixer from 'autoprefixer'
+    <coralite-code-highlight language="javascript">
+      import { defineConfig } from 'coralite-scripts'
+      import { defineComponent, defineCollection } from 'coralite/plugins'
+      import autoprefixer from 'autoprefixer'
 
-export default defineConfig({
-  // Required paths
-  output: './dist',
-  public: './public',
-  pages: './src/pages',
-  templates: './src/templates',
-  
-  // Style processing
-  styles: {
-    type: 'scss',
-    input: './src/scss'
-  },
-  
-  // Sass options
-  sassOptions: {
-    sourceMap: true,
-    loadPaths: ['node_modules'],
-    silenceDeprecations: ['import']
-  },
-  
-  // PostCSS plugins
-  cssPlugins: [
-    autoprefixer()
-  ],
-  
-  // Development server
-  server: {
-    port: 3000
-  },
-  
-  // Coralite plugins
-  plugins: [
-    defineComponent({
-      // Component definitions
-    }),
-    defineCollection({
-      // Collection definitions
-    })
-  ]
-})</coralite-code-highlight>
+      export default defineConfig({
+        // Required paths
+        output: './dist',
+        public: './public',
+        pages: './src/pages',
+        templates: './src/templates',
+        
+        // Style processing
+        styles: {
+          type: 'scss',
+          input: './src/scss'
+        },
+        
+        // Sass options
+        sassOptions: {
+          sourceMap: true,
+          loadPaths: ['node_modules'],
+          silenceDeprecations: ['import']
+        },
+        
+        // PostCSS plugins
+        cssPlugins: [
+          autoprefixer()
+        ],
+        
+        // Development server
+        server: {
+          port: 3000
+        },
+        
+        // Coralite plugins
+        plugins: [
+          defineComponent({
+            // Component definitions
+          }),
+          defineCollection({
+            // Collection definitions
+          })
+        ]
+      })
+    </coralite-code-highlight>
 
     <coralite-heading level="h2" text="Troubleshooting"></coralite-heading>
 

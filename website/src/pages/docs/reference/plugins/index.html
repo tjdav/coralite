@@ -13,7 +13,9 @@
   <main class="container content">
     <!-- Introduction -->
     <h1>Coralite Plugin System</h1>
-    <p>Coralite plugins are extensible modules that integrate into the Coralite framework's lifecycle, enabling developers to customize and enhance its behavior through hooks, data manipulation, and dynamic content generation.</p>
+    <p>Coralite plugins are extensible modules that integrate into the Coralite framework's lifecycle, enabling
+      developers to customize and enhance its behavior through hooks, data manipulation, and dynamic content generation.
+    </p>
 
     <!-- Table of Contents -->
     <nav aria-label="table of contents">
@@ -35,15 +37,16 @@
       <p>Coralite supports two types of templates, each with different requirements:</p>
 
       <coralite-heading level="h3" text="Static Templates"></coralite-heading>
-      <p>Static templates are simple HTML files that support basic token replacement but don't require any script processing:</p>
+      <p>Static templates are simple HTML files that support basic token replacement but don't require any script
+        processing:</p>
 
       <coralite-code-html>
-<template id="simple-component">
-  <div>
-    <h1>{{ title }}</h1>
-    <p>{{ description }}</p>
-  </div>
-</template>
+        <template id="simple-component">
+          <div>
+            <h1>{{ title }}</h1>
+            <p>{{ description }}</p>
+          </div>
+        </template>
       </coralite-code-html>
 
       <p><strong>No script tag needed</strong> - Coralite will process token replacements automatically.</p>
@@ -58,28 +61,28 @@
       </ul>
 
       <coralite-code-html>
-<template id="dynamic-component">
-  <div>
-    <h1>{{ greeting }}</h1>
-    <button type="button" ref="actionBtn">Click me</button>
-  </div>
-</template>
+        <template id="dynamic-component">
+          <div>
+            <h1>{{ greeting }}</h1>
+            <button type="button" ref="actionBtn">Click me</button>
+          </div>
+        </template>
 
-<script type="module">
-  import { defineComponent } from 'coralite'
-  
-  export default defineComponent({
-    tokens: {
-      greeting: ({ name }) => `Hello, ${name}!`
-    },
-    script: (context, helpers) => {
-      const btn = helpers.refs('actionBtn')
-      btn.addEventListener('click', () => {
-        console.log('Button clicked!')
-      })
-    }
-  })
-</script>
+        <script type="module">
+          import { defineComponent } from 'coralite'
+
+          export default defineComponent({
+            tokens: {
+              greeting: ({ name }) => `Hello, ${name}!`
+            },
+            script: (context, helpers) => {
+              const btn = helpers.refs('actionBtn')
+              btn.addEventListener('click', () => {
+                console.log('Button clicked!')
+              })
+            }
+          })
+        </script>
       </coralite-code-html>
 
       <p><strong>Requires <code>defineComponent</code></strong> as the default export.</p>
@@ -91,26 +94,26 @@
       <p>Use the <code>createPlugin</code> function to define a new plugin with configuration options:</p>
 
       <coralite-code-highlight language="JavaScript">
-import { createPlugin } from 'coralite'
+        import { createPlugin } from 'coralite'
 
-const myPlugin = createPlugin({
-  name: 'my-plugin',
-  method: (options, context) => {
-    // Server-side logic
-    return { ...context.values, custom: 'data' }
-  },
-  templates: ['src/components/custom.html'],
-  onPageSet: async (data) => {
-    console.log('Page created:', data.path.pathname)
-  },
-  script: {
-    helpers: {
-      formatDate: (context) => {
-        return (date) => new Date(date).toLocaleDateString()
-      }
-    }
-  }
-})
+        const myPlugin = createPlugin({
+          name: 'my-plugin',
+          method: (options, context) => {
+            // Server-side logic
+            return { ...context.values, custom: 'data' }
+          },
+          templates: ['src/components/custom.html'],
+          onPageSet: async (data) => {
+            console.log('Page created:', data.path.pathname)
+          },
+          script: {
+            helpers: {
+              formatDate: (context) => {
+                return (date) => new Date(date).toLocaleDateString()
+              }
+            }
+          }
+        })
       </coralite-code-highlight>
 
       <coralite-heading level="h3" text="createPlugin Parameters"></coralite-heading>
@@ -193,7 +196,8 @@ const myPlugin = createPlugin({
     <!-- Template-Level Plugins Section -->
     <section id="template-level-plugins">
       <coralite-heading level="h2" text="Template-Level Plugins"></coralite-heading>
-      <p>Template-level plugins provide methods that can be called inside <code>defineComponent</code> tokens and slots. These run during the build process and have access to the template's context.</p>
+      <p>Template-level plugins provide methods that can be called inside <code>defineComponent</code> tokens and slots.
+        These run during the build process and have access to the template's context.</p>
 
       <coralite-heading level="h3" text="Plugin Method Context"></coralite-heading>
       <p>Plugin methods receive two parameters: <code>options</code> and <code>context</code>. The context contains:</p>
@@ -233,132 +237,137 @@ const myPlugin = createPlugin({
       </div>
 
       <coralite-heading level="h3" text="Using Plugin Methods in Templates"></coralite-heading>
-      <p>Import plugin methods from <code>coralite/plugins</code> and use them inside <code>defineComponent</code> tokens:</p>
+      <p>Import plugin methods from <code>coralite/plugins</code> and use them inside <code>defineComponent</code>
+        tokens:</p>
 
       <coralite-code-html>
-<template id="user-profile">
-  <div>
-    <h1>{{ user.name }}</h1>
-    <p>{{ user.bio }}</p>
-    <span>Joined: {{ joinDate }}</span>
-  </div>
-</template>
+        <template id="user-profile">
+          <div>
+            <h1>{{ name }}</h1>
+            <p>{{ bio }}</p>
+            <span>Joined: {{ joinDate }}</span>
+          </div>
+        </template>
 
-<script type="module">
-  import { defineComponent } from 'coralite'
-  import { formatDate } from 'coralite/plugins'
-  
-  export default defineComponent({
-    tokens: {
-      // Plugin method called with options
-      joinDate: (values) => formatDate({ 
-        format: 'long' 
-      }, values.date)
-    }
-  })
-</script>
+        <script type="module">
+          import { defineComponent } from 'coralite'
+          import { formatDate } from 'coralite/plugins'
+
+          export default defineComponent({
+            tokens: {
+              // Plugin method called with options
+              joinDate: (values) => formatDate({
+                format: 'long'
+              }, values.date)
+            }
+          })
+        </script>
       </coralite-code-html>
 
       <coralite-heading level="h3" text="Context Values Difference"></coralite-heading>
       <p>It's important to understand the difference between values passed to template scripts vs plugin methods:</p>
 
       <coralite-code-html>
-<!-- Page: user.html -->
-<head>
-  <meta name="name" content="Alice">
-  <title>User Profile</title>
-</head>
-<body>
-  <user-profile age="25"></user-profile>
-</body>
+        <!-- Page: user.html -->
+        <head>
+          <meta name="name" content="Alice">
+          <title>User Profile</title>
+        </head>
+
+        <body>
+          <user-profile age="25"></user-profile>
+        </body>
       </coralite-code-html>
 
       <coralite-code-highlight language="JavaScript">
-// In defineComponent:
-export default defineComponent({
-  tokens: {
-    // Plugin method receives:
-    // values = { $name: "Alice", $title: "User Profile", age: "25" }
-    userName: (values) => values.$name
-  },
-  script: (context, helpers) => {
-    // Template script receives:
-    // values = { userName: "Alice", age: 25 } (processed tokens)
-  }
-})
+        // In defineComponent:
+        export default defineComponent({
+          tokens: {
+            // Plugin method receives:
+            // values = { $name: "Alice", $title: "User Profile", age: "25" }
+            userName: (values) => values.$name
+          },
+          script: (context, helpers) => {
+            // Template script receives:
+            // values = { userName: "Alice", age: 25 } (processed tokens)
+          }
+        })
       </coralite-code-highlight>
 
-      <p><strong>Key Difference:</strong> Plugin methods get raw metadata/attributes, template scripts get processed token values.</p>
+      <p><strong>Key Difference:</strong> Plugin methods get raw metadata/attributes, template scripts get processed
+        token values.</p>
     </section>
 
     <!-- Page-Level Plugins Section -->
     <section id="page-level-plugins">
       <coralite-heading level="h2" text="Page-Level Plugins"></coralite-heading>
-      <p>Page-level plugins use lifecycle hooks to modify the final HTML output. They work across all pages and templates.</p>
+      <p>Page-level plugins use lifecycle hooks to modify the final HTML output. They work across all pages and
+        templates.</p>
 
       <coralite-heading level="h3" text="How Page-Level Plugins Work"></coralite-heading>
       <p>These plugins are registered in your coralite.config.js and automatically process pages during the build:</p>
 
       <coralite-code-highlight language="JavaScript">
-// coralite.config.js
-import inlineCSSPlugin from './plugins/inline-css.js'
+        // coralite.config.js
+        import inlineCSSPlugin from './plugins/inline-css.js'
 
-export default {
-  templates: './templates',
-  pages: './pages',
-  plugins: [
-    inlineCSSPlugin({
-      path: './styles',
-      minify: true
-    })
-  ]
-}
+        export default {
+          templates: './templates',
+          pages: './pages',
+          plugins: [
+            inlineCSSPlugin({
+              path: './styles',
+              minify: true
+            })
+          ]
+        }
       </coralite-code-highlight>
 
       <coralite-heading level="h3" text="Example: Inline CSS Plugin"></coralite-heading>
-      <p>Here's how a page-level plugin transforms <code>&lt;link&gt;</code> tags to inline <code>&lt;style&gt;</code> tags:</p>
+      <p>Here's how a page-level plugin transforms <code>&lt;link&gt;</code> tags to inline <code>&lt;style&gt;</code>
+        tags:</p>
 
       <coralite-code-highlight language="JavaScript">
-import { createPlugin } from 'coralite'
-import { readFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+        import { createPlugin } from 'coralite'
+        import { readFile } from 'node:fs/promises'
+        import { join, resolve } from 'node:path'
 
-export default ({ path, minify } = {}) => {
-  return createPlugin({
-    name: 'inline-css',
-    async onPageSet (context) {
-      // Walk through all elements in the page
-      let stack = [context.elements.root]
-      
-      while (stack.length > 0) {
-        const node = stack.pop()
-        
-        if (node.type === 'tag' 
-          && node.name === 'link' 
-          && node.attribs.rel === 'stylesheet'
-          && node.attribs['inline-css'] != null
-        ) {
-          // Read and inline CSS file
-          const cssPath = resolve(join(path || '', node.attribs['inline-css']))
-          const css = await readFile(cssPath, 'utf8')
-          
-          // Replace link with style tag
-          node.name = 'style'
-          node.attribs = {}
-          node.children = [{
-            type: 'text',
-            data: css,
-            parent: node
-          }]
+        export default ({ path, minify } = {}) => {
+          return createPlugin({
+            name: 'inline-css',
+            async onPageSet(context) {
+              // Walk through all elements in the page
+              let stack = [context.elements.root]
+
+              while (stack.length > 0) {
+                const node = stack.pop()
+
+                if (node.type === 'tag'
+                  && node.name === 'link'
+                  && node.attribs.rel === 'stylesheet'
+                  && node.attribs['inline-css'] != null
+                ) {
+                  // Read and inline CSS file
+                  const cssPath = resolve(join(path || '', node.attribs['inline-css']))
+                  const css = await readFile(cssPath, 'utf8')
+
+                  // Replace link with style tag
+                  node.name = 'style'
+                  node.attribs = {}
+                  node.children = [{
+                    type: 'text',
+                    data: css,
+                    parent: node
+                  }]
+                }
+
+                if (node.children) {
+                  stack.push(...node.children)
+                }
+              }
+            }
+          })
         }
-        
-        if (node.children) {
-          stack.push(...node.children)
-        }
-      }
-    }
-  })
-}
       </coralite-code-highlight>
 
       <coralite-heading level="h3" text="Template-Level vs Page-Level"></coralite-heading>
@@ -408,64 +417,65 @@ export default ({ path, minify } = {}) => {
       <p>Hooks allow plugins to respond to specific events in the Coralite lifecycle:</p>
 
       <coralite-code-highlight language="JavaScript">
-const analyticsPlugin = createPlugin({
-  name: 'analytics',
-  onPageSet: async (data) => {
-    // Called when a new page is created
-    console.log('New page:', data.path.pathname)
-    await trackPageView(data.path.pathname)
-  },
-  onPageUpdate: async ({ elements, newValue, oldValue }) => {
-    // Called when a page is updated
-    console.log('Page updated:', newValue.path.pathname)
-  },
-  onPageDelete: async (value) => {
-    // Called when a page is deleted
-    console.log('Page deleted:', value.path.pathname)
-  },
-  onTemplateSet: async (template) => {
-    // Called when a template is created
-    console.log('New template:', template.id)
-  },
-  onTemplateUpdate: async (template) => {
-    // Called when a template is updated
-    console.log('Template updated:', template.id)
-  },
-  onTemplateDelete: async (template) => {
-    // Called when a template is deleted
-    console.log('Template deleted:', template.id)
-  }
-})
+        const analyticsPlugin = createPlugin({
+          name: 'analytics',
+          onPageSet: async (data) => {
+            // Called when a new page is created
+            console.log('New page:', data.path.pathname)
+            await trackPageView(data.path.pathname)
+          },
+          onPageUpdate: async ({ elements, newValue, oldValue }) => {
+            // Called when a page is updated
+            console.log('Page updated:', newValue.path.pathname)
+          },
+          onPageDelete: async (value) => {
+            // Called when a page is deleted
+            console.log('Page deleted:', value.path.pathname)
+          },
+          onTemplateSet: async (template) => {
+            // Called when a template is created
+            console.log('New template:', template.id)
+          },
+          onTemplateUpdate: async (template) => {
+            // Called when a template is updated
+            console.log('Template updated:', template.id)
+          },
+          onTemplateDelete: async (template) => {
+            // Called when a template is deleted
+            console.log('Template deleted:', template.id)
+          }
+        })
       </coralite-code-highlight>
     </section>
 
     <!-- Script Plugins Section -->
     <section id="script-plugins">
       <coralite-heading level="h2" text="Script Plugins & Helpers"></coralite-heading>
-      <p>Script plugins provide client-side helpers that are available in template scripts. These use a factory pattern where Coralite automatically executes the factory with context.</p>
+      <p>Script plugins provide client-side helpers that are available in template scripts. These use a factory pattern
+        where Coralite automatically executes the factory with context.</p>
 
       <coralite-code-highlight language="JavaScript">
-const myScriptPlugin = createPlugin({
-  name: 'script-enhancer',
-  script: {
-    // Called when plugin is registered
-    setup: (plugin) => {
-      console.log('Plugin registered:', plugin.name)
-    },
-    
-    // Helpers are factory functions that receive context
-    helpers: {
-      formatDate: (context) => {
-        // Factory receives context, returns actual helper
-        return (date) => new Date(date).toLocaleDateString()
-      },
-      
-      uppercase: (context) => {
-        return (str) => str.toUpperCase()
-      }
-    }
-  }
-})
+        const myScriptPlugin = createPlugin({
+          name: 'script-enhancer',
+          script: {
+            // Called when plugin is registered
+            setup: (plugin) => {
+              console.log('Plugin registered:', plugin.name)
+            },
+
+            // Helpers are factory functions that receive context
+            helpers: {
+              formatDate: (context) => {
+                // Factory receives context, returns actual helper
+                return (date) => new Date(date).toLocaleDateString()
+              },
+
+              uppercase: (context) => {
+                return (str) => str.toUpperCase()
+              }
+            }
+          }
+        })
       </coralite-code-highlight>
 
       <coralite-heading level="h3" text="How Helpers Work"></coralite-heading>
@@ -473,20 +483,21 @@ const myScriptPlugin = createPlugin({
         <li><strong>Registration</strong>: Plugin helpers are registered with ScriptManager</li>
         <li><strong>Factory Execution</strong>: Coralite calls each factory with current context</li>
         <li><strong>Helper Injection</strong>: Returned functions are injected into template scripts</li>
-        <li><strong>Template Usage</strong>: Scripts receive <code>(context, helpers)</code> with ready-to-use functions</li>
+        <li><strong>Template Usage</strong>: Scripts receive <code>(context, helpers)</code> with ready-to-use functions
+        </li>
       </ol>
 
       <coralite-code-highlight language="JavaScript">
-// In template script:
-export default defineComponent({
-  script: (context, helpers) => {
-    // helpers.formatDate is already the result function
-    const formatted = helpers.formatDate('2024-01-01')
-    
-    // helpers.uppercase is ready to use
-    const upper = helpers.uppercase('hello')
-  }
-})
+        // In template script:
+        export default defineComponent({
+          script: (context, helpers) => {
+            // helpers.formatDate is already the result function
+            const formatted = helpers.formatDate('2024-01-01')
+
+            // helpers.uppercase is ready to use
+            const upper = helpers.uppercase('hello')
+          }
+        })
       </coralite-code-highlight>
     </section>
 
@@ -496,35 +507,34 @@ export default defineComponent({
       <p>Coralite includes two built-in plugins that provide core functionality:</p>
 
       <coralite-heading level="h3" text="defineComponent"></coralite-heading>
-      <p>The <code>defineComponent</code> plugin is required for all dynamic templates. It provides the wrapper for tokens, slots, and script execution:</p>
+      <p>The <code>defineComponent</code> plugin is required for all dynamic templates. It provides the wrapper for
+        tokens, slots, and script execution:</p>
 
       <coralite-code-highlight language="JavaScript">
-import { defineComponent } from 'coralite'
+        import { defineComponent } from 'coralite'
 
-export default defineComponent({
-  tokens: {
-    // Computed tokens that run at build time
-    fullName: ({ firstName, lastName }) => `${firstName} ${lastName}`,
-    formattedDate: ({ date }) => new Date(date).toLocaleDateString()
-  },
-  slots: {
-    // Custom slot processing
-    content: (slotNodes, values) => {
-      // Transform slot content based on values
-      return slotNodes
-    }
-  },
-  script: ({ values, refs }) => {
-    // This function gets serialized and runs client-side
-    // It has access to computed tokens and can use refs
-    return `
-      const btn = refs('actionBtn');
-      btn.addEventListener('click', () => {
-        console.log('Hello!');
-      });
-    `
-  }
-})
+        export default defineComponent({
+          tokens: {
+            // Computed tokens that run at build time
+            fullName: ({ firstName, lastName }) => `${firstName} ${lastName}`,
+            formattedDate: ({ date }) => new Date(date).toLocaleDateString()
+          },
+          slots: {
+            // Custom slot processing
+            content: (slotNodes, values) => {
+              // Transform slot content based on values
+              return slotNodes
+            }
+          },
+          script: ({ values, refs }) => {
+            // This function runs in the client-side
+            // It has access to computed tokens and can use refs
+            const btn = refs('actionBtn');
+            btn.addEventListener('click', () => {
+              console.log('Hello!');
+            });
+          }
+        })
       </coralite-code-highlight>
 
       <coralite-heading level="h4" text="When to Use"></coralite-heading>
@@ -545,34 +555,34 @@ export default defineComponent({
       <p>The <code>refs</code> helper provides DOM element access at runtime using the factory pattern:</p>
 
       <coralite-code-html>
-<template id="my-component">
-  <div>
-    <span ref="author">Author Name</span>
-    <button type="button" ref="actionBtn">Click me</button>
-    <input type="text" ref="userInput">
-  </div>
-</template>
+        <template id="my-component">
+          <div>
+            <span ref="author">Author Name</span>
+            <button type="button" ref="actionBtn">Click me</button>
+            <input type="text" ref="userInput">
+          </div>
+        </template>
 
-<script type="module">
-  import { defineComponent } from 'coralite'
-  
-  export default defineComponent({
-    script: (context, helpers) => {
-      // helpers.refs is the resolver function (factory was executed)
-      const refs = helpers.refs
-      
-      // Get DOM elements by their ref name
-      const button = refs('actionBtn')
-      const input = refs('userInput')
-      const author = refs('author')
-      
-      // Use the elements at runtime
-      button.addEventListener('click', () => {
-        author.textContent = input.value || 'Anonymous'
-      })
-    }
-  })
-</script>
+        <script type="module">
+          import { defineComponent } from 'coralite'
+
+          export default defineComponent({
+            script: (context, helpers) => {
+              // helpers.refs is the resolver function (factory was executed)
+              const refs = helpers.refs
+
+              // Get DOM elements by their ref name
+              const button = refs('actionBtn')
+              const input = refs('userInput')
+              const author = refs('author')
+
+              // Use the elements at runtime
+              button.addEventListener('click', () => {
+                author.textContent = input.value || 'Anonymous'
+              })
+            }
+          })
+        </script>
       </coralite-code-html>
 
       <coralite-heading level="h4" text="How refs Works"></coralite-heading>
@@ -588,57 +598,57 @@ export default defineComponent({
       <p>The refs helper is automatically available when you import the refs plugin:</p>
 
       <coralite-code-highlight language="JavaScript">
-// In your coralite.config.js
-import { refsPlugin } from 'coralite/plugins'
+        // In your coralite.config.js
+        import { refsPlugin } from 'coralite/plugins'
 
-export default {
-  plugins: [
-    refsPlugin
-    // Other plugins...
-  ]
-}
+        export default {
+          plugins: [
+            refsPlugin
+            // Other plugins...
+          ]
+        }
       </coralite-code-highlight>
 
       <coralite-heading level="h3" text="Complete Example"></coralite-heading>
       <p>Here's a complete example showing all built-in plugins working together:</p>
 
       <coralite-code-html>
-<template id="counter">
-  <div class="counter">
-    <h2>Count: {{ count }}</h2>
-    <button type="button" ref="increment">+</button>
-    <button type="button" ref="decrement">-</button>
-  </div>
-</template>
+        <template id="counter">
+          <div class="counter">
+            <h2>Count: {{ count }}</h2>
+            <button type="button" ref="increment">+</button>
+            <button type="button" ref="decrement">-</button>
+          </div>
+        </template>
 
-<script type="module">
-  import { defineComponent } from 'coralite'
-  
-  export default defineComponent({
-    tokens: {
-      // Computed token
-      count: ({ initial }) => parseInt(initial) || 0
-    },
-    script: (context, helpers) => {
-      // Use refs helper
-      const refs = helpers.refs
-      const increment = refs('increment')
-      const decrement = refs('decrement')
-      
-      let count = context.values.count
-      
-      increment.addEventListener('click', () => {
-        count++
-        document.querySelector('h2').textContent = `Count: ${count}`
-      })
-      
-      decrement.addEventListener('click', () => {
-        count--
-        document.querySelector('h2').textContent = `Count: ${count}`
-      })
-    }
-  })
-</script>
+        <script type="module">
+          import { defineComponent } from 'coralite'
+
+          export default defineComponent({
+            tokens: {
+              // Computed token
+              count: ({ initial }) => parseInt(initial) || 0
+            },
+            script: (context, helpers) => {
+              // Use refs helper
+              const refs = helpers.refs
+              const increment = refs('increment')
+              const decrement = refs('decrement')
+
+              let count = context.values.count
+
+              increment.addEventListener('click', () => {
+                count++
+                document.querySelector('h2').textContent = `Count: ${count}`
+              })
+
+              decrement.addEventListener('click', () => {
+                count--
+                document.querySelector('h2').textContent = `Count: ${count}`
+              })
+            }
+          })
+        </script>
       </coralite-code-html>
     </section>
 
