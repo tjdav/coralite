@@ -1,6 +1,6 @@
 <template id="coralite-related-post">
   <li>
-    <a href="{{ $urlPathname }}">{{ $pageTitle }}</a> - {{ localeDate }}
+    <a href="{{ $urlPathname }}">{{ meta_pageTitle }}</a> - {{ localeDate }}
   </li>
 </template>
 
@@ -10,7 +10,7 @@
   export default defineComponent({
     tokens: {
       localeDate (values) {
-        return new Date(values.$published_time).toLocaleDateString('en-AU', {
+        return new Date(values.meta_published_time).toLocaleDateString('en-AU', {
           year: '2-digit',
           month: 'short',
           day: 'numeric',
