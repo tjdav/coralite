@@ -236,6 +236,7 @@ export function replaceToken ({
 
       // replace computed token
       node.parent.children.splice(childIndex, 1,
+        // @ts-ignore
         {
           type: 'text',
           data: textSplit[0],

@@ -1,4 +1,11 @@
 import { Parser } from 'htmlparser2'
+import {
+  createCoraliteElement,
+  createCoraliteTextNode,
+  createCoraliteComment,
+  createCoraliteDirective,
+  createCoraliteDocument
+} from './dom.js'
 import { isValidCustomElementName, VALID_TAGS } from './tags.js'
 
 /**
@@ -12,7 +19,8 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  *  CoraliteDocumentRoot,
  *  CoraliteContentNode,
  *  IgnoreByAttribute,
- *  ParseHTMLResult} from '../types/index.js'
+ *  ParseHTMLResult,
+ RawCoraliteElement} from '../types/index.js'
  */
 
 /**
@@ -25,11 +33,10 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  */
 export function parseHTML (string, ignoreByAttribute) {
   // root element reference
-  /** @type {CoraliteDocumentRoot} */
-  const root = {
+  const root = createCoraliteDocument({
     type: 'root',
     children: []
-  }
+  })
 
   // stack to keep track of current element hierarchy
   /** @type {CoraliteContentNode[]} */
@@ -40,11 +47,11 @@ export function parseHTML (string, ignoreByAttribute) {
 
   const parser = new Parser({
     onprocessinginstruction (name, data) {
-      root.children.push({
+      root.children.push(createCoraliteDirective({
         type: 'directive',
         name,
         data
-      })
+      }))
     },
     onopentag (originalName, attributes) {
       const name = originalName.toLowerCase()
@@ -84,11 +91,11 @@ export function parseHTML (string, ignoreByAttribute) {
     oncomment (data) {
       const parent = stack[stack.length - 1]
 
-      parent.children.push({
+      parent.children.push(createCoraliteComment({
         type: 'comment',
         data,
         parent
-      })
+      }))
     }
   })
 
@@ -166,11 +173,10 @@ function sortSlottedChildren (elements) {
  */
 export function parseModule (string, { ignoreByAttribute }) {
   // root element reference
-  /** @type {CoraliteDocumentRoot} */
-  const root = {
+  const root = createCoraliteDocument({
     type: 'root',
     children: []
-  }
+  })
   // stack to keep track of current element hierarchy
   /** @type {CoraliteContentNode[]} */
   const stack = [root]
@@ -306,11 +312,11 @@ export function parseModule (string, { ignoreByAttribute }) {
     },
 
     oncomment (data) {
-      stack[stack.length - 1].children.push({
+      stack[stack.length - 1].children.push(createCoraliteComment({
         type: 'comment',
         data,
         parent: stack[stack.length - 1]
-      })
+      }))
     }
   })
 
@@ -330,6 +336,7 @@ export function parseModule (string, { ignoreByAttribute }) {
           throw new Error('One template element is permitted')
         }
 
+        // @ts-ignore
         template = node
 
       } else if (node.name == 'script') {
@@ -417,16 +424,14 @@ export function createElement ({
   ignoreByAttribute
 }) {
   const sanitisedName = name.toLowerCase()
-
-  /** @type {CoraliteElement} */
-  const element = {
+  const element = createCoraliteElement({
     type: 'tag',
     name: sanitisedName,
     attribs: attributes,
     children: [],
     parent,
     parentChildIndex: parent.children.length
-  }
+  })
 
   if (ignoreByAttribute) {
     const ignore = findAttributesToIgnore(ignoreByAttribute, attributes)
@@ -463,11 +468,11 @@ export function createElement ({
  */
 export function createTextNode (data, parent) {
   /** @type {CoraliteTextNode} */
-  const textNode = {
+  const textNode = createCoraliteTextNode({
     type: 'text',
     data,
     parent
-  }
+  })
 
   // @ts-ignore
   parent.children.push(textNode)
