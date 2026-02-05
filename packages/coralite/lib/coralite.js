@@ -1,5 +1,5 @@
 import { cleanKeys, cloneModuleInstance, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, replaceToken, ScriptManager } from '#lib'
-import { defineComponent, refsPlugin } from '#plugins'
+import { defineComponent, metadataPlugin, refsPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
 import { createRequire } from 'node:module'
@@ -143,7 +143,7 @@ export function Coralite ({
   this._currentRenderQueue = []
 
   // place core plugin first
-  plugins.unshift(defineComponent, refsPlugin)
+  plugins.unshift(defineComponent, refsPlugin, metadataPlugin)
 
   const source = this._source
   // iterate over each plugin and register its hooks and modules in the Coralite source context.
