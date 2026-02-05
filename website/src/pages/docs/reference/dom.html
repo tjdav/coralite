@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite DOM Structure: Guide to the Server-Side DOM"
+    description="Learn about the Coralite DOM structure, how to manipulate it in plugins, and the available API for elements and text nodes."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="content container">
+    <h1>Coralite DOM Structure</h1>
+    <p>Coralite uses a server-side DOM structure that mimics the standard browser DOM but is optimized for static site
+      generation. This DOM is exposed to developers when writing plugins, specifically in lifecycle hooks like
+      <code>onPageSet</code> and when processing slots in templates.</p>
+
+    <p>While the underlying structure is compatible with <code>domhandler</code>, Coralite enhances these nodes with a
+      standard DOM-like API (getters and setters) to make manipulation more intuitive.</p>
+
+    <nav aria-label="table of contents">
+      <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+      <ul>
+        <li><a href="#node-types">Node Types</a></li>
+        <li><a href="#coralite-element">CoraliteElement API</a></li>
+        <li><a href="#coralite-text-node">CoraliteTextNode API</a></li>
+        <li><a href="#traversing-the-dom">Traversing the DOM</a></li>
+        <li><a href="#manipulating-the-dom">Manipulating the DOM</a></li>
+        <li><a href="#creating-nodes">Creating Nodes</a></li>
+        <li><a href="#usage-in-plugins">Usage in Plugins</a></li>
+      </ul>
+    </nav>
+
+    <section id="node-types">
+      <coralite-heading level="h2" text="Node Types"></coralite-heading>
+      <p>The Coralite DOM consists of several node types, all inheriting from a base node structure:</p>
+      <ul>
+        <li><strong>CoraliteElement</strong> (Type 1): Represents HTML tags (e.g., <code>&lt;div&gt;</code>,
+          <code>&lt;span&gt;</code>).</li>
+        <li><strong>CoraliteTextNode</strong> (Type 3): Represents text content.</li>
+        <li><strong>CoraliteComment</strong> (Type 8): Represents HTML comments.</li>
+        <li><strong>CoraliteDocumentRoot</strong> (Type 9): The root node of a document.</li>
+        <li><strong>CoraliteDirective</strong> (Type 10): Directives like <code>&lt;!DOCTYPE html&gt;</code>.</li>
+      </ul>
+    </section>
+
+    <section id="coralite-element">
+      <coralite-heading level="h2" text="CoraliteElement API"></coralite-heading>
+      <p>Elements are the most common nodes you will interact with. They are standard objects enhanced with the
+        following properties:</p>
+
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Type</th>
+              <th>Access</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>tagName</code></td>
+              <td><code>string</code></td>
+              <td>Read/Write</td>
+              <td>The uppercase tag name of the element (e.g., "DIV"). Setting it updates <code>name</code> (lowercase).
+              </td>
+            </tr>
+            <tr>
+              <td><code>nodeName</code></td>
+              <td><code>string</code></td>
+              <td>Read-only</td>
+              <td>Same as <code>tagName</code>.</td>
+            </tr>
+            <tr>
+              <td><code>attributes</code></td>
+              <td><code>Object</code></td>
+              <td>Read/Write</td>
+              <td>Key-value pair of attributes. Alias for <code>attribs</code>.</td>
+            </tr>
+            <tr>
+              <td><code>childNodes</code></td>
+              <td><code>Array</code></td>
+              <td>Read/Write</td>
+              <td>Live collection (array) of child nodes. Alias for <code>children</code>.</td>
+            </tr>
+            <tr>
+              <td><code>parentNode</code></td>
+              <td><code>Node</code></td>
+              <td>Read/Write</td>
+              <td>The parent node of this element. Alias for <code>parent</code>.</td>
+            </tr>
+            <tr>
+              <td><code>textContent</code></td>
+              <td><code>string</code></td>
+              <td>Read/Write</td>
+              <td>Getting returns concatenated text of all descendants. Setting replaces all children with a single text
+                node.</td>
+            </tr>
+            <tr>
+              <td><code>id</code></td>
+              <td><code>string</code></td>
+              <td>Read/Write</td>
+              <td>Convenience accessor for the <code>id</code> attribute.</td>
+            </tr>
+            <tr>
+              <td><code>className</code></td>
+              <td><code>string</code></td>
+              <td>Read/Write</td>
+              <td>Convenience accessor for the <code>class</code> attribute.</td>
+            </tr>
+            <tr>
+              <td><code>firstChild</code></td>
+              <td><code>Node|null</code></td>
+              <td>Read-only</td>
+              <td>The first child node.</td>
+            </tr>
+            <tr>
+              <td><code>lastChild</code></td>
+              <td><code>Node|null</code></td>
+              <td>Read-only</td>
+              <td>The last child node.</td>
+            </tr>
+            <tr>
+              <td><code>previousSibling</code></td>
+              <td><code>Node|null</code></td>
+              <td>Read-only</td>
+              <td>The node immediately preceding this one.</td>
+            </tr>
+            <tr>
+              <td><code>nextSibling</code></td>
+              <td><code>Node|null</code></td>
+              <td>Read-only</td>
+              <td>The node immediately following this one.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="coralite-text-node">
+      <coralite-heading level="h2" text="CoraliteTextNode API"></coralite-heading>
+      <p>Text nodes represent the text content within elements.</p>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Property</th>
+              <th>Type</th>
+              <th>Access</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>data</code></td>
+              <td><code>string</code></td>
+              <td>Read/Write</td>
+              <td>The actual text content.</td>
+            </tr>
+            <tr>
+              <td><code>nodeValue</code></td>
+              <td><code>string</code></td>
+              <td>Read/Write</td>
+              <td>Alias for <code>data</code>.</td>
+            </tr>
+            <tr>
+              <td><code>textContent</code></td>
+              <td><code>string</code></td>
+              <td>Read/Write</td>
+              <td>Alias for <code>data</code>.</td>
+            </tr>
+            <tr>
+              <td><code>parentNode</code></td>
+              <td><code>Node</code></td>
+              <td>Read/Write</td>
+              <td>The parent node.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="traversing-the-dom">
+      <coralite-heading level="h2" text="Traversing the DOM"></coralite-heading>
+      <p>You can traverse the DOM tree using the relationship properties defined above.</p>
+
+      <coralite-code-highlight language="JavaScript">
+        // Example: Walking the tree
+        function walk(node) {
+          console.log(node.nodeName);
+          
+          if (node.childNodes) {
+            node.childNodes.forEach(child => walk(child));
+          }
+        }
+        
+        // Example: Finding a sibling
+        if (element.nextSibling) {
+          console.log('Next element is:', element.nextSibling.tagName);
+        }
+      </coralite-code-highlight>
+    </section>
+
+    <section id="manipulating-the-dom">
+      <coralite-heading level="h2" text="Manipulating the DOM"></coralite-heading>
+      <p>Since Coralite nodes are JavaScript objects, you can manipulate them directly. However, for adding or removing
+        nodes, you interact with the <code>childNodes</code> (or <code>children</code>) array.</p>
+
+      <coralite-heading level="h3" text="Changing Content"></coralite-heading>
+      <coralite-code-highlight language="JavaScript">
+        // Change text content
+        element.textContent = "New text content";
+        
+        // Change an attribute
+        element.attributes.class = "active";
+        // element.setAttribute('data-id', '123'); // Error: setAttribute is not a function
+        
+        // Use the attributes object (or its alias attribs) directly:
+        element.attributes['data-id'] = '123';
+      </coralite-code-highlight>
+
+      <coralite-heading level="h3" text="Adding/Removing Children"></coralite-heading>
+      <p>Coralite does not implement methods like <code>appendChild</code>, <code>removeChild</code> or <code>setAttribute</code>. Instead, use
+        standard Array methods on <code>childNodes</code> and direct access to <code>attributes</code>.</p>
+
+      <coralite-code-highlight language="JavaScript">
+        // Append a child
+        parent.childNodes.push(newElement);
+        
+        // Remove a child
+        const index = parent.childNodes.indexOf(childToRemove);
+        if (index > -1) {
+          parent.childNodes.splice(index, 1);
+        }
+        
+        // Insert before
+        parent.childNodes.splice(index, 0, newElement);
+      </coralite-code-highlight>
+    </section>
+
+    <section id="creating-nodes">
+      <coralite-heading level="h2" text="Creating Nodes"></coralite-heading>
+      <p>To create new nodes that are correctly enhanced with the Coralite API, use the helper functions exported by the
+        <code>coralite</code> package.</p>
+
+      <div class="alert alert-info">
+        <strong>Note:</strong> These functions automatically append the new node to the parent's children array if a
+        parent is provided.
+      </div>
+
+      <coralite-code-highlight language="JavaScript">
+        import { createElement, createTextNode } from 'coralite';
+
+        // Create a new DIV attached to parent
+        const newDiv = createElement({
+          name: 'div',
+          attributes: { class: 'container' },
+          parent: parentElement
+        });
+        
+        // Create a text node attached to the new DIV
+        createTextNode('Hello World', newDiv);
+      </coralite-code-highlight>
+
+      <coralite-heading level="h3" text="createElement Options"></coralite-heading>
+      <ul>
+        <li><code>name</code> (string): The tag name (e.g., 'div').</li>
+        <li><code>attributes</code> (object): Key-value pairs of attributes.</li>
+        <li><code>parent</code> (Node): The parent node to attach to.</li>
+      </ul>
+    </section>
+
+    <section id="usage-in-plugins">
+      <coralite-heading level="h2" text="Usage in Plugins"></coralite-heading>
+      <p>You will encounter the Coralite DOM in several places when developing plugins.</p>
+
+      <coralite-heading level="h3" text="Page-Level Plugins"></coralite-heading>
+      <p>In hooks like <code>onPageSet</code>, you receive the full document tree.</p>
+      <coralite-code-highlight language="JavaScript">
+        // coralite.config.js
+        createPlugin({
+          name: 'my-plugin',
+          onPageSet: async (context) => {
+            const root = context.elements.root;
+            // Traverse root.childNodes to find and modify elements
+          }
+        })
+      </coralite-code-highlight>
+
+      <coralite-heading level="h3" text="Modifying Slots"></coralite-heading>
+      <p>When using <code>defineComponent</code>, the <code>slots</code> property allows you to intercept and modify
+        slot content. The content is passed as an array of DOM nodes.</p>
+
+      <coralite-code-highlight language="JavaScript">
+        // component.html script
+        export default defineComponent({
+          slots: {
+            default: (slotNodes, values) => {
+              // slotNodes is an Array<CoraliteAnyNode>
+              
+              // Example: Wrap content in a div
+              const wrapper = createElement({
+                name: 'div',
+                attributes: { class: 'wrapper' },
+                parent: null // Don't attach yet
+              });
+              
+              // Move nodes to wrapper
+              wrapper.children = slotNodes;
+              slotNodes.forEach(node => node.parent = wrapper);
+              
+              return [wrapper];
+            }
+          }
+        })
+      </coralite-code-highlight>
+    </section>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
