@@ -191,7 +191,7 @@ async function server (config, options) {
 
             await coralite.pages.setItem(pathname)
             // build the HTML for this page using the built-in compiler.
-            const documents = await coralite.compile(pathname)
+            const documents = await coralite.build(pathname, (result) => result)
             // inject a script to enable live reload via Server-Sent Events
             const injectedHtml = documents[0].html.replace(/<\/body>/i, `\n
   <script>
