@@ -13,7 +13,7 @@
           path: ['blog'],
           template: 'coralite-post',
           sort (a, b) {
-            return new Date(b.$published_time) - new Date(a.$published_time)
+            return new Date(b.metaPublished_time) - new Date(a.metaPublished_time)
           }
         })
       }
