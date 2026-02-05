@@ -131,7 +131,7 @@ CoraliteCollection.prototype.setItem = async function (value) {
       this.list.push(documentValue)
     }
   } else {
-    await this.updateItem(value)
+    return await this.updateItem(value)
   }
 
   return documentValue
