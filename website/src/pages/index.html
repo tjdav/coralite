@@ -1,10 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <coralite-meta title="Coralite | HTML modules static site generator" description="Build with HTML Modules. Coralite is static site generator that uses native web technologies. No special syntax, build websites using standard HTML, CSS, and JavaScript."></coralite-meta>
+  <coralite-meta title="Coralite | HTML modules static site generator"
+    description="Build with HTML Modules. Coralite is static site generator that uses native web technologies. No special syntax, build websites using standard HTML, CSS, and JavaScript."></coralite-meta>
   <link rel="dns-prefetch" href="https://www.youtube-nocookie.com">
   <link rel="stylesheet" href="/css/styles.css" inline-css>
 </head>
+
 <body>
   <coralite-navbar></coralite-navbar>
   <main id="content">
@@ -18,14 +21,16 @@
       </picture>
 
       <div class="hero-container">
-        <img class="content-img drop-shadow-neon" width="100" src="/images/logo-icon.svg" alt="Coralite logo" loading="lazy">
+        <img class="content-img drop-shadow-neon" width="100" src="/images/logo-icon.svg" alt="Coralite logo"
+          loading="lazy">
 
         <h1 class="hero-title">Build for the Web, With the Web</h1>
 
         <div class="hero-body bg-glass drop-shadow">
-          <p class="hero-subtitle"><strong>Coralite</strong> is a static site generator built around <strong>HTML modules</strong> and the <strong>Native Web</strong>.</p>
+          <p class="hero-subtitle"><strong>Coralite</strong> is a static site generator built around <strong>HTML
+              modules</strong> and the <strong>Native Web</strong>.</p>
           <div class="hero-buttons gap">
-            <a href="/docs/guide.html" class="button button-primary">Get Started</a>
+            <a href="/docs/guide/index.html" class="button button-primary">Get Started</a>
             <a href="https://codeberg.org/tjdavid/coralite" target="_blank" class="button button-secondary">
               Source Code
             </a>
@@ -35,7 +40,8 @@
 
       <picture>
         <source media="(min-width: 768px)" srcset="/images/coral-borders2.avif">
-        <img class="hero-border-bottom left" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
+        <img class="hero-border-bottom left"
+          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="">
       </picture>
       <img class="hero-border-bottom right" src="/images/coral-borders1.avif" alt="">
     </section>
@@ -43,7 +49,11 @@
     <section class="video-bg py-5">
       <div class="container">
         <h2 class="text-center video-title mb-4">How does it work?</h2>
-        <iframe loading="lazy" class="video-player drop-shadow" width="560" height="315" src="https://www.youtube-nocookie.com/embed/wUWwH9QZUTs?si=jkFm2J5XQ8aLK6SM?cc_load_policy=1&cc_lang_pref=en" title="Building Modular HTML Sites with Coralite" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        <iframe loading="lazy" class="video-player drop-shadow" width="560" height="315"
+          src="https://www.youtube-nocookie.com/embed/wUWwH9QZUTs?si=jkFm2J5XQ8aLK6SM?cc_load_policy=1&cc_lang_pref=en"
+          title="Building Modular HTML Sites with Coralite"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;"
+          referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
       </div>
     </section>
 
@@ -54,24 +64,29 @@
         <h2 class="text-center mb-4">Features</h2>
         <div class="grid gap">
           <div class="column-12 column-md-4 d-flex align-items-center justify-content-center">
-            <img class="content-img" src="/images/progressive_enhancement.avif" alt="Progressive enhancement" loading="lazy">
+            <img class="content-img" src="/images/progressive_enhancement.avif" alt="Progressive enhancement"
+              loading="lazy">
           </div>
 
           <div class="grid gap column-12 column-md-8">
             <div class="column-12 column-md-6 d-flex">
-              <coralite-card icon="filetype-html" title="Build with HTML Modules" text="Build your entire website with modular components using only native web technologies. This provides a simple, stable, and maintainable foundation without third-party libraries."></coralite-card>
-            </div>
-
-             <div class="column-12 column-md-6 d-flex">
-              <coralite-card icon="triangle" title="Progressive Enhancement" text="Ensures that all basic content and functionality are accessible, even on browsers without JavaScript. JavaScript is treated as an optional enhancement, not a requirement."></coralite-card>
+              <coralite-card icon="filetype-html" title="Build with HTML Modules"
+                text="Build your entire website with modular components using only native web technologies. This provides a simple, stable, and maintainable foundation without third-party libraries."></coralite-card>
             </div>
 
             <div class="column-12 column-md-6 d-flex">
-              <coralite-card icon="universal" title="Accessibility and Security First" text="By leveraging native HTML elements, sites inherit strong accessibility features out-of-the-box. A small footprint with no third-party library dependencies creates a more secure website."></coralite-card>
+              <coralite-card icon="triangle" title="Progressive Enhancement"
+                text="Ensures that all basic content and functionality are accessible, even on browsers without JavaScript. JavaScript is treated as an optional enhancement, not a requirement."></coralite-card>
             </div>
 
             <div class="column-12 column-md-6 d-flex">
-              <coralite-card icon="plugin" title="Powerful Plugin System" text="Extend and customize the build process with a plugin API. Use hooks to manage content, create aggregations like blog posts with pagination, or transform final HTML and CSS output."></coralite-card>
+              <coralite-card icon="universal" title="Accessibility and Security First"
+                text="By leveraging native HTML elements, sites inherit strong accessibility features out-of-the-box. A small footprint with no third-party library dependencies creates a more secure website."></coralite-card>
+            </div>
+
+            <div class="column-12 column-md-6 d-flex">
+              <coralite-card icon="plugin" title="Powerful Plugin System"
+                text="Extend and customize the build process with a plugin API. Use hooks to manage content, create aggregations like blog posts with pagination, or transform final HTML and CSS output."></coralite-card>
             </div>
           </div>
         </div>
@@ -81,7 +96,8 @@
     <section class="container text-center py-5 mb-5">
       <h2>Free &amp; Open Source</h2>
 
-      <p><strong>Coralite</strong> is <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank">AGPL Licensed</a> and will always be free and open source.</p>
+      <p><strong>Coralite</strong> is <a href="https://www.gnu.org/licenses/agpl-3.0.en.html" target="_blank">AGPL
+          Licensed</a> and will always be free and open source.</p>
 
       <p>Brought to you by <a href="https://thomasjackdavid.com/" target="_blank">Thomas David</a></p>
 
@@ -91,4 +107,5 @@
     <coralite-footer></coralite-footer>
   </main>
 </body>
+
 </html>

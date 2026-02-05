@@ -9,17 +9,16 @@ import { pathToFileURL } from 'node:url'
 import { availableParallelism } from 'node:os'
 import render from 'dom-serializer'
 import pLimit from 'p-limit'
+import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
 
 /**
  * @import {
  *  CoraliteElement,
- *  CoraliteTextNode,
  *  CoraliteAnyNode,
  *  CoraliteModule,
  *  CoraliteResult,
  *  CoraliteModuleValues,
  *  CoraliteDocument,
- *  CoraliteModuleValue,
  *  CoraliteCollectionItem,
  *  CoraliteDocumentRoot,
  *  CoralitePluginInstance,
@@ -629,8 +628,7 @@ Coralite.prototype._generatePages = async function* (path) {
           }
         }
 
-        /** @type {CoraliteElement} */
-        const scriptElement = {
+        const scriptElement = createCoraliteElement({
           type: 'tag',
           name: 'script',
           parent: bodyElement,
@@ -638,13 +636,13 @@ Coralite.prototype._generatePages = async function* (path) {
             type: 'module'
           },
           children: []
-        }
+        })
 
-        scriptElement.children.push({
+        scriptElement.children.push(createCoraliteTextNode({
           type: 'text',
           data: scriptTextContent,
           parent: scriptElement
-        })
+        }))
 
         bodyElement.children.push(scriptElement)
       }
@@ -801,6 +799,11 @@ Coralite.prototype.build = async function (...args) {
 
     if (error.name === 'AbortError') {
       console.warn('Build cancelled by user.')
+    }
+
+    if (error instanceof Error) {
+      error.message = `Build failed: ${error.message}`
+      throw error
     }
 
     throw new Error(`Build failed: ${error.message}`, { cause: error })
@@ -1323,7 +1326,14 @@ Coralite.prototype._evaluate = async function ({
   )
 
   // Execute the function with our mocks and context
-  await fn(moduleMock, moduleMock.exports, customRequire, context)
+  try {
+    await fn(moduleMock, moduleMock.exports, customRequire, context)
+  } catch (error) {
+    if (error instanceof Error) {
+      error.message = `Error in "${templateItem.path.pathname}": ${error.message}`
+    }
+    throw error
+  }
 
   if (moduleMock.exports.default != null) {
     return moduleMock.exports.default
