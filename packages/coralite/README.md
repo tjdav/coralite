@@ -10,10 +10,18 @@ coralite is a static site generator library built around the emerging [HTML modu
 </p>
 
 - Getting started
-  - [Basic templating](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/basic-templating.md)
+  - [Installation](https://coralite.dev/docs/guide/installation.html)
+  - [Basic templating](https://coralite.dev/docs/guide/getting-started.html)
 - Reference
-  - [Coralite CLI](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite-cli.md)
-  - [Coralite](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/coralite.md)
+  - [Coralite CLI](https://coralite.dev/docs/reference/cli.html)
+  - [Coralite](https://coralite.dev/docs/reference/coralite.html)
+  - [Plugin system](https://coralite.dev/docs/reference/plugins/index.html)
+    - [Define component](https://coralite.dev/docs/reference/plugins/define-component.html)
+      - The defineComponent plugin is Coralite's core built-in plugin that enables dynamic template functionality.
+    - [Ref](https://coralite.dev/docs/reference/plugins/refs-plugin.html)
+      - The refs plugin is a built-in Coralite helper that provides runtime DOM element access.
+    - [Metadata](https://coralite.dev/docs/reference/plugins/metadata.html)
+      - The metadata plugin is a built-in Coralite tool that extracts metadata from <meta> tags in your page's <head> and makes them available as template variables. 
   - [Javascript](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/javascript.md)
   - [Types](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/types.md)
 
