@@ -1076,6 +1076,7 @@ Coralite.prototype.createComponent = async function ({
   const customElements = module.customElements
   let childIndex
 
+  // Update slot elements for all custom elements
   for (let i = 0; i < customElements.length; i++) {
     const customElement = customElements[i]
 
@@ -1101,6 +1102,19 @@ Coralite.prototype.createComponent = async function ({
         customElement.slots.push(slotElement)
       }
     }
+  }
+
+  const createComponentTasks = []
+
+  for (let i = 0; i < customElements.length; i++) {
+    const customElement = customElements[i]
+
+    // Skip if this element is a direct child of another custom element.
+    // The parent will handle processing this element via slots.
+    // @ts-ignore
+    if (customElement.parent && customElement.parent.slots) {
+      continue
+    }
 
     const childContextId = contextId + i + customElement.name
     const currentValues = this.values[childContextId] || {}
@@ -1118,14 +1132,25 @@ Coralite.prototype.createComponent = async function ({
       this.values[childContextId] = Object.assign(currentValues, values)
     }
 
-    const component = await this.createComponent({
-      id: customElement.name,
-      values: this.values[childContextId],
-      element: customElement,
-      document,
-      contextId: childContextId,
-      index
-    }, false)
+    createComponentTasks.push(
+      this.createComponent({
+        id: customElement.name,
+        values: this.values[childContextId],
+        element: customElement,
+        document,
+        contextId: childContextId,
+        index
+      }, false).then(component => ({
+        component,
+        customElement
+      }))
+    )
+  }
+
+  const results = await Promise.all(createComponentTasks)
+
+  for (let i = 0; i < results.length; i++) {
+    const { component, customElement } = results[i]
     const children = customElement.parent.children
 
     if (!childIndex) {
