@@ -504,7 +504,7 @@
     <!-- Built-in Plugins Section -->
     <section id="built-in-plugins">
       <coralite-heading level="h2" text="Built-in Plugins"></coralite-heading>
-      <p>Coralite includes two built-in plugins that provide core functionality:</p>
+      <p>Coralite includes three built-in plugins that provide core functionality:</p>
 
       <coralite-heading level="h3" text="defineComponent"></coralite-heading>
       <p>The <code>defineComponent</code> plugin is required for all dynamic templates. It provides the wrapper for
@@ -608,6 +608,17 @@
           ]
         }
       </coralite-code-highlight>
+
+      <coralite-heading level="h3" text="Metadata Plugin"></coralite-heading>
+      <p>The <code>metadata</code> plugin automatically processes page metadata for use in templates:</p>
+
+      <ul>
+        <li>Scans <code>&lt;head&gt;</code> for <code>&lt;meta&gt;</code> tags</li>
+        <li>Exposes values as <code>meta_name</code> variables</li>
+        <li>Supports dynamic metadata generation via components</li>
+      </ul>
+
+      <p>See the <a href="./metadata.html">Metadata Plugin Reference</a> for full details.</p>
 
       <coralite-heading level="h3" text="Complete Example"></coralite-heading>
       <p>Here's a complete example showing all built-in plugins working together:</p>
