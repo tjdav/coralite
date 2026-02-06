@@ -18,9 +18,10 @@
     "lint-css-fix": "stylelint --fix 'src/css/*.css'"
   },
   "devDependencies": {
-    "coralite-plugin-aggregation": "^0.5.4",
+    "coralite-plugin-aggregation": "^0.6.0",
     "coralite-plugin-inline-css": "^0.4.0",
     "coralite-scripts": "workspace:*",
+    "highlight.js": "^11.11.1",
     "stylelint": "^16.24.0",
     "stylelint-config-twbs-bootstrap": "^16.1.0"
   },

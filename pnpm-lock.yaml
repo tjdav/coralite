@@ -139,14 +139,17 @@ importers:
   website:
     devDependencies:
       coralite-plugin-aggregation:
-        specifier: ^0.5.4
-        version: 0.5.4
+        specifier: ^0.6.0
+        version: 0.6.0
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
       coralite-scripts:
         specifier: workspace:*
         version: link:../packages/coralite-scripts
+      highlight.js:
+        specifier: ^11.11.1
+        version: 11.11.1
       stylelint:
         specifier: ^16.24.0
         version: 16.24.0(typescript@5.9.2)
@@ -843,18 +846,11 @@ packages:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
-  coralite-plugin-aggregation@0.5.4:
-    resolution: {integrity: sha512-ED6cCLbusLHWz641uTrDfwq2rQcx77F3dqO1ZY2teMppJMBPWrQRZwTAoebr2w/PBlXC3UbCYQhvKfhUygVuQg==}
-    peerDependencies:
-      coralite: ^0.18.7
+  coralite-plugin-aggregation@0.6.0:
+    resolution: {integrity: sha512-i6xzNXIEKFp8wDygwMD6g4TPeq3+04buNNlffd7Tad2J54nZHj54eDCbiTlz+dFfF2uaeM/RrsrYC6gEsK3JHA==}
 
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
-
-  coralite@0.20.0:
-    resolution: {integrity: sha512-zCLGCXznXlMNcB+9y5SvuNWnH9WsNby+iC/dVNqwOBrOK/BwzGcdWLcUgUIZErgXg/2lFhJhW6d3tHuB1ZuNaw==}
-    engines: {node: ^20.19.0 || >=22.19.0}
-    hasBin: true
 
   cosmiconfig-typescript-loader@6.1.0:
     resolution: {integrity: sha512-tJ1w35ZRUiM5FeTzT7DtYWAFFv37ZLqSRkGi2oeCK1gPhvaWjkAtfXvLmvE1pRfxxp9aQo6ba/Pvg1dKj05D4g==}
@@ -1211,6 +1207,10 @@ packages:
   hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
+
+  highlight.js@11.11.1:
+    resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
+    engines: {node: '>=12.0.0'}
 
   hookified@1.12.1:
     resolution: {integrity: sha512-xnKGl+iMIlhrZmGHB729MqlmPoWBznctSQTYCpFKqNsCgimJQmithcW0xSQMMFzYnV2iKUh25alswn6epgxS0Q==}
@@ -2775,9 +2775,8 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.5.4(coralite@0.20.0):
+  coralite-plugin-aggregation@0.6.0:
     dependencies:
-      coralite: 0.20.0
       dom-serializer: 2.0.0
       htmlparser2: 10.0.0
 
@@ -2786,11 +2785,6 @@ snapshots:
       postcss: 8.5.6
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
-
-  coralite@0.20.0:
-    dependencies:
-      commander: 13.1.0
-      p-limit: 7.2.0
 
   cosmiconfig-typescript-loader@6.1.0(@types/node@22.18.5)(cosmiconfig@9.0.0(typescript@5.9.2))(typescript@5.9.2):
     dependencies:
@@ -3205,6 +3199,8 @@ snapshots:
   hasown@2.0.2:
     dependencies:
       function-bind: 1.1.2
+
+  highlight.js@11.11.1: {}
 
   hookified@1.12.1: {}
 
