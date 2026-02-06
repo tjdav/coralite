@@ -4,16 +4,6 @@ Welcome to **Coralite starter script**, a lightweight Static Site Generator (SSG
 
 ---
 
-## Prerequisites
-
-Ensure you have:
-- Node.js ≥ 20.x
-- npm or pnpm installed
-
-> Coralite uses experimental ES modules (`--experimental-vm-modules`) — make sure your Node version supports it.
-
----
-
 ## Project Structure
 
 Coralite expects a standard folder layout:
