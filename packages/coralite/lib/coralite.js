@@ -959,7 +959,6 @@ Coralite.prototype.createComponent = async function ({
   const templateItem = this.templates.getItem(id)
 
   if (!templateItem) {
-    console.warn('Could not find component "' + id + '" used in document "' + document.path.pathname + '"')
     return
   }
 
