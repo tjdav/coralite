@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Create Coralite Scaffolding: CLI Tool for Rapid Project Setup"
+    description="Learn how to use create-coralite to quickly scaffold new Coralite projects. Explore CLI options, templates, and installation methods."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Create Coralite Scaffolding</h1>
+    <p>
+      The <code>create-coralite</code> package is a command-line interface (CLI) tool designed to scaffold new projects using the Coralite static-site-generator (SSG).
+    </p>
+
+    <blockquote>
+      <p><strong>Note</strong>: This guide assumes familiarity with basic terminal operations, Node.js (v22.12.0 or higher), and package managers such as <code>npm</code>, <code>yarn</code>, or <code>pnpm</code>.</p>
+    </blockquote>
+
+    <coralite-heading level="h2" text="Installation & Usage"></coralite-heading>
+
+    <coralite-heading level="h3" text="Install via Package Manager"></coralite-heading>
+    <p>To initialize a new Coralite project:</p>
+
+    <coralite-code-highlight language="bash">npm create coralite@latest</coralite-code-highlight>
+
+    <p>Alternatively, use other package managers:</p>
+
+    <coralite-code-highlight language="bash">yarn create coralite</coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">pnpm create coralite</coralite-code-highlight>
+
+    <blockquote>
+      <p><strong>Note</strong>: The <code>create-coralite</code> CLI is registered as both <code>create-coralite</code> and <code>cca</code> (short for <em>Coralite Create App</em>).</p>
+    </blockquote>
+
+    <coralite-heading level="h2" text="CLI Options"></coralite-heading>
+
+    <coralite-heading level="h3" text="-o, --output &lt;name&gt;"></coralite-heading>
+    <ul>
+      <li><strong>Purpose</strong>: Set project output directory.</li>
+      <li><strong>Default</strong>: Empty string → prompt required</li>
+      <li><strong>Usage Example</strong>:</li>
+    </ul>
+    <coralite-code-highlight language="bash">npm create coralite -o my-project</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="-t, --template &lt;name&gt;"></coralite-heading>
+    <ul>
+      <li><strong>Purpose</strong>: Select styling template for the scaffolded project.</li>
+      <li><strong>Choices</strong>: <code>css</code>, <code>scss</code></li>
+      <li><strong>Default</strong>: Empty string → user selection required</li>
+      <li><strong>Usage Example</strong>:</li>
+    </ul>
+    <coralite-code-highlight language="bash">npm create coralite -t scss</coralite-code-highlight>
+
+  </main>
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
