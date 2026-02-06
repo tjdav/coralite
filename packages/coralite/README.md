@@ -22,8 +22,7 @@ coralite is a static site generator library built around the emerging [HTML modu
       - The refs plugin is a built-in Coralite helper that provides runtime DOM element access.
     - [Metadata](https://coralite.dev/docs/reference/plugins/metadata.html)
       - The metadata plugin is a built-in Coralite tool that extracts metadata from <meta> tags in your page's <head> and makes them available as template variables. 
-  - [Javascript](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/javascript.md)
-  - [Types](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite/docs/types.md)
+  - [Types](https://coralite.dev/docs/reference/types.html)
 
 ## Installation
 
