@@ -36,7 +36,7 @@
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.4.0",
     "@types/node": "^22.18.5",
-    "coralite-release": "link:packages/coralite-release",
+    "coralite-release": "workspace:*",
     "esbuild": "^0.25.9",
     "eslint": "^9.38.0",
     "lint-staged": "^16.1.6",

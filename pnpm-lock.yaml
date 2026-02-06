@@ -15,7 +15,7 @@ importers:
         specifier: ^22.18.5
         version: 22.18.5
       coralite-release:
-        specifier: link:packages/coralite-release
+        specifier: workspace:*
         version: link:packages/coralite-release
       esbuild:
         specifier: ^0.25.9
@@ -41,9 +41,24 @@ importers:
       commander:
         specifier: ^13.1.0
         version: 13.1.0
+      dom-serializer:
+        specifier: ^2.0.0
+        version: 2.0.0
+      esbuild:
+        specifier: ^0.25.9
+        version: 0.25.9
+      htmlparser2:
+        specifier: ^10.0.0
+        version: 10.0.0
+      kleur:
+        specifier: ^4.1.5
+        version: 4.1.5
       p-limit:
         specifier: ^7.2.0
         version: 7.2.0
+      serialize-javascript:
+        specifier: ^7.0.2
+        version: 7.0.2
     devDependencies:
       '@commitlint/cli':
         specifier: ^19.6.1
@@ -54,27 +69,9 @@ importers:
       '@playwright/test':
         specifier: ^1.50.0
         version: 1.55.0
-      dom-serializer:
-        specifier: ^2.0.0
-        version: 2.0.0
-      esbuild:
-        specifier: ^0.25.9
-        version: 0.25.9
-      highlight.js:
-        specifier: ^11.11.1
-        version: 11.11.1
-      htmlparser2:
-        specifier: ^10.0.0
-        version: 10.0.0
-      kleur:
-        specifier: ^4.1.5
-        version: 4.1.5
       premove:
         specifier: ^4.0.0
         version: 4.0.0
-      serialize-javascript:
-        specifier: ^7.0.2
-        version: 7.0.2
       sirv-cli:
         specifier: ^3.0.0
         version: 3.0.1
@@ -142,13 +139,13 @@ importers:
   website:
     devDependencies:
       coralite-plugin-aggregation:
-        specifier: ^0.5.3
-        version: 0.5.4(coralite@0.19.0)
+        specifier: link:../../coralite-plugin-aggregation
+        version: link:../../coralite-plugin-aggregation
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
       coralite-scripts:
-        specifier: 'workspace:'
+        specifier: workspace:*
         version: link:../packages/coralite-scripts
       stylelint:
         specifier: ^16.24.0
@@ -560,36 +557,42 @@ packages:
     engines: {node: '>= 10.0.0'}
     cpu: [arm]
     os: [linux]
+    libc: [glibc]
 
   '@parcel/watcher-linux-arm-musl@2.5.1':
     resolution: {integrity: sha512-6E+m/Mm1t1yhB8X412stiKFG3XykmgdIOqhjWj+VL8oHkKABfu/gjFj8DvLrYVHSBNC+/u5PeNrujiSQ1zwd1Q==}
     engines: {node: '>= 10.0.0'}
     cpu: [arm]
     os: [linux]
+    libc: [musl]
 
   '@parcel/watcher-linux-arm64-glibc@2.5.1':
     resolution: {integrity: sha512-LrGp+f02yU3BN9A+DGuY3v3bmnFUggAITBGriZHUREfNEzZh/GO06FF5u2kx8x+GBEUYfyTGamol4j3m9ANe8w==}
     engines: {node: '>= 10.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [glibc]
 
   '@parcel/watcher-linux-arm64-musl@2.5.1':
     resolution: {integrity: sha512-cFOjABi92pMYRXS7AcQv9/M1YuKRw8SZniCDw0ssQb/noPkRzA+HBDkwmyOJYp5wXcsTrhxO0zq1U11cK9jsFg==}
     engines: {node: '>= 10.0.0'}
     cpu: [arm64]
     os: [linux]
+    libc: [musl]
 
   '@parcel/watcher-linux-x64-glibc@2.5.1':
     resolution: {integrity: sha512-GcESn8NZySmfwlTsIur+49yDqSny2IhPeZfXunQi48DMugKeZ7uy1FX83pO0X22sHntJ4Ub+9k34XQCX+oHt2A==}
     engines: {node: '>= 10.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [glibc]
 
   '@parcel/watcher-linux-x64-musl@2.5.1':
     resolution: {integrity: sha512-n0E2EQbatQ3bXhcH2D1XIAANAcTZkQICBPVaxMeaCVBtOpBZpWJuf7LwyWPSBDITb7In8mqQgJ7gH8CILCURXg==}
     engines: {node: '>= 10.0.0'}
     cpu: [x64]
     os: [linux]
+    libc: [musl]
 
   '@parcel/watcher-win32-arm64@2.5.1':
     resolution: {integrity: sha512-RFzklRvmc3PkjKjry3hLF9wD7ppR4AKcWNzH7kXR7GUe0Igb3Nz8fyPwtZCSquGrhU5HhUNDr/mKBqj7tqA2Vw==}
@@ -840,18 +843,8 @@ packages:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
-  coralite-plugin-aggregation@0.5.4:
-    resolution: {integrity: sha512-ED6cCLbusLHWz641uTrDfwq2rQcx77F3dqO1ZY2teMppJMBPWrQRZwTAoebr2w/PBlXC3UbCYQhvKfhUygVuQg==}
-    peerDependencies:
-      coralite: ^0.18.7
-
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
-
-  coralite@0.19.0:
-    resolution: {integrity: sha512-lVGvad5XZWggoryZLmXr8Gj8zK5y02KO9GZo68ZUQh0rcWdOvMwUp/36veFC3VG+Oin8K78jMVB193IwRp07Sw==}
-    engines: {node: ^20.19.0 || >=22.19.0}
-    hasBin: true
 
   cosmiconfig-typescript-loader@6.1.0:
     resolution: {integrity: sha512-tJ1w35ZRUiM5FeTzT7DtYWAFFv37ZLqSRkGi2oeCK1gPhvaWjkAtfXvLmvE1pRfxxp9aQo6ba/Pvg1dKj05D4g==}
@@ -1208,10 +1201,6 @@ packages:
   hasown@2.0.2:
     resolution: {integrity: sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==}
     engines: {node: '>= 0.4'}
-
-  highlight.js@11.11.1:
-    resolution: {integrity: sha512-Xwwo44whKBVCYoliBQwaPvtd/2tYFkRQtXDWj1nackaV2JPXx3L0+Jvd8/qCJ2p+ML0/XVkJ2q+Mr+UVdpJK5w==}
-    engines: {node: '>=12.0.0'}
 
   hookified@1.12.1:
     resolution: {integrity: sha512-xnKGl+iMIlhrZmGHB729MqlmPoWBznctSQTYCpFKqNsCgimJQmithcW0xSQMMFzYnV2iKUh25alswn6epgxS0Q==}
@@ -2776,21 +2765,11 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.5.4(coralite@0.19.0):
-    dependencies:
-      coralite: 0.19.0
-      dom-serializer: 2.0.0
-      htmlparser2: 10.0.0
-
   coralite-plugin-inline-css@0.4.0:
     dependencies:
       postcss: 8.5.6
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
-
-  coralite@0.19.0:
-    dependencies:
-      esbuild: 0.25.9
 
   cosmiconfig-typescript-loader@6.1.0(@types/node@22.18.5)(cosmiconfig@9.0.0(typescript@5.9.2))(typescript@5.9.2):
     dependencies:
@@ -3205,8 +3184,6 @@ snapshots:
   hasown@2.0.2:
     dependencies:
       function-bind: 1.1.2
-
-  highlight.js@11.11.1: {}
 
   hookified@1.12.1: {}
 
