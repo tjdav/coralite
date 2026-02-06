@@ -74,20 +74,3 @@ Run the CLI in dry-run mode to preview the actions that would be performed witho
 ```bash
 coralite --templates path/to/templates --pages path/to/pages --output dist --dry-run
 ```
-
-## Troubleshooting
-
-
-Coralite uses **ECMAScript Modules** and **Import meta resolve** which requires to run Node.js with the **`--experimental-vm-modules`** and **`--experimental-import-meta-resolve`** option enabled.
-
-```bash
-node --experimental-vm-modules --experimental-import-meta-resolve node_modules/coralite/bin/coralite.js [options]
-```
-
-If you require your templates to import
-
-or using NODE_OPTIONS
-
-```bash
-NODE_OPTIONS="--experimental-vm-modules --experimental-import-meta-resolve" coralite [options]
-```
