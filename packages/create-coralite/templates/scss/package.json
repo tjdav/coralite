@@ -7,6 +7,6 @@
     "build": "coralite-scripts build"
   },
   "devDependencies": {
-    "coralite-scripts": "workspace:*"
+    "coralite-scripts": "^0.20.0"
   }
 }
