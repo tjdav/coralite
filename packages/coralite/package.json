@@ -37,7 +37,7 @@
     "test-e2e-ui": "playwright test --ui",
     "server": "sirv .html --dev --port 3000",
     "build": "premove dist && pnpm build-lib && pnpm build-plugins && pnpm build-types",
-    "build-lib": "esbuild ./lib/index.js --bundle --target=esnext --external:esbuild --format=esm --outdir=dist/lib --platform=node --sourcemap",
+    "build-lib": "esbuild ./lib/index.js --bundle --target=esnext --external:esbuild --external:commander --external:dom-serializer --external:dom-htmlparser2 --external:kleur --external:p-limit --external:serialize-javascript --format=esm --outdir=dist/lib --platform=node --sourcemap",
     "build-plugins": "esbuild ./plugins/*.js --format=esm --outdir=dist/plugins --platform=node",
     "build-types": "tsc",
     "build-html": "premove .html && node ./bin/coralite.js -t tests/fixtures/templates -p tests/fixtures/pages -o .html -i 'data-dev=true'"
@@ -71,20 +71,19 @@
     "@commitlint/cli": "^19.6.1",
     "@commitlint/config-conventional": "^19.6.0",
     "@playwright/test": "^1.50.0",
-    "dom-serializer": "^2.0.0",
-    "esbuild": "^0.25.9",
-    "highlight.js": "^11.11.1",
-    "htmlparser2": "^10.0.0",
-    "kleur": "^4.1.5",
     "premove": "^4.0.0",
-    "serialize-javascript": "^7.0.2",
     "sirv-cli": "^3.0.0"
   },
   "engines": {
-    "node": "^20.19.0 || >=22.19.0"
+    "node": ">20.19.0"
   },
   "dependencies": {
     "commander": "^13.1.0",
-    "p-limit": "^7.2.0"
+    "dom-serializer": "^2.0.0",
+    "esbuild": "^0.25.9",
+    "htmlparser2": "^10.0.0",
+    "kleur": "^4.1.5",
+    "p-limit": "^7.2.0",
+    "serialize-javascript": "^7.0.2"
   }
 }
