@@ -1,6 +1,5 @@
 import { createPlugin } from '#lib'
 
-// Export as plugin for the new system
 export const refsPlugin = createPlugin({
   name: 'refs',
   script: {
