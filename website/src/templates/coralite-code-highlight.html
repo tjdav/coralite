@@ -22,6 +22,39 @@
 
   const allowedCustomTags = ['coralite-version']
 
+  function replacePlaceholders(nodes, placeholders) {
+    const result = []
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i]
+
+      if (node.type === 'text') {
+        const parts = node.data.split(/(__CORALITE_TAG_\d+__)/g)
+
+        for (let j = 0; j < parts.length; j++) {
+          const part = parts[j]
+          if (placeholders[part]) {
+            const originalNode = placeholders[part]
+            originalNode.parent = node.parent
+            result.push(originalNode)
+          } else if (part) {
+            result.push({
+              type: 'text',
+              data: part,
+              parent: node.parent
+            })
+          }
+        }
+      } else if (node.children) {
+        node.children = replacePlaceholders(node.children, placeholders)
+        result.push(node)
+      } else {
+        result.push(node)
+      }
+    }
+    return result
+  }
+
   export default defineComponent({
     tokens: {
       languageClass(attributes) {
@@ -30,43 +63,34 @@
     },
     slots: {
       default(content, values) {
-        let result = []
-        let endIndex = content.length
-        let startIndex = 0
-        const firstNode = content[0]
-        const lastNode = content[endIndex - 1]
+        let fullText = ''
+        const placeholders = {}
+        let placeholderIndex = 0
 
-        if (firstNode.type === 'text' && !firstNode.data.trim()) {
-          // skip first new line
-          startIndex = 1
-        }
-
-        if (lastNode.type === 'text' && !lastNode.data.trim()) {
-          endIndex = content.length - 1
-        }
-
-        for (let i = startIndex; i < endIndex; i++) {
+        for (let i = 0; i < content.length; i++) {
           const node = content[i];
 
-          if (node.type === 'text' && node.data.trim()) {
-            const content = dedent(node.data)
-            // re-indent with 2 spaces relative to the tag
-            const indentedContent = indent(content, '  ')
-
-            const highlightCode = code.highlight(
-              indentedContent,
-              { language: values.language.toLowerCase() }
-            )
-
-            const nodes = parseHTML(highlightCode.value)
-
-            result = result.concat(nodes.root.children)
+          if (node.type === 'text') {
+            fullText += node.data
           } else if (node.type === 'tag' && allowedCustomTags.includes(node.name)) {
-            result.push(node)
+            const placeholder = `__CORALITE_TAG_${placeholderIndex++}__`
+            placeholders[placeholder] = node
+            fullText += placeholder
           }
         }
 
-        return result
+        const dedented = dedent(fullText).trim()
+        // re-indent with 2 spaces relative to the tag
+        const indentedContent = indent(dedented, '  ')
+
+        const highlightCode = code.highlight(
+          indentedContent,
+          { language: values.language.toLowerCase() }
+        )
+
+        const nodes = parseHTML(highlightCode.value)
+
+        return replacePlaceholders(nodes.root.children, placeholders)
       }
     },
     script(context, { refs }) {
