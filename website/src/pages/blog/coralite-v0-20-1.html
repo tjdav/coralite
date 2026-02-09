@@ -4,9 +4,9 @@
 <head>
   <coralite-meta 
     type="article" 
-    title="Coralite v0.20 Released: Major Performance Boost & New APIs" 
+    title="Coralite v0.20 Released - Major Performance Boost & New APIs" 
     description="Coralite v0.20 introduces significant performance improvements, a new metadata plugin, enhanced DOM APIs, and removes experimental flag requirements."></coralite-meta>
-  <meta property="article:published_time" name="published_time" content="2026-02-06T09:17:53.000Z">
+  <meta property="article:published_time" name="published_time" content="2026-02-09T20:57:36.635Z">
   <meta name="author_id" content="thomas" data-dev="true">
   <title>Coralite v0.20 Released: Major Performance Boost & New APIs</title>
   <link rel="stylesheet" href="/css/styles.css" inline-css>
@@ -18,13 +18,13 @@
   <main class="container content post">
     <h1>Coralite v0.20 Released</h1>
 
-    <coralite-author name="thomas" date-time="2026-02-06T09:17:53.000Z"></coralite-author>
+    <coralite-author name="thomas" date-time="2026-02-09T20:57:36.635Z"></coralite-author>
 
-    <p>We are thrilled to announce the release of <strong>Coralite v0.20.1</strong> and <strong>Coralite Scripts v0.20.0</strong>! This major update focuses on significantly improving build performance, simplifying the development environment, and introducing powerful new APIs for metadata and DOM manipulation.</p>
+    <p>I am thrilled to announce the release of <strong>Coralite v0.20.1</strong> and <strong>Coralite Scripts v0.20.0</strong>! This major update focuses on significantly improving build performance, simplifying the development environment, and introducing powerful new APIs for metadata and DOM manipulation.</p>
 
     <coralite-heading level="h2" text="Major Performance Improvements"></coralite-heading>
 
-    <p>Build times and page generation have been majorly improved in this release. The core compilation process now parallelizes custom element creation, especially for asynchronous operations. In our benchmarks, this resulted in a dramatic speedup (up to 10x faster for complex component trees), reducing build times from seconds to milliseconds.</p>
+    <p>Build times and page generation have been majorly improved in this release. The core compilation process now parallelizes custom element creation, especially for asynchronous operations. In  benchmarks, this resulted in a dramatic speedup (up to 10x faster for complex component trees), reducing build times from seconds to milliseconds.</p>
 
     <p>Additionally, the development server now features <strong>in-memory page caching</strong>. This means subsequent requests to unchanged pages are served instantly, and multi-page builds are handled more efficiently, making the developer experience smoother and faster.</p>
 
@@ -46,13 +46,13 @@
 
     <coralite-heading level="h2" text="Enhanced DOM API"></coralite-heading>
 
-    <p>We've refactored the internal DOM node creation logic to be more robust and type-safe. New factory functions <code>createCoraliteElement</code> and <code>createCoraliteTextNode</code> are now available, providing a standardized way to create nodes programmatically in plugins and scripts.</p>
-
+    <p>This release includes a refactored internal DOM node creation logic designed for greater robustness and type safety. It also introduces the new factory functions <code>createCoraliteElement</code> and <code>createCoraliteTextNode</code>, which provide a standardized approach for programmatically creating nodes in plugins and scripts.
+    
     <p>The new <code>coralite.build</code> API replaces the older compilation methods, offering better error handling and a callback overload for more flexible build scripts.</p>
 
     <coralite-heading level="h2" text="Simplified Environment Setup"></coralite-heading>
 
-    <p>Good news for Node.js developers: The system no longer depends on any experimental Node.js flags! You can now run Coralite without the <code>--experimental-vm-modules</code> flag, simplifying your <code>package.json</code> scripts and CI/CD pipelines.</p>
+    <p>The system no longer depends on any experimental Node.js flags! You can now run Coralite without the <code>--experimental-vm-modules</code> flag, simplifying your <code>package.json</code> scripts and CI/CD pipelines.</p>
 
     <coralite-heading level="h2" text="Bug Fixes & Improvements"></coralite-heading>
 
@@ -86,5 +86,4 @@
   <coralite-footer></coralite-footer>
   
 </body>
-
 </html>
