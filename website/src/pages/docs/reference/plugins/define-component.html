@@ -179,15 +179,15 @@
                *  $filename: data.path.filename,
                *  
                *  // Data from page meta tags
-               *  $firstName: "Alice",
-               *  $lastName: "Smith",
-               *  $title: "User Profile",
+               *  meta_firstName: "Alice",
+               *  meta_lastName: "Smith",
+               *  meta_title: "User Profile",
                *  
                *  // Data from attribute values
                *  age: "25"
                * }
                */ 
-              fullName: ({ $firstName, $lastName }) => `${$firstName} ${$lastName}`,
+              fullName: ({ meta_firstName, meta_lastName }) => `${meta_firstName} ${meta_lastName}`,
               greeting: ({ age }) => `You are ${age} years old`
             }
           })
