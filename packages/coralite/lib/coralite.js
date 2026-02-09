@@ -789,9 +789,7 @@ Coralite.prototype.build = async function (...args) {
 
     await Promise.all(executing)
 
-    if (callback) {
-      return results
-    }
+    return results
 
   } catch (error) {
     // Clean up - If one fails or we abort, wait for pending to settle
