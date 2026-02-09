@@ -1,0 +1,33 @@
+.back-to-top {
+  position: fixed;
+  right: var(--padding-x);
+  bottom: var(--padding-y);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  color: var(--light);
+  visibility: hidden;
+  background-color: var(--secondary);
+  border: none;
+  border-radius: 50%;
+  box-shadow: var(--box-shadow);
+  opacity: 0;
+  transition: opacity .3s, visibility .3s, background-color .3s;
+
+  &:hover {
+    background-color: hsl(from var(--secondary) h s 40%);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+}
+
+.back-to-top.visible {
+  visibility: visible;
+  opacity: 1;
+}
