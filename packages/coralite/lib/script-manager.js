@@ -105,10 +105,10 @@ ScriptManager.prototype.generateInstanceWrapper = function (templateId, instance
  * @returns {Promise<string>} Compiled script
  */
 ScriptManager.prototype.compileAllInstances = async function (instances) {
-  let code = '(async () => {\n'
+  const codeParts = ['(async () => {\n']
 
-  code += `  const coraliteTemplateScriptHelpers = ${this.getHelpers()};\n`
-  code += `  const getHelpers = (context) => {
+  codeParts.push(`  const coraliteTemplateScriptHelpers = ${this.getHelpers()};\n`)
+  codeParts.push(`  const getHelpers = (context) => {
     const helpers = {}
 
     for (const key in coraliteTemplateScriptHelpers) {
@@ -118,8 +118,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances) {
     }
 
     return helpers
-  }\n`
-  code += `  const coraliteTemplateFunctions = {\n`
+  }\n`)
+  codeParts.push(`  const coraliteTemplateFunctions = {\n`)
 
   // Add shared function definitions (once per template)
   const processedTemplates = new Set()
@@ -131,16 +131,16 @@ ScriptManager.prototype.compileAllInstances = async function (instances) {
       const sharedFn = this.sharedFunctions.get(templateId)
       if (sharedFn && typeof sharedFn.script === 'function') {
         const script = normalizeFunction(sharedFn.script)
-        code += `    "${templateId}": ${script},\n`
+        codeParts.push(`    "${templateId}": ${script},\n`)
         processedTemplates.add(templateId)
       }
     }
   }
 
-  code += '  };\n'
+  codeParts.push('  };\n')
 
   // Add instance
-  code += '\n// Instances\n'
+  codeParts.push('\n// Instances\n')
   for (const [instanceId, instanceData] of Object.entries(instances)) {
     // Create context for instance helpers
     const context = {
@@ -152,15 +152,17 @@ ScriptManager.prototype.compileAllInstances = async function (instances) {
     }
 
     // Build instance helpers by calling factories with context
-    code += ';(async() => {\n'
-    code += 'const context = ' + serialize(context) + ';\n'
-    code += 'const helpers = getHelpers(context);\n'
-    code += `\n// Instance: ${instanceId}\n`
-    code += `await coraliteTemplateFunctions["${context.templateId}"](context, helpers);\n`
-    code += '})();\n'
+    codeParts.push(';(async() => {\n')
+    codeParts.push('const context = ' + serialize(context) + ';\n')
+    codeParts.push('const helpers = getHelpers(context);\n')
+    codeParts.push(`\n// Instance: ${instanceId}\n`)
+    codeParts.push(`await coraliteTemplateFunctions["${context.templateId}"](context, helpers);\n`)
+    codeParts.push('})();\n')
   }
 
-  code += '})();\n'
+  codeParts.push('})();\n')
+
+  const code = codeParts.join('')
 
   const result = await transform(code, {
     treeShaking: true
