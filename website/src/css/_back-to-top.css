@@ -11,11 +11,11 @@
   color: var(--light);
   visibility: hidden;
   background-color: var(--secondary);
-  border: none;
   border-radius: 50%;
   box-shadow: var(--box-shadow);
   opacity: 0;
   transition: opacity .3s, visibility .3s, background-color .3s;
+  border: 2px solid var(--primary);
 
   &:hover {
     background-color: hsl(from var(--secondary) h s 40%);
