@@ -45,6 +45,8 @@ export function parseHTML (string, ignoreByAttribute) {
   /** @type {CoraliteElement[]} */
   const tempElements = []
 
+  const ignoreAttributeMap = getIgnoreAttributeMap(ignoreByAttribute)
+
   const parser = new Parser({
     onprocessinginstruction (name, data) {
       root.children.push(createCoraliteDirective({
@@ -60,7 +62,7 @@ export function parseHTML (string, ignoreByAttribute) {
         name,
         attributes,
         parent,
-        ignoreByAttribute
+        ignoreByAttribute: ignoreAttributeMap
       })
 
       if (element.slots) {
@@ -193,14 +195,16 @@ export function parseModule (string, { ignoreByAttribute }) {
   let isTemplate = false
   let templateId = ''
 
+  const ignoreAttributeMap = getIgnoreAttributeMap(ignoreByAttribute)
+
   const parser = new Parser({
     onopentag (originalName, attributes) {
-      const parent = stack[stack.length -1]
+      const parent = stack[stack.length - 1]
       const element = createElement({
         name: originalName,
         attributes,
         parent,
-        ignoreByAttribute
+        ignoreByAttribute: ignoreAttributeMap
       })
 
       if (element.slots) {
@@ -414,7 +418,7 @@ function addMetadata (meta, name, content) {
  * @param {string} data.name - The tag name of the new element.
  * @param {Object.<string, string>} data.attributes - Attributes for the new element.
  * @param {CoraliteElement | CoraliteDocumentRoot} data.parent - Parent element or document root where this element will be attached.
- * @param {IgnoreByAttribute[]} [data.ignoreByAttribute] - Optional parameter used for ignoring elements based on attributes.
+ * @param {IgnoreByAttribute[] | Map<string, string[]>} [data.ignoreByAttribute] - Optional parameter used for ignoring elements based on attributes.
  * @returns {CoraliteElement} The newly created element with its parent reference and position in the parent's children list.
  */
 export function createElement ({
@@ -483,20 +487,66 @@ export function createTextNode (data, parent) {
 /**
  * Find attributes to be ignored by the parser.
  *
- * @param {IgnoreByAttribute[]} ignoreByAttribute - An array of attribute pairs to be ignored by the parser
+ * @param {IgnoreByAttribute[] | Map<string, string[]>} ignoreByAttribute - An array of attribute pairs or a map to be ignored by the parser
  * @param {Object<string, string>} attributes - The HTML attribute object to be parsed by the parser
  * @returns {boolean}
  */
 function findAttributesToIgnore (ignoreByAttribute, attributes) {
-  for (let i = 0; i < ignoreByAttribute.length; i++) {
-    const { name, value } = ignoreByAttribute[i]
+  if (Array.isArray(ignoreByAttribute)) {
+    for (let i = 0; i < ignoreByAttribute.length; i++) {
+      const { name, value } = ignoreByAttribute[i]
 
-    if (attributes[name] && attributes[name].includes(value)) {
-      return true
+      if (attributes[name] && attributes[name].includes(value)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // Handle Map optimization
+  for (const name in attributes) {
+    if (Object.prototype.hasOwnProperty.call(attributes, name)) {
+      if (ignoreByAttribute.has(name)) {
+        const values = ignoreByAttribute.get(name)
+        const attributeValue = attributes[name]
+
+        for (let i = 0; i < values.length; i++) {
+          if (attributeValue.includes(values[i])) {
+            return true
+          }
+        }
+      }
     }
   }
 
   return false
+}
+
+/**
+ * Create a map from ignoreByAttribute array.
+ * @param {IgnoreByAttribute[] | Map<string, string[]>} ignoreByAttribute
+ * @returns {Map<string, string[]>}
+ */
+function getIgnoreAttributeMap (ignoreByAttribute) {
+  if (!ignoreByAttribute) {
+    return
+  }
+
+  if (!Array.isArray(ignoreByAttribute)) {
+    return ignoreByAttribute
+  }
+
+  const map = new Map()
+
+  for (let i = 0; i < ignoreByAttribute.length; i++) {
+    const { name, value } = ignoreByAttribute[i]
+    if (!map.has(name)) {
+      map.set(name, [])
+    }
+    map.get(name).push(value)
+  }
+
+  return map
 }
 
 /**
