@@ -2,6 +2,8 @@
  * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement, CoraliteModuleValue, CoraliteTextNode} from '../types/index.js'
  */
 
+const KEBAB_REGEX = /[-|:]([a-z])/g
+
 /**
  * Converts a kebab-case string to camelCase
  * @param {string} str - The kebab-case string to convert
@@ -9,7 +11,7 @@
  */
 export function kebabToCamel (str) {
   // replace each dash followed by a letter with the uppercase version of the letter
-  return str.replace(/[-|:]([a-z])/g, function (match, letter) {
+  return str.replace(KEBAB_REGEX, function (match, letter) {
     return letter.toUpperCase()
   })
 }
