@@ -35,11 +35,11 @@ const nodeTypes = {
  * @template {RawCoraliteElement | RawCoraliteTextNode | RawCoraliteComment | RawCoraliteDirective | RawCoraliteDocumentRoot} T
  * @param {T} node
  */
-function CoraliteNode (node) {
+function CoraliteNodeConstructor (node) {
   Object.assign(this, node)
 }
 
-Object.defineProperties(CoraliteNode.prototype, {
+Object.defineProperties(CoraliteNodeConstructor.prototype, {
   nodeType: {
     /**
      * Returns an integer identifying the type of the node.
@@ -109,15 +109,15 @@ Object.defineProperties(CoraliteNode.prototype, {
  * Coralite Element Node Constructor
  * @param {RawCoraliteElement} node
  */
-function CoraliteElement (node) {
-  CoraliteNode.call(this, node)
+function CoraliteElementConstructor (node) {
+  CoraliteNodeConstructor.call(this, node)
 }
 
-CoraliteElement.prototype = Object.create(CoraliteNode.prototype)
-CoraliteElement.prototype.constructor = CoraliteElement
+CoraliteElementConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
+CoraliteElementConstructor.prototype.constructor = CoraliteElementConstructor
 
 
-Object.defineProperties(CoraliteElement.prototype, {
+Object.defineProperties(CoraliteElementConstructor.prototype, {
   nodeName: {
     /**
      * Returns the name of the node (uppercase tag name for elements).
@@ -277,7 +277,7 @@ Object.defineProperties(CoraliteElement.prototype, {
  * @returns {CoraliteElement}
  */
 export function createCoraliteElement (node) {
-  Object.setPrototypeOf(node, CoraliteElement.prototype)
+  Object.setPrototypeOf(node, CoraliteElementConstructor.prototype)
   // @ts-ignore
   return node
 }
@@ -286,14 +286,14 @@ export function createCoraliteElement (node) {
  * Coralite Text Node Constructor
  * @param {RawCoraliteTextNode} node
  */
-function CoraliteTextNode (node) {
-  CoraliteNode.call(this, node)
+function CoraliteTextNodeConstructor (node) {
+  CoraliteNodeConstructor.call(this, node)
 }
 
-CoraliteTextNode.prototype = Object.create(CoraliteNode.prototype)
-CoraliteTextNode.prototype.constructor = CoraliteTextNode
+CoraliteTextNodeConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
+CoraliteTextNodeConstructor.prototype.constructor = CoraliteTextNodeConstructor
 
-Object.defineProperties(CoraliteTextNode.prototype, {
+Object.defineProperties(CoraliteTextNodeConstructor.prototype, {
   nodeName: {
     /**
      * Returns the name of the node (#text).
@@ -343,7 +343,7 @@ Object.defineProperties(CoraliteTextNode.prototype, {
  * @returns {CoraliteTextNode}
  */
 export function createCoraliteTextNode (node) {
-  Object.setPrototypeOf(node, CoraliteTextNode.prototype)
+  Object.setPrototypeOf(node, CoraliteTextNodeConstructor.prototype)
   // @ts-ignore
   return node
 }
@@ -352,14 +352,14 @@ export function createCoraliteTextNode (node) {
  * Coralite Comment Node Constructor
  * @param {RawCoraliteComment} node
  */
-function CoraliteComment (node) {
-  CoraliteNode.call(this, node)
+function CoraliteCommentConstructor (node) {
+  CoraliteNodeConstructor.call(this, node)
 }
 
-CoraliteComment.prototype = Object.create(CoraliteNode.prototype)
-CoraliteComment.prototype.constructor = CoraliteComment
+CoraliteCommentConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
+CoraliteCommentConstructor.prototype.constructor = CoraliteCommentConstructor
 
-Object.defineProperties(CoraliteComment.prototype, {
+Object.defineProperties(CoraliteCommentConstructor.prototype, {
   nodeName: {
     /**
      * Returns the name of the node (#comment).
@@ -409,7 +409,7 @@ Object.defineProperties(CoraliteComment.prototype, {
  * @returns {CoraliteComment}
  */
 export function createCoraliteComment (node) {
-  Object.setPrototypeOf(node, CoraliteComment.prototype)
+  Object.setPrototypeOf(node, CoraliteCommentConstructor.prototype)
   // @ts-ignore
   return node
 }
@@ -418,14 +418,14 @@ export function createCoraliteComment (node) {
  * Coralite Directive Node Constructor
  * @param {RawCoraliteDirective} node
  */
-function CoraliteDirective (node) {
-  CoraliteNode.call(this, node)
+function CoraliteDirectiveConstructor (node) {
+  CoraliteNodeConstructor.call(this, node)
 }
 
-CoraliteDirective.prototype = Object.create(CoraliteNode.prototype)
-CoraliteDirective.prototype.constructor = CoraliteDirective
+CoraliteDirectiveConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
+CoraliteDirectiveConstructor.prototype.constructor = CoraliteDirectiveConstructor
 
-Object.defineProperties(CoraliteDirective.prototype, {
+Object.defineProperties(CoraliteDirectiveConstructor.prototype, {
   nodeName: {
     /**
      * Returns the name of the directive (e.g., !DOCTYPE).
@@ -459,7 +459,7 @@ Object.defineProperties(CoraliteDirective.prototype, {
  * @returns {CoraliteDirective}
  */
 export function createCoraliteDirective (node) {
-  Object.setPrototypeOf(node, CoraliteDirective.prototype)
+  Object.setPrototypeOf(node, CoraliteDirectiveConstructor.prototype)
   // @ts-ignore
   return node
 }
@@ -468,14 +468,14 @@ export function createCoraliteDirective (node) {
  * Coralite Document Node Constructor
  * @param {RawCoraliteDocumentRoot} node
  */
-function CoraliteDocument (node) {
-  CoraliteNode.call(this, node)
+function CoraliteDocumentConstructor (node) {
+  CoraliteNodeConstructor.call(this, node)
 }
 
-CoraliteDocument.prototype = Object.create(CoraliteNode.prototype)
-CoraliteDocument.prototype.constructor = CoraliteDocument
+CoraliteDocumentConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
+CoraliteDocumentConstructor.prototype.constructor = CoraliteDocumentConstructor
 
-Object.defineProperties(CoraliteDocument.prototype, {
+Object.defineProperties(CoraliteDocumentConstructor.prototype, {
   nodeName: {
     /**
      * Returns the name of the node (#document).
@@ -545,7 +545,7 @@ Object.defineProperties(CoraliteDocument.prototype, {
  * @returns {CoraliteDocumentRoot}
  */
 export function createCoraliteDocument (node) {
-  Object.setPrototypeOf(node, CoraliteDocument.prototype)
+  Object.setPrototypeOf(node, CoraliteDocumentConstructor.prototype)
   // @ts-ignore
   return node
 }
