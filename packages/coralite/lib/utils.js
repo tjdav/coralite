@@ -18,17 +18,20 @@ export function kebabToCamel (str) {
 
 /**
  * Converts all keys in an object from kebab-case to camelCase
- * @template {Object} T
- * @param {T} object - The object with kebab-case keys
- * @returns {T} - A new object with camelCase keys
+ * @template T
+ * @param {Object.<string, T>} object - The object with kebab-case keys
+ * @returns {Object.<string, T>} - A new object with camelCase keys
  */
 export function cleanKeys (object) {
-  const result = Object.assign({}, object)
+  /** @type {Object.<string, T>} */
+  const result = {}
 
-  for (const key in object) {
-    if (Object.prototype.hasOwnProperty.call(object, key)) {
-      // convert the kebab-case key to camelCase and assign the value to the new object
-      result[kebabToCamel(key)] = object[key]
+  for (const [key, value] of Object.values(object)) {
+    result[key] = value
+
+    const camelKey = kebabToCamel(key)
+    if (camelKey !== key) {
+      result[camelKey] = value
     }
   }
 
