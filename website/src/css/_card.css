@@ -8,6 +8,7 @@
   border-style: solid;
   border-width: 0 1px;
   border-radius: var(--border-radius);
+  overflow: hidden;
 }
 
 .card-title {
@@ -20,4 +21,3 @@
   padding: var(--spacer-1);
   margin: 0;
 }
-
