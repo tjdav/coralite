@@ -19,11 +19,11 @@ export function kebabToCamel (str) {
 /**
  * Converts all keys in an object from kebab-case to camelCase
  * @template T
- * @param {Object.<string, T>} object - The object with kebab-case keys
- * @returns {Object.<string, T>} - A new object with camelCase keys
+ * @param {Record<string, T>} object - The object with kebab-case keys
+ * @returns {Record<string, T>} - A new object with camelCase keys
  */
 export function cleanKeys (object) {
-  /** @type {Object.<string, T>} */
+  /** @type {Record<string, T>} */
   const result = {}
 
   for (const [key, value] of Object.entries(object)) {
