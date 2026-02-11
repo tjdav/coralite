@@ -26,7 +26,7 @@ export function cleanKeys (object) {
   /** @type {Object.<string, T>} */
   const result = {}
 
-  for (const [key, value] of Object.values(object)) {
+  for (const [key, value] of Object.entries(object)) {
     result[key] = value
 
     const camelKey = kebabToCamel(key)
