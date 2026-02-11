@@ -1,6 +1,6 @@
 {
   "name": "create-coralite",
-  "version": "0.20.0",
+  "version": "0.21.0",
   "description": "Coralite scaffolding script",
   "bin": {
     "create-coralite": "bin/index.js",
