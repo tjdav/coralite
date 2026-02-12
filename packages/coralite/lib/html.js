@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import CoraliteCollection from './collection.js'
 
 /**
- * @import { HTMLData,
+ * @import {
  *  CoraliteCollectionEventSet,
  *  CoraliteCollectionEventUpdate,
  *  CoraliteCollectionEventDelete } from '../types/index.js'
@@ -20,6 +20,7 @@ import CoraliteCollection from './collection.js'
  * @param {CoraliteCollectionEventSet} [options.onFileSet]
  * @param {CoraliteCollectionEventUpdate} [options.onFileUpdate]
  * @param {CoraliteCollectionEventDelete} [options.onFileDelete]
+ * @param {CoraliteCollection} [options.collection] - Optional collection instance to populate
  * @returns {Promise<CoraliteCollection>} Array of HTML file data including parent path, name, and content
  *
  * @example
@@ -37,15 +38,18 @@ export async function getHtmlFiles ({
   exclude = [],
   onFileSet,
   onFileUpdate,
-  onFileDelete
+  onFileDelete,
+  collection
 }) {
   try {
-    const collection = new CoraliteCollection({
-      rootDir: path,
-      onSet: onFileSet,
-      onUpdate: onFileUpdate,
-      onDelete: onFileDelete
-    })
+    if (!collection) {
+      collection = new CoraliteCollection({
+        rootDir: path,
+        onSet: onFileSet,
+        onUpdate: onFileUpdate,
+        onDelete: onFileDelete
+      })
+    }
 
     let files
     try {
