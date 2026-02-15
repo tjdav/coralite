@@ -1,5 +1,5 @@
 /**
- * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement, CoraliteModuleValue, CoraliteTextNode} from '../types/index.js'
+ * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement, CoraliteModuleValue, CoraliteTextNode, CoraliteDocument, CoraliteDocumentResult, CoraliteContentNode, CoraliteAnyNode, CoraliteDirective} from '../types/index.js'
  */
 
 const KEBAB_REGEX = /[-|:]([a-z])/g
@@ -93,8 +93,9 @@ export function normalizeFunction (func) {
 
 /**
    * Recursively clones a node and its children.
-   * @param {CoraliteElement} node
-   * @param {CoraliteElement|null} parent
+   * @param {any} node
+   * @param {any} parent
+   * @returns {any}
    */
 function cloneNode (nodeMap, node, parent) {
   // Shallow copy the node structure
@@ -257,5 +258,27 @@ export function replaceToken ({
       // replace token string
       node.data = node.data.replace(content, value)
     }
+  }
+}
+
+/**
+ * Creates a deep copy of a CoraliteDocument with re-linked internal references to enable safe independent mutation.
+ *
+ * @param {CoraliteDocument & CoraliteDocumentResult} originalDocument - Document to clone.
+ * @returns {CoraliteDocument & CoraliteDocumentResult}
+ */
+export function cloneDocumentInstance (originalDocument) {
+  const nodeMap = new Map()
+  const newRoot = cloneNode(nodeMap, originalDocument.root, null)
+
+  const newCustomElements = originalDocument.customElements.map(el => nodeMap.get(el))
+  const newTempElements = originalDocument.tempElements ? originalDocument.tempElements.map(el => nodeMap.get(el)) : []
+
+  return {
+    ...originalDocument,
+    values: { ...originalDocument.values },
+    root: newRoot,
+    customElements: newCustomElements,
+    tempElements: newTempElements
   }
 }
