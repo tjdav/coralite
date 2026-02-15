@@ -24,8 +24,19 @@ jobs:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@v4
 
+      - name: Cache pnpm modules
+        uses: https://code.forgejo.org/actions/cache@v3
+        with:
+          path: ~/.local/share/pnpm/store/v3
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
       - name: Enable Corepack (for pnpm)
-        run: corepack enable && corepack prepare pnpm@latest --activate
+        run: |
+          npm install -g corepack@latest
+          corepack enable
+          corepack prepare pnpm@latest --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
