@@ -19,7 +19,7 @@
     "url": "https://codeberg.org/tjdavid/coralite/issues"
   },
   "license": "AGPL-3.0-only",
-  "devDependencies": {
+  "dependencies": {
     "@clack/prompts": "^0.11.0",
     "commander": "^13.1.0",
     "glob": "^11.0.3",
