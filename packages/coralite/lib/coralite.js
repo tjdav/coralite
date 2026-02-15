@@ -1,4 +1,7 @@
-import { cleanKeys, cloneModuleInstance, createElement, createTextNode, getHtmlFile, getHtmlFiles, parseHTML, parseModule, replaceToken, ScriptManager } from '#lib'
+import { cleanKeys, cloneModuleInstance, replaceToken } from './utils.js'
+import { getHtmlFile, getHtmlFiles } from './html.js'
+import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
+import { ScriptManager } from './script-manager.js'
 import { defineComponent, metadataPlugin, refsPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
@@ -10,6 +13,7 @@ import { availableParallelism } from 'node:os'
 import render from 'dom-serializer'
 import pLimit from 'p-limit'
 import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
+import CoraliteCollection from './collection.js'
 
 /**
  * @import {
@@ -28,7 +32,6 @@ import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
  *  CoraliteValues,
  *  CoraliteScriptContent,
  *  InstanceContext} from '../types/index.js'
- * @import CoraliteCollection from './collection.js'
  */
 
 /**
@@ -381,85 +384,94 @@ Coralite.prototype.initialise = async function () {
     }
   }
 
-  /** @type {CoraliteCollection} */
-  this.pages = await getHtmlFiles({
-    path: this.options.pages,
-    recursive: true,
-    type: 'page',
-    onFileSet,
-    onFileUpdate: async (newValue, oldValue) => {
-      let newCustomElements
+  const onPageUpdate = async (newValue, oldValue) => {
+    let newCustomElements
 
-      if (!newValue.result) {
-        const result = await onFileSet(newValue)
+    if (!newValue.result) {
+      const result = await onFileSet(newValue)
 
-        newValue = result.value
-        newCustomElements = result.value.customElements
-      } else {
-        newCustomElements = newValue.result.customElements
-      }
+      newValue = result.value
+      newCustomElements = result.value.customElements
+    } else {
+      newCustomElements = newValue.result.customElements
+    }
 
-      let oldElements = oldValue.result.customElements.slice()
+    let oldElements = oldValue.result.customElements.slice()
 
-      await this._triggerPluginHook('onPageUpdate', {
-        elements: newCustomElements,
-        newValue,
-        oldValue
-      })
+    await this._triggerPluginHook('onPageUpdate', {
+      elements: newCustomElements,
+      newValue,
+      oldValue
+    })
 
-      for (let i = 0; i < newCustomElements.length; i++) {
-        const newElement = newCustomElements[i]
+    for (let i = 0; i < newCustomElements.length; i++) {
+      const newElement = newCustomElements[i]
 
-        let hasElement = false
-
-        for (let i = 0; i < oldElements.length; i++) {
-          const oldElement = oldElements[i]
-
-          if (newElement.name === oldElement.name) {
-            hasElement = true
-            oldElements.splice(i, 1)
-            break
-          }
-        }
-
-        if (!hasElement) {
-          let item = pageCustomElements[newElement.name]
-
-          if (!item) {
-            pageCustomElements[newElement.name] = new Set()
-            item = pageCustomElements[newElement.name]
-          }
-
-          // add page to custom element collection
-          item.add(newValue.path.pathname)
-        }
-      }
+      let hasElement = false
 
       for (let i = 0; i < oldElements.length; i++) {
-        const pageCustomElement = pageCustomElements[oldElements[i].name]
+        const oldElement = oldElements[i]
 
-        // remove page from custom element reference
-        pageCustomElement.delete(newValue.path.pathname)
+        if (newElement.name === oldElement.name) {
+          hasElement = true
+          oldElements.splice(i, 1)
+          break
+        }
       }
 
-      return newValue
-    },
-    onFileDelete: async (value) => {
-      await this._triggerPluginHook('onPageDelete', value)
+      if (!hasElement) {
+        let item = pageCustomElements[newElement.name]
+
+        if (!item) {
+          pageCustomElements[newElement.name] = new Set()
+          item = pageCustomElements[newElement.name]
+        }
+
+        // add page to custom element collection
+        item.add(newValue.path.pathname)
+      }
+    }
+
+    for (let i = 0; i < oldElements.length; i++) {
+      const pageCustomElement = pageCustomElements[oldElements[i].name]
 
       // remove page from custom element reference
-      if (value && value.result && value.result.customElements) {
-        const customElements = value.result.customElements
+      pageCustomElement.delete(newValue.path.pathname)
+    }
 
-        for (let i = 0; i < customElements.length; i++) {
-          const pageCustomElement = pageCustomElements[customElements[i]]
+    return newValue
+  }
 
-          if (pageCustomElement) {
-            pageCustomElement.delete(value.path.pathname)
-          }
+  const onPageDelete = async (value) => {
+    await this._triggerPluginHook('onPageDelete', value)
+
+    // remove page from custom element reference
+    if (value && value.result && value.result.customElements) {
+      const customElements = value.result.customElements
+
+      for (let i = 0; i < customElements.length; i++) {
+        const pageCustomElement = pageCustomElements[customElements[i]]
+
+        if (pageCustomElement) {
+          pageCustomElement.delete(value.path.pathname)
         }
       }
     }
+  }
+
+  this.pages = new CoraliteCollection({
+    rootDir: this.options.pages,
+    onSet: onFileSet,
+    onUpdate: onPageUpdate,
+    onDelete: onPageDelete
+  })
+
+  /** @type {CoraliteCollection} */
+  await getHtmlFiles({
+    path: this.options.pages,
+    recursive: true,
+    type: 'page',
+    collection: this.pages
   })
 }
 
