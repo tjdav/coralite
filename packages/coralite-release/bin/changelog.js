@@ -3,13 +3,14 @@
 import * as prompts from '@clack/prompts'
 import { simpleGit } from 'simple-git'
 import { program } from 'commander'
-import { writeFileSync } from 'fs'
+import { writeFileSync, existsSync, readFileSync } from 'fs'
 
 program
   .name('generate-changelog')
   .description('Generate a changelog based on commits between git tags')
   .option('-f, --from <tag>', 'Starting tag (defaults to last tag)')
   .option('-t, --to <tag>', 'Ending tag (defaults to HEAD)')
+  .option('--next-version <version>', 'Version number for the new release')
   .option('-o, --output <file>', 'Output file (defaults to stdout)', 'CHANGELOG.md')
   .option('-y, --yes', 'Skip confirmation')
   .option('--stdout', 'Print to stdout only, ignore output file')
@@ -86,8 +87,15 @@ program
         other: '🔨 Other Changes'
       }
 
+      let titleVersion = toRef
+      if (toRef === 'HEAD') {
+        titleVersion = options.nextVersion ? `v${options.nextVersion.replace(/^v/, '')}` : 'Unreleased'
+      } else {
+        titleVersion = `v${toRef.replace(/^v/, '')}`
+      }
+
       const changelog = {
-        title: `## ${toRef === 'HEAD' ? 'Unreleased' : `v${toRef.replace(/^v/, '')}`}`,
+        title: `## ${titleVersion}`,
         sections: {},
         pullRequests: new Set()
       }
@@ -157,8 +165,7 @@ program
       }
 
       // Generate markdown
-      let markdown = `# Changelog\n\n`
-      markdown += `${changelog.title}\n\n`
+      let markdown = `${changelog.title}\n\n`
       markdown += `> Comparing \`${fromTag}\` to \`${toRef}\`\n\n`
 
       // Add summary
@@ -213,8 +220,19 @@ program
       }
 
       if (!options.stdout) {
+        let finalContent = markdown
+
+        if (existsSync(options.output)) {
+          const existingContent = readFileSync(options.output, 'utf8')
+          // Remove existing # Changelog header if present to avoid duplication
+          const cleanExisting = existingContent.replace(/^# Changelog\s+/, '')
+          finalContent = `# Changelog\n\n${markdown}\n${cleanExisting}`
+        } else {
+          finalContent = `# Changelog\n\n${markdown}`
+        }
+
         // Write to file
-        writeFileSync(options.output, markdown, 'utf8')
+        writeFileSync(options.output, finalContent, 'utf8')
         prompts.log.success(`Changelog written to ${options.output}`)
       }
 
