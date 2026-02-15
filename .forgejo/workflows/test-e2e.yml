@@ -2,39 +2,46 @@ name: Test e2e
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'website/**'
+
   pull_request:
-    branches:
-      - main
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'website/**'
 
 jobs:
-  test:
+  e2e:
     runs-on: codeberg-tiny-lazy
     container:
-      image: "guergeiro/pnpm:22-10-slim"
+      image: mcr.microsoft.com/playwright:v1.50.0-jammy
     steps:
-    - name: Checkout
-      uses: https://code.forgejo.org/actions/checkout@v4
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
 
-    - name: Install dependencies
-      run: pnpm install
+      - name: Enable Corepack (for pnpm)
+        run: corepack enable && corepack prepare pnpm@latest --activate
 
-    - name: Build Coralite
-      run: pnpm run build
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-    - name: Build HTML from templates
-      run: pnpm  --filter coralite run build-html
+      - name: Build Coralite
+        run: pnpm run build
 
-    - name: Install Playwright Browser
-      run: pnpm --filter coralite exec playwright install firefox --with-deps
+      - name: Build HTML for Tests
+        run: pnpm --filter coralite run build-html
 
-    - name: Run Playwright tests
-      run: pnpm --filter coralite run test-e2e
+      - name: Run Playwright tests
+        run: pnpm --filter coralite run test-e2e
 
-    - uses: https://code.forgejo.org/actions/upload-artifact@v3
-      if: ${{ !cancelled() }}
-      with:
-        name: playwright-report
-        path: playwright-report/
-        retention-days: 30
+      - uses: https://code.forgejo.org/actions/upload-artifact@v3
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: packages/coralite/playwright-report/
+          retention-days: 7
