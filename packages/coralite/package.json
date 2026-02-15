@@ -25,6 +25,10 @@
   "bugs": {
     "url": "https://codeberg.org/tjdavid/coralite/issues"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "lint-format": "eslint --cache --fix .",
