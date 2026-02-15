@@ -62,13 +62,13 @@ const renameFiles = {
 
 async function createProject () {
   const argTemplate = options.template
-  let target = options.target
+  let target = options.output
   let template = argTemplate
   const pkgInfo = extractPackageInfoFromUserAgent(process.env.npm_config_user_agent)
 
   // get project name and target directory
   if (target) {
-    target = formatTargetDir(options.target)
+    target = formatTargetDir(options.output)
   } else {
     const projectName = await prompts.text({
       message: 'Project name:',
@@ -159,7 +159,7 @@ async function createProject () {
     template = selectedTemplate
   }
 
-  const root = path.join(cwd, target)
+  const root = path.resolve(cwd, target)
   fs.mkdirSync(root, { recursive: true })
 
   const pkgManager = pkgInfo ? pkgInfo.name : 'npm'
