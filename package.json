@@ -23,6 +23,7 @@
     "postinstall": "simple-git-hooks",
     "format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
+    "test-unit": "pnpm -r --if-present run test-unit",
     "build": "pnpm --filter coralite run build",
     "build-scripts": "pnpm --filter coralite-scripts run build",
     "publish": "pnpm run build && pnpm --filter='./packages/coralite' publish",
