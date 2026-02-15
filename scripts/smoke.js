@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process'
-import { mkdirSync, rmSync, writeFileSync, readdirSync, existsSync } from 'node:fs'
+import { mkdirSync, rmSync, writeFileSync, readdirSync, existsSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -59,7 +59,27 @@ function cleanup () {
 }
 
 try {
-  // Common Step 1: Pack the current package
+  // Build the package
+  console.log(`Building ${targetPackageName}...`)
+  try {
+    const pkgJsonPath = join(PACKAGE_ROOT, 'package.json')
+    if (existsSync(pkgJsonPath)) {
+      const pkgJson = JSON.parse(readFileSync(pkgJsonPath, 'utf8'))
+      if (pkgJson.scripts && pkgJson.scripts.build) {
+        console.log(`Found build script, executing...`)
+        execSync('pnpm run build', {
+          cwd: PACKAGE_ROOT,
+          stdio: 'inherit'
+        })
+      } else {
+        console.log(`No build script found for ${targetPackageName}, skipping build.`)
+      }
+    }
+  } catch (e) {
+    console.warn(`Could not run build for ${targetPackageName}: ${e.message}`)
+  }
+
+  // Pack the current package
   console.log(`Packing ${targetPackageName}...`)
   // Use pnpm pack to handle workspace:* resolution
   const packOutput = execSync('pnpm pack', { cwd: PACKAGE_ROOT }).toString().trim()
@@ -89,7 +109,7 @@ try {
     extraTarballs.push(cTarballPath)
   }
 
-  // Common Step 2: Create temp environment
+  // Create temp environment
   console.log(`Creating temp env at ${TEMP_DIR}...`)
   mkdirSync(TEMP_DIR, { recursive: true })
   execSync('npm init -y', {
@@ -97,7 +117,7 @@ try {
     stdio: 'ignore'
   })
 
-  // Common Step 3: Install
+  // Install
   console.log('Installing package(s)...')
   const allTarballs = [tarballPath, ...extraTarballs].map(p => `"${p}"`).join(' ')
   // Use npm install to verify package integrity
