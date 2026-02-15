@@ -5,6 +5,9 @@ import * as prompts from '@clack/prompts'
 import { readFileSync, writeFileSync } from 'fs'
 import { globSync } from 'glob'
 import { simpleGit } from 'simple-git'
+import { execSync } from 'child_process'
+import path from 'path'
+import { fileURLToPath } from 'url'
 
 // Define available release types
 const RELEASE_TYPES = ['major', 'minor', 'patch', 'prerelease']
@@ -28,6 +31,29 @@ program
       // Validate release type
       if (!RELEASE_TYPES.includes(type)) {
         prompts.log.error(`Invalid release type: ${type}. Must be one of: ${RELEASE_TYPES.join(', ')}`)
+        process.exit(1)
+      }
+
+      // Pre-release checks
+      prompts.log.info('🔍 Running pre-release checks...')
+
+      try {
+        // 1. Linting
+        prompts.log.step('Running Lint...')
+        execSync('pnpm lint', { stdio: 'inherit' })
+
+        // 2. Unit Tests
+        prompts.log.step('Running Tests...')
+        execSync('pnpm test-unit', { stdio: 'inherit' })
+
+        // 3. Build Verification
+        prompts.log.step('Verifying Build...')
+        // Using recursive build to cover all packages
+        execSync('pnpm -r --if-present run build', { stdio: 'inherit' })
+
+        prompts.log.success('✅ All checks passed!')
+      } catch (error) {
+        prompts.log.error('❌ Pre-release checks failed. Fix errors before releasing.')
         process.exit(1)
       }
 
@@ -115,6 +141,26 @@ program
       console.log(`Commit message: "${commitMessage}"`)
       console.log('')
 
+      // Dry run pack
+      const pkgDir = path.dirname(selectedPkg.path)
+      prompts.log.info(`📦 Verifying package content for ${selectedPkg.name}...`)
+      execSync('pnpm pack --dry-run', {
+        cwd: pkgDir,
+        stdio: 'inherit'
+      })
+
+      if (!options.yes) {
+        const packConfirmed = await prompts.confirm({
+          message: 'Does the package content look correct?',
+          initialValue: true
+        })
+
+        if (prompts.isCancel(packConfirmed) || !packConfirmed) {
+          prompts.log.info('Release cancelled')
+          process.exit(0)
+        }
+      }
+
       // Skip confirmation if --yes flag is provided
       if (!options.yes) {
         const confirmed = await prompts.confirm({
@@ -167,11 +213,33 @@ program
         }
       }
 
+      // Generate Changelog
+      prompts.log.step('Generating Changelog...')
+      try {
+        const __dirname = path.dirname(fileURLToPath(import.meta.url))
+        const changelogScript = path.join(__dirname, 'changelog.js')
+
+        execSync(`node ${changelogScript} --next-version ${newVersion} -y`, { stdio: 'inherit' })
+        prompts.log.success('✅ Generated Changelog')
+      } catch (error) {
+        prompts.log.error(`Failed to generate changelog: ${error.message}`)
+        if (!options.yes) {
+          const continueWithoutChangelog = await prompts.confirm({
+            message: 'Continue without changelog?',
+            initialValue: false
+          })
+          if (prompts.isCancel(continueWithoutChangelog) || !continueWithoutChangelog) {
+            process.exit(1)
+          }
+        }
+      }
+
       // Git commit if not disabled
       if (!options.noGitCommit) {
         try {
           await git.add('packages/*/package.json')
           await git.add('packages/create-coralite/templates/*/package.json')
+          await git.add('CHANGELOG.md')
           await git.commit(commitMessage)
           prompts.log.success('✅ Committed version changes')
         } catch (error) {
