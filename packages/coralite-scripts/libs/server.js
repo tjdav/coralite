@@ -41,6 +41,14 @@ async function server (config, options) {
     await coralite.initialise()
     displaySuccess('Coralite initialized successfully')
 
+    if (config.plugins) {
+      for (const plugin of config.plugins) {
+        if (typeof plugin.server === 'function') {
+          await plugin.server(app, coralite)
+        }
+      }
+    }
+
     const watchPath = [
       config.public,
       config.pages,
