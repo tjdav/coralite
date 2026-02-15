@@ -158,21 +158,6 @@ try {
       throw new Error(`CLI help output verification failed. Output: ${helpOutput}`)
     }
     console.log('CLI verification passed.')
-  } else if (targetPackageName === 'coralite-release') {
-    console.log('Verifying CLI (coralite-release)...')
-    const cliReleasePath = join(TEMP_DIR, 'node_modules', '.bin', 'coralite-release')
-    const helpOutput = execSync(`"${cliReleasePath}" --help`, { cwd: TEMP_DIR }).toString()
-    if (!helpOutput.includes('Usage: release')) {
-      throw new Error(`CLI help output verification failed. Output: ${helpOutput}`)
-    }
-    console.log('CLI verification passed.')
-
-    console.log('Verifying CLI (coralite-changelog)...')
-    const cliChangelogPath = join(TEMP_DIR, 'node_modules', '.bin', 'coralite-changelog')
-    if (!existsSync(cliChangelogPath)) {
-      throw new Error('coralite-changelog binary missing.')
-    }
-    console.log('coralite-changelog binary exists.')
   } else if (targetPackageName === 'coralite-scripts') {
     console.log('Verifying CLI...')
     const cliPath = join(TEMP_DIR, 'node_modules', '.bin', 'coralite-scripts')

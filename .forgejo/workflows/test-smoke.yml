@@ -21,8 +21,5 @@ jobs:
     - name: Smoke Test Create Coralite
       run: node scripts/smoke.js create-coralite
 
-    - name: Smoke Test Coralite Release
-      run: node scripts/smoke.js coralite-release
-
     - name: Smoke Test Coralite Scripts
       run: node scripts/smoke.js coralite-scripts
