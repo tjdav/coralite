@@ -415,6 +415,7 @@
  * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ * @property {Function} [server] - Server extension hook
  */
 
 /**
@@ -431,6 +432,7 @@
  * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ * @property {Function} [server] - Server extension hook
  */
 
 /**
@@ -445,6 +447,7 @@
  * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ * @property {Function} [server] - Server extension hook
  */
 
 /**

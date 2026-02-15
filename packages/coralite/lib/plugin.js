@@ -130,7 +130,8 @@ export function createPlugin ({
   onTemplateSet,
   onTemplateUpdate,
   onTemplateDelete,
-  script
+  script,
+  server
 }) {
   // Validate required parameters
   validateNonEmptyString(name, 'name')
@@ -143,6 +144,7 @@ export function createPlugin ({
   validateOptionalFunction(onTemplateSet, 'onTemplateSet')
   validateOptionalFunction(onTemplateUpdate, 'onTemplateUpdate')
   validateOptionalFunction(onTemplateDelete, 'onTemplateDelete')
+  validateOptionalFunction(server, 'server')
 
   // Validate templates array
   validateStringArray(templates, 'templates')
@@ -199,7 +201,8 @@ export function createPlugin ({
     onTemplateSet,
     onTemplateUpdate,
     onTemplateDelete,
-    script
+    script,
+    server
   }
 }
 
