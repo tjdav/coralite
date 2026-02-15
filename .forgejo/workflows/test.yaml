@@ -1,0 +1,68 @@
+name: Test coverage
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'website/**'
+
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'website/**'
+
+jobs:
+  check:
+    runs-on: codeberg-tiny-lazy
+    container:
+      image: "guergeiro/pnpm:22-10-slim"
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+      
+      - name: Cache pnpm modules
+        uses: https://code.forgejo.org/actions/cache@v3
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit Tests
+        run: pnpm --filter coralite run test-unit
+
+  smoke:
+    needs: check
+    runs-on: codeberg-tiny-lazy
+    container:
+      image: "guergeiro/pnpm:22-10-slim"
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+      
+      - name: Cache pnpm modules
+        uses: https://code.forgejo.org/actions/cache@v3
+        with:
+          path: ~/.local/share/pnpm/store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Smoke Test Packages
+        run: |
+          node scripts/smoke.js coralite
+          node scripts/smoke.js create-coralite
+          node scripts/smoke.js coralite-scripts
