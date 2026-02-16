@@ -60,6 +60,13 @@
  */
 
 /**
+ * Represents a CSS style definition within a Coralite module.
+ * @typedef {Object} CoraliteStyle
+ * @property {string} content - The raw CSS content
+ * @property {boolean} scoped - Whether the style should be scoped to component instances
+ */
+
+/**
  * A module within the Coralite library, containing metadata and rendering logic.
  * @typedef {Object} CoraliteModule
  * @property {string} [id] - Unique module identifier used to reference this module within the application.
@@ -67,6 +74,7 @@
  * @property {number} [lineOffset] - Optional offset value for line numbering purposes within the template.
  * @property {CoraliteElement} [template] - Module's rendering template which defines its structure and layout.
  * @property {string|undefined} [script] - Module's JavaScript raw code used for logic or behavior associated with this module.
+ * @property {CoraliteStyle[]} [styles] - Styles associated with this module.
  * @property {CoraliteDocumentValues} [values] - Values generated from the module's markup, containing metadata or variable information.
  * @property {CoraliteElement[]} [customElements] - Custom elements defined in the module, allowing extension of HTML capabilities.
  * @property {Object.<string, Object.<string,CoraliteModuleSlotElement>>} [slotElements] - Custom slot elements and their configurations, enabling flexible content insertion points within components.
@@ -285,12 +293,16 @@
  * @property {CoraliteElement[]} customElements - Custom elements defined in the document
  * @property {CoralitePath & CoraliteFilePath} path - Document's file path
  * @property {IgnoreByAttribute[]} ignoreByAttribute - An array of attribute names and values to ignore by element type.
+ * @property {string[]} [styles] - Collected styles during build process
+ * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
  */
 
 /**
  * @typedef {Object} CoraliteDocumentResult
  * @property {CoraliteModuleValues} values - The module values extracted from the document
  * @property {CoraliteElement[]} tempElements - Temporary elements created during processing
+ * @property {string[]} [styles] - Collected styles during build process
+ * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
  */
 
 /**

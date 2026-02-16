@@ -463,6 +463,7 @@ Coralite.prototype._createRenderContext = function (buildId) {
   return {
     buildId,
     values: {},
+    styles: new Map(),
     scripts: {
       content: {},
       add (id, item) {
@@ -590,6 +591,52 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
           const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
           // replace custom element with component
           customElement.parent.children.splice(index, 1, ...component.children)
+        }
+      }
+
+      if (renderContext.styles.size > 0) {
+        let cssContent = ''
+
+        for (const [selector, css] of renderContext.styles) {
+          cssContent += `[data-style-selector~="${selector}"] {\n${css}\n}\n`
+        }
+
+        /** @type {CoraliteElement} */
+        let headElement
+
+        findHeadLoop: for (let i = 0; i < document.root.children.length; i++) {
+          const rootNode = document.root.children[i]
+
+          if (rootNode.type === 'tag' && rootNode.name === 'html') {
+            for (let i = 0; i < rootNode.children.length; i++) {
+              const node = rootNode.children[i]
+
+              if (node.type === 'tag' && node.name === 'head') {
+                headElement = node
+                break findHeadLoop
+              }
+            }
+          }
+        }
+
+        const styleElement = createCoraliteElement({
+          type: 'tag',
+          name: 'style',
+          parent: headElement || document.root,
+          attribs: {},
+          children: []
+        })
+
+        styleElement.children.push(createCoraliteTextNode({
+          type: 'text',
+          data: cssContent,
+          parent: styleElement
+        }))
+
+        if (headElement) {
+          headElement.children.push(styleElement)
+        } else {
+          document.root.children.unshift(styleElement)
         }
       }
 
@@ -987,6 +1034,49 @@ Coralite.prototype.createComponent = async function ({
    */
   const module = cloneModuleInstance(templateItem.result)
   const result = module.template
+
+  if (module.styles && module.styles.length > 0) {
+    const attributeName = 'data-style-selector'
+    const selectors = []
+
+    // Process shared styles (scoped: false)
+    const sharedStyles = module.styles.filter(s => !s.scoped)
+    if (sharedStyles.length > 0) {
+      const selector = module.id
+      selectors.push(selector)
+
+      if (!renderContext.styles.has(selector)) {
+        renderContext.styles.set(selector, sharedStyles.map(s => s.content).join('\n'))
+      }
+    }
+
+    // Process instance styles (scoped: true)
+    const instanceStyles = module.styles.filter(s => s.scoped)
+    if (instanceStyles.length > 0) {
+      const uuid = randomUUID()
+      const selector = `${module.id}-${uuid}`
+      selectors.push(selector)
+
+      renderContext.styles.set(selector, instanceStyles.map(s => s.content).join('\n'))
+    }
+
+    // Inject attribute into component root elements
+    if (selectors.length > 0) {
+      const value = selectors.join(' ')
+
+      for (let i = 0; i < result.children.length; i++) {
+        const child = result.children[i]
+        if (child.type === 'tag') {
+          if (!child.attribs) child.attribs = {}
+          if (child.attribs[attributeName]) {
+            child.attribs[attributeName] += ' ' + value
+          } else {
+            child.attribs[attributeName] = value
+          }
+        }
+      }
+    }
+  }
 
   // merge values from component script
   if (module.script) {

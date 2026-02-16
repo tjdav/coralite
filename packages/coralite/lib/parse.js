@@ -191,6 +191,7 @@ export function parseModule (string, { ignoreByAttribute }) {
     attributes: [],
     textNodes: []
   }
+  const styles = []
   let isScript = false
   let isTemplate = false
   let templateId = ''
@@ -343,9 +344,9 @@ export function parseModule (string, { ignoreByAttribute }) {
         // @ts-ignore
         template = node
 
-      } else if (node.name == 'script') {
+      } else if (node.name === 'script') {
         if (node.attribs.type !== 'module') {
-          throw new Error('Template "'+ templateId + '" script tag must contain the `type="module"` attribute')
+          throw new Error('Template "' + templateId + '" script tag must contain the `type="module"` attribute')
         }
         const scriptString = node.children[0]
 
@@ -354,6 +355,15 @@ export function parseModule (string, { ignoreByAttribute }) {
         }
 
         script = scriptString.data
+      } else if (node.name === 'style') {
+        const styleContent = node.children[0]
+
+        if (styleContent && styleContent.type === 'text') {
+          styles.push({
+            content: styleContent.data,
+            scoped: node.attribs.scoped !== undefined
+          })
+        }
       }
     }
   }
@@ -372,6 +382,7 @@ export function parseModule (string, { ignoreByAttribute }) {
     id: template.attribs.id,
     template,
     script,
+    styles,
     values: documentValues,
     lineOffset,
     customElements,
