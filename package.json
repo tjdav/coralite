@@ -24,6 +24,7 @@
     "format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
     "test-unit": "pnpm -r --if-present run test-unit",
+    "test-e2e": "docker compose exec e2e bash",
     "build": "pnpm --filter coralite run build",
     "build-scripts": "pnpm --filter coralite-scripts run build",
     "publish": "pnpm run build && pnpm --filter='./packages/coralite' publish",

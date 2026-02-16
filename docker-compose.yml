@@ -1,0 +1,20 @@
+services:
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.55.0-noble
+    container_name: coralite-e2e
+    working_dir: /app
+    ipc: host
+    environment:
+      - CI=true
+      - HOST_UID=${UID:-1000}
+      - HOST_GID=${GID:-1000}
+      - PNPM_CONFIG_STORE_DIR=/pnpm-store
+    ports:
+      - "9323:9323"
+    volumes:
+      - .:/app
+      - pnpm-store:/pnpm-store
+    entrypoint: ["/bin/bash", "/app/scripts/docker-setup.sh"]
+
+volumes:
+  pnpm-store:
