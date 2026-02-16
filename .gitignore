@@ -11,6 +11,7 @@ jspm_packages
 .tmp
 .cache
 .eslintcache
+.pnpm-store/
 
 # Generated dirs
 dist
