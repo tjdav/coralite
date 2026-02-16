@@ -6,8 +6,8 @@ services:
     ipc: host
     environment:
       - CI=true
-      - HOST_UID=${UID:-1000}
-      - HOST_GID=${GID:-1000}
+      - HOST_UID=${HOST_UID:-1000}
+      - HOST_GID=${HOST_GID:-1000}
       - PNPM_CONFIG_STORE_DIR=/pnpm-store
     ports:
       - "9323:9323"
