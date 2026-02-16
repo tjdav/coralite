@@ -4,18 +4,23 @@ import * as prompts from '@clack/prompts'
 import { simpleGit } from 'simple-git'
 import { program } from 'commander'
 import { writeFileSync, existsSync, readFileSync } from 'fs'
+import path from 'path'
 
 program
   .name('generate-changelog')
   .description('Generate a changelog based on commits between git tags')
   .option('-f, --from <tag>', 'Starting tag (defaults to last tag)')
   .option('-t, --to <tag>', 'Ending tag (defaults to HEAD)')
+  .option('--package <name>', 'Package name (for tag filtering)')
+  .option('--path <path>', 'Package path (for commit filtering and output)')
   .option('--next-version <version>', 'Version number for the new release')
-  .option('-o, --output <file>', 'Output file (defaults to stdout)', 'CHANGELOG.md')
+  .option('-o, --output <file>', 'Output file (defaults to package/CHANGELOG.md or stdout)')
   .option('-y, --yes', 'Skip confirmation')
   .option('--stdout', 'Print to stdout only, ignore output file')
   .action(async (options) => {
     const REPO = 'https://codeberg.org/tjdavid/coralite'
+    const packageName = options.package
+    const pkgPath = options.path
 
     prompts.intro('📝 Generating Changelog')
 
@@ -31,11 +36,18 @@ program
       }
 
       // Sort tags by version (assuming semantic versioning)
+      // Filter by package prefix if packageName is provided
       const sortedTags = tags.all
-        .filter(tag => tag.startsWith('v') || /^\d+\.\d+\.\d+/.test(tag))
+        .filter(tag => {
+          if (packageName) {
+            return tag.startsWith(`${packageName}-v`)
+          }
+          return tag.startsWith('v') || /^\d+\.\d+\.\d+/.test(tag)
+        })
         .sort((a, b) => {
-          const cleanA = a.replace(/^v/, '')
-          const cleanB = b.replace(/^v/, '')
+          const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
+          const cleanA = a.replace(prefixRegex, '')
+          const cleanB = b.replace(prefixRegex, '')
           return cleanB.localeCompare(cleanA, undefined, {
             numeric: true,
             sensitivity: 'base'
@@ -59,11 +71,13 @@ program
       }
 
       // Get commit history between fromTag and toRef
-      const log = await git.log({
-        from: fromTag,
-        to: toRef,
-        symmetric: true
-      })
+      const logArgs = [`${fromTag}..${toRef}`]
+
+      if (pkgPath) {
+        logArgs.push('--', pkgPath)
+      }
+
+      const log = await git.log(logArgs)
 
       if (!log.all.length) {
         prompts.log.warn(`No commits found between ${fromTag} and ${toRef}`)
@@ -221,9 +235,17 @@ program
 
       if (!options.stdout) {
         let finalContent = markdown
+        let outputFile = options.output
 
-        if (existsSync(options.output)) {
-          const existingContent = readFileSync(options.output, 'utf8')
+        // Determine output file if not explicitly provided
+        if (!outputFile && pkgPath) {
+          outputFile = path.join(pkgPath, 'CHANGELOG.md')
+        } else if (!outputFile) {
+          outputFile = 'CHANGELOG.md'
+        }
+
+        if (existsSync(outputFile)) {
+          const existingContent = readFileSync(outputFile, 'utf8')
           // Remove existing # Changelog header if present to avoid duplication
           const cleanExisting = existingContent.replace(/^# Changelog\s+/, '')
           finalContent = `# Changelog\n\n${markdown}\n${cleanExisting}`
@@ -232,8 +254,8 @@ program
         }
 
         // Write to file
-        writeFileSync(options.output, finalContent, 'utf8')
-        prompts.log.success(`Changelog written to ${options.output}`)
+        writeFileSync(outputFile, finalContent, 'utf8')
+        prompts.log.success(`Changelog written to ${outputFile}`)
       }
 
       prompts.outro('✅ Changelog generated successfully!')
