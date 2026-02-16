@@ -46,7 +46,7 @@ chown -R "$HOST_UID:$HOST_GID" /app/node_modules
 # 3. FIX: Claim ownership of package build folders (.html, dist) 
 # This ensures the user can overwrite/delete artifacts created by previous root runs
 echo "   - Fixing package artifacts..."
-find /app/packages -type d \( -name ".html" -o -name "dist" -o -name "node_modules" \) -exec chown -R "$HOST_UID:$HOST_GID" {} +
+find /app/packages -type d \( -name ".html" -o -name "dist" -o -name "node_modules" -o -name "test-results" \) -exec chown -R "$HOST_UID:$HOST_GID" {} +
 
 # --- 2. USER TASKS ---
 
