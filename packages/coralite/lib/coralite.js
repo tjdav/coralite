@@ -110,7 +110,8 @@ export function Coralite ({
       getHtmlFiles,
       getHtmlFile,
       createElement,
-      createTextNode
+      createTextNode,
+      transform: this.transform
     },
     context: {
       plugins: {},
