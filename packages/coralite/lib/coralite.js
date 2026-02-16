@@ -487,10 +487,10 @@ Coralite.prototype._createRenderContext = function (buildId) {
  * @internal
  *
  * @param {string | string[]} [path] - Path to a single page or array of page paths relative to the pages directory. If omitted, compiles all pages.
- * @param {Object} [locals] - Local variables to be passed to the page
+ * @param {Object} [values] - Values to be passed to the page
  * @return {AsyncGenerator<CoraliteResult>}
  */
-Coralite.prototype._generatePages = async function* (path, locals = {}) {
+Coralite.prototype._generatePages = async function* (path, values = {}) {
   let queue = []
 
   if (Array.isArray(path)) {
@@ -537,8 +537,8 @@ Coralite.prototype._generatePages = async function* (path, locals = {}) {
       // Deep clone the document to ensure thread safety
       const document = cloneDocumentInstance(originalDocument)
 
-      // Merge locals into document values
-      Object.assign(document.values, locals)
+      // Merge variables into document values
+      Object.assign(document.values, values)
 
       // Initialize Render Context
       const renderContext = this._createRenderContext(buildId)
