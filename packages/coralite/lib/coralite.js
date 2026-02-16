@@ -36,6 +36,10 @@ import { randomUUID } from 'node:crypto'
  */
 
 /**
+ * @import {DomSerializerOptions} from 'dom-serializer'
+ */
+
+/**
  * @constructor
  * @param {Object} options
  * @param {string} options.templates - The path to the directory containing Coralite templates.
@@ -844,11 +848,12 @@ Coralite.prototype.save = async function (output, path, options = {}) {
  * Renders the provided node or array of nodes using the render function.
  *
  * @param {CoraliteDocumentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
+ * @param {DomSerializerOptions} [options] - Changes serialization behavior
  * @returns {string} returns raw HTML
  */
-Coralite.prototype.transform = function (root) {
+Coralite.prototype.transform = function (root, options) {
   // @ts-ignore
-  return render(root)
+  return render(root, options)
 }
 
 /**
