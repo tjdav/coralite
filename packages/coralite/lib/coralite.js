@@ -475,10 +475,7 @@ Coralite.prototype._createRenderContext = function (buildId) {
     source: {
       currentSourceContextId: '',
       contextInstances: {}
-    },
-    // Shared context
-    contextModules: this._source.contextModules,
-    context: this._source.context
+    }
   }
 }
 
@@ -1292,17 +1289,17 @@ Coralite.prototype._evaluate = async function ({
   contextId,
   renderContext
 }) {
-  renderContext.source.currentSourceContextId = contextId
-
   const context = {
-    ...renderContext.contextModules,
-    ...renderContext.context,
+    ...this._source.contextModules,
+    ...this._source.context,
     document,
     values,
     element,
     module,
     id: contextId
   }
+
+  renderContext.source.currentSourceContextId = contextId
   renderContext.source.contextInstances[contextId] = context
 
   // Retrieve Template and check cache
@@ -1329,35 +1326,43 @@ Coralite.prototype._evaluate = async function ({
   // Create a require function anchored to the template's file path to resolve relative imports
   const fileRequire = createRequire(resolve(templateItem.path.pathname))
 
-  const customRequire = (id) => {
-    // Intercept 'coralite' import to return the current context
-    if (id === 'coralite') {
-      const boundContext = {
-        ...context,
-        addRenderQueue: (value) => this.addRenderQueue(value, renderContext.buildId)
-      }
-      return {
-        ...boundContext,
-        default: boundContext
-      }
-    }
-    // Intercept 'coralite/plugins'
-    if (id === 'coralite/plugins') {
-      const plugins = renderContext.context.plugins
-      const boundPlugins = {}
+  let cachedBoundPlugins = null
 
-      for (const key in plugins) {
-        if (typeof plugins[key] === 'function') {
-          // Bind the current context as the second argument
-          boundPlugins[key] = (options) => plugins[key](options, context)
-        } else {
-          boundPlugins[key] = plugins[key]
+  const customRequire = (id) => {
+    const isCoralite = id === 'coralite'
+    const isPlugins = id === 'coralite/plugins'
+
+    // Handle internal coralite imports
+    if (isCoralite || isPlugins) {
+      // Lazily bind plugins once per evaluation
+      if (!cachedBoundPlugins) {
+        const plugins = this._source.context.plugins
+        cachedBoundPlugins = {}
+
+        for (const key in plugins) {
+          cachedBoundPlugins[key] = typeof plugins[key] === 'function'
+            ? (options) => plugins[key](options, context)
+            : plugins[key]
         }
       }
 
-      return {
-        ...boundPlugins,
-        default: boundPlugins
+      if (isCoralite) {
+        const boundContext = {
+          ...context,
+          addRenderQueue: (value) => this.addRenderQueue(value, renderContext.buildId)
+        }
+        return {
+          ...boundContext,
+          ...cachedBoundPlugins,
+          default: boundContext
+        }
+      }
+
+      if (isPlugins) {
+        return {
+          ...cachedBoundPlugins,
+          default: cachedBoundPlugins
+        }
       }
     }
 
