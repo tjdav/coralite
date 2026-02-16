@@ -219,7 +219,7 @@ program
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
         const changelogScript = path.join(__dirname, 'changelog.js')
 
-        execSync(`node ${changelogScript} --next-version ${newVersion} -y`, { stdio: 'inherit' })
+        execSync(`node ${changelogScript} --next-version ${newVersion} --package ${selectedPkg.name} --path ${pkgDir} -y`, { stdio: 'inherit' })
         prompts.log.success('✅ Generated Changelog')
       } catch (error) {
         prompts.log.error(`Failed to generate changelog: ${error.message}`)
@@ -239,7 +239,8 @@ program
         try {
           await git.add('packages/*/package.json')
           await git.add('packages/create-coralite/templates/*/package.json')
-          await git.add('CHANGELOG.md')
+          const changelogPath = path.join(pkgDir, 'CHANGELOG.md')
+          await git.add(changelogPath)
           await git.commit(commitMessage)
           prompts.log.success('✅ Committed version changes')
         } catch (error) {
