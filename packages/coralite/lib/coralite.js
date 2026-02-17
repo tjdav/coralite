@@ -1,6 +1,7 @@
 import { cleanKeys, cloneModuleInstance, replaceToken, cloneDocumentInstance } from './utils.js'
 import { getHtmlFile, getHtmlFiles } from './html.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
+import { transformCss } from './style-transform.js'
 import { ScriptManager } from './script-manager.js'
 import { defineComponent, metadataPlugin, refsPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -598,7 +599,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         let cssContent = ''
 
         for (const [selector, css] of renderContext.styles) {
-          cssContent += `[data-style-selector~="${selector}"] {\n${css}\n}\n`
+          cssContent += `[data-style-selector="${selector}"] {\n${css}\n}\n`
         }
 
         /** @type {CoraliteElement} */
@@ -1035,45 +1036,37 @@ Coralite.prototype.createComponent = async function ({
   const module = cloneModuleInstance(templateItem.result)
   const result = module.template
 
-  if (module.styles && module.styles.length > 0) {
+  if (module.styles.length) {
     const attributeName = 'data-style-selector'
-    const selectors = []
+    const selector = module.id
 
-    // Process shared styles (scoped: false)
-    const sharedStyles = module.styles.filter(s => !s.scoped)
-    if (sharedStyles.length > 0) {
-      const selector = module.id
-      selectors.push(selector)
+    // Check if styles have been processed for this template
+    if (!templateItem.result._processedCss) {
+      const rawCss = module.styles.join('\n')
 
-      if (!renderContext.styles.has(selector)) {
-        renderContext.styles.set(selector, sharedStyles.map(s => s.content).join('\n'))
-      }
+      const { rootClasses, descendantClasses } = templateItem.result
+
+      // Transform CSS
+      templateItem.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses)
     }
 
-    // Process instance styles (scoped: true)
-    const instanceStyles = module.styles.filter(s => s.scoped)
-    if (instanceStyles.length > 0) {
-      const uuid = randomUUID()
-      const selector = `${module.id}-${uuid}`
-      selectors.push(selector)
-
-      renderContext.styles.set(selector, instanceStyles.map(s => s.content).join('\n'))
+    // Add styles to renderContext (idempotent for the build)
+    if (!renderContext.styles.has(selector)) {
+      renderContext.styles.set(selector, templateItem.result._processedCss)
     }
 
     // Inject attribute into component root elements
-    if (selectors.length > 0) {
-      const value = selectors.join(' ')
+    const value = selector
 
-      for (let i = 0; i < result.children.length; i++) {
-        const child = result.children[i]
-        if (child.type === 'tag') {
-          if (!child.attribs) child.attribs = {}
-          if (child.attribs[attributeName]) {
-            child.attribs[attributeName] += ' ' + value
-          } else {
-            child.attribs[attributeName] = value
-          }
+    for (let i = 0; i < result.children.length; i++) {
+      const child = result.children[i]
+      if (child.type === 'tag') {
+        if (!child.attribs) {
+          child.attribs = {}
         }
+
+        // Handle existing attribute value
+        child.attribs[attributeName] = value
       }
     }
   }

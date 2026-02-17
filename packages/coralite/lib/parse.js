@@ -19,8 +19,7 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  *  CoraliteDocumentRoot,
  *  CoraliteContentNode,
  *  IgnoreByAttribute,
- *  ParseHTMLResult,
- RawCoraliteElement} from '../types/index.js'
+ *  ParseHTMLResult} from '../types/index.js'
  */
 
 /**
@@ -195,6 +194,8 @@ export function parseModule (string, { ignoreByAttribute }) {
   let isScript = false
   let isTemplate = false
   let templateId = ''
+  const rootClasses = new Set()
+  const descendantClasses = new Set()
 
   const ignoreAttributeMap = getIgnoreAttributeMap(ignoreByAttribute)
 
@@ -251,6 +252,22 @@ export function parseModule (string, { ignoreByAttribute }) {
         }
       } else if (isTemplate) {
         const attributeNames = Object.keys(attributes)
+
+        // Collect classes
+        if (attributes.class && parent.type !== 'root') {
+          const classes = attributes.class.trim().split(/\s+/)
+          const isRoot = parent.name === 'template'
+
+          for (const className of classes) {
+            if (className) {
+              if (isRoot) {
+                rootClasses.add(className)
+              } else {
+                descendantClasses.add(className)
+              }
+            }
+          }
+        }
 
         // collect tokens inside template tag
         if (attributeNames.length) {
@@ -359,10 +376,7 @@ export function parseModule (string, { ignoreByAttribute }) {
         const styleContent = node.children[0]
 
         if (styleContent && styleContent.type === 'text') {
-          styles.push({
-            content: styleContent.data,
-            scoped: node.attribs.scoped !== undefined
-          })
+          styles.push(styleContent.data)
         }
       }
     }
@@ -387,7 +401,9 @@ export function parseModule (string, { ignoreByAttribute }) {
     lineOffset,
     customElements,
     slotElements,
-    isTemplate: true
+    isTemplate: true,
+    rootClasses,
+    descendantClasses
   }
 }
 
