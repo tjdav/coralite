@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Advanced Styles in Coralite: Mastering Scoped CSS & Nesting"
+    description="Learn how to leverage Coralite's powerful component styling features. Master scoped CSS, selector nesting, and advanced style management for modular web development."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Advanced Component Styles</h1>
+
+    <p>
+      Coralite provides a powerful styling system that allows you to write scoped CSS directly within your components.
+      This guide explores advanced styling techniques, including how scoping works and how to use modern CSS features like nesting.
+    </p>
+
+    <coralite-heading level="h2" text="Scoped Styles"></coralite-heading>
+
+    <p>
+      When you define styles inside a Coralite component template, they are automatically scoped to that component.
+      This prevents styles from leaking out and affecting other parts of your application.
+    </p>
+
+    <p>
+      Coralite achieves this by adding a unique <code>data-style-selector</code> attribute to the component's root elements
+      and transforming your CSS selectors to match this attribute.
+    </p>
+
+    <coralite-code-html>
+      <!-- Source Component -->
+      <template id="my-button">
+        <style>
+          button {
+            background: blue;
+            color: white;
+          }
+        </style>
+        <button>Click me</button>
+      </template>
+    </coralite-code-html>
+
+    <p>
+      The above component will be transformed during the build process. The CSS selector <code>button</code> becomes
+      <code>[data-style-selector="my-button"] button</code> (conceptually), ensuring it only targets buttons within instances of this component.
+    </p>
+
+    <coralite-heading level="h2" text="CSS Nesting"></coralite-heading>
+
+    <p>
+      Coralite supports CSS nesting syntax out of the box, allowing you to write cleaner and more hierarchical styles.
+      You can use the <code>&</code> selector to reference the parent selector.
+    </p>
+
+    <coralite-heading level="h3" text="The Parent Selector (&)"></coralite-heading>
+
+    <p>
+      The ampersand (<code>&</code>) refers to the parent rule's selector. It's particularly useful for pseudo-classes,
+      pseudo-elements, and modifiers.
+    </p>
+
+    <coralite-code-html>
+      <template id="styled-card">
+        <style>
+          .card {
+            background: #fff;
+            padding: 1rem;
+            border: 1px solid #ddd;
+
+            /* Hover state */
+            &:hover {
+              border-color: #aaa;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            /* Dark theme modifier (if applying a class to the component) */
+            &.dark {
+              background: #333;
+              color: #fff;
+            }
+
+            /* Nested element */
+            & .title {
+              font-size: 1.25rem;
+              font-weight: bold;
+              margin-bottom: 0.5rem;
+            }
+          }
+        </style>
+        <div class="card">
+          <div class="title">{{ title }}</div>
+          <slot></slot>
+        </div>
+      </template>
+    </coralite-code-html>
+
+    <p>
+      This nesting capability makes it easy to encapsulate all styles related to a component within a readable structure.
+    </p>
+
+    <coralite-heading level="h2" text="Global vs. Component Styles"></coralite-heading>
+
+    <p>
+      While component styles are scoped, you often need global styles for things like typography, resets, and utility classes.
+    </p>
+
+    <ul>
+      <li><strong>Global Styles:</strong> Define these in your main CSS/SCSS files (e.g., <code>src/scss/main.scss</code>) and include them in your layout or page templates. These styles apply to the entire document.</li>
+      <li><strong>Component Styles:</strong> Define these within the <code>&lt;template&gt;</code> tag using a <code>&lt;style&gt;</code> block. These are specific to the component and are automatically scoped.</li>
+    </ul>
+
+    <p>
+      You can use global utility classes (like Bootstrap or Tailwind) within your components alongside your scoped styles.
+    </p>
+
+    <coralite-heading level="h2" text="Using Preprocessors"></coralite-heading>
+
+    <p>
+      If your project is configured to use Sass or PostCSS (via <code>coralite-scripts</code>), these transformations occur before the component styles are scoped.
+      This means you can use variables, mixins, and other preprocessor features directly within your component's <code>&lt;style&gt;</code> block.
+    </p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
