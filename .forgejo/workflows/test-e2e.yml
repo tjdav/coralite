@@ -17,7 +17,7 @@ on:
 
 jobs:
   e2e:
-    runs-on: codeberg-tiny-lazy
+    runs-on: codeberg-small-lazy
     container:
       image: mcr.microsoft.com/playwright:v1.55.0-noble
     steps:
