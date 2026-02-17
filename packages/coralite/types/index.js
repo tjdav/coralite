@@ -60,13 +60,6 @@
  */
 
 /**
- * Represents a CSS style definition within a Coralite module.
- * @typedef {Object} CoraliteStyle
- * @property {string} content - The raw CSS content
- * @property {boolean} scoped - Whether the style should be scoped to component instances
- */
-
-/**
  * A module within the Coralite library, containing metadata and rendering logic.
  * @typedef {Object} CoraliteModule
  * @property {string} [id] - Unique module identifier used to reference this module within the application.
@@ -74,11 +67,13 @@
  * @property {number} [lineOffset] - Optional offset value for line numbering purposes within the template.
  * @property {CoraliteElement} [template] - Module's rendering template which defines its structure and layout.
  * @property {string|undefined} [script] - Module's JavaScript raw code used for logic or behavior associated with this module.
- * @property {CoraliteStyle[]} [styles] - Styles associated with this module.
+ * @property {string[]} [styles] - Raw CSS associated with this module.
  * @property {CoraliteDocumentValues} [values] - Values generated from the module's markup, containing metadata or variable information.
  * @property {CoraliteElement[]} [customElements] - Custom elements defined in the module, allowing extension of HTML capabilities.
  * @property {Object.<string, Object.<string,CoraliteModuleSlotElement>>} [slotElements] - Custom slot elements and their configurations, enabling flexible content insertion points within components.
  * @property {boolean} isTemplate - Indicates whether the module is a template
+ * @property {Set<string>} [rootClasses] - Root classes relative to template.
+ * @property {Set<string>} [descendantClasses] - Descendant classes.
  */
 
 /**

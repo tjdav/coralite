@@ -115,21 +115,26 @@
       createCodeNode('html-tag-text', tag, '>')
     )
 
-    if (node.name === 'script') {
+    if (node.name === 'script' || node.name === 'style') {
       for (let i = 0; i < node.children.length; i++) {
         const childNode = node.children[i]
 
         if (childNode.type === 'text' && childNode.data.trim()) {
           const content = dedent(childNode.data)
           // re-indent with 2 spaces relative to the tag
-          const indentedContent = indent(content, separator.space + '  ')
+          const indentedContent = indent(content)
 
           const highlightCode = code.highlight(
             indentedContent,
-            { language: 'javascript' }
+            { language: node.name === 'style' ? 'css' : 'javascript' }
           )
 
           const nodes = parseHTML(highlightCode.value)
+          const lastChild = nodes.root.children[nodes.root.children.length - 1]
+
+          if (lastChild && lastChild.type === 'text' && lastChild.data.trim() === '') {
+            lastChild.data = lastChild.data
+          }
 
           tag.children = tag.children.concat(nodes.root.children)
         }
