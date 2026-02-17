@@ -39,6 +39,6 @@ export function dedent (text) {
  * @param {string} text
  * @returns {string}
  */
-export function indent (text) {
-  return text.split('\n').reduce((previousValue, currentValue) => previousValue + '  ' + currentValue + '\n', '').trimRight() + '\n'
+export function indent (text, spacer = '  ') {
+  return text.split('\n').reduce((previousValue, currentValue) => previousValue + spacer + currentValue + '\n', '') + '\n'
 }
