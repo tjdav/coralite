@@ -39,8 +39,11 @@ jobs:
       - name: Build
         run: pnpm --filter "${{ env.PACKAGE_NAME }}..." run build
 
+      - name: set npm config
+        run: |
+          npm config set registry ${{github.SERVER_URL}}/api/packages/tjdavid/npm/
+          npm config set "//codeberg.org/api/packages/tjdavid/npm/:_authToken=${{secrets.NPM_TOKEN}}"
+
       - name: Publish to NPM
         run: |
           pnpm --filter "${{ env.PACKAGE_NAME }}" publish --no-git-checks
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
