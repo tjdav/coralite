@@ -61,8 +61,31 @@ program
       }
 
       // Determine from/to refs
-      const fromTag = options.from || sortedTags[1] || sortedTags[0] // fallback to oldest if only one tag
+      const latestTag = sortedTags[0]
+      let fromTag = options.from
       const toRef = options.to || 'HEAD'
+
+      if (!fromTag) {
+        try {
+          // Check if toRef points to the same commit as latestTag
+          // Use ^{} to peel tags to their commits
+          const [toCommit, latestCommit] = await Promise.all([
+            git.revparse([`${toRef}^{}`]),
+            git.revparse([`${latestTag}^{}`])
+          ])
+
+          if (toCommit.trim() === latestCommit.trim()) {
+            // We are generating changelog for the latest tag itself
+            fromTag = sortedTags[1] || latestTag
+          } else {
+            // We are generating changelog for new changes since latest tag
+            fromTag = latestTag
+          }
+        } catch (error) {
+          // Fallback if git commands fail (e.g. invalid ref)
+          fromTag = sortedTags[1] || latestTag
+        }
+      }
 
       // Validate from tag exists
       if (!tags.all.includes(fromTag)) {
