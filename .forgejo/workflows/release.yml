@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    runs-on: codeberg-tiny-lazy
+    runs-on: codeberg-small-lazy
     container:
       image: "guergeiro/pnpm:22-10-slim"
     steps:
