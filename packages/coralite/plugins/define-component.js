@@ -123,13 +123,14 @@ export const defineComponent = createPlugin({
 
           // check if the token is a function to compute its value
           if (typeof token === 'function') {
-            result = await token(values)
+            result = await token(results)
           }
 
           if (result) {
             // process the string token using unified token processor
             results[key] = await processTokenValue(result, {
               ...context,
+              values: results,
               createComponent: this.createComponent.bind(this)
             })
           } else {
@@ -168,6 +169,7 @@ export const defineComponent = createPlugin({
             // process string result through unified processor
             const processedResult = await processTokenValue(result, {
               ...context,
+              values: results,
               createComponent: this.createComponent.bind(this)
             })
 
