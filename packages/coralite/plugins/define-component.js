@@ -35,7 +35,8 @@ function replaceCustomElementWithTemplate (coraliteElement, element) {
  * @param {Object} context - Processing context
  * @returns {Promise<any>} - Processed value
  */
-async function processTokenValue (value, { excludeByAttribute, values, document, createComponent }) {
+async function processTokenValue (value, context) {
+  const { excludeByAttribute, values, document, createComponent, renderContext } = context
   // If not a string, return as-is
   if (typeof value !== 'string') {
     return value
@@ -53,11 +54,13 @@ async function processTokenValue (value, { excludeByAttribute, values, document,
   for (let i = 0; i < result.customElements.length; i++) {
     const customElement = result.customElements[i]
     const component = await createComponent({
+      contextId: `${document.path.pathname}${customElement.name}-${i}`,
       id: customElement.name,
       values,
       element: customElement,
       document,
-      index: i
+      index: i,
+      renderContext
     })
 
     if (component) {
@@ -97,12 +100,12 @@ export const defineComponent = createPlugin({
     script,
     setup
   },
-  {
-    values,
-    document,
-    element,
-    excludeByAttribute
-  }) {
+  context) {
+    const {
+      values,
+      document,
+      element
+    } = context
     /** @type {CoraliteModuleValues} */
     let results = { ...values }
 
@@ -126,9 +129,7 @@ export const defineComponent = createPlugin({
           if (result) {
             // process the string token using unified token processor
             results[key] = await processTokenValue(result, {
-              excludeByAttribute,
-              values,
-              document,
+              ...context,
               createComponent: this.createComponent.bind(this)
             })
           } else {
@@ -166,9 +167,7 @@ export const defineComponent = createPlugin({
           if (typeof result === 'string') {
             // process string result through unified processor
             const processedResult = await processTokenValue(result, {
-              excludeByAttribute,
-              values: results,
-              document,
+              ...context,
               createComponent: this.createComponent.bind(this)
             })
 
