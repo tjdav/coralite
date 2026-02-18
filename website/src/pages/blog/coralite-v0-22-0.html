@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta 
+    type="article" 
+    title="Coralite v0.22.0 Released - Scoped Styles & Concurrent Rendering" 
+    description="Coralite v0.22.0 introduces automatic scoped styles with CSS transformation, concurrent rendering for faster builds, and significant performance optimizations."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-02-18T15:06:23.484Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.22.0 Released: Scoped Styles & Concurrent Rendering</title>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.22.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-02-18T15:06:23.484Z"></coralite-author>
+
+    <p>I am excited to announce the release of <strong>Coralite v0.22.0</strong>! This update brings powerful new styling capabilities, concurrent rendering for faster builds, and significant performance improvements across the board.</p>
+
+    <coralite-heading level="h2" text="Automatic Scoped Styles"></coralite-heading>
+
+    <p>Component styles are now scoped by default, with automatic CSS transformation handling root class selectors. This means you can write standard CSS without worrying about manual scoping, and Coralite will automatically apply the correct selectors based on where the class is used.</p>
+
+    <p>For example, given a component with a root class and a descendant class:</p>
+
+    <coralite-code-html>
+      <template id="my-card">
+        <div class="card">
+          <h2 class="title">My Card</h2>
+          <p>Some content...</p>
+        </div>
+        <style>
+          /* Applies to the root element because .card is on the root */
+          .card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+          }
+
+          /* Applies to the descendant element */
+          .title {
+            color: #333;
+            font-size: 1.5rem;
+          }
+        </style>
+      </template>
+    </coralite-code-html>
+
+    <p>Coralite will automatically transform this into scoped CSS:</p>
+
+    <coralite-code-highlight language="css">
+      [data-style-selector="my-card"] {
+        &.card {
+          background: white;
+          padding: 1rem;
+          border-radius: 8px;
+        }
+
+        .title {
+          color: #333;
+          font-size: 1.5rem;
+        }
+      }
+    </coralite-code-highlight>
+
+    <p>This ensures that styles remain encapsulated within the component while still allowing you to target the root element easily.</p>
+
+    <coralite-heading level="h2" text="Concurrent Rendering"></coralite-heading>
+
+    <p>The build process now supports concurrent rendering with build-scoped render queues. This allows Coralite to process multiple pages in parallel, significantly reducing build times for large sites.</p>
+    
+    <p>The new <code>addRenderQueue(page, buildId)</code> method enables plugins to safely add pages to the current build queue without race conditions.</p>
+
+    <coralite-heading level="h2" text="Performance Improvements"></coralite-heading>
+
+    <p>This release includes several performance optimizations:</p>
+
+    <ul>
+      <li><strong>DOM Creation:</strong> A new benchmark shows up to <strong>22x speedup</strong> in DOM node creation.</li>
+      <li><strong>Document Cloning:</strong> The new <code>cloneDocumentInstance</code> utility provides a faster and safer way to clone documents for mutations during the build process.</li>
+      <li><strong>Optimized CSS Transformation:</strong> The style transformation logic has been unified and optimized for better performance.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.22.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.22.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+  
+</body>
+</html>
