@@ -83,8 +83,6 @@ async function server (config, options) {
       next()
     })
 
-    let initWatcher = true
-
     // check if Sass is configured and add its input directory to watchPath for file changes.
     if (config.styles) {
       if (config.styles.input) {
@@ -111,7 +109,6 @@ async function server (config, options) {
           start
         })
 
-        initWatcher = false
         let dash = colours.gray(' ─ ')
 
         for (let i = 0; i < results.length; i++) {
@@ -128,8 +125,6 @@ async function server (config, options) {
           plugins: config.cssPlugins,
           start
         })
-
-        initWatcher = false
       } else {
         displayError('Coralite config styles type must not be empty')
       }
