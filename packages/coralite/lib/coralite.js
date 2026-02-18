@@ -1431,14 +1431,10 @@ Coralite.prototype._evaluate = async function ({
       }
 
       if (isCoralite) {
-        const boundContext = {
-          ...context,
-          addRenderQueue: (value) => this.addRenderQueue(value, renderContext.buildId)
-        }
         return {
-          ...boundContext,
+          ...context,
           ...cachedBoundPlugins,
-          default: boundContext
+          default: context
         }
       }
 
