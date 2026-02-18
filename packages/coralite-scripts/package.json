@@ -36,10 +36,6 @@
   "bugs": {
     "url": "https://codeberg.org/tjdavid/coralite/issues"
   },
-  "publishConfig": {
-    "access": "public",
-    "provenance": true
-  },
   "imports": {
     "#lib": {
       "default": "./libs/index.js"
