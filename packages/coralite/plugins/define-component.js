@@ -56,7 +56,8 @@ async function processTokenValue (value, { excludeByAttribute, values, document,
       id: customElement.name,
       values,
       element: customElement,
-      document
+      document,
+      index: i
     })
 
     if (component) {
@@ -215,7 +216,6 @@ export const defineComponent = createPlugin({
         }
       }
     }
-
     if (typeof script === 'function') {
       const scriptTextContent = script.toString().trim()
 
