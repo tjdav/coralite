@@ -1379,7 +1379,8 @@ Coralite.prototype._evaluate = async function ({
     values,
     element,
     module,
-    id: contextId
+    id: contextId,
+    renderContext
   }
 
   renderContext.source.currentSourceContextId = contextId
