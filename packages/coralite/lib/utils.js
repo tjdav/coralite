@@ -129,6 +129,19 @@ function cloneNode (nodeMap, node, parent) {
     }
   }
 
+  // Update slot references to point to new cloned nodes
+  if (newNode.slots) {
+    for (let i = 0; i < newNode.slots.length; i++) {
+      const slot = newNode.slots[i]
+      if (slot.node) {
+        const clonedNode = nodeMap.get(slot.node)
+        if (clonedNode) {
+          slot.node = clonedNode
+        }
+      }
+    }
+  }
+
   return newNode
 }
 
