@@ -1313,12 +1313,13 @@ Coralite.prototype.createComponent = async function ({
             if (component) {
               const slotContextId = contextId + slotName + i + node.name
               const currentValues = renderContext.values[slotContextId] || {}
+              const attribValues = cleanKeys(node.attribs)
 
               if (typeof node.attribs === 'object') {
                 renderContext.values[slotContextId] = {
                   ...currentValues,
                   ...values,
-                  ...node.attribs
+                  ...attribValues
                 }
               } else {
                 renderContext.values[slotContextId] = Object.assign(currentValues, values)
