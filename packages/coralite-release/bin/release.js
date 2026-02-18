@@ -48,8 +48,8 @@ program
 
         // 3. Build Verification
         prompts.log.step('Verifying Build...')
-        // Using recursive build to cover all packages
-        execSync('pnpm -r --if-present run build', { stdio: 'inherit' })
+        execSync('pnpm run build', { stdio: 'inherit' })
+        execSync('pnpm run build-scripts', { stdio: 'inherit' })
 
         prompts.log.success('✅ All checks passed!')
       } catch (error) {
