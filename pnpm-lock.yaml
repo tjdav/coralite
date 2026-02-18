@@ -145,8 +145,8 @@ importers:
   website:
     devDependencies:
       coralite-plugin-aggregation:
-        specifier: ^0.6.0
-        version: 0.6.0
+        specifier: ^0.7.0
+        version: 0.7.0(coralite@0.22.0)
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
@@ -852,11 +852,18 @@ packages:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
-  coralite-plugin-aggregation@0.6.0:
-    resolution: {integrity: sha512-i6xzNXIEKFp8wDygwMD6g4TPeq3+04buNNlffd7Tad2J54nZHj54eDCbiTlz+dFfF2uaeM/RrsrYC6gEsK3JHA==}
+  coralite-plugin-aggregation@0.7.0:
+    resolution: {integrity: sha512-AkroUHAUvDEUpSo8W+g9t+gu2Ue4opph5W3Xez7k5tXBtvga04QqBJF0oTU3CD9EUaH5DCETKEX9PRCXhqXXyA==}
+    peerDependencies:
+      coralite: ^0.22.0
 
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
+
+  coralite@0.22.0:
+    resolution: {integrity: sha512-W4Fy1SB4ucY0af0dLVlEOhR12cQtX5h4z7ORHo1I8IjLuvpE/7Z2zFGno2xHCZda4ofJPNovYaMabWoXeZdT2A==}
+    engines: {node: '>20.19.0'}
+    hasBin: true
 
   cosmiconfig-typescript-loader@6.1.0:
     resolution: {integrity: sha512-tJ1w35ZRUiM5FeTzT7DtYWAFFv37ZLqSRkGi2oeCK1gPhvaWjkAtfXvLmvE1pRfxxp9aQo6ba/Pvg1dKj05D4g==}
@@ -2785,16 +2792,27 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.6.0:
+  coralite-plugin-aggregation@0.7.0(coralite@0.22.0):
     dependencies:
-      dom-serializer: 2.0.0
-      htmlparser2: 10.0.0
+      coralite: 0.22.0
 
   coralite-plugin-inline-css@0.4.0:
     dependencies:
       postcss: 8.5.6
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
+
+  coralite@0.22.0:
+    dependencies:
+      commander: 13.1.0
+      dom-serializer: 2.0.0
+      esbuild: 0.25.9
+      htmlparser2: 10.0.0
+      kleur: 4.1.5
+      p-limit: 7.2.0
+      postcss: 8.5.6
+      postcss-selector-parser: 7.1.1
+      serialize-javascript: 7.0.2
 
   cosmiconfig-typescript-loader@6.1.0(@types/node@22.18.5)(cosmiconfig@9.0.0(typescript@5.9.2))(typescript@5.9.2):
     dependencies:
