@@ -56,6 +56,9 @@ export const metadataPlugin = createPlugin({
                       }
                     }
                   }
+                } else if (element.name === 'title' && element.children.length && element.children[0].type === 'text') {
+                  // store page title
+                  values.meta_pageTitle = element.children[0].data
                 }
               }
             }
