@@ -8,12 +8,16 @@
 
   export default defineComponent({
     tokens: {
-      posts () {
-        return aggregation({
+      async posts () {
+        return await aggregation({
           path: ['blog'],
           template: 'coralite-post',
           sort (a, b) {
             return new Date(b.meta_published_time) - new Date(a.meta_published_time)
+          },
+          limit: 15,
+          pagination: {
+            maxVisible: 3
           }
         })
       }
