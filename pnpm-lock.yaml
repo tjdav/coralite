@@ -82,6 +82,21 @@ importers:
         specifier: ^3.0.0
         version: 3.0.1
 
+  packages/coralite-plugin-scripts:
+    dependencies:
+      '@clack/prompts':
+        specifier: ^0.11.0
+        version: 0.11.0
+      commander:
+        specifier: ^13.1.0
+        version: 13.1.0
+      kleur:
+        specifier: ^4.1.5
+        version: 4.1.5
+      simple-git:
+        specifier: ^3.28.0
+        version: 3.28.0
+
   packages/coralite-release:
     dependencies:
       '@clack/prompts':
@@ -142,11 +157,23 @@ importers:
         specifier: ^4.1.5
         version: 4.1.5
 
+  packages/create-coralite-plugin:
+    dependencies:
+      '@clack/prompts':
+        specifier: ^0.11.0
+        version: 0.11.0
+      commander:
+        specifier: ^13.1.0
+        version: 13.1.0
+      kleur:
+        specifier: ^4.1.5
+        version: 4.1.5
+
   website:
     devDependencies:
       coralite-plugin-aggregation:
         specifier: ^0.7.0
-        version: 0.7.0(coralite@0.22.0)
+        version: 0.7.0(coralite@0.22.1)
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
@@ -860,8 +887,8 @@ packages:
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
 
-  coralite@0.22.0:
-    resolution: {integrity: sha512-W4Fy1SB4ucY0af0dLVlEOhR12cQtX5h4z7ORHo1I8IjLuvpE/7Z2zFGno2xHCZda4ofJPNovYaMabWoXeZdT2A==}
+  coralite@0.22.1:
+    resolution: {integrity: sha512-oKon3c6lcw/f75yRJJyqyq7AV5y6/Gbasri/DmuZKVKA49KDogST7AoKfyDUUJtLYhHIT+2k1FU9k7eXMxMP9w==}
     engines: {node: '>20.19.0'}
     hasBin: true
 
@@ -2792,9 +2819,9 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.7.0(coralite@0.22.0):
+  coralite-plugin-aggregation@0.7.0(coralite@0.22.1):
     dependencies:
-      coralite: 0.22.0
+      coralite: 0.22.1
 
   coralite-plugin-inline-css@0.4.0:
     dependencies:
@@ -2802,7 +2829,7 @@ snapshots:
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
 
-  coralite@0.22.0:
+  coralite@0.22.1:
     dependencies:
       commander: 13.1.0
       dom-serializer: 2.0.0
