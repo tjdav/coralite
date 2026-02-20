@@ -1,0 +1,6 @@
+steps:
+  test:
+    image: node:22
+    commands:
+      - npm ci
+      - npm test

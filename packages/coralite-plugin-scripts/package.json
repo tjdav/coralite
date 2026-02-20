@@ -1,0 +1,39 @@
+{
+  "name": "@coralite/plugin-scripts",
+  "version": "0.1.0",
+  "description": "Release and utility scripts for Coralite plugins",
+  "type": "module",
+  "bin": {
+    "coralite-plugin-scripts": "./bin/index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "coralite",
+    "plugin",
+    "scripts",
+    "release",
+    "changelog"
+  ],
+  "homepage": "https://coralite.dev",
+  "author": {
+    "name": "Thomas David",
+    "url": "https://thomasjackdavid.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://codeberg.org/tjdavid/coralite.git",
+    "directory": "packages/coralite-plugin-scripts"
+  },
+  "bugs": {
+    "url": "https://codeberg.org/tjdavid/coralite/issues"
+  },
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "commander": "^13.1.0",
+    "kleur": "^4.1.5",
+    "simple-git": "^3.28.0"
+  }
+}

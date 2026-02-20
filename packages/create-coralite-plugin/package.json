@@ -1,0 +1,34 @@
+{
+  "name": "create-coralite-plugin",
+  "version": "0.1.0",
+  "description": "Scaffold a new Coralite plugin",
+  "type": "module",
+  "bin": {
+    "create-coralite-plugin": "./bin/index.js"
+  },
+  "keywords": [
+    "coralite",
+    "scaffolding",
+    "plugin",
+    "create"
+  ],
+  "homepage": "https://coralite.dev",
+  "author": {
+    "name": "Thomas David",
+    "url": "https://thomasjackdavid.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://codeberg.org/tjdavid/coralite.git",
+    "directory": "packages/create-coralite-plugin"
+  },
+  "bugs": {
+    "url": "https://codeberg.org/tjdavid/coralite/issues"
+  },
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "commander": "^13.1.0",
+    "kleur": "^4.1.5"
+  }
+}

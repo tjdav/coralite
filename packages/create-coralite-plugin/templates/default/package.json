@@ -1,0 +1,21 @@
+{
+  "name": "coralite-plugin-template",
+  "version": "0.0.1",
+  "description": "A Coralite plugin",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.spec.js",
+    "release": "coralite-plugin-scripts release"
+  },
+  "keywords": [
+    "coralite",
+    "plugin"
+  ],
+  "author": "",
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "coralite": "latest",
+    "@coralite/plugin-scripts": "latest"
+  }
+}
