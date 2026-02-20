@@ -1,49 +1,12 @@
-/**
- * @import { CoraliteResult, HTMLData, CoraliteModuleValue, CoraliteAnyNode, CoraliteDocument, CoraliteModule, CoraliteElement, CoraliteFilePath, CoraliteDocumentRoot } from './index.js'
- */
 
 /**
- * @typedef {Object} IgnoreByAttribute
- * @property {string} name - Name of attribute
- * @property {string} value - Value of attribute
- */
-
-/**
- * @typedef {Object} CoraliteCollectionCallbackResult
- * @property {'page'|'template'} [type] - Document type
- * @property {*} [result] - Result value returned from event handlers
- */
-
-/**
- * A document object with both HTMLData properties and result handling capabilities
- * @typedef {(CoraliteCollectionCallbackResult & HTMLData)} CoraliteCollectionItem
- */
-
-/**
- * @typedef {Object} CoraliteCollectionEventResult
- * @property {*} value - The processed value
- * @property {'page'|'template'} [type] - Document type
- * @property {string} [id] - Optional identifier for the item
- */
-
-/**
- * @callback CoraliteCollectionEventSet
- * @param {CoraliteCollectionItem} value - Item to be set
- * @returns {Promise<CoraliteCollectionEventResult>} Returns a result object with processed value and optional ID
- * @async
- */
-
-/**
- * @callback CoraliteCollectionEventDelete
- * @param {CoraliteCollectionItem} value - Item or pathname to delete
- * @async
- */
-
-/**
- * @callback CoraliteCollectionEventUpdate
- * @param {CoraliteCollectionItem} newValue - New item value
- * @param {CoraliteCollectionItem} oldValue - Original item value
- * @async
+ * @import { CoraliteResult, CoraliteDocument, ParseHTMLResult, IgnoreByAttribute } from './document.js'
+ * @import { HTMLData, CoraliteFilePath } from './core.js'
+ * @import { CoraliteModule } from './module.js'
+ * @import { CoraliteElement, CoraliteAnyNode } from './dom.js'
+ * @import { CoraliteCollectionItem } from './collection.js'
+ * @import { ScriptPlugin } from './script.js'
+ * @import { Coralite } from '#lib'
  */
 
 /**
@@ -126,6 +89,7 @@
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
+ * @property {Function} [server] - Server extension hook
  */
 
 /**
@@ -143,6 +107,7 @@
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
+ * @property {Function} [server] - Server extension hook
  */
 
 /**
@@ -158,59 +123,7 @@
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
- */
-
-/**
- * @typedef {Object} ParseHTMLResult
- * @property {CoraliteDocumentRoot} root - The root element of the parsed HTML document.
- * @property {CoraliteElement[]} customElements - An array of custom elements identified during parsing.
- * @property {CoraliteElement[]} tempElements - An array of temporary elements created during the parsing process.
- */
-
-/**
- * @typedef {Object} CoraliteConfig
- * @property {string} output - The path to the output directory where built files will be placed.
- * @property {string} templates - The path to the directory containing Coralite templates.
- * @property {string} pages - The path to the directory containing pages that will be rendered using the provided templates.
- * @property {CoralitePluginInstance[]} [plugins] - Optional array of plugin instances to extend Coralite functionality.
- */
-
-/**
- * @typedef {Object} CoraliteScriptContent
- * @property {string} id - Unique instance identifier
- * @property {string} [templateId] - Template identifier for shared functions
- * @property {CoraliteDocument} document - Coralite document with metadata and rendering structure.
- * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
- * @property {Object} refs - Array of reference identifiers.
- */
-
-/**
- * @callback CoraliteModuleScript
- * @param {CoraliteValues} values - The module's current values
- * @param {CoraliteRef} refs - References template elements
- */
-
-/**
- * @callback CoraliteModuleSetup
- * @param {CoraliteModuleValues} context
- */
-
-
-/**
- * @typedef {Object} ScriptPlugin
- * @property {function(any): void} [setup] - Called when plugin is registered
- * @property {Object.<string, function>} [helpers] - Global or instance helpers to add to scripts
- * @property {Object.<'register'|'beforeExecute'|'afterExecute'|'onScriptCompile', function>} [lifecycle] - Lifecycle hooks
- * @property {function(string, Object): string} [transform] - Transform script content
- */
-
-/**
- * @typedef {Object} InstanceContext
- * @property {string} instanceId - Unique instance identifier
- * @property {string} templateId - Template identifier
- * @property {Object.<string, CoraliteModuleValue>} values - Instance values
- * @property {Object.<string, string>} refs - Instance refs
- * @property {CoraliteDocument} [document] - Document context
+ * @property {Function} [server] - Server extension hook
  */
 
 export default {}
