@@ -27,13 +27,13 @@ import { randomUUID } from 'node:crypto'
  *  CoraliteDocument,
  *  CoraliteCollectionItem,
  *  CoraliteDocumentRoot,
- *  CoralitePluginInstance,
  *  CoraliteCollectionEventSet,
  *  IgnoreByAttribute,
  *  CoraliteDocumentResult,
  *  CoraliteValues,
- *  CoraliteScriptContent,
  *  InstanceContext} from '../types/index.js'
+ *
+ * @import { CoralitePluginInstance } from '../types/plugin.js'
  */
 
 /**
@@ -100,7 +100,8 @@ export function Coralite ({
       onPageDelete: [],
       onTemplateSet: [],
       onTemplateUpdate: [],
-      onTemplateDelete: []
+      onTemplateDelete: [],
+      onAfterPageRender: []
     }
   }
 
@@ -171,6 +172,9 @@ export function Coralite ({
     }
     if (plugin.onTemplateUpdate) {
       this._addPluginHook('onTemplateUpdate', plugin.onTemplateUpdate)
+    }
+    if (plugin.onAfterPageRender) {
+      this._addPluginHook('onAfterPageRender', plugin.onAfterPageRender)
     }
 
     // register script plugin if provided
@@ -804,23 +808,49 @@ Coralite.prototype.build = async function (...args) {
         // Exit early if build was cancelled while in queue
         if (signal?.aborted) throw signal.reason
 
-        if (typeof callback === 'function') {
-          return await callback(result)
-        } else {
-          return result
+        // Trigger onAfterPageRender hooks
+        const hookResults = await this._triggerPluginHook('onAfterPageRender', result)
+        let hookItems = []
+
+        // Collect new results from hooks
+        for (const hookResult of hookResults) {
+          if (hookResult) {
+            if (Array.isArray(hookResult)) {
+              hookItems.push(...hookResult)
+            } else {
+              hookItems.push(hookResult)
+            }
+          }
         }
+
+        const items = [result, ...hookItems]
+        const finalResults = []
+
+        for (const item of items) {
+          if (typeof callback === 'function') {
+            const transformed = await callback(item)
+            if (transformed) {
+              finalResults.push(transformed)
+            }
+          } else {
+            finalResults.push(item)
+          }
+        }
+
+        return finalResults
       })
 
       executing.add(task)
 
       // Clean up task
-      task.then((callbackResult) => {
-        if (callbackResult) {
-          results.push(callbackResult)
+      task.then((callbackResults) => {
+        if (callbackResults && callbackResults.length) {
+          results.push(...callbackResults)
         }
 
         executing.delete(task)
-      }).catch(() => {
+      }).catch((err) => {
+        console.error(err)
         executing.delete(task)
       })
     }
@@ -1488,7 +1518,7 @@ Coralite.prototype._evaluate = async function ({
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'} name - The name of the hook to trigger.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onAfterPageRender'} name - The name of the hook to trigger.
  * @param {T} data - Data to pass to each callback function.
  * @return {Promise<Array<T>>} A promise that resolves to an array of results from all callbacks.
  */
@@ -1511,7 +1541,7 @@ Coralite.prototype._triggerPluginHook = async function (name, data) {
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'} name - The name of the hook to register the callback with.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onAfterPageRender'} name - The name of the hook to register the callback with.
  * @param {Function} callback - The callback function to be executed when the hook is triggered.
  */
 Coralite.prototype._addPluginHook = function (name, callback) {
