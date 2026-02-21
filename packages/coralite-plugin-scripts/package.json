@@ -1,5 +1,5 @@
 {
-  "name": "@coralite/plugin-scripts",
+  "name": "coralite-plugin-scripts",
   "version": "0.1.0",
   "description": "Release and utility scripts for Coralite plugins",
   "type": "module",
