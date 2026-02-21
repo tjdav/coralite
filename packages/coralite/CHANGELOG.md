@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.23.0
+
+> Comparing `coralite-v0.22.1` to `HEAD`
+
+**Summary:** 7 commits
+
+### ✨ Features
+
+- add onAfterPageRender plugin hook ([56f7421](https://codeberg.org/tjdavid/coralite/commit/56f742185dd7ee4a94d7b7a1cdd3d2b620286655))
+- normalize slot component attributes to camelCase ([5a3a203](https://codeberg.org/tjdavid/coralite/commit/5a3a203e557612de0cf1d157a8d7607caa732665))
+
+### 🐛 Bug Fixes
+
+- update homepage URL from .io to .dev ([a83c431](https://codeberg.org/tjdavid/coralite/commit/a83c431b3f34dd8c90e2600671a78a1fc05a3ac9))
+- pass fully merged results to token functions and processor ([479efef](https://codeberg.org/tjdavid/coralite/commit/479efef995ef764197d898b2ea9dacffdb896519))
+- update slot references when cloning nodes ([e7d27c8](https://codeberg.org/tjdavid/coralite/commit/e7d27c8c1a9fca0601fcbab8d5db4d9b62b33812))
+
+### ♻️ Code Refactoring
+
+- reorganize type definitions by domain ([27a76df](https://codeberg.org/tjdavid/coralite/commit/27a76dfab1912e411465849e439f300669da91b8))
+
+### 🔨 Other Changes
+
+- types: add type definitions for Coralite plugin system ([1ff954a](https://codeberg.org/tjdavid/coralite/commit/1ff954a0ca080dd97d900049d30c6ec6cc751bf2))
+
+
 ## v0.22.1
 
 > Comparing `coralite-v0.21.0` to `HEAD`
