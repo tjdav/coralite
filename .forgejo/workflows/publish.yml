@@ -27,17 +27,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: Install pnpm
-        run: |
-          npm install -g corepack@latest
-          corepack enable
-          corepack prepare pnpm@latest --activate
-
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm --filter "${{ env.PACKAGE_NAME }}..." run build
+        run: pnpm --filter "${{ env.PACKAGE_NAME }}..." run build --if-present
 
       - name: set npm config
         run: |
