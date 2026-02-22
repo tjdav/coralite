@@ -78,7 +78,8 @@ program
       // Get all package.json files
       const packageFiles = globSync('packages/*/package.json')
       const packageTemplateFiles = globSync('packages/create-coralite/templates/*/package.json')
-      const packageJsonFiles = packageFiles.concat(packageTemplateFiles)
+      const pluginTemplateFiles = globSync('packages/create-coralite-plugin/templates/*/package.json')
+      const packageJsonFiles = packageFiles.concat(packageTemplateFiles, pluginTemplateFiles)
 
       if (packageJsonFiles.length === 0) {
         prompts.log.warn('No packages found in packages/ directory')
