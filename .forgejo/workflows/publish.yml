@@ -19,6 +19,13 @@ jobs:
           PACKAGE_NAME=$(echo ${{ github.ref_name }} | sed -E 's/-v[0-9]+\.[0-9]+\.[0-9]+.*//')
           echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
 
+          # Find the directory for this package name
+          PKG_PATH=$(pnpm list --filter "$PACKAGE_NAME" --depth -1 --json | node -e "
+            const input = JSON.parse(require('fs').readFileSync(0));
+            console.log(input[0]?.path || '');
+          ")
+          echo "PACKAGE_PATH=$PKG_PATH" >> $GITHUB_ENV
+
       - name: Cache pnpm modules
         uses: https://code.forgejo.org/actions/cache@v3
         with:
@@ -35,9 +42,27 @@ jobs:
 
       - name: set npm config
         run: |
-          npm config set registry ${{github.SERVER_URL}}/api/packages/tjdavid/npm/
-          npm config set "//codeberg.org/api/packages/tjdavid/npm/:_authToken=${{secrets.NPM_TOKEN}}"
+          # Codeberg Auth
+          npm config set //codeberg.org/api/packages/tjdavid/npm/:_authToken=${{secrets.CODEBERG_TOKEN}}
+          
+          # npmjs.com Auth
+          npm config set //registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}
 
       - name: Publish to NPM
         run: |
-          pnpm --filter "${{ env.PACKAGE_NAME }}" publish --no-git-checks
+          # Check if private (using the logic from our previous step)
+          IS_PRIVATE=$(node -p "require('${{ env.PACKAGE_PATH }}/package.json').private || false")
+          
+          if [ "$IS_PRIVATE" = "true" ]; then
+            echo "::notice::Skipping publish for $PACKAGE_NAME (Private package)."
+          else
+            echo "🚀 Publishing $PACKAGE_NAME to Codeberg..."
+            pnpm --filter "${{ env.PACKAGE_NAME }}" publish \
+              --registry "https://codeberg.org/api/packages/tjdavid/npm/" \
+              --no-git-checks
+
+            echo "🚀 Publishing $PACKAGE_NAME to npmjs.com..."
+            pnpm --filter "${{ env.PACKAGE_NAME }}" publish \
+              --registry "https://registry.npmjs.org/" \
+              --no-git-checks
+          fi
