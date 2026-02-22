@@ -43,14 +43,14 @@ function CoraliteCollection (options = { rootDir: '' }) {
    * Used for grouping documents by their file path.
    * @type {Object.<string, CoraliteCollectionItem[]>}
    */
-  this.listByPath = {}
+  this.listByPath = Object.create(null)
 
   /**
    * An object mapping unique identifiers to HTMLData objects.
    * Used for quick lookup of documents by their identifier.
    * @type {Object.<string, CoraliteCollectionItem>}
    */
-  this.collection = {}
+  this.collection = Object.create(null)
 
   /**
    * Callback triggered when setting a new item
