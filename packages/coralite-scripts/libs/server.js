@@ -156,21 +156,83 @@ async function server (config, options) {
       })
       .get(/(.*)/, async (req, res) => {
         // extract the requested path and its extension.
-        let path = req.path
-        const extension = extname(path)
+        const reqPath = req.path
+        const extension = extname(reqPath)
 
-        // if no extension is present, assume it's a HTML file and append '.html'.
-        if (!extension) {
-          if ('/' === path) {
-            path = 'index.html'
-          } else if (path.endsWith('/')) {
-            path = path.slice(0, path.length - 1) + '.html'
-          } else {
-            path += '.html'
-          }
+        // Only handle HTML requests or extension-less requests (assumed to be pages)
+        if (extension && extension !== '.html') {
+          return res.sendStatus(404)
         }
 
-        const cacheKey = path.startsWith('/') ? path.slice(1) : path
+        const resolveSource = async () => {
+          const candidates = []
+
+          // Ensure relative path doesn't start with / for joining
+          const relPath = reqPath.startsWith('/') ? reqPath.slice(1) : reqPath
+
+          if (reqPath.endsWith('/')) {
+            const key = join(relPath, 'index.html')
+            candidates.push({
+              path: join(config.pages, key),
+              key
+            })
+          } else if (extension === '.html') {
+            const key = relPath
+            candidates.push({
+              path: join(config.pages, key),
+              key
+            })
+          } else {
+            // No extension, no trailing slash
+            const key1 = relPath + '.html'
+            candidates.push({
+              path: join(config.pages, key1),
+              key: key1
+            })
+
+            const key2 = join(relPath, 'index.html')
+            candidates.push({
+              path: join(config.pages, key2),
+              key: key2
+            })
+          }
+
+          for (const candidate of candidates) {
+            try {
+              await access(candidate.path, constants.R_OK)
+              // Normalize key for consistency (use forward slashes)
+              const normalizedKey = candidate.key.split(sep).join('/')
+              return {
+                pathname: candidate.path,
+                key: normalizedKey
+              }
+            } catch {
+              // continue
+            }
+          }
+
+          // Fallback check memoryPageSource
+          for (const candidate of candidates) {
+            const normalizedKey = candidate.key.split(sep).join('/')
+            if (memoryPageSource.has(normalizedKey)) {
+              return {
+                pathname: memoryPageSource.get(normalizedKey),
+                key: normalizedKey
+              }
+            }
+          }
+
+          return null
+        }
+
+        const result = await resolveSource()
+
+        if (!result) {
+          res.sendStatus(404)
+          return
+        }
+
+        const { pathname, key: cacheKey } = result
 
         if (pageCache.has(cacheKey)) {
           res.send(pageCache.get(cacheKey))
@@ -178,99 +240,70 @@ async function server (config, options) {
         }
 
         try {
-          // first attempt to read the file directly.
-          await access(path)
-          const data = await readFile(path, 'utf8')
+          const start = process.hrtime()
+          let duration, dash = colours.gray(' ─ ')
 
-          res.send(data)
-        } catch {
-          if (!path.endsWith('.html')) {
-            res.sendStatus(404)
+          let rebuildScript = '\n<script>\n'
+          rebuildScript += "    const eventSource = new EventSource('/_/rebuild');\n"
+          rebuildScript += '    eventSource.onmessage = function(event) {\n'
+          rebuildScript += "      if (event.data === 'connected') return;\n"
+          rebuildScript += '      // Reload page when file changes\n'
+          rebuildScript += '      location.reload()\n'
+          rebuildScript += '    }\n'
+          rebuildScript += '  </script>\n'
+          rebuildScript += '</body>\n'
+
+          await coralite.pages.setItem(pathname)
+          // build the HTML for this page using the built-in compiler.
+          const documents = await coralite.build(pathname, (result) => {
+            // inject a script to enable live reload via Server-Sent Events
+            const injectedHtml = result.html.replace(/<\/body>/i, rebuildScript)
+
+            const relPath = relative(config.pages, result.path.pathname)
+            const normalizedKey = relPath.split(sep).join('/')
+
+            // map in memory page to source
+            if (normalizedKey !== pathname) {
+              memoryPageSource.set(normalizedKey, pathname)
+            }
+
+            // only cache pages that were out of scope of the initial page request
+            if (normalizedKey !== cacheKey) {
+              pageCache.set(normalizedKey, injectedHtml)
+            }
+
+            return {
+              path: result.path,
+              html: injectedHtml,
+              duration: result.duration
+            }
+          })
+
+          // prints time and path to the file that has been changed or added.
+          duration = process.hrtime(start)
+          process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(duration) + dash + '/' + cacheKey + '\n')
+
+          // find the document that matches the request path
+          const doc = documents.find(doc => {
+            const relPath = relative(config.pages, doc.path.pathname)
+            const normalizedKey = relPath.split(sep).join('/')
+            return normalizedKey === cacheKey
+          })
+
+          if (doc) {
+            res.send(doc.html)
           } else {
-            let pathname = join(config.pages, path)
-
-            try {
-              // if that fails, try reading from pages directory.
-
-              // check if page source file exists and is readable
-              await access(pathname, constants.R_OK)
-            } catch {
-              // check if it is a known in memory page source
-              const cacheKey = path.startsWith('/') ? path.slice(1) : path
-              if (memoryPageSource.has(cacheKey)) {
-                pathname = memoryPageSource.get(cacheKey)
-              } else {
-                res.sendStatus(404)
-                return
-              }
-            }
-
-            try {
-              const start = process.hrtime()
-              let duration, dash = colours.gray(' ─ ')
-
-              let rebuildScript = '\n<script>\n'
-              rebuildScript += "    const eventSource = new EventSource('/_/rebuild');\n"
-              rebuildScript += '    eventSource.onmessage = function(event) {\n'
-              rebuildScript += "      if (event.data === 'connected') return;\n"
-              rebuildScript += '      // Reload page when file changes\n'
-              rebuildScript += '      location.reload()\n'
-              rebuildScript += '    }\n'
-              rebuildScript += '  </script>\n'
-              rebuildScript += '</body>\n'
-
-              await coralite.pages.setItem(pathname)
-              // build the HTML for this page using the built-in compiler.
-              const documents = await coralite.build(pathname, (result) => {
-                // inject a script to enable live reload via Server-Sent Events
-                const injectedHtml = result.html.replace(/<\/body>/i, rebuildScript)
-
-                const relPath = relative(config.pages, result.path.pathname)
-                const normalizedKey = relPath.split(sep).join('/')
-
-                // map in memory page to source
-                if (normalizedKey !== pathname) {
-                  memoryPageSource.set(normalizedKey, pathname)
-                }
-
-                // only cache pages that were out of scope of the initial page request
-                if (normalizedKey !== cacheKey) {
-                  pageCache.set(normalizedKey, injectedHtml)
-                }
-
-                return {
-                  path: result.path,
-                  html: injectedHtml,
-                  duration: result.duration
-                }
-              })
-
-              // prints time and path to the file that has been changed or added.
-              duration = process.hrtime(start)
-              process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(duration) + dash + path + '\n')
-
-              // find the document that matches the request path
-              const doc = documents.find(doc => {
-                const relPath = relative(config.pages, doc.path.pathname)
-                const normalizedKey = relPath.split(sep).join('/')
-                return normalizedKey === cacheKey
-              })
-
-              if (doc) {
-                res.send(doc.html)
-              } else {
-                res.sendStatus(404)
-              }
-            } catch (error) {
-              // If headers haven't been sent, send 500
-              if (!res.headersSent) {
-                res.status(500).send(error.message)
-              }
-              displayError('Request processing failed', error)
-            }
+            res.sendStatus(404)
           }
+        } catch (error) {
+          // If headers haven't been sent, send 500
+          if (!res.headersSent) {
+            res.status(500).send(error.message)
+          }
+          displayError('Request processing failed', error)
         }
-      })
+      }
+      )
 
     // watch for file changes
     const watcher = chokidar.watch(watchPath, {
