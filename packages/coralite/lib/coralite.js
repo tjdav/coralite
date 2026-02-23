@@ -101,7 +101,8 @@ export function Coralite ({
       onTemplateSet: [],
       onTemplateUpdate: [],
       onTemplateDelete: [],
-      onAfterPageRender: []
+      onAfterPageRender: [],
+      onBuildComplete: []
     }
   }
 
@@ -175,6 +176,9 @@ export function Coralite ({
     }
     if (plugin.onAfterPageRender) {
       this._addPluginHook('onAfterPageRender', plugin.onAfterPageRender)
+    }
+    if (plugin.onBuildComplete) {
+      this._addPluginHook('onBuildComplete', plugin.onBuildComplete)
     }
 
     // register script plugin if provided
@@ -769,6 +773,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
  * })
  */
 Coralite.prototype.build = async function (...args) {
+  const startTime = performance.now()
   let path = args[0]
   let options
   let callback
@@ -793,6 +798,7 @@ Coralite.prototype.build = async function (...args) {
   const limit = pLimit(maxConcurrent)
   const executing = new Set()
   const results = []
+  let buildError = null
 
   try {
     for await (const result of this._generatePages(path, variables)) {
@@ -863,16 +869,28 @@ Coralite.prototype.build = async function (...args) {
     // Clean up - If one fails or we abort, wait for pending to settle
     await Promise.allSettled(executing)
 
+    let finalError = error
+
     if (error.name === 'AbortError') {
       console.warn('Build cancelled by user.')
     }
 
     if (error instanceof Error) {
       error.message = `Build failed: ${error.message}`
-      throw error
+      finalError = error
+    } else {
+      finalError = new Error(`Build failed: ${error.message}`, { cause: error })
     }
 
-    throw new Error(`Build failed: ${error.message}`, { cause: error })
+    buildError = finalError
+    throw finalError
+  } finally {
+    const duration = performance.now() - startTime
+    await this._triggerPluginHook('onBuildComplete', {
+      results,
+      error: buildError,
+      duration
+    })
   }
 }
 
@@ -1521,7 +1539,7 @@ Coralite.prototype._evaluate = async function ({
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onAfterPageRender'} name - The name of the hook to trigger.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onAfterPageRender'|'onBuildComplete'} name - The name of the hook to trigger.
  * @param {T} data - Data to pass to each callback function.
  * @return {Promise<Array<T>>} A promise that resolves to an array of results from all callbacks.
  */
@@ -1544,7 +1562,7 @@ Coralite.prototype._triggerPluginHook = async function (name, data) {
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onAfterPageRender'} name - The name of the hook to register the callback with.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onAfterPageRender'|'onBuildComplete'} name - The name of the hook to register the callback with.
  * @param {Function} callback - The callback function to be executed when the hook is triggered.
  */
 Coralite.prototype._addPluginHook = function (name, callback) {

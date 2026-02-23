@@ -131,6 +131,7 @@ export function createPlugin ({
   onTemplateUpdate,
   onTemplateDelete,
   onAfterPageRender,
+  onBuildComplete,
   script,
   server
 }) {
@@ -146,6 +147,7 @@ export function createPlugin ({
   validateOptionalFunction(onTemplateUpdate, 'onTemplateUpdate')
   validateOptionalFunction(onTemplateDelete, 'onTemplateDelete')
   validateOptionalFunction(onAfterPageRender, 'onAfterPageRender')
+  validateOptionalFunction(onBuildComplete, 'onBuildComplete')
   validateOptionalFunction(server, 'server')
 
   // Validate templates array
@@ -204,6 +206,7 @@ export function createPlugin ({
     onTemplateUpdate,
     onTemplateDelete,
     onAfterPageRender,
+    onBuildComplete,
     script,
     server
   }
