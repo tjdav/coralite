@@ -928,7 +928,10 @@ Coralite.prototype.save = async function (output, path, options = {}) {
  */
 Coralite.prototype.transform = function (root, options) {
   // @ts-ignore
-  return render(root, options)
+  return render(root, {
+    decodeEntities: false,
+    ...options
+  })
 }
 
 /**

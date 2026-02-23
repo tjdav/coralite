@@ -98,7 +98,7 @@ export function parseHTML (string, ignoreByAttribute) {
         parent
       }))
     }
-  })
+  }, { decodeEntities: false })
 
   parser.write(string)
   parser.end()
@@ -340,7 +340,7 @@ export function parseModule (string, { ignoreByAttribute }) {
         parent: stack[stack.length - 1]
       }))
     }
-  })
+  }, { decodeEntities: false })
 
   parser.write(string)
   parser.end()
