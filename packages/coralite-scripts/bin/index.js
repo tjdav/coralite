@@ -34,6 +34,10 @@ const options = program.opts()
 const mode = program.args[0]
 const config = await loadConfig()
 
+if (!config) {
+  process.exit(1)
+}
+
 if (mode === 'dev') {
   await server(config, options)
 } else if (mode === 'build') {
