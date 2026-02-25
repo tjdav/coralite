@@ -7,14 +7,11 @@ describe('ScriptManager', () => {
     it('should initialize with empty collections', () => {
       const sm = new ScriptManager()
 
-      assert.ok(sm.sharedFunctions instanceof Map)
-      assert.strictEqual(sm.sharedFunctions.size, 0)
+      assert.ok(sm.sharedFunctions instanceof Object)
+      assert.strictEqual(Object.values(sm.sharedFunctions).length, 0)
 
       assert.ok(sm.helpers instanceof Object)
       assert.strictEqual(Object.keys(sm.helpers).length, 0)
-
-      assert.ok(sm.factoryHelpers instanceof Set)
-      assert.strictEqual(sm.factoryHelpers.size, 0)
 
       assert.ok(sm.plugins instanceof Array)
       assert.strictEqual(sm.plugins.length, 0)
@@ -309,8 +306,8 @@ describe('ScriptManager', () => {
       const script = (context) => context.values
       await sm.registerTemplate('test-template', script)
 
-      assert.ok(sm.sharedFunctions.has('test-template'))
-      const registered = sm.sharedFunctions.get('test-template')
+      assert.ok(sm.sharedFunctions['test-template'])
+      const registered = sm.sharedFunctions['test-template']
       assert.strictEqual(registered.templateId, 'test-template')
       assert.strictEqual(registered.script, script)
     })
@@ -319,8 +316,8 @@ describe('ScriptManager', () => {
       const script = 'console.log("test")'
       await sm.registerTemplate('string-template', script)
 
-      assert.ok(sm.sharedFunctions.has('string-template'))
-      const registered = sm.sharedFunctions.get('string-template')
+      assert.ok(sm.sharedFunctions['string-template'])
+      const registered = sm.sharedFunctions['string-template']
       assert.strictEqual(registered.script, script)
     })
 
@@ -329,17 +326,17 @@ describe('ScriptManager', () => {
       const script2 = () => 'second'
 
       await sm.registerTemplate('test', script1)
-      assert.strictEqual(sm.sharedFunctions.get('test').script, script1)
+      assert.strictEqual(sm.sharedFunctions['test'].script, script1)
 
       await sm.registerTemplate('test', script2)
-      assert.strictEqual(sm.sharedFunctions.get('test').script, script2)
+      assert.strictEqual(sm.sharedFunctions['test'].script, script2)
     })
 
     it('should handle async registration', async () => {
       const script = async () => 'async'
       await sm.registerTemplate('async-template', script)
 
-      assert.ok(sm.sharedFunctions.has('async-template'))
+      assert.ok(sm.sharedFunctions['async-template'])
     })
 
     it('should handle template with complex script', async () => {
@@ -350,7 +347,7 @@ describe('ScriptManager', () => {
 
       await sm.registerTemplate('complex', script)
 
-      const registered = sm.sharedFunctions.get('complex')
+      const registered = sm.sharedFunctions['complex']
       assert.strictEqual(registered.script, script)
     })
   })
@@ -789,7 +786,7 @@ describe('ScriptManager', () => {
 
     it('should handle template with non-function script', async () => {
       await sm.registerTemplate('test', 123)
-      const registered = sm.sharedFunctions.get('test')
+      const registered = sm.sharedFunctions['test']
       assert.strictEqual(registered.script, 123)
     })
 
@@ -830,7 +827,7 @@ describe('ScriptManager', () => {
       await sm.registerTemplate('template_with_underscores', () => 'test')
       await sm.registerTemplate('template.with.dots', () => 'test')
 
-      assert.ok(sm.sharedFunctions.has('template-with-dashes'))
+      assert.ok(sm.sharedFunctions['template-with-dashes'])
       assert.ok(sm.sharedFunctions.has('template_with_underscores'))
       assert.ok(sm.sharedFunctions.has('template.with.dots'))
     })
@@ -874,6 +871,47 @@ describe('ScriptManager', () => {
 
       const result = await sm.compileAllInstances(instances)
       assert.ok(typeof result === 'string')
+    })
+  })
+
+  describe('Source Maps', () => {
+    it('should generate inline source map containing the file path', async () => {
+      const sm = new ScriptManager()
+      const templateId = 'test-component'
+      const script = (context) => context.values.message
+      const filePath = '/absolute/path/to/test-component.html'
+
+      await sm.registerTemplate(templateId, script, filePath)
+
+      /**
+       * @type {{
+       *     [x: string]: import('../../../types/script.js').InstanceContext
+       * }}
+       */
+      const instances = {
+        'inst-1': {
+          templateId,
+          instanceId: 'inst-1',
+          values: { message: 'Hello' },
+          refs: {}
+        }
+      }
+
+      const output = await sm.compileAllInstances(instances)
+
+      // Check for inline source map
+      assert.ok(output.includes('//# sourceMappingURL=data:application/json;base64,'), 'Output should contain inline source map')
+
+      // Decode source map
+      const base64Map = output.split('base64,')[1]
+      const decodedMap = Buffer.from(base64Map, 'base64').toString('utf-8')
+      const sourceMap = JSON.parse(decodedMap)
+
+      // Check if sources array contains the file path
+      const filename = 'test-component.html'
+      const hasFile = sourceMap.sources.some(source => source.includes(filename))
+
+      assert.ok(hasFile, `Source map sources should contain ${filename}. Found: ${JSON.stringify(sourceMap.sources)}`)
     })
   })
 })

@@ -1135,7 +1135,7 @@ Coralite.prototype.createComponent = async function ({
 
     if (scriptResult.__script__ != null) {
       // Register template script with script manager
-      await this._scriptManager.registerTemplate(module.id, scriptResult.__script__.fn)
+      await this._scriptManager.registerTemplate(module.id, scriptResult.__script__.fn, templateItem.path.pathname)
 
       const refs = {}
 
