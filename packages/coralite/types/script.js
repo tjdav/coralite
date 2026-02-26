@@ -7,8 +7,9 @@
 /**
  * Coralite module script content
  * @typedef {Object} ScriptContent
- * @property {function} fn
- * @property {Object.<string, CoraliteModuleValue>} values
+ * @property {string} [content] - Script string content
+ * @property {Object.<string, CoraliteModuleValue>} [values]
+ * @property {number} [lineOffset] - Script offset number.
  */
 
 /**

@@ -38,6 +38,12 @@ importers:
 
   packages/coralite:
     dependencies:
+      acorn:
+        specifier: ^8.16.0
+        version: 8.16.0
+      acorn-walk:
+        specifier: ^8.3.5
+        version: 8.3.5
       commander:
         specifier: ^13.1.0
         version: 13.1.0
@@ -173,7 +179,7 @@ importers:
     devDependencies:
       coralite-plugin-aggregation:
         specifier: ^0.7.0
-        version: 0.7.0(coralite@0.22.1)
+        version: 0.7.0(coralite@0.23.0)
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
@@ -707,8 +713,17 @@ packages:
     peerDependencies:
       acorn: ^6.0.0 || ^7.0.0 || ^8.0.0
 
+  acorn-walk@8.3.5:
+    resolution: {integrity: sha512-HEHNfbars9v4pgpW6SO1KSPkfoS0xVOM/9UzkJltjlsHZmJasxg8aXkuZa7SMf8vKGIBhpUsPluQSqhJFCqebw==}
+    engines: {node: '>=0.4.0'}
+
   acorn@8.15.0:
     resolution: {integrity: sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
+
+  acorn@8.16.0:
+    resolution: {integrity: sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw==}
     engines: {node: '>=0.4.0'}
     hasBin: true
 
@@ -887,8 +902,8 @@ packages:
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
 
-  coralite@0.22.1:
-    resolution: {integrity: sha512-oKon3c6lcw/f75yRJJyqyq7AV5y6/Gbasri/DmuZKVKA49KDogST7AoKfyDUUJtLYhHIT+2k1FU9k7eXMxMP9w==}
+  coralite@0.23.0:
+    resolution: {integrity: sha512-kuz8vcSM34xTx5MsKYeaC7SIZJXgNeQsNOmdmMrN/Zme5L1H46ZBdTYvNSLNO1qbIlEtkhAc/rQMtMk85NRAVA==}
     engines: {node: '>20.19.0'}
     hasBin: true
 
@@ -2654,7 +2669,13 @@ snapshots:
     dependencies:
       acorn: 8.15.0
 
+  acorn-walk@8.3.5:
+    dependencies:
+      acorn: 8.16.0
+
   acorn@8.15.0: {}
+
+  acorn@8.16.0: {}
 
   ajv@6.12.6:
     dependencies:
@@ -2819,9 +2840,9 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.7.0(coralite@0.22.1):
+  coralite-plugin-aggregation@0.7.0(coralite@0.23.0):
     dependencies:
-      coralite: 0.22.1
+      coralite: 0.23.0
 
   coralite-plugin-inline-css@0.4.0:
     dependencies:
@@ -2829,7 +2850,7 @@ snapshots:
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
 
-  coralite@0.22.1:
+  coralite@0.23.0:
     dependencies:
       commander: 13.1.0
       dom-serializer: 2.0.0

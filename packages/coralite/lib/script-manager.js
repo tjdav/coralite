@@ -1,6 +1,8 @@
-import { transform } from 'esbuild'
+import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction } from './utils.js'
+import { pathToFileURL } from 'node:url'
+import { resolve } from 'node:path'
 
 /**
  * Script Manager for Coralite
@@ -13,9 +15,8 @@ import { normalizeFunction } from './utils.js'
  * @constructor
  */
 export function ScriptManager () {
-  this.sharedFunctions = new Map()
-  this.helpers = {}
-  this.factoryHelpers = new Set()
+  this.sharedFunctions = Object.create(null)
+  this.helpers = Object.create(null)
   this.plugins = []
 }
 
@@ -61,9 +62,7 @@ ScriptManager.prototype.addHelper = async function (name, method) {
 ScriptManager.prototype.getHelpers = function (context) {
   let helpers = ''
 
-  for (const key in this.helpers) {
-    if (!Object.hasOwn(this.helpers, key)) continue
-
+  for (const key of Object.keys(this.helpers)) {
     helpers += `"${key}": ${this.helpers[key]},`
   }
 
@@ -73,13 +72,15 @@ ScriptManager.prototype.getHelpers = function (context) {
 /**
  * Register shared functions for a template
  * @param {string} templateId - Template identifier
- * @param {string|function} script - Script content or function
+ * @param {import('../types/script.js').ScriptContent} script - Script content or function
+ * @param {string} [filePath] - The source file path to map back to
  */
-ScriptManager.prototype.registerTemplate = async function (templateId, script) {
-  this.sharedFunctions.set(templateId, {
+ScriptManager.prototype.registerTemplate = function (templateId, script, filePath) {
+  this.sharedFunctions[templateId] = {
     templateId,
-    script
-  })
+    script,
+    filePath: filePath ? resolve(filePath) : `/template-${templateId}.js`
+  }
 }
 
 /**
@@ -105,44 +106,48 @@ ScriptManager.prototype.generateInstanceWrapper = function (templateId, instance
  * @returns {Promise<string>} Compiled script
  */
 ScriptManager.prototype.compileAllInstances = async function (instances) {
-  const codeParts = ['(async () => {\n']
+  const entryCodeParts = []
 
-  codeParts.push(`  const coraliteTemplateScriptHelpers = ${this.getHelpers()};\n`)
-  codeParts.push(`  const getHelpers = (context) => {
+  // Setup helpers
+  entryCodeParts.push(`const coraliteTemplateScriptHelpers = ${this.getHelpers()};\n`)
+  entryCodeParts.push(`const getHelpers = (context) => {
     const helpers = {}
-
     for (const key in coraliteTemplateScriptHelpers) {
       if (!Object.hasOwn(coraliteTemplateScriptHelpers, key)) continue
-
       helpers[key] = coraliteTemplateScriptHelpers[key](context)
     }
-
     return helpers
   }\n`)
-  codeParts.push(`  const coraliteTemplateFunctions = {\n`)
 
-  // Add shared function definitions (once per template)
-  const processedTemplates = new Set()
+  const instanceValues = Object.entries(instances)
+  // Collect unique templates
+  const processedTemplates = {}
+  for (const instanceData of instanceValues) {
+    processedTemplates[instanceData[1].templateId] = true
+  }
 
-  for (const [instanceId, instanceData] of Object.entries(instances)) {
-    const { templateId } = instanceData
-
-    if (!processedTemplates.has(templateId)) {
-      const sharedFn = this.sharedFunctions.get(templateId)
-      if (sharedFn && typeof sharedFn.script === 'function') {
-        const script = normalizeFunction(sharedFn.script)
-        codeParts.push(`    "${templateId}": ${script},\n`)
-        processedTemplates.add(templateId)
-      }
+  const processedTemplatesKeys = Object.keys(processedTemplates)
+  const regex = /[-.:]/g
+  const namespace = 'coralite-templates:'
+  // Generate ESM imports for each template script
+  for (const templateId of processedTemplatesKeys) {
+    if (this.sharedFunctions[templateId]) {
+      entryCodeParts.push(`import template_${templateId.replace(regex, '_')} from "${namespace}${templateId}";\n`)
     }
   }
 
-  codeParts.push('  };\n')
+  // Map imports to the functions object
+  entryCodeParts.push('const coraliteTemplateFunctions = {\n')
+  for (const templateId of processedTemplatesKeys) {
+    if (this.sharedFunctions[templateId]) {
+      entryCodeParts.push(`  "${templateId}": template_${templateId.replace(regex, '_')},\n`)
+    }
+  }
+  entryCodeParts.push('};\n')
 
-  // Add instance
-  codeParts.push('\n// Instances\n')
-  for (const [instanceId, instanceData] of Object.entries(instances)) {
-    // Create context for instance helpers
+  // Invoke instances
+  entryCodeParts.push('\n// Instances\n')
+  for (const [instanceId, instanceData] of instanceValues) {
     const context = {
       instanceId,
       templateId: instanceData.templateId,
@@ -151,22 +156,65 @@ ScriptManager.prototype.compileAllInstances = async function (instances) {
       document: instances[instanceId].document || {}
     }
 
-    // Build instance helpers by calling factories with context
-    codeParts.push(';(async() => {\n')
-    codeParts.push('const context = ' + serialize(context) + ';\n')
-    codeParts.push('const helpers = getHelpers(context);\n')
-    codeParts.push(`\n// Instance: ${instanceId}\n`)
-    codeParts.push(`await coraliteTemplateFunctions["${context.templateId}"](context, helpers);\n`)
-    codeParts.push('})();\n')
+    entryCodeParts.push(';(async() => {\n')
+    entryCodeParts.push('const context = ' + serialize(context) + ';\n')
+    entryCodeParts.push('const helpers = getHelpers(context);\n')
+    entryCodeParts.push(`\n// Instance: ${instanceId}\n`)
+    entryCodeParts.push(`await coraliteTemplateFunctions["${context.templateId}"](context, helpers);\n`)
+    entryCodeParts.push('})();\n')
   }
 
-  codeParts.push('})();\n')
+  // Build and bundle
+  const result = await build({
+    stdin: {
+      contents: entryCodeParts.join('').trimEnd(),
+      resolveDir: process.cwd(),
+      sourcefile: 'coralite-client-runtime.js'
+    },
+    bundle: true,
+    write: false,
+    treeShaking: true,
+    sourcemap: 'inline',
+    format: 'iife',
+    sourceRoot: pathToFileURL(process.cwd()).href,
+    plugins: [
+      {
+        name: 'coralite-template-resolver',
+        setup: (pluginBuild) => {
+          // Catch the imports and associate them with the real file paths
+          const templateRegex = new RegExp(`^${namespace}`)
 
-  const code = codeParts.join('')
+          pluginBuild.onResolve({ filter: templateRegex }, args => {
+            const templateId = args.path.replace(namespace, '')
+            const sharedFn = this.sharedFunctions[templateId]
 
-  const result = await transform(code, {
-    treeShaking: true
+            return {
+              path: sharedFn.filePath,
+              pluginData: { templateId }
+            }
+          })
+
+          // Provide the script content to esbuild when it loads those file paths
+          pluginBuild.onLoad({
+            filter: /.*/
+          }, args => {
+            if (!args.pluginData || !args.pluginData.templateId) {
+              return
+            }
+
+            const sharedFn = this.sharedFunctions[args.pluginData.templateId]
+            const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
+
+            return {
+              contents: `${padding}export default ${sharedFn.script.content};`,
+              loader: 'js',
+              resolveDir: process.cwd()
+            }
+          })
+        }
+      }
+    ]
   })
 
-  return result.code
+  return result.outputFiles[0].text
 }

@@ -1,4 +1,4 @@
-import { cleanKeys, cloneModuleInstance, replaceToken, cloneDocumentInstance } from './utils.js'
+import { cleanKeys, cloneModuleInstance, replaceToken, cloneDocumentInstance, findAndExtractScript } from './utils.js'
 import { getHtmlFile, getHtmlFiles } from './html.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
 import { transformCss } from './style-transform.js'
@@ -671,8 +671,8 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         // Use script manager to compile all instances
         const scriptTextContent = await this._scriptManager.compileAllInstances(instances)
 
-        /** @type {CoraliteElement} */
-        let bodyElement
+        /** @type {CoraliteElement | CoraliteDocumentRoot} */
+        let bodyElement = document.root
 
         findBodyLoop: for (let i = 0; i < document.root.children.length; i++) {
           const rootNode = document.root.children[i]
@@ -1134,8 +1134,20 @@ Coralite.prototype.createComponent = async function ({
     })
 
     if (scriptResult.__script__ != null) {
+      const extractedScript = findAndExtractScript(module.script)
+
+      if (extractedScript) {
+        scriptResult.__script__.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
+        scriptResult.__script__.content = extractedScript.content
+      } else {
+        // Fallback for when script extraction fails (shouldn't happen with valid defineComponent)
+        // Ensure we don't crash
+        scriptResult.__script__.lineOffset = module.lineOffset || 0
+        scriptResult.__script__.content = 'export default function(){}'
+      }
+
       // Register template script with script manager
-      await this._scriptManager.registerTemplate(module.id, scriptResult.__script__.fn)
+      await this._scriptManager.registerTemplate(module.id, scriptResult.__script__, templateItem.path.pathname)
 
       const refs = {}
 
@@ -1442,7 +1454,7 @@ Coralite.prototype._evaluate = async function ({
   const templateItem = this.templates.getItem(module.id)
 
   if (!templateItem.result._compiledCode) {
-    const paddingCount = Math.max(0, (module.lineOffset - 3 || 0))
+    const paddingCount = Math.max(0, (module.lineOffset - 1 || 0))
     const padding = '\n'.repeat(paddingCount)
     const sourceFile = pathToFileURL(templateItem.path.pathname).href
 
