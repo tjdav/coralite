@@ -183,9 +183,6 @@ importers:
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
-      coralite-plugin-translation:
-        specifier: link:../../coralite-plugin-translation
-        version: link:../../coralite-plugin-translation
       coralite-scripts:
         specifier: workspace:*
         version: link:../packages/coralite-scripts
