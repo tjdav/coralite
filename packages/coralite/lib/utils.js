@@ -1,3 +1,6 @@
+import { parse as parseJS } from 'acorn'
+import { simple as walkJS } from 'acorn-walk'
+
 /**
  * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement, CoraliteModuleValue, CoraliteTextNode, CoraliteDocument, CoraliteDocumentResult, CoraliteContentNode, CoraliteAnyNode, CoraliteDirective} from '../types/index.js'
  */
@@ -294,4 +297,75 @@ export function cloneDocumentInstance (originalDocument) {
     customElements: newCustomElements,
     tempElements: newTempElements
   }
+}
+
+/**
+ * Extracts and normalizes the script content from a component definition.
+ *
+ * @param {string} code - The raw script content
+ * @returns {import('../types/script.js').ScriptContent | null}
+ */
+export function findAndExtractScript (code) {
+  const ast = parseJS(code, {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    locations: true
+  })
+
+  let result = null
+
+  walkJS(ast, {
+    CallExpression (node) {
+      if (
+        node.callee &&
+        node.callee.type === 'Identifier' &&
+        node.callee.name === 'defineComponent'
+      ) {
+        const firstArg = node.arguments[0]
+
+        if (firstArg && firstArg.type === 'ObjectExpression') {
+          const scriptProp = firstArg.properties.find(
+            prop => prop.type === 'Property' &&
+            prop.key.type === 'Identifier' &&
+            prop.key.name === 'script'
+          )
+
+          if (scriptProp && scriptProp.type === 'Property') {
+            const { value, method } = scriptProp
+            let startLine = value.loc.start.line - 1
+            let prefix = ''
+            let content = ''
+
+            // Get source slice
+            const source = code.slice(value.start, value.end)
+
+            if (value.type === 'ArrowFunctionExpression') {
+              // Arrow function: `script: (ctx) => {}` or `script: async (ctx) => {}`
+              content = prefix + source
+              startLine = value.loc.start.line - 1
+            } else if (value.type === 'FunctionExpression') {
+              if (method) {
+                // Reconstruct function declaration
+                const isAsync = value.async
+                prefix += (isAsync ? 'async ' : '') + 'function script'
+                content = prefix + source
+                startLine = scriptProp.key.loc.start.line - 1
+              } else {
+                // Function expression: `script: function(ctx) {}` or `script: async function(ctx) {}`
+                content = prefix + source
+                startLine = value.loc.start.line - 1
+              }
+            }
+
+            result = {
+              content,
+              lineOffset: startLine
+            }
+          }
+        }
+      }
+    }
+  })
+
+  return result
 }
