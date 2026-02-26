@@ -390,7 +390,7 @@ export function parseModule (string, { ignoreByAttribute }) {
 
   const scriptIndex = string.indexOf('<script')
   const stringHead = string.substring(0, scriptIndex)
-  const lineOffset = stringHead.split(/\r\n|\r|\n/).length
+  const lineOffset = stringHead.split(/\r\n|\r|\n/).length - 1
 
   return {
     id: template.attribs.id,

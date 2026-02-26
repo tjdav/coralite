@@ -232,7 +232,6 @@ export const defineComponent = createPlugin({
       }
 
       results.__script__ = {
-        fn: script,
         values: args
       }
     } else {

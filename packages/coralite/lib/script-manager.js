@@ -2,7 +2,7 @@ import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction } from './utils.js'
 import { pathToFileURL } from 'node:url'
-import { relative, resolve } from 'node:path'
+import { resolve } from 'node:path'
 
 /**
  * Script Manager for Coralite
@@ -72,14 +72,14 @@ ScriptManager.prototype.getHelpers = function (context) {
 /**
  * Register shared functions for a template
  * @param {string} templateId - Template identifier
- * @param {string|function} script - Script content or function
+ * @param {import('../types/script.js').ScriptContent} script - Script content or function
  * @param {string} [filePath] - The source file path to map back to
  */
-ScriptManager.prototype.registerTemplate = async function (templateId, script, filePath) {
+ScriptManager.prototype.registerTemplate = function (templateId, script, filePath) {
   this.sharedFunctions[templateId] = {
     templateId,
     script,
-    filePath: filePath || `virtual-${templateId}.js`
+    filePath: filePath ? resolve(filePath) : `/template-${templateId}.js`
   }
 }
 
@@ -128,11 +128,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances) {
 
   const processedTemplatesKeys = Object.keys(processedTemplates)
   const regex = /[-.:]/g
-  const namespace = 'coralite-templates'
+  const namespace = 'coralite-templates:'
   // Generate ESM imports for each template script
   for (const templateId of processedTemplatesKeys) {
     if (this.sharedFunctions[templateId]) {
-      entryCodeParts.push(`import template_${templateId.replace(regex, '_')} from "${namespace}:${templateId}";\n`)
+      entryCodeParts.push(`import template_${templateId.replace(regex, '_')} from "${namespace}${templateId}";\n`)
     }
   }
 
@@ -176,6 +176,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances) {
     treeShaking: true,
     sourcemap: 'inline',
     format: 'iife',
+    sourceRoot: pathToFileURL(process.cwd()).href,
     plugins: [
       {
         name: 'coralite-template-resolver',
@@ -184,27 +185,30 @@ ScriptManager.prototype.compileAllInstances = async function (instances) {
           const templateRegex = new RegExp(`^${namespace}`)
 
           pluginBuild.onResolve({ filter: templateRegex }, args => {
-            const templateId = args.path.replace(namespace + ':', '')
+            const templateId = args.path.replace(namespace, '')
             const sharedFn = this.sharedFunctions[templateId]
 
             return {
               path: sharedFn.filePath,
-              namespace,
               pluginData: { templateId }
             }
           })
 
           // Provide the script content to esbuild when it loads those file paths
           pluginBuild.onLoad({
-            filter: /.*/,
-            namespace
+            filter: /.*/
           }, args => {
+            if (!args.pluginData || !args.pluginData.templateId) {
+              return
+            }
+
             const sharedFn = this.sharedFunctions[args.pluginData.templateId]
-            const scriptContent = normalizeFunction(sharedFn.script)
+            const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
 
             return {
-              contents: `export default ${scriptContent};`,
-              loader: 'js'
+              contents: `${padding}export default ${sharedFn.script.content};`,
+              loader: 'js',
+              resolveDir: process.cwd()
             }
           })
         }

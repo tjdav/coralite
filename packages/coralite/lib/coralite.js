@@ -16,6 +16,8 @@ import pLimit from 'p-limit'
 import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
 import CoraliteCollection from './collection.js'
 import { randomUUID } from 'node:crypto'
+import { parse as parseJS } from 'acorn'
+import { simple as walkJS } from 'acorn-walk'
 
 /**
  * @import {
@@ -671,8 +673,8 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         // Use script manager to compile all instances
         const scriptTextContent = await this._scriptManager.compileAllInstances(instances)
 
-        /** @type {CoraliteElement} */
-        let bodyElement
+        /** @type {CoraliteElement | CoraliteDocumentRoot} */
+        let bodyElement = document.root
 
         findBodyLoop: for (let i = 0; i < document.root.children.length; i++) {
           const rootNode = document.root.children[i]
@@ -1134,8 +1136,62 @@ Coralite.prototype.createComponent = async function ({
     })
 
     if (scriptResult.__script__ != null) {
+      const ast = parseJS(module.script, {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        locations: true
+      })
+
+      let scriptLocStartLine = 0
+      let scriptStart
+      let scriptEnd
+      let scriptExpression
+
+      walkJS(ast, {
+        CallExpression (node) {
+          // Check if the function being called is 'defineComponent'
+          if (node.callee
+            && node.callee.type === 'Identifier'
+            && node.callee.name === 'defineComponent'
+          ) {
+
+            const firstArg = node.arguments[0]
+
+            if (firstArg && firstArg.type === 'ObjectExpression') {
+
+              // Find the property where the key is 'script'
+              const scriptProp = firstArg.properties.find(
+                prop => prop.type === 'Property' && prop.key.type === 'Identifier' && prop.key.name === 'script'
+              )
+
+              if (
+                scriptProp
+                && scriptProp.type === 'Property'
+                && (
+                  scriptProp.value.type === 'ArrowFunctionExpression'
+                  || scriptProp.value.type === 'FunctionExpression'
+                )
+              ) {
+                scriptLocStartLine = scriptProp.loc.start.line - 1
+                scriptStart = scriptProp.value.start
+                scriptEnd = scriptProp.value.end
+
+                scriptExpression = 'function script'
+
+                if (scriptProp.value.async) {
+                  scriptExpression = 'async ' + scriptExpression
+                }
+              }
+            }
+          }
+        }
+      })
+
+      scriptResult.__script__.lineOffset = module.lineOffset || 0 + scriptLocStartLine
+      scriptResult.__script__.content = scriptExpression + module.script.slice(scriptStart, scriptEnd)
+
       // Register template script with script manager
-      await this._scriptManager.registerTemplate(module.id, scriptResult.__script__.fn, templateItem.path.pathname)
+      await this._scriptManager.registerTemplate(module.id, scriptResult.__script__, templateItem.path.pathname)
 
       const refs = {}
 
@@ -1442,7 +1498,7 @@ Coralite.prototype._evaluate = async function ({
   const templateItem = this.templates.getItem(module.id)
 
   if (!templateItem.result._compiledCode) {
-    const paddingCount = Math.max(0, (module.lineOffset - 3 || 0))
+    const paddingCount = Math.max(0, (module.lineOffset - 1 || 0))
     const padding = '\n'.repeat(paddingCount)
     const sourceFile = pathToFileURL(templateItem.path.pathname).href
 

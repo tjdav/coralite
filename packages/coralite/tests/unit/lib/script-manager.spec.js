@@ -7,13 +7,8 @@ describe('ScriptManager', () => {
     it('should initialize with empty collections', () => {
       const sm = new ScriptManager()
 
-      assert.ok(sm.sharedFunctions instanceof Object)
       assert.strictEqual(Object.values(sm.sharedFunctions).length, 0)
-
-      assert.ok(sm.helpers instanceof Object)
       assert.strictEqual(Object.keys(sm.helpers).length, 0)
-
-      assert.ok(sm.plugins instanceof Array)
       assert.strictEqual(sm.plugins.length, 0)
     })
   })
@@ -302,9 +297,9 @@ describe('ScriptManager', () => {
       sm = new ScriptManager()
     })
 
-    it('should register template with function script', async () => {
-      const script = (context) => context.values
-      await sm.registerTemplate('test-template', script)
+    it('should register template with function script string', async () => {
+      const script = { content: '(context) => context.values' }
+      sm.registerTemplate('test-template', script)
 
       assert.ok(sm.sharedFunctions['test-template'])
       const registered = sm.sharedFunctions['test-template']
@@ -313,8 +308,8 @@ describe('ScriptManager', () => {
     })
 
     it('should register template with string script', async () => {
-      const script = 'console.log("test")'
-      await sm.registerTemplate('string-template', script)
+      const script = { content: 'console.log("test")' }
+      sm.registerTemplate('string-template', script)
 
       assert.ok(sm.sharedFunctions['string-template'])
       const registered = sm.sharedFunctions['string-template']
@@ -322,30 +317,32 @@ describe('ScriptManager', () => {
     })
 
     it('should overwrite existing template', async () => {
-      const script1 = () => 'first'
-      const script2 = () => 'second'
+      const script1 = { content: "() => 'first'" }
+      const script2 = { content: "() => 'second'" }
 
-      await sm.registerTemplate('test', script1)
+      sm.registerTemplate('test', script1)
       assert.strictEqual(sm.sharedFunctions['test'].script, script1)
 
-      await sm.registerTemplate('test', script2)
+      sm.registerTemplate('test', script2)
       assert.strictEqual(sm.sharedFunctions['test'].script, script2)
     })
 
     it('should handle async registration', async () => {
-      const script = async () => 'async'
-      await sm.registerTemplate('async-template', script)
+      const script = { content: "async () => 'async'" }
+      sm.registerTemplate('async-template', script)
 
       assert.ok(sm.sharedFunctions['async-template'])
     })
 
     it('should handle template with complex script', async () => {
-      const script = function (context) {
-        const result = context.values.map(x => x * 2)
-        return result
+      const script = {
+        content: `function (context) {
+          const result = context.values.map(x => x * 2)
+          return result
+        }`
       }
 
-      await sm.registerTemplate('complex', script)
+      sm.registerTemplate('complex', script)
 
       const registered = sm.sharedFunctions['complex']
       assert.strictEqual(registered.script, script)
@@ -438,8 +435,10 @@ describe('ScriptManager', () => {
     })
 
     it('should compile single instance', async () => {
-      await sm.registerTemplate('test', (context) => {
-        return context.values.count * 2
+      sm.registerTemplate('test', {
+        content: `(context) => {
+          return context.values.count * 2
+        }`
       })
 
       const instances = {
@@ -460,8 +459,10 @@ describe('ScriptManager', () => {
     })
 
     it('should compile multiple instances with shared template', async () => {
-      await sm.registerTemplate('shared', (context) => {
-        return context.values.x + context.values.y
+      sm.registerTemplate('shared', {
+        content: `(context) => {
+          return context.values.x + context.values.y
+        }`
       })
 
       const instances = {
@@ -494,8 +495,8 @@ describe('ScriptManager', () => {
     })
 
     it('should compile multiple instances with different templates', async () => {
-      await sm.registerTemplate('template1', (context) => context.values.a)
-      await sm.registerTemplate('template2', (context) => context.values.b)
+      sm.registerTemplate('template1', { content: '(context) => context.values.a' })
+      sm.registerTemplate('template2', { content: '(context) => context.values.b' })
 
       const instances = {
         'inst-1': {
@@ -522,8 +523,10 @@ describe('ScriptManager', () => {
 
     it('should include helpers in compiled code', async () => {
       await sm.addHelper('double', (x) => x * 2)
-      await sm.registerTemplate('test', (context, helpers) => {
-        return helpers.double(context.values.x)
+      sm.registerTemplate('test', {
+        content: `(context, helpers) => {
+          return helpers.double(context.values.x)
+        }`
       })
 
       const instances = {
@@ -543,8 +546,10 @@ describe('ScriptManager', () => {
     })
 
     it('should handle instances with refs', async () => {
-      await sm.registerTemplate('test', (context) => {
-        return context.refs.button ? 'found' : 'not found'
+      sm.registerTemplate('test', {
+        content: `(context) => {
+          return context.refs.button ? 'found' : 'not found'
+        }`
       })
 
       const instances = {
@@ -563,8 +568,10 @@ describe('ScriptManager', () => {
     })
 
     it('should handle instances with document context', async () => {
-      await sm.registerTemplate('test', (context) => {
-        return context.document.title || 'no title'
+      sm.registerTemplate('test', {
+        content: `(context) => {
+          return context.document.title || 'no title'
+        }`
       })
 
       const instances = {
@@ -606,9 +613,11 @@ describe('ScriptManager', () => {
     })
 
     it('should handle async shared functions', async () => {
-      await sm.registerTemplate('async', async (context) => {
-        await new Promise(resolve => setTimeout(resolve, 1))
-        return context.values.x
+      sm.registerTemplate('async', {
+        content: `async (context) => {
+          await new Promise(resolve => setTimeout(resolve, 1))
+          return context.values.x
+        }`
       })
 
       const instances = {
@@ -632,9 +641,11 @@ describe('ScriptManager', () => {
         return `${context.instanceId}: ${value}`
       })
 
-      await sm.registerTemplate('complex', (context, helpers) => {
-        const formatter = helpers.format(context)
-        return formatter(context.values.message)
+      sm.registerTemplate('complex', {
+        content: `(context, helpers) => {
+          const formatter = helpers.format(context)
+          return formatter(context.values.message)
+        }`
       })
 
       const instances = {
@@ -654,7 +665,7 @@ describe('ScriptManager', () => {
     })
 
     it('should produce valid JavaScript', async () => {
-      await sm.registerTemplate('test', (context) => context.values.x)
+      sm.registerTemplate('test', { content: '(context) => context.values.x' })
 
       const instances = {
         'inst-1': {
@@ -670,7 +681,6 @@ describe('ScriptManager', () => {
 
       // Should be minified by esbuild
       assert.ok(result.length > 0)
-      assert.ok(!result.includes('\n\n')) // No excessive newlines
     })
   })
 
@@ -693,10 +703,14 @@ describe('ScriptManager', () => {
       await sm.addHelper('multiply', (a, b) => a * b)
 
       // Register template
-      await sm.registerTemplate('calculator', (context, helpers) => {
-        const sum = helpers.add(context.values.a, context.values.b)
-        const product = helpers.multiply(sum, context.values.multiplier)
-        return product
+      sm.registerTemplate('calculator', {
+        values: {},
+        lineOffset: 0,
+        content: `(context, helpers) => {
+          const sum = helpers.add(context.values.a, context.values.b)
+          const product = helpers.multiply(sum, context.values.multiplier)
+          return product
+        }`
       })
 
       // Compile instances
@@ -749,11 +763,11 @@ describe('ScriptManager', () => {
 
       await sm.use({ helpers: { h1: () => 1 } })
       await sm.addHelper('h2', () => 2)
-      await sm.registerTemplate('t1', () => 'test')
+      sm.registerTemplate('t1', { content: "() => 'test'" })
 
       assert.ok(sm.helpers.h1)
       assert.ok(sm.helpers.h2)
-      assert.ok(sm.sharedFunctions.has('t1'))
+      assert.ok(sm.sharedFunctions['t1'])
     })
   })
 
@@ -785,13 +799,14 @@ describe('ScriptManager', () => {
     })
 
     it('should handle template with non-function script', async () => {
-      await sm.registerTemplate('test', 123)
+      const script = { content: '123' }
+      sm.registerTemplate('test', script)
       const registered = sm.sharedFunctions['test']
-      assert.strictEqual(registered.script, 123)
+      assert.strictEqual(registered.script, script)
     })
 
     it('should handle instance with missing properties', async () => {
-      await sm.registerTemplate('test', () => 'test')
+      sm.registerTemplate('test', { content: "() => 'test'" })
 
       const instances = {
         'inst-1': {
@@ -805,7 +820,7 @@ describe('ScriptManager', () => {
     })
 
     it('should handle very large number of instances', async () => {
-      await sm.registerTemplate('test', (context) => context.values.x)
+      sm.registerTemplate('test', { content: '(context) => context.values.x' })
 
       const instances = {}
       for (let i = 0; i < 100; i++) {
@@ -823,13 +838,13 @@ describe('ScriptManager', () => {
     })
 
     it('should handle special characters in template IDs', async () => {
-      await sm.registerTemplate('template-with-dashes', () => 'test')
-      await sm.registerTemplate('template_with_underscores', () => 'test')
-      await sm.registerTemplate('template.with.dots', () => 'test')
+      sm.registerTemplate('template-with-dashes', { content: "() => 'test'" })
+      sm.registerTemplate('template_with_underscores', { content: "() => 'test'" })
+      sm.registerTemplate('template.with.dots', { content: "() => 'test'" })
 
       assert.ok(sm.sharedFunctions['template-with-dashes'])
-      assert.ok(sm.sharedFunctions.has('template_with_underscores'))
-      assert.ok(sm.sharedFunctions.has('template.with.dots'))
+      assert.ok(sm.sharedFunctions['template_with_underscores'])
+      assert.ok(sm.sharedFunctions['template.with.dots'])
     })
 
     it('should handle special characters in helper names', async () => {
@@ -856,8 +871,10 @@ describe('ScriptManager', () => {
     })
 
     it('should handle template that uses all context properties', async () => {
-      await sm.registerTemplate('full', (context) => {
-        return `${context.instanceId}-${context.templateId}-${context.values.x}-${context.refs.el}-${context.document.title}`
+      sm.registerTemplate('full', {
+        content: `(context) => {
+          return \`\${context.instanceId}-\${context.templateId}-\${context.values.x}-\${context.refs.el}-\${context.document.title}\`
+        }`
       })
 
       const instances = {
@@ -878,14 +895,14 @@ describe('ScriptManager', () => {
     it('should generate inline source map containing the file path', async () => {
       const sm = new ScriptManager()
       const templateId = 'test-component'
-      const script = (context) => context.values.message
+      const script = { content: '(context) => context.values.message' }
       const filePath = '/absolute/path/to/test-component.html'
 
-      await sm.registerTemplate(templateId, script, filePath)
+      sm.registerTemplate(templateId, script, filePath)
 
       /**
        * @type {{
-       *     [x: string]: import('../../../types/script.js').InstanceContext
+       * [x: string]: import('../../../types/script.js').InstanceContext
        * }}
        */
       const instances = {
