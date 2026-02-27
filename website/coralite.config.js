@@ -11,6 +11,7 @@ export default defineConfig({
     type: 'css',
     input: 'src/css'
   },
+  mode: 'development',
   plugins: [aggregation, inlineCSS({
     atImport: true,
     minify: true,
