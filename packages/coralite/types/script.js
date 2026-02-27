@@ -32,10 +32,10 @@
 
 /**
  * @typedef {Object} ScriptPlugin
+ * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {function(any): void} [setup] - Called when plugin is registered
  * @property {ScriptImport[]} [imports] - Module imports for helpers
  * @property {Object.<string, function>} [helpers] - Global or instance helpers to add to scripts
- * @property {function(string, Object): string} [transform] - Transform script content
  */
 
 /**
@@ -45,6 +45,8 @@
  * @property {Object.<string, CoraliteModuleValue>} values - Instance values
  * @property {Object.<string, string>} refs - Instance refs
  * @property {CoraliteDocument} [document] - Document context
+ * @property {Object.<string, any>} [config] - Plugin configuration
+ * @property {Object.<string, any>} [imports] - Plugin imports
  */
 
 export default {}

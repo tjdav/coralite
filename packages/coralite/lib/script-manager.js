@@ -292,6 +292,13 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
             contents += importsObjContent + '\n'
 
+            // Generate config object
+            const configContent = module.config
+              ? `const pluginConfig = ${JSON.stringify(module.config)};`
+              : 'const pluginConfig = {};'
+
+            contents += configContent + '\n'
+
             // Generate helpers
             contents += 'const helpers = {\n'
             if (module.helpers) {
@@ -300,6 +307,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
                   const fn = normalizeFunction(module.helpers[key])
                   contents += `  "${key}": (context) => {
                     context.imports = { ...(context.imports || {}), ...pluginImports }
+                    context.config = { ...(context.config || {}), ...pluginConfig }
                     const fn = ${fn}
                     return fn(context)
                   },\n`
