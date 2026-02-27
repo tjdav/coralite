@@ -27,6 +27,7 @@
         <li><a href="#page-level-plugins">Page-Level Plugins</a></li>
         <li><a href="#lifecycle-hooks">Lifecycle Hooks</a></li>
         <li><a href="#script-plugins">Script Plugins & Helpers</a></li>
+        <li><a href="./create-plugin.html">Create Plugin API</a></li>
         <li><a href="#built-in-plugins">Built-in Plugins</a></li>
       </ul>
     </nav>
@@ -97,22 +98,22 @@
         import { createPlugin } from 'coralite'
 
         const myPlugin = createPlugin({
-          name: 'my-plugin',
-          method: (options, context) => {
-            // Server-side logic
-            return { ...context.values, custom: 'data' }
-          },
-          templates: ['src/components/custom.html'],
-          onPageSet: async (data) => {
-            console.log('Page created:', data.path.pathname)
-          },
-          script: {
-            helpers: {
-              formatDate: (context) => {
-                return (date) => new Date(date).toLocaleDateString()
-              }
-            }
-          }
+        name: 'my-plugin',
+        method: (options, context) => {
+        // Server-side logic
+        return { ...context.values, custom: 'data' }
+        },
+        templates: ['src/components/custom.html'],
+        onPageSet: async (data) => {
+        console.log('Page created:', data.path.pathname)
+        },
+        script: {
+        helpers: {
+        formatDate: (context) => {
+        return (date) => new Date(date).toLocaleDateString()
+        }
+        }
+        }
         })
       </coralite-code-highlight>
 
@@ -269,6 +270,7 @@
 
       <coralite-code-html>
         <!-- Page: user.html -->
+
         <head>
           <meta name="name" content="Alice">
           <title>User Profile</title>
@@ -282,15 +284,15 @@
       <coralite-code-highlight language="JavaScript">
         // In defineComponent:
         export default defineComponent({
-          tokens: {
-            // Plugin method receives:
-            // values = { $name: "Alice", $title: "User Profile", age: "25" }
-            userName: (values) => values.$name
-          },
-          script: (context, helpers) => {
-            // Template script receives:
-            // values = { userName: "Alice", age: 25 } (processed tokens)
-          }
+        tokens: {
+        // Plugin method receives:
+        // values = { $name: "Alice", $title: "User Profile", age: "25" }
+        userName: (values) => values.$name
+        },
+        script: (context, helpers) => {
+        // Template script receives:
+        // values = { userName: "Alice", age: 25 } (processed tokens)
+        }
         })
       </coralite-code-highlight>
 
@@ -312,14 +314,14 @@
         import inlineCSSPlugin from './plugins/inline-css.js'
 
         export default {
-          templates: './templates',
-          pages: './pages',
-          plugins: [
-            inlineCSSPlugin({
-              path: './styles',
-              minify: true
-            })
-          ]
+        templates: './templates',
+        pages: './pages',
+        plugins: [
+        inlineCSSPlugin({
+        path: './styles',
+        minify: true
+        })
+        ]
         }
       </coralite-code-highlight>
 
@@ -333,40 +335,40 @@
         import { join, resolve } from 'node:path'
 
         export default ({ path, minify } = {}) => {
-          return createPlugin({
-            name: 'inline-css',
-            async onPageSet(context) {
-              // Walk through all elements in the page
-              let stack = [context.elements.root]
+        return createPlugin({
+        name: 'inline-css',
+        async onPageSet(context) {
+        // Walk through all elements in the page
+        let stack = [context.elements.root]
 
-              while (stack.length > 0) {
-                const node = stack.pop()
+        while (stack.length > 0) {
+        const node = stack.pop()
 
-                if (node.type === 'tag'
-                  && node.name === 'link'
-                  && node.attribs.rel === 'stylesheet'
-                  && node.attribs['inline-css'] != null
-                ) {
-                  // Read and inline CSS file
-                  const cssPath = resolve(join(path || '', node.attribs['inline-css']))
-                  const css = await readFile(cssPath, 'utf8')
+        if (node.type === 'tag'
+        && node.name === 'link'
+        && node.attribs.rel === 'stylesheet'
+        && node.attribs['inline-css'] != null
+        ) {
+        // Read and inline CSS file
+        const cssPath = resolve(join(path || '', node.attribs['inline-css']))
+        const css = await readFile(cssPath, 'utf8')
 
-                  // Replace link with style tag
-                  node.name = 'style'
-                  node.attribs = {}
-                  node.children = [{
-                    type: 'text',
-                    data: css,
-                    parent: node
-                  }]
-                }
+        // Replace link with style tag
+        node.name = 'style'
+        node.attribs = {}
+        node.children = [{
+        type: 'text',
+        data: css,
+        parent: node
+        }]
+        }
 
-                if (node.children) {
-                  stack.push(...node.children)
-                }
-              }
-            }
-          })
+        if (node.children) {
+        stack.push(...node.children)
+        }
+        }
+        }
+        })
         }
       </coralite-code-highlight>
 
@@ -418,32 +420,32 @@
 
       <coralite-code-highlight language="JavaScript">
         const analyticsPlugin = createPlugin({
-          name: 'analytics',
-          onPageSet: async (data) => {
-            // Called when a new page is created
-            console.log('New page:', data.path.pathname)
-            await trackPageView(data.path.pathname)
-          },
-          onPageUpdate: async ({ elements, newValue, oldValue }) => {
-            // Called when a page is updated
-            console.log('Page updated:', newValue.path.pathname)
-          },
-          onPageDelete: async (value) => {
-            // Called when a page is deleted
-            console.log('Page deleted:', value.path.pathname)
-          },
-          onTemplateSet: async (template) => {
-            // Called when a template is created
-            console.log('New template:', template.id)
-          },
-          onTemplateUpdate: async (template) => {
-            // Called when a template is updated
-            console.log('Template updated:', template.id)
-          },
-          onTemplateDelete: async (template) => {
-            // Called when a template is deleted
-            console.log('Template deleted:', template.id)
-          }
+        name: 'analytics',
+        onPageSet: async (data) => {
+        // Called when a new page is created
+        console.log('New page:', data.path.pathname)
+        await trackPageView(data.path.pathname)
+        },
+        onPageUpdate: async ({ elements, newValue, oldValue }) => {
+        // Called when a page is updated
+        console.log('Page updated:', newValue.path.pathname)
+        },
+        onPageDelete: async (value) => {
+        // Called when a page is deleted
+        console.log('Page deleted:', value.path.pathname)
+        },
+        onTemplateSet: async (template) => {
+        // Called when a template is created
+        console.log('New template:', template.id)
+        },
+        onTemplateUpdate: async (template) => {
+        // Called when a template is updated
+        console.log('Template updated:', template.id)
+        },
+        onTemplateDelete: async (template) => {
+        // Called when a template is deleted
+        console.log('Template deleted:', template.id)
+        }
         })
       </coralite-code-highlight>
     </section>
@@ -456,25 +458,25 @@
 
       <coralite-code-highlight language="JavaScript">
         const myScriptPlugin = createPlugin({
-          name: 'script-enhancer',
-          script: {
-            // Called when plugin is registered
-            setup: (plugin) => {
-              console.log('Plugin registered:', plugin.name)
-            },
+        name: 'script-enhancer',
+        script: {
+        // Called when plugin is registered
+        setup: (plugin) => {
+        console.log('Plugin registered:', plugin.name)
+        },
 
-            // Helpers are factory functions that receive context
-            helpers: {
-              formatDate: (context) => {
-                // Factory receives context, returns actual helper
-                return (date) => new Date(date).toLocaleDateString()
-              },
+        // Helpers are factory functions that receive context
+        helpers: {
+        formatDate: (context) => {
+        // Factory receives context, returns actual helper
+        return (date) => new Date(date).toLocaleDateString()
+        },
 
-              uppercase: (context) => {
-                return (str) => str.toUpperCase()
-              }
-            }
-          }
+        uppercase: (context) => {
+        return (str) => str.toUpperCase()
+        }
+        }
+        }
         })
       </coralite-code-highlight>
 
@@ -490,13 +492,13 @@
       <coralite-code-highlight language="JavaScript">
         // In template script:
         export default defineComponent({
-          script: (context, helpers) => {
-            // helpers.formatDate is already the result function
-            const formatted = helpers.formatDate('2024-01-01')
+        script: (context, helpers) => {
+        // helpers.formatDate is already the result function
+        const formatted = helpers.formatDate('2024-01-01')
 
-            // helpers.uppercase is ready to use
-            const upper = helpers.uppercase('hello')
-          }
+        // helpers.uppercase is ready to use
+        const upper = helpers.uppercase('hello')
+        }
         })
       </coralite-code-highlight>
     </section>
@@ -514,26 +516,26 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          tokens: {
-            // Computed tokens that run at build time
-            fullName: ({ firstName, lastName }) => `${firstName} ${lastName}`,
-            formattedDate: ({ date }) => new Date(date).toLocaleDateString()
-          },
-          slots: {
-            // Custom slot processing
-            content: (slotNodes, values) => {
-              // Transform slot content based on values
-              return slotNodes
-            }
-          },
-          script: ({ values, refs }) => {
-            // This function runs in the client-side
-            // It has access to computed tokens and can use refs
-            const btn = refs('actionBtn');
-            btn.addEventListener('click', () => {
-              console.log('Hello!');
-            });
-          }
+        tokens: {
+        // Computed tokens that run at build time
+        fullName: ({ firstName, lastName }) => `${firstName} ${lastName}`,
+        formattedDate: ({ date }) => new Date(date).toLocaleDateString()
+        },
+        slots: {
+        // Custom slot processing
+        content: (slotNodes, values) => {
+        // Transform slot content based on values
+        return slotNodes
+        }
+        },
+        script: ({ values, refs }) => {
+        // This function runs in the client-side
+        // It has access to computed tokens and can use refs
+        const btn = refs('actionBtn');
+        btn.addEventListener('click', () => {
+        console.log('Hello!');
+        });
+        }
         })
       </coralite-code-highlight>
 
@@ -602,10 +604,10 @@
         import { refsPlugin } from 'coralite/plugins'
 
         export default {
-          plugins: [
-            refsPlugin
-            // Other plugins...
-          ]
+        plugins: [
+        refsPlugin
+        // Other plugins...
+        ]
         }
       </coralite-code-highlight>
 

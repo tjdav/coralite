@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <coralite-meta title="Coralite API" description="Explore comprehensive Coralite technical documentation, including architecture, API specifications, data structure definitions, and implementation best practices for developers."></coralite-meta>
+  <coralite-meta title="Coralite API"
+    description="Explore comprehensive Coralite technical documentation, including architecture, API specifications, data structure definitions, and implementation best practices for developers."></coralite-meta>
   <link rel="stylesheet" href="/css/styles.css" inline-css>
 </head>
+
 <body>
   <coralite-navbar></coralite-navbar>
   <main class="container content">
@@ -17,27 +20,36 @@
         <li><a href="./dom.html">DOM Structure.</a></li>
         <li>
           <a href="./plugins/index.html">Coralite plugin system</a>
-           <ul>
+          <ul>
+            <li>
+              <a href="./plugins/create-plugin.html">Create plugin</a>
+              <p class="mt-0">The createPlugin function is the entry point for extending Coralite's functionality.</p>
+            </li>
             <li>
               <a href="./plugins/define-component.html">Define component</a>
-              <p class="mt-0">The defineComponent plugin is Coralite's core built-in plugin that enables dynamic template functionality.</p>
+              <p class="mt-0">The defineComponent plugin is Coralite's core built-in plugin that enables dynamic
+                template functionality.</p>
             </li>
             <li>
               <a href="./plugins/refs-plugin.html">Reference elements</a>
-              <p class="mt-0">The refs plugin is a built-in Coralite helper that provides runtime DOM element access.</p>
+              <p class="mt-0">The refs plugin is a built-in Coralite helper that provides runtime DOM element access.
+              </p>
             </li>
             <li>
               <a href="./plugins/metadata.html">Metadata</a>
-              <p class="mt-0">The metadata plugin is a built-in Coralite tool that extracts metadata from <code>&lt;meta&gt;</code> tags in your page's <code>&lt;head&gt;</code> and makes them available as template variables.</p>
+              <p class="mt-0">The metadata plugin is a built-in Coralite tool that extracts metadata from
+                <code>&lt;meta&gt;</code> tags in your page's <code>&lt;head&gt;</code> and makes them available as
+                template variables.</p>
             </li>
-           </ul>
+          </ul>
         </li>
         <li><a href="./types.html">Types.</a></li>
       </ul>
     </nav>
   </main>
-  
+
   <coralite-footer></coralite-footer>
-  
+
 </body>
+
 </html>

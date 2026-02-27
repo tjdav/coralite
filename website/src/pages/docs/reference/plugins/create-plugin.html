@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="createPlugin API - Coralite Documentation"
+    description="Comprehensive guide to the createPlugin API for extending Coralite functionality, with deep dive into client-side script injection and configuration."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <!-- Introduction -->
+    <h1>createPlugin API</h1>
+    <p>The <code>createPlugin</code> function is the entry point for extending Coralite's functionality. It allows you
+      to
+      inject server-side logic, register custom templates, and most importantly, bundle and configure client-side
+      scripts that can be used by your components.</p>
+
+    <!-- Table of Contents -->
+    <nav aria-label="table of contents">
+      <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+      <ul>
+        <li><a href="#configuration">Configuration Options</a></li>
+        <li><a href="#server-hooks">Server-Side Hooks</a></li>
+        <li><a href="#client-scripting">Client-Side Scripting</a></li>
+        <li><a href="#script-imports">Script Imports</a></li>
+        <li><a href="#script-config">Script Configuration</a></li>
+        <li><a href="#context-injection">Context Injection</a></li>
+        <li><a href="#complete-example">Complete Example</a></li>
+      </ul>
+    </nav>
+
+    <!-- Configuration Options -->
+    <section id="configuration">
+      <coralite-heading level="h2" text="Configuration Options"></coralite-heading>
+      <p>The <code>createPlugin</code> function accepts a configuration object with the following properties:</p>
+
+      <coralite-code-html>
+        <script type="module">
+          import { createPlugin } from 'coralite'
+
+          const myPlugin = createPlugin({
+            name: 'my-plugin', // Required: Unique name for the plugin
+            
+            // Optional: Main server-side logic
+            method: (options, context) => {
+              // ... implementation
+            },
+
+            // Optional: Register custom templates
+            templates: ['./path/to/template.html'],
+
+            // Optional: Client-side script configuration
+            script: {
+              setup: async () => { /* ... */ },
+              helpers: { /* ... */ },
+              imports: [ /* ... */ ],
+              config: { /* ... */ }
+            },
+
+            // Optional: Server-side lifecycle hooks
+            onPageSet: async (data) => { /* ... */ },
+            // ... other hooks
+          })
+        </script>
+      </coralite-code-html>
+    </section>
+
+    <!-- Server-Side Hooks -->
+    <section id="server-hooks">
+      <coralite-heading level="h2" text="Server-Side Hooks"></coralite-heading>
+      <p>Plugins can hook into Coralite's build lifecycle to perform actions when pages or templates are processed.</p>
+      <ul>
+        <li><code>onPageSet(data)</code>: Called when a page is created or updated.</li>
+        <li><code>onPageUpdate(data)</code>: Called when a page is updated.</li>
+        <li><code>onPageDelete(path)</code>: Called when a page is deleted.</li>
+        <li><code>onTemplateSet(data)</code>: Called when a template is registered.</li>
+        <li><code>onBuildComplete()</code>: Called when the entire build process finishes.</li>
+      </ul>
+    </section>
+
+    <!-- Client-Side Scripting -->
+    <section id="client-scripting">
+      <coralite-heading level="h2" text="Client-Side Scripting"></coralite-heading>
+      <p>The <code>script</code> property is powerful: it allows you to inject code that runs in the browser. This code
+        is bundled with your application.</p>
+
+      <coralite-heading level="h3" text="script.setup"></coralite-heading>
+      <p>A server-side function that runs during the build process to prepare data or environment for the plugin. Use it
+        to fetch remote data or validate configuration.</p>
+
+      <coralite-heading level="h3" text="script.helpers"></coralite-heading>
+      <p>Define helper functions that will be available to <code>defineComponent</code> scripts in the browser.</p>
+
+      <coralite-code-html>
+        <script type="module">
+          createPlugin({
+            name: 'utils',
+            script: {
+              helpers: {
+                formatDate: (context) => (date) => {
+                  return new Date(date).toLocaleDateString()
+                }
+              }
+            }
+          })
+        </script>
+      </coralite-code-html>
+      <p><strong>Note:</strong> Helper functions must be "factory functions" that accept a <code>context</code> object
+        and return the actual function to be used.</p>
+    </section>
+
+    <!-- Script Imports -->
+    <section id="script-imports">
+      <coralite-heading level="h2" text="Script Imports"></coralite-heading>
+      <p>Use <code>script.imports</code> to make external libraries (npm packages, local files, or remote URLs)
+        available to your client-side helpers. Coralite handles the bundling and injection for you.</p>
+
+      <coralite-heading level="h3" text="Import Types"></coralite-heading>
+
+      <coralite-heading level="h4" text="Remote Import (ESM)"></coralite-heading>
+      <p>Import a library directly from a CDN.</p>
+      <coralite-code-highlight language="JavaScript">
+        imports: [
+          {
+            specifier: 'https://esm.sh/canvas-confetti@1.6.0',
+            defaultExport: 'confetti'
+          }
+        ]
+      </coralite-code-highlight>
+
+      <coralite-heading level="h4" text="Local Import"></coralite-heading>
+      <p>Import a local JavaScript module.</p>
+      <coralite-code-highlight language="JavaScript">
+        imports: [
+          {
+            specifier: './utils/math.js',
+            namedExports: ['add', 'subtract']
+          }
+        ]
+      </coralite-code-highlight>
+
+      <coralite-heading level="h4" text="JSON Import"></coralite-heading>
+      <p>Import a JSON file as a module.</p>
+      <coralite-code-highlight language="JavaScript">
+        imports: [
+          {
+            specifier: './data/config.json',
+            defaultExport: 'config',
+            attributes: { type: 'json' }
+          }
+        ]
+      </coralite-code-highlight>
+
+      <coralite-heading level="h3" text="Import Options"></coralite-heading>
+      <ul>
+        <li><code>specifier</code> (string): The path or URL of the module.</li>
+        <li><code>defaultExport</code> (string): The name to assign to the default export.</li>
+        <li><code>namedExports</code> (string[]): List of named exports to import. Supports
+          <code>"original as alias"</code> syntax.</li>
+        <li><code>namespaceExport</code> (string): Import the entire module as a namespace
+          (<code>import * as Name</code>).</li>
+      </ul>
+    </section>
+
+    <!-- Script Configuration -->
+    <section id="script-config">
+      <coralite-heading level="h2" text="Script Configuration"></coralite-heading>
+      <p>The <code>script.config</code> object allows you to pass static configuration data from the server (where the
+        plugin is defined) to the client (where helpers run). This is useful for API keys, theme settings, or feature
+        flags.</p>
+
+      <coralite-code-html>
+        <script type="module">
+          createPlugin({
+            name: 'analytics',
+            script: {
+              config: {
+                trackingId: 'UA-123456-7',
+                debug: true
+              },
+              // ...
+            }
+          })
+        </script>
+      </coralite-code-html>
+    </section>
+
+    <!-- Context Injection -->
+    <section id="context-injection">
+      <coralite-heading level="h2" text="Context Injection"></coralite-heading>
+      <p>Both <code>script.imports</code> and <code>script.config</code> are automatically injected into the
+        <code>context</code> object passed to your helper factories.
+      </p>
+
+      <p>Access them via:</p>
+      <ul>
+        <li><code>context.imports</code>: Contains all imported modules/exports.</li>
+        <li><code>context.config</code>: Contains the configuration object.</li>
+      </ul>
+
+      <coralite-code-html>
+        <script type="module">
+          // Inside script.helpers
+          helpers: {
+            trackEvent: (context) => (eventName) => {
+              const { trackingId } = context.config;
+              const { analyticsLib } = context.imports;
+              
+              analyticsLib.send(trackingId, eventName);
+            }
+          }
+        </script>
+      </coralite-code-html>
+    </section>
+
+    <!-- Complete Example -->
+    <section id="complete-example">
+      <coralite-heading level="h2" text="Complete Example: Confetti Plugin"></coralite-heading>
+      <p>Let's build a plugin that triggers a confetti explosion using a remote library and allows configuration of
+        particle
+        count.</p>
+
+      <coralite-code-html>
+        <script type="module">
+          import { createPlugin } from 'coralite'
+
+          export default createPlugin({
+            name: 'confetti-plugin',
+            script: {
+              // 1. Import the library
+              imports: [
+                {
+                  specifier: 'https://esm.sh/canvas-confetti@1.6.0',
+                  defaultExport: 'confetti'
+                }
+              ],
+
+              // 2. Define default configuration
+              config: {
+                particleCount: 100,
+                spread: 70
+              },
+
+              // 3. Create the helper
+              helpers: {
+                explode: (context) => () => {
+                  // Access injected imports and config
+                  const confetti = context.imports.confetti
+                  const config = context.config
+
+                  if (!confetti) {
+                    console.warn('Confetti library not loaded')
+                    return
+                  }
+
+                  // Use the library with the config
+                  confetti({
+                    particleCount: config.particleCount,
+                    spread: config.spread,
+                    origin: { y: 0.6 }
+                  })
+                }
+              }
+            }
+          })
+        </script>
+      </coralite-code-html>
+
+      <p><strong>Usage in a component:</strong></p>
+      <coralite-code-html>
+        <template id="celebration-button">
+          <button ref="btn">Celebrate!</button>
+        </template>
+
+        <script type="module">
+          import { defineComponent } from 'coralite'
+
+          export default defineComponent({
+            script: (context, helpers) => {
+              const btn = helpers.refs('btn')
+              
+              // The 'explode' helper is now available on 'helpers'
+              const explode = helpers.explode
+
+              btn.addEventListener('click', () => {
+                explode()
+              })
+            }
+          })
+        </script>
+      </coralite-code-html>
+    </section>
+
+  </main>
+
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
