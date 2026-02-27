@@ -13,6 +13,7 @@
  * @property {string} styles.input - The path to the main stylesheet file to process.
  * @property {Options<'async'>} [sassOptions] - Additional options passed to the Sass compiler.
  * @property {import('postcss').AcceptedPlugin[]} [cssPlugins] - Postcss plugins.
+ * @property {'production' | 'development'} [mode='production'] - Set build mode for the coralite instance.
  */
 
 /**
