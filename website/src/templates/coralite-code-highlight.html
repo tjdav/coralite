@@ -88,7 +88,7 @@
           { language: values.language.toLowerCase() }
         )
 
-        const nodes = parseHTML(highlightCode.value)
+        const nodes = parseHTML(highlightCode.value.trimEnd())
 
         return replacePlaceholders(nodes.root.children, placeholders)
       }
