@@ -1,0 +1,14 @@
+<template id="script-test-component">
+  <div id="target">Initial Content</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    script: ({}, { updateTestElement }) => {
+      if (updateTestElement) {
+        updateTestElement('target')
+      }
+    }
+  })
+</script>
