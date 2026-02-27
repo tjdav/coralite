@@ -85,7 +85,7 @@
     }
 
     tag.children.push(
-      createCodeNode('html-tag-text', tag, '<'),
+      createCodeNode('html-tag-text', tag, '&lt;'),
       createCodeNode('html-tag-name', tag, node.name),
     )
 
@@ -112,7 +112,7 @@
 
     // closing arrow bracket
     tag.children.push(
-      createCodeNode('html-tag-text', tag, '>')
+      createCodeNode('html-tag-text', tag, '&gt;')
     )
 
     if (node.name === 'script' || node.name === 'style') {
@@ -129,13 +129,8 @@
             { language: node.name === 'style' ? 'css' : 'javascript' }
           )
 
-          const nodes = parseHTML(highlightCode.value)
-          const lastChild = nodes.root.children[nodes.root.children.length - 1]
-
-          if (lastChild && lastChild.type === 'text' && lastChild.data.trim() === '') {
-            lastChild.data = lastChild.data
-          }
-
+          const nodes = parseHTML(highlightCode.value.trimEnd() + '\n')
+          
           tag.children = tag.children.concat(nodes.root.children)
         }
       }
@@ -181,9 +176,9 @@
 
     // closing tag
     children.push(
-      createCodeNode('html-tag-text', tag, '</'),
-      createCodeNode('html-tag-name', tag, node.name),
-      createCodeNode('html-tag-text', tag, '>')
+      createCodeNode('html-tag-text', parent, '&lt;/'),
+      createCodeNode('html-tag-name', parent, node.name),
+      createCodeNode('html-tag-text', parent, '&gt;')
     )
   }
 
