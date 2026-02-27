@@ -231,6 +231,12 @@ export function createPlugin ({
     if (script.imports != null) {
       validateImportArray(script.imports, 'scriptPlugin.imports')
     }
+
+    if (script.config != null && typeof script.config !== 'object') {
+      throw new Error(
+        `Coralite plugin validation failed: "scriptPlugin.config" must be an object, received ${typeof script.config}`
+      )
+    }
   }
 
   // Process template files with error handling
