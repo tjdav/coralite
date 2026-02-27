@@ -29,9 +29,9 @@
   "scripts": {
     "lint-format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
-    "test-unit": "node --test ./tests/unit/**/*.spec.js",
-    "test-unit-watch": "node --test --watch ./tests/unit/**/*.spec.js",
-    "test-unit-coverage": "node --experimental-test-coverage --test ./tests/unit/**/*.spec.js",
+    "test-unit": "node --experimental-vm-modules --experimental-import-meta-resolve --test ./tests/unit/**/*.spec.js",
+    "test-unit-watch": "node --experimental-vm-modules --experimental-import-meta-resolve --test --watch ./tests/unit/**/*.spec.js",
+    "test-unit-coverage": "node --experimental-vm-modules --experimental-import-meta-resolve --experimental-test-coverage --test ./tests/unit/**/*.spec.js",
     "test-e2e": "pnpm build-html && playwright test",
     "test-e2e-report": "playwright show-report",
     "test-e2e-ui": "playwright test --ui",

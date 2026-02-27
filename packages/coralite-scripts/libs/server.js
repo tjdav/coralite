@@ -36,7 +36,8 @@ async function server (config, options) {
     const coralite = new Coralite({
       templates: config.templates,
       pages: config.pages,
-      plugins: config.plugins
+      plugins: config.plugins,
+      mode: 'development'
     })
     await coralite.initialise()
     displaySuccess('Coralite initialized successfully')

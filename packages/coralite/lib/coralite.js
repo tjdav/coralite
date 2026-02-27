@@ -16,6 +16,7 @@ import pLimit from 'p-limit'
 import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
 import CoraliteCollection from './collection.js'
 import { randomUUID } from 'node:crypto'
+import { createContext } from 'node:vm'
 
 /**
  * @import {
@@ -46,11 +47,13 @@ import { randomUUID } from 'node:crypto'
  * @param {string} options.templates - The path to the directory containing Coralite templates.
  * @param {CoralitePluginInstance[]} [options.plugins=[]]
  * @param {string} options.pages - The path to the directory containing pages that will be rendered using the provided templates.
+ * @param {string} [options.mode='production'] - Build mode: "development" or "production"
  * @param {IgnoreByAttribute[]} [options.ignoreByAttribute] - Elements to ignore with attribute name value pair
  * @example
  * const coralite = new Coralite({
  *   templates: './path/to/templates',
  *   pages: './path/to/pages',
+ *   mode: 'development',
  *   plugins: [myPlugin],
  *   ignoreByAttribute: [{ name: 'data-ignore', value: 'true' }]
  * });
@@ -59,7 +62,8 @@ export function Coralite ({
   templates,
   pages,
   plugins,
-  ignoreByAttribute
+  ignoreByAttribute,
+  mode = 'production'
 }) {
   // Validate required parameters
   if (!templates && typeof templates !== 'string') {
@@ -85,6 +89,7 @@ export function Coralite ({
     pages,
     plugins,
     ignoreByAttribute,
+    mode,
     path
   }
 
@@ -552,6 +557,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
 
       // Initialize Render Context
       const renderContext = this._createRenderContext(buildId)
+      renderContext.mode = this.options.mode
 
       // remove temporary elements
       if (document.tempElements) {
@@ -669,7 +675,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         }
 
         // Use script manager to compile all instances
-        const scriptTextContent = await this._scriptManager.compileAllInstances(instances)
+        const scriptTextContent = await this._scriptManager.compileAllInstances(instances, this.options.mode)
 
         /** @type {CoraliteElement | CoraliteDocumentRoot} */
         let bodyElement = document.root
@@ -1415,6 +1421,178 @@ Coralite.prototype.createComponent = async function ({
 }
 
 /**
+ * @param {import('../types/core.js').CoraliteFilePath} path
+ */
+Coralite.prototype._moduleLinker = function (path, context) {
+  const source = this._source
+  const templateDirURL = pathToFileURL(resolve(path.dirname)).href
+
+  /**
+   * @param {string} specifier - The specifier of the requested module
+   * @param {import('node:vm').Module} referencingModule - The Module object link() is called on.
+   * @param {{ attributes: ImportAttributes }} extra - The type for the with property of the optional second argument to import().
+   */
+  return async (specifier, referencingModule, extra) => {
+    const originalSpecifier = specifier
+
+    if (specifier == 'coralite/plugins') {
+      const plugins = source.context.plugins
+      let pluginExports = ''
+
+      pluginExports = 'const plugins = globalThis.__coralite_plugins__; export default plugins;'
+
+      for (const key in plugins) {
+        if (Object.prototype.hasOwnProperty.call(plugins, key)) {
+          pluginExports += `export const ${key} = plugins["${key}"];\n`
+        }
+      }
+
+      const { SourceTextModule } = await import('node:vm')
+
+      return new SourceTextModule(pluginExports, {
+        context: referencingModule.context
+      })
+    } else if (specifier === 'coralite') {
+      let coraliteExports = 'const context = globalThis.__coralite_context__; export default context;'
+
+      for (const key in context) {
+        if (Object.prototype.hasOwnProperty.call(context, key)) {
+          coraliteExports += `export const ${key} = context["${key}"];\n`
+        }
+      }
+
+      const { SourceTextModule } = await import('node:vm')
+
+      return new SourceTextModule(coraliteExports, {
+        context: referencingModule.context
+      })
+    } else if (specifier.startsWith('.')) {
+      // handle relative path
+      specifier = pathToFileURL(resolve(path.dirname, specifier)).href
+    } else {
+      // handle modules
+      specifier = import.meta.resolve(specifier, templateDirURL)
+    }
+
+    try {
+      const module = await import(specifier, { with: extra.attributes })
+      let exportModule = ''
+
+      for (const key in module) {
+        if (Object.prototype.hasOwnProperty.call(module, key)) {
+          const name = 'globalThis["' + originalSpecifier + '"].'
+
+          if (key === 'default') {
+            exportModule += 'export default ' + name + key + ';\n'
+          } else {
+            exportModule += 'export const ' + key + ' = ' + name + key + ';\n'
+          }
+        }
+
+        referencingModule.context[originalSpecifier] = module
+      }
+
+      const { SourceTextModule } = await import('node:vm')
+
+      return new SourceTextModule(exportModule, {
+        context: referencingModule.context
+      })
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
+}
+
+/**
+ * Parses a Coralite module script and evaluates it using SourceTextModule.
+ *
+ * @param {Object} data
+ * @param {CoraliteModule} data.module - The Coralite module to parse
+ * @param {CoraliteModuleValues} data.values - Replacement tokens for the component
+ * @param {CoraliteElement} data.element - The Coralite module to parse
+ * @param {CoraliteDocument} data.document - The document context in which the module is being processed
+ * @param {string} data.contextId - Context Id
+ * @param {Object} data.renderContext - Render Context
+ *
+ * @returns {Promise<CoraliteModuleValues>}
+ */
+Coralite.prototype._evaluateDevelopment = async function ({
+  module,
+  values,
+  element,
+  document,
+  contextId,
+  renderContext
+}) {
+  const { SourceTextModule } = await import('node:vm')
+
+  if (!SourceTextModule) {
+    throw new Error('SourceTextModule is not available. Please run Node.js with --experimental-vm-modules to use Development mode.')
+  }
+
+  const plugins = this._source.context.plugins
+  const cachedBoundPlugins = {}
+
+  for (const key in plugins) {
+    cachedBoundPlugins[key] = typeof plugins[key] === 'function'
+      ? (options) => plugins[key](options, context)
+      : plugins[key]
+  }
+
+  const context = {
+    ...this._source.contextModules,
+    ...this._source.context,
+    ...cachedBoundPlugins,
+    document,
+    values,
+    element,
+    module,
+    id: contextId,
+    renderContext
+  }
+
+  renderContext.source.currentSourceContextId = contextId
+  renderContext.source.contextInstances[contextId] = context
+
+
+  // Create a fresh context for the module
+  const contextifiedObject = createContext({
+    console: globalThis.console,
+    crypto: globalThis.crypto,
+    __coralite_context__: context,
+    __coralite_plugins__: cachedBoundPlugins
+  })
+
+  const template = this.templates.getItem(module.id)
+
+  // create a new source text module with the provided script content, configuration options, and context
+  const script = new SourceTextModule(module.script, {
+    initializeImportMeta (meta) {
+      meta.url = pathToFileURL(resolve(template.path.pathname)).href
+    },
+    lineOffset: module.lineOffset,
+    identifier: resolve(template.path.pathname),
+    context: contextifiedObject
+  })
+
+  const linker = this._moduleLinker(template.path, context)
+
+  await script.link(linker)
+
+  // evaluate the module to execute its content
+  await script.evaluate()
+
+  // @ts-ignore
+  if (script.namespace.default != null) {
+    // @ts-ignore
+    return await script.namespace.default
+  }
+
+  // throw an error if no default export was found
+  throw new Error(`Module "${module.id}" has no default export`)
+}
+
+/**
  * Parses a Coralite module script and compiles it into JavaScript using esbuild.
  * Replaces node:vm SourceTextModule for better performance and memory management.
  *
@@ -1428,7 +1606,7 @@ Coralite.prototype.createComponent = async function ({
  *
  * @returns {Promise<CoraliteModuleValues>}
  */
-Coralite.prototype._evaluate = async function ({
+Coralite.prototype._evaluateProduction = async function ({
   module,
   values,
   element,
@@ -1456,19 +1634,16 @@ Coralite.prototype._evaluate = async function ({
   if (!templateItem.result._compiledCode) {
     const paddingCount = Math.max(0, (module.lineOffset - 1 || 0))
     const padding = '\n'.repeat(paddingCount)
-    const sourceFile = pathToFileURL(templateItem.path.pathname).href
 
     // Transform using esbuild
     const { code } = await transform(padding + module.script, {
       loader: 'js',
       format: 'cjs',
       target: 'node18',
-      platform: 'node',
-      sourcemap: 'inline',
-      sourcefile: sourceFile
+      platform: 'node'
     })
 
-    templateItem.result._compiledCode = code + `\n//# sourceURL=${sourceFile}`
+    templateItem.result._compiledCode = `(async() => {${code}})();`
   }
 
   // Create a require function anchored to the template's file path to resolve relative imports
@@ -1542,6 +1717,27 @@ Coralite.prototype._evaluate = async function ({
   }
 
   throw new Error(`Module "${module.id}" has no default export`)
+}
+
+/**
+ * Parses a Coralite module script and compiles it into JavaScript using esbuild.
+ * Replaces node:vm SourceTextModule for better performance and memory management.
+ *
+ * @param {Object} data
+ * @param {CoraliteModule} data.module - The Coralite module to parse
+ * @param {CoraliteModuleValues} data.values - Replacement tokens for the component
+ * @param {CoraliteElement} data.element - The Coralite module to parse
+ * @param {CoraliteDocument} data.document - The document context in which the module is being processed
+ * @param {string} data.contextId - Context Id
+ * @param {Object} data.renderContext - Render Context
+ *
+ * @returns {Promise<CoraliteModuleValues>}
+ */
+Coralite.prototype._evaluate = async function (options) {
+  if (this.options.mode === 'development') {
+    return this._evaluateDevelopment(options)
+  }
+  return this._evaluateProduction(options)
 }
 
 /**

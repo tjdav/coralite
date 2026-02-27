@@ -103,9 +103,10 @@ ScriptManager.prototype.generateInstanceWrapper = function (templateId, instance
 /**
  * Compile all instances for a document
  * @param {Object.<string, InstanceContext>} instances - Map of instanceId -> instance data
+ * @param {string} mode - Build mode
  * @returns {Promise<string>} Compiled script
  */
-ScriptManager.prototype.compileAllInstances = async function (instances) {
+ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const entryCodeParts = []
 
   // Setup helpers
@@ -174,7 +175,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances) {
     bundle: true,
     write: false,
     treeShaking: true,
-    sourcemap: 'inline',
+    sourcemap: mode === 'production' ? false : 'inline',
+    minify: mode === 'production',
     format: 'iife',
     sourceRoot: pathToFileURL(process.cwd()).href,
     plugins: [

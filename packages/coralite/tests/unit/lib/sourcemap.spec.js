@@ -44,7 +44,8 @@ export default defineComponent({
 
     const coralite = new Coralite({
       templates: templatesDir,
-      pages: pagesDir
+      pages: pagesDir,
+      mode: 'development'
     })
 
     await coralite.initialise()
@@ -117,7 +118,8 @@ export default defineComponent({
 
     const coralite = new Coralite({
       templates: templatesDir,
-      pages: pagesDir
+      pages: pagesDir,
+      mode: 'development'
     })
 
     await coralite.initialise()

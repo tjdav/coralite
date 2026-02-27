@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
 import { Coralite } from '../dist/lib/index.js'
 import { Command } from 'commander'
@@ -19,6 +19,7 @@ program
   .requiredOption('-t, --templates <path>', 'Path to templates directory')
   .requiredOption('-p, --pages <path>', 'Path to pages directory')
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
+  .option('-m, --mode <mode>', 'Build mode: "development" or "production"', 'production')
   .option('-i, --ignore-attribute <key=value...>', 'Ignore elements by attribute name value pair', [])
   .option('-d, --dry-run', 'Run in dry-run mode')
 
@@ -48,6 +49,7 @@ const coraliteOptions = {
   templates: options.templates,
   pages,
   ignoreByAttribute,
+  mode: options.mode,
   plugins: []
 }
 
