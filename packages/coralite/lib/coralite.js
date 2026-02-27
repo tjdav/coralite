@@ -1529,9 +1529,19 @@ Coralite.prototype._evaluateDevelopment = async function ({
     throw new Error('SourceTextModule is not available. Please run Node.js with --experimental-vm-modules to use Development mode.')
   }
 
+  const plugins = this._source.context.plugins
+  const cachedBoundPlugins = {}
+
+  for (const key in plugins) {
+    cachedBoundPlugins[key] = typeof plugins[key] === 'function'
+      ? (options) => plugins[key](options, context)
+      : plugins[key]
+  }
+
   const context = {
     ...this._source.contextModules,
     ...this._source.context,
+    ...cachedBoundPlugins,
     document,
     values,
     element,
@@ -1543,14 +1553,6 @@ Coralite.prototype._evaluateDevelopment = async function ({
   renderContext.source.currentSourceContextId = contextId
   renderContext.source.contextInstances[contextId] = context
 
-  const plugins = this._source.context.plugins
-  const cachedBoundPlugins = {}
-
-  for (const key in plugins) {
-    cachedBoundPlugins[key] = typeof plugins[key] === 'function'
-      ? (options) => plugins[key](options, context)
-      : plugins[key]
-  }
 
   // Create a fresh context for the module
   const contextifiedObject = createContext({
