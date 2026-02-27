@@ -1135,4 +1135,73 @@ describe('ScriptManager', () => {
     })
   })
 
+  describe('ScriptManager Config Injection', () => {
+    it('should inject config into helper context', async () => {
+      const manager = new ScriptManager()
+      const config = {
+        baseURL: 'http://example.com',
+        apiKey: '123'
+      }
+
+      await manager.use({
+        config,
+        helpers: {
+          testHelper: (context) => {
+            return context.config
+          }
+        }
+      })
+
+      const instances = {
+        inst1: {
+          instanceId: 'inst1',
+          templateId: 'temp1',
+          values: {},
+          refs: {},
+          document: {}
+        }
+      }
+
+      manager.registerTemplate('temp1', { content: '() => {}' })
+
+      const compiledScript = await manager.compileAllInstances(instances, 'development')
+
+      // Verify config injection in generated code with whitespace-agnostic regex
+      // Looks for: pluginConfig = { ... "baseURL": "http://example.com" ... "apiKey": "123" ... }
+      assert.match(compiledScript, /pluginConfig\s*=\s*\{\s*"baseURL"\s*:\s*"http:\/\/example\.com"\s*,\s*"apiKey"\s*:\s*"123"\s*\}/)
+
+      // Check for the context injection logic
+      // context.config = { ...(context.config || {}), ...pluginConfig }
+      // Handles potential variations in spacing or parentheses (esbuild might remove parens)
+      assert.match(compiledScript, /context\.config\s*=\s*\{\s*\.\.\.\(?context\.config\s*\|\|\s*\{\}\)?\s*,\s*\.\.\.pluginConfig\s*\}/)
+    })
+
+    it('should handle missing config gracefully', async () => {
+      const manager = new ScriptManager()
+
+      await manager.use({
+        helpers: {
+          testHelper: (context) => {
+            return context.config
+          }
+        }
+      })
+
+      const instances = {
+        inst1: {
+          instanceId: 'inst1',
+          templateId: 'temp1',
+          values: {},
+          refs: {},
+          document: {}
+        }
+      }
+
+      manager.registerTemplate('temp1', { content: '() => {}' })
+
+      const compiledScript = await manager.compileAllInstances(instances, 'development')
+
+      assert.match(compiledScript, /pluginConfig\s*=\s*\{\}/)
+    })
+  })
 })
