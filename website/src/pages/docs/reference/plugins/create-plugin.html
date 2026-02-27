@@ -133,14 +133,21 @@
 
       <coralite-heading level="h4" text="Local Import"></coralite-heading>
       <p>Import a local JavaScript module.</p>
-      <coralite-code-highlight language="JavaScript">
-        imports: [
-          {
-            specifier: './utils/math.js',
-            namedExports: ['add', 'subtract']
-          }
-        ]
-      </coralite-code-highlight>
+
+      <code-highlight lang="html">
+        <script type="module">
+          createPlugin({
+            name: 'analytics',
+            script: {
+              config: {
+                trackingId: 'UA-123456-7',
+                debug: true
+              },
+              // ...
+            }
+          })
+        </script>
+      </code-highlight>
 
       <coralite-heading level="h4" text="JSON Import"></coralite-heading>
       <p>Import a JSON file as a module.</p>
