@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "coralite-scripts build",
-    "start": "coralite-scripts dev",
+    "start": "cross-env NODE_ENV='--experimental-vm-modules --experimental-import-meta-resolve' coralite-scripts dev",
     "lint-css": "stylelint 'src/css/*.css'",
     "lint-css-fix": "stylelint --fix 'src/css/*.css'"
   },
@@ -21,6 +21,7 @@
     "coralite-plugin-aggregation": "^0.7.0",
     "coralite-plugin-inline-css": "^0.4.0",
     "coralite-scripts": "workspace:*",
+    "cross-env": "^10.1.0",
     "highlight.js": "^11.11.1",
     "stylelint": "^16.24.0",
     "stylelint-config-twbs-bootstrap": "^16.1.0"
