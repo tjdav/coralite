@@ -141,7 +141,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   entryCodeParts.push(`const getHelpers = (context) => {
     const helpers = {}
-    for (const helper of Object.values(coraliteTemplateScriptHelpers)) {
+    for (const [key, helper] of Object.entries(coraliteTemplateScriptHelpers)) {
       helpers[key] = helper(context)
     }
     return helpers
@@ -243,12 +243,19 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
             let contents = ''
 
             // Generate imports
+            const importMap = {}
             if (module.imports) {
               for (const imp of module.imports) {
                 const parts = []
-                if (imp.defaultExport) parts.push(imp.defaultExport)
+                if (imp.defaultExport) {
+                  parts.push(imp.defaultExport)
+                  importMap[imp.defaultExport] = imp.defaultExport
+                }
                 if (imp.namedExports && imp.namedExports.length) {
                   parts.push(`{ ${imp.namedExports.join(', ')} }`)
+                  for (const named of imp.namedExports) {
+                    importMap[named] = named
+                  }
                 }
                 const importStr = parts.length ? parts.join(', ') : ''
                 const fromStr = importStr ? `import ${importStr} from` : 'import'
@@ -262,12 +269,24 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
               }
             }
 
+            // Generate imports object for context injection
+            const importsObjContent = Object.keys(importMap).length > 0
+              ? `const pluginImports = { ${Object.entries(importMap).map(([k, v]) => `${k}: ${v}`).join(', ')} };`
+              : 'const pluginImports = {};'
+
+            contents += importsObjContent + '\n'
+
             // Generate helpers
             contents += 'const helpers = {\n'
             if (module.helpers) {
               for (const key in module.helpers) {
                 if (Object.hasOwn(module.helpers, key)) {
-                  contents += `  "${key}": ${normalizeFunction(module.helpers[key])},\n`
+                  const fn = normalizeFunction(module.helpers[key])
+                  contents += `  "${key}": (context) => {
+                    context.imports = { ...(context.imports || {}), ...pluginImports }
+                    const fn = ${fn}
+                    return fn(context)
+                  },\n`
                 }
               }
             }
