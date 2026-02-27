@@ -1425,6 +1425,7 @@ Coralite.prototype.createComponent = async function ({
  */
 Coralite.prototype._moduleLinker = function (path, context) {
   const source = this._source
+  const templateDirURL = pathToFileURL(resolve(path.dirname)).href
 
   /**
    * @param {string} specifier - The specifier of the requested module
@@ -1470,7 +1471,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
       specifier = pathToFileURL(resolve(path.dirname, specifier)).href
     } else {
       // handle modules
-      specifier = import.meta.resolve(specifier, import.meta.url)
+      specifier = import.meta.resolve(specifier, templateDirURL)
     }
 
     try {
