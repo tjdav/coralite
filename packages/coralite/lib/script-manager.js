@@ -18,6 +18,7 @@ export function ScriptManager () {
   this.sharedFunctions = Object.create(null)
   this.helpers = Object.create(null)
   this.plugins = []
+  this.scriptModules = []
 }
 
 /**
@@ -31,16 +32,30 @@ ScriptManager.prototype.use = async function (plugin) {
   }
 
   // Register helpers
-  if (plugin && typeof plugin !== 'function' && plugin.helpers) {
-    for (const key in plugin.helpers) {
-      if (!Object.hasOwn(plugin.helpers, key)) continue
-
-      await this.addHelper(key, plugin.helpers[key])
-    }
+  if (
+    plugin
+    && typeof plugin !== 'function'
+    && (plugin.helpers || plugin.imports)
+  ) {
+    this.scriptModules.push(plugin)
   }
 
   this.plugins.push(plugin)
   return this
+}
+
+/**
+ * Get helpers object content string
+ * @returns {string} String containing all helpers as object properties
+ */
+ScriptManager.prototype.getHelpersContent = function () {
+  let helpers = ''
+
+  for (const key of Object.keys(this.helpers)) {
+    helpers += `"${key}": ${this.helpers[key]},`
+  }
+
+  return helpers
 }
 
 /**
@@ -59,7 +74,7 @@ ScriptManager.prototype.addHelper = async function (name, method) {
  * Get helpers
  * @returns {string} Object containing all helpers
  */
-ScriptManager.prototype.getHelpers = function (context) {
+ScriptManager.prototype.getHelpers = function () {
   let helpers = ''
 
   for (const key of Object.keys(this.helpers)) {
@@ -108,14 +123,26 @@ ScriptManager.prototype.generateInstanceWrapper = function (templateId, instance
  */
 ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const entryCodeParts = []
+  const moduleNamespace = 'coralite-script-module:'
+  // Generate ESM imports for each script module
+  for (let i = 0; i < this.scriptModules.length; i++) {
+    entryCodeParts.push(`import scriptModule_${i} from "${moduleNamespace}${i}";\n`)
+  }
 
   // Setup helpers
-  entryCodeParts.push(`const coraliteTemplateScriptHelpers = ${this.getHelpers()};\n`)
+  const helperParts = [
+    ...this.scriptModules.map((_, i) => `...scriptModule_${i}`),
+    this.getHelpersContent()
+  ].filter(Boolean).join(',\n')
+
+  entryCodeParts.push(`const coraliteTemplateScriptHelpers = {
+    ${helperParts}
+  };\n`)
+
   entryCodeParts.push(`const getHelpers = (context) => {
     const helpers = {}
-    for (const key in coraliteTemplateScriptHelpers) {
-      if (!Object.hasOwn(coraliteTemplateScriptHelpers, key)) continue
-      helpers[key] = coraliteTemplateScriptHelpers[key](context)
+    for (const [key, helper] of Object.entries(coraliteTemplateScriptHelpers)) {
+      helpers[key] = helper(context)
     }
     return helpers
   }\n`)
@@ -193,6 +220,107 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
             return {
               path: sharedFn.filePath,
               pluginData: { templateId }
+            }
+          })
+
+          // Handle script modules
+          const moduleRegex = new RegExp(`^${moduleNamespace}`)
+          pluginBuild.onResolve({ filter: moduleRegex }, args => {
+            const index = parseInt(args.path.replace(moduleNamespace, ''), 10)
+            return {
+              path: args.path,
+              namespace: 'coralite-script-module',
+              pluginData: { index }
+            }
+          })
+
+          pluginBuild.onLoad({
+            filter: /.*/,
+            namespace: 'coralite-script-module'
+          }, args => {
+            const index = args.pluginData.index
+            const module = this.scriptModules[index]
+            let contents = ''
+
+            // Generate imports
+            const importMap = {}
+            if (module.imports) {
+              for (const imp of module.imports) {
+                const specifier = JSON.stringify(imp.specifier)
+                let attrStr = ''
+                if (imp.attributes) {
+                  attrStr = ` with { ${Object.entries(imp.attributes).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} }`
+                }
+
+                // Handle namespaceExport separately to avoid invalid syntax (e.g. import Def, * as N, { Named })
+                if (imp.namespaceExport) {
+                  contents += `import * as ${imp.namespaceExport} from ${specifier}${attrStr};\n`
+                  importMap[imp.namespaceExport] = imp.namespaceExport
+                }
+
+                // Handle default and named exports together
+                const parts = []
+                if (imp.defaultExport) {
+                  parts.push(imp.defaultExport)
+                  importMap[imp.defaultExport] = imp.defaultExport
+                }
+
+                if (imp.namedExports && imp.namedExports.length) {
+                  parts.push(`{ ${imp.namedExports.join(', ')} }`)
+                  for (const named of imp.namedExports) {
+                    // Check for "as" syntax: "original as alias"
+                    if (named.includes(' as ')) {
+                      const [, alias] = named.split(' as ')
+                      importMap[alias.trim()] = alias.trim()
+                    } else {
+                      importMap[named.trim()] = named.trim()
+                    }
+                  }
+                }
+
+                if (parts.length > 0) {
+                  const importStr = parts.join(', ')
+                  contents += `import ${importStr} from ${specifier}${attrStr};\n`
+                }
+              }
+            }
+
+            // Generate imports object for context injection
+            const importsObjContent = Object.keys(importMap).length > 0
+              ? `const pluginImports = { ${Object.entries(importMap).map(([k, v]) => `${k}: ${v}`).join(', ')} };`
+              : 'const pluginImports = {};'
+
+            contents += importsObjContent + '\n'
+
+            // Generate config object
+            const configContent = module.config
+              ? `const pluginConfig = ${JSON.stringify(module.config)};`
+              : 'const pluginConfig = {};'
+
+            contents += configContent + '\n'
+
+            // Generate helpers
+            contents += 'const helpers = {\n'
+            if (module.helpers) {
+              for (const key in module.helpers) {
+                if (Object.hasOwn(module.helpers, key)) {
+                  const fn = normalizeFunction(module.helpers[key])
+                  contents += `  "${key}": (context) => {
+                    context.imports = { ...(context.imports || {}), ...pluginImports }
+                    context.config = { ...(context.config || {}), ...pluginConfig }
+                    const fn = ${fn}
+                    return fn(context)
+                  },\n`
+                }
+              }
+            }
+            contents += '};\n'
+            contents += 'export default helpers;'
+
+            return {
+              contents,
+              loader: 'js',
+              resolveDir: process.cwd()
             }
           })
 

@@ -30,8 +30,7 @@
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginPageSetCallback
- * @description Async callback triggered when a page is created. Called with elements, values, and data.
+ * @callback CoralitePluginPageSetCallback - Async callback triggered when a page is created. Called with elements, values, and data.
  * @param {Object} param
  * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
  * @param {CoraliteFilePath & Object.<string, any>} param.values - Values associated with the page path
@@ -41,8 +40,7 @@
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginPageUpdateCallback
- * @description Async callback triggered when a page is updated. Called with elements, new and old values.
+ * @callback CoralitePluginPageUpdateCallback - Async callback triggered when a page is updated. Called with elements, new and old values.
  * @param {Object} param
  * @param {CoraliteElement[]} param.elements - Updated HTML elements from the page
  * @param {CoraliteCollectionItem} param.newValue - The updated data item
@@ -52,24 +50,21 @@
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginPageDeleteCallback
- * @description Async callback triggered when a page is deleted. Called with the deleted data.
+ * @callback CoralitePluginPageDeleteCallback - Async callback triggered when a page is deleted. Called with the deleted data.
  * @param {CoraliteCollectionItem} value - The data item being deleted
  * @async
  */
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginTemplateCallback
- * @description Async callback triggered for template-related events (set, update, delete).
+ * @callback CoralitePluginTemplateCallback - Async callback triggered for template-related events (set, update, delete).
  * @param {CoraliteModule} template - The template module that was set, updated, or deleted
  * @async
  */
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginAfterPageRenderCallback
- * @description Async callback triggered after a page has been rendered but before saving.
+ * @callback CoralitePluginAfterPageRenderCallback - Async callback triggered after a page has been rendered but before saving.
  * @param {CoraliteResult} result - The rendered page result
  * @returns {Promise<CoraliteResult[]|CoraliteResult|void>} New result(s) to add to the build output
  * @async
@@ -77,8 +72,7 @@
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginBuildCompleteCallback
- * @description Async callback triggered when a build process completes (success or failure).
+ * @callback CoralitePluginBuildCompleteCallback - Async callback triggered when a build process completes (success or failure).
  * @param {Object} context
  * @param {CoraliteResult[]} context.results - The results of the build (pages generated)
  * @param {Error|null} context.error - The error if the build failed

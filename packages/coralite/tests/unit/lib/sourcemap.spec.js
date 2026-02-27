@@ -1,4 +1,3 @@
-
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
 import { Coralite } from '#lib'
@@ -68,12 +67,12 @@ export default defineComponent({
 
     // Verify sources
     // The source path should be the file URL or path to my-component.html
-    const hasSource = sourceMap.sources.some(s => s.includes('my-component.html'))
-    assert.ok(hasSource, 'Source map does not contain my-component.html')
+    const sourceIndex = sourceMap.sources.findIndex(s => s.includes('my-component.html'))
+    assert.ok(sourceIndex !== -1, 'Source map does not contain my-component.html')
 
     // Verify script was normalised
-    const hasNormalisedScript = sourceMap.sourcesContent[0].includes('export default function script' + componentScriptContent)
-    assert.ok(hasNormalisedScript, 'Source map does not contain my-component.html')
+    const hasNormalisedScript = sourceMap.sourcesContent[sourceIndex].includes('export default function script' + componentScriptContent)
+    assert.ok(hasNormalisedScript, 'Source map sourcesContent does not contain expected script')
 
     // Cleanup
     await rm(tmpDir, {
@@ -141,11 +140,11 @@ export default defineComponent({
     const sourceMap = JSON.parse(sourceMapJson)
 
     // Verify sources
-    const hasSource = sourceMap.sources.some(s => s.includes('complex-component.html'))
-    assert.ok(hasSource, 'Source map does not contain complex-component.html')
+    const sourceIndex = sourceMap.sources.findIndex(s => s.includes('complex-component.html'))
+    assert.ok(sourceIndex !== -1, 'Source map does not contain complex-component.html')
 
     // Verify script content in sourcesContent matches
-    const hasScriptContent = sourceMap.sourcesContent[0].includes("console.log('Hello from complex-component')")
+    const hasScriptContent = sourceMap.sourcesContent[sourceIndex].includes("console.log('Hello from complex-component')")
     assert.ok(hasScriptContent, 'Source map sourcesContent does not contain expected script')
 
     // Verify mappings
