@@ -101,6 +101,12 @@ function validateImportArray (value, paramName) {
         `Coralite plugin validation failed: "${paramName}[${i}].attributes" must be an object`
       )
     }
+
+    if (item.namespaceExport != null && typeof item.namespaceExport !== 'string') {
+      throw new Error(
+        `Coralite plugin validation failed: "${paramName}[${i}].namespaceExport" must be a string`
+      )
+    }
   }
 }
 

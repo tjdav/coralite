@@ -16,7 +16,8 @@
  * @typedef {Object} ScriptImport
  * @property {string} specifier - Module specifier
  * @property {string} [defaultExport] - Default export name
- * @property {string[]} [namedExports] - Named exports list
+ * @property {string} [namespaceExport] - Namespace export name (import * as namespace)
+ * @property {string[]} [namedExports] - Named exports list (supports "original as alias" syntax)
  * @property {Object.<string, string>} [attributes] - Import attributes
  */
 
@@ -34,7 +35,6 @@
  * @property {function(any): void} [setup] - Called when plugin is registered
  * @property {ScriptImport[]} [imports] - Module imports for helpers
  * @property {Object.<string, function>} [helpers] - Global or instance helpers to add to scripts
- * @property {Object.<'register'|'beforeExecute'|'afterExecute'|'onScriptCompile', function>} [lifecycle] - Lifecycle hooks
  * @property {function(string, Object): string} [transform] - Transform script content
  */
 

@@ -1,8 +1,20 @@
-import { describe, it, beforeEach, mock } from 'node:test'
+import { describe, it, beforeEach, mock, after } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { ScriptManager } from '#lib'
+import fs from 'node:fs'
+import path from 'node:path'
 
 describe('ScriptManager', () => {
+  // Setup temp test file for imports
+  const tempFile = path.resolve('temp-test-module.js')
+  fs.writeFileSync(tempFile, 'export const version = "1.0.0"; export const name = "test"; export default "default-value";')
+
+  after(() => {
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile)
+    }
+  })
+
   describe('Constructor', () => {
     it('should initialize with empty collections', () => {
       const sm = new ScriptManager()
@@ -948,7 +960,7 @@ describe('ScriptManager', () => {
         name: 'test-plugin',
         imports: [
           {
-            specifier: './package.json',
+            specifier: './temp-test-module.js',
             defaultExport: 'pkg'
           }
         ],
@@ -993,7 +1005,7 @@ describe('ScriptManager', () => {
       await sm.use({
         name: 'plugin-1',
         imports: [{
-          specifier: './package.json',
+          specifier: './temp-test-module.js',
           defaultExport: 'foo'
         }],
         helpers: {
@@ -1004,7 +1016,7 @@ describe('ScriptManager', () => {
       await sm.use({
         name: 'plugin-2',
         imports: [{
-          specifier: './package.json',
+          specifier: './temp-test-module.js',
           defaultExport: 'bar'
         }],
         helpers: {
@@ -1028,6 +1040,98 @@ describe('ScriptManager', () => {
 
       assert.ok(matches, 'Matches should not be null')
       assert.strictEqual(matches.length, 2, `Expected 2 injection patterns, found ${matches ? matches.length : 0}`)
+    })
+
+    it('should handle namedExports with "as" alias syntax', async () => {
+      const sm = new ScriptManager()
+
+      await sm.use({
+        name: 'alias-plugin',
+        imports: [{
+          specifier: './temp-test-module.js',
+          namedExports: ['version as pkgVersion', 'name']
+        }],
+        helpers: {
+          getVersion: (context) => () => context.imports.pkgVersion
+        }
+      })
+
+      sm.registerTemplate('test', { content: '() => {}' })
+      const output = await sm.compileAllInstances({
+        'inst-1': {
+          templateId: 'test',
+          instanceId: '1',
+          values: {},
+          refs: {},
+          document: {}
+        }
+      }, 'development')
+
+      assert.ok(output.includes('pkgVersion'), 'Output should contain aliased import name')
+      assert.ok(output.includes('name'), 'Output should contain regular named import')
+    })
+
+    it('should handle namespaceExport', async () => {
+      const sm = new ScriptManager()
+
+      await sm.use({
+        name: 'namespace-plugin',
+        imports: [{
+          specifier: './temp-test-module.js',
+          namespaceExport: 'pkg'
+        }],
+        helpers: {
+          getPkg: (context) => () => context.imports.pkg
+        }
+      })
+
+      sm.registerTemplate('test', { content: '() => {}' })
+      const output = await sm.compileAllInstances({
+        'inst-1': {
+          templateId: 'test',
+          instanceId: '1',
+          values: {},
+          refs: {},
+          document: {}
+        }
+      }, 'development')
+
+      // Esbuild bundles the import, so we check if the key is present in pluginImports
+      assert.ok(output.includes('pkg: '), 'Namespace should be mapped in pluginImports')
+    })
+
+    it('should handle combined default, namespace, and named exports', async () => {
+      const sm = new ScriptManager()
+
+      await sm.use({
+        name: 'combo-plugin',
+        imports: [{
+          specifier: './temp-test-module.js',
+          defaultExport: 'defaultPkg',
+          namespaceExport: 'allPkg',
+          namedExports: ['version as v', 'name']
+        }],
+        helpers: {
+          check: (context) => () => true
+        }
+      })
+
+      sm.registerTemplate('test', { content: '() => {}' })
+      const output = await sm.compileAllInstances({
+        'inst-1': {
+          templateId: 'test',
+          instanceId: '1',
+          values: {},
+          refs: {},
+          document: {}
+        }
+      }, 'development')
+
+      // Esbuild bundles imports, so we verify keys in pluginImports are present
+      assert.ok(output.includes('defaultPkg: '), 'Default export mapped')
+      assert.ok(output.includes('allPkg: '), 'Namespace export mapped')
+      assert.ok(output.includes('v: '), 'Aliased named export mapped')
+      assert.ok(output.includes('name: '), 'Named export mapped')
     })
   })
 

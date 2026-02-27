@@ -246,26 +246,42 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
             const importMap = {}
             if (module.imports) {
               for (const imp of module.imports) {
-                const parts = []
-                if (imp.defaultExport) {
-                  parts.push(imp.defaultExport)
-                  importMap[imp.defaultExport] = imp.defaultExport
-                }
-                if (imp.namedExports && imp.namedExports.length) {
-                  parts.push(`{ ${imp.namedExports.join(', ')} }`)
-                  for (const named of imp.namedExports) {
-                    importMap[named] = named
-                  }
-                }
-                const importStr = parts.length ? parts.join(', ') : ''
-                const fromStr = importStr ? `import ${importStr} from` : 'import'
-
+                const specifier = JSON.stringify(imp.specifier)
                 let attrStr = ''
                 if (imp.attributes) {
                   attrStr = ` with { ${Object.entries(imp.attributes).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} }`
                 }
 
-                contents += `${fromStr} ${JSON.stringify(imp.specifier)}${attrStr};\n`
+                // Handle namespaceExport separately to avoid invalid syntax (e.g. import Def, * as N, { Named })
+                if (imp.namespaceExport) {
+                  contents += `import * as ${imp.namespaceExport} from ${specifier}${attrStr};\n`
+                  importMap[imp.namespaceExport] = imp.namespaceExport
+                }
+
+                // Handle default and named exports together
+                const parts = []
+                if (imp.defaultExport) {
+                  parts.push(imp.defaultExport)
+                  importMap[imp.defaultExport] = imp.defaultExport
+                }
+
+                if (imp.namedExports && imp.namedExports.length) {
+                  parts.push(`{ ${imp.namedExports.join(', ')} }`)
+                  for (const named of imp.namedExports) {
+                    // Check for "as" syntax: "original as alias"
+                    if (named.includes(' as ')) {
+                      const [, alias] = named.split(' as ')
+                      importMap[alias.trim()] = alias.trim()
+                    } else {
+                      importMap[named.trim()] = named.trim()
+                    }
+                  }
+                }
+
+                if (parts.length > 0) {
+                  const importStr = parts.join(', ')
+                  contents += `import ${importStr} from ${specifier}${attrStr};\n`
+                }
               }
             }
 
