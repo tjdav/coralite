@@ -13,6 +13,14 @@
  */
 
 /**
+ * @typedef {Object} ScriptImport
+ * @property {string} specifier - Module specifier
+ * @property {string} [defaultExport] - Default export name
+ * @property {string[]} [namedExports] - Named exports list
+ * @property {Object.<string, string>} [attributes] - Import attributes
+ */
+
+/**
  * @typedef {Object} CoraliteScriptContent
  * @property {string} id - Unique instance identifier
  * @property {string} [templateId] - Template identifier for shared functions
@@ -24,6 +32,7 @@
 /**
  * @typedef {Object} ScriptPlugin
  * @property {function(any): void} [setup] - Called when plugin is registered
+ * @property {ScriptImport[]} [imports] - Module imports for helpers
  * @property {Object.<string, function>} [helpers] - Global or instance helpers to add to scripts
  * @property {Object.<'register'|'beforeExecute'|'afterExecute'|'onScriptCompile', function>} [lifecycle] - Lifecycle hooks
  * @property {function(string, Object): string} [transform] - Transform script content

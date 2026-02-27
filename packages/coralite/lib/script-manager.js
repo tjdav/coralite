@@ -18,6 +18,7 @@ export function ScriptManager () {
   this.sharedFunctions = Object.create(null)
   this.helpers = Object.create(null)
   this.plugins = []
+  this.scriptModules = []
 }
 
 /**
@@ -31,16 +32,30 @@ ScriptManager.prototype.use = async function (plugin) {
   }
 
   // Register helpers
-  if (plugin && typeof plugin !== 'function' && plugin.helpers) {
-    for (const key in plugin.helpers) {
-      if (!Object.hasOwn(plugin.helpers, key)) continue
-
-      await this.addHelper(key, plugin.helpers[key])
-    }
+  if (
+    plugin
+    && typeof plugin !== 'function'
+    && (plugin.helpers || plugin.imports)
+  ) {
+    this.scriptModules.push(plugin)
   }
 
   this.plugins.push(plugin)
   return this
+}
+
+/**
+ * Get helpers object content string
+ * @returns {string} String containing all helpers as object properties
+ */
+ScriptManager.prototype.getHelpersContent = function () {
+  let helpers = ''
+
+  for (const key of Object.keys(this.helpers)) {
+    helpers += `"${key}": ${this.helpers[key]},`
+  }
+
+  return helpers
 }
 
 /**
@@ -59,7 +74,7 @@ ScriptManager.prototype.addHelper = async function (name, method) {
  * Get helpers
  * @returns {string} Object containing all helpers
  */
-ScriptManager.prototype.getHelpers = function (context) {
+ScriptManager.prototype.getHelpers = function () {
   let helpers = ''
 
   for (const key of Object.keys(this.helpers)) {
@@ -108,14 +123,26 @@ ScriptManager.prototype.generateInstanceWrapper = function (templateId, instance
  */
 ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const entryCodeParts = []
+  const moduleNamespace = 'coralite-script-module:'
+  // Generate ESM imports for each script module
+  for (let i = 0; i < this.scriptModules.length; i++) {
+    entryCodeParts.push(`import scriptModule_${i} from "${moduleNamespace}${i}";\n`)
+  }
 
   // Setup helpers
-  entryCodeParts.push(`const coraliteTemplateScriptHelpers = ${this.getHelpers()};\n`)
+  const helperParts = [
+    ...this.scriptModules.map((_, i) => `...scriptModule_${i}`),
+    this.getHelpersContent()
+  ].filter(Boolean).join(',\n')
+
+  entryCodeParts.push(`const coraliteTemplateScriptHelpers = {
+    ${helperParts}
+  };\n`)
+
   entryCodeParts.push(`const getHelpers = (context) => {
     const helpers = {}
-    for (const key in coraliteTemplateScriptHelpers) {
-      if (!Object.hasOwn(coraliteTemplateScriptHelpers, key)) continue
-      helpers[key] = coraliteTemplateScriptHelpers[key](context)
+    for (const helper of Object.values(coraliteTemplateScriptHelpers)) {
+      helpers[key] = helper(context)
     }
     return helpers
   }\n`)
@@ -193,6 +220,64 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
             return {
               path: sharedFn.filePath,
               pluginData: { templateId }
+            }
+          })
+
+          // Handle script modules
+          const moduleRegex = new RegExp(`^${moduleNamespace}`)
+          pluginBuild.onResolve({ filter: moduleRegex }, args => {
+            const index = parseInt(args.path.replace(moduleNamespace, ''), 10)
+            return {
+              path: args.path,
+              namespace: 'coralite-script-module',
+              pluginData: { index }
+            }
+          })
+
+          pluginBuild.onLoad({
+            filter: /.*/,
+            namespace: 'coralite-script-module'
+          }, args => {
+            const index = args.pluginData.index
+            const module = this.scriptModules[index]
+            let contents = ''
+
+            // Generate imports
+            if (module.imports) {
+              for (const imp of module.imports) {
+                const parts = []
+                if (imp.defaultExport) parts.push(imp.defaultExport)
+                if (imp.namedExports && imp.namedExports.length) {
+                  parts.push(`{ ${imp.namedExports.join(', ')} }`)
+                }
+                const importStr = parts.length ? parts.join(', ') : ''
+                const fromStr = importStr ? `import ${importStr} from` : 'import'
+
+                let attrStr = ''
+                if (imp.attributes) {
+                  attrStr = ` with { ${Object.entries(imp.attributes).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} }`
+                }
+
+                contents += `${fromStr} ${JSON.stringify(imp.specifier)}${attrStr};\n`
+              }
+            }
+
+            // Generate helpers
+            contents += 'const helpers = {\n'
+            if (module.helpers) {
+              for (const key in module.helpers) {
+                if (Object.hasOwn(module.helpers, key)) {
+                  contents += `  "${key}": ${normalizeFunction(module.helpers[key])},\n`
+                }
+              }
+            }
+            contents += '};\n'
+            contents += 'export default helpers;'
+
+            return {
+              contents,
+              loader: 'js',
+              resolveDir: process.cwd()
             }
           })
 

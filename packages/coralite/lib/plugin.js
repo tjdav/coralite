@@ -57,6 +57,54 @@ function validateStringArray (value, paramName) {
 }
 
 /**
+ * Validates that a value is an array of Import Objects
+ * @param {*} value - Value to validate
+ * @param {string} paramName - Parameter name for error messages
+ * @throws {Error} If value is defined but not an array of objects
+ */
+function validateImportArray (value, paramName) {
+  if (!Array.isArray(value)) {
+    throw new Error(
+      `Coralite plugin validation failed: "${paramName}" must be an array, received ${typeof value}`
+    )
+  }
+
+  for (let i = 0; i < value.length; i++) {
+    const item = value[i]
+
+    if (typeof item !== 'object') {
+      throw new Error(
+        `Coralite plugin validation failed: "${paramName}[${i}]" must be an object, received ${typeof item}`
+      )
+    }
+
+    if (typeof item.specifier !== 'string' || item.specifier.trim().length === 0) {
+      throw new Error(
+        `Coralite plugin validation failed: "${paramName}[${i}].specifier" must be a non-empty string`
+      )
+    }
+
+    if (item.defaultExport != null && typeof item.defaultExport !== 'string') {
+      throw new Error(
+        `Coralite plugin validation failed: "${paramName}[${i}].defaultExport" must be a string`
+      )
+    }
+
+    if (item.namedExports != null && !Array.isArray(item.namedExports)) {
+      throw new Error(
+        `Coralite plugin validation failed: "${paramName}[${i}].namedExports" must be an array`
+      )
+    }
+
+    if (item.attributes != null && typeof item.attributes !== 'object') {
+      throw new Error(
+        `Coralite plugin validation failed: "${paramName}[${i}].attributes" must be an object`
+      )
+    }
+  }
+}
+
+/**
  * Processes a single template file with optional caching
  * @param {string} path - Template file path
  * @returns {HTMLData} Template data
@@ -172,6 +220,10 @@ export function createPlugin ({
       throw new Error(
         `Coralite plugin validation failed: "scriptPlugin.helpers" must be an object, received ${typeof script.helpers}`
       )
+    }
+
+    if (script.imports != null) {
+      validateImportArray(script.imports, 'scriptPlugin.imports')
     }
   }
 
