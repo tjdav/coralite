@@ -10,6 +10,7 @@
  * @property {string} [content] - Script string content
  * @property {Object.<string, CoraliteModuleValue>} [values]
  * @property {number} [lineOffset] - Script offset number.
+ * @property {ScriptImport[]} [imports] - Script imports.
  */
 
 /**

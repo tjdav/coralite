@@ -8,13 +8,16 @@
     import { defineComponent } from 'coralite/plugins'
 
     export default defineComponent({
-      setup: async () => {
-        // Simulate async
-        await new Promise(r => setTimeout(r, 10))
-        return {
-          direction: 'East Australian Current',
-          speed: 'Fast'
+      client: {
+        setup: async () => {
+          // Simulate async
+          await new Promise(r => setTimeout(r, 10))
+          return {
+            direction: 'East Australian Current',
+            speed: 'Fast'
+          }
         }
+
       }
     })
 </script>

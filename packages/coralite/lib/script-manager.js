@@ -94,6 +94,7 @@ ScriptManager.prototype.registerTemplate = function (templateId, script, filePat
   this.sharedFunctions[templateId] = {
     templateId,
     script,
+    imports: script.imports || [],
     filePath: filePath ? resolve(filePath) : `/template-${templateId}.js`
   }
 }
@@ -111,6 +112,7 @@ ScriptManager.prototype.generateInstanceWrapper = function (templateId, instance
   return `await coraliteTemplateFunctions["${templateId}"]({
       values: ${values},
       helpers,
+      imports,
       instanceId: '${instanceContext.instanceId}'
     });`
 }
@@ -157,10 +159,17 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const processedTemplatesKeys = Object.keys(processedTemplates)
   const regex = /[-.:]/g
   const namespace = 'coralite-templates:'
+  const componentImportsNamespace = 'coralite-template-imports:'
+
   // Generate ESM imports for each template script
   for (const templateId of processedTemplatesKeys) {
     if (this.sharedFunctions[templateId]) {
-      entryCodeParts.push(`import template_${templateId.replace(regex, '_')} from "${namespace}${templateId}";\n`)
+      const safeId = templateId.replace(regex, '_')
+      entryCodeParts.push(`import template_${safeId} from "${namespace}${templateId}";\n`)
+
+      if (this.sharedFunctions[templateId].imports && this.sharedFunctions[templateId].imports.length > 0) {
+        entryCodeParts.push(`import componentImports_${safeId} from "${componentImportsNamespace}${templateId}";\n`)
+      }
     }
   }
 
@@ -169,6 +178,14 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   for (const templateId of processedTemplatesKeys) {
     if (this.sharedFunctions[templateId]) {
       entryCodeParts.push(`  "${templateId}": template_${templateId.replace(regex, '_')},\n`)
+    }
+  }
+  entryCodeParts.push('};\n')
+
+  entryCodeParts.push('const coraliteComponentImports = {\n')
+  for (const templateId of processedTemplatesKeys) {
+    if (this.sharedFunctions[templateId] && this.sharedFunctions[templateId].imports && this.sharedFunctions[templateId].imports.length > 0) {
+      entryCodeParts.push(`  "${templateId}": componentImports_${templateId.replace(regex, '_')},\n`)
     }
   }
   entryCodeParts.push('};\n')
@@ -187,8 +204,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     entryCodeParts.push(';(async() => {\n')
     entryCodeParts.push('const context = ' + serialize(context) + ';\n')
     entryCodeParts.push('const helpers = getHelpers(context);\n')
+    entryCodeParts.push(`const imports = coraliteComponentImports["${context.templateId}"] || {};\n`)
+    entryCodeParts.push('context.imports = imports;\n')
+    entryCodeParts.push('context.helpers = helpers;\n')
     entryCodeParts.push(`\n// Instance: ${instanceId}\n`)
-    entryCodeParts.push(`await coraliteTemplateFunctions["${context.templateId}"](context, helpers);\n`)
+    entryCodeParts.push(`await coraliteTemplateFunctions["${context.templateId}"](context);\n`)
     entryCodeParts.push('})();\n')
   }
 
@@ -224,6 +244,17 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
           })
 
           // Handle script modules
+          const componentImportsRegex = new RegExp(`^${componentImportsNamespace}`)
+
+          pluginBuild.onResolve({ filter: componentImportsRegex }, args => {
+            const templateId = args.path.replace(componentImportsNamespace, '')
+            return {
+              path: args.path,
+              namespace: 'coralite-component-imports',
+              pluginData: { templateId }
+            }
+          })
+
           const moduleRegex = new RegExp(`^${moduleNamespace}`)
           pluginBuild.onResolve({ filter: moduleRegex }, args => {
             const index = parseInt(args.path.replace(moduleNamespace, ''), 10)
@@ -231,6 +262,67 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
               path: args.path,
               namespace: 'coralite-script-module',
               pluginData: { index }
+            }
+          })
+
+          pluginBuild.onLoad({
+            filter: /.*/,
+            namespace: 'coralite-component-imports'
+          }, args => {
+            const templateId = args.pluginData.templateId
+            const sharedFn = this.sharedFunctions[templateId]
+            let contents = ''
+
+            const importMap = {}
+            if (sharedFn.imports) {
+              for (const imp of sharedFn.imports) {
+                const specifier = JSON.stringify(imp.specifier)
+                let attrStr = ''
+                if (imp.attributes) {
+                  attrStr = ` with { ${Object.entries(imp.attributes).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} }`
+                }
+
+                if (imp.namespaceExport) {
+                  contents += `import * as ${imp.namespaceExport} from ${specifier}${attrStr};\n`
+                  importMap[imp.namespaceExport] = imp.namespaceExport
+                }
+
+                const parts = []
+                if (imp.defaultExport) {
+                  parts.push(imp.defaultExport)
+                  importMap[imp.defaultExport] = imp.defaultExport
+                }
+
+                if (imp.namedExports && imp.namedExports.length) {
+                  parts.push(`{ ${imp.namedExports.join(', ')} }`)
+                  for (const named of imp.namedExports) {
+                    if (named.includes(' as ')) {
+                      const [, alias] = named.split(' as ')
+                      importMap[alias.trim()] = alias.trim()
+                    } else {
+                      importMap[named.trim()] = named.trim()
+                    }
+                  }
+                }
+
+                if (parts.length > 0) {
+                  const importStr = parts.join(', ')
+                  contents += `import ${importStr} from ${specifier}${attrStr};\n`
+                }
+              }
+            }
+
+            const importsObjContent = Object.keys(importMap).length > 0
+              ? `const componentImports = { ${Object.entries(importMap).map(([k, v]) => `${k}: ${v}`).join(', ')} };`
+              : 'const componentImports = {};'
+
+            contents += importsObjContent + '\n'
+            contents += 'export default componentImports;'
+
+            return {
+              contents,
+              loader: 'js',
+              resolveDir: process.cwd()
             }
           })
 

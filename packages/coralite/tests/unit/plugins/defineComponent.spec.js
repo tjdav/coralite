@@ -673,8 +673,10 @@ describe('defineComponent', () => {
 
     it('should generate __script__', async () => {
       const options = {
-        script: function (values) {
-          return values.title
+        client: {
+          script: function (values) {
+            return values.title
+          }
         }
       }
 
@@ -690,8 +692,10 @@ describe('defineComponent', () => {
 
     it('should include only values used in script', async () => {
       const options = {
-        script: function (values) {
-          return values.title.toUpperCase()
+        client: {
+          script: function (values) {
+            return values.title.toUpperCase()
+          }
         }
       }
       const extraValues = {
@@ -712,8 +716,10 @@ describe('defineComponent', () => {
     it('should remove __script__ when script is undefined', async () => {
       // First call with script
       let result = await defineComponent.method.call(mockContext, {
-        script: function (v){
-          return v.title
+        client: {
+          script: function (v) {
+            return v.title
+          }
         }
       }, {
         values: mockValues,
@@ -723,7 +729,11 @@ describe('defineComponent', () => {
       assert.ok(result.__script__)
 
       // Second call without script
-      result = await defineComponent.method.call(mockContext, { script: undefined }, {
+      result = await defineComponent.method.call(mockContext, {
+        client: {
+          script: undefined
+        }
+      }, {
         values: mockValues,
         element: mockElement,
         document: mockDocument

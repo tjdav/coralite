@@ -29,7 +29,9 @@ describe('Source Map Generation', () => {
 import { defineComponent } from 'coralite/plugins'
 
 export default defineComponent({
-  script${componentScriptContent}
+  client: {
+    script${componentScriptContent}
+  }
 })
 </script>
 `
@@ -101,8 +103,10 @@ export default defineComponent({
   /**
    * JSDoc comment
    */
-  script: async (context) => {
-    console.log('Hello from complex-component')
+  client: {
+    script: async (context) => {
+      console.log('Hello from complex-component')
+    }
   }
 })
 </script>

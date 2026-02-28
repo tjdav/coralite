@@ -5,9 +5,11 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script: ({}, { updateTestElement }) => {
-      if (updateTestElement) {
-        updateTestElement('target')
+    client: {
+      script: ({ helpers }) => {
+        if (helpers.updateTestElement) {
+          helpers.updateTestElement('target')
+        }
       }
     }
   })
