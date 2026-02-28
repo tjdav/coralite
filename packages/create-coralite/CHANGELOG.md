@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.24.0
+
+> Comparing `create-coralite-v0.23.0` to `HEAD`
+
+**Summary:** 4 commits
+
+### ✨ Features
+
+- add cross-env and experimental flags for dev script (templates) ([ad1b834](https://codeberg.org/tjdavid/coralite/commit/ad1b834ccc81ad7852655faedade0c251140923a))
+
+### 🐛 Bug Fixes
+
+- update NODE_OPTIONS environment variable syntax in templates ([eb6d8fe](https://codeberg.org/tjdavid/coralite/commit/eb6d8fe2cd19193f4b1825e7775730d37f471afa))
+- update component script API and improve template formatting ([6e57913](https://codeberg.org/tjdavid/coralite/commit/6e579133854a45137b956701bf1493163f23a47b))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.24.0 ([4b88b0d](https://codeberg.org/tjdavid/coralite/commit/4b88b0dd16f8e3cfb5584b16fc95a363255daa73))
+
+
 ## v0.23.0
 
 > Comparing `create-coralite-v0.22.1` to `HEAD`
