@@ -1,0 +1,27 @@
+name: Add Mirror Warning
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Prepend warning to README
+        run: |
+          # Check if the warning already exists to prevent duplication
+          if ! grep -q "codeberg.org/tjdavid/coralite" README.md; then
+            echo "> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite)." > temp_readme.md
+            echo "" >> temp_readme.md
+            cat README.md >> temp_readme.md
+            mv temp_readme.md README.md
+            
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -am "docs: append mirror warning"
+            git push
+          fi
