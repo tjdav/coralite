@@ -1,29 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="/css/styles.css" rel="stylesheet">
   <title>Coralite - Build for the Web, With the Web!</title>
 </head>
+
 <body>
-  <main>
-    <h1>Hello Coralite!</h1>
+  <main class="container">
+    <h1 class="text-center">Hello Coralite!</h1>
 
-    <p>Build for the Web, With the Web!</p>
+    <p class="text-center">Build for the Web, With the Web!</p>
 
-    <p>
+    <p class="text-center">
       <coralite-counter step="1"></coralite-counter>
     </p>
 
-    <div class="card">
+    <coralite-card>
       <img src="/images/icon-coralite.avif" alt="Coralite logo" class="img-fluid">
       <img src="/images/icon-html.avif" alt="HTML logo" class="img-fluid">
       <img src="/images/icon-css.avif" alt="CSS logo" class="img-fluid">
       <img src="/images/icon-js.avif" alt="JS logo" class="img-fluid">
-    </div>
+    </coralite-card>
   </main>
 
   <coralite-footer name="coralite"></coralite-footer>
 </body>
+
 </html>

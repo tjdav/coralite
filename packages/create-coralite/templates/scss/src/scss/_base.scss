@@ -1,0 +1,102 @@
+@use "variables" as *;
+
+@media (prefers-reduced-motion: no-preference) {
+  :root {
+    scroll-behavior: smooth;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: $font-size;
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  font-family: $font-body;
+  font-size: $spacer-base;
+  line-height: $line-height;
+  color: $body-colour;
+  background-color: $body-bg;
+}
+
+a {
+  color: $primary;
+  text-decoration-thickness: 2px;
+  text-decoration-style: dotted;
+  text-decoration-color: $secondary;
+  text-underline-offset: .25em;
+
+  &:hover {
+    text-decoration-color: hsl(from $secondary h 60% l);
+  }
+}
+
+p {
+  margin-bottom: $spacer-1;
+}
+
+h1,
+.h1,
+h2,
+.h2,
+h3,
+.h3,
+h4,
+.h4,
+h5,
+.h5,
+h6,
+.h6 {
+  margin-top: 0;
+  margin-bottom: $spacer-1;
+  font-family: $font-heading;
+  line-height: $heading-line-height;
+}
+
+h1,
+.h1 {
+  font-size: calc($spacer-base + 2rem);
+}
+
+h2,
+.h2 {
+  font-size: calc($spacer-base + 1.6rem);
+}
+
+h3,
+.h3 {
+  font-size: calc($spacer-base + .8rem);
+}
+
+h4,
+.h4 {
+  font-size: calc($spacer-base + .5rem);
+}
+
+h5,
+.h5 {
+  font-size: calc($spacer-base + .3rem);
+}
+
+h6,
+.h6 {
+  font-size: calc($spacer-base + .1rem);
+}
+
+pre {
+  padding: $spacer-1;
+  tab-size: 4;
+}
+
+code {
+  font-family: $font-monospace;
+  color: $code-colour;
+  word-wrap: break-word;
+}

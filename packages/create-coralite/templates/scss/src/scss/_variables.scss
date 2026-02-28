@@ -1,0 +1,57 @@
+/* colours */
+$green-light: #d0ff00;
+$green-dark: #667d00;
+$pink-dark: #d63384;
+$pink-light: #e685b5;
+$primary: $green-light;
+$secondary-dark: rgb(49, 26, 75);
+$secondary: #639;
+$light: #f9f9f9;
+$dark: rgb(49, 26, 75);
+$darker: rgb(14, 7, 19);
+$body-bg: $darker;
+$body-colour: $light;
+$gradient-dark: linear-gradient($secondary-dark, $darker);
+$code-colour: $pink-light;
+
+/* spacing */
+$spacer-base: 1rem;
+$spacer-1: calc($spacer-base - .3rem);
+$spacer-2: $spacer-base;
+$spacer-3: calc($spacer-base + .3rem);
+$spacer-4: calc($spacer-base + 1rem);
+$spacer-5: calc($spacer-base + 2rem);
+
+$padding-x: 1rem;
+$padding-y: .5rem;
+
+/* fonts */
+$font-body: "TikTok Sans", sans-serif;
+$font-heading: "TikTok Sans", sans-serif;
+$font-monospace: "JetBrains Mono", monospace;
+$font-size: 20px;
+
+/* text */
+$line-height: 1.5;
+$heading-line-height: 1.2;
+
+/* border */
+$border-radius: .5rem;
+
+/* shadow */
+$box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+
+:root {
+  color-scheme: light dark;
+
+  /* Output CSS variables needed by coralite components */
+  --primary: #{$primary};
+  --body-bg: #{$body-bg};
+  --border-radius: #{$border-radius};
+  --padding-x: #{$padding-x};
+  --padding-y: #{$padding-y};
+  --font-body: #{$font-body};
+  --spacer-base: #{$spacer-base};
+  --box-shadow: #{$box-shadow};
+  --code-colour: #{$code-colour};
+}

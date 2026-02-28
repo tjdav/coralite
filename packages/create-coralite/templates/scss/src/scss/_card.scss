@@ -1,0 +1,25 @@
+@use "variables" as *;
+
+$card-border-color: #ffffff2e;
+
+.card {
+  color: $light;
+  background-image: radial-gradient(circle at bottom, rgba(49, 26, 75, .3), rgba(14, 7, 19, .5));
+  backdrop-filter: blur(10px);
+  border-color: $card-border-color;
+  border-style: solid;
+  border-width: 0 1px;
+  border-radius: $border-radius;
+  overflow: hidden;
+}
+
+.card-title {
+  padding: $spacer-1;
+  margin: 0;
+  border-bottom: 1px solid $card-border-color;
+}
+
+.card-body {
+  padding: $spacer-1;
+  margin: 0;
+}

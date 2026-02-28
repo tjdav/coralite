@@ -1,0 +1,46 @@
+:root {
+  color-scheme: light dark;
+
+  /* colours */
+  --green-light: #d0ff00;
+  --green-dark: #667d00;
+  --pink-dark: #d63384;
+  --pink-light: #e685b5;
+  --primary: var(--green-light);
+  --secondary-dark: rgb(49, 26, 75);
+  --secondary: #639;
+  --light: #f9f9f9;
+  --dark: rgb(49, 26, 75);
+  --darker: rgb(14, 7, 19);
+  --body-bg: var(--darker);
+  --body-colour: var(--light);
+  --gradient-dark: linear-gradient(var(--secondary-dark), var(--darker));
+  --code-colour: var(--pink-light);
+
+  /* spacing */
+  --spacer-base: 1rem;
+  --spacer-1: calc(var(--spacer-base) - .3rem);
+  --spacer-2: var(--spacer-base);
+  --spacer-3: calc(var(--spacer-base) + .3rem);
+  --spacer-4: calc(var(--spacer-base) + 1rem);
+  --spacer-5: calc(var(--spacer-base) + 2rem);
+
+  --padding-x: 1rem;
+  --padding-y: .5rem;
+
+  /* fonts */
+  --font-body: "TikTok Sans", sans-serif;
+  --font-heading: "TikTok Sans", sans-serif;
+  --font-monospace: "JetBrains Mono", monospace;
+  --font-size: 20px;
+
+  /* text */
+  --line-height: 1.5;
+  --heading-line-height: 1.2;
+
+  /* border */
+  --border-radius: .5rem;
+
+  /* shadow */
+  --box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+}

@@ -1,16 +1,41 @@
 <template id="coralite-counter">
-  <button ref="count-button" type="button">
+  <button ref="count-button" type="button" class="btn">
     Count is 0
   </button>
 </template>
+
+<style>
+  .btn {
+    background-color: var(--primary);
+    color: var(--body-bg);
+    border: none;
+    border-radius: var(--border-radius);
+    padding: var(--padding-y) var(--padding-x);
+    font-family: var(--font-body);
+    font-size: var(--spacer-base);
+    cursor: pointer;
+    box-shadow: var(--box-shadow);
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  .btn:hover {
+    background-color: var(--code-colour);
+  }
+</style>
 
 <script type="module">
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
     client: {
-      script ({ values, helpers }) {
-        const button = refs('count-button')
+      imports: [
+        {
+          specifier: 'canvas-confetti',
+          defaultExport: 'confetti'
+        }
+      ],
+      script ({ values, helpers, imports }) {
+        const button = helpers.refs('count-button')
         const step = values.step ? parseInt(values.step) : 1
         let count = 0
         
@@ -20,6 +45,9 @@
 
           // update the button's text content to reflect the new count value
           button.textContent = `Count is ${count}`
+
+          // Explode confetti :)
+          imports.confetti()
         })
       }
     }

@@ -9,5 +9,8 @@
   "devDependencies": {
     "coralite-scripts": "^0.24.0",
     "cross-env": "^10.1.0"
+  },
+  "dependencies": {
+    "canvas-confetti": "latest"
   }
 }
