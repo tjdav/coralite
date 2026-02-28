@@ -93,18 +93,20 @@
         return replacePlaceholders(nodes.root.children, placeholders)
       }
     },
-    script(context, { refs }) {
-      const popoverButton = refs('popoverBtn')
-      const popoverTarget = refs('popoverTarget')
-      const codeBody = refs('code')
-      const popoverId = 'copy-' + Math.random().toString(16).substring(2)
+    client: {
+      script({ refs }) {
+        const popoverButton = refs('popoverBtn')
+        const popoverTarget = refs('popoverTarget')
+        const codeBody = refs('code')
+        const popoverId = 'copy-' + Math.random().toString(16).substring(2)
 
-      popoverTarget.setAttribute('id', popoverId)
-      popoverButton.setAttribute('popovertarget', popoverId) 
+        popoverTarget.setAttribute('id', popoverId)
+        popoverButton.setAttribute('popovertarget', popoverId) 
 
-      popoverButton.addEventListener('click', () => {
-        navigator.clipboard.writeText(codeBody.textContent)
-      })
+        popoverButton.addEventListener('click', () => {
+          navigator.clipboard.writeText(codeBody.textContent)
+        })
+      }
     }
   })
 </script>
