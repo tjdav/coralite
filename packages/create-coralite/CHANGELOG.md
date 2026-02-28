@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.24.1
+
+> Comparing `create-coralite-v0.24.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- add canvas-confetti dependency and improve CSS/SCSS scaffolding (templates) ([6f26769](https://codeberg.org/tjdavid/coralite/commit/6f2676981505edcae9554b93d94cf6091dfe900f))
+
+
 ## v0.24.0
 
 > Comparing `create-coralite-v0.23.0` to `HEAD`
