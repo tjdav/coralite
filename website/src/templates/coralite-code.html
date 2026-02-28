@@ -41,22 +41,25 @@
         return result
       }
     },
-    script (context, { refs }) {
-      const button = refs('popoverBtn')
-      const popoverTarget = refs('popoverTarget')
-      const codeTarget = refs('code')
-      const popoverId = 'copy__' + Math.random().toString(16).substring(2)
+    client: {
+      script ({ values, helpers }) {
+        const { refs } = helpers
+        const button = refs('popoverBtn')
+        const popoverTarget = refs('popoverTarget')
+        const codeTarget = refs('code')
+        const popoverId = 'copy__' + Math.random().toString(16).substring(2)
 
-      popoverTarget.setAttribute('id', popoverId)
-      button.setAttribute('popovertarget', popoverTarget.id)
+        popoverTarget.setAttribute('id', popoverId)
+        button.setAttribute('popovertarget', popoverTarget.id)
 
-      button.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(codeTarget.textContent)
-        } catch (error) {
-          console.error(error.message)
-        }
-      })
+        button.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(codeTarget.textContent)
+          } catch (error) {
+            console.error(error.message)
+          }
+        })
+      }
     }
   })
 </script>

@@ -1,6 +1,6 @@
 <template id="coralite-counter">
   <button ref="count-button" type="button">
-      Count is 0
+    Count is 0
   </button>
 </template>
 
@@ -8,18 +8,20 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script ({ values }, { refs }) {
-      const button = refs('count-button')
-      const step = values.step ? parseInt(values.step) : 1
-      let count = 0
-      
-      button.addEventListener('click', () => {
-        // increment the counter by the specified step value
-        count += step
+    client: {
+      script ({ values, helpers }) {
+        const button = helpers.refs('count-button')
+        const step = values.step ? parseInt(values.step) : 1
+        let count = 0
+        
+        button.addEventListener('click', () => {
+          // increment the counter by the specified step value
+          count += step
 
-        // update the button's text content to reflect the new count value
-        button.textContent = `Count is ${count}`
-      })
+          // update the button's text content to reflect the new count value
+          button.textContent = `Count is ${count}`
+        })
+      }
     }
   })
 </script>

@@ -36,26 +36,29 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script (context, { refs }) {
-      const button = refs('popoverBtn')
-      const popoverTarget = refs('popoverTarget')
-      const codeTarget = refs('code')
-      const popoverId = 'code__' + Math.random().toString(16).substring(2)
+    client: {
+      script ({ helpers }) {
+        const { refs } = helpers
+        const button = refs('popoverBtn')
+        const popoverTarget = refs('popoverTarget')
+        const codeTarget = refs('code')
+        const popoverId = 'code__' + Math.random().toString(16).substring(2)
 
-      popoverTarget.setAttribute('id', popoverId)
-      button.setAttribute('popovertarget', popoverId)
+        popoverTarget.setAttribute('id', popoverId)
+        button.setAttribute('popovertarget', popoverId)
 
-      codeTarget.addEventListener('focus', () => {
-        codeTarget.select()
-      })
+        codeTarget.addEventListener('focus', () => {
+          codeTarget.select()
+        })
 
-      button.addEventListener('click', async () => {
-        try {
-          await navigator.clipboard.writeText(codeTarget.value)
-        } catch (error) {
-          console.error(error.message)
-        }
-      })
+        button.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(codeTarget.value)
+          } catch (error) {
+            console.error(error.message)
+          }
+        })
+      }
     }
   })
 </script>

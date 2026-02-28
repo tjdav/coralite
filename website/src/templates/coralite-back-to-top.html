@@ -1,7 +1,8 @@
 <template id="coralite-back-to-top">
   <a href="#" ref="backToTopBtn" class="back-to-top" aria-label="Back to top">
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M18 15l-6-6-6 6"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M18 15l-6-6-6 6" />
     </svg>
   </a>
 </template>
@@ -10,26 +11,28 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script (context, { refs }) {
-      const button = refs('backToTopBtn')
+    client: {
+      script ({ values, helpers }) {
+        const button = helpers.refs('backToTopBtn')
 
-      const toggleVisibility = () => {
-        if (window.scrollY > 300) {
-          button.classList.add('visible')
-        } else {
-          button.classList.remove('visible')
+        const toggleVisibility = () => {
+          if (window.scrollY > 300) {
+            button.classList.add('visible')
+          } else {
+            button.classList.remove('visible')
+          }
         }
-      }
 
-      window.addEventListener('scroll', toggleVisibility)
+        window.addEventListener('scroll', toggleVisibility)
 
-      button.addEventListener('click', (e) => {
-        e.preventDefaults()
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth'
+        button.addEventListener('click', (e) => {
+          e.preventDefaults()
+          window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+          })
         })
-      })
+      }
     }
   })
 </script>
