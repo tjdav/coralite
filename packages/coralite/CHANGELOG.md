@@ -1,5 +1,53 @@
 # Changelog
 
+## v0.24.0
+
+> Comparing `coralite-v0.23.0` to `HEAD`
+
+**Summary:** 26 commits
+
+### ✨ Features
+
+- add plugin configuration support to script compilation (script-manager) ([f27be00](https://codeberg.org/tjdavid/coralite/commit/f27be000f61eb1ffc533025296f8ee7cc8cfd884))
+- add validation for script.config property (plugin) ([eabe015](https://codeberg.org/tjdavid/coralite/commit/eabe0152c05234de864a23cb493e18446bfcddde))
+- add namespaceExport support and improve import validation ([dc22603](https://codeberg.org/tjdavid/coralite/commit/dc22603847370652e8e0d659e63fbc5e80a5cfd7))
+- add validation for script imports and improve script module handling (plugin) ([879ad33](https://codeberg.org/tjdavid/coralite/commit/879ad3368cf2a3fd317b5c2df820a292863b3e61))
+- add benchmark suite for Coralite build modes ([c34a508](https://codeberg.org/tjdavid/coralite/commit/c34a508680ad5eb0b3071fbe80a2b8975685d412))
+- add unit test for module resolution in development mode ([af7fbbb](https://codeberg.org/tjdavid/coralite/commit/af7fbbb969534aca29e64b0116d3aa302784b0f7))
+- introduce development and production build modes ([02a1b7a](https://codeberg.org/tjdavid/coralite/commit/02a1b7a3f80f3139e69f7fd2bde60e483cafbe10))
+- add sourcemap to defineComponent client side script ([394f8e0](https://codeberg.org/tjdavid/coralite/commit/394f8e0358df28fbb14f0a0c9f9f25825c77fa52))
+- improve script compilation and add source mapping (script-manager) ([b5aa2de](https://codeberg.org/tjdavid/coralite/commit/b5aa2de0ae8355180e8983648f24735459dcd82b))
+- add onBuildComplete hook for build lifecycle events ([f0012fe](https://codeberg.org/tjdavid/coralite/commit/f0012feeb9ae59699acad370ee1f85db5899b7b1))
+
+### 🐛 Bug Fixes
+
+- correct sourcemap test assertions to use proper source index ([5179dd6](https://codeberg.org/tjdavid/coralite/commit/5179dd6c70f1b09fab563dc3a117a10e7a521f6c))
+- correct helper iteration and inject imports into context (script-manager) ([d8d1fae](https://codeberg.org/tjdavid/coralite/commit/d8d1faef89cfd147a88a36c9f70f8b74da37ccca))
+- add mode option to Coralite initialization in sourcemap tests ([5b1c04f](https://codeberg.org/tjdavid/coralite/commit/5b1c04faacb31c92f5fe9a67e0ce889d1d75fac8))
+- resolve dynamic import relative to template file ([1f50dbf](https://codeberg.org/tjdavid/coralite/commit/1f50dbf6b92e8f0fd8d6177fb4361ef4397d806a))
+- export core plugins from main entry point ([bd53216](https://codeberg.org/tjdavid/coralite/commit/bd53216099f2f83787176f6e2c4553a037b7e574))
+- preserve HTML entities in parsing and rendering ([5298814](https://codeberg.org/tjdavid/coralite/commit/52988142f32374a96249549da83ae02f61ecd95a))
+- prevent prototype pollution in storage objects (collection) ([e05418d](https://codeberg.org/tjdavid/coralite/commit/e05418d92da16e7f56a2109f71cbd8dd5e153645))
+
+### 📚 Documentation
+
+- update README with plugin documentation details ([23894a2](https://codeberg.org/tjdavid/coralite/commit/23894a26d5dedf72e68fdd786631c07569417c66))
+- refactor: consolidate JSDoc callback descriptions into single line ([1e54cf7](https://codeberg.org/tjdavid/coralite/commit/1e54cf700c170878425f8eb10ebcea1a8ef590fc))
+
+### ♻️ Code Refactoring
+
+- restructure defineComponent API for client/server separation ([7f079f2](https://codeberg.org/tjdavid/coralite/commit/7f079f25c56f2e917d135a915c5d169a815dfa27))
+- update test assertions to reflect new scriptModules structure (script-manager) ([02fbf9c](https://codeberg.org/tjdavid/coralite/commit/02fbf9c37a459cf9f0ecaadc8dd867c2b6dd9f84))
+- extract script parsing logic into utils ([b5301d8](https://codeberg.org/tjdavid/coralite/commit/b5301d807e974834449bafd187714eb46219715b))
+
+### ✅ Tests
+
+- add e2e test for script plugin configuration ([067ac6a](https://codeberg.org/tjdavid/coralite/commit/067ac6a7c09f04fa1ac35cace701f09e39e76ecd))
+- add unit tests for config injection into helper context (script-manager) ([1039c05](https://codeberg.org/tjdavid/coralite/commit/1039c050ac02d90239c8e2ef79f45a31f16a601b))
+- add unit tests for script extraction and sourcemap generation ([ddab7b3](https://codeberg.org/tjdavid/coralite/commit/ddab7b3b5ca10a7967e370d50631285d54e78bdc))
+- add unit test for source map generation (sourcemap) ([40e0b57](https://codeberg.org/tjdavid/coralite/commit/40e0b570a909f20e6e15f43437892deac5d816a4))
+
+
 ## v0.23.0
 
 > Comparing `coralite-v0.22.1` to `HEAD`
