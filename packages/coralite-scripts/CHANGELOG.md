@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.24.0
+
+> Comparing `coralite-scripts-v0.23.0` to `HEAD`
+
+**Summary:** 4 commits
+
+### ✨ Features
+
+- enable experimental VM modules and development mode (scripts) ([5e457e7](https://codeberg.org/tjdavid/coralite/commit/5e457e7074232f0bf72bbaa79f51a8e6e77fec14))
+- improve config loading error handling and validation (scripts) ([ad48e49](https://codeberg.org/tjdavid/coralite/commit/ad48e49894f5e1d95a7250fdc93009bb87acc974))
+
+### 🐛 Bug Fixes
+
+- improve static file serving and page resolution ([0420a06](https://codeberg.org/tjdavid/coralite/commit/0420a06f4f1a892d22b8783fad1fcc3a980deab3))
+
+### ♻️ Code Refactoring
+
+- remove unused html build file ([a92d293](https://codeberg.org/tjdavid/coralite/commit/a92d293654a5266c0c4cdc515c80e8a2891dbeff))
+
+
 ## v0.22.1
 
 > Comparing `coralite-scripts-v0.21.0` to `HEAD`
