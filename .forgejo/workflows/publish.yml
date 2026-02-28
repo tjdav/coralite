@@ -38,7 +38,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
-        run: pnpm --filter "${{ env.PACKAGE_NAME }}..." run build --if-present
+        run: pnpm --filter "${{ env.PACKAGE_NAME }}..." run --if-present build
 
       - name: set npm config
         run: |
