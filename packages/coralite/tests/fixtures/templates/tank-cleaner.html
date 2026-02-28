@@ -8,13 +8,15 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script: ({ values }, { refs }) => {
-      const btn = refs('clean-btn')
-      const status = refs('status')
-      if (btn) {
-        btn.addEventListener('click', () => {
-          if (status) status.textContent = 'Clean'
-        })
+    client: {
+      script: ({ values, helpers }) => {
+        const btn = helpers.refs('clean-btn')
+        const status = helpers.refs('status')
+        if (btn) {
+          btn.addEventListener('click', () => {
+            if (status) status.textContent = 'Clean'
+          })
+        }
       }
     }
   })

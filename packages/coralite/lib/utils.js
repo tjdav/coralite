@@ -324,42 +324,50 @@ export function findAndExtractScript (code) {
         const firstArg = node.arguments[0]
 
         if (firstArg && firstArg.type === 'ObjectExpression') {
-          const scriptProp = firstArg.properties.find(
+          const clientProp = firstArg.properties.find(
             prop => prop.type === 'Property' &&
             prop.key.type === 'Identifier' &&
-            prop.key.name === 'script'
+            prop.key.name === 'client'
           )
 
-          if (scriptProp && scriptProp.type === 'Property') {
-            const { value, method } = scriptProp
-            let startLine = value.loc.start.line - 1
-            let prefix = ''
-            let content = ''
+          if (clientProp && clientProp.type === 'Property' && clientProp.value.type === 'ObjectExpression') {
+            const scriptProp = clientProp.value.properties.find(
+              prop => prop.type === 'Property' &&
+              prop.key.type === 'Identifier' &&
+              prop.key.name === 'script'
+            )
 
-            // Get source slice
-            const source = code.slice(value.start, value.end)
+            if (scriptProp && scriptProp.type === 'Property') {
+              const { value, method } = scriptProp
+              let startLine = value.loc.start.line - 1
+              let prefix = ''
+              let content = ''
 
-            if (value.type === 'ArrowFunctionExpression') {
-              // Arrow function: `script: (ctx) => {}` or `script: async (ctx) => {}`
-              content = prefix + source
-              startLine = value.loc.start.line - 1
-            } else if (value.type === 'FunctionExpression') {
-              if (method) {
-                // Reconstruct function declaration
-                const isAsync = value.async
-                prefix += (isAsync ? 'async ' : '') + 'function script'
-                content = prefix + source
-                startLine = scriptProp.key.loc.start.line - 1
-              } else {
-                // Function expression: `script: function(ctx) {}` or `script: async function(ctx) {}`
+              // Get source slice
+              const source = code.slice(value.start, value.end)
+
+              if (value.type === 'ArrowFunctionExpression') {
+                // Arrow function: `script: (ctx) => {}` or `script: async (ctx) => {}`
                 content = prefix + source
                 startLine = value.loc.start.line - 1
+              } else if (value.type === 'FunctionExpression') {
+                if (method) {
+                  // Reconstruct function declaration
+                  const isAsync = value.async
+                  prefix += (isAsync ? 'async ' : '') + 'function script'
+                  content = prefix + source
+                  startLine = scriptProp.key.loc.start.line - 1
+                } else {
+                  // Function expression: `script: function(ctx) {}` or `script: async function(ctx) {}`
+                  content = prefix + source
+                  startLine = value.loc.start.line - 1
+                }
               }
-            }
 
-            result = {
-              content,
-              lineOffset: startLine
+              result = {
+                content,
+                lineOffset: startLine
+              }
             }
           }
         }

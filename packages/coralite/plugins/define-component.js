@@ -89,16 +89,17 @@ export const defineComponent = createPlugin({
    * @param {Object.<string, Function>} [options.slots] -
    *   Computed slots for the component. These are functions that define
    *   how content should be rendered within the component.
-   * @param {CoraliteModuleScript} [options.script] - Script that will be added below the element.
-   * @param {CoraliteModuleSetup} [options.setup] - Setup function
+   * @param {Object} [options.client] - Client side configuration.
+   * @param {CoraliteModuleSetup} [options.client.setup] - Setup function
+   * @param {CoraliteModuleScript} [options.client.script] - Script that will be added below the element.
+   * @param {Object[]} [options.client.imports] - Component imports to bundle.
    * @returns {Promise<CoraliteModuleValues>} A promise resolving to the module values
    *   associated with this component.
    */
   async method ({
     tokens,
     slots,
-    script,
-    setup
+    client
   },
   context) {
     const {
@@ -109,8 +110,8 @@ export const defineComponent = createPlugin({
     /** @type {CoraliteModuleValues} */
     let results = { ...values }
 
-    if (setup) {
-      const initialValues = await setup(results)
+    if (client && client.setup) {
+      const initialValues = await client.setup(results)
 
       results = Object.assign(results, initialValues)
     }
@@ -217,8 +218,8 @@ export const defineComponent = createPlugin({
         }
       }
     }
-    if (typeof script === 'function') {
-      const scriptTextContent = script.toString().trim()
+    if (client && typeof client.script === 'function') {
+      const scriptTextContent = client.script.toString().trim()
 
       // include values used in script
       /** @type {Object.<string, CoraliteModuleValue>} */
@@ -233,6 +234,10 @@ export const defineComponent = createPlugin({
 
       results.__script__ = {
         values: args
+      }
+
+      if (client.imports) {
+        results.__script__.imports = client.imports
       }
     } else {
       // remove custom element parent script

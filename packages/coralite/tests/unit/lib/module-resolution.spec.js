@@ -49,9 +49,12 @@ describe('Module Resolution', () => {
         import dummy from 'dummy-pkg'
 
         export default defineComponent({
-          setup() {
-            return {
-              message: dummy
+          client: {
+            setup() {
+              return {
+                message: dummy
+              }
+
             }
           }
         })
