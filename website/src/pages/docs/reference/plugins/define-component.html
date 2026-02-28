@@ -80,11 +80,13 @@
             tokens: {
               greeting: ({ name }) => `Hello, ${name}!`
             },
-            script: (context, helpers) => {
-              const btn = helpers.refs('actionBtn')
-              btn.addEventListener('click', () => {
-                console.log('Button clicked!')
-              })
+            client: {
+              script: ({ values, helpers }) => {
+                const btn = helpers.refs('actionBtn')
+                btn.addEventListener('click', () => {
+                  console.log('Button clicked!')
+                })
+              }
             }
           })
         </script>
@@ -153,6 +155,7 @@
 
       <coralite-code-html>
         <!-- Page: user.html -->
+
         <head>
           <meta name="firstName" content="Alice">
           <meta name="lastName" content="Smith">
@@ -186,7 +189,7 @@
                *  // Data from attribute values
                *  age: "25"
                * }
-               */ 
+               */
               fullName: ({ meta_firstName, meta_lastName }) => `${meta_firstName} ${meta_lastName}`,
               greeting: ({ age }) => `You are ${age} years old`
             }
@@ -269,16 +272,18 @@
       <coralite-code-html>
         <script type="module">
           export default defineComponent({
-            setup: async (values) => {
-              // Initial data fetching or processing
-              // const response = await fetch('https://api.example.com/data');
-              // const data = await response.json();
+            client: {
+              setup: async (values) => {
+                // Initial data fetching or processing
+                // const response = await fetch('https://api.example.com/data');
+                // const data = await response.json();
 
-              // Return values to be merged into the component's token values
-              return {
-                // fetchedData: data
-                message: 'Hello from setup!'
-              };
+                // Return values to be merged into the component's token values
+                return {
+                  // fetchedData: data
+                  message: 'Hello from setup!'
+                };
+              }
             }
           })
         </script>
@@ -299,15 +304,17 @@
       <coralite-code-html>
         <script type="module">
           export default defineComponent({
-            script: (context, helpers) => {
-              // context: Contains processed token values
-              // helpers: Contains client-side helpers like refs
+            client: {
+              script: ({ values, helpers }) => {
+                // values: Contains processed token values
+                // helpers: Contains client-side helpers like refs
 
-              const btn = helpers.refs('actionBtn');
+                const btn = helpers.refs('actionBtn');
 
-              btn.addEventListener('click', () => {
-                console.log('Clicked!');
-              });
+                btn.addEventListener('click', () => {
+                  console.log('Clicked!');
+                });
+              }
             }
           })
         </script>
@@ -315,8 +322,9 @@
 
       <coralite-heading level="h3" text="Script Context"></coralite-heading>
       <ul>
-        <li><strong>context.values</strong>: Processed token values</li>
-        <li><strong>context.id</strong>: Unique instance identifier</li>
+        <li><strong>values</strong>: Processed token values</li>
+        <li><strong>helpers</strong>: Contains client-side helpers like refs and dynamically imported modules within
+          <code>helpers.imports</code></li>
       </ul>
 
       <coralite-heading level="h3" text="Script Helpers"></coralite-heading>
@@ -341,22 +349,24 @@
             tokens: {
               count: ({ initial }) => parseInt(initial) || 0
             },
-            script: (context, helpers) => {
-              const refs = helpers.refs
-              const increment = refs('increment')
-              const decrement = refs('decrement')
+            client: {
+              script: ({ values, helpers }) => {
+                const refs = helpers.refs
+                const increment = refs('increment')
+                const decrement = refs('decrement')
 
-              let count = context.values.count
+                let count = values.count
 
-              increment.addEventListener('click', () => {
-                count++
-                document.querySelector('h2').textContent = `Count: ${count}`
-              })
+                increment.addEventListener('click', () => {
+                  count++
+                  document.querySelector('h2').textContent = `Count: ${count}`
+                })
 
-              decrement.addEventListener('click', () => {
-                count--
-                document.querySelector('h2').textContent = `Count: ${count}`
-              })
+                decrement.addEventListener('click', () => {
+                  count--
+                  document.querySelector('h2').textContent = `Count: ${count}`
+                })
+              }
             }
           })
         </script>
@@ -429,14 +439,16 @@
               }
             },
 
-            script: (context, helpers) => {
-              const refs = helpers.refs
-              const buyBtn = refs('buyBtn')
+            client: {
+              script: ({ values, helpers }) => {
+                const refs = helpers.refs
+                const buyBtn = refs('buyBtn')
 
-              if (buyBtn) {
-                buyBtn.addEventListener('click', () => {
-                  alert(`Thank you for purchasing ${context.values.productName}!`)
-                })
+                if (buyBtn) {
+                  buyBtn.addEventListener('click', () => {
+                    alert(`Thank you for purchasing ${values.productName}!`)
+                  })
+                }
               }
             }
           })

@@ -14,60 +14,70 @@
 
     <p>
       Coralite's component system allows you to bundle client-side logic directly with your HTML templates using the
-      <code>defineComponent</code> helper. This guide explains how to create interactive components, manage data flow, and access DOM elements.
+      <code>defineComponent</code> helper. This guide explains how to create interactive components, manage data flow,
+      and access DOM elements.
     </p>
 
     <coralite-heading level="h2" text="The defineComponent Helper"></coralite-heading>
 
     <p>
-      The <code>defineComponent</code> function is the core of Coralite's component logic. It separates server-side data preparation
+      The <code>defineComponent</code> function is the core of Coralite's component logic. It separates server-side data
+      preparation
       from client-side interactivity.
     </p>
 
     <coralite-code-highlight language="javascript">
-import { defineComponent } from 'coralite'
+      import { defineComponent } from 'coralite'
 
-export default defineComponent({
-  // Server-side: Asynchronous data preparation
-  async setup(props) {
-    // Simulate fetching data or reading a file
-    const data = await fetch('https://api.example.com/data').then(r => r.json())
-    
-    return {
-      remoteData: data
-    }
-  },
+      export default defineComponent({
+        client: {
+          // Server-side: Asynchronous data preparation
+          async setup() {
+            // Simulate fetching data or reading a file
+            const data = await fetch('https://api.example.com/data').then(r => r.json())
 
-  // Client-side: Runs in the browser
-  script({ values }, { refs }) {
-    console.log('Component mounted with props:', values)
-    console.log('Remote data from setup:', values.remoteData)
-  }
-})
+            return {
+              remoteData: data
+            }
+          },
+
+          // Client-side: Runs in the browser
+          script({ values }) {
+            console.log('Component mounted with props:', values)
+            console.log('Remote data from setup:', values.remoteData)
+          }
+        }
+      })
     </coralite-code-highlight>
 
     <coralite-heading level="h2" text="Server-Side Setup"></coralite-heading>
 
     <p>
-      The <code>setup</code> function runs during the build process (server-side). Its primary purpose is to perform asynchronous operations
+      The <code>setup</code> function runs during the build process (server-side). Its primary purpose is to perform
+      asynchronous operations
       that prepare data for your component, such as fetching content from an API or reading files from the disk.
     </p>
 
     <ul>
-      <li><strong>Async Support:</strong> <code>setup</code> is async, allowing you to <code>await</code> data before rendering.</li>
-      <li><strong>Data Flow:</strong> The object returned by <code>setup</code> is merged into the component's <code>values</code> context.</li>
-      <li><strong>Usage:</strong> These values are available to the template (e.g., <code>{{ remoteData }}</code>), slots, tokens, and the client-side <code>script</code>.</li>
+      <li><strong>Async Support:</strong> <code>setup</code> is async, allowing you to <code>await</code> data before
+        rendering.</li>
+      <li><strong>Data Flow:</strong> The object returned by <code>setup</code> is merged into the component's
+        <code>values</code> context.</li>
+      <li><strong>Usage:</strong> These values are available to the template (e.g., <code>{{ remoteData }}</code>),
+        slots, tokens, and the client-side <code>script</code>.</li>
     </ul>
 
     <p>
-      <strong>Note:</strong> You do not need to use <code>setup</code> just to pass props (attributes) to the client-side script. All attributes passed to the component
+      <strong>Note:</strong> You do not need to use <code>setup</code> just to pass props (attributes) to the
+      client-side script. All attributes passed to the component
       are automatically available in the <code>values</code> object within the <code>script</code> context.
     </p>
 
     <coralite-heading level="h2" text="Client-Side Script"></coralite-heading>
 
     <p>
-      The <code>script</code> function is extracted, compiled, and executed in the browser. It allows you to add interactivity to your component instance.
+      The <code>script</code> function is extracted, compiled, and executed in the browser. It allows you to add
+      interactivity to your component instance.
     </p>
 
     <p>
@@ -80,67 +90,81 @@ export default defineComponent({
     <p>
       The first argument to the <code>script</code> function is the context object, which contains <code>values</code>.
       This object holds the merged data from:
-      <ol>
-        <li>Attributes passed to the component instance (props)</li>
-        <li>Data returned from the <code>setup</code> function</li>
-      </ol>
+    <ol>
+      <li>Attributes passed to the component instance (props)</li>
+      <li>Data returned from the <code>setup</code> function</li>
+    </ol>
     </p>
 
     <coralite-heading level="h3" text="Accessing DOM Elements (Refs)"></coralite-heading>
 
     <p>
       Coralite provides a <code>refs</code> helper to easily select elements within your component instance.
-      Add the <code>ref="name"</code> attribute to any HTML element in your template, and access it using <code>refs('name')</code> in your script.
+      Add the <code>ref="name"</code> attribute to any HTML element in your template, and access it using
+      <code>refs('name')</code> in your script.
     </p>
 
     <coralite-code-html>
-<template id="my-counter">
-  <!-- 'start' attribute is available in values.start automatically -->
-  <button type="button" ref="btn">Count is {{ start }}</button>
-</template>
+      <template id="my-counter">
+        <!-- 'start' attribute is available in values.start automatically -->
+        <button type="button" ref="btn">Count is {{ start }}</button>
+      </template>
 
-<script type="module">
-  import { defineComponent } from 'coralite'
+      <script type="module">
+        import { defineComponent } from 'coralite'
 
-  export default defineComponent({
-    script({ values }, { refs }) {
-      const button = refs('btn')
-      // Access the 'start' attribute directly from values
-      let count = parseInt(values.start) || 0
+        export default defineComponent({
+          client: {
+            script: ({ values, helpers }) => {
+              const button = helpers.refs('btn')
+              // Access the 'start' attribute directly from values
+              let count = parseInt(values.start) || 0
 
-      button.textContent = `Count is ${count}`
+              button.textContent = `Count is ${count}`
 
-      button.addEventListener('click', () => {
-        count++
-        button.textContent = `Count is ${count}`
-      })
-    }
-  })
-</script>
+              button.addEventListener('click', () => {
+                count++
+                button.textContent = `Count is ${count}`
+              })
+            }
+          }
+        })
+      </script>
     </coralite-code-html>
 
     <coralite-heading level="h2" text="Using External Libraries"></coralite-heading>
 
     <p>
-      Because the client-side script is isolated, you cannot use static <code>import</code> statements for client-side dependencies directly within the <code>script</code> function body.
-      Instead, you can use dynamic imports to load libraries asynchronously.
+      Because the client-side script is isolated, you cannot use static <code>import</code> statements for client-side
+      dependencies directly within the <code>script</code> function body.
+      Instead, you can define them inside the <code>imports</code> array in the client object to bundle them at
+      build-time.
     </p>
 
     <coralite-code-highlight language="javascript">
-script({ values }, { refs }) {
-  // Dynamically import a library
-  import('https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.module.mjs')
-    .then((confetti) => {
-      const button = refs('celebrate-btn')
-      button.addEventListener('click', () => {
-        confetti.default()
+      export default defineComponent({
+        client: {
+          // Statically declare imports at build time
+          imports: [
+            {
+              specifier: 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.module.mjs',
+              defaultExport: 'confetti'
+            }
+          ],
+          // The configured imports become available on the helpers object
+          script: ({ values, helpers }) => {
+            const button = helpers.refs('celebrate-btn')
+            button.addEventListener('click', () => {
+              helpers.imports.confetti()
+            })
+          }
+        }
       })
-    })
-}
     </coralite-code-highlight>
 
     <p>
-      Alternatively, if you are bundling your site with a tool that supports code splitting, standard dynamic imports will work as expected.
+      Defining imports within the <code>client</code> object tells Coralite to bundle them. The default, namespace, or
+      named exports you configure will be available within the <code>helpers.imports</code> object.
     </p>
 
   </main>
