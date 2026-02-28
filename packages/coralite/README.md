@@ -16,12 +16,14 @@ coralite is a static site generator library built around the emerging [HTML modu
   - [Coralite CLI](https://coralite.dev/docs/reference/cli.html)
   - [Coralite](https://coralite.dev/docs/reference/coralite.html)
   - [Plugin system](https://coralite.dev/docs/reference/plugins/index.html)
+    - [Create plugin](https://coralite.dev/docs/reference/plugins/create-plugin.html)
+      - The `createPlugin` function is the entry point for extending Coralite's functionality.
     - [Define component](https://coralite.dev/docs/reference/plugins/define-component.html)
-      - The defineComponent plugin is Coralite's core built-in plugin that enables dynamic template functionality.
+      - The `defineComponent` plugin is Coralite's core built-in plugin that enables dynamic template functionality.
     - [Ref](https://coralite.dev/docs/reference/plugins/refs-plugin.html)
-      - The refs plugin is a built-in Coralite helper that provides runtime DOM element access.
+      - The `refs` plugin is a built-in Coralite helper that provides runtime DOM element access.
     - [Metadata](https://coralite.dev/docs/reference/plugins/metadata.html)
-      - The metadata plugin is a built-in Coralite tool that extracts metadata from <meta> tags in your page's <head> and makes them available as template variables. 
+      - The `metadata` plugin is a built-in Coralite tool that extracts metadata from <meta> tags in your page's <head> and makes them available as template variables. 
   - [Types](https://coralite.dev/docs/reference/types.html)
 
 ## Installation
