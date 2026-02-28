@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "cross-env NODE_ENV='--experimental-vm-modules --experimental-import-meta-resolve' coralite-scripts dev",
+    "start": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --experimental-import-meta-resolve\" coralite-scripts dev",
     "build": "coralite-scripts build"
   },
   "devDependencies": {
