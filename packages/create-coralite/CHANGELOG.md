@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.25.0
+
+> Comparing `create-coralite-v0.24.1` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- remove canvas-confetti dependency and use ESM import (templates) ([9bc71a4](https://codeberg.org/tjdavid/coralite/commit/9bc71a4b50bf0bb036de1362ffba540aad014024))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.25.0 ([ccc8839](https://codeberg.org/tjdavid/coralite/commit/ccc8839d4535ef1baa58c5de080975a1ca7f9bb2))
+
+
 ## v0.24.1
 
 > Comparing `create-coralite-v0.24.0` to `HEAD`
