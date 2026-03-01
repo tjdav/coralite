@@ -74,6 +74,8 @@
         <li><a href="#coraliteplugin">CoralitePlugin</a></li>
         <li><a href="#coralitepluginresult">CoralitePluginResult</a></li>
         <li><a href="#coraliteplugininstance">CoralitePluginInstance</a></li>
+        <li><a href="#coralitepluginbeforebuildcallback">CoralitePluginBeforeBuildCallback</a></li>
+        <li><a href="#coralitepluginbeforepagerendercallback">CoralitePluginBeforePageRenderCallback</a></li>
         <li><a href="#coralitepluginpagesetcallback">CoralitePluginPageSetCallback</a></li>
         <li><a href="#coralitepluginpageupdatecallback">CoralitePluginPageUpdateCallback</a></li>
         <li><a href="#coralitepluginpagedeletecallback">CoralitePluginPageDeleteCallback</a></li>
@@ -1414,6 +1416,16 @@
             <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)</td>
             <td>Async callback triggered when a template is deleted.</td>
           </tr>
+          <tr>
+            <td><code>onBeforePageRender</code></td>
+            <td><a href="#coralitepluginbeforepagerendercallback"><code>CoralitePluginBeforePageRenderCallback</code></a> (optional)</td>
+            <td>Async callback triggered before page render.</td>
+          </tr>
+          <tr>
+            <td><code>onBeforeBuild</code></td>
+            <td><a href="#coralitepluginbeforebuildcallback"><code>CoralitePluginBeforeBuildCallback</code></a> (optional)</td>
+            <td>Async callback triggered before build starts.</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -1479,6 +1491,16 @@
             <td><code>onTemplateDelete</code></td>
             <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)</td>
             <td>Async callback triggered when a template is deleted.</td>
+          </tr>
+          <tr>
+            <td><code>onBeforePageRender</code></td>
+            <td><a href="#coralitepluginbeforepagerendercallback"><code>CoralitePluginBeforePageRenderCallback</code></a> (optional)</td>
+            <td>Async callback triggered before page render.</td>
+          </tr>
+          <tr>
+            <td><code>onBeforeBuild</code></td>
+            <td><a href="#coralitepluginbeforebuildcallback"><code>CoralitePluginBeforeBuildCallback</code></a> (optional)</td>
+            <td>Async callback triggered before build starts.</td>
           </tr>
         </tbody>
       </table>

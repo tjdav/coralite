@@ -64,6 +64,27 @@
 
 /**
  * @this {ThisType<Coralite>}
+ * @callback CoralitePluginBeforePageRenderCallback - Async callback triggered before a page has been rendered.
+ * @param {Object} context
+ * @param {CoraliteDocument} context.document - The cloned HTML document data being processed
+ * @param {Object} context.values - Values associated with the document
+ * @param {Object} context.renderContext - Render context containing state for the build
+ * @returns {Promise<void>}
+ * @async
+ */
+
+/**
+ * @this {ThisType<Coralite>}
+ * @callback CoralitePluginBeforeBuildCallback - Async callback triggered before the build begins.
+ * @param {Object} context
+ * @param {string | string[] | null} context.path - The target directory or an array of specific page paths to build
+ * @param {Object} context.options - Configuration options for the build process
+ * @returns {Promise<void>}
+ * @async
+ */
+
+/**
+ * @this {ThisType<Coralite>}
  * @callback CoralitePluginAfterPageRenderCallback - Async callback triggered after a page has been rendered but before saving.
  * @param {CoraliteResult} result - The rendered page result
  * @returns {Promise<CoraliteResult[]|CoraliteResult|void>} New result(s) to add to the build output
@@ -94,7 +115,9 @@
  * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
+ * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
  * @property {CoralitePluginBuildCompleteCallback} [onBuildComplete] - Async callback triggered when a build completes
  * @property {Function} [server] - Server extension hook
  */
@@ -113,7 +136,9 @@
  * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
+ * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
  * @property {CoralitePluginBuildCompleteCallback} [onBuildComplete] - Async callback triggered when a build completes
  * @property {Function} [server] - Server extension hook
  */
@@ -130,7 +155,9 @@
  * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
  * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
  * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
+ * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
  * @property {CoralitePluginBuildCompleteCallback} [onBuildComplete] - Async callback triggered when a build completes
  * @property {Function} [server] - Server extension hook
  */

@@ -1,6 +1,6 @@
 /**
  * @import Coralite from './coralite.js'
- * @import { CoralitePlugin, CoralitePluginResult, HTMLData, CoralitePluginPageSetCallback, CoralitePluginPageUpdateCallback, CoralitePluginPageDeleteCallback, CoralitePluginTemplateCallback } from '../types/index.js'
+ * @import { CoralitePlugin, CoralitePluginResult, HTMLData, CoralitePluginPageSetCallback, CoralitePluginPageUpdateCallback, CoralitePluginPageDeleteCallback, CoralitePluginTemplateCallback, CoralitePluginBeforePageRenderCallback, CoralitePluginBeforeBuildCallback } from '../types/index.js'
  */
 
 import { basename, dirname } from 'path'
@@ -184,7 +184,9 @@ export function createPlugin ({
   onTemplateSet,
   onTemplateUpdate,
   onTemplateDelete,
+  onBeforePageRender,
   onAfterPageRender,
+  onBeforeBuild,
   onBuildComplete,
   script,
   server
@@ -200,7 +202,9 @@ export function createPlugin ({
   validateOptionalFunction(onTemplateSet, 'onTemplateSet')
   validateOptionalFunction(onTemplateUpdate, 'onTemplateUpdate')
   validateOptionalFunction(onTemplateDelete, 'onTemplateDelete')
+  validateOptionalFunction(onBeforePageRender, 'onBeforePageRender')
   validateOptionalFunction(onAfterPageRender, 'onAfterPageRender')
+  validateOptionalFunction(onBeforeBuild, 'onBeforeBuild')
   validateOptionalFunction(onBuildComplete, 'onBuildComplete')
   validateOptionalFunction(server, 'server')
 
@@ -269,7 +273,9 @@ export function createPlugin ({
     onTemplateSet,
     onTemplateUpdate,
     onTemplateDelete,
+    onBeforePageRender,
     onAfterPageRender,
+    onBeforeBuild,
     onBuildComplete,
     script,
     server
