@@ -289,13 +289,15 @@ export function cloneDocumentInstance (originalDocument) {
 
   const newCustomElements = originalDocument.customElements.map(el => nodeMap.get(el))
   const newTempElements = originalDocument.tempElements ? originalDocument.tempElements.map(el => nodeMap.get(el)) : []
+  const newSkipRenderElements = originalDocument.skipRenderElements ? originalDocument.skipRenderElements.map(el => nodeMap.get(el)) : []
 
   return {
     ...originalDocument,
     values: { ...originalDocument.values },
     root: newRoot,
     customElements: newCustomElements,
-    tempElements: newTempElements
+    tempElements: newTempElements,
+    skipRenderElements: newSkipRenderElements
   }
 }
 

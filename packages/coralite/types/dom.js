@@ -10,6 +10,7 @@
  * @property {number} [parentChildIndex] - Position in parent's child list
  * @property {Object[]} [slots]
  * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {boolean} [skipRender] - Mark element to be removed before rendering
  */
 
 /**
@@ -23,6 +24,7 @@
  * @property {number} [parentChildIndex] - Position in parent's child list
  * @property {Object[]} [slots]
  * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {boolean} [skipRender] - Mark element to be removed before rendering
  * @property {string} nodeName - The name of the node (uppercase tag name)
  * @property {string} tagName - The tag name of the element (uppercase)
  * @property {number} nodeType - The node type constant (1 for elements)
