@@ -13,9 +13,6 @@ jspm_packages
 .eslintcache
 .pnpm-store/
 
-# Coralite
-.coralite
-
 # Generated dirs
 dist
 .output
