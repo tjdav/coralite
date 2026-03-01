@@ -79,5 +79,43 @@ export function defineConfig (options) {
     throw new Error('Configuration must contain a valid "public" property')
   }
 
+  if (options.ignoreByAttribute) {
+    if (!Array.isArray(options.ignoreByAttribute)) {
+      throw new Error('Configuration "ignoreByAttribute" must be an array')
+    }
+
+    for (let i = 0; i < options.ignoreByAttribute.length; i++) {
+      const item = options.ignoreByAttribute[i]
+      if (!item || typeof item !== 'object') {
+        throw new Error('Configuration "ignoreByAttribute" items must be objects')
+      }
+      if (typeof item.name !== 'string') {
+        throw new Error('Configuration "ignoreByAttribute" items must have a string "name" property')
+      }
+      if (typeof item.value !== 'string') {
+        throw new Error('Configuration "ignoreByAttribute" items must have a string "value" property')
+      }
+    }
+  }
+
+  if (options.skipRenderByAttribute) {
+    if (!Array.isArray(options.skipRenderByAttribute)) {
+      throw new Error('Configuration "skipRenderByAttribute" must be an array')
+    }
+
+    for (let i = 0; i < options.skipRenderByAttribute.length; i++) {
+      const item = options.skipRenderByAttribute[i]
+      if (!item || typeof item !== 'object') {
+        throw new Error('Configuration "skipRenderByAttribute" items must be objects')
+      }
+      if (typeof item.name !== 'string') {
+        throw new Error('Configuration "skipRenderByAttribute" items must have a string "name" property')
+      }
+      if (typeof item.value !== 'string') {
+        throw new Error('Configuration "skipRenderByAttribute" items must have a string "value" property')
+      }
+    }
+  }
+
   return options
 }

@@ -37,6 +37,8 @@ async function server (config, options) {
       templates: config.templates,
       pages: config.pages,
       plugins: config.plugins,
+      ignoreByAttribute: config.ignoreByAttribute,
+      skipRenderByAttribute: config.skipRenderByAttribute,
       mode: 'development'
     })
     await coralite.initialise()
