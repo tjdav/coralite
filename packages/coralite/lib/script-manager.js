@@ -224,7 +224,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     treeShaking: true,
     sourcemap: mode === 'production' ? false : 'inline',
     minify: mode === 'production',
-    format: 'iife',
+    format: 'esm',
+    external: ['http://*', 'https://*'],
     sourceRoot: pathToFileURL(process.cwd()).href,
     plugins: [
       {
