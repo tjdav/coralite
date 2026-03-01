@@ -114,14 +114,14 @@ describe('Coralite', () => {
     })
   })
 
-  describe('onBuildComplete hook', () => {
+  describe('onAfterBuild hook', () => {
     it('should be called after a successful build', async () => {
       let hookCalled = false
       let hookContext = null
 
       const plugin = {
         name: 'test-plugin',
-        onBuildComplete: async (context) => {
+        onAfterBuild: async (context) => {
           hookCalled = true
           hookContext = context
         }
@@ -136,7 +136,7 @@ describe('Coralite', () => {
       await coralite.initialise()
       await coralite.build()
 
-      assert.ok(hookCalled, 'onBuildComplete hook should be called')
+      assert.ok(hookCalled, 'onAfterBuild hook should be called')
       assert.ok(hookContext, 'context should be passed to the hook')
       assert.ok(Array.isArray(hookContext.results), 'results should be an array')
       assert.strictEqual(hookContext.results.length, 1, 'should have 1 result')
@@ -150,7 +150,7 @@ describe('Coralite', () => {
 
       const plugin = {
         name: 'test-plugin',
-        onBuildComplete: async (context) => {
+        onAfterBuild: async (context) => {
           hookCalled = true
           hookContext = context
         }
@@ -177,7 +177,7 @@ describe('Coralite', () => {
         // Expected error
       }
 
-      assert.ok(hookCalled, 'onBuildComplete hook should be called even on error')
+      assert.ok(hookCalled, 'onAfterBuild hook should be called even on error')
       assert.ok(hookContext.error, 'error should be present')
       assert.ok(hookContext.error.message.includes('Test Error'), 'error message should match')
       assert.ok(typeof hookContext.duration === 'number', 'duration should be a number')

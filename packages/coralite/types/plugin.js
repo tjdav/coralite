@@ -93,7 +93,7 @@
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginBuildCompleteCallback - Async callback triggered when a build process completes (success or failure).
+ * @callback CoralitePluginAfterBuildCallback - Async callback triggered when a build process completes (success or failure).
  * @param {Object} context
  * @param {CoraliteResult[]} context.results - The results of the build (pages generated)
  * @param {Error|null} context.error - The error if the build failed
@@ -118,7 +118,7 @@
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
- * @property {CoralitePluginBuildCompleteCallback} [onBuildComplete] - Async callback triggered when a build completes
+ * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
  * @property {Function} [server] - Server extension hook
  */
 
@@ -139,7 +139,7 @@
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
- * @property {CoralitePluginBuildCompleteCallback} [onBuildComplete] - Async callback triggered when a build completes
+ * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
  * @property {Function} [server] - Server extension hook
  */
 
@@ -158,7 +158,7 @@
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
- * @property {CoralitePluginBuildCompleteCallback} [onBuildComplete] - Async callback triggered when a build completes
+ * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
  * @property {Function} [server] - Server extension hook
  */
 

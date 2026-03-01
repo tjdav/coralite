@@ -109,7 +109,7 @@ export function Coralite ({
       onBeforePageRender: [],
       onAfterPageRender: [],
       onBeforeBuild: [],
-      onBuildComplete: []
+      onAfterBuild: []
     }
   }
 
@@ -190,8 +190,8 @@ export function Coralite ({
     if (plugin.onBeforeBuild) {
       this._addPluginHook('onBeforeBuild', plugin.onBeforeBuild)
     }
-    if (plugin.onBuildComplete) {
-      this._addPluginHook('onBuildComplete', plugin.onBuildComplete)
+    if (plugin.onAfterBuild) {
+      this._addPluginHook('onAfterBuild', plugin.onAfterBuild)
     }
 
     // register script plugin if provided
@@ -915,7 +915,7 @@ Coralite.prototype.build = async function (...args) {
     throw finalError
   } finally {
     const duration = performance.now() - startTime
-    await this._triggerPluginHook('onBuildComplete', {
+    await this._triggerPluginHook('onAfterBuild', {
       results,
       error: buildError,
       duration
@@ -1770,7 +1770,7 @@ Coralite.prototype._evaluate = async function (options) {
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onBuildComplete'} name - The name of the hook to trigger.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to trigger.
  * @param {T} data - Data to pass to each callback function.
  * @return {Promise<Array<T>>} A promise that resolves to an array of results from all callbacks.
  */
@@ -1793,7 +1793,7 @@ Coralite.prototype._triggerPluginHook = async function (name, data) {
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onBuildComplete'} name - The name of the hook to register the callback with.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to register the callback with.
  * @param {Function} callback - The callback function to be executed when the hook is triggered.
  */
 Coralite.prototype._addPluginHook = function (name, callback) {

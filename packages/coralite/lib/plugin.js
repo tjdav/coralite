@@ -187,7 +187,7 @@ export function createPlugin ({
   onBeforePageRender,
   onAfterPageRender,
   onBeforeBuild,
-  onBuildComplete,
+  onAfterBuild,
   script,
   server
 }) {
@@ -205,7 +205,7 @@ export function createPlugin ({
   validateOptionalFunction(onBeforePageRender, 'onBeforePageRender')
   validateOptionalFunction(onAfterPageRender, 'onAfterPageRender')
   validateOptionalFunction(onBeforeBuild, 'onBeforeBuild')
-  validateOptionalFunction(onBuildComplete, 'onBuildComplete')
+  validateOptionalFunction(onAfterBuild, 'onAfterBuild')
   validateOptionalFunction(server, 'server')
 
   // Validate templates array
@@ -276,7 +276,7 @@ export function createPlugin ({
     onBeforePageRender,
     onAfterPageRender,
     onBeforeBuild,
-    onBuildComplete,
+    onAfterBuild,
     script,
     server
   }
