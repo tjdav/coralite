@@ -1,0 +1,28 @@
+<template id="imports-plugin">
+  <div class="plugin-imports-results">
+    <p id="plugin-results"></p>
+    <button id="plugin-remote-btn">Trigger Plugin Confetti</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: {
+      script: ({ helpers }) => {
+        if (helpers.testPluginImports) {
+          helpers.testPluginImports('plugin-results')
+        }
+
+        const btn = document.getElementById('plugin-remote-btn')
+        if (btn && helpers.triggerPluginConfetti) {
+          btn.addEventListener('click', () => {
+            helpers.triggerPluginConfetti()
+            btn.setAttribute('data-triggered', 'true')
+          })
+        }
+      }
+    }
+  })
+</script>
