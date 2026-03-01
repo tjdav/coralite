@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.25.0
+
+> Comparing `coralite-v0.24.0` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- add skipRenderByAttribute option to parse but exclude elements from render ([2a0a91c](https://codeberg.org/tjdavid/coralite/commit/2a0a91c7c3155bf467544c19c75975221b5b0eb3))
+- add E2E tests for client and plugin imports with ESM bundler format ([475fbef](https://codeberg.org/tjdavid/coralite/commit/475fbef19015bdbda915edd966eade880f42394a))
+- add onBeforePageRender and onBeforeBuild plugin hooks ([c18ddaf](https://codeberg.org/tjdavid/coralite/commit/c18ddafcb66a1ebb4cacc6e36111595c706e4770))
+
+### 🐛 Bug Fixes
+
+- change build format to ESM and exclude HTTP(S) from bundling (script-manager) ([764ba6b](https://codeberg.org/tjdavid/coralite/commit/764ba6ba2f15dba2ac751b1764f489a336ff0f4f))
+
+### ♻️ Code Refactoring
+
+- rename onBuildComplete hook to onAfterBuild ([0ad170f](https://codeberg.org/tjdavid/coralite/commit/0ad170f6f5f1b372222c7af6eea222180949b90a))
+
+
 ## v0.24.0
 
 > Comparing `coralite-v0.23.0` to `HEAD`
