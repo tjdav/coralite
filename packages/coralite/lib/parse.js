@@ -27,10 +27,11 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  *
  * @param {string} string - HTML content to parse as string input type textual data
  * @param {IgnoreByAttribute[]} [ignoreByAttribute] - Ignore element with attribute name value pair
+ * @param {string[]} [skipRenderByAttribute] - Parse element but remove before final render
  * @returns {ParseHTMLResult}
  * @example parseHTML('<h1>Hello world!</h1>')
  */
-export function parseHTML (string, ignoreByAttribute) {
+export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute) {
   // root element reference
   const root = createCoraliteDocument({
     type: 'root',
@@ -43,6 +44,8 @@ export function parseHTML (string, ignoreByAttribute) {
   const customElements = []
   /** @type {CoraliteElement[]} */
   const tempElements = []
+  /** @type {CoraliteElement[]} */
+  const skipRenderElements = []
 
   const ignoreAttributeMap = getIgnoreAttributeMap(ignoreByAttribute)
 
@@ -64,6 +67,15 @@ export function parseHTML (string, ignoreByAttribute) {
         ignoreByAttribute: ignoreAttributeMap
       })
 
+      if (skipRenderByAttribute && skipRenderByAttribute.length > 0) {
+        for (let i = 0; i < skipRenderByAttribute.length; i++) {
+          if (Object.prototype.hasOwnProperty.call(attributes, skipRenderByAttribute[i])) {
+            element.skipRender = true
+            break
+          }
+        }
+      }
+
       if (element.slots) {
         // store custom element
         customElements.push(element)
@@ -80,10 +92,15 @@ export function parseHTML (string, ignoreByAttribute) {
     onclosetag () {
       const element = stack[stack.length - 1]
 
-      if (element.type === 'tag' && element.remove) {
-        // store element for removal
-        // @ts-ignore
-        tempElements.push(element.parent.children[element.parent.children.length - 1])
+      if (element.type === 'tag') {
+        if (element.remove) {
+          // store element for removal
+          // @ts-ignore
+          tempElements.push(element.parent.children[element.parent.children.length - 1])
+        } else if (element.skipRender) {
+          // @ts-ignore
+          skipRenderElements.push(element.parent.children[element.parent.children.length - 1])
+        }
       }
 
       // remove current element from stack as we're done with its children
@@ -108,7 +125,8 @@ export function parseHTML (string, ignoreByAttribute) {
   return {
     root,
     customElements,
-    tempElements
+    tempElements,
+    skipRenderElements
   }
 }
 
@@ -147,6 +165,7 @@ function sortSlottedChildren (elements) {
  * @param {string} string - HTML content containing meta tags or module markup
  * @param {Object} options
  * @param {IgnoreByAttribute[]} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
+ * @param {string[]} [options.skipRenderByAttribute] - An array of attributes that exclude element from rendering
  * @returns {CoraliteModule} - Parsed module information, including template, script, tokens, and slot configurations
  *
  * @example
@@ -172,7 +191,7 @@ function sortSlottedChildren (elements) {
  * //}
  * ```
  */
-export function parseModule (string, { ignoreByAttribute }) {
+export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute }) {
   // root element reference
   const root = createCoraliteDocument({
     type: 'root',
@@ -208,6 +227,15 @@ export function parseModule (string, { ignoreByAttribute }) {
         parent,
         ignoreByAttribute: ignoreAttributeMap
       })
+
+      if (skipRenderByAttribute && skipRenderByAttribute.length > 0) {
+        for (let i = 0; i < skipRenderByAttribute.length; i++) {
+          if (Object.prototype.hasOwnProperty.call(attributes, skipRenderByAttribute[i])) {
+            element.skipRender = true
+            break
+          }
+        }
+      }
 
       if (element.slots) {
         customElements.push(element)

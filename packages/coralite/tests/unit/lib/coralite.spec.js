@@ -114,6 +114,65 @@ describe('Coralite', () => {
     })
   })
 
+  describe('Ignore/Skip Attributes', () => {
+    it('should drop elements from AST when they match ignoreByAttribute', async () => {
+      await writeFile(path.join(pagesDir, 'ignore.html'), '<div><span data-ignore="true">Ignored</span><span data-keep="true">Kept</span></div>')
+
+      coralite = new Coralite({
+        pages: pagesDir,
+        templates: templatesDir,
+        ignoreByAttribute: [{
+          name: 'data-ignore',
+          value: 'true'
+        }]
+      })
+
+      await coralite.initialise()
+
+      const result = await coralite.build('ignore.html')
+
+      assert.strictEqual(result.length, 1)
+      assert.strictEqual(result[0].html.includes('Ignored'), false)
+      assert.strictEqual(result[0].html.includes('Kept'), true)
+    })
+
+    it('should parse elements but remove them from render output when they match skipRenderByAttribute', async () => {
+      await writeFile(path.join(pagesDir, 'skip.html'), '<div><test-component data-skip="true"></test-component><span data-keep="true">Kept</span></div>')
+      await writeFile(path.join(templatesDir, 'test-component.html'), '<span id="rendered-test-component">Test Component</span>')
+
+      let testComponentRendered = false
+
+      const testPlugin = {
+        name: 'test-plugin',
+        onBeforePageRender: (context) => {
+          // Verify it's in the document before rendering
+          const hasTestComponent = context.document.customElements.some(el => el.name === 'test-component')
+          if (hasTestComponent) {
+            testComponentRendered = true
+          }
+        }
+      }
+
+      coralite = new Coralite({
+        pages: pagesDir,
+        templates: templatesDir,
+        plugins: [testPlugin],
+        skipRenderByAttribute: ['data-skip']
+      })
+
+      await coralite.initialise()
+
+      const result = await coralite.build('skip.html')
+
+      assert.strictEqual(result.length, 1)
+      assert.strictEqual(testComponentRendered, true, 'Test component should have been parsed and kept in the custom elements list')
+      assert.strictEqual(result[0].html.includes('rendered-test-component'), false, 'Test component should not be in the final HTML')
+      assert.strictEqual(result[0].html.includes('Test Component'), false, 'Test component should not be in the final HTML')
+      assert.strictEqual(result[0].html.includes('Kept'), true, 'Elements without skip attribute should be kept')
+      assert.strictEqual(result[0].html.includes('<test-component'), false, 'Test component should not be in the final HTML')
+    })
+  })
+
   describe('onAfterBuild hook', () => {
     it('should be called after a successful build', async () => {
       let hookCalled = false

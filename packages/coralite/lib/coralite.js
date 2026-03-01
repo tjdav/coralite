@@ -49,13 +49,15 @@ import { createContext } from 'node:vm'
  * @param {string} options.pages - The path to the directory containing pages that will be rendered using the provided templates.
  * @param {string} [options.mode='production'] - Build mode: "development" or "production"
  * @param {IgnoreByAttribute[]} [options.ignoreByAttribute] - Elements to ignore with attribute name value pair
+ * @param {string[]} [options.skipRenderByAttribute] - Element attributes to parse but exclude from final render output
  * @example
  * const coralite = new Coralite({
  *   templates: './path/to/templates',
  *   pages: './path/to/pages',
  *   mode: 'development',
  *   plugins: [myPlugin],
- *   ignoreByAttribute: [{ name: 'data-ignore', value: 'true' }]
+ *   ignoreByAttribute: [{ name: 'data-ignore', value: 'true' }],
+ *   skipRenderByAttribute: ['data-skip-render']
  * });
  */
 export function Coralite ({
@@ -63,6 +65,7 @@ export function Coralite ({
   pages,
   plugins,
   ignoreByAttribute,
+  skipRenderByAttribute,
   mode = 'production'
 }) {
   // Validate required parameters
@@ -89,6 +92,7 @@ export function Coralite ({
     pages,
     plugins,
     ignoreByAttribute,
+    skipRenderByAttribute,
     mode,
     path
   }
@@ -292,7 +296,7 @@ Coralite.prototype.initialise = async function () {
 
   /** @type {CoraliteCollectionEventSet} */
   const onFileSet = async (data) => {
-    const elements = parseHTML(data.content, this.options.ignoreByAttribute)
+    const elements = parseHTML(data.content, this.options.ignoreByAttribute, this.options.skipRenderByAttribute)
 
     // track parent-child relationship between custom elements
     for (let i = 0; i < elements.customElements.length; i++) {
@@ -379,7 +383,8 @@ Coralite.prototype.initialise = async function () {
         path: data.path,
         root: elements.root,
         customElements: elements.customElements,
-        tempElements: elements.tempElements
+        tempElements: elements.tempElements,
+        skipRenderElements: elements.skipRenderElements
       }
     }
   }
@@ -726,6 +731,18 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         }))
 
         bodyElement.children.push(scriptElement)
+      }
+
+      // remove skip render elements
+      if (document.skipRenderElements) {
+        for (const element of document.skipRenderElements) {
+          if (element.parent && element.parent.children) {
+            // Filter children directly on the cloned document
+            element.parent.children = element.parent.children.filter(
+              child => child !== element
+            )
+          }
+        }
       }
 
       let rawHTML = ''

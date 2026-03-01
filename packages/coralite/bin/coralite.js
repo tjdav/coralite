@@ -21,6 +21,7 @@ program
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
   .option('-m, --mode <mode>', 'Build mode: "development" or "production"', 'production')
   .option('-i, --ignore-attribute <key=value...>', 'Ignore elements by attribute name value pair', [])
+  .option('-s, --skip-render-attribute <key...>', 'Parse elements but exclude them from final render output', [])
   .option('-d, --dry-run', 'Run in dry-run mode')
 
 program.parse(process.argv)
@@ -49,6 +50,7 @@ const coraliteOptions = {
   templates: options.templates,
   pages,
   ignoreByAttribute,
+  skipRenderByAttribute: options.skipRenderAttribute,
   mode: options.mode,
   plugins: []
 }

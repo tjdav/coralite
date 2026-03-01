@@ -16,12 +16,14 @@
  * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
  * @property {CoraliteModuleValues} [values] - The initial values for the document.
  * @property {CoraliteElement[]} [tempElements] - An array of temporary elements created during the parsing process.
+ * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
  */
 
 /**
  * @typedef {Object} CoraliteDocumentResult
  * @property {CoraliteModuleValues} values - The module values extracted from the document
  * @property {CoraliteElement[]} tempElements - Temporary elements created during processing
+ * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
  * @property {string[]} [styles] - Collected styles during build process
  * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
  * @property {CoraliteElement[]} [customElements] - Custom elements defined in the document
@@ -82,6 +84,7 @@
  * @property {CoraliteDocumentRoot} root - The root element of the parsed HTML document.
  * @property {CoraliteElement[]} customElements - An array of custom elements identified during parsing.
  * @property {CoraliteElement[]} tempElements - An array of temporary elements created during the parsing process.
+ * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
  */
 
 export default {}
