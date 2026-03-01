@@ -1,6 +1,6 @@
 
 /**
- * @import { CoraliteResult, CoraliteDocument, ParseHTMLResult, IgnoreByAttribute } from './document.js'
+ * @import { CoraliteResult, CoraliteDocument, ParseHTMLResult, Attribute } from './document.js'
  * @import { HTMLData, CoraliteFilePath } from './core.js'
  * @import { CoraliteModule } from './module.js'
  * @import { CoraliteElement, CoraliteAnyNode } from './dom.js'
@@ -16,7 +16,7 @@
  * @property {CoraliteModule} module - The module context the plugin is operating within (contains template/script)
  * @property {CoraliteElement} element - The specific HTML element the plugin is applied to (if applicable)
  * @property {Object} path - File path information for the current document/module being processed
- * @property {IgnoreByAttribute[]} excludeByAttribute - List of attribute name-value pairs to ignore during processing by element type
+ * @property {Attribute[]} excludeByAttribute - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
  */
 

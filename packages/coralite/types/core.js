@@ -2,6 +2,7 @@
 /**
  * @import { CoraliteModuleValues } from './module.js'
  * @import { CoralitePluginInstance } from './plugin.js'
+ * @import { Attribute } from './document.js'
  */
 
 /**
@@ -34,6 +35,8 @@
  * @property {string} templates - The path to the directory containing Coralite templates.
  * @property {string} pages - The path to the directory containing pages that will be rendered using the provided templates.
  * @property {CoralitePluginInstance[]} [plugins] - Optional array of plugin instances to extend Coralite functionality.
+ * @property {Attribute[]} [ignoreByAttribute] - An array of attribute names and values to ignore by element type.
+ * @property {Attribute[]} [skipRenderByAttribute] - An array of attribute names and values to skip rendering by element type.
  */
 
 /**

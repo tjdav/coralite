@@ -7,7 +7,7 @@
  * @import { CoraliteElement, RawCoraliteElement, CoraliteTextNode, RawCoraliteTextNode, CoraliteComment, RawCoraliteComment, CoraliteDirective, RawCoraliteDirective, CoraliteAnyNode, CoraliteDocumentRoot, RawCoraliteDocumentRoot, CoraliteContentNode } from './dom.js'
  *
  * DOCUMENT
- * @import { CoraliteDocument, CoraliteResult, ParseHTMLResult, CoraliteToken, CoraliteAttributeToken, CoraliteTextNodeToken, CoraliteRef, CoraliteDocumentValues, IgnoreByAttribute, CoraliteDocumentResult } from './document.js'
+ * @import { CoraliteDocument, CoraliteResult, ParseHTMLResult, CoraliteToken, CoraliteAttributeToken, CoraliteTextNodeToken, CoraliteRef, CoraliteDocumentValues, Attribute, CoraliteDocumentResult } from './document.js'
  *
  * MODULES
  * @import { CoraliteModule, CoraliteModuleValues, CoraliteModuleValue, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleSetup } from './module.js'
@@ -59,7 +59,7 @@
  * @typedef {import('./document.js').CoraliteTextNodeToken} CoraliteTextNodeToken
  * @typedef {import('./document.js').CoraliteRef} CoraliteRef
  * @typedef {import('./document.js').CoraliteDocumentValues} CoraliteDocumentValues
- * @typedef {import('./document.js').IgnoreByAttribute} IgnoreByAttribute
+ * @typedef {import('./document.js').Attribute} Attribute
  * @typedef {import('./document.js').CoraliteDocumentResult} CoraliteDocumentResult
  */
 

@@ -1,6 +1,6 @@
 
 /**
- * @import { CoraliteElement, CoraliteDocumentRoot, CoraliteTextNode, CoraliteAnyNode } from './dom.js'
+ * @import { CoraliteElement, CoraliteDocumentRoot, CoraliteTextNode } from './dom.js'
  * @import { CoraliteModuleValues } from './module.js'
  * @import { CoralitePath, CoraliteFilePath } from './core.js'
  */
@@ -11,7 +11,7 @@
  * @property {CoraliteDocumentRoot} root - Array of elements and text nodes in the document
  * @property {CoraliteElement[]} customElements - Custom elements defined in the document
  * @property {CoralitePath & CoraliteFilePath} path - Document's file path
- * @property {IgnoreByAttribute[]} ignoreByAttribute - An array of attribute names and values to ignore by element type.
+ * @property {Attribute[]} ignoreByAttribute - An array of attribute names and values to ignore by element type.
  * @property {string[]} [styles] - Collected styles during build process
  * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
  * @property {CoraliteModuleValues} [values] - The initial values for the document.
@@ -38,7 +38,7 @@
  */
 
 /**
- * @typedef {Object} IgnoreByAttribute
+ * @typedef {Object} Attribute
  * @property {string} name - Name of attribute
  * @property {string} value - Value of attribute
  */

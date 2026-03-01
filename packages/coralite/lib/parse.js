@@ -18,7 +18,7 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  *  CoraliteDocumentValues,
  *  CoraliteDocumentRoot,
  *  CoraliteContentNode,
- *  IgnoreByAttribute,
+ *  Attribute,
  *  ParseHTMLResult} from '../types/index.js'
  */
 
@@ -26,7 +26,7 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  * Parse HTML content and return a CoraliteDocument object representing the parsed document structure
  *
  * @param {string} string - HTML content to parse as string input type textual data
- * @param {IgnoreByAttribute[]} [ignoreByAttribute] - Ignore element with attribute name value pair
+ * @param {Attribute[]} [ignoreByAttribute] - Ignore element with attribute name value pair
  * @param {string[]} [skipRenderByAttribute] - Parse element but remove before final render
  * @returns {ParseHTMLResult}
  * @example parseHTML('<h1>Hello world!</h1>')
@@ -164,7 +164,7 @@ function sortSlottedChildren (elements) {
  *
  * @param {string} string - HTML content containing meta tags or module markup
  * @param {Object} options
- * @param {IgnoreByAttribute[]} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
+ * @param {Attribute[]} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
  * @param {string[]} [options.skipRenderByAttribute] - An array of attributes that exclude element from rendering
  * @returns {CoraliteModule} - Parsed module information, including template, script, tokens, and slot configurations
  *
@@ -473,7 +473,7 @@ function addMetadata (meta, name, content) {
  * @param {string} data.name - The tag name of the new element.
  * @param {Object.<string, string>} data.attributes - Attributes for the new element.
  * @param {CoraliteElement | CoraliteDocumentRoot} data.parent - Parent element or document root where this element will be attached.
- * @param {IgnoreByAttribute[] | Map<string, string[]>} [data.ignoreByAttribute] - Optional parameter used for ignoring elements based on attributes.
+ * @param {Attribute[] | Map<string, string[]>} [data.ignoreByAttribute] - Optional parameter used for ignoring elements based on attributes.
  * @returns {CoraliteElement} The newly created element with its parent reference and position in the parent's children list.
  */
 export function createElement ({
@@ -542,7 +542,7 @@ export function createTextNode (data, parent) {
 /**
  * Find attributes to be ignored by the parser.
  *
- * @param {IgnoreByAttribute[] | Map<string, string[]>} ignoreByAttribute - An array of attribute pairs or a map to be ignored by the parser
+ * @param {Attribute[] | Map<string, string[]>} ignoreByAttribute - An array of attribute pairs or a map to be ignored by the parser
  * @param {Object<string, string>} attributes - The HTML attribute object to be parsed by the parser
  * @returns {boolean}
  */
@@ -579,7 +579,7 @@ function findAttributesToIgnore (ignoreByAttribute, attributes) {
 
 /**
  * Create a map from ignoreByAttribute array.
- * @param {IgnoreByAttribute[] | Map<string, string[]>} ignoreByAttribute
+ * @param {Attribute[] | Map<string, string[]>} ignoreByAttribute
  * @returns {Map<string, string[]>}
  */
 function getIgnoreAttributeMap (ignoreByAttribute) {
