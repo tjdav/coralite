@@ -18,7 +18,7 @@ describe('createPlugin', () => {
     assert.doesNotThrow(() => {
       createPlugin({
         name: 'test',
-        script: {
+        client: {
           imports: [{
             specifier: 'mod',
             namespaceExport: 'ns'
@@ -30,7 +30,7 @@ describe('createPlugin', () => {
     assert.throws(() => {
       createPlugin({
         name: 'test',
-        script: {
+        client: {
           imports: [{
             specifier: 'mod',
             namespaceExport: 123
@@ -44,7 +44,7 @@ describe('createPlugin', () => {
     assert.doesNotThrow(() => {
       createPlugin({
         name: 'test',
-        script: {
+        client: {
           imports: [{
             specifier: 'mod',
             defaultExport: 'def',

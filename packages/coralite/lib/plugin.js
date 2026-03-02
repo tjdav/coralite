@@ -188,7 +188,7 @@ export function createPlugin ({
   onAfterPageRender,
   onBeforeBuild,
   onAfterBuild,
-  script,
+  client,
   server
 }) {
   // Validate required parameters
@@ -211,34 +211,34 @@ export function createPlugin ({
   // Validate templates array
   validateStringArray(templates, 'templates')
 
-  // Validate scriptPlugin if provided
-  if (script != null) {
-    if (typeof script !== 'object') {
+  // Validate client plugin if provided
+  if (client != null) {
+    if (typeof client !== 'object') {
       throw new Error(
-        `Coralite plugin validation failed: "scriptPlugin" must be an object, received ${typeof script}`
+        `Coralite plugin validation failed: "client" must be an object, received ${typeof client}`
       )
     }
 
-    // Validate optional scriptPlugin properties
-    if (script.setup != null && typeof script.setup !== 'function') {
+    // Validate optional client properties
+    if (client.setup != null && typeof client.setup !== 'function') {
       throw new Error(
-        `Coralite plugin validation failed: "scriptPlugin.setup" must be a function, received ${typeof script.setup}`
+        `Coralite plugin validation failed: "client.setup" must be a function, received ${typeof client.setup}`
       )
     }
 
-    if (script.helpers != null && typeof script.helpers !== 'object') {
+    if (client.helpers != null && typeof client.helpers !== 'object') {
       throw new Error(
-        `Coralite plugin validation failed: "scriptPlugin.helpers" must be an object, received ${typeof script.helpers}`
+        `Coralite plugin validation failed: "client.helpers" must be an object, received ${typeof client.helpers}`
       )
     }
 
-    if (script.imports != null) {
-      validateImportArray(script.imports, 'scriptPlugin.imports')
+    if (client.imports != null) {
+      validateImportArray(client.imports, 'client.imports')
     }
 
-    if (script.config != null && typeof script.config !== 'object') {
+    if (client.config != null && typeof client.config !== 'object') {
       throw new Error(
-        `Coralite plugin validation failed: "scriptPlugin.config" must be an object, received ${typeof script.config}`
+        `Coralite plugin validation failed: "client.config" must be an object, received ${typeof client.config}`
       )
     }
   }
@@ -277,7 +277,7 @@ export function createPlugin ({
     onAfterPageRender,
     onBeforeBuild,
     onAfterBuild,
-    script,
+    client,
     server
   }
 }

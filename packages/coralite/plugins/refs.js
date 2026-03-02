@@ -2,7 +2,7 @@ import { createPlugin } from '#lib'
 
 export const refsPlugin = createPlugin({
   name: 'refs',
-  script: {
+  client: {
     helpers: {
       /**
        * Creates a ref resolver function that maps IDs to DOM elements.
