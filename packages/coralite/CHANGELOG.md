@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.26.0
+
+> Comparing `coralite-v0.25.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- rename script plugin to client and move setup to frontend bundle (script-manager) ([6f96075](https://codeberg.org/tjdavid/coralite/commit/6f960750d836faadb5df3e2d0e4e2572063eea0c))
+
+### ♻️ Code Refactoring
+
+- migrate from script to client config (test-script-plugin) ([aef12a9](https://codeberg.org/tjdavid/coralite/commit/aef12a9097bf95b19d361c419d72a7c6ff9924cb))
+- rename IgnoreByAttribute type to Attribute ([241d91a](https://codeberg.org/tjdavid/coralite/commit/241d91a45a9aa0c848f203b39a29be83cbf9c6e6))
+
+
 ## v0.25.0
 
 > Comparing `coralite-v0.24.0` to `HEAD`
