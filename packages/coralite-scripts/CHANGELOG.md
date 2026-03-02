@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.26.0
+
+> Comparing `coralite-scripts-v0.25.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- add validation for ignoreByAttribute and skipRenderByAttribute options (config) ([ae82713](https://codeberg.org/tjdavid/coralite/commit/ae82713c5f1c9cbe8b3199749d03ac4f14783bf1))
+
+
 ## v0.24.0
 
 > Comparing `coralite-scripts-v0.23.0` to `HEAD`
