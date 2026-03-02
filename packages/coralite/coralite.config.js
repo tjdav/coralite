@@ -2,7 +2,7 @@ import { createPlugin } from './dist/lib/index.js'
 
 const testPlugin = createPlugin({
   name: 'test-script-plugin',
-  script: {
+  client: {
     imports: [
       {
         specifier: './tests/fixtures/dummy-client-lib.js',
@@ -26,7 +26,7 @@ const testPlugin = createPlugin({
 
 const pluginImportsTest = createPlugin({
   name: 'plugin-imports-test',
-  script: {
+  client: {
     imports: [
       {
         specifier: './tests/fixtures/dummy-client-lib.js',
