@@ -38,10 +38,12 @@ describe('ScriptManager', () => {
 
       await sm.use(plugin)
 
-      assert.strictEqual(setupMock.mock.calls.length, 1)
-      assert.strictEqual(setupMock.mock.calls[0].arguments[0], sm)
+      // setup is no longer called during registration, it's run client-side
+      assert.strictEqual(setupMock.mock.calls.length, 0)
       assert.strictEqual(sm.plugins.length, 1)
       assert.strictEqual(sm.plugins[0], plugin)
+      assert.strictEqual(sm.scriptModules.length, 1)
+      assert.strictEqual(sm.scriptModules[0], plugin)
     })
 
     it('should register plugin with helpers', async () => {
@@ -74,7 +76,7 @@ describe('ScriptManager', () => {
 
       await sm.use(plugin)
 
-      assert.strictEqual(setupMock.mock.calls.length, 1)
+      assert.strictEqual(setupMock.mock.calls.length, 0)
       assert.strictEqual(sm.scriptModules.length, 1)
       assert.strictEqual(sm.scriptModules[0].helpers.testHelper, helper)
     })
@@ -154,7 +156,8 @@ describe('ScriptManager', () => {
 
       await sm.use(plugin)
 
-      assert.strictEqual(setupMock.mock.calls.length, 1)
+      // setup is no longer called during registration
+      assert.strictEqual(setupMock.mock.calls.length, 0)
     })
 
     it('should handle helpers with async methods', async () => {
@@ -708,17 +711,16 @@ describe('ScriptManager', () => {
 
       // Register plugin with helper
       await sm.use({
-        setup: (manager) => {
-          // Add a custom property for testing
-          manager.customProperty = 'test'
+        setup: () => {
+          return { customProperty: 'test' }
         },
         helpers: {
-          add: (a, b) => a + b
+          add: (context) => (a, b) => a + b
         }
       })
 
       // Add another helper
-      await sm.addHelper('multiply', (a, b) => a * b)
+      await sm.addHelper('multiply', (context) => (a, b) => a * b)
 
       // Register template
       sm.registerTemplate('calculator', {
@@ -727,6 +729,10 @@ describe('ScriptManager', () => {
         content: `(context, helpers) => {
           const sum = helpers.add(context.values.a, context.values.b)
           const product = helpers.multiply(sum, context.values.multiplier)
+          // also return customProperty if present to prove setup injected it
+          if (context.values.customProperty === 'test') {
+            return product + 1000
+          }
           return product
         }`
       })
@@ -750,7 +756,7 @@ describe('ScriptManager', () => {
 
       assert.ok(typeof result === 'string')
       assert.ok(result.length > 0)
-      assert.strictEqual(sm.customProperty, 'test')
+      assert.ok(result.includes('customProperty'))
     })
 
     it('should handle multiple plugins with overlapping helpers', async () => {

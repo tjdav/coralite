@@ -108,7 +108,6 @@
  * @property {string} name - Unique identifier/name of the plugin
  * @property {CoralitePluginModule<T>} [method] - Execution function that processes content using plugin logic
  * @property {HTMLData[]} [templates] - Array of loaded template data
- * @property {ScriptPlugin} [script] - Script plugin configuration
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
@@ -119,6 +118,7 @@
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
  * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
+ * @property {ScriptPlugin} [client] - Client-side plugin configuration
  * @property {Function} [server] - Server extension hook
  */
 
@@ -129,7 +129,6 @@
  * @property {CoralitePluginModule<T>} [method] - Execution function that processes content using plugin logic
  * @property {HTMLData[]} [templates] - Array of loaded template data
  * @property {Object} [metadata] - Plugin metadata
- * @property {Object} [script] - Script plugin configuration
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
@@ -140,6 +139,7 @@
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
  * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
+ * @property {ScriptPlugin} [client] - Client-side plugin configuration
  * @property {Function} [server] - Server extension hook
  */
 
@@ -148,7 +148,6 @@
  * @property {string} name - Unique identifier/name of the plugin
  * @property {Function} [method] - Execution function that processes content using plugin logic
  * @property {HTMLData[]} [templates=[]] - List of custom templates to be included in the coralite instance
- * @property {ScriptPlugin} [script] - Script plugin configuration for extending script functionality
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
@@ -159,6 +158,7 @@
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
  * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
+ * @property {ScriptPlugin} [client] - Client-side plugin configuration
  * @property {Function} [server] - Server extension hook
  */
 

@@ -198,9 +198,9 @@ export function Coralite ({
       this._addPluginHook('onAfterBuild', plugin.onAfterBuild)
     }
 
-    // register script plugin if provided
-    if (plugin.script) {
-      this._scriptManager.use(plugin.script)
+    // register client-side plugin if provided
+    if (plugin.client) {
+      this._scriptManager.use(plugin.client)
     }
   }
 

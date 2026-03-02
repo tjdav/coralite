@@ -27,15 +27,11 @@ export function ScriptManager () {
  * @returns {Promise<ScriptManager>} - Returns this for method chaining
  */
 ScriptManager.prototype.use = async function (plugin) {
-  if (plugin && typeof plugin.setup === 'function') {
-    plugin.setup(this)
-  }
-
-  // Register helpers
+  // Register script modules (client plugins)
   if (
     plugin
     && typeof plugin !== 'function'
-    && (plugin.helpers || plugin.imports)
+    && (plugin.helpers || plugin.imports || typeof plugin.setup === 'function')
   ) {
     this.scriptModules.push(plugin)
   }
@@ -128,12 +124,12 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const moduleNamespace = 'coralite-script-module:'
   // Generate ESM imports for each script module
   for (let i = 0; i < this.scriptModules.length; i++) {
-    entryCodeParts.push(`import scriptModule_${i} from "${moduleNamespace}${i}";\n`)
+    entryCodeParts.push(`import { helpers as helpers_${i}, runSetup as runSetup_${i} } from "${moduleNamespace}${i}";\n`)
   }
 
   // Setup helpers
   const helperParts = [
-    ...this.scriptModules.map((_, i) => `...scriptModule_${i}`),
+    ...this.scriptModules.map((_, i) => `...helpers_${i}`),
     this.getHelpersContent()
   ].filter(Boolean).join(',\n')
 
@@ -148,6 +144,23 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     }
     return helpers
   }\n`)
+
+  entryCodeParts.push(`const getSetups = async (context) => {
+    const values = {};
+    const results = await Promise.all([
+      ${this.scriptModules.map((_, i) => `runSetup_${i}(context)`).join(',\n      ')}
+    ]);
+    for (const res of results) {
+      if (res && typeof res === 'object') {
+        Object.assign(values, res);
+      }
+    }
+    return values;
+  }\n`)
+
+  // Global setups initialization
+  entryCodeParts.push(`const globalContext = {};\n`)
+  entryCodeParts.push(`const globalSetupValuesPromise = getSetups(globalContext);\n`)
 
   const instanceValues = Object.entries(instances)
   // Collect unique templates
@@ -203,9 +216,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
     entryCodeParts.push(';(async() => {\n')
     entryCodeParts.push('const context = ' + serialize(context) + ';\n')
-    entryCodeParts.push('const helpers = getHelpers(context);\n')
     entryCodeParts.push(`const imports = coraliteComponentImports["${context.templateId}"] || {};\n`)
     entryCodeParts.push('context.imports = imports;\n')
+    entryCodeParts.push('const setupValues = await globalSetupValuesPromise;\n')
+    entryCodeParts.push('context.values = { ...context.values, ...setupValues };\n')
+    entryCodeParts.push('const helpers = getHelpers(context);\n')
     entryCodeParts.push('context.helpers = helpers;\n')
     entryCodeParts.push(`\n// Instance: ${instanceId}\n`)
     entryCodeParts.push(`await coraliteTemplateFunctions["${context.templateId}"](context);\n`)
@@ -392,8 +407,21 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
             contents += configContent + '\n'
 
+            // Generate setup function
+            const setupFn = module.setup ? normalizeFunction(module.setup) : 'null'
+            contents += `export const runSetup = async (context) => {
+              const setup = ${setupFn};
+              if (!setup) return {};
+              const ctx = {
+                imports: pluginImports,
+                config: pluginConfig,
+                ...context
+              };
+              return await setup(ctx);
+            };\n`
+
             // Generate helpers
-            contents += 'const helpers = {\n'
+            contents += 'export const helpers = {\n'
             if (module.helpers) {
               for (const key in module.helpers) {
                 if (Object.hasOwn(module.helpers, key)) {
@@ -408,7 +436,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
               }
             }
             contents += '};\n'
-            contents += 'export default helpers;'
 
             return {
               contents,
