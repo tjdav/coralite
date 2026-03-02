@@ -1,0 +1,60 @@
+name: Publish to NPM
+
+on:
+  push:
+    tags:
+      - "*-v*"
+
+jobs:
+  publish:
+    runs-on: codeberg-small-lazy
+    container:
+      image: "guergeiro/pnpm:22-10-slim"
+    steps:
+      - name: Checkout
+        uses: https://code.forgejo.org/actions/checkout@v4
+
+      - name: Extract Package Name
+        run: |
+          PACKAGE_NAME=$(echo ${{ github.ref_name }} | sed -E 's/-v[0-9]+\.[0-9]+\.[0-9]+.*//')
+          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
+
+          # Find the directory for this package name
+          PKG_PATH=$(pnpm list --filter "$PACKAGE_NAME" --depth -1 --json | node -e "
+            const input = JSON.parse(require('fs').readFileSync(0));
+            console.log(input[0]?.path || '');
+          ")
+          echo "PACKAGE_PATH=$PKG_PATH" >> $GITHUB_ENV
+
+      - name: Cache pnpm modules
+        uses: https://code.forgejo.org/actions/cache@v3
+        with:
+          path: ~/.local/share/pnpm/store/v3
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm --filter "${{ env.PACKAGE_NAME }}..." run --if-present build
+
+      - name: set npm config
+        run: |
+          # npmjs.com Auth
+          npm config set //registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}
+
+      - name: Publish to NPM
+        run: |
+          # Check if private
+          IS_PRIVATE=$(node -p "require('${{ env.PACKAGE_PATH }}/package.json').private || false")
+          
+          if [ "$IS_PRIVATE" = "true" ]; then
+            echo "::notice::Skipping publish for $PACKAGE_NAME (Private package)."
+          else
+            echo "🚀 Publishing $PACKAGE_NAME to npmjs.com..."
+            pnpm --filter "${{ env.PACKAGE_NAME }}" publish \
+              --registry "https://registry.npmjs.org/" \
+              --no-git-checks
+          fi
