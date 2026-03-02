@@ -48,9 +48,9 @@ jobs:
           # npmjs.com Auth
           npm config set //registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}
 
-      - name: Publish to NPM
+      - name: Publish to Codeberg
         run: |
-          # Check if private (using the logic from our previous step)
+          # Check if private
           IS_PRIVATE=$(node -p "require('${{ env.PACKAGE_PATH }}/package.json').private || false")
           
           if [ "$IS_PRIVATE" = "true" ]; then
@@ -60,7 +60,16 @@ jobs:
             pnpm --filter "${{ env.PACKAGE_NAME }}" publish \
               --registry "https://codeberg.org/api/packages/tjdavid/npm/" \
               --no-git-checks
+          fi
 
+      - name: Publish to NPM
+        run: |
+          # Check if private
+          IS_PRIVATE=$(node -p "require('${{ env.PACKAGE_PATH }}/package.json').private || false")
+          
+          if [ "$IS_PRIVATE" = "true" ]; then
+            echo "::notice::Skipping publish for $PACKAGE_NAME (Private package)."
+          else
             echo "🚀 Publishing $PACKAGE_NAME to npmjs.com..."
             pnpm --filter "${{ env.PACKAGE_NAME }}" publish \
               --registry "https://registry.npmjs.org/" \
