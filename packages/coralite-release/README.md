@@ -1,3 +1,5 @@
+> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite).
+
 # Coralite release
 
 This package provides two CLI tools for managing releases and generating changelogs:

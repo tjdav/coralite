@@ -1,3 +1,5 @@
+> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite).
+
 # Coralite Development Environment Guide
 
 Welcome to **Coralite starter script**, a lightweight Static Site Generator (SSG) built for rapid development and clean output. This guide walks you through setting up your local development environment using the provided `coralite-scripts` package and configuration files.
