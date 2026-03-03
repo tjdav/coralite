@@ -1,5 +1,6 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
+import { createCoraliteTextNode } from './dom.js'
 
 /**
  * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement, CoraliteModuleValue, CoraliteTextNode, CoraliteDocument, CoraliteDocumentResult, CoraliteContentNode, CoraliteAnyNode, CoraliteDirective} from '../types/index.js'
@@ -234,44 +235,50 @@ export function replaceToken ({
   ) {
     node.attribs[attribute] = node.attribs[attribute].replace(content, value)
   } else if (node.type === 'text') {
-    if (typeof value === 'object') {
-      if (!Array.isArray(value)) {
-        // handle single nodes
-        value = [value]
-      }
+    if (typeof value === 'object' && value !== null) {
+      if (Array.isArray(value) || value.type) {
+        let nodesArray = Array.isArray(value) ? value : [value]
 
-      // inject nodes
-      const textSplit = node.data.split(content)
-      const childIndex = node.parent.children.indexOf(node)
-      const children = []
+        // inject nodes
+        const textSplit = node.data.split(content)
+        const childIndex = node.parent.children.indexOf(node)
+        const children = []
 
-      // append computed tokens in between token split
-      for (let i = 0; i < value.length; i++) {
-        const child = value[i]
+        // append computed tokens in between token split
+        for (let i = 0; i < nodesArray.length; i++) {
+          const child = nodesArray[i]
 
-        if (typeof child !== 'string' && child.type !== 'directive') {
-          // update child parent
-          child.parent = node.parent
-          children.push(child)
+          if (typeof child !== 'string' && child.type !== 'directive' && typeof child === 'object' && child.type) {
+            // update child parent
+            // @ts-ignore
+            child.parent = node.parent
+            // @ts-ignore
+            children.push(child)
+          }
         }
-      }
 
-      // replace computed token
-      node.parent.children.splice(childIndex, 1,
-        // @ts-ignore
-        {
-          type: 'text',
-          data: textSplit[0],
-          parent: node.parent
-        },
-        ...children,
-        {
-          type: 'text',
-          data: textSplit[1],
-          parent: node.parent
-        })
+        // replace computed token
+        node.parent.children.splice(childIndex, 1,
+          createCoraliteTextNode({
+            type: 'text',
+            data: textSplit[0],
+            parent: node.parent
+          }),
+          // @ts-ignore
+          ...children,
+          createCoraliteTextNode({
+            type: 'text',
+            data: textSplit[1],
+            parent: node.parent
+          })
+        )
+      } else {
+        // Handle object values like refs stringification
+        node.data = node.data.replace(content, JSON.stringify(value))
+      }
     } else {
       // replace token string
+      // @ts-ignore
       node.data = node.data.replace(content, value)
     }
   }
@@ -328,15 +335,15 @@ export function findAndExtractScript (code) {
         if (firstArg && firstArg.type === 'ObjectExpression') {
           const clientProp = firstArg.properties.find(
             prop => prop.type === 'Property' &&
-            prop.key.type === 'Identifier' &&
-            prop.key.name === 'client'
+              prop.key.type === 'Identifier' &&
+              prop.key.name === 'client'
           )
 
           if (clientProp && clientProp.type === 'Property' && clientProp.value.type === 'ObjectExpression') {
             const scriptProp = clientProp.value.properties.find(
               prop => prop.type === 'Property' &&
-              prop.key.type === 'Identifier' &&
-              prop.key.name === 'script'
+                prop.key.type === 'Identifier' &&
+                prop.key.name === 'script'
             )
 
             if (scriptProp && scriptProp.type === 'Property') {
