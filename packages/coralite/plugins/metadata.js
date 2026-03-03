@@ -3,12 +3,16 @@ import { createPlugin } from '#lib'
 export const metadataPlugin = createPlugin({
   name: 'metadata',
   async onPageSet ({ elements, values, data }) {
+    values.$lang = ''
+
     // loop through all children of the root element to process metadata in <head> tags.
     for (let i = 0; i < elements.root.children.length; i++) {
       const rootNode = elements.root.children[i]
 
       // traverse html children to find the head element
       if (rootNode.type === 'tag' && rootNode.name === 'html') {
+        values.$lang = rootNode.attribs.lang
+
         for (let i = 0; i < rootNode.children.length; i++) {
           const node = rootNode.children[i]
 
