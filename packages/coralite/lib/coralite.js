@@ -687,8 +687,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
             instances[script.id] = {
               instanceId: script.id,
               templateId: script.templateId,
-              values: script.values,
-              refs: script.refs
+              values: script.values
             }
           }
         }
@@ -1195,17 +1194,20 @@ Coralite.prototype.createComponent = async function ({
       // Register template script with script manager
       await this._scriptManager.registerTemplate(module.id, scriptResult.__script__, templateItem.path.pathname)
 
-      const refs = {}
+      // Ensure values object exists in scriptResult
+      if (!scriptResult.__script__.values) {
+        scriptResult.__script__.values = {}
+      }
 
       for (let i = 0; i < module.values.refs.length; i++) {
         const ref = module.values.refs[i]
         const id = `${module.id}__${ref.name}-${index}`
 
-        // map ref name id pair
-        refs[ref.name] = id
+        // set id selector
+        ref.element.attribs.id = id
 
-        // set data ref selector
-        ref.element.attribs['data-coralite-ref'] = id
+        // inject flat token into script instance values
+        scriptResult.__script__.values[`ref_${ref.name}`] = id
 
         // clean up ref attribute
         delete ref.element.attribs.ref
@@ -1216,7 +1218,6 @@ Coralite.prototype.createComponent = async function ({
         id: contextId,
         templateId: module.id,
         document,
-        refs,
         values: scriptResult.__script__.values
       })
 
@@ -1226,6 +1227,20 @@ Coralite.prototype.createComponent = async function ({
     values = Object.assign(values, scriptResult)
     renderContext.values[contextId] = values
   }
+
+  // append ref objects to values
+  /** @type {Object.<string, string>} */
+  const refs = {}
+  for (let i = 0; i < module.values.refs.length; i++) {
+    const ref = module.values.refs[i]
+    refs[ref.name] = `${module.id}__${ref.name}-${index}`
+  }
+
+  values.refs = refs
+  if (!renderContext.values[contextId]) {
+    renderContext.values[contextId] = {}
+  }
+  renderContext.values[contextId].refs = refs
 
   // replace tokens in the template with their values from `values` object and store them into computed value array for later use if needed (e.g., to be injected back).
   for (let i = 0; i < module.values.attributes.length; i++) {

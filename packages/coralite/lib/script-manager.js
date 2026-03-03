@@ -209,7 +209,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     const context = {
       instanceId,
       templateId: instanceData.templateId,
-      refs: instanceData.refs,
       values: instanceData.values,
       document: instances[instanceId].document || {}
     }
