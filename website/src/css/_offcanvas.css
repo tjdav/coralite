@@ -82,6 +82,7 @@
     box-shadow: none;
     transition: none;
     transform: none !important;
+    overflow: unset;
   /* stylelint-enable */
 
     .nav {
