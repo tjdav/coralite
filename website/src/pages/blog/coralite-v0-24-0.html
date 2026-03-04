@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.24.0: Build Modes, Client/Server Separation, and Plugin Enhancements"
+    description="Coralite v0.24.0 introduces Development & Production build modes, a restructured defineComponent API for clearer client/server separation, and robust new plugin features."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-02-28T14:05:16.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.24.0: Build Modes, Client/Server Separation, and Plugin Enhancements</title>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <coralite-heading level="h1"
+      text="Coralite v0.24.0: Build Modes, Client/Server Separation, and Plugin Enhancements"></coralite-heading>
+
+    <coralite-author name="thomas" date="2026-03-01T14:05:16.000Z"></coralite-author>
+
+    <p>Welcome to <strong>Coralite v0.24.0</strong>! This update is all about bringing structure, clarity, and robust
+      debugging tools to your components and builds.</p>
+
+    <p><strong>TL;DR of what's new:</strong></p>
+    <ul>
+      <li><strong>Build Modes:</strong> Introduced explicit Development and Production build modes with tailored
+        performance profiles.</li>
+      <li><strong>Client/Server Separation:</strong> A major refactoring of the <code>defineComponent</code> API to
+        cleanly separate server-side setup and client-side execution.</li>
+      <li><strong>Sourcemap Support:</strong> Automatic inline sourcemaps for component client scripts in development
+        mode.</li>
+      <li><strong>Plugin Enhancements:</strong> A new <code>onBuildComplete</code> lifecycle hook and robust
+        configuration options for script compilation.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Development & Production Build Modes"></coralite-heading>
+
+    <p>With v0.24.0, we have introduced explicit <strong>Development</strong> and <strong>Production</strong> build
+      modes. This foundational change allows Coralite to optimize its internal behavior based on what you are trying to
+      achieve.</p>
+
+    <p>In <strong>Development mode</strong>, Coralite prioritizes debugging. It utilizes <code>SourceTextModule</code>
+      for server-side evaluation and automatically injects inline sourcemaps into all of your client-side component
+      scripts. We also resolve bare module specifiers dynamically using <code>createRequire</code> relative to your
+      importing component.</p>
+
+    <p>In <strong>Production mode</strong>, Coralite strips out the debugging overhead and relies on highly optimized
+      <code>esbuild</code> transformations to compile your server-side scripts for maximum performance.
+    </p>
+
+    <coralite-heading level="h2" text="Client/Server Separation in defineComponent"></coralite-heading>
+
+    <p>We've completely restructured the <code>defineComponent</code> API to enforce a strict and clear separation
+      between server-side Server-Side Rendering (SSR) logic and client-side browser execution.</p>
+
+    <p>Client-side configurations—including imports, SSR data preparation (<code>setup</code>), and browser execution
+      logic (<code>script</code>)—must now be nested within a dedicated <code>client</code> object. This structural
+      change prevents server-only logic from accidentally leaking into your client bundles and provides a much better
+      mental model for component authoring.</p>
+
+    <coralite-code-highlight language="javascript">
+      defineComponent({
+        client: {
+          imports: [{ specifier: 'my-package' }],
+          setup(props) {
+            // Runs on the server during SSR
+            return { serverTime: Date.now() }
+          },
+          script({ values }) {
+            // Runs on the client
+            console.log("Server time was:", values.serverTime)
+          }
+        }
+      })
+    </coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Sourcemap Support for Easier Debugging"></coralite-heading>
+
+    <p>As part of the new Development mode, Coralite now automatically generates and maps <strong>inline
+        sourcemaps</strong> for the code you write inside your <code>client.script</code> functions. Say goodbye to
+      struggling with minified or obscured errors in the browser console. Stack traces will now point directly back to
+      the original source lines in your component templates!</p>
+
+    <coralite-heading level="h2" text="Plugin Enhancements & The onBuildComplete Hook"></coralite-heading>
+
+    <p>We continue to expand the power available to plugin authors:</p>
+    <ul>
+      <li><strong><code>onBuildComplete</code>:</strong> A new lifecycle event hook that triggers immediately after the
+        entire build process (including all concurrent render queues) has finished.</li>
+      <li><strong>Script Configuration:</strong> Plugin helpers can now receive robust static configuration objects
+        (<code>script.config</code>) which are securely serialized and injected directly into the helper function
+        context.</li>
+      <li><strong>Namespace Exports:</strong> We've improved module handling with new <code>namespaceExport</code>
+        support, ensuring valid ESM syntax when combined with default or named exports.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+
+    <p>You can upgrade your projects today by updating your dependencies:</p>
+    <coralite-code-highlight language="bash">npm install coralite@latest</coralite-code-highlight>
+
+    <p>Happy building!</p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

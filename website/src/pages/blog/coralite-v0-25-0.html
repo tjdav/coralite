@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.25.0 Released: skipRenderByAttribute & New Plugin Hooks"
+    description="Coralite v0.25.0 introduces the skipRenderByAttribute option, new onBeforePageRender and onBeforeBuild plugin hooks, an ESM bundler format, and a breaking change to standardize hook naming."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-03-04T10:19:11.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.25.0 Released: skipRenderByAttribute & New Plugin Hooks</title>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.25.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-03-04T10:19:11.000Z"></coralite-author>
+
+    <p>I am excited to announce the release of <strong>Coralite v0.25.0</strong>! This update introduces a new option to
+      exclude elements from rendering, powerful new plugin hooks for interacting with the build and render processes, a
+      switch to an ESM bundler format, and an important breaking change to normalize our hook naming conventions.</p>
+
+    <coralite-heading level="h2" text="Skip Render By Attribute"></coralite-heading>
+
+    <p>This release introduces a new <code>skipRenderByAttribute</code> option to <code>CoraliteOptions</code> and the
+      CLI (<code>-s</code>, <code>--skip-render-attribute</code>). This feature allows you to parse tags but exclude
+      them from the final render output.</p>
+
+    <p>Elements meeting the specified attribute criteria will be parsed and evaluated normally, but they will be
+      stripped right before the final HTML generation. This is extremely useful for keeping certain components or
+      metadata in the AST without making them visible in the final HTML output.</p>
+
+    <coralite-heading level="h2" text="New Plugin Hooks"></coralite-heading>
+
+    <p>We've introduced two new plugin hooks to allow for powerful mutations of the AST and configuration:</p>
+
+    <ul>
+      <li><strong>onBeforePageRender:</strong> Triggered just before rendering a page, giving you the ability to alter
+        context data specific to that page.</li>
+      <li><strong>onBeforeBuild:</strong> Triggered before the entire build process starts, allowing plugins to modify
+        the build process globally.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="ESM Bundler Format"></coralite-heading>
+
+    <p>The Script Manager's Rollup build format has been changed from IIFE to <strong>ESM</strong> to support modern
+      module loading. We've also added external configuration to prevent bundling of <code>http://</code> and
+      <code>https://</code> imports.
+    </p>
+
+    <p>This update allows for seamless external library imports via plugin and component client script imports,
+      drastically improving integration with modern dependencies.</p>
+
+    <coralite-heading level="h2" text="Breaking Change: Hook Renaming"></coralite-heading>
+
+    <p>To normalize the naming pattern with other lifecycle hooks (like <code>onBeforeBuild</code> and
+      <code>onAfterPageRender</code>), we have renamed the <code>onBuildComplete</code> hook to
+      <strong><code>onAfterBuild</code></strong>.
+    </p>
+
+    <p>If you have authored or are maintaining a Coralite plugin, you will need to update your plugin definitions and
+      hook registrations to use <code>onAfterBuild</code> instead.</p>
+
+    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.25.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.25.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
