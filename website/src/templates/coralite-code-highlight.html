@@ -94,7 +94,8 @@
       }
     },
     client: {
-      script({ refs }) {
+      script({ helpers }) {
+        const { refs } = helpers
         const popoverButton = refs('popoverBtn')
         const popoverTarget = refs('popoverTarget')
         const codeBody = refs('code')
