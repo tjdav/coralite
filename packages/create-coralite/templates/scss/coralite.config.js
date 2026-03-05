@@ -4,7 +4,7 @@ export default defineConfig({
   public: 'public',
   output: 'dist',
   pages: 'src/pages',
-  templates: 'src/templates',
+  components: 'src/components',
   styles: {
     type: 'scss',
     input: 'src/scss'

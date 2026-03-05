@@ -59,7 +59,7 @@ if (mode === 'dev') {
   const start = process.hrtime()
   // start coralite
   const coralite = new Coralite({
-    templates: config.templates,
+    components: config.components,
     pages: config.pages,
     plugins: config.plugins
   })

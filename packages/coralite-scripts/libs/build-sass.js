@@ -31,10 +31,10 @@ async function buildSass ({
     silenceDeprecations: [
       'color-functions',
       'import',
-      'global-builtin'
+      'global-builtin',
+      'elseif'
     ]
-  },
-  start
+  }
 }) {
   try {
     // ensure output directory exists
@@ -43,33 +43,33 @@ async function buildSass ({
     // read all files from src/scss directory
     const scssFiles = await fs.readdir(input)
     const filteredScssFiles = scssFiles.filter(file => file.endsWith('.scss') && file[0] !== '_')
-    const results = []
 
-    for (const file of filteredScssFiles) {
+    const results = await Promise.all(filteredScssFiles.map(async (file) => {
       const filePath = path.join(input, file)
       const outputFile = path.join(output, file.replace('.scss', '.css'))
 
+      // start duration timer.
       const fileStart = process.hrtime()
 
+      // compile sass
       const result = await sass.compileAsync(filePath, options)
 
+      // record duration
       const duration = process.hrtime(fileStart)
 
-      // write the compiled CSS
       await fs.writeFile(outputFile, result.css)
 
-      // write source map if enabled
       if (result.sourceMap) {
         const sourceMapPath = outputFile + '.map'
         await fs.writeFile(sourceMapPath, JSON.stringify(result.sourceMap))
       }
 
-      results.push({
+      return {
         input: filePath,
         output: outputFile,
         duration
-      })
-    }
+      }
+    }))
 
     return results
   } catch (error) {

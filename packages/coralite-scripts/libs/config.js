@@ -17,7 +17,7 @@
  *
  * export default defineConfig({
  *   output: './dist',
- *   templates: './src/templates',
+ *   components: './src/components',
  *   pages: './src/pages',
  *   public: './public',
  *   server: {
@@ -39,8 +39,8 @@ export function defineConfig (options) {
     throw new Error('Configuration must contain a valid "output" property')
   }
 
-  if (!options.templates || typeof options.templates !== 'string') {
-    throw new Error('Configuration must contain a valid "templates" property')
+  if (!options.components || typeof options.components !== 'string') {
+    throw new Error('Configuration must contain a valid "components" property')
   }
 
   if (!options.pages || typeof options.pages !== 'string') {

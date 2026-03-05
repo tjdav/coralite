@@ -21,8 +21,7 @@ import path from 'path'
 async function buildCSS ({
   input,
   output,
-  plugins = [],
-  start
+  plugins = []
 }) {
   try {
     // ensure output directory exists
@@ -31,9 +30,8 @@ async function buildCSS ({
     // read all files from src/scss directory
     const cssFiles = await fs.readdir(input)
     const filteredCssFiles = cssFiles.filter(file => file.endsWith('.css'))
-    const results = []
 
-    for (const file of filteredCssFiles) {
+    const results = await Promise.all(filteredCssFiles.map(async (file) => {
       const filePath = path.join(input, file)
       const outputFile = path.join(output, file)
       const css = await fs.readFile(filePath)
@@ -49,16 +47,16 @@ async function buildCSS ({
 
       await fs.writeFile(outputFile, result.css)
 
-      if ( result.map ) {
+      if (result.map) {
         await fs.writeFile(outputFile + '.map', result.map.toString())
       }
 
-      results.push({
+      return {
         input: filePath,
         output: outputFile,
         duration
-      })
-    }
+      }
+    }))
 
     return results
   } catch (error) {
