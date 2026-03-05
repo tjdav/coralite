@@ -96,7 +96,7 @@ export function Coralite ({
     ignoreByAttribute,
     skipRenderByAttribute,
     mode,
-    standaloneOutput,
+    standaloneOutput: standaloneOutput ? normalize(standaloneOutput) : undefined,
     path
   }
 
