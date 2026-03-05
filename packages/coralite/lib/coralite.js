@@ -976,7 +976,15 @@ Coralite.prototype.build = async function (...args) {
     if (this.options.standaloneOutput) {
       for await (const result of this._generateStandaloneComponents()) {
         if (signal?.aborted) throw signal.reason
-        results.push(result)
+
+        if (typeof callback === 'function') {
+          const transformed = await callback(result)
+          if (transformed) {
+            results.push(transformed)
+          }
+        } else {
+          results.push(result)
+        }
       }
     }
 
