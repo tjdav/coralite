@@ -242,8 +242,15 @@ class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
     context.values = { ...context.values, ...setupValues };
     
     // Inject HTML & CSS payload first so user script can interact with DOM
-    const htmlPayload = \`${htmlPayload.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+    let htmlPayload = \`${htmlPayload.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
     const cssPayload = \`${cssPayload.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
+    
+    // Replace text tokens in the payload (rudimentary support for standalone components without the full AST engine)
+    for (const [key, value] of Object.entries(context.values)) {
+      const token = \`{{ \${key} }}\`;
+      htmlPayload = htmlPayload.split(token).join(value);
+    }
+    
     let styles = '';
     if (cssPayload) {
       styles = \`<style>\${cssPayload}</style>\`;
