@@ -20,7 +20,7 @@ export const refsPlugin = createPlugin({
 
           const refId = values[`ref_${id}`]
 
-          if (!refId) {
+          if (!refId && typeof refId !== 'string') {
             return null
           }
 

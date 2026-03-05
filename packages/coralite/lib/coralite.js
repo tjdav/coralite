@@ -44,15 +44,15 @@ import { createContext } from 'node:vm'
 /**
  * @constructor
  * @param {Object} options
- * @param {string} options.templates - The path to the directory containing Coralite templates.
+ * @param {string} options.components - The path to the directory containing Coralite components.
  * @param {CoralitePluginInstance[]} [options.plugins=[]]
- * @param {string} options.pages - The path to the directory containing pages that will be rendered using the provided templates.
+ * @param {string} options.pages - The path to the directory containing pages that will be rendered using the provided components.
  * @param {string} [options.mode='production'] - Build mode: "development" or "production"
  * @param {Attribute[]} [options.ignoreByAttribute] - Elements to ignore with attribute name value pair
  * @param {string[]} [options.skipRenderByAttribute] - Element attributes to parse but exclude from final render output
  * @example
  * const coralite = new Coralite({
- *   templates: './path/to/templates',
+ *   components: './path/to/components',
  *   pages: './path/to/pages',
  *   mode: 'development',
  *   plugins: [myPlugin],
@@ -61,7 +61,7 @@ import { createContext } from 'node:vm'
  * });
  */
 export function Coralite ({
-  templates,
+  components,
   pages,
   plugins,
   ignoreByAttribute,
@@ -69,8 +69,8 @@ export function Coralite ({
   mode = 'production'
 }) {
   // Validate required parameters
-  if (!templates && typeof templates !== 'string') {
-    throw new Error('Coralite constructor requires "templates" option to be defined')
+  if (!components && typeof components !== 'string') {
+    throw new Error('Coralite constructor requires "components" option to be defined')
   }
 
   if (!pages && typeof pages !== 'string') {
@@ -82,13 +82,13 @@ export function Coralite ({
   }
 
   const path = {
-    templates: normalize(templates),
+    components: normalize(components),
     pages: normalize(pages)
   }
 
   // instance options
   this.options = {
-    templates,
+    components,
     pages,
     plugins,
     ignoreByAttribute,
@@ -102,14 +102,14 @@ export function Coralite ({
 
   // plugins
   this._plugins = {
-    templates: [],
+    components: [],
     hooks: {
       onPageSet: [],
       onPageUpdate: [],
       onPageDelete: [],
-      onTemplateSet: [],
-      onTemplateUpdate: [],
-      onTemplateDelete: [],
+      onComponentSet: [],
+      onComponentUpdate: [],
+      onComponentDelete: [],
       onBeforePageRender: [],
       onAfterPageRender: [],
       onBeforeBuild: [],
@@ -135,7 +135,7 @@ export function Coralite ({
       plugins: {},
       path,
       excludeByAttribute: ignoreByAttribute,
-      templates: this.templates,
+      components: this.components,
       pages: this.pages
     }
   }
@@ -159,10 +159,10 @@ export function Coralite ({
       }
     }
 
-    // queue any templates provided by the plugin to be registered.
-    if (plugin.templates && Array.isArray(plugin.templates)) {
-      for (let i = 0; i < plugin.templates.length; i++) {
-        this._plugins.templates.push(plugin.templates[i])
+    // queue any components provided by the plugin to be registered.
+    if (plugin.components && Array.isArray(plugin.components)) {
+      for (let i = 0; i < plugin.components.length; i++) {
+        this._plugins.components.push(plugin.components[i])
       }
     }
 
@@ -176,14 +176,14 @@ export function Coralite ({
     if (plugin.onPageUpdate) {
       this._addPluginHook('onPageUpdate', plugin.onPageUpdate)
     }
-    if (plugin.onTemplateSet) {
-      this._addPluginHook('onTemplateSet', plugin.onTemplateSet)
+    if (plugin.onComponentSet) {
+      this._addPluginHook('onComponentSet', plugin.onComponentSet)
     }
-    if (plugin.onTemplateDelete) {
-      this._addPluginHook('onTemplateDelete', plugin.onTemplateDelete)
+    if (plugin.onComponentDelete) {
+      this._addPluginHook('onComponentDelete', plugin.onComponentDelete)
     }
-    if (plugin.onTemplateUpdate) {
-      this._addPluginHook('onTemplateUpdate', plugin.onTemplateUpdate)
+    if (plugin.onComponentUpdate) {
+      this._addPluginHook('onComponentUpdate', plugin.onComponentUpdate)
     }
     if (plugin.onBeforePageRender) {
       this._addPluginHook('onBeforePageRender', plugin.onBeforePageRender)
@@ -232,51 +232,52 @@ export function Coralite ({
  * @returns {Promise<void>}
  */
 Coralite.prototype.initialise = async function () {
-  this.templates = await getHtmlFiles({
-    path: this.options.templates,
+  this.components = await getHtmlFiles({
+    path: this.options.components,
     recursive: true,
-    type: 'template',
+    type: 'component',
     onFileSet: async (value) => {
-      const template = parseModule(value.content, {
-        ignoreByAttribute: this.options.ignoreByAttribute
+      const component = parseModule(value.content, {
+        ignoreByAttribute: this.options.ignoreByAttribute,
+        skipRenderByAttribute: this.options.skipRenderByAttribute
       })
 
-      // abort template add
-      if (!template.isTemplate) {
+      // abort component add
+      if (!component.isTemplate) {
         return
       }
 
-      await this._triggerPluginHook('onTemplateSet', template)
+      await this._triggerPluginHook('onComponentSet', component)
 
       return {
-        type: 'template',
-        // @ts-ignore
-        id: template.id,
-        value: template
+        type: 'component',
+        id: component.id,
+        value: component
       }
     },
     onFileUpdate: async (value) => {
-      const template = parseModule(value.content, {
-        ignoreByAttribute: this.options.ignoreByAttribute
+      const component = parseModule(value.content, {
+        ignoreByAttribute: this.options.ignoreByAttribute,
+        skipRenderByAttribute: this.options.skipRenderByAttribute
       })
 
-      // abort template update
-      if (!template.isTemplate) {
+      // abort component update
+      if (!component.isTemplate) {
         return
       }
 
-      await this._triggerPluginHook('onTemplateUpdate', template)
+      await this._triggerPluginHook('onComponentUpdate', component)
 
-      return template
+      return component
     },
     onFileDelete: async (value) => {
-      await this._triggerPluginHook('onTemplateDelete', value)
+      await this._triggerPluginHook('onComponentDelete', value)
     }
   })
 
-  // register plugin templates
-  for (let i = 0; i < this._plugins.templates.length; i++) {
-    await this.templates.setItem(this._plugins.templates[i])
+  // register plugin components
+  for (let i = 0; i < this._plugins.components.length; i++) {
+    await this.components.setItem(this._plugins.components[i])
   }
 
   // collection of custom elements used by pages
@@ -308,15 +309,15 @@ Coralite.prototype.initialise = async function () {
         pageCustomElements[name] = new Set()
         item = pageCustomElements[name]
 
-        const template = this.templates.getItem(name)
+        const component = this.components.getItem(name)
 
         if (
-          template &&
-          template.result &&
-          template.result.customElements &&
-          template.result.customElements.length
+          component &&
+          component.result &&
+          component.result.customElements &&
+          component.result.customElements.length
         ) {
-          const stack = [template.result.customElements]
+          const stack = [component.result.customElements]
 
           while (stack.length > 0) {
             const current = stack.pop()
@@ -328,16 +329,16 @@ Coralite.prototype.initialise = async function () {
                 childCustomElements[element.name] = name
 
                 // process nested elements recursively
-                const template = this.templates.getItem(element.name)
+                const component = this.components.getItem(element.name)
 
                 if (
-                  template &&
-                  template.result &&
-                  template.result.customElements &&
-                  template.result.customElements.length
+                  component &&
+                  component.result &&
+                  component.result.customElements &&
+                  component.result.customElements.length
                 ) {
                   // push nested custom elements to stack for processing
-                  stack.push(template.result.customElements)
+                  stack.push(component.result.customElements)
                 }
               }
             }
@@ -352,14 +353,14 @@ Coralite.prototype.initialise = async function () {
     // Determine the root path based on the data type
     let rootPath = this.options.path.pages
 
-    if (data.type === 'template') {
-      rootPath = this.options.path.templates
+    if (data.type === 'component') {
+      rootPath = this.options.path.components
     }
 
     // Convert relative file path to a URL pathname format
     const urlPathname = pathToFileURL(join('/', relative(rootPath, data.path.pathname))).pathname
 
-    // define a set of context values for template rendering
+    // define a set of context values for component rendering
     /** @type {CoraliteValues} */
     const values = {
       $urlPathname: urlPathname,
@@ -686,7 +687,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
             // extending script content with templateId and values
             instances[script.id] = {
               instanceId: script.id,
-              templateId: script.templateId,
+              componentId: script.componentId,
               values: script.values
             }
           }
@@ -1030,28 +1031,28 @@ Coralite.prototype.addRenderQueue = async function (value, buildId) {
 }
 
 /**
- * Retrieves page paths associated with a custom element template.
+ * Retrieves page paths associated with a custom element components.
  *
- * @param {string} path - The original path potentially prefixed with the templates directory.
- * @returns {string[]} An array of page paths linked to the custom element template.
+ * @param {string} path - The original path potentially prefixed with the components directory.
+ * @returns {string[]} An array of page paths linked to the custom element component.
  */
 Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
-  // normalize path by removing the templates directory prefix
-  if (path.startsWith(this.options.path.templates)) {
-    path = path.substring(this.options.path.templates.length + 1)
+  // normalize path by removing the components directory prefix
+  if (path.startsWith(this.options.path.components)) {
+    path = path.substring(this.options.path.components.length + 1)
   }
 
-  // retrieve the template item from the templates collection
-  const item = this.templates.getItem(path)
+  // retrieve the component item from the components collection
+  const item = this.components.getItem(path)
   const pages = []
 
-  // if template exists, collect associated page paths
+  // if component exists, collect associated page paths
   if (item) {
     const id = this._childCustomElements[item.result.id] || item.result.id
     const pageCustomElements = this._pageCustomElements[id]
 
     if (pageCustomElements) {
-      // iterate over custom element paths linked to this template
+      // iterate over custom element paths linked to this component
       pageCustomElements.forEach(path => {
         pages.push(path)
       })
@@ -1079,12 +1080,12 @@ Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
  * const component = await createComponent({
  *   id: 'my-component',
  *   tokens: {
- *     'some-value': 'value-for-template'
+ *     'some-value': 'value-for-component'
  *   },
  *   components: {
  *     'my-component': {
  *       id: 'my-component',
- *       template: someTemplate,
+ *       component: someComponent,
  *       script: someScript,
  *       values: someValues
  *     }
@@ -1106,9 +1107,9 @@ Coralite.prototype.createComponent = async function ({
     renderContext = this._createRenderContext()
   }
 
-  const templateItem = this.templates.getItem(id)
+  const component = this.components.getItem(id)
 
-  if (!templateItem) {
+  if (!component) {
     return
   }
 
@@ -1129,26 +1130,26 @@ Coralite.prototype.createComponent = async function ({
    * clone the component to avoid mutations during replacement process.
    * @type {CoraliteModule}
    */
-  const module = cloneModuleInstance(templateItem.result)
+  const module = cloneModuleInstance(component.result)
   const result = module.template
 
   if (module.styles.length) {
     const attributeName = 'data-style-selector'
     const selector = module.id
 
-    // Check if styles have been processed for this template
-    if (!templateItem.result._processedCss) {
+    // Check if styles have been processed for this component
+    if (!component.result._processedCss) {
       const rawCss = module.styles.join('\n')
 
-      const { rootClasses, descendantClasses } = templateItem.result
+      const { rootClasses, descendantClasses } = component.result
 
       // Transform CSS
-      templateItem.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses)
+      component.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses)
     }
 
     // Add styles to renderContext (idempotent for the build)
     if (!renderContext.styles.has(selector)) {
-      renderContext.styles.set(selector, templateItem.result._processedCss)
+      renderContext.styles.set(selector, component.result._processedCss)
     }
 
     // Inject attribute into component root elements
@@ -1191,8 +1192,8 @@ Coralite.prototype.createComponent = async function ({
         scriptResult.__script__.content = 'export default function(){}'
       }
 
-      // Register template script with script manager
-      await this._scriptManager.registerTemplate(module.id, scriptResult.__script__, templateItem.path.pathname)
+      // Register component script with script manager
+      await this._scriptManager.registerComponent(module.id, scriptResult.__script__, component.path.pathname)
 
       // Ensure values object exists in scriptResult
       if (!scriptResult.__script__.values) {
@@ -1216,7 +1217,7 @@ Coralite.prototype.createComponent = async function ({
       // Store instance data for script manager
       renderContext.scripts.add(document.path.pathname, {
         id: contextId,
-        templateId: module.id,
+        componentId: module.id,
         document,
         values: scriptResult.__script__.values
       })
@@ -1229,20 +1230,13 @@ Coralite.prototype.createComponent = async function ({
   }
 
   // append ref objects to values
-  /** @type {Object.<string, string>} */
-  const refs = {}
   for (let i = 0; i < module.values.refs.length; i++) {
     const ref = module.values.refs[i]
-    refs[ref.name] = `${module.id}__${ref.name}-${index}`
+
+    values[`ref_${ref.name}`] = `${module.id}__${ref.name}-${index}`
   }
 
-  values.refs = refs
-  if (!renderContext.values[contextId]) {
-    renderContext.values[contextId] = {}
-  }
-  renderContext.values[contextId].refs = refs
-
-  // replace tokens in the template with their values from `values` object and store them into computed value array for later use if needed (e.g., to be injected back).
+  // replace tokens in the component with their values from `values` object and store them into computed value array for later use if needed (e.g., to be injected back).
   for (let i = 0; i < module.values.attributes.length; i++) {
     const item = module.values.attributes[i]
 
@@ -1432,7 +1426,7 @@ Coralite.prototype.createComponent = async function ({
           const node = slotNodes[i]
 
           if (node.name) {
-            const component = this.templates.getItem(node.name)
+            const component = this.components.getItem(node.name)
 
             if (component) {
               const slotContextId = contextId + slotName + i + node.name
@@ -1480,7 +1474,7 @@ Coralite.prototype.createComponent = async function ({
  */
 Coralite.prototype._moduleLinker = function (path, context) {
   const source = this._source
-  const templateDirURL = pathToFileURL(resolve(path.dirname)).href
+  const componentDirURL = pathToFileURL(resolve(path.dirname)).href
 
   /**
    * @param {string} specifier - The specifier of the requested module
@@ -1526,7 +1520,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
       specifier = pathToFileURL(resolve(path.dirname, specifier)).href
     } else {
       // handle modules
-      specifier = import.meta.resolve(specifier, templateDirURL)
+      specifier = import.meta.resolve(specifier, componentDirURL)
     }
 
     try {
@@ -1618,19 +1612,19 @@ Coralite.prototype._evaluateDevelopment = async function ({
     __coralite_plugins__: cachedBoundPlugins
   })
 
-  const template = this.templates.getItem(module.id)
+  const component = this.components.getItem(module.id)
 
   // create a new source text module with the provided script content, configuration options, and context
   const script = new SourceTextModule(module.script, {
     initializeImportMeta (meta) {
-      meta.url = pathToFileURL(resolve(template.path.pathname)).href
+      meta.url = pathToFileURL(resolve(component.path.pathname)).href
     },
     lineOffset: module.lineOffset,
-    identifier: resolve(template.path.pathname),
+    identifier: resolve(component.path.pathname),
     context: contextifiedObject
   })
 
-  const linker = this._moduleLinker(template.path, context)
+  const linker = this._moduleLinker(component.path, context)
 
   await script.link(linker)
 
@@ -1684,9 +1678,9 @@ Coralite.prototype._evaluateProduction = async function ({
   renderContext.source.contextInstances[contextId] = context
 
   // Retrieve Template and check cache
-  const templateItem = this.templates.getItem(module.id)
+  const component = this.components.getItem(module.id)
 
-  if (!templateItem.result._compiledCode) {
+  if (!component.result._compiledCode) {
     const paddingCount = Math.max(0, (module.lineOffset - 1 || 0))
     const padding = '\n'.repeat(paddingCount)
 
@@ -1698,11 +1692,11 @@ Coralite.prototype._evaluateProduction = async function ({
       platform: 'node'
     })
 
-    templateItem.result._compiledCode = `(async() => {${code}})();`
+    component.result._compiledCode = `(async() => {${code}})();`
   }
 
-  // Create a require function anchored to the template's file path to resolve relative imports
-  const fileRequire = createRequire(resolve(templateItem.path.pathname))
+  // Create a require function anchored to the component's file path to resolve relative imports
+  const fileRequire = createRequire(resolve(component.path.pathname))
 
   let cachedBoundPlugins = null
 
@@ -1754,7 +1748,7 @@ Coralite.prototype._evaluateProduction = async function ({
     'exports',
     'require',
     'coralite',
-    templateItem.result._compiledCode.trim()
+    component.result._compiledCode.trim()
   )
 
   // Execute the function with our mocks and context
@@ -1762,7 +1756,7 @@ Coralite.prototype._evaluateProduction = async function ({
     await fn(moduleMock, moduleMock.exports, customRequire, context)
   } catch (error) {
     if (error instanceof Error) {
-      error.message = `Error in "${templateItem.path.pathname}": ${error.message}`
+      error.message = `Error in "${component.path.pathname}": ${error.message}`
     }
     throw error
   }
@@ -1802,7 +1796,7 @@ Coralite.prototype._evaluate = async function (options) {
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to trigger.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to trigger.
  * @param {T} data - Data to pass to each callback function.
  * @return {Promise<Array<T>>} A promise that resolves to an array of results from all callbacks.
  */
@@ -1825,7 +1819,7 @@ Coralite.prototype._triggerPluginHook = async function (name, data) {
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onTemplateSet'|'onTemplateUpdate'|'onTemplateDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to register the callback with.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to register the callback with.
  * @param {Function} callback - The callback function to be executed when the hook is triggered.
  */
 Coralite.prototype._addPluginHook = function (name, callback) {

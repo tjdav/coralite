@@ -34,7 +34,7 @@ async function server (config, options) {
     // start coralite
     displayInfo('Initializing Coralite...')
     const coralite = new Coralite({
-      templates: config.templates,
+      components: config.components,
       pages: config.pages,
       plugins: config.plugins,
       ignoreByAttribute: config.ignoreByAttribute,
@@ -55,7 +55,7 @@ async function server (config, options) {
     const watchPath = [
       config.public,
       config.pages,
-      config.templates
+      config.components
     ]
 
     // no cache middleware
@@ -315,7 +315,7 @@ async function server (config, options) {
       ignoreInitial: true
     })
 
-    const templatePath = normalize(config.templates)
+    const componentPath = normalize(config.components)
     const pagesPath = normalize(config.pages)
 
     // Debouncing and compilation state management
@@ -343,14 +343,14 @@ async function server (config, options) {
 
         // Group changes by type
         const pagesChanges = changes.filter(p => p.startsWith(pagesPath))
-        const templateChanges = changes.filter(p => p.startsWith(templatePath))
+        const componentChanges = changes.filter(p => p.startsWith(componentPath))
         const sassChanges = changes.filter(p => p.endsWith('.scss') || p.endsWith('.sass'))
         const cssChanges = changes.filter(p => p.endsWith('.css'))
 
         try {
-          // Handle template changes
-          for (const path of templateChanges) {
-            await coralite.templates.setItem(path)
+          // Handle component changes
+          for (const path of componentChanges) {
+            await coralite.components.setItem(path)
           }
 
           // Handle SASS changes - rebuild all SASS files once
@@ -383,7 +383,7 @@ async function server (config, options) {
 
           // Notify clients to reload
           if (pagesChanges.length > 0
-            || templateChanges.length > 0
+            || componentChanges.length > 0
             || sassChanges.length > 0
             || cssChanges.length > 0) {
             clients.forEach(client => {
@@ -401,8 +401,8 @@ async function server (config, options) {
     watcher
       .on('unlink', async (path) => {
         try {
-          if (path.startsWith(templatePath)) {
-            await coralite.templates.deleteItem(path)
+          if (path.startsWith(componentPath)) {
+            await coralite.components.deleteItem(path)
           } else if (path.startsWith(pagesPath)) {
             await coralite.pages.deleteItem(path)
           }
@@ -417,9 +417,9 @@ async function server (config, options) {
       })
       .on('add', async (path) => {
         try {
-          if (path.startsWith(templatePath)) {
-            // set template item
-            coralite.templates.setItem(path)
+          if (path.startsWith(componentPath)) {
+            // set component item
+            coralite.components.setItem(path)
           } else if (path.endsWith('.scss') || path.endsWith('.sass')) {
             // Add to pending changes and trigger debounced compilation
             pendingChanges.add(path)

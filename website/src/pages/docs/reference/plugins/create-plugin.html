@@ -41,27 +41,27 @@
         import { createPlugin } from 'coralite'
 
         const myPlugin = createPlugin({
-          name: 'my-plugin', // Required: Unique name for the plugin
-          
-          // Optional: Main server-side logic
-          method: (options, context) => {
-            // ... implementation
-          },
+        name: 'my-plugin', // Required: Unique name for the plugin
 
-          // Optional: Register custom templates
-          templates: ['./path/to/template.html'],
+        // Optional: Main server-side logic
+        method: (options, context) => {
+        // ... implementation
+        },
 
-          // Optional: Client-side script configuration
-          script: {
-            setup: async () => { /* ... */ },
-            helpers: { /* ... */ },
-            imports: [ /* ... */ ],
-            config: { /* ... */ }
-          },
+        // Optional: Register custom templates
+        templates: ['./path/to/template.html'],
 
-          // Optional: Server-side lifecycle hooks
-          onPageSet: async (data) => { /* ... */ },
-          // ... other hooks
+        // Optional: Client-side script configuration
+        script: {
+        setup: async () => { /* ... */ },
+        helpers: { /* ... */ },
+        imports: [ /* ... */ ],
+        config: { /* ... */ }
+        },
+
+        // Optional: Server-side lifecycle hooks
+        onPageSet: async (data) => { /* ... */ },
+        // ... other hooks
         })
       </coralite-code-highlight>
     </section>
@@ -74,7 +74,7 @@
         <li><code>onPageSet(data)</code>: Called when a page is created or updated.</li>
         <li><code>onPageUpdate(data)</code>: Called when a page is updated.</li>
         <li><code>onPageDelete(path)</code>: Called when a page is deleted.</li>
-        <li><code>onTemplateSet(data)</code>: Called when a template is registered.</li>
+        <li><code>onComponentSet(data)</code>: Called when a template is registered.</li>
         <li><code>onAfterBuild()</code>: Called when the entire build process finishes.</li>
       </ul>
     </section>
@@ -94,14 +94,14 @@
 
       <coralite-code-highlight language="JavaScript">
         createPlugin({
-          name: 'utils',
-          script: {
-            helpers: {
-              formatDate: (context) => (date) => {
-                return new Date(date).toLocaleDateString()
-              }
-            }
-          }
+        name: 'utils',
+        script: {
+        helpers: {
+        formatDate: (context) => (date) => {
+        return new Date(date).toLocaleDateString()
+        }
+        }
+        }
         })
       </coralite-code-highlight>
       <p><strong>Note:</strong> Helper functions must be "factory functions" that accept a <code>context</code> object
@@ -120,10 +120,10 @@
       <p>Import a library directly from a CDN.</p>
       <coralite-code-highlight language="JavaScript">
         imports: [
-          {
-            specifier: 'https://esm.sh/canvas-confetti@1.6.0',
-            defaultExport: 'confetti'
-          }
+        {
+        specifier: 'https://esm.sh/canvas-confetti@1.6.0',
+        defaultExport: 'confetti'
+        }
         ]
       </coralite-code-highlight>
 
@@ -132,14 +132,14 @@
 
       <coralite-code-highlight language="JavaScript">
         createPlugin({
-          name: 'analytics',
-          script: {
-            config: {
-              trackingId: 'UA-123456-7',
-              debug: true
-            },
-            // ...
-          }
+        name: 'analytics',
+        script: {
+        config: {
+        trackingId: 'UA-123456-7',
+        debug: true
+        },
+        // ...
+        }
         })
       </coralite-code-highlight>
 
@@ -147,11 +147,11 @@
       <p>Import a JSON file as a module.</p>
       <coralite-code-highlight language="JavaScript">
         imports: [
-          {
-            specifier: './data/config.json',
-            defaultExport: 'config',
-            attributes: { type: 'json' }
-          }
+        {
+        specifier: './data/config.json',
+        defaultExport: 'config',
+        attributes: { type: 'json' }
+        }
         ]
       </coralite-code-highlight>
 
@@ -160,7 +160,8 @@
         <li><code>specifier</code> (string): The path or URL of the module.</li>
         <li><code>defaultExport</code> (string): The name to assign to the default export.</li>
         <li><code>namedExports</code> (string[]): List of named exports to import. Supports
-          <code>"original as alias"</code> syntax.</li>
+          <code>"original as alias"</code> syntax.
+        </li>
         <li><code>namespaceExport</code> (string): Import the entire module as a namespace
           (<code>import * as Name</code>).</li>
       </ul>
@@ -175,14 +176,14 @@
 
       <coralite-code-highlight language="JavaScript">
         createPlugin({
-          name: 'analytics',
-          script: {
-            config: {
-              trackingId: 'UA-123456-7',
-              debug: true
-            },
-            // ...
-          }
+        name: 'analytics',
+        script: {
+        config: {
+        trackingId: 'UA-123456-7',
+        debug: true
+        },
+        // ...
+        }
         })
       </coralite-code-highlight>
     </section>
@@ -203,12 +204,12 @@
       <coralite-code-highlight language="JavaScript">
         // Inside script.helpers
         helpers: {
-          trackEvent: (context) => (eventName) => {
-            const { trackingId } = context.config;
-            const { analyticsLib } = context.imports;
-            
-            analyticsLib.send(trackingId, eventName);
-          }
+        trackEvent: (context) => (eventName) => {
+        const { trackingId } = context.config;
+        const { analyticsLib } = context.imports;
+
+        analyticsLib.send(trackingId, eventName);
+        }
         }
       </coralite-code-highlight>
     </section>
@@ -224,53 +225,53 @@
         import { createPlugin } from 'coralite'
 
         export default createPlugin({
-          name: 'confetti-plugin',
-          script: {
-            // 1. Import the library
-            imports: [
-              {
-                specifier: 'https://esm.sh/canvas-confetti@1.6.0',
-                defaultExport: 'confetti'
-              }
-            ],
+        name: 'confetti-plugin',
+        script: {
+        // 1. Import the library
+        imports: [
+        {
+        specifier: 'https://esm.sh/canvas-confetti@1.6.0',
+        defaultExport: 'confetti'
+        }
+        ],
 
-            // 2. Define default configuration
-            config: {
-              particleCount: 100,
-              spread: 70
-            },
+        // 2. Define default configuration
+        config: {
+        particleCount: 100,
+        spread: 70
+        },
 
-            // 3. Create the helper
-            helpers: {
-              explode: (context) => () => {
-                // Access injected imports and config
-                const confetti = context.imports.confetti
-                const config = context.config
+        // 3. Create the helper
+        helpers: {
+        explode: (context) => () => {
+        // Access injected imports and config
+        const confetti = context.imports.confetti
+        const config = context.config
 
-                if (!confetti) {
-                  console.warn('Confetti library not loaded')
-                  return
-                }
+        if (!confetti) {
+        console.warn('Confetti library not loaded')
+        return
+        }
 
-                // Use the library with the config
-                confetti({
-                  particleCount: config.particleCount,
-                  spread: config.spread,
-                  origin: { y: 0.6 }
-                })
-              }
-            }
-          }
+        // Use the library with the config
+        confetti({
+        particleCount: config.particleCount,
+        spread: config.spread,
+        origin: { y: 0.6 }
         })
-      </coralite-code-html>
+        }
+        }
+        }
+        })
+        </coralite-code-html>
 
-      <p><strong>Usage in a component:</strong></p>
-      <coralite-code-html>
-        <template id="celebration-button">
-          <button ref="btn">Celebrate!</button>
-        </template>
+        <p><strong>Usage in a component:</strong></p>
+        <coralite-code-html>
+          <template id="celebration-button">
+            <button ref="btn">Celebrate!</button>
+          </template>
 
-        <script type="module">
+          <script type="module">
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
@@ -286,7 +287,7 @@
             }
           })
         </script>
-      </coralite-code-html>
+        </coralite-code-html>
     </section>
 
   </main>

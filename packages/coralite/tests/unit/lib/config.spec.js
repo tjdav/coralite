@@ -11,7 +11,7 @@ describe('config.js', () => {
     it('should return valid config unchanged', () => {
       const validConfig = {
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: []
       }
@@ -23,7 +23,7 @@ describe('config.js', () => {
     it('should return valid config without plugins', () => {
       const validConfig = {
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages'
       }
 
@@ -40,37 +40,37 @@ describe('config.js', () => {
 
     it('should throw error when missing required property', () => {
       assert.throws(() => defineConfig({
-        templates: './templates',
+        components: './components',
         pages: './pages'
       }), /Missing required config property: "output"/)
 
       assert.throws(() => defineConfig({
         output: './dist',
         pages: './pages'
-      }), /Missing required config property: "templates"/)
+      }), /Missing required config property: "components"/)
 
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: './templates'
+        components: './components'
       }), /Missing required config property: "pages"/)
     })
 
     it('should throw error when required property is not a string', () => {
       assert.throws(() => defineConfig({
         output: 123,
-        templates: './templates',
+        components: './components',
         pages: './pages'
       }), /Config property "output" must be a string, received number/)
 
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: {},
+        components: {},
         pages: './pages'
-      }), /Config property "templates" must be a string, received object/)
+      }), /Config property "components" must be a string, received object/)
 
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: []
       }), /Config property "pages" must be a string, received object/)
     })
@@ -78,28 +78,28 @@ describe('config.js', () => {
     it('should throw error when required property is empty string', () => {
       assert.throws(() => defineConfig({
         output: '   ',
-        templates: './templates',
+        components: './components',
         pages: './pages'
       }), /Config property "output" cannot be empty/)
 
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: '',
+        components: '',
         pages: './pages'
-      }), /Config property "templates" cannot be empty/)
+      }), /Config property "components" cannot be empty/)
     })
 
     it('should throw error when plugins is not an array', () => {
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: 'not-an-array'
       }), /Config property "plugins" must be an array, received string/)
 
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: {}
       }), /Config property "plugins" must be an array, received object/)
@@ -108,7 +108,7 @@ describe('config.js', () => {
     it('should validate plugin objects in plugins array', () => {
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: [null]
       }), /Plugin at index 0 must be an object, received object/)
@@ -116,7 +116,7 @@ describe('config.js', () => {
       // Valid plugin should not throw
       const validResult = defineConfig({
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: [{ name: 'valid-plugin' }]
       })
@@ -124,14 +124,14 @@ describe('config.js', () => {
 
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: [{ name: 123 }]
       }), /Plugin at index 0 must have a valid "name" property \(non-empty string\)/)
 
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: [{ name: '' }]
       }), /Plugin at index 0 must have a valid "name" property \(non-empty string\)/)
@@ -140,7 +140,7 @@ describe('config.js', () => {
     it('should validate multiple plugins in array', () => {
       const result = defineConfig({
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: [
           { name: 'plugin1' },
@@ -156,7 +156,7 @@ describe('config.js', () => {
     it('should throw error for invalid plugin at specific index', () => {
       assert.throws(() => defineConfig({
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: [
           { name: 'valid' },
@@ -170,7 +170,7 @@ describe('config.js', () => {
       // Should trim and validate empty strings
       assert.throws(() => defineConfig({
         output: '  ',
-        templates: './templates',
+        components: './components',
         pages: './pages'
       }), /Config property "output" cannot be empty/)
     })
@@ -178,7 +178,7 @@ describe('config.js', () => {
     it('should preserve valid config with all properties', () => {
       const fullConfig = {
         output: './dist',
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: [
           { name: 'plugin1' },

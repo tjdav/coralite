@@ -172,19 +172,19 @@
               <td>Hook for when a page is deleted</td>
             </tr>
             <tr>
-              <td><code>onTemplateSet</code></td>
+              <td><code>onComponentSet</code></td>
               <td><code>function</code></td>
               <td>No</td>
               <td>Hook for when a template is created</td>
             </tr>
             <tr>
-              <td><code>onTemplateUpdate</code></td>
+              <td><code>onComponentUpdate</code></td>
               <td><code>function</code></td>
               <td>No</td>
               <td>Hook for when a template is updated</td>
             </tr>
             <tr>
-              <td><code>onTemplateDelete</code></td>
+              <td><code>onComponentDelete</code></td>
               <td><code>function</code></td>
               <td>No</td>
               <td>Hook for when a template is deleted</td>
@@ -434,15 +434,15 @@
         // Called when a page is deleted
         console.log('Page deleted:', value.path.pathname)
         },
-        onTemplateSet: async (template) => {
+        onComponentSet: async (template) => {
         // Called when a template is created
         console.log('New template:', template.id)
         },
-        onTemplateUpdate: async (template) => {
+        onComponentUpdate: async (template) => {
         // Called when a template is updated
         console.log('Template updated:', template.id)
         },
-        onTemplateDelete: async (template) => {
+        onComponentDelete: async (template) => {
         // Called when a template is deleted
         console.log('Template deleted:', template.id)
         }

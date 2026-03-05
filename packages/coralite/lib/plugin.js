@@ -111,16 +111,15 @@ function validateImportArray (value, paramName) {
 }
 
 /**
- * Processes a single template file with optional caching
+ * Processes a single components file with optional caching
  * @param {string} path - Template file path
  * @returns {HTMLData} Template data
- * @throws {Error} If template file cannot be read or is invalid
+ * @throws {Error} If components file cannot be read or is invalid
  */
-function processTemplate (path) {
+function processComponents (path) {
   try {
     const content = getHtmlFileSync(path)
-
-    const templateData = {
+    const componentData = {
       content,
       path: {
         pathname: path,
@@ -129,10 +128,10 @@ function processTemplate (path) {
       }
     }
 
-    return templateData
+    return componentData
   } catch (error) {
     throw new Error(
-      `Coralite plugin template processing failed for "${path}": ${error.message}`
+      `Coralite plugin component processing failed for "${path}": ${error.message}`
     )
   }
 }
@@ -140,8 +139,8 @@ function processTemplate (path) {
 /**
  * Creates a new Coralite plugin instance based on provided configuration options.
  * @template T
- * @param {CoralitePlugin<T> & ThisType<Coralite> & { templates?: string[] }} options - Plugin configuration object
- * @returns {CoralitePlugin<T> & { templates: HTMLData[] }} A configured plugin instance ready to be registered with Coralite
+ * @param {CoralitePlugin<T> & ThisType<Coralite> & { components?: string[] }} options - Plugin configuration object
+ * @returns {CoralitePlugin<T> & { components: HTMLData[] }} A configured plugin instance ready to be registered with Coralite
  * @example
  * // Basic plugin
  * const myPlugin = createPlugin({
@@ -153,14 +152,14 @@ function processTemplate (path) {
  * })
  *
  * @example
- * // Plugin with templates and metadata
+ * // Plugin with components and metadata
  * const advancedPlugin = createPlugin({
  *   name: 'advanced-plugin',
  *   method: async (options, context) => {
  *     // Async plugin logic
  *     return { ...context.values, processed: true }
  *   },
- *   templates: ['src/components/header.html', 'src/components/footer.html'],
+ *   components: ['src/components/header.html', 'src/components/footer.html'],
  *   onPageSet: async (data) => {
  *     console.log('Page created:', data.path.pathname)
  *   }
@@ -171,19 +170,19 @@ function processTemplate (path) {
  * const devPlugin = createPlugin({
  *   name: 'dev-plugin',
  *   method: (options, context) => context.values,
- *   templates: ['src/components/dev.html'],
+ *   components: ['src/components/dev.html'],
  * })
  */
 export function createPlugin ({
   name,
   method,
-  templates = [],
+  components = [],
   onPageSet,
   onPageUpdate,
   onPageDelete,
-  onTemplateSet,
-  onTemplateUpdate,
-  onTemplateDelete,
+  onComponentSet,
+  onComponentUpdate,
+  onComponentDelete,
   onBeforePageRender,
   onAfterPageRender,
   onBeforeBuild,
@@ -199,17 +198,17 @@ export function createPlugin ({
   validateOptionalFunction(onPageSet, 'onPageSet')
   validateOptionalFunction(onPageUpdate, 'onPageUpdate')
   validateOptionalFunction(onPageDelete, 'onPageDelete')
-  validateOptionalFunction(onTemplateSet, 'onTemplateSet')
-  validateOptionalFunction(onTemplateUpdate, 'onTemplateUpdate')
-  validateOptionalFunction(onTemplateDelete, 'onTemplateDelete')
+  validateOptionalFunction(onComponentSet, 'onComponentSet')
+  validateOptionalFunction(onComponentUpdate, 'onComponentUpdate')
+  validateOptionalFunction(onComponentDelete, 'onComponentDelete')
   validateOptionalFunction(onBeforePageRender, 'onBeforePageRender')
   validateOptionalFunction(onAfterPageRender, 'onAfterPageRender')
   validateOptionalFunction(onBeforeBuild, 'onBeforeBuild')
   validateOptionalFunction(onAfterBuild, 'onAfterBuild')
   validateOptionalFunction(server, 'server')
 
-  // Validate templates array
-  validateStringArray(templates, 'templates')
+  // Validate components
+  validateStringArray(components, 'components')
 
   // Validate client plugin if provided
   if (client != null) {
@@ -243,21 +242,20 @@ export function createPlugin ({
     }
   }
 
-  // Process template files with error handling
+  // Process component files with error handling
   /** @type {HTMLData[]} */
-  const templateResults = []
+  const componentHTMLData = []
 
-  if (templates.length > 0) {
+  if (components.length > 0) {
     try {
-      // Process all templates
-      for (const path of templates) {
-        const result = processTemplate(path)
-        templateResults.push(result)
+      // Process all components
+      for (const path of components) {
+        componentHTMLData.push(processComponents(path))
       }
     } catch (error) {
       // Enhance error message with plugin context
       throw new Error(
-        `Coralite plugin "${name}" failed to load templates: ${error.message}`
+        `Coralite plugin "${name}" failed to load components: ${error.message}`
       )
     }
   }
@@ -266,13 +264,13 @@ export function createPlugin ({
   return {
     name,
     method,
-    templates: templateResults,
+    components: componentHTMLData,
     onPageSet,
     onPageUpdate,
     onPageDelete,
-    onTemplateSet,
-    onTemplateUpdate,
-    onTemplateDelete,
+    onComponentSet,
+    onComponentUpdate,
+    onComponentDelete,
     onBeforePageRender,
     onAfterPageRender,
     onBeforeBuild,

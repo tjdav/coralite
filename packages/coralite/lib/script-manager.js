@@ -6,7 +6,7 @@ import { resolve } from 'node:path'
 
 /**
  * Script Manager for Coralite
- * Manages shared functions across template instances and provides plugin extensibility
+ * Manages shared functions across component instances and provides plugin extensibility
  * @import {ScriptPlugin, InstanceContext} from '../types/index.js'
  */
 
@@ -81,31 +81,31 @@ ScriptManager.prototype.getHelpers = function () {
 }
 
 /**
- * Register shared functions for a template
- * @param {string} templateId - Template identifier
+ * Register shared functions for a component
+ * @param {string} id - component identifier
  * @param {import('../types/script.js').ScriptContent} script - Script content or function
  * @param {string} [filePath] - The source file path to map back to
  */
-ScriptManager.prototype.registerTemplate = function (templateId, script, filePath) {
-  this.sharedFunctions[templateId] = {
-    templateId,
+ScriptManager.prototype.registerComponent = function (id, script, filePath) {
+  this.sharedFunctions[id] = {
+    id,
     script,
     imports: script.imports || [],
-    filePath: filePath ? resolve(filePath) : `/template-${templateId}.js`
+    filePath: filePath ? resolve(filePath) : `/component-${id}.js`
   }
 }
 
 /**
  * Generate instance-specific script wrapper
- * @param {string} templateId - Template identifier
+ * @param {string} id - component identifier
  * @param {InstanceContext} instanceContext - Instance context
  * @returns {string} Generated script
  */
-ScriptManager.prototype.generateInstanceWrapper = function (templateId, instanceContext) {
+ScriptManager.prototype.generateInstanceWrapper = function (id, instanceContext) {
   const values = instanceContext.values ? serialize(instanceContext.values) : '{}'
 
   // Generate wrapper that calls shared functions with instance context
-  return `await coraliteTemplateFunctions["${templateId}"]({
+  return `await coraliteComponentFunctions["${id}"]({
       values: ${values},
       helpers,
       imports,
@@ -133,13 +133,13 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     this.getHelpersContent()
   ].filter(Boolean).join(',\n')
 
-  entryCodeParts.push(`const coraliteTemplateScriptHelpers = {
+  entryCodeParts.push(`const coraliteComponentScriptHelpers = {
     ${helperParts}
   };\n`)
 
   entryCodeParts.push(`const getHelpers = (context) => {
     const helpers = {}
-    for (const [key, helper] of Object.entries(coraliteTemplateScriptHelpers)) {
+    for (const [key, helper] of Object.entries(coraliteComponentScriptHelpers)) {
       helpers[key] = helper(context)
     }
     return helpers
@@ -163,42 +163,42 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push(`const globalSetupValuesPromise = getSetups(globalContext);\n`)
 
   const instanceValues = Object.entries(instances)
-  // Collect unique templates
-  const processedTemplates = {}
+  // Collect unique components
+  const processedComponent = {}
   for (const instanceData of instanceValues) {
-    processedTemplates[instanceData[1].templateId] = true
+    processedComponent[instanceData[1].componentId] = true
   }
 
-  const processedTemplatesKeys = Object.keys(processedTemplates)
+  const processedComponentKeys = Object.keys(processedComponent)
   const regex = /[-.:]/g
-  const namespace = 'coralite-templates:'
-  const componentImportsNamespace = 'coralite-template-imports:'
+  const namespace = 'coralite-component:'
+  const componentImportsNamespace = 'coralite-component-imports:'
 
-  // Generate ESM imports for each template script
-  for (const templateId of processedTemplatesKeys) {
-    if (this.sharedFunctions[templateId]) {
-      const safeId = templateId.replace(regex, '_')
-      entryCodeParts.push(`import template_${safeId} from "${namespace}${templateId}";\n`)
+  // Generate ESM imports for each component script
+  for (const componentId of processedComponentKeys) {
+    if (this.sharedFunctions[componentId]) {
+      const safeId = componentId.replace(regex, '_')
+      entryCodeParts.push(`import component_${safeId} from "${namespace}${componentId}";\n`)
 
-      if (this.sharedFunctions[templateId].imports && this.sharedFunctions[templateId].imports.length > 0) {
-        entryCodeParts.push(`import componentImports_${safeId} from "${componentImportsNamespace}${templateId}";\n`)
+      if (this.sharedFunctions[componentId].imports && this.sharedFunctions[componentId].imports.length > 0) {
+        entryCodeParts.push(`import componentImports_${safeId} from "${componentImportsNamespace}${componentId}";\n`)
       }
     }
   }
 
   // Map imports to the functions object
-  entryCodeParts.push('const coraliteTemplateFunctions = {\n')
-  for (const templateId of processedTemplatesKeys) {
-    if (this.sharedFunctions[templateId]) {
-      entryCodeParts.push(`  "${templateId}": template_${templateId.replace(regex, '_')},\n`)
+  entryCodeParts.push('const coraliteComponentFunctions = {\n')
+  for (const componentId of processedComponentKeys) {
+    if (this.sharedFunctions[componentId]) {
+      entryCodeParts.push(`  "${componentId}": component_${componentId.replace(regex, '_')},\n`)
     }
   }
   entryCodeParts.push('};\n')
 
   entryCodeParts.push('const coraliteComponentImports = {\n')
-  for (const templateId of processedTemplatesKeys) {
-    if (this.sharedFunctions[templateId] && this.sharedFunctions[templateId].imports && this.sharedFunctions[templateId].imports.length > 0) {
-      entryCodeParts.push(`  "${templateId}": componentImports_${templateId.replace(regex, '_')},\n`)
+  for (const componentId of processedComponentKeys) {
+    if (this.sharedFunctions[componentId] && this.sharedFunctions[componentId].imports && this.sharedFunctions[componentId].imports.length > 0) {
+      entryCodeParts.push(`  "${componentId}": componentImports_${componentId.replace(regex, '_')},\n`)
     }
   }
   entryCodeParts.push('};\n')
@@ -208,21 +208,21 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   for (const [instanceId, instanceData] of instanceValues) {
     const context = {
       instanceId,
-      templateId: instanceData.templateId,
+      componentId: instanceData.componentId,
       values: instanceData.values,
       document: instances[instanceId].document || {}
     }
 
     entryCodeParts.push(';(async() => {\n')
     entryCodeParts.push('const context = ' + serialize(context) + ';\n')
-    entryCodeParts.push(`const imports = coraliteComponentImports["${context.templateId}"] || {};\n`)
+    entryCodeParts.push(`const imports = coraliteComponentImports["${context.componentId}"] || {};\n`)
     entryCodeParts.push('context.imports = imports;\n')
     entryCodeParts.push('const setupValues = await globalSetupValuesPromise;\n')
     entryCodeParts.push('context.values = { ...context.values, ...setupValues };\n')
     entryCodeParts.push('const helpers = getHelpers(context);\n')
     entryCodeParts.push('context.helpers = helpers;\n')
     entryCodeParts.push(`\n// Instance: ${instanceId}\n`)
-    entryCodeParts.push(`await coraliteTemplateFunctions["${context.templateId}"](context);\n`)
+    entryCodeParts.push(`await coraliteComponentFunctions["${context.componentId}"](context);\n`)
     entryCodeParts.push('})();\n')
   }
 
@@ -243,18 +243,18 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     sourceRoot: pathToFileURL(process.cwd()).href,
     plugins: [
       {
-        name: 'coralite-template-resolver',
+        name: 'coralite-component-resolver',
         setup: (pluginBuild) => {
           // Catch the imports and associate them with the real file paths
-          const templateRegex = new RegExp(`^${namespace}`)
+          const componentRegex = new RegExp(`^${namespace}`)
 
-          pluginBuild.onResolve({ filter: templateRegex }, args => {
-            const templateId = args.path.replace(namespace, '')
-            const sharedFn = this.sharedFunctions[templateId]
+          pluginBuild.onResolve({ filter: componentRegex }, args => {
+            const componentId = args.path.replace(namespace, '')
+            const sharedFn = this.sharedFunctions[componentId]
 
             return {
               path: sharedFn.filePath,
-              pluginData: { templateId }
+              pluginData: { componentId }
             }
           })
 
@@ -262,11 +262,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
           const componentImportsRegex = new RegExp(`^${componentImportsNamespace}`)
 
           pluginBuild.onResolve({ filter: componentImportsRegex }, args => {
-            const templateId = args.path.replace(componentImportsNamespace, '')
+            const componentId = args.path.replace(componentImportsNamespace, '')
             return {
               path: args.path,
               namespace: 'coralite-component-imports',
-              pluginData: { templateId }
+              pluginData: { componentId }
             }
           })
 
@@ -284,8 +284,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
             filter: /.*/,
             namespace: 'coralite-component-imports'
           }, args => {
-            const templateId = args.pluginData.templateId
-            const sharedFn = this.sharedFunctions[templateId]
+            const componentId = args.pluginData.componentId
+            const sharedFn = this.sharedFunctions[componentId]
             let contents = ''
 
             const importMap = {}
@@ -447,11 +447,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
           pluginBuild.onLoad({
             filter: /.*/
           }, args => {
-            if (!args.pluginData || !args.pluginData.templateId) {
+            if (!args.pluginData || !args.pluginData.componentId) {
               return
             }
 
-            const sharedFn = this.sharedFunctions[args.pluginData.templateId]
+            const sharedFn = this.sharedFunctions[args.pluginData.componentId]
             const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
 
             return {

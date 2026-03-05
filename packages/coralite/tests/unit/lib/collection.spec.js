@@ -194,14 +194,14 @@ describe('CoraliteCollection', () => {
         ...item,
         content: '<h1>Updated</h1>',
         values: { key: 'value2' },
-        type: 'template'
+        type: 'component'
       }
 
       const result = await collection.updateItem(updatedItem)
 
       assert.strictEqual(result.content, '<h1>Updated</h1>')
       assert.deepStrictEqual(result.values, { key: 'value2' })
-      assert.strictEqual(result.type, 'template')
+      assert.strictEqual(result.type, 'component')
     })
 
     it('should call onUpdate hook and handle result', async () => {

@@ -6,7 +6,7 @@ import { createPlugin } from 'coralite'
 export default createPlugin({
   name: 'my-plugin',
   /**
-   * Called when the plugin is invoked in a template
+   * Called when the plugin is invoked in a component
    * e.g. {{ myPlugin(options) }}
    */
   method: (options, context) => {

@@ -1,3 +1,5 @@
+> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite).
+
 # Coralite Development Environment Guide
 
 Welcome to **Coralite starter script**, a lightweight Static Site Generator (SSG) built for rapid development and clean output. This guide walks you through setting up your local development environment using the provided `coralite-scripts` package and configuration files.
@@ -11,9 +13,9 @@ Coralite expects a standard folder layout:
 ```
 my-coralite-site/
 ├── src/
-│   ├── pages/        # Your page templates (e.g., `about.html`, `index.html`)
+│   ├── pages/        # Your page components (e.g., `about.html`, `index.html`)
 │   ├── scss/         # SCSS/Sass styles
-│   └── templates/    # Reusable template files
+│   └── components/    # Reusable component files
 ├── public/           # Static assets (CSS, JS, images)
 ├── dist/             # Output directory for built site (auto-generated)
 ├── coralite.config.js # Configuration file
@@ -33,7 +35,7 @@ export default defineConfig({
   output: 'dist',
   public: 'public',
   pages: 'src/pages',
-  templates: 'src/templates',
+  components: 'src/components',
   sass: {
     input: 'src/scss'
   }
@@ -74,7 +76,7 @@ Coralite provides real-time development workflows out of the box:
 |-------|-------------|
 | **Live Reload** | Automatically reloads browser when any `.html`, `.scss`, or `.sass` file changes. |
 | **Hot CSS Updates** | Sass/SCSS files are compiled instantly and injected into your page via Server-Sent Events (SSE). |
-| **File Watching** | Monitors `src/pages`, `src/scss`, `public`, and `src/templates`. |
+| **File Watching** | Monitors `src/pages`, `src/scss`, `public`, and `src/components`. |
 | **Dev Logs** | Shows real-time build times, file changes, and status codes in terminal. |
 
 ---

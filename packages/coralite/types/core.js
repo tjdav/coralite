@@ -8,7 +8,7 @@
 /**
  * Represents HTML file data including path and raw content.
  * @typedef {Object} HTMLData
- * @property {'page'|'template'} [type] - The type of HTML file. 'page' for main pages, 'template' for reusable components.
+ * @property {'page'|'component'} [type] - The type of HTML file. 'page' for main pages, 'component' for reusable components.
  * @property {CoraliteModuleValues} [values] - The initial values for the HTML module.
  * @property {CoraliteFilePath} path - The file's path information within the project structure.
  * @property {string} [content] - The raw HTML string contents of the file (optional, may be omitted for templates).
@@ -23,16 +23,16 @@
  */
 
 /**
- * Defines root directories for pages and templates in a Coralite project.
+ * Defines root directories for pages and components in a Coralite project.
  * @typedef {Object} CoralitePath
  * @property {string} pages - The path to the root pages directory
- * @property {string} templates - The path to the root templates directory
+ * @property {string} components - The path to the root components directory
  */
 
 /**
  * @typedef {Object} CoraliteConfig
  * @property {string} output - The path to the output directory where built files will be placed.
- * @property {string} templates - The path to the directory containing Coralite templates.
+ * @property {string} components - The path to the directory containing Coralite components.
  * @property {string} pages - The path to the directory containing pages that will be rendered using the provided templates.
  * @property {CoralitePluginInstance[]} [plugins] - Optional array of plugin instances to extend Coralite functionality.
  * @property {Attribute[]} [ignoreByAttribute] - An array of attribute names and values to ignore by element type.
@@ -40,7 +40,7 @@
  */
 
 /**
- * Represents URL and file path values available during template rendering.
+ * Represents URL and file path values available during component rendering.
  * @typedef {Object} CoralitePathValues
  * @property {string} $urlPathname - The URL pathname
  * @property {string} $urlDirname - The directory name of the URL
@@ -51,7 +51,7 @@
  */
 
 /**
- * Union type representing values available for token replacement in templates.
+ * Union type representing values available for token replacement in components.
  * @typedef {CoralitePathValues | Object.<string, string>} CoraliteValues
  */
 

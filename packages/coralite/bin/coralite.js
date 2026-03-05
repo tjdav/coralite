@@ -16,7 +16,7 @@ program
   .name('Coralite')
   .description('HTML modules static site generator CLI tool')
   .version('0.18.1')
-  .requiredOption('-t, --templates <path>', 'Path to templates directory')
+  .requiredOption('-c, --components <path>', 'Path to components directory')
   .requiredOption('-p, --pages <path>', 'Path to pages directory')
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
   .option('-m, --mode <mode>', 'Build mode: "development" or "production"', 'production')
@@ -47,7 +47,7 @@ const output = options.output
 const ignoreByAttribute = []
 
 const coraliteOptions = {
-  templates: options.templates,
+  components: options.components,
   pages,
   ignoreByAttribute,
   skipRenderByAttribute: options.skipRenderAttribute,

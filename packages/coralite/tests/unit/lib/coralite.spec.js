@@ -8,22 +8,22 @@ import Coralite from '#lib'
 describe('Coralite', () => {
   let testDir
   let pagesDir
-  let templatesDir
+  let componentDir
   let coralite
 
   beforeEach(async () => {
     testDir = await mkdtemp(path.join(tmpdir(), 'coralite-test-'))
     pagesDir = path.join(testDir, 'pages')
-    templatesDir = path.join(testDir, 'templates')
+    componentDir = path.join(testDir, 'component')
 
     await mkdir(pagesDir)
-    await mkdir(templatesDir)
+    await mkdir(componentDir)
 
     // Create a basic page
     await writeFile(path.join(pagesDir, 'index.html'), '<h1>Hello World</h1>')
 
-    // Create a basic template
-    await writeFile(path.join(templatesDir, 'layout.html'), '<slot></slot>')
+    // Create a basic component
+    await writeFile(path.join(componentDir, 'layout.html'), '<slot></slot>')
   })
 
   afterEach(async () => {
@@ -53,7 +53,7 @@ describe('Coralite', () => {
 
       coralite = new Coralite({
         pages: pagesDir,
-        templates: templatesDir,
+        components: componentDir,
         plugins: [plugin]
       })
 
@@ -96,7 +96,7 @@ describe('Coralite', () => {
 
       coralite = new Coralite({
         pages: pagesDir,
-        templates: templatesDir,
+        components: componentDir,
         plugins: [plugin]
       })
 
@@ -120,7 +120,7 @@ describe('Coralite', () => {
 
       coralite = new Coralite({
         pages: pagesDir,
-        templates: templatesDir,
+        components: componentDir,
         ignoreByAttribute: [{
           name: 'data-ignore',
           value: 'true'
@@ -138,7 +138,7 @@ describe('Coralite', () => {
 
     it('should parse elements but remove them from render output when they match skipRenderByAttribute', async () => {
       await writeFile(path.join(pagesDir, 'skip.html'), '<div><test-component data-skip="true"></test-component><span data-keep="true">Kept</span></div>')
-      await writeFile(path.join(templatesDir, 'test-component.html'), '<span id="rendered-test-component">Test Component</span>')
+      await writeFile(path.join(componentDir, 'test-component.html'), '<span id="rendered-test-component">Test Component</span>')
 
       let testComponentRendered = false
 
@@ -155,7 +155,7 @@ describe('Coralite', () => {
 
       coralite = new Coralite({
         pages: pagesDir,
-        templates: templatesDir,
+        components: componentDir,
         plugins: [testPlugin],
         skipRenderByAttribute: ['data-skip']
       })
@@ -188,7 +188,7 @@ describe('Coralite', () => {
 
       coralite = new Coralite({
         pages: pagesDir,
-        templates: templatesDir,
+        components: componentDir,
         plugins: [plugin]
       })
 
@@ -224,7 +224,7 @@ describe('Coralite', () => {
 
       coralite = new Coralite({
         pages: pagesDir,
-        templates: templatesDir,
+        components: componentDir,
         plugins: [plugin, errorPlugin]
       })
 

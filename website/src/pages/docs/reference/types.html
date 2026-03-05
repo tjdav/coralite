@@ -2,7 +2,8 @@
 <html lang="en">
 
 <head>
-  <coralite-meta title="Coralite Technical Documentation: Definition, Specification & Implementation Guide" description="Explore comprehensive Coralite technical documentation, including architecture, API specifications, data structure definitions."></coralite-meta>
+  <coralite-meta title="Coralite Technical Documentation: Definition, Specification & Implementation Guide"
+    description="Explore comprehensive Coralite technical documentation, including architecture, API specifications, data structure definitions."></coralite-meta>
   <link rel="stylesheet" href="/css/styles.css" inline-css>
 </head>
 
@@ -440,7 +441,7 @@
     </div>
 
     <coralite-heading level="h2" text="Document and Result Types"></coralite-heading>
-    
+
     <coralite-heading level="h3" text="CoraliteDocumentValues"></coralite-heading>
     <p>Holds tokenized metadata extracted from document attributes, element references and text nodes.</p>
     <div class="table-responsive">
@@ -661,7 +662,7 @@
     </div>
 
     <coralite-heading level="h2" text="Module and Plugin Types"></coralite-heading>
-    
+
     <coralite-heading level="h3" text="CoraliteModule"></coralite-heading>
     <p>A module within the Coralite library, containing metadata and rendering logic.</p>
     <div class="table-responsive">
@@ -711,8 +712,11 @@
           </tr>
           <tr>
             <td><code>slotElements</code></td>
-            <td><code>Object&lt;string, Object&lt;string, <a href="#coralite-module-slot-element">CoraliteModuleSlotElement</a>&gt;&gt;</code></td>
-            <td>Custom slot elements and their configurations, enabling flexible content insertion points within components.</td>
+            <td>
+              <code>Object&lt;string, Object&lt;string, <a href="#coralite-module-slot-element">CoraliteModuleSlotElement</a>&gt;&gt;</code>
+            </td>
+            <td>Custom slot elements and their configurations, enabling flexible content insertion points within
+              components.</td>
           </tr>
           <tr>
             <td><code>isTemplate</code></td>
@@ -829,10 +833,10 @@
     <coralite-heading level="h3" text="CoraliteModuleScript"></coralite-heading>
     <p>Callback for module script execution.</p>
     <coralite-code-highlight language="JavaScript">/**
- * @callback CoraliteModuleScript
- * @param {CoraliteValues} values - The module's current values
- * @param {CoraliteRef} refs - References template elements
- */</coralite-code-highlight>
+      * @callback CoraliteModuleScript
+      * @param {CoraliteValues} values - The module's current values
+      * @param {CoraliteRef} refs - References template elements
+      */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="ScriptPlugin"></coralite-heading>
     <p>Configuration for script plugins.</p>
@@ -858,7 +862,8 @@
           </tr>
           <tr>
             <td><code>lifecycle</code></td>
-            <td><code>Object&lt;'register'|'beforeExecute'|'afterExecute'|'onScriptCompile', function&gt;</code> (optional)</td>
+            <td><code>Object&lt;'register'|'beforeExecute'|'afterExecute'|'onScriptCompile', function&gt;</code>
+              (optional)</td>
             <td>Lifecycle hooks.</td>
           </tr>
           <tr>
@@ -912,7 +917,7 @@
     </div>
 
     <coralite-heading level="h2" text="Content Nodes"></coralite-heading>
-    
+
     <coralite-heading level="h3" text="CoraliteElement"></coralite-heading>
     <p>Represents a standard HTML element in the Coralite content tree.</p>
     <div class="table-responsive">
@@ -947,7 +952,8 @@
           </tr>
           <tr>
             <td><code>lifecycle</code></td>
-            <td><code>Object&lt;'register'|'beforeExecute'|'afterExecute'|'onScriptCompile', function&gt;</code> (optional)</td>
+            <td><code>Object&lt;'register'|'beforeExecute'|'afterExecute'|'onScriptCompile', function&gt;</code>
+              (optional)</td>
             <td>Lifecycle hooks.</td>
           </tr>
           <tr>
@@ -1092,7 +1098,7 @@
     </div>
 
     <coralite-heading level="h2" text="Plugins, Collections and Events"></coralite-heading>
-    
+
     <coralite-heading level="h3" text="IgnoreByAttribute"></coralite-heading>
     <p>An array of attribute name-value pairs to exclude from processing.</p>
     <div class="table-responsive">
@@ -1199,28 +1205,28 @@
     <coralite-heading level="h3" text="CoraliteCollectionEventSet"></coralite-heading>
     <p>Callback for setting an item in a collection.</p>
     <coralite-code-highlight language="JavaScript">/**
- * @callback CoraliteCollectionEventSet
- * @param {CoraliteCollectionItem} value - Item to be set
- * @returns {Promise<CoraliteCollectionEventResult>} Returns a result object with processed value and optional ID
- * @async
- */</coralite-code-highlight>
+      * @callback CoraliteCollectionEventSet
+      * @param {CoraliteCollectionItem} value - Item to be set
+      * @returns {Promise<CoraliteCollectionEventResult>} Returns a result object with processed value and optional ID
+        * @async
+        */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoraliteCollectionEventDelete"></coralite-heading>
     <p>Callback for deleting an item from a collection.</p>
     <coralite-code-highlight language="JavaScript">/**
- * @callback CoraliteCollectionEventDelete
- * @param {CoraliteCollectionItem} value - Item or pathname to delete
- * @async
- */</coralite-code-highlight>
+      * @callback CoraliteCollectionEventDelete
+      * @param {CoraliteCollectionItem} value - Item or pathname to delete
+      * @async
+      */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoraliteCollectionEventUpdate"></coralite-heading>
     <p>Callback for updating an item in a collection.</p>
     <coralite-code-highlight language="JavaScript">/**
- * @callback CoraliteCollectionEventUpdate
- * @param {CoraliteCollectionItem} newValue - New item value
- * @param {CoraliteCollectionItem} oldValue - Original item value
- * @async
- */</coralite-code-highlight>
+      * @callback CoraliteCollectionEventUpdate
+      * @param {CoraliteCollectionItem} newValue - New item value
+      * @param {CoraliteCollectionItem} oldValue - Original item value
+      * @async
+      */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginContext"></coralite-heading>
     <p>Runtime context for plugin execution.</p>
@@ -1276,12 +1282,13 @@
     <coralite-heading level="h3" text="CoralitePluginModule"></coralite-heading>
     <p>Execution function that processes content using plugin logic.</p>
     <coralite-code-highlight language="JavaScript">/**
- * @template T
- * @this {ThisType<Coralite>}
- * @callback CoralitePluginModule
- * @param {T} options - Configuration options passed to the plugin
- * @param {CoralitePluginContext} context - Runtime context providing access to values, document data, module info, and path details
- */</coralite-code-highlight>
+      * @template T
+      * @this {ThisType<Coralite>}
+        * @callback CoralitePluginModule
+        * @param {T} options - Configuration options passed to the plugin
+        * @param {CoralitePluginContext} context - Runtime context providing access to values, document data, module
+        info, and path details
+        */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePlugin"></coralite-heading>
     <p>Definition of a Coralite plugin.</p>
@@ -1393,37 +1400,45 @@
           </tr>
           <tr>
             <td><code>onPageUpdate</code></td>
-            <td><a href="#coralitepluginpageupdatecallback"><code>CoralitePluginPageUpdateCallback</code></a> (optional)</td>
+            <td><a href="#coralitepluginpageupdatecallback"><code>CoralitePluginPageUpdateCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a page is updated.</td>
           </tr>
           <tr>
             <td><code>onPageDelete</code></td>
-            <td><a href="#coralitepluginpagedeletecallback"><code>CoralitePluginPageDeleteCallback</code></a> (optional)</td>
+            <td><a href="#coralitepluginpagedeletecallback"><code>CoralitePluginPageDeleteCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a page is deleted.</td>
           </tr>
           <tr>
-            <td><code>onTemplateSet</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)</td>
+            <td><code>onComponentSet</code></td>
+            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a template is created.</td>
           </tr>
           <tr>
-            <td><code>onTemplateUpdate</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)</td>
+            <td><code>onComponentUpdate</code></td>
+            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a template is updated.</td>
           </tr>
           <tr>
-            <td><code>onTemplateDelete</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)</td>
+            <td><code>onComponentDelete</code></td>
+            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a template is deleted.</td>
           </tr>
           <tr>
             <td><code>onBeforePageRender</code></td>
-            <td><a href="#coralitepluginbeforepagerendercallback"><code>CoralitePluginBeforePageRenderCallback</code></a> (optional)</td>
+            <td><a
+                href="#coralitepluginbeforepagerendercallback"><code>CoralitePluginBeforePageRenderCallback</code></a>
+              (optional)</td>
             <td>Async callback triggered before page render.</td>
           </tr>
           <tr>
             <td><code>onBeforeBuild</code></td>
-            <td><a href="#coralitepluginbeforebuildcallback"><code>CoralitePluginBeforeBuildCallback</code></a> (optional)</td>
+            <td><a href="#coralitepluginbeforebuildcallback"><code>CoralitePluginBeforeBuildCallback</code></a>
+              (optional)</td>
             <td>Async callback triggered before build starts.</td>
           </tr>
         </tbody>
@@ -1469,37 +1484,45 @@
           </tr>
           <tr>
             <td><code>onPageUpdate</code></td>
-            <td><a href="#coralitepluginpageupdatecallback"><code>CoralitePluginPageUpdateCallback</code></a> (optional)</td>
+            <td><a href="#coralitepluginpageupdatecallback"><code>CoralitePluginPageUpdateCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a page is updated.</td>
           </tr>
           <tr>
             <td><code>onPageDelete</code></td>
-            <td><a href="#coralitepluginpagedeletecallback"><code>CoralitePluginPageDeleteCallback</code></a> (optional)</td>
+            <td><a href="#coralitepluginpagedeletecallback"><code>CoralitePluginPageDeleteCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a page is deleted.</td>
           </tr>
           <tr>
-            <td><code>onTemplateSet</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)</td>
+            <td><code>onComponentSet</code></td>
+            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a template is created.</td>
           </tr>
           <tr>
-            <td><code>onTemplateUpdate</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)</td>
+            <td><code>onComponentUpdate</code></td>
+            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a template is updated.</td>
           </tr>
           <tr>
-            <td><code>onTemplateDelete</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)</td>
+            <td><code>onComponentDelete</code></td>
+            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            </td>
             <td>Async callback triggered when a template is deleted.</td>
           </tr>
           <tr>
             <td><code>onBeforePageRender</code></td>
-            <td><a href="#coralitepluginbeforepagerendercallback"><code>CoralitePluginBeforePageRenderCallback</code></a> (optional)</td>
+            <td><a
+                href="#coralitepluginbeforepagerendercallback"><code>CoralitePluginBeforePageRenderCallback</code></a>
+              (optional)</td>
             <td>Async callback triggered before page render.</td>
           </tr>
           <tr>
             <td><code>onBeforeBuild</code></td>
-            <td><a href="#coralitepluginbeforebuildcallback"><code>CoralitePluginBeforeBuildCallback</code></a> (optional)</td>
+            <td><a href="#coralitepluginbeforebuildcallback"><code>CoralitePluginBeforeBuildCallback</code></a>
+              (optional)</td>
             <td>Async callback triggered before build starts.</td>
           </tr>
         </tbody>
@@ -1509,48 +1532,48 @@
     <coralite-heading level="h3" text="CoralitePluginPageSetCallback"></coralite-heading>
     <p>Async callback triggered when a page is created.</p>
     <coralite-code-highlight language="JavaScript">/**
- * @this {ThisType<Coralite>}
- * @callback CoralitePluginPageSetCallback
- * @description Async callback triggered when a page is created. Called with elements, values, and data.
- * @param {Object} param
- * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
- * @param {CoraliteFilePath & Object.&lt;string, any>} param.values - Values associated with the page path
- * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
- * @async
- */</coralite-code-highlight>
+      * @this {ThisType<Coralite>}
+        * @callback CoralitePluginPageSetCallback
+        * @description Async callback triggered when a page is created. Called with elements, values, and data.
+        * @param {Object} param
+        * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
+        * @param {CoraliteFilePath & Object.&lt;string, any>} param.values - Values associated with the page path
+        * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
+        * @async
+        */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginPageUpdateCallback"></coralite-heading>
     <p>Async callback triggered when a page is updated.</p>
     <coralite-code-highlight language="JavaScript">/**
- * @this {ThisType<Coralite>}
- * @callback CoralitePluginPageUpdateCallback
- * @description Async callback triggered when a page is updated. Called with elements, new and old values.
- * @param {Object} param
- * @param {CoraliteElement[]} param.elements - Updated HTML elements from the page
- * @param {CoraliteCollectionItem} param.newValue - The updated data item
- * @param {CoraliteCollectionItem} param.oldValue - The previous data item before update
- * @async
- */</coralite-code-highlight>
+      * @this {ThisType<Coralite>}
+        * @callback CoralitePluginPageUpdateCallback
+        * @description Async callback triggered when a page is updated. Called with elements, new and old values.
+        * @param {Object} param
+        * @param {CoraliteElement[]} param.elements - Updated HTML elements from the page
+        * @param {CoraliteCollectionItem} param.newValue - The updated data item
+        * @param {CoraliteCollectionItem} param.oldValue - The previous data item before update
+        * @async
+        */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginPageDeleteCallback"></coralite-heading>
     <p>Async callback triggered when a page is deleted.</p>
     <coralite-code-highlight language="JavaScript">/**
- * @this {ThisType<Coralite>}
- * @callback CoralitePluginPageDeleteCallback
- * @description Async callback triggered when a page is deleted. Called with the deleted data.
- * @param {CoraliteCollectionItem} value - The data item being deleted
- * @async
- */</coralite-code-highlight>
+      * @this {ThisType<Coralite>}
+        * @callback CoralitePluginPageDeleteCallback
+        * @description Async callback triggered when a page is deleted. Called with the deleted data.
+        * @param {CoraliteCollectionItem} value - The data item being deleted
+        * @async
+        */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginTemplateCallback"></coralite-heading>
     <p>Async callback triggered for template-related events.</p>
     <coralite-code-highlight language="JavaScript">/**
- * @this {ThisType<Coralite>}
- * @callback CoralitePluginTemplateCallback
- * @description Async callback triggered for template-related events (set, update, delete).
- * @param {CoraliteModule} template - The template module that was set, updated, or deleted
- * @async
- */</coralite-code-highlight>
+      * @this {ThisType<Coralite>}
+        * @callback CoralitePluginTemplateCallback
+        * @description Async callback triggered for template-related events (set, update, delete).
+        * @param {CoraliteModule} template - The template module that was set, updated, or deleted
+        * @async
+        */</coralite-code-highlight>
   </main>
   <coralite-footer></coralite-footer>
 

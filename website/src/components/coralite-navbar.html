@@ -3,19 +3,22 @@
     <div class="container text-center">
       <a class="visually-hidden-focusable" href="#content">Skip to main content</a>
     </div>
+    <coralite-language-switcher languages="en,fr,es,de"></coralite-language-switcher>
   </div>
   <header class="navbar box-shadow">
     <nav class="container">
       <a class="navbar-brand" href="/" aria-current="page">
         <img class="navbar-logo" src="/images/logo-light.svg" alt="Coralite logo" height="48">
       </a>
-      <button class="button navbar-toggler" type="button" popovertarget="navbarNav" popovertargetaction="toggle" aria-label="Toggle navigation">
+      <button class="button navbar-toggler" type="button" popovertarget="navbarNav" popovertargetaction="toggle"
+        aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
       </button>
       <div id="navbarNav" class="offcanvas drop-shadow" tabindex="-1" popover="auto">
         <div class="offcanvas-header">
           <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-          <button type="button" class="button-close" popovertarget="navbarNav" popovertargetaction="hide" aria-label="Close"></button>
+          <button type="button" class="button-close" popovertarget="navbarNav" popovertargetaction="hide"
+            aria-label="Close"></button>
         </div>
         <div class="offcanvas-body">
           <ul class="nav">
@@ -23,6 +26,7 @@
             <li><a class="nav-link" href="/showcase.html">Showcase</a></li>
             <li><a class="nav-link" href="/docs/guide/index.html">Get started</a></li>
             <li><a class="nav-link" href="/docs/reference/index.html">Reference</a></li>
+            <li><coralite-language-switcher languages="en,fr,es,de" source-lang="en"></coralite-language-switcher></li>
           </ul>
         </div>
       </div>
