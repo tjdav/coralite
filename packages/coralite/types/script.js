@@ -27,7 +27,7 @@
  * @typedef {Object} CoraliteScriptContent
  * @property {string} id - Unique instance identifier
  * @property {string} [componentId] - component identifier for shared functions
- * @property {CoraliteDocument} document - Coralite document with metadata and rendering structure.
+ * @property {CoraliteDocument | { getElementById: function(string): HTMLElement|null }} document - Coralite document with metadata and rendering structure or mocked client document.
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {ShadowRoot} [root] - Shadow Root for standalone web components

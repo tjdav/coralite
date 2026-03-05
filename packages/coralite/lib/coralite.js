@@ -547,6 +547,8 @@ Coralite.prototype._generateStandaloneComponents = async function* () {
       } else {
         scriptContent = { content: 'export default function(){}' }
       }
+
+      scriptContent.imports = scriptContent.imports || result.values?.imports || result.imports || []
     }
 
     // Call ScriptManager to compile the standalone component code

@@ -346,11 +346,47 @@ export function findAndExtractScript (code) {
                 prop.key.name === 'script'
             )
 
-            const setupProp = clientProp.value.properties.find(
+            const importsProp = clientProp.value.properties.find(
               prop => prop.type === 'Property' &&
                 prop.key.type === 'Identifier' &&
-                prop.key.name === 'setup'
+                prop.key.name === 'imports'
             )
+
+            let imports = undefined
+            if (importsProp && importsProp.type === 'Property' && importsProp.value.type === 'ArrayExpression') {
+              imports = importsProp.value.elements.map(el => {
+                const imp = {}
+                if (el.type === 'ObjectExpression') {
+                  el.properties.forEach(p => {
+                    if (p.type !== 'Property') return
+
+                    const pKey = p.key
+                    const key = (pKey.type === 'Identifier' ? pKey.name : (pKey.type === 'Literal' ? pKey.value : undefined))
+
+                    if (!key) return
+
+                    if (p.value.type === 'Literal') {
+                      imp[key] = p.value.value
+                    } else if (p.value.type === 'ArrayExpression') {
+                      const elements = p.value.elements
+                      imp[key] = elements.map(e => ((e && e.type === 'Literal') ? e.value : undefined))
+                    } else if (p.value.type === 'ObjectExpression') {
+                      imp[key] = {}
+                      p.value.properties.forEach(op => {
+                        if (op.type === 'Property') {
+                          const opKey = op.key
+                          const opKeyName = (opKey.type === 'Identifier' ? opKey.name : (opKey.type === 'Literal' ? opKey.value : undefined))
+                          if (typeof opKeyName === 'string' && op.value.type === 'Literal') {
+                            imp[key][opKeyName] = String(op.value.value)
+                          }
+                        }
+                      })
+                    }
+                  })
+                }
+                return imp
+              })
+            }
 
             if (scriptProp && scriptProp.type === 'Property') {
               const { value, method } = scriptProp
@@ -383,53 +419,16 @@ export function findAndExtractScript (code) {
                 content,
                 lineOffset: startLine
               }
-            }
-
-            if (setupProp && setupProp.type === 'Property' && result) {
-              const { value, method } = setupProp
-              let prefix = ''
-              let content = ''
-
-              // Get source slice
-              const source = code.slice(value.start, value.end)
-
-              if (value.type === 'ArrowFunctionExpression') {
-                content = prefix + source
-              } else if (value.type === 'FunctionExpression') {
-                if (method) {
-                  const isAsync = value.async
-                  prefix += (isAsync ? 'async ' : '') + 'function setup'
-                  content = prefix + source
-                } else {
-                  content = prefix + source
-                }
+              if (imports) {
+                // @ts-ignore
+                result.imports = imports
               }
-
-              result.setupContent = content
-            } else if (setupProp && setupProp.type === 'Property' && !result) {
-              const { value, method } = setupProp
-              let prefix = ''
-              let content = ''
-
-              // Get source slice
-              const source = code.slice(value.start, value.end)
-
-              if (value.type === 'ArrowFunctionExpression') {
-                content = prefix + source
-              } else if (value.type === 'FunctionExpression') {
-                if (method) {
-                  const isAsync = value.async
-                  prefix += (isAsync ? 'async ' : '') + 'function setup'
-                  content = prefix + source
-                } else {
-                  content = prefix + source
-                }
-              }
-
+            } else if (imports) {
               result = {
                 content: 'export default function(){}',
                 lineOffset: 0,
-                setupContent: content
+                // @ts-ignore
+                imports
               }
             }
           }

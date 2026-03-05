@@ -12,7 +12,7 @@
     <div id="standalone-test" style="display:none">
         <script>
             // We append a custom element here so it's not parsed by Coralite but Playwright can test it
-            document.getElementById('standalone-test').innerHTML = '<my-button id="my-dynamic-btn" text="Dynamic Button"></my-button>';
+            document.getElementById('standalone-test').innerHTML = '<my-button text="Dynamic Button"></my-button>';
         </script>
     </div>
     <p id="result-text"></p>
