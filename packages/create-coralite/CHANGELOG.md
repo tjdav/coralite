@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.27.0
+
+> Comparing `create-coralite-v0.26.0` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.27.0 ([2ceda35](https://codeberg.org/tjdavid/coralite/commit/2ceda3526265a2688e0e0fd92f4f50310a51d32c))
+- refactor!(coralite-scripts): align terminology with core components rename ([560e083](https://codeberg.org/tjdavid/coralite/commit/560e0833204303f5c513cb20a295887d49e3b0ae))
+
+
 ## v0.26.0
 
 > Comparing `create-coralite-v0.25.0` to `HEAD`
