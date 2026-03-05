@@ -88,6 +88,6 @@ describe('Module Resolution', () => {
     const results = await coralite.build()
 
     assert.ok(results.length > 0)
-    assert.match(results[0].html, /Hello from Dummy Package/)
+    assert.match(results[0].content, /Hello from Dummy Package/)
   })
 })

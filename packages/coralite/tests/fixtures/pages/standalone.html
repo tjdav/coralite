@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Standalone Component Tests</title>
+</head>
+
+<body>
+    <h1>Testing Standalone Components</h1>
+    <my-button text="Click Me!" data-skip-render="true"></my-button>
+    <div id="standalone-test" style="display:none">
+        <script>
+            // We append a custom element here so it's not parsed by Coralite but Playwright can test it
+            document.getElementById('standalone-test').innerHTML = '<my-button text="Dynamic Button"></my-button>';
+        </script>
+    </div>
+    <p id="result-text"></p>
+
+    <script type="module" src="./standalone/my-button.js"></script>
+    <script>
+        window.addEventListener('button-clicked', (e) => {
+            const p = document.getElementById('result-text');
+            if (p) p.textContent = 'Button was clicked from component event!';
+        });
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const dynamicContainer = document.getElementById('standalone-test');
+            if (dynamicContainer) {
+                dynamicContainer.style.display = 'block';
+            }
+        });
+    </script>
+</body>
+
+</html>
