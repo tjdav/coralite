@@ -23,6 +23,7 @@ program
   .option('-i, --ignore-attribute <key=value...>', 'Ignore elements by attribute name value pair', [])
   .option('-s, --skip-render-attribute <key...>', 'Parse elements but exclude them from final render output', [])
   .option('-d, --dry-run', 'Run in dry-run mode')
+  .option('--standalone <path>', 'Output directory for standalone client-side web components')
 
 program.parse(process.argv)
 program.on('error', (err) => {
@@ -52,6 +53,7 @@ const coraliteOptions = {
   ignoreByAttribute,
   skipRenderByAttribute: options.skipRenderAttribute,
   mode: options.mode,
+  standaloneOutput: options.standalone,
   plugins: []
 }
 
