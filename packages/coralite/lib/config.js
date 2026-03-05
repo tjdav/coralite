@@ -15,7 +15,7 @@ export function defineConfig (options) {
   }
 
   // Validate required string properties
-  const requiredProps = ['output', 'templates', 'pages']
+  const requiredProps = ['output', 'components', 'pages']
 
   for (const prop of requiredProps) {
     // Check if property exists

@@ -9,10 +9,10 @@ describe('Source Map Generation', () => {
 
   test('defineComponent script sourcemap', async () => {
     const tmpDir = await mkdir(join(tmpdir(), 'coralite-sourcemap-test-' + Date.now()), { recursive: true })
-    const templatesDir = join(tmpDir, 'templates')
+    const componentsDir = join(tmpDir, 'components')
     const pagesDir = join(tmpDir, 'pages')
 
-    await mkdir(templatesDir, { recursive: true })
+    await mkdir(componentsDir, { recursive: true })
     await mkdir(pagesDir, { recursive: true })
 
     // Create a component with a script at a specific line
@@ -35,7 +35,7 @@ export default defineComponent({
 })
 </script>
 `
-    await writeFile(join(templatesDir, 'my-component.html'), componentContent)
+    await writeFile(join(componentsDir, 'my-component.html'), componentContent)
 
     // Create a page using the component
     const pageContent = `
@@ -44,7 +44,7 @@ export default defineComponent({
     await writeFile(join(pagesDir, 'index.html'), pageContent)
 
     const coralite = new Coralite({
-      templates: templatesDir,
+      components: componentsDir,
       pages: pagesDir,
       mode: 'development'
     })
@@ -85,10 +85,10 @@ export default defineComponent({
 
   test('defineComponent complex script sourcemap', async () => {
     const tmpDir = await mkdir(join(tmpdir(), 'coralite-sourcemap-test-complex-' + Date.now()), { recursive: true })
-    const templatesDir = join(tmpDir, 'templates')
+    const componentsDir = join(tmpDir, 'components')
     const pagesDir = join(tmpDir, 'pages')
 
-    await mkdir(templatesDir, { recursive: true })
+    await mkdir(componentsDir, { recursive: true })
     await mkdir(pagesDir, { recursive: true })
 
     const componentContent = `
@@ -111,7 +111,7 @@ export default defineComponent({
 })
 </script>
 `
-    await writeFile(join(templatesDir, 'complex-component.html'), componentContent)
+    await writeFile(join(componentsDir, 'complex-component.html'), componentContent)
 
     // Create a page using the component
     const pageContent = `
@@ -120,7 +120,7 @@ export default defineComponent({
     await writeFile(join(pagesDir, 'index.html'), pageContent)
 
     const coralite = new Coralite({
-      templates: templatesDir,
+      components: componentsDir,
       pages: pagesDir,
       mode: 'development'
     })

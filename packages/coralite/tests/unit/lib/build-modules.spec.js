@@ -8,16 +8,16 @@ import { Coralite } from '#lib'
 describe('Coralite Build Modes', () => {
   let testDir
   let pagesDir
-  let templatesDir
+  let componentDir
   let coralite
 
   beforeEach(async () => {
     testDir = await mkdtemp(path.join(tmpdir(), 'coralite-test-mode-'))
     pagesDir = path.join(testDir, 'pages')
-    templatesDir = path.join(testDir, 'templates')
+    componentDir = path.join(testDir, 'components')
 
     await mkdir(pagesDir, { recursive: true })
-    await mkdir(templatesDir, { recursive: true })
+    await mkdir(componentDir, { recursive: true })
 
     // Create a basic page
     await writeFile(path.join(pagesDir, 'index.html'), `
@@ -32,7 +32,7 @@ describe('Coralite Build Modes', () => {
 
     // Create a component with a script that exports a default
     // We export a simple string message to verify execution
-    await writeFile(path.join(templatesDir, 'my-component.html'), `
+    await writeFile(path.join(componentDir, 'my-component.html'), `
       <template id="my-component">
         <div>{{ message }}</div>
         <script>
@@ -56,7 +56,7 @@ describe('Coralite Build Modes', () => {
   it('should build in production mode by default (esbuild strategy)', async () => {
     coralite = new Coralite({
       pages: pagesDir,
-      templates: templatesDir
+      components: componentDir
     })
 
     await coralite.initialise()
@@ -83,7 +83,7 @@ describe('Coralite Build Modes', () => {
 
     coralite = new Coralite({
       pages: pagesDir,
-      templates: templatesDir,
+      components: componentDir,
       mode: 'development'
     })
 

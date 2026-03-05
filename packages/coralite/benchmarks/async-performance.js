@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const TEMP_DIR = join(__dirname, 'temp')
-const TEMPLATES_DIR = join(TEMP_DIR, 'templates')
+const COMPONENT_DIR = join(TEMP_DIR, 'templates')
 const PAGES_DIR = join(TEMP_DIR, 'pages')
 
 // Configuration
@@ -17,7 +17,7 @@ async function setup () {
     recursive: true,
     force: true
   })
-  await mkdir(TEMPLATES_DIR, { recursive: true })
+  await mkdir(COMPONENT_DIR, { recursive: true })
   await mkdir(PAGES_DIR, { recursive: true })
 
   // Create async component
@@ -36,7 +36,7 @@ async function setup () {
   })
 </script>
   `
-  await writeFile(join(TEMPLATES_DIR, 'async-comp.html'), componentContent)
+  await writeFile(join(COMPONENT_DIR, 'async-comp.html'), componentContent)
 
   // Create page with many instances
   const instances = Array(COMPONENT_COUNT).fill('<async-comp></async-comp>').join('\n    ')
@@ -62,7 +62,7 @@ async function runBenchmark () {
   console.log(`- Theoretical Serial Time: ${COMPONENT_DELAY_MS * COMPONENT_COUNT}ms`)
 
   const coralite = new Coralite({
-    templates: TEMPLATES_DIR,
+    components: COMPONENT_DIR,
     pages: PAGES_DIR
   })
 

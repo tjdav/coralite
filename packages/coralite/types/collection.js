@@ -5,7 +5,7 @@
 
 /**
  * @typedef {Object} CoraliteCollectionCallbackResult
- * @property {'page'|'template'} [type] - Document type
+ * @property {'page'|'component'} [type] - Document type
  * @property {*} [result] - Result value returned from event handlers
  */
 
@@ -17,7 +17,7 @@
 /**
  * @typedef {Object} CoraliteCollectionEventResult
  * @property {*} value - The processed value
- * @property {'page'|'template'} [type] - Document type
+ * @property {'page'|'component'} [type] - Document type
  * @property {string} [id] - Optional identifier for the item
  */
 

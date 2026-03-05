@@ -6,7 +6,7 @@ import { performance } from 'node:perf_hooks'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const TEMP_DIR = join(__dirname, 'temp-benchmark')
-const TEMPLATES_DIR = join(TEMP_DIR, 'templates')
+const TEMPLATES_DIR = join(TEMP_DIR, 'components')
 const PAGES_DIR = join(TEMP_DIR, 'pages')
 
 // Check for required VM modules
@@ -120,7 +120,7 @@ async function runBenchmark (mode, scenario) {
   // Initialize Coralite
   const initStart = performance.now()
   const coralite = new Coralite({
-    templates: TEMPLATES_DIR,
+    components: TEMPLATES_DIR,
     pages: PAGES_DIR,
     mode: mode
   })

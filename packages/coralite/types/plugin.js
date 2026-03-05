@@ -57,8 +57,8 @@
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginTemplateCallback - Async callback triggered for template-related events (set, update, delete).
- * @param {CoraliteModule} template - The template module that was set, updated, or deleted
+ * @callback CoralitePluginComponentCallback - Async callback triggered for component-related events (set, update, delete).
+ * @param {CoraliteModule} component - The component module that was set, updated, or deleted
  * @async
  */
 
@@ -107,13 +107,13 @@
  * @typedef {Object} CoralitePlugin
  * @property {string} name - Unique identifier/name of the plugin
  * @property {CoralitePluginModule<T>} [method] - Execution function that processes content using plugin logic
- * @property {HTMLData[]} [templates] - Array of loaded template data
+ * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
- * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
- * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
- * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ * @property {CoralitePluginComponentCallback} [onComponentSet] - Async callback triggered when a component is created
+ * @property {CoralitePluginComponentCallback} [onComponentUpdate] - Async callback triggered when a components is updated
+ * @property {CoralitePluginComponentCallback} [onComponentDelete] - Async callback triggered when a component is deleted
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
@@ -127,14 +127,14 @@
  * @typedef {Object} CoralitePluginResult
  * @property {string} name - Unique identifier/name of the plugin
  * @property {CoralitePluginModule<T>} [method] - Execution function that processes content using plugin logic
- * @property {HTMLData[]} [templates] - Array of loaded template data
+ * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {Object} [metadata] - Plugin metadata
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
- * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
- * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
- * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ * @property {CoralitePluginComponentCallback} [onComponentSet] - Async callback triggered when a component is created
+ * @property {CoralitePluginComponentCallback} [onComponentUpdate] - Async callback triggered when a component is updated
+ * @property {CoralitePluginComponentCallback} [onComponentDelete] - Async callback triggered when a component is deleted
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
@@ -147,13 +147,13 @@
  * @typedef {Object} CoralitePluginInstance
  * @property {string} name - Unique identifier/name of the plugin
  * @property {Function} [method] - Execution function that processes content using plugin logic
- * @property {HTMLData[]} [templates=[]] - List of custom templates to be included in the coralite instance
+ * @property {HTMLData[]} [components=[]] - List of custom components to be included in the coralite instance
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
- * @property {CoralitePluginTemplateCallback} [onTemplateSet] - Async callback triggered when a template is created
- * @property {CoralitePluginTemplateCallback} [onTemplateUpdate] - Async callback triggered when a template is updated
- * @property {CoralitePluginTemplateCallback} [onTemplateDelete] - Async callback triggered when a template is deleted
+ * @property {CoralitePluginComponentCallback} [onComponentSet] - Async callback triggered when a component is created
+ * @property {CoralitePluginComponentCallback} [onComponentUpdate] - Async callback triggered when a component is updated
+ * @property {CoralitePluginComponentCallback} [onComponentDelete] - Async callback triggered when a component is deleted
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts

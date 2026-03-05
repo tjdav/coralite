@@ -14,7 +14,7 @@ import CoraliteCollection from './collection.js'
  * Get HTML
  * @param {Object} options - Options for searching HTML files
  * @param {string} options.path - Path to the directory containing HTML files
- * @param {'page' | 'template'} options.type - Document types
+ * @param {'page' | 'component'} options.type - Document types
  * @param {boolean} [options.recursive=false] - Whether to search recursively in subdirectories
  * @param {string[]} [options.exclude=[]] - Files or directories to exclude from search
  * @param {CoraliteCollectionEventSet} [options.onFileSet]

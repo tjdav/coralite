@@ -435,38 +435,6 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute 
   }
 }
 
-
-/**
- * In place add metadata to meta
- * @param {Object.<string, (string | CoraliteToken[])>} meta - The metadata object to which the new entry will be added.
- * @param {string} name - The key under which the content will be stored in the meta object.
- * @param {string} content - The value associated with the specified key.
- */
-function addMetadata (meta, name, content) {
-  let entry = meta[name]
-
-  if (!entry) {
-    // if the metadata key does not exist, initialize it with the provided content.
-    meta[name] = content
-  } else {
-    // if the existing value is not an array, convert it into an array containing a single object
-    // with the name and content. This allows for handling multiple values under the same metadata key.
-    if (!Array.isArray(entry)) {
-      meta[name] = [{
-        name,
-        content: entry
-      }]
-      entry = meta[name]
-    }
-    // add the new content to the array as a new object, preserving existing entries.
-    // this is useful for adding multiple values (e.g., Open Graph metadata) under the same key.
-    entry.push({
-      name,
-      content
-    })
-  }
-}
-
 /**
  * Creates an element within the document structure based on provided parameters.
  * @param {Object} data - An object containing details needed to create the element.

@@ -249,15 +249,15 @@ describe('html.js', () => {
         assert.strictEqual(collection.list[0].type, 'page')
       })
 
-      it('should set type to "template"', async () => {
-        await writeFile(path.join(testDir, 'template.html'), '<h1>Template</h1>')
+      it('should set type to "component"', async () => {
+        await writeFile(path.join(testDir, 'component.html'), '<h1>Template</h1>')
 
         const collection = await getHtmlFiles({
           path: testDir,
-          type: 'template'
+          type: 'component'
         })
 
-        assert.strictEqual(collection.list[0].type, 'template')
+        assert.strictEqual(collection.list[0].type, 'component')
       })
     })
 

@@ -25,7 +25,7 @@
 /**
  * @typedef {Object} CoraliteScriptContent
  * @property {string} id - Unique instance identifier
- * @property {string} [templateId] - Template identifier for shared functions
+ * @property {string} [componentId] - component identifier for shared functions
  * @property {CoraliteDocument} document - Coralite document with metadata and rendering structure.
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
@@ -42,7 +42,7 @@
 /**
  * @typedef {Object} InstanceContext
  * @property {string} instanceId - Unique instance identifier
- * @property {string} templateId - Template identifier
+ * @property {string} componentId - component identifier
  * @property {Object.<string, CoraliteModuleValue>} values - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {CoraliteDocument} [document] - Document context

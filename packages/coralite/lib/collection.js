@@ -104,7 +104,7 @@ CoraliteCollection.prototype.setItem = async function (value) {
 
       documentValue.result = result.value
 
-      if (result.type === 'page' || result.type === 'template') {
+      if (result.type === 'page' || result.type === 'component') {
         documentValue.type = result.type
       }
 
@@ -255,7 +255,7 @@ CoraliteCollection.prototype.updateItem = async function (value) {
       }
 
       // update type if provided
-      if (result.type === 'page' || result.type === 'template') {
+      if (result.type === 'page' || result.type === 'component') {
         originalValue.type = result.type
       }
     } else {

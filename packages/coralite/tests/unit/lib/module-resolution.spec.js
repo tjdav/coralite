@@ -8,7 +8,7 @@ import Coralite from '#lib'
 describe('Module Resolution', () => {
   let testDir
   let pagesDir
-  let templatesDir
+  let componentDir
   let nodeModulesDir
   let pkgDir
   let coralite
@@ -16,12 +16,12 @@ describe('Module Resolution', () => {
   beforeEach(async () => {
     testDir = await mkdtemp(join(tmpdir(), 'coralite-resolution-'))
     pagesDir = join(testDir, 'pages')
-    templatesDir = join(testDir, 'templates')
+    componentDir = join(testDir, 'components')
     nodeModulesDir = join(testDir, 'node_modules')
     pkgDir = join(nodeModulesDir, 'dummy-pkg')
 
     await mkdir(pagesDir, { recursive: true })
-    await mkdir(templatesDir, { recursive: true })
+    await mkdir(componentDir, { recursive: true })
     await mkdir(pkgDir, { recursive: true })
 
     // Create a dummy package in node_modules
@@ -40,7 +40,7 @@ describe('Module Resolution', () => {
 
     // Create a component that imports the dummy package
     // This is the crucial part: it imports 'dummy-pkg' which is in the project's node_modules
-    await writeFile(join(templatesDir, 'my-component.html'), `
+    await writeFile(join(componentDir, 'my-component.html'), `
       <template id="my-component">
         <div>{{ message }}</div>
       </template>
@@ -77,7 +77,7 @@ describe('Module Resolution', () => {
   it('should resolve imports from project node_modules in development mode', async () => {
     coralite = new Coralite({
       pages: pagesDir,
-      templates: templatesDir,
+      components: componentDir,
       mode: 'development'
     })
 
