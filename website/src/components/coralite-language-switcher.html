@@ -1,0 +1,163 @@
+<template id="coralite-language-switcher">
+  <nav class="dropdown" aria-expanded="false" no-translate="true">
+    <a href="#" class="nav-link" ref="button">{{ currentLang }}</a>
+    <ul ref="tooltip" class="dropdown-menu">
+      {{ languageLinks }}
+    </ul>
+  </nav>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  function getNativeLanguageName(langCode) {
+    const displayNames = new Intl.DisplayNames([langCode], { type: 'language' });
+    const displayName = displayNames.of(langCode)
+
+    return displayName[0].toUpperCase() + displayName.slice(1);
+  }
+
+  function normalizePath(pathname, languages) {
+    for (const lang of languages) {
+      if (pathname.startsWith(lang + '/')) {
+        return pathname.slice(lang.length + 1);
+      }
+    }
+    return pathname;
+  }
+
+  const flags = {
+    'en': '🇬🇧',
+    'fr': '🇫🇷',
+    'de': '🇩🇪',
+    'es': '🇪🇸',
+  }
+
+  export default defineComponent({
+    tokens: {
+      currentLang (values) {
+        return `<span class="d-none">
+          ${getNativeLanguageName(values.$lang)}
+        </span>${flags[values.$lang]} ${values.$lang.toUpperCase()}`
+      },
+      languageLinks ({ $lang, languages, sourceLang, $urlPathname }) {      
+        // Split the path into segments
+        const segments = $urlPathname.split('/').filter(Boolean)
+        
+        // Supported languages
+        const langCodes = languages.split(',')
+        
+        if (!langCodes.length) {
+          return
+        }
+
+        const pathname = normalizePath($urlPathname, langCodes)
+        const currentPath = segments.join('/') + (pathname.endsWith('/') && segments.length > 1 ? '/' : '')
+
+        return langCodes.map((code) => {
+          if ($lang === code) {
+            return ''
+          }
+
+          let href = '/' + code + '/' + currentPath
+
+          if (code === sourceLang) {
+            href = currentPath
+          }
+
+          return `<li><a href="${href}" hreflang="${code}">${getNativeLanguageName(code)}</a></li>`
+        }).join('')
+      },
+    },
+    client: {
+      imports: [
+        {
+          specifier: 'https://esm.sh/@popperjs/core/lib/popper-lite',
+          namedExports: ['createPopper']
+        }
+      ],
+      script ({ imports, helpers }) {
+        const button = helpers.refs('button')
+        const tooltip = helpers.refs('tooltip')
+
+        imports.createPopper(button, tooltip, {
+          placement: 'bottom',
+        });
+
+        // Toggle the dropdown when the button is clicked
+        button.addEventListener('click', (event) => {
+          event.preventDefault()
+          tooltip.classList.toggle('show');
+        });
+
+        // Close the dropdown when clicking anywhere outside of it
+        document.addEventListener('click', (event) => {
+          const isClickInsideMenu = tooltip.contains(event.target);
+          const isClickOnButton = button.contains(event.target);
+
+          if (!isClickInsideMenu && !isClickOnButton) {
+            tooltip.classList.remove('show');
+          }
+        });
+      }
+    }
+  })
+</script>
+
+
+<style>
+/* Container styling */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Dropdown Menu Base Styling 
+  Using opacity/visibility instead of 'display: none' ensures Popper.js 
+  can correctly calculate the element's dimensions when initializing.
+*/
+.dropdown-menu {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1000;
+  
+  /* Visuals */
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.375rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 0.5rem 0;
+  margin: 0;
+  list-style: none;
+  min-width: 140px;
+  
+  /* Smooth fade in/out */
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.dropdown-menu.show {
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Link styling */
+.dropdown-menu li a {
+  display: block;
+  padding: 0.5rem 1rem;
+  color: #334155;
+  text-decoration: none;
+  font-size: 0.875rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Hover and focus states for accessibility */
+.dropdown-menu li a:hover,
+.dropdown-menu li a:focus {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  outline: none;
+}
+</style>
