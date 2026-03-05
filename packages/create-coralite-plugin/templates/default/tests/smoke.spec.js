@@ -22,7 +22,7 @@ describe('Smoke Test', () => {
 
     const coralite = new Coralite({
       pages: path.join(fixtures, 'pages'),
-      templates: path.join(fixtures, 'templates'),
+      components: path.join(fixtures, 'components'),
       plugins: [myPlugin]
     })
 
