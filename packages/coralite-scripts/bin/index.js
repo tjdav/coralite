@@ -80,7 +80,7 @@ if (mode === 'dev') {
       const outFile = join(outDir, result.path.filename)
 
       await mkdir(outDir, { recursive: true })
-      await writeFile(outFile, result.html)
+      await writeFile(outFile, result.content)
 
       if (options.verbose) {
         process.stdout.write(toTime() + toMS(result.duration) + dash + result.path.pathname + '\n')

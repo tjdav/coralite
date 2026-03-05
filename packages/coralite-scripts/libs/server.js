@@ -260,7 +260,7 @@ async function server (config, options) {
           // build the HTML for this page using the built-in compiler.
           const documents = await coralite.build(pathname, (result) => {
             // inject a script to enable live reload via Server-Sent Events
-            const injectedHtml = result.html.replace(/<\/body>/i, rebuildScript)
+            const injectedHtml = result.content.replace(/<\/body>/i, rebuildScript)
 
             const relPath = relative(config.pages, result.path.pathname)
             const normalizedKey = relPath.split(sep).join('/')
@@ -277,7 +277,7 @@ async function server (config, options) {
 
             return {
               path: result.path,
-              html: injectedHtml,
+              content: injectedHtml,
               duration: result.duration
             }
           })
@@ -294,7 +294,7 @@ async function server (config, options) {
           })
 
           if (doc) {
-            res.send(doc.html)
+            res.send(doc.content)
           } else {
             res.sendStatus(404)
           }
