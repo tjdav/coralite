@@ -1,5 +1,55 @@
 # Changelog
 
+## v0.27.0
+
+> Comparing `coralite-v0.26.0` to `HEAD`
+
+**Summary:** 19 commits
+
+### ✨ Features
+
+- allow `skipRenderByAttribute` and `ignoreByAttribute` to accept string or object arrays ([a9686cd](https://codeberg.org/tjdavid/coralite/commit/a9686cdb877e685c6099e642744b68789b5ede12))
+- fix standalone web components client-side import resolution ([df4e3fe](https://codeberg.org/tjdavid/coralite/commit/df4e3fe0505c45b31e6dc975dc39e2975e147cef))
+- extract client.imports from AST for standalone component generation ([ccf64f1](https://codeberg.org/tjdavid/coralite/commit/ccf64f1cbcbe0c9dbbac57739fba733e26eabee5))
+- bypass transformCSS and remove mock DOM ([022a762](https://codeberg.org/tjdavid/coralite/commit/022a762c9306535cc02a96210c1a5970e86b3a5e))
+- add E2E tests for standalone web components and custom elements (tests) ([20ebcfd](https://codeberg.org/tjdavid/coralite/commit/20ebcfd097f9967fe467290bb6e9bf285a3f551c))
+- add rudimentary text token replacement for user script payloads ([5d00e07](https://codeberg.org/tjdavid/coralite/commit/5d00e074e33601f0eaa5922938edfcbcd229f811))
+- add optional callback transformation for standalone component generation ([443057f](https://codeberg.org/tjdavid/coralite/commit/443057ff70f198aae8a7ed9850b6c2fa1245e655))
+- normalize standalone output parameter in constructor (coralite) ([0a40abf](https://codeberg.org/tjdavid/coralite/commit/0a40abf2f843944191d9943a3d6fc2114881757e))
+- add --standalone option for client-side web component output directory ([fc761a3](https://codeberg.org/tjdavid/coralite/commit/fc761a3a9ee19dbbec76934a9a9708f6741c9236))
+- extract and set $lang from html lang attribute in head (metadata) ([cdaefcd](https://codeberg.org/tjdavid/coralite/commit/cdaefcd291a2c7f9ea544af3b1b759dcb9a56baf))
+
+### 🐛 Bug Fixes
+
+- standalone components not firing e2e tests. ([b52bc5f](https://codeberg.org/tjdavid/coralite/commit/b52bc5f0efb4ef5eeb1a9fb75a0a4565efb07297))
+- standalone Web Components so that CSS is unscoped correctly ([9c9c9c5](https://codeberg.org/tjdavid/coralite/commit/9c9c9c5d1738078f4bf6743721adbdc111cf982f))
+
+### 🎨 Styles
+
+- expands abbreviated variable names ([0e644c4](https://codeberg.org/tjdavid/coralite/commit/0e644c45ea437eb8f81df0785e793822512707d4))
+
+### ♻️ Code Refactoring
+
+- move fixture templates to components dir ([70103cc](https://codeberg.org/tjdavid/coralite/commit/70103cc98145aab641f695264fe204b0c43ebe67))
+- the refs plugin to assign ref values directly to the `id` ([4271556](https://codeberg.org/tjdavid/coralite/commit/427155649cdab380aba61e37e35085f080ca4893))
+
+### ✅ Tests
+
+- test for current-language support (meta) ([830b337](https://codeberg.org/tjdavid/coralite/commit/830b337cd816d0edca0112574b96e1fb3ec83c9a))
+
+### 🧹 Chores
+
+- update coralite build-html script with standalone and skip-render flags ([a737532](https://codeberg.org/tjdavid/coralite/commit/a737532bb08493c3a3f97fe9c5a0d454e931b016))
+
+### 💥 Breaking Changes
+
+- rename "templates" to "components" across the public API ([8ea8764](https://codeberg.org/tjdavid/coralite/commit/8ea876488a8e5a88d7c8edee1dbc42d30d76ab7b))
+
+### 🔨 Other Changes
+
+- feat!(coralite): implement standalone client-side components with breaking API changes ([533ea3d](https://codeberg.org/tjdavid/coralite/commit/533ea3dae4f1d7a6cf1fa4a5b1dbdb76bfdc788e))
+
+
 ## v0.26.0
 
 > Comparing `coralite-v0.25.0` to `HEAD`
