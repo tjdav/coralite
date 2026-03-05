@@ -19,14 +19,16 @@
 
     <script type="module" src="./standalone/my-button.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const dynamicContainer = document.getElementById('standalone-test');
-            dynamicContainer.style.display = 'block';
+        window.addEventListener('button-clicked', (e) => {
+            const p = document.getElementById('result-text');
+            if (p) p.textContent = 'Button was clicked from component event!';
+        });
 
-            window.addEventListener('button-clicked', (e) => {
-                const p = document.getElementById('result-text');
-                p.textContent = 'Button was clicked from component event!';
-            })
+        window.addEventListener('DOMContentLoaded', () => {
+            const dynamicContainer = document.getElementById('standalone-test');
+            if (dynamicContainer) {
+                dynamicContainer.style.display = 'block';
+            }
         });
     </script>
 </body>

@@ -321,6 +321,7 @@ export function findAndExtractScript (code) {
     locations: true
   })
 
+  /** @type {import('../types/script.js').ScriptContent | null} */
   let result = null
 
   walkJS(ast, {
@@ -346,22 +347,31 @@ export function findAndExtractScript (code) {
                 prop.key.name === 'script'
             )
 
+            const setupProp = clientProp.value.properties.find(
+              prop => prop.type === 'Property' &&
+                prop.key.type === 'Identifier' &&
+                prop.key.name === 'setup'
+            )
+
             const importsProp = clientProp.value.properties.find(
               prop => prop.type === 'Property' &&
                 prop.key.type === 'Identifier' &&
                 prop.key.name === 'imports'
             )
 
+            /** @type {import('../types/script.js').ScriptImport[] | undefined} */
             let imports = undefined
             if (importsProp && importsProp.type === 'Property' && importsProp.value.type === 'ArrayExpression') {
-              imports = importsProp.value.elements.map(el => {
+              imports = importsProp.value.elements.reduce((acc, el) => {
+                /** @type {Record<string, any>} */
                 const imp = {}
+                let hasSpecifier = false
                 if (el.type === 'ObjectExpression') {
                   el.properties.forEach(p => {
                     if (p.type !== 'Property') return
 
                     const pKey = p.key
-                    const key = (pKey.type === 'Identifier' ? pKey.name : (pKey.type === 'Literal' ? pKey.value : undefined))
+                    const key = String(pKey.type === 'Identifier' ? pKey.name : (pKey.type === 'Literal' ? pKey.value : ''))
 
                     if (!key) return
 
@@ -382,10 +392,36 @@ export function findAndExtractScript (code) {
                         }
                       })
                     }
+                    if (key === 'specifier') {
+                      hasSpecifier = true
+                    }
                   })
                 }
-                return imp
-              })
+                if (hasSpecifier) {
+                  // Type cast when we know it has the required properties
+                  acc.push(/** @type {import('../types/script.js').ScriptImport} */ (imp))
+                }
+                return acc
+              }, /** @type {import('../types/script.js').ScriptImport[]} */([]))
+            }
+
+            let setupContent = undefined
+            if (setupProp && setupProp.type === 'Property') {
+              const { value, method } = setupProp
+              let prefix = ''
+
+              const source = code.slice(value.start, value.end)
+              if (value.type === 'ArrowFunctionExpression') {
+                setupContent = source
+              } else if (value.type === 'FunctionExpression') {
+                if (method) {
+                  const isAsync = value.async
+                  prefix += (isAsync ? 'async ' : '') + 'function setup'
+                  setupContent = prefix + source
+                } else {
+                  setupContent = source
+                }
+              }
             }
 
             if (scriptProp && scriptProp.type === 'Property') {
@@ -420,15 +456,21 @@ export function findAndExtractScript (code) {
                 lineOffset: startLine
               }
               if (imports) {
-                // @ts-ignore
                 result.imports = imports
               }
-            } else if (imports) {
+              if (setupContent) {
+                result.setupContent = setupContent
+              }
+            } else if (imports || setupContent) {
               result = {
                 content: 'export default function(){}',
-                lineOffset: 0,
-                // @ts-ignore
-                imports
+                lineOffset: 0
+              }
+              if (imports) {
+                result.imports = imports
+              }
+              if (setupContent) {
+                result.setupContent = setupContent
               }
             }
           }

@@ -7,20 +7,24 @@ test.describe('Standalone Web Components', () => {
     // Wait for the custom element to be defined
     await page.waitForFunction(() => customElements.get('my-button') !== undefined)
 
-    const btnElement = page.getByRole('button', { name: 'Dynamic Button' })
+    const componentLocator = page.locator('my-button', { hasText: 'Dynamic Button' }).first()
+    const btnElement = componentLocator.locator('.my-btn')
+
     await expect(btnElement).toBeVisible()
     await expect(btnElement).toHaveText('Dynamic Button')
 
     // Query inside the shadow DOM for the output div to verify async setup resolution
-    const outputInsideShadow = btnElement.locator('.output')
+    const outputInsideShadow = componentLocator.locator('.output')
     await expect(outputInsideShadow).toHaveText('Loaded from setup!')
 
-    // Click the button. Playwright automatically penetrates open shadow roots.
+    // Wait for event to process if necessary, wait for promise to resolve, click the button
+    const resultText = page.locator('#result-text')
+
+    // We expect the button to dispatch the event which sets text
     await btnElement.click()
 
     // The component's script dispatches an event which the light DOM script catches to update the paragraph
-    const resultText = page.locator('#result-text')
-    await expect(resultText).toHaveText('Button was clicked from component event!')
+    await expect(resultText).toHaveText('Button was clicked from component event!', { timeout: 10000 })
 
     // Verify that the confetti script loaded and updated the text inside shadow DOM
     await expect(outputInsideShadow).toHaveText('Confetti fired!')

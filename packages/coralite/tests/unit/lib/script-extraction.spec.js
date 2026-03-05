@@ -135,4 +135,47 @@ defineComponent({
       console.log('comments')
     }`)
   })
+  test('setup block with script block', () => {
+    const code = `
+defineComponent({
+  client: {
+    setup() {
+      return { msg: 'setup' }
+    },
+    script(context) {
+      console.log('script')
+    }
+  }
+})`
+    const result = findAndExtractScript(code)
+    assert.strictEqual(result.lineOffset, 6)
+    assert.strictEqual(result.content, `function script(context) {
+      console.log('script')
+    }`)
+    assert.strictEqual(result.setupContent, `function setup() {
+      return { msg: 'setup' }
+    }`)
+  })
+
+  test('async setup block with arrow script block', () => {
+    const code = `
+defineComponent({
+  client: {
+    setup: async () => {
+      return { msg: 'async setup arrow' }
+    },
+    script: (context) => {
+      console.log('script arrow')
+    }
+  }
+})`
+    const result = findAndExtractScript(code)
+    assert.strictEqual(result.lineOffset, 6)
+    assert.strictEqual(result.content, `(context) => {
+      console.log('script arrow')
+    }`)
+    assert.strictEqual(result.setupContent, `async () => {
+      return { msg: 'async setup arrow' }
+    }`)
+  })
 })

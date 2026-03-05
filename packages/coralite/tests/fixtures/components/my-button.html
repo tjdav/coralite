@@ -56,15 +56,13 @@
         const btn = context.helpers.refs('btn');
         const output = context.helpers.refs('output');
         
-        btn.addEventListener('click', () => {
-          if (context.imports.confetti) {
-            context.imports.confetti({
-              particleCount: 100,
-              spread: 70,
-              origin: { y: 0.6 }
-            });
-            output.textContent = 'Confetti fired!'
-          }
+        btn.addEventListener('click', function () {
+          context.imports.confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+          output.textContent = 'Confetti fired!'
           
           this.dispatchEvent(new CustomEvent('button-clicked', { 
             detail: { 
