@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.27.0
+
+> Comparing `coralite-scripts-v0.26.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- allow `skipRenderByAttribute` and `ignoreByAttribute` to accept string or object arrays ([a9686cd](https://codeberg.org/tjdavid/coralite/commit/a9686cdb877e685c6099e642744b68789b5ede12))
+
+### ♻️ Code Refactoring
+
+- rename result property from html to content ([31e9911](https://codeberg.org/tjdavid/coralite/commit/31e9911b3a447df0a804744c4830340b3887e2bc))
+
+### 🔨 Other Changes
+
+- refactor!(coralite-scripts): align terminology with core components rename ([560e083](https://codeberg.org/tjdavid/coralite/commit/560e0833204303f5c513cb20a295887d49e3b0ae))
+
+
 ## v0.26.0
 
 > Comparing `coralite-scripts-v0.25.0` to `HEAD`
