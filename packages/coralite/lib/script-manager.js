@@ -130,46 +130,46 @@ ScriptManager.prototype.compileStandaloneComponent = async function (componentId
   // Generate component imports
   const importMap = {}
   if (scriptContent && scriptContent.imports) {
-    for (const imp of scriptContent.imports) {
-      const specifier = JSON.stringify(imp.specifier)
-      let attrStr = ''
-      if (imp.attributes) {
-        attrStr = ` with { ${Object.entries(imp.attributes).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} }`
+    for (const importDefinition of scriptContent.imports) {
+      const specifier = JSON.stringify(importDefinition.specifier)
+      let attributesString = ''
+      if (importDefinition.attributes) {
+        attributesString = ` with { ${Object.entries(importDefinition.attributes).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')} }`
       }
 
-      if (imp.namespaceExport) {
-        entryCodeParts.push(`import * as ${imp.namespaceExport} from ${specifier}${attrStr};\n`)
-        importMap[imp.namespaceExport] = imp.namespaceExport
+      if (importDefinition.namespaceExport) {
+        entryCodeParts.push(`import * as ${importDefinition.namespaceExport} from ${specifier}${attributesString};\n`)
+        importMap[importDefinition.namespaceExport] = importDefinition.namespaceExport
       }
 
       const parts = []
-      if (imp.defaultExport) {
-        parts.push(imp.defaultExport)
-        importMap[imp.defaultExport] = imp.defaultExport
+      if (importDefinition.defaultExport) {
+        parts.push(importDefinition.defaultExport)
+        importMap[importDefinition.defaultExport] = importDefinition.defaultExport
       }
 
-      if (imp.namedExports && imp.namedExports.length) {
-        parts.push(`{ ${imp.namedExports.join(', ')} }`)
-        for (const named of imp.namedExports) {
-          if (named.includes(' as ')) {
-            const [, alias] = named.split(' as ')
-            importMap[alias.trim()] = alias.trim()
+      if (importDefinition.namedExports && importDefinition.namedExports.length) {
+        parts.push(`{ ${importDefinition.namedExports.join(', ')} }`)
+        for (const namedExport of importDefinition.namedExports) {
+          if (namedExport.includes(' as ')) {
+            const [, exportAlias] = namedExport.split(' as ')
+            importMap[exportAlias.trim()] = exportAlias.trim()
           } else {
-            importMap[named.trim()] = named.trim()
+            importMap[namedExport.trim()] = namedExport.trim()
           }
         }
       }
 
       if (parts.length > 0) {
         const importStr = parts.join(', ')
-        entryCodeParts.push(`import ${importStr} from ${specifier}${attrStr};\n`)
+        entryCodeParts.push(`import ${importStr} from ${specifier}${attributesString};\n`)
       }
     }
   }
 
   // Generate imports object for context injection
   const importsObjContent = Object.keys(importMap).length > 0
-    ? `const componentImports = { ${Object.entries(importMap).map(([k, v]) => `${k}: ${v}`).join(', ')} };`
+    ? `const componentImports = { ${Object.entries(importMap).map(([key, value]) => `${key}: ${value}`).join(', ')} };`
     : 'const componentImports = {};'
 
   entryCodeParts.push(importsObjContent + '\n')
@@ -243,9 +243,9 @@ function cleanKeys(object) {
       results.push(componentSetupResult);
     }
 
-    for (const res of results) {
-      if (res && typeof res === 'object') {
-        Object.assign(values, res);
+    for (const result of results) {
+      if (result && typeof result === 'object') {
+        Object.assign(values, result);
       }
     }
     return values;
@@ -284,8 +284,8 @@ class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
     // 1. Map DOM Attributes to values
     const domAttributes = {};
     for (let i = 0; i < this.attributes.length; i++) {
-      const attr = this.attributes[i];
-      domAttributes[attr.name] = attr.value;
+      const attribute = this.attributes[i];
+      domAttributes[attribute.name] = attribute.value;
     }
     const initialValues = cleanKeys(domAttributes);
 
@@ -342,7 +342,6 @@ class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
 customElements.define("${componentId}", ${componentId.replace(/[-.:]/g, '_')});
   `)
 
-  // Build via ESBuild
   const result = await build({
     stdin: {
       contents: entryCodeParts.join('').trimEnd(),
@@ -381,45 +380,45 @@ customElements.define("${componentId}", ${componentId.replace(/[-.:]/g, '_')});
             // Generate imports
             const importMap = {}
             if (module.imports) {
-              for (const imp of module.imports) {
-                const specifier = JSON.stringify(imp.specifier)
-                let attrStr = ''
-                if (imp.attributes) {
-                  attrStr = ` with { ${Object.entries(imp.attributes).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} }`
+              for (const importDefinition of module.imports) {
+                const specifier = JSON.stringify(importDefinition.specifier)
+                let attributesString = ''
+                if (importDefinition.attributes) {
+                  attributesString = ` with { ${Object.entries(importDefinition.attributes).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')} }`
                 }
 
-                if (imp.namespaceExport) {
-                  contents += `import * as ${imp.namespaceExport} from ${specifier}${attrStr};\n`
-                  importMap[imp.namespaceExport] = imp.namespaceExport
+                if (importDefinition.namespaceExport) {
+                  contents += `import * as ${importDefinition.namespaceExport} from ${specifier}${attributesString};\n`
+                  importMap[importDefinition.namespaceExport] = importDefinition.namespaceExport
                 }
 
                 const parts = []
-                if (imp.defaultExport) {
-                  parts.push(imp.defaultExport)
-                  importMap[imp.defaultExport] = imp.defaultExport
+                if (importDefinition.defaultExport) {
+                  parts.push(importDefinition.defaultExport)
+                  importMap[importDefinition.defaultExport] = importDefinition.defaultExport
                 }
 
-                if (imp.namedExports && imp.namedExports.length) {
-                  parts.push(`{ ${imp.namedExports.join(', ')} }`)
-                  for (const named of imp.namedExports) {
-                    if (named.includes(' as ')) {
-                      const [, alias] = named.split(' as ')
-                      importMap[alias.trim()] = alias.trim()
+                if (importDefinition.namedExports && importDefinition.namedExports.length) {
+                  parts.push(`{ ${importDefinition.namedExports.join(', ')} }`)
+                  for (const namedExport of importDefinition.namedExports) {
+                    if (namedExport.includes(' as ')) {
+                      const [, exportAlias] = namedExport.split(' as ')
+                      importMap[exportAlias.trim()] = exportAlias.trim()
                     } else {
-                      importMap[named.trim()] = named.trim()
+                      importMap[namedExport.trim()] = namedExport.trim()
                     }
                   }
                 }
 
                 if (parts.length > 0) {
                   const importStr = parts.join(', ')
-                  contents += `import ${importStr} from ${specifier}${attrStr};\n`
+                  contents += `import ${importStr} from ${specifier}${attributesString};\n`
                 }
               }
             }
 
             const importsObjContent = Object.keys(importMap).length > 0
-              ? `const pluginImports = { ${Object.entries(importMap).map(([k, v]) => `${k}: ${v}`).join(', ')} };`
+              ? `const pluginImports = { ${Object.entries(importMap).map(([key, value]) => `${key}: ${value}`).join(', ')} };`
               : 'const pluginImports = {};'
 
             contents += importsObjContent + '\n'
@@ -435,12 +434,12 @@ customElements.define("${componentId}", ${componentId.replace(/[-.:]/g, '_')});
             contents += `export const runSetup = async (context) => {
               const setup = ${setupFn};
               if (!setup) return {};
-              const ctx = {
+              const contextObject = {
                 imports: pluginImports,
                 config: pluginConfig,
                 ...context
               };
-              return await setup(ctx);
+              return await setup(contextObject);
             };\n`
 
             // Generate helpers
@@ -511,9 +510,9 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     const results = await Promise.all([
       ${this.scriptModules.map((_, i) => `runSetup_${i}(context)`).join(',\n      ')}
     ]);
-    for (const res of results) {
-      if (res && typeof res === 'object') {
-        Object.assign(values, res);
+    for (const result of results) {
+      if (result && typeof result === 'object') {
+        Object.assign(values, result);
       }
     }
     return values;
@@ -651,45 +650,45 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
             const importMap = {}
             if (sharedFn.imports) {
-              for (const imp of sharedFn.imports) {
-                const specifier = JSON.stringify(imp.specifier)
-                let attrStr = ''
-                if (imp.attributes) {
-                  attrStr = ` with { ${Object.entries(imp.attributes).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} }`
+              for (const importDefinition of sharedFn.imports) {
+                const specifier = JSON.stringify(importDefinition.specifier)
+                let attributesString = ''
+                if (importDefinition.attributes) {
+                  attributesString = ` with { ${Object.entries(importDefinition.attributes).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')} }`
                 }
 
-                if (imp.namespaceExport) {
-                  contents += `import * as ${imp.namespaceExport} from ${specifier}${attrStr};\n`
-                  importMap[imp.namespaceExport] = imp.namespaceExport
+                if (importDefinition.namespaceExport) {
+                  contents += `import * as ${importDefinition.namespaceExport} from ${specifier}${attributesString};\n`
+                  importMap[importDefinition.namespaceExport] = importDefinition.namespaceExport
                 }
 
                 const parts = []
-                if (imp.defaultExport) {
-                  parts.push(imp.defaultExport)
-                  importMap[imp.defaultExport] = imp.defaultExport
+                if (importDefinition.defaultExport) {
+                  parts.push(importDefinition.defaultExport)
+                  importMap[importDefinition.defaultExport] = importDefinition.defaultExport
                 }
 
-                if (imp.namedExports && imp.namedExports.length) {
-                  parts.push(`{ ${imp.namedExports.join(', ')} }`)
-                  for (const named of imp.namedExports) {
-                    if (named.includes(' as ')) {
-                      const [, alias] = named.split(' as ')
-                      importMap[alias.trim()] = alias.trim()
+                if (importDefinition.namedExports && importDefinition.namedExports.length) {
+                  parts.push(`{ ${importDefinition.namedExports.join(', ')} }`)
+                  for (const namedExport of importDefinition.namedExports) {
+                    if (namedExport.includes(' as ')) {
+                      const [, exportAlias] = namedExport.split(' as ')
+                      importMap[exportAlias.trim()] = exportAlias.trim()
                     } else {
-                      importMap[named.trim()] = named.trim()
+                      importMap[namedExport.trim()] = namedExport.trim()
                     }
                   }
                 }
 
                 if (parts.length > 0) {
                   const importStr = parts.join(', ')
-                  contents += `import ${importStr} from ${specifier}${attrStr};\n`
+                  contents += `import ${importStr} from ${specifier}${attributesString};\n`
                 }
               }
             }
 
             const importsObjContent = Object.keys(importMap).length > 0
-              ? `const componentImports = { ${Object.entries(importMap).map(([k, v]) => `${k}: ${v}`).join(', ')} };`
+              ? `const componentImports = { ${Object.entries(importMap).map(([key, value]) => `${key}: ${value}`).join(', ')} };`
               : 'const componentImports = {};'
 
             contents += importsObjContent + '\n'
@@ -713,49 +712,49 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
             // Generate imports
             const importMap = {}
             if (module.imports) {
-              for (const imp of module.imports) {
-                const specifier = JSON.stringify(imp.specifier)
-                let attrStr = ''
-                if (imp.attributes) {
-                  attrStr = ` with { ${Object.entries(imp.attributes).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} }`
+              for (const importDefinition of module.imports) {
+                const specifier = JSON.stringify(importDefinition.specifier)
+                let attributesString = ''
+                if (importDefinition.attributes) {
+                  attributesString = ` with { ${Object.entries(importDefinition.attributes).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')} }`
                 }
 
                 // Handle namespaceExport separately to avoid invalid syntax (e.g. import Def, * as N, { Named })
-                if (imp.namespaceExport) {
-                  contents += `import * as ${imp.namespaceExport} from ${specifier}${attrStr};\n`
-                  importMap[imp.namespaceExport] = imp.namespaceExport
+                if (importDefinition.namespaceExport) {
+                  contents += `import * as ${importDefinition.namespaceExport} from ${specifier}${attributesString};\n`
+                  importMap[importDefinition.namespaceExport] = importDefinition.namespaceExport
                 }
 
-                // Handle default and named exports together
+                // Handle default and namedExport exports together
                 const parts = []
-                if (imp.defaultExport) {
-                  parts.push(imp.defaultExport)
-                  importMap[imp.defaultExport] = imp.defaultExport
+                if (importDefinition.defaultExport) {
+                  parts.push(importDefinition.defaultExport)
+                  importMap[importDefinition.defaultExport] = importDefinition.defaultExport
                 }
 
-                if (imp.namedExports && imp.namedExports.length) {
-                  parts.push(`{ ${imp.namedExports.join(', ')} }`)
-                  for (const named of imp.namedExports) {
-                    // Check for "as" syntax: "original as alias"
-                    if (named.includes(' as ')) {
-                      const [, alias] = named.split(' as ')
-                      importMap[alias.trim()] = alias.trim()
+                if (importDefinition.namedExports && importDefinition.namedExports.length) {
+                  parts.push(`{ ${importDefinition.namedExports.join(', ')} }`)
+                  for (const namedExport of importDefinition.namedExports) {
+                    // Check for "as" syntax: "original as exportAlias"
+                    if (namedExport.includes(' as ')) {
+                      const [, exportAlias] = namedExport.split(' as ')
+                      importMap[exportAlias.trim()] = exportAlias.trim()
                     } else {
-                      importMap[named.trim()] = named.trim()
+                      importMap[namedExport.trim()] = namedExport.trim()
                     }
                   }
                 }
 
                 if (parts.length > 0) {
                   const importStr = parts.join(', ')
-                  contents += `import ${importStr} from ${specifier}${attrStr};\n`
+                  contents += `import ${importStr} from ${specifier}${attributesString};\n`
                 }
               }
             }
 
             // Generate imports object for context injection
             const importsObjContent = Object.keys(importMap).length > 0
-              ? `const pluginImports = { ${Object.entries(importMap).map(([k, v]) => `${k}: ${v}`).join(', ')} };`
+              ? `const pluginImports = { ${Object.entries(importMap).map(([key, value]) => `${key}: ${value}`).join(', ')} };`
               : 'const pluginImports = {};'
 
             contents += importsObjContent + '\n'
@@ -772,12 +771,12 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
             contents += `export const runSetup = async (context) => {
               const setup = ${setupFn};
               if (!setup) return {};
-              const ctx = {
+              const contextObject = {
                 imports: pluginImports,
                 config: pluginConfig,
                 ...context
               };
-              return await setup(ctx);
+              return await setup(contextObject);
             };\n`
 
             // Generate helpers
