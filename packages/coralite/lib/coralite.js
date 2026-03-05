@@ -536,10 +536,7 @@ Coralite.prototype._generateStandaloneComponents = async function* () {
 
     let cssPayload = ''
     if (result.styles && result.styles.length > 0) {
-      if (!result._processedCss) {
-        result._processedCss = await transformCss(result.styles.join('\n'), result.rootClasses, result.descendantClasses)
-      }
-      cssPayload = result._processedCss
+      cssPayload = result.styles.join('\n')
     }
 
     let scriptContent = null
