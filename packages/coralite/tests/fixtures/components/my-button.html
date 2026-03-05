@@ -1,8 +1,16 @@
 <template id="my-button">
-  <button ref="btn" class="my-btn">{{ text }}</button>
+  <div class="container">
+    <button ref="btn" class="my-btn">{{ text }}</button>
+    <div ref="output" class="output">{{ asyncData }}</div>
+  </div>
 </template>
 
 <style>
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
   .my-btn {
     background-color: #007bff;
     color: white;
@@ -15,6 +23,10 @@
   .my-btn:hover {
     background-color: #0056b3;
   }
+  .output {
+    font-family: monospace;
+    font-size: 14px;
+  }
 </style>
 
 <script type="module">
@@ -22,10 +34,33 @@
 
   export default defineComponent({
     client: {
+      imports: [
+        {
+          specifier: 'https://esm.sh/canvas-confetti@1.6.0',
+          defaultExport: 'confetti'
+        }
+      ],
+      setup: async function() {
+        return new Promise(resolve => {
+          setTimeout(() => {
+            resolve({ asyncData: 'Loaded from setup!' })
+          }, 50)
+        })
+      },
       script: function(context) {
         const btn = context.helpers.refs('btn');
+        const output = context.helpers.refs('output');
         
         btn.addEventListener('click', () => {
+          if (context.imports.confetti) {
+            context.imports.confetti({
+              particleCount: 100,
+              spread: 70,
+              origin: { y: 0.6 }
+            });
+            output.textContent = 'Confetti fired!'
+          }
+          
           this.dispatchEvent(new CustomEvent('button-clicked', { 
             detail: { 
               id: btn.id

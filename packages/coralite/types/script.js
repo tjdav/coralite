@@ -8,6 +8,7 @@
  * Coralite module script content
  * @typedef {Object} ScriptContent
  * @property {string} [content] - Script string content
+ * @property {string} [setupContent] - Setup string content
  * @property {Object.<string, CoraliteModuleValue>} [values]
  * @property {number} [lineOffset] - Script offset number.
  * @property {ScriptImport[]} [imports] - Script imports.
@@ -29,6 +30,7 @@
  * @property {CoraliteDocument} document - Coralite document with metadata and rendering structure.
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
+ * @property {ShadowRoot} [root] - Shadow Root for standalone web components
  */
 
 /**

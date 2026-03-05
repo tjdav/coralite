@@ -170,11 +170,32 @@ function cleanKeys(object) {
     return helpers;
   };\n`)
 
+  const setupToInject = scriptContent && scriptContent.setupContent ? scriptContent.setupContent : null
+  let cleanSetup = setupToInject
+
+  if (cleanSetup) {
+    if (cleanSetup.startsWith('function setup(')) {
+      cleanSetup = cleanSetup.replace(/^function setup\(/, 'function(')
+    } else if (cleanSetup.startsWith('async function setup(')) {
+      cleanSetup = cleanSetup.replace(/^async function setup\(/, 'async function(')
+    } else if (cleanSetup.startsWith('export default ')) {
+      cleanSetup = cleanSetup.replace(/^export default /, '')
+    }
+  }
+
+  const setupCode = cleanSetup ? `const componentSetup = ${cleanSetup};\n      const componentSetupResult = await componentSetup(context);` : 'const componentSetupResult = {};'
+
   entryCodeParts.push(`const getSetups = async (context) => {
     const values = {};
     const results = await Promise.all([
       ${this.scriptModules.map((_, i) => `runSetup_${i}(context)`).join(',\n      ')}
     ]);
+    
+    ${setupCode}
+    if (componentSetupResult && typeof componentSetupResult === 'object') {
+      results.push(componentSetupResult);
+    }
+
     for (const res of results) {
       if (res && typeof res === 'object') {
         Object.assign(values, res);
@@ -221,20 +242,15 @@ class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
     }
     const initialValues = cleanKeys(domAttributes);
 
-    // 2. Hydrate Refs and mocked context
+    // 2. Hydrate Refs
     const refs = {};
-    const mockedDocument = {
-      getElementById: (id) => this.shadowRoot.getElementById(id),
-      querySelector: (sel) => this.shadowRoot.querySelector(sel),
-      querySelectorAll: (sel) => this.shadowRoot.querySelectorAll(sel)
-    };
 
     // 3. Setup context
     const context = {
       instanceId: this.id || Math.random().toString(36).substr(2, 9),
       componentId: "${componentId}",
       values: initialValues,
-      document: mockedDocument,
+      root: this.shadowRoot,
       imports: {} // Standalone imports are bundled within the component
     };
 

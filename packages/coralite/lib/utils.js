@@ -346,6 +346,12 @@ export function findAndExtractScript (code) {
                 prop.key.name === 'script'
             )
 
+            const setupProp = clientProp.value.properties.find(
+              prop => prop.type === 'Property' &&
+                prop.key.type === 'Identifier' &&
+                prop.key.name === 'setup'
+            )
+
             if (scriptProp && scriptProp.type === 'Property') {
               const { value, method } = scriptProp
               let startLine = value.loc.start.line - 1
@@ -376,6 +382,54 @@ export function findAndExtractScript (code) {
               result = {
                 content,
                 lineOffset: startLine
+              }
+            }
+
+            if (setupProp && setupProp.type === 'Property' && result) {
+              const { value, method } = setupProp
+              let prefix = ''
+              let content = ''
+
+              // Get source slice
+              const source = code.slice(value.start, value.end)
+
+              if (value.type === 'ArrowFunctionExpression') {
+                content = prefix + source
+              } else if (value.type === 'FunctionExpression') {
+                if (method) {
+                  const isAsync = value.async
+                  prefix += (isAsync ? 'async ' : '') + 'function setup'
+                  content = prefix + source
+                } else {
+                  content = prefix + source
+                }
+              }
+
+              result.setupContent = content
+            } else if (setupProp && setupProp.type === 'Property' && !result) {
+              const { value, method } = setupProp
+              let prefix = ''
+              let content = ''
+
+              // Get source slice
+              const source = code.slice(value.start, value.end)
+
+              if (value.type === 'ArrowFunctionExpression') {
+                content = prefix + source
+              } else if (value.type === 'FunctionExpression') {
+                if (method) {
+                  const isAsync = value.async
+                  prefix += (isAsync ? 'async ' : '') + 'function setup'
+                  content = prefix + source
+                } else {
+                  content = prefix + source
+                }
+              }
+
+              result = {
+                content: 'export default function(){}',
+                lineOffset: 0,
+                setupContent: content
               }
             }
           }

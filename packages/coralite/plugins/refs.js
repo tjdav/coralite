@@ -10,7 +10,7 @@ export const refsPlugin = createPlugin({
        * @param {import('../types/index.js').CoraliteScriptContent} context - An array of ref attribute values to be mapped
        * @returns {function(string): HTMLElement | null} A function that resolves refs by their ID
        */
-      refs ({ values }) {
+      refs ({ values, root }) {
         const elements = {}
 
         return function (id) {
@@ -25,7 +25,7 @@ export const refsPlugin = createPlugin({
           }
 
           // @ts-ignore
-          const element = document.getElementById(refId)
+          const element = (root || document).getElementById(refId)
 
           if (element) {
             elements[id] = element
