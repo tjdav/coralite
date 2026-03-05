@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Standalone Component Test</title>
+</head>
+<body>
+    <h1>Testing Standalone Component</h1>
+    <test-button id="my-btn" text="Click Me!"></test-button>
+    
+    <script type="module" src="./standalone/test-button.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('my-btn');
+            btn.addEventListener('button-clicked', () => {
+                const p = document.createElement('p');
+                p.textContent = 'Button was clicked from component event!';
+                p.id = 'result-text';
+                document.body.appendChild(p);
+            });
+        });
+    </script>
+</body>
+</html>

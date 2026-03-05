@@ -109,7 +109,7 @@ describe('Coralite', () => {
       assert.ok(hookContext.values, 'values should be present in context')
       assert.ok(hookContext.renderContext, 'renderContext should be present in context')
 
-      const html = results[0].html
+      const html = results[0].content
       assert.ok(html.includes('class="injected"'), 'AST modifications should be present in the final HTML')
     })
   })
@@ -132,8 +132,8 @@ describe('Coralite', () => {
       const result = await coralite.build('ignore.html')
 
       assert.strictEqual(result.length, 1)
-      assert.strictEqual(result[0].html.includes('Ignored'), false)
-      assert.strictEqual(result[0].html.includes('Kept'), true)
+      assert.strictEqual(result[0].content.includes('Ignored'), false)
+      assert.strictEqual(result[0].content.includes('Kept'), true)
     })
 
     it('should parse elements but remove them from render output when they match skipRenderByAttribute', async () => {
@@ -166,10 +166,10 @@ describe('Coralite', () => {
 
       assert.strictEqual(result.length, 1)
       assert.strictEqual(testComponentRendered, true, 'Test component should have been parsed and kept in the custom elements list')
-      assert.strictEqual(result[0].html.includes('rendered-test-component'), false, 'Test component should not be in the final HTML')
-      assert.strictEqual(result[0].html.includes('Test Component'), false, 'Test component should not be in the final HTML')
-      assert.strictEqual(result[0].html.includes('Kept'), true, 'Elements without skip attribute should be kept')
-      assert.strictEqual(result[0].html.includes('<test-component'), false, 'Test component should not be in the final HTML')
+      assert.strictEqual(result[0].content.includes('rendered-test-component'), false, 'Test component should not be in the final HTML')
+      assert.strictEqual(result[0].content.includes('Test Component'), false, 'Test component should not be in the final HTML')
+      assert.strictEqual(result[0].content.includes('Kept'), true, 'Elements without skip attribute should be kept')
+      assert.strictEqual(result[0].content.includes('<test-component'), false, 'Test component should not be in the final HTML')
     })
   })
 

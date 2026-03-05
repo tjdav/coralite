@@ -37,6 +37,7 @@
  * @property {CoralitePluginInstance[]} [plugins] - Optional array of plugin instances to extend Coralite functionality.
  * @property {Attribute[]} [ignoreByAttribute] - An array of attribute names and values to ignore by element type.
  * @property {Attribute[]} [skipRenderByAttribute] - An array of attribute names and values to skip rendering by element type.
+ * @property {string} [standaloneOutput] - Output directory for standalone client-side web components
  */
 
 /**

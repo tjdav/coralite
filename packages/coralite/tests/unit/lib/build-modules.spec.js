@@ -63,7 +63,7 @@ describe('Coralite Build Modes', () => {
     const results = await coralite.build()
 
     assert.strictEqual(results.length, 1)
-    const html = results[0].html
+    const html = results[0].content
     assert.ok(html.includes('Hello from Component'), 'Output HTML should contain component message')
   })
 
@@ -91,7 +91,7 @@ describe('Coralite Build Modes', () => {
     const results = await coralite.build()
 
     assert.strictEqual(results.length, 1)
-    const html = results[0].html
+    const html = results[0].content
     assert.ok(html.includes('Hello from Component'), 'Output HTML should contain component message')
   })
 })

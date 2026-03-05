@@ -53,7 +53,7 @@ export default defineComponent({
     const results = await coralite.build()
 
     assert.strictEqual(results.length, 1)
-    const html = results[0].html
+    const html = results[0].content
 
     // Extract the script content
     const scriptMatch = html.match(/<script type="module">([\s\S]*?)<\/script>/)
@@ -129,7 +129,7 @@ export default defineComponent({
     const results = await coralite.build()
 
     assert.strictEqual(results.length, 1)
-    const html = results[0].html
+    const html = results[0].content
 
     // Extract the script content
     const scriptMatch = html.match(/<script type="module">([\s\S]*?)<\/script>/)
