@@ -48,8 +48,8 @@ import { createContext } from 'node:vm'
  * @param {CoralitePluginInstance[]} [options.plugins=[]]
  * @param {string} options.pages - The path to the directory containing pages that will be rendered using the provided components.
  * @param {string} [options.mode='production'] - Build mode: "development" or "production"
- * @param {Attribute[]} [options.ignoreByAttribute] - Elements to ignore with attribute name value pair
- * @param {string[]} [options.skipRenderByAttribute] - Element attributes to parse but exclude from final render output
+ * @param {Array<string | Attribute>} [options.ignoreByAttribute] - Elements to ignore with attribute name value pair
+ * @param {Array<string | Attribute>} [options.skipRenderByAttribute] - Element attributes to parse but exclude from final render output
  * @param {string} [options.standaloneOutput] - Output directory for standalone client-side web components
  * @example
  * const coralite = new Coralite({

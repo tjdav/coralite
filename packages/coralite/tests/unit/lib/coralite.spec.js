@@ -115,7 +115,7 @@ describe('Coralite', () => {
   })
 
   describe('Ignore/Skip Attributes', () => {
-    it('should drop elements from AST when they match ignoreByAttribute', async () => {
+    it('should drop elements from AST when they match ignoreByAttribute (Object format)', async () => {
       await writeFile(path.join(pagesDir, 'ignore.html'), '<div><span data-ignore="true">Ignored</span><span data-keep="true">Kept</span></div>')
 
       coralite = new Coralite({
@@ -136,8 +136,26 @@ describe('Coralite', () => {
       assert.strictEqual(result[0].content.includes('Kept'), true)
     })
 
-    it('should parse elements but remove them from render output when they match skipRenderByAttribute', async () => {
-      await writeFile(path.join(pagesDir, 'skip.html'), '<div><test-component data-skip="true"></test-component><span data-keep="true">Kept</span></div>')
+    it('should drop elements from AST when they match ignoreByAttribute (String format)', async () => {
+      await writeFile(path.join(pagesDir, 'ignore2.html'), '<div><span data-ignore>Ignored</span><span data-keep="true">Kept</span></div>')
+
+      coralite = new Coralite({
+        pages: pagesDir,
+        components: componentDir,
+        ignoreByAttribute: ['data-ignore']
+      })
+
+      await coralite.initialise()
+
+      const result = await coralite.build('ignore2.html')
+
+      assert.strictEqual(result.length, 1)
+      assert.strictEqual(result[0].content.includes('Ignored'), false)
+      assert.strictEqual(result[0].content.includes('Kept'), true)
+    })
+
+    it('should parse elements but remove them from render output when they match skipRenderByAttribute (String format)', async () => {
+      await writeFile(path.join(pagesDir, 'skip.html'), '<div><test-component data-skip></test-component><span data-keep="true">Kept</span></div>')
       await writeFile(path.join(componentDir, 'test-component.html'), '<span id="rendered-test-component">Test Component</span>')
 
       let testComponentRendered = false

@@ -86,8 +86,11 @@ export function defineConfig (options) {
 
     for (let i = 0; i < options.ignoreByAttribute.length; i++) {
       const item = options.ignoreByAttribute[i]
+      if (typeof item === 'string') {
+        continue
+      }
       if (!item || typeof item !== 'object') {
-        throw new Error('Configuration "ignoreByAttribute" items must be objects')
+        throw new Error('Configuration "ignoreByAttribute" items must be strings or objects')
       }
       if (typeof item.name !== 'string') {
         throw new Error('Configuration "ignoreByAttribute" items must have a string "name" property')
@@ -105,8 +108,11 @@ export function defineConfig (options) {
 
     for (let i = 0; i < options.skipRenderByAttribute.length; i++) {
       const item = options.skipRenderByAttribute[i]
+      if (typeof item === 'string') {
+        continue
+      }
       if (!item || typeof item !== 'object') {
-        throw new Error('Configuration "skipRenderByAttribute" items must be objects')
+        throw new Error('Configuration "skipRenderByAttribute" items must be strings or objects')
       }
       if (typeof item.name !== 'string') {
         throw new Error('Configuration "skipRenderByAttribute" items must have a string "name" property')

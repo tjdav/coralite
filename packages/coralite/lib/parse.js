@@ -26,8 +26,8 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  * Parse HTML content and return a CoraliteDocument object representing the parsed document structure
  *
  * @param {string} string - HTML content to parse as string input type textual data
- * @param {Attribute[]} [ignoreByAttribute] - Ignore element with attribute name value pair
- * @param {string[]} [skipRenderByAttribute] - Parse element but remove before final render
+ * @param {Array<string | Attribute>} [ignoreByAttribute] - Ignore element with attribute name value pair
+ * @param {Array<string | Attribute>} [skipRenderByAttribute] - Parse element but remove before final render
  * @returns {ParseHTMLResult}
  * @example parseHTML('<h1>Hello world!</h1>')
  */
@@ -69,9 +69,17 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute) {
 
       if (skipRenderByAttribute && skipRenderByAttribute.length > 0) {
         for (let i = 0; i < skipRenderByAttribute.length; i++) {
-          if (Object.prototype.hasOwnProperty.call(attributes, skipRenderByAttribute[i])) {
-            element.skipRender = true
-            break
+          const skipItem = skipRenderByAttribute[i]
+          if (typeof skipItem === 'string') {
+            if (Object.prototype.hasOwnProperty.call(attributes, skipItem)) {
+              element.skipRender = true
+              break
+            }
+          } else if (skipItem && typeof skipItem === 'object') {
+            if (Object.prototype.hasOwnProperty.call(attributes, skipItem.name) && attributes[skipItem.name].includes(skipItem.value)) {
+              element.skipRender = true
+              break
+            }
           }
         }
       }
@@ -164,8 +172,8 @@ function sortSlottedChildren (elements) {
  *
  * @param {string} string - HTML content containing meta tags or module markup
  * @param {Object} options
- * @param {Attribute[]} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
- * @param {string[]} [options.skipRenderByAttribute] - An array of attributes that exclude element from rendering
+ * @param {Array<string | Attribute>} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
+ * @param {Array<string | Attribute>} [options.skipRenderByAttribute] - An array of attributes that exclude element from rendering
  * @returns {CoraliteModule} - Parsed module information, including template, script, tokens, and slot configurations
  *
  * @example
@@ -230,9 +238,17 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute 
 
       if (skipRenderByAttribute && skipRenderByAttribute.length > 0) {
         for (let i = 0; i < skipRenderByAttribute.length; i++) {
-          if (Object.prototype.hasOwnProperty.call(attributes, skipRenderByAttribute[i])) {
-            element.skipRender = true
-            break
+          const skipItem = skipRenderByAttribute[i]
+          if (typeof skipItem === 'string') {
+            if (Object.prototype.hasOwnProperty.call(attributes, skipItem)) {
+              element.skipRender = true
+              break
+            }
+          } else if (skipItem && typeof skipItem === 'object') {
+            if (Object.prototype.hasOwnProperty.call(attributes, skipItem.name) && attributes[skipItem.name].includes(skipItem.value)) {
+              element.skipRender = true
+              break
+            }
           }
         }
       }
@@ -441,7 +457,7 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute 
  * @param {string} data.name - The tag name of the new element.
  * @param {Object.<string, string>} data.attributes - Attributes for the new element.
  * @param {CoraliteElement | CoraliteDocumentRoot} data.parent - Parent element or document root where this element will be attached.
- * @param {Attribute[] | Map<string, string[]>} [data.ignoreByAttribute] - Optional parameter used for ignoring elements based on attributes.
+ * @param {Array<string | Attribute> | Map<string, string[]>} [data.ignoreByAttribute] - Optional parameter used for ignoring elements based on attributes.
  * @returns {CoraliteElement} The newly created element with its parent reference and position in the parent's children list.
  */
 export function createElement ({
@@ -510,17 +526,23 @@ export function createTextNode (data, parent) {
 /**
  * Find attributes to be ignored by the parser.
  *
- * @param {Attribute[] | Map<string, string[]>} ignoreByAttribute - An array of attribute pairs or a map to be ignored by the parser
+ * @param {Array<string | Attribute> | Map<string, Array<string | null>>} ignoreByAttribute - An array of attribute pairs/strings or a map to be ignored by the parser
  * @param {Object<string, string>} attributes - The HTML attribute object to be parsed by the parser
  * @returns {boolean}
  */
 function findAttributesToIgnore (ignoreByAttribute, attributes) {
   if (Array.isArray(ignoreByAttribute)) {
     for (let i = 0; i < ignoreByAttribute.length; i++) {
-      const { name, value } = ignoreByAttribute[i]
-
-      if (attributes[name] && attributes[name].includes(value)) {
-        return true
+      const item = ignoreByAttribute[i]
+      if (typeof item === 'string') {
+        if (Object.prototype.hasOwnProperty.call(attributes, item)) {
+          return true
+        }
+      } else {
+        const { name, value } = item
+        if (attributes[name] && attributes[name].includes(value)) {
+          return true
+        }
       }
     }
     return false
@@ -534,7 +556,9 @@ function findAttributesToIgnore (ignoreByAttribute, attributes) {
         const attributeValue = attributes[name]
 
         for (let i = 0; i < values.length; i++) {
-          if (attributeValue.includes(values[i])) {
+          if (values[i] === null) {
+            return true
+          } else if (attributeValue.includes(values[i])) {
             return true
           }
         }
@@ -547,8 +571,8 @@ function findAttributesToIgnore (ignoreByAttribute, attributes) {
 
 /**
  * Create a map from ignoreByAttribute array.
- * @param {Attribute[] | Map<string, string[]>} ignoreByAttribute
- * @returns {Map<string, string[]>}
+ * @param {Array<string | Attribute> | Map<string, Array<string | null>>} ignoreByAttribute
+ * @returns {Map<string, Array<string | null>>}
  */
 function getIgnoreAttributeMap (ignoreByAttribute) {
   if (!ignoreByAttribute) {
@@ -562,7 +586,16 @@ function getIgnoreAttributeMap (ignoreByAttribute) {
   const map = new Map()
 
   for (let i = 0; i < ignoreByAttribute.length; i++) {
-    const { name, value } = ignoreByAttribute[i]
+    const item = ignoreByAttribute[i]
+    let name, value
+    if (typeof item === 'string') {
+      name = item
+      value = null
+    } else {
+      name = item.name
+      value = item.value
+    }
+
     if (!map.has(name)) {
       map.set(name, [])
     }
