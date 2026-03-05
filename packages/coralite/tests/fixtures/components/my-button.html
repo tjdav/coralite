@@ -2,6 +2,7 @@
   <div class="container">
     <button ref="btn" class="my-btn">{{ text }}</button>
     <div ref="output" class="output">{{ asyncData }}</div>
+    <div ref="jsonOutput" class="json-output"></div>
   </div>
 </template>
 
@@ -43,6 +44,11 @@
         {
           specifier: 'https://esm.sh/canvas-confetti@1.6.0',
           defaultExport: 'confetti'
+        },
+        {
+          specifier: './tests/fixtures/dummy-data.json',
+          defaultExport: 'dummyData',
+          attributes: { type: 'json' }
         }
       ],
       setup: async function() {
@@ -55,7 +61,12 @@
       script: function(context) {
         const btn = context.helpers.refs('btn');
         const output = context.helpers.refs('output');
+        const jsonOutput = context.helpers.refs('jsonOutput');
         
+        if (context.imports.dummyData) {
+          jsonOutput.textContent = context.imports.dummyData.name;
+        }
+
         btn.addEventListener('click', function () {
           context.imports.confetti({
             particleCount: 100,

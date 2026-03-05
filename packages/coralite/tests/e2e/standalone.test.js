@@ -17,6 +17,10 @@ test.describe('Standalone Web Components', () => {
     const outputInsideShadow = componentLocator.locator('.output')
     await expect(outputInsideShadow).toHaveText('Loaded from setup!')
 
+    // Query inside the shadow DOM to verify json import works
+    const jsonOutputInsideShadow = componentLocator.locator('.json-output')
+    await expect(jsonOutputInsideShadow).toHaveText('Coralite E2E')
+
     // Wait for event to process if necessary, wait for promise to resolve, click the button
     const resultText = page.locator('#result-text')
 

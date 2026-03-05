@@ -127,6 +127,53 @@ ScriptManager.prototype.compileStandaloneComponent = async function (componentId
   const entryCodeParts = []
   const moduleNamespace = 'coralite-script-module:'
 
+  // Generate component imports
+  const importMap = {}
+  if (scriptContent && scriptContent.imports) {
+    for (const imp of scriptContent.imports) {
+      const specifier = JSON.stringify(imp.specifier)
+      let attrStr = ''
+      if (imp.attributes) {
+        attrStr = ` with { ${Object.entries(imp.attributes).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ')} }`
+      }
+
+      if (imp.namespaceExport) {
+        entryCodeParts.push(`import * as ${imp.namespaceExport} from ${specifier}${attrStr};\n`)
+        importMap[imp.namespaceExport] = imp.namespaceExport
+      }
+
+      const parts = []
+      if (imp.defaultExport) {
+        parts.push(imp.defaultExport)
+        importMap[imp.defaultExport] = imp.defaultExport
+      }
+
+      if (imp.namedExports && imp.namedExports.length) {
+        parts.push(`{ ${imp.namedExports.join(', ')} }`)
+        for (const named of imp.namedExports) {
+          if (named.includes(' as ')) {
+            const [, alias] = named.split(' as ')
+            importMap[alias.trim()] = alias.trim()
+          } else {
+            importMap[named.trim()] = named.trim()
+          }
+        }
+      }
+
+      if (parts.length > 0) {
+        const importStr = parts.join(', ')
+        entryCodeParts.push(`import ${importStr} from ${specifier}${attrStr};\n`)
+      }
+    }
+  }
+
+  // Generate imports object for context injection
+  const importsObjContent = Object.keys(importMap).length > 0
+    ? `const componentImports = { ${Object.entries(importMap).map(([k, v]) => `${k}: ${v}`).join(', ')} };`
+    : 'const componentImports = {};'
+
+  entryCodeParts.push(importsObjContent + '\n')
+
   // Include cleanKeys utility inline for the standalone artifact
   entryCodeParts.push(`
 function kebabToCamel(str) {
@@ -251,7 +298,7 @@ class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
       componentId: "${componentId}",
       values: initialValues,
       root: this.shadowRoot,
-      imports: {} // Standalone imports are bundled within the component
+      imports: componentImports // Standalone imports are bundled within the component
     };
 
     const setupValues = await getSetups(context);
