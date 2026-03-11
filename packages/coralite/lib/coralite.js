@@ -562,7 +562,10 @@ Coralite.prototype._generateStandaloneComponents = async function* () {
 
     yield {
       type: 'component',
-      path: component.path,
+      path: {
+        ...component.path,
+        filename: component.path.filename.replace(/\.html$/, '.js')
+      },
       content: compiledCode,
       duration: performance.now() - startTime
     }
@@ -971,19 +974,17 @@ Coralite.prototype.build = async function (...args) {
 
     await Promise.all(executing)
 
-    // Generate standalone components if configured
-    if (this.options.standaloneOutput) {
-      for await (const result of this._generateStandaloneComponents()) {
-        if (signal?.aborted) throw signal.reason
+    // Generate standalone components
+    for await (const result of this._generateStandaloneComponents()) {
+      if (signal?.aborted) throw signal.reason
 
-        if (typeof callback === 'function') {
-          const transformed = await callback(result)
-          if (transformed) {
-            results.push(transformed)
-          }
-        } else {
-          results.push(result)
+      if (typeof callback === 'function') {
+        const transformed = await callback(result)
+        if (transformed) {
+          results.push(transformed)
         }
+      } else {
+        results.push(result)
       }
     }
 
@@ -1042,10 +1043,13 @@ Coralite.prototype.save = async function (output, path, options = {}) {
     let relDir, outDir, outFile, contentToWrite
 
     if (result.type === 'component') {
-      // It's a standalone component
       relDir = relative(this.options.path.components, result.path.dirname)
-      outDir = join(this.options.standaloneOutput, relDir)
-      outFile = join(outDir, result.path.filename.replace('.html', '.js'))
+      if (this.options.standaloneOutput) {
+        outDir = join(output, this.options.standaloneOutput, relDir)
+      } else {
+        outDir = join(output, 'components', relDir)
+      }
+      outFile = join(outDir, result.path.filename)
       contentToWrite = result.content
     } else {
       // It's a standard HTML page

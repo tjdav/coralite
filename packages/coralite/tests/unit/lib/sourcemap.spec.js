@@ -50,7 +50,7 @@ export default defineComponent({
     })
 
     await coralite.initialise()
-    const results = await coralite.build()
+    const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)
     const html = results[0].content
@@ -126,7 +126,7 @@ export default defineComponent({
     })
 
     await coralite.initialise()
-    const results = await coralite.build()
+    const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)
     const html = results[0].content
@@ -150,12 +150,6 @@ export default defineComponent({
     // Verify script content in sourcesContent matches
     const hasScriptContent = sourceMap.sourcesContent[sourceIndex].includes("console.log('Hello from complex-component')")
     assert.ok(hasScriptContent, 'Source map sourcesContent does not contain expected script')
-
-    // Verify mappings
-    // We want to check that the line with console.log maps to the correct line in the source file.
-    // In complex-component.html, console.log is on line 13 (1-based).
-    // The generated script is bundled, so we'd need to parse the mappings to be sure.
-    // But checking sourcesContent presence and correct file association is a strong indicator given we tested lineOffset logic separately.
 
     // Cleanup
     await rm(tmpDir, {

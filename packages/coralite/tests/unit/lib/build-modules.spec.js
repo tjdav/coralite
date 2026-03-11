@@ -60,7 +60,7 @@ describe('Coralite Build Modes', () => {
     })
 
     await coralite.initialise()
-    const results = await coralite.build()
+    const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)
     const html = results[0].content
@@ -88,7 +88,7 @@ describe('Coralite Build Modes', () => {
     })
 
     await coralite.initialise()
-    const results = await coralite.build()
+    const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)
     const html = results[0].content
