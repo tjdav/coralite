@@ -40,7 +40,7 @@
     "build-lib": "esbuild ./lib/index.js --bundle --target=esnext --external:postcss --external:postcss-selector-parser --external:esbuild --external:commander --external:dom-serializer --external:dom-htmlparser2 --external:kleur --external:p-limit --external:serialize-javascript --format=esm --outdir=dist/lib --platform=node --sourcemap",
     "build-plugins": "esbuild ./plugins/*.js --format=esm --outdir=dist/plugins --platform=node",
     "build-types": "tsc",
-    "build-html": "premove .html && node ./bin/coralite.js -c tests/fixtures/components -p tests/fixtures/pages -o .html --standalone .html/standalone -i 'data-dev=true' -s 'data-skip-render'"
+    "build-html": "premove .html && node ./bin/coralite.js -c tests/fixtures/components -p tests/fixtures/pages -o .html --standalone standalone -i 'data-dev=true' -s 'data-skip-render'"
   },
   "files": [
     "dist",
