@@ -9,16 +9,14 @@
 <body>
   <h1>Testing Standalone Components</h1>
 
-  <!-- Test skip render at page level -->
-  <my-button text="Skip SSR" data-skip-render="true"></my-button>
-
   <!-- Use wrapper to test component client imports -->
-  <standalone-wrapper></standalone-wrapper>
+  <div id="standalone-wrapper"></div>
   <p id="result-text"></p>
 
   <!-- Do not import my-button.js directly, let standalone-wrapper import it -->
   <script type="module" src="./standalone/standalone-wrapper.js"></script>
   <script>
+    document.getElementById('standalone-wrapper').innerHTML = '<standalone-wrapper></standalone-wrapper>'
     window.addEventListener('button-clicked', (e) => {
       const p = document.getElementById('result-text')
       if (p) {
