@@ -1,6 +1,9 @@
 <template id="my-button">
   <div class="container">
-    <button ref="btn" class="my-btn">{{ text }}</button>
+    <button ref="btn" class="my-btn">
+      {{ text }}
+      <slot></slot>
+    </button>
     <div ref="output" class="output">{{ asyncData }}</div>
     <div ref="jsonOutput" class="json-output"></div>
   </div>
