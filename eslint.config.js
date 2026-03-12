@@ -3,7 +3,7 @@ import html from 'eslint-plugin-html'
 
 export default [
   {
-    files: ['**/*.html'],
+    files: ['**/*.html', '**/*.js'],
     plugins: {
       '@stylistic/js': stylisticJs,
       html
