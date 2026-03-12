@@ -1,9 +1,12 @@
 import stylisticJs from '@stylistic/eslint-plugin'
+import html from 'eslint-plugin-html'
 
 export default [
   {
+    files: ['**/*.html'],
     plugins: {
-      '@stylistic/js': stylisticJs
+      '@stylistic/js': stylisticJs,
+      html
     },
     rules: {
       '@stylistic/js/curly-newline': ['error', 'always'],
