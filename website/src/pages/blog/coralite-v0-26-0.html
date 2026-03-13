@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta type="article" title="Coralite v0.26.0 Released: Client Plugins & Bundle Enhancements"
+    description="Coralite v0.26.0 introduces a major refactor to rename the script plugin to client, moving the setup process directly to the frontend bundle, and simplifying attributes."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-03-05T11:53:12.000Z">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.26.0 Released: Client Plugins & Bundle Enhancements</title>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1>Coralite v0.26.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-03-05T11:53:12.000Z"></coralite-author>
+
+    <p>I am excited to announce the release of <strong>Coralite v0.26.0</strong>! This update brings an important architectural shift by renaming the script plugin to client and moving its setup process directly into the frontend bundle.</p>
+
+    <coralite-heading level="h2" text="Client Plugins & Bundle Setup"></coralite-heading>
+
+    <p>This release introduces a significant refactor to how scripts are handled. We have renamed the <code>script</code> configuration to <code>client</code> in <code>createPlugin</code>. Additionally, the <code>client.setup</code> execution has been moved from the server-side <code>ScriptManager.prototype.use</code> to the frontend bundle.</p>
+    
+    <p>By bundling <code>client.setup</code> into the frontend output, it now executes globally during initialization, and its result is deeply merged into <code>context.values</code>. This simplifies the execution flow and improves consistency between the server and the client environment.</p>
+
+    <coralite-heading level="h2" text="Breaking Changes"></coralite-heading>
+
+    <p>Due to the architectural improvements mentioned above, there are a few breaking changes to be aware of when upgrading to v0.26.0:</p>
+
+    <ul>
+      <li><strong>Renamed `script` to `client`:</strong> The `script` property in `createPlugin` has been renamed to `client`. You will need to update your plugin configurations to use the new name.</li>
+      <li><strong>Server-side Execution Removed:</strong> Server-side execution of `client.setup` in `ScriptManager.prototype.use` has been completely removed.</li>
+      <li><strong>Bundled Execution:</strong> `ScriptManager.prototype.compileAllInstances` now bundles `client.setup` into the frontend output. Ensure any setup logic is compatible with the client environment.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Code Refactoring"></coralite-heading>
+
+    <p>Alongside the main architectural changes, we've also cleaned up some types and tests:</p>
+    
+    <ul>
+      <li>Migrated from script to client config in the `test-script-plugin`.</li>
+      <li>Renamed the `IgnoreByAttribute` type to simply `Attribute`, streamlining our type definitions.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.26.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.26.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
