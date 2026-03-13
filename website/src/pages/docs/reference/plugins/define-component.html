@@ -13,8 +13,8 @@
   <main class="container content">
     <!-- Introduction -->
     <h1>defineComponent Plugin</h1>
-    <p>The <code>defineComponent</code> plugin is Coralite's core built-in plugin that enables dynamic template
-      functionality. It makes available computed tokens, slots, and script execution for the template that need data
+    <p>The <code>defineComponent</code> plugin is Coralite's core built-in plugin that enables dynamic component
+      functionality. It makes available computed tokens, dynamic attribute binding, slots, and script execution for the component that need data
       processing and client-side interactivity.</p>
 
     <!-- Table of Contents -->
@@ -37,23 +37,23 @@
 
       <coralite-heading level="h3" text="Use defineComponent When:"></coralite-heading>
       <ul>
-        <li>Your template needs computed tokens (functions that process data)</li>
+        <li>Your component needs computed tokens (functions that process data)</li>
         <li>You need custom slot processing</li>
         <li>You need client-side JavaScript execution</li>
-        <li>You need to use plugin methods inside the template</li>
-        <li>Your template requires dynamic data binding</li>
+        <li>You need to use plugin methods inside the component</li>
+        <li>Your component requires dynamic data or attribute binding</li>
       </ul>
 
       <coralite-heading level="h3" text="Do NOT Use defineComponent When:"></coralite-heading>
       <ul>
-        <li>Template only has simple token replacement (<code>{{ token }}</code>)</li>
+        <li>Component only has simple token replacement (<code>{{ token }}</code>)</li>
         <li>No script processing is needed</li>
-        <li>Template is purely static HTML</li>
+        <li>Component is purely static HTML</li>
       </ul>
 
-      <coralite-heading level="h3" text="Template Type Comparison"></coralite-heading>
+      <coralite-heading level="h3" text="Component Type Comparison"></coralite-heading>
 
-      <coralite-heading level="h4" text="Static Template (No defineComponent)"></coralite-heading>
+      <coralite-heading level="h4" text="Static Component (No defineComponent)"></coralite-heading>
       <coralite-code-html>
         <template id="simple-component">
           <div>
@@ -64,7 +64,7 @@
       </coralite-code-html>
       <p><strong>No script tag needed</strong> - Coralite processes token replacements automatically.</p>
 
-      <coralite-heading level="h4" text="Dynamic Template (With defineComponent)"></coralite-heading>
+      <coralite-heading level="h4" text="Dynamic Component (With defineComponent)"></coralite-heading>
       <coralite-code-html>
         <template id="dynamic-component">
           <div>
@@ -97,7 +97,7 @@
     <!-- Basic Usage -->
     <section id="basic-usage">
       <coralite-heading level="h2" text="Basic Usage"></coralite-heading>
-      <p>Here's the minimal setup for a dynamic template:</p>
+      <p>Here's the minimal setup for a dynamic component:</p>
 
       <coralite-code-html>
         <template id="my-component">
@@ -120,9 +120,9 @@
 
     <!-- Tokens -->
     <section id="tokens">
-      <coralite-heading level="h2" text="Tokens"></coralite-heading>
+      <coralite-heading level="h2" text="Tokens & Dynamic Attribute Binding"></coralite-heading>
       <p>Tokens are computed values that are processed at build time. They can be strings or functions that return
-        values based on the template's context.</p>
+        values based on the component's context. Tokens can be used as text content or dynamically bound to attributes (e.g., <code>class="{{ token }}"</code> or <code>data-value="{{ token }}"</code>).</p>
 
       <coralite-heading level="h3" text="Token Structure"></coralite-heading>
       <coralite-code-html>
@@ -201,7 +201,7 @@
     <!-- Slots -->
     <section id="slots">
       <coralite-heading level="h2" text="Slots"></coralite-heading>
-      <p>Slots allow you to process and transform content that is passed between custom element tags.</p>
+      <p>Slots allow you to process and transform content that is passed between component tags.</p>
 
       <coralite-heading level="h3" text="Basic Slot Processing"></coralite-heading>
       <coralite-code-html>
@@ -259,7 +259,7 @@
             }
           })
         </script>
-        <coralite-code-html>
+      </coralite-code-html>
     </section>
 
     <!-- Setup -->
@@ -283,7 +283,7 @@
                   // fetchedData: data
                   message: 'Hello from setup!'
                 }
-    }
+              }
             }
           })
         </script>
@@ -311,10 +311,10 @@
 
                 const btn = helpers.refs('actionBtn')
 
-      btn.addEventListener('click', () => {
+                btn.addEventListener('click', () => {
                   console.log('Clicked!')
-      })
-    }
+                })
+              }
             }
           })
         </script>
@@ -394,7 +394,7 @@
       </coralite-code-html>
 
       <coralite-code-html>
-        <!-- Template: product-card.html -->
+        <!-- Component: product-card.html -->
         <template id="product-card">
           <div class="product-card">
             <!-- test -->

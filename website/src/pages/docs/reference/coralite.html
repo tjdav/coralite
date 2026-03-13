@@ -10,7 +10,7 @@
   <main class="container content">
     <h1>Coralite Library</h1>
     <p>
-      The Coralite library is used for processing and rendering HTML documents with custom elements, templates, and plugins. It provides a structured way to manage document metadata, template paths, plugin configurations, and ignored attributes during rendering.
+      The Coralite library is used for processing and rendering HTML documents with custom elements, components, and plugins. It provides a structured way to manage document metadata, component paths, plugin configurations, and ignored attributes during rendering.
     </p>
 
     <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
@@ -26,7 +26,7 @@
     </ul>
 
     <coralite-heading level="h2" text="Coralite Constructor"></coralite-heading>
-    <p>Initializes a new Coralite instance with configuration options for templates, pages, plugins, and ignore attributes.</p>
+    <p>Initializes a new Coralite instance with configuration options for components, pages, plugins, and ignore attributes.</p>
 
     <coralite-heading level="h3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
@@ -47,16 +47,16 @@
             <td>Configuration options for the <code>Coralite</code> constructor.</td>
           </tr>
           <tr>
-            <th scope="row">options.templates</th>
+            <th scope="row">options.components</th>
             <td><code>string</code></td>
             <td>Required</td>
-            <td>The absolute or relative path to the directory containing Coralite templates.</td>
+            <td>The absolute or relative path to the directory containing Coralite components.</td>
           </tr>
           <tr>
             <th scope="row">options.pages</th>
             <td><code>string</code></td>
             <td>Required</td>
-            <td>The absolute or relative path to the directory containing pages to be rendered with the provided templates.</td>
+            <td>The absolute or relative path to the directory containing pages to be rendered with the provided components.</td>
           </tr>
           <tr>
             <th scope="row">options.plugins</th>
@@ -66,9 +66,21 @@
           </tr>
           <tr>
             <th scope="row">options.ignoreByAttribute</th>
-            <td><code><a href="/docs/types.html#ignore-by-attribute">IgnoreByAttribute</a>[]</code></td>
+            <td><code><a href="/docs/types.html#ignore-by-attribute">IgnoreByAttribute</a>[]</code> | <code>string[]</code></td>
             <td>Optional</td>
-            <td>An array of objects specifying attribute name-value pairs to ignore during document processing. Each object must have a name and value property.</td>
+            <td>An array of strings or objects specifying attribute name-value pairs to ignore during document processing. Objects must have a name and value property.</td>
+          </tr>
+          <tr>
+            <th scope="row">options.skipRenderByAttribute</th>
+            <td><code><a href="/docs/types.html#ignore-by-attribute">IgnoreByAttribute</a>[]</code> | <code>string[]</code></td>
+            <td>Optional</td>
+            <td>An array of strings or objects specifying attribute name-value pairs to skip rendering.</td>
+          </tr>
+          <tr>
+            <th scope="row">options.standaloneOutput</th>
+            <td><code>string</code></td>
+            <td>Optional</td>
+            <td>The path to the output directory where standalone client-side web components will be saved. Default is relative to output path.</td>
           </tr>
         </tbody>
       </table>
@@ -76,21 +88,25 @@
 
     <coralite-heading level="h3" text="Example Usage"></coralite-heading>
     <coralite-code-highlight language="JavaScript">const coralite = new Coralite({
-  templates: './src/templates',
+  components: './src/components',
   pages: './src/pages',
   plugins: [myCustomPlugin],
   ignoreByAttribute: [
     { name: 'data-ignore', value: 'true' },
     { name: 'aria-hidden', value: 'true' }
-  ]
+  ],
+  skipRenderByAttribute: [
+    'data-client-only'
+  ],
+  standaloneOutput: './components'
 });</coralite-code-highlight>
 
     <coralite-heading level="h2" text="Initialise Method"></coralite-heading>
-    <p>Initialises the Coralite instance by loading templates and setting up collections for pages and custom elements.</p>
+    <p>Initialises the Coralite instance by loading components and setting up collections for pages and custom elements.</p>
 
     <coralite-code-highlight language="JavaScript">/**
  * Initialises the Coralite instance.
- * @returns {Promise<void>}
+ * @returns {Promise*void*}
  */
 await coralite.initialise()</coralite-code-highlight>
 
@@ -106,7 +122,7 @@ await coralite.initialise()</coralite-code-highlight>
  * and returns rendered results with performance metrics.
  *
  * @param {string | string[]} [path] - Path to a single page or array of page paths relative to the pages directory. If omitted, compiles all pages.
- * @return {Promise<Array<CoraliteResult>>}
+ * @return {Promise*Array*CoraliteResult**}
  */
 coralite.compile(path)</coralite-code-highlight>
 
@@ -167,7 +183,7 @@ coralite.compile(path)</coralite-code-highlight>
 
     <coralite-code-highlight language="JavaScript">/**
  * Saves processed documents as HTML files to the specified output directory.
- * @param {Array<CoraliteResult>} documents - Array of document objects containing metadata and HTML content
+ * @param {Array*CoraliteResult*} documents - Array of document objects containing metadata and HTML content
  * @param {string} output - Base directory path where generated HTML files will be saved
  */
 coralite.save(documents, output)</coralite-code-highlight>
@@ -246,13 +262,13 @@ coralite._render(root)</coralite-code-highlight>
     <p>Raw HTML string from the rendering process.</p>
 
     <coralite-heading level="h2" text="Get Page Paths Using Custom Element"></coralite-heading>
-    <p>Retrieves page paths associated with a custom element template.</p>
+    <p>Retrieves page paths associated with a custom element component.</p>
 
     <coralite-code-highlight language="JavaScript">/**
- * Retrieves page paths associated with a custom element template.
+ * Retrieves page paths associated with a custom element component.
  *
- * @param {string} path - The original path potentially prefixed with the templates directory.
- * @returns {string[]} An array of page paths linked to the custom element template.
+ * @param {string} path - The original path potentially prefixed with the components directory.
+ * @returns {string[]} An array of page paths linked to the custom element component.
  */
 coralite.getPagePathsUsingCustomElement(path)</coralite-code-highlight>
 
@@ -270,14 +286,14 @@ coralite.getPagePathsUsingCustomElement(path)</coralite-code-highlight>
           <tr>
             <th scope="row">path</th>
             <td><code>string</code></td>
-            <td>The original path potentially prefixed with the templates directory.</td>
+            <td>The original path potentially prefixed with the components directory.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <coralite-heading level="h3" text="Returns"></coralite-heading>
-    <p>An array of page paths linked to the custom element template.</p>
+    <p>An array of page paths linked to the custom element component.</p>
 
     <coralite-heading level="h2" text="Add Render Queue"></coralite-heading>
     <p>Adds a page to the current render queue.</p>
@@ -320,14 +336,14 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
  * @param {string} [options.contextId] - Context Id
  * @param {number} [options.index] - Context index
  * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
- * @returns {Promise<CoraliteElement | void>}
+ * @returns {Promise&lt;CoraliteElement | void&gt;}
  *
  * @example
  * // example usage:
  * const component = await coralite.createComponent({
  *   id: 'my-component',
  *   values: {
- *     'some-value': 'value-for-template'
+ *     'some-value': 'value-for-component'
  *   },
  *   element: customElement,
  *   document: documentInstance,

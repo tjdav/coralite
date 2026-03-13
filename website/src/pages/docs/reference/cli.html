@@ -27,17 +27,17 @@
 
     <ul>
       <li>
-        <p><strong><code>-t, --templates &lt;path&gt;</code></strong> (required)</p>
+        <p><strong><code>-c, --components &lt;path&gt;</code></strong> (required)</p>
         <ul>
-          <li>Description: The file system path to the directory containing Coralite templates.</li>
-          <li>Example: <code>--templates path/to/templates</code></li>
+          <li>Description: The file system path to the directory containing Coralite components.</li>
+          <li>Example: <code>--components path/to/components</code></li>
         </ul>
       </li>
       <li>
         <p><strong><code>-p, --pages &lt;path&gt;</code></strong> (required)</p>
         <ul>
           <li>Description: The file system path to the directory containing pages that will be rendered using the
-            provided templates.</li>
+            provided components.</li>
           <li>Example: <code>--pages path/to/pages</code></li>
         </ul>
       </li>
@@ -47,6 +47,13 @@
           <li>Description: The output directory for the generated site. If the specified directory does not exist, it
             will be created.</li>
           <li>Example: <code>--output path/to/dist</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>-s, --standalone &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: The output directory for standalone client-side web components.</li>
+          <li>Example: <code>--standalone components</code></li>
         </ul>
       </li>
       <li>
@@ -64,11 +71,18 @@
         </ul>
       </li>
       <li>
+        <p><strong><code>--skip-render-attribute &lt;key=value...&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Skip rendering elements by attribute name-value pair. Multiple pairs can be provided separated by spaces.</li>
+          <li>Example: <code>--skip-render-attribute data-client-only=true</code></li>
+        </ul>
+      </li>
+      <li>
         <p><strong><code>-d, --dry-run</code></strong> (optional)</p>
         <ul>
           <li>Description: Run the CLI in dry-run mode. This displays information about generated documents and their
             content without actually writing files to the output directory.</li>
-          <li>Example: <code>coralite -t src/templates -p src/pages -o dist --dry-run</code></li>
+          <li>Example: <code>coralite -c src/components -p src/pages -o dist --dry-run</code></li>
         </ul>
       </li>
     </ul>
@@ -80,15 +94,15 @@
 
     <p><strong>1. Generate a site with default options:</strong></p>
 
-    <coralite-code language="bash">coralite -t src/templates -p src/pages -o dist</coralite-code>
+    <coralite-code language="bash">coralite -c src/components -p src/pages -o dist</coralite-code>
 
     <p><strong>2. Ignore specific elements during parsing and run in dry-run mode:</strong></p>
 
-    <coralite-code language="bash">coralite -t src/templates -p src/pages -o dist --ignore-attribute data-ignore=true class=test-only --dry-run</coralite-code>
+    <coralite-code language="bash">coralite -c src/components -p src/pages -o dist --ignore-attribute data-ignore=true class=test-only --dry-run</coralite-code>
 
     <p><strong>3. Using with a configuration file:</strong></p>
     <p>When a <code>coralite.config.js</code> file exists in your project root, the CLI will automatically load plugins from it:</p>
-    <coralite-code language="bash">coralite -t src/templates -p src/pages -o dist</coralite-code>
+    <coralite-code language="bash">coralite -c src/components -p src/pages -o dist</coralite-code>
 
     <coralite-heading level="h2" text="Technical Details"></coralite-heading>
     <p>Under the hood, the Coralite CLI does the following:</p>

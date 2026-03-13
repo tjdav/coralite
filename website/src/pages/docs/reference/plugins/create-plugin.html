@@ -48,11 +48,11 @@
         // ... implementation
         },
 
-        // Optional: Register custom templates
-        templates: ['./path/to/template.html'],
+        // Optional: Register custom components
+        components: ['./path/to/component.html'],
 
         // Optional: Client-side script configuration
-        script: {
+        client: {
         setup: async () => { /* ... */ },
         helpers: { /* ... */ },
         imports: [ /* ... */ ],
@@ -69,12 +69,13 @@
     <!-- Server-Side Hooks -->
     <section id="server-hooks">
       <coralite-heading level="h2" text="Server-Side Hooks"></coralite-heading>
-      <p>Plugins can hook into Coralite's build lifecycle to perform actions when pages or templates are processed.</p>
+      <p>Plugins can hook into Coralite's build lifecycle to perform actions when pages or components are processed.</p>
       <ul>
         <li><code>onPageSet(data)</code>: Called when a page is created or updated.</li>
         <li><code>onPageUpdate(data)</code>: Called when a page is updated.</li>
         <li><code>onPageDelete(path)</code>: Called when a page is deleted.</li>
-        <li><code>onComponentSet(data)</code>: Called when a template is registered.</li>
+        <li><code>onComponentSet(data)</code>: Called when a component is registered.</li>
+        <li><code>onBeforeBuild()</code>: Called before the build process starts.</li>
         <li><code>onAfterBuild()</code>: Called when the entire build process finishes.</li>
       </ul>
     </section>
@@ -82,20 +83,20 @@
     <!-- Client-Side Scripting -->
     <section id="client-scripting">
       <coralite-heading level="h2" text="Client-Side Scripting"></coralite-heading>
-      <p>The <code>script</code> property is powerful: it allows you to inject code that runs in the browser. This code
+      <p>The <code>client</code> property is powerful: it allows you to inject code that runs in the browser. This code
         is bundled with your application.</p>
 
-      <coralite-heading level="h3" text="script.setup"></coralite-heading>
-      <p>A server-side function that runs during the build process to prepare data or environment for the plugin. Use it
-        to fetch remote data or validate configuration.</p>
+      <coralite-heading level="h3" text="client.setup"></coralite-heading>
+      <p>A client-side function that runs when the plugin is registered in the browser. Use it
+        to prepare data or environment for the plugin in the frontend.</p>
 
-      <coralite-heading level="h3" text="script.helpers"></coralite-heading>
+      <coralite-heading level="h3" text="client.helpers"></coralite-heading>
       <p>Define helper functions that will be available to <code>defineComponent</code> scripts in the browser.</p>
 
       <coralite-code-highlight language="JavaScript">
         createPlugin({
         name: 'utils',
-        script: {
+        client: {
         helpers: {
         formatDate: (context) => (date) => {
         return new Date(date).toLocaleDateString()
@@ -108,10 +109,10 @@
         and return the actual function to be used.</p>
     </section>
 
-    <!-- Script Imports -->
+    <!-- Client Imports -->
     <section id="script-imports">
-      <coralite-heading level="h2" text="Script Imports"></coralite-heading>
-      <p>Use <code>script.imports</code> to make external libraries (npm packages, local files, or remote URLs)
+      <coralite-heading level="h2" text="Client Imports"></coralite-heading>
+      <p>Use <code>client.imports</code> to make external libraries (npm packages, local files, or remote URLs)
         available to your client-side helpers. Coralite handles the bundling and injection for you.</p>
 
       <coralite-heading level="h3" text="Import Types"></coralite-heading>
@@ -133,7 +134,7 @@
       <coralite-code-highlight language="JavaScript">
         createPlugin({
         name: 'analytics',
-        script: {
+        client: {
         config: {
         trackingId: 'UA-123456-7',
         debug: true
@@ -169,15 +170,15 @@
 
     <!-- Script Configuration -->
     <section id="script-config">
-      <coralite-heading level="h2" text="Script Configuration"></coralite-heading>
-      <p>The <code>script.config</code> object allows you to pass static configuration data from the server (where the
+      <coralite-heading level="h2" text="Client Configuration"></coralite-heading>
+      <p>The <code>client.config</code> object allows you to pass static configuration data from the server (where the
         plugin is defined) to the client (where helpers run). This is useful for API keys, theme settings, or feature
         flags.</p>
 
       <coralite-code-highlight language="JavaScript">
         createPlugin({
         name: 'analytics',
-        script: {
+        client: {
         config: {
         trackingId: 'UA-123456-7',
         debug: true
@@ -191,7 +192,7 @@
     <!-- Context Injection -->
     <section id="context-injection">
       <coralite-heading level="h2" text="Context Injection"></coralite-heading>
-      <p>Both <code>script.imports</code> and <code>script.config</code> are automatically injected into the
+      <p>Both <code>client.imports</code> and <code>client.config</code> are automatically injected into the
         <code>context</code> object passed to your helper factories.
       </p>
 
@@ -202,7 +203,7 @@
       </ul>
 
       <coralite-code-highlight language="JavaScript">
-        // Inside script.helpers
+        // Inside client.helpers
         helpers: {
         trackEvent: (context) => (eventName) => {
         const { trackingId } = context.config;
@@ -226,7 +227,7 @@
 
         export default createPlugin({
         name: 'confetti-plugin',
-        script: {
+        client: {
         // 1. Import the library
         imports: [
         {

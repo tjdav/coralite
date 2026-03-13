@@ -50,7 +50,7 @@
         <li><a href="#coraliteconfig">CoraliteConfig</a></li>
         <li><a href="#coralitescriptcontent">CoraliteScriptContent</a></li>
         <li><a href="#coralitemodulescript">CoraliteModuleScript</a></li>
-        <li><a href="#scriptplugin">ScriptPlugin</a></li>
+        <li><a href="#clientplugin">ClientPlugin</a></li>
         <li><a href="#instancecontext">InstanceContext</a></li>
       </ul>
       <p><a href="#content-nodes">Content Nodes</a></p>
@@ -100,8 +100,8 @@
         <tbody>
           <tr>
             <td><code>type</code></td>
-            <td><code>'page'</code> | <code>'template'</code></td>
-            <td>The type of HTML file. 'page' for main pages, 'template' for reusable components.</td>
+            <td><code>'page'</code> | <code>'component'</code></td>
+            <td>The type of HTML file. 'page' for main pages, 'component' for reusable components.</td>
           </tr>
           <tr>
             <td><code>values</code></td>
@@ -154,7 +154,7 @@
     </div>
 
     <coralite-heading level="h3" text="CoralitePath"></coralite-heading>
-    <p>Defines root directories for pages and templates in a Coralite project.</p>
+    <p>Defines root directories for pages and components in a Coralite project.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -171,16 +171,16 @@
             <td>The path to the root pages directory.</td>
           </tr>
           <tr>
-            <td><code>templates</code></td>
+            <td><code>components</code></td>
             <td><code>string</code></td>
-            <td>The path to the root templates directory.</td>
+            <td>The path to the root components directory.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <coralite-heading level="h3" text="CoralitePathValues"></coralite-heading>
-    <p>Represents URL and file path values available during template rendering.</p>
+    <p>Represents URL and file path values available during component rendering.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -226,7 +226,7 @@
     </div>
 
     <coralite-heading level="h3" text="CoraliteValues"></coralite-heading>
-    <p>Union type representing values available for token replacement in templates.</p>
+    <p>Union type representing values available for token replacement in components.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -683,17 +683,17 @@
           <tr>
             <td><code>path</code></td>
             <td><a href="#coralitefilepath"><code>CoraliteFilePath</code></a> (optional)</td>
-            <td>Template paths associated with this module, if any.</td>
+            <td>Component paths associated with this module, if any.</td>
           </tr>
           <tr>
             <td><code>lineOffset</code></td>
             <td><code>number</code> (optional)</td>
-            <td>Optional offset value for line numbering purposes within the template.</td>
+            <td>Optional offset value for line numbering purposes within the component.</td>
           </tr>
           <tr>
-            <td><code>template</code></td>
+            <td><code>component</code></td>
             <td><a href="#coralite-element"><code>CoraliteElement</code></a></td>
-            <td>Module's rendering template which defines its structure and layout.</td>
+            <td>Module's rendering component which defines its structure and layout.</td>
           </tr>
           <tr>
             <td><code>script</code></td>
@@ -719,9 +719,9 @@
               components.</td>
           </tr>
           <tr>
-            <td><code>isTemplate</code></td>
+            <td><code>isComponent</code></td>
             <td><code>boolean</code></td>
-            <td>Indicates whether the module is a template.</td>
+            <td>Indicates whether the module is a component.</td>
           </tr>
         </tbody>
       </table>
@@ -771,19 +771,29 @@
             <td>The path to the output directory where built files will be placed.</td>
           </tr>
           <tr>
-            <td><code>templates</code></td>
+            <td><code>components</code></td>
             <td><code>string</code></td>
-            <td>The path to the directory containing Coralite templates.</td>
+            <td>The path to the directory containing Coralite components.</td>
           </tr>
           <tr>
             <td><code>pages</code></td>
             <td><code>string</code></td>
-            <td>The path to the directory containing pages that will be rendered using the provided templates.</td>
+            <td>The path to the directory containing pages that will be rendered using the provided components.</td>
           </tr>
           <tr>
             <td><code>plugins</code></td>
             <td><a href="#coraliteplugininstance"><code>CoralitePluginInstance[]</code></a> (optional)</td>
             <td>Optional array of plugin instances to extend Coralite functionality.</td>
+          </tr>
+          <tr>
+            <td><code>skipRenderByAttribute</code></td>
+            <td><code><a href="#ignorebyattribute">IgnoreByAttribute[]</a> | string[]</code> (optional)</td>
+            <td>An array of attribute names and values to skip rendering.</td>
+          </tr>
+          <tr>
+            <td><code>standaloneOutput</code></td>
+            <td><code>string</code> (optional)</td>
+            <td>The path to the output directory where standalone client-side web components will be placed.</td>
           </tr>
         </tbody>
       </table>
@@ -807,9 +817,9 @@
             <td>Unique instance identifier.</td>
           </tr>
           <tr>
-            <td><code>templateId</code></td>
+            <td><code>componentId</code></td>
             <td><code>string</code> (optional)</td>
-            <td>Template identifier for shared functions.</td>
+            <td>Component identifier for shared functions.</td>
           </tr>
           <tr>
             <td><code>document</code></td>
@@ -838,8 +848,8 @@
       * @param {CoraliteRef} refs - References template elements
       */</coralite-code-highlight>
 
-    <coralite-heading level="h3" text="ScriptPlugin"></coralite-heading>
-    <p>Configuration for script plugins.</p>
+    <coralite-heading level="h3" text="ClientPlugin"></coralite-heading>
+    <p>Configuration for client plugins.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -893,9 +903,9 @@
             <td>Unique instance identifier.</td>
           </tr>
           <tr>
-            <td><code>templateId</code></td>
+            <td><code>componentId</code></td>
             <td><code>string</code></td>
-            <td>Template identifier.</td>
+            <td>Component identifier.</td>
           </tr>
           <tr>
             <td><code>values</code></td>
@@ -1139,7 +1149,7 @@
         <tbody>
           <tr>
             <td><code>type</code></td>
-            <td><code>'page'</code> | <code>'template'</code> (optional)</td>
+            <td><code>'page'</code> | <code>'component'</code> (optional)</td>
             <td>Document type.</td>
           </tr>
           <tr>
@@ -1357,7 +1367,7 @@
     </div>
 
     <coralite-heading level="h3" text="CoralitePluginResult"></coralite-heading>
-    <p>Result type for Coralite plugins with generic template parameter.</p>
+    <p>Result type for Coralite plugins with generic component parameter.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -1389,9 +1399,9 @@
             <td>Plugin metadata.</td>
           </tr>
           <tr>
-            <td><code>script</code></td>
+            <td><code>client</code></td>
             <td><code>Object</code> (optional)</td>
-            <td>Script plugin configuration.</td>
+            <td>Client plugin configuration.</td>
           </tr>
           <tr>
             <td><code>onPageSet</code></td>
@@ -1412,21 +1422,21 @@
           </tr>
           <tr>
             <td><code>onComponentSet</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            <td><a href="#coraliteplugincomponentcallback"><code>CoralitePluginComponentCallback</code></a> (optional)
             </td>
-            <td>Async callback triggered when a template is created.</td>
+            <td>Async callback triggered when a component is created.</td>
           </tr>
           <tr>
             <td><code>onComponentUpdate</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            <td><a href="#coraliteplugincomponentcallback"><code>CoralitePluginComponentCallback</code></a> (optional)
             </td>
-            <td>Async callback triggered when a template is updated.</td>
+            <td>Async callback triggered when a component is updated.</td>
           </tr>
           <tr>
             <td><code>onComponentDelete</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            <td><a href="#coraliteplugincomponentcallback"><code>CoralitePluginComponentCallback</code></a> (optional)
             </td>
-            <td>Async callback triggered when a template is deleted.</td>
+            <td>Async callback triggered when a component is deleted.</td>
           </tr>
           <tr>
             <td><code>onBeforePageRender</code></td>
@@ -1441,12 +1451,18 @@
               (optional)</td>
             <td>Async callback triggered before build starts.</td>
           </tr>
+          <tr>
+            <td><code>onAfterBuild</code></td>
+            <td><a href="#coralitepluginafterbuildcallback"><code>CoralitePluginAfterBuildCallback</code></a>
+              (optional)</td>
+            <td>Async callback triggered after build completes.</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <coralite-heading level="h3" text="CoralitePluginInstance"></coralite-heading>
-    <p>A Coralite plugin with associated template data.</p>
+    <p>A Coralite plugin with associated component data.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -1468,14 +1484,14 @@
             <td>Execution function that processes content using plugin logic.</td>
           </tr>
           <tr>
-            <td><code>templates</code></td>
+            <td><code>components</code></td>
             <td><a href="#htmldata"><code>HTMLData[]</code></a> (optional, default: <code>[]</code>)</td>
-            <td>List of custom templates to be included in the coralite instance.</td>
+            <td>List of custom components to be included in the coralite instance.</td>
           </tr>
           <tr>
-            <td><code>script</code></td>
-            <td><a href="#scriptplugin"><code>ScriptPlugin</code></a> (optional)</td>
-            <td>Script plugin configuration for extending script functionality.</td>
+            <td><code>client</code></td>
+            <td><a href="#clientplugin"><code>ClientPlugin</code></a> (optional)</td>
+            <td>Client plugin configuration for extending script functionality.</td>
           </tr>
           <tr>
             <td><code>onPageSet</code></td>
@@ -1496,21 +1512,21 @@
           </tr>
           <tr>
             <td><code>onComponentSet</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            <td><a href="#coraliteplugincomponentcallback"><code>CoralitePluginComponentCallback</code></a> (optional)
             </td>
-            <td>Async callback triggered when a template is created.</td>
+            <td>Async callback triggered when a component is created.</td>
           </tr>
           <tr>
             <td><code>onComponentUpdate</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            <td><a href="#coraliteplugincomponentcallback"><code>CoralitePluginComponentCallback</code></a> (optional)
             </td>
-            <td>Async callback triggered when a template is updated.</td>
+            <td>Async callback triggered when a component is updated.</td>
           </tr>
           <tr>
             <td><code>onComponentDelete</code></td>
-            <td><a href="#coraliteplugintemplatecallback"><code>CoralitePluginTemplateCallback</code></a> (optional)
+            <td><a href="#coraliteplugincomponentcallback"><code>CoralitePluginComponentCallback</code></a> (optional)
             </td>
-            <td>Async callback triggered when a template is deleted.</td>
+            <td>Async callback triggered when a component is deleted.</td>
           </tr>
           <tr>
             <td><code>onBeforePageRender</code></td>
@@ -1524,6 +1540,12 @@
             <td><a href="#coralitepluginbeforebuildcallback"><code>CoralitePluginBeforeBuildCallback</code></a>
               (optional)</td>
             <td>Async callback triggered before build starts.</td>
+          </tr>
+          <tr>
+            <td><code>onAfterBuild</code></td>
+            <td><a href="#coralitepluginafterbuildcallback"><code>CoralitePluginAfterBuildCallback</code></a>
+              (optional)</td>
+            <td>Async callback triggered after build completes.</td>
           </tr>
         </tbody>
       </table>
@@ -1565,13 +1587,13 @@
         * @async
         */</coralite-code-highlight>
 
-    <coralite-heading level="h3" text="CoralitePluginTemplateCallback"></coralite-heading>
-    <p>Async callback triggered for template-related events.</p>
+    <coralite-heading level="h3" text="CoralitePluginComponentCallback"></coralite-heading>
+    <p>Async callback triggered for component-related events.</p>
     <coralite-code-highlight language="JavaScript">/**
       * @this {ThisType<Coralite>}
-        * @callback CoralitePluginTemplateCallback
-        * @description Async callback triggered for template-related events (set, update, delete).
-        * @param {CoraliteModule} template - The template module that was set, updated, or deleted
+        * @callback CoralitePluginComponentCallback
+        * @description Async callback triggered for component-related events (set, update, delete).
+        * @param {CoraliteModule} component - The component module that was set, updated, or deleted
         * @async
         */</coralite-code-highlight>
   </main>

@@ -3,7 +3,7 @@
 
 <head>
   <coralite-meta title="Coralite Plugin System: Complete Guide to Extending Coralite"
-    description="Learn how to create and use Coralite plugins, script plugins, and custom templates."></coralite-meta>
+    description="Learn how to create and use Coralite plugins, script plugins, and custom components."></coralite-meta>
   <link rel="stylesheet" href="/css/styles.css" inline-css>
 </head>
 
@@ -21,24 +21,24 @@
     <nav aria-label="table of contents">
       <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
       <ul>
-        <li><a href="#template-types">Template Types</a></li>
+        <li><a href="#component-types">Component Types</a></li>
         <li><a href="#creating-plugins">Creating Plugins</a></li>
-        <li><a href="#template-level-plugins">Template-Level Plugins</a></li>
+        <li><a href="#component-level-plugins">Component-Level Plugins</a></li>
         <li><a href="#page-level-plugins">Page-Level Plugins</a></li>
         <li><a href="#lifecycle-hooks">Lifecycle Hooks</a></li>
-        <li><a href="#script-plugins">Script Plugins & Helpers</a></li>
+        <li><a href="#client-plugins">Client Plugins & Helpers</a></li>
         <li><a href="./create-plugin.html">Create Plugin API</a></li>
         <li><a href="#built-in-plugins">Built-in Plugins</a></li>
       </ul>
     </nav>
 
-    <!-- Template Types Section -->
-    <section id="template-types">
-      <coralite-heading level="h2" text="Template Types"></coralite-heading>
-      <p>Coralite supports two types of templates, each with different requirements:</p>
+    <!-- Component Types Section -->
+    <section id="component-types">
+      <coralite-heading level="h2" text="Component Types"></coralite-heading>
+      <p>Coralite supports two types of components, each with different requirements:</p>
 
-      <coralite-heading level="h3" text="Static Templates"></coralite-heading>
-      <p>Static templates are simple HTML files that support basic token replacement but don't require any script
+      <coralite-heading level="h3" text="Static Components"></coralite-heading>
+      <p>Static components are simple HTML files that support basic token replacement but don't require any script
         processing:</p>
 
       <coralite-code-html>
@@ -52,8 +52,8 @@
 
       <p><strong>No script tag needed</strong> - Coralite will process token replacements automatically.</p>
 
-      <coralite-heading level="h3" text="Dynamic Templates"></coralite-heading>
-      <p>Dynamic templates require a script tag and are used when you need:</p>
+      <coralite-heading level="h3" text="Dynamic Components"></coralite-heading>
+      <p>Dynamic components require a script tag and are used when you need:</p>
       <ul>
         <li>Computed tokens or slots</li>
         <li>Client-side JavaScript execution</li>
@@ -103,11 +103,11 @@
         // Server-side logic
         return { ...context.values, custom: 'data' }
         },
-        templates: ['src/components/custom.html'],
+        components: ['src/components/custom.html'],
         onPageSet: async (data) => {
         console.log('Page created:', data.path.pathname)
         },
-        script: {
+        client: {
         helpers: {
         formatDate: (context) => {
         return (date) => new Date(date).toLocaleDateString()
@@ -139,19 +139,19 @@
               <td><code>method</code></td>
               <td><code>function</code></td>
               <td>No</td>
-              <td>Server-side function available in templates</td>
+              <td>Server-side function available in components</td>
             </tr>
             <tr>
-              <td><code>templates</code></td>
+              <td><code>components</code></td>
               <td><code>string[]</code></td>
               <td>No</td>
-              <td>Array of template file paths to include</td>
+              <td>Array of component file paths to include</td>
             </tr>
             <tr>
-              <td><code>script</code></td>
+              <td><code>client</code></td>
               <td><code>object</code></td>
               <td>No</td>
-              <td>Script plugin configuration with helpers</td>
+              <td>Client plugin configuration with helpers</td>
             </tr>
             <tr>
               <td><code>onPageSet</code></td>
@@ -175,30 +175,30 @@
               <td><code>onComponentSet</code></td>
               <td><code>function</code></td>
               <td>No</td>
-              <td>Hook for when a template is created</td>
+              <td>Hook for when a component is created</td>
             </tr>
             <tr>
               <td><code>onComponentUpdate</code></td>
               <td><code>function</code></td>
               <td>No</td>
-              <td>Hook for when a template is updated</td>
+              <td>Hook for when a component is updated</td>
             </tr>
             <tr>
               <td><code>onComponentDelete</code></td>
               <td><code>function</code></td>
               <td>No</td>
-              <td>Hook for when a template is deleted</td>
+              <td>Hook for when a component is deleted</td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- Template-Level Plugins Section -->
-    <section id="template-level-plugins">
-      <coralite-heading level="h2" text="Template-Level Plugins"></coralite-heading>
-      <p>Template-level plugins provide methods that can be called inside <code>defineComponent</code> tokens and slots.
-        These run during the build process and have access to the template's context.</p>
+    <!-- Component-Level Plugins Section -->
+    <section id="component-level-plugins">
+      <coralite-heading level="h2" text="Component-Level Plugins"></coralite-heading>
+      <p>Component-level plugins provide methods that can be called inside <code>defineComponent</code> tokens and slots.
+        These run during the build process and have access to the component's context.</p>
 
       <coralite-heading level="h3" text="Plugin Method Context"></coralite-heading>
       <p>Plugin methods receive two parameters: <code>options</code> and <code>context</code>. The context contains:</p>
@@ -233,11 +233,16 @@
               <td><code>Object</code></td>
               <td>File path information</td>
             </tr>
+            <tr>
+              <td><code>transform</code></td>
+              <td><code>function</code></td>
+              <td>Exposed transform method for serialization control and rendering logic</td>
+            </tr>
           </tbody>
         </table>
       </div>
 
-      <coralite-heading level="h3" text="Using Plugin Methods in Templates"></coralite-heading>
+      <coralite-heading level="h3" text="Using Plugin Methods in Components"></coralite-heading>
       <p>Import plugin methods from <code>coralite/plugins</code> and use them inside <code>defineComponent</code>
         tokens:</p>
 
@@ -266,7 +271,7 @@
       </coralite-code-html>
 
       <coralite-heading level="h3" text="Context Values Difference"></coralite-heading>
-      <p>It's important to understand the difference between values passed to template scripts vs plugin methods:</p>
+      <p>It's important to understand the difference between values passed to component scripts vs plugin methods:</p>
 
       <coralite-code-html>
         <!-- Page: user.html -->
@@ -290,13 +295,13 @@
         userName: (values) => values.$name
         },
         script: (context, helpers) => {
-        // Template script receives:
+        // Component script receives:
         // values = { userName: "Alice", age: 25 } (processed tokens)
         }
         })
       </coralite-code-highlight>
 
-      <p><strong>Key Difference:</strong> Plugin methods get raw metadata/attributes, template scripts get processed
+      <p><strong>Key Difference:</strong> Plugin methods get raw metadata/attributes, component scripts get processed
         token values.</p>
     </section>
 
@@ -304,7 +309,7 @@
     <section id="page-level-plugins">
       <coralite-heading level="h2" text="Page-Level Plugins"></coralite-heading>
       <p>Page-level plugins use lifecycle hooks to modify the final HTML output. They work across all pages and
-        templates.</p>
+        components.</p>
 
       <coralite-heading level="h3" text="How Page-Level Plugins Work"></coralite-heading>
       <p>These plugins are registered in your coralite.config.js and automatically process pages during the build:</p>
@@ -314,7 +319,7 @@
         import inlineCSSPlugin from './plugins/inline-css.js'
 
         export default {
-        templates: './templates',
+        components: './components',
         pages: './pages',
         plugins: [
         inlineCSSPlugin({
@@ -372,25 +377,25 @@
         }
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="Template-Level vs Page-Level"></coralite-heading>
+      <coralite-heading level="h3" text="Component-Level vs Page-Level"></coralite-heading>
       <div class="table-responsive">
         <table class="table">
           <thead>
             <tr>
               <th>Feature</th>
-              <th>Template-Level</th>
+              <th>Component-Level</th>
               <th>Page-Level</th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td><strong>Registration</strong></td>
-              <td>Imported in template script</td>
+              <td>Imported in component script</td>
               <td>Registered in coralite.config.js</td>
             </tr>
             <tr>
               <td><strong>Execution</strong></td>
-              <td>Build time (per template)</td>
+              <td>Build time (per component)</td>
               <td>Build time (per page)</td>
             </tr>
             <tr>
@@ -405,7 +410,7 @@
             </tr>
             <tr>
               <td><strong>Context</strong></td>
-              <td>Template context + element attributes</td>
+              <td>Component context + element attributes</td>
               <td>Full page context + DOM tree</td>
             </tr>
           </tbody>
@@ -434,32 +439,32 @@
         // Called when a page is deleted
         console.log('Page deleted:', value.path.pathname)
         },
-        onComponentSet: async (template) => {
-        // Called when a template is created
-        console.log('New template:', template.id)
+        onComponentSet: async (component) => {
+        // Called when a component is created
+        console.log('New component:', component.id)
         },
-        onComponentUpdate: async (template) => {
-        // Called when a template is updated
-        console.log('Template updated:', template.id)
+        onComponentUpdate: async (component) => {
+        // Called when a component is updated
+        console.log('Component updated:', component.id)
         },
-        onComponentDelete: async (template) => {
-        // Called when a template is deleted
-        console.log('Template deleted:', template.id)
+        onComponentDelete: async (component) => {
+        // Called when a component is deleted
+        console.log('Component deleted:', component.id)
         }
         })
       </coralite-code-highlight>
     </section>
 
-    <!-- Script Plugins Section -->
-    <section id="script-plugins">
-      <coralite-heading level="h2" text="Script Plugins & Helpers"></coralite-heading>
-      <p>Script plugins provide client-side helpers that are available in template scripts. These use a factory pattern
-        where Coralite automatically executes the factory with context.</p>
+    <!-- Client Plugins Section -->
+    <section id="client-plugins">
+      <coralite-heading level="h2" text="Client Plugins & Helpers"></coralite-heading>
+      <p>Client plugins provide client-side helpers that are available in component scripts. These use a factory pattern
+        where Coralite automatically executes the factory with context. Client setup execution has been moved from server-side to the frontend bundle.</p>
 
       <coralite-code-highlight language="JavaScript">
-        const myScriptPlugin = createPlugin({
-        name: 'script-enhancer',
-        script: {
+        const myClientPlugin = createPlugin({
+        name: 'client-enhancer',
+        client: {
         // Called when plugin is registered
         setup: (plugin) => {
         console.log('Plugin registered:', plugin.name)
@@ -484,13 +489,13 @@
       <ol>
         <li><strong>Registration</strong>: Plugin helpers are registered with ScriptManager</li>
         <li><strong>Factory Execution</strong>: Coralite calls each factory with current context</li>
-        <li><strong>Helper Injection</strong>: Returned functions are injected into template scripts</li>
-        <li><strong>Template Usage</strong>: Scripts receive <code>(context, helpers)</code> with ready-to-use functions
+        <li><strong>Helper Injection</strong>: Returned functions are injected into component scripts</li>
+        <li><strong>Component Usage</strong>: Scripts receive <code>(context, helpers)</code> with ready-to-use functions
         </li>
       </ol>
 
       <coralite-code-highlight language="JavaScript">
-        // In template script:
+        // In component script:
         export default defineComponent({
         script: (context, helpers) => {
         // helpers.formatDate is already the result function
@@ -509,7 +514,7 @@
       <p>Coralite includes three built-in plugins that provide core functionality:</p>
 
       <coralite-heading level="h3" text="defineComponent"></coralite-heading>
-      <p>The <code>defineComponent</code> plugin is required for all dynamic templates. It provides the wrapper for
+      <p>The <code>defineComponent</code> plugin is required for all dynamic components. It provides the wrapper for
         tokens, slots, and script execution:</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -541,7 +546,7 @@
 
       <coralite-heading level="h4" text="When to Use"></coralite-heading>
       <ul>
-        <li>When your template needs computed tokens</li>
+        <li>When your component needs computed tokens</li>
         <li>When you need custom slot processing</li>
         <li>When you need client-side JavaScript</li>
         <li>When you need to use plugin methods</li>
@@ -549,8 +554,8 @@
 
       <coralite-heading level="h4" text="When NOT to Use"></coralite-heading>
       <ul>
-        <li>Simple static templates with only token replacement</li>
-        <li>Templates that don't need script processing</li>
+        <li>Simple static components with only token replacement</li>
+        <li>Components that don't need script processing</li>
       </ul>
 
       <coralite-heading level="h3" text="refs Helper"></coralite-heading>
@@ -592,8 +597,8 @@
         <li><strong>Factory Definition</strong>: <code>refs({ refs })</code> receives context and returns resolver</li>
         <li><strong>Factory Execution</strong>: ScriptManager calls <code>refs(context)</code> automatically</li>
         <li><strong>Helper Injection</strong>: Result is injected as <code>helpers.refs</code></li>
-        <li><strong>Template Usage</strong>: Scripts use <code>helpers.refs</code> directly</li>
-        <li><strong>DOM Access</strong>: Queries elements with <code>data-coralite-ref</code> attributes</li>
+        <li><strong>Component Usage</strong>: Scripts use <code>helpers.refs</code> directly</li>
+        <li><strong>DOM Access</strong>: Queries elements with generated unique <code>id</code> attributes</li>
       </ul>
 
       <coralite-heading level="h4" text="Plugin Registration"></coralite-heading>
@@ -612,7 +617,7 @@
       </coralite-code-highlight>
 
       <coralite-heading level="h3" text="Metadata Plugin"></coralite-heading>
-      <p>The <code>metadata</code> plugin automatically processes page metadata for use in templates:</p>
+      <p>The <code>metadata</code> plugin automatically processes page metadata for use in components:</p>
 
       <ul>
         <li>Scans <code>&lt;head&gt;</code> for <code>&lt;meta&gt;</code> tags</li>
