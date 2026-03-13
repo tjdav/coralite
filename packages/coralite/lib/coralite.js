@@ -1040,21 +1040,21 @@ Coralite.prototype.save = async function (output, path, options = {}) {
   const createdDir = {}
 
   const results = await this.build(path, options, async (result) => {
-    let relDir, outDir, outFile, contentToWrite
+    let relativeDir, outDir, outFile, contentToWrite
 
     if (result.type === 'component') {
-      relDir = relative(this.options.path.components, result.path.dirname)
+      relativeDir = relative(this.options.path.components, result.path.dirname)
       if (this.options.standaloneOutput) {
-        outDir = join(output, this.options.standaloneOutput, relDir)
+        outDir = join(output, this.options.standaloneOutput, relativeDir)
       } else {
-        outDir = join(output, 'components', relDir)
+        outDir = join(output, 'components', relativeDir)
       }
       outFile = join(outDir, result.path.filename)
       contentToWrite = result.content
     } else {
       // It's a standard HTML page
-      relDir = relative(this.options.path.pages, result.path.dirname)
-      outDir = join(output, relDir)
+      relativeDir = relative(this.options.path.pages, result.path.dirname)
+      outDir = join(output, relativeDir)
       outFile = join(outDir, result.path.filename)
       contentToWrite = result.content
     }
