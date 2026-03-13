@@ -13,30 +13,68 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Prepend warning to README
+      - name: Prepend warning to READMEs
         run: |
           MODIFIED=false
+          WARNING_TEXT="> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite)."
           
-          # Search for README.md in root and inside packages/
-          # Note: This is case-sensitive. It strictly looks for "README.md"
-          for file in README.md packages/*/README.md; do
+          # ---------------------------------------------------
+          # 1. EXPLICITLY HANDLE THE ROOT README
+          # ---------------------------------------------------
+          echo "Checking for root README..."
+          
+          # Find the root readme regardless of case (README.md, readme.md, etc.)
+          ROOT_README=$(ls -1 | grep -i '^readme\.md$' || true)
+          
+          if [ -n "$ROOT_README" ] && [ -f "$ROOT_README" ]; then
+            if ! grep -q "codeberg.org/tjdavid/coralite" "$ROOT_README"; then
+              echo "Updating root file: $ROOT_README"
+              echo "$WARNING_TEXT" > temp_readme.md
+              echo "" >> temp_readme.md
+              cat "$ROOT_README" >> temp_readme.md
+              mv temp_readme.md "$ROOT_README"
+              git add "$ROOT_README"
+              MODIFIED=true
+            else
+              echo "Root $ROOT_README already contains the warning. Skipping."
+            fi
+          else
+            echo "❌ No root README file found in the workspace!"
+          fi
+          
+          # ---------------------------------------------------
+          # 2. HANDLE THE PACKAGES DIRECTORIES
+          # ---------------------------------------------------
+          echo "Checking packages directories..."
+          
+          # Enable case-insensitive globbing for the packages folder
+          shopt -s nocaseglob
+          for file in packages/*/README.md; do
             if [ -f "$file" ]; then
-              # Check if the warning already exists to prevent duplication
               if ! grep -q "codeberg.org/tjdavid/coralite" "$file"; then
-                echo "> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite)." > temp_readme.md
+                echo "Updating package file: $file"
+                echo "$WARNING_TEXT" > temp_readme.md
                 echo "" >> temp_readme.md
                 cat "$file" >> temp_readme.md
                 mv temp_readme.md "$file"
-                
                 git add "$file"
                 MODIFIED=true
+              else
+                 echo "Package file $file already contains the warning. Skipping."
               fi
             fi
           done
+          shopt -u nocaseglob # Turn case-insensitivity back off
           
+          # ---------------------------------------------------
+          # 3. COMMIT AND PUSH IF CHANGES WERE MADE
+          # ---------------------------------------------------
           if [ "$MODIFIED" = true ]; then
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
             git commit -m "docs: prepend mirror warning to READMEs"
             git push
+            echo "Changes successfully pushed."
+          else
+            echo "No README files needed updating."
           fi
