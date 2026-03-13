@@ -1002,7 +1002,6 @@ describe('ScriptManager', () => {
       const sm = new ScriptManager()
 
       await sm.use({
-        name: 'plugin-1',
         imports: [{
           specifier: './temp-test-module.js',
           defaultExport: 'foo'
@@ -1013,7 +1012,6 @@ describe('ScriptManager', () => {
       })
 
       await sm.use({
-        name: 'plugin-2',
         imports: [{
           specifier: './temp-test-module.js',
           defaultExport: 'bar'
@@ -1044,7 +1042,6 @@ describe('ScriptManager', () => {
       const sm = new ScriptManager()
 
       await sm.use({
-        name: 'alias-plugin',
         imports: [{
           specifier: './temp-test-module.js',
           namedExports: ['version as pkgVersion', 'name']
@@ -1072,7 +1069,6 @@ describe('ScriptManager', () => {
       const sm = new ScriptManager()
 
       await sm.use({
-        name: 'namespace-plugin',
         imports: [{
           specifier: './temp-test-module.js',
           namespaceExport: 'pkg'
@@ -1093,14 +1089,13 @@ describe('ScriptManager', () => {
       }, 'development')
 
       // Esbuild bundles the import, so we check if the key is present in pluginImports
-      assert.ok(output.includes('pkg: '), 'Namespace should be mapped in pluginImports')
+      assert.ok(output.includes('"pkg": '), 'Namespace should be mapped in pluginImports')
     })
 
     it('should handle combined default, namespace, and named exports', async () => {
       const sm = new ScriptManager()
 
       await sm.use({
-        name: 'combo-plugin',
         imports: [{
           specifier: './temp-test-module.js',
           defaultExport: 'defaultPkg',
@@ -1123,10 +1118,10 @@ describe('ScriptManager', () => {
       }, 'development')
 
       // Esbuild bundles imports, so we verify keys in pluginImports are present
-      assert.ok(output.includes('defaultPkg: '), 'Default export mapped')
-      assert.ok(output.includes('allPkg: '), 'Namespace export mapped')
-      assert.ok(output.includes('v: '), 'Aliased named export mapped')
-      assert.ok(output.includes('name: '), 'Named export mapped')
+      assert.ok(output.includes('"defaultPkg": '), 'Default export mapped')
+      assert.ok(output.includes('"allPkg": '), 'Namespace export mapped')
+      assert.ok(output.includes('"v": '), 'Aliased named export mapped')
+      assert.ok(output.includes('"name": '), 'Named export mapped')
     })
   })
 
