@@ -44,11 +44,11 @@
           export default defineComponent({
             script: (context, helpers) => {
               const refs = helpers.refs
-              
+          
               const username = refs('username')
               const password = refs('password')
               const submitBtn = refs('submitBtn')
-              
+          
               submitBtn.addEventListener('click', () => {
                 if (username.value && password.value) {
                   console.log('Login:', username.value)
@@ -90,20 +90,20 @@
               const increment = refs('increment')
               const decrement = refs('decrement')
               const reset = refs('reset')
-              
+          
               let count = context.values.count
               const counterDisplay = document.querySelector('h2')
-              
+          
               increment.addEventListener('click', () => {
                 count++
                 counterDisplay.textContent = `Count: ${count}`
               })
-              
+          
               decrement.addEventListener('click', () => {
                 count--
                 counterDisplay.textContent = `Count: ${count}`
               })
-              
+          
               reset.addEventListener('click', () => {
                 count = 0
                 counterDisplay.textContent = `Count: ${count}`
@@ -135,24 +135,24 @@
           export default defineComponent({
             script: (context, helpers) => {
               const refs = helpers.refs
-              
+          
               const email = refs('email')
               const password = refs('password')
               const emailError = refs('emailError')
               const passwordError = refs('passwordError')
               const submitBtn = refs('submitBtn')
-              
+          
               const validateEmail = (email) => {
                 return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
               }
-              
+          
               const validatePassword = (password) => {
                 return password.length >= 8
               }
-              
+          
               submitBtn.addEventListener('click', () => {
                 let valid = true
-                
+          
                 // Validate email
                 if (!validateEmail(email.value)) {
                   emailError.textContent = 'Invalid email format'
@@ -160,7 +160,7 @@
                 } else {
                   emailError.textContent = ''
                 }
-                
+          
                 // Validate password
                 if (!validatePassword(password.value)) {
                   passwordError.textContent = 'Password must be 8+ characters'
@@ -168,7 +168,7 @@
                 } else {
                   passwordError.textContent = ''
                 }
-                
+          
                 if (valid) {
                   console.log('Form submitted:', email.value)
                   // Submit form
@@ -202,20 +202,20 @@
           export default defineComponent({
             script: (context, helpers) => {
               const refs = helpers.refs
-              
+          
               const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
               const contents = [refs('content1'), refs('content2'), refs('content3')]
-              
+          
               buttons.forEach((btn, index) => {
                 btn.addEventListener('click', () => {
                   // Hide all contents
                   contents.forEach(content => {
                     content.style.display = 'none'
                   })
-                  
+          
                   // Show selected content
                   contents[index].style.display = 'block'
-                  
+          
                   // Update button states
                   buttons.forEach(b => b.classList.remove('active'))
                   btn.classList.add('active')

@@ -29,13 +29,13 @@
     tokens: {
       url () {
         if (!currentAuthor) {
-          return ""
+          return ''
         }
         return currentAuthor.url
       },
       img () {
         if (!currentAuthor) {
-          return ""
+          return ''
         }
 
         let picture = '<picture>'
@@ -43,7 +43,7 @@
         if (currentAuthor.img.avif) {
           picture += `<source srcset="${currentAuthor.img.avif}" type="image/avif">`
         }
-        
+  
         if (currentAuthor.img.avif) {
           picture += `<source srcset="${currentAuthor.img.avif}" type="image/avif">`
         }
@@ -58,16 +58,16 @@
       },
       fullName () {
         if (!currentAuthor) {
-          return ""
+          return ''
         }
-        
+  
         return currentAuthor.name
       },
       localeDate (values) {
         return new Date(values.dateTime).toLocaleDateString('en-AU', {
           year: '2-digit',
           month: 'short',
-          day: 'numeric',
+          day: 'numeric'
         })
       }
     }

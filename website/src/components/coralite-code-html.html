@@ -21,7 +21,7 @@
    * @param {Object} parent
    * @param {string} [data]
    */
-  function createCodeNode(className, parent, data) {
+  function createCodeNode (className, parent, data) {
     const node = {
       type: 'tag',
       name: 'span',
@@ -46,7 +46,7 @@
    * @param {Object} node
    * @param {Object} parent
    */
-  function createCodeCommentNode(node, parent) {
+  function createCodeCommentNode (node, parent) {
     const comment = {
       type: 'tag',
       name: 'span',
@@ -71,9 +71,9 @@
    * @param {Object} node
    * @param {Object} parent
    * @param {Array<Object>} children
-   * @param {string} whitespace 
+   * @param {string} whitespace
    */
-  function createCodeTagNode(node, parent, children, separator = { space: '' }) {
+  function createCodeTagNode (node, parent, children, separator = { space: '' }) {
     const tag = {
       type: 'tag',
       name: 'span',
@@ -86,8 +86,8 @@
 
     tag.children.push(
       createCodeNode('html-tag-text', tag, '&lt;'),
-      createCodeNode('html-tag-name', tag, node.name),
-    )
+      createCodeNode('html-tag-name', tag, node.name)
+  )
 
     // add tag to code list
     children.push(tag)
@@ -130,7 +130,7 @@
           )
 
           const nodes = parseHTML(highlightCode.value.trimEnd() + '\n')
-          
+  
           tag.children = tag.children.concat(nodes.root.children)
         }
       }
@@ -188,7 +188,7 @@
 
   export default defineComponent({
     slots: {
-      default(content) {
+      default (content) {
         const children = []
         let endIndex = content.length
         let startIndex = 0
@@ -229,7 +229,7 @@
       }
     },
     client: {
-      script({ helpers }) {
+      script ({ helpers }) {
         const { refs } = helpers
         const popoverButton = refs('popoverBtn')
         const popoverTarget = refs('popoverTarget')

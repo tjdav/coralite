@@ -139,7 +139,7 @@
               formattedDate: ({ date }) => new Date(date).toLocaleDateString(),
 
               // Token with conditional logic
-              status: ({ isActive }) => isActive ? 'Active' : 'Inactive'
+              status: ({ isActive }) => (isActive ? 'Active' : 'Inactive')
             }
           })
         </script>
@@ -180,12 +180,12 @@
                *  $filePathname: data.path.pathname,
                *  $fileDirname: data.path.dirname,
                *  $filename: data.path.filename,
-               *  
+               *
                *  // Data from page meta tags
                *  meta_firstName: "Alice",
                *  meta_lastName: "Smith",
                *  meta_title: "User Profile",
-               *  
+               *
                *  // Data from attribute values
                *  age: "25"
                * }
@@ -282,8 +282,8 @@
                 return {
                   // fetchedData: data
                   message: 'Hello from setup!'
-                };
-              }
+                }
+    }
             }
           })
         </script>
@@ -309,12 +309,12 @@
                 // values: Contains processed token values
                 // helpers: Contains client-side helpers like refs
 
-                const btn = helpers.refs('actionBtn');
+                const btn = helpers.refs('actionBtn')
 
-                btn.addEventListener('click', () => {
-                  console.log('Clicked!');
-                });
-              }
+      btn.addEventListener('click', () => {
+                  console.log('Clicked!')
+      })
+    }
             }
           })
         </script>
@@ -425,8 +425,7 @@
               },
 
               // Conditional token
-              stockStatus: ({ $inStock }) =>
-                $inStock === 'true' ? 'In Stock' : 'Out of Stock'
+              stockStatus: ({ $inStock }) => ($inStock === 'true' ? 'In Stock' : 'Out of Stock')
             },
 
             slots: {

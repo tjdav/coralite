@@ -22,7 +22,7 @@
 
   const allowedCustomTags = ['coralite-version']
 
-  function replacePlaceholders(nodes, placeholders) {
+  function replacePlaceholders (nodes, placeholders) {
     const result = []
 
     for (let i = 0; i < nodes.length; i++) {
@@ -57,18 +57,18 @@
 
   export default defineComponent({
     tokens: {
-      languageClass(attributes) {
+      languageClass (attributes) {
         return attributes.language.toLowerCase()
       }
     },
     slots: {
-      default(content, values) {
+      default (content, values) {
         let fullText = ''
         const placeholders = {}
         let placeholderIndex = 0
 
         for (let i = 0; i < content.length; i++) {
-          const node = content[i];
+          const node = content[i]
 
           if (node.type === 'text') {
             fullText += node.data
@@ -94,7 +94,7 @@
       }
     },
     client: {
-      script({ helpers }) {
+      script ({ helpers }) {
         const { refs } = helpers
         const popoverButton = refs('popoverBtn')
         const popoverTarget = refs('popoverTarget')
@@ -102,7 +102,7 @@
         const popoverId = 'copy-' + Math.random().toString(16).substring(2)
 
         popoverTarget.setAttribute('id', popoverId)
-        popoverButton.setAttribute('popovertarget', popoverId) 
+        popoverButton.setAttribute('popovertarget', popoverId)
 
         popoverButton.addEventListener('click', () => {
           navigator.clipboard.writeText(codeBody.textContent)

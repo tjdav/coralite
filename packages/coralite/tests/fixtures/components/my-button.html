@@ -54,20 +54,20 @@
           attributes: { type: 'json' }
         }
       ],
-      setup: async function() {
+      setup: async function () {
         return new Promise(resolve => {
           setTimeout(() => {
             resolve({ asyncData: 'Loaded from setup!' })
           }, 50)
         })
       },
-      script: function(context) {
-        const btn = context.helpers.refs('btn');
-        const output = context.helpers.refs('output');
-        const jsonOutput = context.helpers.refs('jsonOutput');
-        
+      script: function (context) {
+        const btn = context.helpers.refs('btn')
+        const output = context.helpers.refs('output')
+        const jsonOutput = context.helpers.refs('jsonOutput')
+  
         if (context.imports.dummyData) {
-          jsonOutput.textContent = context.imports.dummyData.name;
+          jsonOutput.textContent = context.imports.dummyData.name
         }
 
         btn.addEventListener('click', function () {
@@ -75,17 +75,17 @@
             particleCount: 100,
             spread: 70,
             origin: { y: 0.6 }
-          });
+          })
           output.textContent = 'Confetti fired!'
-          
-          this.dispatchEvent(new CustomEvent('button-clicked', { 
-            detail: { 
+  
+          this.dispatchEvent(new CustomEvent('button-clicked', {
+            detail: {
               id: btn.id
             },
             composed: true,
-            bubbles: true 
-          }));
-        });
+            bubbles: true
+          }))
+        })
       }
     }
   })

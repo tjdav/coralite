@@ -8,8 +8,8 @@ import { defineComponent } from 'coralite'
 export default defineComponent({
   tokens: {
     displayName ({ $lang }) {
-      const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
-      
+      const displayNames = new Intl.DisplayNames(['en'], { type: 'language' })
+
       return displayNames.of($lang)
     }
   }

@@ -10,28 +10,28 @@
 <script type="module">
   import { defineComponent } from 'coralite'
 
-  function getNativeLanguageName(langCode) {
-    const displayNames = new Intl.DisplayNames([langCode], { type: 'language' });
-    const displayName = displayNames.of(langCode)
+  function getNativeLanguageName (langCode) {
+    const displayNames = new Intl.DisplayNames([langCode], { type: 'language' })
+  const displayName = displayNames.of(langCode)
 
-    return displayName[0].toUpperCase() + displayName.slice(1);
-  }
+    return displayName[0].toUpperCase() + displayName.slice(1)
+}
 
-  function normalizePath(pathname, languages) {
+  function normalizePath (pathname, languages) {
     for (const lang of languages) {
       if (pathname.startsWith(lang + '/')) {
-        return pathname.slice(lang.length + 1);
+        return pathname.slice(lang.length + 1)
       }
     }
-    return pathname;
-  }
+    return pathname
+}
 
   const flags = {
-    'en': '🇬🇧',
-    'fr': '🇫🇷',
-    'de': '🇩🇪',
-    'es': '🇪🇸',
-  }
+    en: '🇬🇧',
+    fr: '🇫🇷',
+    de: '🇩🇪',
+    es: '🇪🇸'
+}
 
   export default defineComponent({
     tokens: {
@@ -40,13 +40,13 @@
           ${getNativeLanguageName(values.$lang)}
         </span>${flags[values.$lang]} ${values.$lang.toUpperCase()}`
       },
-      languageLinks ({ $lang, languages, sourceLang, $urlPathname }) {      
+      languageLinks ({ $lang, languages, sourceLang, $urlPathname }) {
         // Split the path into segments
         const segments = $urlPathname.split('/').filter(Boolean)
-        
+  
         // Supported languages
         const langCodes = languages.split(',')
-        
+  
         if (!langCodes.length) {
           return
         }
@@ -67,8 +67,8 @@
 
           return `<li><a href="${href}" hreflang="${code}">${getNativeLanguageName(code)}</a></li>`
         }).join('')
-      },
-    },
+      }
+  },
     client: {
       imports: [
         {
@@ -81,24 +81,24 @@
         const tooltip = helpers.refs('tooltip')
 
         imports.createPopper(button, tooltip, {
-          placement: 'bottom',
-        });
+          placement: 'bottom'
+        })
 
         // Toggle the dropdown when the button is clicked
         button.addEventListener('click', (event) => {
           event.preventDefault()
-          tooltip.classList.toggle('show');
-        });
+          tooltip.classList.toggle('show')
+        })
 
         // Close the dropdown when clicking anywhere outside of it
         document.addEventListener('click', (event) => {
-          const isClickInsideMenu = tooltip.contains(event.target);
-          const isClickOnButton = button.contains(event.target);
+          const isClickInsideMenu = tooltip.contains(event.target)
+          const isClickOnButton = button.contains(event.target)
 
           if (!isClickInsideMenu && !isClickOnButton) {
-            tooltip.classList.remove('show');
+            tooltip.classList.remove('show')
           }
-        });
+        })
       }
     }
   })
