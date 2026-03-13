@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.28.0
+
+> Comparing `coralite-v0.27.0` to `HEAD`
+
+**Summary:** 11 commits
+
+### ✨ Features
+
+- implement dynamic attribute binding and token replacement in generated web components ([4a4d22f](https://codeberg.org/tjdavid/coralite/commit/4a4d22f20bfff90698b97a1a742c5768774f4353))
+- refactor standalone component tests to use dynamic HTML injection ([19a3523](https://codeberg.org/tjdavid/coralite/commit/19a35234667e960baf66b77ac3380ca2f1a30441))
+- expand E2E coverage for standalone Web Components (tests) ([f53ec32](https://codeberg.org/tjdavid/coralite/commit/f53ec320074f485dc8ff45965f9de1340649516b))
+
+### 🐛 Bug Fixes
+
+- update test assertions to match esbuild's JSON key formatting in pluginImports output ([16f51fd](https://codeberg.org/tjdavid/coralite/commit/16f51fd5e15121f0556e355003f25ffd9bd87362))
+- update component import specifier in standalone-wrapper fixture (tests) ([f80391a](https://codeberg.org/tjdavid/coralite/commit/f80391a4198ebaf78d5d3340eefad75c8087fc70))
+- unconditionally build standalone components with .js extension ([236cead](https://codeberg.org/tjdavid/coralite/commit/236cead5ec79192ca305222f9138910b7806696f))
+
+### 📚 Documentation
+
+- clarify terminology in Coralite README from templates to components ([8b8f31b](https://codeberg.org/tjdavid/coralite/commit/8b8f31b3f3438a87fbd934baedbd30da02f57d5f))
+- simplify CLI installation and update option names ([4474b84](https://codeberg.org/tjdavid/coralite/commit/4474b8438c808252f11d410464b21bde3eb02062))
+
+### ♻️ Code Refactoring
+
+- standardise JavaScript formatting and remove trailing whitespace ([d2f36e9](https://codeberg.org/tjdavid/coralite/commit/d2f36e97dac5f6fb0d6da87f0c76eaf165b34553))
+- rename `relDir` to `relativeDir` for consistency in coralite.js ([51cb2e2](https://codeberg.org/tjdavid/coralite/commit/51cb2e2959b4a1cd70c650758e65654cfdc0decd))
+- improve standalone component E2E tests and assertions ([0241ab9](https://codeberg.org/tjdavid/coralite/commit/0241ab9fd98fe64290855cc28376abca9129340c))
+
+
 ## v0.27.0
 
 > Comparing `coralite-v0.26.0` to `HEAD`
