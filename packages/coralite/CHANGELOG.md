@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.28.1
+
+> Comparing `coralite-v0.28.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- correctly resolve relative path for standalone component imports (script-manager) ([a7f4875](https://codeberg.org/tjdavid/coralite/commit/a7f4875b89e2b7c1b5badc59a6ca23ddd1ec87c7))
+
+
 ## v0.28.0
 
 > Comparing `coralite-v0.27.0` to `HEAD`
