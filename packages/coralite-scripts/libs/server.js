@@ -3,7 +3,7 @@ import colours from 'kleur'
 import localAccess from 'local-access'
 import chokidar from 'chokidar'
 import buildSass from './build-sass.js'
-import { displayError, displayInfo, displaySuccess, toCode, toMS, toTime } from './build-utils.js'
+import { displayError, displayInfo, displaySuccess, toCode, toMS, toTime, deleteDirectoryRecursive } from './build-utils.js'
 import { extname, join, normalize, relative, sep } from 'path'
 import { access, constants, mkdir, writeFile } from 'fs/promises'
 import Coralite from 'coralite'
@@ -474,6 +474,14 @@ async function server (config, options) {
       process.stdout.write(PAD + `${colours.bold('- Network:')}    ${access.network}\n\n`)
       process.stdout.write(border + colours.inverse(' LOGS ') + border + '\n\n')
     })
+
+    const gracefulShutdown = () => {
+      deleteDirectoryRecursive(config.output)
+      process.exit(0)
+    }
+
+    process.on('SIGINT', gracefulShutdown)
+    process.on('SIGTERM', gracefulShutdown)
   } catch (error) {
     displayError('Failed to start server', error)
   }
