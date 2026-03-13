@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.28.0
+
+> Comparing `create-coralite-v0.27.0` to `HEAD`
+
+**Summary:** 2 commits
+
+### ♻️ Code Refactoring
+
+- standardise JavaScript formatting and remove trailing whitespace ([d2f36e9](https://codeberg.org/tjdavid/coralite/commit/d2f36e97dac5f6fb0d6da87f0c76eaf165b34553))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.28.0 ([7677851](https://codeberg.org/tjdavid/coralite/commit/767785126027751fdadb31769e26505aed7d73bf))
+
+
 ## v0.27.0
 
 > Comparing `create-coralite-v0.26.0` to `HEAD`
