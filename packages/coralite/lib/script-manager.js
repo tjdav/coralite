@@ -2,7 +2,7 @@ import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction } from './utils.js'
 import { pathToFileURL } from 'node:url'
-import { resolve } from 'node:path'
+import { resolve, relative, dirname, parse, format } from 'node:path'
 
 /**
  * Script Manager for Coralite
@@ -465,10 +465,31 @@ customElements.define("${componentId}", ${componentId.replace(/[-.:]/g, '_')});
           })
 
           pluginBuild.onResolve({ filter: /^coralite-component\// }, args => {
-            const componentId = args.path.replace('coralite-component/', '')
+            const importedComponentId = args.path.replace('coralite-component/', '')
+            let targetPath = `./${importedComponentId}.js`
+
+            const sourceSharedFn = this.sharedFunctions[componentId]
+            const targetSharedFn = this.sharedFunctions[importedComponentId]
+
+            if (sourceSharedFn && sourceSharedFn.filePath && targetSharedFn && targetSharedFn.filePath) {
+              const relativePath = relative(dirname(sourceSharedFn.filePath), targetSharedFn.filePath)
+              const parsed = parse(relativePath)
+
+              parsed.ext = '.js'
+              parsed.base = parsed.name + parsed.ext
+
+              let finalPath = format(parsed)
+
+              if (!finalPath.startsWith('.') && !finalPath.startsWith('/')) {
+                finalPath = `./${finalPath}`
+              }
+
+              // Normalize Windows backslashes to forward slashes for ES module imports
+              targetPath = finalPath.replace(/\\/g, '/')
+            }
 
             return {
-              path: `./${componentId}.js`,
+              path: targetPath,
               external: true
             }
           })
