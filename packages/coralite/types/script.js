@@ -32,6 +32,7 @@
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {ShadowRoot} [root] - Shadow Root for standalone web components
+ * @property {Object.<string, any>} [helpers] - Plugin helpers available to the script
  */
 
 /**

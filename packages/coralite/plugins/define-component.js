@@ -90,8 +90,8 @@ export const defineComponent = createPlugin({
    *   Computed slots for the component. These are functions that define
    *   how content should be rendered within the component.
    * @param {Object} [options.client] - Client side configuration.
-   * @param {CoraliteModuleSetup} [options.client.setup] - Setup function
-   * @param {CoraliteModuleScript} [options.client.script] - Script that will be added below the element.
+   * @param {CoraliteModuleSetup} [options.client.setup] - Setup function executed during server-side rendering
+   * @param {CoraliteModuleScript} [options.client.script] - Script function that executes on the client-side
    * @param {Object[]} [options.client.imports] - Component imports to bundle.
    * @returns {Promise<CoraliteModuleValues>} A promise resolving to the module values
    *   associated with this component.

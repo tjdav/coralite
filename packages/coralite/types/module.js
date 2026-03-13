@@ -3,7 +3,7 @@
  * @import { CoraliteElement, CoraliteAnyNode, CoraliteDirective } from './dom.js'
  * @import { CoraliteFilePath, CoraliteValues } from './core.js'
  * @import { CoraliteDocumentValues, CoraliteRef } from './document.js'
- * @import { ScriptContent } from './script.js'
+ * @import { ScriptContent, CoraliteScriptContent } from './script.js'
  */
 
 /**
@@ -42,8 +42,7 @@
 
 /**
  * @callback CoraliteModuleScript
- * @param {CoraliteValues} values - The module's current values
- * @param {CoraliteRef} refs - References template elements
+ * @param {CoraliteScriptContent} context - The module's script context
  */
 
 /**
