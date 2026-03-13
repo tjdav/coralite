@@ -420,7 +420,7 @@
               displayPrice: ({ $price, discount }) => {
                 const price = parseFloat($price)
                 const discountPercent = parseFloat(discount) || 0
-                const finalPrice = price * (1 - discountPercent / 100)
+                const finalPrice = price * (1 - (discountPercent / 100))
                 return `$${finalPrice.toFixed(2)}`
               },
 

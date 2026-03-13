@@ -12,10 +12,10 @@
 
   function getNativeLanguageName (langCode) {
     const displayNames = new Intl.DisplayNames([langCode], { type: 'language' })
-  const displayName = displayNames.of(langCode)
+    const displayName = displayNames.of(langCode)
 
     return displayName[0].toUpperCase() + displayName.slice(1)
-}
+  }
 
   function normalizePath (pathname, languages) {
     for (const lang of languages) {
@@ -24,14 +24,14 @@
       }
     }
     return pathname
-}
+  }
 
   const flags = {
     en: '🇬🇧',
     fr: '🇫🇷',
     de: '🇩🇪',
     es: '🇪🇸'
-}
+  }
 
   export default defineComponent({
     tokens: {
@@ -68,7 +68,7 @@
           return `<li><a href="${href}" hreflang="${code}">${getNativeLanguageName(code)}</a></li>`
         }).join('')
       }
-  },
+    },
     client: {
       imports: [
         {
