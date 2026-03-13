@@ -39,6 +39,9 @@ if (!config) {
 }
 
 if (mode === 'dev') {
+  config.output = join(process.cwd(), '.coralite')
+  await mkdir(config.output, { recursive: true })
+
   await server(config, options)
 } else if (mode === 'build') {
   const PAD = '  '
@@ -69,31 +72,58 @@ if (mode === 'dev') {
   let pageCount = 0
 
   try {
+    let componentCount = 0
+
     if (!options.verbose) {
       spinner = ora('Building pages...').start()
     }
 
     // compile website
     await coralite.build(async (result) => {
-      const relDir = relative(config.pages, result.path.dirname)
-      const outDir = join(config.output, relDir)
-      const outFile = join(outDir, result.path.filename)
+      if (result.type === 'component') {
+        const relativeDir = relative(config.components, result.path.dirname)
+        let outDir
+        if (config.standaloneOutput) {
+          outDir = join(config.output, config.standaloneOutput, relativeDir)
+        } else {
+          outDir = join(config.output, 'components', relativeDir)
+        }
+        const outFile = join(outDir, result.path.filename)
 
-      await mkdir(outDir, { recursive: true })
-      await writeFile(outFile, result.content)
+        await mkdir(outDir, { recursive: true })
+        await writeFile(outFile, result.content)
 
-      if (options.verbose) {
-        process.stdout.write(toTime() + toMS(result.duration) + dash + result.path.pathname + '\n')
+        if (options.verbose) {
+          process.stdout.write(toTime() + colours.bgCyan(' Compiled Component ') + dash + toMS(result.duration) + dash + result.path.pathname + '\n')
+        } else {
+          componentCount++
+        }
+
+        return outFile
       } else {
-        pageCount++
-        spinner.text = `Building pages... (${pageCount} completed)`
-      }
+        const relativeDir = relative(config.pages, result.path.dirname)
+        const outDir = join(config.output, relativeDir)
+        const outFile = join(outDir, result.path.filename)
 
-      return outFile
+        await mkdir(outDir, { recursive: true })
+        await writeFile(outFile, result.content)
+
+        if (options.verbose) {
+          process.stdout.write(toTime() + toMS(result.duration) + dash + result.path.pathname + '\n')
+        } else {
+          pageCount++
+          spinner.text = `Building pages... (${pageCount} completed)`
+        }
+
+        return outFile
+      }
     })
 
     if (!options.verbose) {
       spinner.succeed(`Pages built (${pageCount} completed)`)
+      if (componentCount > 0) {
+        ora(`Components built (${componentCount} completed)`).succeed()
+      }
     }
 
     const publicDir = config.public

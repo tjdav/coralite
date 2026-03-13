@@ -5,7 +5,7 @@ import chokidar from 'chokidar'
 import buildSass from './build-sass.js'
 import { displayError, displayInfo, displaySuccess, toCode, toMS, toTime } from './build-utils.js'
 import { extname, join, normalize, relative, sep } from 'path'
-import { readFile, access, constants } from 'fs/promises'
+import { access, constants, mkdir, writeFile } from 'fs/promises'
 import Coralite from 'coralite'
 import buildCSS from './build-css.js'
 import { existsSync, mkdirSync } from 'fs'
@@ -85,6 +85,11 @@ async function server (config, options) {
 
       next()
     })
+
+    // serve compiled components directory
+    app.use(express.static(config.output, {
+      cacheControl: false
+    }))
 
     // check if Sass is configured and add its input directory to watchPath for file changes.
     if (config.styles) {
@@ -258,7 +263,26 @@ async function server (config, options) {
 
           await coralite.pages.setItem(pathname)
           // build the HTML for this page using the built-in compiler.
-          const documents = await coralite.build(pathname, (result) => {
+          const documents = await coralite.build(pathname, async (result) => {
+            if (result.type === 'component') {
+              const relativeDir = relative(config.components, result.path.dirname)
+              let outDir
+              if (config.standaloneOutput) {
+                outDir = join(config.output, config.standaloneOutput, relativeDir)
+              } else {
+                outDir = join(config.output, 'components', relativeDir)
+              }
+              const outFile = join(outDir, result.path.filename)
+
+              await mkdir(outDir, { recursive: true })
+              await writeFile(outFile, result.content)
+
+              if (options.verbose) {
+                process.stdout.write(toTime() + colours.bgCyan(' Compiled Component ') + colours.gray(' ─ ') + toMS(result.duration) + colours.gray(' ─ ') + result.path.pathname + '\n')
+              }
+              return null
+            }
+
             // inject a script to enable live reload via Server-Sent Events
             const injectedHtml = result.content.replace(/<\/body>/i, rebuildScript)
 
@@ -288,6 +312,7 @@ async function server (config, options) {
 
           // find the document that matches the request path
           const doc = documents.find(doc => {
+            if (!doc) return false
             const relPath = relative(config.pages, doc.path.pathname)
             const normalizedKey = relPath.split(sep).join('/')
             return normalizedKey === cacheKey
