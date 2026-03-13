@@ -13,6 +13,11 @@ jspm_packages
 .eslintcache
 .pnpm-store/
 
+
+# Coralite development artifacts
+website/.coralite/components
+website/.coralite/css
+
 # Generated dirs
 dist
 .output
