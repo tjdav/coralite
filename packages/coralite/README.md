@@ -56,7 +56,7 @@ Replace `[options]` with the desired flags and arguments.
 
 To generate a website using Coralite, you must provide three essential options:
 
-- **-t or --components**: The path to your templates directory containing reusable UI elements (e.g., `-t src/components`).
+- **-t or --components**: The path to your components directory containing reusable UI elements (e.g., `-t src/components`).
 - **-p or --pages**: The path to your pages directory where static HTML files reside (e.g., `-p src/pages`).
 - **--output or -o**: The output directory for the generated site (e.g., `--output dist`).
 
