@@ -15,8 +15,10 @@ jobs:
       
       - name: Prepend warning to README
         run: |
-          # Search for README.md in root and inside packages/
           MODIFIED=false
+          
+          # Search for README.md in root and inside packages/
+          # Note: This is case-sensitive. It strictly looks for "README.md"
           for file in README.md packages/*/README.md; do
             if [ -f "$file" ]; then
               # Check if the warning already exists to prevent duplication
@@ -25,6 +27,8 @@ jobs:
                 echo "" >> temp_readme.md
                 cat "$file" >> temp_readme.md
                 mv temp_readme.md "$file"
+                
+                git add "$file"
                 MODIFIED=true
               fi
             fi
@@ -33,6 +37,6 @@ jobs:
           if [ "$MODIFIED" = true ]; then
             git config --global user.name "github-actions[bot]"
             git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git commit -am "docs: prepend mirror warning"
+            git commit -m "docs: prepend mirror warning to READMEs"
             git push
           fi
