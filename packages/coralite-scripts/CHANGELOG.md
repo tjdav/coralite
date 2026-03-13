@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.28.1
+
+> Comparing `coralite-scripts-v0.28.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- save standalone components to disk during build and dev (coralite-scripts) ([5067fb5](https://codeberg.org/tjdavid/coralite/commit/5067fb5a8713627462b8d7899328cd0200d6b495))
+
+
 ## v0.27.0
 
 > Comparing `coralite-scripts-v0.26.0` to `HEAD`
