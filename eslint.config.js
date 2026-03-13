@@ -112,7 +112,8 @@ export default [
     ignores: [
       '**/dist/',
       '**/.history/',
-      '**/playwright-report/'
+      '**/playwright-report/',
+      '**/.coralite'
     ]
   }
 ]
