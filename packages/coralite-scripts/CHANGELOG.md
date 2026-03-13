@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.28.2
+
+> Comparing `coralite-scripts-v0.28.1` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- clean up dev server build artifacts ([76950ff](https://codeberg.org/tjdavid/coralite/commit/76950ff38da65431346e66206e0eaa857cdd4cf2))
+
+### 📚 Documentation
+
+- remove read-only mirror note from coralite-scripts README ([6c7b868](https://codeberg.org/tjdavid/coralite/commit/6c7b868dfe2b0b18c0d332b87d6e2503c26ee6c5))
+
+
 ## v0.28.1
 
 > Comparing `coralite-scripts-v0.28.0` to `HEAD`
