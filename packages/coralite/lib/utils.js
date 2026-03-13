@@ -334,6 +334,22 @@ export function findAndExtractScript (code) {
         const firstArg = node.arguments[0]
 
         if (firstArg && firstArg.type === 'ObjectExpression') {
+          const tokensProp = firstArg.properties.find(
+            prop => prop.type === 'Property' &&
+              prop.key.type === 'Identifier' &&
+              prop.key.name === 'tokens'
+          )
+
+          let tokens = []
+          if (tokensProp && tokensProp.type === 'Property' && tokensProp.value.type === 'ObjectExpression') {
+            tokens = tokensProp.value.properties.map(p => {
+              if (p.type === 'Property') {
+                return p.key.type === 'Identifier' ? p.key.name : (p.key.type === 'Literal' ? p.key.value : undefined)
+              }
+              return undefined
+            }).filter(Boolean)
+          }
+
           const clientProp = firstArg.properties.find(
             prop => prop.type === 'Property' &&
               prop.key.type === 'Identifier' &&
@@ -472,6 +488,17 @@ export function findAndExtractScript (code) {
               if (setupContent) {
                 result.setupContent = setupContent
               }
+            }
+
+            if (result && tokens.length > 0) {
+              result.tokens = tokens
+            }
+          } else if (tokens.length > 0) {
+            // Handle case where tokens exist but client does not
+            result = {
+              content: 'export default function(){}',
+              lineOffset: 0,
+              tokens
             }
           }
         }

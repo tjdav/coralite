@@ -12,6 +12,7 @@
  * @property {Object.<string, CoraliteModuleValue>} [values]
  * @property {number} [lineOffset] - Script offset number.
  * @property {ScriptImport[]} [imports] - Script imports.
+ * @property {string[]} [tokens] - Extracted reactivity tokens.
  */
 
 /**

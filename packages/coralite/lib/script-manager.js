@@ -163,13 +163,15 @@ ScriptManager.prototype.compileStandaloneComponent = async function (componentId
       if (parts.length > 0) {
         const importStr = parts.join(', ')
         entryCodeParts.push(`import ${importStr} from ${specifier}${attributesString};\n`)
+      } else if (!importDefinition.namespaceExport) {
+        entryCodeParts.push(`import ${specifier}${attributesString};\n`)
       }
     }
   }
 
   // Generate imports object for context injection
   const importsObjContent = Object.keys(importMap).length > 0
-    ? `const componentImports = { ${Object.entries(importMap).map(([key, value]) => `${key}: ${value}`).join(', ')} };`
+    ? `const componentImports = { ${Object.entries(importMap).map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
     : 'const componentImports = {};'
 
   entryCodeParts.push(importsObjContent + '\n')
@@ -275,13 +277,68 @@ function cleanKeys(object) {
   // Web Component Class Definition
   entryCodeParts.push(`
 class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
+  static get observedAttributes() {
+    return ${JSON.stringify(scriptContent?.tokens || [])};
+  }
+
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    this._initialized = false;
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue !== newValue) {
+      if (this._context && this._context.values) {
+        this._context.values[name] = newValue;
+      }
+      this.updateDOM(name, newValue);
+    }
+  }
+
+  updateDOM(name, newValue) {
+    if (!this.shadowRoot) return;
+    
+    // Find text nodes that contain the token mapping
+    const walker = document.createTreeWalker(this.shadowRoot, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    const tokenStr = \`{{ \${name} }}\`;
+    
+    while ((node = walker.nextNode())) {
+      // Check if original data or textContent contains the token map
+      if (node._coraliteTokens && node._coraliteTokens.includes(name)) {
+        // We know this text node holds the value, let's re-render its text based on current context
+        let newText = node._coraliteOriginalText;
+        for (const token of node._coraliteTokens) {
+           newText = newText.split(\`{{ \${token} }}\`).join(this._context.values[token] !== undefined ? this._context.values[token] : '');
+        }
+        node.nodeValue = newText;
+        node.nodeValue = newText;
+      }
+    }
+    
+    // Also update attributes that might have bindings
+    const elements = this.shadowRoot.querySelectorAll('*');
+    for (const el of elements) {
+      if (el._coraliteAttrs) {
+        for (const [attrName, originalValue] of Object.entries(el._coraliteAttrs)) {
+          if (originalValue.includes(tokenStr)) {
+            let newAttrValue = originalValue;
+            // replace all tokens in this attribute
+            const tokenMatches = originalValue.match(/\\{\\{([^}]+)\\}\\}/g) || [];
+            for (const match of tokenMatches) {
+               const tokenKey = match.replace(/\\{|\\}/g, '').trim();
+               newAttrValue = newAttrValue.split(match).join(this._context.values[tokenKey] !== undefined ? this._context.values[tokenKey] : '');
+            }
+            el.setAttribute(attrName, newAttrValue);
+          }
+        }
+      }
+    }
   }
 
   async connectedCallback() {
-    // 1. Map DOM Attributes to values
+    // Map DOM Attributes to values
     const domAttributes = {};
     for (let i = 0; i < this.attributes.length; i++) {
       const attribute = this.attributes[i];
@@ -289,17 +346,18 @@ class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
     }
     const initialValues = cleanKeys(domAttributes);
 
-    // 2. Hydrate Refs
+    // Hydrate Refs
     const refs = {};
 
-    // 3. Setup context
-    const context = {
+    // Setup context
+    this._context = {
       instanceId: this.id || Math.random().toString(36).substr(2, 9),
       componentId: "${componentId}",
       values: initialValues,
       root: this.shadowRoot,
       imports: componentImports // Standalone imports are bundled within the component
     };
+    const context = this._context;
 
     const setupValues = await getSetups(context);
     context.values = { ...context.values, ...setupValues };
@@ -308,17 +366,50 @@ class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
     let htmlPayload = \`${htmlPayload.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
     const cssPayload = \`${cssPayload.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
     
-    // Replace text tokens in the payload (rudimentary support for standalone components without the full AST engine)
-    for (const [key, value] of Object.entries(context.values)) {
-      const token = \`{{ \${key} }}\`;
-      htmlPayload = htmlPayload.split(token).join(value);
-    }
-    
     let styles = '';
     if (cssPayload) {
       styles = \`<style>\${cssPayload}</style>\`;
     }
+    
+    // Set raw HTML first before token replacement to preserve slots structure
     this.shadowRoot.innerHTML = styles + htmlPayload;
+
+    // Extract tokens mapped to DOM nodes for reactivity
+    const walker = document.createTreeWalker(this.shadowRoot, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while ((node = walker.nextNode())) {
+      const text = node.textContent || '';
+      const tokens = (text.match(/\\{\\{([^}]+)\\}\\}/g) || []).map(t => t.replace(/\\{|\\}/g, '').trim());
+      
+      if (tokens.length > 0) {
+        node._coraliteTokens = tokens;
+        node._coraliteOriginalText = text;
+        
+        let newText = text;
+        for (const token of tokens) {
+          newText = newText.split(\`{{ \${token} }}\`).join(context.values[token] !== undefined ? context.values[token] : '');
+        }
+        node.nodeValue = newText;
+      }
+    }
+    
+    // Attribute reactivity
+    const allElements = this.shadowRoot.querySelectorAll('*');
+    for (const el of allElements) {
+      for (const attr of el.attributes) {
+         if (attr.value.includes('{{')) {
+             if (!el._coraliteAttrs) el._coraliteAttrs = {};
+             el._coraliteAttrs[attr.name] = attr.value;
+             
+             let newAttrValue = attr.value;
+             const tokens = (attr.value.match(/\\{\\{([^}]+)\\}\\}/g) || []).map(t => t.replace(/\\{|\\}/g, '').trim());
+             for (const token of tokens) {
+               newAttrValue = newAttrValue.split(\`{{ \${token} }}\`).join(context.values[token] !== undefined ? context.values[token] : '');
+             }
+             el.setAttribute(attr.name, newAttrValue);
+         }
+      }
+    }
 
     // Post-render ref extraction
     const refElements = this.shadowRoot.querySelectorAll('[ref]');
@@ -335,6 +426,10 @@ class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
 
     // 4. Execute User Script
     if (typeof userComponentFn === 'function') {
+      if (this._initialized) {
+        return;
+      }
+      this._initialized = true;
       await userComponentFn.call(this, context);
     }
   }
@@ -366,6 +461,15 @@ customElements.define("${componentId}", ${componentId.replace(/[-.:]/g, '_')});
               path: args.path,
               namespace: 'coralite-script-module',
               pluginData: { index }
+            }
+          })
+
+          pluginBuild.onResolve({ filter: /^coralite-component\// }, args => {
+            const componentId = args.path.replace('coralite-component/', '')
+
+            return {
+              path: `./${componentId}.js`,
+              external: true
             }
           })
 
@@ -418,7 +522,7 @@ customElements.define("${componentId}", ${componentId.replace(/[-.:]/g, '_')});
             }
 
             const importsObjContent = Object.keys(importMap).length > 0
-              ? `const pluginImports = { ${Object.entries(importMap).map(([key, value]) => `${key}: ${value}`).join(', ')} };`
+              ? `const pluginImports = { ${Object.entries(importMap).map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
               : 'const pluginImports = {};'
 
             contents += importsObjContent + '\n'
@@ -688,7 +792,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
             }
 
             const importsObjContent = Object.keys(importMap).length > 0
-              ? `const componentImports = { ${Object.entries(importMap).map(([key, value]) => `${key}: ${value}`).join(', ')} };`
+              ? `const componentImports = { ${Object.entries(importMap).map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
               : 'const componentImports = {};'
 
             contents += importsObjContent + '\n'
@@ -754,7 +858,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
             // Generate imports object for context injection
             const importsObjContent = Object.keys(importMap).length > 0
-              ? `const pluginImports = { ${Object.entries(importMap).map(([key, value]) => `${key}: ${value}`).join(', ')} };`
+              ? `const pluginImports = { ${Object.entries(importMap).map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
               : 'const pluginImports = {};'
 
             contents += importsObjContent + '\n'
