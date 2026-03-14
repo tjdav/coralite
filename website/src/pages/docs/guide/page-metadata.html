@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite Page Metadata: Automatic SEO Extraction"
+    description="Learn how the built-in metadata plugin extracts data from your HTML head and makes it globally available across all Coralite components."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Core Concepts: Page Metadata</h1>
+
+    <p>In a standard HTML page, the <code>&lt;head&gt;</code> element contains metadata crucial for SEO, social sharing, and page structure. Coralite provides a built-in <strong>metadata plugin</strong> that automatically extracts this information and makes it available globally to all your components during the build process.</p>
+
+    <coralite-heading level="h2" text="How It Works"></coralite-heading>
+
+    <p>During the <code>onPageSet</code> lifecycle hook, the metadata plugin scans the <code>&lt;head&gt;</code> of your page (e.g., <code>src/pages/index.html</code>) for standard <code>&lt;meta&gt;</code> and <code>&lt;title&gt;</code> tags.</p>
+
+    <p>It extracts the data and stores it globally with a specific prefix format, making it accessible as tokens inside your components.</p>
+
+    <coralite-heading level="h2" text="Prefixes and Structure"></coralite-heading>
+
+    <ul>
+      <li><strong>Meta Tags:</strong> Tags formatted as <code>&lt;meta name="X" content="Y"&gt;</code> are stored as <code>meta_X</code>. For example, <code>&lt;meta name="author" content="Coralite Team"&gt;</code> becomes accessible via the token <code>{{ meta_author }}</code>.</li>
+      <li><strong>Title Tag:</strong> The text content of the <code>&lt;title&gt;</code> tag is stored specifically as <code>meta_pageTitle</code>.</li>
+      <li><strong>Language:</strong> The <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag is extracted and stored as <code>$lang</code>.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Example Usage"></coralite-heading>
+
+    <p>Let's define a page with metadata:</p>
+
+    <coralite-code-html>
+      <!-- src/pages/blog-post.html -->
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <title>Understanding Coralite Metadata</title>
+        <meta name="author" content="Jane Doe">
+        <meta name="publishDate" content="2023-10-27">
+        <meta name="category" content="Framework Guide">
+      </head>
+      <body>
+        <!-- We use a custom component here -->
+        <post-header></post-header>
+      </body>
+      </html>
+    </coralite-code-html>
+
+    <p>Now, any component used on that page can access the metadata via tokens without needing the data passed manually as attributes!</p>
+
+    <coralite-code-html>
+      <!-- src/components/post-header.html -->
+      <template id="post-header">
+        <header class="blog-header">
+          <!-- Accessing the title -->
+          <h1>{{ meta_pageTitle }}</h1>
+          
+          <div class="meta-info">
+            <!-- Accessing the custom meta tags -->
+            <span>Written by: {{ meta_author }}</span>
+            <span>Published: {{ meta_publishDate }}</span>
+            <span class="badge">{{ meta_category }}</span>
+            <span>Language: {{ $lang }}</span>
+          </div>
+        </header>
+      </template>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Dynamic Components in <head>"></coralite-heading>
+
+    <p>The metadata plugin is smart enough to handle nested components. It recursively processes custom components placed inside the <code>&lt;head&gt;</code> tag.</p>
+
+    <p>This means you can create reusable metadata components, like an <code>&lt;seo-bundle&gt;</code>, that inject standard tags across your site. The plugin will render the component and extract any <code>&lt;meta&gt;</code> tags it generates into the global context.</p>
+
+    <coralite-code-html>
+      <!-- src/components/seo-bundle.html -->
+      <template id="seo-bundle">
+        <meta name="generator" content="Coralite">
+        <meta name="robots" content="index, follow">
+        <meta name="theme-color" content="#3498db">
+      </template>
+    </coralite-code-html>
+
+    <p>Usage in a page:</p>
+
+    <coralite-code-html>
+      <!-- src/pages/index.html -->
+      <head>
+        <seo-bundle></seo-bundle>
+      </head>
+    </coralite-code-html>
+
+    <p>The resulting global context will include <code>meta_generator</code>, <code>meta_robots</code>, and <code>meta_theme-color</code>.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

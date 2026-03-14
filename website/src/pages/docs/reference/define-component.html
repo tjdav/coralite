@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="defineComponent API Reference - Coralite Documentation"
+    description="Strict API signatures, arguments, and return types for the defineComponent core plugin."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <h1>defineComponent API Reference</h1>
+
+    <p>This document details the exact API signatures, options, and types for Coralite's core <code>defineComponent</code> plugin.</p>
+
+    <p><em>For a conceptual guide on how to use dynamic components, see the <a href="/docs/guide/dynamic-components.html">Dynamic Components Guide</a>.</em></p>
+
+    <coralite-heading level="h2" text="Signature"></coralite-heading>
+
+    <coralite-code-highlight language="typescript">
+function defineComponent(options: DefineComponentOptions): PluginDefinition
+    </coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Options Object (DefineComponentOptions)"></coralite-heading>
+
+    <p>The <code>defineComponent</code> function accepts a single configuration object with the following optional properties:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Property</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>tokens</code></td>
+        <td><code>Record&lt;string, string | TokenFunction&gt;</code></td>
+        <td>An object defining computed or static values available for template interpolation.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>slots</code></td>
+        <td><code>Record&lt;string, SlotFunction&gt;</code></td>
+        <td>An object defining server-side processing functions for component slots.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>client</code></td>
+        <td><code>ClientOptions</code></td>
+        <td>An object defining server-side setup and client-side scripts.</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="h2" text="Type Definitions"></coralite-heading>
+
+    <coralite-heading level="h3" text="TokenFunction"></coralite-heading>
+
+    <coralite-code-highlight language="typescript">
+type TokenFunction = (values: Record&lt;string, any&gt;) => string
+    </coralite-code-highlight>
+
+    <p>A function that evaluates data at build time. It receives a <code>values</code> object containing element attributes and page metadata (prefixed with <code>meta_</code> and <code>$</code>).</p>
+
+    <coralite-heading level="h3" text="SlotFunction"></coralite-heading>
+
+    <coralite-code-highlight language="typescript">
+type SlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&lt;string, any&gt;) => ParsedHTMLNode[]
+    </coralite-code-highlight>
+
+    <p>A function that processes slot content. It receives an array of parsed HTML nodes and the current token values, and must return an array of parsed HTML nodes.</p>
+
+    <coralite-heading level="h3" text="ClientOptions"></coralite-heading>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Property</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>setup</code></td>
+        <td><code>(values: Record&lt;string, any&gt;) => Promise&lt;Record&lt;string, any&gt;&gt;</code></td>
+        <td>An asynchronous server-side function. Its returned object is merged into the component's <code>values</code>.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>script</code></td>
+        <td><code>(context: CoraliteScriptContent) => void</code></td>
+        <td>The client-side function executed in the browser post-load.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>imports</code></td>
+        <td><code>Array&lt;ImportDefinition&gt;</code></td>
+        <td>An array defining component-level external dependencies to be bundled.</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="h3" text="CoraliteScriptContent Context Object"></coralite-heading>
+
+    <p>The context object passed to the <code>client.script</code> function:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Property</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>id</code></td>
+        <td><code>string</code></td>
+        <td>A unique identifier for the specific component instance.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>componentId</code></td>
+        <td><code>string</code> (optional)</td>
+        <td>The generic component identifier.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>document</code></td>
+        <td><code>object</code></td>
+        <td>The Coralite document interface (or a mocked interface with <code>getElementById</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>values</code></td>
+        <td><code>Record&lt;string, any&gt;</code></td>
+        <td>The processed token values, props, and setup data.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>refs</code></td>
+        <td><code>Record&lt;string, string&gt;</code></td>
+        <td>A map of instance reference IDs.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>root</code></td>
+        <td><code>ShadowRoot</code> (optional)</td>
+        <td>The Shadow Root boundary (if compiled as a standalone Web Component).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>helpers</code></td>
+        <td><code>object</code></td>
+        <td>Client-side utilities provided by plugins (e.g., <code>helpers.refs</code> and <code>helpers.imports</code>).</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="h3" text="ImportDefinition"></coralite-heading>
+
+    <p>Objects in the <code>client.imports</code> array:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Property</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>specifier</code></td>
+        <td><code>string</code> (Required)</td>
+        <td>The path or URL of the module.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>defaultExport</code></td>
+        <td><code>string</code></td>
+        <td>The name to assign to the default export.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>namedExports</code></td>
+        <td><code>string[]</code></td>
+        <td>List of named exports to import. Supports <code>"original as alias"</code> syntax.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>namespaceExport</code></td>
+        <td><code>string</code></td>
+        <td>Import the entire module as a namespace (<code>import * as Name</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>attributes</code></td>
+        <td><code>object</code></td>
+        <td>Import attributes (e.g., <code>{ type: 'json' }</code>).</td>
+      </tr>
+    </coralite-table>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

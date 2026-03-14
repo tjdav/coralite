@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite Managing the DOM: The Refs Plugin"
+    description="Learn how to safely and efficiently access the DOM in Coralite using the built-in refs plugin, bypassing manual querySelectors."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Core Concepts: Managing the DOM</h1>
+
+    <p>When writing JavaScript for the browser, you usually need to interact with HTML elements on the page. In traditional web development, you might use <code>document.querySelector('.my-class')</code> or <code>document.getElementById('my-id')</code>.</p>
+
+    <p>In Coralite, direct DOM querying is typically replaced by the built-in <strong>refs plugin</strong>. This plugin provides a safe, runtime DOM element targeting system specifically designed for component encapsulation.</p>
+
+    <coralite-heading level="h2" text="Why Use Refs Instead of querySelector?"></coralite-heading>
+
+    <ul>
+      <li><strong>Encapsulation:</strong> When you use <code>document.querySelector</code>, you risk selecting an element outside your component, or selecting an element from a <em>different instance</em> of the same component on the page.</li>
+      <li><strong>Shadow DOM Compatibility:</strong> If you eventually compile your Coralite component into a standalone Web Component, the DOM is encapsulated in a ShadowRoot. <code>document.querySelector</code> won't work across the shadow boundary. The refs plugin automatically handles this scoping for you!</li>
+      <li><strong>Performance:</strong> The refs plugin caches DOM lookups, so subsequent calls to retrieve the same element are instant.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="How to Use Refs"></coralite-heading>
+
+    <p>Using the refs plugin is a simple two-step process: defining the reference in your HTML template, and accessing it in your client-side script.</p>
+
+    <coralite-heading level="h3" text="1. Template Setup"></coralite-heading>
+
+    <p>Add a <code>ref="yourName"</code> attribute to any HTML element inside your component's <code>&lt;template&gt;</code>.</p>
+
+    <p>During the server-side build, Coralite intercepts this attribute, generates a unique, component-instance-specific ID for the element, and maps it behind the scenes.</p>
+
+    <coralite-code-html>
+      <template id="my-form">
+        <form>
+          <!-- Assign a ref name to the input -->
+          <input type="text" ref="usernameInput" placeholder="Enter username">
+          <!-- Assign a ref name to the button -->
+          <button type="submit" ref="submitBtn">Submit</button>
+        </form>
+      </template>
+    </coralite-code-html>
+
+    <coralite-heading level="h3" text="2. Script Usage"></coralite-heading>
+
+    <p>Inside your <code>defineComponent</code>'s <code>client.script</code>, the refs plugin provides a helper function: <code>helpers.refs('yourName')</code>.</p>
+
+    <p>Call this function with the name you defined in the template to retrieve the actual DOM element.</p>
+
+    <coralite-code-html>
+      <script type="module">
+        import { defineComponent } from 'coralite';
+
+        export default defineComponent({
+          client: {
+            script: (context) => {
+              // Extract the refs helper from the context
+              const { helpers } = context;
+              const refs = helpers.refs;
+              
+              // Safe DOM element retrieval
+              const input = refs('usernameInput');
+              const button = refs('submitBtn');
+
+              // Now use standard DOM APIs
+              button.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log(`Submitted username: ${input.value}`);
+              });
+            }
+          }
+        });
+      </script>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Under the Hood: Scoping & Safety"></coralite-heading>
+
+    <p>The refs plugin is highly context-aware. Depending on how your component is compiled, it behaves differently to ensure maximum safety:</p>
+
+    <ol>
+      <li><strong>Shadow DOM Scoping:</strong> If your component is compiled as a standalone Web Component, the <code>context</code> object receives a <code>root</code> property (the ShadowRoot). The refs plugin detects this and <em>automatically restricts all element lookups to that specific Shadow DOM boundary</em>. Complete encapsulation is guaranteed.</li>
+      <li><strong>Global Fallback:</strong> For standard Server-Side Rendered (SSR) components, the plugin safely scopes the lookup to the instance ID generated during the build.</li>
+      <li><strong>Caching:</strong> The first time you call <code>refs('myEl')</code>, it performs the DOM query. If found, the DOM node is cached locally in the plugin. The next time you call <code>refs('myEl')</code>, it returns immediately without querying the DOM again.</li>
+      <li><strong>Null Safety:</strong> If the element isn't found (perhaps conditionally rendered out), the helper safely returns <code>null</code> without throwing an error.</li>
+    </ol>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

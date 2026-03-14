@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite Dynamic Components: Advanced Logic & Interactivity"
+    description="Master defineComponent in Coralite. Learn how to add server-side logic, computed tokens, custom slots, and client-side interactivity to your web components."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Core Concepts: Dynamic Components</h1>
+
+    <p>While <a href="./static-components.html">Static Components</a> are great for simple layouts, modern web development often requires more power. When your component needs data processing, dynamic attribute binding, custom slot processing, or client-side interactivity, you must create a <strong>Dynamic Component</strong>.</p>
+
+    <p>Dynamic components are powered by Coralite's core built-in plugin: <code>defineComponent</code>.</p>
+
+    <coralite-heading level="h2" text="Upgrading a Component"></coralite-heading>
+
+    <p>To turn a static component into a dynamic one, you simply append a <code>&lt;script type="module"&gt;</code> tag below your <code>&lt;template&gt;</code> and export <code>defineComponent</code>.</p>
+
+    <coralite-code-html>
+      <template id="my-dynamic-component">
+        <div>...</div>
+      </template>
+
+      <!-- The addition of this script block makes it dynamic -->
+      <script type="module">
+        import { defineComponent } from 'coralite';
+
+        export default defineComponent({
+          // Configuration goes here
+        });
+      </script>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Tokens: Build-time Evaluation"></coralite-heading>
+
+    <p>In a static component, <code>{{ data }}</code> simply maps to an HTML attribute. In a dynamic component, you can define <strong>Tokens</strong>. Tokens evaluate data at build time (during server-side rendering).</p>
+
+    <p>Tokens can be static strings or computed functions. Computed functions receive a <code>values</code> object, which contains all the attributes passed to the component, plus page metadata.</p>
+
+    <coralite-code-html>
+      <template id="greeting-card">
+        <div class="card">
+          <h2>{{ formattedGreeting }}</h2>
+          <p>Status: {{ status }}</p>
+        </div>
+      </template>
+
+      <script type="module">
+        import { defineComponent } from 'coralite';
+
+        export default defineComponent({
+          tokens: {
+            // Static string token
+            status: 'Active',
+            
+            // Computed function token receiving 'name' attribute
+            formattedGreeting: ({ name }) => {
+              const cleanName = name ? name.trim().toUpperCase() : 'GUEST';
+              return `Welcome, ${cleanName}!`;
+            }
+          }
+        });
+      </script>
+    </coralite-code-html>
+
+    <p>When used as <code>&lt;greeting-card name=" alice "&gt;&lt;/greeting-card&gt;</code>, the output will be "Welcome, ALICE!".</p>
+
+    <coralite-heading level="h2" text="Slots: Server-Side Processing"></coralite-heading>
+
+    <p>While static components use the standard <code>&lt;slot&gt;</code> tag blindly, <code>defineComponent</code> allows you to intercept and process slot content on the server before it's rendered.</p>
+
+    <p>Slot functions receive an array of parsed HTML nodes (<code>slotNodes</code>) and the current <code>values</code>. You can mutate tags, replace them, or map over them conditionally.</p>
+
+    <coralite-code-html>
+      <template id="smart-list">
+        <ul class="list">
+          {{ items }}
+        </ul>
+      </template>
+
+      <script type="module">
+        import { defineComponent } from 'coralite';
+
+        export default defineComponent({
+          slots: {
+            // The slot name matches the token {{ items }} in the template
+            items: (slotNodes, values) => {
+              // Transform the content passed into the slot
+              return slotNodes.map(node => {
+                // If the user passed <li> elements, automatically add a class
+                if (node.type === 'tag' && node.name === 'li') {
+                  node.attributes.class = 'list-item-styled';
+                }
+                return node;
+              });
+            }
+          }
+        });
+      </script>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Server-Side Setup"></coralite-heading>
+
+    <p>If your component needs to fetch data from an API or read files before rendering, use the <code>client.setup</code> function. It effectively replaces Top-Level Await (TLA) in component modules.</p>
+
+    <p>The object returned by <code>setup</code> is seamlessly merged into the component's <code>values</code> object, making that data available to tokens and client scripts.</p>
+
+    <coralite-code-html>
+      <script type="module">
+        import { defineComponent } from 'coralite';
+
+        export default defineComponent({
+          client: {
+            // This runs ON THE SERVER during the build process
+            setup: async (values) => {
+              const response = await fetch('https://api.example.com/data');
+              const data = await response.json();
+
+              // Merge this data into the component's values
+              return {
+                fetchedData: data.message
+              };
+            }
+          },
+          tokens: {
+            // Now we can use the fetched data in our template
+            apiMessage: ({ fetchedData }) => fetchedData
+          }
+        });
+      </script>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Client-Side Interactivity (The Browser Script)"></coralite-heading>
+
+    <p>The <code>client.script</code> function is what makes Coralite components interactive. This function is serialized and bundled to run <strong>in the user's browser</strong> after the page loads.</p>
+
+    <p>The script receives a context object (<code>CoraliteScriptContent</code>) containing things like <code>id</code>, <code>values</code>, and <code>helpers</code>.</p>
+
+    <coralite-code-html>
+      <template id="toggle-box">
+        <div ref="box" class="box closed">
+          {{ content }}
+        </div>
+        <button type="button" ref="toggleBtn">Toggle</button>
+      </template>
+
+      <script type="module">
+        import { defineComponent } from 'coralite';
+
+        export default defineComponent({
+          client: {
+            // This runs IN THE BROWSER
+            script: (context) => {
+              // Extract the refs helper
+              const { helpers } = context;
+              const refs = helpers.refs;
+              
+              // Get DOM elements safely
+              const box = refs('box');
+              const btn = refs('toggleBtn');
+
+              btn.addEventListener('click', () => {
+                box.classList.toggle('closed');
+                box.classList.toggle('open');
+              });
+            }
+          }
+        });
+      </script>
+    </coralite-code-html>
+
+    <p>Notice the use of <code>ref="box"</code> and <code>helpers.refs('box')</code>? This is Coralite's safe way to query the DOM. Learn more in the <a href="./dom-refs.html">Managing the DOM (Refs)</a> guide.</p>
+
+    <hr>
+    
+    <p>For strict API type definitions, arguments, and return types, see the <a href="/docs/reference/define-component.html">defineComponent API Reference</a>.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

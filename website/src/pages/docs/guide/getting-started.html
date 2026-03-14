@@ -1,87 +1,161 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <coralite-meta title="Coralite Getting Started Tutorials: Build Your First Static Site with HTML & JS" description="Explore beginner-friendly Coralite tutorials to create static websites using native web technologies. Learn core concepts and hands-on practices for site development."></coralite-meta>
+  <coralite-meta title="Coralite Getting Started: Build Your First Interactive Component" description="Follow this beginner-friendly tutorial to build your first Coralite component from scratch. Learn how to write static templates, add dynamic logic with defineComponent, and make it interactive."></coralite-meta>
   <link rel="stylesheet" href="/css/styles.css" inline-css>
 </head>
 <body>
   <coralite-navbar></coralite-navbar>
   <main class="container content">
-    <h1>Getting Started</h1>
+    <h1>Getting Started: Your First Component</h1>
 
-    <p>This guide will walk you through creating your first web page using Coralite, a static site generator built around HTML modules.</p>
+    <p>Welcome to Coralite! This tutorial will walk you through building your very first interactive web component using Coralite's unique HTML-first approach. We'll start with a simple static template and slowly make it dynamic.</p>
 
-    <p>
-      Coralite components represent a simpler form of web components. They allow you to create custom elements using "template" and "slot" elements,
-      but they do not use the Shadow DOM, as they're server-side rendered and there is no hydration.
-    </p>
-  
-    <coralite-heading level="h2" text="Project Structure"></coralite-heading>
+    <coralite-heading level="h2" text="1. The Setup"></coralite-heading>
 
-    <p>Create a new project directory with the following structure:</p>
+    <p>First, make sure you have a basic Coralite project structure. If you used the <code>create-coralite</code> CLI (from the <a href="./quick-start.html">Quick Start</a> guide), you're already good to go. Otherwise, create the following folders:</p>
 
     <coralite-code type="Project Structure">
     <pre>
   my-coralite-site/
   ├── src/
   │   ├── components/
-  │   │   ├── header.html
-  │   │   ├── body.html
-  │   │   └── footer.html
   │   └── pages/
-  │       └── index.html
-  └── dist/</pre>
+  └── package.json</pre>
   </coralite-code>
 
-    <coralite-heading level="h2" text="Creating Components"></coralite-heading>
+    <coralite-heading level="h2" text="2. Creating a Static Component"></coralite-heading>
 
-    <coralite-heading level="h3" text="Header component"></coralite-heading>
+    <p>In Coralite, components are just standard HTML <code>&lt;template&gt;</code> tags. Let's create a simple counter component. Create a file named <code>counter.html</code> inside your <code>src/components/</code> directory.</p>
 
-    <p>
-      Every component <code>&lt;template&gt;</code> must have an <code>"id"</code> attribute that matches its usage in pages, in this case our header component has the id of "<code>coralite-header</code>".
-      Take note in the example below the use of double curly braces <code>{{ title }}</code> will display the attribute value
-    </p>
-
-    <p>
-      Just like Web Components can pass data to components through both attribute values and slots so can Coralite components, however,
-      Coralite components use a special syntax with double curly braces to display the attribute values.
-    </p>
+    <p>Give the template an <code>id</code> attribute. This ID becomes the custom HTML tag you will use in your pages (e.g., <code>&lt;my-counter&gt;</code>).</p>
 
     <coralite-code-html>
-      <!-- my-coralite-site/src/components/header.html -->
-      <template id="coralite-header">
-        <h1>{{ title }}</h1>
+      <!-- src/components/counter.html -->
+      <template id="my-counter">
+        <div class="counter-box">
+          <h2>Count: <span>0</span></h2>
+          <button type="button">Increment</button>
+        </div>
       </template>
     </coralite-code-html>
-  
-    <coralite-heading level="h3" text="Use Header Component"></coralite-heading>
 
-    <p>In order to use the component in pages, the custom element name must match the <strong>component id.</strong></p>
+    <coralite-heading level="h2" text="3. Using the Component in a Page"></coralite-heading>
+
+    <p>Now, let's use this static component. Create an <code>index.html</code> file inside your <code>src/pages/</code> directory. You can use your component simply by writing its tag name.</p>
 
     <coralite-code-html>
-      <!-- my-coralite-site/src/pages/index.html -->
+      <!-- src/pages/index.html -->
+      <!DOCTYPE html>
       <html lang="en">
       <head>
-        <title>My coralite site</title>
+        <title>My First Coralite App</title>
       </head>
       <body>
-        <coralite-header title="My Title"></coralite-header>
+        <h1>Welcome!</h1>
+        
+        <!-- Use our new component -->
+        <my-counter></my-counter>
+
       </body>
       </html>
     </coralite-code-html>
 
-    <coralite-heading level="h3" text="Building your site"></coralite-heading>
+    <p>If you run your build command (<code>npm run build</code>), Coralite will generate an HTML page where the <code>&lt;my-counter&gt;</code> tag is replaced by the contents of your template.</p>
 
-    <p>To manually build the example, run the following command:</p>
+    <coralite-heading level="h2" text="4. Making It Dynamic with defineComponent"></coralite-heading>
 
-    <coralite-code language="bash">coralite -c src/components -p src/pages -o dist</coralite-code>
+    <p>Right now, our counter is just static HTML. Clicking the button does nothing. To add interactivity and data processing, we need to turn this into a <strong>Dynamic Component</strong>.</p>
 
-    <p>If you've followed the <a href="./installation.html#build-script">build script</a> step on the installation guide, run the build script:</p>
+    <p>To do this, we add a <code>&lt;script type="module"&gt;</code> tag below our template and export the <code>defineComponent</code> function.</p>
 
-    <coralite-code language="bash">npm run build</coralite-code>
+    <p>Let's update our <code>counter.html</code> to define an initial count value using <strong>Tokens</strong>. Tokens allow us to pass data into our component using double curly braces (<code>{{ }}</code>).</p>
+
+    <coralite-code-html>
+      <!-- src/components/counter.html -->
+      <template id="my-counter">
+        <div class="counter-box">
+          <!-- We replace the hardcoded 0 with our token -->
+          <h2>Count: <span class="count-display">{{ currentCount }}</span></h2>
+          <button type="button" class="btn">Increment</button>
+        </div>
+      </template>
+
+      <script type="module">
+        import { defineComponent } from 'coralite';
+
+        export default defineComponent({
+          tokens: {
+            // Define our initial value
+            currentCount: () => 0
+          }
+        });
+      </script>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="5. Adding Interactivity with Refs"></coralite-heading>
+
+    <p>We have data, but we still need the button to actually do something! Coralite provides a built-in <strong>refs plugin</strong> to easily target DOM elements without needing to use <code>document.querySelector</code>.</p>
+
+    <p>First, add a <code>ref</code> attribute to the elements we want to interact with in our template.</p>
+
+    <p>Second, add a <code>client.script</code> function inside <code>defineComponent</code>. This script is what runs in the user's browser.</p>
+
+    <coralite-code-html>
+      <!-- src/components/counter.html -->
+      <template id="my-counter">
+        <div class="counter-box">
+          <!-- Add ref attributes -->
+          <h2>Count: <span ref="countDisplay">{{ currentCount }}</span></h2>
+          <button type="button" ref="incrementBtn">Increment</button>
+        </div>
+      </template>
+
+      <script type="module">
+        import { defineComponent } from 'coralite';
+
+        export default defineComponent({
+          tokens: {
+            currentCount: () => 0
+          },
+          client: {
+            // The script function runs in the browser!
+            script: ({ values, helpers }) => {
+              // 1. Get our elements using the refs helper
+              const display = helpers.refs('countDisplay');
+              const btn = helpers.refs('incrementBtn');
+
+              // 2. Set up our state
+              let count = values.currentCount;
+
+              // 3. Add an event listener
+              btn.addEventListener('click', () => {
+                count++;
+                display.textContent = count;
+              });
+            }
+          }
+        });
+      </script>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Congratulations!"></coralite-heading>
+
+    <p>You have just built your first fully functional, interactive Coralite component! You learned how to:</p>
+
+    <ul>
+      <li>Create a static HTML template component.</li>
+      <li>Use the component in a page.</li>
+      <li>Turn it into a dynamic component using <code>defineComponent</code>.</li>
+      <li>Bind data using tokens (<code>{{ }}</code>).</li>
+      <li>Add interactivity using <code>client.script</code> and the <code>refs</code> plugin.</li>
+    </ul>
+
+    <hr>
+
+    <p>Ready to learn more? Dive into the Core Concepts to master <a href="./static-components.html">Static Components</a> and <a href="./dynamic-components.html">Dynamic Components</a>.</p>
     
   </main>
   <coralite-footer></coralite-footer>
-  
 </body>
 </html>

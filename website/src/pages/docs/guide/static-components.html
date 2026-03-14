@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite Static Components: Core Concepts & HTML Templating"
+    description="Learn how to build static components in Coralite. Master HTML templates, basic data binding, and reusable UI structures without complex logic."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Core Concepts: Static Components</h1>
+
+    <p>Static components are the building blocks of Coralite. They are purely HTML-based elements without complex scripting logic. If a piece of UI doesn't need to fetch data, handle user events, or compute complex values, it should be a static component.</p>
+
+    <coralite-heading level="h2" text="Component Definition"></coralite-heading>
+
+    <p>Every component in Coralite is defined inside an HTML file using the standard <code>&lt;template&gt;</code> tag. The most important part of a component is its <code>id</code> attribute. This ID becomes the custom HTML tag name you will use to include the component in your pages.</p>
+
+    <p>For example, if you create a file <code>src/components/header.html</code>, the component definition looks like this:</p>
+
+    <coralite-code-html>
+      <!-- src/components/header.html -->
+      <template id="coralite-header">
+        <header class="site-header">
+          <nav>
+            <ul>
+              <li><a href="/">Home</a></li>
+              <li><a href="/about">About</a></li>
+            </ul>
+          </nav>
+        </header>
+      </template>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Using Components"></coralite-heading>
+
+    <p>To use the component in your pages (or inside other components), the custom element tag name must exactly match the component's <code>id</code>.</p>
+
+    <p>Coralite components are server-side rendered (SSR). When you run the build command, Coralite replaces the custom tag with the actual HTML content of your template.</p>
+
+    <coralite-code-html>
+      <!-- src/pages/index.html -->
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <title>Home</title>
+      </head>
+      <body>
+        <!-- The tag name matches the template ID -->
+        <coralite-header></coralite-header>
+        
+        <main>
+          <h1>Welcome to my site!</h1>
+        </main>
+      </body>
+      </html>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Basic Data Binding"></coralite-heading>
+
+    <p>You can pass data into static components using standard HTML attributes. Coralite allows you to display these attribute values inside your component using double curly braces (<code>{{ }}</code>).</p>
+
+    <p>For instance, let's create a reusable <code>&lt;user-card&gt;</code> component.</p>
+
+    <coralite-code-html>
+      <!-- src/components/user-card.html -->
+      <template id="user-card">
+        <div class="card">
+          <!-- The 'name' attribute value will be injected here -->
+          <h2>{{ name }}</h2>
+          <!-- The 'role' attribute value will be injected here -->
+          <p class="role">{{ role }}</p>
+        </div>
+      </template>
+    </coralite-code-html>
+
+    <p>Now, when using the component, simply pass the data as attributes:</p>
+
+    <coralite-code-html>
+      <!-- src/pages/team.html -->
+      <body>
+        <h1>Our Team</h1>
+        <div class="team-grid">
+          <!-- Passing data via attributes -->
+          <user-card name="Alice Smith" role="Lead Developer"></user-card>
+          <user-card name="Bob Jones" role="Designer"></user-card>
+        </div>
+      </body>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Standard Slots"></coralite-heading>
+
+    <p>Sometimes you need to pass entire blocks of HTML into a component, not just simple text attributes. Coralite supports standard HTML <code>&lt;slot&gt;</code> elements for this purpose.</p>
+
+    <p>A slot acts as a placeholder where the content between the component tags will be inserted.</p>
+
+    <coralite-code-html>
+      <!-- src/components/alert-box.html -->
+      <template id="alert-box">
+        <div class="alert {{ type }}">
+          <div class="alert-content">
+            <!-- Content passed between <alert-box> tags goes here -->
+            <slot></slot>
+          </div>
+        </div>
+      </template>
+    </coralite-code-html>
+
+    <p>Using the slot:</p>
+
+    <coralite-code-html>
+      <!-- src/pages/index.html -->
+      <alert-box type="warning">
+        <strong>Warning:</strong> Your session is about to expire.
+      </alert-box>
+
+      <alert-box type="success">
+        <p>Profile updated successfully!</p>
+        <button>View Profile</button>
+      </alert-box>
+    </coralite-code-html>
+
+    <coralite-heading level="h2" text="Summary"></coralite-heading>
+
+    <p>Static components are perfect for layout structures, simple UI elements, and reusable content blocks. However, when you need complex logic, computed values, or client-side interactivity, you need to upgrade your component to a <a href="./dynamic-components.html">Dynamic Component</a>.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

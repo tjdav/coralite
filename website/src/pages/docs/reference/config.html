@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite Configuration Reference (coralite.config.js)"
+    description="Complete reference for the coralite.config.js configuration file options, including input paths, output directories, and plugin configuration."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Configuration Reference</h1>
+
+    <p>Coralite is configured using a <code>coralite.config.js</code> file in the root of your project. This file exports a configuration object that defines input paths, output directories, plugins, and build options.</p>
+
+    <p>If you prefer TypeScript or type hinting, you can use the <code>defineConfig</code> helper from <code>coralite-scripts</code>.</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+import { defineConfig } from 'coralite-scripts';
+import myPlugin from './plugins/my-plugin.js';
+
+export default defineConfig({
+  components: 'src/components',
+  pages: 'src/pages',
+  output: 'dist',
+  plugins: [myPlugin]
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Configuration Options"></coralite-heading>
+
+    <p>The <code>CoraliteConfig</code> object accepts the following properties:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Property</th>
+        <th>Type</th>
+        <th>Default</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>components</code></td>
+        <td><code>string</code></td>
+        <td><code>"src/components"</code> (via CLI)</td>
+        <td>The path to the directory containing Coralite templates.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>pages</code></td>
+        <td><code>string</code></td>
+        <td><code>"src/pages"</code> (via CLI)</td>
+        <td>The path to the directory containing pages that will be rendered using the provided templates.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>output</code></td>
+        <td><code>string</code></td>
+        <td><code>"dist"</code> (via CLI)</td>
+        <td>The base directory path where generated HTML files will be saved.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>plugins</code></td>
+        <td><code>Array&lt;CoralitePluginInstance&gt;</code></td>
+        <td><code>[]</code></td>
+        <td>An array of plugin instances to extend Coralite's functionality (e.g., loaded via <code>createPlugin</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>standaloneOutput</code></td>
+        <td><code>string</code> (optional)</td>
+        <td><code>"components"</code> (relative to output)</td>
+        <td>The directory path (relative to <code>output</code>) where compiled standalone client-side web components will be placed.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>ignoreByAttribute</code></td>
+        <td><code>Array&lt;{name: string, value: string} | string&gt;</code> (optional)</td>
+        <td><code>[]</code></td>
+        <td>An array of attribute names and values used to filter out elements during processing.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>skipRenderByAttribute</code></td>
+        <td><code>Array&lt;{name: string, value: string} | string&gt;</code> (optional)</td>
+        <td><code>[]</code></td>
+        <td>An array of attribute names and values used to skip rendering of specific elements during processing.</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="h2" text="Environment Considerations"></coralite-heading>
+
+    <p>When running Coralite using the <code>coralite-scripts</code> development mode (e.g., <code>npm run dev</code> or <code>mode === 'dev'</code>), the <code>output</code> directory is automatically overridden to a temporary <code>.coralite/build</code> folder to isolate build artifacts from production outputs. This directory is automatically cleaned up on server startup and graceful exit.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

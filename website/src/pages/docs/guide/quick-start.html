@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite Quick Start Guide: Scaffold & Install Your First Project"
+    description="Learn how to quickly scaffold a new Coralite project using the create-coralite CLI or install it manually. Get your development environment up and running fast."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Quick Start</h1>
+
+    <p>Before beginning, you will need <a href="https://nodejs.org/" target="_blank">Node.js</a> version <strong>22.12.0</strong> or higher installed.</p>
+
+    <coralite-heading level="h2" text="Scaffold a New Project (Recommended)"></coralite-heading>
+
+    <p>The fastest way to get started is by using the <code>create-coralite</code> CLI tool to scaffold a new project template.</p>
+
+    <coralite-heading level="h3" text="Install via Package Manager"></coralite-heading>
+
+    <coralite-code-highlight language="bash">npm create coralite@latest</coralite-code-highlight>
+
+    <p>Alternatively, use other package managers:</p>
+
+    <coralite-code-highlight language="bash">yarn create coralite</coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">pnpm create coralite</coralite-code-highlight>
+
+    <blockquote>
+      <p><strong>Note</strong>: The <code>create-coralite</code> CLI is also registered as <code>cca</code> (short for <em>Coralite Create App</em>).</p>
+    </blockquote>
+
+    <coralite-heading level="h3" text="CLI Options"></coralite-heading>
+    
+    <coralite-heading level="h4" text="-o, --output <name>"></coralite-heading>
+    <p>Set the project output directory.</p>
+    <coralite-code-highlight language="bash">npm create coralite -o my-project</coralite-code-highlight>
+
+    <coralite-heading level="h4" text="-t, --template <name>"></coralite-heading>
+    <p>Select styling template for the scaffolded project (Choices: <code>css</code>, <code>scss</code>).</p>
+    <coralite-code-highlight language="bash">npm create coralite -t scss</coralite-code-highlight>
+
+
+    <coralite-heading level="h2" text="Manual Installation"></coralite-heading>
+
+    <p>Alternatively, after <a href="https://docs.npmjs.com/cli/v6/commands/npm-init" target="_blank">initialising</a> your project,
+      install coralite as a dev dependency:</p>
+
+    <coralite-code-highlight language="bash">npm install coralite</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="Build script"></coralite-heading>
+
+    <p>To prepare the development environment, we'll add the build command to the <strong>"script"</strong> property
+      in our <code>package.json</code> file.</p>
+
+    <p>Here is an example of what your <code>package.json</code> file should look like:</p>
+
+    <p>For more information about the CLI options check out the <a href="/docs/reference/cli.html">CLI reference page</a>.</p>
+
+    <coralite-code-highlight language="JSON">
+{
+  "name": "my-coralite-site",
+  "scripts": {
+    "build": "coralite -c src/components -p src/pages -o dist"
+  },
+  "dependencies": {
+    "coralite": "^<coralite-version></coralite-version>"
+  }
+}
+    </coralite-code-highlight>
+
+    <hr>
+
+    <p>Next, follow the <a href="getting-started.html">getting started tutorial</a> to discover how build your first web
+      page with Coralite!</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
