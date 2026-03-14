@@ -42,6 +42,7 @@ Declares external dependencies bundled at build-time. Static `import` statements
 * Side-Effects: Providing only a `specifier` triggers a side-effect import (e.g., polyfills).
 * JSON: Supported via `attributes: { type: 'json' }`.
 * **Cross-Component**: Import other components via `specifier: 'coralite-component/<component-id>'`.
+
 * **CRITICAL RULE FOR CROSS-COMPONENT IMPORTS**: You **ONLY** need to import another Coralite component if your `client.script` is *imperatively* creating and appending it to the DOM at runtime (e.g., `document.createElement('other-component')`). If you are simply using `<other-component>` declaratively inside your HTML `<template>`, Coralite resolves and bundles it automatically on the server. **Do not manually import components used declaratively in the template.**
 * **Access**: Resolved modules are available in `helpers.imports`.
 
