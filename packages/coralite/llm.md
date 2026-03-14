@@ -1,0 +1,77 @@
+# Coralite Framework
+
+> Coralite is a static site generator library built around the emerging HTML modules proposal. It relies on Server-Side Rendering (SSR) by default, features zero hydration, and implements a simplified web component model using `<template>` and `<slot>` elements without requiring a Shadow DOM.
+
+## 1. System Architecture & CLI
+* **Rendering**: Strictly Server-Side Rendered (SSR). No client-side hydration.
+* **Execution**: Sites are built via the Coralite CLI.
+* **CLI Arguments**: Requires paths for components directory (`-t` or `--components`), pages directory (`-p` or `--pages`), and output directory (`-o` or `--output`).
+
+## 2. Static Components
+Static components are purely HTML-based elements without scripting logic.
+* **Definition**: Must be wrapped in a `<template id="component-name">` tag.
+* **Usage**: The custom element tag name in the HTML page must exactly match the template's `id` (e.g., `<component-name></component-name>`).
+* **Data Binding**: Data is passed via HTML attributes and rendered inside the template using double curly braces: `{{ attributeName }}`.
+
+## 3. Dynamic Components (defineComponent)
+Dynamic components are required for data processing, slots, and client-side interactivity. They are authored by appending a `<script type="module">` below the `<template>`, exporting the core `defineComponent` helper.
+
+### 3.1 Server-Side Execution (Build Time)
+* **client.setup(results)**: An asynchronous function executed strictly on the server during the build. Replaces Top-Level Await (TLA). Used for fetching data or reading files. The returned object is merged into the component's `values` context.
+* **tokens**: Evaluates data at build time. Can be static strings or functions receiving `values`. If a token returns an HTML string, the token processor parses and integrates it into the tree.
+* **slots**: Allows server-side transformation of content passed between component tags. Receives `slotNodes` (parsed HTML array) and `values`. Can mutate, replace, or conditionally return nodes.
+
+### 3.2 Client-Side Execution (Browser Hydration)
+* **client.script(context)**: Serialized and executed in the browser. 
+* **Context Object (`CoraliteScriptContent`)**: 
+  * `id`: Unique instance identifier.
+  * `componentId`: Generic component identifier.
+  * `document`: Coralite document or mocked client document (with `getElementById`).
+  * `values`: Processed tokens, props, and `setup` data.
+  * `refs`: Map of instance reference IDs.
+  * `root`: ShadowRoot boundary (only present if compiled as a standalone Web Component).
+  * `helpers`: Plugin-injected utilities (e.g., `helpers.refs`, `helpers.imports`).
+
+### 3.3 Component-Level Imports (`client.imports`)
+Declares external dependencies bundled at build-time. Static `import` statements cannot be used directly in `client.script`.
+* **Configurations**:
+  * Default/Named: `defaultExport: 'Name'`, `namedExports: ['FuncA', 'FuncB as Alias']`.
+  * Namespace: `namespaceExport: 'MyLib'` (compiles to `import * as MyLib`).
+  * Side-Effects: Providing only a `specifier` triggers a side-effect import (e.g., polyfills).
+  * JSON: Supported via `attributes: { type: 'json' }`.
+  * Cross-Component: Import other components via `specifier: 'coralite-component/<component-id>'`.
+* **Access**: Resolved modules are available in `helpers.imports`.
+
+## 4. Framework Extensibility (createPlugin)
+Plugins hook into the build lifecycle, register global components, and inject bundled scripts.
+
+### 4.1 Configuration
+* `name`: Required unique string.
+* `method(options, context)`: Main server-side logic hook.
+* `server(context)`: Dedicated server-side execution function.
+* `components`: Array of file paths to automatically register as global components.
+
+### 4.2 Lifecycle Hooks (Server-Side)
+* **Page**: `onPageSet`, `onPageUpdate`, `onPageDelete`
+* **Component**: `onComponentSet`, `onComponentUpdate`, `onComponentDelete`
+* **Render**: `onBeforePageRender`, `onAfterPageRender`
+* **Build**: `onBeforeBuild`, `onAfterBuild`
+
+### 4.3 Client Injection
+* `client.imports`: Bundles external libraries identically to component-level imports.
+* `client.config`: Passes static server-side data (e.g., API keys) to the client bundle.
+* `client.helpers`: Injects utility functions into `client.script`. Must be factory functions returning an executable function. Context injected includes `context.imports` and `context.config`.
+
+## 5. Core Built-In Plugins
+### 5.1 Metadata Plugin
+* **Purpose**: Extracts `<meta>` tags from `<head>` and exposes them globally.
+* **Mapping**: `<meta name="X" content="Y">` becomes accessible via `{{ meta_X }}`.
+* **Special Cases**: The `<title>` tag maps to `meta_pageTitle`. The `<html>` tag's `lang` maps to `$lang`.
+* **Dynamic Head**: Processes nested components (e.g., `<seo-bundle>`) placed inside the `<head>`, extracting their resulting `<meta>` tags into the global context.
+
+### 5.2 Refs Plugin
+* **Purpose**: Replaces `document.querySelector` for safe DOM element targeting.
+* **Template Setup**: Add `ref="elementName"` to any HTML tag.
+* **Script Usage**: Access via `const el = helpers.refs('elementName')`.
+* **Shadow DOM Scoping**: If the component is compiled standalone (`context.root` exists), element lookups are automatically restricted to that specific Shadow DOM boundary.
+* **Execution**: Maps the unique ID (stored in `values['ref_elementName']`) via `getElementById`. Returns cached DOM node or `null` if absent.
