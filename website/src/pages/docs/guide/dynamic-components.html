@@ -27,11 +27,11 @@
 
       <!-- The addition of this script block makes it dynamic -->
       <script type="module">
-        import { defineComponent } from 'coralite';
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           // Configuration goes here
-        });
+        })
       </script>
     </coralite-code-html>
 
@@ -50,20 +50,20 @@
       </template>
 
       <script type="module">
-        import { defineComponent } from 'coralite';
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           tokens: {
             // Static string token
             status: 'Active',
-            
+        
             // Computed function token receiving 'name' attribute
             formattedGreeting: ({ name }) => {
-              const cleanName = name ? name.trim().toUpperCase() : 'GUEST';
-              return `Welcome, ${cleanName}!`;
+              const cleanName = name ? name.trim().toUpperCase() : 'GUEST'
+              return `Welcome, ${cleanName}!`
             }
           }
-        });
+        })
       </script>
     </coralite-code-html>
 
@@ -83,7 +83,7 @@
       </template>
 
       <script type="module">
-        import { defineComponent } from 'coralite';
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           slots: {
@@ -93,13 +93,13 @@
               return slotNodes.map(node => {
                 // If the user passed <li> elements, automatically add a class
                 if (node.type === 'tag' && node.name === 'li') {
-                  node.attributes.class = 'list-item-styled';
+                  node.attributes.class = 'list-item-styled'
                 }
-                return node;
-              });
+                return node
+              })
             }
           }
-        });
+        })
       </script>
     </coralite-code-html>
 
@@ -111,26 +111,26 @@
 
     <coralite-code-html>
       <script type="module">
-        import { defineComponent } from 'coralite';
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           client: {
             // This runs ON THE SERVER during the build process
             setup: async (values) => {
-              const response = await fetch('https://api.example.com/data');
-              const data = await response.json();
+              const response = await fetch('https://api.example.com/data')
+              const data = await response.json()
 
               // Merge this data into the component's values
               return {
                 fetchedData: data.message
-              };
+              }
             }
           },
           tokens: {
             // Now we can use the fetched data in our template
             apiMessage: ({ fetchedData }) => fetchedData
           }
-        });
+        })
       </script>
     </coralite-code-html>
 
@@ -149,27 +149,27 @@
       </template>
 
       <script type="module">
-        import { defineComponent } from 'coralite';
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           client: {
             // This runs IN THE BROWSER
             script: (context) => {
               // Extract the refs helper
-              const { helpers } = context;
-              const refs = helpers.refs;
-              
+              const { helpers } = context
+              const refs = helpers.refs
+
               // Get DOM elements safely
-              const box = refs('box');
-              const btn = refs('toggleBtn');
+              const box = refs('box')
+              const btn = refs('toggleBtn')
 
               btn.addEventListener('click', () => {
-                box.classList.toggle('closed');
-                box.classList.toggle('open');
-              });
+                box.classList.toggle('closed')
+                box.classList.toggle('open')
+              })
             }
           }
-        });
+        })
       </script>
     </coralite-code-html>
 

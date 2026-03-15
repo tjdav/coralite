@@ -82,14 +82,14 @@
       </template>
 
       <script type="module">
-        import { defineComponent } from 'coralite';
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           tokens: {
             // Define our initial value
             currentCount: () => 0
           }
-        });
+        })
       </script>
     </coralite-code-html>
 
@@ -112,7 +112,7 @@
       </template>
 
       <script type="module">
-        import { defineComponent } from 'coralite';
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           tokens: {
@@ -122,20 +122,20 @@
             // The script function runs in the browser!
             script: ({ values, helpers }) => {
               // 1. Get our elements using the refs helper
-              const display = helpers.refs('countDisplay');
-              const btn = helpers.refs('incrementBtn');
+              const display = helpers.refs('countDisplay')
+              const btn = helpers.refs('incrementBtn')
 
               // 2. Set up our state
-              let count = values.currentCount;
+              let count = values.currentCount
 
               // 3. Add an event listener
               btn.addEventListener('click', () => {
-                count++;
-                display.textContent = count;
-              });
+                count++
+                display.textContent = count
+              })
             }
           }
-        });
+        })
       </script>
     </coralite-code-html>
 

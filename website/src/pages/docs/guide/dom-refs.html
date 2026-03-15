@@ -53,27 +53,27 @@
 
     <coralite-code-html>
       <script type="module">
-        import { defineComponent } from 'coralite';
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           client: {
             script: (context) => {
               // Extract the refs helper from the context
-              const { helpers } = context;
-              const refs = helpers.refs;
-              
+              const { helpers } = context
+              const refs = helpers.refs
+
               // Safe DOM element retrieval
-              const input = refs('usernameInput');
-              const button = refs('submitBtn');
+              const input = refs('usernameInput')
+              const button = refs('submitBtn')
 
               // Now use standard DOM APIs
               button.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log(`Submitted username: ${input.value}`);
-              });
+                e.preventDefault()
+                console.log(`Submitted username: ${input.value}`)
+              })
             }
           }
-        });
+        })
       </script>
     </coralite-code-html>
 
