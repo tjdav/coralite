@@ -64,7 +64,8 @@ if (mode === 'dev') {
   const coralite = new Coralite({
     components: config.components,
     pages: config.pages,
-    plugins: config.plugins
+    plugins: config.plugins,
+    output: config.output
   })
   await coralite.initialise()
 

@@ -1,6 +1,7 @@
 /**
  * @import {CoraliteScriptConfig} from '../types/index.js'
  */
+import { staticAssetPlugin } from 'coralite/plugins'
 
 /**
  * Defines the Coralite configuration for the project.
@@ -121,6 +122,14 @@ export function defineConfig (options) {
         throw new Error('Configuration "skipRenderByAttribute" items must have a string "value" property')
       }
     }
+  }
+
+  if (options.assets) {
+    if (!Array.isArray(options.assets)) {
+      throw new Error('Configuration "assets" must be an array')
+    }
+    options.plugins = options.plugins || []
+    options.plugins.push(staticAssetPlugin(options.assets))
   }
 
   return options

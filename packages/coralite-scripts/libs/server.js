@@ -39,7 +39,8 @@ async function server (config, options) {
       plugins: config.plugins,
       ignoreByAttribute: config.ignoreByAttribute,
       skipRenderByAttribute: config.skipRenderByAttribute,
-      mode: 'development'
+      mode: 'development',
+      output: config.output
     })
     await coralite.initialise()
     displaySuccess('Coralite initialized successfully')
@@ -86,10 +87,17 @@ async function server (config, options) {
       next()
     })
 
+    const staticOptions = {
+      cacheControl: false,
+      setHeaders: (res, path) => {
+        if (path.endsWith('.wasm')) {
+          res.setHeader('Content-Type', 'application/wasm')
+        }
+      }
+    }
+
     // serve compiled components directory
-    app.use(express.static(config.output, {
-      cacheControl: false
-    }))
+    app.use(express.static(config.output, staticOptions))
 
     // check if Sass is configured and add its input directory to watchPath for file changes.
     if (config.styles) {
@@ -139,9 +147,7 @@ async function server (config, options) {
     }
 
     app
-      .use(express.static(config.public, {
-        cacheControl: false
-      }))
+      .use(express.static(config.public, staticOptions))
       .get('/_/rebuild', (req, res) => {
         // set headers for SSE
         res.writeHead(200, {
