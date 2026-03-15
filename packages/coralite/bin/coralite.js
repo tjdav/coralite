@@ -54,6 +54,7 @@ const coraliteOptions = {
   skipRenderByAttribute: options.skipRenderAttribute,
   mode: options.mode,
   standaloneOutput: options.standalone,
+  output,
   plugins: []
 }
 
@@ -101,5 +102,5 @@ if (options.dryRun) {
   }
 } else {
   // save the generated documents to output directory
-  await coralite.save(output)
+  await coralite.save()
 }

@@ -23,11 +23,12 @@ describe('Smoke Test', () => {
     const coralite = new Coralite({
       pages: path.join(fixtures, 'pages'),
       components: path.join(fixtures, 'components'),
+      output,
       plugins: [myPlugin]
     })
 
     await coralite.initialise()
-    await coralite.save(output)
+    await coralite.save()
 
     const indexPath = path.join(output, 'index.html')
     assert.ok(fs.existsSync(indexPath), 'index.html should exist')

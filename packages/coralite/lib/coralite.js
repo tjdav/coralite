@@ -51,6 +51,7 @@ import { createContext } from 'node:vm'
  * @param {Array<string | Attribute>} [options.ignoreByAttribute] - Elements to ignore with attribute name value pair
  * @param {Array<string | Attribute>} [options.skipRenderByAttribute] - Element attributes to parse but exclude from final render output
  * @param {string} [options.standaloneOutput] - Output directory for standalone client-side web components
+ * @param {string} [options.output] - Output directory for build artifacts
  * @example
  * const coralite = new Coralite({
  *   components: './path/to/components',
@@ -68,7 +69,8 @@ export function Coralite ({
   ignoreByAttribute,
   skipRenderByAttribute,
   mode = 'production',
-  standaloneOutput
+  standaloneOutput,
+  output
 }) {
   // Validate required parameters
   if (!components && typeof components !== 'string') {
@@ -97,7 +99,8 @@ export function Coralite ({
     skipRenderByAttribute,
     mode,
     standaloneOutput: standaloneOutput ? normalize(standaloneOutput) : undefined,
-    path
+    path,
+    output: output ? normalize(output) : undefined
   }
 
   /** @type {Map<string, CoraliteCollectionItem[]>} */
@@ -1022,7 +1025,6 @@ Coralite.prototype.build = async function (...args) {
 /**
  * Compiles and saves pages to disk
  *
- * @param {string} output - Output directory path
  * @param {string | string[]} [path] - Optional page path(s) to build
  * @param {Object} [options] - Build configuration
  * @param {number} [options.maxConcurrent=10] - Max concurrent file writes (min 1, max 100)
@@ -1030,14 +1032,20 @@ Coralite.prototype.build = async function (...args) {
  * @returns {Promise<{ path: string, duration: number }[]>} Array of saved file paths
  * @example
  * // Build entire site with default concurrency (10 files)
- * await coralite.build('./dist')
+ * await coralite.save()
  *
  * // Build specific pages with custom concurrency
- * await coralite.build('./dist', ['blog/*'], { maxConcurrent: 5 })
+ * await coralite.save(['blog/*'], { maxConcurrent: 5 })
  */
-Coralite.prototype.save = async function (output, path, options = {}) {
+Coralite.prototype.save = async function (path, options = {}) {
   const signal = options?.signal
   const createdDir = {}
+
+  if (!this.options.output) {
+    throw new Error('Coralite instance must be configured with an "output" option to use save()')
+  }
+
+  const output = this.options.output
 
   const results = await this.build(path, options, async (result) => {
     let relativeDir, outDir, outFile, contentToWrite
