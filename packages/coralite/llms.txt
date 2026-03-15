@@ -74,11 +74,13 @@ Plugins hook into the build lifecycle, register global components, and inject bu
 * **Dynamic Head**: Processes nested components (e.g., `<seo-bundle>`) placed inside the `<head>`, extracting their resulting `<meta>` tags into the global context.
 
 ### 5.2 Refs Plugin
-
 * **Purpose**: Replaces `document.querySelector` for safe DOM element targeting.
 * **Template Setup**: Add `ref="elementName"` to any HTML tag.
 * **Script Usage**: Access via `const el = helpers.refs('elementName')`.
 * **Shadow DOM Scoping**: If the component is compiled standalone (`context.root` exists), element lookups are automatically restricted to that specific Shadow DOM boundary.
 * **Execution**: Maps the unique ID (stored in `values['ref_elementName']`) via `getElementById`. Returns cached DOM node or `null` if absent.
-* **DOM Output & Testing Pattern**: During the SSR build process, the `ref` attribute is **completely removed** from the HTML markup and replaced with an auto-generated `id` attribute.
-* **CRITICAL RULE FOR EXTERNAL TESTING (Playwright/Cypress)**: Never use `[ref="name"]` CSS selectors in your tests, as the attribute does not exist in the final DOM. For standard SSR components without a Shadow DOM, the generated `id` follows a strict pattern: `<component-id>__<ref-name>-<instance-index>`. (e.g., If `<coralite-login>` has an input with `ref="username"`, the first instance on the page will have the ID `coralite-login__username-0`). Always scope strict tests to these generated IDs or their specific component containers.
+
+### 5.3 Static Assets Plugin
+* **Purpose**: Copies static or binary dependencies (like `.wasm` files) from NPM packages into the build output directory.
+* **Usage**: Define an `assets` array in `coralite.config.js`. Each object must contain `pkg` (NPM package name), `path` (path within package), and `dest` (destination path relative to the build output directory).
+* **Execution**: Automatically intercepts the `onBeforeBuild` hook to ensure files are present before the rendering process or dev server starts.
