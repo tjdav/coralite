@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Handling Binary Assets - Coralite User Guide"
+    description="Learn how to handle static and binary assets like .wasm files in your Coralite projects."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Handling Binary Assets</h1>
+    <p>Some libraries, like the Matrix JS SDK, require loading external binary dependencies like `.wasm` files. Coralite provides a seamless way to handle these files during both development and production builds.</p>
+
+    <coralite-heading level="h2" text="The `assets` Configuration"></coralite-heading>
+    <p>In your `coralite.config.js` file, you can specify an `assets` array. This array tells Coralite to copy specific files from an NPM package into your project's build output.</p>
+
+    <p>Each object in the `assets` array should have the following properties:</p>
+    <ul>
+      <li><code>pkg</code>: The NPM package name (e.g., `'matrix-js-sdk'`).</li>
+      <li><code>path</code>: The relative path to the asset within the package (e.g., `'lib/matrix.wasm'`).</li>
+      <li><code>dest</code>: The destination path relative to your output directory (e.g., `'wasm/matrix.wasm'`).</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Example: Matrix JS SDK"></coralite-heading>
+    <p>Here is an example of configuring your project to include the WebAssembly files required by the Matrix SDK.</p>
+
+    <coralite-code language="javascript" title="coralite.config.js">
+export default defineConfig({
+  output: './dist',
+  components: './src/components',
+  pages: './src/pages',
+  public: './public',
+  assets: [
+    {
+      pkg: 'matrix-js-sdk',
+      path: 'lib/matrix.wasm',
+      dest: 'wasm/matrix.wasm'
+    }
+  ]
+})
+    </coralite-code>
+
+    <p>When you run the development server (`pnpm run dev`) or build your project (`pnpm run build`), Coralite will automatically extract `matrix.wasm` from your `node_modules` and place it in your configured output folder under `wasm/matrix.wasm`.</p>
+    <p>You can then point your library configuration to fetch the file from `/wasm/matrix.wasm`.</p>
+
+    <coralite-heading level="h2" text="MIME Type Support"></coralite-heading>
+    <p>To ensure `.wasm` files execute correctly for streaming compilation, the Coralite development server automatically configures the appropriate `application/wasm` MIME type headers for any files ending in `.wasm`.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
