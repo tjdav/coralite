@@ -24,7 +24,7 @@ program
   .option('-s, --skip-render-attribute <key...>', 'Parse elements but exclude them from final render output', [])
   .option('-d, --dry-run', 'Run in dry-run mode')
   .option('--standalone <path>', 'Output directory for standalone client-side web components')
-  .option('-a, --assets <assets...>', 'Static assets to copy during build (JSON string arrays)')
+  .option('-a, --assets <mapping...>', 'Static assets to copy. Format: pkg:path:dest (or pkg:path)')
 
 program.parse(process.argv)
 program.on('error', (err) => {
@@ -52,13 +52,18 @@ let assets
 if (options.assets) {
   assets = []
   for (const assetStr of options.assets) {
-    try {
-      assets.push(JSON.parse(assetStr))
-    } catch (err) {
+    const parts = assetStr.split(':')
+    if (parts.length < 2) {
       console.error('Failed to parse asset:', assetStr)
-      console.error(err)
+      console.error('Invalid format. Expected pkg:path:dest or pkg:path')
       process.exit(1)
     }
+    const [pkg, path, dest] = parts
+    assets.push({
+      pkg,
+      path,
+      dest: dest || path
+    })
   }
 }
 
