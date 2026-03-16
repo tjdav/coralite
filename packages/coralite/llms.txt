@@ -90,8 +90,10 @@ Plugins hook into the build lifecycle, register global components, and inject bu
 * **Shadow DOM Scoping**: If the component is compiled standalone (`context.root` exists), element lookups are automatically restricted to that specific Shadow DOM boundary.
 * **Execution & DOM Compilation**: The framework maps the `ref` attribute to a unique `id` stored in `values['ref_elementName']`, which is fetched via `getElementById`. Returns a cached DOM node or `null` if absent.
 * **E2E Testing & External Querying**: At build time, Coralite compiles the `ref` attribute into a strict `id` attribute on the DOM element using the pattern: `<component-id>__<refName>-<index>`. For E2E testing frameworks (like Playwright) or external scripts, you must query this compiled ID directly (e.g., `page.locator('#coralite-chat-timeline__messagesContainer-0')`) instead of adding arbitrary CSS classes.
-
 ### 5.3 Static Assets Plugin
-* **Purpose**: Copies static or binary dependencies (like `.wasm` files) from NPM packages into the build output directory.
-* **Usage**: Define an `assets` array in `coralite.config.js`. Each object must contain `pkg` (NPM package name), `path` (path within package), and `dest` (destination path relative to the build output directory).
+* **Purpose**: Copies static or binary dependencies (like `.wasm` files) from NPM packages or local paths into the build output directory.
+* **Usage**: Define an `assets` array in `coralite.config.js`. Each object must contain a `dest` (destination path relative to the build output directory). To determine the source, you must provide either:
+  * `pkg` (NPM package name) and `path` (the relative path to the asset within the package).
+  * `src` (a local path to the source file or directory).
 * **Execution**: Automatically intercepts the `onBeforeBuild` hook to ensure files are present before the rendering process or dev server starts.
+* **MIME Types**: The Coralite development server automatically configures the appropriate `application/wasm` MIME type headers for any files ending in `.wasm`.
