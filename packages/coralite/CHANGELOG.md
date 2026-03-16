@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.28.2
+
+> Comparing `coralite-v0.28.1` to `HEAD`
+
+**Summary:** 10 commits
+
+### ✨ Features
+
+- implement staticAssetPlugin for handling binary dependencies ([ebc09d4](https://codeberg.org/tjdavid/coralite/commit/ebc09d4d20e3b92d1e199d9b99f7d0007b61aefb))
+
+### 📚 Documentation
+
+- clarify dynamic component data passing and ref compilation patterns ([ca461ef](https://codeberg.org/tjdavid/coralite/commit/ca461ef53fbc3f2a190ae3bbf02da16aec479ee6))
+- document Refs Plugin DOM output and testing patterns ([af9e917](https://codeberg.org/tjdavid/coralite/commit/af9e9172f6326fd32f475b345dc104d2ba091d00))
+- fix newline ([da73885](https://codeberg.org/tjdavid/coralite/commit/da7388598d23c843cf939eb05e6c5aac6c55567a))
+- clarify cross-component import rules for llms.txt ([09d336f](https://codeberg.org/tjdavid/coralite/commit/09d336fb81ddee572578d2deff50703c735f7232))
+- add comprehensive LLM documentation for Coralite framework architecture ([31d04aa](https://codeberg.org/tjdavid/coralite/commit/31d04aaa5b4de31bf0da7f1f8ec9f55828596b64))
+- clarify client-side execution context in module definitions and types ([cdb228f](https://codeberg.org/tjdavid/coralite/commit/cdb228fbd323d9cf70410ecb4adf054845e65f5f))
+
+### ♻️ Code Refactoring
+
+- make coralite save method use internal options ([8eda84c](https://codeberg.org/tjdavid/coralite/commit/8eda84cc2063d94465a496dd61a8351b108eb95c))
+- rename llm.md to llms.txt ([f73641f](https://codeberg.org/tjdavid/coralite/commit/f73641f0c7b4172b7ba625d4c2697c276352be85))
+
+### 🧹 Chores
+
+- document Static Assets Plugin for binary dependencies in llms.txt ([77abc7f](https://codeberg.org/tjdavid/coralite/commit/77abc7f75fa86530ba77d5bccc62c95198815313))
+
+
 ## v0.28.1
 
 > Comparing `coralite-v0.28.0` to `HEAD`
