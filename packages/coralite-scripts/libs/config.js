@@ -1,7 +1,6 @@
 /**
  * @import {CoraliteScriptConfig} from '../types/index.js'
  */
-import { staticAssetPlugin } from 'coralite/plugins'
 
 /**
  * Defines the Coralite configuration for the project.
@@ -132,8 +131,6 @@ export function defineConfig (options) {
     if (!Array.isArray(options.assets)) {
       throw new Error('Configuration "assets" must be an array')
     }
-    options.plugins = options.plugins || []
-    options.plugins.push(staticAssetPlugin(options.assets))
   }
 
   return options

@@ -37,6 +37,7 @@ async function server (config, options) {
       components: config.components,
       pages: config.pages,
       plugins: config.plugins,
+      assets: config.assets,
       ignoreByAttribute: config.ignoreByAttribute,
       skipRenderByAttribute: config.skipRenderByAttribute,
       mode: 'development',
