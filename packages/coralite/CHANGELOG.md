@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.28.3
+
+> Comparing `coralite-v0.28.2` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- add --assets option to copy static files during build (build) ([bd166da](https://codeberg.org/tjdavid/coralite/commit/bd166da7b194074a4ad1f7d3bbec3c2e98407cbb))
+- add static asset plugin support for copying package assets during build (core) ([cab4a3e](https://codeberg.org/tjdavid/coralite/commit/cab4a3e6bad6a53ab03ab7de4c005ee0ee7cd8ec))
+
+### 📚 Documentation
+
+- add JSDoc comments to static asset plugin function ([634c628](https://codeberg.org/tjdavid/coralite/commit/634c628861f5a0fd5b1d9f9d14b8a9977667f45b))
+
+### ♻️ Code Refactoring
+
+- asset parsing to support flexible package:path:dest format ([4623f1c](https://codeberg.org/tjdavid/coralite/commit/4623f1c80eba34c83df915f27ddc2bfb38e3986d))
+
+### ✅ Tests
+
+- add e2e coverage for staticAssetPlugin (coralite) ([5cf9b1b](https://codeberg.org/tjdavid/coralite/commit/5cf9b1bb14b803640df785e77b8be3d046e4a6b8))
+
+
 ## v0.28.2
 
 > Comparing `coralite-v0.28.1` to `HEAD`
