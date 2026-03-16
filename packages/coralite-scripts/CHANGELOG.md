@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.28.5
+
+> Comparing `coralite-scripts-v0.28.4` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- refactor asset handling to use plugin system (config) ([bcf66d8](https://codeberg.org/tjdavid/coralite/commit/bcf66d86c75195c25da64e14396be2b923cc8e64))
+
+
 ## v0.28.4
 
 > Comparing `coralite-scripts-v0.28.3` to `HEAD`
