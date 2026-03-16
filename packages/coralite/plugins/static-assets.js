@@ -3,6 +3,10 @@ import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { cp, mkdir } from 'node:fs/promises'
 
+/**
+ * Coralite plugin to copy static assets during build
+ * @param {import('../types/index.js').CoraliteStaticAsset[]} assets - Static assets to copy during build.
+ */
 export const staticAssetPlugin = (assets = []) => {
   return createPlugin({
     name: 'static-asset-plugin',
