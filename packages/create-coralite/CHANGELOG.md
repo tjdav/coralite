@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.28.2
+
+> Comparing `create-coralite-v0.28.1` to `HEAD`
+
+**Summary:** 4 commits
+
+### 🧹 Chores
+
+- add .coralite to gitignore templates for css and scss ([452da63](https://codeberg.org/tjdavid/coralite/commit/452da63c2821d7063dd14c0732cdbdc90d2e6f2d))
+
+### ⏪ Reverts
+
+- remove coralite artifact entries from gitignore templates ([b5d2492](https://codeberg.org/tjdavid/coralite/commit/b5d2492da6b0516b5543adfe6862419546d8c94b))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.28.3 ([8a9d64d](https://codeberg.org/tjdavid/coralite/commit/8a9d64d655cab5d6222eabd5719e16e84c0c7325))
+- release(coralite-scripts): version 0.28.2 ([26e3249](https://codeberg.org/tjdavid/coralite/commit/26e3249ffe99bb828ed3f7ce6b70cb7ca9add922))
+
+
 ## v0.28.1
 
 > Comparing `create-coralite-v0.28.0` to `HEAD`
