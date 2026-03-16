@@ -24,9 +24,13 @@ import { staticAssetPlugin } from 'coralite/plugins'
  *   server: {
  *     port: 3000
  *   },
- *   sass: {
+ *   styles: {
+ *     type: 'scss',
  *     input: './src/styles/main.scss'
- *   }
+ *   },
+ *   assets: [
+ *     { pkg: 'some-package', path: 'dist/asset.js', dest: 'assets/asset.js' }
+ *   ]
  * })
  * ```
  */
