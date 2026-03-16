@@ -85,6 +85,18 @@
           <li>Example: <code>coralite -c src/components -p src/pages -o dist --dry-run</code></li>
         </ul>
       </li>
+      <li>
+        <p><strong><code>-a, --assets &lt;mapping...&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Static assets to copy during build from NPM packages to the output directory. Format is <code>pkg:path:dest</code> (or <code>pkg:path</code> where destination defaults to path). Multiple mappings can be provided separated by spaces.</li>
+          <li>Examples:
+            <ul>
+              <li>Copy specific file: <code>--assets my-package:dist/style.css:assets/style.css</code></li>
+              <li>Copy and keep same path: <code>--assets my-package:dist/logo.png</code></li>
+            </ul>
+          </li>
+        </ul>
+      </li>
     </ul>
 
     <coralite-heading level="h2" text="Configuration File Support"></coralite-heading>
