@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.28.3
+
+> Comparing `coralite-scripts-v0.28.2` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- add static asset plugin support and configure WASM headers (coralite-scripts) ([abbb4d4](https://codeberg.org/tjdavid/coralite/commit/abbb4d47f2a03c0fef26d4d3476b636ccffa287a))
+
+
 ## v0.28.2
 
 > Comparing `coralite-scripts-v0.28.1` to `HEAD`
