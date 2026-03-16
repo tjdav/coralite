@@ -24,6 +24,7 @@ program
   .option('-s, --skip-render-attribute <key...>', 'Parse elements but exclude them from final render output', [])
   .option('-d, --dry-run', 'Run in dry-run mode')
   .option('--standalone <path>', 'Output directory for standalone client-side web components')
+  .option('-a, --assets <assets...>', 'Static assets to copy during build (JSON string arrays)')
 
 program.parse(process.argv)
 program.on('error', (err) => {
@@ -46,6 +47,20 @@ const options = program.opts()
 const pages = options.pages
 const output = options.output
 const ignoreByAttribute = []
+let assets
+
+if (options.assets) {
+  assets = []
+  for (const assetStr of options.assets) {
+    try {
+      assets.push(JSON.parse(assetStr))
+    } catch (err) {
+      console.error('Failed to parse asset:', assetStr)
+      console.error(err)
+      process.exit(1)
+    }
+  }
+}
 
 const coraliteOptions = {
   components: options.components,
@@ -55,6 +70,7 @@ const coraliteOptions = {
   mode: options.mode,
   standaloneOutput: options.standalone,
   output,
+  assets,
   plugins: []
 }
 
