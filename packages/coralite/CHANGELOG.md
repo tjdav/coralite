@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.28.4
+
+> Comparing `coralite-v0.28.3` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- update staticAssetPlugin to support explicit src and fallback resolution ([55cb5be](https://codeberg.org/tjdavid/coralite/commit/55cb5be34420d16436d7cede264cd5a3170d1a41))
+
+
 ## v0.28.3
 
 > Comparing `coralite-v0.28.2` to `HEAD`
