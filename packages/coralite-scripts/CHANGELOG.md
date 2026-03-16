@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.28.4
+
+> Comparing `coralite-scripts-v0.28.3` to `HEAD`
+
+**Summary:** 2 commits
+
+### 📚 Documentation
+
+- update README to reflect current configuration and remove emojis (coralite-scripts) ([4456454](https://codeberg.org/tjdavid/coralite/commit/44564547ce1b1029ce43275520cd75d9d0724bce))
+- update types and examples for the `assets` feature (coralite-scripts) ([58f4d79](https://codeberg.org/tjdavid/coralite/commit/58f4d79b7fbaa118a1efc1ced389d2bb0789782d))
+
+
 ## v0.28.3
 
 > Comparing `coralite-scripts-v0.28.2` to `HEAD`
