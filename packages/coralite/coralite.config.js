@@ -65,6 +65,15 @@ const pluginImportsTest = createPlugin({
   }
 })
 
+import { staticAssetPlugin } from './plugins/static-assets.js'
+
 export default {
-  plugins: [testPlugin, pluginImportsTest]
+  plugins: [
+    testPlugin,
+    pluginImportsTest,
+    staticAssetPlugin([{
+      src: 'package.json',
+      dest: 'coralite.json'
+    }])
+  ]
 }

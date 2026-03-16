@@ -12,4 +12,16 @@ test.describe('Static Assets', () => {
     // Verify it is indeed the esbuild package.json
     expect(data.name).toBe('esbuild')
   })
+
+  test('should copy asset configured with explicit src property', async ({ page }) => {
+    // The asset was configured via coralite.config.js with { src: 'package.json', dest: 'coralite.json' }
+    const response = await page.request.get('/coralite.json')
+
+    expect(response.status()).toBe(200)
+
+    const data = await response.json()
+
+    // Verify it is indeed the coralite package.json
+    expect(data.name).toBe('coralite')
+  })
 })

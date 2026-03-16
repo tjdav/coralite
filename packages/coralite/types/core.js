@@ -31,9 +31,10 @@
 
 /**
  * @typedef {Object} CoraliteStaticAsset
- * @property {string} pkg - The package name to copy assets from.
- * @property {string} path - The path to the asset within the package.
+ * @property {string} [pkg] - The package name to copy assets from.
+ * @property {string} [path] - The path to the asset within the package.
  * @property {string} dest - The destination path for the asset in the output directory.
+ * @property {string} [src] - The absolute path to the source file (bypasses package resolution).
  */
 
 /**
