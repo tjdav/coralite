@@ -1,6 +1,6 @@
-# Coralite Development Environment Guide
+# Coralite Scripts
 
-Welcome to **Coralite starter script**, a lightweight Static Site Generator (SSG) built for rapid development and clean output. This guide walks you through setting up your local development environment using the provided `coralite-scripts` package and configuration files.
+Welcome to **Coralite Scripts**, a lightweight script toolset for building and serving Coralite applications. This guide walks you through setting up your local development environment using the provided `coralite-scripts` package and configuration files.
 
 ---
 
@@ -12,8 +12,8 @@ Coralite expects a standard folder layout:
 my-coralite-site/
 ├── src/
 │   ├── pages/        # Your page components (e.g., `about.html`, `index.html`)
-│   ├── scss/         # SCSS/Sass styles
-│   └── components/    # Reusable component files
+│   ├── scss/         # SCSS/Sass/CSS styles
+│   └── components/   # Reusable component files
 ├── public/           # Static assets (CSS, JS, images)
 ├── dist/             # Output directory for built site (auto-generated)
 ├── coralite.config.js # Configuration file
@@ -34,13 +34,26 @@ export default defineConfig({
   public: 'public',
   pages: 'src/pages',
   components: 'src/components',
-  sass: {
+  styles: {
+    type: 'scss', // can be 'scss', 'sass', or 'css'
     input: 'src/scss'
-  }
+  },
+  // Optional: copy static assets from other packages
+  assets: [
+    { pkg: 'some-package', path: 'dist/asset.js', dest: 'assets/asset.js' }
+  ],
+  // Optional: ignore processing elements with specific attributes
+  ignoreByAttribute: [
+    { name: 'data-ignore', value: 'true' }
+  ],
+  // Optional: skip rendering elements with specific attributes
+  skipRenderByAttribute: [
+    { name: 'data-skip', value: 'true' }
+  ]
 })
 ```
 
-> This tells Coralite where to find your source files, compile CSS from SCSS, and serve static assets.
+> This tells Coralite where to find your source files, compile CSS from SCSS/Sass/CSS, and serve static assets. It also sets up advanced features like copying static assets or ignoring/skipping rendering of specific elements based on attributes.
 
 ---
 
@@ -48,10 +61,11 @@ export default defineConfig({
 
 Update your `package.json` scripts to include:
 
-```json package.json
+```json
 {
   "scripts": {
-    "start": "coralite-script"
+    "start": "coralite-scripts start",
+    "build": "coralite-scripts build"
   }
 }
 ```
@@ -62,7 +76,7 @@ Then start the dev server:
 npm run start
 ```
 
-> ✅ The server runs on `http://localhost:3000` by default.
+> The server runs on `http://localhost:3000` by default.
 
 ---
 
@@ -72,7 +86,7 @@ Coralite provides real-time development workflows out of the box:
 
 | Feature | How It Works |
 |-------|-------------|
-| **Live Reload** | Automatically reloads browser when any `.html`, `.scss`, or `.sass` file changes. |
+| **Live Reload** | Automatically reloads browser when any `.html`, `.scss`, `.sass`, or `.css` file changes. |
 | **Hot CSS Updates** | Sass/SCSS files are compiled instantly and injected into your page via Server-Sent Events (SSE). |
 | **File Watching** | Monitors `src/pages`, `src/scss`, `public`, and `src/components`. |
 | **Dev Logs** | Shows real-time build times, file changes, and status codes in terminal. |
@@ -82,8 +96,8 @@ Coralite provides real-time development workflows out of the box:
 ## How it works under the hood
 
 - **Routing**: `/` → `index.html`, `/about` → `about.html`
-- **HTML Compilation**: Pages are compiled with embedded live reload scripts.
-- **Sass Support**: `.scss`/`.sass` files are auto-compiled to CSS in `dist/css`.
+- **HTML Compilation**: Pages are compiled with embedded live reload scripts during development.
+- **Sass/CSS Support**: `.scss`, `.sass`, or `.css` files are auto-compiled to CSS in `dist/css`.
 - **Server-Sent Events (SSE)**: Used for real-time updates without full page refresh.
 
 > No extra tooling needed — everything is built-in!
@@ -109,6 +123,6 @@ Coralite provides real-time development workflows out of the box:
 
 ---
 
-> **Feedback?** Found a bug or want a feature? Open an issue!
+> **Feedback?** Found a bug or want a feature? [Open an issue](https://codeberg.org/tjdavid/coralite/issues) on our Codeberg repository!
 
 Happy building with Coralite!
