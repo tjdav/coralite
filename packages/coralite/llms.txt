@@ -16,8 +16,18 @@ Static components are purely HTML-based elements without scripting logic.
 ## 3. Dynamic Components (defineComponent)
 Dynamic components are required for data processing, slots, and client-side interactivity. They are authored by appending a `<script type="module">` below the `<template>`, exporting the core `defineComponent` helper.
 
-### 3.1 Server-Side Execution (Build Time)
+### 3.1 Server-Side Execution (Build Time) & Context Data
 * **client.setup(results)**: An asynchronous function executed strictly on the server during the build. Replaces Top-Level Await (TLA). Used for fetching data or reading files. The returned object is merged into the component's `values` context.
+* **Context Data (`values`) & Data Passing**: The `values` object acts as the central state mechanism for a component. Data must be passed via **HTML attributes**, which the framework automatically maps into the `values` object.
+  * **Handling Complex Data**: Do not pass complex objects or arrays as stringified JSON attributes. Instead, handle the complex data structures in your script logic (e.g., mapping over an array) and pass the decomposed primitive values (strings, numbers) as individual attributes.
+  * **Declarative Rendering Example**: Generate component instances using template literals, passing primitive data as attributes and utilizing `<slot>`s for nested content:
+    ```javascript
+    container.innerHTML = items.map(item => `
+      <my-component item-id="${item.id}" item-name="${item.name}">
+         <p slot="description">${item.desc}</p>
+      </my-component>
+    `).join('');
+    ```
 * **tokens**: Evaluates data at build time. Can be static strings or functions receiving `values`. If a token returns an HTML string, the token processor parses and integrates it into the tree.
 * **slots**: Allows server-side transformation of content passed between component tags. Receives `slotNodes` (parsed HTML array) and `values`. Can mutate, replace, or conditionally return nodes.
 
@@ -78,7 +88,8 @@ Plugins hook into the build lifecycle, register global components, and inject bu
 * **Template Setup**: Add `ref="elementName"` to any HTML tag.
 * **Script Usage**: Access via `const el = helpers.refs('elementName')`.
 * **Shadow DOM Scoping**: If the component is compiled standalone (`context.root` exists), element lookups are automatically restricted to that specific Shadow DOM boundary.
-* **Execution**: Maps the unique ID (stored in `values['ref_elementName']`) via `getElementById`. Returns cached DOM node or `null` if absent.
+* **Execution & DOM Compilation**: The framework maps the `ref` attribute to a unique `id` stored in `values['ref_elementName']`, which is fetched via `getElementById`. Returns a cached DOM node or `null` if absent.
+* **E2E Testing & External Querying**: At build time, Coralite compiles the `ref` attribute into a strict `id` attribute on the DOM element using the pattern: `<component-id>__<refName>-<index>`. For E2E testing frameworks (like Playwright) or external scripts, you must query this compiled ID directly (e.g., `page.locator('#coralite-chat-timeline__messagesContainer-0')`) instead of adding arbitrary CSS classes.
 
 ### 5.3 Static Assets Plugin
 * **Purpose**: Copies static or binary dependencies (like `.wasm` files) from NPM packages into the build output directory.
