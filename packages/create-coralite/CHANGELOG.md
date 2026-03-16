@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.28.3
+
+> Comparing `create-coralite-v0.28.2` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.28.5 ([1116381](https://codeberg.org/tjdavid/coralite/commit/1116381529f730be66218b768e12c7bd5511ee64))
+- release(coralite-scripts): version 0.28.4 ([7b5173b](https://codeberg.org/tjdavid/coralite/commit/7b5173b4b4732416013c4338ca66c6924c780f6b))
+
+
 ## v0.28.2
 
 > Comparing `create-coralite-v0.28.1` to `HEAD`
