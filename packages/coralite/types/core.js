@@ -30,11 +30,19 @@
  */
 
 /**
+ * @typedef {Object} CoraliteStaticAsset
+ * @property {string} pkg - The package name to copy assets from.
+ * @property {string} path - The path to the asset within the package.
+ * @property {string} dest - The destination path for the asset in the output directory.
+ */
+
+/**
  * @typedef {Object} CoraliteConfig
  * @property {string} output - The path to the output directory where built files will be placed.
  * @property {string} components - The path to the directory containing Coralite components.
  * @property {string} pages - The path to the directory containing pages that will be rendered using the provided templates.
  * @property {CoralitePluginInstance[]} [plugins] - Optional array of plugin instances to extend Coralite functionality.
+ * @property {CoraliteStaticAsset[]} [assets] - Static assets to copy during build.
  * @property {Array<string | Attribute>} [ignoreByAttribute] - An array of attribute names and values to ignore by element type.
  * @property {Array<string | Attribute>} [skipRenderByAttribute] - An array of attribute names and values to skip rendering by element type.
  * @property {string} [standaloneOutput] - Output directory for standalone client-side web components

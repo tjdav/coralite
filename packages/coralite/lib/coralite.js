@@ -3,7 +3,7 @@ import { getHtmlFile, getHtmlFiles } from './html.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
 import { transformCss } from './style-transform.js'
 import { ScriptManager } from './script-manager.js'
-import { defineComponent, metadataPlugin, refsPlugin } from '#plugins'
+import { defineComponent, metadataPlugin, refsPlugin, staticAssetPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
 import { createRequire } from 'node:module'
@@ -48,6 +48,7 @@ import { createContext } from 'node:vm'
  * @param {CoralitePluginInstance[]} [options.plugins=[]]
  * @param {string} options.pages - The path to the directory containing pages that will be rendered using the provided components.
  * @param {string} [options.mode='production'] - Build mode: "development" or "production"
+ * @param {import('../types/core.js').CoraliteStaticAsset[]} [options.assets] - Static assets to copy during build
  * @param {Array<string | Attribute>} [options.ignoreByAttribute] - Elements to ignore with attribute name value pair
  * @param {Array<string | Attribute>} [options.skipRenderByAttribute] - Element attributes to parse but exclude from final render output
  * @param {string} [options.standaloneOutput] - Output directory for standalone client-side web components
@@ -66,6 +67,7 @@ export function Coralite ({
   components,
   pages,
   plugins,
+  assets,
   ignoreByAttribute,
   skipRenderByAttribute,
   mode = 'production',
@@ -95,6 +97,7 @@ export function Coralite ({
     components,
     pages,
     plugins,
+    assets,
     ignoreByAttribute,
     skipRenderByAttribute,
     mode,
@@ -148,6 +151,10 @@ export function Coralite ({
 
   // place core plugin first
   plugins.unshift(defineComponent, refsPlugin, metadataPlugin)
+
+  if (assets) {
+    plugins.unshift(staticAssetPlugin(assets))
+  }
 
   const source = this._source
   // iterate over each plugin and register its hooks and modules in the Coralite source context.

@@ -33,6 +33,31 @@ describe('Coralite', () => {
     })
   })
 
+  describe('Plugins Initialization', () => {
+    it('should unshift staticAssetPlugin when assets option is provided', async () => {
+      const assets = [
+        {
+          pkg: 'some-pkg',
+          path: 'src/file.js',
+          dest: 'dest/file.js'
+        }
+      ]
+
+      coralite = new Coralite({
+        pages: pagesDir,
+        components: componentDir,
+        assets
+      })
+
+      // plugins array should have static-asset-plugin as the first item
+      assert.strictEqual(coralite.options.plugins[0].name, 'static-asset-plugin')
+      // Followed by core plugins
+      assert.strictEqual(coralite.options.plugins[1].name, 'defineComponent')
+      assert.strictEqual(coralite.options.plugins[2].name, 'refs')
+      assert.strictEqual(coralite.options.plugins[3].name, 'metadata')
+    })
+  })
+
   describe('onBeforeBuild hook', () => {
     it('should be called before the build starts with path and options', async () => {
       let hookCalled = false

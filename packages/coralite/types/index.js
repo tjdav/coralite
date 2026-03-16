@@ -33,6 +33,7 @@
  * @typedef {import('./core.js').CoraliteConfig} CoraliteConfig
  * @typedef {import('./core.js').CoralitePathValues} CoralitePathValues
  * @typedef {import('./core.js').CoraliteValues} CoraliteValues
+ * @typedef {import('./core.js').CoraliteStaticAsset} CoraliteStaticAsset
  */
 
 /**
