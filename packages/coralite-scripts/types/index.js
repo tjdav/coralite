@@ -4,16 +4,8 @@
  */
 
 /**
- * @typedef {Object} CoraliteStaticAsset
- * @property {string} pkg - The package name to copy assets from.
- * @property {string} path - The path to the asset within the package.
- * @property {string} dest - The destination path for the asset in the output directory.
- */
-
-/**
  * @typedef {Object} CoraliteScriptBaseConfig
  * @property {string} public - The path to the directory containing static assets.
- * @property {CoraliteStaticAsset[]} [assets] - Static assets to copy during build.
  * @property {Object} [server] - Server configuration options.
  * @property {number} server.port - The port number on which the development server will run.
  * @property {Object} [styles]
