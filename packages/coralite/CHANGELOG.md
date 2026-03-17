@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.28.5
+
+> Comparing `coralite-v0.28.4` to `HEAD`
+
+**Summary:** 2 commits
+
+### 📚 Documentation
+
+- enhance Static Assets Plugin documentation with local path support and WASM details ([96d7726](https://codeberg.org/tjdavid/coralite/commit/96d7726977584b4491302e7876ce476e053706c8))
+
+### 🔨 Other Changes
+
+- revert(feat (build)): disable tree shaking in script manager compilation ([d5ec771](https://codeberg.org/tjdavid/coralite/commit/d5ec771bd1111d586596a4aaae217274bc31c3b6))
+
+
 ## v0.28.4
 
 > Comparing `coralite-v0.28.3` to `HEAD`
