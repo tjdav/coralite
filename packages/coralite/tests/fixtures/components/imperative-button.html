@@ -1,0 +1,41 @@
+<template id="hydrated-button">
+  <button ref="fixtureBtn">{{ label }}</button>
+  <div ref="fixtureCount">{{ count }}</div>
+  <div ref="childHelperOut"></div>
+</template>
+
+<style>
+  button {
+    background-color: blue;
+    color: white;
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    tokens: {
+      label: 'Default Label'
+    },
+    client: {
+      setup () {
+        return {
+          count: 0
+        }
+      },
+      script (context) {
+        const btn = context.helpers.refs('fixtureBtn')
+        const childOut = context.helpers.refs('childHelperOut')
+
+        if (context.helpers.getSharedRandomNumber) {
+          childOut.textContent = context.helpers.getSharedRandomNumber()
+        }
+
+        btn.addEventListener('click', () => {
+          context.values.count++
+        })
+      }
+    }
+  })
+</script>

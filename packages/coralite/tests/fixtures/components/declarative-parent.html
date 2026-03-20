@@ -1,0 +1,27 @@
+<template id="hydrated-parent">
+  <div ref="container"></div>
+  <div ref="parentHelperOut"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    client: {
+      components: ['hydrated-button'],
+      script (context) {
+        const container = context.helpers.refs('container')
+        const parentOut = context.helpers.refs('parentHelperOut')
+  
+        if (context.helpers.getSharedRandomNumber) {
+          parentOut.textContent = context.helpers.getSharedRandomNumber()
+        }
+  
+        const btn = document.createElement('hydrated-button')
+        btn.setAttribute('label', 'Click Me Dynamic')
+  
+        container.appendChild(btn)
+      }
+    }
+  })
+</script>
