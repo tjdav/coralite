@@ -110,6 +110,7 @@ export default [
   },
   {
     ignores: [
+      '**/.html/',
       '**/dist/',
       '**/.history/',
       '**/playwright-report/',

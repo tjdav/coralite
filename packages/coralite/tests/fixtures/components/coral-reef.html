@@ -1,6 +1,29 @@
 <template id="coral-reef">
-  <div class="reef">
-    <h1>Great Barrier Reef</h1>
-    <p>A beautiful home for many fish.</p>
-  </div>
+  <div class="reef-stats">Reef Temp: <span ref="tempOut" id="reef-temp"></span></div>
+  <div ref="habitat"></div>
 </template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    client: {
+      // 1. Explicitly collect the imperative child dependency
+      components: ['sea-anemone'],
+      script (context) {
+        const habitat = context.helpers.refs('habitat')
+        const tempOut = context.helpers.refs('tempOut')
+
+        // 2. Consume the Phase 2 curried helper
+        if (context.helpers.getWaterTemperature) {
+          tempOut.textContent = context.helpers.getWaterTemperature()
+        }
+  
+        // 3. Append the Web Component dynamically
+        const anemone = document.createElement('sea-anemone')
+        anemone.setAttribute('color', 'Neon Pink')
+        habitat.appendChild(anemone)
+      }
+    }
+  })
+</script>

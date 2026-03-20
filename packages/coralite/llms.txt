@@ -53,7 +53,11 @@ Declares external dependencies bundled at build-time. Static `import` statements
 * JSON: Supported via `attributes: { type: 'json' }`.
 * **Cross-Component**: Import other components via `specifier: 'coralite-component/<component-id>'`.
 
-* **CRITICAL RULE FOR CROSS-COMPONENT IMPORTS**: You **ONLY** need to import another Coralite component if your `client.script` is *imperatively* creating and appending it to the DOM at runtime (e.g., `document.createElement('other-component')`). If you are simply using `<other-component>` declaratively inside your HTML `<template>`, Coralite resolves and bundles it automatically on the server. **Do not manually import components used declaratively in the template.**
+* **CRITICAL RULE FOR CROSS-COMPONENT IMPORTS & HYDRATION**: You **ONLY** need to import another Coralite component if your `client.script` is *imperatively* creating and appending it to the DOM at runtime (e.g., `document.createElement('other-component')`). 
+  * If you are simply using `<other-component>` declaratively inside your HTML `<template>`, Coralite resolves and bundles it automatically on the server. **Do not manually import components used declaratively in the template.**
+  * When you imperatively import a component (`specifier: 'coralite-component/<component-id>'`), Coralite dynamically compiles it as a standard Web Component (`class extends HTMLElement`). 
+  * **Global Hydration:** These dynamically created Web Components automatically wire themselves into the central Coralite script system (`window.coraliteComponentFunctions`, `window.getSetups`, `window.getHelpers`). This means they share the same global setups, plugins, and helpers as the parent, rather than running in complete isolation, allowing seamless integration between standard HTML pages and dynamically appended Web Components.
+
 * **Access**: Resolved modules are available in `helpers.imports`.
 
 ## 4. Framework Extensibility (createPlugin)
@@ -87,9 +91,9 @@ Plugins hook into the build lifecycle, register global components, and inject bu
 * **Purpose**: Replaces `document.querySelector` for safe DOM element targeting.
 * **Template Setup**: Add `ref="elementName"` to any HTML tag.
 * **Script Usage**: Access via `const el = helpers.refs('elementName')`.
-* **Shadow DOM Scoping**: If the component is compiled standalone (`context.root` exists), element lookups are automatically restricted to that specific Shadow DOM boundary.
+* **Shadow DOM Scoping**: If the component is compiled standalone or dynamically imported (`context.root` exists), element lookups are automatically restricted to that specific Shadow DOM boundary.
 * **Execution & DOM Compilation**: The framework maps the `ref` attribute to a unique `id` stored in `values['ref_elementName']`, which is fetched via `getElementById`. Returns a cached DOM node or `null` if absent.
-* **E2E Testing & External Querying**: At build time, Coralite compiles the `ref` attribute into a strict `id` attribute on the DOM element using the pattern: `<component-id>__<refName>-<index>`. For E2E testing frameworks (like Playwright) or external scripts, you must query this compiled ID directly (e.g., `page.locator('#coralite-chat-timeline__messagesContainer-0')`) instead of adding arbitrary CSS classes.
+* **E2E Testing & External Querying**: At build time, Coralite compiles the `ref` attribute into a strict `id` attribute on the DOM element using the pattern: `<component-id>__<refName>-<index>`. When dynamically testing components that are generated at runtime and encapsulated in a Shadow DOM, avoid depending on strictly serialized IDs, and query by standard elements or properties. For server-rendered nodes, you must query the compiled ID directly (e.g., `page.locator('#coralite-chat-timeline__messagesContainer-0')`) instead of adding arbitrary CSS classes.
 ### 5.3 Static Assets Plugin
 * **Purpose**: Copies static or binary dependencies (like `.wasm` files) from NPM packages or local paths into the build output directory.
 * **Usage**: Define an `assets` array in `coralite.config.js`. Each object must contain a `dest` (destination path relative to the build output directory). To determine the source, you must provide either:

@@ -13,11 +13,13 @@ const testPlugin = createPlugin({
       message: 'Hello from config'
     },
     helpers: {
-      updateTestElement: ({ config, imports }) => (elementId) => {
-        const el = document.getElementById(elementId)
-        if (el) {
-          el.textContent = `${config.message} - ${imports.foo}`
-          el.setAttribute('data-updated', 'true')
+      updateTestElement: ({ config, imports }) => {
+        return (localContext) => (elementId) => {
+          const el = document.getElementById(elementId)
+          if (el) {
+            el.textContent = `${config.message} - ${imports.foo}`
+            el.setAttribute('data-updated', 'true')
+          }
         }
       }
     }
@@ -43,22 +45,26 @@ const pluginImportsTest = createPlugin({
       }
     ],
     helpers: {
-      testPluginImports: ({ imports }) => (elementId) => {
-        const el = document.getElementById(elementId)
-        if (el) {
-          el.textContent = `Plugin JS: ${imports.bar}, Plugin JSON: ${imports.pluginDummyData.name}`
-          if (imports.pluginConfetti) {
-            el.setAttribute('data-confetti-loaded', 'true')
+      testPluginImports: ({ imports }) => {
+        return (localContext) => (elementId) => {
+          const el = document.getElementById(elementId)
+          if (el) {
+            el.textContent = `Plugin JS: ${imports.bar}, Plugin JSON: ${imports.pluginDummyData.name}`
+            if (imports.pluginConfetti) {
+              el.setAttribute('data-confetti-loaded', 'true')
+            }
           }
         }
       },
-      triggerPluginConfetti: ({ imports }) => () => {
-        if (imports.pluginConfetti) {
-          imports.pluginConfetti({
-            particleCount: 15,
-            spread: 40,
-            origin: { y: 0.5 }
-          })
+      triggerPluginConfetti: ({ imports }) => {
+        return (localContext) => () => {
+          if (imports.pluginConfetti) {
+            imports.pluginConfetti({
+              particleCount: 15,
+              spread: 40,
+              origin: { y: 0.5 }
+            })
+          }
         }
       }
     }

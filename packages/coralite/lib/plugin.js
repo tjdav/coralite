@@ -218,27 +218,57 @@ export function createPlugin ({
       )
     }
 
+    let innerClient = client
+    // @ts-ignore
+    if (client.client && typeof client.client === 'object') {
+      // @ts-ignore
+      innerClient = client.client
+    }
+
     // Validate optional client properties
-    if (client.setup != null && typeof client.setup !== 'function') {
+    // @ts-ignore
+    if (innerClient.setup != null && typeof innerClient.setup !== 'function') {
       throw new Error(
-        `Coralite plugin validation failed: "client.setup" must be a function, received ${typeof client.setup}`
+        // @ts-ignore
+        `Coralite plugin validation failed: "client.setup" must be a function, received ${typeof innerClient.setup}`
       )
     }
 
-    if (client.helpers != null && typeof client.helpers !== 'object') {
+    // @ts-ignore
+    if (innerClient.helpers != null && typeof innerClient.helpers !== 'object') {
       throw new Error(
-        `Coralite plugin validation failed: "client.helpers" must be an object, received ${typeof client.helpers}`
+        // @ts-ignore
+        `Coralite plugin validation failed: "client.helpers" must be an object, received ${typeof innerClient.helpers}`
       )
     }
 
-    if (client.imports != null) {
-      validateImportArray(client.imports, 'client.imports')
+    // @ts-ignore
+    if (innerClient.imports != null) {
+      // @ts-ignore
+      validateImportArray(innerClient.imports, 'client.imports')
     }
 
-    if (client.config != null && typeof client.config !== 'object') {
+    // @ts-ignore
+    if (innerClient.config != null && typeof innerClient.config !== 'object') {
       throw new Error(
-        `Coralite plugin validation failed: "client.config" must be an object, received ${typeof client.config}`
+        // @ts-ignore
+        `Coralite plugin validation failed: "client.config" must be an object, received ${typeof innerClient.config}`
       )
+    }
+
+    // Normalize to flat client format internally for backward compatibility with build scripts
+    // @ts-ignore
+    if (client.client && typeof client.client === 'object') {
+      // @ts-ignore
+      client.setup = client.client.setup
+      // @ts-ignore
+      client.helpers = client.client.helpers
+      // @ts-ignore
+      client.imports = client.client.imports
+      // @ts-ignore
+      client.config = client.client.config
+      // @ts-ignore
+      client.components = client.client.components
     }
   }
 

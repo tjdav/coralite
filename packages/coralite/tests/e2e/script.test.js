@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('Client-side Scripts', () => {
   test('should interact with DOM using refs', async ({ page }) => {
-    await page.goto('/aquarium.html')
+    await page.goto('/script-test.html')
 
     const cleaner = page.locator('.cleaner')
     const btn = cleaner.locator('button')

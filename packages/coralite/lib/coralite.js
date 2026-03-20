@@ -522,67 +522,6 @@ Coralite.prototype._createRenderContext = function (buildId) {
 }
 
 /**
- * Compiles reusable Web Components for the standalone output target.
- *
- * @internal
- * @return {AsyncGenerator<CoraliteResult>}
- */
-Coralite.prototype._generateStandaloneComponents = async function* () {
-  const queue = this.components.list.slice()
-
-  for (let i = 0; i < queue.length; i++) {
-    const component = queue[i]
-
-    // Skip if it is not a template
-    if (!component.result || !component.result.isTemplate) {
-      continue
-    }
-
-    const startTime = performance.now()
-    const result = component.result
-
-    // Extract the raw HTML of the template (excluding the wrapping `<template>` tag)
-    const htmlPayload = result.template.children.map(node => this.transform(node)).join('').trim()
-
-    let cssPayload = ''
-    if (result.styles && result.styles.length > 0) {
-      cssPayload = result.styles.join('\n')
-    }
-
-    let scriptContent = null
-    if (result.script) {
-      const extractedScript = findAndExtractScript(result.script)
-      if (extractedScript) {
-        scriptContent = extractedScript
-      } else {
-        scriptContent = { content: 'export default function(){}' }
-      }
-
-      scriptContent.imports = scriptContent.imports || result.values?.imports || result.imports || []
-    }
-
-    // Call ScriptManager to compile the standalone component code
-    const compiledCode = await this._scriptManager.compileStandaloneComponent(
-      result.id,
-      scriptContent,
-      htmlPayload,
-      cssPayload,
-      this.options.mode
-    )
-
-    yield {
-      type: 'component',
-      path: {
-        ...component.path,
-        filename: component.path.filename.replace(/\.html$/, '.js')
-      },
-      content: compiledCode,
-      duration: performance.now() - startTime
-    }
-  }
-}
-
-/**
  * Compiles specified page(s) by rendering their document content and measuring render time.
  * Processes pages based on provided path(s), replacing custom elements with components,
  * and returns rendered results with performance metrics.
@@ -984,20 +923,6 @@ Coralite.prototype.build = async function (...args) {
 
     await Promise.all(executing)
 
-    // Generate standalone components
-    for await (const result of this._generateStandaloneComponents()) {
-      if (signal?.aborted) throw signal.reason
-
-      if (typeof callback === 'function') {
-        const transformed = await callback(result)
-        if (transformed) {
-          results.push(transformed)
-        }
-      } else {
-        results.push(result)
-      }
-    }
-
     return results
 
   } catch (error) {
@@ -1309,8 +1234,16 @@ Coralite.prototype.createComponent = async function ({
         scriptResult.__script__.content = 'export default function(){}'
       }
 
+      // Get HTML Payload
+      const htmlPayload = module.template.children.map(node => this.transform(node)).join('').trim()
+
+      let cssPayload = ''
+      if (module.styles && module.styles.length > 0) {
+        cssPayload = module.styles.join('\n')
+      }
+
       // Register component script with script manager
-      await this._scriptManager.registerComponent(module.id, scriptResult.__script__, component.path.pathname)
+      await this._scriptManager.registerComponent(module.id, scriptResult.__script__, component.path.pathname, htmlPayload, cssPayload)
 
       // Ensure values object exists in scriptResult
       if (!scriptResult.__script__.values) {

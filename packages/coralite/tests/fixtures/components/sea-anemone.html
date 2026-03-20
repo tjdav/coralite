@@ -1,11 +1,34 @@
 <template id="sea-anemone">
-  <div class="sea-anemone">
-    <h2>Anemone</h2>
-    <div class="tentacles">
-      <slot name="resident">No one is home.</slot>
-    </div>
-    <div class="surroundings">
-      <slot>Just water.</slot>
-    </div>
+  <div class="anemone-card" style="border: 2px solid {{ color }};">
+    <button ref="feedBtn" id="feed-btn">Feed Anemone</button>
+    <div>Tentacles: <span ref="tentacleCount" id="tentacle-count">{{ tentacles }}</span></div>
+    <div>Anemone Temp: <span ref="tempOut" id="anemone-temp"></span></div>
   </div>
 </template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    tokens: { color: 'Red' },
+    client: {
+      setup () {
+        return { tentacles: 10 } // Initial reactive state
+      },
+      script (context) {
+        const feedBtn = context.helpers.refs('feedBtn')
+        const tempOut = context.helpers.refs('tempOut')
+
+        // Share the exact same singleton temperature as the Reef
+        if (context.helpers.getWaterTemperature) {
+          tempOut.textContent = context.helpers.getWaterTemperature()
+        }
+
+        // 4. Test the Reactivity Proxy
+        feedBtn.addEventListener('click', () => {
+          context.values.tentacles += 5 // Mutating state auto-updates DOM
+        })
+      }
+    }
+  })
+</script>

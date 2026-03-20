@@ -375,6 +375,12 @@ export function findAndExtractScript (code) {
                 prop.key.name === 'imports'
             )
 
+            const componentsProp = clientProp.value.properties.find(
+              prop => prop.type === 'Property' &&
+                prop.key.type === 'Identifier' &&
+                prop.key.name === 'components'
+            )
+
             /** @type {import('../types/script.js').ScriptImport[] | undefined} */
             let imports = undefined
             if (importsProp && importsProp.type === 'Property' && importsProp.value.type === 'ArrayExpression') {
@@ -419,6 +425,13 @@ export function findAndExtractScript (code) {
                 }
                 return acc
               }, /** @type {import('../types/script.js').ScriptImport[]} */([]))
+            }
+
+            /** @type {string[] | undefined} */
+            let components = undefined
+            if (componentsProp && componentsProp.type === 'Property' && componentsProp.value.type === 'ArrayExpression') {
+              // @ts-ignore
+              components = componentsProp.value.elements.map(e => ((e && e.type === 'Literal') ? e.value : undefined)).filter(Boolean)
             }
 
             let setupContent = undefined
@@ -474,16 +487,22 @@ export function findAndExtractScript (code) {
               if (imports) {
                 result.imports = imports
               }
+              if (components) {
+                result.components = components
+              }
               if (setupContent) {
                 result.setupContent = setupContent
               }
-            } else if (imports || setupContent) {
+            } else if (imports || setupContent || components) {
               result = {
                 content: 'export default function(){}',
                 lineOffset: 0
               }
               if (imports) {
                 result.imports = imports
+              }
+              if (components) {
+                result.components = components
               }
               if (setupContent) {
                 result.setupContent = setupContent

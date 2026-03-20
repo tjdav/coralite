@@ -1,6 +1,7 @@
 import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction } from './utils.js'
+import { generateWebComponentClass } from './compile-component.js'
 import { pathToFileURL } from 'node:url'
 import { resolve, relative, dirname, parse, format } from 'node:path'
 
@@ -31,6 +32,14 @@ ScriptManager.prototype.use = async function (plugin) {
   if (
     plugin
     && typeof plugin !== 'function'
+    && plugin.client
+    && (plugin.client.helpers || plugin.client.imports || typeof plugin.client.setup === 'function')
+  ) {
+    this.scriptModules.push(plugin.client)
+  } else if (
+    plugin
+    && typeof plugin !== 'function'
+    // @ts-ignore
     && (plugin.helpers || plugin.imports || typeof plugin.setup === 'function')
   ) {
     this.scriptModules.push(plugin)
@@ -85,517 +94,19 @@ ScriptManager.prototype.getHelpers = function () {
  * @param {string} id - component identifier
  * @param {import('../types/script.js').ScriptContent} script - Script content or function
  * @param {string} [filePath] - The source file path to map back to
+ * @param {string} [htmlPayload] - The component's HTML structure
+ * @param {string} [cssPayload] - The component's scoped CSS
  */
-ScriptManager.prototype.registerComponent = function (id, script, filePath) {
+ScriptManager.prototype.registerComponent = function (id, script, filePath, htmlPayload, cssPayload) {
   this.sharedFunctions[id] = {
     id,
     script,
+    components: script.components || [],
     imports: script.imports || [],
+    htmlPayload: htmlPayload || '',
+    cssPayload: cssPayload || '',
     filePath: filePath ? resolve(filePath) : `/component-${id}.js`
   }
-}
-
-/**
- * Generate instance-specific script wrapper
- * @param {string} id - component identifier
- * @param {InstanceContext} instanceContext - Instance context
- * @returns {string} Generated script
- */
-ScriptManager.prototype.generateInstanceWrapper = function (id, instanceContext) {
-  const values = instanceContext.values ? serialize(instanceContext.values) : '{}'
-
-  // Generate wrapper that calls shared functions with instance context
-  return `await coraliteComponentFunctions["${id}"]({
-      values: ${values},
-      helpers,
-      imports,
-      instanceId: '${instanceContext.instanceId}'
-    });`
-}
-
-/**
- * Compiles a single generic Web Component as a standalone ES Module.
- *
- * @param {string} componentId - The tag name for the custom element.
- * @param {import('../types/script.js').ScriptContent} scriptContent - The component's script logic.
- * @param {string} htmlPayload - The component's HTML structure.
- * @param {string} cssPayload - The component's scoped CSS.
- * @param {string} mode - Build mode ('development' | 'production').
- * @returns {Promise<string>} The compiled JavaScript module.
- */
-ScriptManager.prototype.compileStandaloneComponent = async function (componentId, scriptContent, htmlPayload, cssPayload, mode) {
-  const entryCodeParts = []
-  const moduleNamespace = 'coralite-script-module:'
-
-  // Generate component imports
-  const importMap = {}
-  if (scriptContent && scriptContent.imports) {
-    for (const importDefinition of scriptContent.imports) {
-      const specifier = JSON.stringify(importDefinition.specifier)
-      let attributesString = ''
-      if (importDefinition.attributes) {
-        attributesString = ` with { ${Object.entries(importDefinition.attributes).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')} }`
-      }
-
-      if (importDefinition.namespaceExport) {
-        entryCodeParts.push(`import * as ${importDefinition.namespaceExport} from ${specifier}${attributesString};\n`)
-        importMap[importDefinition.namespaceExport] = importDefinition.namespaceExport
-      }
-
-      const parts = []
-      if (importDefinition.defaultExport) {
-        parts.push(importDefinition.defaultExport)
-        importMap[importDefinition.defaultExport] = importDefinition.defaultExport
-      }
-
-      if (importDefinition.namedExports && importDefinition.namedExports.length) {
-        parts.push(`{ ${importDefinition.namedExports.join(', ')} }`)
-        for (const namedExport of importDefinition.namedExports) {
-          if (namedExport.includes(' as ')) {
-            const [, exportAlias] = namedExport.split(' as ')
-            importMap[exportAlias.trim()] = exportAlias.trim()
-          } else {
-            importMap[namedExport.trim()] = namedExport.trim()
-          }
-        }
-      }
-
-      if (parts.length > 0) {
-        const importStr = parts.join(', ')
-        entryCodeParts.push(`import ${importStr} from ${specifier}${attributesString};\n`)
-      } else if (!importDefinition.namespaceExport) {
-        entryCodeParts.push(`import ${specifier}${attributesString};\n`)
-      }
-    }
-  }
-
-  // Generate imports object for context injection
-  const importsObjContent = Object.keys(importMap).length > 0
-    ? `const componentImports = { ${Object.entries(importMap).map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
-    : 'const componentImports = {};'
-
-  entryCodeParts.push(importsObjContent + '\n')
-
-  // Include cleanKeys utility inline for the standalone artifact
-  entryCodeParts.push(`
-function kebabToCamel(str) {
-  return str.replace(/[-|:]([a-z])/g, function (match, letter) {
-    return letter.toUpperCase();
-  });
-}
-function cleanKeys(object) {
-  const result = {};
-  for (const [key, value] of Object.entries(object)) {
-    result[key] = value;
-    const camelKey = kebabToCamel(key);
-    if (camelKey !== key) {
-      result[camelKey] = value;
-    }
-  }
-  return result;
-}
-`)
-
-  // Include script modules (plugins)
-  for (let i = 0; i < this.scriptModules.length; i++) {
-    entryCodeParts.push(`import { helpers as helpers_${i}, runSetup as runSetup_${i} } from "${moduleNamespace}${i}";\n`)
-  }
-
-  // Setup helpers factory
-  const helperParts = [
-    ...this.scriptModules.map((_, i) => `...helpers_${i}`),
-    this.getHelpersContent()
-  ].filter(Boolean).join(',\n')
-
-  entryCodeParts.push(`const coraliteComponentScriptHelpers = {
-    ${helperParts}
-  };\n`)
-
-  entryCodeParts.push(`const getHelpers = (context) => {
-    const helpers = {};
-    for (const [key, helper] of Object.entries(coraliteComponentScriptHelpers)) {
-      helpers[key] = helper(context);
-    }
-    return helpers;
-  };\n`)
-
-  const setupToInject = scriptContent && scriptContent.setupContent ? scriptContent.setupContent : null
-  let cleanSetup = setupToInject
-
-  if (cleanSetup) {
-    if (cleanSetup.startsWith('function setup(')) {
-      cleanSetup = cleanSetup.replace(/^function setup\(/, 'function(')
-    } else if (cleanSetup.startsWith('async function setup(')) {
-      cleanSetup = cleanSetup.replace(/^async function setup\(/, 'async function(')
-    } else if (cleanSetup.startsWith('export default ')) {
-      cleanSetup = cleanSetup.replace(/^export default /, '')
-    }
-  }
-
-  const setupCode = cleanSetup ? `const componentSetup = ${cleanSetup};\n      const componentSetupResult = await componentSetup(context);` : 'const componentSetupResult = {};'
-
-  entryCodeParts.push(`const getSetups = async (context) => {
-    const values = {};
-    const results = await Promise.all([
-      ${this.scriptModules.map((_, i) => `runSetup_${i}(context)`).join(',\n      ')}
-    ]);
-    
-    ${setupCode}
-    if (componentSetupResult && typeof componentSetupResult === 'object') {
-      results.push(componentSetupResult);
-    }
-
-    for (const result of results) {
-      if (result && typeof result === 'object') {
-        Object.assign(values, result);
-      }
-    }
-    return values;
-  };\n`)
-
-  // Include user component script
-  const scriptToInject = scriptContent && scriptContent.content ? scriptContent.content : 'export default function(){}'
-  let cleanScript = scriptToInject
-  if (cleanScript.startsWith('function script(')) {
-    cleanScript = cleanScript.replace(/^function script\(/, 'function(')
-  } else if (cleanScript.startsWith('async function script(')) {
-    cleanScript = cleanScript.replace(/^async function script\(/, 'async function(')
-  } else if (cleanScript.startsWith('export default ')) {
-    cleanScript = cleanScript.replace(/^export default /, '')
-  }
-
-  entryCodeParts.push(`
-  const userComponentFn = (() => {
-    // Wrap user script in an IIFE to capture the default export cleanly
-    let defaultExport;
-    const module = { get exports() { return defaultExport; }, set exports(v) { defaultExport = v; } };
-    module.exports = ${cleanScript};
-    return defaultExport;
-  })();
-  `)
-
-  // Web Component Class Definition
-  entryCodeParts.push(`
-class ${componentId.replace(/[-.:]/g, '_')} extends HTMLElement {
-  static get observedAttributes() {
-    return ${JSON.stringify(scriptContent?.tokens || [])};
-  }
-
-  constructor() {
-    super();
-    this.attachShadow({ mode: 'open' });
-    this._initialized = false;
-  }
-
-  attributeChangedCallback(name, oldValue, newValue) {
-    if (oldValue !== newValue) {
-      if (this._context && this._context.values) {
-        this._context.values[name] = newValue;
-      }
-      this.updateDOM(name, newValue);
-    }
-  }
-
-  updateDOM(name, newValue) {
-    if (!this.shadowRoot) return;
-    
-    // Find text nodes that contain the token mapping
-    const walker = document.createTreeWalker(this.shadowRoot, NodeFilter.SHOW_TEXT, null, false);
-    let node;
-    const tokenStr = \`{{ \${name} }}\`;
-    
-    while ((node = walker.nextNode())) {
-      // Check if original data or textContent contains the token map
-      if (node._coraliteTokens && node._coraliteTokens.includes(name)) {
-        // We know this text node holds the value, let's re-render its text based on current context
-        let newText = node._coraliteOriginalText;
-        for (const token of node._coraliteTokens) {
-           newText = newText.split(\`{{ \${token} }}\`).join(this._context.values[token] !== undefined ? this._context.values[token] : '');
-        }
-        node.nodeValue = newText;
-        node.nodeValue = newText;
-      }
-    }
-    
-    // Also update attributes that might have bindings
-    const elements = this.shadowRoot.querySelectorAll('*');
-    for (const el of elements) {
-      if (el._coraliteAttrs) {
-        for (const [attrName, originalValue] of Object.entries(el._coraliteAttrs)) {
-          if (originalValue.includes(tokenStr)) {
-            let newAttrValue = originalValue;
-            // replace all tokens in this attribute
-            const tokenMatches = originalValue.match(/\\{\\{([^}]+)\\}\\}/g) || [];
-            for (const match of tokenMatches) {
-               const tokenKey = match.replace(/\\{|\\}/g, '').trim();
-               newAttrValue = newAttrValue.split(match).join(this._context.values[tokenKey] !== undefined ? this._context.values[tokenKey] : '');
-            }
-            el.setAttribute(attrName, newAttrValue);
-          }
-        }
-      }
-    }
-  }
-
-  async connectedCallback() {
-    // Map DOM Attributes to values
-    const domAttributes = {};
-    for (let i = 0; i < this.attributes.length; i++) {
-      const attribute = this.attributes[i];
-      domAttributes[attribute.name] = attribute.value;
-    }
-    const initialValues = cleanKeys(domAttributes);
-
-    // Hydrate Refs
-    const refs = {};
-
-    // Setup context
-    this._context = {
-      instanceId: this.id || Math.random().toString(36).substr(2, 9),
-      componentId: "${componentId}",
-      values: initialValues,
-      root: this.shadowRoot,
-      imports: componentImports // Standalone imports are bundled within the component
-    };
-    const context = this._context;
-
-    const setupValues = await getSetups(context);
-    context.values = { ...context.values, ...setupValues };
-    
-    // Inject HTML & CSS payload first so user script can interact with DOM
-    let htmlPayload = \`${htmlPayload.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
-    const cssPayload = \`${cssPayload.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`;
-    
-    let styles = '';
-    if (cssPayload) {
-      styles = \`<style>\${cssPayload}</style>\`;
-    }
-    
-    // Set raw HTML first before token replacement to preserve slots structure
-    this.shadowRoot.innerHTML = styles + htmlPayload;
-
-    // Extract tokens mapped to DOM nodes for reactivity
-    const walker = document.createTreeWalker(this.shadowRoot, NodeFilter.SHOW_TEXT, null, false);
-    let node;
-    while ((node = walker.nextNode())) {
-      const text = node.textContent || '';
-      const tokens = (text.match(/\\{\\{([^}]+)\\}\\}/g) || []).map(t => t.replace(/\\{|\\}/g, '').trim());
-      
-      if (tokens.length > 0) {
-        node._coraliteTokens = tokens;
-        node._coraliteOriginalText = text;
-        
-        let newText = text;
-        for (const token of tokens) {
-          newText = newText.split(\`{{ \${token} }}\`).join(context.values[token] !== undefined ? context.values[token] : '');
-        }
-        node.nodeValue = newText;
-      }
-    }
-    
-    // Attribute reactivity
-    const allElements = this.shadowRoot.querySelectorAll('*');
-    for (const el of allElements) {
-      for (const attr of el.attributes) {
-         if (attr.value.includes('{{')) {
-             if (!el._coraliteAttrs) el._coraliteAttrs = {};
-             el._coraliteAttrs[attr.name] = attr.value;
-             
-             let newAttrValue = attr.value;
-             const tokens = (attr.value.match(/\\{\\{([^}]+)\\}\\}/g) || []).map(t => t.replace(/\\{|\\}/g, '').trim());
-             for (const token of tokens) {
-               newAttrValue = newAttrValue.split(\`{{ \${token} }}\`).join(context.values[token] !== undefined ? context.values[token] : '');
-             }
-             el.setAttribute(attr.name, newAttrValue);
-         }
-      }
-    }
-
-    // Post-render ref extraction
-    const refElements = this.shadowRoot.querySelectorAll('[ref]');
-    refElements.forEach(el => {
-      const refName = el.getAttribute('ref');
-      // Set an ID dynamically if one doesn't exist to match SSR behavior
-      const elId = el.id || \`${componentId}__\${refName}-\${Math.random().toString(36).substr(2, 5)}\`;
-      el.id = elId;
-      context.values[\`ref_\${refName}\`] = elId;
-      el.removeAttribute('ref'); // clean up
-    });
-
-    context.helpers = getHelpers(context);
-
-    // 4. Execute User Script
-    if (typeof userComponentFn === 'function') {
-      if (this._initialized) {
-        return;
-      }
-      this._initialized = true;
-      await userComponentFn.call(this, context);
-    }
-  }
-}
-customElements.define("${componentId}", ${componentId.replace(/[-.:]/g, '_')});
-  `)
-
-  const result = await build({
-    stdin: {
-      contents: entryCodeParts.join('').trimEnd(),
-      resolveDir: process.cwd(),
-      sourcefile: `${componentId}.js`
-    },
-    bundle: true,
-    write: false,
-    treeShaking: false,
-    sourcemap: mode === 'production' ? false : 'inline',
-    minify: mode === 'production',
-    format: 'esm',
-    external: ['http://*', 'https://*'],
-    sourceRoot: pathToFileURL(process.cwd()).href,
-    plugins: [
-      {
-        name: 'coralite-script-module-resolver',
-        setup: (pluginBuild) => {
-          pluginBuild.onResolve({ filter: new RegExp(`^${moduleNamespace}`) }, args => {
-            const index = parseInt(args.path.replace(moduleNamespace, ''), 10)
-            return {
-              path: args.path,
-              namespace: 'coralite-script-module',
-              pluginData: { index }
-            }
-          })
-
-          pluginBuild.onResolve({ filter: /^coralite-component\// }, args => {
-            const importedComponentId = args.path.replace('coralite-component/', '')
-            let targetPath = `./${importedComponentId}.js`
-
-            const sourceSharedFn = this.sharedFunctions[componentId]
-            const targetSharedFn = this.sharedFunctions[importedComponentId]
-
-            if (sourceSharedFn && sourceSharedFn.filePath && targetSharedFn && targetSharedFn.filePath) {
-              const relativePath = relative(dirname(sourceSharedFn.filePath), targetSharedFn.filePath)
-              const parsed = parse(relativePath)
-
-              parsed.ext = '.js'
-              parsed.base = parsed.name + parsed.ext
-
-              let finalPath = format(parsed)
-
-              if (!finalPath.startsWith('.') && !finalPath.startsWith('/')) {
-                finalPath = `./${finalPath}`
-              }
-
-              // Normalize Windows backslashes to forward slashes for ES module imports
-              targetPath = finalPath.replace(/\\/g, '/')
-            }
-
-            return {
-              path: targetPath,
-              external: true
-            }
-          })
-
-          pluginBuild.onLoad({
-            filter: /.*/,
-            namespace: 'coralite-script-module'
-          }, args => {
-            const index = args.pluginData.index
-            const module = this.scriptModules[index]
-            let contents = ''
-
-            // Generate imports
-            const importMap = {}
-            if (module.imports) {
-              for (const importDefinition of module.imports) {
-                const specifier = JSON.stringify(importDefinition.specifier)
-                let attributesString = ''
-                if (importDefinition.attributes) {
-                  attributesString = ` with { ${Object.entries(importDefinition.attributes).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')} }`
-                }
-
-                if (importDefinition.namespaceExport) {
-                  contents += `import * as ${importDefinition.namespaceExport} from ${specifier}${attributesString};\n`
-                  importMap[importDefinition.namespaceExport] = importDefinition.namespaceExport
-                }
-
-                const parts = []
-                if (importDefinition.defaultExport) {
-                  parts.push(importDefinition.defaultExport)
-                  importMap[importDefinition.defaultExport] = importDefinition.defaultExport
-                }
-
-                if (importDefinition.namedExports && importDefinition.namedExports.length) {
-                  parts.push(`{ ${importDefinition.namedExports.join(', ')} }`)
-                  for (const namedExport of importDefinition.namedExports) {
-                    if (namedExport.includes(' as ')) {
-                      const [, exportAlias] = namedExport.split(' as ')
-                      importMap[exportAlias.trim()] = exportAlias.trim()
-                    } else {
-                      importMap[namedExport.trim()] = namedExport.trim()
-                    }
-                  }
-                }
-
-                if (parts.length > 0) {
-                  const importStr = parts.join(', ')
-                  contents += `import ${importStr} from ${specifier}${attributesString};\n`
-                }
-              }
-            }
-
-            const importsObjContent = Object.keys(importMap).length > 0
-              ? `const pluginImports = { ${Object.entries(importMap).map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
-              : 'const pluginImports = {};'
-
-            contents += importsObjContent + '\n'
-
-            const configContent = module.config
-              ? `const pluginConfig = ${JSON.stringify(module.config)};`
-              : 'const pluginConfig = {};'
-
-            contents += configContent + '\n'
-
-            // Generate setup function
-            const setupFn = module.setup ? normalizeFunction(module.setup) : 'null'
-            contents += `export const runSetup = async (context) => {
-              const setup = ${setupFn};
-              if (!setup) return {};
-              const contextObject = {
-                imports: pluginImports,
-                config: pluginConfig,
-                ...context
-              };
-              return await setup(contextObject);
-            };\n`
-
-            // Generate helpers
-            contents += 'export const helpers = {\n'
-            if (module.helpers) {
-              for (const key in module.helpers) {
-                if (Object.hasOwn(module.helpers, key)) {
-                  const fn = normalizeFunction(module.helpers[key])
-                  contents += `  "${key}": (context) => {
-                    context.imports = { ...(context.imports || {}), ...pluginImports }
-                    context.config = { ...(context.config || {}), ...pluginConfig }
-                    const fn = ${fn}
-                    return fn(context)
-                  },\n`
-                }
-              }
-            }
-            contents += '};\n'
-
-            return {
-              contents,
-              loader: 'js',
-              resolveDir: process.cwd()
-            }
-          })
-        }
-      }
-    ]
-  })
-
-  return result.outputFiles[0].text
 }
 
 /**
@@ -612,6 +123,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     entryCodeParts.push(`import { helpers as helpers_${i}, runSetup as runSetup_${i} } from "${moduleNamespace}${i}";\n`)
   }
 
+  entryCodeParts.push(`import { registry } from "coralite-runtime-context";\n`)
+
   // Setup helpers
   const helperParts = [
     ...this.scriptModules.map((_, i) => `...helpers_${i}`),
@@ -621,14 +134,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push(`const coraliteComponentScriptHelpers = {
     ${helperParts}
   };\n`)
-
-  entryCodeParts.push(`const getHelpers = (context) => {
-    const helpers = {}
-    for (const [key, helper] of Object.entries(coraliteComponentScriptHelpers)) {
-      helpers[key] = helper(context)
-    }
-    return helpers
-  }\n`)
 
   entryCodeParts.push(`const getSetups = async (context) => {
     const values = {};
@@ -645,13 +150,37 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   // Global setups initialization
   entryCodeParts.push(`const globalContext = {};\n`)
-  entryCodeParts.push(`const globalSetupValuesPromise = getSetups(globalContext);\n`)
+  entryCodeParts.push(`registry.globalSetupPromise = getSetups(globalContext);\n`)
+
+  entryCodeParts.push(`
+  for (const [key, factory] of Object.entries(coraliteComponentScriptHelpers)) {
+    if (typeof factory === 'function') {
+      registry.globalHelperFactories[key] = factory(globalContext);
+    } else {
+      registry.globalHelperFactories[key] = factory;
+    }
+  }
+  \n`)
 
   const instanceValues = Object.entries(instances)
-  // Collect unique components
+  // Collect unique components recursively
   const processedComponent = {}
+  const self = this
+
+  function collectComponents (componentId) {
+    if (!processedComponent[componentId]) {
+      processedComponent[componentId] = true
+      const sharedFn = self.sharedFunctions[componentId]
+      if (sharedFn && sharedFn.components && sharedFn.components.length > 0) {
+        for (const childId of sharedFn.components) {
+          collectComponents(childId)
+        }
+      }
+    }
+  }
+
   for (const instanceData of instanceValues) {
-    processedComponent[instanceData[1].componentId] = true
+    collectComponents(instanceData[1].componentId)
   }
 
   const processedComponentKeys = Object.keys(processedComponent)
@@ -659,56 +188,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const namespace = 'coralite-component:'
   const componentImportsNamespace = 'coralite-component-imports:'
 
-  // Generate ESM imports for each component script
+  // Import components as side effects
   for (const componentId of processedComponentKeys) {
     if (this.sharedFunctions[componentId]) {
-      const safeId = componentId.replace(regex, '_')
-      entryCodeParts.push(`import component_${safeId} from "${namespace}${componentId}";\n`)
-
-      if (this.sharedFunctions[componentId].imports && this.sharedFunctions[componentId].imports.length > 0) {
-        entryCodeParts.push(`import componentImports_${safeId} from "${componentImportsNamespace}${componentId}";\n`)
-      }
+      entryCodeParts.push(`import "${namespace}${componentId}";\n`)
     }
-  }
-
-  // Map imports to the functions object
-  entryCodeParts.push('const coraliteComponentFunctions = {\n')
-  for (const componentId of processedComponentKeys) {
-    if (this.sharedFunctions[componentId]) {
-      entryCodeParts.push(`  "${componentId}": component_${componentId.replace(regex, '_')},\n`)
-    }
-  }
-  entryCodeParts.push('};\n')
-
-  entryCodeParts.push('const coraliteComponentImports = {\n')
-  for (const componentId of processedComponentKeys) {
-    if (this.sharedFunctions[componentId] && this.sharedFunctions[componentId].imports && this.sharedFunctions[componentId].imports.length > 0) {
-      entryCodeParts.push(`  "${componentId}": componentImports_${componentId.replace(regex, '_')},\n`)
-    }
-  }
-  entryCodeParts.push('};\n')
-
-  // Invoke instances
-  entryCodeParts.push('\n// Instances\n')
-  for (const [instanceId, instanceData] of instanceValues) {
-    const context = {
-      instanceId,
-      componentId: instanceData.componentId,
-      values: instanceData.values,
-      document: instances[instanceId].document || {}
-    }
-
-    entryCodeParts.push(';(async() => {\n')
-    entryCodeParts.push('const context = ' + serialize(context) + ';\n')
-    entryCodeParts.push(`const imports = coraliteComponentImports["${context.componentId}"] || {};\n`)
-    entryCodeParts.push('context.imports = imports;\n')
-    entryCodeParts.push('const setupValues = await globalSetupValuesPromise;\n')
-    entryCodeParts.push('context.values = { ...context.values, ...setupValues };\n')
-    entryCodeParts.push('const helpers = getHelpers(context);\n')
-    entryCodeParts.push('context.helpers = helpers;\n')
-    entryCodeParts.push(`\n// Instance: ${instanceId}\n`)
-    entryCodeParts.push(`await coraliteComponentFunctions["${context.componentId}"](context);\n`)
-    entryCodeParts.push('})();\n')
   }
 
   // Build and bundle
@@ -730,6 +214,24 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       {
         name: 'coralite-component-resolver',
         setup: (pluginBuild) => {
+          pluginBuild.onResolve({ filter: /^coralite-runtime-context$/ }, args => {
+            return {
+              path: args.path,
+              namespace: 'coralite-runtime-context'
+            }
+          })
+
+          pluginBuild.onLoad({
+            filter: /.*/,
+            namespace: 'coralite-runtime-context'
+          }, () => {
+            return {
+              contents: 'export const registry = { globalSetupPromise: null, globalHelperFactories: {}, coraliteComponentImports: {} };',
+              loader: 'js',
+              resolveDir: process.cwd()
+            }
+          })
+
           // Catch the imports and associate them with the real file paths
           const componentRegex = new RegExp(`^${namespace}`)
 
@@ -738,8 +240,10 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
             const sharedFn = this.sharedFunctions[componentId]
 
             return {
-              path: sharedFn.filePath,
-              pluginData: { componentId }
+              path: args.path,
+              namespace: 'coralite-component',
+              pluginData: { componentId },
+              sideEffects: true
             }
           })
 
@@ -904,17 +408,17 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
               return await setup(contextObject);
             };\n`
 
-            // Generate helpers
+            // Generate helpers (Phase 1 & 2 Currying)
             contents += 'export const helpers = {\n'
             if (module.helpers) {
               for (const key in module.helpers) {
                 if (Object.hasOwn(module.helpers, key)) {
                   const fn = normalizeFunction(module.helpers[key])
-                  contents += `  "${key}": (context) => {
-                    context.imports = { ...(context.imports || {}), ...pluginImports }
-                    context.config = { ...(context.config || {}), ...pluginConfig }
-                    const fn = ${fn}
-                    return fn(context)
+                  contents += `  "${key}": (globalContext) => {
+                    globalContext.imports = { ...(globalContext.imports || {}), ...pluginImports }
+                    globalContext.config = { ...(globalContext.config || {}), ...pluginConfig }
+                    const userPhase1Fn = ${fn}
+                    return userPhase1Fn(globalContext)
                   },\n`
                 }
               }
@@ -930,17 +434,74 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
           // Provide the script content to esbuild when it loads those file paths
           pluginBuild.onLoad({
-            filter: /.*/
+            filter: /.*/,
+            namespace: 'coralite-component'
           }, args => {
             if (!args.pluginData || !args.pluginData.componentId) {
               return
             }
 
-            const sharedFn = this.sharedFunctions[args.pluginData.componentId]
-            const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
+            const componentId = args.pluginData.componentId
+            const sharedFn = this.sharedFunctions[componentId]
+            let contents = `import { registry } from "coralite-runtime-context";\n`
+
+            // Import framework components specified in client.components
+            if (sharedFn.components && sharedFn.components.length > 0) {
+              for (const childId of sharedFn.components) {
+                contents += `import "coralite-component:${childId}";\n`
+              }
+            }
+
+            // Generate imports obj content to bind to component class
+            const importMap = {}
+            if (sharedFn.imports) {
+              for (const importDefinition of sharedFn.imports) {
+                const specifier = JSON.stringify(importDefinition.specifier)
+                let attributesString = ''
+                if (importDefinition.attributes) {
+                  attributesString = ` with { ${Object.entries(importDefinition.attributes).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')} }`
+                }
+
+                if (importDefinition.namespaceExport) {
+                  contents += `import * as ${importDefinition.namespaceExport} from ${specifier}${attributesString};\n`
+                  importMap[importDefinition.namespaceExport] = importDefinition.namespaceExport
+                }
+
+                const parts = []
+                if (importDefinition.defaultExport) {
+                  parts.push(importDefinition.defaultExport)
+                  importMap[importDefinition.defaultExport] = importDefinition.defaultExport
+                }
+
+                if (importDefinition.namedExports && importDefinition.namedExports.length) {
+                  parts.push(`{ ${importDefinition.namedExports.join(', ')} }`)
+                  for (const namedExport of importDefinition.namedExports) {
+                    if (namedExport.includes(' as ')) {
+                      const [, exportAlias] = namedExport.split(' as ')
+                      importMap[exportAlias.trim()] = exportAlias.trim()
+                    } else {
+                      importMap[namedExport.trim()] = namedExport.trim()
+                    }
+                  }
+                }
+
+                if (parts.length > 0) {
+                  const importStr = parts.join(', ')
+                  contents += `import ${importStr} from ${specifier}${attributesString};\n`
+                }
+              }
+            }
+
+            const importsObjContent = Object.keys(importMap).length > 0
+              ? `const componentImports = { ${Object.entries(importMap).map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
+              : 'const componentImports = {};'
+
+            contents += importsObjContent + '\n'
+
+            contents += generateWebComponentClass(componentId, sharedFn.htmlPayload, sharedFn.cssPayload, sharedFn.script)
 
             return {
-              contents: `${padding}export default ${sharedFn.script.content};`,
+              contents,
               loader: 'js',
               resolveDir: process.cwd()
             }
