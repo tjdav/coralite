@@ -4,7 +4,7 @@ import {
   createCoraliteTextNode,
   createCoraliteComment,
   createCoraliteDirective,
-  createCoraliteDocument
+  createCoraliteComponent
 } from './dom.js'
 import { isValidCustomElementName, VALID_TAGS } from './tags.js'
 
@@ -15,15 +15,15 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  *  CoraliteTextNode,
  *  CoraliteElement,
  *  CoraliteModuleSlotElement,
- *  CoraliteDocumentValues,
- *  CoraliteDocumentRoot,
+ *  CoraliteComponentValues,
+ *  CoraliteComponentRoot,
  *  CoraliteContentNode,
  *  Attribute,
  *  ParseHTMLResult} from '../types/index.js'
  */
 
 /**
- * Parse HTML content and return a CoraliteDocument object representing the parsed document structure
+ * Parse HTML content and return a CoraliteComponent object representing the parsed component structure
  *
  * @param {string} string - HTML content to parse as string input type textual data
  * @param {Array<string | Attribute>} [ignoreByAttribute] - Ignore element with attribute name value pair
@@ -33,7 +33,7 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  */
 export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute) {
   // root element reference
-  const root = createCoraliteDocument({
+  const root = createCoraliteComponent({
     type: 'root',
     children: []
   })
@@ -201,7 +201,7 @@ function sortSlottedChildren (elements) {
  */
 export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute }) {
   // root element reference
-  const root = createCoraliteDocument({
+  const root = createCoraliteComponent({
     type: 'root',
     children: []
   })
@@ -211,7 +211,7 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute 
   const customElements = []
   /** @type {Object.<string, Object.<string,CoraliteModuleSlotElement>>} */
   const slotElements = {}
-  /** @type {CoraliteDocumentValues} */
+  /** @type {CoraliteComponentValues} */
   const documentValues = {
     refs: [],
     attributes: [],
@@ -452,11 +452,11 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute 
 }
 
 /**
- * Creates an element within the document structure based on provided parameters.
+ * Creates an element within the component structure based on provided parameters.
  * @param {Object} data - An object containing details needed to create the element.
  * @param {string} data.name - The tag name of the new element.
  * @param {Object.<string, string>} data.attributes - Attributes for the new element.
- * @param {CoraliteElement | CoraliteDocumentRoot} data.parent - Parent element or document root where this element will be attached.
+ * @param {CoraliteElement | CoraliteComponentRoot} data.parent - Parent element or component root where this element will be attached.
  * @param {Array<string | Attribute> | Map<string, string[]>} [data.ignoreByAttribute] - Optional parameter used for ignoring elements based on attributes.
  * @returns {CoraliteElement} The newly created element with its parent reference and position in the parent's children list.
  */
@@ -503,7 +503,7 @@ export function createElement ({
 
 /**
  * @param {string} data - The text content to create a text node
- * @param {CoraliteElement | CoraliteDocumentRoot} parent - parent node
+ * @param {CoraliteElement | CoraliteComponentRoot} parent - parent node
  * @returns {CoraliteTextNode}
  *
  * @example

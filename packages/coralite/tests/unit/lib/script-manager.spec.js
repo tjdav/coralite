@@ -516,7 +516,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: 'inst-1',
           values: { count: 5 },
-          document: {}
+          component: {}
         }
       }
 
@@ -542,7 +542,7 @@ describe('ScriptManager', () => {
             x: 1,
             y: 2
           },
-          document: {}
+          component: {}
         },
         'inst-2': {
           componentId: 'shared',
@@ -551,7 +551,7 @@ describe('ScriptManager', () => {
             x: 3,
             y: 4
           },
-          document: {}
+          component: {}
         }
       }
 
@@ -570,13 +570,13 @@ describe('ScriptManager', () => {
           componentId: 'component1',
           instanceId: 'inst-1',
           values: { a: 1 },
-          document: {}
+          component: {}
         },
         'inst-2': {
           componentId: 'component2',
           instanceId: 'inst-2',
           values: { b: 2 },
-          document: {}
+          component: {}
         }
       }
 
@@ -599,7 +599,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: 'inst-1',
           values: { x: 5 },
-          document: {}
+          component: {}
         }
       }
 
@@ -623,7 +623,7 @@ describe('ScriptManager', () => {
           values: {
             ref_button: 'element'
           },
-          document: {}
+          component: {}
         }
       }
 
@@ -632,10 +632,10 @@ describe('ScriptManager', () => {
       assert.ok(typeof result === 'string')
     })
 
-    it('should handle instances with document context', async () => {
+    it('should handle instances with component context', async () => {
       sm.registerComponent('test', {
         content: `(context) => {
-          return context.document.title || 'no title'
+          return context.component.title || 'no title'
         }`
       })
 
@@ -644,7 +644,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: 'inst-1',
           values: {},
-          document: { title: 'Test Page' }
+          component: { title: 'Test Page' }
         }
       }
 
@@ -666,7 +666,7 @@ describe('ScriptManager', () => {
           componentId: 'nonexistent',
           instanceId: 'inst-1',
           values: {},
-          document: {}
+          component: {}
         }
       }
 
@@ -688,7 +688,7 @@ describe('ScriptManager', () => {
           componentId: 'async',
           instanceId: 'inst-1',
           values: { x: 42 },
-          document: {}
+          component: {}
         }
       }
 
@@ -718,7 +718,7 @@ describe('ScriptManager', () => {
             message: 'Hello World',
             ref_element: 'div'
           },
-          document: { title: 'Test' }
+          component: { title: 'Test' }
         }
       }
 
@@ -736,7 +736,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: 'inst-1',
           values: { x: 1 },
-          document: {}
+          component: {}
         }
       }
 
@@ -789,7 +789,7 @@ describe('ScriptManager', () => {
             b: 3,
             multiplier: 10
           },
-          document: {}
+          component: {}
         }
       }
 
@@ -877,7 +877,7 @@ describe('ScriptManager', () => {
       const instances = {
         'inst-1': {
           componentId: 'test'
-          // Missing values, refs, document
+          // Missing values, refs, component
         }
       }
 
@@ -893,7 +893,7 @@ describe('ScriptManager', () => {
         instances[`inst-${i}`] = {
           componentId: 'test',
           values: { x: i },
-          document: {}
+          component: {}
         }
       }
 
@@ -938,7 +938,7 @@ describe('ScriptManager', () => {
     it('should handle component that uses all context properties', async () => {
       sm.registerComponent('full', {
         content: `(context) => {
-          return \`\${context.instanceId}-\${context.componentId}-\${context.values.x}-\${context.refs.el}-\${context.document.title}\`
+          return \`\${context.instanceId}-\${context.componentId}-\${context.values.x}-\${context.refs.el}-\${context.component.title}\`
         }`
       })
 
@@ -949,7 +949,7 @@ describe('ScriptManager', () => {
             x: 1,
             ref_el: 'div'
           },
-          document: { title: 'Test' }
+          component: { title: 'Test' }
         }
       }
 
@@ -1033,7 +1033,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: 'inst-1',
           values: {},
-          document: {}
+          component: {}
         }
       }
 
@@ -1074,7 +1074,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: '1',
           values: {},
-          document: {}
+          component: {}
         }
       }, 'development')
 
@@ -1104,7 +1104,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: '1',
           values: {},
-          document: {}
+          component: {}
         }
       }, 'development')
 
@@ -1131,7 +1131,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: '1',
           values: {},
-          document: {}
+          component: {}
         }
       }, 'development')
 
@@ -1160,7 +1160,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: '1',
           values: {},
-          document: {}
+          component: {}
         }
       }, 'development')
 
@@ -1194,7 +1194,7 @@ describe('ScriptManager', () => {
           instanceId: 'inst1',
           componentId: 'temp1',
           values: {},
-          document: {}
+          component: {}
         }
       }
 
@@ -1228,7 +1228,7 @@ describe('ScriptManager', () => {
           instanceId: 'inst1',
           componentId: 'temp1',
           values: {},
-          document: {}
+          component: {}
         }
       }
 

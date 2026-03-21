@@ -36,7 +36,7 @@ function replaceCustomElementWithTemplate (coraliteElement, element) {
  * @returns {Promise<any>} - Processed value
  */
 async function processTokenValue (value, context) {
-  const { excludeByAttribute, values, document, createComponent, renderContext } = context
+  const { excludeByAttribute, values, component, createComponentElement, renderContext } = context
   // If not a string, return as-is
   if (typeof value !== 'string') {
     return value
@@ -53,18 +53,18 @@ async function processTokenValue (value, context) {
   // Process custom elements
   for (let i = 0; i < result.customElements.length; i++) {
     const customElement = result.customElements[i]
-    const component = await createComponent({
-      contextId: `${document.path.pathname}${customElement.name}-${i}`,
+    const componentElement = await createComponentElement({
+      contextId: `${component.path.pathname}${customElement.name}-${i}`,
       id: customElement.name,
       values,
       element: customElement,
-      document,
+      component: context.component,
       index: i,
       renderContext
     })
 
-    if (component) {
-      replaceCustomElementWithTemplate(customElement, component)
+    if (componentElement) {
+      replaceCustomElementWithTemplate(customElement, componentElement)
     }
   }
 
@@ -104,7 +104,7 @@ export const defineComponent = createPlugin({
   context) {
     const {
       values,
-      document,
+      component,
       element
     } = context
     /** @type {CoraliteModuleValues} */
@@ -132,7 +132,7 @@ export const defineComponent = createPlugin({
             results[key] = await processTokenValue(result, {
               ...context,
               values: results,
-              createComponent: this.createComponent.bind(this)
+              createComponentElement: this.createComponentElement.bind(this)
             })
           } else {
             results[key] = `${result}`
@@ -171,7 +171,7 @@ export const defineComponent = createPlugin({
             const processedResult = await processTokenValue(result, {
               ...context,
               values: results,
-              createComponent: this.createComponent.bind(this)
+              createComponentElement: this.createComponentElement.bind(this)
             })
 
             if (Array.isArray(processedResult)) {
@@ -208,7 +208,7 @@ export const defineComponent = createPlugin({
               } else {
                 throw new Error('Unexpected slot value, expected a node but found: '
                   + '\n result: ' + JSON.stringify(node)
-                  + '\n path: "' + document.path.pathname +'"')
+                  + '\n path: "' + component.path.pathname + '"')
               }
             }
           }

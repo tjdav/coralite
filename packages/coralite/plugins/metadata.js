@@ -33,19 +33,19 @@ export const metadataPlugin = createPlugin({
                   values[metaName] = element.attribs.content
                 } else if (element.slots) {
                   // process component slots by creating a component dynamically.
-                  const component = await this.createComponent({
+                  const componentElement = await this.createComponentElement({
                     id: element.name,
                     values,
                     element,
-                    document: data.result,
+                    component: data.result,
                     contextId: data.path.pathname + i + element.name,
                     index: i
                   })
 
                   // if the created component returns valid children, iterate over them to extract meta information.
-                  if (component) {
-                    for (let i = 0; i < component.children.length; i++) {
-                      const element = component.children[i]
+                  if (componentElement) {
+                    for (let i = 0; i < componentElement.children.length; i++) {
+                      const element = componentElement.children[i]
 
                       // for each child element in the component's returned HTML,
                       // check if it is a meta tag and store its metadata with a '$' prefix.

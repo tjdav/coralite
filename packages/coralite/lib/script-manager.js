@@ -599,7 +599,7 @@ customElements.define("${componentId}", ${componentId.replace(/[-.:]/g, '_')});
 }
 
 /**
- * Compile all instances for a document
+ * Compile all instances for a component
  * @param {Object.<string, InstanceContext>} instances - Map of instanceId -> instance data
  * @param {string} mode - Build mode
  * @returns {Promise<string>} Compiled script
@@ -695,11 +695,12 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       instanceId,
       componentId: instanceData.componentId,
       values: instanceData.values,
-      document: instances[instanceId].document || {}
+      component: instances[instanceId].component || {}
     }
 
     entryCodeParts.push(';(async() => {\n')
     entryCodeParts.push('const context = ' + serialize(context) + ';\n')
+    entryCodeParts.push('context.root = window.document')
     entryCodeParts.push(`const imports = coraliteComponentImports["${context.componentId}"] || {};\n`)
     entryCodeParts.push('context.imports = imports;\n')
     entryCodeParts.push('const setupValues = await globalSetupValuesPromise;\n')

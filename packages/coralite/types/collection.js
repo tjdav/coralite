@@ -10,7 +10,7 @@
  */
 
 /**
- * A document object with both HTMLData properties and result handling capabilities
+ * A component object with both HTMLData properties and result handling capabilities
  * @typedef {(CoraliteCollectionCallbackResult & HTMLData)} CoraliteCollectionItem
  */
 

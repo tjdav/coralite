@@ -7539,9 +7539,9 @@
     "de": "Einführung der Unterstützung zum Definieren und Verarbeiten benutzerdefinierter HTML-Elemente über die <code>Coralite</code>-Klassen-API mittels des neuen <code>defineComponent()</code>-Plugins. Dadurch werden dynamische Attributersetzung während der Vorlagenverarbeitung ermöglicht."
   },
   "c29c0c9b99d8d71c15a10ed26458c8ec": {
-    "fr": "Réécriture de la logique interne pour adopter une architecture basée sur les composants, en supprimant les méthodes de parsing obsolètes telles que <code>renderDocument()</code>, et en les remplaçant par <code>createComponent()</code> afin d’assurer un rendu modulaire et extensible.",
-    "es": "Se refactorizó la lógica interna para utilizar una arquitectura basada en componentes, eliminando métodos de análisis heredados como <code>renderDocument()</code> y reemplazándolos por <code>createComponent()</code> para un renderizado modular y extensible.",
-    "de": "Die interne Logik wurde umstrukturiert, um eine komponentenbasierte Architektur zu nutzen, wodurch veraltete Parsing-Methoden wie <code>renderDocument()</code> entfernt und durch <code>createComponent()</code> für modulare und erweiterbare Darstellung ersetzt wurden."
+    "fr": "Réécriture de la logique interne pour adopter une architecture basée sur les composants, en supprimant les méthodes de parsing obsolètes telles que <code>renderDocument()</code>, et en les remplaçant par <code>createComponentElement)</code> afin d’assurer un rendu modulaire et extensible.",
+    "es": "Se refactorizó la lógica interna para utilizar una arquitectura basada en componentes, eliminando métodos de análisis heredados como <code>renderDocument()</code> y reemplazándolos por <code>createComponentElement)</code> para un renderizado modular y extensible.",
+    "de": "Die interne Logik wurde umstrukturiert, um eine komponentenbasierte Architektur zu nutzen, wodurch veraltete Parsing-Methoden wie <code>renderDocument()</code> entfernt und durch <code>createComponentElement)</code> für modulare und erweiterbare Darstellung ersetzt wurden."
   },
   "45fd824bb9b6b8bb3242a9c424dc475d": {
     "fr": "Introduit une gestion des fichiers basée sur les événements à l’aide de nouveaux rappels (<code>onFileSet</code>, <code>onFileUpdate</code>, <code>onFileDelete</code>) pour permettre des mises à jour dynamiques et assurer la cohérence entre les pages et les éléments personnalisés.",

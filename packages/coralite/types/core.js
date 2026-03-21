@@ -2,7 +2,7 @@
 /**
  * @import { CoraliteModuleValues } from './module.js'
  * @import { CoralitePluginInstance } from './plugin.js'
- * @import { Attribute } from './document.js'
+ * @import { Attribute } from './component.js'
  */
 
 /**

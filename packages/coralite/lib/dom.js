@@ -3,14 +3,14 @@
  *  CoraliteElement,
  *  CoraliteTextNode,
  *  CoraliteAnyNode,
- *  CoraliteDocumentRoot,
+ *  CoraliteComponentRoot,
  *  CoraliteComment,
  *  CoraliteDirective,
  *  RawCoraliteElement,
  *  RawCoraliteTextNode,
  *  RawCoraliteComment,
  *  RawCoraliteDirective,
- *  RawCoraliteDocumentRoot
+ *  RawCoraliteComponentRoot
  * } from '../types/index.js'
  */
 
@@ -32,7 +32,7 @@ const nodeTypes = {
 
 /**
  * Base enhancer for all Coralite nodes
- * @template {RawCoraliteElement | RawCoraliteTextNode | RawCoraliteComment | RawCoraliteDirective | RawCoraliteDocumentRoot} T
+ * @template {RawCoraliteElement | RawCoraliteTextNode | RawCoraliteComment | RawCoraliteDirective | RawCoraliteComponentRoot} T
  * @param {T} node
  */
 function CoraliteNodeConstructor (node) {
@@ -52,14 +52,14 @@ Object.defineProperties(CoraliteNodeConstructor.prototype, {
   parentNode: {
     /**
      * Returns the parent of the specified node in the DOM tree.
-     * @returns {CoraliteAnyNode | CoraliteDocumentRoot}
+     * @returns {CoraliteAnyNode | CoraliteComponentRoot}
      */
     get () {
       return this.parent
     },
     /**
      * Sets the parent of the node.
-     * @param {CoraliteAnyNode | CoraliteDocumentRoot} value
+     * @param {CoraliteAnyNode | CoraliteComponentRoot} value
      */
     set (value) {
       this.parent = value
@@ -68,14 +68,14 @@ Object.defineProperties(CoraliteNodeConstructor.prototype, {
   parentElement: {
     /**
      * Returns the DOM node's parent Element, or null if the node either has no parent, or its parent isn't a DOM Element.
-     * @returns {CoraliteAnyNode | CoraliteDocumentRoot}
+     * @returns {CoraliteAnyNode | CoraliteComponentRoot}
      */
     get () {
       return this.parent
     },
     /**
      * Sets the parent element of the node.
-     * @param {CoraliteAnyNode | CoraliteDocumentRoot} value
+     * @param {CoraliteAnyNode | CoraliteComponentRoot} value
      */
     set (value) {
       this.parent = value
@@ -466,16 +466,16 @@ export function createCoraliteDirective (node) {
 
 /**
  * Coralite Document Node Constructor
- * @param {RawCoraliteDocumentRoot} node
+ * @param {RawCoraliteComponentRoot} node
  */
-function CoraliteDocumentConstructor (node) {
+function CoraliteComponentConstructor (node) {
   CoraliteNodeConstructor.call(this, node)
 }
 
-CoraliteDocumentConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
-CoraliteDocumentConstructor.prototype.constructor = CoraliteDocumentConstructor
+CoraliteComponentConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
+CoraliteComponentConstructor.prototype.constructor = CoraliteComponentConstructor
 
-Object.defineProperties(CoraliteDocumentConstructor.prototype, {
+Object.defineProperties(CoraliteComponentConstructor.prototype, {
   nodeName: {
     /**
      * Returns the name of the node (#document).
@@ -541,11 +541,11 @@ Object.defineProperties(CoraliteDocumentConstructor.prototype, {
 
 /**
  * Creates an enhanced Coralite Document Root
- * @param {RawCoraliteDocumentRoot} node
- * @returns {CoraliteDocumentRoot}
+ * @param {RawCoraliteComponentRoot} node
+ * @returns {CoraliteComponentRoot}
  */
-export function createCoraliteDocument (node) {
-  Object.setPrototypeOf(node, CoraliteDocumentConstructor.prototype)
+export function createCoraliteComponent (node) {
+  Object.setPrototypeOf(node, CoraliteComponentConstructor.prototype)
   // @ts-ignore
   return node
 }

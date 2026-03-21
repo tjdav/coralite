@@ -1,5 +1,5 @@
 /**
- * @import { CoraliteCollectionItem, CoraliteComment, CoraliteDirective, CoraliteDocumentRoot, CoraliteElement, CoraliteTextNode, CoraliteAnyNode, CoraliteSlotElement } from '../types/index.js'
+ * @import { CoraliteCollectionItem, CoraliteComment, CoraliteDirective, CoraliteComponentRoot, CoraliteElement, CoraliteTextNode, CoraliteAnyNode, CoraliteSlotElement } from '../types/index.js'
  */
 
 /**
@@ -48,11 +48,11 @@ function isCoraliteDirective (obj) {
 }
 
 /**
- * Checks if an object is a CoraliteDocumentRoot.
+ * Checks if an object is a CoraliteComponentRoot.
  * @param {any} obj - The object to check.
- * @returns {obj is CoraliteDocumentRoot} True if the object is a CoraliteDocumentRoot, false otherwise.
+ * @returns {obj is CoraliteComponentRoot} True if the object is a CoraliteComponentRoot, false otherwise.
  */
-function isCoraliteDocumentRoot (obj) {
+function isCoraliteComponentRoot (obj) {
   return isObject(obj) && obj.type === 'root'
 }
 
@@ -83,14 +83,14 @@ function isCoraliteCollectionItem (obj) {
 /**
  * Checks if an object is any Coralite node type (Element, TextNode, Comment, Directive, or DocumentRoot).
  * @param {any} obj - The object to check.
- * @returns {obj is CoraliteAnyNode | CoraliteDirective | CoraliteDocumentRoot} True if the object is any Coralite node type.
+ * @returns {obj is CoraliteAnyNode | CoraliteDirective | CoraliteComponentRoot} True if the object is any Coralite node type.
  */
 function isCoraliteNode (obj) {
   return isCoraliteElement(obj) ||
          isCoraliteTextNode(obj) ||
          isCoraliteComment(obj) ||
          isCoraliteDirective(obj) ||
-         isCoraliteDocumentRoot(obj)
+         isCoraliteComponentRoot(obj)
 }
 
 /**
@@ -161,7 +161,7 @@ export {
   isCoraliteTextNode,
   isCoraliteComment,
   isCoraliteDirective,
-  isCoraliteDocumentRoot,
+  isCoraliteComponentRoot,
   isCoraliteSlotElement,
   isCoraliteCollectionItem,
 

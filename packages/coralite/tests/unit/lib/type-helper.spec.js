@@ -9,7 +9,7 @@ import {
   isCoraliteTextNode,
   isCoraliteComment,
   isCoraliteDirective,
-  isCoraliteDocumentRoot,
+  isCoraliteComponentRoot,
   isCoraliteSlotElement,
   isCoraliteCollectionItem,
   isCoraliteNode,
@@ -132,21 +132,21 @@ describe('type-helper.js', () => {
       })
     })
 
-    describe('isCoraliteDocumentRoot', () => {
-      it('should return true for valid CoraliteDocumentRoot', () => {
+    describe('isCoraliteComponentRoot', () => {
+      it('should return true for valid CoraliteComponentRoot', () => {
         const root = {
           type: 'root',
           children: []
         }
-        assert.strictEqual(isCoraliteDocumentRoot(root), true)
+        assert.strictEqual(isCoraliteComponentRoot(root), true)
       })
 
       it('should return false for non-root types', () => {
-        assert.strictEqual(isCoraliteDocumentRoot({
+        assert.strictEqual(isCoraliteComponentRoot({
           type: 'tag',
           name: 'div'
         }), false)
-        assert.strictEqual(isCoraliteDocumentRoot({
+        assert.strictEqual(isCoraliteComponentRoot({
           type: 'text',
           data: 'text'
         }), false)
@@ -438,7 +438,7 @@ describe('type-helper.js', () => {
       assert.strictEqual(isCoraliteTextNode(null), false)
       assert.strictEqual(isCoraliteComment(undefined), false)
       assert.strictEqual(isCoraliteDirective(null), false)
-      assert.strictEqual(isCoraliteDocumentRoot(undefined), false)
+      assert.strictEqual(isCoraliteComponentRoot(undefined), false)
       assert.strictEqual(isCoraliteSlotElement(null), false)
       assert.strictEqual(isCoraliteCollectionItem(undefined), false)
       assert.strictEqual(isCoraliteNode(null), false)
