@@ -700,7 +700,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
     entryCodeParts.push(';(async() => {\n')
     entryCodeParts.push('const context = ' + serialize(context) + ';\n')
-    entryCodeParts.push('context.root = window.document')
+    entryCodeParts.push('context.root = window.document;\n')
     entryCodeParts.push(`const imports = coraliteComponentImports["${context.componentId}"] || {};\n`)
     entryCodeParts.push('context.imports = imports;\n')
     entryCodeParts.push('const setupValues = await globalSetupValuesPromise;\n')
