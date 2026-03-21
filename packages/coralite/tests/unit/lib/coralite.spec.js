@@ -96,7 +96,7 @@ describe('Coralite', () => {
   })
 
   describe('onBeforePageRender hook', () => {
-    it('should be called before rendering each page with document, values, and renderContext', async () => {
+    it('should be called before rendering each page with component, values, and renderContext', async () => {
       let hookCalledCount = 0
       let hookContext = null
 
@@ -110,7 +110,7 @@ describe('Coralite', () => {
           context.values.injectedGlobal = 'test'
 
           // Modifying AST
-          context.document.root.children.push({
+          context.component.root.children.push({
             type: 'tag',
             name: 'div',
             attribs: { class: 'injected' },
@@ -130,7 +130,7 @@ describe('Coralite', () => {
 
       assert.strictEqual(hookCalledCount, 1, 'onBeforePageRender hook should be called exactly once for 1 page')
       assert.ok(hookContext, 'context should be passed to the hook')
-      assert.ok(hookContext.document, 'document should be present in context')
+      assert.ok(hookContext.component, 'component should be present in context')
       assert.ok(hookContext.values, 'values should be present in context')
       assert.ok(hookContext.renderContext, 'renderContext should be present in context')
 
@@ -188,8 +188,8 @@ describe('Coralite', () => {
       const testPlugin = {
         name: 'test-plugin',
         onBeforePageRender: (context) => {
-          // Verify it's in the document before rendering
-          const hasTestComponent = context.document.customElements.some(el => el.name === 'test-component')
+          // Verify it's in the component before rendering
+          const hasTestComponent = context.component.customElements.some(el => el.name === 'test-component')
           if (hasTestComponent) {
             testComponentRendered = true
           }

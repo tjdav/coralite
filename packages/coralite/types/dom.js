@@ -129,36 +129,36 @@
  */
 
 /**
- * Represents the raw data structure of a document root before DOM enhancement.
- * @typedef {Object} RawCoraliteDocumentRoot
+ * Represents the raw data structure of a component root before DOM enhancement.
+ * @typedef {Object} RawCoraliteComponentRoot
  * @property {'root'} type - Node type
  * @property {(CoraliteAnyNode | CoraliteDirective)[]} children - Document list
  */
 
 /**
- * Represents the root node of a document containing all content nodes.
- * @typedef {Object} CoraliteDocumentRoot
+ * Represents the root node of a component containing all content nodes.
+ * @typedef {Object} CoraliteComponentRoot
  * @property {'root'} type - Node type
  * @property {(CoraliteAnyNode | CoraliteDirective)[]} children - Document list
- * @property {string} nodeName - The name of the node (#document)
- * @property {undefined} tagName - Undefined for document nodes
- * @property {number} nodeType - The node type constant (9 for document nodes)
- * @property {null} nodeValue - Null for document nodes
- * @property {undefined} attributes - Undefined for document nodes
+ * @property {string} nodeName - The name of the node (#component)
+ * @property {undefined} tagName - Undefined for component nodes
+ * @property {number} nodeType - The node type constant (9 for component nodes)
+ * @property {null} nodeValue - Null for component nodes
+ * @property {undefined} attributes - Undefined for component nodes
  * @property {(CoraliteAnyNode | CoraliteDirective)[]} childNodes - Alias for children
- * @property {null} parentNode - Null for document root
- * @property {null} parentElement - Null for document root
- * @property {null} previousSibling - Null for document root
- * @property {null} nextSibling - Null for document root
+ * @property {null} parentNode - Null for component root
+ * @property {null} parentElement - Null for component root
+ * @property {null} previousSibling - Null for component root
+ * @property {null} nextSibling - Null for component root
  * @property {CoraliteAnyNode|CoraliteDirective|null} firstChild - The first child node
  * @property {CoraliteAnyNode|CoraliteDirective|null} lastChild - The last child node
  * @property {string} textContent - The text content of the node and its descendants
  */
 
 /**
- * Union type representing nodes that can be part of a document's content hierarchy.
- * Includes both standard HTML elements and the document root node.
- * @typedef {CoraliteElement | CoraliteDocumentRoot} CoraliteContentNode
+ * Union type representing nodes that can be part of a component's content hierarchy.
+ * Includes both standard HTML elements and the component root node.
+ * @typedef {CoraliteElement | CoraliteComponentRoot} CoraliteContentNode
  */
 
 export default {}

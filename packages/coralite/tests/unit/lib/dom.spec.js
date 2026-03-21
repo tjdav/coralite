@@ -4,7 +4,7 @@ import {
   createCoraliteElement,
   createCoraliteTextNode,
   createCoraliteComment,
-  createCoraliteDocument
+  createCoraliteComponent
 } from '../../../lib/dom.js'
 
 describe('createCoraliteElement', () => {
@@ -114,14 +114,14 @@ describe('createCoraliteComment', () => {
   })
 })
 
-describe('createCoraliteDocument', () => {
-  it('should enhance a document root', () => {
+describe('createCoraliteComponent', () => {
+  it('should enhance a component root', () => {
     const node = {
       type: 'root',
       children: []
     }
 
-    const coraliteNode = createCoraliteDocument(node)
+    const coraliteNode = createCoraliteComponent(node)
 
     assert.equal(coraliteNode.nodeName, '#document')
     assert.equal(coraliteNode.nodeType, 9)

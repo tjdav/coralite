@@ -3,7 +3,7 @@ import { simple as walkJS } from 'acorn-walk'
 import { createCoraliteTextNode } from './dom.js'
 
 /**
- * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement, CoraliteModuleValue, CoraliteTextNode, CoraliteDocument, CoraliteDocumentResult, CoraliteContentNode, CoraliteAnyNode, CoraliteDirective} from '../types/index.js'
+ * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement, CoraliteModuleValue, CoraliteTextNode, CoraliteComponent, CoraliteComponentResult, CoraliteContentNode, CoraliteAnyNode, CoraliteDirective} from '../types/index.js'
  */
 
 const KEBAB_REGEX = /[-|:]([a-z])/g
@@ -285,12 +285,12 @@ export function replaceToken ({
 }
 
 /**
- * Creates a deep copy of a CoraliteDocument with re-linked internal references to enable safe independent mutation.
+ * Creates a deep copy of a CoraliteComponent with re-linked internal references to enable safe independent mutation.
  *
- * @param {CoraliteDocument & CoraliteDocumentResult} originalDocument - Document to clone.
- * @returns {CoraliteDocument & CoraliteDocumentResult}
+ * @param {CoraliteComponent & CoraliteComponentResult} originalDocument - Document to clone.
+ * @returns {CoraliteComponent & CoraliteComponentResult}
  */
-export function cloneDocumentInstance (originalDocument) {
+export function cloneComponentInstance (originalDocument) {
   const nodeMap = new Map()
   const newRoot = cloneNode(nodeMap, originalDocument.root, null)
 

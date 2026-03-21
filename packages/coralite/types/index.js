@@ -4,10 +4,10 @@
  * @import { HTMLData, CoraliteFilePath, CoralitePath, CoraliteConfig, CoralitePathValues, CoraliteValues } from './core.js'
  *
  * DOM & AST
- * @import { CoraliteElement, RawCoraliteElement, CoraliteTextNode, RawCoraliteTextNode, CoraliteComment, RawCoraliteComment, CoraliteDirective, RawCoraliteDirective, CoraliteAnyNode, CoraliteDocumentRoot, RawCoraliteDocumentRoot, CoraliteContentNode } from './dom.js'
+ * @import { CoraliteElement, RawCoraliteElement, CoraliteTextNode, RawCoraliteTextNode, CoraliteComment, RawCoraliteComment, CoraliteDirective, RawCoraliteDirective, CoraliteAnyNode, CoraliteComponentRoot, RawCoraliteComponentRoot, CoraliteContentNode } from './dom.js'
  *
  * DOCUMENT
- * @import { CoraliteDocument, CoraliteResult, ParseHTMLResult, CoraliteToken, CoraliteAttributeToken, CoraliteTextNodeToken, CoraliteRef, CoraliteDocumentValues, Attribute, CoraliteDocumentResult } from './document.js'
+ * @import { CoraliteComponent, CoraliteResult, ParseHTMLResult, CoraliteToken, CoraliteAttributeToken, CoraliteTextNodeToken, CoraliteRef, CoraliteComponentValues, Attribute, CoraliteComponentResult } from './component.js'
  *
  * MODULES
  * @import { CoraliteModule, CoraliteModuleValues, CoraliteModuleValue, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleSetup } from './module.js'
@@ -46,22 +46,22 @@
  * @typedef {import('./dom.js').CoraliteDirective} CoraliteDirective
  * @typedef {import('./dom.js').RawCoraliteDirective} RawCoraliteDirective
  * @typedef {import('./dom.js').CoraliteAnyNode} CoraliteAnyNode
- * @typedef {import('./dom.js').CoraliteDocumentRoot} CoraliteDocumentRoot
- * @typedef {import('./dom.js').RawCoraliteDocumentRoot} RawCoraliteDocumentRoot
+ * @typedef {import('./dom.js').CoraliteComponentRoot} CoraliteComponentRoot
+ * @typedef {import('./dom.js').RawCoraliteComponentRoot} RawCoraliteComponentRoot
  * @typedef {import('./dom.js').CoraliteContentNode} CoraliteContentNode
  */
 
 /**
- * @typedef {import('./document.js').CoraliteDocument} CoraliteDocument
- * @typedef {import('./document.js').CoraliteResult} CoraliteResult
- * @typedef {import('./document.js').ParseHTMLResult} ParseHTMLResult
- * @typedef {import('./document.js').CoraliteToken} CoraliteToken
- * @typedef {import('./document.js').CoraliteAttributeToken} CoraliteAttributeToken
- * @typedef {import('./document.js').CoraliteTextNodeToken} CoraliteTextNodeToken
- * @typedef {import('./document.js').CoraliteRef} CoraliteRef
- * @typedef {import('./document.js').CoraliteDocumentValues} CoraliteDocumentValues
- * @typedef {import('./document.js').Attribute} Attribute
- * @typedef {import('./document.js').CoraliteDocumentResult} CoraliteDocumentResult
+ * @typedef {import('./component.js').CoraliteComponent} CoraliteComponent
+ * @typedef {import('./component.js').CoraliteResult} CoraliteResult
+ * @typedef {import('./component.js').ParseHTMLResult} ParseHTMLResult
+ * @typedef {import('./component.js').CoraliteToken} CoraliteToken
+ * @typedef {import('./component.js').CoraliteAttributeToken} CoraliteAttributeToken
+ * @typedef {import('./component.js').CoraliteTextNodeToken} CoraliteTextNodeToken
+ * @typedef {import('./component.js').CoraliteRef} CoraliteRef
+ * @typedef {import('./component.js').CoraliteComponentValues} CoraliteComponentValues
+ * @typedef {import('./component.js').Attribute} Attribute
+ * @typedef {import('./component.js').CoraliteComponentResult} CoraliteComponentResult
  */
 
 /**

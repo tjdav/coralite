@@ -1,36 +1,36 @@
 
 /**
- * @import { CoraliteElement, CoraliteDocumentRoot, CoraliteTextNode } from './dom.js'
+ * @import { CoraliteElement, CoraliteComponentRoot, CoraliteTextNode } from './dom.js'
  * @import { CoraliteModuleValues } from './module.js'
  * @import { CoralitePath, CoraliteFilePath } from './core.js'
  */
 
 /**
- * Represents a complete Coralite document with metadata and rendering structure.
- * @typedef {Object} CoraliteDocument
- * @property {CoraliteDocumentRoot} root - Array of elements and text nodes in the document
- * @property {CoraliteElement[]} customElements - Custom elements defined in the document
+ * Represents a complete Coralite component with metadata and rendering structure.
+ * @typedef {Object} CoraliteComponent
+ * @property {CoraliteComponentRoot} root - Array of elements and text nodes in the component
+ * @property {CoraliteElement[]} customElements - Custom elements defined in the component
  * @property {CoralitePath & CoraliteFilePath} path - Document's file path
  * @property {Array<string | Attribute>} ignoreByAttribute - An array of attribute names and values to ignore by element type.
  * @property {string[]} [styles] - Collected styles during build process
  * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
- * @property {CoraliteModuleValues} [values] - The initial values for the document.
+ * @property {CoraliteModuleValues} [values] - The initial values for the component.
  * @property {CoraliteElement[]} [tempElements] - An array of temporary elements created during the parsing process.
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
  */
 
 /**
- * @typedef {Object} CoraliteDocumentResult
- * @property {CoraliteModuleValues} values - The module values extracted from the document
+ * @typedef {Object} CoraliteComponentResult
+ * @property {CoraliteModuleValues} values - The module values extracted from the component
  * @property {CoraliteElement[]} tempElements - Temporary elements created during processing
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
  * @property {string[]} [styles] - Collected styles during build process
  * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
- * @property {CoraliteElement[]} [customElements] - Custom elements defined in the document
+ * @property {CoraliteElement[]} [customElements] - Custom elements defined in the component
  */
 
 /**
- * Represents a rendered output document with metadata and statistics.
+ * Represents a rendered output component with metadata and statistics.
  * @typedef {Object} CoraliteResult
  * @property {'page'|'component'} type - Result type.
  * @property {CoraliteFilePath} path - Document's file path
@@ -45,11 +45,11 @@
  */
 
 /**
- * Holds tokenized metadata extracted from document attributes, element references and text nodes.
- * @typedef {Object} CoraliteDocumentValues
+ * Holds tokenized metadata extracted from component attributes, element references and text nodes.
+ * @typedef {Object} CoraliteComponentValues
  * @property {CoraliteRef[]} refs - List of element references
- * @property {CoraliteAttributeToken[]} attributes - List of attribute tokens from the document
- * @property {CoraliteTextNodeToken[]} textNodes - List of text node tokens from the document
+ * @property {CoraliteAttributeToken[]} attributes - List of attribute tokens from the component
+ * @property {CoraliteTextNodeToken[]} textNodes - List of text node tokens from the component
  */
 
 /**
@@ -82,7 +82,7 @@
 
 /**
  * @typedef {Object} ParseHTMLResult
- * @property {CoraliteDocumentRoot} root - The root element of the parsed HTML document.
+ * @property {CoraliteComponentRoot} root - The root element of the parsed HTML component.
  * @property {CoraliteElement[]} customElements - An array of custom elements identified during parsing.
  * @property {CoraliteElement[]} tempElements - An array of temporary elements created during the parsing process.
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.

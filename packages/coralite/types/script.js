@@ -1,7 +1,7 @@
 
 /**
  * @import { CoraliteModuleValue } from './module.js'
- * @import { CoraliteDocument, CoraliteRef } from './document.js'
+ * @import { CoraliteComponent } from './component.js'
  */
 
 /**
@@ -28,10 +28,10 @@
  * @typedef {Object} CoraliteScriptContent
  * @property {string} id - Unique instance identifier
  * @property {string} [componentId] - component identifier for shared functions
- * @property {CoraliteDocument | { getElementById: function(string): HTMLElement|null }} document - Coralite document with metadata and rendering structure or mocked client document.
+ * @property {CoraliteComponent} component - Coralite component with metadata and rendering structure or mocked client component.
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
- * @property {ShadowRoot} [root] - Shadow Root for standalone web components
+ * @property {ShadowRoot | Document} [root] - Shadow Root or DOM
  * @property {Object.<string, any>} [helpers] - Plugin helpers available to the script
  */
 
@@ -49,7 +49,7 @@
  * @property {string} componentId - component identifier
  * @property {Object.<string, CoraliteModuleValue>} values - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
- * @property {CoraliteDocument} [document] - Document context
+ * @property {CoraliteComponent} [component] - Component AST
  * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {Object.<string, any>} [imports] - Plugin imports
  */

@@ -233,7 +233,7 @@ coralite.save(documents, output)</coralite-code-highlight>
  * Renders the provided node or array of nodes using the render function.
  * This method serves as an internal utility to handle the rendering process.
  * @private
- * @param {CoraliteDocumentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
+ * @param {CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
  * @returns {string} returns raw HTML
  */
 coralite._render(root)</coralite-code-highlight>
@@ -251,7 +251,7 @@ coralite._render(root)</coralite-code-highlight>
         <tbody>
           <tr>
             <th scope="row">root</th>
-            <td><code>CoraliteDocumentRoot | CoraliteAnyNode | CoraliteAnyNode[]</code></td>
+            <td><code>CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[]</code></td>
             <td>The node(s) to be rendered.</td>
           </tr>
         </tbody>
@@ -332,7 +332,7 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
  * @param {string} options.id - id - Unique identifier for the component
  * @param {CoraliteModuleValues} [options.values={}] - Token values available for replacement
  * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
- * @param {CoraliteDocument} options.document - Current document being processed
+ * @param {CoraliteComponent} options.document - Current document being processed
  * @param {string} [options.contextId] - Context Id
  * @param {number} [options.index] - Context index
  * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
@@ -340,7 +340,7 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
  *
  * @example
  * // example usage:
- * const component = await coralite.createComponent({
+ * const component = await coralite.createComponentElement{
  *   id: 'my-component',
  *   values: {
  *     'some-value': 'value-for-component'
@@ -351,7 +351,7 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
  *   index: 0
  * })
  */
-coralite.createComponent(options)</coralite-code-highlight>
+coralite.createComponentElementoptions)</coralite-code-highlight>
 
     <coralite-heading level="h3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
@@ -381,7 +381,7 @@ coralite.createComponent(options)</coralite-code-highlight>
           </tr>
           <tr>
             <th scope="row">options.document</th>
-            <td><code>CoraliteDocument</code></td>
+            <td><code>CoraliteComponent</code></td>
             <td>Current document being processed</td>
           </tr>
           <tr>

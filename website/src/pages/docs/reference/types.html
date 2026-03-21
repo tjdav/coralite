@@ -35,11 +35,11 @@
       </ul>
       <p><a href="#document-and-result-types">Document and Result Types</a></p>
       <ul>
-        <li><a href="#coralitedocumentvalues">CoraliteDocumentValues</a></li>
-        <li><a href="#coralitedocumentresult">CoraliteDocumentResult</a></li>
+        <li><a href="#coralitecomponentvalues">CoraliteComponentValues</a></li>
+        <li><a href="#coralitecomponentresult">CoraliteComponentResult</a></li>
         <li><a href="#coraliteresult">CoraliteResult</a></li>
-        <li><a href="#coralitedocumentroot">CoraliteDocumentRoot</a></li>
-        <li><a href="#coralitedocument">CoraliteDocument</a></li>
+        <li><a href="#coralitecomponentroot">CoraliteComponentRoot</a></li>
+        <li><a href="#coralitecomponent">CoraliteComponent</a></li>
         <li><a href="#coralitedirective">CoraliteDirective</a></li>
         <li><a href="#parsehtmlresult">ParseHTMLResult</a></li>
       </ul>
@@ -457,7 +457,7 @@
 
     <coralite-heading level="h2" text="Document and Result Types"></coralite-heading>
 
-    <coralite-heading level="h3" text="CoraliteDocumentValues"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteComponentValues"></coralite-heading>
     <p>Holds tokenized metadata extracted from document attributes, element references and text nodes.</p>
     <div class="table-responsive">
       <table class="table">
@@ -488,7 +488,7 @@
       </table>
     </div>
 
-    <coralite-heading level="h3" text="CoraliteDocumentResult"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteComponentResult"></coralite-heading>
     <p>Result of document processing containing extracted values and temporary elements.</p>
     <div class="table-responsive">
       <table class="table">
@@ -528,7 +528,7 @@
         <tbody>
           <tr>
             <td><code>item</code></td>
-            <td><a href="#coralitedocument"><code>CoraliteDocument</code></a></td>
+            <td><a href="#coralitecomponent"><code>CoraliteComponent</code></a></td>
             <td>The document object from the rendering process.</td>
           </tr>
           <tr>
@@ -545,7 +545,7 @@
       </table>
     </div>
 
-    <coralite-heading level="h3" text="CoraliteDocumentRoot"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteComponentRoot"></coralite-heading>
     <p>Represents the root node of a document containing all content nodes.</p>
     <div class="table-responsive">
       <table class="table">
@@ -572,7 +572,7 @@
       </table>
     </div>
 
-    <coralite-heading level="h3" text="CoraliteDocument"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteComponent"></coralite-heading>
     <p>Represents a complete Coralite document with metadata and rendering structure.</p>
     <div class="table-responsive">
       <table class="table">
@@ -586,7 +586,7 @@
         <tbody>
           <tr>
             <td><code>root</code></td>
-            <td><a href="#coralitedocumentroot"><code>CoraliteDocumentRoot</code></a></td>
+            <td><a href="#coralitecomponentroot"><code>CoraliteComponentRoot</code></a></td>
             <td>Array of elements and text nodes in the document.</td>
           </tr>
           <tr>
@@ -659,7 +659,7 @@
         <tbody>
           <tr>
             <td><code>root</code></td>
-            <td><a href="#coralitedocumentroot"><code>CoraliteDocumentRoot</code></a></td>
+            <td><a href="#coralitecomponentroot"><code>CoraliteComponentRoot</code></a></td>
             <td>The root element of the parsed HTML document.</td>
           </tr>
           <tr>
@@ -717,7 +717,7 @@
           </tr>
           <tr>
             <td><code>values</code></td>
-            <td><a href="#coralitedocumentvalues"><code>CoraliteDocumentValues</code></a></td>
+            <td><a href="#coralitecomponentvalues"><code>CoraliteComponentValues</code></a></td>
             <td>Values generated from the module's markup, containing metadata or variable information.</td>
           </tr>
           <tr>
@@ -838,7 +838,7 @@
           </tr>
           <tr>
             <td><code>document</code></td>
-            <td><a href="#coralitedocument"><code>CoraliteDocument</code></a></td>
+            <td><a href="#coralitecomponent"><code>CoraliteComponent</code></a></td>
             <td>Coralite document with metadata and rendering structure.</td>
           </tr>
           <tr>
@@ -934,7 +934,7 @@
           </tr>
           <tr>
             <td><code>document</code></td>
-            <td><a href="#coralitedocument"><code>CoraliteDocument</code></a> (optional)</td>
+            <td><a href="#coralitecomponent"><code>CoraliteComponent</code></a> (optional)</td>
             <td>Document context.</td>
           </tr>
         </tbody>
@@ -1115,7 +1115,7 @@
             <td>A standard HTML element.</td>
           </tr>
           <tr>
-            <td><a href="#coralitedocumentroot"><code>CoraliteDocumentRoot</code></a></td>
+            <td><a href="#coralitecomponentroot"><code>CoraliteComponentRoot</code></a></td>
             <td>Root node containing all content nodes.</td>
           </tr>
         </tbody>
@@ -1774,7 +1774,7 @@
             * Renders the provided node or array of nodes using the render function.
             * This method serves as an internal utility to handle the rendering process.
             * @private
-            * @param {CoraliteDocumentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
+            * @param {CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
             * @returns {string} returns raw HTML
             */
             Coralite.prototype._render = function (root) {
@@ -1790,7 +1790,7 @@
             </tr>
             <tr slot="body">
                 <td><code>root</code></td>
-                <td><code>CoraliteDocumentRoot | CoraliteAnyNode | CoraliteAnyNode[]</code></td>
+                <td><code>CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[]</code></td>
                 <td>The node(s) to be rendered.</td>
             </tr>
         </coralite-table>
@@ -1860,46 +1860,26 @@
         <p>Creates a component by processing the provided parameters and returning a rendered HTML element.</p>
 
         <coralite-code-highlight language="JavaScript">
-            /**
-            * @param {Object} options
-            * @param {string} options.id - id - Unique identifier for the component
-            * @param {CoraliteModuleValues} [options.values={}] - Token values available for replacement
-            * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
-            * @param {CoraliteDocument} options.document - Current document being processed
-            * @param {string} [options.contextId] - Context Id
-            * @param {number} [options.index] - Context index
-            * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
-            * @returns {Promise<CoraliteElement | void>}
-                *
-                * @example
-                * ```
-                * // example usage:
-                * const component = await createComponent({
-                * id: 'my-component',
-                * tokens: {
-                * 'some-value': 'value-for-template'
-                * },
-                * components: {
-                * 'my-component': {
-                * id: 'my-component',
-                * template: someTemplate,
-                * script: someScript,
-                * values: someValues
-                * }
-                * },
-                * document: documentInstance
-                * })
-                * ```
-                */
-                Coralite.prototype.createComponent = async function ({
-                id,
-                values = {},
-                element,
-                document,
-                contextId,
-                index
-                }, head = true) {
-                }
+          /**
+           * @param {Object} options
+           * @param {string} options.id - id - Unique identifier for the component
+           * @param {CoraliteModuleValues} [options.values={}] - Token values available for replacement
+           * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
+           * @param {CoraliteComponent} options.document - Current document being processed
+           * @param {string} [options.contextId] - Context Id
+           * @param {number} [options.index] - Context index
+           * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
+           * @returns {Promise<CoraliteElement | void>}
+           */
+          Coralite.prototype.createComponentElement = async function ({
+            id,
+            values = {},
+            element,
+            document,
+            contextId,
+            index
+          }, head = true) {
+          }
         </coralite-code-highlight>
 
         <coralite-heading level="h3" text="Parameters"></coralite-heading>
@@ -1926,7 +1906,7 @@
             </tr>
             <tr slot="body">
                 <td><code>options.document</code></td>
-                <td><code>CoraliteDocument</code></td>
+                <td><code>CoraliteComponent</code></td>
                 <td>Current document being processed</td>
             </tr>
             <tr slot="body">
@@ -1955,7 +1935,7 @@
             * @param {CoraliteModule} data.module - The Coralite module to parse
             * @param {CoraliteModuleValues} data.values - Replacement tokens for the component
             * @param {CoraliteElement} data.element - The Coralite module to parse
-            * @param {CoraliteDocument} data.document - The document context in which the module is being processed
+            * @param {CoraliteComponent} data.document - The document context in which the module is being processed
             * @param {string} data.contextId - Context Id
             *
             * @returns {Promise<Object.<string, string | (CoraliteDirective | CoraliteAnyNode)[]>>}
@@ -1994,7 +1974,7 @@
             </tr>
             <tr slot="body">
                 <td><code>data.document</code></td>
-                <td><code>CoraliteDocument</code></td>
+                <td><code>CoraliteComponent</code></td>
                 <td>The document context in which the module is being processed</td>
             </tr>
             <tr slot="body">

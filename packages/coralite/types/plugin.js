@@ -1,6 +1,6 @@
 
 /**
- * @import { CoraliteResult, CoraliteDocument, ParseHTMLResult, Attribute } from './document.js'
+ * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute } from './component.js'
  * @import { HTMLData, CoraliteFilePath } from './core.js'
  * @import { CoraliteModule } from './module.js'
  * @import { CoraliteElement, CoraliteAnyNode } from './dom.js'
@@ -12,10 +12,10 @@
 /**
  * @typedef {Object} CoralitePluginContext
  * @property {Object.<string, string|string[]|CoraliteAnyNode[]>} values - Key-value pairs of data relevant to plugin execution
- * @property {CoraliteDocument} document - The HTML file data being processed by the plugin
+ * @property {CoraliteComponent} component - The HTML file data being processed by the plugin
  * @property {CoraliteModule} module - The module context the plugin is operating within (contains template/script)
  * @property {CoraliteElement} element - The specific HTML element the plugin is applied to (if applicable)
- * @property {Object} path - File path information for the current document/module being processed
+ * @property {Object} path - File path information for the current component/module being processed
  * @property {Attribute[]} excludeByAttribute - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
  */
@@ -25,7 +25,7 @@
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginModule
  * @param {T} options - Configuration options passed to the plugin
- * @param {CoralitePluginContext} context - Runtime context providing access to values, document data, module info, and path details
+ * @param {CoralitePluginContext} context - Runtime context providing access to values, component data, module info, and path details
  */
 
 /**
@@ -66,8 +66,8 @@
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginBeforePageRenderCallback - Async callback triggered before a page has been rendered.
  * @param {Object} context
- * @param {CoraliteDocument} context.document - The cloned HTML document data being processed
- * @param {Object} context.values - Values associated with the document
+ * @param {CoraliteComponent} context.component - The cloned HTML component data being processed
+ * @param {Object} context.values - Values associated with the component
  * @param {Object} context.renderContext - Render context containing state for the build
  * @returns {Promise<void>}
  * @async

@@ -1,4 +1,4 @@
-import { cleanKeys, cloneModuleInstance, replaceToken, cloneDocumentInstance, findAndExtractScript } from './utils.js'
+import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript } from './utils.js'
 import { getHtmlFile, getHtmlFiles } from './html.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
 import { transformCss } from './style-transform.js'
@@ -25,12 +25,12 @@ import { createContext } from 'node:vm'
  *  CoraliteModule,
  *  CoraliteResult,
  *  CoraliteModuleValues,
- *  CoraliteDocument,
+ *  CoraliteComponent,
  *  CoraliteCollectionItem,
- *  CoraliteDocumentRoot,
+ *  CoraliteComponentRoot,
  *  CoraliteCollectionEventSet,
  *  Attribute,
- *  CoraliteDocumentResult,
+ *  CoraliteComponentResult,
  *  CoraliteValues,
  *  InstanceContext} from '../types/index.js'
  *
@@ -634,30 +634,30 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
     for (let q = 0; q < queue.length; q++) {
       const startTime = performance.now()
 
-      /** @type {CoraliteDocument & CoraliteDocumentResult} */
+      /** @type {CoraliteComponent & CoraliteComponentResult} */
       const originalDocument = queue[q].result
 
       // Deep clone the document to ensure thread safety
-      const document = cloneDocumentInstance(originalDocument)
+      const component = cloneComponentInstance(originalDocument)
 
       // Merge variables into document values
-      Object.assign(document.values, values)
+      Object.assign(component.values, values)
 
       // Initialize Render Context
       const renderContext = this._createRenderContext(buildId)
       renderContext.mode = this.options.mode
 
       await this._triggerPluginHook('onBeforePageRender', {
-        document,
+        component,
         values,
         renderContext
       })
 
       // remove temporary elements
-      if (document.tempElements) {
-        for (const element of document.tempElements) {
+      if (component.tempElements) {
+        for (const element of component.tempElements) {
           if (element.parent && element.parent.children) {
-          // Filter children directly on the cloned document
+            // Filter children directly on the cloned document
             element.parent.children = element.parent.children.filter(
               child => !child.remove
             )
@@ -665,41 +665,41 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         }
       }
 
-      for (let i = 0; i < document.customElements.length; i++) {
-        const customElement = document.customElements[i]
+      for (let i = 0; i < component.customElements.length; i++) {
+        const customElement = component.customElements[i]
 
-        const contextId = document.path.pathname + i + customElement.name
+        const contextId = component.path.pathname + i + customElement.name
         const currentValues = renderContext.values[contextId] || {}
 
         if (typeof customElement.attribs === 'object') {
           renderContext.values[contextId] = {
             ...currentValues,
-            ...document.values,
+            ...component.values,
             ...customElement.attribs
           }
         } else {
-          renderContext.values[contextId] = Object.assign(currentValues, document.values)
+          renderContext.values[contextId] = Object.assign(currentValues, component.values)
         }
 
-        const component = await this.createComponent({
+        const componentElement = await this.createComponentElement({
           id: customElement.name,
           values: renderContext.values[contextId],
           element: customElement,
-          document,
+          component,
           contextId,
           index: i,
           renderContext
         })
 
-        if (component) {
-          for (let i = 0; i < component.children.length; i++) {
-          // update component parent
-            component.children[i].parent = customElement.parent
+        if (componentElement) {
+          for (let i = 0; i < componentElement.children.length; i++) {
+            // update component parent
+            componentElement.children[i].parent = customElement.parent
           }
 
           const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
           // replace custom element with component
-          customElement.parent.children.splice(index, 1, ...component.children)
+          customElement.parent.children.splice(index, 1, ...componentElement.children)
         }
       }
 
@@ -713,8 +713,8 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         /** @type {CoraliteElement} */
         let headElement
 
-        findHeadLoop: for (let i = 0; i < document.root.children.length; i++) {
-          const rootNode = document.root.children[i]
+        findHeadLoop: for (let i = 0; i < component.root.children.length; i++) {
+          const rootNode = component.root.children[i]
 
           if (rootNode.type === 'tag' && rootNode.name === 'html') {
             for (let i = 0; i < rootNode.children.length; i++) {
@@ -731,7 +731,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         const styleElement = createCoraliteElement({
           type: 'tag',
           name: 'style',
-          parent: headElement || document.root,
+          parent: headElement || component.root,
           attribs: {},
           children: []
         })
@@ -745,12 +745,12 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         if (headElement) {
           headElement.children.push(styleElement)
         } else {
-          document.root.children.unshift(styleElement)
+          component.root.children.unshift(styleElement)
         }
       }
 
-      if (renderContext.scripts.content[document.path.pathname]) {
-        const scripts = renderContext.scripts.content[document.path.pathname]
+      if (renderContext.scripts.content[component.path.pathname]) {
+        const scripts = renderContext.scripts.content[component.path.pathname]
 
         // Build instances object for script manager
         /** @type {Object.<string, InstanceContext>} */
@@ -770,11 +770,11 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         // Use script manager to compile all instances
         const scriptTextContent = await this._scriptManager.compileAllInstances(instances, this.options.mode)
 
-        /** @type {CoraliteElement | CoraliteDocumentRoot} */
-        let bodyElement = document.root
+        /** @type {CoraliteElement | CoraliteComponentRoot} */
+        let bodyElement = component.root
 
-        findBodyLoop: for (let i = 0; i < document.root.children.length; i++) {
-          const rootNode = document.root.children[i]
+        findBodyLoop: for (let i = 0; i < component.root.children.length; i++) {
+          const rootNode = component.root.children[i]
 
           if (rootNode.type === 'tag' && rootNode.name === 'html') {
             for (let i = 0; i < rootNode.children.length; i++) {
@@ -808,8 +808,8 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
       }
 
       // remove skip render elements
-      if (document.skipRenderElements) {
-        for (const element of document.skipRenderElements) {
+      if (component.skipRenderElements) {
+        for (const element of component.skipRenderElements) {
           if (element.parent && element.parent.children) {
             // Filter children directly on the cloned document
             element.parent.children = element.parent.children.filter(
@@ -821,11 +821,11 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
 
       let rawHTML = ''
       // render document
-      rawHTML = this.transform(document.root)
+      rawHTML = this.transform(component.root)
 
       yield {
         type: 'page',
-        path: document.path,
+        path: component.path,
         content: rawHTML,
         duration: performance.now() - startTime
       }
@@ -1103,7 +1103,7 @@ Coralite.prototype.save = async function (path, options = {}) {
 /**
  * Renders the provided node or array of nodes using the render function.
  *
- * @param {CoraliteDocumentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
+ * @param {CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
  * @param {DomSerializerOptions} [options] - Changes serialization behavior
  * @returns {string} returns raw HTML
  */
@@ -1132,18 +1132,18 @@ Coralite.prototype.addRenderQueue = async function (value, buildId) {
   }
 
   if (typeof value === 'string') {
-    const document = this.pages.getItem(value)
+    const component = this.pages.getItem(value)
 
-    if (!document) {
+    if (!component) {
       throw new Error('addRenderQueue - unexpected page ID: "' + value + '"')
     }
 
-    queue.push(document)
+    queue.push(component)
   } else if (isCoraliteCollectionItem(value)) {
-    const document = await this.pages.setItem(value)
+    const component = await this.pages.setItem(value)
 
     // add render queue
-    queue.push(document)
+    queue.push(component)
   }
 }
 
@@ -1184,38 +1184,18 @@ Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
  * @param {string} options.id - id - Unique identifier for the component
  * @param {CoraliteModuleValues} [options.values={}] - Token values available for replacement
  * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
- * @param {CoraliteDocument} options.document - Current document being processed
+ * @param {CoraliteComponent} options.component - Current document being processed
  * @param {string} [options.contextId] - Context Id
  * @param {number} [options.index] - Context index
  * @param {Object} [options.renderContext] - Render Context
  * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
  * @returns {Promise<CoraliteElement | void>}
- *
- * @example
- * ```
- * // example usage:
- * const component = await createComponent({
- *   id: 'my-component',
- *   tokens: {
- *     'some-value': 'value-for-component'
- *   },
- *   components: {
- *     'my-component': {
- *       id: 'my-component',
- *       component: someComponent,
- *       script: someScript,
- *       values: someValues
- *     }
- *   },
- *   document: documentInstance
- * })
- * ```
  */
-Coralite.prototype.createComponent = async function ({
+Coralite.prototype.createComponentElement = async function ({
   id,
   values = {},
   element,
-  document,
+  component,
   contextId,
   index,
   renderContext
@@ -1224,9 +1204,9 @@ Coralite.prototype.createComponent = async function ({
     renderContext = this._createRenderContext()
   }
 
-  const component = this.components.getItem(id)
+  const moduleComponent = this.components.getItem(id)
 
-  if (!component) {
+  if (!moduleComponent) {
     return
   }
 
@@ -1240,14 +1220,14 @@ Coralite.prototype.createComponent = async function ({
   }
 
   if (!contextId) {
-    contextId = document.path.pathname + id
+    contextId = moduleComponent.path.pathname + id
   }
 
   /**
    * clone the component to avoid mutations during replacement process.
    * @type {CoraliteModule}
    */
-  const module = cloneModuleInstance(component.result)
+  const module = cloneModuleInstance(moduleComponent.result)
   const result = module.template
 
   if (module.styles.length) {
@@ -1255,18 +1235,18 @@ Coralite.prototype.createComponent = async function ({
     const selector = module.id
 
     // Check if styles have been processed for this component
-    if (!component.result._processedCss) {
+    if (!moduleComponent.result._processedCss) {
       const rawCss = module.styles.join('\n')
 
-      const { rootClasses, descendantClasses } = component.result
+      const { rootClasses, descendantClasses } = moduleComponent.result
 
       // Transform CSS
-      component.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses)
+      moduleComponent.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses)
     }
 
     // Add styles to renderContext (idempotent for the build)
     if (!renderContext.styles.has(selector)) {
-      renderContext.styles.set(selector, component.result._processedCss)
+      renderContext.styles.set(selector, moduleComponent.result._processedCss)
     }
 
     // Inject attribute into component root elements
@@ -1291,7 +1271,7 @@ Coralite.prototype.createComponent = async function ({
       module,
       element,
       values,
-      document,
+      component,
       contextId,
       renderContext
     })
@@ -1310,7 +1290,7 @@ Coralite.prototype.createComponent = async function ({
       }
 
       // Register component script with script manager
-      await this._scriptManager.registerComponent(module.id, scriptResult.__script__, component.path.pathname)
+      await this._scriptManager.registerComponent(module.id, scriptResult.__script__, moduleComponent.path.pathname)
 
       // Ensure values object exists in scriptResult
       if (!scriptResult.__script__.values) {
@@ -1332,10 +1312,10 @@ Coralite.prototype.createComponent = async function ({
       }
 
       // Store instance data for script manager
-      renderContext.scripts.add(document.path.pathname, {
+      renderContext.scripts.add(component.path.pathname, {
         id: contextId,
         componentId: module.id,
-        document,
+        component,
         values: scriptResult.__script__.values
       })
 
@@ -1362,7 +1342,7 @@ Coralite.prototype.createComponent = async function ({
       let value = values[token.name]
 
       if (value == null) {
-        // console.error('Token "' + token.name +'" was empty used on "' + component.id + '"')
+        // console.error('Token "' + token.name +'" was empty used on "' + moduleComponent.id + '"')
         value = ''
       }
 
@@ -1384,7 +1364,7 @@ Coralite.prototype.createComponent = async function ({
       let value = values[token.name]
 
       if (value == null) {
-        // console.error('Token "' + token.name +'" was empty used on "' + component.id + '"')
+        // console.error('Token "' + token.name +'" was empty used on "' + moduleComponent.id + '"')
         value = ''
       }
 
@@ -1458,11 +1438,11 @@ Coralite.prototype.createComponent = async function ({
     }
 
     createComponentTasks.push(
-      this.createComponent({
+      this.createComponentElement({
         id: customElement.name,
         values: renderContext.values[childContextId],
         element: customElement,
-        document,
+        component,
         contextId: childContextId,
         index,
         renderContext
@@ -1560,18 +1540,18 @@ Coralite.prototype.createComponent = async function ({
                 renderContext.values[slotContextId] = Object.assign(currentValues, values)
               }
 
-              const component = await this.createComponent({
+              const componentElement = await this.createComponentElement({
                 id: node.name,
                 values: renderContext.values[slotContextId],
                 element: node,
-                document,
+                component: component.result,
                 contextId: slotContextId,
                 index,
                 renderContext
               }, false)
 
-              if (component) {
-                slotNodes.splice(i, 1, ...component.children)
+              if (componentElement) {
+                slotNodes.splice(i, 1, ...componentElement.children)
               }
             }
           }
@@ -1676,7 +1656,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleValues} data.values - Replacement tokens for the component
  * @param {CoraliteElement} data.element - The Coralite module to parse
- * @param {CoraliteDocument} data.document - The document context in which the module is being processed
+ * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  * @param {Object} data.renderContext - Render Context
  *
@@ -1686,7 +1666,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
   module,
   values,
   element,
-  document,
+  component,
   contextId,
   renderContext
 }) {
@@ -1709,7 +1689,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
     ...this._source.contextModules,
     ...this._source.context,
     ...cachedBoundPlugins,
-    document,
+    component,
     values,
     element,
     module,
@@ -1729,19 +1709,19 @@ Coralite.prototype._evaluateDevelopment = async function ({
     __coralite_plugins__: cachedBoundPlugins
   })
 
-  const component = this.components.getItem(module.id)
+  const moduleComponent = this.components.getItem(module.id)
 
   // create a new source text module with the provided script content, configuration options, and context
   const script = new SourceTextModule(module.script, {
     initializeImportMeta (meta) {
-      meta.url = pathToFileURL(resolve(component.path.pathname)).href
+      meta.url = pathToFileURL(resolve(moduleComponent.path.pathname)).href
     },
     lineOffset: module.lineOffset,
-    identifier: resolve(component.path.pathname),
+    identifier: resolve(moduleComponent.path.pathname),
     context: contextifiedObject
   })
 
-  const linker = this._moduleLinker(component.path, context)
+  const linker = this._moduleLinker(moduleComponent.path, context)
 
   await script.link(linker)
 
@@ -1766,7 +1746,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleValues} data.values - Replacement tokens for the component
  * @param {CoraliteElement} data.element - The Coralite module to parse
- * @param {CoraliteDocument} data.document - The document context in which the module is being processed
+ * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  * @param {Object} data.renderContext - Render Context
  *
@@ -1776,14 +1756,14 @@ Coralite.prototype._evaluateProduction = async function ({
   module,
   values,
   element,
-  document,
+  component,
   contextId,
   renderContext
 }) {
   const context = {
     ...this._source.contextModules,
     ...this._source.context,
-    document,
+    component,
     values,
     element,
     module,
@@ -1795,9 +1775,9 @@ Coralite.prototype._evaluateProduction = async function ({
   renderContext.source.contextInstances[contextId] = context
 
   // Retrieve Template and check cache
-  const component = this.components.getItem(module.id)
+  const moduleComponent = this.components.getItem(module.id)
 
-  if (!component.result._compiledCode) {
+  if (!moduleComponent.result._compiledCode) {
     const paddingCount = Math.max(0, (module.lineOffset - 1 || 0))
     const padding = '\n'.repeat(paddingCount)
 
@@ -1809,11 +1789,11 @@ Coralite.prototype._evaluateProduction = async function ({
       platform: 'node'
     })
 
-    component.result._compiledCode = `(async() => {${code}})();`
+    moduleComponent.result._compiledCode = `(async() => {${code}})();`
   }
 
-  // Create a require function anchored to the component's file path to resolve relative imports
-  const fileRequire = createRequire(resolve(component.path.pathname))
+  // Create a require function anchored to the moduleComponent's file path to resolve relative imports
+  const fileRequire = createRequire(resolve(moduleComponent.path.pathname))
 
   let cachedBoundPlugins = null
 
@@ -1865,7 +1845,7 @@ Coralite.prototype._evaluateProduction = async function ({
     'exports',
     'require',
     'coralite',
-    component.result._compiledCode.trim()
+    moduleComponent.result._compiledCode.trim()
   )
 
   // Execute the function with our mocks and context
@@ -1873,7 +1853,7 @@ Coralite.prototype._evaluateProduction = async function ({
     await fn(moduleMock, moduleMock.exports, customRequire, context)
   } catch (error) {
     if (error instanceof Error) {
-      error.message = `Error in "${component.path.pathname}": ${error.message}`
+      error.message = `Error in "${moduleComponent.path.pathname}": ${error.message}`
     }
     throw error
   }
@@ -1893,7 +1873,7 @@ Coralite.prototype._evaluateProduction = async function ({
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleValues} data.values - Replacement tokens for the component
  * @param {CoraliteElement} data.element - The Coralite module to parse
- * @param {CoraliteDocument} data.document - The document context in which the module is being processed
+ * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  * @param {Object} data.renderContext - Render Context
  *
