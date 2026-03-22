@@ -41,46 +41,18 @@ export default defineConfig({
         <th>Description</th>
       </tr>
       <tr slot="body">
-        <td><code>components</code></td>
-        <td><code>string</code></td>
-        <td><code>"src/components"</code> (via CLI)</td>
-        <td>The path to the directory containing Coralite templates.</td>
       </tr>
       <tr slot="body">
-        <td><code>pages</code></td>
-        <td><code>string</code></td>
-        <td><code>"src/pages"</code> (via CLI)</td>
-        <td>The path to the directory containing pages that will be rendered using the provided templates.</td>
       </tr>
       <tr slot="body">
-        <td><code>output</code></td>
-        <td><code>string</code></td>
-        <td><code>"dist"</code> (via CLI)</td>
-        <td>The base directory path where generated HTML files will be saved.</td>
       </tr>
       <tr slot="body">
-        <td><code>plugins</code></td>
-        <td><code>Array&lt;CoralitePluginInstance&gt;</code></td>
-        <td><code>[]</code></td>
-        <td>An array of plugin instances to extend Coralite's functionality (e.g., loaded via <code>createPlugin</code>).</td>
       </tr>
       <tr slot="body">
-        <td><code>standaloneOutput</code></td>
-        <td><code>string</code> (optional)</td>
-        <td><code>"components"</code> (relative to output)</td>
-        <td>The directory path (relative to <code>output</code>) where compiled standalone client-side web components will be placed.</td>
       </tr>
       <tr slot="body">
-        <td><code>ignoreByAttribute</code></td>
-        <td><code>Array&lt;{name: string, value: string} | string&gt;</code> (optional)</td>
-        <td><code>[]</code></td>
-        <td>An array of attribute names and values used to filter out elements during processing.</td>
       </tr>
       <tr slot="body">
-        <td><code>skipRenderByAttribute</code></td>
-        <td><code>Array&lt;{name: string, value: string} | string&gt;</code> (optional)</td>
-        <td><code>[]</code></td>
-        <td>An array of attribute names and values used to skip rendering of specific elements during processing.</td>
       </tr>
     </coralite-table>
 

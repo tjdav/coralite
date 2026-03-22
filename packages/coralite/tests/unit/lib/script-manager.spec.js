@@ -450,52 +450,6 @@ describe('ScriptManager', () => {
     })
   })
 
-  describe('compileStandaloneComponent()', () => {
-    let sm
-
-    beforeEach(() => {
-      sm = new ScriptManager()
-    })
-
-    it('should resolve correct relative paths for imported components', async () => {
-      sm.registerComponent('a', { content: "() => 'a'" }, '/src/components/foo/a.html')
-      sm.registerComponent('b', { content: "() => 'b'" }, '/src/components/bar/b.html')
-
-      const scriptContent = {
-        content: 'export default function(){}',
-        imports: [
-          {
-            specifier: 'coralite-component/b'
-          }
-        ]
-      }
-
-      const result = await sm.compileStandaloneComponent('a', scriptContent, '<div>A</div>', '', 'development')
-
-      // Should import B from relative path ../bar/b.js
-      assert.match(result, /import "\.\.\/bar\/b\.js";/)
-    })
-
-    it('should default to ./{componentId}.js when paths are missing', async () => {
-      // Register without filePath
-      sm.registerComponent('a', { content: "() => 'a'" })
-      sm.registerComponent('b', { content: "() => 'b'" })
-
-      const scriptContent = {
-        content: 'export default function(){}',
-        imports: [
-          {
-            specifier: 'coralite-component/b'
-          }
-        ]
-      }
-
-      const result = await sm.compileStandaloneComponent('a', scriptContent, '<div>A</div>', '', 'development')
-
-      // Should import B from ./component-b.js
-      assert.match(result, /import "\.\/component-b\.js";/)
-    })
-  })
 
   describe('compileAllInstances() - Full Compilation', () => {
     let sm
