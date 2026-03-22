@@ -20,7 +20,6 @@
 
     <ul>
       <li><strong>Encapsulation:</strong> When you use <code>document.querySelector</code>, you risk selecting an element outside your component, or selecting an element from a <em>different instance</em> of the same component on the page.</li>
-      <li><strong>Shadow DOM Compatibility:</strong> If you eventually compile your Coralite component into a standalone Web Component, the DOM is encapsulated in a ShadowRoot. <code>document.querySelector</code> won't work across the shadow boundary. The refs plugin automatically handles this scoping for you!</li>
       <li><strong>Performance:</strong> The refs plugin caches DOM lookups, so subsequent calls to retrieve the same element are instant.</li>
     </ul>
 
@@ -82,7 +81,6 @@
     <p>The refs plugin is highly context-aware. Depending on how your component is compiled, it behaves differently to ensure maximum safety:</p>
 
     <ol>
-      <li><strong>Shadow DOM Scoping:</strong> If your component is compiled as a standalone Web Component, the <code>context</code> object receives a <code>root</code> property (the ShadowRoot). The refs plugin detects this and <em>automatically restricts all element lookups to that specific Shadow DOM boundary</em>. Complete encapsulation is guaranteed.</li>
       <li><strong>Global Fallback:</strong> For standard Server-Side Rendered (SSR) components, the plugin safely scopes the lookup to the instance ID generated during the build.</li>
       <li><strong>Caching:</strong> The first time you call <code>refs('myEl')</code>, it performs the DOM query. If found, the DOM node is cached locally in the plugin. The next time you call <code>refs('myEl')</code>, it returns immediately without querying the DOM again.</li>
       <li><strong>Null Safety:</strong> If the element isn't found (perhaps conditionally rendered out), the helper safely returns <code>null</code> without throwing an error.</li>

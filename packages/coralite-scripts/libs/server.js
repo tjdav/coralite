@@ -271,25 +271,6 @@ async function server (config, options) {
           await coralite.pages.setItem(pathname)
           // build the HTML for this page using the built-in compiler.
           const documents = await coralite.build(pathname, async (result) => {
-            if (result.type === 'component') {
-              const relativeDir = relative(config.components, result.path.dirname)
-              let outDir
-              if (config.standaloneOutput) {
-                outDir = join(config.output, config.standaloneOutput, relativeDir)
-              } else {
-                outDir = join(config.output, 'components', relativeDir)
-              }
-              const outFile = join(outDir, result.path.filename)
-
-              await mkdir(outDir, { recursive: true })
-              await writeFile(outFile, result.content)
-
-              if (options.verbose) {
-                process.stdout.write(toTime() + colours.bgCyan(' Compiled Component ') + colours.gray(' ─ ') + toMS(result.duration) + colours.gray(' ─ ') + result.path.pathname + '\n')
-              }
-              return null
-            }
-
             // inject a script to enable live reload via Server-Sent Events
             const injectedHtml = result.content.replace(/<\/body>/i, rebuildScript)
 

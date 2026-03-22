@@ -51,7 +51,6 @@ import { createContext } from 'node:vm'
  * @param {import('../types/core.js').CoraliteStaticAsset[]} [options.assets] - Static assets to copy during build
  * @param {Array<string | Attribute>} [options.ignoreByAttribute] - Elements to ignore with attribute name value pair
  * @param {Array<string | Attribute>} [options.skipRenderByAttribute] - Element attributes to parse but exclude from final render output
- * @param {string} [options.standaloneOutput] - Output directory for standalone client-side web components
  * @param {string} [options.output] - Output directory for build artifacts
  * @example
  * const coralite = new Coralite({
@@ -71,7 +70,6 @@ export function Coralite ({
   ignoreByAttribute,
   skipRenderByAttribute,
   mode = 'production',
-  standaloneOutput,
   output
 }) {
   // Validate required parameters
@@ -101,7 +99,6 @@ export function Coralite ({
     ignoreByAttribute,
     skipRenderByAttribute,
     mode,
-    standaloneOutput: standaloneOutput ? normalize(standaloneOutput) : undefined,
     path,
     output: output ? normalize(output) : undefined
   }
@@ -520,68 +517,6 @@ Coralite.prototype._createRenderContext = function (buildId) {
     }
   }
 }
-
-/**
- * Compiles reusable Web Components for the standalone output target.
- *
- * @internal
- * @return {AsyncGenerator<CoraliteResult>}
- */
-Coralite.prototype._generateStandaloneComponents = async function* () {
-  const queue = this.components.list.slice()
-
-  for (let i = 0; i < queue.length; i++) {
-    const component = queue[i]
-
-    // Skip if it is not a template
-    if (!component.result || !component.result.isTemplate) {
-      continue
-    }
-
-    const startTime = performance.now()
-    const result = component.result
-
-    // Extract the raw HTML of the template (excluding the wrapping `<template>` tag)
-    const htmlPayload = result.template.children.map(node => this.transform(node)).join('').trim()
-
-    let cssPayload = ''
-    if (result.styles && result.styles.length > 0) {
-      cssPayload = result.styles.join('\n')
-    }
-
-    let scriptContent = null
-    if (result.script) {
-      const extractedScript = findAndExtractScript(result.script)
-      if (extractedScript) {
-        scriptContent = extractedScript
-      } else {
-        scriptContent = { content: 'export default function(){}' }
-      }
-
-      scriptContent.imports = scriptContent.imports || result.values?.imports || result.imports || []
-    }
-
-    // Call ScriptManager to compile the standalone component code
-    const compiledCode = await this._scriptManager.compileStandaloneComponent(
-      result.id,
-      scriptContent,
-      htmlPayload,
-      cssPayload,
-      this.options.mode
-    )
-
-    yield {
-      type: 'component',
-      path: {
-        ...component.path,
-        filename: component.path.filename.replace(/\.html$/, '.js')
-      },
-      content: compiledCode,
-      duration: performance.now() - startTime
-    }
-  }
-}
-
 /**
  * Compiles specified page(s) by rendering their document content and measuring render time.
  * Processes pages based on provided path(s), replacing custom elements with components,
@@ -984,19 +919,6 @@ Coralite.prototype.build = async function (...args) {
 
     await Promise.all(executing)
 
-    // Generate standalone components
-    for await (const result of this._generateStandaloneComponents()) {
-      if (signal?.aborted) throw signal.reason
-
-      if (typeof callback === 'function') {
-        const transformed = await callback(result)
-        if (transformed) {
-          results.push(transformed)
-        }
-      } else {
-        results.push(result)
-      }
-    }
 
     return results
 
@@ -1057,22 +979,11 @@ Coralite.prototype.save = async function (path, options = {}) {
   const results = await this.build(path, options, async (result) => {
     let relativeDir, outDir, outFile, contentToWrite
 
-    if (result.type === 'component') {
-      relativeDir = relative(this.options.path.components, result.path.dirname)
-      if (this.options.standaloneOutput) {
-        outDir = join(output, this.options.standaloneOutput, relativeDir)
-      } else {
-        outDir = join(output, 'components', relativeDir)
-      }
-      outFile = join(outDir, result.path.filename)
-      contentToWrite = result.content
-    } else {
-      // It's a standard HTML page
-      relativeDir = relative(this.options.path.pages, result.path.dirname)
-      outDir = join(output, relativeDir)
-      outFile = join(outDir, result.path.filename)
-      contentToWrite = result.content
-    }
+    // It's a standard HTML page
+    relativeDir = relative(this.options.path.pages, result.path.dirname)
+    outDir = join(output, relativeDir)
+    outFile = join(outDir, result.path.filename)
+    contentToWrite = result.content
 
     if (!createdDir[outDir]) {
       await mkdir(outDir, { recursive: true })
@@ -1082,14 +993,6 @@ Coralite.prototype.save = async function (path, options = {}) {
 
     // Pass signal to writeFile so Node can stop the I/O immediately
     await writeFile(outFile, contentToWrite, { signal })
-
-    if (result.type === 'component') {
-      return {
-        type: 'component',
-        path: outFile,
-        duration: result.duration
-      }
-    }
 
     return {
       path: outFile,
