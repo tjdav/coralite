@@ -48,7 +48,11 @@ ScriptManager.prototype.getHelpersContent = function () {
   let helpers = ''
 
   for (const key of Object.keys(this.helpers)) {
-    helpers += `"${key}": ${this.helpers[key]},`
+    helpers += `"${key}": (() => {
+      const phase1 = ${this.helpers[key]};
+      const phase2 = phase1({});
+      return (localContext) => phase2(localContext);
+    })(),`
   }
 
   return helpers
@@ -74,7 +78,11 @@ ScriptManager.prototype.getHelpers = function () {
   let helpers = ''
 
   for (const key of Object.keys(this.helpers)) {
-    helpers += `"${key}": ${this.helpers[key]},`
+    helpers += `"${key}": (() => {
+      const phase1 = ${this.helpers[key]};
+      const phase2 = phase1({});
+      return (localContext) => phase2(localContext);
+    })(),`
   }
 
   return `{${helpers}}`
@@ -238,7 +246,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     write: false,
     treeShaking: false,
     sourcemap: mode === 'production' ? false : 'inline',
-    minify: mode === 'production',
     format: 'esm',
     external: ['http://*', 'https://*'],
     sourceRoot: pathToFileURL(process.cwd()).href,
@@ -426,12 +433,14 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
               for (const key in module.helpers) {
                 if (Object.hasOwn(module.helpers, key)) {
                   const fn = normalizeFunction(module.helpers[key])
-                  contents += `  "${key}": (context) => {
-                    context.imports = { ...(context.imports || {}), ...pluginImports }
-                    context.config = { ...(context.config || {}), ...pluginConfig }
-                    const fn = ${fn}
-                    return fn(context)
-                  },\n`
+                  contents += `  "${key}": (() => {
+                    const globalContext = {
+                      imports: pluginImports,
+                      config: pluginConfig
+                    };
+                    const fn = ${fn};
+                    return fn(globalContext);
+                  })(),\n`
                 }
               }
             }
