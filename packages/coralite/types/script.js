@@ -27,8 +27,9 @@
 /**
  * @typedef {Object} CoraliteScriptContent
  * @property {string} id - Unique instance identifier
+ * @property {string} instanceId - Unique instance identifier
  * @property {string} [componentId] - component identifier for shared functions
- * @property {CoraliteComponent} component - Coralite component with metadata and rendering structure or mocked client component.
+ * @property {import('./core.js').CoralitePath & import('./core.js').CoraliteFilePath} [path] - Component AST
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {ShadowRoot | Document} [root] - Shadow Root or DOM
@@ -36,11 +37,29 @@
  */
 
 /**
+ * @typedef {Object} ScriptPluginHelperGlobalContext
+ * @property {Object.<string, any>} [config] - Plugin configuration
+ * @property {Object.<string, any>} [imports] - Module imports for helpers
+ */
+
+/**
+ * @callback ScriptPluginHelperGlobalInstance
+ * @param {ScriptPluginHelperGlobalContext} globalContext - Global instance context
+ * @returns {ScriptPluginHelperLocalInstance}
+ */
+
+/**
+ * @callback ScriptPluginHelperLocalInstance
+ * @param {CoraliteScriptContent} localContext - Local instance context
+ * @returns {any}
+ */
+
+/**
  * @typedef {Object} ScriptPlugin
  * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {function(any): void} [setup] - Called when plugin is registered
  * @property {ScriptImport[]} [imports] - Module imports for helpers
- * @property {Object.<string, function>} [helpers] - Global or instance helpers to add to scripts
+ * @property {Object.<string, ScriptPluginHelperGlobalInstance>} [helpers] - Global or instance helpers to add to scripts
  */
 
 /**

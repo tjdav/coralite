@@ -13,7 +13,7 @@ const testPlugin = createPlugin({
       message: 'Hello from config'
     },
     helpers: {
-      updateTestElement: ({ config, imports }) => (elementId) => {
+      updateTestElement: ({ config, imports }) => () => (elementId) => {
         const el = document.getElementById(elementId)
         if (el) {
           el.textContent = `${config.message} - ${imports.foo}`
@@ -43,7 +43,7 @@ const pluginImportsTest = createPlugin({
       }
     ],
     helpers: {
-      testPluginImports: ({ imports }) => (elementId) => {
+      testPluginImports: ({ imports }) => () => (elementId) => {
         const el = document.getElementById(elementId)
         if (el) {
           el.textContent = `Plugin JS: ${imports.bar}, Plugin JSON: ${imports.pluginDummyData.name}`
@@ -52,7 +52,7 @@ const pluginImportsTest = createPlugin({
           }
         }
       },
-      triggerPluginConfetti: ({ imports }) => () => {
+      triggerPluginConfetti: ({ imports }) => () => () => {
         if (imports.pluginConfetti) {
           imports.pluginConfetti({
             particleCount: 15,
