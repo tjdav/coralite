@@ -93,6 +93,7 @@ export const defineComponent = createPlugin({
    * @param {CoraliteModuleSetup} [options.client.setup] - Setup function executed during server-side rendering
    * @param {CoraliteModuleScript} [options.client.script] - Script function that executes on the client-side
    * @param {Object[]} [options.client.imports] - Component imports to bundle.
+   * @param {string[]} [options.client.components] - Imperative components array.
    * @returns {Promise<CoraliteModuleValues>} A promise resolving to the module values
    *   associated with this component.
    */
@@ -233,7 +234,12 @@ export const defineComponent = createPlugin({
       }
 
       results.__script__ = {
-        values: args
+        values: args,
+        components: client.components || []
+      }
+
+      if (typeof client.setup === 'function') {
+        results.__script__.defaultValues = await client.setup(results) || {}
       }
 
       if (client.imports) {

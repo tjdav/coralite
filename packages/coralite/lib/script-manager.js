@@ -90,14 +90,21 @@ ScriptManager.prototype.getHelpers = function () {
 
 /**
  * Register shared functions for a component
- * @param {string} id - component identifier
- * @param {import('../types/script.js').ScriptContent} script - Script content or function
- * @param {string} [filePath] - The source file path to map back to
+ * @param {Object} options
+ * @param {string} options.id - component identifier
+ * @param {import('../types/script.js').ScriptContent} options.script - Script content or function
+ * @param {string} [options.filePath] - The source file path to map back to
+ * @param {string|null} [options.template=null] - Raw HTML template for imperative client rendering
+ * @param {Object} [options.defaultValues={}] - Initial default state from setup()
+ * @param {string} [options.styles=''] - Raw CSS string for the Shadow DOM
  */
-ScriptManager.prototype.registerComponent = function (id, script, filePath) {
+ScriptManager.prototype.registerComponent = function ({ id, script, filePath, template = null, defaultValues = {}, styles = '' }) {
   this.sharedFunctions[id] = {
     id,
     script,
+    template,
+    defaultValues,
+    styles,
     imports: script.imports || [],
     filePath: filePath ? resolve(filePath) : `/component-${id}.js`
   }
@@ -177,6 +184,19 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     processedComponent[instanceData[1].componentId] = true
   }
 
+  // Force inclusion of imperative components
+  for (const [componentId, fnData] of Object.entries(this.sharedFunctions)) {
+    if (fnData.template != null || (fnData.defaultValues && Object.keys(fnData.defaultValues).length > 0) || (fnData.script && fnData.script.components && fnData.script.components.length > 0) || (fnData.script && fnData.script.content && fnData.script.content !== 'export default function(){}') || (fnData.script && fnData.script.content && fnData.script.content !== 'export default function() {}') || (fnData.styles && fnData.styles !== '')) {
+      processedComponent[componentId] = true
+    } else if (fnData.script && fnData.script.content && fnData.script.content.trim() !== 'export default function(){}' && fnData.script.content.trim() !== 'export default function() {}' && fnData.script.content.trim() !== 'export default function() { }') {
+      processedComponent[componentId] = true
+    } else if (fnData.script && fnData.script.content) {
+      processedComponent[componentId] = true
+    } else if (fnData.template || fnData.styles) {
+      processedComponent[componentId] = true
+    }
+  }
+
   const processedComponentKeys = Object.keys(processedComponent)
   const regex = /[-.:]/g
   const namespace = 'coralite-component:'
@@ -210,6 +230,99 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     }
   }
   entryCodeParts.push('};\n')
+
+  entryCodeParts.push('const coraliteComponentTemplates = {\n')
+  for (const key of processedComponentKeys) {
+    if (this.sharedFunctions[key] && this.sharedFunctions[key].template) {
+      entryCodeParts.push(`  "${key}": ${serialize(this.sharedFunctions[key].template)},\n`)
+    }
+  }
+  entryCodeParts.push('};\n')
+
+  entryCodeParts.push('const coraliteComponentDefaults = {\n')
+  for (const key of processedComponentKeys) {
+    if (this.sharedFunctions[key] && this.sharedFunctions[key].defaultValues) {
+      entryCodeParts.push(`  "${key}": ${serialize(this.sharedFunctions[key].defaultValues)},\n`)
+    }
+  }
+  entryCodeParts.push('};\n')
+
+  entryCodeParts.push('const coraliteComponentStyles = {\n')
+  for (const key of processedComponentKeys) {
+    if (this.sharedFunctions[key] && this.sharedFunctions[key].styles) {
+      entryCodeParts.push(`  "${key}": ${JSON.stringify(this.sharedFunctions[key].styles)},\n`)
+    }
+  }
+  entryCodeParts.push('};\n')
+
+  entryCodeParts.push(`
+class CoraliteElement extends HTMLElement {
+  constructor(componentId) {
+    super();
+    this.componentId = componentId;
+    
+    const defaults = coraliteComponentDefaults[componentId] || {};
+    this.values = { ...defaults };
+    
+    this.attachShadow({ mode: 'open' });
+  }
+
+  connectedCallback() {
+    const template = coraliteComponentTemplates[this.componentId] || '';
+    const styles = coraliteComponentStyles[this.componentId];
+    
+    if (!this.shadowRoot.innerHTML.trim()) {
+      let content = '';
+      if (styles) {
+        content += \`<style>\${styles}</style>\`;
+      }
+      content += template;
+      this.shadowRoot.innerHTML = content; 
+    }
+
+    const localContext = {
+      instanceId: crypto.randomUUID(),
+      componentId: this.componentId,
+      values: this.values,
+      root: this.shadowRoot, 
+      helpers: {}
+    };
+
+    const refElements = this.shadowRoot.querySelectorAll('[ref]');
+    for (let i = 0; i < refElements.length; i++) {
+      const element = refElements[i];
+      const refName = element.getAttribute('ref');
+      
+      const dynamicId = \`\${this.componentId}__\${refName}-\${localContext.instanceId}\`;
+      element.id = dynamicId;
+      
+      this.values[\`ref_\${refName}\`] = dynamicId;
+      element.removeAttribute('ref'); 
+    }
+
+    const helpers = getHelpers(localContext);
+    localContext.helpers = helpers;
+    
+    const imports = coraliteComponentImports[this.componentId] || {};
+    localContext.imports = imports;
+
+    const userScript = coraliteComponentFunctions[this.componentId];
+    if (userScript) {
+      userScript(localContext);
+    }
+  }
+}
+
+for (const componentId of Object.keys(coraliteComponentTemplates)) {
+  if (!customElements.get(componentId)) {
+    customElements.define(componentId, class extends CoraliteElement {
+      constructor() {
+        super(componentId);
+      }
+    });
+  }
+}
+`)
 
   // Invoke instances
   entryCodeParts.push('\n// Instances\n')

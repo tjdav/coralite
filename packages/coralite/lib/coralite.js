@@ -1083,6 +1083,81 @@ Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
 }
 
 /**
+ * Recursively resolves imperative component dependencies, bundling their HTML and state for the client.
+ *
+ * @param {string[]} componentIds - Array of component IDs to process.
+ * @param {Object} renderContext - The current build render context.
+ * @param {CoraliteComponent} parentComponent - The document context in which the module is being processed
+ * @returns {Promise<void>}
+ */
+Coralite.prototype._processDependentComponents = async function (componentIds, renderContext, parentComponent) {
+  if (!componentIds || !componentIds.length) return
+
+  for (const id of componentIds) {
+    // Prevent infinite loops / duplicate processing
+    if (this._scriptManager.sharedFunctions[id]) continue
+
+    const moduleComponent = this.components.getItem(id)
+    if (!moduleComponent) continue
+
+    const module = cloneModuleInstance(moduleComponent.result)
+
+    // Evaluate the script to trigger `defineComponent` and extract `__script__`
+    let scriptResult = {}
+    if (module.script) {
+      scriptResult = await this._evaluate({
+        module,
+        values: {},
+        component: parentComponent,
+        contextId: `dependent-${id}`,
+        renderContext
+      })
+    }
+
+    // Convert the parsed AST template back to a raw HTML string for the client
+    const templateHTML = this.transform(module.template.children)
+
+    // Extract raw styles from the module
+    const stylesHTML = module.styles && module.styles.length ? module.styles.join('\n') : ''
+
+    let scriptObj = {
+      content: 'export default function(){}',
+      values: {}
+    }
+    let nestedComponents = []
+    let defaultValues = {}
+
+    if (scriptResult.__script__) {
+      const extractedScript = findAndExtractScript(module.script)
+      if (extractedScript) {
+        scriptObj.content = extractedScript.content
+        scriptObj.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
+      }
+      scriptObj.values = scriptResult.__script__.values || {}
+      nestedComponents = scriptResult.__script__.components || []
+      scriptObj.components = scriptResult.__script__.components || []
+      defaultValues = scriptResult.__script__.defaultValues || {}
+      delete scriptResult.__script__
+    }
+
+    // Register with ScriptManager (including the template, defaults, and styles)
+    this._scriptManager.registerComponent({
+      id: module.id,
+      script: scriptObj,
+      filePath: moduleComponent.path.pathname,
+      template: templateHTML,
+      defaultValues,
+      styles: stylesHTML
+    })
+
+    // Recursively process deeper dependencies
+    if (nestedComponents.length > 0) {
+      await this._processDependentComponents(nestedComponents, renderContext, parentComponent)
+    }
+  }
+}
+
+/**
  * @param {Object} options
  * @param {string} options.id - id - Unique identifier for the component
  * @param {CoraliteModuleValues} [options.values={}] - Token values available for replacement
@@ -1192,8 +1267,20 @@ Coralite.prototype.createComponentElement = async function ({
         scriptResult.__script__.content = 'export default function(){}'
       }
 
+      // Extract raw styles from the module
+      const stylesHTML = module.styles && module.styles.length ? module.styles.join('\n') : ''
+
       // Register component script with script manager
-      await this._scriptManager.registerComponent(module.id, scriptResult.__script__, moduleComponent.path.pathname)
+      this._scriptManager.registerComponent({
+        id: module.id,
+        script: scriptResult.__script__,
+        filePath: moduleComponent.path.pathname,
+        styles: stylesHTML
+      })
+
+      if (scriptResult.__script__ && scriptResult.__script__.components) {
+        await this._processDependentComponents(scriptResult.__script__.components, renderContext, component)
+      }
 
       // Ensure values object exists in scriptResult
       if (!scriptResult.__script__.values) {

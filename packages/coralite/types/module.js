@@ -48,6 +48,7 @@
 /**
  * @callback CoraliteModuleSetup
  * @param {CoraliteModuleValues} context
+ * @returns {any}
  */
 
 export default {}
