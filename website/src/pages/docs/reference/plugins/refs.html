@@ -47,18 +47,18 @@
                 const { helpers } = context
                 const refs = helpers.refs
           
-              const username = refs('username')
-              const password = refs('password')
-              const submitBtn = refs('submitBtn')
+                const username = refs('username')
+                const password = refs('password')
+                const submitBtn = refs('submitBtn')
           
-              submitBtn.addEventListener('click', () => {
-                if (username.value && password.value) {
-                  console.log('Login:', username.value)
+                submitBtn.addEventListener('click', () => {
+                  if (username.value && password.value) {
+                    console.log('Login:', username.value)
                   // Handle form submission
-                } else {
-                  alert('Please fill all fields')
-                }
-              })
+                  } else {
+                    alert('Please fill all fields')
+                  }
+                })
               }
             }
           })
@@ -99,15 +99,15 @@
                 let count = values.count
                 const counterDisplay = root.querySelector('h2')
           
-              increment.addEventListener('click', () => {
-                count++
-                counterDisplay.textContent = `Count: ${count}`
-              })
+                increment.addEventListener('click', () => {
+                  count++
+                  counterDisplay.textContent = `Count: ${count}`
+                })
           
-              decrement.addEventListener('click', () => {
-                count--
-                counterDisplay.textContent = `Count: ${count}`
-              })
+                decrement.addEventListener('click', () => {
+                  count--
+                  counterDisplay.textContent = `Count: ${count}`
+                })
           
                 reset.addEventListener('click', () => {
                   count = 0
@@ -144,38 +144,38 @@
                 const { helpers } = context
                 const refs = helpers.refs
           
-              const email = refs('email')
-              const password = refs('password')
-              const emailError = refs('emailError')
-              const passwordError = refs('passwordError')
-              const submitBtn = refs('submitBtn')
+                const email = refs('email')
+                const password = refs('password')
+                const emailError = refs('emailError')
+                const passwordError = refs('passwordError')
+                const submitBtn = refs('submitBtn')
           
-              const validateEmail = (email) => {
-                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-              }
-          
-              const validatePassword = (password) => {
-                return password.length >= 8
-              }
-          
-              submitBtn.addEventListener('click', () => {
-                let valid = true
-          
-                // Validate email
-                if (!validateEmail(email.value)) {
-                  emailError.textContent = 'Invalid email format'
-                  valid = false
-                } else {
-                  emailError.textContent = ''
+                const validateEmail = (email) => {
+                  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
                 }
           
-                // Validate password
-                if (!validatePassword(password.value)) {
-                  passwordError.textContent = 'Password must be 8+ characters'
-                  valid = false
-                } else {
-                  passwordError.textContent = ''
+                const validatePassword = (password) => {
+                  return password.length >= 8
                 }
+          
+                submitBtn.addEventListener('click', () => {
+                  let valid = true
+          
+                  // Validate email
+                  if (!validateEmail(email.value)) {
+                    emailError.textContent = 'Invalid email format'
+                    valid = false
+                  } else {
+                    emailError.textContent = ''
+                  }
+          
+                  // Validate password
+                  if (!validatePassword(password.value)) {
+                    passwordError.textContent = 'Password must be 8+ characters'
+                    valid = false
+                  } else {
+                    passwordError.textContent = ''
+                  }
           
                   if (valid) {
                     console.log('Form submitted:', email.value)
@@ -214,18 +214,18 @@
                 const { helpers } = context
                 const refs = helpers.refs
           
-              const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
-              const contents = [refs('content1'), refs('content2'), refs('content3')]
+                const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
+                const contents = [refs('content1'), refs('content2'), refs('content3')]
           
-              buttons.forEach((btn, index) => {
-                btn.addEventListener('click', () => {
+                buttons.forEach((btn, index) => {
+                  btn.addEventListener('click', () => {
                   // Hide all contents
-                  contents.forEach(content => {
-                    content.style.display = 'none'
-                  })
+                    contents.forEach(content => {
+                      content.style.display = 'none'
+                    })
           
-                  // Show selected content
-                  contents[index].style.display = 'block'
+                    // Show selected content
+                    contents[index].style.display = 'block'
           
                     // Update button states
                     buttons.forEach(b => b.classList.remove('active'))
