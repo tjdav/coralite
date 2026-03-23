@@ -92,13 +92,13 @@ ScriptManager.prototype.getHelpers = function () {
  * Register shared functions for a component
  * @param {Object} options
  * @param {string} options.id - component identifier
- * @param {import('../types/script.js').ScriptContent} options.script - Script content or function
+ * @param {import('../types/script.js').ScriptContent} [options.script={}] - Script content or function
  * @param {string} [options.filePath] - The source file path to map back to
  * @param {string|null} [options.template=null] - Raw HTML template for imperative client rendering
  * @param {Object} [options.defaultValues={}] - Initial default state from setup()
  * @param {string} [options.styles=''] - Raw CSS string for the Shadow DOM
  */
-ScriptManager.prototype.registerComponent = function ({ id, script, filePath, template = null, defaultValues = {}, styles = '' }) {
+ScriptManager.prototype.registerComponent = function ({ id, script = {}, filePath, template = null, defaultValues = {}, styles = '' }) {
   this.sharedFunctions[id] = {
     id,
     script,
