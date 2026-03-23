@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.29.0
+
+> Comparing `coralite-scripts-v0.28.7` to `HEAD`
+
+**Summary:** 2 commits
+
+### ♻️ Code Refactoring
+
+- completely remove standalone components feature (coralite) ([142d9aa](https://codeberg.org/tjdavid/coralite/commit/142d9aae1be9527febd47b384a7768228c0cdc7f))
+
+### 🧹 Chores
+
+- remove unused CoraliteStaticAsset typedef from config types ([11011bc](https://codeberg.org/tjdavid/coralite/commit/11011bc41b48f22fcc4aa1784959e9fb9feaa5b4))
+
+
 ## v0.28.5
 
 > Comparing `coralite-scripts-v0.28.4` to `HEAD`
