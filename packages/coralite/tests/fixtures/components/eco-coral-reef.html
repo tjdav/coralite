@@ -1,0 +1,34 @@
+<template id="eco-coral-reef">
+  <div class="reef-stats">
+    <h1>Great Barrier Reef</h1>
+    <p>Ocean Temp: <span ref="oceanTemp"></span>°C</p>
+  </div>
+  <div ref="habitat" id="reef-habitat" style="min-height: 50px;"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+export default defineComponent({
+    client: {
+      components: ['eco-sea-anemone'],
+      setup () {
+        return { oceanTemp: 0 }
+      },
+      script (context) {
+        // Call the curried helper
+        const store = context.helpers.sharedOceanStore
+        const oceanTemp = context.helpers.refs('oceanTemp')
+
+        oceanTemp.textContent = store.getTemp()
+
+        store.subscribe((newTemp) => {
+          context.helpers.refs('oceanTemp').textContent = newTemp
+        })
+
+        const anemone = document.createElement('eco-sea-anemone')
+        context.helpers.refs('habitat').appendChild(anemone)
+      }
+    }
+  })
+</script>

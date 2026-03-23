@@ -322,7 +322,10 @@ describe('ScriptManager', () => {
 
     it('should register component with function script string', async () => {
       const script = { content: '(context) => context.values' }
-      sm.registerComponent('test-component', script)
+      sm.registerComponent({
+        id: 'test-component',
+        script
+      })
 
       assert.ok(sm.sharedFunctions['test-component'])
       const registered = sm.sharedFunctions['test-component']
@@ -332,7 +335,10 @@ describe('ScriptManager', () => {
 
     it('should register component with string script', async () => {
       const script = { content: 'console.log("test")' }
-      sm.registerComponent('string-component', script)
+      sm.registerComponent({
+        id: 'string-component',
+        script
+      })
 
       assert.ok(sm.sharedFunctions['string-component'])
       const registered = sm.sharedFunctions['string-component']
@@ -343,16 +349,25 @@ describe('ScriptManager', () => {
       const script1 = { content: "() => 'first'" }
       const script2 = { content: "() => 'second'" }
 
-      sm.registerComponent('test', script1)
+      sm.registerComponent({
+        id: 'test',
+        script: script1
+      })
       assert.strictEqual(sm.sharedFunctions['test'].script, script1)
 
-      sm.registerComponent('test', script2)
+      sm.registerComponent({
+        id: 'test',
+        script: script2
+      })
       assert.strictEqual(sm.sharedFunctions['test'].script, script2)
     })
 
     it('should handle async registration', async () => {
       const script = { content: "async () => 'async'" }
-      sm.registerComponent('async-component', script)
+      sm.registerComponent({
+        id: 'async-component',
+        script
+      })
 
       assert.ok(sm.sharedFunctions['async-component'])
     })
@@ -365,7 +380,10 @@ describe('ScriptManager', () => {
         }`
       }
 
-      sm.registerComponent('complex', script)
+      sm.registerComponent({
+        id: 'complex',
+        script
+      })
 
       const registered = sm.sharedFunctions['complex']
       assert.strictEqual(registered.script, script)
@@ -784,7 +802,10 @@ describe('ScriptManager', () => {
 
       await sm.use({ helpers: { h1: () => 1 } })
       await sm.addHelper('h2', () => 2)
-      sm.registerComponent('t1', { content: "() => 'test'" })
+      sm.registerComponent({
+        id: 't1',
+        script: { content: "() => 'test'" }
+      })
 
       assert.strictEqual(sm.scriptModules.length, 1)
       assert.ok(sm.scriptModules[0].helpers.h1)
@@ -822,13 +843,19 @@ describe('ScriptManager', () => {
 
     it('should handle component with non-function script', async () => {
       const script = { content: '123' }
-      sm.registerComponent('test', script)
+      sm.registerComponent({
+        id: 'test',
+        script
+      })
       const registered = sm.sharedFunctions['test']
       assert.strictEqual(registered.script, script)
     })
 
     it('should handle instance with missing properties', async () => {
-      sm.registerComponent('test', { content: "() => 'test'" })
+      sm.registerComponent({
+        id: 'test',
+        script: { content: "() => 'test'" }
+      })
 
       const instances = {
         'inst-1': {
@@ -859,9 +886,18 @@ describe('ScriptManager', () => {
     })
 
     it('should handle special characters in component IDs', async () => {
-      sm.registerComponent('component-with-dashes', { content: "() => 'test'" })
-      sm.registerComponent('component_with_underscores', { content: "() => 'test'" })
-      sm.registerComponent('component.with.dots', { content: "() => 'test'" })
+      sm.registerComponent({
+        id: 'component-with-dashes',
+        script: { content: "() => 'test'" }
+      })
+      sm.registerComponent({
+        id: 'component_with_underscores',
+        script: { content: "() => 'test'" }
+      })
+      sm.registerComponent({
+        id: 'component.with.dots',
+        script: { content: "() => 'test'" }
+      })
 
       assert.ok(sm.sharedFunctions['component-with-dashes'])
       assert.ok(sm.sharedFunctions['component_with_underscores'])
@@ -921,7 +957,11 @@ describe('ScriptManager', () => {
       const script = { content: '(context) => context.values.message' }
       const filePath = '/absolute/path/to/test-component.html'
 
-      sm.registerComponent(componentId, script, filePath)
+      sm.registerComponent({
+        id: componentId,
+        script,
+        filePath
+      })
 
       /**
        * @type {{

@@ -1,0 +1,32 @@
+<template id="eco-sea-anemone">
+  <div class="anemone-card">
+    <h3>Sea Anemone</h3>
+    <button ref="warmBtn">Increase Global Temp</button>
+  </div>
+</template>
+
+<style>
+  .anemone-card {
+    display: block;
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+export default defineComponent({
+    client: {
+      script (context) {
+        // Share the exact same closure reference as the parent
+        const store = context.helpers.sharedOceanStore
+
+        const btn = context.helpers.refs('warmBtn')
+        if (btn) {
+          btn.addEventListener('click', () => {
+            store.setTemp(store.getTemp() + 5)
+          })
+        }
+      }
+    }
+  })
+</script>

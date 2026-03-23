@@ -66,11 +66,13 @@ const pluginImportsTest = createPlugin({
 })
 
 import { staticAssetPlugin } from './plugins/static-assets.js'
+import oceanStatePlugin from './tests/fixtures/plugins/ocean-state.js'
 
 export default {
   plugins: [
     testPlugin,
     pluginImportsTest,
+    oceanStatePlugin(),
     staticAssetPlugin([{
       src: 'package.json',
       dest: 'coralite.json'
