@@ -1,10 +1,11 @@
 # Coralite Framework
 
-> Coralite is a static site generator library built around the emerging HTML modules proposal. It relies on Server-Side Rendering (SSR) by default, features zero hydration, and implements a simplified web component model using `<template>` and `<slot>` elements without requiring a Shadow DOM.
+> Coralite is a static site generator library built around the emerging HTML modules proposal. It relies on Server-Side Rendering (SSR) by default, features zero hydration, and implements a hybrid declarative and imperative web component model using `<template>` and `<slot>` elements.
 
 ## 1. System Architecture & CLI
 * **Rendering**: Strictly Server-Side Rendered (SSR). No client-side hydration.
 * **Execution**: Sites are built via the Coralite CLI.
+* **Architecture**: Standalone components are no longer supported. Coralite utilizes a hybrid model where components are either fully declarative (SSR-only) or true imperative Web Components.
 * **CLI Arguments**: Requires paths for components directory (`-t` or `--components`), pages directory (`-p` or `--pages`), and output directory (`-o` or `--output`).
 
 ## 2. Static Components
@@ -36,10 +37,11 @@ Dynamic components are required for data processing, slots, and client-side inte
 * **Context Object (`CoraliteScriptContent`)**: 
   * `id`: Unique instance identifier.
   * `componentId`: Generic component identifier.
-  * `document`: Coralite document or mocked client document (with `getElementById`).
+  * `root`: The DOM root. This will be the `ShadowRoot` for imperative web components or the standard Document (`window.document`) for declarative components.
   * `values`: Processed tokens, props, and `setup` data.
   * `refs`: Map of instance reference IDs.
   * `helpers`: Plugin-injected utilities (e.g., `helpers.refs`, `helpers.imports`).
+* **client.components**: An array of string dependencies. If your `client.script` imperatively creates other Web Components (e.g., `document.createElement('other-component')`), you must declare their IDs here.
 
 ### 3.3 Component-Level Imports (`client.imports`)
 
@@ -50,10 +52,9 @@ Declares external dependencies bundled at build-time. Static `import` statements
 * Namespace: `namespaceExport: 'MyLib'` (compiles to `import * as MyLib`).
 * Side-Effects: Providing only a `specifier` triggers a side-effect import (e.g., polyfills).
 * JSON: Supported via `attributes: { type: 'json' }`.
-* **Cross-Component**: Import other components via `specifier: 'coralite-component/<component-id>'`.
-
-* **CRITICAL RULE FOR CROSS-COMPONENT IMPORTS**: You **ONLY** need to import another Coralite component if your `client.script` is *imperatively* creating and appending it to the DOM at runtime (e.g., `document.createElement('other-component')`). If you are simply using `<other-component>` declaratively inside your HTML `<template>`, Coralite resolves and bundles it automatically on the server. **Do not manually import components used declaratively in the template.**
 * **Access**: Resolved modules are available in `helpers.imports`.
+
+* **CROSS-COMPONENT USAGE**: If you are simply using `<other-component>` declaratively inside your HTML `<template>`, Coralite resolves and bundles it automatically on the server. If you are *imperatively* creating and appending a web component to the DOM at runtime, you must declare it in `client.components = ['other-component']`.
 
 ## 4. Framework Extensibility (createPlugin)
 Plugins hook into the build lifecycle, register global components, and inject bundled scripts.
@@ -73,7 +74,7 @@ Plugins hook into the build lifecycle, register global components, and inject bu
 ### 4.3 Client Injection
 * `client.imports`: Bundles external libraries identically to component-level imports.
 * `client.config`: Passes static server-side data (e.g., API keys) to the client bundle.
-* `client.helpers`: Injects utility functions into `client.script`. Must be factory functions returning an executable function. Context injected includes `context.imports` and `context.config`.
+* `client.helpers`: Injects utility functions into `client.script`. Coralite uses a two-phase currying system for plugin helpers. The factory function first receives a `globalContext` containing `config` and `imports`. It must return a local factory function that receives the local instance context (`CoraliteScriptContent` with `root`, `values`, `refs`, etc.), which finally returns the executable helper method.
 
 ## 5. Core Built-In Plugins
 ### 5.1 Metadata Plugin
@@ -86,8 +87,8 @@ Plugins hook into the build lifecycle, register global components, and inject bu
 * **Purpose**: Replaces `document.querySelector` for safe DOM element targeting.
 * **Template Setup**: Add `ref="elementName"` to any HTML tag.
 * **Script Usage**: Access via `const el = helpers.refs('elementName')`.
-* **Execution & DOM Compilation**: The framework maps the `ref` attribute to a unique `id` stored in `values['ref_elementName']`, which is fetched via `getElementById`. Returns a cached DOM node or `null` if absent.
-* **E2E Testing & External Querying**: At build time, Coralite compiles the `ref` attribute into a strict `id` attribute on the DOM element using the pattern: `<component-id>__<refName>-<index>`. For E2E testing frameworks (like Playwright) or external scripts, you must query this compiled ID directly (e.g., `page.locator('#coralite-chat-timeline__messagesContainer-0')`) instead of adding arbitrary CSS classes.
+* **Execution & DOM Compilation**: The `ref` attribute is preserved on the element, and the framework assigns a generated unique ID directly to this `ref` attribute (leaving the standard `id` attribute intact for other uses). The framework stores this generated ID in `values['ref_elementName']`, which is queried via `root.querySelector('[ref="..."]')`. Returns a cached DOM node or `null` if absent.
+* **E2E Testing & External Querying**: At build time, Coralite assigns a unique string to the `ref` attribute using the pattern: `<component-id>__<refName>-<index>`. For E2E testing frameworks (like Playwright) or external scripts, you must query this compiled `ref` attribute directly (e.g., `page.locator('[ref="coralite-chat-timeline__messagesContainer-0"]')`) instead of adding arbitrary CSS classes.
 ### 5.3 Static Assets Plugin
 * **Purpose**: Copies static or binary dependencies (like `.wasm` files) from NPM packages or local paths into the build output directory.
 * **Usage**: Define an `assets` array in `coralite.config.js`. Each object must contain a `dest` (destination path relative to the build output directory). To determine the source, you must provide either:
