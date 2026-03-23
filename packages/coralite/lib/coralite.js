@@ -1289,16 +1289,13 @@ Coralite.prototype.createComponentElement = async function ({
 
       for (let i = 0; i < module.values.refs.length; i++) {
         const ref = module.values.refs[i]
-        const id = `${module.id}__${ref.name}-${index}`
+        const uniqueRefValue = `${module.id}__${ref.name}-${index}`
 
-        // set id selector
-        ref.element.attribs.id = id
+        // Update the ref attribute value to be unique
+        ref.element.attribs.ref = uniqueRefValue
 
         // inject flat token into script instance values
-        scriptResult.__script__.values[`ref_${ref.name}`] = id
-
-        // clean up ref attribute
-        delete ref.element.attribs.ref
+        scriptResult.__script__.values[`ref_${ref.name}`] = uniqueRefValue
       }
 
       // Store instance data for script manager
@@ -1319,7 +1316,6 @@ Coralite.prototype.createComponentElement = async function ({
   // append ref objects to values
   for (let i = 0; i < module.values.refs.length; i++) {
     const ref = module.values.refs[i]
-
     values[`ref_${ref.name}`] = `${module.id}__${ref.name}-${index}`
   }
 
