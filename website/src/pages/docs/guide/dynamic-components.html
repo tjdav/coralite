@@ -138,7 +138,9 @@
 
     <p>The <code>client.script</code> function is what makes Coralite components interactive. This function is serialized and bundled to run <strong>in the user's browser</strong> after the page loads.</p>
 
-    <p>The script receives a context object (<code>CoraliteScriptContent</code>) containing things like <code>id</code>, <code>values</code>, and <code>helpers</code>.</p>
+    <p>The script receives a context object (<code>CoraliteScriptContent</code>) containing things like <code>id</code>, <code>values</code>, <code>root</code>, and <code>helpers</code>. The <code>root</code> property provides access to either the <code>ShadowRoot</code> (for true imperative Web Components) or the <code>Document</code> (for declarative components).</p>
+
+    <p>If your <code>client.script</code> imperatively creates other Web Components (e.g., <code>document.createElement('other-component')</code>), you must declare their IDs in the <code>client.components</code> array.</p>
 
     <coralite-code-html>
       <template id="toggle-box">
@@ -173,7 +175,7 @@
       </script>
     </coralite-code-html>
 
-    <p>Notice the use of <code>ref="box"</code> and <code>helpers.refs('box')</code>? This is Coralite's safe way to query the DOM. Learn more in the <a href="./dom-refs.html">Managing the DOM (Refs)</a> guide.</p>
+    <p>Notice the use of <code>ref="box"</code> and <code>helpers.refs('box')</code>? This is Coralite's safe way to query the DOM. The refs plugin automatically queries the DOM using <code>root.querySelector('[ref="..."]')</code>. Learn more in the <a href="./dom-refs.html">Managing the DOM (Refs)</a> guide.</p>
 
     <hr>
     

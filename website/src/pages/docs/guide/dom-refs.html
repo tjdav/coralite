@@ -14,7 +14,7 @@
 
     <p>When writing JavaScript for the browser, you usually need to interact with HTML elements on the page. In traditional web development, you might use <code>document.querySelector('.my-class')</code> or <code>document.getElementById('my-id')</code>.</p>
 
-    <p>In Coralite, direct DOM querying is typically replaced by the built-in <strong>refs plugin</strong>. This plugin provides a safe, runtime DOM element targeting system specifically designed for component encapsulation.</p>
+    <p>In Coralite, direct DOM querying is typically replaced by the built-in <strong>refs plugin</strong>. This plugin provides a safe, runtime DOM element targeting system specifically designed for component encapsulation. The Coralite refs system generates unique IDs directly assigned to the <code>ref</code> attribute, allowing you to leave the standard <code>id</code> attribute intact for other uses (like linking a label's <code>for</code> attribute to an input's <code>id</code>).</p>
 
     <coralite-heading level="h2" text="Why Use Refs Instead of querySelector?"></coralite-heading>
 
@@ -81,10 +81,20 @@
     <p>The refs plugin is highly context-aware. Depending on how your component is compiled, it behaves differently to ensure maximum safety:</p>
 
     <ol>
-      <li><strong>Global Fallback:</strong> For standard Server-Side Rendered (SSR) components, the plugin safely scopes the lookup to the instance ID generated during the build.</li>
+      <li><strong>Global Fallback:</strong> For declarative components, the plugin queries <code>root.querySelector('[ref="..."]')</code> where the generated ref ID is assigned. The <code>root</code> represents the ShadowRoot for web components or the Document for declarative components.</li>
       <li><strong>Caching:</strong> The first time you call <code>refs('myEl')</code>, it performs the DOM query. If found, the DOM node is cached locally in the plugin. The next time you call <code>refs('myEl')</code>, it returns immediately without querying the DOM again.</li>
       <li><strong>Null Safety:</strong> If the element isn't found (perhaps conditionally rendered out), the helper safely returns <code>null</code> without throwing an error.</li>
     </ol>
+
+    <coralite-heading level="h2" text="E2E Testing & External Querying"></coralite-heading>
+
+    <p>At build time, Coralite assigns a unique string to the <code>ref</code> attribute using the pattern: <code>&lt;component-id&gt;__&lt;refName&gt;-&lt;index&gt;</code>. For E2E testing frameworks (like Playwright) or external scripts, you should query this compiled <code>ref</code> attribute directly instead of relying on arbitrary CSS classes or standard IDs.</p>
+
+    <p>For example, if you defined <code>&lt;button ref="submitBtn"&gt;</code> in a component named <code>my-form</code>, you could locate it in a Playwright test like this:</p>
+
+    <coralite-code language="javascript">
+await page.locator('[ref="my-form__submitBtn-0"]').click();
+    </coralite-code>
 
   </main>
   <coralite-footer></coralite-footer>

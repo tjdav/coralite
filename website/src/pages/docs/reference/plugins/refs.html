@@ -13,7 +13,7 @@
   <main class="container content">
     <!-- Introduction -->
     <h1>refs Plugin</h1>
-    <p>The <code>refs</code> plugin is a built-in Coralite helper that provides runtime DOM element access. It allows template scripts to safely access and manipulate DOM elements by their <code>ref</code> attributes.</p>
+    <p>The <code>refs</code> plugin is a built-in Coralite helper that provides runtime DOM element access. It allows template scripts to safely access and manipulate DOM elements by their <code>ref</code> attributes. The framework handles automatic unique ID generation by assigning the generated ID to the <code>ref</code> attribute, leaving the standard <code>id</code> attribute intact.</p>
 
     <!-- Table of Contents -->
     <nav aria-label="table of contents">
@@ -42,8 +42,10 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            script: (context, helpers) => {
-              const refs = helpers.refs
+            client: {
+              script: (context) => {
+                const { helpers } = context
+                const refs = helpers.refs
           
               const username = refs('username')
               const password = refs('password')
@@ -57,6 +59,7 @@
                   alert('Please fill all fields')
                 }
               })
+              }
             }
           })
         </script>
@@ -85,14 +88,16 @@
             tokens: {
               count: ({ initial }) => parseInt(initial) || 0
             },
-            script: (context, helpers) => {
-              const refs = helpers.refs
-              const increment = refs('increment')
-              const decrement = refs('decrement')
-              const reset = refs('reset')
+            client: {
+              script: (context) => {
+                const { helpers, root, values } = context
+                const refs = helpers.refs
+                const increment = refs('increment')
+                const decrement = refs('decrement')
+                const reset = refs('reset')
           
-              let count = context.values.count
-              const counterDisplay = document.querySelector('h2')
+                let count = values.count
+                const counterDisplay = root.querySelector('h2')
           
               increment.addEventListener('click', () => {
                 count++
@@ -104,10 +109,11 @@
                 counterDisplay.textContent = `Count: ${count}`
               })
           
-              reset.addEventListener('click', () => {
-                count = 0
-                counterDisplay.textContent = `Count: ${count}`
-              })
+                reset.addEventListener('click', () => {
+                  count = 0
+                  counterDisplay.textContent = `Count: ${count}`
+                })
+              }
             }
           })
         </script>
@@ -133,8 +139,10 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            script: (context, helpers) => {
-              const refs = helpers.refs
+            client: {
+              script: (context) => {
+                const { helpers } = context
+                const refs = helpers.refs
           
               const email = refs('email')
               const password = refs('password')
@@ -169,11 +177,12 @@
                   passwordError.textContent = ''
                 }
           
-                if (valid) {
-                  console.log('Form submitted:', email.value)
-                  // Submit form
-                }
-              })
+                  if (valid) {
+                    console.log('Form submitted:', email.value)
+                    // Submit form
+                  }
+                })
+              }
             }
           })
         </script>
@@ -200,8 +209,10 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            script: (context, helpers) => {
-              const refs = helpers.refs
+            client: {
+              script: (context) => {
+                const { helpers } = context
+                const refs = helpers.refs
           
               const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
               const contents = [refs('content1'), refs('content2'), refs('content3')]
@@ -216,11 +227,12 @@
                   // Show selected content
                   contents[index].style.display = 'block'
           
-                  // Update button states
-                  buttons.forEach(b => b.classList.remove('active'))
-                  btn.classList.add('active')
+                    // Update button states
+                    buttons.forEach(b => b.classList.remove('active'))
+                    btn.classList.add('active')
+                  })
                 })
-              })
+              }
             }
           })
         </script>
@@ -231,6 +243,7 @@
         <li><strong>Runtime Access</strong>: <code>helpers.refs('refName')</code> gets DOM elements</li>
         <li><strong>Automatic Caching</strong>: Elements cached after first access</li>
         <li><strong>Safe Queries</strong>: Returns null if element not found</li>
+        <li><strong>Under the Hood</strong>: Framework assigns the generated unique ID to the <code>ref</code> attribute and queries it via <code>root.querySelector('[ref="..."]')</code>. E2E tests should query this compiled ref attribute directly (e.g., <code>[ref="my-component__btn-0"]</code>).</li>
       </ul>
     </section>
 

@@ -91,6 +91,11 @@ type SlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&lt;string, any&
         <td><code>Array&lt;ImportDefinition&gt;</code></td>
         <td>An array defining component-level external dependencies to be bundled.</td>
       </tr>
+      <tr slot="body">
+        <td><code>components</code></td>
+        <td><code>Array&lt;string&gt;</code></td>
+        <td>An array of string dependencies. Declares other imperative Web Components created in the script.</td>
+      </tr>
     </coralite-table>
 
     <coralite-heading level="h3" text="CoraliteScriptContent Context Object"></coralite-heading>
@@ -114,9 +119,9 @@ type SlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&lt;string, any&
         <td>The generic component identifier.</td>
       </tr>
       <tr slot="body">
-        <td><code>document</code></td>
-        <td><code>object</code></td>
-        <td>The Coralite document interface (or a mocked interface with <code>getElementById</code>).</td>
+        <td><code>root</code></td>
+        <td><code>ShadowRoot | Document</code></td>
+        <td>The DOM root. This will be the <code>ShadowRoot</code> for imperative web components or the standard Document (<code>window.document</code>) for declarative components.</td>
       </tr>
       <tr slot="body">
         <td><code>values</code></td>
@@ -131,6 +136,11 @@ type SlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&lt;string, any&
         <td><code>helpers</code></td>
         <td><code>object</code></td>
         <td>Client-side utilities provided by plugins (e.g., <code>helpers.refs</code> and <code>helpers.imports</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>components</code></td>
+        <td><code>string[]</code></td>
+        <td>An array of string dependencies if imperative web components are used.</td>
       </tr>
     </coralite-table>
 

@@ -56,6 +56,10 @@ export default defineConfig({
       </tr>
     </coralite-table>
 
+    <coralite-heading level="h2" text="Assets Plugin (coralite-scripts)"></coralite-heading>
+
+    <p>The <code>assets</code> property (processed by <code>staticAssetPlugin</code>) expects an array of objects. These objects must define a <code>dest</code> property. To determine the source, you must define either <code>pkg</code> (and optionally <code>path</code>) or an explicit <code>src</code> path to bypass standard package resolution.</p>
+
     <coralite-heading level="h2" text="Environment Considerations"></coralite-heading>
 
     <p>When running Coralite using the <code>coralite-scripts</code> development mode (e.g., <code>npm run dev</code> or <code>mode === 'dev'</code>), the <code>output</code> directory is automatically overridden to a temporary <code>.coralite/build</code> folder to isolate build artifacts from production outputs. This directory is automatically cleaned up on server startup and graceful exit.</p>
