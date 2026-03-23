@@ -294,10 +294,9 @@ class CoraliteElement extends HTMLElement {
       const refName = element.getAttribute('ref');
       
       const dynamicId = \`\${this.componentId}__\${refName}-\${localContext.instanceId}\`;
-      element.id = dynamicId;
+      element.setAttribute('ref', dynamicId);
       
       this.values[\`ref_\${refName}\`] = dynamicId;
-      element.removeAttribute('ref'); 
     }
 
     const helpers = getHelpers(localContext);

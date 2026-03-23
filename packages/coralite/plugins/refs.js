@@ -26,7 +26,7 @@ export const refsPlugin = createPlugin({
             }
 
             // @ts-ignore
-            const element = root.getElementById(refId)
+            const element = root.querySelector(`[ref="${refId}"]`)
 
             if (element) {
               elements[id] = element
