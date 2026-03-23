@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.29.0
+
+> Comparing `coralite-v0.28.5` to `HEAD`
+
+**Summary:** 10 commits
+
+### ✨ Features
+
+- implement recursive imperative component dependency resolution and bundling ([51d55c4](https://codeberg.org/tjdavid/coralite/commit/51d55c4525dca517a1097b43d37f21b8353925f3))
+- update plugin client helpers API to two-phase execution (script-manager) ([0aa9e90](https://codeberg.org/tjdavid/coralite/commit/0aa9e901648edcb507b056890c5aeeaf99eb1857))
+- add E2E tests for imperative component hydration and shared state ([edbdaff](https://codeberg.org/tjdavid/coralite/commit/edbdaff019b77874a12ba9ea0809369f5fb70699))
+
+### 🐛 Bug Fixes
+
+- add missing newline in script-manager.js context assignment to ensure proper code formatting ([476db43](https://codeberg.org/tjdavid/coralite/commit/476db434de6e5545c6aaee749b95ac4513a131e7))
+
+### 📚 Documentation
+
+- update llms.txt with latest framework changes ([f767914](https://codeberg.org/tjdavid/coralite/commit/f7679143f4970b275ab90fe63307d35bf52f981f))
+
+### ♻️ Code Refactoring
+
+- preserve ref attribute uniqueness instead of relying on id ([4f01629](https://codeberg.org/tjdavid/coralite/commit/4f01629873fe60d5e9d7615e7f13bcab38d306e0))
+- completely remove standalone components feature (coralite) ([142d9aa](https://codeberg.org/tjdavid/coralite/commit/142d9aae1be9527febd47b384a7768228c0cdc7f))
+- rename Document types to Component globally ([7a5db39](https://codeberg.org/tjdavid/coralite/commit/7a5db399a8589e774dcb9b233595d583bb3b9440))
+
+### ✅ Tests
+
+- update ScriptManager test cases to use new object-based API signature ([ecb96e7](https://codeberg.org/tjdavid/coralite/commit/ecb96e771108397c06824671fb66dd4a71615d41))
+
+### 🧹 Chores
+
+- remove unused tests ([dd988a7](https://codeberg.org/tjdavid/coralite/commit/dd988a7773410436c9e3ece9f7c03119707747c2))
+
+
 ## v0.28.5
 
 > Comparing `coralite-v0.28.4` to `HEAD`
