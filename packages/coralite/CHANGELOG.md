@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.29.2
+
+> Comparing `coralite-v0.29.1` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- allow plugin client helpers phase 1 to be async ([4d1c2d5](https://codeberg.org/tjdavid/coralite/commit/4d1c2d550450899f41dc8e6c36e6594285bde571))
+
+### 🧹 Chores
+
+- refactor script manager helpers to support async operations ([25d4883](https://codeberg.org/tjdavid/coralite/commit/25d48833ffaf26e04ac992c2e0393b40be640f1a))
+- update llms.txt with critical directives and architectural clarifications ([4a6687b](https://codeberg.org/tjdavid/coralite/commit/4a6687b01e32f93f3da380c1c9431552fdef37ba))
+
+
 ## v0.29.1
 
 > Comparing `coralite-v0.29.0` to `HEAD`
