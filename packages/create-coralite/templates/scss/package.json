@@ -7,7 +7,7 @@
     "build": "coralite-scripts build"
   },
   "devDependencies": {
-    "coralite-scripts": "^0.29.1",
+    "coralite-scripts": "^0.29.2",
     "cross-env": "^10.1.0"
   }
 }
