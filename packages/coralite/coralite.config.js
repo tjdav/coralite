@@ -68,11 +68,29 @@ const pluginImportsTest = createPlugin({
 import { staticAssetPlugin } from './plugins/static-assets.js'
 import oceanStatePlugin from './tests/fixtures/plugins/ocean-state.js'
 
+const asyncHelperPlugin = createPlugin({
+  name: 'async-helper-plugin',
+  client: {
+    helpers: {
+      asyncHelper: async (globalContext) => {
+        // simulate async phase1 setup
+        await new Promise(resolve => setTimeout(resolve, 50))
+        const value = 'async-phase1-result'
+
+        return (localContext) => () => {
+          return value
+        }
+      }
+    }
+  }
+})
+
 export default {
   plugins: [
     testPlugin,
     pluginImportsTest,
     oceanStatePlugin(),
+    asyncHelperPlugin,
     staticAssetPlugin([{
       src: 'package.json',
       dest: 'coralite.json'

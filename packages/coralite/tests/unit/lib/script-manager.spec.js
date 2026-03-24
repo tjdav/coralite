@@ -1172,6 +1172,45 @@ describe('ScriptManager', () => {
     })
   })
 
+  describe('Async Helpers', () => {
+    it('should support async phase1 initialization', async () => {
+      const sm = new ScriptManager()
+
+      await sm.use({
+        helpers: {
+          testHelper: async (globalContext) => {
+            // Simulate async phase1
+            await new Promise(resolve => setTimeout(resolve, 10))
+            return (localContext) => {
+              return 'sync_result'
+            }
+          }
+        }
+      })
+
+      sm.registerComponent({
+        id: 'test',
+        script: { content: '() => {}' }
+      })
+
+      const instances = {
+        'inst-1': {
+          instanceId: '1',
+          componentId: 'test',
+          values: {},
+          component: {}
+        }
+      }
+
+      const compiledScript = await sm.compileAllInstances(instances, 'development')
+
+      // Output should have await getHelpers(context)
+      assert.ok(compiledScript.includes('await getHelpers(context)'))
+      // Output should return the helper's phase2 wrapper synchronously
+      assert.ok(compiledScript.includes('(localContext) => phase2(localContext)'))
+    })
+  })
+
   describe('ScriptManager Config Injection', () => {
     it('should inject config into helper context', async () => {
       const manager = new ScriptManager()

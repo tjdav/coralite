@@ -12,9 +12,6 @@ test.describe('Client-side Scripts', () => {
     const statusRef = await status.getAttribute('ref')
     expect(statusRef).toBeTruthy()
 
-    // Explicitly wait for aria-controls to be set correctly or verify logic handles string evaluation
-    const expectedControls = await status.getAttribute('ref')
-
     await expect(status).toHaveText('Dirty')
     await btn.click()
     await expect(status).toHaveText('Clean')

@@ -1,0 +1,21 @@
+<template id="async-helper-test">
+  <div id="async-target">Waiting...</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: {
+      script: ({ helpers }) => {
+        if (helpers.asyncHelper) {
+          const result = helpers.asyncHelper()
+          const target = document.getElementById('async-target')
+          if (target) {
+            target.textContent = result
+            target.setAttribute('data-updated', 'true')
+          }
+        }
+      }
+    }
+  })
+</script>

@@ -47,10 +47,11 @@
 /**
  * @callback ScriptPluginHelperGlobalInstance
  * @param {ScriptPluginHelperGlobalContext} globalContext - Global instance context
- * @returns {ScriptPluginHelperLocalInstance}
+ * @returns {ScriptPluginHelperLocalInstance | Promise<ScriptPluginHelperLocalInstance>}
  */
 
 /**
+ * @async
  * @callback ScriptPluginHelperLocalInstance
  * @param {CoraliteScriptContent} localContext - Local instance context
  * @returns {any}

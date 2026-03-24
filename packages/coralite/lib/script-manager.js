@@ -51,7 +51,7 @@ ScriptManager.prototype.getHelpersContent = function () {
     helpers += `"${key}": (async () => {
       const phase1 = ${this.helpers[key]};
       const phase2 = await phase1({});
-      return async (localContext) => await phase2(localContext);
+      return (localContext) => phase2(localContext);
     })(),`
   }
 
@@ -81,7 +81,7 @@ ScriptManager.prototype.getHelpers = function () {
     helpers += `"${key}": (async () => {
       const phase1 = ${this.helpers[key]};
       const phase2 = await phase1({});
-      return async (localContext) => await phase2(localContext);
+      return (localContext) => phase2(localContext);
     })(),`
   }
 
@@ -155,7 +155,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push(`const getHelpers = async (context) => {
     const helpers = {}
     for (const [key, helper] of Object.entries(coraliteComponentScriptHelpers)) {
-      helpers[key] = await helper(context)
+      const resolvedHelper = await helper
+      helpers[key] = resolvedHelper(context)
     }
     return helpers
   }\n`)
@@ -645,7 +646,7 @@ for (const componentId of Object.keys(coraliteComponentTemplates)) {
                     };
                     const fn = ${fn};
                     const phase2 = await fn(globalContext);
-                    return async (localContext) => await phase2(localContext);
+                    return (localContext) => phase2(localContext);
                   })(),\n`
                 }
               }
