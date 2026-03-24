@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.29.1
+
+> Comparing `coralite-v0.29.0` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- update whitespace in reactive-token-parent test fixture to ensure consistent formatting ([566b68b](https://codeberg.org/tjdavid/coralite/commit/566b68bbc363e5ae44f8db9adb201f54dffdd2f0))
+- implement reactive token replacement in imperative web components ([b7bf443](https://codeberg.org/tjdavid/coralite/commit/b7bf44394769b6393b1f62229ff2a5ff6b1e3651))
+
+
 ## v0.29.0
 
 > Comparing `coralite-v0.28.5` to `HEAD`
