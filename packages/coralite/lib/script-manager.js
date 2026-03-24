@@ -48,10 +48,10 @@ ScriptManager.prototype.getHelpersContent = function () {
   let helpers = ''
 
   for (const key of Object.keys(this.helpers)) {
-    helpers += `"${key}": (() => {
+    helpers += `"${key}": (async () => {
       const phase1 = ${this.helpers[key]};
-      const phase2 = phase1({});
-      return (localContext) => phase2(localContext);
+      const phase2 = await phase1({});
+      return async (localContext) => await phase2(localContext);
     })(),`
   }
 
@@ -78,10 +78,10 @@ ScriptManager.prototype.getHelpers = function () {
   let helpers = ''
 
   for (const key of Object.keys(this.helpers)) {
-    helpers += `"${key}": (() => {
+    helpers += `"${key}": (async () => {
       const phase1 = ${this.helpers[key]};
-      const phase2 = phase1({});
-      return (localContext) => phase2(localContext);
+      const phase2 = await phase1({});
+      return async (localContext) => await phase2(localContext);
     })(),`
   }
 
@@ -152,10 +152,10 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     ${helperParts}
   };\n`)
 
-  entryCodeParts.push(`const getHelpers = (context) => {
+  entryCodeParts.push(`const getHelpers = async (context) => {
     const helpers = {}
     for (const [key, helper] of Object.entries(coraliteComponentScriptHelpers)) {
-      helpers[key] = helper(context)
+      helpers[key] = await helper(context)
     }
     return helpers
   }\n`)
@@ -359,16 +359,18 @@ class CoraliteElement extends HTMLElement {
       this.values[\`ref_\${refName}\`] = dynamicId;
     }
 
-    const helpers = getHelpers(localContext);
-    localContext.helpers = helpers;
-    
-    const imports = coraliteComponentImports[this.componentId] || {};
-    localContext.imports = imports;
+    ;(async () => {
+      const helpers = await getHelpers(localContext);
+      localContext.helpers = helpers;
+      
+      const imports = coraliteComponentImports[this.componentId] || {};
+      localContext.imports = imports;
 
-    const userScript = coraliteComponentFunctions[this.componentId];
-    if (userScript) {
-      userScript(localContext);
-    }
+      const userScript = coraliteComponentFunctions[this.componentId];
+      if (userScript) {
+        userScript(localContext);
+      }
+    })();
 
     this._observer = new MutationObserver((mutations) => {
       let shouldRender = false;
@@ -431,7 +433,7 @@ for (const componentId of Object.keys(coraliteComponentTemplates)) {
     entryCodeParts.push('context.imports = imports;\n')
     entryCodeParts.push('const setupValues = await globalSetupValuesPromise;\n')
     entryCodeParts.push('context.values = { ...context.values, ...setupValues };\n')
-    entryCodeParts.push('const helpers = getHelpers(context);\n')
+    entryCodeParts.push('const helpers = await getHelpers(context);\n')
     entryCodeParts.push('context.helpers = helpers;\n')
     entryCodeParts.push(`\n// Instance: ${instanceId}\n`)
     entryCodeParts.push(`await coraliteComponentFunctions["${context.componentId}"](context);\n`)
@@ -636,13 +638,14 @@ for (const componentId of Object.keys(coraliteComponentTemplates)) {
               for (const key in module.helpers) {
                 if (Object.hasOwn(module.helpers, key)) {
                   const fn = normalizeFunction(module.helpers[key])
-                  contents += `  "${key}": (() => {
+                  contents += `  "${key}": (async () => {
                     const globalContext = {
                       imports: pluginImports,
                       config: pluginConfig
                     };
                     const fn = ${fn};
-                    return fn(globalContext);
+                    const phase2 = await fn(globalContext);
+                    return async (localContext) => await phase2(localContext);
                   })(),\n`
                 }
               }

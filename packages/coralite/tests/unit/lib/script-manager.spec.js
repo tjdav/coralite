@@ -275,9 +275,9 @@ describe('ScriptManager', () => {
 
       const result = sm.getHelpers()
 
-      assert.ok(result.includes('"helper1": (() =>'))
+      assert.ok(result.includes('"helper1": (async () =>'))
       assert.ok(result.includes('() => \'test1\''))
-      assert.ok(result.includes('"helper2": (() =>'))
+      assert.ok(result.includes('"helper2": (async () =>'))
       assert.ok(result.includes('(x) => x * 2'))
     })
 
