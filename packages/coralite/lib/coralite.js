@@ -1270,11 +1270,40 @@ Coralite.prototype.createComponentElement = async function ({
       // Extract raw styles from the module
       const stylesHTML = module.styles && module.styles.length ? module.styles.join('\n') : ''
 
+      // Convert the parsed AST template back to a raw HTML string for the client
+      const templateHTML = this.transform(module.template.children)
+
+      const componentTokens = {}
+      for (let i = 0; i < module.values.attributes.length; i++) {
+        const item = module.values.attributes[i]
+        for (let j = 0; j < item.tokens.length; j++) {
+          componentTokens[item.tokens[j].name] = true
+        }
+      }
+      for (let i = 0; i < module.values.textNodes.length; i++) {
+        const item = module.values.textNodes[i]
+        for (let j = 0; j < item.tokens.length; j++) {
+          componentTokens[item.tokens[j].name] = true
+        }
+      }
+
+      // Include all computed properties into default values so client script can use them
+      const componentDefaultValues = scriptResult.__script__.defaultValues || {}
+      if (values) {
+        for (const token of Object.keys(componentTokens)) {
+          if(typeof values[token] === 'function') {
+            componentDefaultValues[token] = values[token]
+          }
+        }
+      }
+
       // Register component script with script manager
       this._scriptManager.registerComponent({
         id: module.id,
         script: scriptResult.__script__,
         filePath: moduleComponent.path.pathname,
+        template: templateHTML,
+        defaultValues: componentDefaultValues,
         styles: stylesHTML
       })
 

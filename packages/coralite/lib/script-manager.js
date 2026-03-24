@@ -242,7 +242,12 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push('const coraliteComponentDefaults = {\n')
   for (const key of processedComponentKeys) {
     if (this.sharedFunctions[key] && this.sharedFunctions[key].defaultValues) {
-      entryCodeParts.push(`  "${key}": ${serialize(this.sharedFunctions[key].defaultValues)},\n`)
+      entryCodeParts.push(`  "${key}": (() => {\n`)
+      entryCodeParts.push(`    const defaults = ${serialize(this.sharedFunctions[key].defaultValues)};\n`)
+      entryCodeParts.push(`    return defaults;\n`)
+      entryCodeParts.push(`  })(),\n`)
+    } else {
+      entryCodeParts.push(`  "${key}": {},\n`)
     }
   }
   entryCodeParts.push('};\n')
@@ -263,25 +268,80 @@ class CoraliteElement extends HTMLElement {
     
     const defaults = coraliteComponentDefaults[componentId] || {};
     this.values = { ...defaults };
+    this._isRendering = false;
+    this._observer = null;
     
     this.attachShadow({ mode: 'open' });
   }
 
-  connectedCallback() {
-    const template = coraliteComponentTemplates[this.componentId] || '';
-    const styles = coraliteComponentStyles[this.componentId];
-    
-    if (!this.shadowRoot.innerHTML.trim()) {
+  _replaceTokens(template) {
+    return template.replace(/\\{\\{\\s*([\\w.]+)\\s*\\}\\}/g, (match, token) => {
+      let value = this.values;
+      const properties = token.split('.');
+      for (const prop of properties) {
+        if (value && typeof value === 'object') {
+          value = value[prop];
+        } else {
+          value = undefined;
+          break;
+        }
+      }
+
+      if (typeof value === 'function') {
+        value = value(this.values);
+      }
+
+      return value != null ? value : '';
+    });
+  }
+
+  _render() {
+    if (this._isRendering) return;
+    this._isRendering = true;
+
+    Promise.resolve().then(() => {
+      this._isRendering = false;
+      const template = coraliteComponentTemplates[this.componentId] || '';
+      const styles = coraliteComponentStyles[this.componentId];
+      
       let content = '';
       if (styles) {
         content += \`<style>\${styles}</style>\`;
       }
-      content += template;
-      this.shadowRoot.innerHTML = content; 
+      content += this._replaceTokens(template);
+      
+      this.shadowRoot.innerHTML = content;
+    });
+  }
+
+  connectedCallback() {
+    this._instanceId = crypto.randomUUID();
+    
+    // Initial sync of attributes to values
+    for (let i = 0; i < this.attributes.length; i++) {
+      const attr = this.attributes[i];
+      // Convert kebab-case to camelCase
+      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+      this.values[camelName] = attr.value;
+      if (camelName !== attr.name) {
+          this.values[attr.name] = attr.value;
+      }
     }
 
+    // Initial render synchronously so it's ready for the script
+    const template = coraliteComponentTemplates[this.componentId] || '';
+    const styles = coraliteComponentStyles[this.componentId];
+    
+    let content = '';
+    if (styles) {
+      content += \`<style>\${styles}</style>\`;
+    }
+    content += this._replaceTokens(template);
+    
+    this.shadowRoot.innerHTML = content;
+
     const localContext = {
-      instanceId: crypto.randomUUID(),
+      instanceId: this._instanceId,
       componentId: this.componentId,
       values: this.values,
       root: this.shadowRoot, 
@@ -308,6 +368,37 @@ class CoraliteElement extends HTMLElement {
     const userScript = coraliteComponentFunctions[this.componentId];
     if (userScript) {
       userScript(localContext);
+    }
+
+    this._observer = new MutationObserver((mutations) => {
+      let shouldRender = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'attributes') {
+          const attrName = mutation.attributeName;
+          const camelName = attrName.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+          const newValue = this.getAttribute(attrName);
+          
+          if (this.values[camelName] !== newValue) {
+            this.values[camelName] = newValue;
+            if (camelName !== attrName) {
+                this.values[attrName] = newValue;
+            }
+            shouldRender = true;
+          }
+        }
+      }
+      if (shouldRender) {
+        this._render();
+      }
+    });
+
+    this._observer.observe(this, { attributes: true });
+  }
+
+  disconnectedCallback() {
+    if (this._observer) {
+      this._observer.disconnect();
+      this._observer = null;
     }
   }
 }

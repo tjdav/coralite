@@ -1,0 +1,29 @@
+<template id="reactive-token-child">
+  <h3 ref="title">{{ title }}</h3>
+  <p>Value: {{ computedValue }}</p>
+  <div ref="target">{{ title }}</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    tokens: {
+      title: 'Default Title',
+      computedValue: (values) => (values.title === 'Updated Title' ? '100' : '0')
+    },
+    client: {
+      setup: () => ({
+        computedValue: (values) => (values.title === 'Updated Title' ? '100' : '0')
+      }),
+      script: (context) => {
+        // Just a dummy script so the component generates script wrappers
+        const target = context.helpers.refs('target')
+        if (target) {
+          target.textContent = 'Script executed'
+        }
+      },
+      components: ['reactive-token-child']
+    }
+  })
+</script>

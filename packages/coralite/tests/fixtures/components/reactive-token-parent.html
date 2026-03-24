@@ -1,0 +1,25 @@
+<template id="reactive-token-parent">
+  <div ref="target"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    client: {
+      components: ['reactive-token-child'],
+      script: (context) => {
+        const target = context.helpers.refs('target')
+        const child1 = document.createElement('reactive-token-child')
+        const child2 = document.createElement('reactive-token-child')
+
+        child1.setAttribute('title', 'Initial Title')
+        target.appendChild(child1)
+        
+        child2.setAttribute('title', 'Initial Title')
+        target.appendChild(child2)
+        child2.setAttribute('title', 'Updated Title')
+      }
+    }
+  })
+</script>
