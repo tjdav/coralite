@@ -84,6 +84,9 @@ importers:
       '@playwright/test':
         specifier: ^1.50.0
         version: 1.55.0
+      '@types/node':
+        specifier: ^22.18.5
+        version: 22.18.5
       premove:
         specifier: ^4.0.0
         version: 4.0.0
@@ -185,7 +188,7 @@ importers:
     devDependencies:
       coralite-plugin-aggregation:
         specifier: ^0.7.2
-        version: 0.7.2(coralite@0.29.0)
+        version: 0.7.2(coralite@0.29.2)
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
@@ -914,8 +917,8 @@ packages:
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
 
-  coralite@0.29.0:
-    resolution: {integrity: sha512-5jPfzUqZzY9MwEsd29D+cxe2+Np6vY+crKUEI2rY+8qv052k7XzCA5iJSrfwZtNSNRmRZq2yK5/xbo3reeuG6A==}
+  coralite@0.29.2:
+    resolution: {integrity: sha512-RMvVwJ9KhTadJ6QJlM3t+lcoLzhI/OWQu7ZBK7SGquhzPrAD0slZlQrSRstlYa1G4rXC8krHMncWn0Frxw6Mkg==}
     engines: {node: '>20.19.0'}
     hasBin: true
 
@@ -2863,9 +2866,9 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.7.2(coralite@0.29.0):
+  coralite-plugin-aggregation@0.7.2(coralite@0.29.2):
     dependencies:
-      coralite: 0.29.0
+      coralite: 0.29.2
 
   coralite-plugin-inline-css@0.4.0:
     dependencies:
@@ -2873,7 +2876,7 @@ snapshots:
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
 
-  coralite@0.29.0:
+  coralite@0.29.2:
     dependencies:
       acorn: 8.16.0
       acorn-walk: 8.3.5
