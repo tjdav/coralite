@@ -216,6 +216,60 @@ describe('Coralite', () => {
     })
   })
 
+  describe('save() method', () => {
+    it('should save assets to the assets directory', async () => {
+      const outputDir = path.join(testDir, 'dist')
+      await mkdir(outputDir)
+
+      // Need a component with a script so that it generates an asset chunk
+      await writeFile(path.join(componentDir, 'script-component.html'), `
+        <template id="script-component">
+          <div>Script Component</div>
+        </template>
+        <script type="module">
+          import { defineComponent } from 'coralite/plugins'
+          export default defineComponent({
+            client: {
+              script: (context) => {
+                console.log('test')
+              }
+            }
+          })
+        </script>
+      `)
+
+      await writeFile(path.join(pagesDir, 'with-script.html'), '<script-component></script-component>')
+
+      coralite = new Coralite({
+        pages: pagesDir,
+        components: componentDir,
+        mode: 'development',
+        output: outputDir
+      })
+
+      await coralite.initialise()
+      await coralite.save()
+
+      // Read output directory contents
+      const fs = await import('node:fs/promises')
+      const assetsPath = path.join(outputDir, 'assets')
+
+      try {
+        const stats = await fs.stat(assetsPath)
+        assert.ok(stats.isDirectory(), 'assets directory should have been created')
+
+        const files = await fs.readdir(assetsPath)
+        assert.ok(files.length > 0, 'assets directory should contain at least one chunk file')
+
+        // Verify the orchestrator in the HTML file points to the right chunk
+        const htmlContent = await fs.readFile(path.join(outputDir, 'with-script.html'), 'utf-8')
+        assert.ok(htmlContent.includes('/assets/chunk-shared'), 'HTML orchestrator should reference the assets directory')
+      } catch (err) {
+        assert.fail(`Asset directory or files missing: ${err.message}`)
+      }
+    })
+  })
+
   describe('onAfterBuild hook', () => {
     it('should be called after a successful build', async () => {
       let hookCalled = false

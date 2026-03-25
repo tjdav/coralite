@@ -3,6 +3,7 @@ import serialize from 'serialize-javascript'
 import { normalizeFunction } from './utils.js'
 import { pathToFileURL } from 'node:url'
 import { resolve, relative, dirname, parse, format } from 'node:path'
+import { createHash } from 'node:crypto'
 
 /**
  * Script Manager for Coralite
@@ -14,11 +15,12 @@ import { resolve, relative, dirname, parse, format } from 'node:path'
  * ScriptManager constructor function
  * @constructor
  */
-export function ScriptManager () {
+export function ScriptManager (options = {}) {
   this.sharedFunctions = Object.create(null)
   this.helpers = Object.create(null)
   this.plugins = []
   this.scriptModules = []
+  this.options = options
 }
 
 /**
@@ -132,7 +134,7 @@ ScriptManager.prototype.generateInstanceWrapper = function (id, instanceContext)
  * Compile all instances for a component
  * @param {Object.<string, InstanceContext>} instances - Map of instanceId -> instance data
  * @param {string} mode - Build mode
- * @returns {Promise<string>} Compiled script
+ * @returns {Promise<any>} Compiled script
  */
 ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const entryCodeParts = []
@@ -261,201 +263,160 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }
   entryCodeParts.push('};\n')
 
-  entryCodeParts.push(`
-class CoraliteElement extends HTMLElement {
-  constructor(componentId) {
-    super();
-    this.componentId = componentId;
-    
-    const defaults = coraliteComponentDefaults[componentId] || {};
-    this.values = { ...defaults };
-    this._isRendering = false;
-    this._observer = null;
-    
-    this.attachShadow({ mode: 'open' });
+  entryCodeParts.push('\nexport { getHelpers, getSetups };\n')
+
+  const entryPoints = {
+    'chunk-shared': entryCodeParts.join('').trimEnd()
   }
 
-  _replaceTokens(template) {
-    return template.replace(/\\{\\{\\s*([\\w.]+)\\s*\\}\\}/g, (match, token) => {
-      let value = this.values;
-      const properties = token.split('.');
-      for (const prop of properties) {
-        if (value && typeof value === 'object') {
-          value = value[prop];
-        } else {
-          value = undefined;
-          break;
-        }
+  // Create virtual entry points for each component
+  for (const componentId of processedComponentKeys) {
+    if (this.sharedFunctions[componentId]) {
+      const safeId = componentId.replace(regex, '_')
+      let componentEntryCode = ''
+
+      let hasImports = false
+      if (this.sharedFunctions[componentId].imports && this.sharedFunctions[componentId].imports.length > 0) {
+        componentEntryCode += `import componentImports from "${componentImportsNamespace}${componentId}";\n`
+        hasImports = true
       }
 
-      if (typeof value === 'function') {
-        value = value(this.values);
+      if (this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.content && this.sharedFunctions[componentId].script.content.trim() !== 'export default function(){}' && this.sharedFunctions[componentId].script.content.trim() !== 'export default function() {}' && this.sharedFunctions[componentId].script.content.trim() !== 'export default function() { }') {
+        componentEntryCode += `import componentScript from "${namespace}${componentId}";\n`
+      } else {
+        componentEntryCode += `const componentScript = null;\n`
       }
 
-      return value != null ? value : '';
-    });
-  }
+      const template = serialize(this.sharedFunctions[componentId].template || '')
+      const styles = JSON.stringify(this.sharedFunctions[componentId].styles || '')
+      const defaults = serialize(this.sharedFunctions[componentId].defaultValues || {})
 
-  _render() {
-    if (this._isRendering) return;
-    this._isRendering = true;
-
-    Promise.resolve().then(() => {
-      this._isRendering = false;
-      const template = coraliteComponentTemplates[this.componentId] || '';
-      const styles = coraliteComponentStyles[this.componentId];
-      
-      let content = '';
-      if (styles) {
-        content += \`<style>\${styles}</style>\`;
-      }
-      content += this._replaceTokens(template);
-      
-      this.shadowRoot.innerHTML = content;
-    });
-  }
-
-  connectedCallback() {
-    this._instanceId = crypto.randomUUID();
-    
-    // Initial sync of attributes to values
-    for (let i = 0; i < this.attributes.length; i++) {
-      const attr = this.attributes[i];
-      // Convert kebab-case to camelCase
-      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-      this.values[camelName] = attr.value;
-      if (camelName !== attr.name) {
-          this.values[attr.name] = attr.value;
-      }
-    }
-
-    // Initial render synchronously so it's ready for the script
-    const template = coraliteComponentTemplates[this.componentId] || '';
-    const styles = coraliteComponentStyles[this.componentId];
-    
-    let content = '';
-    if (styles) {
-      content += \`<style>\${styles}</style>\`;
-    }
-    content += this._replaceTokens(template);
-    
-    this.shadowRoot.innerHTML = content;
-
-    const localContext = {
-      instanceId: this._instanceId,
-      componentId: this.componentId,
-      values: this.values,
-      root: this.shadowRoot, 
-      helpers: {}
-    };
-
-    const refElements = this.shadowRoot.querySelectorAll('[ref]');
-    for (let i = 0; i < refElements.length; i++) {
-      const element = refElements[i];
-      const refName = element.getAttribute('ref');
-      
-      const dynamicId = \`\${this.componentId}__\${refName}-\${localContext.instanceId}\`;
-      element.setAttribute('ref', dynamicId);
-      
-      this.values[\`ref_\${refName}\`] = dynamicId;
-    }
-
-    ;(async () => {
-      const helpers = await getHelpers(localContext);
-      localContext.helpers = helpers;
-      
-      const imports = coraliteComponentImports[this.componentId] || {};
-      localContext.imports = imports;
-
-      const userScript = coraliteComponentFunctions[this.componentId];
-      if (userScript) {
-        userScript(localContext);
-      }
-    })();
-
-    this._observer = new MutationObserver((mutations) => {
-      let shouldRender = false;
-      for (const mutation of mutations) {
-        if (mutation.type === 'attributes') {
-          const attrName = mutation.attributeName;
-          const camelName = attrName.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-          const newValue = this.getAttribute(attrName);
-          
-          if (this.values[camelName] !== newValue) {
-            this.values[camelName] = newValue;
-            if (camelName !== attrName) {
-                this.values[attrName] = newValue;
-            }
-            shouldRender = true;
-          }
-        }
-      }
-      if (shouldRender) {
-        this._render();
-      }
-    });
-
-    this._observer.observe(this, { attributes: true });
-  }
-
-  disconnectedCallback() {
-    if (this._observer) {
-      this._observer.disconnect();
-      this._observer = null;
+      componentEntryCode += `
+export default {
+  componentId: "${componentId}",
+  template: ${template},
+  styles: ${styles},
+  defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
+  imports: ${hasImports ? 'componentImports' : '{}'},
+  script: componentScript
+};
+`
+      entryPoints[componentId] = componentEntryCode
     }
   }
-}
 
-for (const componentId of Object.keys(coraliteComponentTemplates)) {
-  if (!customElements.get(componentId)) {
-    customElements.define(componentId, class extends CoraliteElement {
-      constructor() {
-        super(componentId);
-      }
-    });
-  }
-}
-`)
+  const resolvedImportMap = {}
 
-  // Invoke instances
-  entryCodeParts.push('\n// Instances\n')
-  for (const [instanceId, instanceData] of instanceValues) {
-    const context = {
-      instanceId,
-      componentId: instanceData.componentId,
-      values: instanceData.values,
-      component: instances[instanceId].component || {}
-    }
+  // Use config's import map if available
+  const userImportMap = this.options?.importMap || {}
 
-    entryCodeParts.push(';(async() => {\n')
-    entryCodeParts.push('const context = ' + serialize(context) + ';\n')
-    entryCodeParts.push('context.root = window.document;\n')
-    entryCodeParts.push(`const imports = coraliteComponentImports["${context.componentId}"] || {};\n`)
-    entryCodeParts.push('context.imports = imports;\n')
-    entryCodeParts.push('const setupValues = await globalSetupValuesPromise;\n')
-    entryCodeParts.push('context.values = { ...context.values, ...setupValues };\n')
-    entryCodeParts.push('const helpers = await getHelpers(context);\n')
-    entryCodeParts.push('context.helpers = helpers;\n')
-    entryCodeParts.push(`\n// Instance: ${instanceId}\n`)
-    entryCodeParts.push(`await coraliteComponentFunctions["${context.componentId}"](context);\n`)
-    entryCodeParts.push('})();\n')
+  // Since we cannot pass raw code directly as values in the entryPoints object to esbuild,
+  // we need to pass virtual paths.
+  /** @type {Record<string, string>} */
+  const virtualEntryPoints = {}
+  for (const key of Object.keys(entryPoints)) {
+    virtualEntryPoints[key] = `virtual-entry-point:${key}`
   }
 
   // Build and bundle
   const result = await build({
-    stdin: {
-      contents: entryCodeParts.join('').trimEnd(),
-      resolveDir: process.cwd(),
-      sourcefile: 'coralite-client-runtime.js'
-    },
+    entryPoints: virtualEntryPoints,
     bundle: true,
     write: false,
     treeShaking: false,
+    splitting: true,
+    metafile: true,
+    outdir: 'assets',
     sourcemap: mode === 'production' ? false : 'inline',
     format: 'esm',
-    external: ['http://*', 'https://*'],
     sourceRoot: pathToFileURL(process.cwd()).href,
     plugins: [
+      {
+        name: 'coralite-import-map-resolver',
+        setup: (pluginBuild) => {
+          // Regex to catch bare specifiers (doesn't start with ., .., /, or http)
+          const bareSpecifierRegex = /^[^.\/]|^\.[^.\/]|^\.\.[^\/]/
+
+          pluginBuild.onResolve({ filter: bareSpecifierRegex }, (args) => {
+            // Only intercept specifiers inside generated component scripts/files.
+            // Do not externalize entry points themselves.
+            if (args.kind === 'entry-point') {
+              return null
+            }
+
+            // Do not externalize if the path resolves to a virtual module
+            if (args.namespace === 'coralite-entry') {
+              return null
+            }
+
+            // Check for Coralite internal modules first
+            if (args.path.startsWith('coralite-component:') ||
+                args.path.startsWith('coralite-component-imports:') ||
+                args.path.startsWith('coralite-script-module:') ||
+                args.path === 'chunk-shared' ||
+                args.path === 'coralite-shared') {
+              return null // Let other resolvers handle it
+            }
+
+            // Do not externalize if the entry point name actually matches a bare specifier
+            if (Object.keys(entryPoints).includes(args.path)) {
+              return null
+            }
+
+            // Ignore absolute URLs that are already explicitly defined
+            if (args.path.startsWith('http')) {
+              return {
+                path: args.path,
+                external: true
+              }
+            }
+
+            // Check if the user provided an explicit override in coralite.config.js
+            if (userImportMap[args.path]) {
+              resolvedImportMap[args.path] = userImportMap[args.path]
+              return {
+                path: userImportMap[args.path],
+                external: true
+              }
+            }
+
+            // Fallback: Auto-resolve to esm.sh
+            const cdnUrl = `https://esm.sh/${args.path}`
+            resolvedImportMap[args.path] = cdnUrl
+            return {
+              path: cdnUrl,
+              external: true
+            }
+          })
+        }
+      },
+      {
+        name: 'coralite-virtual-modules',
+        setup: (pluginBuild) => {
+          pluginBuild.onResolve({ filter: /^virtual-entry-point:/ }, args => {
+            const key = args.path.replace('virtual-entry-point:', '')
+            if (entryPoints[key]) {
+              return {
+                path: key,
+                namespace: 'coralite-entry'
+              }
+            }
+          })
+
+          pluginBuild.onLoad({
+            filter: /.*/,
+            namespace: 'coralite-entry'
+          }, args => {
+            if (entryPoints[args.path]) {
+              return {
+                contents: entryPoints[args.path],
+                loader: 'js',
+                resolveDir: process.cwd()
+              }
+            }
+          })
+        }
+      },
       {
         name: 'coralite-component-resolver',
         setup: (pluginBuild) => {
@@ -682,5 +643,50 @@ for (const componentId of Object.keys(coraliteComponentTemplates)) {
     ]
   })
 
-  return result.outputFiles[0].text
+  // Hash the output files to create a manifest
+  const manifest = {}
+  const outputFiles = {}
+
+  if (result.outputFiles) {
+    for (const file of result.outputFiles) {
+      const fileName = parse(file.path).name
+      const fileExt = parse(file.path).ext
+
+      const hash = createHash('md5').update(file.text).digest('hex').substring(0, 8)
+      const hashedName = `${fileName}-${hash}${fileExt}`
+
+      // Store the mapping from original chunk name to hashed chunk name
+      manifest[fileName] = hashedName
+
+      // Keep track of the raw file objects for saving later
+      outputFiles[hashedName] = {
+        ...file,
+        hashedPath: hashedName
+      }
+    }
+
+    // Rewrite imports in the output chunks to use the hashed filenames
+    for (const key in outputFiles) {
+      if (Object.prototype.hasOwnProperty.call(outputFiles, key)) {
+        let content = outputFiles[key].text
+
+        // Find import/export statements to other chunks
+        for (const [originalName, hashedName] of Object.entries(manifest)) {
+          if (originalName !== parse(outputFiles[key].path).name) {
+            // Replace e.g., import "./chunk-shared.js" with import "./chunk-shared-[hash].js"
+            const regex = new RegExp(`(["'])\\.\\/${originalName}\\.js(["'])`, 'g')
+            content = content.replace(regex, `$1./${hashedName}$2`)
+          }
+        }
+
+        outputFiles[key].text = content
+      }
+    }
+  }
+
+  return {
+    manifest,
+    outputFiles,
+    importMap: resolvedImportMap
+  }
 }

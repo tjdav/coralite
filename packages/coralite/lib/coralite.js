@@ -124,7 +124,7 @@ export function Coralite ({
   }
 
   // Initialize script manager
-  this._scriptManager = new ScriptManager()
+  this._scriptManager = new ScriptManager(this.options)
 
   // module source context
   this._source = {
@@ -703,10 +703,21 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         }
 
         // Use script manager to compile all instances
-        const scriptTextContent = await this._scriptManager.compileAllInstances(instances, this.options.mode)
+        const scriptResult = await this._scriptManager.compileAllInstances(instances, this.options.mode)
+
+        // Store the asset results in the coralite instance to be saved later
+        if (!this.outputFiles) {
+          this.outputFiles = {}
+        }
+        Object.assign(this.outputFiles, scriptResult.outputFiles)
+
+        if (!scriptResult.manifest['chunk-shared']) {
+          console.error('MANIFEST MISSING chunk-shared!', scriptResult.manifest)
+        }
 
         /** @type {CoraliteElement | CoraliteComponentRoot} */
         let bodyElement = component.root
+        let headElement = null
 
         findBodyLoop: for (let i = 0; i < component.root.children.length; i++) {
           const rootNode = component.root.children[i]
@@ -715,13 +726,241 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
             for (let i = 0; i < rootNode.children.length; i++) {
               const node = rootNode.children[i]
 
-              if (node.type === 'tag' && node.name === 'body') {
-                bodyElement = node
-                break findBodyLoop
+              if (node.type === 'tag') {
+                if(node.name === 'body') {
+                  bodyElement = node
+                } else if (node.name === 'head') {
+                  headElement = node
+                }
               }
             }
           }
         }
+
+        if (scriptResult.importMap && Object.keys(scriptResult.importMap).length > 0) {
+          const importMapElement = createCoraliteElement({
+            type: 'tag',
+            name: 'script',
+            parent: headElement || component.root,
+            attribs: {
+              type: 'importmap'
+            },
+            children: []
+          })
+
+          importMapElement.children.push(createCoraliteTextNode({
+            type: 'text',
+            data: JSON.stringify({ imports: scriptResult.importMap }),
+            parent: importMapElement
+          }))
+
+          if (headElement) {
+            headElement.children.push(importMapElement)
+          } else {
+            component.root.children.unshift(importMapElement)
+          }
+        }
+
+        const chunkManifest = { ...scriptResult.manifest }
+        delete chunkManifest['chunk-shared']
+
+        let orchestratorContent = `
+import { getHelpers, getSetups } from './assets/${scriptResult.manifest['chunk-shared']}';
+
+// Global setups initialization
+const globalContext = {};
+const globalSetupValuesPromise = getSetups(globalContext);
+
+(async () => {
+  const componentManifest = ${JSON.stringify(chunkManifest)};
+  
+  const loadComponent = async (componentId) => {
+    if (!componentManifest[componentId]) return;
+    if (customElements.get(componentId)) return;
+    
+    // Dynamic import to lazy-load the component chunk
+    const module = await import('./assets/' + componentManifest[componentId]);
+    if (module.default && module.default.componentId) {
+      if (!customElements.get(module.default.componentId)) {
+        class ComponentElement extends HTMLElement {
+          constructor() {
+            super();
+            this.componentId = module.default.componentId;
+            this.attachShadow({ mode: 'open' });
+            
+            const randomID = Math.random().toString(36).substring(2, 10);
+            this._instanceId = \`\${this.componentId}-\${randomID}\`;
+            
+            this.values = {};
+            // Extract attributes to values
+            const attributes = this.attributes;
+            for (let i = 0; i < attributes.length; i++) {
+              const attr = attributes[i];
+              const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+              this.values[camelName] = attr.value;
+              if (camelName !== attr.name) {
+                this.values[attr.name] = attr.value;
+              }
+            }
+            
+            // Merge defaults
+            Object.assign(this.values, module.default.defaultValues);
+            
+            this._render();
+          }
+
+          _replaceTokens(template) {
+            return template.replace(/\\{\\{\\s*([^{}\\s]+)\\s*\\}\\}/g, (match, tokenName) => {
+              const value = this.values[tokenName];
+              if (typeof value === 'function') {
+                return value(this.values);
+              }
+              return value != null ? value : '';
+            });
+          }
+
+          _render() {
+            let content = '';
+            if (module.default.styles) {
+              content += \`<style>\${module.default.styles}</style>\`;
+            }
+            content += this._replaceTokens(module.default.template);
+            
+            this.shadowRoot.innerHTML = content;
+
+            const localContext = {
+              instanceId: this._instanceId,
+              componentId: this.componentId,
+              values: this.values,
+              root: this.shadowRoot, 
+              helpers: {}
+            };
+
+            const refElements = this.shadowRoot.querySelectorAll('[ref]');
+            for (let i = 0; i < refElements.length; i++) {
+              const element = refElements[i];
+              const refName = element.getAttribute('ref');
+              
+              const dynamicId = \`\${this.componentId}__\${refName}-\${localContext.instanceId}\`;
+              element.setAttribute('ref', dynamicId);
+              
+              this.values[\`ref_\${refName}\`] = dynamicId;
+            }
+
+            ;(async () => {
+              const setupValues = await globalSetupValuesPromise;
+              localContext.values = { ...localContext.values, ...setupValues };
+
+              const helpers = await getHelpers(localContext);
+              localContext.helpers = helpers;
+              
+              localContext.imports = module.default.imports || {};
+
+              if (module.default.script) {
+                await module.default.script(localContext);
+              }
+            })();
+
+            this._observer = new MutationObserver((mutations) => {
+              let shouldRender = false;
+              for (const mutation of mutations) {
+                if (mutation.type === 'attributes') {
+                  const attrName = mutation.attributeName;
+                  const camelName = attrName.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                  const newValue = this.getAttribute(attrName);
+                  
+                  if (this.values[camelName] !== newValue) {
+                    this.values[camelName] = newValue;
+                    if (camelName !== attrName) {
+                        this.values[attrName] = newValue;
+                    }
+                    shouldRender = true;
+                  }
+                }
+              }
+              if (shouldRender) {
+                this._render();
+              }
+            });
+
+            this._observer.observe(this, { attributes: true });
+          }
+
+          disconnectedCallback() {
+            if (this._observer) {
+              this._observer.disconnect();
+              this._observer = null;
+            }
+          }
+        }
+        customElements.define(module.default.componentId, ComponentElement);
+      }
+    }
+  };
+
+  // Check the current page's DOM for custom elements
+  const elements = document.querySelectorAll('*');
+  const loadPromises = [];
+  for (let i = 0; i < elements.length; i++) {
+    const tagName = elements[i].tagName.toLowerCase();
+    if (componentManifest[tagName]) {
+      loadPromises.push(loadComponent(tagName));
+    }
+  }
+
+  // Setup a MutationObserver to lazily load dynamically added components
+  const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'childList') {
+        for (let i = 0; i < mutation.addedNodes.length; i++) {
+          const node = mutation.addedNodes[i];
+          if (node.nodeType === 1) { // Element node
+            const tagName = node.tagName.toLowerCase();
+            if (componentManifest[tagName]) {
+              loadComponent(tagName);
+            }
+            // Also check its children
+            const childElements = node.querySelectorAll('*');
+            for (let j = 0; j < childElements.length; j++) {
+              const childTagName = childElements[j].tagName.toLowerCase();
+              if (componentManifest[childTagName]) {
+                loadComponent(childTagName);
+              }
+            }
+          }
+        }
+      }
+    }
+  });
+
+  observer.observe(document.body, { childList: true, subtree: true });
+
+  await Promise.all(loadPromises);
+
+  // Invoke inline declarative instances defined in HTML (legacy support for <script> blocks mapped to _generatePages instances if needed)
+  ${Object.values(instances).map(instance => `
+  ;(async() => {
+    const context = {
+      instanceId: '${instance.instanceId}',
+      componentId: '${instance.componentId}',
+      values: ${JSON.stringify(instance.values || {})},
+      component: {}
+    };
+    context.root = window.document;
+    const setupValues = await globalSetupValuesPromise;
+    context.values = { ...context.values, ...setupValues };
+    const helpers = await getHelpers(context);
+    context.helpers = helpers;
+
+    const module = await import('./assets/${scriptResult.manifest[instance.componentId]}');
+    context.imports = module.default.imports || {};
+    if (module.default.script) {
+      await module.default.script(context);
+    }
+  })();
+  `).join('\n')}
+})();
+`
 
         const scriptElement = createCoraliteElement({
           type: 'tag',
@@ -735,7 +974,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
 
         scriptElement.children.push(createCoraliteTextNode({
           type: 'text',
-          data: scriptTextContent,
+          data: orchestratorContent,
           parent: scriptElement
         }))
 
@@ -999,6 +1238,26 @@ Coralite.prototype.save = async function (path, options = {}) {
       duration: result.duration
     }
   })
+
+  // Write ESM script assets generated during the build phase
+  if (this.outputFiles) {
+    const assetsDir = join(output, 'assets')
+    if (!createdDir[assetsDir]) {
+      await mkdir(assetsDir, { recursive: true })
+      createdDir[assetsDir] = true
+    }
+
+    const assetWrites = Object.values(this.outputFiles).map(async (file) => {
+      const outFile = join(assetsDir, file.hashedPath)
+      await writeFile(outFile, file.text, { signal })
+      results.push({
+        path: outFile,
+        duration: 0 // Duration handled collectively during compileAllInstances
+      })
+    })
+
+    await Promise.all(assetWrites)
+  }
 
   return results
 }
