@@ -562,6 +562,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
 
   const buildId = randomUUID()
   this._renderQueues.set(buildId, queue)
+  const scriptResultCache = new Map()
 
   try {
     const queue = this._renderQueues.get(buildId)
@@ -690,9 +691,11 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         // Build instances object for script manager
         /** @type {Object.<string, InstanceContext>} */
         const instances = {}
+        const componentIds = new Set()
         for (const key in scripts) {
           if (Object.prototype.hasOwnProperty.call(scripts, key)) {
             const script = scripts[key]
+            componentIds.add(script.componentId)
             // extending script content with templateId and values
             instances[script.id] = {
               instanceId: script.id,
@@ -702,14 +705,23 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
           }
         }
 
-        // Use script manager to compile all instances
-        const scriptResult = await this._scriptManager.compileAllInstances(instances, this.options.mode)
+        // Generate a deterministic cache key based on the sorted list of components required by this page
+        const cacheKey = Array.from(componentIds).sort().join(',')
 
-        // Store the asset results in the coralite instance to be saved later
-        if (!this.outputFiles) {
-          this.outputFiles = {}
+        let scriptResult
+        if (scriptResultCache.has(cacheKey)) {
+          scriptResult = scriptResultCache.get(cacheKey)
+        } else {
+          // Use script manager to compile all instances
+          scriptResult = await this._scriptManager.compileAllInstances(instances, this.options.mode)
+          scriptResultCache.set(cacheKey, scriptResult)
+
+          // Store the asset results in the coralite instance to be saved later
+          if (!this.outputFiles) {
+            this.outputFiles = {}
+          }
+          Object.assign(this.outputFiles, scriptResult.outputFiles)
         }
-        Object.assign(this.outputFiles, scriptResult.outputFiles)
 
         if (!scriptResult.manifest['chunk-shared']) {
           console.error('MANIFEST MISSING chunk-shared!', scriptResult.manifest)
@@ -726,12 +738,11 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
             for (let i = 0; i < rootNode.children.length; i++) {
               const node = rootNode.children[i]
 
-              if (node.type === 'tag') {
-                if(node.name === 'body') {
-                  bodyElement = node
-                } else if (node.name === 'head') {
-                  headElement = node
-                }
+              if (node.type === 'tag' && node.name === 'body') {
+                bodyElement = node
+              }
+              if (node.type === 'tag' && node.name === 'head') {
+                headElement = node
               }
             }
           }

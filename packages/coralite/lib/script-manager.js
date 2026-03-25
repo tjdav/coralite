@@ -200,7 +200,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     }
   }
 
-  const processedComponentKeys = Object.keys(processedComponent)
+  const processedComponentKeys = Object.keys(processedComponent).sort()
   const regex = /[-.:]/g
   const namespace = 'coralite-component:'
   const componentImportsNamespace = 'coralite-component-imports:'
