@@ -99,6 +99,22 @@ if (mode === 'dev') {
       return outFile
     })
 
+    // Write ESM script assets generated during the build phase
+    if (coralite.outputFiles) {
+      const assetsDir = join(config.output, 'assets')
+      await mkdir(assetsDir, { recursive: true })
+
+      const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
+        const outFile = join(assetsDir, file.hashedPath)
+        await writeFile(outFile, file.text)
+        if (options.verbose) {
+          process.stdout.write(toTime() + toMS(0) + dash + outFile + '\n')
+        }
+      })
+
+      await Promise.all(assetWrites)
+    }
+
     if (!options.verbose) {
       spinner.succeed(`Pages built (${pageCount} completed)`)
       if (componentCount > 0) {

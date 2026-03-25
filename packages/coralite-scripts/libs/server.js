@@ -294,6 +294,21 @@ async function server (config, options) {
             }
           })
 
+          // Write ESM script assets generated during the build phase
+          if (coralite.outputFiles) {
+            const assetsDir = join(config.output, 'assets')
+            if (!existsSync(assetsDir)) {
+              await mkdir(assetsDir, { recursive: true })
+            }
+
+            const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
+              const outFile = join(assetsDir, file.hashedPath)
+              await writeFile(outFile, file.text)
+            })
+
+            await Promise.all(assetWrites)
+          }
+
           // prints time and path to the file that has been changed or added.
           duration = process.hrtime(start)
           process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(duration) + dash + '/' + cacheKey + '\n')
