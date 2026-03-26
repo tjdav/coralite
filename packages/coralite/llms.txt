@@ -250,7 +250,7 @@ The Refs plugin provides a safe, scoped alternative to `document.querySelector` 
   1. It exports an outer `refs` function that takes the `globalContext`.
   2. It returns an inner function that takes the local instance context (`{ values, root }`) and initializes an empty `elements` cache object.
   3. It finally returns the executor function `function (id)` used in scripts.
-* **Resolution Logic:** When a user calls `helpers.refs('myBtn')`, the plugin looks up the unique compiled ID stored by the server in `values['ref_myBtn']`. If the ID exists, it executes `root.querySelector('[ref="<compiled-id>"]')` to find the exact DOM node.
+* **Resolution Logic:** When a user calls `helpers.refs('myBtn')`, the plugin looks up the unique compiled ID stored by the server in `values['ref_myBtn']`. If the ID exists, it executes `root.querySelector('[ref="<component-id>__<refName>-<component-index>"]')` to find the exact DOM node.
 * **Caching:** To maximize performance, once a node is found, it is saved into the closure's `elements` cache. Subsequent calls for the same ref ID will return the cached element instantly rather than querying the DOM again.
 
 ### 5.3 Static Assets Plugin (`staticAssetPlugin`)
