@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.29.3
+
+> Comparing `coralite-v0.29.2` to `HEAD`
+
+**Summary:** 13 commits
+
+### ✨ Features
+
+- enforce deterministic asset hashing and deduplicate rendering pipeline (coralite) ([8248ae1](https://codeberg.org/tjdavid/coralite/commit/8248ae155bb24d5ff6da8e3e74233ef43010221b))
+
+### 🐛 Bug Fixes
+
+- enable native browser module resolution in esbuild (script-manager) ([92d729c](https://codeberg.org/tjdavid/coralite/commit/92d729c3e6a51f18a6783c2c3da593875254c65e))
+- map CLI mode to Coralite environment mode (scripts) ([45cb00a](https://codeberg.org/tjdavid/coralite/commit/45cb00ababa5447de68c9c96bd92a545521816ba))
+- migrate node polyfill plugin to active library (script-manager) ([870e876](https://codeberg.org/tjdavid/coralite/commit/870e8769bb7fa012db340ac4e1a8adb6ca5564e2))
+- handle node built-in modules during local resolution (script-manager) ([60a0ba9](https://codeberg.org/tjdavid/coralite/commit/60a0ba915c3cbb2c139dbf6a5738b40fab5460e0))
+- resolve static assets relative to project root (coralite) ([a522802](https://codeberg.org/tjdavid/coralite/commit/a522802eb6b557d46fc175906e29c6aea9fcf312))
+- resolve missing asset chunks on nested pages with absolute base URL and explicit assets/js dir ([3fec2e0](https://codeberg.org/tjdavid/coralite/commit/3fec2e09151d12d5c5e9fe75f44484a08ac0c778))
+- explicit module exports (coralite) ([46fd07e](https://codeberg.org/tjdavid/coralite/commit/46fd07efd166c1ba50f5b522056cfe5bbf828275))
+
+### 📚 Documentation
+
+- clarify refs plugin resolution ([509ad88](https://codeberg.org/tjdavid/coralite/commit/509ad88b60cc7e0d12c33d84c18e89fe97122d33))
+
+### 🎨 Styles
+
+- normalize whitespace in node-builtins test fixture ([01e9b62](https://codeberg.org/tjdavid/coralite/commit/01e9b621b16f9441f2620446b5e102a81d937bc2))
+
+### 🧹 Chores
+
+- update asset output paths to .coralite/assets/css and .coralite/assets/js ([2de3966](https://codeberg.org/tjdavid/coralite/commit/2de3966841ba81d421496926794d4deaa270c223))
+- remove unused import in coralite.js ([c87772c](https://codeberg.org/tjdavid/coralite/commit/c87772ce25bbdbfbb3d17cfa49c6781548e6ac48))
+- add @types/node dependency to coralite package.json ([7974174](https://codeberg.org/tjdavid/coralite/commit/7974174bc3f90d1c16f6e712ff30a4cfef060566))
+
+
 ## v0.29.2
 
 > Comparing `coralite-v0.29.1` to `HEAD`
