@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.29.4
+
+> Comparing `coralite-scripts-v0.29.2` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- write ESM script assets during dev and server build phases ([8afd33b](https://codeberg.org/tjdavid/coralite/commit/8afd33bec5b1ac7025a48600c3d84a6dc2b267e2))
+
+### 🐛 Bug Fixes
+
+- map CLI mode to Coralite environment mode (scripts) ([45cb00a](https://codeberg.org/tjdavid/coralite/commit/45cb00ababa5447de68c9c96bd92a545521816ba))
+- resolve missing asset chunks on nested pages with absolute base URL and explicit assets/js dir ([3fec2e0](https://codeberg.org/tjdavid/coralite/commit/3fec2e09151d12d5c5e9fe75f44484a08ac0c778))
+
+### 🧹 Chores
+
+- update asset output paths to .coralite/assets/css and .coralite/assets/js ([2de3966](https://codeberg.org/tjdavid/coralite/commit/2de3966841ba81d421496926794d4deaa270c223))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.29.3 ([6ecbdb3](https://codeberg.org/tjdavid/coralite/commit/6ecbdb396798a8386f7585c563b94355d886ade4))
+
+
 ## v0.29.3
 
 > Comparing `coralite-scripts-v0.29.2` to `HEAD`
