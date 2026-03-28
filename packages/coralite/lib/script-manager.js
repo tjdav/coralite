@@ -4,7 +4,8 @@ import { normalizeFunction } from './utils.js'
 import { pathToFileURL } from 'node:url'
 import { resolve, parse, join } from 'node:path'
 import { createHash } from 'node:crypto'
-import { createRequire, isBuiltin } from 'node:module'
+import { createRequire } from 'node:module'
+import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 
 /**
  * Script Manager for Coralite
@@ -343,6 +344,7 @@ export default {
     format: 'esm',
     sourceRoot: pathToFileURL(process.cwd()).href,
     plugins: [
+      nodeModulesPolyfillPlugin(),
       {
         name: 'coralite-import-map-resolver',
         setup: (pluginBuild) => {
@@ -393,29 +395,22 @@ export default {
             }
 
             // Attempt to resolve the package locally
+            const localRequire = createRequire(join(process.cwd(), 'package.json'))
+            let localPath
+
             try {
-              const localRequire = createRequire(join(process.cwd(), 'package.json'))
-              const localPath = localRequire.resolve(args.path)
-
-              if (isBuiltin(localPath)) {
-                return {
-                  path: localPath,
-                  external: true
-                }
-              }
-
-              return {
-                path: localPath,
-                external: false
-              }
+              localPath = localRequire.resolve(args.path)
             } catch (error) {
-              // Fallback: Auto-resolve to esm.sh
-              const cdnUrl = `https://esm.sh/${args.path}`
-              resolvedImportMap[args.path] = cdnUrl
               return {
-                path: cdnUrl,
-                external: true
+                errors: [{
+                  text: `Failed to resolve package "${args.path}". Please make sure it is installed in your project's node_modules. CDN fallbacks are no longer supported.`
+                }]
               }
+            }
+
+            return {
+              path: localPath,
+              external: false
             }
           })
         }

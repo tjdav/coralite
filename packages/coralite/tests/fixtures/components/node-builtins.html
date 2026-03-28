@@ -1,0 +1,34 @@
+<template id="node-builtins">
+  <div class="node-builtins">
+    <h2>Node Built-ins Test</h2>
+    <p>Emitter says: <span ref="output">waiting...</span></p>
+  </div>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  client: {
+    imports: [
+      {
+        specifier: 'events',
+        namedExports: ['EventEmitter']
+      }
+    ],
+    script: async (context) => {
+      const output = context.helpers.refs('output')
+      
+      const { EventEmitter } = context.imports
+      const emitter = new EventEmitter()
+      
+      emitter.on('ping', () => {
+        output.textContent = 'pong'
+        output.classList.add('success')
+      })
+      
+      emitter.emit('ping')
+    }
+  }
+})
+</script>
