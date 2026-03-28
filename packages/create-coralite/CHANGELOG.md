@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.29.3
+
+> Comparing `create-coralite-v0.29.2` to `HEAD`
+
+**Summary:** 4 commits
+
+### 🧹 Chores
+
+- add `.coralite/assets` to CSS and SCSS gitignore templates ([8c977b6](https://codeberg.org/tjdavid/coralite/commit/8c977b6d40a60e9a724f340f3bf809ef1f22534f))
+- update asset output paths to .coralite/assets/css and .coralite/assets/js ([2de3966](https://codeberg.org/tjdavid/coralite/commit/2de3966841ba81d421496926794d4deaa270c223))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.29.4 ([e0527d6](https://codeberg.org/tjdavid/coralite/commit/e0527d6badf12748114380b2b74d5b2d11cc1599))
+- release(coralite-scripts): version 0.29.3 ([6ecbdb3](https://codeberg.org/tjdavid/coralite/commit/6ecbdb396798a8386f7585c563b94355d886ade4))
+
+
 ## v0.29.2
 
 > Comparing `create-coralite-v0.29.1` to `HEAD`
