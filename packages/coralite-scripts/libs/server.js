@@ -110,7 +110,7 @@ async function server (config, options) {
 
         watchPath.push(config.styles.input)
 
-        app.use('/css', express.static(join(config.output, 'css'), {
+        app.use('/assets/css', express.static(join(config.output, 'assets', 'css'), {
           cacheControl: false
         }))
       } else {
@@ -123,7 +123,7 @@ async function server (config, options) {
         // rebuild CSS and send notification
         const results = await buildSass({
           ...config.styles,
-          output: join(config.output, 'css'),
+          output: join(config.output, 'assets', 'css'),
           start
         })
 
@@ -139,7 +139,7 @@ async function server (config, options) {
 
         await buildCSS({
           input: config.styles.input,
-          output: join(config.output, 'css'),
+          output: join(config.output, 'assets', 'css'),
           plugins: config.cssPlugins,
           start
         })
@@ -387,7 +387,7 @@ async function server (config, options) {
             const results = await buildSass({
               input: config.styles.input,
               options: config.sassOptions,
-              output: join(config.output, 'css'),
+              output: join(config.output, 'assets', 'css'),
               start
             })
 
@@ -400,7 +400,7 @@ async function server (config, options) {
           if (cssChanges.length > 0) {
             const results = await buildCSS({
               input: config.styles.input,
-              output: join(config.output, 'css'),
+              output: join(config.output, 'assets', 'css'),
               plugins: config.cssPlugins,
               start
             })

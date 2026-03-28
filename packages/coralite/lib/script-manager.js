@@ -338,7 +338,7 @@ export default {
     treeShaking: false,
     splitting: true,
     metafile: true,
-    outdir: 'assets',
+    outdir: 'assets/js',
     sourcemap: mode === 'production' ? false : 'inline',
     format: 'esm',
     sourceRoot: pathToFileURL(process.cwd()).href,

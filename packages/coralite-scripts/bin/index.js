@@ -102,7 +102,7 @@ if (mode === 'dev') {
 
     // Write ESM script assets generated during the build phase
     if (coralite.outputFiles) {
-      const assetsDir = join(config.output, 'assets')
+      const assetsDir = join(config.output, 'assets', 'js')
       await mkdir(assetsDir, { recursive: true })
 
       const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
@@ -143,7 +143,7 @@ if (mode === 'dev') {
       if (config.styles.type === 'sass' || config.styles.type === 'scss') {
         const results = await buildSass({
           input: config.styles.input,
-          output: join(config.output, 'css'),
+          output: join(config.output, 'assets', 'css'),
           options: config.sassOptions,
           start
         })
@@ -158,7 +158,7 @@ if (mode === 'dev') {
       } else if (config.styles.type === 'css') {
         const results = await buildCSS({
           input: config.styles.input,
-          output: join(config.output, 'css'),
+          output: join(config.output, 'assets', 'css'),
           plugins: config.cssPlugins,
           start
         })
