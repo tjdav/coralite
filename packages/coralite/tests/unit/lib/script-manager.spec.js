@@ -595,7 +595,7 @@ describe('ScriptManager', () => {
         }
       }
 
-      const result = await sm.compileAllInstances(instances, 'production')
+      const result = await sm.compileAllInstances(instances, 'development')
 
       const chunkSharedHashName = result.manifest['chunk-shared']
       const chunkSharedText = result.outputFiles[chunkSharedHashName].text

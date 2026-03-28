@@ -60,6 +60,7 @@ if (mode === 'dev') {
   deleteDirectoryRecursive(config.output)
 
   const start = process.hrtime()
+
   // start coralite
   const coralite = new Coralite({
     components: config.components,
@@ -67,7 +68,8 @@ if (mode === 'dev') {
     plugins: config.plugins,
     assets: config.assets,
     baseURL: config.baseURL,
-    output: config.output
+    output: config.output,
+    mode: 'production'
   })
   await coralite.initialise()
 
