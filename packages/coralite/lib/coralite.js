@@ -34,8 +34,6 @@ import { createContext } from 'node:vm'
  *  CoraliteValues,
  *  InstanceContext,
  *  CoraliteConfig} from '../types/index.js'
- *
- * @import { CoralitePluginInstance } from '../types/plugin.js'
  */
 
 /**
