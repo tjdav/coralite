@@ -344,6 +344,11 @@ export default {
     outdir: 'assets/js',
     format: 'esm',
     sourceRoot: pathToFileURL(process.cwd()).href,
+    define: {
+      global: 'window',
+      __dirname: '""',
+      __filename: '""'
+    },
     plugins: [
       nodeModulesPolyfillPlugin(),
       {
@@ -393,25 +398,6 @@ export default {
                 path: userImportMap[args.path],
                 external: true
               }
-            }
-
-            // Attempt to resolve the package locally
-            const localRequire = createRequire(join(process.cwd(), 'package.json'))
-            let localPath
-
-            try {
-              localPath = localRequire.resolve(args.path)
-            } catch (error) {
-              return {
-                errors: [{
-                  text: `Failed to resolve package "${args.path}". Please make sure it is installed in your project's node_modules. CDN fallbacks are no longer supported.`
-                }]
-              }
-            }
-
-            return {
-              path: localPath,
-              external: false
             }
           })
         }

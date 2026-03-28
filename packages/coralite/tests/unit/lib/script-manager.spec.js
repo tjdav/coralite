@@ -596,7 +596,6 @@ describe('ScriptManager', () => {
       }
 
       const result = await sm.compileAllInstances(instances, 'development')
-
       const chunkSharedHashName = result.manifest['chunk-shared']
       const chunkSharedText = result.outputFiles[chunkSharedHashName].text
       assert.ok(chunkSharedText.includes('double'))
