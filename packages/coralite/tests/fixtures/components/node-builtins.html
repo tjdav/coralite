@@ -18,15 +18,15 @@ export default defineComponent({
     ],
     script: async (context) => {
       const output = context.helpers.refs('output')
-      
+
       const { EventEmitter } = context.imports
       const emitter = new EventEmitter()
-      
+
       emitter.on('ping', () => {
         output.textContent = 'pong'
         output.classList.add('success')
       })
-      
+
       emitter.emit('ping')
     }
   }
