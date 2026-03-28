@@ -8,6 +8,7 @@ import {
 
 /**
  * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleValue, CoraliteModuleValues, CoraliteValues } from '../types/index.js'
+ * @import { ScriptImport } from '../types/script.js'
  */
 
 /**
@@ -92,7 +93,7 @@ export const defineComponent = createPlugin({
    * @param {Object} [options.client] - Client side configuration.
    * @param {CoraliteModuleSetup} [options.client.setup] - Setup function executed during server-side rendering
    * @param {CoraliteModuleScript} [options.client.script] - Script function that executes on the client-side
-   * @param {Object[]} [options.client.imports] - Component imports to bundle.
+   * @param {ScriptImport[]} [options.client.imports] - Component imports to bundle.
    * @param {string[]} [options.client.components] - Imperative components array.
    * @returns {Promise<CoraliteModuleValues>} A promise resolving to the module values
    *   associated with this component.

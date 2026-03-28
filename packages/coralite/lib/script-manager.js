@@ -50,11 +50,11 @@ ScriptManager.prototype.getHelpersContent = function () {
   let helpers = ''
 
   for (const key of Object.keys(this.helpers)) {
-    helpers += `"${key}": (async () => {
+    helpers += `"${key}": async (globalContext) => {
       const phase1 = ${this.helpers[key]};
-      const phase2 = await phase1({});
+      const phase2 = await phase1(globalContext);
       return (localContext) => phase2(localContext);
-    })(),`
+    },`
   }
 
   return helpers
@@ -80,11 +80,11 @@ ScriptManager.prototype.getHelpers = function () {
   let helpers = ''
 
   for (const key of Object.keys(this.helpers)) {
-    helpers += `"${key}": (async () => {
+    helpers += `"${key}": async (globalContext) => {
       const phase1 = ${this.helpers[key]};
-      const phase2 = await phase1({});
+      const phase2 = await phase1(globalContext);
       return (localContext) => phase2(localContext);
-    })(),`
+    },`
   }
 
   return `{${helpers}}`
@@ -154,15 +154,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     ${helperParts}
   };\n`)
 
-  entryCodeParts.push(`const getHelpers = async (context) => {
-    const helpers = {}
-    for (const [key, helper] of Object.entries(coraliteComponentScriptHelpers)) {
-      const resolvedHelper = await helper
-      helpers[key] = resolvedHelper(context)
-    }
-    return helpers
-  }\n`)
-
   entryCodeParts.push(`const getSetups = async (context) => {
     const values = {};
     const results = await Promise.all([
@@ -177,8 +168,28 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }\n`)
 
   // Global setups initialization
-  entryCodeParts.push(`const globalContext = {};\n`)
-  entryCodeParts.push(`const globalSetupValuesPromise = getSetups(globalContext);\n`)
+  entryCodeParts.push(`const globalContext = { values: {} };\n`)
+  entryCodeParts.push(`const globalSetupValuesPromise = getSetups(globalContext).then(setupValues => {
+    Object.assign(globalContext.values, setupValues);
+    return setupValues;
+  });\n`)
+
+  entryCodeParts.push(`const resolvedHelpersPromise = globalSetupValuesPromise.then(async () => {
+    const resolvedHelpers = {};
+    for (const [key, helperFn] of Object.entries(coraliteComponentScriptHelpers)) {
+      resolvedHelpers[key] = await helperFn(globalContext);
+    }
+    return resolvedHelpers;
+  });\n`)
+
+  entryCodeParts.push(`const getHelpers = async (context) => {
+    const helpers = {}
+    const resolvedHelpers = await resolvedHelpersPromise;
+    for (const [key, resolvedHelper] of Object.entries(resolvedHelpers)) {
+      helpers[key] = resolvedHelper(context)
+    }
+    return helpers
+  }\n`)
 
   const instanceValues = Object.entries(instances)
   // Collect unique components
@@ -600,15 +611,16 @@ export default {
               for (const key in module.helpers) {
                 if (Object.hasOwn(module.helpers, key)) {
                   const fn = normalizeFunction(module.helpers[key])
-                  contents += `  "${key}": (async () => {
+                  contents += `  "${key}": async (context) => {
                     const globalContext = {
+                      ...context,
                       imports: pluginImports,
                       config: pluginConfig
                     };
                     const fn = ${fn};
                     const phase2 = await fn(globalContext);
                     return (localContext) => phase2(localContext);
-                  })(),\n`
+                  },\n`
                 }
               }
             }

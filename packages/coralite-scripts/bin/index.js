@@ -66,6 +66,7 @@ if (mode === 'dev') {
     pages: config.pages,
     plugins: config.plugins,
     assets: config.assets,
+    baseURL: config.baseURL,
     output: config.output
   })
   await coralite.initialise()

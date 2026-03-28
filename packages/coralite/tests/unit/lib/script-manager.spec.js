@@ -275,9 +275,9 @@ describe('ScriptManager', () => {
 
       const result = sm.getHelpers()
 
-      assert.ok(result.includes('"helper1": (async () =>'))
+      assert.ok(result.includes('"helper1": async (globalContext) =>'))
       assert.ok(result.includes('() => \'test1\''))
-      assert.ok(result.includes('"helper2": (async () =>'))
+      assert.ok(result.includes('"helper2": async (globalContext) =>'))
       assert.ok(result.includes('(x) => x * 2'))
     })
 
@@ -1333,8 +1333,8 @@ describe('ScriptManager', () => {
       assert.match(compiledScript, /pluginConfig\s*=\s*\{\s*"baseURL"\s*:\s*"http:\/\/example\.com"\s*,\s*"apiKey"\s*:\s*"123"\s*\}/)
 
       // Check for the context injection logic
-      // globalContext = { imports: pluginImports, config: pluginConfig }
-      assert.match(compiledScript, /const globalContext\w*\s*=\s*\{\s*imports\s*:\s*pluginImports\s*,\s*config\s*:\s*pluginConfig\s*\}/)
+      // globalContext = { ...context, imports: pluginImports, config: pluginConfig }
+      assert.match(compiledScript, /const globalContext\w*\s*=\s*\{\s*\.\.\.context\w*,\s*imports\s*:\s*pluginImports\s*,\s*config\s*:\s*pluginConfig\s*\}/)
     })
 
     it('should handle missing config gracefully', async () => {

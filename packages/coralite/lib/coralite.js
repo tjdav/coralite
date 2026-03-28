@@ -32,7 +32,8 @@ import { createContext } from 'node:vm'
  *  Attribute,
  *  CoraliteComponentResult,
  *  CoraliteValues,
- *  InstanceContext} from '../types/index.js'
+ *  InstanceContext,
+ *  CoraliteConfig} from '../types/index.js'
  *
  * @import { CoralitePluginInstance } from '../types/plugin.js'
  */
@@ -43,15 +44,7 @@ import { createContext } from 'node:vm'
 
 /**
  * @constructor
- * @param {Object} options
- * @param {string} options.components - The path to the directory containing Coralite components.
- * @param {CoralitePluginInstance[]} [options.plugins=[]]
- * @param {string} options.pages - The path to the directory containing pages that will be rendered using the provided components.
- * @param {string} [options.mode='production'] - Build mode: "development" or "production"
- * @param {import('../types/core.js').CoraliteStaticAsset[]} [options.assets] - Static assets to copy during build
- * @param {Array<string | Attribute>} [options.ignoreByAttribute] - Elements to ignore with attribute name value pair
- * @param {Array<string | Attribute>} [options.skipRenderByAttribute] - Element attributes to parse but exclude from final render output
- * @param {string} [options.output] - Output directory for build artifacts
+ * @param {CoraliteConfig} options
  * @example
  * const coralite = new Coralite({
  *   components: './path/to/components',
@@ -67,6 +60,7 @@ export function Coralite ({
   pages,
   plugins,
   assets,
+  baseURL = '/',
   ignoreByAttribute,
   skipRenderByAttribute,
   mode = 'production',
@@ -96,6 +90,7 @@ export function Coralite ({
     pages,
     plugins,
     assets,
+    baseURL,
     ignoreByAttribute,
     skipRenderByAttribute,
     mode,
@@ -775,8 +770,10 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         const chunkManifest = { ...scriptResult.manifest }
         delete chunkManifest['chunk-shared']
 
-        let orchestratorContent = `
-import { getHelpers, getSetups } from './assets/${scriptResult.manifest['chunk-shared']}';
+        const base = this.options.baseURL.endsWith('/') ? this.options.baseURL : this.options.baseURL + '/'
+
+        let scriptContent = `
+import { getHelpers, getSetups } from '${base}assets/js/${scriptResult.manifest['chunk-shared']}';
 
 // Global setups initialization
 const globalContext = {};
@@ -790,7 +787,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
     if (customElements.get(componentId)) return;
     
     // Dynamic import to lazy-load the component chunk
-    const module = await import('./assets/' + componentManifest[componentId]);
+    const module = await import('${base}assets/js/' + componentManifest[componentId]);
     if (module.default && module.default.componentId) {
       if (!customElements.get(module.default.componentId)) {
         class ComponentElement extends HTMLElement {
@@ -963,7 +960,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
     const helpers = await getHelpers(context);
     context.helpers = helpers;
 
-    const module = await import('./assets/${scriptResult.manifest[instance.componentId]}');
+    const module = await import('${base}assets/js/${scriptResult.manifest[instance.componentId]}');
     context.imports = module.default.imports || {};
     if (module.default.script) {
       await module.default.script(context);
@@ -985,7 +982,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
 
         scriptElement.children.push(createCoraliteTextNode({
           type: 'text',
-          data: orchestratorContent,
+          data: scriptContent,
           parent: scriptElement
         }))
 
@@ -1252,7 +1249,7 @@ Coralite.prototype.save = async function (path, options = {}) {
 
   // Write ESM script assets generated during the build phase
   if (this.outputFiles) {
-    const assetsDir = join(output, 'assets')
+    const assetsDir = join(output, 'assets', 'js')
     if (!createdDir[assetsDir]) {
       await mkdir(assetsDir, { recursive: true })
       createdDir[assetsDir] = true
