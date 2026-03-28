@@ -2,8 +2,9 @@ import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction } from './utils.js'
 import { pathToFileURL } from 'node:url'
-import { resolve, relative, dirname, parse, format } from 'node:path'
+import { resolve, parse, join } from 'node:path'
 import { createHash } from 'node:crypto'
+import { createRequire, isBuiltin } from 'node:module'
 
 /**
  * Script Manager for Coralite
@@ -391,12 +392,30 @@ export default {
               }
             }
 
-            // Fallback: Auto-resolve to esm.sh
-            const cdnUrl = `https://esm.sh/${args.path}`
-            resolvedImportMap[args.path] = cdnUrl
-            return {
-              path: cdnUrl,
-              external: true
+            // Attempt to resolve the package locally
+            try {
+              const localRequire = createRequire(join(process.cwd(), 'package.json'))
+              const localPath = localRequire.resolve(args.path)
+
+              if (isBuiltin(localPath)) {
+                return {
+                  path: localPath,
+                  external: true
+                }
+              }
+
+              return {
+                path: localPath,
+                external: false
+              }
+            } catch (error) {
+              // Fallback: Auto-resolve to esm.sh
+              const cdnUrl = `https://esm.sh/${args.path}`
+              resolvedImportMap[args.path] = cdnUrl
+              return {
+                path: cdnUrl,
+                external: true
+              }
             }
           })
         }
