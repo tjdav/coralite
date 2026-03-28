@@ -31,7 +31,7 @@ export const staticAssetPlugin = (assets = []) => {
           throw new Error('staticAssetPlugin requires assets to have pkg and path properties when src is not provided.')
         }
 
-        const require = createRequire(import.meta.url)
+        const require = createRequire(join(process.cwd(), 'package.json'))
         let pkgPath
 
         try {
