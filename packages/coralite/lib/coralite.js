@@ -793,6 +793,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
             super();
             this.componentId = module.default.componentId;
             this.attachShadow({ mode: 'open' });
+            this._abortController = null;
             
             const randomID = Math.random().toString(36).substring(2, 10);
             this._instanceId = \`\${this.componentId}-\${randomID}\`;
@@ -811,47 +812,26 @@ const globalSetupValuesPromise = getSetups(globalContext);
             
             // Merge defaults
             Object.assign(this.values, module.default.defaultValues);
+
+            this._styles = ''
+            if (module.default.styles) {
+              this._styles += \`<style>\${module.default.styles}</style>\`;
+            }
+          }
+
+          connectedCallback() {
+            this._abortController = new AbortController();
             
             this._render();
-          }
-
-          _replaceTokens(template) {
-            return template.replace(/\\{\\{\\s*([^{}\\s]+)\\s*\\}\\}/g, (match, tokenName) => {
-              const value = this.values[tokenName];
-              if (typeof value === 'function') {
-                return value(this.values);
-              }
-              return value != null ? value : '';
-            });
-          }
-
-          _render() {
-            let content = '';
-            if (module.default.styles) {
-              content += \`<style>\${module.default.styles}</style>\`;
-            }
-            content += this._replaceTokens(module.default.template);
             
-            this.shadowRoot.innerHTML = content;
-
             const localContext = {
               instanceId: this._instanceId,
               componentId: this.componentId,
               values: this.values,
               root: this.shadowRoot, 
-              helpers: {}
+              helpers: {},
+              signal: this._abortController.signal
             };
-
-            const refElements = this.shadowRoot.querySelectorAll('[ref]');
-            for (let i = 0; i < refElements.length; i++) {
-              const element = refElements[i];
-              const refName = element.getAttribute('ref');
-              
-              const dynamicId = \`\${this.componentId}__\${refName}-\${localContext.instanceId}\`;
-              element.setAttribute('ref', dynamicId);
-              
-              this.values[\`ref_\${refName}\`] = dynamicId;
-            }
 
             ;(async () => {
               const setupValues = await globalSetupValuesPromise;
@@ -892,7 +872,39 @@ const globalSetupValuesPromise = getSetups(globalContext);
             this._observer.observe(this, { attributes: true });
           }
 
+          _replaceTokens(template) {
+            return template.replace(/\\{\\{\\s*([^{}\\s]+)\\s*\\}\\}/g, (match, tokenName) => {
+              const value = this.values[tokenName];
+              if (typeof value === 'function') {
+                return value(this.values);
+              }
+              return value != null ? value : '';
+            });
+          }
+
+          _render() {
+            let content = this._styles;
+            content += this._replaceTokens(module.default.template);
+            
+            this.shadowRoot.innerHTML = content;
+
+            const refElements = this.shadowRoot.querySelectorAll('[ref]');
+            for (let i = 0; i < refElements.length; i++) {
+              const element = refElements[i];
+              const refName = element.getAttribute('ref');
+              
+              const dynamicId = \`\${this.componentId}__\${refName}-\${this._instanceId}\`;
+              element.setAttribute('ref', dynamicId);
+              
+              this.values[\`ref_\${refName}\`] = dynamicId;
+            }
+          }
+
           disconnectedCallback() {
+            if (this._abortController) {
+              this._abortController.abort();
+              this._abortController = null;
+            }
             if (this._observer) {
               this._observer.disconnect();
               this._observer = null;
@@ -905,11 +917,12 @@ const globalSetupValuesPromise = getSetups(globalContext);
   };
 
   // Check the current page's DOM for custom elements
-  const elements = document.querySelectorAll('*');
+  const componentTags = Object.keys(componentManifest);
   const loadPromises = [];
-  for (let i = 0; i < elements.length; i++) {
-    const tagName = elements[i].tagName.toLowerCase();
-    if (componentManifest[tagName]) {
+  for (let i = 0; i < componentTags.length; i++) {
+    const tagName = componentTags[i];
+    const elements = document.querySelectorAll(tagName);
+    if (elements.length > 0) {
       loadPromises.push(loadComponent(tagName));
     }
   }
