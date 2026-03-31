@@ -74,27 +74,35 @@
 
     <coralite-heading level="h3" text="The Factory Pattern"></coralite-heading>
 
-    <p>Helpers must be structured as "factory functions" that execute server-side. They accept a <code>context</code> object and <em>return</em> the actual executable function that will be serialized and sent to the browser.</p>
+    <p>Helpers must be structured using a two-phase currying system that executes server-side. The outermost function receives the global context, and it must return a second function that receives the local Web Component instance context. This second function then returns the actual callable utility function used by the user's script.</p>
 
-    <p>To use client-only APIs (like <code>window</code> or <code>document</code>), the injected helper function must encapsulate that logic.</p>
+    <p>To use client-only APIs (like <code>window</code>, <code>document</code>, or the injected <code>AbortSignal</code>), the injected helper function must encapsulate that logic within the final returned function.</p>
 
     <coralite-code-highlight language="javascript">
       // Server-side definition in createPlugin
       client: {
         helpers: {
-          // This factory runs on the SERVER
-          trackEvent: (context) => {
-            // Access server-side config
-            const apiKey = context.config.apiKey;
+          // Phase 1: Runs on the SERVER and receives global context
+          trackEvent: (globalContext) => {
+            const apiKey = globalContext.config.apiKey;
 
-            // Return the function that runs on the CLIENT
-            return (eventName) => {
-              // Now we can safely use browser APIs
-              window.navigator.sendBeacon('https://api.analytics.com', JSON.stringify({
-                key: apiKey,
-                event: eventName
-              }));
-            };
+            // Phase 2: Receives the local Web Component instance context
+            return (localContext) => {
+              const { signal } = localContext;
+              
+              // Phase 3: The actual function accessible on the CLIENT
+              return (buttonElement, eventName) => {
+                
+                // Now we can safely use browser APIs and component lifecycle signals
+                buttonElement.addEventListener('click', () => {
+                  window.navigator.sendBeacon('https://api.analytics.com', JSON.stringify({
+                    key: apiKey,
+                    event: eventName
+                  }));
+                }, { signal });
+                
+              };
+            }
           }
         }
       }

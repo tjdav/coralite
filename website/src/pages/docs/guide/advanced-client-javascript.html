@@ -88,13 +88,45 @@
     <coralite-heading level="h3" text="Accessing Data"></coralite-heading>
 
     <p>
-      The first argument to the <code>script</code> function is the context object, which contains <code>values</code>.
-      This object holds the merged data from:
+      The first argument to the <code>script</code> function is the context object. This contains properties such as <code>values</code>, which holds the merged data from:
     <ol>
       <li>Attributes passed to the component instance (props)</li>
       <li>Data returned from the <code>setup</code> function</li>
     </ol>
     </p>
+
+    <coralite-heading level="h3" text="Managing Component Lifecycles (AbortSignal)"></coralite-heading>
+
+    <p>
+      Client-side scripts frequently establish event listeners, timers, or asynchronous `fetch` requests. When a dynamically rendered component is unmounted from the DOM, failing to clean up these subscriptions can lead to memory leaks.
+    </p>
+    
+    <p>
+      Coralite injects an <code>AbortSignal</code> directly into the script context via the <code>signal</code> property. This signal automatically triggers its `abort` event the exact moment the Web Component is disconnected from the DOM.
+    </p>
+
+    <coralite-code-highlight language="javascript">
+      export default defineComponent({
+        client: {
+          script({ root, signal }) {
+            const button = root.querySelector('button');
+
+            // Pass the signal directly to addEventListener. 
+            // It will be automatically removed when the component unmounts!
+            button.addEventListener('click', () => {
+              console.log('Clicked!');
+            }, { signal });
+
+            // Or use it to cancel pending network requests
+            fetch('/api/data', { signal })
+              .then(res => res.json())
+              .catch(err => {
+                if (err.name === 'AbortError') console.log('Fetch cancelled');
+              });
+          }
+        }
+      })
+    </coralite-code-highlight>
 
     <coralite-heading level="h3" text="Accessing DOM Elements (Refs)"></coralite-heading>
 
