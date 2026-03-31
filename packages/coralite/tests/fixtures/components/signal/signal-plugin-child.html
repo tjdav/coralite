@@ -1,0 +1,21 @@
+<template id="signal-plugin-child">
+  <div ref="status">Mounted</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: {
+      script: ({ helpers }) => {
+        const status = helpers.refs('status')
+        status.textContent = 'Active'
+
+        if (!window.pluginAbortCount) {
+          window.pluginAbortCount = 0
+        }
+  
+        helpers.trackSignalAbort()
+      }
+    }
+  })
+</script>

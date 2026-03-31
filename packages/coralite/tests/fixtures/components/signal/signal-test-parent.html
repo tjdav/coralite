@@ -1,0 +1,60 @@
+<template id="signal-test-parent">
+  <div>
+    <button ref="st-mountBtn">Mount</button>
+    <button ref="st-unmountBtn">Unmount</button>
+    <div ref="st-container"></div>
+  </div>
+  <div>
+    <button ref="sp-mountBtn">Mount Plugin</button>
+    <button ref="sp-unmountBtn">Unmount Plugin</button>
+    <div ref="sp-container"></div>
+  </div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: {
+      components: ['signal-test-child', 'signal-plugin-child'],
+      script: ({ helpers }) => {
+        // Child 1
+        const mountBtn = helpers.refs('st-mountBtn')
+        const unmountBtn = helpers.refs('st-unmountBtn')
+        const container = helpers.refs('st-container')
+
+        mountBtn.addEventListener('click', () => {
+          if (!container.querySelector('signal-test-child')) {
+            const child = document.createElement('signal-test-child')
+            container.appendChild(child)
+          }
+        })
+
+        unmountBtn.addEventListener('click', () => {
+          const child = container.querySelector('signal-test-child')
+          if (child) {
+            container.removeChild(child)
+          }
+        })
+
+        // Child 2
+        const mountBtn2 = helpers.refs('sp-mountBtn')
+        const unmountBtn2 = helpers.refs('sp-unmountBtn')
+        const container2 = helpers.refs('sp-container')
+
+        mountBtn2.addEventListener('click', () => {
+          if (!container2.querySelector('signal-plugin-child')) {
+            const child = document.createElement('signal-plugin-child')
+            container2.appendChild(child)
+          }
+        })
+
+        unmountBtn2.addEventListener('click', () => {
+          const child = container2.querySelector('signal-plugin-child')
+          if (child) {
+            container2.removeChild(child)
+          }
+        })
+      }
+    }
+  })
+</script>

@@ -1,0 +1,24 @@
+<template id="signal-test-child">
+  <div ref="status">Mounted</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: {
+      script: ({ helpers, signal }) => {
+        const status = helpers.refs('status')
+        status.textContent = 'Active'
+
+        if (!window.abortCount) {
+          window.abortCount = 0
+        }
+
+        signal.addEventListener('abort', () => {
+          window.abortCount++
+          status.textContent = 'Aborted'
+        })
+      }
+    }
+  })
+</script>
