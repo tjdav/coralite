@@ -35,12 +35,12 @@
     "test-e2e": "pnpm build-html && playwright test",
     "test-e2e-report": "playwright show-report",
     "test-e2e-ui": "playwright test --ui",
-    "server": "sirv .html --dev --port 3000",
+    "server": "sirv .coralite --dev --port 3000",
     "build": "premove dist && pnpm build-lib && pnpm build-plugins && pnpm build-types",
     "build-lib": "esbuild ./lib/index.js --bundle --target=esnext --external:postcss --external:postcss-selector-parser --external:esbuild --external:commander --external:dom-serializer --external:dom-htmlparser2 --external:kleur --external:p-limit --external:serialize-javascript --external:esbuild-plugins-node-modules-polyfill --format=esm --outdir=dist/lib --platform=node --sourcemap",
     "build-plugins": "esbuild ./plugins/*.js --format=esm --outdir=dist/plugins --platform=node",
     "build-types": "tsc",
-    "build-html": "premove .html && node ./bin/coralite.js -c tests/fixtures/components -p tests/fixtures/pages -o .html -i 'data-dev=true' -s 'data-skip-render' -a 'esbuild:package.json:esbuild.json'"
+    "build-html": "premove .coralite && node ./tests/scripts/build-html.js"
   },
   "files": [
     "dist",
@@ -72,7 +72,6 @@
     "@commitlint/config-conventional": "^19.6.0",
     "@playwright/test": "^1.50.0",
     "@types/node": "^22.18.5",
-    "premove": "^4.0.0",
     "sirv-cli": "^3.0.0"
   },
   "engines": {

@@ -83,3 +83,4 @@ playwright/.cache/
 .html
 
 examples/
+.coralite

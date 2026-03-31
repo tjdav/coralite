@@ -90,9 +90,6 @@ importers:
       '@types/node':
         specifier: ^22.18.5
         version: 22.18.5
-      premove:
-        specifier: ^4.0.0
-        version: 4.0.0
       sirv-cli:
         specifier: ^3.0.0
         version: 3.0.1
@@ -191,7 +188,7 @@ importers:
     devDependencies:
       coralite-plugin-aggregation:
         specifier: ^0.7.2
-        version: 0.7.2(coralite@0.29.2)
+        version: 0.7.2(coralite@0.29.3)
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
@@ -929,8 +926,8 @@ packages:
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
 
-  coralite@0.29.2:
-    resolution: {integrity: sha512-RMvVwJ9KhTadJ6QJlM3t+lcoLzhI/OWQu7ZBK7SGquhzPrAD0slZlQrSRstlYa1G4rXC8krHMncWn0Frxw6Mkg==}
+  coralite@0.29.3:
+    resolution: {integrity: sha512-mOP1vgByJCTj7R43wEqbWxyIF91NoBfGgN1S/qr/eJvVHy6Y9n48UTLb1Rgs1CfpZ1ZiH4Dl8I8cQtuug1wBEg==}
     engines: {node: '>20.19.0'}
     hasBin: true
 
@@ -2919,9 +2916,9 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.7.2(coralite@0.29.2):
+  coralite-plugin-aggregation@0.7.2(coralite@0.29.3):
     dependencies:
-      coralite: 0.29.2
+      coralite: 0.29.3
 
   coralite-plugin-inline-css@0.4.0:
     dependencies:
@@ -2929,13 +2926,14 @@ snapshots:
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
 
-  coralite@0.29.2:
+  coralite@0.29.3:
     dependencies:
       acorn: 8.16.0
       acorn-walk: 8.3.5
       commander: 13.1.0
       dom-serializer: 2.0.0
       esbuild: 0.25.9
+      esbuild-plugins-node-modules-polyfill: 1.8.1(esbuild@0.25.9)
       htmlparser2: 10.0.0
       kleur: 4.1.5
       p-limit: 7.2.0
