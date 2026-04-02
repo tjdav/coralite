@@ -771,7 +771,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         const base = this.options.baseURL.endsWith('/') ? this.options.baseURL : this.options.baseURL + '/'
 
         let scriptContent = `
-import { getHelpers, getSetups } from '${base}assets/js/${scriptResult.manifest['chunk-shared']}';
+import { getHelpers, getSetups, render } from '${base}assets/js/${scriptResult.manifest['chunk-shared']}';
 
 // Global setups initialization
 const globalContext = {};
@@ -795,7 +795,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
             this.attachShadow({ mode: 'open' });
             this._abortController = null;
             
-            const randomID = Math.random().toString(36).substring(2, 10);
+            const randomID = crypto.randomUUID();
             this._instanceId = \`\${this.componentId}-\${randomID}\`;
             
             this.values = {};
@@ -872,19 +872,81 @@ const globalSetupValuesPromise = getSetups(globalContext);
             this._observer.observe(this, { attributes: true });
           }
 
-          _replaceTokens(template) {
-            return template.replace(/\\{\\{\\s*([^{}\\s]+)\\s*\\}\\}/g, (match, tokenName) => {
-              const value = this.values[tokenName];
-              if (typeof value === 'function') {
-                return value(this.values);
+          _replaceTokens(templateAST, templateValues) {
+            // Map to store cloned nodes by their _id
+            const nodeById = {};
+
+            // Function to deep clone AST and build ID map
+            const cloneAST = (nodes) => {
+              return nodes.map((node) => {
+                const cloned = { ...node };
+                if (cloned._id != null) {
+                  nodeById[cloned._id] = cloned;
+                }
+                if (cloned.children) {
+                  cloned.children = cloneAST(cloned.children);
+                }
+                if (cloned.attribs) {
+                  cloned.attribs = { ...cloned.attribs };
+                }
+                return cloned;
+              });
+            };
+
+            const ast = cloneAST(templateAST);
+
+            if (!templateValues) return ast;
+
+            // Replace tokens in attributes using the exact token matches
+            if (templateValues.attributes) {
+              for (let i = 0; i < templateValues.attributes.length; i++) {
+                const item = templateValues.attributes[i];
+                const node = nodeById[item.elementId];
+                if (!node || !node.attribs || node.attribs[item.name] == null) continue;
+
+                for (let j = 0; j < item.tokens.length; j++) {
+                  const token = item.tokens[j];
+                  let value = this.values[token.name];
+                  
+                  if (typeof value === 'function') {
+                    value = value(this.values);
+                  }
+                  if (value == null) value = '';
+
+                  // Replace exactly the token content string rather than a regex over the whole attribute
+                  node.attribs[item.name] = node.attribs[item.name].split(token.content).join(value);
+                }
               }
-              return value != null ? value : '';
-            });
+            }
+
+            // Replace tokens in text nodes using the exact token matches
+            if (templateValues.textNodes) {
+              for (let i = 0; i < templateValues.textNodes.length; i++) {
+                const item = templateValues.textNodes[i];
+                const node = nodeById[item.textNodeId];
+                if (!node || node.data == null) continue;
+
+                for (let j = 0; j < item.tokens.length; j++) {
+                  const token = item.tokens[j];
+                  let value = this.values[token.name];
+                  
+                  if (typeof value === 'function') {
+                    value = value(this.values);
+                  }
+                  if (value == null) value = '';
+
+                  node.data = node.data.split(token.content).join(value);
+                }
+              }
+            }
+
+            return ast;
           }
 
           _render() {
             let content = this._styles;
-            content += this._replaceTokens(module.default.template);
+            const ast = this._replaceTokens(module.default.templateAST, module.default.templateValues);
+            content += render(ast, { decodeEntities: false });
             
             this.shadowRoot.innerHTML = content;
 
@@ -1392,8 +1454,9 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       })
     }
 
-    // Convert the parsed AST template back to a raw HTML string for the client
-    const templateHTML = this.transform(module.template.children)
+    // Pass the AST
+    const templateAST = module.template.children
+    const templateValues = module.values
 
     // Extract raw styles from the module
     const stylesHTML = module.styles && module.styles.length ? module.styles.join('\n') : ''
@@ -1423,7 +1486,8 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       id: module.id,
       script: scriptObj,
       filePath: moduleComponent.path.pathname,
-      template: templateHTML,
+      templateAST,
+      templateValues,
       defaultValues,
       styles: stylesHTML
     })
@@ -1548,8 +1612,8 @@ Coralite.prototype.createComponentElement = async function ({
       // Extract raw styles from the module
       const stylesHTML = module.styles && module.styles.length ? module.styles.join('\n') : ''
 
-      // Convert the parsed AST template back to a raw HTML string for the client
-      const templateHTML = this.transform(module.template.children)
+      const templateAST = module.template.children
+      const templateValues = module.values
 
       const componentTokens = {}
       for (let i = 0; i < module.values.attributes.length; i++) {
@@ -1580,7 +1644,8 @@ Coralite.prototype.createComponentElement = async function ({
         id: module.id,
         script: scriptResult.__script__,
         filePath: moduleComponent.path.pathname,
-        template: templateHTML,
+        templateAST,
+        templateValues,
         defaultValues: componentDefaultValues,
         styles: stylesHTML
       })

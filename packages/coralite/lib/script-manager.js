@@ -1,7 +1,7 @@
 import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction } from './utils.js'
-import { pathToFileURL } from 'node:url'
+import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, join } from 'node:path'
 import { createHash } from 'node:crypto'
 import { createRequire } from 'node:module'
@@ -98,15 +98,17 @@ ScriptManager.prototype.getHelpers = function () {
  * @param {string} options.id - component identifier
  * @param {import('../types/script.js').ScriptContent} [options.script={}] - Script content or function
  * @param {string} [options.filePath] - The source file path to map back to
- * @param {string|null} [options.template=null] - Raw HTML template for imperative client rendering
+ * @param {Array<Object>|null} [options.templateAST=null] - Parsed HTML template AST for the client side rendering
+ * @param {Object|null} [options.templateValues=null] - Token positions for AST updates
  * @param {Object} [options.defaultValues={}] - Initial default state from setup()
  * @param {string} [options.styles=''] - Raw CSS string for the Shadow DOM
  */
-ScriptManager.prototype.registerComponent = function ({ id, script = {}, filePath, template = null, defaultValues = {}, styles = '' }) {
+ScriptManager.prototype.registerComponent = function ({ id, script = {}, filePath, templateAST = null, templateValues = null, defaultValues = {}, styles = '' }) {
   this.sharedFunctions[id] = {
     id,
     script,
-    template,
+    templateAST,
+    templateValues,
     defaultValues,
     styles,
     imports: script.imports || [],
@@ -202,13 +204,13 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   // Force inclusion of imperative components
   for (const [componentId, fnData] of Object.entries(this.sharedFunctions)) {
-    if (fnData.template != null || (fnData.defaultValues && Object.keys(fnData.defaultValues).length > 0) || (fnData.script && fnData.script.components && fnData.script.components.length > 0) || (fnData.script && fnData.script.content && fnData.script.content !== 'export default function(){}') || (fnData.script && fnData.script.content && fnData.script.content !== 'export default function() {}') || (fnData.styles && fnData.styles !== '')) {
+    if (fnData.templateAST != null || (fnData.defaultValues && Object.keys(fnData.defaultValues).length > 0) || (fnData.script && fnData.script.components && fnData.script.components.length > 0) || (fnData.script && fnData.script.content && fnData.script.content !== 'export default function(){}') || (fnData.script && fnData.script.content && fnData.script.content !== 'export default function() {}') || (fnData.styles && fnData.styles !== '')) {
       processedComponent[componentId] = true
     } else if (fnData.script && fnData.script.content && fnData.script.content.trim() !== 'export default function(){}' && fnData.script.content.trim() !== 'export default function() {}' && fnData.script.content.trim() !== 'export default function() { }') {
       processedComponent[componentId] = true
     } else if (fnData.script && fnData.script.content) {
       processedComponent[componentId] = true
-    } else if (fnData.template || fnData.styles) {
+    } else if (fnData.templateAST || fnData.styles) {
       processedComponent[componentId] = true
     }
   }
@@ -247,14 +249,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }
   entryCodeParts.push('};\n')
 
-  entryCodeParts.push('const coraliteComponentTemplates = {\n')
-  for (const key of processedComponentKeys) {
-    if (this.sharedFunctions[key] && this.sharedFunctions[key].template) {
-      entryCodeParts.push(`  "${key}": ${serialize(this.sharedFunctions[key].template)},\n`)
-    }
-  }
-  entryCodeParts.push('};\n')
-
   entryCodeParts.push('const coraliteComponentDefaults = {\n')
   for (const key of processedComponentKeys) {
     if (this.sharedFunctions[key] && this.sharedFunctions[key].defaultValues) {
@@ -276,7 +270,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }
   entryCodeParts.push('};\n')
 
-  entryCodeParts.push('\nexport { getHelpers, getSetups };\n')
+  // Resolve dom-serializer path using import.meta.resolve
+  const domSerializerPath = fileURLToPath(import.meta.resolve('dom-serializer'))
+
+  entryCodeParts.push(`import render from "${domSerializerPath}";\n`)
+  entryCodeParts.push('\nexport { getHelpers, getSetups, render };\n')
 
   const entryPoints = {
     'chunk-shared': entryCodeParts.join('').trimEnd()
@@ -300,14 +298,74 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
         componentEntryCode += `const componentScript = null;\n`
       }
 
-      const template = serialize(this.sharedFunctions[componentId].template || '')
+      // Use a WeakMap to map original nodes to a unique index
+      const nodeMap = new WeakMap()
+      let nodeCounter = 0
+
+      const cleanAST = (nodes) => {
+        if (!nodes) return null
+        return nodes.map((node) => {
+          const cloned = { ...node }
+          // Assign unique ID for token mapping
+          const id = nodeCounter++
+          nodeMap.set(node, id)
+          cloned._id = id
+
+          // Remove circular references
+          delete cloned.parent
+          delete cloned.prev
+          delete cloned.next
+          if (cloned.children) {
+            cloned.children = cleanAST(cloned.children)
+          }
+          return cloned
+        })
+      }
+
+      const cleanValues = (values) => {
+        if (!values) return null
+        const result = { ...values }
+        if (result.attributes) {
+          result.attributes = result.attributes.map(item => {
+            const cloned = { ...item }
+            cloned.elementId = nodeMap.get(item.element)
+            delete cloned.element // Remove reference to DOM element
+            return cloned
+          })
+        }
+        if (result.textNodes) {
+          result.textNodes = result.textNodes.map(item => {
+            const cloned = { ...item }
+            cloned.textNodeId = nodeMap.get(item.textNode)
+            delete cloned.textNode // Remove reference to DOM element
+            return cloned
+          })
+        }
+        if (result.refs) {
+          result.refs = result.refs.map(item => {
+            const cloned = { ...item }
+            cloned.elementId = nodeMap.get(item.element)
+            delete cloned.element // Remove reference to DOM element
+            return cloned
+          })
+        }
+        return result
+      }
+
+      const templateAST = serialize(cleanAST(this.sharedFunctions[componentId].templateAST) || [])
+      const templateValues = serialize(cleanValues(this.sharedFunctions[componentId].templateValues) || {
+        attributes: [],
+        textNodes: [],
+        refs: []
+      })
       const styles = JSON.stringify(this.sharedFunctions[componentId].styles || '')
       const defaults = serialize(this.sharedFunctions[componentId].defaultValues || {})
 
       componentEntryCode += `
 export default {
   componentId: "${componentId}",
-  template: ${template},
+  templateAST: ${templateAST},
+  templateValues: ${templateValues},
   styles: ${styles},
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
   imports: ${hasImports ? 'componentImports' : '{}'},
@@ -377,6 +435,7 @@ export default {
                 args.path === 'coralite-shared') {
               return null // Let other resolvers handle it
             }
+
 
             // Do not externalize if the entry point name actually matches a bare specifier
             if (Object.keys(entryPoints).includes(args.path)) {
