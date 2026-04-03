@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.29.4
+
+> Comparing `coralite-v0.29.3` to `HEAD`
+
+**Summary:** 6 commits
+
+### ✨ Features
+
+- implement AbortSignal pattern for web component lifecycle ([9d823e5](https://codeberg.org/tjdavid/coralite/commit/9d823e5e709797ed706e1fac0401d51c17655824))
+
+### 📚 Documentation
+
+- update `AbortSignal` injection and helper currying updates. ([97c8053](https://codeberg.org/tjdavid/coralite/commit/97c8053705749c777bc346a453885512eb84dbec))
+
+### ✅ Tests
+
+- decouples test environment from standard CLI ([3b5c8c5](https://codeberg.org/tjdavid/coralite/commit/3b5c8c5300d3fe69c1e6ddc8d862cd1954bbf020))
+- cover signal ([c3b6342](https://codeberg.org/tjdavid/coralite/commit/c3b63428d627c8309e96c013a2b744af54d8548b))
+
+### 🧹 Chores
+
+- remove unused path and module imports in script-manager.js ([9a00f57](https://codeberg.org/tjdavid/coralite/commit/9a00f573638c3bbd6935c4348b4225adcb3bc810))
+
+### 🔨 Other Changes
+
+- efactor: transition web component rendering from regex to AST with dom-serializer ([4b750bf](https://codeberg.org/tjdavid/coralite/commit/4b750bfb07a504ca44a295402c5a135b493bbfdd))
+
+
 ## v0.29.3
 
 > Comparing `coralite-v0.29.2` to `HEAD`
