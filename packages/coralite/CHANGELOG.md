@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.29.5
+
+> Comparing `coralite-v0.29.4` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- provide AbortSignal | null to component context (coralite) ([cffbd8c](https://codeberg.org/tjdavid/coralite/commit/cffbd8c515f80c422544bdee146388062271ba37))
+
+
 ## v0.29.4
 
 > Comparing `coralite-v0.29.3` to `HEAD`
