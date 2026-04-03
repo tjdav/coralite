@@ -1025,7 +1025,8 @@ const globalSetupValuesPromise = getSetups(globalContext);
       instanceId: '${instance.instanceId}',
       componentId: '${instance.componentId}',
       values: ${JSON.stringify(instance.values || {})},
-      component: {}
+      component: {},
+      signal: null
     };
     context.root = window.document;
     const setupValues = await globalSetupValuesPromise;

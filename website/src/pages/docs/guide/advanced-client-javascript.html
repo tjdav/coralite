@@ -102,7 +102,7 @@
     </p>
     
     <p>
-      Coralite injects an <code>AbortSignal</code> directly into the script context via the <code>signal</code> property. This signal automatically triggers its `abort` event the exact moment the Web Component is disconnected from the DOM.
+      Coralite injects an <code>AbortSignal</code> directly into the script context via the <code>signal</code> property. For imperative Web Components, this signal automatically triggers its `abort` event the exact moment the component is disconnected from the DOM. For declarative components, <code>signal</code> is <code>null</code> to ensure API uniformity, as declarative components lack a disconnection lifecycle.
     </p>
 
     <coralite-code-highlight language="javascript">

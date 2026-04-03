@@ -9,6 +9,8 @@
     client: {
       components: ['reactive-token-child'],
       script: (context) => {
+        window.declarativeSignalAvailable = context.signal === null
+  
         const target = context.helpers.refs('target')
         const child1 = document.createElement('reactive-token-child')
         const child2 = document.createElement('reactive-token-child')

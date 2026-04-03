@@ -142,4 +142,14 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
     expect(valueText).toBe('Script executed')
   })
 
+  test('should pass a valid signal to declarative components', async ({ page }) => {
+    // Navigating to page triggers the reactive-token-parent (declarative component) script
+    await page.goto('/reactive-token-page.html')
+
+    await page.waitForFunction(() => window.declarativeSignalAvailable !== undefined)
+
+    const hasDeclarativeSignal = await page.evaluate(() => window.declarativeSignalAvailable)
+    expect(hasDeclarativeSignal).toBe(true)
+  })
+
 })

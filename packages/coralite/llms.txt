@@ -39,6 +39,7 @@ Dynamic components are authored by appending a `<script type="module">` below th
   * `values`: Processed tokens, props, and `setup` data.
   * `refs`: Map of instance reference IDs.
   * `helpers`: Plugin-injected utilities (e.g., `helpers.refs`, `helpers.imports`).
+  * `signal`: `AbortSignal` tied to the imperative unmount lifecycle (`null` for declarative components).
 * **Reactivity**: Once an imperative Web Component is mounted, it becomes reactive. Updating attributes (via `setAttribute()`) triggers Coralite's internal `MutationObserver`, which updates the `values` context, re-evaluates computed token functions, and updates the Shadow DOM.
 
 ### 3.3 Component-Level Imports (`client.imports`)
@@ -136,7 +137,7 @@ When the `method` runs, Coralite injects a strongly-typed `CoralitePluginContext
 * `component` & `module`: The HTML file data and parsed module context (template/script) currently being processed.
 * `element`: The specific HTML element the plugin is applied to.
 * `path`: File path information (`pathname`, `dirname`, `filename`).
-* `signal`: An `AbortSignal` tied natively to the component's mount lifecycle. It triggers `.abort()` automatically when the component is unmounted from the DOM, making it perfect for automatically cleaning up event listeners (e.g. `el.addEventListener('click', fn, { signal })`) or aborting `fetch` requests without manual cleanup logic.
+* `signal`: An `AbortSignal` tied natively to the component's mount lifecycle. It triggers `.abort()` automatically when the component is unmounted from the DOM, making it perfect for automatically cleaning up event listeners (e.g. `el.addEventListener('click', fn, { signal })`). For declarative components, `signal` is `null` since they do not have a disconnection lifecycle.
 
 **Component-Level Usage:**
 The most powerful aspect of Coralite's plugin system is that plugins can be executed directly within individual components. All built-in plugins (and custom ones registered to the framework) are exported and importable via their plugin name from `'coralite/plugins'`.
@@ -201,7 +202,7 @@ The `client` object within a plugin definition dictates what gets serialized and
 * `setup`: A function for client-side initialization.
 * **`helpers` & The Two-Phase Currying System**: To safely bridge global plugin configuration with local Web Component instances, Coralite requires `client.helpers` to be authored using a specific nested functional pattern (currying).
   1. **Phase 1 (Global Context)**: The outermost function receives the `globalContext` (containing `imports` and `config`).
-  2. **Phase 2 (Local Instance Context)**: It must return a second function that receives the local Web Component instance context (`{ values, root, signal }`), where `root` is the component's `ShadowRoot` or Document, and `signal` is an `AbortSignal` that triggers when the component unmounts.
+  2. **Phase 2 (Local Instance Context)**: It must return a second function that receives the local Web Component instance context (`{ values, root, signal }`), where `root` is the component's `ShadowRoot` or Document, and `signal` is an `AbortSignal` that triggers when the component unmounts (or `null` for declarative components).
   3. **Phase 3 (Execution)**: It finally returns the actual callable utility function used by the user's script.
 
 **Example of a properly authored Client Helper Plugin:**
