@@ -2,9 +2,8 @@ import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction } from './utils.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
-import { resolve, parse, join } from 'node:path'
+import { resolve, parse } from 'node:path'
 import { createHash } from 'node:crypto'
-import { createRequire } from 'node:module'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 
 /**
