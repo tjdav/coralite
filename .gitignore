@@ -84,3 +84,4 @@ playwright/.cache/
 
 examples/
 .coralite
+RELEASE_POST.md

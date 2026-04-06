@@ -4,7 +4,8 @@
   "private": "true",
   "bin": {
     "coralite-release": "./bin/release.js",
-    "coralite-changelog": "./bin/changelog.js"
+    "coralite-changelog": "./bin/changelog.js",
+    "coralite-release-post": "./bin/release-post.js"
   },
   "author": {
     "name": "Thomas David",

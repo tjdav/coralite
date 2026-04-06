@@ -31,6 +31,8 @@
     "publish-scripts": "pnpm run build-scripts && pnpm --filter='./packages/coralite-scripts' publish",
     "publish-create": "pnpm --filter='./packages/create-coralite' publish",
     "release": "coralite-release",
+    "release-post": "coralite-release-post",
+    "release-changelog": "coralite-release-changelog",
     "changelog": "coralite-changelog",
     "website-build": "pnpm --filter='./website' run build",
     "website-dev": "pnpm --filter='./website' run start"
