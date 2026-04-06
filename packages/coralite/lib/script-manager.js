@@ -704,7 +704,7 @@ export default {
             const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
 
             return {
-              contents: `${padding}export default ${sharedFn.script.content};`,
+              contents: `${padding}${sharedFn.script.content.startsWith('export default') ? sharedFn.script.content : 'export default ' + sharedFn.script.content};`,
               loader: 'js',
               resolveDir: process.cwd()
             }

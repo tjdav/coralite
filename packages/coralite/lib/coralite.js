@@ -950,6 +950,15 @@ const globalSetupValuesPromise = getSetups(globalContext);
             
             this.shadowRoot.innerHTML = content;
 
+            // Load any declarative components inside our shadow DOM
+            const childElements = this.shadowRoot.querySelectorAll('*');
+            for (let j = 0; j < childElements.length; j++) {
+              const childTagName = childElements[j].tagName.toLowerCase();
+              if (componentManifest[childTagName]) {
+                loadComponent(childTagName);
+              }
+            }
+
             const refElements = this.shadowRoot.querySelectorAll('[ref]');
             for (let i = 0; i < refElements.length; i++) {
               const element = refElements[i];
@@ -990,31 +999,48 @@ const globalSetupValuesPromise = getSetups(globalContext);
   }
 
   // Setup a MutationObserver to lazily load dynamically added components
-  const observer = new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      if (mutation.type === 'childList') {
-        for (let i = 0; i < mutation.addedNodes.length; i++) {
-          const node = mutation.addedNodes[i];
-          if (node.nodeType === 1) { // Element node
-            const tagName = node.tagName.toLowerCase();
-            if (componentManifest[tagName]) {
-              loadComponent(tagName);
-            }
-            // Also check its children
-            const childElements = node.querySelectorAll('*');
-            for (let j = 0; j < childElements.length; j++) {
-              const childTagName = childElements[j].tagName.toLowerCase();
-              if (componentManifest[childTagName]) {
-                loadComponent(childTagName);
-              }
-            }
+  const loadComponentsFromNode = (node) => {
+    if (node.nodeType === 1) { // Element node
+      const tagName = node.tagName.toLowerCase();
+      if (componentManifest[tagName]) {
+        loadComponent(tagName);
+      }
+      // Also check its children
+      const childElements = node.querySelectorAll('*');
+      for (let j = 0; j < childElements.length; j++) {
+        const childTagName = childElements[j].tagName.toLowerCase();
+        if (componentManifest[childTagName]) {
+          loadComponent(childTagName);
+        }
+      }
+      // If the node has a shadowRoot, observe and load components there as well
+      if (node.shadowRoot) {
+        observeRoot(node.shadowRoot);
+        const shadowChildren = node.shadowRoot.querySelectorAll('*');
+        for (let j = 0; j < shadowChildren.length; j++) {
+          const childTagName = shadowChildren[j].tagName.toLowerCase();
+          if (componentManifest[childTagName]) {
+            loadComponent(childTagName);
           }
         }
       }
     }
-  });
+  };
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  const observeRoot = (root) => {
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList') {
+          for (let i = 0; i < mutation.addedNodes.length; i++) {
+            loadComponentsFromNode(mutation.addedNodes[i]);
+          }
+        }
+      }
+    });
+    observer.observe(root, { childList: true, subtree: true });
+  };
+
+  observeRoot(document.body);
 
   await Promise.all(loadPromises);
 
