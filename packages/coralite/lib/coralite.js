@@ -798,20 +798,20 @@ const globalSetupValuesPromise = getSetups(globalContext);
             const randomID = crypto.randomUUID();
             this._instanceId = \`\${this.componentId}-\${randomID}\`;
             
-            this.values = {};
+            this._values = {};
             // Extract attributes to values
             const attributes = this.attributes;
             for (let i = 0; i < attributes.length; i++) {
               const attr = attributes[i];
               const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-              this.values[camelName] = attr.value;
+              this._values[camelName] = attr.value;
               if (camelName !== attr.name) {
-                this.values[attr.name] = attr.value;
+                this._values[attr.name] = attr.value;
               }
             }
             
             // Merge defaults
-            Object.assign(this.values, module.default.defaultValues);
+            Object.assign(this._values, module.default.defaultValues);
 
             this._styles = ''
             if (module.default.styles) {
@@ -827,7 +827,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
             const localContext = {
               instanceId: this._instanceId,
               componentId: this.componentId,
-              values: this.values,
+              values: this._values,
               root: this.shadowRoot, 
               helpers: {},
               signal: this._abortController.signal
@@ -855,10 +855,10 @@ const globalSetupValuesPromise = getSetups(globalContext);
                   const camelName = attrName.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
                   const newValue = this.getAttribute(attrName);
                   
-                  if (this.values[camelName] !== newValue) {
-                    this.values[camelName] = newValue;
+                  if (this._values[camelName] !== newValue) {
+                    this._values[camelName] = newValue;
                     if (camelName !== attrName) {
-                        this.values[attrName] = newValue;
+                        this._values[attrName] = newValue;
                     }
                     shouldRender = true;
                   }
@@ -906,10 +906,10 @@ const globalSetupValuesPromise = getSetups(globalContext);
 
                 for (let j = 0; j < item.tokens.length; j++) {
                   const token = item.tokens[j];
-                  let value = this.values[token.name];
+                  let value = this._values[token.name];
                   
                   if (typeof value === 'function') {
-                    value = value(this.values);
+                    value = value(this._values);
                   }
                   if (value == null) value = '';
 
@@ -928,10 +928,10 @@ const globalSetupValuesPromise = getSetups(globalContext);
 
                 for (let j = 0; j < item.tokens.length; j++) {
                   const token = item.tokens[j];
-                  let value = this.values[token.name];
+                  let value = this._values[token.name];
                   
                   if (typeof value === 'function') {
-                    value = value(this.values);
+                    value = value(this._values);
                   }
                   if (value == null) value = '';
 
@@ -958,7 +958,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
               const dynamicId = \`\${this.componentId}__\${refName}-\${this._instanceId}\`;
               element.setAttribute('ref', dynamicId);
               
-              this.values[\`ref_\${refName}\`] = dynamicId;
+              this._values[\`ref_\${refName}\`] = dynamicId;
             }
           }
 
