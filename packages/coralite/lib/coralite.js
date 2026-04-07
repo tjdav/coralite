@@ -779,16 +779,19 @@ const globalSetupValuesPromise = getSetups(globalContext);
 
 (async () => {
   const componentManifest = ${JSON.stringify(chunkManifest)};
+  const loadCache = {};
   
-  const loadComponent = async (componentId) => {
-    if (!componentManifest[componentId]) return;
-    if (customElements.get(componentId)) return;
+  const loadComponent = (componentId) => {
+    if (!componentManifest[componentId]) return Promise.resolve();
+    if (customElements.get(componentId)) return Promise.resolve();
+    if (loadCache[componentId]) return loadCache[componentId];
     
-    // Dynamic import to lazy-load the component chunk
-    const module = await import('${base}assets/js/' + componentManifest[componentId]);
-    if (module.default && module.default.componentId) {
-      if (!customElements.get(module.default.componentId)) {
-        class ComponentElement extends HTMLElement {
+    loadCache[componentId] = (async () => {
+      // Dynamic import to lazy-load the component chunk
+      const module = await import('${base}assets/js/' + componentManifest[componentId]);
+      if (module.default && module.default.componentId) {
+        if (!customElements.get(module.default.componentId)) {
+          class ComponentElement extends HTMLElement {
           constructor() {
             super();
             this.componentId = module.default.componentId;
@@ -799,6 +802,16 @@ const globalSetupValuesPromise = getSetups(globalContext);
             this._instanceId = \`\${this.componentId}-\${randomID}\`;
             
             this._values = {};
+
+            this._styles = ''
+            if (module.default.styles) {
+              this._styles += \`<style>\${module.default.styles}</style>\`;
+            }
+          }
+
+          connectedCallback() {
+            this._abortController = new AbortController();
+            
             // Extract attributes to values
             const attributes = this.attributes;
             for (let i = 0; i < attributes.length; i++) {
@@ -811,17 +824,8 @@ const globalSetupValuesPromise = getSetups(globalContext);
             }
             
             // Merge defaults
-            Object.assign(this._values, module.default.defaultValues);
+            this._values = Object.assign({}, module.default.defaultValues, this._values);
 
-            this._styles = ''
-            if (module.default.styles) {
-              this._styles += \`<style>\${module.default.styles}</style>\`;
-            }
-          }
-
-          connectedCallback() {
-            this._abortController = new AbortController();
-            
             this._render();
             
             const localContext = {
@@ -950,15 +954,6 @@ const globalSetupValuesPromise = getSetups(globalContext);
             
             this.shadowRoot.innerHTML = content;
 
-            // Load any declarative components inside our shadow DOM
-            const childElements = this.shadowRoot.querySelectorAll('*');
-            for (let j = 0; j < childElements.length; j++) {
-              const childTagName = childElements[j].tagName.toLowerCase();
-              if (componentManifest[childTagName]) {
-                loadComponent(childTagName);
-              }
-            }
-
             const refElements = this.shadowRoot.querySelectorAll('[ref]');
             for (let i = 0; i < refElements.length; i++) {
               const element = refElements[i];
@@ -984,63 +979,16 @@ const globalSetupValuesPromise = getSetups(globalContext);
         }
         customElements.define(module.default.componentId, ComponentElement);
       }
-    }
+      }
+    })();
+    return loadCache[componentId];
   };
 
-  // Check the current page's DOM for custom elements
+  // Load all required components for this page immediately
   const componentTags = Object.keys(componentManifest);
-  const loadPromises = [];
-  for (let i = 0; i < componentTags.length; i++) {
-    const tagName = componentTags[i];
-    const elements = document.querySelectorAll(tagName);
-    if (elements.length > 0) {
-      loadPromises.push(loadComponent(tagName));
-    }
-  }
-
-  // Setup a MutationObserver to lazily load dynamically added components
-  const loadComponentsFromNode = (node) => {
-    if (node.nodeType === 1) { // Element node
-      const tagName = node.tagName.toLowerCase();
-      if (componentManifest[tagName]) {
-        loadComponent(tagName);
-      }
-      // Also check its children
-      const childElements = node.querySelectorAll('*');
-      for (let j = 0; j < childElements.length; j++) {
-        const childTagName = childElements[j].tagName.toLowerCase();
-        if (componentManifest[childTagName]) {
-          loadComponent(childTagName);
-        }
-      }
-      // If the node has a shadowRoot, observe and load components there as well
-      if (node.shadowRoot) {
-        observeRoot(node.shadowRoot);
-        const shadowChildren = node.shadowRoot.querySelectorAll('*');
-        for (let j = 0; j < shadowChildren.length; j++) {
-          const childTagName = shadowChildren[j].tagName.toLowerCase();
-          if (componentManifest[childTagName]) {
-            loadComponent(childTagName);
-          }
-        }
-      }
-    }
-  };
-
-  const observeRoot = (root) => {
-    const observer = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (mutation.type === 'childList') {
-          for (let i = 0; i < mutation.addedNodes.length; i++) {
-            loadComponentsFromNode(mutation.addedNodes[i]);
-          }
-        }
-      }
-    });
-    observer.observe(root, { childList: true, subtree: true });
-  };
-
-  observeRoot(document.body);
+  const loadPromises = componentTags
+    .filter(tagName => tagName.includes('-') && !tagName.endsWith('.js'))
+    .map(tagName => loadComponent(tagName));
 
   await Promise.all(loadPromises);
 
