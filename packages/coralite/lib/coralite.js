@@ -826,18 +826,24 @@ const globalSetupValuesPromise = getSetups(globalContext);
             // Merge defaults
             this._values = Object.assign({}, module.default.defaultValues, this._values);
 
-            this._render();
-            
-            const localContext = {
-              instanceId: this._instanceId,
-              componentId: this.componentId,
-              values: this._values,
-              root: this.shadowRoot, 
-              helpers: {},
-              signal: this._abortController.signal
-            };
-
             ;(async () => {
+              const deps = module.default.dependencies || [];
+              if (deps.length > 0) {
+                const loadPromises = deps.map(dep => loadComponent(dep));
+                await Promise.all(loadPromises);
+              }
+
+              this._render();
+              
+              const localContext = {
+                instanceId: this._instanceId,
+                componentId: this.componentId,
+                values: this._values,
+                root: this.shadowRoot, 
+                helpers: {},
+                signal: this._abortController.signal
+              };
+
               const setupValues = await globalSetupValuesPromise;
               localContext.values = { ...localContext.values, ...setupValues };
 
@@ -984,11 +990,18 @@ const globalSetupValuesPromise = getSetups(globalContext);
     return loadCache[componentId];
   };
 
-  // Load all required components for this page immediately
+  // Check the current page's DOM for custom elements
   const componentTags = Object.keys(componentManifest);
-  const loadPromises = componentTags
-    .filter(tagName => tagName.includes('-') && !tagName.endsWith('.js'))
-    .map(tagName => loadComponent(tagName));
+  const loadPromises = [];
+  for (let i = 0; i < componentTags.length; i++) {
+    const tagName = componentTags[i];
+    if (tagName.includes('-') && !tagName.endsWith('.js')) {
+      const elements = document.querySelectorAll(tagName);
+      if (elements.length > 0) {
+        loadPromises.push(loadComponent(tagName));
+      }
+    }
+  }
 
   await Promise.all(loadPromises);
 
@@ -1608,7 +1621,7 @@ Coralite.prototype.createComponentElement = async function ({
       const componentDefaultValues = scriptResult.__script__.defaultValues || {}
       if (values) {
         for (const token of Object.keys(componentTokens)) {
-          if(typeof values[token] === 'function') {
+          if (typeof values[token] === 'function') {
             componentDefaultValues[token] = values[token]
           }
         }

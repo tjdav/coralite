@@ -111,6 +111,7 @@ ScriptManager.prototype.registerComponent = function ({ id, script = {}, filePat
     defaultValues,
     styles,
     imports: script.imports || [],
+    components: script.components || [],
     filePath: filePath ? resolve(filePath) : `/component-${id}.js`
   }
 }
@@ -359,6 +360,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       })
       const styles = JSON.stringify(this.sharedFunctions[componentId].styles || '')
       const defaults = serialize(this.sharedFunctions[componentId].defaultValues || {})
+      const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
 
       componentEntryCode += `
 export default {
@@ -367,6 +369,7 @@ export default {
   templateValues: ${templateValues},
   styles: ${styles},
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
+  dependencies: ${dependencies},
   imports: ${hasImports ? 'componentImports' : '{}'},
   script: componentScript
 };
@@ -428,10 +431,10 @@ export default {
 
             // Check for Coralite internal modules first
             if (args.path.startsWith('coralite-component:') ||
-                args.path.startsWith('coralite-component-imports:') ||
-                args.path.startsWith('coralite-script-module:') ||
-                args.path === 'chunk-shared' ||
-                args.path === 'coralite-shared') {
+              args.path.startsWith('coralite-component-imports:') ||
+              args.path.startsWith('coralite-script-module:') ||
+              args.path === 'chunk-shared' ||
+              args.path === 'coralite-shared') {
               return null // Let other resolvers handle it
             }
 
@@ -704,7 +707,7 @@ export default {
             const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
 
             return {
-              contents: `${padding}${sharedFn.script.content.startsWith('export default') ? sharedFn.script.content : 'export default ' + sharedFn.script.content};`,
+              contents: `${padding}export default ${sharedFn.script.content};`,
               loader: 'js',
               resolveDir: process.cwd()
             }

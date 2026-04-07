@@ -1,0 +1,21 @@
+<template id="dynamic-child">
+  <dynamic-grandchild data="1"></dynamic-grandchild>
+  <dynamic-grandchild data="2"></dynamic-grandchild>
+
+  <span ref="container"></span>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    client: {
+      components: ['this-component'],
+      script: ({ helpers }) => {
+        const container = helpers.refs('container')
+        const childComponent = document.createElement('this-component')
+        container.replaceWith(childComponent)
+      }
+    }
+  })
+</script>
