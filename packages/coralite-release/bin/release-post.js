@@ -3,7 +3,7 @@
 import * as prompts from '@clack/prompts'
 import { simpleGit } from 'simple-git'
 import { program } from 'commander'
-import { writeFileSync, existsSync, readFileSync } from 'fs'
+import { writeFileSync, readFileSync } from 'fs'
 import path from 'path'
 import { globSync } from 'glob'
 
