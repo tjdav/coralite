@@ -4,7 +4,6 @@
  */
 
 import { basename, dirname } from 'path'
-import { getHtmlFileSync } from './html.js'
 
 /**
  * Validates that a value is a non-empty string
@@ -118,9 +117,7 @@ function validateImportArray (value, paramName) {
  */
 function processComponents (path) {
   try {
-    const content = getHtmlFileSync(path)
     const componentData = {
-      content,
       path: {
         pathname: path,
         dirname: dirname(path),
@@ -279,4 +276,3 @@ export function createPlugin ({
     server
   }
 }
-

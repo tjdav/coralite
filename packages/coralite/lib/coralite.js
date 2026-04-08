@@ -279,9 +279,7 @@ Coralite.prototype.initialise = async function () {
   })
 
   // register plugin components
-  for (let i = 0; i < this._plugins.components.length; i++) {
-    await this.components.setItem(this._plugins.components[i])
-  }
+  await Promise.all(this._plugins.components.map(c => this.components.setItem(c)))
 
   // collection of custom elements used by pages
   /** @type {Object.<string, Set<string>>} */

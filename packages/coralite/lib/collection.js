@@ -89,6 +89,11 @@ CoraliteCollection.prototype.setItem = async function (value) {
   const pathname = value.path.pathname
   const dirname = value.path.dirname
   const originalValue = this.collection[pathname]
+
+  if (value.content === undefined && pathname) {
+    value.content = await getHtmlFile(pathname)
+  }
+
   /** @type {CoraliteCollectionItem} */
   const documentValue = value
 

@@ -1,6 +1,8 @@
 import { dirname, extname, join } from 'node:path'
 import { readdir, readFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
+import { availableParallelism } from 'node:os'
+import pLimit from 'p-limit'
 import CoraliteCollection from './collection.js'
 
 /**
@@ -21,6 +23,7 @@ import CoraliteCollection from './collection.js'
  * @param {CoraliteCollectionEventUpdate} [options.onFileUpdate]
  * @param {CoraliteCollectionEventDelete} [options.onFileDelete]
  * @param {CoraliteCollection} [options.collection] - Optional collection instance to populate
+ * @param {import('p-limit').LimitFunction} [options.limit] - Optional concurrency limiter
  * @returns {Promise<CoraliteCollection>} Array of HTML file data including parent path, name, and content
  *
  * @example
@@ -39,7 +42,8 @@ export async function getHtmlFiles ({
   onFileSet,
   onFileUpdate,
   onFileDelete,
-  collection
+  collection,
+  limit
 }) {
   try {
     if (!collection) {
@@ -51,71 +55,72 @@ export async function getHtmlFiles ({
       })
     }
 
-    let files
-    try {
-      files = await readdir(path, {
-        recursive,
-        withFileTypes: true
-      })
-    } catch (error) {
-      if (error.code === 'ENOENT') {
-        throw error
-      }
-      throw error
+    if (!limit) {
+      limit = pLimit(availableParallelism())
     }
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
+    const entries = await readdir(path, { withFileTypes: true })
+    const tasks = []
 
-      // Skip hidden files starting with dot
-      if (file.name.startsWith('.')) {
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i]
+
+      // Skip hidden files/directories starting with dot
+      if (entry.name.startsWith('.')) {
         continue
       }
 
-      // Handle directory exclusion for recursive mode
-      if (file.isDirectory() && recursive) {
-        const relativeDirPath = join(file.parentPath.replace(path + '/', ''), file.name)
-        if (exclude.includes(relativeDirPath) || exclude.includes(file.name)) {
-          continue
-        }
+      const pathname = join(entry.parentPath, entry.name)
+
+      // Calculate relative path from root for exclusion checking
+      const relativePath = pathname.replace(path + '/', '')
+
+      // Check if entry should be excluded by: name, relative path, or full path
+      const shouldExclude = exclude.includes(entry.name) ||
+                           exclude.includes(relativePath) ||
+                           exclude.includes(pathname) ||
+                           exclude.some(excludePath => {
+                             // Handle directory-based exclusions
+                             const excludeDir = excludePath.endsWith('/') ? excludePath.slice(0, -1) : excludePath
+                             return relativePath.startsWith(excludeDir + '/')
+                           })
+
+      if (shouldExclude) {
+        continue
       }
 
-      if (file.isFile()
-        && extname(file.name).toLowerCase() === '.html'
-      ) {
-        const pathname = join(file.parentPath, file.name)
-        const name = file.name
+      if (entry.isDirectory() && recursive) {
+        tasks.push(limit(async () => {
+          await getHtmlFiles({
+            path: pathname,
+            type,
+            recursive,
+            exclude,
+            onFileSet,
+            onFileUpdate,
+            onFileDelete,
+            collection,
+            limit
+          })
+        }))
+      } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
+        tasks.push(limit(async () => {
+          const content = await readFile(pathname, { encoding: 'utf8' })
 
-        // Calculate relative path from root for exclusion checking
-        const relativePath = pathname.replace(path + '/', '')
-
-        // Check if file should be excluded by: filename, relative path, or full path
-        const shouldExclude = exclude.includes(name) ||
-                             exclude.includes(relativePath) ||
-                             exclude.includes(pathname) ||
-                             exclude.some(excludePath => {
-                               // Handle directory-based exclusions
-                               const excludeDir = excludePath.endsWith('/') ? excludePath.slice(0, -1) : excludePath
-                               return relativePath.startsWith(excludeDir + '/')
-                             })
-
-        if (shouldExclude) {
-          continue
-        }
-
-        const content = await readFile(pathname, { encoding: 'utf8' })
-
-        await collection.setItem({
-          type,
-          content,
-          path: {
-            pathname: pathname,
-            filename: name,
-            dirname: dirname(pathname)
-          }
-        })
+          await collection.setItem({
+            type,
+            content,
+            path: {
+              pathname: pathname,
+              filename: entry.name,
+              dirname: dirname(pathname)
+            }
+          })
+        }))
       }
     }
+
+    await Promise.all(tasks)
 
     return collection
   } catch (error) {
