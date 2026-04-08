@@ -14,6 +14,7 @@ When generating code or answering questions about Coralite, you MUST adhere to t
 * **Rendering**: Strictly Server-Side Rendered (SSR). No client-side hydration.
 * **Architecture**: Coralite utilizes a hybrid model where components are either fully declarative (SSR-only) or true imperative Web Components.
 * **CLI Arguments**: Requires paths for components directory (`-c` or `--components`), pages directory (`-p` or `--pages`), and output directory (`-o` or `--output`).
+* **Error Handling**: Supports a structured `onError` callback in the configuration for handling errors, warnings, and logs from the framework.
 
 ## 2. Static Components
 Static components are purely HTML-based elements without scripting logic.
@@ -39,7 +40,7 @@ Dynamic components are authored by appending a `<script type="module">` below th
   * `values`: Processed tokens, props, and `setup` data.
   * `refs`: Map of instance reference IDs.
   * `helpers`: Plugin-injected utilities (e.g., `helpers.refs`, `helpers.imports`).
-  * `signal`: `AbortSignal` tied to the imperative unmount lifecycle.
+  * `signal`: `AbortSignal` tied to the imperative unmount lifecycle (`null` for declarative components).
 * **Reactivity**: Once an imperative Web Component is mounted, it becomes reactive. Updating attributes (via `setAttribute()`) triggers Coralite's internal `MutationObserver`, which updates the `values` context, re-evaluates computed token functions, and updates the Shadow DOM.
 
 ### 3.3 Component-Level Imports (`client.imports`)
@@ -267,3 +268,15 @@ The Static Assets plugin handles the orchestration of copying raw files (like `.
 * **Local vs. Module Resolution:**
   * **Local:** If the asset object contains a `src` property, it recursively creates the destination directory (`mkdir`) and copies the file/folder using Node's `cp`.
   * **NPM Package Resolution:** If `src` is missing, it requires both `pkg` and `path` properties. It uses Node's `createRequire` and `require.resolve` to traverse `node_modules` and locate the root directory of the requested `pkg` (hunting for its `package.json`). It then appends the `path` to the package root and copies the asset out of the dependency.
+
+## 6. Error & Warning Handling (onError)
+Coralite provides a centralized `onError` callback in its configuration to handle framework-level issues.
+
+### 6.1 Structured Error Object
+The `onError` callback receives a single object containing:
+* `level`: The severity of the issue (`'WARN'`, `'ERR'`, or `'LOG'`).
+* `message`: A descriptive string explaining the issue.
+* `error`: (Optional) The original `Error` object, useful for stack traces.
+
+### 6.2 Default Behavior
+By default, Coralite uses `console.warn` and `console.log` for level `'WARN'` and `'LOG'`. For level `'ERR'`, the default handler **throws** the error (or a new `Error` with the provided message). Providing a custom `onError` allows integration with external logging systems (e.g., custom CLI loggers or error tracking services) and control over error propagation.

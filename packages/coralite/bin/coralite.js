@@ -97,7 +97,19 @@ if (config && config.plugins) {
 }
 
 // Create coralite instance
-const coralite = new Coralite(coraliteOptions)
+const coralite = new Coralite({
+  ...coraliteOptions,
+  onError: ({ level, message, error }) => {
+    if (level === 'ERR') {
+      process.stderr.write(kleur.red().bold('ERROR: ') + message + '\n')
+      if (error) process.stderr.write(kleur.gray(error.stack || error.message) + '\n')
+    } else if (level === 'WARN') {
+      process.stdout.write(kleur.yellow().bold('WARNING: ') + message + '\n')
+    } else {
+      process.stdout.write(message + '\n')
+    }
+  }
+})
 // initializes Coralite with the provided options and compiles documents
 await coralite.initialise()
 // compiles all pages using Coralite

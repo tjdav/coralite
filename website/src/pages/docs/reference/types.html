@@ -32,6 +32,8 @@
         <li><a href="#coralitemodulevalues">CoraliteModuleValues</a></li>
         <li><a href="#scriptcontent">ScriptContent</a></li>
         <li><a href="#coralitemodulevalue">CoraliteModuleValue</a></li>
+        <li><a href="#coraliteerrordata">CoraliteErrorData</a></li>
+        <li><a href="#coraliteonerror">CoraliteOnError</a></li>
       </ul>
       <p><a href="#document-and-result-types">Document and Result Types</a></p>
       <ul>
@@ -454,6 +456,45 @@
         </tbody>
       </table>
     </div>
+
+    <coralite-heading level="h3" text="CoraliteErrorData"></coralite-heading>
+    <p>Error or warning data passed to the <code>onError</code> callback.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>level</code></td>
+            <td><code>'WARN'</code> | <code>'ERR'</code> | <code>'LOG'</code></td>
+            <td>The severity level.</td>
+          </tr>
+          <tr>
+            <td><code>message</code></td>
+            <td><code>string</code></td>
+            <td>The message describing the error or warning.</td>
+          </tr>
+          <tr>
+            <td><code>error</code></td>
+            <td><code>Error</code> (optional)</td>
+            <td>Optional error object for tracing.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="h3" text="CoraliteOnError"></coralite-heading>
+    <p>Callback function for handling errors and warnings.</p>
+    <coralite-code-highlight language="JavaScript">/**
+* @callback CoraliteOnError
+* @param {CoraliteErrorData} data - The error or warning data.
+* @returns {void}
+*/</coralite-code-highlight>
 
     <coralite-heading level="h2" text="Document and Result Types"></coralite-heading>
 

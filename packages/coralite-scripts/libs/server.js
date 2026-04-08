@@ -3,7 +3,7 @@ import colours from 'kleur'
 import localAccess from 'local-access'
 import chokidar from 'chokidar'
 import buildSass from './build-sass.js'
-import { displayError, displayInfo, displaySuccess, toCode, toMS, toTime, deleteDirectoryRecursive } from './build-utils.js'
+import { displayError, displayInfo, displayWarning, displaySuccess, toCode, toMS, toTime, deleteDirectoryRecursive } from './build-utils.js'
 import { extname, join, normalize, relative, sep } from 'path'
 import { access, constants, mkdir, writeFile } from 'fs/promises'
 import Coralite from 'coralite'
@@ -42,7 +42,16 @@ async function server (config, options) {
       ignoreByAttribute: config.ignoreByAttribute,
       skipRenderByAttribute: config.skipRenderByAttribute,
       mode: 'development',
-      output: config.output
+      output: config.output,
+      onError: ({ level, message, error }) => {
+        if (level === 'ERR') {
+          displayError(message, error)
+        } else if (level === 'WARN') {
+          displayWarning(message)
+        } else {
+          displayInfo(message)
+        }
+      }
     })
     await coralite.initialise()
     displaySuccess('Coralite initialized successfully')

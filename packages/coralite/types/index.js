@@ -1,7 +1,7 @@
 
 /**
  * CORE TYPES
- * @import { HTMLData, CoraliteFilePath, CoralitePath, CoraliteConfig, CoralitePathValues, CoraliteValues } from './core.js'
+ * @import { HTMLData, CoraliteFilePath, CoralitePath, CoraliteConfig, CoralitePathValues, CoraliteValues, CoraliteErrorData, CoraliteOnError } from './core.js'
  *
  * DOM & AST
  * @import { CoraliteElement, RawCoraliteElement, CoraliteTextNode, RawCoraliteTextNode, CoraliteComment, RawCoraliteComment, CoraliteDirective, RawCoraliteDirective, CoraliteAnyNode, CoraliteComponentRoot, RawCoraliteComponentRoot, CoraliteContentNode } from './dom.js'
@@ -34,6 +34,8 @@
  * @typedef {import('./core.js').CoralitePathValues} CoralitePathValues
  * @typedef {import('./core.js').CoraliteValues} CoraliteValues
  * @typedef {import('./core.js').CoraliteStaticAsset} CoraliteStaticAsset
+ * @typedef {import('./core.js').CoraliteErrorData} CoraliteErrorData
+ * @typedef {import('./core.js').CoraliteOnError} CoraliteOnError
  */
 
 /**

@@ -7,7 +7,7 @@ import colours from 'kleur'
 import pkg from '../package.json' with { type: 'json' }
 import buildSass from '../libs/build-sass.js'
 import { join, relative } from 'node:path'
-import { deleteDirectoryRecursive, copyDirectory, toMS, toTime, displayError } from '../libs/build-utils.js'
+import { deleteDirectoryRecursive, copyDirectory, toMS, toTime, displayError, displayWarning, displayInfo } from '../libs/build-utils.js'
 import buildCSS from '../libs/build-css.js'
 import { Coralite } from 'coralite'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -69,7 +69,16 @@ if (mode === 'dev') {
     assets: config.assets,
     baseURL: config.baseURL,
     output: config.output,
-    mode: 'production'
+    mode: 'production',
+    onError: ({ level, message, error }) => {
+      if (level === 'ERR') {
+        displayError(message, error)
+      } else if (level === 'WARN') {
+        displayWarning(message)
+      } else {
+        displayInfo(message)
+      }
+    }
   })
   await coralite.initialise()
 

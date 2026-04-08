@@ -38,6 +38,21 @@
  */
 
 /**
+ * Error or warning data passed to the onError callback.
+ * @typedef {Object} CoraliteErrorData
+ * @property {'WARN'|'ERR'|'LOG'} level - The severity level.
+ * @property {string} message - The message describing the error or warning.
+ * @property {Error} [error] - Optional error object for tracing.
+ */
+
+/**
+ * Callback function for handling errors and warnings.
+ * @callback CoraliteOnError
+ * @param {CoraliteErrorData} data - The error or warning data.
+ * @returns {void}
+ */
+
+/**
  * @typedef {Object} CoraliteConfig
  * @property {string} output - The path to the output directory where built files will be placed.
  * @property {string} components - The path to the directory containing Coralite components.
@@ -47,6 +62,7 @@
  * @property {CoraliteStaticAsset[]} [assets] - Static assets to copy during build.
  * @property {Array<string | Attribute>} [ignoreByAttribute] - An array of attribute names and values to ignore by element type.
  * @property {Array<string | Attribute>} [skipRenderByAttribute] - An array of attribute names and values to skip rendering by element type.
+ * @property {CoraliteOnError} [onError] - Optional callback function for handling errors and warnings.
  * @property {string} [options.mode='production'] - Build mode: "development" or "production"
  */
 

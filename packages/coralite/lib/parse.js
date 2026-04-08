@@ -19,7 +19,8 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  *  CoraliteComponentRoot,
  *  CoraliteContentNode,
  *  Attribute,
- *  ParseHTMLResult} from '../types/index.js'
+ *  ParseHTMLResult,
+ *  CoraliteOnError} from '../types/index.js'
  */
 
 /**
@@ -28,10 +29,11 @@ import { isValidCustomElementName, VALID_TAGS } from './tags.js'
  * @param {string} string - HTML content to parse as string input type textual data
  * @param {Array<string | Attribute>} [ignoreByAttribute] - Ignore element with attribute name value pair
  * @param {Array<string | Attribute>} [skipRenderByAttribute] - Parse element but remove before final render
+ * @param {CoraliteOnError} [onError] - Callback function for error and warning handling
  * @returns {ParseHTMLResult}
  * @example parseHTML('<h1>Hello world!</h1>')
  */
-export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute) {
+export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onError) {
   // root element reference
   const root = createCoraliteComponent({
     type: 'root',
@@ -64,7 +66,8 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute) {
         name,
         attributes,
         parent,
-        ignoreByAttribute: ignoreAttributeMap
+        ignoreByAttribute: ignoreAttributeMap,
+        onError
       })
 
       if (skipRenderByAttribute && skipRenderByAttribute.length > 0) {
@@ -174,6 +177,7 @@ function sortSlottedChildren (elements) {
  * @param {Object} options
  * @param {Array<string | Attribute>} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
  * @param {Array<string | Attribute>} [options.skipRenderByAttribute] - An array of attributes that exclude element from rendering
+ * @param {CoraliteOnError} [options.onError] - Callback function for error and warning handling
  * @returns {CoraliteModule} - Parsed module information, including template, script, tokens, and slot configurations
  *
  * @example
@@ -199,7 +203,7 @@ function sortSlottedChildren (elements) {
  * //}
  * ```
  */
-export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute }) {
+export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute, onError }) {
   // root element reference
   const root = createCoraliteComponent({
     type: 'root',
@@ -233,7 +237,8 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute 
         name: originalName,
         attributes,
         parent,
-        ignoreByAttribute: ignoreAttributeMap
+        ignoreByAttribute: ignoreAttributeMap,
+        onError
       })
 
       if (skipRenderByAttribute && skipRenderByAttribute.length > 0) {
@@ -458,13 +463,15 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute 
  * @param {Object.<string, string>} data.attributes - Attributes for the new element.
  * @param {CoraliteElement | CoraliteComponentRoot} data.parent - Parent element or component root where this element will be attached.
  * @param {Array<string | Attribute> | Map<string, string[]>} [data.ignoreByAttribute] - Optional parameter used for ignoring elements based on attributes.
+ * @param {CoraliteOnError} [data.onError] - Callback function for error and warning handling
  * @returns {CoraliteElement} The newly created element with its parent reference and position in the parent's children list.
  */
 export function createElement ({
   name,
   attributes,
   parent,
-  ignoreByAttribute
+  ignoreByAttribute,
+  onError
 }) {
   const sanitisedName = name.toLowerCase()
   const element = createCoraliteElement({
@@ -485,13 +492,35 @@ export function createElement ({
   }
 
   if (!VALID_TAGS[sanitisedName]) {
-    // check if the tag name matches the regex for valid custom elements
-    if (isValidCustomElementName(sanitisedName)) {
-      // store custom elements
-      element.slots = []
-    } else {
-      /** @TODO handle warnings  */
-      // console.warn('Invalid custom element tag name: "' + sanitisedName + '" https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
+    const specUrl = 'https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name'
+
+    try {
+      // check if the tag name matches the regex for valid custom elements
+      if (isValidCustomElementName(sanitisedName)) {
+        // store custom elements
+        element.slots = []
+      } else {
+        const message = 'Invalid custom element tag name: "' + sanitisedName + '" ' + specUrl
+        if (typeof onError === 'function') {
+          onError({
+            level: 'WARN',
+            message
+          })
+        } else {
+          console.warn(message)
+        }
+      }
+    } catch (error) {
+      const message = error.message + ' ' + specUrl
+      if (typeof onError === 'function') {
+        onError({
+          level: 'WARN',
+          message,
+          error
+        })
+      } else {
+        console.warn(message)
+      }
     }
   }
 

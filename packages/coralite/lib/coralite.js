@@ -61,6 +61,7 @@ export function Coralite ({
   baseURL = '/',
   ignoreByAttribute,
   skipRenderByAttribute,
+  onError,
   mode = 'production',
   output
 }) {
@@ -91,6 +92,7 @@ export function Coralite ({
     baseURL,
     ignoreByAttribute,
     skipRenderByAttribute,
+    onError: onError || this._defaultOnError,
     mode,
     path,
     output: output ? normalize(output) : undefined
@@ -122,11 +124,17 @@ export function Coralite ({
   // module source context
   this._source = {
     contextModules: {
-      parseHTML,
-      parseModule,
+      parseHTML: (string, ignoreByAttribute, skipRenderByAttribute) => parseHTML(string, ignoreByAttribute, skipRenderByAttribute, this.options.onError),
+      parseModule: (string, options) => parseModule(string, {
+        onError: this.options.onError,
+        ...options
+      }),
       getHtmlFiles,
       getHtmlFile,
-      createElement,
+      createElement: (options) => createElement({
+        onError: this.options.onError,
+        ...options
+      }),
       createTextNode,
       transform: this.transform
     },
@@ -231,6 +239,27 @@ export function Coralite ({
 }
 
 /**
+ * Default error handler for the Coralite instance.
+ * @internal
+ * @param {Object} data
+ * @param {'WARN' | 'ERR' | 'LOG'} data.level
+ * @param {string} data.message
+ * @param {Error} [data.error]
+ */
+Coralite.prototype._defaultOnError = function ({ level, message, error }) {
+  if (level === 'ERR') {
+    if (error) {
+      throw error
+    }
+    throw new Error(message)
+  } else if (level === 'WARN') {
+    console.warn(message)
+  } else {
+    console.log(message)
+  }
+}
+
+/**
  * Initialises the Coralite instance.
  * @returns {Promise<void>}
  */
@@ -242,7 +271,8 @@ Coralite.prototype.initialise = async function () {
     onFileSet: async (value) => {
       const component = parseModule(value.content, {
         ignoreByAttribute: this.options.ignoreByAttribute,
-        skipRenderByAttribute: this.options.skipRenderByAttribute
+        skipRenderByAttribute: this.options.skipRenderByAttribute,
+        onError: this.options.onError
       })
 
       // abort component add
@@ -261,7 +291,8 @@ Coralite.prototype.initialise = async function () {
     onFileUpdate: async (value) => {
       const component = parseModule(value.content, {
         ignoreByAttribute: this.options.ignoreByAttribute,
-        skipRenderByAttribute: this.options.skipRenderByAttribute
+        skipRenderByAttribute: this.options.skipRenderByAttribute,
+        onError: this.options.onError
       })
 
       // abort component update
@@ -298,7 +329,7 @@ Coralite.prototype.initialise = async function () {
 
   /** @type {CoraliteCollectionEventSet} */
   const onFileSet = async (data) => {
-    const elements = parseHTML(data.content, this.options.ignoreByAttribute, this.options.skipRenderByAttribute)
+    const elements = parseHTML(data.content, this.options.ignoreByAttribute, this.options.skipRenderByAttribute, this.options.onError)
 
     // track parent-child relationship between custom elements
     for (let i = 0; i < elements.customElements.length; i++) {
@@ -715,7 +746,11 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
         }
 
         if (!scriptResult.manifest['chunk-shared']) {
-          console.error('MANIFEST MISSING chunk-shared!', scriptResult.manifest)
+          this.options.onError({
+            level: 'ERR',
+            message: 'MANIFEST MISSING chunk-shared!',
+            error: new Error(JSON.stringify(scriptResult.manifest))
+          })
         }
 
         /** @type {CoraliteElement | CoraliteComponentRoot} */
@@ -1232,7 +1267,11 @@ Coralite.prototype.build = async function (...args) {
 
         executing.delete(task)
       }).catch((err) => {
-        console.error(err)
+        this.options.onError({
+          level: 'ERR',
+          message: err.message,
+          error: err
+        })
         executing.delete(task)
       })
     }
@@ -1249,7 +1288,10 @@ Coralite.prototype.build = async function (...args) {
     let finalError = error
 
     if (error.name === 'AbortError') {
-      console.warn('Build cancelled by user.')
+      this.options.onError({
+        level: 'WARN',
+        message: 'Build cancelled by user.'
+      })
     }
 
     if (error instanceof Error) {
@@ -1569,7 +1611,7 @@ Coralite.prototype.createComponentElement = async function ({
       const { rootClasses, descendantClasses } = moduleComponent.result
 
       // Transform CSS
-      moduleComponent.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses)
+      moduleComponent.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, this.options.onError)
     }
 
     // Add styles to renderContext (idempotent for the build)

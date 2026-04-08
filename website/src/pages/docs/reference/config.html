@@ -25,7 +25,15 @@ export default defineConfig({
   components: 'src/components',
   pages: 'src/pages',
   output: 'dist',
-  plugins: [myPlugin]
+  plugins: [myPlugin],
+  onError: ({ level, message, error }) => {
+    if (level === 'ERR') {
+      console.error(`[FATAL] ${message}`);
+      if (error) console.error(error.stack);
+    } else {
+      console.warn(`[${level}] ${message}`);
+    }
+  }
 });
     </coralite-code-highlight>
 
@@ -41,18 +49,46 @@ export default defineConfig({
         <th>Description</th>
       </tr>
       <tr slot="body">
+        <td><code>components</code></td>
+        <td><code>string</code></td>
+        <td>-</td>
+        <td>Path to the directory containing Coralite components.</td>
       </tr>
       <tr slot="body">
+        <td><code>pages</code></td>
+        <td><code>string</code></td>
+        <td>-</td>
+        <td>Path to the directory containing pages.</td>
       </tr>
       <tr slot="body">
+        <td><code>output</code></td>
+        <td><code>string</code></td>
+        <td>-</td>
+        <td>Path to the output directory.</td>
       </tr>
       <tr slot="body">
+        <td><code>plugins</code></td>
+        <td><code>CoralitePluginInstance[]</code></td>
+        <td><code>[]</code></td>
+        <td>Array of plugin instances.</td>
       </tr>
       <tr slot="body">
+        <td><code>baseURL</code></td>
+        <td><code>string</code></td>
+        <td><code>'/'</code></td>
+        <td>Base URL for asset paths.</td>
       </tr>
       <tr slot="body">
+        <td><code>onError</code></td>
+        <td><code><a href="/docs/reference/types.html#coraliteonerror">CoraliteOnError</a></code></td>
+        <td>Default handler</td>
+        <td>Callback for handling errors and warnings. By default, throws for <code>'ERR'</code> and logs to console for others.</td>
       </tr>
       <tr slot="body">
+        <td><code>mode</code></td>
+        <td><code>'production' | 'development'</code></td>
+        <td><code>'production'</code></td>
+        <td>Build mode.</td>
       </tr>
     </coralite-table>
 

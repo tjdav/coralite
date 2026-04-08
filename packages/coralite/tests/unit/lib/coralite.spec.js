@@ -286,7 +286,8 @@ describe('Coralite', () => {
       coralite = new Coralite({
         pages: pagesDir,
         components: componentDir,
-        plugins: [plugin]
+        plugins: [plugin],
+        output: '/'
       })
 
       await coralite.initialise()

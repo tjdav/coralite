@@ -6,9 +6,10 @@ import selectorParser from 'postcss-selector-parser'
  * @param {string} css - The CSS content
  * @param {Set<string>} rootClasses - Set of classes found on the root element
  * @param {Set<string>} descendantClasses - Set of classes found on descendant elements
+ * @param {import('../types/index.js').CoraliteOnError} [onError] - Error handler
  * @returns {Promise<string>} Transformed CSS
  */
-export async function transformCss (css, rootClasses, descendantClasses) {
+export async function transformCss (css, rootClasses, descendantClasses, onError) {
   const processor = postcss([
     {
       postcssPlugin: 'coralite-style-transform',
@@ -67,8 +68,17 @@ export async function transformCss (css, rootClasses, descendantClasses) {
         try {
           // @ts-ignore
           transformSelector.processSync(rule, { updateSelector: true })
-        } catch (e) {
-          console.error('Error parsing selector:', rule.selector, e)
+        } catch (error) {
+          const message = 'Error parsing selector: ' + rule.selector
+          if (typeof onError === 'function') {
+            onError({
+              level: 'ERR',
+              message,
+              error
+            })
+          } else {
+            console.error(message, error)
+          }
         }
       }
     }
