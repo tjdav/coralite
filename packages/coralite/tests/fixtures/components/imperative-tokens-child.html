@@ -1,0 +1,15 @@
+<template id="imperative-tokens-child">
+  <div id="test-output">{{ helloWorld }}</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    tokens: {
+      helloWorld () {
+        return 'hello world'
+      }
+    }
+  })
+</script>

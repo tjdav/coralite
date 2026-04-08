@@ -220,31 +220,35 @@ export const defineComponent = createPlugin({
         }
       }
     }
-    if (client && typeof client.script === 'function') {
-      const scriptTextContent = client.script.toString().trim()
-
-      // include values used in script
-      /** @type {Object.<string, CoraliteModuleValue>} */
-      const args = {}
-      for (const key in results) {
-        if (!Object.hasOwn(results, key)) continue
-
-        if (scriptTextContent.includes(key)) {
-          args[key] = results[key]
-        }
+    if (client) {
+      results.__script__ = {
+        values: {},
+        components: client.components || []
       }
 
-      results.__script__ = {
-        values: args,
-        components: client.components || []
+      if (typeof client.script === 'function') {
+        const scriptTextContent = client.script.toString().trim()
+
+        // include values used in script
+        /** @type {Object.<string, CoraliteModuleValue>} */
+        const args = {}
+        for (const key in results) {
+          if (!Object.hasOwn(results, key)) continue
+
+          if (scriptTextContent.includes(key)) {
+            args[key] = results[key]
+          }
+        }
+
+        results.__script__.values = args
+
+        if (client.imports) {
+          results.__script__.imports = client.imports
+        }
       }
 
       if (typeof client.setup === 'function') {
         results.__script__.defaultValues = await client.setup(results) || {}
-      }
-
-      if (client.imports) {
-        results.__script__.imports = client.imports
       }
     } else {
       // remove custom element parent script

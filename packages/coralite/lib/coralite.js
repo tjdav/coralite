@@ -1620,6 +1620,26 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       scriptObj.components = nestedComponents
     }
 
+    const componentTokens = {}
+    for (let i = 0; i < module.values.attributes.length; i++) {
+      const item = module.values.attributes[i]
+      for (let j = 0; j < item.tokens.length; j++) {
+        componentTokens[item.tokens[j].name] = true
+      }
+    }
+    for (let i = 0; i < module.values.textNodes.length; i++) {
+      const item = module.values.textNodes[i]
+      for (let j = 0; j < item.tokens.length; j++) {
+        componentTokens[item.tokens[j].name] = true
+      }
+    }
+
+    for (const token of Object.keys(componentTokens)) {
+      if (scriptResult[token] !== undefined) {
+        defaultValues[token] = scriptResult[token]
+      }
+    }
+
     // Register with ScriptManager (including the template, defaults, and styles)
     this._scriptManager.registerComponent({
       id: module.id,
@@ -1772,7 +1792,7 @@ Coralite.prototype.createComponentElement = async function ({
       const componentDefaultValues = scriptResult.__script__.defaultValues || {}
       if (values) {
         for (const token of Object.keys(componentTokens)) {
-          if (typeof values[token] === 'function') {
+          if (values[token] !== undefined) {
             componentDefaultValues[token] = values[token]
           }
         }
