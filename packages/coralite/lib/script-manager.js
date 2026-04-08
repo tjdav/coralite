@@ -198,19 +198,50 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const instanceValues = Object.entries(instances)
   // Collect unique components
   const processedComponent = {}
-  for (const instanceData of instanceValues) {
-    processedComponent[instanceData[1].componentId] = true
+
+  // Recursively add components and their dependencies
+  const addComponentAndDependencies = (componentId) => {
+    if (!processedComponent[componentId] && this.sharedFunctions[componentId]) {
+      processedComponent[componentId] = true
+
+      // Add all dependencies of this component
+      const dependencies = this.sharedFunctions[componentId].components || []
+      for (const depId of dependencies) {
+        addComponentAndDependencies(depId)
+      }
+    }
   }
 
-  // Force inclusion of imperative components
+  for (const instanceData of instanceValues) {
+    addComponentAndDependencies(instanceData[1].componentId)
+  }
+
+  // Add plugin dependencies explicitly if they are standalone
+  for (const plugin of this.plugins) {
+    if (plugin && plugin.components && Array.isArray(plugin.components)) {
+      for (const compPath of plugin.components) {
+        for (const [id, fnData] of Object.entries(this.sharedFunctions)) {
+          if (compPath.endsWith(`/${id}.html`) || compPath.endsWith(`\\${id}.html`) || compPath === id || compPath.endsWith(`/${id}`)) {
+            addComponentAndDependencies(id)
+          }
+        }
+      }
+    }
+  }
+
+  // Force inclusion of all components that evaluate something inside
+  // This is required because if a parent is ONLY instantiated via script dynamically,
+  // it might not be in instances or plugin explicit references.
   for (const [componentId, fnData] of Object.entries(this.sharedFunctions)) {
-    if (fnData.templateAST != null || (fnData.defaultValues && Object.keys(fnData.defaultValues).length > 0) || (fnData.script && fnData.script.components && fnData.script.components.length > 0) || (fnData.script && fnData.script.content && fnData.script.content !== 'export default function(){}') || (fnData.script && fnData.script.content && fnData.script.content !== 'export default function() {}') || (fnData.styles && fnData.styles !== '')) {
+    // "forcing all imperative components into the final chunks bundle, is fine, but it must not include the children of the imperative components since the imperative should load its own dependent components."
+    if (fnData.script && fnData.script.content) {
+      const scriptContent = fnData.script.content.replace(/\s+/g, '')
+      if (scriptContent !== 'exportdefaultfunction(){}') {
+        processedComponent[componentId] = true
+      }
+    } else if (fnData.script && fnData.script.components && fnData.script.components.length > 0) {
       processedComponent[componentId] = true
-    } else if (fnData.script && fnData.script.content && fnData.script.content.trim() !== 'export default function(){}' && fnData.script.content.trim() !== 'export default function() {}' && fnData.script.content.trim() !== 'export default function() { }') {
-      processedComponent[componentId] = true
-    } else if (fnData.script && fnData.script.content) {
-      processedComponent[componentId] = true
-    } else if (fnData.templateAST || fnData.styles) {
+    } else if (fnData.defaultValues && Object.keys(fnData.defaultValues).length > 0) {
       processedComponent[componentId] = true
     }
   }

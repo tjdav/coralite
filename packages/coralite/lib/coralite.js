@@ -798,7 +798,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
             this.attachShadow({ mode: 'open' });
             this._abortController = null;
             
-            const randomID = crypto.randomUUID();
+            const randomID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
             this._instanceId = \`\${this.componentId}-\${randomID}\`;
             
             this._values = {};
@@ -990,7 +990,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
     return loadCache[componentId];
   };
 
-  // Check the current page's DOM for custom elements
+  // Define all custom elements present in the dynamically determined chunk manifest
   const componentTags = Object.keys(componentManifest);
   const loadPromises = [];
   for (let i = 0; i < componentTags.length; i++) {
@@ -1022,6 +1022,14 @@ const globalSetupValuesPromise = getSetups(globalContext);
     context.helpers = helpers;
 
     const module = await import('${base}assets/js/${scriptResult.manifest[instance.componentId]}');
+    
+    // Explicitly load declarative script dependencies if any
+    const deps = module.default.dependencies || [];
+    if (deps.length > 0) {
+      const loadPromises = deps.map(dep => loadComponent(dep));
+      await Promise.all(loadPromises);
+    }
+
     context.imports = module.default.imports || {};
     if (module.default.script) {
       await module.default.script(context);
@@ -1443,8 +1451,8 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
     }
 
     // Pass the AST
-    const templateAST = module.template.children
-    const templateValues = module.values
+    const templateAST = moduleComponent.result.template.children
+    const templateValues = moduleComponent.result.values
 
     // Extract raw styles from the module
     const stylesHTML = module.styles && module.styles.length ? module.styles.join('\n') : ''
@@ -1463,10 +1471,18 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
         scriptObj.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
       }
       scriptObj.values = scriptResult.__script__.values || {}
-      nestedComponents = scriptResult.__script__.components || []
-      scriptObj.components = scriptResult.__script__.components || []
+
+      const scriptComponents = scriptResult.__script__.components || []
+      const declarativeComponents = (module.customElements || []).map(el => el.name)
+
+      nestedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents]))
+      scriptObj.components = nestedComponents
       defaultValues = scriptResult.__script__.defaultValues || {}
       delete scriptResult.__script__
+    } else {
+      const declarativeComponents = (module.customElements || []).map(el => el.name)
+      nestedComponents = Array.from(new Set([...declarativeComponents]))
+      scriptObj.components = nestedComponents
     }
 
     // Register with ScriptManager (including the template, defaults, and styles)
@@ -1600,8 +1616,8 @@ Coralite.prototype.createComponentElement = async function ({
       // Extract raw styles from the module
       const stylesHTML = module.styles && module.styles.length ? module.styles.join('\n') : ''
 
-      const templateAST = module.template.children
-      const templateValues = module.values
+      const templateAST = moduleComponent.result.template.children
+      const templateValues = moduleComponent.result.values
 
       const componentTokens = {}
       for (let i = 0; i < module.values.attributes.length; i++) {
@@ -1627,6 +1643,15 @@ Coralite.prototype.createComponentElement = async function ({
         }
       }
 
+      // Dynamically load any components dynamically inserted if they are explicitly mentioned
+      const declarativeComponents = (module.customElements || []).map(el => el.name)
+      const scriptComponents = scriptResult.__script__ ? (scriptResult.__script__.components || []) : []
+      const mergedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents]))
+
+      if (scriptResult.__script__) {
+        scriptResult.__script__.components = mergedComponents
+      }
+
       // Register component script with script manager
       this._scriptManager.registerComponent({
         id: module.id,
@@ -1638,8 +1663,8 @@ Coralite.prototype.createComponentElement = async function ({
         styles: stylesHTML
       })
 
-      if (scriptResult.__script__ && scriptResult.__script__.components) {
-        await this._processDependentComponents(scriptResult.__script__.components, renderContext, component)
+      if (mergedComponents.length > 0) {
+        await this._processDependentComponents(mergedComponents, renderContext, component)
       }
 
       // Ensure values object exists in scriptResult

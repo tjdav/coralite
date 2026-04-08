@@ -8,12 +8,15 @@ test.describe('Dynamic Component Loading', () => {
     // Wait for the dynamically inserted child to be defined and render its Shadow DOM
     await page.waitForFunction(() => {
       const child = document.querySelector('dynamic-child')
-      return child && child.shadowRoot && child.shadowRoot.querySelector('#this-component-loaded')
+      if (!child || !child.shadowRoot) return false
+      const thisComp = child.shadowRoot.querySelector('this-component')
+      return thisComp && thisComp.shadowRoot && thisComp.shadowRoot.querySelector('#this-component-loaded')
     }, { timeout: 5000 })
 
     const text = await page.evaluate(() => {
       const child = document.querySelector('dynamic-child')
-      return child.shadowRoot.querySelector('#this-component-loaded').textContent
+      const thisComp = child.shadowRoot.querySelector('this-component')
+      return thisComp.shadowRoot.querySelector('#this-component-loaded').textContent
     })
 
     expect(text).toBe('This Component Loaded!')
