@@ -323,7 +323,9 @@ describe('Coralite', () => {
       coralite = new Coralite({
         pages: pagesDir,
         components: componentDir,
-        plugins: [plugin, errorPlugin]
+        plugins: [plugin, errorPlugin],
+        onError: () => {
+        } // swallow the error so it doesn't crash the test runner
       })
 
       await coralite.initialise()

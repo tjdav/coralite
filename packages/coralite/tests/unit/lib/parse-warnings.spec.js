@@ -46,22 +46,18 @@ describe('parseHTML warnings', () => {
     assert.strictEqual(warnMock.mock.callCount(), 1, 'Should have called console.warn when onError is missing')
   })
 
-  it('should throw Error on ERR level in default handler', (t) => {
-    const { Coralite } = t.mock.module('../../../lib/coralite.js')
+  it('should throw Error on ERR level in default handler', async (t) => {
+    const Coralite = (await import('../../../lib/index.js')).default
     // We can't easily test Coralite's internal _defaultOnError via parseHTML default fallback
     // because parseHTML uses its own console.warn fallback if onError is not provided to it.
-    // However, Coralite.prototype._defaultOnError is what's assigned to this.options.onError
+    // However, Coralite.prototype._handleError uses _defaultOnError
     // when not provided to the constructor.
 
     // Manual check of _defaultOnError behavior
-    const coralite = {
-      _defaultOnError: (data) => {
-        if (data.level === 'ERR') {
-          if (data.error) throw data.error
-          throw new Error(data.message)
-        }
-      }
-    }
+    const coralite = new Coralite({
+      components: 'tests/fixtures/components',
+      pages: 'tests/fixtures/pages'
+    })
 
     assert.throws(() => coralite._defaultOnError({
       level: 'ERR',
