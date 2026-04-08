@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.30.0
+
+> Comparing `coralite-scripts-v0.29.6` to `HEAD`
+
+**Summary:** 1 commit
+
+### ♻️ Code Refactoring
+
+- unified structured error and warning handling ([d8b59ce](https://codeberg.org/tjdavid/coralite/commit/d8b59ce88fd196b02b0bee8e878edc43de6d4b21))
+
+
 ## v0.29.4
 
 > Comparing `coralite-scripts-v0.29.2` to `HEAD`
