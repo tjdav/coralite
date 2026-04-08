@@ -4,6 +4,8 @@ test.describe('Client-side Scripts', () => {
   test('should interact with DOM using refs', async ({ page }) => {
     await page.goto('/aquarium.html')
 
+    await page.evaluate(() => window.__coralite_ready__)
+
     const cleaner = page.locator('.cleaner')
     const btn = cleaner.locator('button')
     const status = cleaner.locator('span')

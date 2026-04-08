@@ -4,6 +4,8 @@ test.describe('AbortSignal Runtime Lifecycle', () => {
   test('should provide a signal that aborts on unmount and refreshes on remount', async ({ page }) => {
     await page.goto('/signal-test.html')
 
+    await page.evaluate(() => window.__coralite_ready__)
+
     const mountBtn = page.getByRole('button', {
       name: 'Mount',
       exact: true
@@ -42,6 +44,8 @@ test.describe('AbortSignal Runtime Lifecycle', () => {
 
   test('should provide signal to plugin helpers', async ({ page }) => {
     await page.goto('/signal-test.html')
+
+    await page.evaluate(() => window.__coralite_ready__)
 
     const mountBtn = page.getByRole('button', {
       name: 'Mount Plugin',

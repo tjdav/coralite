@@ -776,6 +776,9 @@ const globalContext = {};
 const globalSetupValuesPromise = getSetups(globalContext);
 
 (async () => {
+  let resolveCoraliteReady;
+  window.__coralite_ready__ = new Promise(resolve => resolveCoraliteReady = resolve);
+  const globalAbortController = new AbortController();
   const componentManifest = ${JSON.stringify(chunkManifest)};
   const loadCache = {};
   
@@ -1004,14 +1007,15 @@ const globalSetupValuesPromise = getSetups(globalContext);
   await Promise.all(loadPromises);
 
   // Invoke inline declarative instances defined in HTML (legacy support for <script> blocks mapped to _generatePages instances if needed)
+  const declarativePromises = [];
   ${Object.values(instances).map(instance => `
-  ;(async() => {
+  declarativePromises.push((async() => {
     const context = {
       instanceId: '${instance.instanceId}',
       componentId: '${instance.componentId}',
       values: ${JSON.stringify(instance.values || {})},
       component: {},
-      signal: null
+      signal: globalAbortController.signal
     };
     context.root = window.document;
     const setupValues = await globalSetupValuesPromise;
@@ -1032,8 +1036,10 @@ const globalSetupValuesPromise = getSetups(globalContext);
     if (module.default.script) {
       await module.default.script(context);
     }
-  })();
+  })());
   `).join('\n')}
+  await Promise.all(declarativePromises);
+  resolveCoraliteReady();
 })();
 `
 

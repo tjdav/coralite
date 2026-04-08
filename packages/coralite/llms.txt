@@ -39,7 +39,7 @@ Dynamic components are authored by appending a `<script type="module">` below th
   * `values`: Processed tokens, props, and `setup` data.
   * `refs`: Map of instance reference IDs.
   * `helpers`: Plugin-injected utilities (e.g., `helpers.refs`, `helpers.imports`).
-  * `signal`: `AbortSignal` tied to the imperative unmount lifecycle (`null` for declarative components).
+  * `signal`: `AbortSignal` tied to the imperative unmount lifecycle.
 * **Reactivity**: Once an imperative Web Component is mounted, it becomes reactive. Updating attributes (via `setAttribute()`) triggers Coralite's internal `MutationObserver`, which updates the `values` context, re-evaluates computed token functions, and updates the Shadow DOM.
 
 ### 3.3 Component-Level Imports (`client.imports`)
