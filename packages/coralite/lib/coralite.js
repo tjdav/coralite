@@ -1635,7 +1635,8 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
     }
 
     for (const token of Object.keys(componentTokens)) {
-      if (scriptResult[token] !== undefined) {
+      // Don't overwrite if it's already a function (e.g. from defineComponent)
+      if (defaultValues[token] === undefined && scriptResult[token] !== undefined) {
         defaultValues[token] = scriptResult[token]
       }
     }
@@ -1792,7 +1793,7 @@ Coralite.prototype.createComponentElement = async function ({
       const componentDefaultValues = scriptResult.__script__.defaultValues || {}
       if (values) {
         for (const token of Object.keys(componentTokens)) {
-          if (values[token] !== undefined) {
+          if (componentDefaultValues[token] === undefined && values[token] !== undefined) {
             componentDefaultValues[token] = values[token]
           }
         }

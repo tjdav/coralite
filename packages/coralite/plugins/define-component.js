@@ -112,10 +112,17 @@ export const defineComponent = createPlugin({
     /** @type {CoraliteModuleValues} */
     let results = { ...values }
 
+    results.__script__ = {
+      values: {},
+      components: client?.components || [],
+      defaultValues: {}
+    }
+
     if (client && client.setup) {
       const initialValues = await client.setup(results)
 
       results = Object.assign(results, initialValues)
+      Object.assign(results.__script__.defaultValues, initialValues)
     }
 
     if (typeof tokens === 'object' && tokens !== null) {
@@ -126,7 +133,10 @@ export const defineComponent = createPlugin({
 
           // check if the token is a function to compute its value
           if (typeof token === 'function') {
+            results.__script__.defaultValues[key] = token
             result = await token(results)
+          } else {
+            results.__script__.defaultValues[key] = token
           }
 
           if (result) {
@@ -220,13 +230,13 @@ export const defineComponent = createPlugin({
         }
       }
     }
-    if (client) {
-      results.__script__ = {
-        values: {},
-        components: client.components || []
-      }
+    const hasScript = client && typeof client.script === 'function'
+    const hasSetup = client && typeof client.setup === 'function'
+    const hasComponents = client && client.components && client.components.length > 0
+    const hasTokens = typeof tokens === 'object' && tokens !== null && Object.keys(tokens).length > 0
 
-      if (typeof client.script === 'function') {
+    if (hasScript || hasSetup || hasComponents || hasTokens) {
+      if (hasScript) {
         const scriptTextContent = client.script.toString().trim()
 
         // include values used in script
@@ -245,10 +255,6 @@ export const defineComponent = createPlugin({
         if (client.imports) {
           results.__script__.imports = client.imports
         }
-      }
-
-      if (typeof client.setup === 'function') {
-        results.__script__.defaultValues = await client.setup(results) || {}
       }
     } else {
       // remove custom element parent script

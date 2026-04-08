@@ -11,6 +11,7 @@
       script ({ helpers }) {
         const rootEl = helpers.refs('root')
         const childEl = document.createElement('imperative-tokens-child')
+        childEl.setAttribute('start', '5')
         rootEl.replaceWith(childEl)
       }
     }

@@ -713,7 +713,7 @@ describe('defineComponent', () => {
       assert.ok(!('count' in result.__script__.values))
     })
 
-    it('should remove __script__ when client is undefined', async () => {
+    it('should remove __script__ when client and tokens are absent', async () => {
       // First call with script
       let result = await defineComponent.method.call(mockContext, {
         client: {
@@ -728,7 +728,7 @@ describe('defineComponent', () => {
       })
       assert.ok(result.__script__)
 
-      // Second call without client
+      // Second call without script, client or tokens
       result = await defineComponent.method.call(mockContext, {
       }, {
         values: mockValues,
@@ -738,10 +738,11 @@ describe('defineComponent', () => {
       assert.strictEqual(result.__script__, undefined)
     })
 
-    it('should preserve __script__ with default empty structure when client is provided but script is undefined', async () => {
+    it('should preserve __script__ when tokens are defined', async () => {
       const result = await defineComponent.method.call(mockContext, {
-        client: {
-          script: undefined
+        tokens: {
+          title: 'title',
+          funcToken: () => 'val'
         }
       }, {
         values: mockValues,
@@ -749,10 +750,9 @@ describe('defineComponent', () => {
         component: mockComponent
       })
 
-      assert.deepStrictEqual(result.__script__, {
-        components: [],
-        values: {}
-      })
+      assert.ok(result.__script__)
+      assert.strictEqual(typeof result.__script__.defaultValues.funcToken, 'function')
+      assert.strictEqual(result.__script__.defaultValues.title, 'title')
     })
   })
 

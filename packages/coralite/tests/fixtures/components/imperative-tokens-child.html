@@ -1,5 +1,6 @@
 <template id="imperative-tokens-child">
   <div id="test-output">{{ helloWorld }}</div>
+  <div id="test-output-step">{{ step }}</div>
 </template>
 
 <script type="module">
@@ -9,6 +10,9 @@
     tokens: {
       helloWorld () {
         return 'hello world'
+      },
+      step (values) {
+        return parseInt(values.start || '0') + 1
       }
     }
   })
