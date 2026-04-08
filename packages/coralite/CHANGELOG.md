@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.31.1
+
+> Comparing `coralite-v0.31.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- emulate native slot projection for light dom web components ([5b43e83](https://codeberg.org/tjdavid/coralite/commit/5b43e835adee0acb450b62d78e584aac7ecfbc2f))
+
+
 ## v0.31.0
 
 > Comparing `coralite-v0.30.0` to `HEAD`
