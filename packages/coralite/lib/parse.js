@@ -500,7 +500,7 @@ export function createElement ({
         // store custom elements
         element.slots = []
       } else {
-        const message = 'Invalid custom element tag name: "' + sanitisedName + '" ' + specUrl
+        const message = 'Invalid custom element tag name: "' + sanitisedName + '" (' + specUrl + ')'
         if (typeof onError === 'function') {
           onError({
             level: 'WARN',
@@ -511,7 +511,7 @@ export function createElement ({
         }
       }
     } catch (error) {
-      const message = error.message + ' ' + specUrl
+      const message = error.message + ' (' + specUrl + ')'
       if (typeof onError === 'function') {
         onError({
           level: 'WARN',
