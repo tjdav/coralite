@@ -850,8 +850,8 @@ const globalSetupValuesPromise = getSetups(globalContext);
             this.componentId = module.default.componentId;
             this._abortController = null;
             
-            const randomID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
-            this._instanceId = \`\${this.componentId}-\${randomID}\`;
+            this._index = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+            this._instanceId = \`\${this.componentId}-\${this._index}\`;
             
             this._values = {};
 
@@ -1071,7 +1071,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
               const element = refElements[i];
               const refName = element.getAttribute('ref');
               
-              const dynamicId = \`\${this.componentId}__\${refName}-\${this._instanceId}\`;
+              const dynamicId = \`\${this.componentId}__\${refName}-\${this._index}\`;
               element.setAttribute('ref', dynamicId);
               
               this._values[\`ref_\${refName}\`] = dynamicId;
