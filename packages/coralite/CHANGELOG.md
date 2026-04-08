@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.30.0
+
+> Comparing `coralite-v0.29.5` to `HEAD`
+
+**Summary:** 13 commits
+
+### 🐛 Bug Fixes
+
+- improve error messages for invalid custom elements and parsing errors ([041421d](https://codeberg.org/tjdavid/coralite/commit/041421dd4a2c29c660e0c317e288034a0a59e1a2))
+- update Coralite instance to use internal handleError ([cb80447](https://codeberg.org/tjdavid/coralite/commit/cb80447dc32fa959637063405292966f20947c47))
+- prevent duplicate task deletion on build error handling ([aa9fa6e](https://codeberg.org/tjdavid/coralite/commit/aa9fa6edaa2b397ee2662963a40da90029455563))
+- E2E test flakiness and globalAbortController for declarative components ([15b4e47](https://codeberg.org/tjdavid/coralite/commit/15b4e472ce5cdd4e7e86bb54befc6aacd3ccb066))
+- properly lazy-load declarative component dependencies without eager bundling ([b57b7e9](https://codeberg.org/tjdavid/coralite/commit/b57b7e9c0d876991d9ba156b46b30174c6a47257))
+- automatically instantiate declarative components inside imperative components shadow DOM ([e506c04](https://codeberg.org/tjdavid/coralite/commit/e506c04dfe61a21ed30e7376243fbdf48d6fe5fe))
+- make web component values property private (coralite) ([41706e0](https://codeberg.org/tjdavid/coralite/commit/41706e0785e97ec55ad44d376e5efbbcb2341ecf))
+
+### ⚡ Performance Improvements
+
+- optimize HTML loading and framework initialization ([1ecb3c1](https://codeberg.org/tjdavid/coralite/commit/1ecb3c1e42f97a213349e2f9cae80c42ed0a7500))
+
+### 📚 Documentation
+
+- update documentation for coralite internal handleError method ([2a10ec1](https://codeberg.org/tjdavid/coralite/commit/2a10ec1dba4188f3c1e915842e6c7ca4df098975))
+
+### ♻️ Code Refactoring
+
+- unified structured error and warning handling ([d8b59ce](https://codeberg.org/tjdavid/coralite/commit/d8b59ce88fd196b02b0bee8e878edc43de6d4b21))
+- Remove expensive global MutationObserver for component loading ([c611677](https://codeberg.org/tjdavid/coralite/commit/c61167723830c7dc7c6483e0e6229ee3b7ddce29))
+- Replace expensive global MutationObserver with eager loading ([2dff272](https://codeberg.org/tjdavid/coralite/commit/2dff27254200ddf7c2c309a8cdd04abb16f2304a))
+
+### 🧹 Chores
+
+- remove trailing newline before return statement in coralite.js ([fc38a47](https://codeberg.org/tjdavid/coralite/commit/fc38a479cfcfe018dac0ea9d51f72468c02f8420))
+
+
 ## v0.29.5
 
 > Comparing `coralite-v0.29.4` to `HEAD`
