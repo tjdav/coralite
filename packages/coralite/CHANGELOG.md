@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.31.0
+
+> Comparing `coralite-v0.30.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- apply scoped style wrapper to dynamic web components (client) ([3c6998d](https://codeberg.org/tjdavid/coralite/commit/3c6998d5f2545cfc893056d4f9ba91666e7c38fd))
+- prevent double export default in script fallback ([1006ea3](https://codeberg.org/tjdavid/coralite/commit/1006ea36bfc666ca7332f97776cc5e22e0d8a741))
+- scope CSS within web components inside Light DOM (coralite) ([d4f170a](https://codeberg.org/tjdavid/coralite/commit/d4f170a2012ab4c06941322b98496f9828a3b091))
+
+
 ## v0.30.0
 
 > Comparing `coralite-v0.29.5` to `HEAD`
