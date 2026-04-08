@@ -1069,6 +1069,19 @@ const globalSetupValuesPromise = getSetups(globalContext);
             const refElements = this.querySelectorAll('[ref]');
             for (let i = 0; i < refElements.length; i++) {
               const element = refElements[i];
+              
+              let current = element.parentNode;
+              let isNested = false;
+              while (current && current !== this) {
+                if (current.tagName && current.tagName.includes('-')) {
+                  isNested = true;
+                  break;
+                }
+                current = current.parentNode;
+              }
+              
+              if (isNested) continue;
+
               const refName = element.getAttribute('ref');
               
               const dynamicId = \`\${this.componentId}__\${refName}-\${this._index}\`;
