@@ -1279,7 +1279,6 @@ Coralite.prototype.build = async function (...args) {
 
     await Promise.all(executing)
 
-
     return results
 
   } catch (error) {
