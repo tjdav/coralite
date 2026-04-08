@@ -80,7 +80,7 @@
             <th scope="row">options.onError</th>
             <td><code><a href="/docs/reference/types.html#coraliteonerror">CoraliteOnError</a></code></td>
             <td>Optional</td>
-            <td>A callback function for handling errors, warnings, and logs from the framework. If not provided, level <code>'ERR'</code> will throw.</td>
+            <td>A callback function for handling errors, warnings, and logs from the framework. The <code>Coralite</code> instance uses an internal <code>handleError</code> method to wrap and manage this callback. If not provided, level <code>'ERR'</code> will throw by default.</td>
           </tr>
         </tbody>
       </table>

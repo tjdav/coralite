@@ -82,7 +82,7 @@ export default defineConfig({
         <td><code>onError</code></td>
         <td><code><a href="/docs/reference/types.html#coraliteonerror">CoraliteOnError</a></code></td>
         <td>Default handler</td>
-        <td>Callback for handling errors and warnings. By default, throws for <code>'ERR'</code> and logs to console for others.</td>
+        <td>Callback for handling errors and warnings. The Coralite instance securely wraps this callback inside its own internal <code>handleError</code> function. By default, it throws for <code>'ERR'</code> and logs to console for others.</td>
       </tr>
       <tr slot="body">
         <td><code>mode</code></td>
