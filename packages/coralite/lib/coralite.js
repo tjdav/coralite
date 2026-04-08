@@ -864,6 +864,24 @@ const globalSetupValuesPromise = getSetups(globalContext);
           connectedCallback() {
             this._abortController = new AbortController();
             
+            if (!this._lightDomSlotsCaptured) {
+              this._lightDomSlotsCaptured = true;
+              this._lightDomSlots = {};
+              
+              // Capture light DOM children
+              const childNodes = Array.from(this.childNodes);
+              for (let i = 0; i < childNodes.length; i++) {
+                const child = childNodes[i];
+                const slotName = (child.getAttribute && child.getAttribute('slot')) || 'default';
+                if (!this._lightDomSlots[slotName]) {
+                  this._lightDomSlots[slotName] = [];
+                }
+                this._lightDomSlots[slotName].push(child);
+              }
+              // Clear the innerHTML to detach the captured nodes so they aren't destroyed
+              this.innerHTML = '';
+            }
+
             // Extract attributes to values
             const attributes = this.attributes;
             for (let i = 0; i < attributes.length; i++) {
@@ -1022,6 +1040,31 @@ const globalSetupValuesPromise = getSetups(globalContext);
             content += render(ast, { decodeEntities: false });
             
             this.innerHTML = content;
+
+            // Handle slots projection
+            const slots = this.querySelectorAll('slot');
+            for (let i = 0; i < slots.length; i++) {
+              const slot = slots[i];
+              const slotName = slot.getAttribute('name') || 'default';
+              const projectedNodes = this._lightDomSlots[slotName];
+
+              if (projectedNodes && projectedNodes.length > 0) {
+                // We have content to project, clear the fallback content
+                slot.innerHTML = '';
+                // Append original nodes
+                for (let j = 0; j < projectedNodes.length; j++) {
+                  // Re-insert original nodes to preserve their state and event listeners across re-renders
+                  slot.parentNode.insertBefore(projectedNodes[j], slot);
+                }
+                slot.parentNode.removeChild(slot);
+              } else {
+                // Use fallback content: unwrap the slot tag
+                while (slot.firstChild) {
+                  slot.parentNode.insertBefore(slot.firstChild, slot);
+                }
+                slot.parentNode.removeChild(slot);
+              }
+            }
 
             const refElements = this.querySelectorAll('[ref]');
             for (let i = 0; i < refElements.length; i++) {
