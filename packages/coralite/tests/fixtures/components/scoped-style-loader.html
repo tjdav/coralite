@@ -1,0 +1,21 @@
+<template id="scoped-style-loader">
+  <div ref="container"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    client: {
+      components: ['scoped-style-component'],
+      script: ({ helpers }) => {
+        // Appends after a small delay to simulate dynamic insertion
+        setTimeout(() => {
+          const container = helpers.refs('container')
+          const childComponent = document.createElement('scoped-style-component')
+          container.replaceWith(childComponent)
+        }, 100)
+      }
+    }
+  })
+</script>

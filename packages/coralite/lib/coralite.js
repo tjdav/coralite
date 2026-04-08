@@ -857,7 +857,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
 
             this._styles = ''
             if (module.default.styles) {
-              this._styles += \`<style>\${module.default.styles}</style>\`;
+              this._styles += \`<style>[data-style-selector="\${this.componentId}"] {\\n\${module.default.styles}\\n}</style>\`;
             }
           }
 
