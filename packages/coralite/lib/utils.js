@@ -479,7 +479,7 @@ export function findAndExtractScript (code) {
               }
             } else if (imports || setupContent) {
               result = {
-                content: 'export default function(){}',
+                content: 'function(){}',
                 lineOffset: 0
               }
               if (imports) {
@@ -496,7 +496,7 @@ export function findAndExtractScript (code) {
           } else if (tokens.length > 0) {
             // Handle case where tokens exist but client does not
             result = {
-              content: 'export default function(){}',
+              content: 'function(){}',
               lineOffset: 0,
               tokens
             }

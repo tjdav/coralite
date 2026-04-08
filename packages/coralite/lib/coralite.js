@@ -1537,7 +1537,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
     const stylesHTML = moduleComponent.result._processedCss || ''
 
     let scriptObj = {
-      content: 'export default function(){}',
+      content: 'function(){}',
       values: {}
     }
     let nestedComponents = []
@@ -1689,7 +1689,7 @@ Coralite.prototype.createComponentElement = async function ({
         // Fallback for when script extraction fails (shouldn't happen with valid defineComponent)
         // Ensure we don't crash
         scriptResult.__script__.lineOffset = module.lineOffset || 0
-        scriptResult.__script__.content = 'export default function(){}'
+        scriptResult.__script__.content = 'function(){}'
       }
 
       // Extract processed styles from the module

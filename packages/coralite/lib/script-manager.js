@@ -236,7 +236,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     // "forcing all imperative components into the final chunks bundle, is fine, but it must not include the children of the imperative components since the imperative should load its own dependent components."
     if (fnData.script && fnData.script.content) {
       const scriptContent = fnData.script.content.replace(/\s+/g, '')
-      if (scriptContent !== 'exportdefaultfunction(){}') {
+      if (scriptContent !== 'function(){}') {
         processedComponent[componentId] = true
       }
     } else if (fnData.script && fnData.script.components && fnData.script.components.length > 0) {
@@ -323,7 +323,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
         hasImports = true
       }
 
-      if (this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.content && this.sharedFunctions[componentId].script.content.trim() !== 'export default function(){}' && this.sharedFunctions[componentId].script.content.trim() !== 'export default function() {}' && this.sharedFunctions[componentId].script.content.trim() !== 'export default function() { }') {
+      if (this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.content && this.sharedFunctions[componentId].script.content.trim() !== 'function(){}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() {}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() { }') {
         componentEntryCode += `import componentScript from "${namespace}${componentId}";\n`
       } else {
         componentEntryCode += `const componentScript = null;\n`
