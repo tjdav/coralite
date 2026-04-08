@@ -34,7 +34,7 @@
  * @property {import('./core.js').CoralitePath & import('./core.js').CoraliteFilePath} [path] - Component AST
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
- * @property {ShadowRoot | Document} [root] - Shadow Root or DOM
+ * @property {HTMLElement | Document} [root] - Element Root or DOM
  * @property {Object.<string, any>} [helpers] - Plugin helpers available to the script
  * @property {AbortSignal} [signal] - Lifecycle abort signal for unmount events (null for declarative components).
  */

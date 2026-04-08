@@ -13,17 +13,15 @@ test.describe('Hybrid Component System & Plugin Shared State', () => {
 
     // Verify the imperative child was successfully created and stamped into the DOM
     const anemone = page.locator('eco-sea-anemone')
-    // Ensure it's rendered first (e.g. shadow dom initialized)
+    // Ensure it's rendered first (e.g. DOM initialized)
     await page.waitForFunction(() => {
       const anemone = document.querySelector('eco-sea-anemone')
-      return anemone && anemone.shadowRoot && anemone.shadowRoot.querySelector('h3')
+      return anemone && anemone.querySelector('h3')
     }, { timeout: 10000 })
 
-    // Use evaluate to access shadow DOM since Playwright doesn't pierce open shadow roots natively by default in all cases
+    // Use evaluate to access DOM since Playwright doesn't pierce open DOMs natively by default in all cases
     const headerText = await anemone.evaluate((node) => {
-      const shadow = node.shadowRoot
-      if (!shadow) return null
-      return shadow.querySelector('h3').textContent
+      return node.querySelector('h3').textContent
     })
     expect(headerText).toBe('Sea Anemone')
   })
@@ -33,10 +31,10 @@ test.describe('Hybrid Component System & Plugin Shared State', () => {
     // we use robust semantic/text-based locators to find them.
     const reefTempDisplay = page.locator('p').filter({ hasText: 'Ocean Temp:' }).locator('span')
 
-    // We need to wait for the button to be ready in the shadow DOM
+    // We need to wait for the button to be ready in the DOM
     await page.waitForFunction(() => {
       const anemone = document.querySelector('eco-sea-anemone')
-      return anemone && anemone.shadowRoot && anemone.shadowRoot.querySelector('button')
+      return anemone && anemone.querySelector('button')
     }, { timeout: 10000 })
 
     // 1. Verify Parent read the initial metric state from the plugin helper
@@ -45,7 +43,7 @@ test.describe('Hybrid Component System & Plugin Shared State', () => {
     // 2. Click the button inside the Imperative Child
     // This triggers the plugin helper to update the global shared state (+5°C)
     await page.evaluate(() => {
-      const btn = Array.from(document.querySelector('eco-sea-anemone').shadowRoot.querySelectorAll('button')).find(b => b.textContent.includes('Increase Global Temp'))
+      const btn = Array.from(document.querySelector('eco-sea-anemone').querySelectorAll('button')).find(b => b.textContent.includes('Increase Global Temp'))
       btn.click()
     })
 
@@ -55,7 +53,7 @@ test.describe('Hybrid Component System & Plugin Shared State', () => {
 
     // Click again to ensure continuous reactivity
     await page.evaluate(() => {
-      const btn = Array.from(document.querySelector('eco-sea-anemone').shadowRoot.querySelectorAll('button')).find(b => b.textContent.includes('Increase Global Temp'))
+      const btn = Array.from(document.querySelector('eco-sea-anemone').querySelectorAll('button')).find(b => b.textContent.includes('Increase Global Temp'))
       btn.click()
     })
     await expect(reefTempDisplay).toHaveText('40')

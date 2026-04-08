@@ -848,7 +848,6 @@ const globalSetupValuesPromise = getSetups(globalContext);
           constructor() {
             super();
             this.componentId = module.default.componentId;
-            this.attachShadow({ mode: 'open' });
             this._abortController = null;
             
             const randomID = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
@@ -892,7 +891,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
                 instanceId: this._instanceId,
                 componentId: this.componentId,
                 values: this._values,
-                root: this.shadowRoot, 
+                root: this, 
                 helpers: {},
                 signal: this._abortController.signal
               };
@@ -1009,11 +1008,22 @@ const globalSetupValuesPromise = getSetups(globalContext);
           _render() {
             let content = this._styles;
             const ast = this._replaceTokens(module.default.templateAST, module.default.templateValues);
+
+            if (this._styles) {
+              for (let i = 0; i < ast.length; i++) {
+                const node = ast[i];
+                if (node.type === 'tag') {
+                  if (!node.attribs) node.attribs = {};
+                  node.attribs['data-style-selector'] = this.componentId;
+                }
+              }
+            }
+
             content += render(ast, { decodeEntities: false });
             
-            this.shadowRoot.innerHTML = content;
+            this.innerHTML = content;
 
-            const refElements = this.shadowRoot.querySelectorAll('[ref]');
+            const refElements = this.querySelectorAll('[ref]');
             for (let i = 0; i < refElements.length; i++) {
               const element = refElements[i];
               const refName = element.getAttribute('ref');
@@ -1517,8 +1527,14 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
     const templateAST = moduleComponent.result.template.children
     const templateValues = moduleComponent.result.values
 
-    // Extract raw styles from the module
-    const stylesHTML = module.styles && module.styles.length ? module.styles.join('\n') : ''
+    if (module.styles.length && !moduleComponent.result._processedCss) {
+      const rawCss = module.styles.join('\n')
+      const { rootClasses, descendantClasses } = moduleComponent.result
+      moduleComponent.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, (errorData) => this._handleError(errorData))
+    }
+
+    // Extract processed styles from the module
+    const stylesHTML = moduleComponent.result._processedCss || ''
 
     let scriptObj = {
       content: 'export default function(){}',
@@ -1676,8 +1692,8 @@ Coralite.prototype.createComponentElement = async function ({
         scriptResult.__script__.content = 'export default function(){}'
       }
 
-      // Extract raw styles from the module
-      const stylesHTML = module.styles && module.styles.length ? module.styles.join('\n') : ''
+      // Extract processed styles from the module
+      const stylesHTML = moduleComponent.result._processedCss || ''
 
       const templateAST = moduleComponent.result.template.children
       const templateValues = moduleComponent.result.values

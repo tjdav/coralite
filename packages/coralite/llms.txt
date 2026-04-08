@@ -6,7 +6,7 @@ When generating code or answering questions about Coralite, you MUST adhere to t
 1. **NO HYDRATION:** Do not write code using Virtual DOM, React, Vue, or Lit patterns. Coralite is strictly Server-Side Rendered (SSR).
 2. **NO VANILLA BOILERPLATE:** Do not write standard `customElements.define()` or `class extends HTMLElement` blocks for components. You MUST always use Coralite's `defineComponent` exported from `coralite/plugins`.
 3. **AST SPLICING AWARENESS:** If a component is written declaratively in HTML (e.g., `<my-component>`), the server completely deletes the host tag and replaces it with the template's inner HTML. 
-4. **IMPERATIVE MOUNTING IS REQUIRED FOR REACTIVITY:** To create a client-side Web Component that uses a `ShadowRoot` and reacts to attribute changes, the component MUST be instantiated via `document.createElement()` inside a parent's `client.script` and appended to the DOM. **Crucially, the parent MUST also declare the child's tag name in its `client.components` array** so the bundler includes it.
+4. **IMPERATIVE MOUNTING IS REQUIRED FOR REACTIVITY:** To create a client-side Web Component that reacts to attribute changes, the component MUST be instantiated via `document.createElement()` inside a parent's `client.script` and appended to the DOM. **Crucially, the parent MUST also declare the child's tag name in its `client.components` array** so the bundler includes it.
 
 ---
 
@@ -36,12 +36,12 @@ Dynamic components are authored by appending a `<script type="module">` below th
 * **client.script(context)**: Serialized and executed in the browser.
 * **Context Object (`CoraliteScriptContent`)**: 
   * `id`: Unique instance identifier.
-  * `root`: If the component was imperatively appended to the DOM via `document.createElement()`, `context.root` is its isolated `ShadowRoot`. If the component was written declaratively in the HTML, the SSG stripped its host tag, meaning it shares the global scope and `context.root` falls back to `window.document`.
+  * `root`: If the component was imperatively appended to the DOM via `document.createElement()`, `context.root` is the custom element itself (`HTMLElement`). If the component was written declaratively in the HTML, the SSG stripped its host tag, meaning it shares the global scope and `context.root` falls back to `window.document`.
   * `values`: Processed tokens, props, and `setup` data.
   * `refs`: Map of instance reference IDs.
   * `helpers`: Plugin-injected utilities (e.g., `helpers.refs`, `helpers.imports`).
   * `signal`: `AbortSignal` tied to the imperative unmount lifecycle (`null` for declarative components).
-* **Reactivity**: Once an imperative Web Component is mounted, it becomes reactive. Updating attributes (via `setAttribute()`) triggers Coralite's internal `MutationObserver`, which updates the `values` context, re-evaluates computed token functions, and updates the Shadow DOM.
+* **Reactivity**: Once an imperative Web Component is mounted, it becomes reactive. Updating attributes (via `setAttribute()`) triggers Coralite's internal `MutationObserver`, which updates the `values` context, re-evaluates computed token functions, and updates the DOM.
 
 ### 3.3 Component-Level Imports (`client.imports`)
 Declares external dependencies bundled at build-time. Static `import` statements cannot be used directly in `client.script`.
@@ -49,7 +49,7 @@ Declares external dependencies bundled at build-time. Static `import` statements
 * **Access**: Resolved modules are available in `helpers.imports`.
 
 ### 3.4 Imperative Web Components (Client-Side)
-To use a true Web Component with a client-side lifecycle (`connectedCallback`, Shadow DOM, `MutationObserver`), **it cannot be placed statically in your HTML file.** A parent component must imperatively instantiate the child component via JavaScript and append it to the DOM.
+To use a true Web Component with a client-side lifecycle (`connectedCallback`, Light DOM, `MutationObserver`), **it cannot be placed statically in your HTML file.** A parent component must imperatively instantiate the child component via JavaScript and append it to the DOM.
 1. The parent must declare the child's ID in its `client.components` array so the bundler includes it.
 2. The child is instantiated using `document.createElement('child-id')`.
 
@@ -76,7 +76,7 @@ To use a true Web Component with a client-side lifecycle (`connectedCallback`, S
         computedStatus: (values) => values.title === 'Active' ? 'Online' : 'Offline'
       }),
       script: (context) => {
-        // context.root is the ShadowRoot here
+        // context.root is the component element here
         console.log('Child mounted with title:', context.values.title);
       }
     }
@@ -104,7 +104,7 @@ To use a true Web Component with a client-side lifecycle (`connectedCallback`, S
         const child = document.createElement('child-element');
         child.setAttribute('title', 'Pending');
         
-        // 2. Mount to DOM (Fires connectedCallback & renders Shadow DOM)
+        // 2. Mount to DOM (Fires connectedCallback & renders DOM)
         target.appendChild(child);
         
         // 3. Reactivity test: Updating attribute triggers MutationObserver & re-render
@@ -203,7 +203,7 @@ The `client` object within a plugin definition dictates what gets serialized and
 * `setup`: A function for client-side initialization.
 * **`helpers` & The Two-Phase Currying System**: To safely bridge global plugin configuration with local Web Component instances, Coralite requires `client.helpers` to be authored using a specific nested functional pattern (currying).
   1. **Phase 1 (Global Context)**: The outermost function receives the `globalContext` (containing `imports` and `config`).
-  2. **Phase 2 (Local Instance Context)**: It must return a second function that receives the local Web Component instance context (`{ values, root, signal }`), where `root` is the component's `ShadowRoot` or Document, and `signal` is an `AbortSignal` that triggers when the component unmounts (or `null` for declarative components).
+  2. **Phase 2 (Local Instance Context)**: It must return a second function that receives the local Web Component instance context (`{ values, root, signal }`), where `root` is the component's `HTMLElement` or Document, and `signal` is an `AbortSignal` that triggers when the component unmounts (or `null` for declarative components).
   3. **Phase 3 (Execution)**: It finally returns the actual callable utility function used by the user's script.
 
 **Example of a properly authored Client Helper Plugin:**

@@ -6,7 +6,7 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
     // Navigate to a page that mounts reactive-token
     await page.goto('/reactive-token-page.html')
 
-    // Wait for the reactive-token-child shadow DOM to initialize inside parent
+    // Wait for the reactive-token-child DOM to initialize inside parent
     await page.waitForFunction(() => {
       // parent is just a regular div with ref="target"
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
@@ -15,18 +15,18 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
       const children = target.querySelectorAll('reactive-token-child')
       if (children.length < 2) return false
 
-      return children[0].shadowRoot && children[0].shadowRoot.querySelector('h3') &&
-             children[1].shadowRoot && children[1].shadowRoot.querySelector('h3')
+      return children[0].querySelector('h3') &&
+             children[1].querySelector('h3')
     }, { timeout: 10000 })
 
     // Extract the evaluated tokens from the first reactive-token-child template
     const child1Tokens = await page.evaluate(() => {
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
       const child = target.querySelectorAll('reactive-token-child')[0]
-      const shadow = child.shadowRoot
+
       return {
-        title: shadow.querySelector('h3').textContent,
-        valueText: shadow.querySelector('p').textContent
+        title: child.querySelector('h3').textContent,
+        valueText: child.querySelector('p').textContent
       }
     })
 
@@ -34,10 +34,10 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
     const child2Tokens = await page.evaluate(() => {
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
       const child = target.querySelectorAll('reactive-token-child')[1]
-      const shadow = child.shadowRoot
+
       return {
-        title: shadow.querySelector('h3').textContent,
-        valueText: shadow.querySelector('p').textContent
+        title: child.querySelector('h3').textContent,
+        valueText: child.querySelector('p').textContent
       }
     })
 
@@ -61,18 +61,18 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
       target.appendChild(comp)
     })
 
-    // Wait for the reactive-token shadow DOM to initialize
+    // Wait for the reactive-token DOM to initialize
     await page.waitForFunction(() => {
       const comp = document.querySelector('#dynamic-comp')
-      return comp && comp.shadowRoot && comp.shadowRoot.querySelector('h3')
+      return comp && comp.querySelector('h3')
     }, { timeout: 10000 })
 
     // Extract the evaluated tokens from the reactive-token template
     const { title, valueText } = await page.evaluate(() => {
-      const shadow = document.querySelector('#dynamic-comp').shadowRoot
+      const element = document.querySelector('#dynamic-comp')
       return {
-        title: shadow.querySelector('h3').textContent,
-        valueText: shadow.querySelector('p').textContent
+        title: element.querySelector('h3').textContent,
+        valueText: element.querySelector('p').textContent
       }
     })
 
@@ -83,7 +83,7 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
   test('should reactively update template when attributes change', async ({ page }) => {
     await page.goto('/reactive-token-page.html')
 
-    // Wait for the reactive-token-child shadow DOM to initialize inside parent
+    // Wait for the reactive-token-child DOM to initialize inside parent
     await page.waitForFunction(() => {
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
       if (!target) return false
@@ -91,7 +91,7 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
       const children = target.querySelectorAll('reactive-token-child')
       if (children.length < 1) return false
 
-      return children[0].shadowRoot && children[0].shadowRoot.querySelector('h3')
+      return children[0].querySelector('h3')
     }, { timeout: 10000 })
 
     // Change the attribute via standard JS to trigger the MutationObserver
@@ -105,13 +105,13 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
     await page.waitForFunction(() => {
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
       const child = target.querySelectorAll('reactive-token-child')[0]
-      return child.shadowRoot.querySelector('h3').textContent === 'Mutated Title'
+      return child.querySelector('h3').textContent === 'Mutated Title'
     }, { timeout: 10000 })
 
     const valueText = await page.evaluate(() => {
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
       const child = target.querySelectorAll('reactive-token-child')[0]
-      return child.shadowRoot.querySelector('p').textContent
+      return child.querySelector('p').textContent
     })
 
     // 'Mutated Title' !== 'Updated Title' so it evaluates to '0'
@@ -122,7 +122,7 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
     // Test script execution
     await page.goto('/reactive-token-page.html')
 
-    // Wait for the reactive-token-child shadow DOM to initialize inside parent
+    // Wait for the reactive-token-child DOM to initialize inside parent
     await page.waitForFunction(() => {
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
       if (!target) return false
@@ -130,13 +130,13 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
       const children = target.querySelectorAll('reactive-token-child')
       if (children.length < 1) return false
 
-      return children[0].shadowRoot && children[0].shadowRoot.querySelector('div')
+      return children[0].querySelector('div')
     }, { timeout: 10000 })
 
     const valueText = await page.evaluate(() => {
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
       const child = target.querySelectorAll('reactive-token-child')[0]
-      return child.shadowRoot.querySelector('div').textContent
+      return child.querySelector('div').textContent
     })
 
     expect(valueText).toBe('Script executed')
