@@ -1267,12 +1267,13 @@ Coralite.prototype.build = async function (...args) {
 
         executing.delete(task)
       }).catch((err) => {
+        executing.delete(task)
+
         this.options.onError({
           level: 'ERR',
           message: err.message,
           error: err
         })
-        executing.delete(task)
       })
     }
 
