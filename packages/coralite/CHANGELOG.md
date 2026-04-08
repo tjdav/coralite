@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.31.2
+
+> Comparing `coralite-v0.31.1` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- prevent parent components from overriding nested child component refs ([8b8a545](https://codeberg.org/tjdavid/coralite/commit/8b8a5452695c117b42d579407b5f0f0590c31590))
+- set correct web component ref attribute value ([6c35557](https://codeberg.org/tjdavid/coralite/commit/6c3555792e2398ab134e6847eb900cf6f0983096))
+
+
 ## v0.31.1
 
 > Comparing `coralite-v0.31.0` to `HEAD`
