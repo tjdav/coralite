@@ -620,9 +620,7 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
 
       // Initialize Render Context
       const renderContext = this._createRenderContext(buildId)
-
       renderContext.mode = this.options.mode
-      renderContext.pagePath = component.path.pathname
 
       await this._triggerPluginHook('onBeforePageRender', {
         component,
@@ -2020,8 +2018,8 @@ Coralite.prototype.createComponentElement = async function ({
         contextId: childContextId,
         index,
         renderContext
-      }, false).then(component => ({
-        component,
+      }, false).then(childComponentElement => ({
+        childComponentElement,
         customElement
       }))
     )
@@ -2030,7 +2028,7 @@ Coralite.prototype.createComponentElement = async function ({
   const results = await Promise.all(createComponentTasks)
 
   for (let i = 0; i < results.length; i++) {
-    const { component, customElement } = results[i]
+    const { childComponentElement, customElement } = results[i]
     const children = customElement.parent.children
 
     if (!childIndex) {
@@ -2040,8 +2038,8 @@ Coralite.prototype.createComponentElement = async function ({
     }
 
     // replace custom element with component
-    if (component && typeof component === 'object') {
-      children.splice(childIndex, 1, ...component.children)
+    if (childComponentElement && typeof childComponentElement === 'object') {
+      children.splice(childIndex, 1, ...childComponentElement.children)
     }
   }
 
@@ -2097,9 +2095,9 @@ Coralite.prototype.createComponentElement = async function ({
           const node = slotNodes[i]
 
           if (node.name) {
-            const component = this.components.getItem(node.name)
+            const slotComponentItem = this.components.getItem(node.name)
 
-            if (component) {
+            if (slotComponentItem) {
               const slotContextId = contextId + slotName + i + node.name
               const currentValues = renderContext.values[slotContextId] || {}
               const attribValues = cleanKeys(node.attribs)
@@ -2118,7 +2116,7 @@ Coralite.prototype.createComponentElement = async function ({
                 id: node.name,
                 values: renderContext.values[slotContextId],
                 element: node,
-                component: component.result,
+                component,
                 contextId: slotContextId,
                 index,
                 renderContext

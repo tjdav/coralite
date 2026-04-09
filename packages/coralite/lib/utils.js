@@ -43,6 +43,64 @@ export function cleanKeys (object) {
 }
 
 /**
+ * Recursively traverses an object or array and normalizes any function properties
+ * it finds into a string representation that preserves standard function syntax,
+ * bypassing ES6 shorthand method serialization issues.
+ * @param {any} target - The object or array to normalize.
+ * @returns {void}
+ */
+export function normalizeObjectFunctions (target) {
+  if (Array.isArray(target)) {
+    target.forEach(normalizeObjectFunctions)
+  } else if (typeof target === 'object' && target !== null) {
+    for (const key in target) {
+      if (typeof target[key] === 'function') {
+        if (target[key].__normalized) continue
+        const normalizedString = normalizeFunction(target[key])
+        const originalFunction = target[key]
+
+        target[key] = function () {
+          return originalFunction.apply(this, arguments)
+        }
+
+        target[key].toString = () => normalizedString
+        target[key].__normalized = true
+      } else {
+        normalizeObjectFunctions(target[key])
+      }
+    }
+  }
+}
+
+/**
+ * Checks whether the given object is an object and has at least one own key.
+ * @param {any} obj - The object to check.
+ * @returns {boolean} True if the object is truthy and has keys, otherwise false.
+ */
+export function hasObjectKeys (obj) {
+  return obj && typeof obj === 'object' && Object.keys(obj).length > 0
+}
+
+/**
+ * Merges two arrays, returning a new array with unique items.
+ * Uses JSON.stringify for deep comparison of object elements, preserving object uniqueness correctly.
+ * @param {Array<any>} [arr1] - The first array.
+ * @param {Array<any>} [arr2] - The second array.
+ * @returns {Array<any>} A new array with unique values from both input arrays.
+ */
+export function mergeUniqueObjects (arr1, arr2) {
+  const all = [...(arr1 || []), ...(arr2 || [])]
+  const seen = new Set()
+
+  return all.filter(item => {
+    const key = typeof item === 'object' ? JSON.stringify(item) : item
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
+/**
  * Normalizes function declarations to ensure consistent formatting.
  * Converts shorthand method syntax to full function declarations where needed,
  * while preserving arrow functions and existing full declarations.

@@ -37,7 +37,10 @@ export const metadataPlugin = createPlugin({
                     id: element.name,
                     values,
                     element,
-                    component: data.result,
+                    component: /** @type {any} */ ({
+                      ...elements,
+                      path: data.path
+                    }),
                     contextId: data.path.pathname + i + element.name,
                     index: i
                   })

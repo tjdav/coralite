@@ -1,6 +1,7 @@
 import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
-import { normalizeFunction } from './utils.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects } from './utils.js'
+
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse } from 'node:path'
 import { createHash } from 'node:crypto'
@@ -113,9 +114,6 @@ ScriptManager.prototype.registerComponent = function ({
   styles = '',
   slots = {}
 }) {
-  const hasKeys = (obj) => obj && Object.keys(obj).length > 0
-  const mergeUnique = (arr1, arr2) => [...new Set([...(arr1 || []), ...(arr2 || [])])]
-
   // Initialize base object if it's the first time we are seeing this ID
   if (!this.sharedFunctions[id]) {
     this.sharedFunctions[id] = {
@@ -128,7 +126,7 @@ ScriptManager.prototype.registerComponent = function ({
 
   const target = this.sharedFunctions[id]
 
-  if (hasKeys(script)) {
+  if (hasObjectKeys(script)) {
     target.script = script
   }
 
@@ -149,7 +147,7 @@ ScriptManager.prototype.registerComponent = function ({
   }
 
 
-  if (hasKeys(defaultValues)) {
+  if (hasObjectKeys(defaultValues)) {
     if (target.defaultValues) {
       target.defaultValues = {
         ...target.defaultValues,
@@ -160,7 +158,7 @@ ScriptManager.prototype.registerComponent = function ({
     }
   }
 
-  if (hasKeys(slots)) {
+  if (hasObjectKeys(slots)) {
     if (target.slots) {
       target.slots = {
         ...target.slots,
@@ -173,11 +171,11 @@ ScriptManager.prototype.registerComponent = function ({
 
   if (script) {
     if (script.imports?.length) {
-      target.imports = mergeUnique(target.imports, script.imports)
+      target.imports = mergeUniqueObjects(target.imports, script.imports)
     }
 
     if (script.components?.length) {
-      target.components = mergeUnique(target.components, script.components)
+      target.components = mergeUniqueObjects(target.components, script.components)
     }
   }
 }
@@ -349,6 +347,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push('const coraliteComponentDefaults = {\n')
   for (const key of processedComponentKeys) {
     if (this.sharedFunctions[key] && this.sharedFunctions[key].defaultValues) {
+      normalizeObjectFunctions(this.sharedFunctions[key].defaultValues)
+
       entryCodeParts.push(`  "${key}": (() => {\n`)
       entryCodeParts.push(`    const defaults = ${serialize(this.sharedFunctions[key].defaultValues)};\n`)
       entryCodeParts.push(`    return defaults;\n`)
@@ -456,6 +456,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
         refs: []
       })
       const styles = JSON.stringify(this.sharedFunctions[componentId].styles || '')
+
+      if (this.sharedFunctions[componentId].defaultValues) {
+        normalizeObjectFunctions(this.sharedFunctions[componentId].defaultValues)
+      }
+
       const defaults = serialize(this.sharedFunctions[componentId].defaultValues || {})
       const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
       const slots = serialize(this.sharedFunctions[componentId].slots || {})
