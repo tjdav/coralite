@@ -1853,7 +1853,7 @@ Coralite.prototype.createComponentElement = async function ({
       }
 
       // Store instance data for script manager
-      renderContext.scripts.add(component.path.pathname, {
+      renderContext.scripts.add(moduleComponent.path.pathname, {
         id: contextId,
         componentId: module.id,
         component,
