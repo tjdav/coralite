@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.31.3
+
+> Comparing `coralite-v0.31.2` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- define CoraliteModuleTokenFunction (types) ([7f7243b](https://codeberg.org/tjdavid/coralite/commit/7f7243ba5a05c50da2c7696a73d9a9a60ceb3c5a))
+- define CoraliteModuleSlotFunction (types) ([eced451](https://codeberg.org/tjdavid/coralite/commit/eced451678a7ab0bf89d0a879ccd12dad67fa3a9))
+- implement client-side reactivity for computed slots in web components ([e8ffe19](https://codeberg.org/tjdavid/coralite/commit/e8ffe196b732f86d5d100a58dbaad982acf09289))
+
+### 🐛 Bug Fixes
+
+- allow imperative component tokens to remain reactive ([a0ca589](https://codeberg.org/tjdavid/coralite/commit/a0ca589f83e3914bf7a8c623e343d92638240e2d))
+- correctly pass tokens to imperative components without client.script ([eca9494](https://codeberg.org/tjdavid/coralite/commit/eca94943ffaae42838b69fc8d745f23fc301e530))
+
+
 ## v0.31.2
 
 > Comparing `coralite-v0.31.1` to `HEAD`
