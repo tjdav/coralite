@@ -7,6 +7,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      dom-serializer:
+        specifier: ^2.0.0
+        version: 2.0.0
     devDependencies:
       '@stylistic/eslint-plugin':
         specifier: ^5.4.0
@@ -188,7 +192,7 @@ importers:
     devDependencies:
       coralite-plugin-aggregation:
         specifier: ^0.7.2
-        version: 0.7.2(coralite@0.29.3)
+        version: 0.7.2(coralite@0.31.3)
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
@@ -926,8 +930,8 @@ packages:
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
 
-  coralite@0.29.3:
-    resolution: {integrity: sha512-mOP1vgByJCTj7R43wEqbWxyIF91NoBfGgN1S/qr/eJvVHy6Y9n48UTLb1Rgs1CfpZ1ZiH4Dl8I8cQtuug1wBEg==}
+  coralite@0.31.3:
+    resolution: {integrity: sha512-nRLz7w3WDMJeFvri8M3MVwG189x4vaSIMa6M1ltbyeyohFgwdMXq6FNUnDUO+ZzL3N03VOBudD8Hxqa+/KDf/A==}
     engines: {node: '>20.19.0'}
     hasBin: true
 
@@ -2916,9 +2920,9 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.7.2(coralite@0.29.3):
+  coralite-plugin-aggregation@0.7.2(coralite@0.31.3):
     dependencies:
-      coralite: 0.29.3
+      coralite: 0.31.3
 
   coralite-plugin-inline-css@0.4.0:
     dependencies:
@@ -2926,7 +2930,7 @@ snapshots:
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
 
-  coralite@0.29.3:
+  coralite@0.31.3:
     dependencies:
       acorn: 8.16.0
       acorn-walk: 8.3.5

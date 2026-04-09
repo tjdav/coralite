@@ -13,6 +13,7 @@
 
 <script type="module">
   import { defineComponent, parseHTML } from 'coralite'
+  import render from 'dom-serializer'
   import code from 'highlight.js'
   import { indent, dedent } from '../utils/format.js'
 
@@ -72,10 +73,14 @@
 
           if (node.type === 'text') {
             fullText += node.data
-          } else if (node.type === 'tag' && allowedCustomTags.includes(node.name)) {
-            const placeholder = `__CORALITE_TAG_${placeholderIndex++}__`
-            placeholders[placeholder] = node
-            fullText += placeholder
+          } else if (node.type === 'tag') {
+            if (allowedCustomTags.includes(node.name)) {
+              const placeholder = `__CORALITE_TAG_${placeholderIndex++}__`
+              placeholders[placeholder] = node
+              fullText += placeholder
+            } else {
+              fullText += render(node)
+            }
           }
         }
 
