@@ -38,31 +38,31 @@
       <p>The <code>createPlugin</code> function accepts a configuration object with the following properties:</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { createPlugin } from 'coralite'
+       import { createPlugin } from 'coralite'
 
-        const myPlugin = createPlugin({
-        name: 'my-plugin', // Required: Unique name for the plugin
+const myPlugin = createPlugin({
+  name: 'my-plugin', // Required: Unique name for the plugin
 
-        // Optional: Main server-side logic
-        method: (options, context) => {
-        // ... implementation
-        },
+  // Optional: Main server-side logic
+  method: (options, context) => {
+    // ... implementation
+  },
 
-        // Optional: Register custom components
-        components: ['./path/to/component.html'],
+  // Optional: Register custom components
+  components: ['./path/to/component.html'],
 
-        // Optional: Client-side script configuration
-        client: {
-        setup: async () => { /* ... */ },
-        helpers: { /* ... */ },
-        imports: [ /* ... */ ],
-        config: { /* ... */ }
-        },
+  // Optional: Client-side script configuration
+  client: {
+    setup: async () => { /* ... */ },
+    helpers: { /* ... */ },
+    imports: [ /* ... */],
+    config: { /* ... */ }
+  },
 
-        // Optional: Server-side lifecycle hooks
-        onPageSet: async (data) => { /* ... */ },
-        // ... other hooks
-        })
+  // Optional: Server-side lifecycle hooks
+  onPageSet: async (data) => { /* ... */ },
+  // ... other hooks
+})
       </coralite-code-highlight>
     </section>
 
@@ -95,15 +95,15 @@
 
       <coralite-code-highlight language="JavaScript">
         createPlugin({
-        name: 'utils',
-        client: {
-        helpers: {
-        formatDate: (context) => (date) => {
+  name: 'utils',
+  client: {
+    helpers: {
+      formatDate: (context) => (date) => {
         return new Date(date).toLocaleDateString()
-        }
-        }
-        }
-        })
+      }
+    }
+  }
+})
       </coralite-code-highlight>
       <p><strong>Note:</strong> Helper functions must be "factory functions" that accept a <code>context</code> object
         and return the actual function to be used.</p>
@@ -121,39 +121,39 @@
       <p>Import a library directly from a CDN.</p>
       <coralite-code-highlight language="JavaScript">
         imports: [
-        {
-        specifier: 'https://esm.sh/canvas-confetti@1.6.0',
-        defaultExport: 'confetti'
-        }
-        ]
+  {
+    specifier: 'https://esm.sh/canvas-confetti@1.6.0',
+    defaultExport: 'confetti'
+  }
+]
       </coralite-code-highlight>
 
       <coralite-heading level="h4" text="Local Import"></coralite-heading>
       <p>Import a local JavaScript module.</p>
 
       <coralite-code-highlight language="JavaScript">
-        createPlugin({
-        name: 'analytics',
-        client: {
-        config: {
-        trackingId: 'UA-123456-7',
-        debug: true
-        },
-        // ...
-        }
-        })
+       createPlugin({
+  name: 'analytics',
+  client: {
+    config: {
+      trackingId: 'UA-123456-7',
+      debug: true
+    },
+    // ...
+  }
+})
       </coralite-code-highlight>
 
       <coralite-heading level="h4" text="JSON Import"></coralite-heading>
       <p>Import a JSON file as a module.</p>
       <coralite-code-highlight language="JavaScript">
-        imports: [
-        {
-        specifier: './data/config.json',
-        defaultExport: 'config',
-        attributes: { type: 'json' }
-        }
-        ]
+       imports: [
+  {
+    specifier: './data/config.json',
+    defaultExport: 'config',
+    attributes: { type: 'json' }
+  }
+]
       </coralite-code-highlight>
 
       <coralite-heading level="h3" text="Import Options"></coralite-heading>
@@ -177,15 +177,15 @@
 
       <coralite-code-highlight language="JavaScript">
         createPlugin({
-        name: 'analytics',
-        client: {
-        config: {
-        trackingId: 'UA-123456-7',
-        debug: true
-        },
-        // ...
-        }
-        })
+  name: 'analytics',
+  client: {
+    config: {
+      trackingId: 'UA-123456-7',
+      debug: true
+    },
+    // ...
+  }
+})
       </coralite-code-highlight>
     </section>
 
@@ -204,67 +204,65 @@
 
       <coralite-code-highlight language="JavaScript">
         // Inside client.helpers
-        helpers: {
-        trackEvent: (context) => (eventName) => {
-        const { trackingId } = context.config;
-        const { analyticsLib } = context.imports;
+helpers: {
+  trackEvent: (context) => (eventName) => {
+    const { trackingId } = context.config
+    const { analyticsLib } = context.imports
 
-        analyticsLib.send(trackingId, eventName);
-        }
-        }
+    analyticsLib.send(trackingId, eventName)
+  }
+}
       </coralite-code-highlight>
     </section>
 
     <!-- Complete Example -->
     <section id="complete-example">
       <coralite-heading level="h2" text="Complete Example: Confetti Plugin"></coralite-heading>
-      <p>Let's build a plugin that triggers a confetti explosion using a remote library and allows configuration of
-        particle
-        count.</p>
+      <p>Let's build a plugin that triggers a confetti explosion using a remote library and allows configuration of particle count.</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { createPlugin } from 'coralite'
+       import { createPlugin } from 'coralite'
 
-        export default createPlugin({
-        name: 'confetti-plugin',
-        client: {
-        // 1. Import the library
-        imports: [
-        {
+export default createPlugin({
+  name: 'confetti-plugin',
+  client: {
+    // 1. Import the library
+    imports: [
+      {
         specifier: 'https://esm.sh/canvas-confetti@1.6.0',
         defaultExport: 'confetti'
-        }
-        ],
+      }
+    ],
 
-        // 2. Define default configuration
-        config: {
-        particleCount: 100,
-        spread: 70
-        },
+    // 2. Define default configuration
+    config: {
+      particleCount: 100,
+      spread: 70
+    },
 
-        // 3. Create the helper
-        helpers: {
-        explode: (context) => () => {
+    // 3. Create the helper
+    helpers: {
+      explode: (context) => () => {
         // Access injected imports and config
         const confetti = context.imports.confetti
         const config = context.config
 
         if (!confetti) {
-        console.warn('Confetti library not loaded')
-        return
+          console.warn('Confetti library not loaded')
+          return
         }
 
         // Use the library with the config
         confetti({
-        particleCount: config.particleCount,
-        spread: config.spread,
-        origin: { y: 0.6 }
+          particleCount: config.particleCount,
+          spread: config.spread,
+          origin: { y: 0.6 }
         })
-        }
-        }
-        }
-        })
-        </coralite-code-html>
+      }
+    }
+  }
+})
+        </coralite-code-highlight>
 
         <p><strong>Usage in a component:</strong></p>
         <coralite-code-html>
@@ -288,7 +286,7 @@
             }
           })
         </script>
-        </coralite-code-html>
+      </coralite-code-html>
     </section>
 
   </main>

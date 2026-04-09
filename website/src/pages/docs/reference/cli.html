@@ -96,13 +96,13 @@
     <p>The Coralite CLI automatically looks for a <code>coralite.config.js</code> file in the current working directory. If found, it will merge any plugins defined in the configuration file with the CLI options.</p>
     <p>When configuring static assets in the <code>coralite.config.js</code> via <code>defineConfig</code>, you can bypass the package resolution and provide an absolute path to the file using the <code>src</code> property. This handles cases where NPM packages may not explicitly export their <code>package.json</code> or where a custom file path is necessary.</p>
 
-    <coralite-code language="javascript">import { createRequire } from 'node:module';
+    <coralite-code-highlight language="JavaScript">import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 const wasmPath = require.resolve('@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm');
 
 export default defineConfig({
   assets: [{ src: wasmPath, dest: 'matrix_sdk_crypto_wasm_bg.wasm' }]
-});</coralite-code>
+});</coralite-code-highlight>
 
     <coralite-heading level="h2" text="Examples"></coralite-heading>
 
