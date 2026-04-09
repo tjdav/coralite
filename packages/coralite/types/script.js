@@ -15,6 +15,7 @@
  * @property {string[]} [tokens] - Extracted reactivity tokens.
  * @property {string[]} [components] - Imperative components array.
  * @property {Object} [defaultValues] - Initial state from setup.
+ * @property {Object.<string, Function>} [slots] - Computed slots.
  */
 
 /**

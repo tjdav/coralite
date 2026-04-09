@@ -115,7 +115,8 @@ export const defineComponent = createPlugin({
     results.__script__ = {
       values: {},
       components: client?.components || [],
-      defaultValues: {}
+      defaultValues: {},
+      slots: slots || {}
     }
 
     if (client && client.setup) {

@@ -101,8 +101,9 @@ ScriptManager.prototype.getHelpers = function () {
  * @param {Object|null} [options.templateValues=null] - Token positions for AST updates
  * @param {Object} [options.defaultValues={}] - Initial default state from setup()
  * @param {string} [options.styles=''] - Raw CSS string for the component
+ * @param {Object.<string, Function>} [options.slots={}] - Computed slots
  */
-ScriptManager.prototype.registerComponent = function ({ id, script = {}, filePath, templateAST = null, templateValues = null, defaultValues = {}, styles = '' }) {
+ScriptManager.prototype.registerComponent = function ({ id, script = {}, filePath, templateAST = null, templateValues = null, defaultValues = {}, styles = '', slots = {} }) {
   this.sharedFunctions[id] = {
     id,
     script,
@@ -110,6 +111,7 @@ ScriptManager.prototype.registerComponent = function ({ id, script = {}, filePat
     templateValues,
     defaultValues,
     styles,
+    slots,
     imports: script.imports || [],
     components: script.components || [],
     filePath: filePath ? resolve(filePath) : `/component-${id}.js`
@@ -392,6 +394,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       const styles = JSON.stringify(this.sharedFunctions[componentId].styles || '')
       const defaults = serialize(this.sharedFunctions[componentId].defaultValues || {})
       const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
+      const slots = serialize(this.sharedFunctions[componentId].slots || {})
 
       componentEntryCode += `
 export default {
@@ -400,6 +403,7 @@ export default {
   templateValues: ${templateValues},
   styles: ${styles},
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
+  slots: (() => { const slots = ${slots}; return slots; })(),
   dependencies: ${dependencies},
   imports: ${hasImports ? 'componentImports' : '{}'},
   script: componentScript

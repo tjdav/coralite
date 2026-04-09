@@ -1046,7 +1046,18 @@ const globalSetupValuesPromise = getSetups(globalContext);
             for (let i = 0; i < slots.length; i++) {
               const slot = slots[i];
               const slotName = slot.getAttribute('name') || 'default';
-              const projectedNodes = this._lightDomSlots[slotName];
+              let projectedNodes = this._lightDomSlots[slotName];
+
+              if (module.default.slots && typeof module.default.slots[slotName] === 'function') {
+                const computedResult = module.default.slots[slotName](projectedNodes || [], this._values);
+                if (typeof computedResult === 'string') {
+                  const tempDiv = document.createElement('div');
+                  tempDiv.innerHTML = computedResult;
+                  projectedNodes = Array.from(tempDiv.childNodes);
+                } else if (Array.isArray(computedResult)) {
+                  projectedNodes = computedResult;
+                }
+              }
 
               if (projectedNodes && projectedNodes.length > 0) {
                 // We have content to project, clear the fallback content
@@ -1649,7 +1660,8 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       templateAST,
       templateValues,
       defaultValues,
-      styles: stylesHTML
+      styles: stylesHTML,
+      slots: scriptResult.__script__?.slots || {}
     })
 
     // Recursively process deeper dependencies
@@ -1816,7 +1828,8 @@ Coralite.prototype.createComponentElement = async function ({
         templateAST,
         templateValues,
         defaultValues: componentDefaultValues,
-        styles: stylesHTML
+        styles: stylesHTML,
+        slots: scriptResult.__script__.slots || {}
       })
 
       if (mergedComponents.length > 0) {

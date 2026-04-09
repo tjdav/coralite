@@ -1,0 +1,39 @@
+<template id="computed-slots-imperative">
+  <div class="wrapper">
+    <slot name="header"></slot>
+    <slot></slot>
+  </div>
+</template>
+<script type="module">
+import { defineComponent } from 'coralite/plugins'
+
+export default defineComponent({
+  slots: {
+    header: (content, values) => {
+      return `<h1 class="header-slot">Title: ${values.title}</h1>`
+    },
+    default: (content, values) => {
+      // Return modified DOM nodes (e.g. wrapper div for each existing node plus a title)
+      // Since `content` in client is an Array of DOM nodes from projected slot.
+      // But we can also test string here. Actually, we'll test node modification in header or default.
+      if (typeof window !== 'undefined' && Array.isArray(content) && content.length > 0) {
+        return content.map(node => {
+          if (node.nodeType === 1) { // ELEMENT_NODE
+            const wrapper = document.createElement('div')
+            wrapper.className = 'body-slot-node'
+            wrapper.textContent = `Body: ${values.body}`
+            return wrapper
+          }
+          return node
+        })
+      }
+      return `<div class="body-slot">Body: ${values.body}</div>`
+    }
+  },
+  client: {
+    components: ['computed-slots-imperative'],
+    script: () => {
+    }
+  }
+})
+</script>
