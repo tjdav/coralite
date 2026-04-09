@@ -38,21 +38,18 @@ program
       prompts.log.info('🔍 Running pre-release checks...')
 
       try {
-        // 1. Linting
         prompts.log.step('Running Lint...')
         execSync('pnpm lint', { stdio: 'inherit' })
 
-        // 2. Unit Tests
-        prompts.log.step('Running Tests...')
-        execSync('pnpm test-unit', { stdio: 'inherit' })
-
-        // 3. Build Verification
         prompts.log.step('Verifying Build...')
         execSync('pnpm run build', { stdio: 'inherit' })
         execSync('pnpm run build-scripts', { stdio: 'inherit' })
 
+        prompts.log.step('Running Tests...')
+        execSync('pnpm test-unit', { stdio: 'inherit' })
+
         prompts.log.step('Verifying HTML build...')
-        execSync('pnpm --filter coralite run build-html', { stdio: 'inherit' })
+        execSync('pnpm --filter coralite run test-e2e', { stdio: 'inherit' })
 
         prompts.log.success('✅ All checks passed!')
       } catch (error) {
