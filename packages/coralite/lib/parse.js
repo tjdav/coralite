@@ -495,12 +495,14 @@ export function createElement ({
     const specUrl = 'https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name'
 
     try {
+      element.name = name
+
       // check if the tag name matches the regex for valid custom elements
-      if (isValidCustomElementName(sanitisedName)) {
+      if (isValidCustomElementName(name)) {
         // store custom elements
         element.slots = []
       } else {
-        const message = 'Invalid custom element tag name: "' + sanitisedName + '" (' + specUrl + ')'
+        const message = 'Invalid custom element tag name: "' + name + '" (' + specUrl + ')'
         if (typeof onError === 'function') {
           onError({
             level: 'WARN',
