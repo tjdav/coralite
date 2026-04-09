@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.31.4
+
+> Comparing `coralite-v0.31.3` to `HEAD`
+
+**Summary:** 7 commits
+
+### 🐛 Bug Fixes
+
+- use original name for validation and error messages (parse) ([6cf8841](https://codeberg.org/tjdavid/coralite/commit/6cf884134c7976e91b04e4cf6d4becd00acf91e7))
+- resolve TypeError when accessing component.path in createComponentElement and extract utility functions ([31f19af](https://codeberg.org/tjdavid/coralite/commit/31f19afc480aa0ef7538e06c78be7dc02ae0a3d9))
+- properly register generated scripts under the page path and resolve component slot bugs (coralite) ([ca0913b](https://codeberg.org/tjdavid/coralite/commit/ca0913b7eaa4dff183481af765a640cc5061210c))
+- properly merge and populate dynamic imperative ref tokens (coralite) ([1524815](https://codeberg.org/tjdavid/coralite/commit/1524815cf980099d0b15f1a79766e0e540ea6ff9))
+- use correct path from moduleComponent in script manager registration ([cc8b50f](https://codeberg.org/tjdavid/coralite/commit/cc8b50f20f35a4e8f518eb09e5c650c42c44a3a8))
+- compute dynamic wrapper slots issue causing test timeout ([8272185](https://codeberg.org/tjdavid/coralite/commit/827218575db54dd47fd90ffd09d274e721c0c230))
+
+### ♻️ Code Refactoring
+
+- improve `registerComponent` logic and code structure ([728c434](https://codeberg.org/tjdavid/coralite/commit/728c4341c2397eecdd520c84268311c83b27da7b))
+
+
 ## v0.31.3
 
 > Comparing `coralite-v0.31.2` to `HEAD`
