@@ -103,37 +103,81 @@ ScriptManager.prototype.getHelpers = function () {
  * @param {string} [options.styles=''] - Raw CSS string for the component
  * @param {Object.<string, Function>} [options.slots={}] - Computed slots
  */
-ScriptManager.prototype.registerComponent = function ({ id, script = {}, filePath, templateAST = null, templateValues = null, defaultValues = {}, styles = '', slots = {} }) {
-  if (this.sharedFunctions[id]) {
-    const existing = this.sharedFunctions[id]
+ScriptManager.prototype.registerComponent = function ({
+  id,
+  script = {},
+  filePath,
+  templateAST = null,
+  templateValues = null,
+  defaultValues = {},
+  styles = '',
+  slots = {}
+}) {
+  const hasKeys = (obj) => obj && Object.keys(obj).length > 0
+  const mergeUnique = (arr1, arr2) => [...new Set([...(arr1 || []), ...(arr2 || [])])]
 
-    if (script && Object.keys(script).length > 0) existing.script = script
-    if (templateAST) existing.templateAST = templateAST
-    if (templateValues) existing.templateValues = templateValues
-    if (defaultValues && Object.keys(defaultValues).length > 0) existing.defaultValues = {
-      ...existing.defaultValues,
-      ...defaultValues
-    }
-    if (styles) existing.styles = styles
-    if (slots && Object.keys(slots).length > 0) existing.slots = {
-      ...existing.slots,
-      ...slots
-    }
-    if (script.imports && script.imports.length > 0) existing.imports = Array.from(new Set([...existing.imports, ...script.imports]))
-    if (script.components && script.components.length > 0) existing.components = Array.from(new Set([...existing.components, ...script.components]))
-    if (filePath) existing.filePath = resolve(filePath)
-  } else {
+  // Initialize base object if it's the first time we are seeing this ID
+  if (!this.sharedFunctions[id]) {
     this.sharedFunctions[id] = {
       id,
-      script,
-      templateAST,
-      templateValues,
-      defaultValues,
-      styles,
-      slots,
-      imports: script.imports || [],
-      components: script.components || [],
-      filePath: filePath ? resolve(filePath) : `/component-${id}.js`
+      imports: [],
+      components: [],
+      filePath: `/component-${id}.js`
+    }
+  }
+
+  const target = this.sharedFunctions[id]
+
+  if (hasKeys(script)) {
+    target.script = script
+  }
+
+  if (templateAST) {
+    target.templateAST = templateAST
+  }
+
+  if (templateValues) {
+    target.templateValues = templateValues
+  }
+
+  if (styles) {
+    target.styles = styles
+  }
+
+  if (filePath) {
+    target.filePath = resolve(filePath)
+  }
+
+
+  if (hasKeys(defaultValues)) {
+    if (target.defaultValues) {
+      target.defaultValues = {
+        ...target.defaultValues,
+        ...defaultValues
+      }
+    } else {
+      target.defaultValues = defaultValues
+    }
+  }
+
+  if (hasKeys(slots)) {
+    if (target.slots) {
+      target.slots = {
+        ...target.slots,
+        ...slots
+      }
+    } else {
+      target.slots = slots
+    }
+  }
+
+  if (script) {
+    if (script.imports?.length) {
+      target.imports = mergeUnique(target.imports, script.imports)
+    }
+
+    if (script.components?.length) {
+      target.components = mergeUnique(target.components, script.components)
     }
   }
 }
