@@ -104,17 +104,37 @@ ScriptManager.prototype.getHelpers = function () {
  * @param {Object.<string, Function>} [options.slots={}] - Computed slots
  */
 ScriptManager.prototype.registerComponent = function ({ id, script = {}, filePath, templateAST = null, templateValues = null, defaultValues = {}, styles = '', slots = {} }) {
-  this.sharedFunctions[id] = {
-    id,
-    script,
-    templateAST,
-    templateValues,
-    defaultValues,
-    styles,
-    slots,
-    imports: script.imports || [],
-    components: script.components || [],
-    filePath: filePath ? resolve(filePath) : `/component-${id}.js`
+  if (this.sharedFunctions[id]) {
+    const existing = this.sharedFunctions[id]
+
+    if (script && Object.keys(script).length > 0) existing.script = script
+    if (templateAST) existing.templateAST = templateAST
+    if (templateValues) existing.templateValues = templateValues
+    if (defaultValues && Object.keys(defaultValues).length > 0) existing.defaultValues = {
+      ...existing.defaultValues,
+      ...defaultValues
+    }
+    if (styles) existing.styles = styles
+    if (slots && Object.keys(slots).length > 0) existing.slots = {
+      ...existing.slots,
+      ...slots
+    }
+    if (script.imports && script.imports.length > 0) existing.imports = Array.from(new Set([...existing.imports, ...script.imports]))
+    if (script.components && script.components.length > 0) existing.components = Array.from(new Set([...existing.components, ...script.components]))
+    if (filePath) existing.filePath = resolve(filePath)
+  } else {
+    this.sharedFunctions[id] = {
+      id,
+      script,
+      templateAST,
+      templateValues,
+      defaultValues,
+      styles,
+      slots,
+      imports: script.imports || [],
+      components: script.components || [],
+      filePath: filePath ? resolve(filePath) : `/component-${id}.js`
+    }
   }
 }
 

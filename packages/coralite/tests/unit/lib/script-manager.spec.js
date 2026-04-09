@@ -1367,5 +1367,30 @@ describe('ScriptManager', () => {
 
       assert.match(compiledScript, /pluginConfig\s*=\s*\{\}/)
     })
+
+    it('should deeply merge defaultValues in registerComponent', async () => {
+      const manager = new ScriptManager()
+
+      manager.registerComponent({
+        id: 'test',
+        script: { content: '() => {}' },
+        defaultValues: { a: 1 }
+      })
+
+      // Register again with new defaultValues
+      manager.registerComponent({
+        id: 'test',
+        defaultValues: {
+          b: 2,
+          a: 3
+        }
+      })
+
+      const registered = manager.sharedFunctions['test']
+      assert.deepStrictEqual(registered.defaultValues, {
+        a: 3,
+        b: 2
+      })
+    })
   })
 })

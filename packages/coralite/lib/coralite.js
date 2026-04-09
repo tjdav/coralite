@@ -896,6 +896,13 @@ const globalSetupValuesPromise = getSetups(globalContext);
             // Merge defaults
             this._values = Object.assign({}, module.default.defaultValues, this._values);
 
+            if (module.default.templateValues && module.default.templateValues.refs) {
+              for (let i = 0; i < module.default.templateValues.refs.length; i++) {
+                const ref = module.default.templateValues.refs[i];
+                this._values['ref_' + ref.name] = this.componentId + '__' + ref.name + '-' + this._index;
+              }
+            }
+
             ;(async () => {
               const deps = module.default.dependencies || [];
               if (deps.length > 0) {
@@ -1652,6 +1659,27 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       }
     }
 
+    if (templateValues && templateValues.refs) {
+      for (let i = 0; i < templateValues.refs.length; i++) {
+        const ref = templateValues.refs[i]
+        defaultValues[`ref_${ref.name}`] = ''
+
+        if (!scriptObj.values) {
+          scriptObj.values = {}
+        }
+        scriptObj.values[`ref_${ref.name}`] = ''
+      }
+    }
+
+    // Restore __script__ to maintain consistency with _generatePages logic for components array
+    if (!scriptResult.__script__) {
+      scriptResult.__script__ = { defaultValues }
+    } else {
+      scriptResult.__script__.defaultValues = defaultValues
+    }
+
+    scriptObj.defaultValues = defaultValues
+
     // Register with ScriptManager (including the template, defaults, and styles)
     this._scriptManager.registerComponent({
       id: module.id,
@@ -1853,7 +1881,7 @@ Coralite.prototype.createComponentElement = async function ({
       }
 
       // Store instance data for script manager
-      renderContext.scripts.add(moduleComponent.path.pathname, {
+      renderContext.scripts.add(component.path.pathname, {
         id: contextId,
         componentId: module.id,
         component,
