@@ -164,14 +164,16 @@ export const defineComponent = createPlugin({
           // new slot elements
           const elementSlots = []
 
-          for (let i = 0; i < element.slots.length; i++) {
-            const slot = element.slots[i]
+          if (element && element.slots) {
+            for (let i = 0; i < element.slots.length; i++) {
+              const slot = element.slots[i]
 
-            if (slot.name === name) {
-              // slot content to compute
-              slotContent.push(slot.node)
-            } else {
-              elementSlots.push(slot)
+              if (slot.name === name) {
+                // slot content to compute
+                slotContent.push(slot.node)
+              } else {
+                elementSlots.push(slot)
+              }
             }
           }
 
@@ -227,7 +229,9 @@ export const defineComponent = createPlugin({
           }
 
           // update element slots
-          element.slots = elementSlots
+          if (element) {
+            element.slots = elementSlots
+          }
         }
       }
     }

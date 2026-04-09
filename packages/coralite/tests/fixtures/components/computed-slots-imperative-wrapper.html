@@ -1,0 +1,30 @@
+<template id="computed-slots-imperative-wrapper">
+  <div id="container" ref="container"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    client: {
+      components: ['computed-slots-imperative'],
+      script: ({ helpers }) => {
+        window.mountComponent = function () {
+          const el = document.createElement('computed-slots-imperative')
+          el.setAttribute('title', 'Initial Title')
+          el.setAttribute('body', 'Initial Body')
+
+          const content1 = document.createElement('span')
+          content1.textContent = 'Projected Node 1'
+          const content2 = document.createElement('span')
+          content2.textContent = 'Projected Node 2'
+
+          el.appendChild(content1)
+          el.appendChild(content2)
+
+          helpers.refs('container').appendChild(el)
+        }
+      }
+    }
+  })
+</script>

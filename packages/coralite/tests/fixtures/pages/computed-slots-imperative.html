@@ -5,23 +5,6 @@
   <title>Computed Slots Test</title>
 </head>
 <body>
-  <div id="container"></div>
-  <script type="module">
-    window.mountComponent = function () {
-      const el = document.createElement('computed-slots-imperative')
-  el.setAttribute('title', 'Initial Title')
-  el.setAttribute('body', 'Initial Body')
-
-  const content1 = document.createElement('span')
-  content1.textContent = 'Projected Node 1'
-  const content2 = document.createElement('span')
-  content2.textContent = 'Projected Node 2'
-
-  el.appendChild(content1)
-  el.appendChild(content2)
-
-  document.getElementById('container').appendChild(el)
-}
-  </script>
+  <computed-slots-imperative-wrapper></computed-slots-imperative-wrapper>
 </body>
 </html>
