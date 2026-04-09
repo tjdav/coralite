@@ -620,7 +620,9 @@ Coralite.prototype._generatePages = async function* (path, values = {}) {
 
       // Initialize Render Context
       const renderContext = this._createRenderContext(buildId)
+
       renderContext.mode = this.options.mode
+      renderContext.pagePath = component.path.pathname
 
       await this._triggerPluginHook('onBeforePageRender', {
         component,
@@ -1616,6 +1618,8 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
     }
     let nestedComponents = []
     let defaultValues = {}
+    /** @type {Object.<string, Function>} */
+    let slots = {}
 
     if (scriptResult.__script__) {
       const extractedScript = findAndExtractScript(module.script)
@@ -1631,6 +1635,8 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       nestedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents]))
       scriptObj.components = nestedComponents
       defaultValues = scriptResult.__script__.defaultValues || {}
+      slots = scriptResult.__script__.slots || {}
+
       delete scriptResult.__script__
     } else {
       const declarativeComponents = (module.customElements || []).map(el => el.name)
@@ -1689,7 +1695,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       templateValues,
       defaultValues,
       styles: stylesHTML,
-      slots: scriptResult.__script__?.slots || {}
+      slots
     })
 
     // Recursively process deeper dependencies
