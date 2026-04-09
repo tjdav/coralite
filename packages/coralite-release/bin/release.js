@@ -49,7 +49,7 @@ program
         execSync('pnpm test-unit', { stdio: 'inherit' })
 
         prompts.log.step('Verifying E2E Tests...')
-        execSync('pnpm --filter coralite run test-e2e', { stdio: 'inherit' })
+        execSync('pnpm run test-e2e', { stdio: 'inherit' })
 
         prompts.log.success('✅ All checks passed!')
       } catch (error) {
