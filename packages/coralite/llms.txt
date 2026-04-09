@@ -29,7 +29,7 @@ Dynamic components are authored by appending a `<script type="module">` below th
 * **client.setup(results)**: An asynchronous function executed strictly on the server during the build. Replaces Top-Level Await (TLA). Used for fetching data or reading files. The returned object is merged into the component's `values` context.
 * **Context Data (`values`) & Data Passing**: Data must be passed via **HTML attributes**, which the framework automatically maps into the `values` object.
 * **Handling Complex Data**: Do not pass complex objects or arrays as stringified JSON attributes. Instead, handle the complex data structures in your script logic (e.g., mapping over an array) and pass the decomposed primitive values (strings, numbers) as individual attributes.
-* **tokens**: Evaluates data at build time. Can be static strings or functions receiving `values`. 
+* **tokens**: Evaluates data at build time. Can be static strings or functions (type `CoraliteModuleTokenFunction`) receiving `values` and returning the computed value, optionally as a Promise. 
 * **slots**: Allows server-side transformation of content passed between component tags. Slot functions (type `CoraliteModuleSlotFunction`) receive the parsed `slotNodes` array and component `values`, and can return an array of parsed HTML nodes, an HTML string, or void/undefined to fallback to the original slot content.
 
 ### 3.2 Client-Side Execution (Browser Hydration)

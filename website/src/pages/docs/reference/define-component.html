@@ -35,7 +35,7 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
       </tr>
       <tr slot="body">
         <td><code>tokens</code></td>
-        <td><code>Record&lt;string, string | TokenFunction&gt;</code></td>
+        <td><code>Record&lt;string, string | CoraliteModuleTokenFunction&gt;</code></td>
         <td>An object defining computed or static values available for template interpolation.</td>
       </tr>
       <tr slot="body">
@@ -52,10 +52,10 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
 
     <coralite-heading level="h2" text="Type Definitions"></coralite-heading>
 
-    <coralite-heading level="h3" text="TokenFunction"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteModuleTokenFunction"></coralite-heading>
 
     <coralite-code-highlight language="typescript">
-type TokenFunction = (values: Record&lt;string, any&gt;) => string
+type CoraliteModuleTokenFunction = (values: Record&lt;string, any&gt;) => any | Promise&lt;any&gt;
     </coralite-code-highlight>
 
     <p>A function that evaluates data at build time. It receives a <code>values</code> object containing element attributes and page metadata (prefixed with <code>meta_</code> and <code>$</code>).</p>

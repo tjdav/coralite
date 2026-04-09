@@ -7,7 +7,7 @@ import {
 } from '#lib'
 
 /**
- * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleValue, CoraliteModuleValues, CoraliteValues, CoraliteModuleSlotFunction } from '../types/index.js'
+ * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleValue, CoraliteModuleValues, CoraliteValues, CoraliteModuleSlotFunction, CoraliteModuleTokenFunction } from '../types/index.js'
  * @import { ScriptImport } from '../types/script.js'
  */
 
@@ -84,7 +84,7 @@ export const defineComponent = createPlugin({
    * It is used to register components with their associated tokens and slots.
    *
    * @param {Object} options - Configuration options for the component
-   * @param {Object.<string, (string | function)>} [options.tokens] -
+   * @param {Object.<string, (string | CoraliteModuleTokenFunction)>} [options.tokens] -
    *   Computed tokens that will be available in the template. These can be
    *   strings or functions that return values.
    * @param {Object.<string, CoraliteModuleSlotFunction>} [options.slots] -
