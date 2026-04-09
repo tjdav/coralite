@@ -10,7 +10,7 @@
  * @import { CoraliteComponent, CoraliteResult, ParseHTMLResult, CoraliteToken, CoraliteAttributeToken, CoraliteTextNodeToken, CoraliteRef, CoraliteComponentValues, Attribute, CoraliteComponentResult } from './component.js'
  *
  * MODULES
- * @import { CoraliteModule, CoraliteModuleValues, CoraliteModuleValue, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleSetup } from './module.js'
+ * @import { CoraliteModule, CoraliteModuleValues, CoraliteModuleValue, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleSlotFunction } from './module.js'
  *
  * COLLECTIONS
  * @import { CoraliteCollectionItem, CoraliteCollectionCallbackResult, CoraliteCollectionEventResult, CoraliteCollectionEventSet, CoraliteCollectionEventDelete, CoraliteCollectionEventUpdate } from './collection.js'
@@ -73,6 +73,7 @@
  * @typedef {import('./module.js').CoraliteModuleSlotElement} CoraliteModuleSlotElement
  * @typedef {import('./module.js').CoraliteModuleScript} CoraliteModuleScript
  * @typedef {import('./module.js').CoraliteModuleSetup} CoraliteModuleSetup
+ * @typedef {import('./module.js').CoraliteModuleSlotFunction} CoraliteModuleSlotFunction
  */
 
 /**

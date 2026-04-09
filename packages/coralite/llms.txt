@@ -30,7 +30,7 @@ Dynamic components are authored by appending a `<script type="module">` below th
 * **Context Data (`values`) & Data Passing**: Data must be passed via **HTML attributes**, which the framework automatically maps into the `values` object.
 * **Handling Complex Data**: Do not pass complex objects or arrays as stringified JSON attributes. Instead, handle the complex data structures in your script logic (e.g., mapping over an array) and pass the decomposed primitive values (strings, numbers) as individual attributes.
 * **tokens**: Evaluates data at build time. Can be static strings or functions receiving `values`. 
-* **slots**: Allows server-side transformation of content passed between component tags.
+* **slots**: Allows server-side transformation of content passed between component tags. Slot functions (type `CoraliteModuleSlotFunction`) receive the parsed `slotNodes` array and component `values`, and can return an array of parsed HTML nodes, an HTML string, or void/undefined to fallback to the original slot content.
 
 ### 3.2 Client-Side Execution (Browser Hydration)
 * **client.script(context)**: Serialized and executed in the browser.

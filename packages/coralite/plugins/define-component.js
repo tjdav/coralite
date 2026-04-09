@@ -7,7 +7,7 @@ import {
 } from '#lib'
 
 /**
- * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleValue, CoraliteModuleValues, CoraliteValues } from '../types/index.js'
+ * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleValue, CoraliteModuleValues, CoraliteValues, CoraliteModuleSlotFunction } from '../types/index.js'
  * @import { ScriptImport } from '../types/script.js'
  */
 
@@ -87,7 +87,7 @@ export const defineComponent = createPlugin({
    * @param {Object.<string, (string | function)>} [options.tokens] -
    *   Computed tokens that will be available in the template. These can be
    *   strings or functions that return values.
-   * @param {Object.<string, Function>} [options.slots] -
+   * @param {Object.<string, CoraliteModuleSlotFunction>} [options.slots] -
    *   Computed slots for the component. These are functions that define
    *   how content should be rendered within the component.
    * @param {Object} [options.client] - Client side configuration.

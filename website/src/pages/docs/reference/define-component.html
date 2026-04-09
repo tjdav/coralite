@@ -40,7 +40,7 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
       </tr>
       <tr slot="body">
         <td><code>slots</code></td>
-        <td><code>Record&lt;string, SlotFunction&gt;</code></td>
+        <td><code>Record&lt;string, CoraliteModuleSlotFunction&gt;</code></td>
         <td>An object defining server-side processing functions for component slots.</td>
       </tr>
       <tr slot="body">
@@ -60,13 +60,13 @@ type TokenFunction = (values: Record&lt;string, any&gt;) => string
 
     <p>A function that evaluates data at build time. It receives a <code>values</code> object containing element attributes and page metadata (prefixed with <code>meta_</code> and <code>$</code>).</p>
 
-    <coralite-heading level="h3" text="SlotFunction"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteModuleSlotFunction"></coralite-heading>
 
     <coralite-code-highlight language="typescript">
-type SlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&lt;string, any&gt;) => ParsedHTMLNode[]
+type CoraliteModuleSlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&lt;string, any&gt;) => ParsedHTMLNode[] | string | void
     </coralite-code-highlight>
 
-    <p>A function that processes slot content. It receives an array of parsed HTML nodes and the current token values, and must return an array of parsed HTML nodes.</p>
+    <p>A function that processes slot content. It receives an array of parsed HTML nodes and the current token values, and can return an array of parsed HTML nodes, an HTML string to be parsed, or void/undefined to fallback to the original slot content.</p>
 
     <coralite-heading level="h3" text="ClientOptions"></coralite-heading>
 

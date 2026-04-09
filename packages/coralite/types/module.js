@@ -51,4 +51,12 @@
  * @returns {any}
  */
 
+
+/**
+ * @callback CoraliteModuleSlotFunction
+ * @param {CoraliteAnyNode[]} slotNodes - The parsed HTML nodes for the slot content
+ * @param {CoraliteModuleValues} values - The current component values
+ * @returns {CoraliteAnyNode[] | string | void} - The processed nodes, an HTML string, or void to use original content
+ */
+
 export default {}
