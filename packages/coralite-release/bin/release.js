@@ -45,10 +45,10 @@ program
         execSync('pnpm run build', { stdio: 'inherit' })
         execSync('pnpm run build-scripts', { stdio: 'inherit' })
 
-        prompts.log.step('Running Tests...')
+        prompts.log.step('Running Unit Tests...')
         execSync('pnpm test-unit', { stdio: 'inherit' })
 
-        prompts.log.step('Verifying HTML build...')
+        prompts.log.step('Verifying E2E Tests...')
         execSync('pnpm --filter coralite run test-e2e', { stdio: 'inherit' })
 
         prompts.log.success('✅ All checks passed!')
