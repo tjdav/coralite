@@ -347,10 +347,10 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push('const coraliteComponentDefaults = {\n')
   for (const key of processedComponentKeys) {
     if (this.sharedFunctions[key] && this.sharedFunctions[key].defaultValues) {
-      normalizeObjectFunctions(this.sharedFunctions[key].defaultValues)
+      const normalizedDefaults = normalizeObjectFunctions(this.sharedFunctions[key].defaultValues)
 
       entryCodeParts.push(`  "${key}": (() => {\n`)
-      entryCodeParts.push(`    const defaults = ${serialize(this.sharedFunctions[key].defaultValues)};\n`)
+      entryCodeParts.push(`    const defaults = ${serialize(normalizedDefaults)};\n`)
       entryCodeParts.push(`    return defaults;\n`)
       entryCodeParts.push(`  })(),\n`)
     } else {
@@ -457,13 +457,18 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       })
       const styles = JSON.stringify(this.sharedFunctions[componentId].styles || '')
 
+      let normalizedDefaults = this.sharedFunctions[componentId].defaultValues || {}
       if (this.sharedFunctions[componentId].defaultValues) {
-        normalizeObjectFunctions(this.sharedFunctions[componentId].defaultValues)
+        normalizedDefaults = normalizeObjectFunctions(this.sharedFunctions[componentId].defaultValues)
       }
-
-      const defaults = serialize(this.sharedFunctions[componentId].defaultValues || {})
+      const defaults = serialize(normalizedDefaults)
       const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
-      const slots = serialize(this.sharedFunctions[componentId].slots || {})
+
+      let normalizedSlots = this.sharedFunctions[componentId].slots || {}
+      if (this.sharedFunctions[componentId].slots) {
+        normalizedSlots = normalizeObjectFunctions(this.sharedFunctions[componentId].slots)
+      }
+      const slots = serialize(normalizedSlots)
 
       componentEntryCode += `
 export default {

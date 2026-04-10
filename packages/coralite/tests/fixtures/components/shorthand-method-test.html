@@ -1,0 +1,34 @@
+<template id="shorthand-method-test">
+  <div>
+    <span ref="message">{{ generatedMessage }}</span>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    tokens: {
+      generatedMessage (values) {
+        return values.initialMessage + ' world!'
+      }
+    },
+    client: {
+      setup () {
+        return {
+          initialMessage: 'Hello',
+          // Shorthand method here that needs to be normalized
+          myShorthand ({ msg }) {
+            return msg + '!'
+          }
+        }
+      },
+      script (context) {
+        const msg = context.values.myShorthand({ msg: 'Hello from client' })
+        const refId = context.values.ref_message
+        const el = document.querySelector(`[ref="${refId}"]`)
+        if (el) el.textContent = msg
+      }
+    }
+  })
+</script>

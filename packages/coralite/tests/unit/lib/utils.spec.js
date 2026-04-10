@@ -91,7 +91,7 @@ describe('normalizeFunction', () => {
         }
       }
       const result = normalizeFunction(obj.method)
-      assert.strictEqual(result, 'function method() {\n          return 1\n        }')
+      assert.strictEqual(result, 'function() {\n          return 1\n        }')
     })
 
     it('async method shorthand', () => {
@@ -101,7 +101,7 @@ describe('normalizeFunction', () => {
         }
       }
       const result = normalizeFunction(obj.method)
-      assert.strictEqual(result, 'async function method() {\n          return 2\n        }')
+      assert.strictEqual(result, 'async function() {\n          return 2\n        }')
     })
 
     it('method with parameters', () => {
@@ -111,7 +111,7 @@ describe('normalizeFunction', () => {
         }
       }
       const result = normalizeFunction(obj.multiply)
-      assert.strictEqual(result, 'function multiply(a, b) {\n          return a * b\n        }')
+      assert.strictEqual(result, 'function(a, b) {\n          return a * b\n        }')
     })
 
     it('method with destructured parameters', () => {
@@ -121,7 +121,7 @@ describe('normalizeFunction', () => {
         }
       }
       const result = normalizeFunction(obj.sum)
-      assert.strictEqual(result, 'function sum({ a, b }) {\n          return a + b\n        }')
+      assert.strictEqual(result, 'function({ a, b }) {\n          return a + b\n        }')
     })
 
     it('method with rest parameters', () => {
@@ -131,7 +131,7 @@ describe('normalizeFunction', () => {
         }
       }
       const result = normalizeFunction(obj.sum)
-      assert.strictEqual(result, 'function sum(...args) {\n          return args.reduce((a, b) => a + b, 0)\n        }')
+      assert.strictEqual(result, 'function(...args) {\n          return args.reduce((a, b) => a + b, 0)\n        }')
     })
   })
 
@@ -168,7 +168,7 @@ describe('normalizeFunction', () => {
         }
       }
       const result = normalizeFunction(obj.$private)
-      assert.strictEqual(result, 'function $private() {\n          return \'private\'\n        }')
+      assert.strictEqual(result, 'function() {\n          return \'private\'\n        }')
     })
 
     it('async method with $ in name', () => {
@@ -178,7 +178,7 @@ describe('normalizeFunction', () => {
         }
       }
       const result = normalizeFunction(obj.$private)
-      assert.strictEqual(result, 'async function $private() {\n          return \'private\'\n        }')
+      assert.strictEqual(result, 'async function() {\n          return \'private\'\n        }')
     })
 
     it('function with underscore in name', () => {
@@ -188,7 +188,7 @@ describe('normalizeFunction', () => {
         }
       }
       const result = normalizeFunction(obj.private_method)
-      assert.strictEqual(result, 'function private_method() {\n          return \'private\'\n        }')
+      assert.strictEqual(result, 'function() {\n          return \'private\'\n        }')
     })
 
     it('arrow function with complex body', () => {
@@ -260,7 +260,7 @@ describe('normalizeFunction', () => {
         }
       }
       const result = normalizeFunction(obj.method)
-      assert.match(result, /async function method\(\)/)
+      assert.match(result, /async function\(\)/)
       // The inner arrow function should not be affected
       assert.match(result, /async \(x\) => x \* 2/)
     })

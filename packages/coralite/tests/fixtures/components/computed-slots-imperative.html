@@ -21,7 +21,7 @@ export default defineComponent({
           if (node.nodeType === 1) { // ELEMENT_NODE
             const wrapper = document.createElement('div')
             wrapper.className = 'body-slot-node'
-            wrapper.textContent = `Body: ${values.body} `
+            wrapper.textContent = `Body: ${values.body} - `
             wrapper.appendChild(node)
             return wrapper
           }

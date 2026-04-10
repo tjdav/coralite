@@ -1155,11 +1155,12 @@ const globalSetupValuesPromise = getSetups(globalContext);
     };
     context.root = window.document;
     const setupValues = await globalSetupValuesPromise;
-    context.values = { ...context.values, ...setupValues };
     const helpers = await getHelpers(context);
     context.helpers = helpers;
 
     const module = await import('${base}assets/js/${scriptResult.manifest[instance.componentId]}');
+    
+    context.values = { ...module.default.defaultValues, ...context.values, ...setupValues };
     
     // Explicitly load declarative script dependencies if any
     const deps = module.default.dependencies || [];
@@ -1616,8 +1617,6 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
     }
     let nestedComponents = []
     let defaultValues = {}
-    /** @type {Object.<string, Function>} */
-    let slots = {}
 
     if (scriptResult.__script__) {
       const extractedScript = findAndExtractScript(module.script)
@@ -1633,7 +1632,10 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       nestedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents]))
       scriptObj.components = nestedComponents
       defaultValues = scriptResult.__script__.defaultValues || {}
-      slots = scriptResult.__script__.slots || {}
+
+      if (scriptResult.__script__.slots) {
+        scriptObj.slots = scriptResult.__script__.slots
+      }
 
       delete scriptResult.__script__
     } else {
@@ -1693,7 +1695,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       templateValues,
       defaultValues,
       styles: stylesHTML,
-      slots
+      slots: scriptObj.slots || {}
     })
 
     // Recursively process deeper dependencies

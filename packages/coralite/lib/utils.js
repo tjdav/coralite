@@ -43,33 +43,51 @@ export function cleanKeys (object) {
 }
 
 /**
- * Recursively traverses an object or array and normalizes any function properties
+ * Recursively clones an object or array and normalizes any function properties
  * it finds into a string representation that preserves standard function syntax,
  * bypassing ES6 shorthand method serialization issues.
  * @param {any} target - The object or array to normalize.
- * @returns {void}
+ * @param {WeakMap} [seen=new WeakMap()] - Map of seen objects to handle circular references.
+ * @returns {any} A deeply cloned object with normalized functions.
  */
-export function normalizeObjectFunctions (target) {
+export function normalizeObjectFunctions (target, seen = new WeakMap()) {
+  if (typeof target !== 'object' || target === null) {
+    return target
+  }
+
+  if (seen.has(target)) {
+    return seen.get(target)
+  }
+
   if (Array.isArray(target)) {
-    target.forEach(normalizeObjectFunctions)
-  } else if (typeof target === 'object' && target !== null) {
-    for (const key in target) {
+    const arr = []
+    seen.set(target, arr)
+    for (let i = 0; i < target.length; i++) {
+      arr.push(normalizeObjectFunctions(target[i], seen))
+    }
+    return arr
+  }
+
+  const obj = {}
+  seen.set(target, obj)
+  for (const key in target) {
+    if (Object.hasOwn(target, key)) {
       if (typeof target[key] === 'function') {
-        if (target[key].__normalized) continue
         const normalizedString = normalizeFunction(target[key])
         const originalFunction = target[key]
 
-        target[key] = function () {
+        const wrapper = function () {
           return originalFunction.apply(this, arguments)
         }
-
-        target[key].toString = () => normalizedString
-        target[key].__normalized = true
+        wrapper.toString = () => normalizedString
+        obj[key] = wrapper
       } else {
-        normalizeObjectFunctions(target[key])
+        obj[key] = normalizeObjectFunctions(target[key], seen)
       }
     }
   }
+
+  return obj
 }
 
 /**
@@ -91,7 +109,6 @@ export function hasObjectKeys (obj) {
 export function mergeUniqueObjects (arr1, arr2) {
   const all = [...(arr1 || []), ...(arr2 || [])]
   const seen = new Set()
-
   return all.filter(item => {
     const key = typeof item === 'object' ? JSON.stringify(item) : item
     if (seen.has(key)) return false
@@ -142,13 +159,13 @@ export function normalizeFunction (func) {
     }
 
     // Capture the name (group 1) and allow $ in name
-    return original.replace(/^async\s+([$\w]+)\s*\(/, 'async function $1(')
+    return original.replace(/^async\s+([$\w]+)\s*\(/, 'async function(')
   } else {
     // Check for getters/setters
     if (header.startsWith('get ') || header.startsWith('set ')) return original
 
     // Capture the name (group 1) and allow $ in name
-    return original.replace(/^([$\w]+)\s*\(/, 'function $1(')
+    return original.replace(/^([$\w]+)\s*\(/, 'function(')
   }
 }
 
