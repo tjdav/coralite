@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.31.5
+
+> Comparing `coralite-v0.31.4` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- deeply clone default values and completely resolve esbuild shorthand serialization errors ([59c5655](https://codeberg.org/tjdavid/coralite/commit/59c5655a64f442f61661ddbaa991fc5c5068eab6))
+
+### 📚 Documentation
+
+- document hydration readiness hook for E2E testing stability ([b030c64](https://codeberg.org/tjdavid/coralite/commit/b030c64c4c155ef1a478a074b8b5d890d7ec3f9e))
+
+
 ## v0.31.4
 
 > Comparing `coralite-v0.31.3` to `HEAD`
