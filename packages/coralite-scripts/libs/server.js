@@ -5,7 +5,7 @@ import chokidar from 'chokidar'
 import buildSass from './build-sass.js'
 import { displayError, displayInfo, displayWarning, displaySuccess, toCode, toMS, toTime, deleteDirectoryRecursive } from './build-utils.js'
 import { extname, join, normalize, relative, sep } from 'path'
-import { access, constants, mkdir, writeFile } from 'fs/promises'
+import { access, constants, mkdir, readFile, writeFile } from 'fs/promises'
 import Coralite from 'coralite'
 import buildCSS from './build-css.js'
 import { existsSync, mkdirSync } from 'fs'
@@ -32,39 +32,125 @@ async function server (config, options) {
     const memoryPageSource = new Map()
 
     // start coralite
-    displayInfo('Initializing Coralite...')
-    const coralite = new Coralite({
-      components: config.components,
-      pages: config.pages,
-      plugins: config.plugins,
-      assets: config.assets,
-      baseURL: config.baseURL,
-      ignoreByAttribute: config.ignoreByAttribute,
-      skipRenderByAttribute: config.skipRenderByAttribute,
-      mode: 'development',
-      output: config.output,
-      onError: ({ level, message, error }) => {
-        if (level === 'ERR') {
-          displayError(message, error)
-        } else if (level === 'WARN') {
-          displayWarning(message)
-        } else {
-          displayInfo(message)
-        }
-      }
-    })
-    await coralite.initialise()
-    displaySuccess('Coralite initialized successfully')
+    let coralite
+    let currentConfig = config
+    const pluginPaths = new Set()
 
-    if (config.plugins) {
-      for (const plugin of config.plugins) {
-        if (typeof plugin.server === 'function') {
-          await plugin.server(app, coralite)
+    /**
+     * Asynchronously extracts relative plugin paths from the `coralite.config.js` file.
+     * This function clears the existing `pluginPaths` Set, reads the configuration file
+     * (if it exists), and parses it line-by-line to find `import ... from '...'` statements.
+     * Any relative paths found in these imports are resolved against the current working
+     * directory and added to the `pluginPaths` Set.
+     *
+     * @returns {Promise<void>} A promise that resolves when the file has been processed.
+     * Fails silently if the file does not exist or cannot be read.
+     */
+    const extractPluginPaths = async () => {
+      pluginPaths.clear()
+
+      try {
+        const configPath = join(process.cwd(), 'coralite.config.js')
+
+        try {
+          await access(configPath, constants.F_OK)
+        } catch (err) {
+          return
         }
+
+        const configContent = await readFile(configPath, 'utf-8')
+        const lines = configContent.split('\n')
+
+        for (const line of lines) {
+          if (line.trim().startsWith('import ') && line.includes(' from ')) {
+            const match = line.match(/from\s+['"]([^'"]+)['"]/)
+            if (match && match[1]) {
+              const importPath = match[1]
+
+              // If it's a relative path, resolve it
+              if (importPath.startsWith('.')) {
+                pluginPaths.add(join(process.cwd(), importPath))
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // ignore any other unexpected errors during reading/parsing
       }
     }
 
+    let originalAppRouter
+    /**
+     * Asynchronously initializes or re-initializes the Coralite instance.
+     * This function performs a complete setup/teardown cycle, making it suitable
+     * for Hot Module Replacement (HMR) or development live-reloading. Its key operations include:
+     * 1. Backing up the original Express application router state.
+     * 2. Clearing the page cache.
+     * 3. Creating and initializing a new `Coralite` instance with the current configuration.
+     * 4. Resetting the Express router stack to remove stale plugin routes.
+     * 5. Re-registering server-side plugin routes.
+     * 6. Broadcasting a 'reload' signal to all connected clients via Server-Sent Events (SSE).
+     *
+     * @returns {Promise<void>} Resolves when the Coralite instance, plugins, and routing have been fully initialized.
+     */
+    const initCoralite = async () => {
+      if (!originalAppRouter && app._router) {
+        originalAppRouter = Object.assign({}, app._router)
+        originalAppRouter.stack = [...app._router.stack]
+      }
+      displayInfo('Initializing Coralite...')
+
+      pageCache.clear()
+
+      coralite = new Coralite({
+        components: currentConfig.components,
+        pages: currentConfig.pages,
+        plugins: currentConfig.plugins,
+        assets: currentConfig.assets,
+        baseURL: currentConfig.baseURL,
+        ignoreByAttribute: currentConfig.ignoreByAttribute,
+        skipRenderByAttribute: currentConfig.skipRenderByAttribute,
+        mode: 'development',
+        output: currentConfig.output,
+        onError: ({ level, message, error }) => {
+          if (level === 'ERR') {
+            displayError(message, error)
+          } else if (level === 'WARN') {
+            displayWarning(message)
+          } else {
+            displayInfo(message)
+          }
+        }
+      })
+
+      await coralite.initialise()
+
+      displaySuccess('Coralite initialized successfully')
+
+      // Reset express routing to remove old plugin routes before adding new ones
+      if (originalAppRouter && originalAppRouter.stack) {
+        // Splice the router stack back to its original length to remove newly added routes
+        app._router.stack.splice(originalAppRouter.stack.length)
+      }
+
+      if (currentConfig.plugins) {
+        extractPluginPaths()
+        for (const plugin of currentConfig.plugins) {
+          if (typeof plugin.server === 'function') {
+            await plugin.server(app, coralite)
+          }
+        }
+      }
+
+      clients.forEach(client => {
+        client.write(`data: reload\n\n`)
+      })
+    }
+
+    await initCoralite()
+
     const watchPath = [
+      process.cwd() + '/coralite.config.js',
       config.public,
       config.pages,
       config.components
@@ -360,6 +446,8 @@ async function server (config, options) {
     let compileTimeout = null
     let isCompiling = false
     const pendingChanges = new Set()
+    const configPathStr = join(process.cwd(), 'coralite.config.js')
+
 
     // Helper function to debounce compilations
     const debounceCompile = () => {
@@ -384,8 +472,33 @@ async function server (config, options) {
         const componentChanges = changes.filter(p => p.startsWith(componentPath))
         const sassChanges = changes.filter(p => p.endsWith('.scss') || p.endsWith('.sass'))
         const cssChanges = changes.filter(p => p.endsWith('.css'))
+        const configChanges = changes.filter(p => p === configPathStr || Array.from(pluginPaths).some(pluginPath => p === pluginPath))
 
         try {
+          // Handle config changes
+          if (configChanges.length > 0) {
+            displayInfo('Configuration changed, reloading Coralite...')
+            // Append cache busting param to reload properly
+            const { pathToFileURL } = await import('url')
+            const bust = '?t=' + Date.now()
+
+            try {
+              const freshConfigModule = await import(pathToFileURL(configPathStr).toString() + bust)
+              const { defineConfig } = await import('./config.js')
+
+              if (freshConfigModule.default) {
+                currentConfig = defineConfig(freshConfigModule.default)
+                currentConfig.output = config.output
+                currentConfig.server = config.server
+
+                // Re-initialize Coralite with new config
+                await initCoralite()
+              }
+            } catch (err) {
+              displayError('Failed to reload configuration', err)
+            }
+          }
+
           // Handle component changes
           for (const path of componentChanges) {
             await coralite.components.setItem(path)
@@ -423,7 +536,8 @@ async function server (config, options) {
           if (pagesChanges.length > 0
             || componentChanges.length > 0
             || sassChanges.length > 0
-            || cssChanges.length > 0) {
+            || cssChanges.length > 0
+            || configChanges.length > 0) {
             clients.forEach(client => {
               client.write(`data: reload\n\n`)
             })
@@ -449,7 +563,7 @@ async function server (config, options) {
         }
       })
       .on('change', async (path) => {
-        // Add to pending changes and trigger debounced compilation
+        // We only want to trigger for things we care about or are in watchPath (but sometimes chokidar watches the whole dir)
         pendingChanges.add(path)
         debounceCompile()
       })
@@ -458,7 +572,7 @@ async function server (config, options) {
           if (path.startsWith(componentPath)) {
             // set component item
             coralite.components.setItem(path)
-          } else if (path.endsWith('.scss') || path.endsWith('.sass')) {
+          } else if (path.endsWith('.scss') || path.endsWith('.sass') || path === configPathStr || Array.from(pluginPaths).some(pluginPath => path === pluginPath)) {
             // Add to pending changes and trigger debounced compilation
             pendingChanges.add(path)
             debounceCompile()
