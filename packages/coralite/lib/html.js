@@ -90,18 +90,16 @@ export async function getHtmlFiles ({
       }
 
       if (entry.isDirectory() && recursive) {
-        tasks.push(limit(async () => {
-          await getHtmlFiles({
-            path: pathname,
-            type,
-            recursive,
-            exclude,
-            onFileSet,
-            onFileUpdate,
-            onFileDelete,
-            collection,
-            limit
-          })
+        tasks.push(getHtmlFiles({
+          path: pathname,
+          type,
+          recursive,
+          exclude,
+          onFileSet,
+          onFileUpdate,
+          onFileDelete,
+          collection,
+          limit
         }))
       } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
         tasks.push(limit(async () => {
