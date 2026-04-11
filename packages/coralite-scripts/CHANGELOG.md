@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.31.6
+
+> Comparing `coralite-scripts-v0.31.5` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- add config and plugin hot reload to coralite-scripts ([fe6be1f](https://codeberg.org/tjdavid/coralite/commit/fe6be1f247eb9c3022eaf3bba42b5801f66dae78))
+
+
 ## v0.30.0
 
 > Comparing `coralite-scripts-v0.29.6` to `HEAD`
