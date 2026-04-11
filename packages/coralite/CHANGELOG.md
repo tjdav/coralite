@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.31.6
+
+> Comparing `coralite-v0.31.5` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- avoid premature disconnectedCallback via innerHTML clear in Light DOM slots (core) ([076c3d1](https://codeberg.org/tjdavid/coralite/commit/076c3d1c2882cbfe792b92732a78f2ed225845d2))
+- prevent recursive p-limit deadlock (html) ([520d338](https://codeberg.org/tjdavid/coralite/commit/520d338284294f8fedbe23fc33eb182fd7e57359))
+
+### ✅ Tests
+
+- add lifecycle race condition suite (e2e) ([8ef6524](https://codeberg.org/tjdavid/coralite/commit/8ef652490b8bb79d71defbaf3bed84f7a64f2e88))
+
+
 ## v0.31.5
 
 > Comparing `coralite-v0.31.4` to `HEAD`
