@@ -7,11 +7,14 @@ test.describe('Lifecycle Race Condition', () => {
       errors.push(err.message)
     })
 
-    await page.goto('http://localhost:3000/lifecycle-bug.html')
+    await page.goto('/lifecycle-bug.html')
+    await page.evaluate(() => window.__coralite_ready__)
 
-    const result = await page.evaluate(() => window.__test_done)
+    const childStatus = await page.evaluate(() => window.__child_status)
+    const childError = await page.evaluate(() => window.__child_error)
 
     expect(errors.length).toBe(0)
-    expect(result).toBe('SUCCESS')
+    expect(childError).toBeUndefined()
+    expect(childStatus).toBe('SUCCESS')
   })
 })

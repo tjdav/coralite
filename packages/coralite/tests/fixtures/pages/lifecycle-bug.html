@@ -6,23 +6,11 @@
 </head>
 <body>
   <div id="app">
-    <!-- Imperatively instantiate inside a wrapper via Coralite parsing directly -->
     <parent-comp id="test-parent">
       <div style="display: contents;">
         <child-comp id="test-child"></child-comp>
       </div>
     </parent-comp>
   </div>
-
-  <script type="module">
-    // The components will be evaluated by Coralite client framework dynamically.
-    // Wait for the framework to finish rendering and wait for the async script to set success or error.
-    window.__test_done = new Promise((resolve) => {
-      // The global ready promise of coralite can be used if exposed, or just standard timeout
-      setTimeout(() => {
-        resolve(window.__child_error || 'SUCCESS');
-      }, 500);
-    });
-  </script>
-</body>
+  </body>
 </html>

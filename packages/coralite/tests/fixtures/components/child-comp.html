@@ -4,14 +4,19 @@
   </div>
 </template>
 <script type="module">
-  export default {
-    componentId: 'child-comp',
-    script: async (context) => {
-      try {
-        context.signal.addEventListener('abort', () => {});
-      } catch (e) {
-        window.__child_error = e.message;
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: {
+      script: async ({ signal }) => {
+        try {
+          signal.addEventListener('abort', () => {
+          })
+          window.__child_status = 'SUCCESS'
+        } catch (e) {
+          window.__child_error = e.message
+        }
       }
     }
-  }
+  })
 </script>
