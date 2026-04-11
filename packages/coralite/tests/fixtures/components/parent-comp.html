@@ -1,0 +1,14 @@
+<template id="parent-comp">
+  <div class="parent-container">
+    <slot></slot>
+  </div>
+</template>
+<script type="module">
+  export default {
+    componentId: 'parent-comp',
+    dependencies: ['child-comp'],
+    script: async (context) => {
+        await new Promise(r => setTimeout(r, 100));
+    }
+  }
+</script>

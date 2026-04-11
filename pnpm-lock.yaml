@@ -89,8 +89,8 @@ importers:
         specifier: ^19.6.0
         version: 19.8.1
       '@playwright/test':
-        specifier: ^1.50.0
-        version: 1.55.0
+        specifier: ^1.58.2
+        version: 1.59.1
       '@types/node':
         specifier: ^22.18.5
         version: 22.18.5
@@ -192,7 +192,7 @@ importers:
     devDependencies:
       coralite-plugin-aggregation:
         specifier: ^0.7.2
-        version: 0.7.2(coralite@0.31.3)
+        version: 0.7.2(coralite@0.31.5)
       coralite-plugin-inline-css:
         specifier: ^0.4.0
         version: 0.4.0
@@ -680,8 +680,8 @@ packages:
     resolution: {integrity: sha512-dfUnCxiN9H4ap84DvD2ubjw+3vUNpstxa0TneY/Paat8a3R4uQZDLSvWjmznAY/DoahqTHl9V46HF/Zs3F29pg==}
     engines: {node: '>= 10.0.0'}
 
-  '@playwright/test@1.55.0':
-    resolution: {integrity: sha512-04IXzPwHrW69XusN/SIdDdKZBzMfOT9UNT/YiJit/xpy2VuAoB8NHc8Aplb96zsWDddLnbkPL3TsmrS04ZU2xQ==}
+  '@playwright/test@1.59.1':
+    resolution: {integrity: sha512-PG6q63nQg5c9rIi4/Z5lR5IVF7yU5MqmKaPOe0HSc0O2cX1fPi96sUQu5j7eo4gKCkB2AnNGoWt7y4/Xx3Kcqg==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -930,8 +930,8 @@ packages:
   coralite-plugin-inline-css@0.4.0:
     resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
 
-  coralite@0.31.3:
-    resolution: {integrity: sha512-nRLz7w3WDMJeFvri8M3MVwG189x4vaSIMa6M1ltbyeyohFgwdMXq6FNUnDUO+ZzL3N03VOBudD8Hxqa+/KDf/A==}
+  coralite@0.31.5:
+    resolution: {integrity: sha512-cym2YrfewOP1C/breHisWtypABKY9UK991NH8Eeqb9+MfuqV6o7wNjKA8DIC/hltWNQHGpMkDGVupo3ECYq6Kg==}
     engines: {node: '>20.19.0'}
     hasBin: true
 
@@ -1769,13 +1769,13 @@ packages:
   pkg-types@2.3.0:
     resolution: {integrity: sha512-SIqCzDRg0s9npO5XQ3tNZioRY1uK06lA41ynBC1YmFTmnY6FjUjVt6s4LoADmwoig1qqD0oK8h1p/8mlMx8Oig==}
 
-  playwright-core@1.55.0:
-    resolution: {integrity: sha512-GvZs4vU3U5ro2nZpeiwyb0zuFaqb9sUiAJuyrWpcGouD8y9/HLgGbNRjIph7zU9D3hnPaisMl9zG9CgFi/biIg==}
+  playwright-core@1.59.1:
+    resolution: {integrity: sha512-HBV/RJg81z5BiiZ9yPzIiClYV/QMsDCKUyogwH9p3MCP6IYjUFu/MActgYAvK0oWyV9NlwM3GLBjADyWgydVyg==}
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.55.0:
-    resolution: {integrity: sha512-sdCWStblvV1YU909Xqx0DhOjPZE4/5lJsIS84IfN9dAZfcl/CIZ5O8l3o0j7hPMjDvqoTF8ZUcc+i/GL5erstA==}
+  playwright@1.59.1:
+    resolution: {integrity: sha512-C8oWjPR3F81yljW9o5OxcWzfh6avkVwDD2VYdwIGqTkl+OGFISgypqzfu7dOe4QNLL2aqcWBmI3PMtLIK233lw==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -2684,9 +2684,9 @@ snapshots:
       '@parcel/watcher-win32-x64': 2.5.1
     optional: true
 
-  '@playwright/test@1.55.0':
+  '@playwright/test@1.59.1':
     dependencies:
-      playwright: 1.55.0
+      playwright: 1.59.1
 
   '@polka/url@1.0.0-next.29': {}
 
@@ -2920,9 +2920,9 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.7.2(coralite@0.31.3):
+  coralite-plugin-aggregation@0.7.2(coralite@0.31.5):
     dependencies:
-      coralite: 0.31.3
+      coralite: 0.31.5
 
   coralite-plugin-inline-css@0.4.0:
     dependencies:
@@ -2930,7 +2930,7 @@ snapshots:
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
 
-  coralite@0.31.3:
+  coralite@0.31.5:
     dependencies:
       acorn: 8.16.0
       acorn-walk: 8.3.5
@@ -3768,11 +3768,11 @@ snapshots:
       exsolve: 1.0.8
       pathe: 2.0.3
 
-  playwright-core@1.55.0: {}
+  playwright-core@1.59.1: {}
 
-  playwright@1.55.0:
+  playwright@1.59.1:
     dependencies:
-      playwright-core: 1.55.0
+      playwright-core: 1.59.1
     optionalDependencies:
       fsevents: 2.3.2
 

@@ -870,16 +870,26 @@ const globalSetupValuesPromise = getSetups(globalContext);
               
               // Capture light DOM children
               const childNodes = Array.from(this.childNodes);
+
               for (let i = 0; i < childNodes.length; i++) {
                 const child = childNodes[i];
                 const slotName = (child.getAttribute && child.getAttribute('slot')) || 'default';
+                
                 if (!this._lightDomSlots[slotName]) {
                   this._lightDomSlots[slotName] = [];
                 }
+
                 this._lightDomSlots[slotName].push(child);
+
+                // Hide the nodes so they don't cause FOUC
+                if (child.nodeType === 1) {
+                  child.__coralite_orig_display = child.style.display;
+                  child.style.display = 'none';
+                } else if (child.nodeType === 3) { // TEXT_NODE
+                  child.__coralite_orig_text = child.textContent;
+                  child.textContent = '';
+                }
               }
-              // Clear the innerHTML to detach the captured nodes so they aren't destroyed
-              this.innerHTML = '';
             }
 
             // Extract attributes to values
@@ -1068,9 +1078,17 @@ const globalSetupValuesPromise = getSetups(globalContext);
 
               if (projectedNodes && projectedNodes.length > 0) {
                 // We have content to project, clear the fallback content
-                slot.innerHTML = '';
+                slot.replaceChildren();
                 // Append original nodes
                 for (let j = 0; j < projectedNodes.length; j++) {
+                  // Restore original visibility before re-inserting
+                  if (projectedNodes[j].nodeType === 1 && projectedNodes[j].hasOwnProperty('__coralite_orig_display')) {
+                    projectedNodes[j].style.display = projectedNodes[j].__coralite_orig_display;
+                    delete projectedNodes[j].__coralite_orig_display;
+                  } else if (projectedNodes[j].nodeType === 3 && projectedNodes[j].hasOwnProperty('__coralite_orig_text')) {
+                    projectedNodes[j].textContent = projectedNodes[j].__coralite_orig_text;
+                    delete projectedNodes[j].__coralite_orig_text;
+                  }
                   // Re-insert original nodes to preserve their state and event listeners across re-renders
                   slot.parentNode.insertBefore(projectedNodes[j], slot);
                 }

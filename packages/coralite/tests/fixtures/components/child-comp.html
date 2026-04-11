@@ -1,0 +1,17 @@
+<template id="child-comp">
+  <div class="child-container">
+    Child Content
+  </div>
+</template>
+<script type="module">
+  export default {
+    componentId: 'child-comp',
+    script: async (context) => {
+      try {
+        context.signal.addEventListener('abort', () => {});
+      } catch (e) {
+        window.__child_error = e.message;
+      }
+    }
+  }
+</script>
