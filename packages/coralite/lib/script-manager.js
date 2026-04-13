@@ -1,9 +1,8 @@
 import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects } from './utils.js'
-
 import { pathToFileURL, fileURLToPath } from 'node:url'
-import { resolve, parse } from 'node:path'
+import { resolve, parse, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 
@@ -694,7 +693,7 @@ export default {
             return {
               contents,
               loader: 'js',
-              resolveDir: process.cwd()
+              resolveDir: sharedFn && sharedFn.filePath ? dirname(sharedFn.filePath) : process.cwd()
             }
           })
 
@@ -800,7 +799,7 @@ export default {
             return {
               contents,
               loader: 'js',
-              resolveDir: process.cwd()
+              resolveDir: module.rootDir || (module.filePath ? dirname(module.filePath) : process.cwd())
             }
           })
 

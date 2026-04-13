@@ -14,11 +14,11 @@
     client: {
       imports: [
         {
-          specifier: './tests/fixtures/dummy-client-lib.js',
+          specifier: '../dummy-client-lib.js',
           namedExports: ['foo']
         },
         {
-          specifier: './tests/fixtures/dummy-data.json',
+          specifier: '../dummy-data.json',
           defaultExport: 'dummyData',
           attributes: { type: 'json' }
         },
