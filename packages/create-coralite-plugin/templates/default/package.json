@@ -15,7 +15,7 @@
   "author": "",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
-    "coralite": "^0.31.6",
+    "coralite": "^0.31.7",
     "@coralite/plugin-scripts": "latest"
   }
 }

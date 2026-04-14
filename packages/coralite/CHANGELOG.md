@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.31.7
+
+> Comparing `coralite-v0.31.6` to `HEAD`
+
+**Summary:** 4 commits
+
+### 🐛 Bug Fixes
+
+- remove deprecated `root` property and update type definitions ([5910e59](https://codeberg.org/tjdavid/coralite/commit/5910e5990a179ce5e342d6eeebed27ff558705a7))
+- resolve client.imports relative to component file (script-manager) ([cc04d3a](https://codeberg.org/tjdavid/coralite/commit/cc04d3adc9c52227aaf96bd3fe9aaf6976c4428e))
+
+### ♻️ Code Refactoring
+
+- rename createPlugin to definePlugin (core) ([9e7cd1c](https://codeberg.org/tjdavid/coralite/commit/9e7cd1ccc611d51b4b76dd0153bcfce024be4e1c))
+
+### 🧹 Chores
+
+- refine JSDoc types in script.js to improve type safety and clarity ([664d203](https://codeberg.org/tjdavid/coralite/commit/664d2037f84ff7765b931d138c72db64ceba4c0e))
+
+
 ## v0.31.6
 
 > Comparing `coralite-v0.31.5` to `HEAD`
