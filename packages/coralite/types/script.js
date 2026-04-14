@@ -1,6 +1,7 @@
 
 /**
- * @import { CoraliteModuleValue } from './module.js'
+ * @import { CoraliteModuleValue, CoraliteModuleSlotFunction } from './module.js'
+ * @import { CoralitePath, CoraliteFilePath } from './core.js'
  * @import { CoraliteComponent } from './component.js'
  */
 
@@ -15,7 +16,7 @@
  * @property {string[]} [tokens] - Extracted reactivity tokens.
  * @property {string[]} [components] - Imperative components array.
  * @property {Object} [defaultValues] - Initial state from setup.
- * @property {Object.<string, Function>} [slots] - Computed slots.
+ * @property {Object.<string, CoraliteModuleSlotFunction>} [slots] - Computed slots.
  */
 
 /**
@@ -32,10 +33,9 @@
  * @property {string} id - Unique instance identifier
  * @property {string} instanceId - Unique instance identifier
  * @property {string} [componentId] - component identifier for shared functions
- * @property {import('./core.js').CoralitePath & import('./core.js').CoraliteFilePath} [path] - Component AST
+ * @property {CoralitePath & CoraliteFilePath} [path] - Component AST
  * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
  * @property {Object.<string, string>} [refs] - Instance refs
- * @property {HTMLElement | Document} [root] - Element Root or DOM
  * @property {Object.<string, any>} [helpers] - Plugin helpers available to the script
  * @property {AbortSignal} [signal] - Lifecycle abort signal for unmount events (null for declarative components).
  */
@@ -44,6 +44,7 @@
  * @typedef {Object} ScriptPluginHelperGlobalContext
  * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {Object.<string, any>} [imports] - Module imports for helpers
+ * @property {Object.<string, CoraliteModuleValue>} [values] - Global context values
  */
 
 /**
