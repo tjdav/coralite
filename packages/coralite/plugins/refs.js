@@ -1,5 +1,9 @@
 import { createPlugin } from '#lib'
 
+/**
+ * @import { ScriptPluginHelperGlobalContext, ScriptPluginHelperLocalInstance } from '../types/index.js'
+ */
+
 export const refsPlugin = createPlugin({
   name: 'refs',
   client: {
@@ -7,11 +11,10 @@ export const refsPlugin = createPlugin({
       /**
        * Creates a ref resolver function that maps IDs to DOM elements.
        *
-       * @param {import('../types/index.js').ScriptPluginHelperGlobalContext} globalContext
-       * @returns {import('../types/index.js').ScriptPluginHelperLocalInstance}
+       * @returns {ScriptPluginHelperLocalInstance}
        */
-      refs (globalContext) {
-        return ({ values, root }) => {
+      refs () {
+        return ({ values }) => {
           const elements = {}
 
           return function (id) {
@@ -25,8 +28,7 @@ export const refsPlugin = createPlugin({
               return null
             }
 
-            // @ts-ignore
-            const element = root.querySelector(`[ref="${refId}"]`)
+            const element = document.querySelector(`[ref="${refId}"]`)
 
             if (element) {
               elements[id] = element

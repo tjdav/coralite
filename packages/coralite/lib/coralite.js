@@ -1171,7 +1171,6 @@ const globalSetupValuesPromise = getSetups(globalContext);
       component: {},
       signal: globalAbortController.signal
     };
-    context.root = window.document;
     const setupValues = await globalSetupValuesPromise;
     const helpers = await getHelpers(context);
     context.helpers = helpers;
