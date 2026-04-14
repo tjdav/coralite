@@ -126,15 +126,15 @@ Coralite injects a global promise named `window.__coralite_ready__` into the bui
   * Example: `await page.waitForFunction(() => window.__coralite_ready__)`
   * Failing to wait for this promise can lead to race conditions where the test clicks buttons or asserts state before the components have actually mounted or initialized their internal variables.
 
-Here is the deep dive and extensive expansion of **Section 4. Framework Extensibility (createPlugin)**. You can replace the previous Section 4 in your `llms.txt` with this comprehensive breakdown.
+Here is the deep dive and extensive expansion of **Section 4. Framework Extensibility (definePlugin)**. You can replace the previous Section 4 in your `llms.txt` with this comprehensive breakdown.
 
 ***
 
-## 4. Framework Extensibility (createPlugin)
-Coralite provides a highly structured plugin system initialized via the `createPlugin` function. Plugins can hook into the SSG build lifecycle, modify HTML/data, register global components, and inject isolated scripts or helpers into the client runtime.
+## 4. Framework Extensibility (definePlugin)
+Coralite provides a highly structured plugin system initialized via the `definePlugin` function. Plugins can hook into the SSG build lifecycle, modify HTML/data, register global components, and inject isolated scripts or helpers into the client runtime.
 
 ### 4.1 Plugin Configuration & Component Execution (`method`)
-Plugins in Coralite are structured objects created via `createPlugin`, which defines their name, global components, client/server injections, and their core execution logic.
+Plugins in Coralite are structured objects created via `definePlugin`, which defines their name, global components, client/server injections, and their core execution logic.
 
 **The Configuration Object:**
 * `name`: A strictly validated, unique, non-empty string identifying the plugin.
@@ -217,9 +217,9 @@ The `client` object within a plugin definition dictates what gets serialized and
 
 **Example of a properly authored Client Helper Plugin:**
 ```javascript
-import { createPlugin } from 'coralite/plugins'
+import { definePlugin } from 'coralite/plugins'
 
-export const myCustomPlugin = createPlugin({
+export const myCustomPlugin = definePlugin({
   name: 'my-custom-plugin',
   client: {
     helpers: {

@@ -1,6 +1,6 @@
-import { createPlugin } from './dist/lib/index.js'
+import { definePlugin } from './dist/lib/index.js'
 
-const testPlugin = createPlugin({
+const testPlugin = definePlugin({
   name: 'test-script-plugin',
   client: {
     imports: [
@@ -24,7 +24,7 @@ const testPlugin = createPlugin({
   }
 })
 
-const pluginImportsTest = createPlugin({
+const pluginImportsTest = definePlugin({
   name: 'plugin-imports-test',
   client: {
     imports: [
@@ -68,7 +68,7 @@ const pluginImportsTest = createPlugin({
 import { staticAssetPlugin } from './plugins/static-assets.js'
 import oceanStatePlugin from './tests/fixtures/plugins/ocean-state.js'
 
-const asyncHelperPlugin = createPlugin({
+const asyncHelperPlugin = definePlugin({
   name: 'async-helper-plugin',
   client: {
     helpers: {

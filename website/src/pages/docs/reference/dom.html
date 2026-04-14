@@ -280,7 +280,7 @@
       <p>In hooks like <code>onPageSet</code>, you receive the full document tree.</p>
       <coralite-code-highlight language="JavaScript">
         // coralite.config.js
-        createPlugin({
+        definePlugin({
           name: 'my-plugin',
           onPageSet: async (context) => {
             const root = context.elements.root;

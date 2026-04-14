@@ -1,6 +1,6 @@
-import { createPlugin } from '#lib'
+import { definePlugin } from '#lib'
 
-export const metadataPlugin = createPlugin({
+export const metadataPlugin = definePlugin({
   name: 'metadata',
   async onPageSet ({ elements, values, data }) {
     values.$lang = ''

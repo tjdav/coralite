@@ -1,4 +1,4 @@
-import { createPlugin } from '../lib/plugin.js'
+import { definePlugin } from '../lib/plugin.js'
 import { createRequire } from 'node:module'
 import { dirname, join } from 'node:path'
 import { existsSync } from 'node:fs'
@@ -9,7 +9,7 @@ import { cp, mkdir } from 'node:fs/promises'
  * @param {import('../types/index.js').CoraliteStaticAsset[]} assets - Static assets to copy during build.
  */
 export const staticAssetPlugin = (assets = []) => {
-  return createPlugin({
+  return definePlugin({
     name: 'static-asset-plugin',
     onBeforeBuild: async function () {
       const outputDir = this.options.output || join(process.cwd(), 'dist')

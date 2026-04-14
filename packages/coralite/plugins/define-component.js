@@ -1,6 +1,6 @@
 import {
   parseHTML,
-  createPlugin,
+  definePlugin,
   isCoraliteComment,
   isCoraliteElement,
   isCoraliteTextNode
@@ -77,7 +77,7 @@ async function processTokenValue (value, context) {
   return result.root.children
 }
 
-export const defineComponent = createPlugin({
+export const defineComponent = definePlugin({
   name: 'defineComponent',
   /**
    * This function defines a component plugin for the Coralite framework.

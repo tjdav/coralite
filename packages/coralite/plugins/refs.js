@@ -1,10 +1,10 @@
-import { createPlugin } from '#lib'
+import { definePlugin } from '#lib'
 
 /**
  * @import { ScriptPluginHelperGlobalContext, ScriptPluginHelperLocalInstance } from '../types/index.js'
  */
 
-export const refsPlugin = createPlugin({
+export const refsPlugin = definePlugin({
   name: 'refs',
   client: {
     helpers: {

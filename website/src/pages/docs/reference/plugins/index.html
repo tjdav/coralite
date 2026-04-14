@@ -27,7 +27,7 @@
         <li><a href="#page-level-plugins">Page-Level Plugins</a></li>
         <li><a href="#lifecycle-hooks">Lifecycle Hooks</a></li>
         <li><a href="#client-plugins">Client Plugins & Helpers</a></li>
-        <li><a href="./create-plugin.html">Create Plugin API</a></li>
+        <li><a href="./define-plugin.html">Create Plugin API</a></li>
         <li><a href="#built-in-plugins">Built-in Plugins</a></li>
       </ul>
     </nav>
@@ -92,12 +92,12 @@
     <!-- Creating Plugins Section -->
     <section id="creating-plugins">
       <coralite-heading level="h2" text="Creating Plugins"></coralite-heading>
-      <p>Use the <code>createPlugin</code> function to define a new plugin with configuration options:</p>
+      <p>Use the <code>definePlugin</code> function to define a new plugin with configuration options:</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { createPlugin } from 'coralite'
+        import { definePlugin } from 'coralite'
 
-        const myPlugin = createPlugin({
+        const myPlugin = definePlugin({
         name: 'my-plugin',
         method: (options, context) => {
         // Server-side logic
@@ -117,7 +117,7 @@
         })
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="createPlugin Parameters"></coralite-heading>
+      <coralite-heading level="h3" text="definePlugin Parameters"></coralite-heading>
       <div class="table-responsive">
         <table class="table">
           <thead>
@@ -335,12 +335,12 @@
         tags:</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { createPlugin } from 'coralite'
+        import { definePlugin } from 'coralite'
         import { readFile } from 'node:fs/promises'
         import { join, resolve } from 'node:path'
 
         export default ({ path, minify } = {}) => {
-        return createPlugin({
+        return definePlugin({
         name: 'inline-css',
         async onPageSet(context) {
         // Walk through all elements in the page
@@ -424,7 +424,7 @@
       <p>Hooks allow plugins to respond to specific events in the Coralite lifecycle:</p>
 
       <coralite-code-highlight language="JavaScript">
-        const analyticsPlugin = createPlugin({
+        const analyticsPlugin = definePlugin({
         name: 'analytics',
         onPageSet: async (data) => {
         // Called when a new page is created
@@ -462,7 +462,7 @@
         where Coralite automatically executes the factory with context. Client setup execution has been moved from server-side to the frontend bundle.</p>
 
       <coralite-code-highlight language="JavaScript">
-        const myClientPlugin = createPlugin({
+        const myClientPlugin = definePlugin({
         name: 'client-enhancer',
         client: {
         // Called when plugin is registered

@@ -1,8 +1,8 @@
-import { Coralite, createPlugin, staticAssetPlugin } from '../../lib/index.js'
+import { Coralite, definePlugin, staticAssetPlugin } from '../../lib/index.js'
 import oceanStatePlugin from '../fixtures/plugins/ocean-state.js'
 import signalPlugin from '../fixtures/plugins/signal-plugin.js'
 
-const testPlugin = createPlugin({
+const testPlugin = definePlugin({
   name: 'test-script-plugin',
   client: {
     imports: [
@@ -26,7 +26,7 @@ const testPlugin = createPlugin({
   }
 })
 
-const pluginImportsTest = createPlugin({
+const pluginImportsTest = definePlugin({
   name: 'plugin-imports-test',
   client: {
     imports: [
@@ -67,7 +67,7 @@ const pluginImportsTest = createPlugin({
   }
 })
 
-const asyncHelperPlugin = createPlugin({
+const asyncHelperPlugin = definePlugin({
   name: 'async-helper-plugin',
   client: {
     helpers: {

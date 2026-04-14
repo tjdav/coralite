@@ -1,9 +1,9 @@
-import { createPlugin } from 'coralite'
+import { definePlugin } from 'coralite'
 
 /**
  * My Plugin
  */
-export default createPlugin({
+export default definePlugin({
   name: 'my-plugin',
   /**
    * Called when the plugin is invoked in a component

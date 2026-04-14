@@ -140,7 +140,7 @@ function processComponents (path) {
  * @returns {CoralitePlugin<T> & { components: HTMLData[] }} A configured plugin instance ready to be registered with Coralite
  * @example
  * // Basic plugin
- * const myPlugin = createPlugin({
+ * const myPlugin = definePlugin({
  *   name: 'my-plugin',
  *   method: (options, context) => {
  *     // Plugin logic implementation
@@ -150,7 +150,7 @@ function processComponents (path) {
  *
  * @example
  * // Plugin with components and metadata
- * const advancedPlugin = createPlugin({
+ * const advancedPlugin = definePlugin({
  *   name: 'advanced-plugin',
  *   method: async (options, context) => {
  *     // Async plugin logic
@@ -164,13 +164,13 @@ function processComponents (path) {
  *
  * @example
  * // Plugin with caching disabled
- * const devPlugin = createPlugin({
+ * const devPlugin = definePlugin({
  *   name: 'dev-plugin',
  *   method: (options, context) => context.values,
  *   components: ['src/components/dev.html'],
  * })
  */
-export function createPlugin ({
+export function definePlugin ({
   name,
   method,
   components = [],

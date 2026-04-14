@@ -1,6 +1,6 @@
-import { createPlugin } from '../../../dist/lib/index.js'
+import { definePlugin } from '../../../lib/index.js'
 
-export default createPlugin({
+export default definePlugin({
   name: 'testSignalPlugin',
   client: {
     helpers: {
@@ -8,6 +8,7 @@ export default createPlugin({
         return (localContext) => () => {
           if (localContext.signal) {
             localContext.signal.addEventListener('abort', () => {
+              // @ts-ignore
               window.pluginAbortCount++
             })
           }

@@ -63,7 +63,7 @@ const CI_PLATFORMS = [
   }
 ]
 
-async function createPlugin () {
+async function definePlugin () {
   let target = options.output
   const pkgInfo = extractPackageInfoFromUserAgent(process.env.npm_config_user_agent)
 
@@ -194,4 +194,4 @@ async function createPlugin () {
   prompts.outro(doneMessage)
 }
 
-createPlugin().catch(console.error)
+definePlugin().catch(console.error)

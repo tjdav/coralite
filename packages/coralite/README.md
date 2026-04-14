@@ -17,7 +17,7 @@ coralite is a static site generator library built around the emerging [HTML modu
   - [Coralite](https://coralite.dev/docs/reference/coralite.html)
   - [Plugin system](https://coralite.dev/docs/reference/plugins/index.html)
     - [Create plugin](https://coralite.dev/docs/reference/plugins/create-plugin.html)
-      - The `createPlugin` function is the entry point for extending Coralite's functionality.
+      - The `definePlugin` function is the entry point for extending Coralite's functionality.
     - [Define component](https://coralite.dev/docs/reference/plugins/define-component.html)
       - The `defineComponent` plugin is Coralite's core built-in plugin that enables dynamic template functionality.
     - [Ref](https://coralite.dev/docs/reference/plugins/refs-plugin.html)

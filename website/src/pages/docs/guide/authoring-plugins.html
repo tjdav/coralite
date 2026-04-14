@@ -12,7 +12,7 @@
   <main class="container content">
     <h1>Advanced Guide: Authoring Plugins</h1>
 
-    <p>Plugins are the primary way to extend Coralite's functionality. The framework's architecture is designed to be highly extensible via the <code>createPlugin</code> function.</p>
+    <p>Plugins are the primary way to extend Coralite's functionality. The framework's architecture is designed to be highly extensible via the <code>definePlugin</code> function.</p>
 
     <p>With plugins, you can hook deep into the build lifecycle, register custom components globally, bundle external scripts, and inject custom helper functions directly into the frontend.</p>
 
@@ -21,7 +21,7 @@
     <p>Authoring a plugin involves understanding how Coralite synthesizes server-side rendering and client-side hydration. When you register a plugin, Coralite integrates it through the following flow:</p>
 
     <ol>
-      <li><strong>Registration & Bootstrapping:</strong> Coralite loads your plugin via <code>createPlugin</code>, reading its <code>client.config</code> and bundling any dependencies defined in <code>client.imports</code>.</li>
+      <li><strong>Registration & Bootstrapping:</strong> Coralite loads your plugin via <code>definePlugin</code>, reading its <code>client.config</code> and bundling any dependencies defined in <code>client.imports</code>.</li>
       <li><strong>Server Execution:</strong> As the generator processes pages and encounters dynamic components, it fires your plugin's lifecycle hooks (e.g., <code>onPageSet</code>, <code>onBeforePageRender</code>). It also executes <code>client.setup()</code> asynchronously to fetch any required data.</li>
       <li><strong>Data Binding & Injection:</strong> Coralite processes the component's tokens and slots. Crucially, it merges the data returned from your <code>client.setup()</code> into the component's <code>values</code> object.</li>
       <li><strong>Client Hydration:</strong> Finally, Coralite serializes your component's <code>client.script</code> and your plugin's custom <code>helpers</code>. When the browser loads the page, the bundled modules are provided securely via the <code>helpers</code> context, enabling dynamic interactions.</li>
@@ -79,7 +79,7 @@
     <p>To use client-only APIs (like <code>window</code>, <code>document</code>, or the injected <code>AbortSignal</code>), the injected helper function must encapsulate that logic within the final returned function.</p>
 
     <coralite-code-highlight language="javascript">
-      // Server-side definition in createPlugin
+      // Server-side definition in definePlugin
       client: {
         helpers: {
           // Phase 1: Runs on the SERVER and receives global context
@@ -116,7 +116,7 @@
 
     <hr>
     
-    <p>Ready to build your plugin? Consult the strict API signatures and configuration options in the <a href="/docs/reference/create-plugin.html">createPlugin API Reference</a>.</p>
+    <p>Ready to build your plugin? Consult the strict API signatures and configuration options in the <a href="/docs/reference/define-plugin.html">definePlugin API Reference</a>.</p>
 
   </main>
   <coralite-footer></coralite-footer>

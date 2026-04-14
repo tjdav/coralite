@@ -1,10 +1,10 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createPlugin } from '#lib'
+import { definePlugin } from '#lib'
 
-describe('createPlugin', () => {
+describe('definePlugin', () => {
   it('should validate basic plugin properties', () => {
-    const plugin = createPlugin({
+    const plugin = definePlugin({
       name: 'test-plugin',
       method: () => {
       }
@@ -16,7 +16,7 @@ describe('createPlugin', () => {
 
   it('should validate namespaceExport is a string', () => {
     assert.doesNotThrow(() => {
-      createPlugin({
+      definePlugin({
         name: 'test',
         client: {
           imports: [{
@@ -28,7 +28,7 @@ describe('createPlugin', () => {
     })
 
     assert.throws(() => {
-      createPlugin({
+      definePlugin({
         name: 'test',
         client: {
           imports: [{
@@ -42,7 +42,7 @@ describe('createPlugin', () => {
 
   it('should allow valid import combinations', () => {
     assert.doesNotThrow(() => {
-      createPlugin({
+      definePlugin({
         name: 'test',
         client: {
           imports: [{
