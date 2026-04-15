@@ -43,7 +43,11 @@ jobs:
       - name: set npm config
         run: |
           # Codeberg Auth
-          npm config set //codeberg.org/api/packages/tjdavid/npm/:_authToken=${{secrets.CODEBERG_TOKEN}}
+          pnpm config set //codeberg.org/api/packages/tjdavid/npm/:_authToken=${{secrets.CODEBERG_TOKEN}}
+
+          # Prevent timeout retries which cause 409 Conflicts if the first publish attempt succeeds
+          pnpm config set fetch-retries 0
+          pnpm config set fetch-timeout 600000
 
       - name: Publish to Codeberg
         run: |

@@ -43,7 +43,7 @@ jobs:
       - name: set npm config
         run: |
           # npmjs.com Auth
-          npm config set //registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}
+          pnpm config set //registry.npmjs.org/:_authToken=${{secrets.NPM_TOKEN}}
 
       - name: Publish to NPM
         run: |
