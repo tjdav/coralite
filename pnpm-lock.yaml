@@ -191,11 +191,11 @@ importers:
   website:
     devDependencies:
       coralite-plugin-aggregation:
-        specifier: ^0.7.2
-        version: 0.7.2(coralite@0.31.5)
+        specifier: ^0.7.3
+        version: 0.7.3(coralite@0.31.7)
       coralite-plugin-inline-css:
-        specifier: ^0.4.0
-        version: 0.4.0
+        specifier: ^0.4.1
+        version: 0.4.1(coralite@0.31.7)
       coralite-scripts:
         specifier: workspace:*
         version: link:../packages/coralite-scripts
@@ -922,16 +922,18 @@ packages:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
-  coralite-plugin-aggregation@0.7.2:
-    resolution: {integrity: sha512-DE2bLVTR9wkGcUYYMM21Xux9XSqtYXAiBYCs+PbusJZoF9dLrnzD9LgIJvWbIS9uEXnEPAKvf/mAju4v89rhzg==}
+  coralite-plugin-aggregation@0.7.3:
+    resolution: {integrity: sha512-s6KMlvdyq+0RDzV6XuHBIoHVcGrVSx3eZZht/q9hPPDnoxNeQMgSwaeeflSOKHw5fXMzqOEC6wE4qQMEtMaXVg==}
     peerDependencies:
-      coralite: ^0.29.0
+      coralite: ^0.31.7
 
-  coralite-plugin-inline-css@0.4.0:
-    resolution: {integrity: sha512-JixQ1wdLhOUUN7WFRSML1yPkiv45s8WHgihFsWJ1hgPcKISRzon7v7uMapoy0d54OOselHzHzuReOoiu3WblNQ==}
+  coralite-plugin-inline-css@0.4.1:
+    resolution: {integrity: sha512-mcUV2UMVnouHHtaEULSoP5y76C5LReIepAepIX3huhZdqRpYKZ5wq3gV9RA6MwVlr/+g3ThPH2ExrOh9oE6tzA==}
+    peerDependencies:
+      coralite: ^0.31.7
 
-  coralite@0.31.5:
-    resolution: {integrity: sha512-cym2YrfewOP1C/breHisWtypABKY9UK991NH8Eeqb9+MfuqV6o7wNjKA8DIC/hltWNQHGpMkDGVupo3ECYq6Kg==}
+  coralite@0.31.7:
+    resolution: {integrity: sha512-s6YH6dk+y1cBcDguOvy1o1fPUpiucvMMeKZS/Sm0D/yadfdiHuLI5W2tVTlkqJ20Hs1bY/3EJUWKERUBZdkLJw==}
     engines: {node: '>20.19.0'}
     hasBin: true
 
@@ -2920,17 +2922,18 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.7.2(coralite@0.31.5):
+  coralite-plugin-aggregation@0.7.3(coralite@0.31.7):
     dependencies:
-      coralite: 0.31.5
+      coralite: 0.31.7
 
-  coralite-plugin-inline-css@0.4.0:
+  coralite-plugin-inline-css@0.4.1(coralite@0.31.7):
     dependencies:
+      coralite: 0.31.7
       postcss: 8.5.6
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
 
-  coralite@0.31.5:
+  coralite@0.31.7:
     dependencies:
       acorn: 8.16.0
       acorn-walk: 8.3.5
@@ -3795,7 +3798,7 @@ snapshots:
   postcss-minify@1.2.0(postcss@8.5.6):
     dependencies:
       postcss: 8.5.6
-      postcss-selector-parser: 7.1.0
+      postcss-selector-parser: 7.1.1
       postcss-value-parser: 4.2.0
 
   postcss-resolve-nested-selector@0.1.6: {}
