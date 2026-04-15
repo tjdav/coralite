@@ -9,7 +9,7 @@ jobs:
   publish:
     runs-on: codeberg-small-lazy
     container:
-      image: "guergeiro/pnpm:22-10-slim"
+      image: "guergeiro/pnpm:lts-latest-slim"
     steps:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@v4
