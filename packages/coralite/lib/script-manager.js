@@ -50,9 +50,9 @@ ScriptManager.prototype.use = async function (plugin) {
 ScriptManager.prototype.getHelpersContent = function () {
   let helpers = ''
 
-  for (const key of Object.keys(this.helpers)) {
+  for (const [key, value] of Object.entries(this.helpers)) {
     helpers += `"${key}": async (globalContext) => {
-      const phase1 = ${this.helpers[key]};
+      const phase1 = ${value};
       const phase2 = await phase1(globalContext);
       return (localContext) => phase2(localContext);
     },`
@@ -80,9 +80,9 @@ ScriptManager.prototype.addHelper = async function (name, method) {
 ScriptManager.prototype.getHelpers = function () {
   let helpers = ''
 
-  for (const key of Object.keys(this.helpers)) {
+  for (const [key, value] of Object.entries(this.helpers)) {
     helpers += `"${key}": async (globalContext) => {
-      const phase1 = ${this.helpers[key]};
+      const phase1 = ${value};
       const phase2 = await phase1(globalContext);
       return (localContext) => phase2(localContext);
     },`
@@ -304,7 +304,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       }
     } else if (fnData.script && fnData.script.components && fnData.script.components.length > 0) {
       processedComponent[componentId] = true
-    } else if (fnData.defaultValues && Object.keys(fnData.defaultValues).length > 0) {
+    } else if (hasObjectKeys(fnData.defaultValues)) {
       processedComponent[componentId] = true
     }
   }
@@ -548,7 +548,7 @@ export default {
 
 
             // Do not externalize if the entry point name actually matches a bare specifier
-            if (Object.keys(entryPoints).includes(args.path)) {
+            if (Object.hasOwn(entryPoints, args.path)) {
               return null
             }
 
@@ -683,8 +683,9 @@ export default {
               }
             }
 
-            const importsObjContent = Object.keys(importMap).length > 0
-              ? `const componentImports = { ${Object.entries(importMap).map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
+            const importEntries = Object.entries(importMap)
+            const importsObjContent = importEntries.length > 0
+              ? `const componentImports = { ${importEntries.map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
               : 'const componentImports = {};'
 
             contents += importsObjContent + '\n'
@@ -749,8 +750,9 @@ export default {
             }
 
             // Generate imports object for context injection
-            const importsObjContent = Object.keys(importMap).length > 0
-              ? `const pluginImports = { ${Object.entries(importMap).map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
+            const importEntries = Object.entries(importMap)
+            const importsObjContent = importEntries.length > 0
+              ? `const pluginImports = { ${importEntries.map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
               : 'const pluginImports = {};'
 
             contents += importsObjContent + '\n'
