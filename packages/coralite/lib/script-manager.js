@@ -369,7 +369,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   // Resolve dom-serializer path using import.meta.resolve
   const domSerializerPath = fileURLToPath(import.meta.resolve('dom-serializer'))
 
-  entryCodeParts.push(`import render from "${domSerializerPath}";\n`)
+  entryCodeParts.push(`import render from ${JSON.stringify(domSerializerPath)};\n`)
   entryCodeParts.push('\nexport { getHelpers, getSetups, render };\n')
 
   const entryPoints = {
