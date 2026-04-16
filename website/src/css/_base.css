@@ -55,37 +55,45 @@ h6,
   margin-top: 0;
   margin-bottom: var(--spacer-1);
   font-family: var(--font-heading);
+  font-weight: 500;
   line-height: var(--heading-line-height);
 }
 
 h1,
 .h1 {
-  font-size: calc(var(--spacer-base) + 2rem);
+  font-size: var(--h1-font-size);
 }
 
 h2,
 .h2 {
-  font-size: calc(var(--spacer-base) + 1.6rem);
+  font-size: var(--h2-font-size);
 }
 
 h3,
 .h3 {
-  font-size: calc(var(--spacer-base) + .8rem);
+  font-size: var(--h3-font-size);
 }
 
 h4,
 .h4 {
-  font-size: calc(var(--spacer-base) + .5rem);
+  font-size: var(--h4-font-size);
 }
 
 h5,
 .h5 {
-  font-size: calc(var(--spacer-base) + .3rem);
+  font-size: var(--h5-font-size);
 }
 
 h6,
 .h6 {
-  font-size: calc(var(--spacer-base) + .1rem);
+  font-size: var(--h6-font-size);
+}
+
+.display {
+  font-size: var(--display-font-size);
+  font-weight: 300;
+  line-height: var(--heading-line-height);
+  font-family: var(--font-heading);
 }
 
 pre {

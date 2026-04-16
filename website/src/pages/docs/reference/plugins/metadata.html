@@ -12,7 +12,7 @@
 
   <main class="container content">
     <!-- Introduction -->
-    <h1>Metadata Plugin</h1>
+    <h1 class="display">Metadata Plugin</h1>
     <p>The <code>metadata</code> plugin is a built-in Coralite tool that extracts metadata from <code>&lt;meta&gt;</code> tags in your page's <code>&lt;head&gt;</code> and makes them available as template variables. This allows you to easily reuse page metadata within your components and layout templates.</p>
 
     <!-- Table of Contents -->
@@ -55,7 +55,7 @@
       <coralite-code-html>
         <template id="page-header">
           <header>
-            <h1>{{ meta_title }}</h1>
+            <h1 class="display">{{ meta_title }}</h1>
             <p>By {{ meta_author }}</p>
             <div class="summary">{{ meta_description }}</div>
           </header>

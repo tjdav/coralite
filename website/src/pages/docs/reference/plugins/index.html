@@ -12,7 +12,7 @@
 
   <main class="container content">
     <!-- Introduction -->
-    <h1>Coralite Plugin System</h1>
+    <h1 class="display">Coralite Plugin System</h1>
     <p>Coralite plugins are extensible modules that integrate into the Coralite framework's lifecycle, enabling
       developers to customize and enhance its behavior through hooks, data manipulation, and dynamic content generation.
     </p>
@@ -44,7 +44,7 @@
       <coralite-code-html>
         <template id="simple-component">
           <div>
-            <h1>{{ title }}</h1>
+            <h1 class="display">{{ title }}</h1>
             <p>{{ description }}</p>
           </div>
         </template>
@@ -64,7 +64,7 @@
       <coralite-code-html>
         <template id="dynamic-component">
           <div>
-            <h1>{{ greeting }}</h1>
+            <h1 class="display">{{ greeting }}</h1>
             <button type="button" ref="actionBtn">Click me</button>
           </div>
         </template>
@@ -273,7 +273,7 @@
       <coralite-code-html>
         <template id="user-profile">
           <div>
-            <h1>{{ name }}</h1>
+            <h1 class="display">{{ name }}</h1>
             <p>{{ bio }}</p>
             <span>Joined: {{ joinDate }}</span>
           </div>

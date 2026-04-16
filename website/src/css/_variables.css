@@ -38,6 +38,15 @@
   --line-height: 1.5;
   --heading-line-height: 1.2;
 
+  /* headings */
+  --h1-font-size: calc(var(--spacer-base) * 2.5);
+  --h2-font-size: calc(var(--spacer-base) * 2);
+  --h3-font-size: calc(var(--spacer-base) * 1.75);
+  --h4-font-size: calc(var(--spacer-base) * 1.5);
+  --h5-font-size: calc(var(--spacer-base) * 1.25);
+  --h6-font-size: var(--spacer-base);
+  --display-font-size: calc(var(--spacer-base) * 4);
+
   /* border */
   --border-radius: .5rem;
 

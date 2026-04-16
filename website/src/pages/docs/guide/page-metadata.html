@@ -10,7 +10,7 @@
 <body>
   <coralite-navbar></coralite-navbar>
   <main class="container content">
-    <h1>Core Concepts: Page Metadata</h1>
+    <h1 class="display">Core Concepts: Page Metadata</h1>
 
     <p>In a standard HTML page, the <code>&lt;head&gt;</code> element contains metadata crucial for SEO, social sharing, and page structure. Coralite provides a built-in <strong>metadata plugin</strong> that automatically extracts this information and makes it available globally to all your components during the build process.</p>
 
@@ -56,7 +56,7 @@
       <template id="post-header">
         <header class="blog-header">
           <!-- Accessing the title -->
-          <h1>{{ meta_pageTitle }}</h1>
+          <h1 class="display">{{ meta_pageTitle }}</h1>
           
           <div class="meta-info">
             <!-- Accessing the custom meta tags -->
