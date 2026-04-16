@@ -78,6 +78,14 @@
 
     <p>Now, when using the component, simply pass the data as attributes:</p>
 
+    <div class="callout callout-warning">
+      <strong>⚠️ Warning: AST Splicing (Host Tag Removal)</strong>
+      <p>
+        Coralite's server completely deletes the host tag of declarative components and replaces it with the template's inner HTML. 
+        If you try to style the host tag (e.g., <code>&lt;user-card class="foo"&gt;</code>) in CSS or use it as a flex container, it will break because the tag simply won't exist in the final HTML.
+      </p>
+    </div>
+
     <coralite-code-html>
       <!-- src/pages/team.html -->
       <body>

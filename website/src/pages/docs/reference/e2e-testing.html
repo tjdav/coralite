@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite Hydration Readiness & E2E Testing Reference"
+    description="Technical specifications and documentation for Coralite's hydration pipelines and window.__coralite_ready__ promise."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Hydration Readiness & E2E Testing</h1>
+
+    <p>This reference details the technical specifications of Coralite's client-side hydration phase and how it exposes its state for End-to-End (E2E) testing frameworks.</p>
+
+    <coralite-heading level="h2" text="The window.__coralite_ready__ Promise"></coralite-heading>
+
+    <p>Coralite injects a global promise named <code>window.__coralite_ready__</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
+
+    <coralite-heading level="h3" text="Resolution Lifecycle Pipelines"></coralite-heading>
+
+    <p>The framework strict-awaits the hydration process, ensuring the <code>window.__coralite_ready__</code> promise only resolves after two critical asynchronous pipelines finish:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Pipeline</th>
+        <th>Internal Variable</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><strong>Component Definition</strong></td>
+        <td><code>loadPromises</code></td>
+        <td>The framework scans the DOM, dynamically imports the required module chunks for any custom elements found on the current page, and registers them via the browser's native <code>customElements.define()</code> API.</td>
+      </tr>
+      <tr slot="body">
+        <td><strong>Declarative Scripts</strong></td>
+        <td><code>declarativePromises</code></td>
+        <td>The framework fully executes the asynchronous <code>client.script</code> blocks (defined in <code>defineComponent</code>) for all declarative component instances mapped on the page.</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="h2" text="E2E Testing Implications"></coralite-heading>
+
+    <p>Because end-to-end testing frameworks (like Playwright or Cypress) interact with the DOM much faster than front-end hydration completes, tests <strong>MUST</strong> wait for this promise immediately after page navigation.</p>
+
+    <p>Failing to wait for this promise can lead to race conditions where the test runner attempts to click buttons, select inputs, or assert component state before the custom elements have actually mounted or initialized their internal variables, leading to flaky or failing tests.</p>
+
+    <p>For practical examples on how to implement this in popular testing frameworks, see the <a href="/docs/guide/e2e-testing.html">E2E Testing Guide</a>.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

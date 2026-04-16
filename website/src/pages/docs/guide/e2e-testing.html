@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite E2E Testing & Hydration Readiness Guide"
+    description="Learn how to perform End-to-End (E2E) testing on Coralite applications using Playwright or Cypress, and how to wait for Hydration Readiness."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">E2E Testing & Hydration Readiness</h1>
+
+    <p>Because Coralite uses a Server-Side Rendering (SSR) approach with deferred client-side component definitions and scripts, there is a small window of time between when the browser initially paints the HTML and when the dynamic web components actually become interactive (Hydration).</p>
+
+    <p>End-to-end testing frameworks like Playwright or Cypress interact with the DOM incredibly fast. If you try to click a button or assert the state of a dynamic component immediately after navigating to a page, your tests will likely fail due to a race condition: the framework hasn't finished mounting or initializing the component's internal state.</p>
+
+    <coralite-heading level="h2" text="The window.__coralite_ready__ Promise"></coralite-heading>
+
+    <p>To solve this, Coralite injects a global promise named <code>window.__coralite_ready__</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
+
+    <p>Your testing frameworks <strong>MUST</strong> wait for this promise to resolve immediately after performing a page navigation before interacting with any Coralite components.</p>
+
+    <coralite-heading level="h3" text="Playwright Example"></coralite-heading>
+
+    <coralite-code-highlight language="javascript">
+      import { test, expect } from '@playwright/test';
+
+      test('component should increment counter', async ({ page }) => {
+        // 1. Navigate to the page
+        await page.goto('/my-page');
+
+        // 2. Wait for Coralite hydration to complete
+        await page.waitForFunction(() => window.__coralite_ready__);
+
+        // 3. Now it is safe to interact with the DOM
+        const button = page.locator('my-counter button');
+        await button.click();
+
+        await expect(page.locator('my-counter .count-display')).toHaveText('1');
+      });
+    </coralite-code-highlight>
+
+    <coralite-heading level="h3" text="Cypress Example"></coralite-heading>
+
+    <coralite-code-highlight language="javascript">
+      describe('Counter Component', () => {
+        it('should increment counter', () => {
+          // 1. Navigate to the page
+          cy.visit('/my-page');
+
+          // 2. Wait for Coralite hydration to complete
+          cy.window().then((win) => {
+            return win.__coralite_ready__;
+          });
+
+          // 3. Now it is safe to interact with the DOM
+          cy.get('my-counter button').click();
+          cy.get('my-counter .count-display').should('have.text', '1');
+        });
+      });
+    </coralite-code-highlight>
+
+    <coralite-heading level="h2" text="What Does It Wait For?"></coralite-heading>
+
+    <p>The <code>window.__coralite_ready__</code> promise ensures two critical hydration pipelines have completed:</p>
+
+    <ol>
+      <li><strong>Component Definition:</strong> The framework has dynamically imported all required module chunks for custom elements and registered them via <code>customElements.define()</code>.</li>
+      <li><strong>Declarative Scripts:</strong> The framework has fully executed the async <code>client.script</code> blocks for all declarative component instances mapped on the page.</li>
+    </ol>
+
+    <p>For a detailed technical breakdown of how these pipelines operate under the hood, refer to the <a href="/docs/reference/e2e-testing.html">Hydration Readiness Technical Reference</a>.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

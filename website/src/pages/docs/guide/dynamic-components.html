@@ -16,6 +16,14 @@
 
     <p>Dynamic components are powered by Coralite's core built-in plugin: <code>defineComponent</code>.</p>
 
+    <div class="alert alert-warning">
+      <strong>⚠️ Warning: AST Splicing (Host Tag Removal)</strong>
+      <p>
+        Just like static components, Coralite's server completely deletes the host tag of declarative dynamic components and replaces it with the template's inner HTML. 
+        If you try to style the host tag (e.g., <code>&lt;my-component class="foo"&gt;</code>) in CSS or use it as a flex container, it will break because the tag simply won't exist in the final HTML.
+      </p>
+    </div>
+
     <coralite-heading level="h2" text="Upgrading a Component"></coralite-heading>
 
     <p>To turn a static component into a dynamic one, you simply append a <code>&lt;script type="module"&gt;</code> tag below your <code>&lt;template&gt;</code> and export <code>defineComponent</code>.</p>
@@ -69,6 +77,12 @@
 
     <p>When used as <code>&lt;greeting-card name=" alice "&gt;&lt;/greeting-card&gt;</code>, the output will be "Welcome, ALICE!".</p>
 
+    <coralite-heading level="h3" text="Best Practices for Data Binding"></coralite-heading>
+
+    <p>Developers should <strong>not</strong> pass complex objects or arrays as stringified JSON attributes to components. Passing <code>data='[{"id": 1}, {"id": 2}]'</code> into an HTML attribute is a common anti-pattern in vanilla HTML/JS, but Coralite actively discourages it.</p>
+
+    <p>Instead, the framework expects developers to handle complex data structures in their server-side script logic (like mapping over an array) and pass only decomposed primitive values (strings, numbers, booleans) as individual attributes to their components.</p>
+
     <coralite-heading level="h2" text="Slots: Server-Side Processing"></coralite-heading>
 
     <p>While static components use the standard <code>&lt;slot&gt;</code> tag blindly, <code>defineComponent</code> allows you to intercept and process slot content on the server before it's rendered.</p>
@@ -78,7 +92,7 @@
     <coralite-code-html>
       <template id="smart-list">
         <ul class="list">
-          {{ items }}
+          <slot name="items"></slot>
         </ul>
       </template>
 
@@ -87,7 +101,7 @@
 
         export default defineComponent({
           slots: {
-            // The slot name matches the token {{ items }} in the template
+            // The slot name matches <slot name="items"> in the template
             items: (slotNodes, values) => {
               // Transform the content passed into the slot
               return slotNodes.map(node => {
@@ -105,9 +119,11 @@
 
     <coralite-heading level="h2" text="Server-Side Setup"></coralite-heading>
 
-    <p>If your component needs to fetch data from an API or read files before rendering, use the <code>client.setup</code> function. It effectively replaces Top-Level Await (TLA) in component modules.</p>
+    <p>If your component needs to fetch data from an API or read files before rendering, use the <code>client.setup</code> function.</p>
 
-    <p>The object returned by <code>setup</code> is seamlessly merged into the component's <code>values</code> object, making that data available to tokens and client scripts.</p>
+    <p>The object returned by <code>setup</code> is seamlessly merged into the component's <code>values</code> object, making that data available to tokens and client scripts. Keep in mind that anything returned by <code>setup</code> will be stringified using <code>serialize-javascript</code> before being sent to the client.</p>
+
+    <p>While <code>setup</code> is used for data fetching on the server, if you need true Top-Level Await (TLA) for client-side functionality (like awaiting a module initialization in the browser), you must use <code>client.imports</code> which is designed to handle TLA natively for the client.</p>
 
     <coralite-code-html>
       <script type="module">

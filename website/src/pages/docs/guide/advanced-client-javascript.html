@@ -164,13 +164,14 @@
       </script>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Using External Libraries"></coralite-heading>
+    <coralite-heading level="h2" text="Using External Libraries (The Static Import Ban)"></coralite-heading>
 
     <p>
-      Because the client-side script is isolated, you cannot use static <code>import</code> statements for client-side
-      dependencies directly within the <code>script</code> function body.
-      Instead, you can define them inside the <code>imports</code> array in the client object to bundle them at
-      build-time.
+      Because the client-side script is extracted and serialized to run isolated in the browser, <strong>static <code>import</code> statements cannot be used directly inside the <code>client.script</code> block</strong>. If you try to write <code>import _ from 'lodash'</code> inside <code>client.script</code>, the build will fail.
+    </p>
+
+    <p>
+      Instead, external dependencies must be declared in the <code>client.imports</code> array so the bundler can process them at build time.
     </p>
 
     <coralite-code-highlight language="javascript">
