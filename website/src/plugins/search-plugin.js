@@ -1,6 +1,6 @@
 import { definePlugin } from 'coralite'
 import { join } from 'node:path'
-import { writeFile, mkdir } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
 
 let searchIndex = []
 
@@ -21,7 +21,9 @@ export default definePlugin({
   name: 'search-plugin',
   onPageSet: async ({ elements, values, data }) => {
     // Only index HTML pages
-    if (!data.path.pathname.endsWith('.html')) return
+    if (!data.path.pathname.endsWith('.html')){
+      return
+    }
 
     const title = values.title || ''
     const description = values.description || ''
@@ -52,13 +54,13 @@ export default definePlugin({
     content = content.replace(/\s+/g, ' ').trim()
 
     searchIndex.push({
-      url: data.path.pathname,
+      url: values.$urlPathname,
       title,
       description,
       content
     })
   },
-  onAfterBuild: async ({ results }) => {
+  onAfterBuild: async () => {
     // Write index to dist
     const dest = join(process.cwd(), 'dist', 'search-index.json')
     try {
