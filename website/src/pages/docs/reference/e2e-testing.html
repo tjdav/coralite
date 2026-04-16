@@ -14,6 +14,14 @@
 
     <p>This reference details the technical specifications of Coralite's client-side hydration phase and how it exposes its state for End-to-End (E2E) testing frameworks.</p>
 
+    <coralite-heading level="h2" text="Testing Plugin (data-testid)"></coralite-heading>
+
+    <p>When Coralite is configured with <code>mode: 'development'</code>, it automatically activates a built-in testing plugin.</p>
+
+    <p>During the AST build phase, this plugin recursively traverses all component templates (both declarative and imperative). Because Coralite isolates references across component instances, the underlying <code>ref</code> strings have already been resolved by the core framework into a strict namespace pattern: <code>[componentId]__[refName]-[index]</code>. Whenever the testing plugin encounters one of these resolved <code>ref</code> attributes, it duplicates that exact namespaced value into a <code>data-testid</code> attribute.</p>
+
+    <p>This ensures that E2E testing frameworks can target highly specific element instances deterministically using the standard <code>data-testid</code> selector pattern without requiring developers to manually maintain duplicate attributes, and guaranteeing these testing hooks are entirely stripped from production builds.</p>
+
     <coralite-heading level="h2" text="The window.__coralite_ready__ Promise"></coralite-heading>
 
     <p>Coralite injects a global promise named <code>window.__coralite_ready__</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>

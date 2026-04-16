@@ -115,14 +115,19 @@ To use a true Web Component with a client-side lifecycle (`connectedCallback`, L
 </script>
 ```
 
-### 3.5 Hydration Readiness & E2E Testing (`window.__coralite_ready__`)
-Coralite injects a global promise named `window.__coralite_ready__` into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.
-* **Resolution Lifecycle:** The framework strict-awaits the hydration process, ensuring the promise only resolves after two critical pipelines finish:
-  1. **Component Definition (`loadPromises`):** The framework scans the DOM, dynamically imports the required module chunks for any custom elements found, and registers them via `customElements.define()`.
-  2. **Declarative Scripts (`declarativePromises`):** The framework fully executes the async `client.script` blocks for all declarative component instances mapped on the page.
-* **E2E Testing:** Because end-to-end testing frameworks (like Playwright or Cypress) interact with the DOM much faster than front-end hydration completes, your tests MUST wait for this promise immediately after page navigation. 
+### 3.5 E2E Testing: Hydration & Testing Selectors
+* **Hydration Readiness (`window.__coralite_ready__`)**: Coralite injects a global promise into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.
+  * **Resolution Lifecycle:** The framework strict-awaits the hydration process, ensuring the promise only resolves after two critical pipelines finish:
+    1. **Component Definition (`loadPromises`):** The framework scans the DOM, dynamically imports the required module chunks for any custom elements found, and registers them via `customElements.define()`.
+    2. **Declarative Scripts (`declarativePromises`):** The framework fully executes the async `client.script` blocks for all declarative component instances mapped on the page.
+  * Because end-to-end testing frameworks (like Playwright or Cypress) interact with the DOM much faster than front-end hydration completes, your tests MUST wait for this promise immediately after page navigation. 
   * Example: `await page.waitForFunction(() => window.__coralite_ready__)`
-  * Failing to wait for this promise can lead to race conditions where the test clicks buttons or asserts state before the components have actually mounted or initialized their internal variables.
+  * Failing to wait for this promise can lead to race conditions where the test clicks buttons or asserts state before the components have actually mounted.
+* **Testing Selectors (`data-testid`)**: When Coralite runs in `development` mode, it activates a built-in testing plugin. 
+  * During the AST build phase, this plugin recursively traverses all templates (both declarative and imperative). It takes the resolved `ref` attributes and duplicates them into `data-testid` attributes.
+  * Because the core framework isolates references, the generated `data-testid` strictly follows the namespaced pattern: `[componentId]__[refName]-[index]`.
+  * For example, a component with ID `testing-counter` and `ref="btn"` will render `<button ref="testing-counter__btn-0" data-testid="testing-counter__btn-0">`.
+  * This allows you to target specific component instances deterministically using `page.getByTestId('testing-counter__btn-0')` without polluting production code.
 
 Here is the deep dive and extensive expansion of **Section 4. Framework Extensibility (definePlugin)**. You can replace the previous Section 4 in your `llms.txt` with this comprehensive breakdown.
 

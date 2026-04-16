@@ -16,6 +16,23 @@
 
     <p>End-to-end testing frameworks like Playwright or Cypress interact with the DOM incredibly fast. If you try to click a button or assert the state of a dynamic component immediately after navigating to a page, your tests will likely fail due to a race condition: the framework hasn't finished mounting or initializing the component's internal state.</p>
 
+    <coralite-heading level="h2" text="Testing Selectors (data-testid)"></coralite-heading>
+
+    <p>When Coralite is run in <code>development</code> mode, it automatically activates a built-in testing plugin. This plugin parses your component templates and duplicates the resolved <code>ref</code> attributes into <code>data-testid</code> attributes for both declarative and imperative components.</p>
+    
+    <p>Because Coralite isolates component references, the generated <code>data-testid</code> follows a strict namespaced pattern: <code>[componentId]__[refName]-[index]</code>.</p>
+
+    <p>For example, a component with the ID <code>user-profile</code> defining a button with <code>ref="submit-btn"</code> will render the following HTML for its first instance:</p>
+
+    <coralite-code-highlight language="html">
+      <div class="profile-container" ref="user-profile__container-0" data-testid="user-profile__container-0">
+        <h2 ref="user-profile__title-0" data-testid="user-profile__title-0">User Profile</h2>
+        <button ref="user-profile__submit-btn-0" data-testid="user-profile__submit-btn-0">Save Changes</button>
+      </div>
+    </coralite-code-highlight>
+
+    <p>This allows you to write highly specific E2E tests using the standard <code>data-testid</code> pattern without polluting your production builds.</p>
+
     <coralite-heading level="h2" text="The window.__coralite_ready__ Promise"></coralite-heading>
 
     <p>To solve this, Coralite injects a global promise named <code>window.__coralite_ready__</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
@@ -34,11 +51,11 @@
         // 2. Wait for Coralite hydration to complete
         await page.waitForFunction(() => window.__coralite_ready__);
 
-        // 3. Now it is safe to interact with the DOM
-        const button = page.locator('my-counter button');
+        // 3. Now it is safe to interact with the DOM using the namespaced pattern
+        const button = page.getByTestId('my-counter__increment-btn-0');
         await button.click();
 
-        await expect(page.locator('my-counter .count-display')).toHaveText('1');
+        await expect(page.getByTestId('my-counter__count-display-0')).toHaveText('1');
       });
     </coralite-code-highlight>
 
@@ -55,9 +72,9 @@
             return win.__coralite_ready__;
           });
 
-          // 3. Now it is safe to interact with the DOM
-          cy.get('my-counter button').click();
-          cy.get('my-counter .count-display').should('have.text', '1');
+          // 3. Now it is safe to interact with the DOM using the namespaced pattern
+          cy.get('[data-testid="my-counter__increment-btn-0"]').click();
+          cy.get('[data-testid="my-counter__count-display-0"]').should('have.text', '1');
         });
       });
     </coralite-code-highlight>
