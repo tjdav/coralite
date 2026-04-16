@@ -25,21 +25,22 @@
     <coralite-heading level="h2" text="Example: Matrix JS SDK"></coralite-heading>
     <p>Here is an example of configuring your project to include the WebAssembly files required by the Matrix SDK.</p>
 
-    <coralite-code language="javascript" title="coralite.config.js">
-export default defineConfig({
-  output: './dist',
-  components: './src/components',
-  pages: './src/pages',
-  public: './public',
-  assets: [
-    {
-      pkg: 'matrix-js-sdk',
-      path: 'lib/matrix.wasm',
-      dest: 'wasm/matrix.wasm'
-    }
-  ]
-})
-    </coralite-code>
+    <coralite-code-highlight language="JavaScript" title="coralite.config.js">
+      // coralite.config.js
+      export default defineConfig({
+        output: './dist',
+        components: './src/components',
+        pages: './src/pages',
+        public: './public',
+        assets: [
+          {
+            pkg: 'matrix-js-sdk',
+            path: 'lib/matrix.wasm',
+            dest: 'wasm/matrix.wasm'
+          }
+        ]
+      })
+    </coralite-code-highlight>
 
     <p>When you run the development server (`pnpm run dev`) or build your project (`pnpm run build`), Coralite will automatically extract `matrix.wasm` from your `node_modules` and place it in your configured output folder under `wasm/matrix.wasm`.</p>
     <p>You can then point your library configuration to fetch the file from `/wasm/matrix.wasm`.</p>
@@ -47,15 +48,16 @@ export default defineConfig({
     <coralite-heading level="h2" text="Bypassing Package Resolution"></coralite-heading>
     <p>If a package does not explicitly export its <code>package.json</code>, the plugin will attempt an upward directory traversal. However, if you need to bypass package resolution entirely, you can provide an absolute path via the <code>src</code> property.</p>
 
-    <coralite-code language="javascript" title="coralite.config.js">
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const wasmPath = require.resolve('@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm');
+    <coralite-code-highlight language="JavaScript" title="coralite.config.js">
+      // coralite.config.js
+      import { createRequire } from 'node:module';
+      const require = createRequire(import.meta.url);
+      const wasmPath = require.resolve('@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm');
 
-export default defineConfig({
-  assets: [{ src: wasmPath, dest: 'matrix_sdk_crypto_wasm_bg.wasm' }]
-});
-    </coralite-code>
+      export default defineConfig({
+        assets: [{ src: wasmPath, dest: 'matrix_sdk_crypto_wasm_bg.wasm' }]
+      });
+    </coralite-code-highlight>
 
     <coralite-heading level="h2" text="MIME Type Support"></coralite-heading>
     <p>To ensure `.wasm` files execute correctly for streaming compilation, the Coralite development server automatically configures the appropriate `application/wasm` MIME type headers for any files ending in `.wasm`.</p>
