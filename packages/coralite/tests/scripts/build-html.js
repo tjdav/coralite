@@ -93,6 +93,7 @@ const coralite = new Coralite({
     value: 'true'
   }],
   skipRenderByAttribute: ['data-skip-render'],
+  mode: 'development',
   assets: [
     {
       src: 'package.json',

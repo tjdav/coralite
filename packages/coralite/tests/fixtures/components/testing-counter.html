@@ -1,0 +1,23 @@
+<template id="testing-counter">
+  <div ref="placeholder"></div>
+  <div class="test-container" ref="container">
+    <h1 ref="heading">Testing Component</h1>
+    <button ref="btn">Click me</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: {
+      components: ['testing-counter-imperative'],
+      script ({ helpers }) {
+        const placeholderElement = helpers.refs('placeholder')
+        const imperativeComponent = document.createElement('testing-counter-imperative')
+
+        placeholderElement.replaceWith(imperativeComponent)
+      }
+    }
+  })
+</script>

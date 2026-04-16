@@ -1,0 +1,18 @@
+<template id="testing-counter-imperative">
+  <div class="test-container-imperative" ref="container">
+    <h1 ref="heading">Testing Imperative</h1>
+    <button ref="btn">Click me imperative</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    componentId: 'testing-counter-imperative',
+    client: {
+      script: () => {
+      }
+    }
+  })
+</script>

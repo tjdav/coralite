@@ -3,7 +3,7 @@ import { getHtmlFile, getHtmlFiles } from './html.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
 import { transformCss } from './style-transform.js'
 import { ScriptManager } from './script-manager.js'
-import { defineComponent, metadataPlugin, refsPlugin, staticAssetPlugin } from '#plugins'
+import { defineComponent, metadataPlugin, refsPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
 import { createRequire } from 'node:module'
@@ -149,6 +149,9 @@ export function Coralite ({
   }
 
   // place core plugin first
+  if (this.options.mode === 'development') {
+    plugins.unshift(testingPlugin)
+  }
   plugins.unshift(defineComponent, refsPlugin, metadataPlugin)
 
   if (assets) {
@@ -833,6 +836,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
   const globalAbortController = new AbortController();
   const componentManifest = ${JSON.stringify(chunkManifest)};
   const loadCache = {};
+  const instanceCounters = {};
   
   const loadComponent = (componentId) => {
     if (!componentManifest[componentId]) return Promise.resolve();
@@ -850,7 +854,9 @@ const globalSetupValuesPromise = getSetups(globalContext);
             this.componentId = module.default.componentId;
             this._abortController = null;
             
-            this._index = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15);
+            instanceCounters[this.componentId] = instanceCounters[this.componentId] || 0;
+            this._index = instanceCounters[this.componentId]++;
+            
             this._instanceId = \`\${this.componentId}-\${this._index}\`;
             
             this._values = {};
@@ -1121,7 +1127,13 @@ const globalSetupValuesPromise = getSetups(globalContext);
               const refName = element.getAttribute('ref');
               
               const dynamicId = \`\${this.componentId}__\${refName}-\${this._index}\`;
+
               element.setAttribute('ref', dynamicId);
+
+              const previousTestId = element.getAttribute('data-testid')
+              if (previousTestId !== null) {
+                element.setAttribute('data-testid', dynamicId);
+              }
               
               this._values[\`ref_\${refName}\`] = dynamicId;
             }
@@ -1898,6 +1910,9 @@ Coralite.prototype.createComponentElement = async function ({
 
         // Update the ref attribute value to be unique
         ref.element.attribs.ref = uniqueRefValue
+        if (ref.element.attribs['data-testid']) {
+          ref.element.attribs['data-testid'] = uniqueRefValue
+        }
 
         // inject flat token into script instance values
         scriptResult.__script__.values[`ref_${ref.name}`] = uniqueRefValue
@@ -1921,7 +1936,11 @@ Coralite.prototype.createComponentElement = async function ({
   // append ref objects to values
   for (let i = 0; i < module.values.refs.length; i++) {
     const ref = module.values.refs[i]
-    values[`ref_${ref.name}`] = `${module.id}__${ref.name}-${index}`
+    const refValue = `${module.id}__${ref.name}-${index}`
+    values[`ref_${ref.name}`] = refValue
+    if (ref.element && ref.element.attribs && ref.element.attribs['data-testid'] === ref.name) {
+      ref.element.attribs['data-testid'] = refValue
+    }
   }
 
   // replace tokens in the component with their values from `values` object and store them into computed value array for later use if needed (e.g., to be injected back).
@@ -2296,6 +2315,13 @@ Coralite.prototype._evaluateDevelopment = async function ({
   const contextifiedObject = createContext({
     console: globalThis.console,
     crypto: globalThis.crypto,
+    setTimeout: globalThis.setTimeout,
+    clearTimeout: globalThis.clearTimeout,
+    setInterval: globalThis.setInterval,
+    clearInterval: globalThis.clearInterval,
+    fetch: globalThis.fetch,
+    URL: globalThis.URL,
+    URLSearchParams: globalThis.URLSearchParams,
     __coralite_context__: context,
     __coralite_plugins__: cachedBoundPlugins
   })
