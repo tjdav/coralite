@@ -1,4 +1,4 @@
-import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript } from './utils.js'
+import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, extractGlobals } from './utils.js'
 import { getHtmlFile, getHtmlFiles } from './html.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
 import { transformCss } from './style-transform.js'
@@ -2310,21 +2310,22 @@ Coralite.prototype._evaluateDevelopment = async function ({
   renderContext.source.currentSourceContextId = contextId
   renderContext.source.contextInstances[contextId] = context
 
-
-  // Create a fresh context for the module
-  const contextifiedObject = createContext({
-    console: globalThis.console,
-    crypto: globalThis.crypto,
-    setTimeout: globalThis.setTimeout,
-    clearTimeout: globalThis.clearTimeout,
-    setInterval: globalThis.setInterval,
-    clearInterval: globalThis.clearInterval,
-    fetch: globalThis.fetch,
-    URL: globalThis.URL,
-    URLSearchParams: globalThis.URLSearchParams,
+  // Protect fundamental constructors from being extracted and polluting the context realm
+  const standardBuiltIns = new Set(['Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Math', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt', 'BigInt64Array', 'BigUint64Array', 'Symbol', 'Infinity', 'NaN', 'undefined', 'globalThis', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'escape', 'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'unescape'])
+  const usedGlobals = extractGlobals(module.script)
+  const contextGlobals = {
     __coralite_context__: context,
     __coralite_plugins__: cachedBoundPlugins
-  })
+  }
+
+  for (const glob of usedGlobals) {
+    if (!standardBuiltIns.has(glob) && glob in globalThis && globalThis[glob] !== undefined && !(glob in contextGlobals)) {
+      contextGlobals[glob] = globalThis[glob]
+    }
+  }
+
+  // Create a fresh context for the module
+  const contextifiedObject = createContext(contextGlobals)
 
   const moduleComponent = this.components.getItem(module.id)
 

@@ -583,3 +583,28 @@ export function findAndExtractScript (code) {
 
   return result
 }
+
+/**
+ * Extracts global variable names from a module script code using Acorn parsing and AST walking.
+ * @param {string} code - The raw script code
+ * @returns {Array<string>} - Array of identified global variables
+ */
+export function extractGlobals (code) {
+  try {
+    const ast = parseJS(code, {
+      ecmaVersion: 'latest',
+      sourceType: 'module'
+    })
+
+    const globals = new Set()
+    walkJS(ast, {
+      Identifier (node) {
+        globals.add(node.name)
+      }
+    })
+
+    return [...globals]
+  } catch (err) {
+    return []
+  }
+}

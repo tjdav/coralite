@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { normalizeFunction } from '#lib'
+import { normalizeFunction, extractGlobals } from '#lib'
 
 describe('normalizeFunction', () => {
   describe('Arrow Functions - should return as-is', () => {
@@ -309,5 +309,42 @@ describe('normalizeFunction', () => {
       const result = normalizeFunction(fn)
       assert.strictEqual(result, '() => {\n      }')
     })
+  })
+})
+
+describe('extractGlobals', () => {
+  it('should extract top level variables', () => {
+    const code = `console.log('hello'); Buffer.from('test'); const enc = new TextEncoder();`
+    const globals = extractGlobals(code)
+    assert.ok(globals.includes('console'))
+    assert.ok(globals.includes('Buffer'))
+    assert.ok(globals.includes('TextEncoder'))
+  })
+
+  it('should extract nested variables', () => {
+    const code = `
+      function myFunc() {
+        if (true) {
+          const timeout = setTimeout(() => {
+            fetch('/api')
+          }, 100);
+        }
+      }
+    `
+    const globals = extractGlobals(code)
+    assert.ok(globals.includes('setTimeout'))
+    assert.ok(globals.includes('fetch'))
+  })
+
+  it('should return empty array for invalid code', () => {
+    const code = `console.log('hello';`
+    const globals = extractGlobals(code)
+    assert.deepStrictEqual(globals, [])
+  })
+
+  it('should not throw on empty code', () => {
+    const code = ``
+    const globals = extractGlobals(code)
+    assert.deepStrictEqual(globals, [])
   })
 })
