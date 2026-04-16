@@ -189,13 +189,20 @@ importers:
         version: 4.1.5
 
   website:
+    dependencies:
+      coralite:
+        specifier: workspace:*
+        version: link:../packages/coralite
+      fuse.js:
+        specifier: ^7.3.0
+        version: 7.3.0
     devDependencies:
       coralite-plugin-aggregation:
         specifier: ^0.7.3
-        version: 0.7.3(coralite@0.31.7)
+        version: 0.7.3(coralite@packages+coralite)
       coralite-plugin-inline-css:
         specifier: ^0.4.1
-        version: 0.4.1(coralite@0.31.7)
+        version: 0.4.1(coralite@packages+coralite)
       coralite-scripts:
         specifier: workspace:*
         version: link:../packages/coralite-scripts
@@ -932,11 +939,6 @@ packages:
     peerDependencies:
       coralite: ^0.31.7
 
-  coralite@0.31.7:
-    resolution: {integrity: sha512-s6YH6dk+y1cBcDguOvy1o1fPUpiucvMMeKZS/Sm0D/yadfdiHuLI5W2tVTlkqJ20Hs1bY/3EJUWKERUBZdkLJw==}
-    engines: {node: '>20.19.0'}
-    hasBin: true
-
   cosmiconfig-typescript-loader@6.1.0:
     resolution: {integrity: sha512-tJ1w35ZRUiM5FeTzT7DtYWAFFv37ZLqSRkGi2oeCK1gPhvaWjkAtfXvLmvE1pRfxxp9aQo6ba/Pvg1dKj05D4g==}
     engines: {node: '>=v18'}
@@ -1233,6 +1235,10 @@ packages:
 
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
+
+  fuse.js@7.3.0:
+    resolution: {integrity: sha512-plz8RVjfcDedTGfVngWH1jmJvBvAwi1v2jecfDerbEnMcmOYUEEwKFTHbNoCiYyzaK2Ws8lABkTCcRSqCY1q4w==}
+    engines: {node: '>=10'}
 
   get-caller-file@2.0.5:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
@@ -2922,31 +2928,16 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.7.3(coralite@0.31.7):
+  coralite-plugin-aggregation@0.7.3(coralite@packages+coralite):
     dependencies:
-      coralite: 0.31.7
+      coralite: link:packages/coralite
 
-  coralite-plugin-inline-css@0.4.1(coralite@0.31.7):
+  coralite-plugin-inline-css@0.4.1(coralite@packages+coralite):
     dependencies:
-      coralite: 0.31.7
+      coralite: link:packages/coralite
       postcss: 8.5.6
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
-
-  coralite@0.31.7:
-    dependencies:
-      acorn: 8.16.0
-      acorn-walk: 8.3.5
-      commander: 13.1.0
-      dom-serializer: 2.0.0
-      esbuild: 0.25.9
-      esbuild-plugins-node-modules-polyfill: 1.8.1(esbuild@0.25.9)
-      htmlparser2: 10.0.0
-      kleur: 4.1.5
-      p-limit: 7.2.0
-      postcss: 8.5.6
-      postcss-selector-parser: 7.1.1
-      serialize-javascript: 7.0.2
 
   cosmiconfig-typescript-loader@6.1.0(@types/node@22.18.5)(cosmiconfig@9.0.0(typescript@5.9.2))(typescript@5.9.2):
     dependencies:
@@ -3295,6 +3286,8 @@ snapshots:
     optional: true
 
   function-bind@1.1.2: {}
+
+  fuse.js@7.3.0: {}
 
   get-caller-file@2.0.5: {}
 
