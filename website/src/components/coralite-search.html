@@ -1,0 +1,187 @@
+<template id="coralite-search">
+  <div class="search-container">
+    <button type="button" class="search-button" popovertarget="search-popover" aria-label="Search" ref="searchTrigger">
+      <span class="search-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
+          <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+        </svg>
+      </span>
+      <span class="search-text">Search</span>
+      <span class="search-shortcut">
+        <kbd>Ctrl</kbd> <kbd>K</kbd>
+      </span>
+    </button>
+    
+    <div id="search-popover" class="search-popover bg-glass drop-shadow" popover ref="searchPopover">
+      <div class="search-header">
+        <form class="search-form" ref="searchForm">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search search-input-icon" viewBox="0 0 16 16">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+          <input type="search" class="search-input" ref="searchInput" placeholder="Search documentation..." aria-label="Search input">
+          <button type="button" class="button-close" popovertarget="search-popover" popovertargetaction="hide" aria-label="Close search"></button>
+        </form>
+      </div>
+      <div class="search-results-container">
+        <ul class="search-results" ref="searchResults">
+          <li class="search-empty">Type to start searching...</li>
+        </ul>
+      </div>
+      <div class="search-footer">
+        <span>Search by <a href="https://fusejs.io" target="_blank" rel="noopener">Fuse.js</a></span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: {
+      imports: [
+        {
+          specifier: 'fuse.js',
+          defaultExport: 'Fuse'
+        }
+      ],
+      script: ({ helpers, imports, signal }) => {
+        const { refs } = helpers
+        const Fuse = imports.Fuse
+        const searchForm = refs('searchForm')
+        const searchTrigger = refs('searchTrigger')
+        const searchPopover = refs('searchPopover')
+        const searchInput = refs('searchInput')
+        const searchResults = refs('searchResults')
+  
+        let fuse = null
+        let indexLoaded = false
+
+        async function loadIndex () {
+          if (indexLoaded) return
+          try {
+            const res = await fetch('/search-index.json', { signal })
+            const data = await res.json()
+  
+            fuse = new Fuse(data, {
+              useTokenSearch: true,
+              keys: [
+                {
+                  name: 'title',
+                  weight: 3
+                },
+                {
+                  name: 'description',
+                  weight: 2
+                },
+                {
+                  name: 'content',
+                  weight: 1
+                }
+              ],
+              threshold: 0.4,
+              ignoreLocation: true,
+              includeMatches: true
+            })
+            indexLoaded = true
+  
+            // Re-trigger search if user already typed something
+            if (searchInput.value.trim() !== '') {
+              searchInput.dispatchEvent(new Event('input'))
+            }
+          } catch (e) {
+            if (e.name !== 'AbortError') {
+              console.error('Failed to load search index:', e)
+              searchResults.innerHTML = '<li class="search-error">Failed to load search index. Please try again later.</li>'
+            }
+          }
+        }
+
+        // Setup shortcut
+        document.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault()
+            try {
+              searchPopover.showPopover()
+            } catch (e) {
+            }
+          }
+        }, { signal })
+
+        searchForm.addEventListener('submit', (e) => {
+          e.preventDefault()
+        }, { signal })
+
+        // When popover opens
+        searchPopover.addEventListener('toggle', (e) => {
+          if (e.newState === 'open') {
+            loadIndex()
+            searchInput.focus()
+          } else {
+            searchInput.value = ''
+            searchResults.innerHTML = '<li class="search-empty">Type to start searching...</li>'
+          }
+        }, { signal })
+
+        // Handle search
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value.trim()
+  
+          if (!query) {
+            searchResults.innerHTML = '<li class="search-empty">Type to start searching...</li>'
+            return
+          }
+
+          if (!fuse) {
+            searchResults.innerHTML = '<li class="search-loading">Loading search index...</li>'
+            return
+          }
+
+          const results = fuse.search(query, { limit: 8 })
+  
+          if (results.length === 0) {
+            const li = document.createElement('li')
+            li.className = 'search-empty'
+            li.textContent = 'No results found for "' + query + '"'
+            searchResults.innerHTML = ''
+            searchResults.appendChild(li)
+            return
+          }
+
+          searchResults.innerHTML = ''
+          results.forEach(({ item }) => {
+            const li = document.createElement('li')
+            li.className = 'search-result-item'
+  
+            const a = document.createElement('a')
+            a.href = item.url
+  
+            if (!item.url.startsWith('/')) {
+              a.href = '/' + item.url
+            }
+
+            a.className = 'search-result-link'
+  
+            const title = document.createElement('div')
+            title.className = 'search-result-title'
+            title.textContent = item.title || item.url
+  
+            const desc = document.createElement('div')
+            desc.className = 'search-result-desc'
+            desc.textContent = item.description || (item.content ? item.content.substring(0, 100) + '...' : '')
+  
+            a.appendChild(title)
+            if (desc.textContent) a.appendChild(desc)
+            li.appendChild(a)
+            searchResults.appendChild(li)
+  
+            // Close popover when clicked
+            a.addEventListener('click', () => {
+              searchPopover.hidePopover()
+            })
+          })
+        }, { signal })
+      }
+    }
+  })
+</script>

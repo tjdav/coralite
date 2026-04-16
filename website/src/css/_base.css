@@ -90,10 +90,10 @@ h6,
 }
 
 .display {
+  font-family: var(--font-heading);
   font-size: var(--display-font-size);
   font-weight: 300;
   line-height: var(--heading-line-height);
-  font-family: var(--font-heading);
 }
 
 pre {

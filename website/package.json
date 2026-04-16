@@ -28,5 +28,9 @@
   },
   "stylelint": {
     "extends": "stylelint-config-twbs-bootstrap"
+  },
+  "dependencies": {
+    "coralite": "workspace:*",
+    "fuse.js": "^7.3.0"
   }
 }

@@ -1,5 +1,6 @@
 .card {
   --card-border-color: #ffffff2e;
+  overflow: hidden;
 
   color: var(--light);
   background-image: radial-gradient(circle at bottom, rgba(49, 26, 75, .3), rgba(14, 7, 19, .5));
@@ -8,7 +9,6 @@
   border-style: solid;
   border-width: 0 1px;
   border-radius: var(--border-radius);
-  overflow: hidden;
 }
 
 .card-title {

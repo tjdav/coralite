@@ -34,6 +34,19 @@
 
 .navbar-brand {
   display: inherit;
+  flex: 1;
+}
+
+.navbar-search {
+  display: flex;
+  flex: 2;
+  justify-content: center;
+}
+
+#navbarNav {
+  display: flex;
+  flex: 1;
+  justify-content: flex-end;
 }
 
 .nav-link {
