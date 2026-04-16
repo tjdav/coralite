@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Advanced Error Logging with Coralite"
+    description="Learn how to build custom CLI loggers and integrate external error-tracking services using Coralite's centralized onError configuration."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1>Advanced Error Logging</h1>
+
+    <p>Coralite provides a centralised <code>onError</code> configuration callback. By default, it will use <code>console.warn</code> and <code>console.log</code> for non-critical information and throw for <code>ERR</code> level. However, for production pipelines or advanced build tools, you might want to integrate custom loggers or external error tracking systems.</p>
+
+    <coralite-heading level="h2" text="Building a Custom CLI Logger"></coralite-heading>
+    
+    <p>You can use tools like <code>chalk</code> to build beautifully styled console outputs for your builds.</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+import { defineConfig } from 'coralite-scripts';
+import chalk from 'chalk';
+
+export default defineConfig({
+  // ... other configs
+  onError: ({ level, message, error }) => {
+    switch (level) {
+      case 'ERR':
+        console.error(chalk.red.bold(`[FATAL BUILD ERROR] ${message}`));
+        if (error && error.stack) {
+            console.error(chalk.red(error.stack));
+        }
+        // Since we are overriding the default throw, we should manually exit
+        process.exit(1); 
+      case 'WARN':
+        console.warn(chalk.yellow(`[WARNING] ${message}`));
+        break;
+      case 'LOG':
+      default:
+        console.log(chalk.blue(`[INFO] ${message}`));
+        break;
+    }
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="h2" text="Integrating Sentry during the Build"></coralite-heading>
+    
+    <p>If you're running Coralite as part of a CI/CD pipeline, capturing errors directly to a service like Sentry ensures your DevOps team gets real-time stack traces for build failures.</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+import { defineConfig } from 'coralite-scripts';
+import * as Sentry from '@sentry/node';
+
+// Initialize Sentry early
+Sentry.init({
+  dsn: "https://examplePublicKey@o0.ingest.sentry.io/0",
+  tracesSampleRate: 1.0,
+});
+
+export default defineConfig({
+  // ... other configs
+  onError: ({ level, message, error }) => {
+    if (level === 'ERR') {
+      const sentryError = error || new Error(message);
+      
+      // Capture the exception in Sentry
+      Sentry.captureException(sentryError, {
+          tags: { phase: 'build', framework: 'coralite' },
+          extra: { originalMessage: message }
+      });
+      
+      // We still want to log to the console for local output
+      console.error(`[Build Failed] ${message}`);
+      
+      // Give Sentry 2 seconds to flush before breaking the build
+      Sentry.flush(2000).then(() => {
+          process.exit(1);
+      });
+    } else if (level === 'WARN') {
+        // You could use captureMessage for warnings if desired
+        // Sentry.captureMessage(message, 'warning');
+        console.warn(message);
+    } else {
+        console.log(message);
+    }
+  }
+});
+    </coralite-code-highlight>
+
+    <p>Remember that when overriding the <code>'ERR'</code> behavior, Coralite relies on you to halt the process (e.g., via <code>process.exit(1)</code>) or throw manually if an unrecoverable failure occurs during your custom logic.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

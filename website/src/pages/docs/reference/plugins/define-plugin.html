@@ -38,31 +38,31 @@
       <p>The <code>definePlugin</code> function accepts a configuration object with the following properties:</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite'
+import { definePlugin } from 'coralite'
 
-        const myPlugin = definePlugin({
-        name: 'my-plugin', // Required: Unique name for the plugin
+const myPlugin = definePlugin({
+  name: 'my-plugin', // Required: Unique name for the plugin
 
-        // Optional: Main server-side logic
-        method: (options, context) => {
-        // ... implementation
-        },
+  // Optional: Main server-side logic
+  method: (options, context) => {
+    // ... implementation
+  },
 
-        // Optional: Register custom components
-        components: ['./path/to/component.html'],
+  // Optional: Register custom components
+  components: ['./path/to/component.html'],
 
-        // Optional: Client-side script configuration
-        client: {
-        setup: async () => { /* ... */ },
-        helpers: { /* ... */ },
-        imports: [ /* ... */ ],
-        config: { /* ... */ }
-        },
+  // Optional: Client-side script configuration
+  client: {
+    setup: async () => { /* ... */ },
+    helpers: { /* ... */ },
+    imports: [ /* ... */],
+    config: { /* ... */ }
+  },
 
-        // Optional: Server-side lifecycle hooks
-        onPageSet: async (data) => { /* ... */ },
-        // ... other hooks
-        })
+  // Optional: Server-side lifecycle hooks
+  onPageSet: async (data) => { /* ... */ },
+  // ... other hooks
+})
       </coralite-code-highlight>
     </section>
 
@@ -91,22 +91,35 @@
         to prepare data or environment for the plugin in the frontend.</p>
 
       <coralite-heading level="h3" text="client.helpers"></coralite-heading>
-      <p>Define helper functions that will be available to <code>defineComponent</code> scripts in the browser.</p>
+      <p>Define helper functions that will be available to <code>defineComponent</code> scripts in the browser. To safely bridge global plugin configuration with local Web Component instances, Coralite requires <code>client.helpers</code> to be authored using a strict <strong>Two-Phase Currying System</strong>.</p>
+
+      <ol>
+        <li><strong>Phase 1 (Global Context):</strong> The outermost function receives the <code>globalContext</code> (containing <code>imports</code> and global <code>config</code>).</li>
+        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ values, root, signal }</code>). Here, <code>root</code> is the component's <code>HTMLElement</code> (or Document), and <code>signal</code> is an <code>AbortSignal</code>.</li>
+        <li><strong>Phase 3 (Execution):</strong> It finally returns the final value (which can be a function, object, or primitive) that is injected into the client's <code>helpers</code> object for use in the browser script.</li>
+      </ol>
+
+      <p><strong>Note on <code>signal</code>:</strong> The <code>signal</code> is tied natively to the component's mount lifecycle. It triggers <code>.abort()</code> automatically when an imperative component is unmounted from the DOM, making it perfect for cleaning up event listeners. For declarative components, <code>signal</code> is <code>null</code>.</p>
 
       <coralite-code-highlight language="JavaScript">
         definePlugin({
-        name: 'utils',
-        client: {
-        helpers: {
-        formatDate: (context) => (date) => {
-        return new Date(date).toLocaleDateString()
-        }
-        }
-        }
+          name: 'utils',
+          client: {
+            helpers: {
+              // Phase 1: Receives Global Context
+              formatDate(globalContext) {
+                // Phase 2: Receives Local Instance Context
+                return ({ values, root, signal }) => {
+                  // Phase 3: The actual helper function
+                  return (date) => {
+                    return new Date(date).toLocaleDateString()
+                  }
+                }
+              }
+            }
+          }
         })
       </coralite-code-highlight>
-      <p><strong>Note:</strong> Helper functions must be "factory functions" that accept a <code>context</code> object
-        and return the actual function to be used.</p>
     </section>
 
     <!-- Client Imports -->
@@ -121,10 +134,10 @@
       <p>Import a library directly from a CDN.</p>
       <coralite-code-highlight language="JavaScript">
         imports: [
-        {
-        specifier: 'https://esm.sh/canvas-confetti@1.6.0',
-        defaultExport: 'confetti'
-        }
+          {
+            specifier: 'https://esm.sh/canvas-confetti@1.6.0',
+            defaultExport: 'confetti'
+          }
         ]
       </coralite-code-highlight>
 
@@ -132,27 +145,27 @@
       <p>Import a local JavaScript module.</p>
 
       <coralite-code-highlight language="JavaScript">
-        definePlugin({
-        name: 'analytics',
-        client: {
-        config: {
-        trackingId: 'UA-123456-7',
-        debug: true
-        },
-        // ...
-        }
-        })
+definePlugin({
+  name: 'analytics',
+  client: {
+    config: {
+      trackingId: 'UA-123456-7',
+      debug: true
+    },
+    // ...
+  }
+})
       </coralite-code-highlight>
 
       <coralite-heading level="h4" text="JSON Import"></coralite-heading>
       <p>Import a JSON file as a module.</p>
       <coralite-code-highlight language="JavaScript">
         imports: [
-        {
-        specifier: './data/config.json',
-        defaultExport: 'config',
-        attributes: { type: 'json' }
-        }
+          {
+            specifier: './data/config.json',
+            defaultExport: 'config',
+            attributes: { type: 'json' }
+          }
         ]
       </coralite-code-highlight>
 
@@ -176,16 +189,16 @@
         flags.</p>
 
       <coralite-code-highlight language="JavaScript">
-        definePlugin({
-        name: 'analytics',
-        client: {
-        config: {
-        trackingId: 'UA-123456-7',
-        debug: true
-        },
-        // ...
-        }
-        })
+definePlugin({
+  name: 'analytics',
+  client: {
+    config: {
+      trackingId: 'UA-123456-7',
+      debug: true
+    },
+    // ...
+  }
+})
       </coralite-code-highlight>
     </section>
 
@@ -193,24 +206,28 @@
     <section id="context-injection">
       <coralite-heading level="h2" text="Context Injection"></coralite-heading>
       <p>Both <code>client.imports</code> and <code>client.config</code> are automatically injected into the
-        <code>context</code> object passed to your helper factories.
+        <code>globalContext</code> object (Phase 1) passed to your helper factories.
       </p>
 
       <p>Access them via:</p>
       <ul>
-        <li><code>context.imports</code>: Contains all imported modules/exports.</li>
-        <li><code>context.config</code>: Contains the configuration object.</li>
+        <li><code>globalContext.imports</code>: Contains all imported modules/exports.</li>
+        <li><code>globalContext.config</code>: Contains the configuration object.</li>
       </ul>
 
       <coralite-code-highlight language="JavaScript">
         // Inside client.helpers
         helpers: {
-        trackEvent: (context) => (eventName) => {
-        const { trackingId } = context.config;
-        const { analyticsLib } = context.imports;
+          trackEvent: (globalContext) => {
+            const { trackingId } = globalContext.config;
+            const { analyticsLib } = globalContext.imports;
 
-        analyticsLib.send(trackingId, eventName);
-        }
+            return ({ values, root, signal }) => {
+              return (eventName) => {
+                analyticsLib.send(trackingId, eventName);
+              }
+            }
+          }
         }
       </coralite-code-highlight>
     </section>
@@ -223,63 +240,71 @@
         count.</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite'
+import { definePlugin } from 'coralite'
 
-        export default definePlugin({
-        name: 'confetti-plugin',
-        client: {
-        // 1. Import the library
-        imports: [
-        {
+export default definePlugin({
+  name: 'confetti-plugin',
+  client: {
+    // 1. Import the library
+    imports: [
+      {
         specifier: 'https://esm.sh/canvas-confetti@1.6.0',
         defaultExport: 'confetti'
+      }
+    ],
+
+    // 2. Define default configuration
+    config: {
+      particleCount: 100,
+      spread: 70
+    },
+
+    // 3. Create the curried helper
+    helpers: {
+      explode: (globalContext) => {
+        // Phase 1: Access injected imports and config globally
+        const confetti = globalContext.imports.confetti
+        const config = globalContext.config
+
+        return ({ values, root, signal }) => {
+          // Phase 2: Local context (we don't need it for confetti, but must return it)
+
+          return () => {
+            // Phase 3: The actual execution
+            if (!confetti) {
+              console.warn('Confetti library not loaded')
+              return
+            }
+
+            // Use the library with the config
+            confetti({
+              particleCount: config.particleCount,
+              spread: config.spread,
+              origin: { y: 0.6 }
+            })
+          }
         }
-        ],
+      }
+    }
+  }
+})
+      </coralite-code-html>
 
-        // 2. Define default configuration
-        config: {
-        particleCount: 100,
-        spread: 70
-        },
+      <p><strong>Usage in a component:</strong></p>
+      <coralite-code-html>
+        <template id="celebration-button">
+          <button ref="btn">Celebrate!</button>
+        </template>
 
-        // 3. Create the helper
-        helpers: {
-        explode: (context) => () => {
-        // Access injected imports and config
-        const confetti = context.imports.confetti
-        const config = context.config
-
-        if (!confetti) {
-        console.warn('Confetti library not loaded')
-        return
-        }
-
-        // Use the library with the config
-        confetti({
-        particleCount: config.particleCount,
-        spread: config.spread,
-        origin: { y: 0.6 }
-        })
-        }
-        }
-        }
-        })
-        </coralite-code-html>
-
-        <p><strong>Usage in a component:</strong></p>
-        <coralite-code-html>
-          <template id="celebration-button">
-            <button ref="btn">Celebrate!</button>
-          </template>
-
-          <script type="module">
+        <script type="module">
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
-            script: (context, helpers) => {
+            script: (context) => {
+              const { helpers } = context
               const btn = helpers.refs('btn')
           
-              // The 'explode' helper is now available on 'helpers'
+              // The fully curried 'explode' helper is now available
               const explode = helpers.explode
 
               btn.addEventListener('click', () => {
@@ -288,7 +313,7 @@
             }
           })
         </script>
-        </coralite-code-html>
+      </coralite-code-html>
     </section>
 
   </main>

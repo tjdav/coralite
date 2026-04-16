@@ -92,6 +92,29 @@ export default defineConfig({
       </tr>
     </coralite-table>
 
+    <coralite-heading level="h2" text="Error & Warning Handling (onError)"></coralite-heading>
+
+    <p>Coralite provides a centralized <code>onError</code> callback in its configuration to handle framework-level issues.</p>
+
+    <h3>The API Signature</h3>
+    <p>The <code>onError</code> callback receives a single structured error object containing:</p>
+    <ul>
+      <li><code>level</code>: The severity of the issue (<code>'WARN'</code>, <code>'ERR'</code>, or <code>'LOG'</code>).</li>
+      <li><code>message</code>: A descriptive string explaining the issue.</li>
+      <li><code>error</code>: (Optional) The original <code>Error</code> object, useful for stack traces.</li>
+    </ul>
+
+    <h3>The Default Behavior</h3>
+    <p>If omitted, Coralite defaults to using <code>console.warn</code> and <code>console.log</code> for warnings and logs. However, for level <code>'ERR'</code>, the default handler <strong>throws</strong> an actual Error with the provided message to intentionally break the build pipeline if an unrecoverable issue occurs.</p>
+
+    <h3>Internal Handling</h3>
+    <p>The <code>Coralite</code> instance securely wraps the custom (or default) error callback inside an internal <code>handleError</code> method. This allows internal functions (like the HTML or module parsers) to use a safe, bound reference to report issues seamlessly without handling the configuration logic themselves.</p>
+
+    <h3>Use Cases</h3>
+    <p>Overriding this configuration is particularly useful if you are building a custom CLI logger, integrating an external error-tracking service (like Sentry) during the build process, or needing to gracefully silence specific warnings.</p>
+
+    <p>For a complete tutorial on implementing this, check out our guide on <a href="/docs/guide/advanced-logging.html">Advanced Error Logging</a>.</p>
+
     <coralite-heading level="h2" text="Assets Plugin (coralite-scripts)"></coralite-heading>
 
     <p>The <code>assets</code> property (processed by <code>staticAssetPlugin</code>) expects an array of objects. These objects must define a <code>dest</code> property. To determine the source, you must define either <code>pkg</code> (and optionally <code>path</code>) or an explicit <code>src</code> path to bypass standard package resolution.</p>

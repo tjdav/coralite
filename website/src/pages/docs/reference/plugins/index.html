@@ -189,6 +189,30 @@
               <td>No</td>
               <td>Hook for when a component is deleted</td>
             </tr>
+            <tr>
+              <td><code>onBeforePageRender</code></td>
+              <td><code>function</code></td>
+              <td>No</td>
+              <td>Hook called before rendering a page to a string</td>
+            </tr>
+            <tr>
+              <td><code>onAfterPageRender</code></td>
+              <td><code>function</code></td>
+              <td>No</td>
+              <td>Hook called after rendering a page, before saving</td>
+            </tr>
+            <tr>
+              <td><code>onBeforeBuild</code></td>
+              <td><code>function</code></td>
+              <td>No</td>
+              <td>Hook called at the start of the build process</td>
+            </tr>
+            <tr>
+              <td><code>onAfterBuild</code></td>
+              <td><code>function</code></td>
+              <td>No</td>
+              <td>Hook called at the end of the build process</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -458,52 +482,61 @@
     <!-- Client Plugins Section -->
     <section id="client-plugins">
       <coralite-heading level="h2" text="Client Plugins & Helpers"></coralite-heading>
-      <p>Client plugins provide client-side helpers that are available in component scripts. These use a factory pattern
-        where Coralite automatically executes the factory with context. Client setup execution has been moved from server-side to the frontend bundle.</p>
+      <p>Client plugins provide client-side helpers that are available in component scripts. To safely bridge global plugin configuration with local Web Component instances, Coralite requires <code>client.helpers</code> to be authored using a strict <strong>Two-Phase Currying System</strong>.</p>
+
+      <coralite-heading level="h3" text="The Two-Phase Currying System"></coralite-heading>
+      <ol>
+        <li><strong>Phase 1 (Global Context):</strong> The outermost function receives the <code>globalContext</code> (containing <code>imports</code> and global <code>config</code>).</li>
+        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ values, root, signal }</code>). Here, <code>root</code> is the component's <code>HTMLElement</code> (or Document), and <code>signal</code> is an <code>AbortSignal</code>.</li>
+        <li><strong>Phase 3 (Execution):</strong> It finally returns the actual callable utility function used by the user's script in the browser.</li>
+      </ol>
+
+      <p><strong>Note on <code>signal</code>:</strong> The <code>signal</code> is tied natively to the component's mount lifecycle. It triggers <code>.abort()</code> automatically when an imperative component is unmounted from the DOM, making it perfect for cleaning up event listeners (e.g. <code>element.addEventListener('click', fn, { signal })</code>). For declarative components, <code>signal</code> is <code>null</code>.</p>
 
       <coralite-code-highlight language="JavaScript">
-        const myClientPlugin = definePlugin({
-        name: 'client-enhancer',
-        client: {
-        // Called when plugin is registered
-        setup: (plugin) => {
-        console.log('Plugin registered:', plugin.name)
-        },
+        import { definePlugin } from 'coralite/plugins'
 
-        // Helpers are factory functions that receive context
-        helpers: {
-        formatDate: (context) => {
-        // Factory receives context, returns actual helper
-        return (date) => new Date(date).toLocaleDateString()
-        },
-
-        uppercase: (context) => {
-        return (str) => str.toUpperCase()
-        }
-        }
-        }
+        export const myCustomPlugin = definePlugin({
+          name: 'my-custom-plugin',
+          client: {
+            helpers: {
+              // Phase 1: Receives Global Context
+              myHelper(globalContext) {
+                
+                // Phase 2: Receives Local Instance Context
+                return ({ values, root, signal }) => {
+                  
+                  // Phase 3: The actual function accessible via context.helpers.myHelper
+                  return function (selector) {
+                     // The plugin queries elements from the local component root
+                     const element = root.querySelector(selector);
+                     
+                     // Example using the signal to prevent memory leaks
+                     if (signal) {
+                       element.addEventListener('click', () => console.log('clicked'), { signal });
+                     }
+                     
+                     return element;
+                  }
+                }
+              }
+            }
+          }
         })
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="How Helpers Work"></coralite-heading>
-      <ol>
-        <li><strong>Registration</strong>: Plugin helpers are registered with ScriptManager</li>
-        <li><strong>Factory Execution</strong>: Coralite calls each factory with current context</li>
-        <li><strong>Helper Injection</strong>: Returned functions are injected into component scripts</li>
-        <li><strong>Component Usage</strong>: Scripts receive <code>(context, helpers)</code> with ready-to-use functions
-        </li>
-      </ol>
+      <coralite-heading level="h3" text="Usage in Components"></coralite-heading>
+      <p>Once injected, the user interacts strictly with the Phase 3 Execution function.</p>
 
       <coralite-code-highlight language="JavaScript">
         // In component script:
         export default defineComponent({
-        script: (context, helpers) => {
-        // helpers.formatDate is already the result function
-        const formatted = helpers.formatDate('2024-01-01')
-
-        // helpers.uppercase is ready to use
-        const upper = helpers.uppercase('hello')
-        }
+          script: (context) => {
+            const { helpers } = context;
+            
+            // helpers.myHelper is already curried with Global and Local Context
+            const btn = helpers.myHelper('.btn-class');
+          }
         })
       </coralite-code-highlight>
     </section>
@@ -626,6 +659,21 @@
       </ul>
 
       <p>See the <a href="./metadata.html">Metadata Plugin Reference</a> for full details.</p>
+
+      <coralite-heading level="h3" text="Static Assets Plugin"></coralite-heading>
+      <p>The <code>staticAssetPlugin</code> handles the orchestration of copying raw files (like <code>.wasm</code>, images, or pre-compiled scripts) directly into the final build directory.</p>
+
+      <coralite-heading level="h4" text="Configuration"></coralite-heading>
+      <p>It acts as a higher-order function that accepts an <code>assets</code> array and returns a configured Coralite plugin. Every object in the array <em>must</em> contain a <code>dest</code> (destination) property.</p>
+      
+      <coralite-heading level="h4" text="Lifecycle Hook"></coralite-heading>
+      <p>It triggers on the <code>onBeforeBuild</code> hook, ensuring all required binary/static dependencies are physically present in the output directory before Coralite attempts to render pages or start the dev server.</p>
+      
+      <coralite-heading level="h4" text="Resolution Strategies"></coralite-heading>
+      <ul>
+        <li><strong>Local Resolution:</strong> If the asset object contains a <code>src</code> property, it recursively creates the destination directory and copies the file/folder using Node's <code>cp</code>.</li>
+        <li><strong>NPM Package Resolution:</strong> If <code>src</code> is missing, it requires both <code>pkg</code> and <code>path</code> properties. It uses Node's <code>createRequire</code> and <code>require.resolve</code> to traverse <code>node_modules</code> and locate the root directory of the requested <code>pkg</code>. It then appends the <code>path</code> to the package root and copies the asset out of the dependency.</li>
+      </ul>
 
       <coralite-heading level="h3" text="Complete Example"></coralite-heading>
       <p>Here's a complete example showing all built-in plugins working together:</p>
