@@ -16,13 +16,13 @@
 
     <p>Dynamic components are powered by Coralite's core built-in plugin: <code>defineComponent</code>.</p>
 
-    <div class="alert alert-warning">
+    <coralite-alert type="warning">
       <strong>⚠️ Warning: AST Splicing (Host Tag Removal)</strong>
       <p>
         Just like static components, Coralite's server completely deletes the host tag of declarative dynamic components and replaces it with the template's inner HTML. 
         If you try to style the host tag (e.g., <code>&lt;my-component class="foo"&gt;</code>) in CSS or use it as a flex container, it will break because the tag simply won't exist in the final HTML.
       </p>
-    </div>
+    </coralite-alert>
 
     <coralite-heading level="h2" text="Upgrading a Component"></coralite-heading>
 

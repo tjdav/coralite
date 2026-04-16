@@ -181,12 +181,12 @@ type CoraliteModuleSlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&l
       </tr>
     </coralite-table>
 
-    <div class="callout callout-info">
+    <coralite-alert type="info">
       <strong>ℹ️ The Static Import Ban</strong>
       <p>
         Static <code>import</code> statements cannot be used directly inside a <code>client.script</code> block. Doing so will result in a build failure. Instead, you must declare all external dependencies via the <code>client.imports</code> array, and they will become available at runtime via the <code>helpers.imports</code> object.
       </p>
-    </div>
+    </coralite-alert>
 
   </main>
   <coralite-footer></coralite-footer>

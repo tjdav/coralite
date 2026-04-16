@@ -1,0 +1,52 @@
+<template id="coralite-alert">
+  <div class="alert {{ type }}">
+    <slot></slot>
+  </div>
+</template>
+
+<style>
+  .alert {
+    position: relative;
+    padding: var(--spacer-2);
+    margin-bottom: var(--spacer-2);
+    border: 1px solid transparent;
+    border-radius: var(--border-radius);
+    color: var(--body-colour);
+    background-color: var(--body-bg);
+
+    code {
+      color: #000;
+    }
+
+    &.info {
+      color: #055160;
+      background-color: #cff4fc;
+      border-color: #b6effb;
+    }
+    
+    &.warning {
+      color: #664d03;
+      background-color: #fff3cd;
+      border-color: #ffecb5;
+    }
+    
+    &.success {
+      color: #0f5132;
+      background-color: #d1e7dd;
+      border-color: #badbcc;
+    }
+    
+    &.danger {
+      color: #842029;
+      background-color: #f8d7da;
+      border-color: #f5c2c7;
+    }
+  }
+
+  .alert p {
+    margin-bottom: 0;
+  }
+  .alert p + p {
+    margin-top: var(--spacer-1);
+  }
+</style>
