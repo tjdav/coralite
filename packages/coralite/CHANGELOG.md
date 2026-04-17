@@ -1,5 +1,44 @@
 # Changelog
 
+## v0.32.0
+
+> Comparing `coralite-v0.31.7` to `HEAD`
+
+**Summary:** 14 commits
+
+### ✨ Features
+
+- add deprecated `$urlPathname` property for legacy plugin compatibility (coralite) ([c6c203a](https://codeberg.org/tjdavid/coralite/commit/c6c203a5b095d7f25f4edf49a7361df0e75c04fe))
+- dynamically extract and inject used globals into dev vm context ([1909968](https://codeberg.org/tjdavid/coralite/commit/1909968e358fadbfe0f6a7e28cab065d65d21136))
+- add testing plugin and deterministic component counter (coralite) ([2e8306c](https://codeberg.org/tjdavid/coralite/commit/2e8306cd7bb49574c4ff3e592bdc9c8fcbf41971))
+
+### 🐛 Bug Fixes
+
+- deterministic initialization order for declarative client scripts in development ([6fe0fc9](https://codeberg.org/tjdavid/coralite/commit/6fe0fc936a32916c7b99f013cd3d83d266ec6383))
+- extract page title from HTML custom elements ([bb9931c](https://codeberg.org/tjdavid/coralite/commit/bb9931ccaaf45a2ba202782f1b72e1a62168a9fc))
+- switch plugin hook execution from parallel to sequential mode ([54b4949](https://codeberg.org/tjdavid/coralite/commit/54b49496766b0a453b75f76627d0846648f2c5f5))
+- update metadata namespacing and add onPageUpdate support (plugin) ([8f9b92a](https://codeberg.org/tjdavid/coralite/commit/8f9b92aac3e17b6902a9091658900dcf49a21f82))
+- escape backslashes in dom-serializer import path on windows (coralite) ([9ca736c](https://codeberg.org/tjdavid/coralite/commit/9ca736cc5c8d5010fdd356316dc21084e9f923ef))
+
+### ⚡ Performance Improvements
+
+- optimize object iterations and lookups in script-manager.js ([cd6390f](https://codeberg.org/tjdavid/coralite/commit/cd6390f14b0769c5f998fdff9809568378fd3535))
+
+### 📚 Documentation
+
+- document built-in page variables and update navigation ([91b829d](https://codeberg.org/tjdavid/coralite/commit/91b829d46616cc74e81970dd9b1b4f6c6711ad1e))
+- update E2E testing docs with namespaced data-testid details ([de94b83](https://codeberg.org/tjdavid/coralite/commit/de94b830d99e42276a3a42d61ded09d3b41cc652))
+- update llms.txt to match current codebase ([42d7ef9](https://codeberg.org/tjdavid/coralite/commit/42d7ef98db68d0d22e2d8f57c498a08082678ad9))
+
+### 🧹 Chores
+
+- remove redundant comment in metadata extraction logic ([2cf78c3](https://codeberg.org/tjdavid/coralite/commit/2cf78c3f10149fe73e9d11f43c2f2343994f70ea))
+
+### 💥 Breaking Changes
+
+- update built-in variables to use `page_*` prefix ([e8d1649](https://codeberg.org/tjdavid/coralite/commit/e8d1649e5fb30ff2c1ea5fade9d57026ae7e0db0))
+
+
 ## v0.31.7
 
 > Comparing `coralite-v0.31.6` to `HEAD`
