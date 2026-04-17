@@ -411,7 +411,7 @@ Coralite.prototype.initialise = async function () {
     if (!newValue.result) {
       const result = await onFileSet(newValue)
 
-      newValue = result.value
+      newValue.result = result.value
       newCustomElements = result.value.customElements
     } else {
       newCustomElements = newValue.result.customElements
@@ -420,7 +420,7 @@ Coralite.prototype.initialise = async function () {
     let oldElements = oldValue.result.customElements.slice()
 
     await this._triggerPluginHook('onPageUpdate', {
-      elements: newCustomElements,
+      elements: newValue.result,
       newValue,
       oldValue
     })
@@ -460,7 +460,7 @@ Coralite.prototype.initialise = async function () {
       pageCustomElement.delete(newValue.path.pathname)
     }
 
-    return newValue
+    return newValue.result
   }
 
   const onPageDelete = async (value) => {

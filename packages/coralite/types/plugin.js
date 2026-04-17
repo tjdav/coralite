@@ -42,7 +42,7 @@
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageUpdateCallback - Async callback triggered when a page is updated. Called with elements, new and old values.
  * @param {Object} param
- * @param {CoraliteElement[]} param.elements - Updated HTML elements from the page
+ * @param {ParseHTMLResult} param.elements - Updated HTML elements from the page
  * @param {CoraliteCollectionItem} param.newValue - The updated data item
  * @param {CoraliteCollectionItem} param.oldValue - The previous data item before update
  * @async
