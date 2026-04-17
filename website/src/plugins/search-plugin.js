@@ -20,7 +20,8 @@ function extractText (node) {
 export default definePlugin({
   name: 'search-plugin',
   onPageSet: async ({ elements, values, data }) => {
-    if (!data.path.pathname.endsWith('.html') || !data.path.pathname.startsWith('docs/')){
+    if (!data.path.pathname.endsWith('.html')
+      || !values.page_url_dirname.startsWith('/docs')){
       return
     }
 
