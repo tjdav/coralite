@@ -25,8 +25,8 @@ export default definePlugin({
       return
     }
 
-    const title = values.title || ''
-    const description = values.description || ''
+    const title = values.page_title || ''
+    const description = values.pageDescription || ''
 
     // Extract full text from body
     let bodyNode = null
@@ -64,7 +64,8 @@ export default definePlugin({
     // Write index to dist
     const dest = join(process.cwd(), 'dist', 'search-index.json')
     try {
-      await writeFile(dest, JSON.stringify(searchIndex))
+      const content = JSON.stringify(searchIndex)
+      await writeFile(dest, content)
     } catch (err) {
       console.error('Failed to write search index', err)
     }
