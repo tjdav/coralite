@@ -26,6 +26,13 @@ Static components are purely HTML-based elements without scripting logic.
 Dynamic components are authored by appending a `<script type="module">` below the `<template>`, exporting the core `defineComponent` helper.
 
 ### 3.1 Server-Side Execution (Build Time) & Context Data
+* **Built-in Page Variables**: During the build phase, Coralite automatically injects several context variables into the `values` object. These follow the `page_*` snake_case naming convention:
+  * `page_url_pathname`: The full URL pathname of the page.
+  * `page_url_dirname`: The directory name of the URL.
+  * `page_pathname`: The physical file path name of the page relative to the pages directory.
+  * `page_dirname`: The physical directory name of the page file.
+  * `page_filename`: The filename of the page file.
+  * *Note*: The metadata plugin may also inject `page_lang` and `page_title`.
 * **client.setup(results)**: An asynchronous function executed strictly on the server during the build. Replaces Top-Level Await (TLA). Used for fetching data or reading files. The returned object is merged into the component's `values` context.
 * **Context Data (`values`) & Data Passing**: Data must be passed via **HTML attributes**, which the framework automatically maps into the `values` object.
 * **Handling Complex Data**: Do not pass complex objects or arrays as stringified JSON attributes. Instead, handle the complex data structures in your script logic (e.g., mapping over an array) and pass the decomposed primitive values (strings, numbers) as individual attributes.

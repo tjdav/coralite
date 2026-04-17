@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta title="Coralite Page Variables: Built-in Path & URL Context"
+    description="Learn about the built-in context variables automatically injected into your components' values object by Coralite during the build phase."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Core Concepts: Built-in Page Variables</h1>
+
+    <p>During the build phase, Coralite automatically injects several context variables into the <code>values</code> object of your components. These variables provide essential information about the current page's URL and file path, making it easy to create dynamic logic like highlighting active navigation links or generating breadcrumbs.</p>
+
+    <p>These core variables all follow the <code>page_*</code> snake_case naming convention and are provided natively by the framework.</p>
+
+    <coralite-heading level="h2" text="Available Page Variables"></coralite-heading>
+
+    <ul>
+      <li><strong><code>page_url_pathname</code></strong>: The final URL path that the user navigates to (e.g., <code>/docs/guide/page-variables.html</code>).</li>
+      <li><strong><code>page_url_dirname</code></strong>: The directory component of the URL path (e.g., <code>/docs/guide</code>).</li>
+      <li><strong><code>page_pathname</code></strong>: The physical file path name relative to your pages directory (e.g., <code>docs/guide/page-variables.html</code>).</li>
+      <li><strong><code>page_dirname</code></strong>: The physical directory name of the source page file (e.g., <code>docs/guide</code>).</li>
+      <li><strong><code>page_filename</code></strong>: The filename of the source page file (e.g., <code>page-variables.html</code>).</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Metadata Variables"></coralite-heading>
+    
+    <p>In addition to the path-related variables, if you are using the built-in <a href="/docs/guide/page-metadata.html">metadata plugin</a>, it injects the following special variables from the page's <code>&lt;head&gt;</code>:</p>
+
+    <ul>
+      <li><strong><code>page_title</code></strong>: Extracted from the page's <code>&lt;title&gt;</code> tag.</li>
+      <li><strong><code>page_lang</code></strong>: Extracted from the <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Example Usage"></coralite-heading>
+
+    <p>Because these variables are injected directly into the <code>values</code> object, you can reference them seamlessly within your components using tokens or computed properties.</p>
+
+    <p>Here is an example of a navigation link component that automatically adds an "active" class if the current URL matches its target URL:</p>
+
+    <coralite-code-html>
+      <!-- src/components/nav-link.html -->
+      <template id="nav-link">
+        <a href="{{ href }}" class="link {{ activeClass }}">
+          <slot></slot>
+        </a>
+      </template>
+
+      <script type="module">
+        import { defineComponent } from 'coralite/plugins'
+
+        export default defineComponent({
+          tokens: {
+            // Computed token that checks if the href prop matches the current URL
+            activeClass: (values) => (values.href === values.page_url_pathname ? 'active' : '')
+          }
+        })
+      </script>
+    </coralite-code-html>
+
+    <p>You can also use these variables purely declaratively inside your static templates:</p>
+
+    <coralite-code-html>
+      <!-- src/components/page-info.html -->
+      <template id="page-info">
+        <div class="page-info-box">
+          <p>Current URL: <strong>{{ page_url_pathname }}</strong></p>
+          <p>Source File: <strong>{{ page_filename }}</strong></p>
+          <p>Language: <strong>{{ page_lang }}</strong></p>
+        </div>
+      </template>
+    </coralite-code-html>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
