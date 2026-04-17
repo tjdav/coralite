@@ -383,6 +383,8 @@ Coralite.prototype.initialise = async function () {
       page_pathname: data.path.pathname,
       page_dirname: data.path.dirname,
       page_filename: data.path.filename,
+      // DEPRECATED: provide backwards compatibility for legacy plugins
+      $urlPathname: urlPathname,
       ...data.values
     }
 
