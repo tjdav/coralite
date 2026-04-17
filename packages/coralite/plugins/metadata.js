@@ -77,6 +77,8 @@ async function extractMetadata (context) {
                       const metaName = 'meta_' + element.attribs.name
 
                       values[metaName] = element.attribs.content
+                    } else if (element.type === 'tag' && element.name === 'title' && element.children.length && element.children[0].type === 'text') {
+                      values.page_title = element.children[0].data
                     }
                   }
                 }
