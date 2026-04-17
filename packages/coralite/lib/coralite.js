@@ -2509,7 +2509,7 @@ Coralite.prototype._evaluate = async function (options) {
 /**
  * @template {Object} T
  *
- * Executes all plugin callbacks registered under the specified hook name.
+ * Executes all plugin callbacks registered under the specified hook name sequentially.
  *
  * @internal
  *
@@ -2518,17 +2518,24 @@ Coralite.prototype._evaluate = async function (options) {
  * @return {Promise<Array<T>>} A promise that resolves to an array of results from all callbacks.
  */
 Coralite.prototype._triggerPluginHook = async function (name, data) {
-  const pluginCallbacks = []
+  const results = []
   const pluginHooks = this._plugins.hooks[name]
 
-  // iterate over each plugin callback associated with the given hook name
-  for (let i = 0; i < pluginHooks.length; i++) {
-    // push a promise representing the execution of the callback into the array
-    pluginCallbacks.push(pluginHooks[i](data))
+  if (!pluginHooks || pluginHooks.length === 0) {
+    return results
   }
 
-  // wait for all plugin callbacks to complete and return their results
-  return await Promise.all(pluginCallbacks)
+  for (let i = 0; i < pluginHooks.length; i++) {
+    let result = pluginHooks[i](data)
+
+    if (result !== null && typeof result === 'object' && typeof result.then === 'function') {
+      result = await result
+    }
+
+    results.push(result)
+  }
+
+  return results
 }
 
 /**
