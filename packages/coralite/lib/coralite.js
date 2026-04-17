@@ -1175,9 +1175,9 @@ const globalSetupValuesPromise = getSetups(globalContext);
   await Promise.all(loadPromises);
 
   // Invoke inline declarative instances defined in HTML (legacy support for <script> blocks mapped to _generatePages instances if needed)
-  const declarativePromises = [];
+  const declarativeFunctions = [];
   ${Object.values(instances).map(instance => `
-  declarativePromises.push((async() => {
+  declarativeFunctions.push((async() => {
     const context = {
       instanceId: '${instance.instanceId}',
       componentId: '${instance.componentId}',
@@ -1185,12 +1185,13 @@ const globalSetupValuesPromise = getSetups(globalContext);
       component: {},
       signal: globalAbortController.signal
     };
-    const setupValues = await globalSetupValuesPromise;
-    const helpers = await getHelpers(context);
-    context.helpers = helpers;
+    const setupValuesPromise = globalSetupValuesPromise;
+    const helpersPromise = getHelpers(context);
+    const modulePromise = import('${base}assets/js/${scriptResult.manifest[instance.componentId]}');
 
-    const module = await import('${base}assets/js/${scriptResult.manifest[instance.componentId]}');
-    
+    const [setupValues, helpers, module] = await Promise.all([setupValuesPromise, helpersPromise, modulePromise]);
+
+    context.helpers = helpers;
     context.values = { ...module.default.defaultValues, ...context.values, ...setupValues };
     
     // Explicitly load declarative script dependencies if any
@@ -1201,12 +1202,27 @@ const globalSetupValuesPromise = getSetups(globalContext);
     }
 
     context.imports = module.default.imports || {};
-    if (module.default.script) {
-      await module.default.script(context);
-    }
+    
+    return async () => {
+      if (module.default.script) {
+        await module.default.script(context);
+      }
+    };
   })());
   `).join('\n')}
-  await Promise.all(declarativePromises);
+  
+  const executableScripts = await Promise.all(declarativeFunctions);
+  ${this.options.mode === 'development' ? `
+  for (let i = 0; i < executableScripts.length; i++) {
+    await executableScripts[i]();
+  }
+  ` : `
+  const scriptPromises = [];
+  for (let i = 0; i < executableScripts.length; i++) {
+    scriptPromises.push(executableScripts[i]());
+  }
+  await Promise.all(scriptPromises);
+  `}
   resolveCoraliteReady();
 })();
 `
