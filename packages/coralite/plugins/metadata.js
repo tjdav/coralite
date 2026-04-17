@@ -81,13 +81,11 @@ async function extractMetadata (context) {
                   }
                 }
               } else if (element.name === 'title' && element.children.length && element.children[0].type === 'text') {
-                // store page title
                 values.page_title = element.children[0].data
               }
             }
           }
 
-          // once the <head> tag is processed, return to exit the loop.
           return
         }
       }
