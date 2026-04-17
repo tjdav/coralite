@@ -137,68 +137,6 @@
           })
         }
 
-        const getHighlightedText = (text, matches, key) => {
-          if (!text) return ''
-          const match = matches && matches.find(m => m.key === key)
-          if (!match || !match.indices || match.indices.length === 0) return escapeHtml(text)
-
-          let result = ''
-          let lastIndex = 0
-
-          match.indices.forEach(([start, end]) => {
-            result += escapeHtml(text.substring(lastIndex, start))
-            result += '<mark>' + escapeHtml(text.substring(start, end + 1)) + '</mark>'
-            lastIndex = end + 1
-          })
-
-          result += escapeHtml(text.substring(lastIndex))
-          return result
-        }
-
-        const getHighlightedContentSnippet = (content, matches) => {
-          if (!content) return ''
-          const match = matches && matches.find(m => m.key === 'content')
-  
-          if (!match || !match.indices || match.indices.length === 0) {
-            return escapeHtml(content.substring(0, 100)) + (content.length > 100 ? '...' : '')
-          }
-
-          const firstMatch = match.indices[0]
-          const matchStart = firstMatch[0]
-          const matchEnd = firstMatch[1]
-          const matchLength = matchEnd - (matchStart + 1)
-  
-          const remainingSpace = 100 - matchLength
-          const beforeLength = Math.max(0, Math.floor(remainingSpace / 2))
-  
-          let snippetStart = Math.max(0, matchStart - beforeLength)
-          let snippetEnd = Math.min(content.length, snippetStart + 100)
-
-          if (snippetEnd - snippetStart < 100 && snippetStart > 0) {
-            snippetStart = Math.max(0, snippetEnd - 100)
-          }
-  
-          const snippet = content.substring(snippetStart, snippetEnd)
-  
-          let result = ''
-          let lastIndex = 0
-
-          match.indices.forEach(([s, e]) => {
-            if (e >= snippetStart && s < snippetEnd) {
-              const localStart = Math.max(0, s - snippetStart)
-              const localEnd = Math.min(snippet.length - 1, e - snippetStart)
-  
-              result += escapeHtml(snippet.substring(lastIndex, localStart))
-              result += '<mark>' + escapeHtml(snippet.substring(localStart, localEnd + 1)) + '</mark>'
-              lastIndex = localEnd + 1
-            }
-          })
-
-          result += escapeHtml(snippet.substring(lastIndex))
-  
-          return (snippetStart > 0 ? '...' : '') + result + (snippetEnd < content.length ? '...' : '')
-        }
-
         // Handle search
         searchInput.addEventListener('input', (e) => {
           const query = e.target.value.trim()
@@ -225,7 +163,7 @@
           }
 
           searchResults.innerHTML = ''
-          results.forEach(({ item, matches }) => {
+          results.forEach(({ item }) => {
             const li = document.createElement('li')
             li.className = 'search-result-item'
   
@@ -240,18 +178,19 @@
   
             const title = document.createElement('div')
             title.className = 'search-result-title'
-            title.innerHTML = getHighlightedText(item.title || item.url, matches, 'title')
+            title.textContent = item.title
   
             const desc = document.createElement('div')
+
             desc.className = 'search-result-desc'
-            if (item.description) {
-              desc.innerHTML = getHighlightedText(item.description, matches, 'description')
-            } else if (item.content) {
-              desc.innerHTML = getHighlightedContentSnippet(item.content, matches)
-            }
+            desc.textContent = item.content ? item.content.substring(0, 100) + '...' : item.description
   
             a.appendChild(title)
-            if (desc.innerHTML) a.appendChild(desc)
+  
+            if (desc.innerHTML) {
+              a.appendChild(desc)
+            }
+  
             li.appendChild(a)
             searchResults.appendChild(li)
   
