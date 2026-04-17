@@ -20,7 +20,7 @@ import { definePlugin } from '#lib'
  */
 async function extractMetadata (context) {
   const { elements, values, data, coraliteContext } = context
-  values.$lang = ''
+  values.page_lang = ''
 
   // loop through all children of the root element to process metadata in <head> tags.
   for (let i = 0; i < elements.root.children.length; i++) {
@@ -28,7 +28,7 @@ async function extractMetadata (context) {
 
     // traverse html children to find the head element
     if (rootNode.type === 'tag' && rootNode.name === 'html') {
-      values.$lang = rootNode.attribs.lang
+      values.page_lang = rootNode.attribs.lang
 
       for (let i = 0; i < rootNode.children.length; i++) {
         const node = rootNode.children[i]

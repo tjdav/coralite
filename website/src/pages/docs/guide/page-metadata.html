@@ -25,7 +25,7 @@
     <ul>
       <li><strong>Meta Tags:</strong> Tags formatted as <code>&lt;meta name="X" content="Y"&gt;</code> are stored as <code>meta_X</code>. For example, <code>&lt;meta name="author" content="Coralite Team"&gt;</code> becomes accessible via the token <code>{{ meta_author }}</code>.</li>
       <li><strong>Title Tag:</strong> The text content of the <code>&lt;title&gt;</code> tag is stored specifically as <code>page_title</code>.</li>
-      <li><strong>Language:</strong> The <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag is extracted and stored as <code>$lang</code>.</li>
+      <li><strong>Language:</strong> The <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag is extracted and stored as <code>page_lang</code>.</li>
     </ul>
 
     <coralite-heading level="h2" text="Example Usage"></coralite-heading>
@@ -63,7 +63,7 @@
             <span>Written by: {{ meta_author }}</span>
             <span>Published: {{ meta_publishDate }}</span>
             <span class="badge">{{ meta_category }}</span>
-            <span>Language: {{ $lang }}</span>
+            <span>Language: {{ page_lang }}</span>
           </div>
         </header>
       </template>

@@ -37,12 +37,12 @@
     tokens: {
       currentLang (values) {
         return `<span class="d-none">
-          ${getNativeLanguageName(values.$lang)}
-        </span>${flags[values.$lang]} ${values.$lang.toUpperCase()}`
+          ${getNativeLanguageName(values.page_lang)}
+        </span>${flags[values.page_lang]} ${values.page_lang.toUpperCase()}`
       },
-      languageLinks ({ $lang, languages, sourceLang, $urlPathname }) {
+      languageLinks ({ page_lang, languages, sourceLang, page_url_pathname }) {
         // Split the path into segments
-        const segments = $urlPathname.split('/').filter(Boolean)
+        const segments = page_url_pathname.split('/').filter(Boolean)
   
         // Supported languages
         const langCodes = languages.split(',')
@@ -51,11 +51,11 @@
           return
         }
 
-        const pathname = normalizePath($urlPathname, langCodes)
+        const pathname = normalizePath(page_url_pathname, langCodes)
         const currentPath = segments.join('/') + (pathname.endsWith('/') && segments.length > 1 ? '/' : '')
 
         return langCodes.map((code) => {
-          if ($lang === code) {
+          if (page_lang === code) {
             return ''
           }
 

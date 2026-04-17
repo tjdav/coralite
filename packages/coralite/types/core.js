@@ -69,11 +69,11 @@
 /**
  * Represents URL and file path values available during component rendering.
  * @typedef {Object} CoralitePathValues
- * @property {string} $urlPathname - The URL pathname
- * @property {string} $urlDirname - The directory name of the URL
- * @property {string} $filePathname - The file path name
- * @property {string} $fileDirname - The directory name of the file
- * @property {string} $filename - The filename
+ * @property {string} page_url_pathname - The URL pathname
+ * @property {string} page_url_dirname - The directory name of the URL
+ * @property {string} page_pathname - The file path name
+ * @property {string} page_dirname - The directory name of the file
+ * @property {string} page_filename - The filename
  * @property {Object<string, string>} [data.values] - Additional values from data
  */
 

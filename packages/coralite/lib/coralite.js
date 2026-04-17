@@ -378,11 +378,11 @@ Coralite.prototype.initialise = async function () {
     // define a set of context values for component rendering
     /** @type {CoraliteValues} */
     const values = {
-      $urlPathname: urlPathname,
-      $urlDirname: pathToFileURL(dirname(urlPathname)).pathname,
-      $filePathname: data.path.pathname,
-      $fileDirname: data.path.dirname,
-      $filename: data.path.filename,
+      page_url_pathname: urlPathname,
+      page_url_dirname: pathToFileURL(dirname(urlPathname)).pathname,
+      page_pathname: data.path.pathname,
+      page_dirname: data.path.dirname,
+      page_filename: data.path.filename,
       ...data.values
     }
 

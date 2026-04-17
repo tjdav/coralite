@@ -256,7 +256,7 @@ The Metadata plugin automatically extracts SEO and page configuration data from 
 * **Lifecycle Hook:** It operates on the `onPageSet` hook, intercepting the parsed HTML AST (`elements.root`) when a page is first created.
 * **AST Traversal:** The plugin manually loops through the root's children to locate the `<html>` tag, and then drills down to find the `<head>` tag.
 * **Data Extraction Rules:**
-  * **Language:** It reads the `lang` attribute from the `<html>` tag and assigns it to `values.$lang` (defaulting to an empty string if absent).
+  * **Language:** It reads the `lang` attribute from the `<html>` tag and assigns it to `values.page_lang` (defaulting to an empty string if absent).
   * **Title:** If it encounters a `<title>` tag containing a text node, it stores the text in `values.page_title`.
   * **Meta Tags:** For any `<meta>` tag with both `name` and `content` attributes, it dynamically creates a key prefixed with `meta_` (e.g., `meta_description`) and assigns the `content` to it.
 * **Dynamic Head Components:** If the plugin detects a custom component (an element with `slots`) inside the `<head>`, it pauses to imperatively compile that component using `this.createComponentElement()`. It then iterates over the newly rendered children of that component to extract any resulting `<meta>` tags. 

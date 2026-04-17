@@ -40,11 +40,11 @@
         let result = 'https://coralite.dev'
 
         // return root path
-        if (values.$urlPathname === '/index.html' ) {
+        if (values.page_url_pathname === '/index.html' ) {
           return result
         }
 
-        let nameSplit = values.$urlPathname.split('.html')
+        let nameSplit = values.page_url_pathname.split('.html')
         // remove .html file extension.
         return result + nameSplit.slice(0, nameSplit.length - 1).join('')
       }

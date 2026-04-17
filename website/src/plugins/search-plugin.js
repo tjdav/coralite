@@ -20,8 +20,7 @@ function extractText (node) {
 export default definePlugin({
   name: 'search-plugin',
   onPageSet: async ({ elements, values, data }) => {
-    // Only index HTML pages
-    if (!data.path.pathname.endsWith('.html')){
+    if (!data.path.pathname.endsWith('.html') || !data.path.pathname.startsWith('docs/')){
       return
     }
 
@@ -54,7 +53,7 @@ export default definePlugin({
     content = content.replace(/\s+/g, ' ').trim()
 
     searchIndex.push({
-      url: values.$urlPathname,
+      url: values.page_url_pathname,
       title,
       description,
       content

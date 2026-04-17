@@ -1,5 +1,5 @@
 <template id="current-language">
-  <p class="current-language">{{ $lang }} - {{ displayName }}</p>
+  <p class="current-language">{{ page_lang }} - {{ displayName }}</p>
 </template>
 
 <script type="module">
@@ -7,10 +7,10 @@ import { defineComponent } from 'coralite'
 
 export default defineComponent({
   tokens: {
-    displayName ({ $lang }) {
+    displayName ({ page_lang }) {
       const displayNames = new Intl.DisplayNames(['en'], { type: 'language' })
 
-      return displayNames.of($lang)
+      return displayNames.of(page_lang)
     }
   }
 })
