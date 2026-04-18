@@ -3,7 +3,20 @@ import { simple as walkJS } from 'acorn-walk'
 import { createCoraliteTextNode } from './dom.js'
 
 /**
- * @import {CoraliteElement, CoraliteModule, CoraliteModuleSlotElement, CoraliteModuleValue, CoraliteTextNode, CoraliteComponent, CoraliteComponentResult, CoraliteContentNode, CoraliteAnyNode, CoraliteDirective} from '../types/index.js'
+ * @import {
+ * CoraliteElement,
+ * CoraliteModule,
+ * CoraliteModuleSlotElement,
+ * CoraliteModuleValue,
+ * CoraliteTextNode,
+ * CoraliteComponent,
+ * CoraliteComponentResult,
+ * CoraliteContentNode,
+ * CoraliteAnyNode,
+ * CoraliteDirective,
+ * ScriptImport,
+ * ScriptContent
+ * } from '../types/index.js'
  */
 
 const KEBAB_REGEX = /[-|:]([a-z])/g
@@ -111,7 +124,9 @@ export function mergeUniqueObjects (arr1, arr2) {
   const seen = new Set()
   return all.filter(item => {
     const key = typeof item === 'object' ? JSON.stringify(item) : item
-    if (seen.has(key)) return false
+    if (seen.has(key)) {
+      return false
+    }
     seen.add(key)
     return true
   })
@@ -162,7 +177,9 @@ export function normalizeFunction (func) {
     return original.replace(/^async\s+([$\w]+)\s*\(/, 'async function(')
   } else {
     // Check for getters/setters
-    if (header.startsWith('get ') || header.startsWith('set ')) return original
+    if (header.startsWith('get ') || header.startsWith('set ')) {
+      return original
+    }
 
     // Capture the name (group 1) and allow $ in name
     return original.replace(/^([$\w]+)\s*\(/, 'function(')
@@ -171,11 +188,14 @@ export function normalizeFunction (func) {
 
 
 /**
-   * Recursively clones a node and its children.
-   * @param {any} node
-   * @param {any} parent
-   * @returns {any}
-   */
+ * Recursively clones an AST node and its children, ensuring that
+ * inner references (like parents and slots) point to the newly cloned nodes.
+ *
+ * @param {Map<Object, Object>} nodeMap - A map tracking original nodes to their newly cloned counterparts.
+ * @param {Object} node - The current AST node being cloned.
+ * @param {Object} [parent] - The parent node reference to assign to the clone.
+ * @returns {Object} The newly cloned node.
+ */
 function cloneNode (nodeMap, node, parent) {
   // Shallow copy the node structure
   const newNode = { ...node }
@@ -224,7 +244,6 @@ function cloneNode (nodeMap, node, parent) {
   return newNode
 }
 
-/**
 /**
  * Creates a shallow copy of a CoraliteModule with a deep clone of its DOM tree (template) and re-linked internal references to enable safe independent mutation.
  *
@@ -387,7 +406,7 @@ export function cloneComponentInstance (originalDocument) {
  * Extracts and normalizes the script content from a component definition.
  *
  * @param {string} code - The raw script content
- * @returns {import('../types/script.js').ScriptContent | null}
+ * @returns {ScriptContent | null}
  */
 export function findAndExtractScript (code) {
   const ast = parseJS(code, {
@@ -396,7 +415,7 @@ export function findAndExtractScript (code) {
     locations: true
   })
 
-  /** @type {import('../types/script.js').ScriptContent | null} */
+  /** @type {ScriptContent | null} */
   let result = null
 
   walkJS(ast, {
@@ -419,7 +438,11 @@ export function findAndExtractScript (code) {
           if (tokensProp && tokensProp.type === 'Property' && tokensProp.value.type === 'ObjectExpression') {
             tokens = tokensProp.value.properties.map(p => {
               if (p.type === 'Property') {
-                return p.key.type === 'Identifier' ? p.key.name : (p.key.type === 'Literal' ? p.key.value : undefined)
+                if (p.key.type === 'Identifier') {
+                  return p.key.name
+                } else if (p.key.type === 'Literal') {
+                  return p.key.value
+                }
               }
               return undefined
             }).filter(Boolean)
@@ -450,21 +473,38 @@ export function findAndExtractScript (code) {
                 prop.key.name === 'imports'
             )
 
-            /** @type {import('../types/script.js').ScriptImport[] | undefined} */
+            /** @type {ScriptImport[] | undefined} */
             let imports = undefined
             if (importsProp && importsProp.type === 'Property' && importsProp.value.type === 'ArrayExpression') {
+              /** @type {ScriptImport[]} */
+              const initialImportsAcc = []
+
               imports = importsProp.value.elements.reduce((acc, el) => {
                 /** @type {Record<string, any>} */
                 const imp = {}
                 let hasSpecifier = false
+
                 if (el.type === 'ObjectExpression') {
                   el.properties.forEach(p => {
-                    if (p.type !== 'Property') return
+                    if (p.type !== 'Property') {
+                      return
+                    }
 
                     const pKey = p.key
-                    const key = String(pKey.type === 'Identifier' ? pKey.name : (pKey.type === 'Literal' ? pKey.value : ''))
+                    let rawKey = ''
 
-                    if (!key) return
+                    if (pKey.type === 'Identifier') {
+                      rawKey = pKey.name
+                    } else if (pKey.type === 'Literal') {
+                      // @ts-ignore
+                      rawKey = pKey.value
+                    }
+
+                    const key = String(rawKey)
+
+                    if (!key) {
+                      return
+                    }
 
                     if (p.value.type === 'Literal') {
                       imp[key] = p.value.value
@@ -476,7 +516,14 @@ export function findAndExtractScript (code) {
                       p.value.properties.forEach(op => {
                         if (op.type === 'Property') {
                           const opKey = op.key
-                          const opKeyName = (opKey.type === 'Identifier' ? opKey.name : (opKey.type === 'Literal' ? opKey.value : undefined))
+                          let opKeyName
+
+                          if (opKey.type === 'Identifier') {
+                            opKeyName = opKey.name
+                          } else if (opKey.type === 'Literal') {
+                            opKeyName = opKey.value
+                          }
+
                           if (typeof opKeyName === 'string' && op.value.type === 'Literal') {
                             imp[key][opKeyName] = String(op.value.value)
                           }
@@ -488,12 +535,14 @@ export function findAndExtractScript (code) {
                     }
                   })
                 }
+
                 if (hasSpecifier) {
-                  // Type cast when we know it has the required properties
-                  acc.push(/** @type {import('../types/script.js').ScriptImport} */ (imp))
+                  // @ts-ignore
+                  acc.push(imp)
                 }
+
                 return acc
-              }, /** @type {import('../types/script.js').ScriptImport[]} */([]))
+              }, initialImportsAcc)
             }
 
             let setupContent = undefined
@@ -580,6 +629,40 @@ export function findAndExtractScript (code) {
       }
     }
   })
+
+  return result
+}
+
+/**
+ * Safely merges partial plugin updates into the main context object.
+ * Deeply merges plain objects and overwrites other types (arrays, primitives, etc.).
+ *
+ * @param {any} current - The current state object.
+ * @param {any} patch - The patch object containing updates.
+ * @returns {any} The newly merged state object.
+ */
+export function mergePluginState (current, patch) {
+  if (!patch || typeof patch !== 'object') {
+    return current
+  }
+
+  const result = { ...current }
+
+  for (const key of Object.keys(patch)) {
+    const patchValue = patch[key]
+    const currentValue = result[key]
+
+    // If both are plain objects, merge them deeply
+    if (
+      patchValue && typeof patchValue === 'object' && !Array.isArray(patchValue) &&
+      currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue)
+    ) {
+      result[key] = mergePluginState(currentValue, patchValue)
+    } else {
+      // Otherwise, overwrite (Arrays, strings, numbers, etc.)
+      result[key] = patchValue
+    }
+  }
 
   return result
 }

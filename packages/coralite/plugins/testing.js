@@ -2,10 +2,14 @@ import { definePlugin } from '#lib'
 
 /**
  * Traverses an AST recursively and duplicates 'ref' attributes to 'data-testid'.
+ * Note: Modifying AST nodes in-place is required to preserve reference identity
+ * for internal framework arrays (e.g. customElements, skipRenderElements).
  * @param {Array} children - The AST nodes to traverse.
  */
 function traverseAndAddTestId (children) {
-  if (!children || !Array.isArray(children)) return
+  if (!children || !Array.isArray(children)) {
+    return
+  }
   for (let i = 0; i < children.length; i++) {
     const node = children[i]
     if (node.type === 'tag' && node.attribs && node.attribs.ref) {
