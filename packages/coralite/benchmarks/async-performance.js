@@ -80,7 +80,7 @@ async function runBenchmark () {
 
   if (results && results.length > 0) {
     console.log(`- Pages Built: ${results.length}`)
-    const html = results[0].html
+    const html = results[0]?.content || ''
     const matchCount = (html.match(/class="async-comp"/g) || []).length
     console.log(`- Rendered Components: ${matchCount} / ${COMPONENT_COUNT}`)
 
