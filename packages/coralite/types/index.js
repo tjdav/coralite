@@ -122,6 +122,7 @@
  * @typedef {import('./script.js').ScriptPluginHelperGlobalContext} ScriptPluginHelperGlobalContext
  * @typedef {import('./script.js').ScriptPluginHelperGlobalInstance} ScriptPluginHelperGlobalInstance
  * @typedef {import('./script.js').ScriptPluginHelperLocalInstance} ScriptPluginHelperLocalInstance
+ * @typedef {import('./script.js').ScriptImport} ScriptImport
  */
 
 export default {}
