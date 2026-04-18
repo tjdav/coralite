@@ -1633,9 +1633,10 @@ Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
  * @param {string[]} componentIds - Array of component IDs to process.
  * @param {Object} renderContext - The current build render context.
  * @param {CoraliteComponent} parentComponent - The document context in which the module is being processed
+ * @param {Object} values - The current token values and state available
  * @returns {Promise<void>}
  */
-Coralite.prototype._processDependentComponents = async function (componentIds, renderContext, parentComponent) {
+Coralite.prototype._processDependentComponents = async function (componentIds, renderContext, parentComponent, values = {}) {
   if (!componentIds || !componentIds.length) {
     return
   }
@@ -1658,7 +1659,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
     if (module.script) {
       scriptResult = await this._evaluate({
         module,
-        values: {},
+        values,
         component: parentComponent,
         contextId: `dependent-${id}`,
         renderContext
@@ -1767,7 +1768,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
 
     // Recursively process deeper dependencies
     if (nestedComponents.length > 0) {
-      await this._processDependentComponents(nestedComponents, renderContext, parentComponent)
+      await this._processDependentComponents(nestedComponents, renderContext, parentComponent, values)
     }
   }
 }
@@ -1934,7 +1935,7 @@ Coralite.prototype.createComponentElement = async function ({
       })
 
       if (mergedComponents.length > 0) {
-        await this._processDependentComponents(mergedComponents, renderContext, component)
+        await this._processDependentComponents(mergedComponents, renderContext, component, values)
       }
 
       // Ensure values object exists in scriptResult

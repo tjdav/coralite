@@ -320,12 +320,13 @@ describe('Coralite', () => {
         }
       }
 
+      // swallow the error so it doesn't crash the test runner
       coralite = new Coralite({
         pages: pagesDir,
         components: componentDir,
         plugins: [plugin, errorPlugin],
         onError: () => {
-        } // swallow the error so it doesn't crash the test runner
+        }
       })
 
       await coralite.initialise()
@@ -341,5 +342,83 @@ describe('Coralite', () => {
       assert.ok(hookContext.error.message.includes('Test Error'), 'error message should match')
       assert.ok(typeof hookContext.duration === 'number', 'duration should be a number')
     })
+  })
+})
+
+describe('Bug Fix: Preserving recursive tokens', () => {
+  let tmpDir, pagesDir, componentsDir, outputDir
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(path.join(tmpdir(), 'coralite-nested-test-'))
+    pagesDir = path.join(tmpDir, 'pages')
+    componentsDir = path.join(tmpDir, 'components')
+    outputDir = path.join(tmpDir, 'dist')
+
+    await mkdir(pagesDir)
+    await mkdir(componentsDir)
+  })
+
+  afterEach(async () => {
+    await rm(tmpDir, {
+      recursive: true,
+      force: true
+    })
+  })
+
+  it('preserves values context into child components nested dependencies', async () => {
+    const parentPlugin = {
+      name: 'parent-plugin',
+      onPageSet: async ({ values }) => {
+        values.special_value = 'i-am-preserved'
+      }
+    }
+
+    await writeFile(path.join(pagesDir, 'index.html'), '<parent-component></parent-component>')
+
+    const parentHtml = `
+<template id="parent-component">
+<child-component></child-component>
+</template>
+<script type="module">
+import { defineComponent } from 'coralite/plugins'
+export default defineComponent({
+  components: ['child-component']
+})
+</script>
+`
+    await writeFile(path.join(componentsDir, 'parent-component.html'), parentHtml)
+
+    const childHtml = `
+<template id="child-component">
+<div>{{ checkValue }}</div>
+</template>
+<script type="module">
+import { defineComponent } from 'coralite/plugins'
+export default defineComponent({
+tokens: {
+checkValue(values) {
+return values.special_value || 'missing'
+}
+}
+})
+</script>
+`
+    await writeFile(path.join(componentsDir, 'child-component.html'), childHtml)
+
+    const coralite = new Coralite({
+      pages: pagesDir,
+      components: componentsDir,
+      output: outputDir,
+      plugins: [parentPlugin],
+      mode: 'production'
+    })
+
+    await coralite.initialise()
+    const results = await coralite.build()
+
+    const pageResult = results.find(r => r.path && r.path.filename === 'index.html')
+    const htmlOutput = pageResult ? pageResult.content : ''
+
+    assert.ok(htmlOutput.includes('<div>i-am-preserved</div>'), 'nested child token values should receive context values')
   })
 })
