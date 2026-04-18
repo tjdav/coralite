@@ -35,6 +35,7 @@
  * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
  * @param {CoraliteFilePath & Object.<string, any>} param.values - Values associated with the page path
  * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
+ * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
@@ -45,6 +46,7 @@
  * @param {ParseHTMLResult} param.elements - Updated HTML elements from the page
  * @param {CoraliteCollectionItem} param.newValue - The updated data item
  * @param {CoraliteCollectionItem} param.oldValue - The previous data item before update
+ * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
@@ -52,6 +54,7 @@
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageDeleteCallback - Async callback triggered when a page is deleted. Called with the deleted data.
  * @param {CoraliteCollectionItem} value - The data item being deleted
+ * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
@@ -59,6 +62,7 @@
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginComponentCallback - Async callback triggered for component-related events (set, update, delete).
  * @param {CoraliteModule} component - The component module that was set, updated, or deleted
+ * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
@@ -69,7 +73,7 @@
  * @param {CoraliteComponent} context.component - The cloned HTML component data being processed
  * @param {Object} context.values - Values associated with the component
  * @param {Object} context.renderContext - Render context containing state for the build
- * @returns {Promise<void>}
+ * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
@@ -79,7 +83,7 @@
  * @param {Object} context
  * @param {string | string[] | null} context.path - The target directory or an array of specific page paths to build
  * @param {Object} context.options - Configuration options for the build process
- * @returns {Promise<void>}
+ * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
@@ -98,7 +102,7 @@
  * @param {CoraliteResult[]} context.results - The results of the build (pages generated)
  * @param {Error|null} context.error - The error if the build failed
  * @param {number} context.duration - The duration of the build in milliseconds
- * @returns {Promise<void>}
+ * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
