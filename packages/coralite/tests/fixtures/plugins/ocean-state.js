@@ -1,3 +1,7 @@
+/**
+ * Test plugin that manages shared state across components.
+ * @returns {Object} The coralite plugin definition
+ */
 export default function oceanStatePlugin () {
   return {
     name: 'ocean-state-plugin',

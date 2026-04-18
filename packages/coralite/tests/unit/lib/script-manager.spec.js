@@ -805,7 +805,7 @@ describe('ScriptManager', () => {
         }
       }
 
-      const result = await sm.compileAllInstances(instances, 'development') // switch to development so customProperty isn't minified out
+      const result = await sm.compileAllInstances(instances, 'development')
 
       assert.ok(typeof result === 'object')
       const chunkHashName = result.manifest['calculator']
@@ -828,7 +828,7 @@ describe('ScriptManager', () => {
       await sm.use({
         helpers: {
           helper2: () => 'second',
-          shared: (x) => x * 3 // Should overwrite
+          shared: (x) => x * 3
         }
       })
 

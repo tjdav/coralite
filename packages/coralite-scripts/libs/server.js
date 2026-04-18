@@ -411,7 +411,9 @@ async function server (config, options) {
 
           // find the document that matches the request path
           const doc = documents.find(doc => {
-            if (!doc) return false
+            if (!doc) {
+              return false
+            }
             const relPath = relative(config.pages, doc.path.pathname)
             const normalizedKey = relPath.split(sep).join('/')
             return normalizedKey === cacheKey
@@ -455,7 +457,9 @@ async function server (config, options) {
         clearTimeout(compileTimeout)
       }
       compileTimeout = setTimeout(async () => {
-        if (isCompiling || pendingChanges.size === 0) return
+        if (isCompiling || pendingChanges.size === 0) {
+          return
+        }
 
         pageCache.clear()
 
@@ -547,7 +551,7 @@ async function server (config, options) {
         } finally {
           isCompiling = false
         }
-      }, 100) // 100ms debounce
+      }, 100)
     }
 
     watcher

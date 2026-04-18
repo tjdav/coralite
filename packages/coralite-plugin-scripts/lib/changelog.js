@@ -4,6 +4,14 @@ import * as prompts from '@clack/prompts'
 import { writeFileSync, existsSync, readFileSync } from 'fs'
 import path from 'path'
 
+/**
+ * Generates a changelog file based on git history.
+ * @param {Object} [options={}] - Options for generating the changelog
+ * @param {string} [options.nextVersion] - The next version string
+ * @param {string} [options.output] - Output file path, relative to process.cwd()
+ * @param {boolean} [options.yes] - Auto-confirm prompts if true
+ * @returns {Promise<void>} Resolves when the changelog is generated
+ */
 export async function changelog (options = {}) {
   let repoUrl = ''
   try {
@@ -98,7 +106,14 @@ export async function changelog (options = {}) {
       other: '🔨 Other Changes'
     }
 
-    let titleVersion = options.nextVersion ? `v${options.nextVersion.replace(/^v/, '')}` : (toRef === 'HEAD' ? 'Unreleased' : toRef)
+    let titleVersion = ''
+    if (options.nextVersion) {
+      titleVersion = `v${options.nextVersion.replace(/^v/, '')}`
+    } else if (toRef === 'HEAD') {
+      titleVersion = 'Unreleased'
+    } else {
+      titleVersion = toRef
+    }
 
     const changelogData = {
       title: `## ${titleVersion}`,
@@ -114,7 +129,9 @@ export async function changelog (options = {}) {
 
       const prMatch = firstLine.match(/#(\d+)|Pull\s+Request\s+#(\d+)/i)
       const prNumber = prMatch ? prMatch[1] || prMatch[2] : null
-      if (prNumber) changelogData.pullRequests.add(prNumber)
+      if (prNumber) {
+        changelogData.pullRequests.add(prNumber)
+      }
 
       let isBreaking = firstLine.includes('BREAKING CHANGE') || message.includes('BREAKING CHANGE')
       let type = 'other'
@@ -126,7 +143,9 @@ export async function changelog (options = {}) {
         type = match[1]
         scope = match[2] || ''
         subject = match[3]
-        if (firstLine.includes('!')) isBreaking = true
+        if (firstLine.includes('!')) {
+          isBreaking = true
+        }
       }
 
       const commitEntry = {
@@ -151,13 +170,21 @@ export async function changelog (options = {}) {
     markdown += `> Comparing \`${fromTag}\` to \`${toRef}\`\n\n`
 
     for (const [key, title] of Object.entries(categories)) {
-      if (changelogData.sections[key].length === 0) continue
+      if (changelogData.sections[key].length === 0) {
+        continue
+      }
       markdown += `### ${title}\n\n`
       for (const commit of changelogData.sections[key]) {
         let line = `- ${commit.subject}`
-        if (commit.scope) line += ` (**${commit.scope}**)`
-        if (commit.pr && repoUrl) line += ` ([#${commit.pr}](${repoUrl}/pull/${commit.pr}))`
-        if (repoUrl) line += ` ([${commit.hash.slice(0, 7)}](${repoUrl}/commit/${commit.hash}))`
+        if (commit.scope) {
+          line += ` (**${commit.scope}**)`
+        }
+        if (commit.pr && repoUrl) {
+          line += ` ([#${commit.pr}](${repoUrl}/pull/${commit.pr}))`
+        }
+        if (repoUrl) {
+          line += ` ([${commit.hash.slice(0, 7)}](${repoUrl}/commit/${commit.hash}))`
+        }
         markdown += `${line}\n`
       }
       markdown += '\n'
@@ -189,7 +216,9 @@ export async function changelog (options = {}) {
         message: 'Write to file?',
         initialValue: true
       })
-      if (!confirmed) return
+      if (!confirmed) {
+        return
+      }
     }
 
     writeFileSync(outputFile, finalContent, 'utf8')

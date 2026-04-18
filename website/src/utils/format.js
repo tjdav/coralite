@@ -1,8 +1,8 @@
 
 /**
  * Remove common leading whitespace from a string.
- * @param {string} text
- * @returns {string}
+ * @param {string} text - The text to dedent
+ * @returns {string} The dedented text
  */
 export function dedent (text) {
   const lines = text.split('\n')
@@ -36,8 +36,9 @@ export function dedent (text) {
 
 /**
  * Add indentation to a string.
- * @param {string} text
- * @returns {string}
+ * @param {string} text - The text to indent
+ * @param {string} [spacer='  '] - The string to use for indentation
+ * @returns {string} The indented text
  */
 export function indent (text, spacer = '  ') {
   return text.split('\n').reduce((previousValue, currentValue) => previousValue + spacer + currentValue + '\n', '') + '\n'

@@ -7,6 +7,12 @@ import path from 'path'
 
 const RELEASE_TYPES = ['major', 'minor', 'patch', 'prerelease']
 
+/**
+ * Executes the package release process.
+ * @param {string} type - The release type ('major', 'minor', 'patch', etc.)
+ * @param {Object} options - Configuration options for the release
+ * @returns {Promise<void>} Resolves when the release process is complete
+ */
 export async function release (type, options) {
   const git = simpleGit()
 
@@ -106,7 +112,7 @@ export async function release (type, options) {
     const { changelog } = await import('./changelog.js')
     await changelog({
       nextVersion: newVersion,
-      yes: true, // auto-confirm inside release process
+      yes: true,
       output: 'CHANGELOG.md'
     })
 
@@ -123,7 +129,9 @@ export async function release (type, options) {
             message: 'Continue anyway?',
             initialValue: false
           })
-          if (!cont) process.exit(1)
+          if (!cont) {
+            process.exit(1)
+          }
         }
       }
     }

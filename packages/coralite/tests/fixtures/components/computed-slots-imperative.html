@@ -18,7 +18,7 @@ export default defineComponent({
       // But we can also test string here. Actually, we'll test node modification in header or default.
       if (typeof window !== 'undefined' && Array.isArray(content) && content.length > 0) {
         return content.map(node => {
-          if (node.nodeType === 1) { // ELEMENT_NODE
+          if (node.nodeType === 1) {
             const wrapper = document.createElement('div')
             wrapper.className = 'body-slot-node'
             wrapper.textContent = `Body: ${values.body} - `

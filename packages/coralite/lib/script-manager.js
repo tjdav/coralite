@@ -14,7 +14,7 @@ import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill
 
 /**
  * ScriptManager constructor function
- * @constructor
+ * @class
  */
 export function ScriptManager (options = {}) {
   this.sharedFunctions = Object.create(null)
@@ -399,7 +399,9 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       let nodeCounter = 0
 
       const cleanAST = (nodes) => {
-        if (!nodes) return null
+        if (!nodes) {
+          return null
+        }
         return nodes.map((node) => {
           const cloned = { ...node }
           // Assign unique ID for token mapping
@@ -419,13 +421,15 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       }
 
       const cleanValues = (values) => {
-        if (!values) return null
+        if (!values) {
+          return null
+        }
         const result = { ...values }
         if (result.attributes) {
           result.attributes = result.attributes.map(item => {
             const cloned = { ...item }
             cloned.elementId = nodeMap.get(item.element)
-            delete cloned.element // Remove reference to DOM element
+            delete cloned.element
             return cloned
           })
         }
@@ -433,7 +437,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
           result.textNodes = result.textNodes.map(item => {
             const cloned = { ...item }
             cloned.textNodeId = nodeMap.get(item.textNode)
-            delete cloned.textNode // Remove reference to DOM element
+            delete cloned.textNode
             return cloned
           })
         }
@@ -441,7 +445,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
           result.refs = result.refs.map(item => {
             const cloned = { ...item }
             cloned.elementId = nodeMap.get(item.element)
-            delete cloned.element // Remove reference to DOM element
+            delete cloned.element
             return cloned
           })
         }
@@ -543,7 +547,7 @@ export default {
               args.path.startsWith('coralite-script-module:') ||
               args.path === 'chunk-shared' ||
               args.path === 'coralite-shared') {
-              return null // Let other resolvers handle it
+              return null
             }
 
 

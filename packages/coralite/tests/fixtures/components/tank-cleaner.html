@@ -14,7 +14,9 @@
         const status = helpers.refs('status')
         if (btn) {
           btn.addEventListener('click', () => {
-            if (status) status.textContent = 'Clean'
+            if (status) {
+              status.textContent = 'Clean'
+            }
           })
         }
       }

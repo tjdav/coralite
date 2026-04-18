@@ -102,7 +102,9 @@ const coralite = new Coralite({
   onError: ({ level, message, error }) => {
     if (level === 'ERR') {
       process.stderr.write(kleur.red().bold('ERROR: ') + message + '\n')
-      if (error) process.stderr.write(kleur.gray(error.stack || error.message) + '\n')
+      if (error) {
+        process.stderr.write(kleur.gray(error.stack || error.message) + '\n')
+      }
     } else if (level === 'WARN') {
       process.stdout.write(kleur.yellow().bold('WARNING: ') + message + '\n')
     } else {

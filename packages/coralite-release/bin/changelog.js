@@ -150,7 +150,9 @@ program
         // Extract PR number if present (GitHub-style: #123 or Pull Request #123)
         const prMatch = firstLine.match(/#(\d+)|Pull\s+Request\s+#(\d+)/i)
         const prNumber = prMatch ? prMatch[1] || prMatch[2] : null
-        if (prNumber) changelog.pullRequests.add(prNumber)
+        if (prNumber) {
+          changelog.pullRequests.add(prNumber)
+        }
 
         // Detect breaking changes
         let isBreaking = firstLine.includes('BREAKING CHANGE') || message.includes('BREAKING CHANGE')
@@ -216,13 +218,19 @@ program
 
       // Render sections
       for (const [key, title] of Object.entries(categories)) {
-        if (changelog.sections[key].length === 0) continue
+        if (changelog.sections[key].length === 0) {
+          continue
+        }
 
         markdown += `### ${title}\n\n`
         for (const commit of changelog.sections[key]) {
           let line = `- ${commit.subject}`
-          if (commit.scope) line += ` (${commit.scope})`
-          if (commit.pr) line += ` ([#${commit.pr}](${REPO}/pulls/${commit.pr}))`
+          if (commit.scope) {
+            line += ` (${commit.scope})`
+          }
+          if (commit.pr) {
+            line += ` ([#${commit.pr}](${REPO}/pulls/${commit.pr}))`
+          }
           line += ` ([${commit.hash.slice(0, 7)}](${REPO}/commit/${commit.hash}))`
           markdown += `${line}\n`
         }

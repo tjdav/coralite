@@ -8,7 +8,9 @@ test.describe('Dynamic Component Loading', () => {
     // Wait for the dynamically inserted child to be defined and render its DOM
     await page.waitForFunction(() => {
       const child = document.querySelector('dynamic-child')
-      if (!child) return false
+      if (!child) {
+        return false
+      }
       const thisComp = child.querySelector('this-component')
       return thisComp && thisComp && thisComp.querySelector('#this-component-loaded')
     }, { timeout: 5000 })

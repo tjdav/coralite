@@ -248,7 +248,9 @@ export const defineComponent = definePlugin({
         /** @type {Object.<string, CoraliteModuleValue>} */
         const args = {}
         for (const key in results) {
-          if (!Object.hasOwn(results, key)) continue
+          if (!Object.hasOwn(results, key)) {
+            continue
+          }
 
           if (scriptTextContent.includes(key)) {
             args[key] = results[key]

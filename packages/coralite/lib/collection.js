@@ -15,8 +15,8 @@ import { existsSync } from 'node:fs'
 /**
  * Represents a collection of documents with methods to organize and retrieve them.
  * Maintains three views: flat list, path-based grouping, and ID lookup.
- * @constructor
- * @param {Object} [options={}]
+ * @class
+ * @param {Object} [options={}] - Options for configuring the collection
  * @param {string} [options.rootDir=''] - The root directory path for the collection
  * @param {CoraliteCollectionEventSet} [options.onSet] - Event handler for when documents are set
  * @param {CoraliteCollectionEventUpdate} [options.onUpdate] - Event handler for when documents are updated

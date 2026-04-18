@@ -10,7 +10,9 @@ function extractText (node) {
     text += node.data + ' '
   } else if (node.children) {
     for (const child of node.children) {
-      if (node.type === 'tag' && (node.name === 'script' || node.name === 'style')) continue
+      if (node.type === 'tag' && (node.name === 'script' || node.name === 'style')) {
+        continue
+      }
       text += extractText(child)
     }
   }
@@ -38,7 +40,9 @@ export default definePlugin({
       if (node.children) {
         for (const child of node.children) {
           findBody(child)
-          if (bodyNode) return
+          if (bodyNode) {
+            return
+          }
         }
       }
     }

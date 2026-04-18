@@ -27,7 +27,9 @@
         const msg = context.values.myShorthand({ msg: 'Hello from client' })
         const refId = context.values.ref_message
         const el = document.querySelector(`[ref="${refId}"]`)
-        if (el) el.textContent = msg
+        if (el) {
+          el.textContent = msg
+        }
       }
     }
   })

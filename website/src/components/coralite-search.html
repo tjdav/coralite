@@ -58,7 +58,9 @@
         let indexLoaded = false
 
         async function loadIndex () {
-          if (indexLoaded) return
+          if (indexLoaded) {
+            return
+          }
           try {
             const res = await fetch('/search-index.json', { signal })
             const data = await res.json()
@@ -124,7 +126,9 @@
         }, { signal })
 
         const escapeHtml = (str) => {
-          if (!str) return ''
+          if (!str) {
+            return ''
+          }
           return str.replace(/[&<>"']/g, (m) => {
             const map = {
               '&': '&amp;',

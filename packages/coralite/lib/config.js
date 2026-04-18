@@ -4,7 +4,7 @@
 
 /**
  * Validates and defines a Coralite configuration object
- * @params {CoraliteConfig} options
+ * @param {CoraliteConfig} options - The configuration options to validate and define
  * @returns {CoraliteConfig} The validated configuration object
  * @throws {Error} If the configuration is invalid
  */

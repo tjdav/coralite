@@ -3,7 +3,7 @@ import { mkdirSync, rmSync, writeFileSync, readdirSync, existsSync, readFileSync
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 
-const ROOT_DIR = process.cwd() // Assuming running from repo root
+const ROOT_DIR = process.cwd()
 const PACKAGES_DIR = resolve(ROOT_DIR, 'packages')
 
 // Helper to get package name from argument

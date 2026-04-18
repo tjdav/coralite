@@ -602,8 +602,8 @@ function findAttributesToIgnore (ignoreByAttribute, attributes) {
 
 /**
  * Create a map from ignoreByAttribute array.
- * @param {Array<string | Attribute> | Map<string, Array<string | null>>} ignoreByAttribute
- * @returns {Map<string, Array<string | null>>}
+ * @param {Array<string | Attribute> | Map<string, Array<string | null>>} ignoreByAttribute - The ignore configurations
+ * @returns {Map<string, Array<string | null>>} The generated map
  */
 function getIgnoreAttributeMap (ignoreByAttribute) {
   if (!ignoreByAttribute) {
@@ -638,8 +638,8 @@ function getIgnoreAttributeMap (ignoreByAttribute) {
 
 /**
  * Extract tokens from string
- * @param {string} string
- * @returns {CoraliteToken[]}
+ * @param {string} string - The string to extract tokens from
+ * @returns {CoraliteToken[]} The array of tokens extracted from the string
  *
  * @example
  * getTokensFromString('Hello {{ name }} and {{ age }}')
@@ -657,10 +657,9 @@ function getTokensFromString (string) {
   let i = 0
 
   while (i < string.length) {
-    // Find opening braces
     if (string[i] === '{' && string[i + 1] === '{') {
       const tokenStart = i
-      i += 2 // Skip opening braces
+      i += 2
 
       // Track brace depth for nested tokens
       let depth = 1

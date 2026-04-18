@@ -33,7 +33,7 @@ const nodeTypes = {
 /**
  * Base enhancer for all Coralite nodes
  * @template {RawCoraliteElement | RawCoraliteTextNode | RawCoraliteComment | RawCoraliteDirective | RawCoraliteComponentRoot} T
- * @param {T} node
+ * @param {T} node - The raw DOM node to enhance
  */
 function CoraliteNodeConstructor (node) {
   Object.assign(this, node)
@@ -59,7 +59,7 @@ Object.defineProperties(CoraliteNodeConstructor.prototype, {
     },
     /**
      * Sets the parent of the node.
-     * @param {CoraliteAnyNode | CoraliteComponentRoot} value
+     * @param {CoraliteAnyNode | CoraliteComponentRoot} value - The parent node to set
      */
     set (value) {
       this.parent = value
@@ -75,7 +75,7 @@ Object.defineProperties(CoraliteNodeConstructor.prototype, {
     },
     /**
      * Sets the parent element of the node.
-     * @param {CoraliteAnyNode | CoraliteComponentRoot} value
+     * @param {CoraliteAnyNode | CoraliteComponentRoot} value - The parent element to set
      */
     set (value) {
       this.parent = value
@@ -87,7 +87,9 @@ Object.defineProperties(CoraliteNodeConstructor.prototype, {
      * @returns {CoraliteAnyNode | null}
      */
     get () {
-      if (!this.parent || !this.parent.children) return null
+      if (!this.parent || !this.parent.children) {
+        return null
+      }
       const index = this.parent.children.indexOf(this)
       return index > 0 ? this.parent.children[index - 1] : null
     }
@@ -98,7 +100,9 @@ Object.defineProperties(CoraliteNodeConstructor.prototype, {
      * @returns {CoraliteAnyNode | null}
      */
     get () {
-      if (!this.parent || !this.parent.children) return null
+      if (!this.parent || !this.parent.children) {
+        return null
+      }
       const index = this.parent.children.indexOf(this)
       return index > -1 && index < this.parent.children.length - 1 ? this.parent.children[index + 1] : null
     }
@@ -107,7 +111,7 @@ Object.defineProperties(CoraliteNodeConstructor.prototype, {
 
 /**
  * Coralite Element Node Constructor
- * @param {RawCoraliteElement} node
+ * @param {RawCoraliteElement} node - The raw element node
  */
 function CoraliteElementConstructor (node) {
   CoraliteNodeConstructor.call(this, node)
@@ -137,7 +141,7 @@ Object.defineProperties(CoraliteElementConstructor.prototype, {
     },
     /**
      * Sets the tag name of the element (converted to lowercase).
-     * @param {string} value
+     * @param {string} value - The tag name to set
      */
     set (value) {
       this.name = value.toLowerCase()
@@ -168,7 +172,7 @@ Object.defineProperties(CoraliteElementConstructor.prototype, {
     },
     /**
      * Sets the attributes of the element.
-     * @param {Object.<string, string>} value
+     * @param {Object.<string, string>} value - The attributes object to set
      */
     set (value) {
       this.attribs = value
@@ -184,7 +188,7 @@ Object.defineProperties(CoraliteElementConstructor.prototype, {
     },
     /**
      * Sets the child nodes of the element.
-     * @param {CoraliteAnyNode[]} value
+     * @param {CoraliteAnyNode[]} value - The array of child nodes to set
      */
     set (value) {
       this.children = value
@@ -221,7 +225,7 @@ Object.defineProperties(CoraliteElementConstructor.prototype, {
     },
     /**
      * Sets the text content of the node. Replaces all children with a single text node.
-     * @param {string} value
+     * @param {string} value - The text content to set
      */
     set (value) {
       // Replace all children with a single text node
@@ -243,7 +247,7 @@ Object.defineProperties(CoraliteElementConstructor.prototype, {
     },
     /**
      * Sets the element's ID attribute.
-     * @param {string} value
+     * @param {string} value - The ID to set
      */
     set (value) {
       if (this.attribs) {
@@ -261,7 +265,7 @@ Object.defineProperties(CoraliteElementConstructor.prototype, {
     },
     /**
      * Sets the element's class attribute.
-     * @param {string} value
+     * @param {string} value - The class names to set
      */
     set (value) {
       if (this.attribs) {
@@ -273,8 +277,8 @@ Object.defineProperties(CoraliteElementConstructor.prototype, {
 
 /**
  * Creates an enhanced Coralite Element
- * @param {RawCoraliteElement} node
- * @returns {CoraliteElement}
+ * @param {RawCoraliteElement} node - The raw element node
+ * @returns {CoraliteElement} The enhanced Coralite Element
  */
 export function createCoraliteElement (node) {
   Object.setPrototypeOf(node, CoraliteElementConstructor.prototype)
@@ -284,7 +288,7 @@ export function createCoraliteElement (node) {
 
 /**
  * Coralite Text Node Constructor
- * @param {RawCoraliteTextNode} node
+ * @param {RawCoraliteTextNode} node - The raw text node
  */
 function CoraliteTextNodeConstructor (node) {
   CoraliteNodeConstructor.call(this, node)
@@ -313,7 +317,7 @@ Object.defineProperties(CoraliteTextNodeConstructor.prototype, {
     },
     /**
      * Sets the text content of the node.
-     * @param {string} value
+     * @param {string} value - The text content to set
      */
     set (value) {
       this.data = value
@@ -329,7 +333,7 @@ Object.defineProperties(CoraliteTextNodeConstructor.prototype, {
     },
     /**
      * Sets the text content of the node.
-     * @param {string} value
+     * @param {string} value - The text content to set
      */
     set (value) {
       this.data = value
@@ -339,8 +343,8 @@ Object.defineProperties(CoraliteTextNodeConstructor.prototype, {
 
 /**
  * Creates an enhanced Coralite Text Node
- * @param {RawCoraliteTextNode} node
- * @returns {CoraliteTextNode}
+ * @param {RawCoraliteTextNode} node - The raw text node
+ * @returns {CoraliteTextNode} The enhanced Coralite Text Node
  */
 export function createCoraliteTextNode (node) {
   Object.setPrototypeOf(node, CoraliteTextNodeConstructor.prototype)
@@ -350,7 +354,7 @@ export function createCoraliteTextNode (node) {
 
 /**
  * Coralite Comment Node Constructor
- * @param {RawCoraliteComment} node
+ * @param {RawCoraliteComment} node - The raw comment node
  */
 function CoraliteCommentConstructor (node) {
   CoraliteNodeConstructor.call(this, node)
@@ -379,7 +383,7 @@ Object.defineProperties(CoraliteCommentConstructor.prototype, {
     },
     /**
      * Sets the content of the comment.
-     * @param {string} value
+     * @param {string} value - The content to set
      */
     set (value) {
       this.data = value
@@ -395,7 +399,7 @@ Object.defineProperties(CoraliteCommentConstructor.prototype, {
     },
     /**
      * Sets the content of the comment.
-     * @param {string} value
+     * @param {string} value - The content to set
      */
     set (value) {
       this.data = value
@@ -405,8 +409,8 @@ Object.defineProperties(CoraliteCommentConstructor.prototype, {
 
 /**
  * Creates an enhanced Coralite Comment Node
- * @param {RawCoraliteComment} node
- * @returns {CoraliteComment}
+ * @param {RawCoraliteComment} node - The raw comment node
+ * @returns {CoraliteComment} The enhanced Coralite Comment Node
  */
 export function createCoraliteComment (node) {
   Object.setPrototypeOf(node, CoraliteCommentConstructor.prototype)
@@ -416,7 +420,7 @@ export function createCoraliteComment (node) {
 
 /**
  * Coralite Directive Node Constructor
- * @param {RawCoraliteDirective} node
+ * @param {RawCoraliteDirective} node - The raw directive node
  */
 function CoraliteDirectiveConstructor (node) {
   CoraliteNodeConstructor.call(this, node)
@@ -445,7 +449,7 @@ Object.defineProperties(CoraliteDirectiveConstructor.prototype, {
     },
     /**
      * Sets the content of the directive.
-     * @param {string} value
+     * @param {string} value - The content to set
      */
     set (value) {
       this.data = value
@@ -455,8 +459,8 @@ Object.defineProperties(CoraliteDirectiveConstructor.prototype, {
 
 /**
  * Creates an enhanced Coralite Directive Node (e.g. DOCTYPE)
- * @param {RawCoraliteDirective} node
- * @returns {CoraliteDirective}
+ * @param {RawCoraliteDirective} node - The raw directive node
+ * @returns {CoraliteDirective} The enhanced Coralite Directive Node
  */
 export function createCoraliteDirective (node) {
   Object.setPrototypeOf(node, CoraliteDirectiveConstructor.prototype)
@@ -466,7 +470,7 @@ export function createCoraliteDirective (node) {
 
 /**
  * Coralite Document Node Constructor
- * @param {RawCoraliteComponentRoot} node
+ * @param {RawCoraliteComponentRoot} node - The raw document node
  */
 function CoraliteComponentConstructor (node) {
   CoraliteNodeConstructor.call(this, node)
@@ -504,7 +508,7 @@ Object.defineProperties(CoraliteComponentConstructor.prototype, {
     },
     /**
      * Sets the child nodes of the document.
-     * @param {CoraliteAnyNode[]} value
+     * @param {CoraliteAnyNode[]} value - The array of child nodes to set
      */
     set (value) {
       this.children = value
@@ -534,15 +538,15 @@ Object.defineProperties(CoraliteComponentConstructor.prototype, {
      * @returns {null}
      */
     get () {
-      return null // Document nodes don't have text content in the same way
+      return null
     }
   }
 })
 
 /**
  * Creates an enhanced Coralite Document Root
- * @param {RawCoraliteComponentRoot} node
- * @returns {CoraliteComponentRoot}
+ * @param {RawCoraliteComponentRoot} node - The raw document node
+ * @returns {CoraliteComponentRoot} The enhanced Coralite Document Root
  */
 export function createCoraliteComponent (node) {
   Object.setPrototypeOf(node, CoraliteComponentConstructor.prototype)

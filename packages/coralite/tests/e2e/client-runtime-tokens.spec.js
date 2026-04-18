@@ -10,10 +10,14 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
     await page.waitForFunction(() => {
       // parent is just a regular div with ref="target"
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
-      if (!target) return false
+      if (!target) {
+        return false
+      }
 
       const children = target.querySelectorAll('reactive-token-child')
-      if (children.length < 2) return false
+      if (children.length < 2) {
+        return false
+      }
 
       return children[0].querySelector('h3') &&
              children[1].querySelector('h3')
@@ -86,10 +90,14 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
     // Wait for the reactive-token-child DOM to initialize inside parent
     await page.waitForFunction(() => {
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
-      if (!target) return false
+      if (!target) {
+        return false
+      }
 
       const children = target.querySelectorAll('reactive-token-child')
-      if (children.length < 1) return false
+      if (children.length < 1) {
+        return false
+      }
 
       return children[0].querySelector('h3')
     }, { timeout: 10000 })
@@ -125,10 +133,14 @@ test.describe('Client Runtime: Reactive Tokens & Web Components', () => {
     // Wait for the reactive-token-child DOM to initialize inside parent
     await page.waitForFunction(() => {
       const target = document.querySelector('[ref^="reactive-token-parent__target"]')
-      if (!target) return false
+      if (!target) {
+        return false
+      }
 
       const children = target.querySelectorAll('reactive-token-child')
-      if (children.length < 1) return false
+      if (children.length < 1) {
+        return false
+      }
 
       return children[0].querySelector('div')
     }, { timeout: 10000 })

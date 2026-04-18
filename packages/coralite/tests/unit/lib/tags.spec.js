@@ -169,7 +169,7 @@ describe('tags.js', () => {
 
     it('should contain all tags from the original file', () => {
       // Count the tags in VALID_TAGS and verify they match the source
-      const expectedTagCount = 191 // Total count from the original file
+      const expectedTagCount = 191
       const actualTagCount = Object.keys(VALID_TAGS).length
       assert.strictEqual(actualTagCount, expectedTagCount, `VALID_TAGS should contain exactly ${expectedTagCount} tags`)
     })
@@ -328,10 +328,10 @@ describe('tags.js', () => {
         // Test that the function works for different valid name lengths
         // Note: The regex has specific behavior with non-greedy quantifiers
         const validNames = [
-          'a-b', // 3 chars - works
-          'my-component', // standard case
-          'test-123', // with numbers
-          'app-v2' // short valid name
+          'a-b',
+          'my-component',
+          'test-123',
+          'app-v2'
         ]
 
         validNames.forEach(name => {
@@ -524,20 +524,20 @@ describe('tags.js', () => {
 
       it('should handle names with Unicode characters in various ranges', () => {
         const unicodeNames = [
-          'my-\u00B7-component', // Middle dot
-          'my-\u00C0-component', // Latin-1 Supplement
-          'my-\u0100-component', // Latin Extended-A
-          'my-\u1FFF-component', // Greek and Coptic
-          'my-\u200C-component', // Zero Width Non-Joiner
-          'my-\u203F-component', // Inseparable
-          'my-\u2070-component', // Superscripts and Subscripts
-          'my-\u2C00-component', // Glagolitic
-          'my-\u3001-component', // CJK Symbols and Punctuation
-          'my-\uD7FF-component', // Private Use Area (before surrogates)
-          'my-\uF900-component', // CJK Compatibility Ideographs
-          'my-\uFDCF-component', // Arabic Presentation Forms-A
-          'my-\uFDF0-component', // Arabic Presentation Forms-A
-          'my-\uFFFD-component' // Specials
+          'my-\u00B7-component',
+          'my-\u00C0-component',
+          'my-\u0100-component',
+          'my-\u1FFF-component',
+          'my-\u200C-component',
+          'my-\u203F-component',
+          'my-\u2070-component',
+          'my-\u2C00-component',
+          'my-\u3001-component',
+          'my-\uD7FF-component',
+          'my-\uF900-component',
+          'my-\uFDCF-component',
+          'my-\uFDF0-component',
+          'my-\uFFFD-component'
         ]
 
         unicodeNames.forEach(name => {
@@ -553,7 +553,7 @@ describe('tags.js', () => {
       it('should handle names with hyphens and dots combined', () => {
         // Only names with dots that end with hyphenated parts work
         const names = [
-          'my.component-name' // This works: my.component-name
+          'my.component-name'
         ]
 
         names.forEach(name => {

@@ -120,7 +120,9 @@ export function emptyDir (dir) {
  * @returns {{name: string, version: string} | undefined} Package information object or undefined if not found
  */
 export function extractPackageInfoFromUserAgent (userAgent) {
-  if (!userAgent) return undefined
+  if (!userAgent) {
+    return undefined
+  }
   const pkgSpec = userAgent.split(' ')[0]
   const pkgSpecArr = pkgSpec.split('/')
   return {

@@ -10,7 +10,7 @@ test('imperative component tokens are passed correctly and remain reactive', asy
   await expect(output).toHaveText('hello world')
 
   const stepOutput = child.locator('#test-output-step')
-  await expect(stepOutput).toHaveText('6') // initial start was 5
+  await expect(stepOutput).toHaveText('6')
 
   // Verify reactivity when attribute changes
   await child.evaluate(node => node.setAttribute('start', '10'))

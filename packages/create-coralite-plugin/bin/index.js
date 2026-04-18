@@ -83,7 +83,9 @@ async function definePlugin () {
       }
     })
 
-    if (prompts.isCancel(projectName)) return cancelPrompt()
+    if (prompts.isCancel(projectName)) {
+      return cancelPrompt()
+    }
     target = formatTargetDir(projectName)
   }
 
@@ -101,7 +103,9 @@ async function definePlugin () {
         }
       ]
     })
-    if (prompts.isCancel(overwrite) || overwrite === 'no') return cancelPrompt()
+    if (prompts.isCancel(overwrite) || overwrite === 'no') {
+      return cancelPrompt()
+    }
     emptyDir(target)
   }
 
@@ -113,7 +117,9 @@ async function definePlugin () {
       placeholder: toValidPackageName(packageName),
       validate: (val) => (isValidPackageName(val) ? undefined : 'Invalid package name')
     })
-    if (prompts.isCancel(name)) return cancelPrompt()
+    if (prompts.isCancel(name)) {
+      return cancelPrompt()
+    }
     packageName = name
   }
 
@@ -124,7 +130,9 @@ async function definePlugin () {
       placeholder: 'A cool Coralite plugin',
       initialValue: ''
     })
-    if (prompts.isCancel(description)) return cancelPrompt()
+    if (prompts.isCancel(description)) {
+      return cancelPrompt()
+    }
   }
 
   let ciPlatform = options.ci
@@ -133,7 +141,9 @@ async function definePlugin () {
       message: 'Select CI platform:',
       options: CI_PLATFORMS
     })
-    if (prompts.isCancel(selected)) return cancelPrompt()
+    if (prompts.isCancel(selected)) {
+      return cancelPrompt()
+    }
     ciPlatform = selected
   }
 

@@ -196,7 +196,7 @@ export function normalizeFunction (func) {
  * @param {Object} [parent] - The parent node reference to assign to the clone.
  * @returns {Object} The newly cloned node.
  */
-function cloneNode (nodeMap, node, parent) {
+export function cloneNode (nodeMap, node, parent) {
   // Shallow copy the node structure
   const newNode = { ...node }
 

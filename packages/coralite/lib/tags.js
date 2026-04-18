@@ -1,7 +1,7 @@
 export const VALID_TAGS = {
   a: true,
   abbr: true,
-  acronym: true, // deprecated
+  acronym: true,
   address: true,
   area: true,
   article: true,
@@ -11,14 +11,14 @@ export const VALID_TAGS = {
   base: true,
   bdi: true,
   bdo: true,
-  big: true, // deprecated
+  big: true,
   blockquote: true,
   body: true,
   br: true,
   button: true,
   canvas: true,
   caption: true,
-  center: true, // deprecated
+  center: true,
   cite: true,
   code: true,
   col: true,
@@ -30,21 +30,21 @@ export const VALID_TAGS = {
   details: true,
   dfn: true,
   dialog: true,
-  dir: true, // deprecated
+  dir: true,
   div: true,
   dl: true,
   dt: true,
   em: true,
   embed: true,
-  fencedframe: true, // experimental
+  fencedframe: true,
   fieldset: true,
   figcaption: true,
   figure: true,
-  font: true, // deprecated
+  font: true,
   footer: true,
   form: true,
-  frame: true, // deprecated
-  frameset: true, // deprecated
+  frame: true,
+  frameset: true,
   h1: true,
   h2: true,
   h3: true,
@@ -69,14 +69,14 @@ export const VALID_TAGS = {
   main: true,
   map: true,
   mark: true,
-  marquee: true, // deprecated
+  marquee: true,
   menu: true,
   meta: true,
   meter: true,
   nav: true,
-  nobr: true, // deprecated
-  noembed: true, // deprecated
-  noframes: true, // deprecated
+  nobr: true,
+  noembed: true,
+  noframes: true,
   noscript: true,
   object: true,
   ol: true,
@@ -84,17 +84,17 @@ export const VALID_TAGS = {
   option: true,
   output: true,
   p: true,
-  param: true, // deprecated
+  param: true,
   picture: true,
-  plaintext: true, // deprecated
-  portal: true, // experimental
+  plaintext: true,
+  portal: true,
   pre: true,
   progress: true,
   q: true,
-  rb: true, // deprecated
+  rb: true,
   rp: true,
   rt: true,
-  rtc: true, // deprecated
+  rtc: true,
   ruby: true,
   s: true,
   samp: true,
@@ -106,7 +106,7 @@ export const VALID_TAGS = {
   small: true,
   source: true,
   span: true,
-  strike: true, // deprecated
+  strike: true,
   strong: true,
   style: true,
   sub: true,
@@ -124,7 +124,7 @@ export const VALID_TAGS = {
   title: true,
   tr: true,
   track: true,
-  tt: true, // deprecated
+  tt: true,
   u: true,
   ul: true,
   var: true,

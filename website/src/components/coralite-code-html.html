@@ -17,9 +17,11 @@
   import { indent, dedent } from '../utils/format.js'
 
   /**
-   * @param {string} className
-   * @param {Object} parent
-   * @param {string} [data]
+   * Creates a code node
+   * @param {string} className - The CSS class name for the node
+   * @param {Object} parent - The parent node object
+   * @param {string} [data] - Optional text data for the node
+   * @returns {Object} The created code node object
    */
   function createCodeNode (className, parent, data) {
     const node = {
@@ -43,8 +45,10 @@
   }
 
   /**
-   * @param {Object} node
-   * @param {Object} parent
+   * Creates a code comment node
+   * @param {Object} node - The original comment node
+   * @param {Object} parent - The parent node object
+   * @returns {Object} The created code comment node
    */
   function createCodeCommentNode (node, parent) {
     const comment = {
@@ -67,10 +71,12 @@
   }
 
   /**
-   * @param {Object} node
-   * @param {Object} parent
-   * @param {Array<Object>} children
-   * @param {string} whitespace
+   * Creates a code tag node
+   * @param {Object} node - The original tag node
+   * @param {Object} parent - The parent node object
+   * @param {Array<Object>} children - The parsed children nodes
+   * @param {Object} [separator={ space: '' }] - Space separator object
+   * @returns {Object} The created code tag node
    */
   function createCodeTagNode (node, parent, children, separator = { space: '' }) {
     const tag = {

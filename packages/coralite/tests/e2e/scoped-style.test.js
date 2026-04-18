@@ -7,7 +7,9 @@ test.describe('Scoped Styles', () => {
     // Wait for the dynamically inserted component to be defined and render its DOM
     await page.waitForFunction(() => {
       const comp = document.querySelector('scoped-style-component')
-      if (!comp) return false
+      if (!comp) {
+        return false
+      }
       const div = comp.querySelector('div.red')
       return div && window.getComputedStyle(div).color === 'rgb(255, 0, 0)'
     }, { timeout: 5000 })

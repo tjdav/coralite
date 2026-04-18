@@ -29,13 +29,19 @@ export async function transformCss (css, rootClasses, descendantClasses, onError
 
           selectors.forEach((selector) => {
             // We only care about Selector nodes
-            if (selector.type !== 'selector') return
+            if (selector.type !== 'selector') {
+              return
+            }
 
             const firstNode = selector.first
 
             // Skip if empty or already nested
-            if (!firstNode) return
-            if (firstNode.type === 'nesting') return
+            if (!firstNode) {
+              return
+            }
+            if (firstNode.type === 'nesting') {
+              return
+            }
 
             // Check if first node is a class
             if (firstNode.type === 'class') {
