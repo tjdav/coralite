@@ -136,7 +136,7 @@ async function runBenchmark (mode, scenario) {
   const buildTime = (buildEnd - buildStart).toFixed(2)
 
   // Memory after build
-  global.gc && global.gc() // Try to force GC if available for consistent results
+  global.gc && global.gc()
   const memAfterBuild = getMemoryUsage()
 
   // Rebuild (simulating watch mode update or subsequent build)
@@ -183,7 +183,7 @@ const scenarios = [
     name: 'Complex Pages',
     pages: 10,
     components: 50,
-    componentsPerPage: 100 // Heavy DOM structure per page
+    componentsPerPage: 100
   },
   {
     name: 'Mixed Workload',
@@ -225,7 +225,9 @@ async function main () {
   // Group by scenario for easy comparison
   const grouped = {}
   summary.forEach(res => {
-    if (!grouped[res.scenario]) grouped[res.scenario] = {}
+    if (!grouped[res.scenario]) {
+      grouped[res.scenario] = {}
+    }
     grouped[res.scenario][res.mode] = res
   })
 

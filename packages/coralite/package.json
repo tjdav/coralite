@@ -40,7 +40,8 @@
     "build-lib": "esbuild ./lib/index.js --bundle --target=esnext --external:postcss --external:postcss-selector-parser --external:esbuild --external:commander --external:dom-serializer --external:dom-htmlparser2 --external:kleur --external:p-limit --external:serialize-javascript --external:esbuild-plugins-node-modules-polyfill --format=esm --outdir=dist/lib --platform=node --sourcemap",
     "build-plugins": "esbuild ./plugins/*.js --format=esm --outdir=dist/plugins --platform=node",
     "build-types": "tsc",
-    "build-html": "premove .coralite && node --experimental-vm-modules ./tests/scripts/build-html.js"
+    "build-html": "premove .coralite && node --experimental-vm-modules ./tests/scripts/build-html.js",
+    "bench": "node --experimental-vm-modules ./tests/scripts/run-benchmarks.js"
   },
   "files": [
     "dist",
@@ -72,6 +73,7 @@
     "@commitlint/config-conventional": "^19.6.0",
     "@playwright/test": "^1.58.2",
     "@types/node": "^22.18.5",
+    "mitata": "^1.0.34",
     "sirv-cli": "^3.0.0"
   },
   "engines": {
