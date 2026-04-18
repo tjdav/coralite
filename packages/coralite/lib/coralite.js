@@ -1392,14 +1392,18 @@ Coralite.prototype.build = async function (...args) {
           throw signal.reason
         }
 
-        // Trigger onAfterPageRender hooks
-        const mappedResult = await this._triggerPluginHook('onAfterPageRender', result)
+        // Trigger onAfterPageRender hooks using the aggregate method
+        const additionalPages = await this._triggerPluginAggregateHook('onAfterPageRender', result)
 
-        // Note: Since `_triggerPluginHook` now only returns the merged state,
-        // plugins can no longer return arrays of new files via hook returns.
-        // If they append files, they must do so via modifying a property on the mappedResult,
-        // but for now we'll process the mappedResult directly.
-        const items = [mappedResult]
+        const items = [result]
+
+        // Process any dynamically generated pages returned by the plugins
+        for (const newPage of additionalPages) {
+          if (newPage && newPage.path && newPage.content) {
+            items.push(newPage)
+          }
+        }
+
         const finalResults = []
 
         for (const item of items) {
@@ -2548,6 +2552,43 @@ Coralite.prototype._evaluate = async function (options) {
     return this._evaluateDevelopment(options)
   }
   return this._evaluateProduction(options)
+}
+
+/**
+ * Executes a collecting plugin hook where the results are aggregated.
+ * Useful for hooks like `onAfterPageRender` that return new pages to be added to the build.
+ *
+ * @internal
+ * @param {string} name - The name of the hook to trigger.
+ * @param {any} contextData - Context to pass to the callbacks (not mutated by this function).
+ * @returns {Promise<any[]>} A flattened array of all results returned by the plugins.
+ */
+Coralite.prototype._triggerPluginAggregateHook = async function (name, contextData) {
+  const pluginHooks = this._plugins.hooks[name]
+  const aggregatedResults = []
+
+  if (!pluginHooks || pluginHooks.length === 0) {
+    return aggregatedResults
+  }
+
+  for (let i = 0; i < pluginHooks.length; i++) {
+    let result = pluginHooks[i](contextData)
+
+    if (result !== null && typeof result === 'object' && typeof result.then === 'function') {
+      result = await result
+    }
+
+    // Collect the results into a flat array instead of merging them into the context
+    if (result !== undefined && result !== null) {
+      if (Array.isArray(result)) {
+        aggregatedResults.push(...result)
+      } else {
+        aggregatedResults.push(result)
+      }
+    }
+  }
+
+  return aggregatedResults
 }
 
 /**
