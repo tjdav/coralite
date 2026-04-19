@@ -25,7 +25,7 @@
   "bugs": {
     "url": "https://codeberg.org/tjdavid/coralite/issues"
   },
-  "license": "AGPL-3.0-or-later",
+  "license": "MPL-2.0",
   "scripts": {
     "lint-format": "eslint --cache --fix .",
     "lint": "eslint --cache .",

@@ -1,6 +1,7 @@
 {
   "name": "coralite-project",
   "private": true,
+  "license": "MPL-2.0",
   "type": "module",
   "scripts": {
     "start": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --experimental-import-meta-resolve\" coralite-scripts dev",

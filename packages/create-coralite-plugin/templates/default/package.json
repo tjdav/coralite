@@ -13,7 +13,7 @@
     "plugin"
   ],
   "author": "",
-  "license": "AGPL-3.0-or-later",
+  "license": "MPL-2.0",
   "devDependencies": {
     "coralite": "^0.32.0",
     "@coralite/plugin-scripts": "latest"

@@ -1,6 +1,7 @@
 {
   "name": "coralite-monorepo",
   "private": true,
+  "license": "MPL-2.0",
   "type": "module",
   "homepage": "https://coralite.dev/",
   "repository": {

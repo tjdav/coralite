@@ -1,6 +1,7 @@
 {
   "name": "website",
   "private": true,
+  "license": "MPL-2.0",
   "type": "module",
   "repository": {
     "type": "git",
