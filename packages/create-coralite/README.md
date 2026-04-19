@@ -56,7 +56,7 @@ pnpm create coralite
 ## Author & Licensing
 
 - **Author**: Thomas David ([https://thomasjackdavid.com](https://thomasjackdavid.com))
-- **License**: AGPL-3.0-only (Affero General Public License, version 3)
+- **License**: MPL-2.0
   > **Implication**: Any derived work must be open-source and accessible to users.
 
 ---
