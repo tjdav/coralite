@@ -6,8 +6,5 @@
     "moduleResolution": "nodenext",
     "resolveJsonModule": true
   },
-  "exclude": [
-    "dist",
-    "node_modules"
-  ]
+  "exclude": ["dist", "node_modules", "tests"]
 }
