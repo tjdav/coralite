@@ -58,7 +58,7 @@
     "pre-commit": "pnpm exec lint-staged -v && pnpm --filter coralite run build-types"
   },
   "lint-staged": {
-    "packages/**/*.{js,ts,tsx}": [
+    "packages/**/*.js": [
       "eslint --cache --fix"
     ]
   },
