@@ -283,9 +283,9 @@ CoraliteCollection.prototype.updateItem = async function (value) {
     originalValue.type = value.type
   }
 
-  // update any additional properties from value
-  if (value.values !== undefined) {
-    originalValue.values = value.values
+  // update any additional properties
+  if (value.properties !== undefined) {
+    originalValue.properties = value.properties
   }
 
   return originalValue

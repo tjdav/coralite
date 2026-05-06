@@ -13,14 +13,14 @@ import { definePlugin } from '#lib'
  *
  * @param {Object} context -
  * @param {ParseHTMLResult} context.elements - The parsed HTML elements including root
- * @param {Object.<string, any>} context.values - The global values object to store the extracted metadata
+ * @param {Object.<string, any>} context.properties - The global properties object to store the extracted metadata
  * @param {CoraliteCollectionItem} context.data - The file data currently being evaluated
  * @param {Coralite} context.coraliteContext - The Coralite instance context for component creation
- * @returns {Promise<{values: Object.<string, any>}>}
+ * @returns {Promise<{properties: Object.<string, any>}>}
  */
 async function extractMetadata (context) {
-  const { elements, values, data, coraliteContext } = context
-  const newValues = { page_lang: '' }
+  const { elements, properties, data, coraliteContext } = context
+  const newProperties = { page_lang: '' }
 
   // loop through all children of the root element to process metadata in <head> tags.
   for (let i = 0; i < elements.root.children.length; i++) {
@@ -28,7 +28,7 @@ async function extractMetadata (context) {
 
     // traverse html children to find the head element
     if (rootNode.type === 'tag' && rootNode.name === 'html') {
-      newValues.page_lang = rootNode.attribs.lang
+      newProperties.page_lang = rootNode.attribs.lang
 
       for (let i = 0; i < rootNode.children.length; i++) {
         const node = rootNode.children[i]
@@ -47,12 +47,12 @@ async function extractMetadata (context) {
               ) {
                 const metaName = 'meta_' + element.attribs.name
 
-                newValues[metaName] = element.attribs.content
+                newProperties[metaName] = element.attribs.content
               } else if (element.slots) {
                 // process component slots by creating a component dynamically.
                 const componentElement = await coraliteContext.createComponentElement({
                   id: element.name,
-                  values,
+                  properties,
                   element,
                   /** @type {any} */
                   component: {
@@ -77,33 +77,33 @@ async function extractMetadata (context) {
                     ) {
                       const metaName = 'meta_' + element.attribs.name
 
-                      newValues[metaName] = element.attribs.content
+                      newProperties[metaName] = element.attribs.content
                     } else if (element.type === 'tag' && element.name === 'title' && element.children.length && element.children[0].type === 'text') {
-                      newValues.page_title = element.children[0].data
+                      newProperties.page_title = element.children[0].data
                     }
                   }
                 }
               } else if (element.name === 'title' && element.children.length && element.children[0].type === 'text') {
-                newValues.page_title = element.children[0].data
+                newProperties.page_title = element.children[0].data
               }
             }
           }
 
-          return { values: newValues }
+          return { properties: newProperties }
         }
       }
     }
   }
 
-  return { values: newValues }
+  return { properties: newProperties }
 }
 
 export const metadataPlugin = definePlugin({
   name: 'metadata',
-  async onPageSet ({ elements, values, data }) {
+  async onPageSet ({ elements, properties, data }) {
     return extractMetadata({
       elements,
-      values,
+      properties,
       data,
       coraliteContext: this
     })
@@ -111,7 +111,7 @@ export const metadataPlugin = definePlugin({
   async onPageUpdate ({ elements, newValue }) {
     const patch = await extractMetadata({
       elements,
-      values: newValue.result.values,
+      properties: newValue.result.properties,
       data: newValue,
       coraliteContext: this
     })
@@ -121,7 +121,7 @@ export const metadataPlugin = definePlugin({
     return {
       newValue: {
         result: {
-          values: patch.values
+          properties: patch.properties
         }
       }
     }

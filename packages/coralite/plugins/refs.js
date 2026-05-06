@@ -14,7 +14,7 @@ export const refsPlugin = definePlugin({
        * @returns {ScriptPluginHelperLocalInstance}
        */
       refs () {
-        return ({ values }) => {
+        return ({ properties }) => {
           const elements = {}
 
           return function (id) {
@@ -22,7 +22,7 @@ export const refsPlugin = definePlugin({
               return elements[id]
             }
 
-            const refId = values[`ref_${id}`]
+            const refId = properties[`ref_${id}`]
 
             if (!refId && typeof refId !== 'string') {
               return null

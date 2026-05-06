@@ -186,11 +186,11 @@ ScriptManager.prototype.registerComponent = function ({
  * @returns {string} Generated script
  */
 ScriptManager.prototype.generateInstanceWrapper = function (id, instanceContext) {
-  const values = instanceContext.values ? serialize(instanceContext.values) : '{}'
+  const properties = instanceContext.properties ? serialize(instanceContext.properties) : '{}'
 
   // Generate wrapper that calls shared functions with instance context
   return `await coraliteComponentFunctions["${id}"]({
-      values: ${values},
+      properties: ${properties},
       helpers,
       imports,
       instanceId: '${instanceContext.instanceId}'
@@ -222,16 +222,16 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   };\n`)
 
   entryCodeParts.push(`const getSetups = async (context) => {
-    const values = {};
+    const properties = {};
     const results = await Promise.all([
       ${this.scriptModules.map((_, i) => `runSetup_${i}(context)`).join(',\n      ')}
     ]);
     for (const result of results) {
       if (result && typeof result === 'object') {
-        Object.assign(values, result);
+        Object.assign(properties, result);
       }
     }
-    return values;
+    return properties;
   }\n`)
 
   // Global setups initialization
@@ -241,7 +241,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     return setupValues;
   });\n`)
 
-  entryCodeParts.push(`const resolvedHelpersPromise = globalSetupValuesPromise.then(async () => {
+  entryCodeParts.push(`const resolvedHelpersPromise = globalSetupPropertiesPromise.then(async () => {
     const resolvedHelpers = {};
     for (const [key, helperFn] of Object.entries(coraliteComponentScriptHelpers)) {
       resolvedHelpers[key] = await helperFn(globalContext);

@@ -7,7 +7,7 @@ import { createCoraliteTextNode } from './dom.js'
  * CoraliteElement,
  * CoraliteModule,
  * CoraliteModuleSlotElement,
- * CoraliteModuleValue,
+ * CoraliteModuleDefinition,
  * CoraliteTextNode,
  * CoraliteComponent,
  * CoraliteComponentResult,
@@ -313,7 +313,7 @@ export function cloneModuleInstance (originalModule) {
  * @param {CoraliteElement|CoraliteTextNode} token.node - The node containing the token.
  * @param {string} [token.attribute] - The attribute name to replace within the node.
  * @param {string} token.content - The content of the token.
- * @param {CoraliteModuleValue} token.value - The value associated with the token.
+ * @param {CoraliteModuleDefinition} token.value - The definition associated with the token.
  */
 export function replaceToken ({
   type,
@@ -394,7 +394,7 @@ export function cloneComponentInstance (originalDocument) {
 
   return {
     ...originalDocument,
-    values: { ...originalDocument.values },
+    properties: { ...originalDocument.properties },
     root: newRoot,
     customElements: newCustomElements,
     tempElements: newTempElements,
