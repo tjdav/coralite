@@ -1,7 +1,7 @@
 
 /**
  * CORE TYPES
- * @import { HTMLData, CoraliteFilePath, CoralitePath, CoraliteConfig, CoralitePathValues, CoraliteValues, CoraliteErrorData, CoraliteOnError } from './core.js'
+ * @import { HTMLData, CoraliteFilePath, CoralitePath, CoraliteConfig, CoralitePathValues, CoraliteProperties, CoraliteErrorData, CoraliteOnError } from './core.js'
  *
  * DOM & AST
  * @import { CoraliteElement, RawCoraliteElement, CoraliteTextNode, RawCoraliteTextNode, CoraliteComment, RawCoraliteComment, CoraliteDirective, RawCoraliteDirective, CoraliteAnyNode, CoraliteComponentRoot, RawCoraliteComponentRoot, CoraliteContentNode } from './dom.js'
@@ -10,7 +10,7 @@
  * @import { CoraliteComponent, CoraliteResult, ParseHTMLResult, CoraliteToken, CoraliteAttributeToken, CoraliteTextNodeToken, CoraliteRef, CoraliteComponentValues, Attribute, CoraliteComponentResult } from './component.js'
  *
  * MODULES
- * @import { CoraliteModule, CoraliteModuleValues, CoraliteModuleValue, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleSlotFunction, CoraliteModuleTokenFunction } from './module.js'
+ * @import { CoraliteModule, CoraliteModuleDefinitions, CoraliteModuleDefinition, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleSlotFunction, CoraliteModuleTokenFunction } from './module.js'
  *
  * COLLECTIONS
  * @import { CoraliteCollectionItem, CoraliteCollectionCallbackResult, CoraliteCollectionEventResult, CoraliteCollectionEventSet, CoraliteCollectionEventDelete, CoraliteCollectionEventUpdate } from './collection.js'
@@ -32,7 +32,7 @@
  * @typedef {import('./core.js').CoralitePath} CoralitePath
  * @typedef {import('./core.js').CoraliteConfig} CoraliteConfig
  * @typedef {import('./core.js').CoralitePathValues} CoralitePathValues
- * @typedef {import('./core.js').CoraliteValues} CoraliteValues
+ * @typedef {import('./core.js').CoraliteProperties} CoraliteProperties
  * @typedef {import('./core.js').CoraliteStaticAsset} CoraliteStaticAsset
  * @typedef {import('./core.js').CoraliteErrorData} CoraliteErrorData
  * @typedef {import('./core.js').CoraliteOnError} CoraliteOnError
@@ -68,8 +68,8 @@
 
 /**
  * @typedef {import('./module.js').CoraliteModule} CoraliteModule
- * @typedef {import('./module.js').CoraliteModuleValues} CoraliteModuleValues
- * @typedef {import('./module.js').CoraliteModuleValue} CoraliteModuleValue
+ * @typedef {import('./module.js').CoraliteModuleDefinitions} CoraliteModuleDefinitions
+ * @typedef {import('./module.js').CoraliteModuleDefinition} CoraliteModuleDefinition
  * @typedef {import('./module.js').CoraliteModuleSlotElement} CoraliteModuleSlotElement
  * @typedef {import('./module.js').CoraliteModuleScript} CoraliteModuleScript
  * @typedef {import('./module.js').CoraliteModuleSetup} CoraliteModuleSetup

@@ -1,6 +1,6 @@
 
 /**
- * @import { CoraliteModuleValue, CoraliteModuleSlotFunction } from './module.js'
+ * @import { CoraliteModuleDefinition, CoraliteModuleSlotFunction } from './module.js'
  * @import { CoralitePath, CoraliteFilePath } from './core.js'
  * @import { CoraliteComponent } from './component.js'
  */
@@ -10,7 +10,7 @@
  * @typedef {Object} ScriptContent
  * @property {string} [content] - Script string content
  * @property {string} [setupContent] - Setup string content
- * @property {Object.<string, CoraliteModuleValue>} [values]
+ * @property {Object.<string, CoraliteModuleDefinition>} [properties]
  * @property {number} [lineOffset] - Script offset number.
  * @property {ScriptImport[]} [imports] - Script imports.
  * @property {string[]} [tokens] - Extracted reactivity tokens.
@@ -34,7 +34,7 @@
  * @property {string} instanceId - Unique instance identifier
  * @property {string} [componentId] - component identifier for shared functions
  * @property {CoralitePath & CoraliteFilePath} [path] - Component AST
- * @property {Object.<string, CoraliteModuleValue>} [values] - Instance values
+ * @property {Object.<string, CoraliteModuleDefinition>} [properties] - Instance properties
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {Object.<string, any>} [helpers] - Plugin helpers available to the script
  * @property {AbortSignal} [signal] - Lifecycle abort signal for unmount events (null for declarative components).
@@ -44,7 +44,7 @@
  * @typedef {Object} ScriptPluginHelperGlobalContext
  * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {Object.<string, any>} [imports] - Module imports for helpers
- * @property {Object.<string, CoraliteModuleValue>} [values] - Global context values
+ * @property {Object.<string, CoraliteModuleDefinition>} [properties] - Global context properties
  */
 
 /**
@@ -72,7 +72,7 @@
  * @typedef {Object} InstanceContext
  * @property {string} instanceId - Unique instance identifier
  * @property {string} componentId - component identifier
- * @property {Object.<string, CoraliteModuleValue>} values - Instance values
+ * @property {Object.<string, CoraliteModuleDefinition>} properties - Instance properties
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {CoraliteComponent} [component] - Component AST
  * @property {Object.<string, any>} [config] - Plugin configuration

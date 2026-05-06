@@ -1,7 +1,7 @@
 
 /**
  * @import { CoraliteElement, CoraliteAnyNode, CoraliteDirective } from './dom.js'
- * @import { CoraliteFilePath, CoraliteValues } from './core.js'
+ * @import { CoraliteFilePath, CoraliteProperties } from './core.js'
  * @import { CoraliteComponentValues, CoraliteRef } from './component.js'
  * @import { ScriptContent, CoraliteScriptContent } from './script.js'
  */
@@ -25,12 +25,12 @@
 
 /**
  * Represents a single value that a module can store or process.
- * @typedef {string | string[] | (CoraliteDirective | CoraliteAnyNode)[] | Object.<string, string>} CoraliteModuleValue
+ * @typedef {string | string[] | (CoraliteDirective | CoraliteAnyNode)[] | Object.<string, string>} CoraliteModuleDefinition
  */
 
 /**
  * A collection of module values associated with a module.
- * @typedef {Object.<string, CoraliteModuleValue> & { __script__?: ScriptContent }} CoraliteModuleValues
+ * @typedef {Object.<string, CoraliteModuleDefinition> & { __script__?: ScriptContent }} CoraliteModuleDefinitions
  */
 
 /**
@@ -47,20 +47,20 @@
 
 /**
  * @callback CoraliteModuleSetup
- * @param {CoraliteModuleValues} context
+ * @param {CoraliteModuleDefinitions} context
  * @returns {any}
  */
 
 /**
  * @callback CoraliteModuleSlotFunction
  * @param {CoraliteAnyNode[]} slotNodes - The parsed HTML nodes for the slot content
- * @param {CoraliteModuleValues} values - The current component values
+ * @param {CoraliteModuleDefinitions} properties - The current component values
  * @returns {CoraliteAnyNode[] | string | void} - The processed nodes, an HTML string, or void to use original content
  */
 
 /**
  * @callback CoraliteModuleTokenFunction
- * @param {CoraliteModuleValues} values - The current component values
+ * @param {CoraliteModuleDefinitions} properties - The current component values
  * @returns {any | Promise<any>} - The computed value for the token
  */
 

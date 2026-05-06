@@ -1,6 +1,6 @@
 
 /**
- * @import { CoraliteModuleValues } from './module.js'
+ * @import { CoraliteModuleDefinitions } from './module.js'
  * @import { CoralitePluginInstance } from './plugin.js'
  * @import { Attribute } from './component.js'
  */
@@ -9,7 +9,7 @@
  * Represents HTML file data including path and raw content.
  * @typedef {Object} HTMLData
  * @property {'page'|'component'} [type] - The type of HTML file. 'page' for main pages, 'component' for reusable components.
- * @property {CoraliteModuleValues} [values] - The initial values for the HTML module.
+ * @property {CoraliteModuleDefinitions} [properties] - The initial values for the HTML module.
  * @property {CoraliteFilePath} path - The file's path information within the project structure.
  * @property {string} [content] - The raw HTML string contents of the file (optional, may be omitted for templates).
  */
@@ -74,12 +74,11 @@
  * @property {string} page_pathname - The file path name
  * @property {string} page_dirname - The directory name of the file
  * @property {string} page_filename - The filename
- * @property {Object<string, string>} [data.values] - Additional values from data
  */
 
 /**
  * Union type representing values available for token replacement in components.
- * @typedef {CoralitePathValues | Object.<string, string>} CoraliteValues
+ * @typedef {CoralitePathValues | Object.<string, string>} CoraliteProperties
  */
 
 export default {}

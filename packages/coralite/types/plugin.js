@@ -11,7 +11,7 @@
 
 /**
  * @typedef {Object} CoralitePluginContext
- * @property {Object.<string, string|string[]|CoraliteAnyNode[]>} values - Key-value pairs of data relevant to plugin execution
+ * @property {Object.<string, string|string[]|CoraliteAnyNode[]>} properties - Key-value pairs of data relevant to plugin execution
  * @property {CoraliteComponent} component - The HTML file data being processed by the plugin
  * @property {CoraliteModule} module - The module context the plugin is operating within (contains template/script)
  * @property {CoraliteElement} element - The specific HTML element the plugin is applied to (if applicable)
@@ -30,10 +30,10 @@
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginPageSetCallback - Async callback triggered when a page is created. Called with elements, values, and data.
+ * @callback CoralitePluginPageSetCallback - Async callback triggered when a page is created. Called with elements, properties, and data.
  * @param {Object} param
  * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
- * @param {CoraliteFilePath & Object.<string, any>} param.values - Values associated with the page path
+ * @param {CoraliteFilePath & Object.<string, any>} param.properties - Values associated with the page path
  * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
@@ -41,7 +41,7 @@
 
 /**
  * @this {ThisType<Coralite>}
- * @callback CoralitePluginPageUpdateCallback - Async callback triggered when a page is updated. Called with elements, new and old values.
+ * @callback CoralitePluginPageUpdateCallback - Async callback triggered when a page is updated. Called with elements, new and old properties.
  * @param {Object} param
  * @param {ParseHTMLResult} param.elements - Updated HTML elements from the page
  * @param {CoraliteCollectionItem} param.newValue - The updated data item
@@ -71,7 +71,7 @@
  * @callback CoralitePluginBeforePageRenderCallback - Async callback triggered before a page has been rendered.
  * @param {Object} context
  * @param {CoraliteComponent} context.component - The cloned HTML component data being processed
- * @param {Object} context.values - Values associated with the component
+ * @param {Object} context.properties - Properties associated with the component
  * @param {Object} context.renderContext - Render context containing state for the build
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async

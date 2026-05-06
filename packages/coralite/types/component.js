@@ -1,7 +1,7 @@
 
 /**
  * @import { CoraliteElement, CoraliteComponentRoot, CoraliteTextNode } from './dom.js'
- * @import { CoraliteModuleValues } from './module.js'
+ * @import { CoraliteModuleDefinitions } from './module.js'
  * @import { CoralitePath, CoraliteFilePath } from './core.js'
  */
 
@@ -14,14 +14,14 @@
  * @property {Array<string | Attribute>} ignoreByAttribute - An array of attribute names and values to ignore by element type.
  * @property {string[]} [styles] - Collected styles during build process
  * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
- * @property {CoraliteModuleValues} [values] - The initial values for the component.
+ * @property {CoraliteModuleDefinitions} [properties] - The initial definitions for the component.
  * @property {CoraliteElement[]} [tempElements] - An array of temporary elements created during the parsing process.
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
  */
 
 /**
  * @typedef {Object} CoraliteComponentResult
- * @property {CoraliteModuleValues} values - The module values extracted from the component
+ * @property {CoraliteModuleDefinitions} properties - The module definitions extracted from the component
  * @property {CoraliteElement[]} tempElements - Temporary elements created during processing
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
  * @property {string[]} [styles] - Collected styles during build process
