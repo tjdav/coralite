@@ -7,7 +7,7 @@ import { defineComponent } from 'coralite'
 
 export default defineComponent({
   tokens: {
-    displayName ({ page_lang }) {
+    displayName ({ page_lang = '' }) {
       const displayNames = new Intl.DisplayNames(['en'], { type: 'language' })
 
       return displayNames.of(page_lang)

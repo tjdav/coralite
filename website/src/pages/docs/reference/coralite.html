@@ -329,7 +329,7 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
     <coralite-code-highlight language="JavaScript">/**
  * @param {Object} options
  * @param {string} options.id - id - Unique identifier for the component
- * @param {CoraliteModuleValues} [options.values={}] - Token values available for replacement
+ * @param {CoraliteModuleDefinitions} [options.properties={}] - Token properties available for replacement
  * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
  * @param {CoraliteComponent} options.document - Current document being processed
  * @param {string} [options.contextId] - Context Id
@@ -370,7 +370,7 @@ coralite.createComponentElementoptions)</coralite-code-highlight>
           </tr>
           <tr>
             <th scope="row">options.values</th>
-            <td><code>CoraliteModuleValues</code></td>
+            <td><code>CoraliteModuleDefinitions</code></td>
             <td>Token values available for replacement (default: {})</td>
           </tr>
           <tr>

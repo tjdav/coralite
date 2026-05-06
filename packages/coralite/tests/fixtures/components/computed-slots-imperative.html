@@ -9,10 +9,10 @@ import { defineComponent } from 'coralite/plugins'
 
 export default defineComponent({
   slots: {
-    header: (content, values) => {
-      return `<h1 class="header-slot">Title: ${values.title}</h1>`
+    header: (content, properties) => {
+      return `<h1 class="header-slot">Title: ${properties.title}</h1>`
     },
-    default: (content, values) => {
+    default: (content, properties) => {
       // Return modified DOM nodes (e.g. wrapper div for each existing node plus a title)
       // Since `content` in client is an Array of DOM nodes from projected slot.
       // But we can also test string here. Actually, we'll test node modification in header or default.
@@ -21,14 +21,14 @@ export default defineComponent({
           if (node.nodeType === 1) {
             const wrapper = document.createElement('div')
             wrapper.className = 'body-slot-node'
-            wrapper.textContent = `Body: ${values.body} - `
+            wrapper.textContent = `Body: ${properties.body} - `
             wrapper.appendChild(node)
             return wrapper
           }
           return node
         })
       }
-      return `<div class="body-slot">Body: ${values.body}</div>`
+      return `<div class="body-slot">Body: ${properties.body}</div>`
     }
   },
   client: {

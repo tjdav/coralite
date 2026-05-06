@@ -10,11 +10,11 @@
   export default defineComponent({
     tokens: {
       title: '',
-      computedValue: (values) => (values.title === 'Updated Title' ? '100' : '0')
+      computedValue: (properties) => (properties.title === 'Updated Title' ? '100' : '0')
     },
     client: {
       setup: () => ({
-        computedValue: (values) => (values.title === 'Updated Title' ? '100' : '0')
+        computedValue: (properties) => (properties.title === 'Updated Title' ? '100' : '0')
       }),
       script: (context) => {
         // Just a dummy script so the component generates script wrappers

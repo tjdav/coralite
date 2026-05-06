@@ -9,8 +9,8 @@
 
   export default defineComponent({
     tokens: {
-      generatedMessage (values) {
-        return values.initialMessage + ' world!'
+      generatedMessage (properties) {
+        return properties.initialMessage + ' world!'
       }
     },
     client: {
@@ -24,8 +24,8 @@
         }
       },
       script (context) {
-        const msg = context.values.myShorthand({ msg: 'Hello from client' })
-        const refId = context.values.ref_message
+        const msg = context.properties.myShorthand({ msg: 'Hello from client' })
+        const refId = context.properties.ref_message
         const el = document.querySelector(`[ref="${refId}"]`)
         if (el) {
           el.textContent = msg

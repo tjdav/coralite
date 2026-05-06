@@ -12,16 +12,16 @@ describe('defineComponent', () => {
   let createComponentElementCalls
   let mockComponent
   let mockElement
-  let mockValues
+  let mockProperties
 
   beforeEach(() => {
     createComponentElementCalls = []
 
     // Mock createComponentElementElement function with call tracking
-    mockCreateComponentElement = async ({ id, values, element, component, contextId }) => {
+    mockCreateComponentElement = async ({ id, properties, element, component, contextId }) => {
       createComponentElementCalls.push({
         id,
-        values,
+        properties,
         element,
         component,
         contextId
@@ -63,7 +63,7 @@ describe('defineComponent', () => {
     }
 
     // Mock values
-    mockValues = {
+    mockProperties = {
       title: 'Test Title',
       count: 5
     }
@@ -78,11 +78,11 @@ describe('defineComponent', () => {
   describe('Basic Functionality', () => {
     it('should return empty object when no options provided', async () => {
       const result = await defineComponent.method.call(mockContext, {}, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
-      assert.deepStrictEqual(result, mockValues)
+      assert.deepStrictEqual(result, mockProperties)
     })
 
     it('should preserve existing values', async () => {
@@ -92,7 +92,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -103,21 +103,21 @@ describe('defineComponent', () => {
     it('should handle empty tokens object', async () => {
       const options = { tokens: {} }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
-      assert.deepStrictEqual(result, mockValues)
+      assert.deepStrictEqual(result, mockProperties)
     })
 
     it('should handle null tokens', async () => {
       const options = { tokens: null }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
-      assert.deepStrictEqual(result, mockValues)
+      assert.deepStrictEqual(result, mockProperties)
     })
   })
 
@@ -131,7 +131,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -143,13 +143,13 @@ describe('defineComponent', () => {
     it('should handle function tokens that return strings', async () => {
       const options = {
         tokens: {
-          uppercase: (values) => values.title.toUpperCase(),
-          doubled: (values) => values.count * 2,
-          concatenated: (values) => `${values.title} - ${values.count}`
+          uppercase: (properties) => properties.title.toUpperCase(),
+          doubled: (properties) => properties.count * 2,
+          concatenated: (properties) => `${properties.title} - ${properties.count}`
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -161,12 +161,12 @@ describe('defineComponent', () => {
     it('should handle function tokens that return numbers', async () => {
       const options = {
         tokens: {
-          add: (values) => values.count + 10,
-          multiply: (values) => values.count * 3
+          add: (properties) => properties.count + 10,
+          multiply: (properties) => properties.count * 3
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -181,7 +181,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -197,7 +197,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -213,7 +213,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -229,7 +229,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -243,7 +243,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -257,7 +257,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -269,11 +269,11 @@ describe('defineComponent', () => {
         tokens: {
           sync: 'sync value',
           async: async () => new Promise(r => setTimeout(() => r('async value'), 1)),
-          func: (values) => values.title
+          func: (properties) => properties.title
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -289,7 +289,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -306,7 +306,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -324,7 +324,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -341,7 +341,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -355,7 +355,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -372,7 +372,7 @@ describe('defineComponent', () => {
       }
 
       await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -394,7 +394,7 @@ describe('defineComponent', () => {
       }
 
       await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -416,7 +416,7 @@ describe('defineComponent', () => {
       }
 
       await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -436,7 +436,7 @@ describe('defineComponent', () => {
       }
 
       await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -457,7 +457,7 @@ describe('defineComponent', () => {
       }
 
       await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -475,7 +475,7 @@ describe('defineComponent', () => {
       }
 
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -501,7 +501,7 @@ describe('defineComponent', () => {
 
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
-          values: mockValues,
+          properties: mockProperties,
           element: mockElement,
           component: mockComponent
         })
@@ -522,7 +522,7 @@ describe('defineComponent', () => {
       }]
 
       await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -534,7 +534,7 @@ describe('defineComponent', () => {
     it('should compute slot with string result', async () => {
       const options = {
         slots: {
-          header: (content, values) => `Header: ${values.title}`
+          header: (content, properties) => `Header: ${properties.title}`
         }
       }
 
@@ -547,7 +547,7 @@ describe('defineComponent', () => {
       }]
 
       await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -581,7 +581,7 @@ describe('defineComponent', () => {
       }]
 
       await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -594,8 +594,8 @@ describe('defineComponent', () => {
     it('should handle multiple slots with different names', async () => {
       const options = {
         slots: {
-          header: (content, values) => `Header: ${values.title}`,
-          footer: (content, values) => `Footer: ${values.count}`
+          header: (content, properties) => `Header: ${properties.title}`,
+          footer: (content, properties) => `Footer: ${properties.count}`
         }
       }
 
@@ -624,7 +624,7 @@ describe('defineComponent', () => {
       ]
 
       await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -652,7 +652,7 @@ describe('defineComponent', () => {
 
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
-          values: mockValues,
+          properties: mockProperties,
           element: mockElement,
           component: mockComponent
         })
@@ -664,7 +664,7 @@ describe('defineComponent', () => {
     it('should handle no script provided', async () => {
       const options = {}
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -674,43 +674,43 @@ describe('defineComponent', () => {
     it('should generate __script__', async () => {
       const options = {
         client: {
-          script: function (values) {
-            return values.title
+          script: function (properties) {
+            return properties.title
           }
         }
       }
 
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
 
       assert.ok(result.__script__)
-      assert.deepStrictEqual(result.__script__.values, { title: 'Test Title' })
+      assert.deepStrictEqual(result.__script__.properties, { title: 'Test Title' })
     })
 
     it('should include only values used in script', async () => {
       const options = {
         client: {
-          script: function (values) {
-            return values.title.toUpperCase()
+          script: function (properties) {
+            return properties.title.toUpperCase()
           }
         }
       }
-      const extraValues = {
-        ...mockValues,
+      const extraProperties = {
+        ...mockProperties,
         unused: 'skip'
       }
 
       const result = await defineComponent.method.call(mockContext, options, {
-        values: extraValues,
+        properties: extraProperties,
         element: mockElement,
         component: mockComponent
       })
 
-      assert.deepStrictEqual(result.__script__.values, { title: 'Test Title' })
-      assert.ok(!('count' in result.__script__.values))
+      assert.deepStrictEqual(result.__script__.properties, { title: 'Test Title' })
+      assert.ok(!('count' in result.__script__.properties))
     })
 
     it('should remove __script__ when client and tokens are absent', async () => {
@@ -722,7 +722,7 @@ describe('defineComponent', () => {
           }
         }
       }, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -731,7 +731,7 @@ describe('defineComponent', () => {
       // Second call without script, client or tokens
       result = await defineComponent.method.call(mockContext, {
       }, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -745,7 +745,7 @@ describe('defineComponent', () => {
           funcToken: () => 'val'
         }
       }, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -765,7 +765,7 @@ describe('defineComponent', () => {
         }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -783,7 +783,7 @@ describe('defineComponent', () => {
       }
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
-          values: mockValues,
+          properties: mockProperties,
           element: mockElement,
           component: mockComponent
         })
@@ -800,7 +800,7 @@ describe('defineComponent', () => {
       }
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
-          values: mockValues,
+          properties: mockProperties,
           element: mockElement,
           component: mockComponent
         })
@@ -815,7 +815,7 @@ describe('defineComponent', () => {
         tokens: { large: largeString }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -827,7 +827,7 @@ describe('defineComponent', () => {
         tokens: { unicode: 'Hello 世界 🌍' }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: mockValues,
+        properties: mockProperties,
         element: mockElement,
         component: mockComponent
       })
@@ -838,10 +838,10 @@ describe('defineComponent', () => {
       const circularValues = { title: 'Test' }
       circularValues.self = circularValues
       const options = {
-        tokens: { ref: (values) => values.title }
+        tokens: { ref: (properties) => properties.title }
       }
       const result = await defineComponent.method.call(mockContext, options, {
-        values: circularValues,
+        properties: circularValues,
         element: mockElement,
         component: mockComponent
       })

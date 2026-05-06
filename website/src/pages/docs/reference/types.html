@@ -24,14 +24,14 @@
         <li><a href="#coralitefilepath">CoraliteFilePath</a></li>
         <li><a href="#coralitepath">CoralitePath</a></li>
         <li><a href="#coralitepathvalues">CoralitePathValues</a></li>
-        <li><a href="#coralitevalues">CoraliteValues</a></li>
+        <li><a href="#coralitevalues">CoraliteProperties</a></li>
         <li><a href="#coralitetoken">CoraliteToken</a></li>
         <li><a href="#coraliteattributetoken">CoraliteAttributeToken</a></li>
         <li><a href="#coraliteref">CoraliteRef</a></li>
         <li><a href="#coralitetextnodetoken">CoraliteTextNodeToken</a></li>
-        <li><a href="#coralitemodulevalues">CoraliteModuleValues</a></li>
+        <li><a href="#coralitemodulevalues">CoraliteModuleDefinitions</a></li>
         <li><a href="#scriptcontent">ScriptContent</a></li>
-        <li><a href="#coralitemodulevalue">CoraliteModuleValue</a></li>
+        <li><a href="#coralitemodulevalue">CoraliteModuleDefinition</a></li>
         <li><a href="#coraliteerrordata">CoraliteErrorData</a></li>
         <li><a href="#coraliteonerror">CoraliteOnError</a></li>
       </ul>
@@ -122,7 +122,7 @@
           </tr>
           <tr>
             <td><code>values</code></td>
-            <td><a href="#coralitemodulevalues"><code>CoraliteModuleValues</code></a></td>
+            <td><a href="#coralitemodulevalues"><code>CoraliteModuleDefinitions</code></a></td>
             <td>The initial values for the HTML module.</td>
           </tr>
           <tr>
@@ -242,7 +242,7 @@
       </table>
     </div>
 
-    <coralite-heading level="h3" text="CoraliteValues"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteProperties"></coralite-heading>
     <p>Union type representing values available for token replacement in components.</p>
     <div class="table-responsive">
       <table class="table">
@@ -374,7 +374,7 @@
       </table>
     </div>
 
-    <coralite-heading level="h3" text="CoraliteModuleValues"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteModuleDefinitions"></coralite-heading>
     <p>A collection of module values associated with a module.</p>
     <div class="table-responsive">
       <table class="table">
@@ -388,7 +388,7 @@
         <tbody>
           <tr>
             <td>(Key)</td>
-            <td><a href="#coralitemodulevalue"><code>CoraliteModuleValue</code></a></td>
+            <td><a href="#coralitemodulevalue"><code>CoraliteModuleDefinition</code></a></td>
             <td>Key-value pairs representing module data.</td>
           </tr>
           <tr>
@@ -419,14 +419,14 @@
           </tr>
           <tr>
             <td><code>values</code></td>
-            <td><code>Object&lt;string, CoraliteModuleValue&gt;</code></td>
+            <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
             <td>Values associated with the script.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <coralite-heading level="h3" text="CoraliteModuleValue"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteModuleDefinition"></coralite-heading>
     <p>Represents a single value that a module can store or process.</p>
     <div class="table-responsive">
       <table class="table">
@@ -543,7 +543,7 @@
         <tbody>
           <tr>
             <td><code>values</code></td>
-            <td><a href="#coralitemodulevalues"><code>CoraliteModuleValues</code></a></td>
+            <td><a href="#coralitemodulevalues"><code>CoraliteModuleDefinitions</code></a></td>
             <td>The module values extracted from the document.</td>
           </tr>
           <tr>
@@ -879,7 +879,7 @@
           </tr>
           <tr>
             <td><code>values</code></td>
-            <td><code>Object&lt;string, CoraliteModuleValue&gt;</code> (optional)</td>
+            <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code> (optional)</td>
             <td>Instance values.</td>
           </tr>
           <tr>
@@ -900,7 +900,7 @@
     <p>Callback for module script execution.</p>
     <coralite-code-highlight language="JavaScript">/**
       * @callback CoraliteModuleScript
-      * @param {CoraliteValues} values - The module's current values
+      * @param {CoraliteProperties} values - The module's current values
       * @param {CoraliteRef} refs - References template elements
       */</coralite-code-highlight>
 
@@ -965,7 +965,7 @@
           </tr>
           <tr>
             <td><code>values</code></td>
-            <td><code>Object&lt;string, CoraliteModuleValue&gt;</code></td>
+            <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
             <td>Instance values.</td>
           </tr>
           <tr>
@@ -1313,7 +1313,7 @@
           </tr>
           <tr>
             <td><code>values</code></td>
-            <td><code>Object&lt;string, CoraliteModuleValue&gt;</code></td>
+            <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
             <td>Instance values.</td>
           </tr>
           <tr>
@@ -1338,7 +1338,7 @@
           </tr>
           <tr>
             <td><code>values</code></td>
-            <td><code>Object&lt;string, CoraliteModuleValue&gt;</code></td>
+            <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
             <td>Values associated with the script.</td>
           </tr>
         </tbody>
@@ -1363,7 +1363,7 @@
         <thead>
           <tr>
             <td><code>values</code></td>
-            <td><code>Object&lt;string, CoraliteModuleValue&gt;</code></td>
+            <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
             <td>Instance values.</td>
           </tr>
         </thead>
@@ -1390,7 +1390,7 @@
           </tr>
           <tr>
             <td><code>values</code></td>
-            <td><code>Object&lt;string, CoraliteModuleValue&gt;</code> (optional)</td>
+            <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code> (optional)</td>
             <td>Instance values.</td>
           </tr>
           <tr>
@@ -1415,7 +1415,7 @@
           </tr>
           <tr>
             <td><code>values</code></td>
-            <td><code>Object&lt;string, CoraliteModuleValue&gt;</code> (optional)</td>
+            <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code> (optional)</td>
             <td>Instance values.</td>
           </tr>
         </tbody>
@@ -1904,7 +1904,7 @@
           /**
            * @param {Object} options
            * @param {string} options.id - id - Unique identifier for the component
-           * @param {CoraliteModuleValues} [options.values={}] - Token values available for replacement
+           * @param {CoraliteModuleDefinitions} [options.values={}] - Token values available for replacement
            * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
            * @param {CoraliteComponent} options.document - Current document being processed
            * @param {string} [options.contextId] - Context Id
@@ -1937,7 +1937,7 @@
             </tr>
             <tr slot="body">
                 <td><code>options.values</code></td>
-                <td><code>CoraliteModuleValues</code></td>
+                <td><code>CoraliteModuleDefinitions</code></td>
                 <td>Token values available for replacement (default: {})</td>
             </tr>
             <tr slot="body">
@@ -1974,7 +1974,7 @@
             * @private
             * @param {Object} data
             * @param {CoraliteModule} data.module - The Coralite module to parse
-            * @param {CoraliteModuleValues} data.values - Replacement tokens for the component
+            * @param {CoraliteModuleDefinitions} data.values - Replacement tokens for the component
             * @param {CoraliteElement} data.element - The Coralite module to parse
             * @param {CoraliteComponent} data.document - The document context in which the module is being processed
             * @param {string} data.contextId - Context Id
@@ -2005,7 +2005,7 @@
             </tr>
             <tr slot="body">
                 <td><code>data.values</code></td>
-                <td><code>CoraliteModuleValues</code></td>
+                <td><code>CoraliteModuleDefinitions</code></td>
                 <td>Replacement tokens for the component</td>
             </tr>
             <tr slot="body">

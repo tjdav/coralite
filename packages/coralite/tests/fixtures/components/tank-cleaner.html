@@ -9,7 +9,7 @@
 
   export default defineComponent({
     client: {
-      script: ({ values, helpers }) => {
+      script: ({ properties, helpers }) => {
         const btn = helpers.refs('clean-btn')
         const status = helpers.refs('status')
         if (btn) {

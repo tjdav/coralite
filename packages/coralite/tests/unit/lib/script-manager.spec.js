@@ -400,7 +400,7 @@ describe('ScriptManager', () => {
     it('should generate wrapper with values', () => {
       const instanceContext = {
         instanceId: 'inst-1',
-        values: {
+        properties: {
           count: 5,
           name: 'test'
         }
@@ -410,7 +410,7 @@ describe('ScriptManager', () => {
 
       assert.ok(result.includes('await coraliteComponentFunctions["component-1"]'))
       assert.ok(result.includes('instanceId: \'inst-1\''))
-      assert.ok(result.includes('values:'))
+      assert.ok(result.includes('properties:'))
       assert.ok(result.includes('count'))
       assert.ok(result.includes('name'))
     })
@@ -422,14 +422,14 @@ describe('ScriptManager', () => {
 
       const result = sm.generateInstanceWrapper('component-2', instanceContext)
 
-      assert.ok(result.includes('values: {}'))
+      assert.ok(result.includes('properties: {}'))
       assert.ok(result.includes('instanceId: \'inst-2\''))
     })
 
     it('should handle instance context with refs', () => {
       const instanceContext = {
         instanceId: 'inst-3',
-        values: {
+        properties: {
           x: 1,
           ref_button: 'element'
         }
@@ -438,13 +438,13 @@ describe('ScriptManager', () => {
       const result = sm.generateInstanceWrapper('component-3', instanceContext)
 
       assert.ok(result.includes('instanceId: \'inst-3\''))
-      assert.ok(result.includes('values:'))
+      assert.ok(result.includes('properties:'))
     })
 
     it('should serialize complex values', () => {
       const instanceContext = {
         instanceId: 'inst-4',
-        values: {
+        properties: {
           nested: {
             a: 1,
             b: [1, 2, 3]
@@ -465,7 +465,7 @@ describe('ScriptManager', () => {
 
       const result = sm.generateInstanceWrapper('component-5', instanceContext)
 
-      assert.ok(result.includes('values: {}'))
+      assert.ok(result.includes('properties: {}'))
       assert.ok(result.includes('instanceId: \'undefined\''))
     })
   })
@@ -492,7 +492,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          values: { count: 5 },
+          properties: { count: 5 },
           component: {}
         }
       }
@@ -520,7 +520,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'shared',
           instanceId: 'inst-1',
-          values: {
+          properties: {
             x: 1,
             y: 2
           },
@@ -529,7 +529,7 @@ describe('ScriptManager', () => {
         'inst-2': {
           componentId: 'shared',
           instanceId: 'inst-2',
-          values: {
+          properties: {
             x: 3,
             y: 4
           },
@@ -557,13 +557,13 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'component1',
           instanceId: 'inst-1',
-          values: { a: 1 },
+          properties: { a: 1 },
           component: {}
         },
         'inst-2': {
           componentId: 'component2',
           instanceId: 'inst-2',
-          values: { b: 2 },
+          properties: { b: 2 },
           component: {}
         }
       }
@@ -590,7 +590,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          values: { x: 5 },
+          properties: { x: 5 },
           component: {}
         }
       }
@@ -616,7 +616,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          values: {
+          properties: {
             ref_button: 'element'
           },
           component: {}
@@ -642,7 +642,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          values: {},
+          properties: {},
           component: { title: 'Test Page' }
         }
       }
@@ -664,7 +664,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'nonexistent',
           instanceId: 'inst-1',
-          values: {},
+          properties: {},
           component: {}
         }
       }
@@ -689,7 +689,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'async',
           instanceId: 'inst-1',
-          values: { x: 42 },
+          properties: { x: 42 },
           component: {}
         }
       }
@@ -720,7 +720,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'complex',
           instanceId: 'inst-1',
-          values: {
+          properties: {
             message: 'Hello World',
             ref_element: 'div'
           },
@@ -744,7 +744,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          values: { x: 1 },
+          properties: { x: 1 },
           component: {}
         }
       }
@@ -777,7 +777,7 @@ describe('ScriptManager', () => {
       sm.registerComponent({
         id: 'calculator',
         script: {
-          values: {},
+          properties: {},
           lineOffset: 0,
           content: `(context, helpers) => {
             const sum = helpers.add(context.values.a, context.values.b)
@@ -796,7 +796,7 @@ describe('ScriptManager', () => {
         'calc-1': {
           componentId: 'calculator',
           instanceId: 'calc-1',
-          values: {
+          properties: {
             a: 2,
             b: 3,
             multiplier: 10
@@ -919,7 +919,7 @@ describe('ScriptManager', () => {
       for (let i = 0; i < 100; i++) {
         instances[`inst-${i}`] = {
           componentId: 'test',
-          values: { x: i },
+          properties: { x: i },
           component: {}
         }
       }
@@ -983,7 +983,7 @@ describe('ScriptManager', () => {
       const instances = {
         'inst-1': {
           componentId: 'full',
-          values: {
+          properties: {
             x: 1,
             ref_el: 'div'
           },
@@ -1018,7 +1018,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId,
           instanceId: 'inst-1',
-          values: { message: 'Hello' }
+          properties: { message: 'Hello' }
         }
       }
 
@@ -1082,7 +1082,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          values: {},
+          properties: {},
           component: {}
         }
       }
@@ -1128,7 +1128,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: '1',
-          values: {},
+          properties: {},
           component: {}
         }
       }, 'development')
@@ -1166,7 +1166,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: '1',
-          values: {},
+          properties: {},
           component: {}
         }
       }, 'development')
@@ -1199,7 +1199,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: '1',
-          values: {},
+          properties: {},
           component: {}
         }
       }, 'development')
@@ -1234,7 +1234,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: '1',
-          values: {},
+          properties: {},
           component: {}
         }
       }, 'development')
@@ -1275,7 +1275,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           instanceId: '1',
           componentId: 'test',
-          values: {},
+          properties: {},
           component: {}
         }
       }
@@ -1313,7 +1313,7 @@ describe('ScriptManager', () => {
         inst1: {
           instanceId: 'inst1',
           componentId: 'temp1',
-          values: {},
+          properties: {},
           component: {}
         }
       }
@@ -1351,7 +1351,7 @@ describe('ScriptManager', () => {
         inst1: {
           instanceId: 'inst1',
           componentId: 'temp1',
-          values: {},
+          properties: {},
           component: {}
         }
       }

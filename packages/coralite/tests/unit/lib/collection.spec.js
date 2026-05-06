@@ -5,6 +5,10 @@ import path from 'node:path'
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
+/**
+ * @import {CoraliteCollectionItem, HTMLData} from '../../../types/index.js'
+ */
+
 describe('CoraliteCollection', () => {
   /** @type {string} */
   let testDir
@@ -36,6 +40,7 @@ describe('CoraliteCollection', () => {
 
   describe('setItem', () => {
     it('should add a new item to the collection', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -75,6 +80,7 @@ describe('CoraliteCollection', () => {
         }
       })
 
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -91,15 +97,20 @@ describe('CoraliteCollection', () => {
       assert.strictEqual(result.result, 'hook-result')
       assert.strictEqual(result.type, 'page')
       assert.strictEqual(collectionWithHook.collection['custom-id'], result)
-      assert.strictEqual(collectionWithHook.collection[item.path.pathname], result)
+      assert.strictEqual(
+        collectionWithHook.collection[item.path.pathname],
+        result
+      )
     })
 
     it('should abort if onSet returns falsy', async () => {
       const collectionWithHook = new CoraliteCollection({
         rootDir: testDir,
+        // @ts-ignore
         onSet: async () => false
       })
 
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -117,6 +128,7 @@ describe('CoraliteCollection', () => {
     })
 
     it('should update existing item instead of adding duplicate', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -138,10 +150,14 @@ describe('CoraliteCollection', () => {
       const result = await collection.setItem(updatedItem)
 
       assert.strictEqual(collection.list.length, initialLength)
-      assert.strictEqual(collection.collection[item.path.pathname].content, '<h1>Updated</h1>')
+      assert.strictEqual(
+        collection.collection[item.path.pathname].content,
+        '<h1>Updated</h1>'
+      )
     })
 
     it('should prevent duplicate entries in lists', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -160,27 +176,30 @@ describe('CoraliteCollection', () => {
       await collection.setItem(item)
 
       assert.strictEqual(collection.list.length, initialListLength)
-      assert.strictEqual(collection.listByPath[testDir].length, initialPathListLength)
+      assert.strictEqual(
+        collection.listByPath[testDir].length,
+        initialPathListLength
+      )
     })
 
     it('should throw error for invalid input', async () => {
-      await assert.rejects(
-        () => collection.setItem(null),
-        { message: 'Valid HTMLData object must be provided' }
-      )
-      await assert.rejects(
-        () => collection.setItem({}),
-        { message: 'Valid HTMLData object must be provided' }
-      )
+      await assert.rejects(() => collection.setItem(null), {
+        message: 'Valid HTMLData object must be provided'
+      })
+      // @ts-ignore
+      await assert.rejects(() => collection.setItem({}), {
+        message: 'Valid HTMLData object must be provided'
+      })
     })
   })
 
   describe('updateItem', () => {
     it('should update existing item properties', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Original</h1>',
-        values: { key: 'value1' },
+        properties: { key: 'value1' },
         path: {
           pathname: path.join(testDir, 'test.html'),
           dirname: testDir,
@@ -190,17 +209,18 @@ describe('CoraliteCollection', () => {
 
       await collection.setItem(item)
 
+      /** @type {CoraliteCollectionItem} */
       const updatedItem = {
         ...item,
         content: '<h1>Updated</h1>',
-        values: { key: 'value2' },
+        properties: { key: 'value2' },
         type: 'component'
       }
 
       const result = await collection.updateItem(updatedItem)
 
       assert.strictEqual(result.content, '<h1>Updated</h1>')
-      assert.deepStrictEqual(result.values, { key: 'value2' })
+      assert.deepStrictEqual(result.properties, { key: 'value2' })
       assert.strictEqual(result.type, 'component')
     })
 
@@ -214,6 +234,7 @@ describe('CoraliteCollection', () => {
         }
       })
 
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Original</h1>',
@@ -242,6 +263,7 @@ describe('CoraliteCollection', () => {
         onUpdate: async () => false
       })
 
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Original</h1>',
@@ -253,7 +275,8 @@ describe('CoraliteCollection', () => {
       }
 
       await collectionWithHook.setItem(item)
-      const originalContent = collectionWithHook.collection[item.path.pathname].content
+      const originalContent =
+        collectionWithHook.collection[item.path.pathname].content
 
       const updatedItem = {
         ...item,
@@ -261,10 +284,14 @@ describe('CoraliteCollection', () => {
       }
       await collectionWithHook.updateItem(updatedItem)
 
-      assert.strictEqual(collectionWithHook.collection[item.path.pathname].content, originalContent)
+      assert.strictEqual(
+        collectionWithHook.collection[item.path.pathname].content,
+        originalContent
+      )
     })
 
     it('should add item if it does not exist', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>New</h1>',
@@ -282,19 +309,19 @@ describe('CoraliteCollection', () => {
     })
 
     it('should throw error for invalid input', async () => {
-      await assert.rejects(
-        () => collection.updateItem(null),
-        { message: 'Valid HTMLData object must be provided' }
-      )
-      await assert.rejects(
-        () => collection.updateItem({}),
-        { message: 'Valid HTMLData object must be provided' }
-      )
+      await assert.rejects(() => collection.updateItem(null), {
+        message: 'Valid HTMLData object must be provided'
+      })
+      // @ts-ignore
+      await assert.rejects(() => collection.updateItem({}), {
+        message: 'Valid HTMLData object must be provided'
+      })
     })
   })
 
   describe('deleteItem', () => {
     it('should remove item from collection by HTMLData object', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -316,6 +343,7 @@ describe('CoraliteCollection', () => {
     })
 
     it('should remove item from collection by pathname string', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -344,6 +372,7 @@ describe('CoraliteCollection', () => {
         }
       })
 
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -370,6 +399,7 @@ describe('CoraliteCollection', () => {
         })
       })
 
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -387,11 +417,15 @@ describe('CoraliteCollection', () => {
       await collectionWithHook.deleteItem(item)
 
       assert.strictEqual(collectionWithHook.collection['custom-id'], undefined)
-      assert.strictEqual(collectionWithHook.collection[item.path.pathname], undefined)
+      assert.strictEqual(
+        collectionWithHook.collection[item.path.pathname],
+        undefined
+      )
       assert.strictEqual(collectionWithHook.list.length, 0)
     })
 
     it('should clean up empty directory arrays', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -410,6 +444,7 @@ describe('CoraliteCollection', () => {
     })
 
     it('should handle non-existent items gracefully', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -426,19 +461,19 @@ describe('CoraliteCollection', () => {
     })
 
     it('should throw error for invalid input', async () => {
-      await assert.rejects(
-        () => collection.deleteItem(null),
-        { message: 'Valid pathname must be provided' }
-      )
-      await assert.rejects(
-        () => collection.deleteItem({}),
-        { message: 'Valid pathname must be provided' }
-      )
+      await assert.rejects(() => collection.deleteItem(null), {
+        message: 'Valid pathname must be provided'
+      })
+      // @ts-ignore
+      await assert.rejects(() => collection.deleteItem({}), {
+        message: 'Valid pathname must be provided'
+      })
     })
   })
 
   describe('getItem', () => {
     it('should retrieve item by pathname', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -464,6 +499,7 @@ describe('CoraliteCollection', () => {
         })
       })
 
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -481,6 +517,7 @@ describe('CoraliteCollection', () => {
     })
 
     it('should handle HTML extension for relative paths', async () => {
+      /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Test</h1>',
@@ -500,6 +537,7 @@ describe('CoraliteCollection', () => {
 
   describe('getListByPath', () => {
     it('should return a copy of the directory list', async () => {
+      /** @type {HTMLData} */
       const item1 = {
         type: 'page',
         content: '<h1>Test 1</h1>',
@@ -510,6 +548,7 @@ describe('CoraliteCollection', () => {
         }
       }
 
+      /** @type {HTMLData} */
       const item2 = {
         type: 'page',
         content: '<h1>Test 2</h1>',
@@ -527,6 +566,7 @@ describe('CoraliteCollection', () => {
       assert.deepStrictEqual(list, [item1, item2])
 
       // Verify it's a copy
+      // @ts-ignore
       list.push({ test: 'item' })
       assert.strictEqual(collection.listByPath[testDir].length, 2)
     })

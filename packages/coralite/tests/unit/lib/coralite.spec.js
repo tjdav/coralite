@@ -96,7 +96,7 @@ describe('Coralite', () => {
   })
 
   describe('onBeforePageRender hook', () => {
-    it('should be called before rendering each page with component, values, and renderContext', async () => {
+    it('should be called before rendering each page with component, properties, and renderContext', async () => {
       let hookCalledCount = 0
       let hookContext = null
 
@@ -107,7 +107,7 @@ describe('Coralite', () => {
           hookContext = context
 
           // Test mutation
-          context.values.injectedGlobal = 'test'
+          context.properties.injectedGlobal = 'test'
 
           // Modifying AST
           context.component.root.children.push({
@@ -131,7 +131,7 @@ describe('Coralite', () => {
       assert.strictEqual(hookCalledCount, 1, 'onBeforePageRender hook should be called exactly once for 1 page')
       assert.ok(hookContext, 'context should be passed to the hook')
       assert.ok(hookContext.component, 'component should be present in context')
-      assert.ok(hookContext.values, 'values should be present in context')
+      assert.ok(hookContext.properties, 'properties should be present in context')
       assert.ok(hookContext.renderContext, 'renderContext should be present in context')
 
       const html = results[0].content
@@ -365,11 +365,11 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     })
   })
 
-  it('preserves values context into child components nested dependencies', async () => {
+  it('preserves properties context into child components nested dependencies', async () => {
     const parentPlugin = {
       name: 'parent-plugin',
-      onPageSet: async ({ values }) => {
-        values.special_value = 'i-am-preserved'
+      onPageSet: async ({ properties }) => {
+        properties.special_value = 'i-am-preserved'
       }
     }
 
@@ -396,8 +396,8 @@ export default defineComponent({
 import { defineComponent } from 'coralite/plugins'
 export default defineComponent({
 tokens: {
-checkValue(values) {
-return values.special_value || 'missing'
+checkValue(properties) {
+return properties.special_value || 'missing'
 }
 }
 })
@@ -419,6 +419,6 @@ return values.special_value || 'missing'
     const pageResult = results.find(r => r.path && r.path.filename === 'index.html')
     const htmlOutput = pageResult ? pageResult.content : ''
 
-    assert.ok(htmlOutput.includes('<div>i-am-preserved</div>'), 'nested child token values should receive context values')
+    assert.ok(htmlOutput.includes('<div>i-am-preserved</div>'), 'nested child token properties should receive context properties')
   })
 })
