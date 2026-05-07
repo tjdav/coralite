@@ -210,40 +210,41 @@ Plugins can intercept and mutate data at almost every stage of the Server-Side R
   * `onAfterPageRender(result)`: Intercepts the final output before saving. This hook can return new `CoraliteResult` objects to inject additional dynamically generated files into the build output.
   * `onBeforeBuild({ path, options })` & `onAfterBuild({ results, error, duration })`: Hook into the start and end of the entire build process.
 
-### 4.3 Global Component Registration
-Plugins can automatically register global HTML components by passing an array of file paths to the `components` property. 
-During initialization, Coralite strictly validates these paths. It synchronously reads the HTML files from the disk and injects their parsed content (`HTMLData`) globally so they can be used anywhere in the project without explicit imports.
-
-### 4.4 Client-Side Injection (`client`)
+### 4.3 Client-Side Injection (`client`)
 The `client` object within a plugin definition dictates what gets serialized and bundled for the browser environment. It is strictly validated and supports the following:
 * `config`: A static JSON-serializable object to pass server data to the client.
 * `imports`: An array of import declaration objects (e.g., `{ specifier: 'lodash', defaultExport: '_' }`) injected into the client bundle.
-* `setup`: A function for client-side initialization.
-* **`helpers` & The Two-Phase Currying System**: To safely bridge global plugin configuration with local Web Component instances, Coralite requires `client.helpers` to be authored using a specific nested functional pattern (currying).
+* `setup`: An asynchronous function executed strictly on the server during the build.
+* **`context` & The Two-Phase Currying System**: To safely bridge global plugin configuration with local Web Component instances, Coralite requires `client.context` to be authored using a specific nested functional pattern (currying).
   1. **Phase 1 (Global Context)**: The outermost function receives the `globalContext` (containing `imports` and `config`).
-  2. **Phase 2 (Local Instance Context)**: It must return a second function that receives the local Web Component instance context (`{ values, signal }`), where `signal` is an `AbortSignal` that triggers when the component unmounts (or `null` for declarative components).
-  3. **Phase 3 (Execution)**: It finally returns the actual callable utility function used by the user's script.
+  2. **Phase 2 (Local Instance Context)**: It must return a second function that receives the local Web Component instance context (`{ properties, page, signal }`), where `signal` is an `AbortSignal` that triggers when the component unmounts (or `null` for declarative components).
+  3. **Phase 3 (Execution)**: It finally returns the actual callable utility function used by the user's script. During component initialization, these utilities are flattened and spread directly onto the root context (accessible via `context.myHelper`).
 
-**Example of a properly authored Client Helper Plugin:**
+#### Full API Example: Definition & Consumption
+
+**1. Defining the Plugin (`my-plugin.js`)**
 ```javascript
 import { definePlugin } from 'coralite/plugins'
 
 export const myCustomPlugin = definePlugin({
   name: 'my-custom-plugin',
   client: {
-    helpers: {
+    // Utilities are defined under the 'context' key
+    context: {
       // Phase 1: Receives Global Context
       myHelper(globalContext) {
         
         // Phase 2: Receives Local Instance Context
-        return ({ values, signal }) => {
+        return ({ properties, page, signal }) => {
           
-          // Phase 3: The actual function accessible via context.helpers.myHelper
+          // Phase 3: The actual callable utility function
           return function (selector) {
              const element = document.querySelector(selector);
              
              // Example using the signal to prevent memory leaks
-             element.addEventListener('click', () => console.log('clicked'), { signal });
+             if (element && signal) {
+               element.addEventListener('click', () => console.log('clicked'), { signal });
+             }
              
              return element;
           }
@@ -252,6 +253,26 @@ export const myCustomPlugin = definePlugin({
     }
   }
 })
+```
+
+**2. Consuming the Plugin in a Component (`my-component.html`)**
+```html
+<template id="my-component">
+  <button class="target-btn">Click Me</button>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    script: async (context) => {
+      // The utility defined in client.context is spread directly onto the root context.
+      const btn = context.myHelper('.target-btn');
+      
+      console.log('Button bound to page:', context.page.url.pathname);
+    }
+  })
+</script>
 ```
 
 ## 5. Core Built-In Plugins
