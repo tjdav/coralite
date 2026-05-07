@@ -844,7 +844,7 @@ import { getHelpers, getSetups, render } from '${base}assets/js/${scriptResult.m
 
 // Global setups initialization
 const globalContext = {};
-const globalSetupValuesPromise = getSetups(globalContext);
+const globalSetupPropertiesPromise = getSetups(globalContext);
 
 (async () => {
   let resolveCoraliteReady;
@@ -1151,7 +1151,7 @@ const globalSetupValuesPromise = getSetups(globalContext);
                 element.setAttribute('data-testid', dynamicId);
               }
               
-              this._values[\`ref_\${refName}\`] = dynamicId;
+              this._properties[\`ref_\${refName}\`] = dynamicId;
             }
           }
 

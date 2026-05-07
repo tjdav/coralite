@@ -236,7 +236,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   // Global setups initialization
   entryCodeParts.push(`const globalContext = { values: {} };\n`)
-  entryCodeParts.push(`const globalSetupValuesPromise = getSetups(globalContext).then(setupValues => {
+  entryCodeParts.push(`const globalSetupPropertiesPromise = getSetups(globalContext).then(setupValues => {
     Object.assign(globalContext.values, setupValues);
     return setupValues;
   });\n`)
