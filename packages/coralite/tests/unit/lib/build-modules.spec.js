@@ -37,7 +37,7 @@ describe('Coralite Build Modes', () => {
         <div>{{ message }}</div>
         <script>
           export default {
-            message: 'Hello from Component'
+            properties: () => ({ message: 'Hello from Component' })
           }
         </script>
       </template>

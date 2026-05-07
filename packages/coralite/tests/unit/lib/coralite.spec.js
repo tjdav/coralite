@@ -229,10 +229,8 @@ describe('Coralite', () => {
         <script type="module">
           import { defineComponent } from 'coralite/plugins'
           export default defineComponent({
-            client: {
-              script: (context) => {
-                console.log('test')
-              }
+            script () {
+              console.log('test')
             }
           })
         </script>
@@ -379,12 +377,6 @@ describe('Bug Fix: Preserving recursive tokens', () => {
 <template id="parent-component">
 <child-component></child-component>
 </template>
-<script type="module">
-import { defineComponent } from 'coralite/plugins'
-export default defineComponent({
-  components: ['child-component']
-})
-</script>
 `
     await writeFile(path.join(componentsDir, 'parent-component.html'), parentHtml)
 
@@ -395,11 +387,9 @@ export default defineComponent({
 <script type="module">
 import { defineComponent } from 'coralite/plugins'
 export default defineComponent({
-tokens: {
-checkValue(properties) {
-return properties.special_value || 'missing'
-}
-}
+  properties: (properties) => ({
+    checkValue: properties.special_value || 'missing'
+  })
 })
 </script>
 `

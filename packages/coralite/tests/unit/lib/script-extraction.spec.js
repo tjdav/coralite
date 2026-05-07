@@ -7,10 +7,8 @@ describe('Script Extraction', () => {
   test('shorthand method', () => {
     const code = `
 defineComponent({
-  client: {
-    script(context) {
-      console.log('shorthand')
-    }
+  script(context) {
+    console.log('shorthand')
   }
 })`
     const result = findAndExtractScript(code)
@@ -23,10 +21,8 @@ defineComponent({
   test('async shorthand method', () => {
     const code = `
 defineComponent({
-  client: {
-    async script(context) {
-      console.log('async shorthand')
-    }
+  async script(context) {
+    console.log('async shorthand')
   }
 })`
     const result = findAndExtractScript(code)
@@ -39,10 +35,8 @@ defineComponent({
   test('arrow function', () => {
     const code = `
 defineComponent({
-  client: {
-    script: (context) => {
-      console.log('arrow')
-    }
+  script: (context) => {
+    console.log('arrow')
   }
 })`
     const result = findAndExtractScript(code)
@@ -55,10 +49,8 @@ defineComponent({
   test('async arrow function', () => {
     const code = `
 defineComponent({
-  client: {
-    script: async (context) => {
-      console.log('async arrow')
-    }
+  script: async (context) => {
+    console.log('async arrow')
   }
 })`
     const result = findAndExtractScript(code)
@@ -71,10 +63,8 @@ defineComponent({
   test('function expression', () => {
     const code = `
 defineComponent({
-  client: {
-    script: function(context) {
-      console.log('function expression')
-    }
+  script: function(context) {
+    console.log('function expression')
   }
 })`
     const result = findAndExtractScript(code)
@@ -87,10 +77,8 @@ defineComponent({
   test('async function expression', () => {
     const code = `
 defineComponent({
-  client: {
-    script: async function(context) {
-      console.log('async function expression')
-    }
+  script: async function(context) {
+    console.log('async function expression')
   }
 })`
     const result = findAndExtractScript(code)
@@ -103,12 +91,10 @@ defineComponent({
   test('multi-line definition', () => {
     const code = `
 defineComponent({
-  client: {
-    script: 
-      (context) => {
-        console.log('multi-line')
-      }
-  }
+  script: 
+    (context) => {
+      console.log('multi-line')
+    }
 })`
     const result = findAndExtractScript(code)
     assert.strictEqual(result.lineOffset, 4)
@@ -120,62 +106,17 @@ defineComponent({
   test('with comments', () => {
     const code = `
 defineComponent({
-  client: {
-    /**
-     * My script
-     */
-    script(context) {
-      console.log('comments')
-    }
+  /**
+   * My script
+   */
+  script(context) {
+    console.log('comments')
   }
 })`
     const result = findAndExtractScript(code)
     assert.strictEqual(result.lineOffset, 6)
     assert.strictEqual(result.content, `function script(context) {
       console.log('comments')
-    }`)
-  })
-  test('setup block with script block', () => {
-    const code = `
-defineComponent({
-  client: {
-    setup() {
-      return { msg: 'setup' }
-    },
-    script(context) {
-      console.log('script')
-    }
-  }
-})`
-    const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 6)
-    assert.strictEqual(result.content, `function script(context) {
-      console.log('script')
-    }`)
-    assert.strictEqual(result.setupContent, `function setup() {
-      return { msg: 'setup' }
-    }`)
-  })
-
-  test('async setup block with arrow script block', () => {
-    const code = `
-defineComponent({
-  client: {
-    setup: async () => {
-      return { msg: 'async setup arrow' }
-    },
-    script: (context) => {
-      console.log('script arrow')
-    }
-  }
-})`
-    const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 6)
-    assert.strictEqual(result.content, `(context) => {
-      console.log('script arrow')
-    }`)
-    assert.strictEqual(result.setupContent, `async () => {
-      return { msg: 'async setup arrow' }
     }`)
   })
 })

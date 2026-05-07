@@ -87,9 +87,9 @@ describe('defineComponent', () => {
 
     it('should preserve existing values', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           newToken: 'new value'
-        }
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -101,7 +101,7 @@ describe('defineComponent', () => {
     })
 
     it('should handle empty tokens object', async () => {
-      const options = { tokens: {} }
+      const options = { properties: () => ({}) }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
         element: mockElement,
@@ -124,11 +124,11 @@ describe('defineComponent', () => {
   describe('Token Computation - Synchronous', () => {
     it('should handle string tokens', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           greeting: 'Hello World',
           number: '42',
           empty: ''
-        }
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -142,11 +142,11 @@ describe('defineComponent', () => {
 
     it('should handle function tokens that return strings', async () => {
       const options = {
-        tokens: {
-          uppercase: (properties) => properties.title.toUpperCase(),
-          doubled: (properties) => properties.count * 2,
-          concatenated: (properties) => `${properties.title} - ${properties.count}`
-        }
+        properties: (context) => ({
+          uppercase: context.roperties.title.toUpperCase(),
+          doubled: context.properties.count * 2,
+          concatenated: `${context.properties.title} - ${context.properties.count}`
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -160,10 +160,10 @@ describe('defineComponent', () => {
 
     it('should handle function tokens that return numbers', async () => {
       const options = {
-        tokens: {
-          add: (properties) => properties.count + 10,
-          multiply: (properties) => properties.count * 3
-        }
+        properties: (context) => ({
+          add: context.properties.count + 10,
+          multiply: context.properties.count * 3
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -176,9 +176,9 @@ describe('defineComponent', () => {
 
     it('should handle function tokens that return empty string', async () => {
       const options = {
-        tokens: {
-          empty: () => ''
-        }
+        properties: () => ({
+          empty: ''
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -190,11 +190,11 @@ describe('defineComponent', () => {
 
     it('should handle function tokens that return null/undefined', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           nullValue: () => null,
           undefinedValue: () => undefined,
           falsyValue: () => 0
-        }
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -208,9 +208,9 @@ describe('defineComponent', () => {
 
     it('should handle function tokens with no parameters', async () => {
       const options = {
-        tokens: {
-          staticValue: () => 'static'
-        }
+        properties: () => ({
+          staticValue: 'static'
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -224,9 +224,9 @@ describe('defineComponent', () => {
   describe('Token Computation - Asynchronous', () => {
     it('should handle async function tokens that resolve to strings', async () => {
       const options = {
-        tokens: {
-          asyncString: async () => new Promise(r => setTimeout(() => r('async result'), 1))
-        }
+        properties: async () => ({
+          asyncString: new Promise(r => setTimeout(() => r('async result'), 1))
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -238,9 +238,9 @@ describe('defineComponent', () => {
 
     it('should handle async function tokens that resolve to numbers', async () => {
       const options = {
-        tokens: {
-          asyncNumber: async () => new Promise(r => setTimeout(() => r(123), 1))
-        }
+        properties: () => ({
+          asyncNumber: new Promise(r => setTimeout(() => r(123), 1))
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -252,9 +252,9 @@ describe('defineComponent', () => {
 
     it('should handle async function tokens that resolve to objects', async () => {
       const options = {
-        tokens: {
-          asyncObject: async () => new Promise(r => setTimeout(() => r({ key: 'value' }), 1))
-        }
+        properties: async () => ({
+          asyncObject: new Promise(r => setTimeout(() => r({ key: 'value' }), 1))
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -266,11 +266,11 @@ describe('defineComponent', () => {
 
     it('should handle mixed sync and async tokens', async () => {
       const options = {
-        tokens: {
+        properties: async (context) => ({
           sync: 'sync value',
-          async: async () => new Promise(r => setTimeout(() => r('async value'), 1)),
-          func: (properties) => properties.title
-        }
+          async: new Promise(r => setTimeout(() => r('async value'), 1)),
+          func: context.properties.title
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -283,10 +283,10 @@ describe('defineComponent', () => {
 
     it('should handle multiple async tokens', async () => {
       const options = {
-        tokens: {
-          async1: async () => new Promise(r => setTimeout(() => r('result1'), 1)),
-          async2: async () => new Promise(r => setTimeout(() => r('result2'), 1))
-        }
+        properties: async () => ({
+          async1: new Promise(r => setTimeout(() => r('result1'), 1)),
+          async2: new Promise(r => setTimeout(() => r('result2'), 1))
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -301,9 +301,9 @@ describe('defineComponent', () => {
   describe('HTML Parsing for String Tokens', () => {
     it('should parse HTML string tokens into AST', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           html: '<p>Paragraph</p>'
-        }
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -319,9 +319,9 @@ describe('defineComponent', () => {
 
     it('should parse multiple elements', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           content: '<div>A</div><span>B</span>'
-        }
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -336,9 +336,9 @@ describe('defineComponent', () => {
 
     it('should parse HTML with only text node', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           textOnly: 'Just text content'
-        }
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -350,9 +350,9 @@ describe('defineComponent', () => {
 
     it('should handle empty HTML string', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           emptyHtml: ''
-        }
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -366,9 +366,9 @@ describe('defineComponent', () => {
   describe('Custom Element Processing', () => {
     it('should verify createComponentElement arguments including attributes', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           comp: '<my-elem class="btn" type="submit"></my-elem>'
-        }
+        })
       }
 
       await defineComponent.method.call(mockContext, options, {
@@ -388,9 +388,9 @@ describe('defineComponent', () => {
 
     it('should verify context ID generation', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           comp: '<my-elem></my-elem><other-elem></other-elem>'
-        }
+        })
       }
 
       await defineComponent.method.call(mockContext, options, {
@@ -410,9 +410,9 @@ describe('defineComponent', () => {
 
     it('should pass children as content/slots to createComponentElement', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           comp: '<wrapper-elem><span>Child Content</span></wrapper-elem>'
-        }
+        })
       }
 
       await defineComponent.method.call(mockContext, options, {
@@ -430,9 +430,9 @@ describe('defineComponent', () => {
 
     it('should handle nested custom elements correctly (custom inside custom)', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           comp: '<outer-elem><inner-elem></inner-elem></outer-elem>'
-        }
+        })
       }
 
       await defineComponent.method.call(mockContext, options, {
@@ -451,9 +451,9 @@ describe('defineComponent', () => {
 
     it('should handle nested custom elements inside standard tags', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           comp: '<div><nested-elem></nested-elem></div>'
-        }
+        })
       }
 
       await defineComponent.method.call(mockContext, options, {
@@ -469,9 +469,9 @@ describe('defineComponent', () => {
 
     it('should verify DOM replacement', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           comp: '<replace-me></replace-me>'
-        }
+        })
       }
 
       const result = await defineComponent.method.call(mockContext, options, {
@@ -490,9 +490,9 @@ describe('defineComponent', () => {
 
     it('should propagate errors from createComponentElement', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           comp: '<fail-elem></fail-elem>'
-        }
+        })
       }
 
       mockContext.createComponentElement = async () => {
@@ -673,10 +673,8 @@ describe('defineComponent', () => {
 
     it('should generate __script__', async () => {
       const options = {
-        client: {
-          script: function (properties) {
-            return properties.title
-          }
+        script: function (properties) {
+          return properties.title
         }
       }
 
@@ -692,10 +690,8 @@ describe('defineComponent', () => {
 
     it('should include only values used in script', async () => {
       const options = {
-        client: {
-          script: function (properties) {
-            return properties.title.toUpperCase()
-          }
+        script: function (properties) {
+          return properties.title.toUpperCase()
         }
       }
       const extraProperties = {
@@ -716,10 +712,8 @@ describe('defineComponent', () => {
     it('should remove __script__ when client and tokens are absent', async () => {
       // First call with script
       let result = await defineComponent.method.call(mockContext, {
-        client: {
-          script: function (v) {
-            return v.title
-          }
+        script: function (v) {
+          return v.title
         }
       }, {
         properties: mockProperties,
@@ -740,10 +734,10 @@ describe('defineComponent', () => {
 
     it('should preserve __script__ when tokens are defined', async () => {
       const result = await defineComponent.method.call(mockContext, {
-        tokens: {
+        properties: () => ({
           title: 'title',
-          funcToken: () => 'val'
-        }
+          funcToken: (() => 'val')()
+        })
       }, {
         properties: mockProperties,
         element: mockElement,
@@ -759,10 +753,10 @@ describe('defineComponent', () => {
   describe('Error Handling', () => {
     it('should handle tokens object with prototype properties', async () => {
       const options = {
-        tokens: {
+        properties: () => ({
           own: 'own value',
           __proto__: { polluted: 'should not appear' }
-        }
+        })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -775,11 +769,11 @@ describe('defineComponent', () => {
 
     it('should handle async token rejection', async () => {
       const options = {
-        tokens: {
-          failing: async () => {
+        properties: async () => ({
+          failing: (() => {
             throw new Error('Async error')
-          }
-        }
+          })()
+        })
       }
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
@@ -792,11 +786,11 @@ describe('defineComponent', () => {
 
     it('should handle sync function throwing error', async () => {
       const options = {
-        tokens: {
-          throwing: () => {
-            throw new Error('Sync error')
-          }
-        }
+        properties: () => ({
+          throwing: (() => {
+            throw new Error('Async error')
+          })()
+        })
       }
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
@@ -812,7 +806,7 @@ describe('defineComponent', () => {
     it('should handle very large token values', async () => {
       const largeString = 'x'.repeat(10000)
       const options = {
-        tokens: { large: largeString }
+        properties: () => ({ large: largeString })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -824,7 +818,7 @@ describe('defineComponent', () => {
 
     it('should handle Unicode characters in tokens', async () => {
       const options = {
-        tokens: { unicode: 'Hello 世界 🌍' }
+        properties: () => ({ unicode: 'Hello 世界 🌍' })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
@@ -838,7 +832,7 @@ describe('defineComponent', () => {
       const circularValues = { title: 'Test' }
       circularValues.self = circularValues
       const options = {
-        tokens: { ref: (properties) => properties.title }
+        properties: (context) => ({ ref: context.properties.title })
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: circularValues,
