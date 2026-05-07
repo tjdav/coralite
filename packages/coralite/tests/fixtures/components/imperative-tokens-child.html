@@ -1,3 +1,4 @@
+
 <template id="imperative-tokens-child">
   <div id="test-output">{{ helloWorld }}</div>
   <div id="test-output-step">{{ step }}</div>
@@ -7,12 +8,12 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    tokens: {
-      helloWorld () {
-        return 'hello world'
-      },
-      step (properties) {
-        return parseInt(properties.start || '0') + 1
+    properties: async (context) => {
+      const properties = context.properties
+  
+      return {
+        helloWorld: 'hello world',
+        step: parseInt(properties.start || '0') + 1
       }
     }
   })

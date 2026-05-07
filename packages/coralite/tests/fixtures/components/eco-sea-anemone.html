@@ -15,17 +15,15 @@
   import { defineComponent } from 'coralite/plugins'
 
 export default defineComponent({
-    client: {
-      script (context) {
-        // Share the exact same closure reference as the parent
-        const store = context.helpers.sharedOceanStore
+    script (context) {
+      // Share the exact same closure reference as the parent
+      const store = context.helpers.sharedOceanStore
 
-        const btn = context.helpers.refs('warmBtn')
-        if (btn) {
-          btn.addEventListener('click', () => {
-            store.setTemp(store.getTemp() + 5)
-          })
-        }
+      const btn = context.helpers.refs('warmBtn')
+      if (btn) {
+        btn.addEventListener('click', () => {
+          store.setTemp(store.getTemp() + 5)
+        })
       }
     }
   })

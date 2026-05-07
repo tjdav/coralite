@@ -7,15 +7,13 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client: {
-      script: async ({ signal }) => {
-        try {
-          signal.addEventListener('abort', () => {
-          })
-          window.__child_status = 'SUCCESS'
-        } catch (e) {
-          window.__child_error = e.message
-        }
+    script: async ({ signal }) => {
+      try {
+        signal.addEventListener('abort', () => {
+        })
+        window.__child_status = 'SUCCESS'
+      } catch (e) {
+        window.__child_error = e.message
       }
     }
   })

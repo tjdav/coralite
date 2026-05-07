@@ -11,66 +11,51 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client: {
-      imports: [
-        {
-          specifier: '../dummy-client-lib.js',
-          namedExports: ['foo']
-        },
-        {
-          specifier: '../dummy-data.json',
-          defaultExport: 'dummyData',
-          attributes: { type: 'json' }
-        },
-        {
-          specifier: 'https://esm.sh/canvas-confetti@1.6.0',
-          defaultExport: 'confetti'
-        }
-      ],
-      script: ({ imports }) => {
-        const localJsEl = document.getElementById('local-js')
-        const localJsonEl = document.getElementById('local-json')
-        const remoteBtn = document.getElementById('remote-btn')
-        const dynamicBtn = document.getElementById('dynamic-btn')
+    script: async ({ imports }) => {
+      const { foo } = await import('../dummy-client-lib.js')
+      const dummyData = await import('../dummy-data.json', { with: { type: 'json' } })
+      const localJsEl = document.getElementById('local-js')
+      const localJsonEl = document.getElementById('local-json')
+      const remoteBtn = document.getElementById('remote-btn')
+      const dynamicBtn = document.getElementById('dynamic-btn')
 
-        if (localJsEl) {
-          localJsEl.textContent = `Local JS: ${imports.foo}`
-        }
+      if (localJsEl) {
+        localJsEl.textContent = `Local JS: ${foo}`
+      }
 
-        if (localJsonEl) {
-          localJsonEl.textContent = `Local JSON: ${imports.dummyData.name} v${imports.dummyData.version}`
-        }
+      if (localJsonEl) {
+        localJsonEl.textContent = `Local JSON: ${dummyData.name} v${dummyData.version}`
+      }
 
-        if (remoteBtn) {
-          remoteBtn.addEventListener('click', () => {
-            if (imports.confetti) {
-              imports.confetti({
-                particleCount: 10,
-                spread: 30,
-                origin: { y: 0.6 }
+      if (remoteBtn) {
+        remoteBtn.addEventListener('click', () => {
+          if (imports.confetti) {
+            imports.confetti({
+              particleCount: 10,
+              spread: 30,
+              origin: { y: 0.6 }
+            })
+            remoteBtn.setAttribute('data-triggered', 'true')
+          }
+        })
+      }
+
+      if (dynamicBtn) {
+        dynamicBtn.addEventListener('click', async () => {
+          try {
+            const dynamicConfetti = await import('https://esm.sh/canvas-confetti@1.6.0')
+            if (dynamicConfetti.default) {
+              dynamicConfetti.default({
+                particleCount: 5,
+                spread: 20,
+                origin: { y: 0.8 }
               })
-              remoteBtn.setAttribute('data-triggered', 'true')
+              dynamicBtn.setAttribute('data-triggered', 'true')
             }
-          })
-        }
-
-        if (dynamicBtn) {
-          dynamicBtn.addEventListener('click', async () => {
-            try {
-              const dynamicConfetti = await import('https://esm.sh/canvas-confetti@1.6.0')
-              if (dynamicConfetti.default) {
-                dynamicConfetti.default({
-                  particleCount: 5,
-                  spread: 20,
-                  origin: { y: 0.8 }
-                })
-                dynamicBtn.setAttribute('data-triggered', 'true')
-              }
-            } catch (err) {
-              console.error(err)
-            }
-          })
-        }
+          } catch (err) {
+            console.error(err)
+          }
+        })
       }
     }
   })

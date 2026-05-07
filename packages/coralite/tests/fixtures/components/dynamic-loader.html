@@ -6,16 +6,13 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    client: {
-      components: ['dynamic-child'],
-      script: ({ helpers }) => {
-        // Appends after a small delay to simulate dynamic insertion
-        setTimeout(() => {
-          const container = helpers.refs('container')
-          const childComponent = document.createElement('dynamic-child')
-          container.replaceWith(childComponent)
-        }, 100)
-      }
+    script: ({ helpers }) => {
+      // Appends after a small delay to simulate dynamic insertion
+      setTimeout(() => {
+        const container = helpers.refs('container')
+        const childComponent = document.createElement('dynamic-child')
+        container.replaceWith(childComponent)
+      }, 100)
     }
   })
 </script>

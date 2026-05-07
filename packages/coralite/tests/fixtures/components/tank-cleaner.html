@@ -1,6 +1,6 @@
 <template id="tank-cleaner">
   <div class="cleaner">
-    <button ref="clean-btn" aria-controls="{{ refs.status }}">Clean Tank</button>
+    <button ref="clean-btn" aria-controls="{{ refs_status }}">Clean Tank</button>
     <span ref="status">Dirty</span>
   </div>
 </template>
@@ -8,17 +8,15 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client: {
-      script: ({ properties, helpers }) => {
-        const btn = helpers.refs('clean-btn')
-        const status = helpers.refs('status')
-        if (btn) {
-          btn.addEventListener('click', () => {
-            if (status) {
-              status.textContent = 'Clean'
-            }
-          })
-        }
+    script: ({ properties, helpers }) => {
+      const btn = helpers.refs('clean-btn')
+      const status = helpers.refs('status')
+      if (btn) {
+        btn.addEventListener('click', () => {
+          if (status) {
+            status.textContent = 'Clean'
+          }
+        })
       }
     }
   })

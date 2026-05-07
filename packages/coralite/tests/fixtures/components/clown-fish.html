@@ -8,9 +8,11 @@
     import { defineComponent } from 'coralite/plugins'
 
     export default defineComponent({
-      tokens: {
-        stripes: ({ name }) => {
-          return name === 'Nemo' ? '3' : '2'
+      properties (context) {
+        const properties = context.properties
+
+        return {
+          stripes: properties.name === 'Nemo' ? '3' : '2'
         }
       }
     })

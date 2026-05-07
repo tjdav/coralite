@@ -4,14 +4,14 @@
   </div>
 </template>
 <script type="module">
-    import { defineComponent } from 'coralite'
+  import { defineComponent } from 'coralite'
 
-    export default defineComponent({
-      slots: {
-        fish: (content) => {
-          // Clone the content 3 times
-          return [...content, ...content, ...content]
-        }
+  export default defineComponent({
+    slots: {
+      fish: (content) => {
+        // Clone the content 3 times
+        return [...content, ...content, ...content]
       }
-    })
+    }
+  })
 </script>

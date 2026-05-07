@@ -10,25 +10,22 @@
   import { defineComponent } from 'coralite/plugins'
 
 export default defineComponent({
-    client: {
-      components: ['eco-sea-anemone'],
-      setup () {
-        return { oceanTemp: 0 }
-      },
-      script (context) {
-        // Call the curried helper
-        const store = context.helpers.sharedOceanStore
-        const oceanTemp = context.helpers.refs('oceanTemp')
+    properties: () => {
+      return { oceanTemp: 0 }
+    },
+    script (context) {
+      // Call the curried helper
+      const store = context.helpers.sharedOceanStore
+      const oceanTemp = context.helpers.refs('oceanTemp')
 
-        oceanTemp.textContent = store.getTemp()
+      oceanTemp.textContent = store.getTemp()
 
-        store.subscribe((newTemp) => {
-          context.helpers.refs('oceanTemp').textContent = newTemp
-        })
+      store.subscribe((newTemp) => {
+        context.helpers.refs('oceanTemp').textContent = newTemp
+      })
 
-        const anemone = document.createElement('eco-sea-anemone')
-        context.helpers.refs('habitat').appendChild(anemone)
-      }
+      const anemone = document.createElement('eco-sea-anemone')
+      context.helpers.refs('habitat').appendChild(anemone)
     }
   })
 </script>

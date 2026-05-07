@@ -10,14 +10,11 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client: {
-      components: ['testing-counter-imperative'],
-      script ({ helpers }) {
-        const placeholderElement = helpers.refs('placeholder')
-        const imperativeComponent = document.createElement('testing-counter-imperative')
+    script ({ helpers }) {
+      const placeholderElement = helpers.refs('placeholder')
+      const imperativeComponent = document.createElement('testing-counter-imperative')
 
-        placeholderElement.replaceWith(imperativeComponent)
-      }
+      placeholderElement.replaceWith(imperativeComponent)
     }
   })
 </script>

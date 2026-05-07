@@ -1,3 +1,4 @@
+
 <template id="reactive-token-child">
   <h3 ref="title">{{ title }}</h3>
   <p>Value: {{ computedValue }}</p>
@@ -8,22 +9,19 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    tokens: {
-      title: '',
-      computedValue: (properties) => (properties.title === 'Updated Title' ? '100' : '0')
+    properties: async (context) => {
+      const properties = context.properties
+      return {
+        title: '',
+        computedValue: properties.title === 'Updated Title' ? '100' : '0'
+      }
     },
-    client: {
-      setup: () => ({
-        computedValue: (properties) => (properties.title === 'Updated Title' ? '100' : '0')
-      }),
-      script: (context) => {
-        // Just a dummy script so the component generates script wrappers
-        const target = context.helpers.refs('target')
-        if (target) {
-          target.textContent = 'Script executed'
-        }
-      },
-      components: ['reactive-token-child']
+    script: (context) => {
+      // Just a dummy script so the component generates script wrappers
+      const target = context.helpers.refs('target')
+      if (target) {
+        target.textContent = 'Script executed'
+      }
     }
   })
 </script>

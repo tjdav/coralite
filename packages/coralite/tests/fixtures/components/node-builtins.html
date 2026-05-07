@@ -9,26 +9,17 @@
 import { defineComponent } from 'coralite'
 
 export default defineComponent({
-  client: {
-    imports: [
-      {
-        specifier: 'events',
-        namedExports: ['EventEmitter']
-      }
-    ],
-    script: async (context) => {
-      const output = context.helpers.refs('output')
+  script: async (context) => {
+    const { EventEmitter } = await import('events')
+    const output = context.helpers.refs('output')
+    const emitter = new EventEmitter()
 
-      const { EventEmitter } = context.imports
-      const emitter = new EventEmitter()
+    emitter.on('ping', () => {
+      output.textContent = 'pong'
+      output.classList.add('success')
+    })
 
-      emitter.on('ping', () => {
-        output.textContent = 'pong'
-        output.classList.add('success')
-      })
-
-      emitter.emit('ping')
-    }
+    emitter.emit('ping')
   }
 })
 </script>

@@ -6,14 +6,11 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client: {
-      components: ['imperative-tokens-child'],
-      script ({ helpers }) {
-        const rootEl = helpers.refs('root')
-        const childEl = document.createElement('imperative-tokens-child')
-        childEl.setAttribute('start', '5')
-        rootEl.replaceWith(childEl)
-      }
+    script ({ helpers }) {
+      const rootEl = helpers.refs('root')
+      const childEl = document.createElement('imperative-tokens-child')
+      childEl.setAttribute('start', '5')
+      rootEl.replaceWith(childEl)
     }
   })
 </script>

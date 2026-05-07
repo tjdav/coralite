@@ -1,3 +1,4 @@
+
 <template id="dynamic-grandchild">
   <div class="grandchild">Dynamic Grandchild <span ref="data-span">{{ data }}</span></div>
 </template>
@@ -6,12 +7,10 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    tokens: {
-      data: ''
-    },
-    client: {
-      script: ({ properties, helpers }) => {
-        // Just verify script executes
+    properties: async (context) => {
+      const properties = context.properties
+      return {
+        data: ''
       }
     }
   })

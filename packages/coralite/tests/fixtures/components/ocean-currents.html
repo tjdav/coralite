@@ -5,19 +5,17 @@
   </div>
 </template>
 <script type="module">
-    import { defineComponent } from 'coralite'
+  import { defineComponent } from 'coralite'
 
-    export default defineComponent({
-      client: {
-        setup: async () => {
-          // Simulate async
-          await new Promise(r => setTimeout(r, 10))
-          return {
-            direction: 'East Australian Current',
-            speed: 'Fast'
-          }
-        }
-
+  export default defineComponent({
+  
+    properties: async (context) => {
+      // Simulate async
+      await new Promise(r => setTimeout(r, 10))
+      return {
+        direction: 'East Australian Current',
+        speed: 'Fast'
       }
-    })
+    }
+  })
 </script>

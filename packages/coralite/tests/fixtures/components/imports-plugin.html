@@ -9,19 +9,17 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client: {
-      script: ({ helpers }) => {
-        if (helpers.testPluginImports) {
-          helpers.testPluginImports('plugin-results')
-        }
+    script: ({ helpers }) => {
+      if (helpers.testPluginImports) {
+        helpers.testPluginImports('plugin-results')
+      }
 
-        const btn = document.getElementById('plugin-remote-btn')
-        if (btn && helpers.triggerPluginConfetti) {
-          btn.addEventListener('click', () => {
-            helpers.triggerPluginConfetti()
-            btn.setAttribute('data-triggered', 'true')
-          })
-        }
+      const btn = document.getElementById('plugin-remote-btn')
+      if (btn && helpers.triggerPluginConfetti) {
+        btn.addEventListener('click', () => {
+          helpers.triggerPluginConfetti()
+          btn.setAttribute('data-triggered', 'true')
+        })
       }
     }
   })

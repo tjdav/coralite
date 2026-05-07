@@ -8,28 +8,20 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    tokens: {
-      generatedMessage (properties) {
-        return properties.initialMessage + ' world!'
+    properties: (context) => {
+      const msg = context.properties.msg
+      return {
+        initialMessage: 'Hello',
+        myShorthand: msg + '!',
+        generatedMessage: 'Hello world!'
       }
     },
-    client: {
-      setup () {
-        return {
-          initialMessage: 'Hello',
-          // Shorthand method here that needs to be normalized
-          myShorthand ({ msg }) {
-            return msg + '!'
-          }
-        }
-      },
-      script (context) {
-        const msg = context.properties.myShorthand({ msg: 'Hello from client' })
-        const refId = context.properties.ref_message
-        const el = document.querySelector(`[ref="${refId}"]`)
-        if (el) {
-          el.textContent = msg
-        }
+    script (context) {
+      const msg = context.properties.myShorthand({ msg: 'Hello from client' })
+      const refId = context.properties.ref_message
+      const el = document.querySelector(`[ref="${refId}"]`)
+      if (el) {
+        el.textContent = msg
       }
     }
   })
