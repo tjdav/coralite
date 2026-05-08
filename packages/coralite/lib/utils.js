@@ -417,6 +417,7 @@ export function findAndExtractScript (code) {
 
   /** @type {ScriptContent | null} */
   let result = null
+  const components = new Set()
 
   walkJS(ast, {
     CallExpression (node) {
@@ -428,207 +429,63 @@ export function findAndExtractScript (code) {
         const firstArg = node.arguments[0]
 
         if (firstArg && firstArg.type === 'ObjectExpression') {
-          const tokensProp = firstArg.properties.find(
+          const scriptProp = firstArg.properties.find(
             prop => prop.type === 'Property' &&
-              prop.key.type === 'Identifier' &&
-              prop.key.name === 'tokens'
+              prop.key && prop.key.type === 'Identifier' &&
+              prop.key.name === 'script'
           )
 
-          let tokens = []
-          if (tokensProp && tokensProp.type === 'Property' && tokensProp.value.type === 'ObjectExpression') {
-            tokens = tokensProp.value.properties.map(p => {
-              if (p.type === 'Property') {
-                if (p.key.type === 'Identifier') {
-                  return p.key.name
-                } else if (p.key.type === 'Literal') {
-                  return p.key.value
-                }
-              }
-              return undefined
-            }).filter(Boolean)
-          }
+          if (scriptProp && scriptProp.type === 'Property') {
+            const { value, method } = scriptProp
+            let startLine = value.loc.start.line - 1
+            let prefix = ''
+            let content = ''
 
-          const clientProp = firstArg.properties.find(
-            prop => prop.type === 'Property' &&
-              prop.key.type === 'Identifier' &&
-              prop.key.name === 'client'
-          )
+            // Get source slice
+            const source = code.slice(value.start, value.end)
 
-          if (clientProp && clientProp.type === 'Property' && clientProp.value.type === 'ObjectExpression') {
-            const scriptProp = clientProp.value.properties.find(
-              prop => prop.type === 'Property' &&
-                prop.key.type === 'Identifier' &&
-                prop.key.name === 'script'
-            )
-
-            const setupProp = clientProp.value.properties.find(
-              prop => prop.type === 'Property' &&
-                prop.key.type === 'Identifier' &&
-                prop.key.name === 'setup'
-            )
-
-            const importsProp = clientProp.value.properties.find(
-              prop => prop.type === 'Property' &&
-                prop.key.type === 'Identifier' &&
-                prop.key.name === 'imports'
-            )
-
-            /** @type {ScriptImport[] | undefined} */
-            let imports = undefined
-            if (importsProp && importsProp.type === 'Property' && importsProp.value.type === 'ArrayExpression') {
-              /** @type {ScriptImport[]} */
-              const initialImportsAcc = []
-
-              imports = importsProp.value.elements.reduce((acc, el) => {
-                /** @type {Record<string, any>} */
-                const imp = {}
-                let hasSpecifier = false
-
-                if (el.type === 'ObjectExpression') {
-                  el.properties.forEach(p => {
-                    if (p.type !== 'Property') {
-                      return
-                    }
-
-                    const pKey = p.key
-                    let rawKey = ''
-
-                    if (pKey.type === 'Identifier') {
-                      rawKey = pKey.name
-                    } else if (pKey.type === 'Literal') {
-                      // @ts-ignore
-                      rawKey = pKey.value
-                    }
-
-                    const key = String(rawKey)
-
-                    if (!key) {
-                      return
-                    }
-
-                    if (p.value.type === 'Literal') {
-                      imp[key] = p.value.value
-                    } else if (p.value.type === 'ArrayExpression') {
-                      const elements = p.value.elements
-                      imp[key] = elements.map(e => ((e && e.type === 'Literal') ? e.value : undefined))
-                    } else if (p.value.type === 'ObjectExpression') {
-                      imp[key] = {}
-                      p.value.properties.forEach(op => {
-                        if (op.type === 'Property') {
-                          const opKey = op.key
-                          let opKeyName
-
-                          if (opKey.type === 'Identifier') {
-                            opKeyName = opKey.name
-                          } else if (opKey.type === 'Literal') {
-                            opKeyName = opKey.value
-                          }
-
-                          if (typeof opKeyName === 'string' && op.value.type === 'Literal') {
-                            imp[key][opKeyName] = String(op.value.value)
-                          }
-                        }
-                      })
-                    }
-                    if (key === 'specifier') {
-                      hasSpecifier = true
-                    }
-                  })
-                }
-
-                if (hasSpecifier) {
-                  // @ts-ignore
-                  acc.push(imp)
-                }
-
-                return acc
-              }, initialImportsAcc)
-            }
-
-            let setupContent = undefined
-            if (setupProp && setupProp.type === 'Property') {
-              const { value, method } = setupProp
-              let prefix = ''
-
-              const source = code.slice(value.start, value.end)
-              if (value.type === 'ArrowFunctionExpression') {
-                setupContent = source
-              } else if (value.type === 'FunctionExpression') {
-                if (method) {
-                  const isAsync = value.async
-                  prefix += (isAsync ? 'async ' : '') + 'function setup'
-                  setupContent = prefix + source
-                } else {
-                  setupContent = source
-                }
-              }
-            }
-
-            if (scriptProp && scriptProp.type === 'Property') {
-              const { value, method } = scriptProp
-              let startLine = value.loc.start.line - 1
-              let prefix = ''
-              let content = ''
-
-              // Get source slice
-              const source = code.slice(value.start, value.end)
-
-              if (value.type === 'ArrowFunctionExpression') {
-                // Arrow function: `script: (ctx) => {}` or `script: async (ctx) => {}`
+            if (value.type === 'ArrowFunctionExpression') {
+              content = prefix + source
+              startLine = value.loc.start.line - 1
+            } else if (value.type === 'FunctionExpression') {
+              if (method) {
+                const isAsync = value.async
+                prefix += (isAsync ? 'async ' : '') + 'function script'
+                content = prefix + source
+                startLine = scriptProp.key.loc.start.line - 1
+              } else {
                 content = prefix + source
                 startLine = value.loc.start.line - 1
-              } else if (value.type === 'FunctionExpression') {
-                if (method) {
-                  // Reconstruct function declaration
-                  const isAsync = value.async
-                  prefix += (isAsync ? 'async ' : '') + 'function script'
-                  content = prefix + source
-                  startLine = scriptProp.key.loc.start.line - 1
-                } else {
-                  // Function expression: `script: function(ctx) {}` or `script: async function(ctx) {}`
-                  content = prefix + source
-                  startLine = value.loc.start.line - 1
-                }
-              }
-
-              result = {
-                content,
-                lineOffset: startLine
-              }
-              if (imports) {
-                result.imports = imports
-              }
-              if (setupContent) {
-                result.setupContent = setupContent
-              }
-            } else if (imports || setupContent) {
-              result = {
-                content: 'function(){}',
-                lineOffset: 0
-              }
-              if (imports) {
-                result.imports = imports
-              }
-              if (setupContent) {
-                result.setupContent = setupContent
               }
             }
 
-            if (result && tokens.length > 0) {
-              result.tokens = tokens
-            }
-          } else if (tokens.length > 0) {
-            // Handle case where tokens exist but client does not
             result = {
-              content: 'function(){}',
-              lineOffset: 0,
-              tokens
+              content,
+              lineOffset: startLine
             }
           }
+        }
+      } else if (
+        node.callee &&
+        node.callee.type === 'MemberExpression' &&
+        node.callee.object &&
+        node.callee.object.type === 'Identifier' &&
+        node.callee.object.name === 'document' &&
+        node.callee.property &&
+        node.callee.property.type === 'Identifier' &&
+        node.callee.property.name === 'createElement'
+      ) {
+        const arg = node.arguments[0]
+        if (arg && arg.type === 'Literal' && typeof arg.value === 'string') {
+          components.add(arg.value)
         }
       }
     }
   })
+
+  if (result && components.size > 0) {
+    result.components = Array.from(components)
+  }
 
   return result
 }
