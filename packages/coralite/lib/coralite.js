@@ -1087,8 +1087,10 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
               const slotName = slot.getAttribute('name') || 'default';
               let projectedNodes = this._lightDomSlots[slotName];
 
-              if (module.default.slots && typeof module.default.slots[slotName] === 'function') {
-                const computedResult = module.default.slots[slotName](projectedNodes || [], this._properties);
+              const slotFunction = module.default.defaultValues && module.default.defaultValues['slots_method_' + slotName];
+
+              if (slotFunction && typeof slotFunction === 'function') {
+                const computedResult = slotFunction(projectedNodes || [], this._properties);
                 if (typeof computedResult === 'string') {
                   const tempDiv = document.createElement('div');
                   tempDiv.innerHTML = computedResult;
@@ -1691,16 +1693,20 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
 
     if (scriptResult.__script__) {
       const extractedScript = findAndExtractScript(module.script)
+      let extractedComponents = []
       if (extractedScript) {
         scriptObj.content = extractedScript.content
         scriptObj.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
+        if (extractedScript.components) {
+          extractedComponents = extractedScript.components
+        }
       }
       scriptObj.properties = scriptResult.__script__.properties || {}
 
       const scriptComponents = scriptResult.__script__.components || []
       const declarativeComponents = (module.customElements || []).map(el => el.name)
 
-      nestedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents]))
+      nestedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents, ...extractedComponents]))
       scriptObj.components = nestedComponents
       defaultValues = scriptResult.__script__.defaultValues || {}
 
@@ -1878,10 +1884,14 @@ Coralite.prototype.createComponentElement = async function ({
 
     if (scriptResult.__script__ != null) {
       const extractedScript = findAndExtractScript(module.script)
+      let extractedComponents = []
 
       if (extractedScript) {
         scriptResult.__script__.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
         scriptResult.__script__.content = extractedScript.content
+        if (extractedScript.components) {
+          extractedComponents = extractedScript.components
+        }
       } else {
         // Fallback for when script extraction fails (shouldn't happen with valid defineComponent)
         // Ensure we don't crash
@@ -1922,7 +1932,7 @@ Coralite.prototype.createComponentElement = async function ({
       // Dynamically load any components dynamically inserted if they are explicitly mentioned
       const declarativeComponents = (module.customElements || []).map(el => el.name)
       const scriptComponents = scriptResult.__script__ ? (scriptResult.__script__.components || []) : []
-      const mergedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents]))
+      const mergedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents, ...extractedComponents]))
 
       if (scriptResult.__script__) {
         scriptResult.__script__.components = mergedComponents
