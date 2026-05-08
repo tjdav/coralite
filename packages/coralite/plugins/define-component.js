@@ -7,7 +7,7 @@ import {
 } from '#lib'
 
 /**
- * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleDefinition, CoraliteModuleDefinitions, CoraliteProperties, CoraliteModuleSlotFunction, CoraliteModuleTokenFunction } from '../types/index.js'
+ * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleProperties, CoraliteModuleDefinition, CoraliteModuleDefinitions, CoraliteProperties, CoraliteModuleSlotFunction, CoraliteModulePropertiesFunction } from '../types/index.js'
  * @import { ScriptImport } from '../types/script.js'
  */
 
@@ -81,27 +81,19 @@ export const defineComponent = definePlugin({
   name: 'defineComponent',
   /**
    * This function defines a component plugin for the Coralite framework.
-   * It is used to register components with their associated tokens and slots.
+   * It is used to register components with their associated properties and scripts.
    *
    * @param {Object} options - Configuration options for the component
-   * @param {Object.<string, (string | CoraliteModuleTokenFunction)>} [options.tokens] -
-   *   Computed tokens that will be available in the template. These can be
-   *   strings or functions that return properties.
-   * @param {Object.<string, CoraliteModuleSlotFunction>} [options.slots] -
-   *   Computed slots for the component. These are functions that define
-   *   how content should be rendered within the component.
-   * @param {Object} [options.client] - Client side configuration.
-   * @param {CoraliteModuleSetup} [options.client.setup] - Setup function executed during server-side rendering
-   * @param {CoraliteModuleScript} [options.client.script] - Script function that executes on the client-side
-   * @param {ScriptImport[]} [options.client.imports] - Component imports to bundle.
-   * @param {string[]} [options.client.components] - Imperative components array.
+   * @param {CoraliteModulePropertiesFunction} [options.properties] - Component properties setup function or object.
+   * @param {Object.<string, CoraliteModuleSlotFunction>} [options.slots] - Computed slots for the component.
+   * @param {CoraliteModuleScript} [options.script] - Script function that executes on the client-side.
    * @returns {Promise<CoraliteModuleDefinitions>} A promise resolving to the module properties
    *   associated with this component.
    */
   async method ({
-    tokens,
+    properties: componentProperties,
     slots,
-    client
+    script
   },
   context) {
     const {
@@ -110,45 +102,44 @@ export const defineComponent = definePlugin({
       element
     } = context
     /** @type {CoraliteModuleDefinitions} */
-    let results = { ...properties }
+    let results = Object.assign({}, properties)
 
     results.__script__ = {
       properties: {},
-      components: client?.components || [],
+      components: [],
       defaultValues: {},
       slots: slots || {}
     }
 
-    if (client && client.setup) {
-      const initialValues = await client.setup(results)
-
-      results = Object.assign(results, initialValues)
-      Object.assign(results.__script__.defaultValues, initialValues)
+    let initialValues = null
+    if (typeof componentProperties === 'function') {
+      initialValues = await componentProperties(context)
+    } else if (typeof componentProperties === 'object' && componentProperties !== null) {
+      initialValues = componentProperties
     }
 
-    if (typeof tokens === 'object' && tokens !== null) {
-      for (const key in tokens) {
-        if (Object.prototype.hasOwnProperty.call(tokens, key)) {
-          const token = tokens[key]
-          let result = token
+    if (initialValues) {
+      for (const key in initialValues) {
+        if (Object.prototype.hasOwnProperty.call(initialValues, key)) {
+          let result = initialValues[key]
+          results.__script__.defaultValues[key] = result
 
-          // check if the token is a function to compute its value
-          if (typeof token === 'function') {
-            results.__script__.defaultValues[key] = token
-            result = await token(results)
-          } else {
-            results.__script__.defaultValues[key] = token
+          if (typeof result === 'function') {
+            result = result(results)
+
+            if (result && typeof result?.then === 'function') {
+              result = await result
+            }
           }
 
           if (result) {
-            // process the string token using unified token processor
             results[key] = await processTokenValue(result, {
               ...context,
               properties: results,
               createComponentElement: this.createComponentElement.bind(this)
             })
           } else {
-            results[key] = `${result}`
+            results[key] = result
           }
         }
       }
@@ -159,6 +150,10 @@ export const defineComponent = definePlugin({
       for (const name in slots) {
         if (Object.prototype.hasOwnProperty.call(slots, name)) {
           const computedSlot = slots[name]
+
+          const methodKey = `slots_method_${name}`
+          results.__script__.defaultValues[methodKey] = computedSlot
+
           // slot content to compute
           const slotContent = []
           // new slot elements
@@ -235,14 +230,12 @@ export const defineComponent = definePlugin({
         }
       }
     }
-    const hasScript = client && typeof client.script === 'function'
-    const hasSetup = client && typeof client.setup === 'function'
-    const hasComponents = client && client.components && client.components.length > 0
-    const hasTokens = typeof tokens === 'object' && tokens !== null && Object.keys(tokens).length > 0
+    const hasScript = typeof script === 'function'
+    const hasProperties = initialValues && Object.keys(initialValues).length > 0
 
-    if (hasScript || hasSetup || hasComponents || hasTokens) {
+    if (hasScript || hasProperties) {
       if (hasScript) {
-        const scriptTextContent = client.script.toString().trim()
+        const scriptTextContent = script.toString().trim()
 
         // include properties used in script
         /** @type {Object.<string, CoraliteModuleDefinition>} */
@@ -253,15 +246,13 @@ export const defineComponent = definePlugin({
           }
 
           if (scriptTextContent.includes(key)) {
-            args[key] = results[key]
+            args[key] = results.__script__.defaultValues[key] !== undefined
+              ? results.__script__.defaultValues[key]
+              : results[key]
           }
         }
 
         results.__script__.properties = args
-
-        if (client.imports) {
-          results.__script__.imports = client.imports
-        }
       }
     } else {
       // remove custom element parent script
