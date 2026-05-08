@@ -49,7 +49,7 @@ describe('Module Resolution', () => {
         import dummy from 'dummy-pkg'
 
         export default defineComponent({
-          properties: () => ({ dummy })
+          properties: () => ({ message: dummy })
         })
       </script>
     `)

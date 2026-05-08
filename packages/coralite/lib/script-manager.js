@@ -182,10 +182,12 @@ ScriptManager.prototype.registerComponent = function ({
  */
 ScriptManager.prototype.generateInstanceWrapper = function (id, instanceContext) {
   const properties = instanceContext.properties ? serialize(instanceContext.properties) : '{}'
+  const page = instanceContext.page ? serialize(instanceContext.page) : '{}'
 
   // Generate wrapper that calls shared functions with instance context
   return `await coraliteComponentFunctions["${id}"]({
       properties: ${properties},
+      page: ${page},
       helpers,
       instanceId: '${instanceContext.instanceId}'
     });`

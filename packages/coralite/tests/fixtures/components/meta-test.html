@@ -1,3 +1,17 @@
 <template id="author-name">
-    <div class="meta-info">{{ meta_author }} - {{ meta_published_time }} - {{ meta_modified-time }}</div>
+    <div class="meta-info">{{ author }} - {{ publishedTime }} - {{ modifiedTime }}</div>
 </template>
+
+<script type="module">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  properties: (context) => {
+    return {
+      author: context.page.meta.author,
+      publishedTime: context.page.meta.published_time,
+      modifiedTime: context.page.meta['modified-time']
+    }
+  }
+})
+</script>

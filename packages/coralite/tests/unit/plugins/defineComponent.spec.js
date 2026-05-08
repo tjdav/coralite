@@ -736,7 +736,7 @@ describe('defineComponent', () => {
       const result = await defineComponent.method.call(mockContext, {
         properties: () => ({
           title: 'title',
-          funcToken: (() => 'val')()
+          funcToken: () => 'val'
         })
       }, {
         properties: mockProperties,
@@ -788,7 +788,7 @@ describe('defineComponent', () => {
       const options = {
         properties: () => ({
           throwing: (() => {
-            throw new Error('Async error')
+            throw new Error('Sync error')
           })()
         })
       }

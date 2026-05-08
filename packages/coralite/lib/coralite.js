@@ -33,7 +33,9 @@ import { createContext } from 'node:vm'
  *  CoraliteProperties,
  *  InstanceContext,
  *  CoraliteConfig,
- *  CoraliteFilePath} from '../types/index.js'
+ *  CoraliteFilePath,
+ *  CoralitePage
+ * } from '../types/index.js'
  */
 
 /**
@@ -375,14 +377,22 @@ Coralite.prototype.initialise = async function () {
     // Convert relative file path to a URL pathname format
     const urlPathname = pathToFileURL(join('/', relative(rootPath, data.path.pathname))).pathname
 
+    const page = {
+      url: {
+        pathname: urlPathname,
+        dirname: pathToFileURL(dirname(urlPathname)).pathname
+      },
+      file: {
+        pathname: data.path.pathname,
+        dirname: data.path.dirname,
+        filename: data.path.filename
+      },
+      meta: {}
+    }
+
     // define a set of context properties for component rendering
-    /** @type {CoraliteProperties} */
+    /** @type {any} */
     const properties = {
-      page_url_pathname: urlPathname,
-      page_url_dirname: pathToFileURL(dirname(urlPathname)).pathname,
-      page_pathname: data.path.pathname,
-      page_dirname: data.path.dirname,
-      page_filename: data.path.filename,
       // DEPRECATED: provide backwards compatibility for legacy plugins
       $urlPathname: urlPathname,
       ...data.properties
@@ -391,6 +401,7 @@ Coralite.prototype.initialise = async function () {
     const mappedContext = await this._triggerPluginHook('onPageSet', {
       elements,
       properties,
+      page,
       data
     })
 
@@ -398,6 +409,7 @@ Coralite.prototype.initialise = async function () {
       type: 'page',
       value: {
         properties: mappedContext.properties,
+        page: mappedContext.page,
         path: mappedContext.data.path,
         root: mappedContext.elements.root,
         customElements: mappedContext.elements.customElements,
@@ -423,6 +435,7 @@ Coralite.prototype.initialise = async function () {
 
     const mappedContext = await this._triggerPluginHook('onPageUpdate', {
       elements: newValue.result,
+      page: newValue.result.page,
       newValue,
       oldValue
     })
@@ -635,6 +648,7 @@ Coralite.prototype._generatePages = async function* (path, properties = {}) {
       const mappedRenderContext = await this._triggerPluginHook('onBeforePageRender', {
         component,
         properties,
+        page: originalDocument.page,
         renderContext
       })
 
@@ -758,6 +772,7 @@ Coralite.prototype._generatePages = async function* (path, properties = {}) {
             instances[script.id] = {
               instanceId: script.id,
               componentId: script.componentId,
+              page: script.page,
               properties: script.properties
             }
           }
@@ -948,6 +963,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 instanceId: this._instanceId,
                 componentId: this.componentId,
                 properties: this._properties,
+                page: module.default.page || {},
                 root: this, 
                 helpers: {},
                 signal: this._abortController.signal
@@ -1198,6 +1214,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
       instanceId: '${instance.instanceId}',
       componentId: '${instance.componentId}',
       properties: ${JSON.stringify(instance.properties || {})},
+      page: ${JSON.stringify(instance.page || {})},
       component: {},
       signal: globalAbortController.signal
     };
@@ -1665,6 +1682,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       scriptResult = await this._evaluate({
         module,
         properties,
+        page: parentComponent.page,
         component: parentComponent,
         contextId: `dependent-${id}`,
         renderContext
@@ -1877,6 +1895,7 @@ Coralite.prototype.createComponentElement = async function ({
       module,
       element,
       properties,
+      page: component.page,
       component,
       contextId,
       renderContext
@@ -1982,6 +2001,7 @@ Coralite.prototype.createComponentElement = async function ({
         id: contextId,
         componentId: module.id,
         component,
+        page: component.page,
         properties: scriptResult.__script__.properties
       })
 
@@ -2338,6 +2358,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
  * @param {Object} data
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} data.properties - Replacement tokens for the component
+ * @param {CoralitePage} data.page - The global page object
  * @param {CoraliteElement} data.element - The Coralite module to parse
  * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
@@ -2348,6 +2369,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
 Coralite.prototype._evaluateDevelopment = async function ({
   module,
   properties,
+  page,
   element,
   component,
   contextId,
@@ -2374,6 +2396,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
     ...cachedBoundPlugins,
     component,
     properties,
+    page,
     element,
     module,
     id: contextId,
@@ -2436,6 +2459,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
  * @param {Object} data
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} data.properties - Replacement tokens for the component
+ * @param {CoralitePage} data.page - The global page object
  * @param {CoraliteElement} data.element - The Coralite module to parse
  * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
@@ -2446,6 +2470,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
 Coralite.prototype._evaluateProduction = async function ({
   module,
   properties,
+  page,
   element,
   component,
   contextId,
@@ -2456,6 +2481,7 @@ Coralite.prototype._evaluateProduction = async function ({
     ...this._source.context,
     component,
     properties,
+    page,
     element,
     module,
     id: contextId,
@@ -2563,6 +2589,7 @@ Coralite.prototype._evaluateProduction = async function ({
  * @param {Object} data -
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} data.properties - Replacement tokens for the component
+ * @param {CoralitePage} data.page - The global page object
  * @param {CoraliteElement} data.element - The Coralite module to parse
  * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id

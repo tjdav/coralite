@@ -1,7 +1,7 @@
 
 /**
  * @import { CoraliteModuleDefinition, CoraliteModuleSlotFunction } from './module.js'
- * @import { CoralitePath, CoraliteFilePath } from './core.js'
+ * @import { CoralitePath, CoraliteFilePath, CoralitePage } from './core.js'
  * @import { CoraliteComponent } from './component.js'
  */
 
@@ -35,6 +35,7 @@
  * @property {string} [componentId] - component identifier for shared functions
  * @property {CoralitePath & CoraliteFilePath} [path] - Component AST
  * @property {Object.<string, CoraliteModuleDefinition>} [properties] - Instance properties
+ * @property {CoralitePage} [page] - The global page object
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {Object.<string, any>} [helpers] - Plugin helpers available to the script
  * @property {AbortSignal} [signal] - Lifecycle abort signal for unmount events (null for declarative components).
@@ -73,6 +74,7 @@
  * @property {string} instanceId - Unique instance identifier
  * @property {string} componentId - component identifier
  * @property {Object.<string, CoraliteModuleDefinition>} properties - Instance properties
+ * @property {CoralitePage} [page] - The global page object
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {CoraliteComponent} [component] - Component AST
  * @property {Object.<string, any>} [config] - Plugin configuration

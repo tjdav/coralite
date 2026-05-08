@@ -2,7 +2,7 @@
 /**
  * @import { CoraliteElement, CoraliteComponentRoot, CoraliteTextNode } from './dom.js'
  * @import { CoraliteModuleDefinitions } from './module.js'
- * @import { CoralitePath, CoraliteFilePath } from './core.js'
+ * @import { CoralitePath, CoraliteFilePath, CoralitePage } from './core.js'
  */
 
 /**
@@ -15,6 +15,7 @@
  * @property {string[]} [styles] - Collected styles during build process
  * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
  * @property {CoraliteModuleDefinitions} [properties] - The initial definitions for the component.
+ * @property {CoralitePage} [page] - The global page object.
  * @property {CoraliteElement[]} [tempElements] - An array of temporary elements created during the parsing process.
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
  */
@@ -22,6 +23,7 @@
 /**
  * @typedef {Object} CoraliteComponentResult
  * @property {CoraliteModuleDefinitions} properties - The module definitions extracted from the component
+ * @property {CoralitePage} [page] - The global page object.
  * @property {CoraliteElement[]} tempElements - Temporary elements created during processing
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
  * @property {string[]} [styles] - Collected styles during build process

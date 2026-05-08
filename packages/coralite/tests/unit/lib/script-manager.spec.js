@@ -468,6 +468,21 @@ describe('ScriptManager', () => {
       assert.ok(result.includes('properties: {}'))
       assert.ok(result.includes('instanceId: \'undefined\''))
     })
+
+    it('should handle instance context with page object', () => {
+      const instanceContext = {
+        instanceId: 'inst-6',
+        page: {
+          url: { pathname: '/example' }
+        }
+      }
+
+      const result = sm.generateInstanceWrapper('component-6', instanceContext)
+
+      assert.ok(result.includes('page:'))
+      assert.ok(result.includes('pathname'))
+      assert.ok(result.includes('example'))
+    })
   })
 
 

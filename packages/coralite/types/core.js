@@ -67,18 +67,21 @@
  */
 
 /**
- * Represents URL and file path values available during component rendering.
- * @typedef {Object} CoralitePathValues
- * @property {string} page_url_pathname - The URL pathname
- * @property {string} page_url_dirname - The directory name of the URL
- * @property {string} page_pathname - The file path name
- * @property {string} page_dirname - The directory name of the file
- * @property {string} page_filename - The filename
+ * Represents structured page URL, file, and meta information.
+ * @typedef {Object} CoralitePage
+ * @property {Object} url - URL path info.
+ * @property {string} url.pathname - The URL pathname.
+ * @property {string} url.dirname - The directory name of the URL.
+ * @property {Object} file - Physical file path info.
+ * @property {string} file.pathname - The file path name.
+ * @property {string} file.dirname - The directory name of the file.
+ * @property {string} file.filename - The filename.
+ * @property {Object.<string, any>} meta - Extracted metadata from the page.
  */
 
 /**
  * Union type representing values available for token replacement in components.
- * @typedef {CoralitePathValues | Object.<string, string>} CoraliteProperties
+ * @typedef {Object.<string, string> & { __script__?: import('./script.js').ScriptContent, $urlPathname?: string }} CoraliteProperties
  */
 
 export default {}

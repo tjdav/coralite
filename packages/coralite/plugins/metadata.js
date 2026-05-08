@@ -4,6 +4,7 @@ import { definePlugin } from '#lib'
  * @import { ParseHTMLResult } from '../types/index.js'
  * @import { CoraliteCollectionItem } from '../types/collection.js'
  * @import { Coralite } from '../lib/index.js'
+ * @import { CoralitePage } from '../types/core.js'
  */
 
 /**
@@ -13,14 +14,15 @@ import { definePlugin } from '#lib'
  *
  * @param {Object} context -
  * @param {ParseHTMLResult} context.elements - The parsed HTML elements including root
+ * @param {CoralitePage} context.page - The global page object to store the extracted metadata
  * @param {Object.<string, any>} context.properties - The global properties object to store the extracted metadata
  * @param {CoraliteCollectionItem} context.data - The file data currently being evaluated
  * @param {Coralite} context.coraliteContext - The Coralite instance context for component creation
- * @returns {Promise<{properties: Object.<string, any>}>}
+ * @returns {Promise<void>}
  */
 async function extractMetadata (context) {
-  const { elements, properties, data, coraliteContext } = context
-  const newProperties = { page_lang: '' }
+  const { elements, properties, page, data, coraliteContext } = context
+  page.meta.lang = ''
 
   // loop through all children of the root element to process metadata in <head> tags.
   for (let i = 0; i < elements.root.children.length; i++) {
@@ -28,7 +30,7 @@ async function extractMetadata (context) {
 
     // traverse html children to find the head element
     if (rootNode.type === 'tag' && rootNode.name === 'html') {
-      newProperties.page_lang = rootNode.attribs.lang
+      page.meta.lang = rootNode.attribs.lang || ''
 
       for (let i = 0; i < rootNode.children.length; i++) {
         const node = rootNode.children[i]
@@ -45,9 +47,7 @@ async function extractMetadata (context) {
                 && element.attribs.name
                 && element.attribs.content
               ) {
-                const metaName = 'meta_' + element.attribs.name
-
-                newProperties[metaName] = element.attribs.content
+                page.meta[element.attribs.name] = element.attribs.content
               } else if (element.slots) {
                 // process component slots by creating a component dynamically.
                 const componentElement = await coraliteContext.createComponentElement({
@@ -69,59 +69,57 @@ async function extractMetadata (context) {
                     const element = componentElement.children[i]
 
                     // for each child element in the component's returned HTML,
-                    // check if it is a meta tag and store its metadata with a '$' prefix.
+                    // check if it is a meta tag and store its metadata.
                     if (element.type === 'tag'
                       && element.name === 'meta'
                       && element.attribs.name
                       && element.attribs.content
                     ) {
-                      const metaName = 'meta_' + element.attribs.name
-
-                      newProperties[metaName] = element.attribs.content
+                      page.meta[element.attribs.name] = element.attribs.content
                     } else if (element.type === 'tag' && element.name === 'title' && element.children.length && element.children[0].type === 'text') {
-                      newProperties.page_title = element.children[0].data
+                      page.meta.title = element.children[0].data
                     }
                   }
                 }
               } else if (element.name === 'title' && element.children.length && element.children[0].type === 'text') {
-                newProperties.page_title = element.children[0].data
+                page.meta.title = element.children[0].data
               }
             }
           }
 
-          return { properties: newProperties }
+          return
         }
       }
     }
   }
 
-  return { properties: newProperties }
+  return
 }
 
 export const metadataPlugin = definePlugin({
   name: 'metadata',
-  async onPageSet ({ elements, properties, data }) {
-    return extractMetadata({
+  async onPageSet ({ elements, properties, page, data }) {
+    await extractMetadata({
       elements,
       properties,
+      page,
       data,
       coraliteContext: this
     })
   },
-  async onPageUpdate ({ elements, newValue }) {
-    const patch = await extractMetadata({
+  async onPageUpdate ({ elements, page, newValue }) {
+    await extractMetadata({
       elements,
       properties: newValue.result.properties,
+      page,
       data: newValue,
       coraliteContext: this
     })
 
-    // In onPageUpdate, we need to apply the patch to newValue.result.values
-    // because that's the property expected to be updated for page rendering
     return {
       newValue: {
         result: {
-          properties: patch.properties
+          page
         }
       }
     }

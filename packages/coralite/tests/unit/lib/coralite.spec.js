@@ -387,8 +387,8 @@ describe('Bug Fix: Preserving recursive tokens', () => {
 <script type="module">
 import { defineComponent } from 'coralite/plugins'
 export default defineComponent({
-  properties: (properties) => ({
-    checkValue: properties.special_value || 'missing'
+  properties: (context) => ({
+    checkValue: context.properties.special_value || 'missing'
   })
 })
 </script>

@@ -12,10 +12,10 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 3)
+    assert.strictEqual(result.lineOffset, 2)
     assert.strictEqual(result.content, `function script(context) {
-      console.log('shorthand')
-    }`)
+    console.log('shorthand')
+  }`)
   })
 
   test('async shorthand method', () => {
@@ -26,10 +26,10 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 3)
+    assert.strictEqual(result.lineOffset, 2)
     assert.strictEqual(result.content, `async function script(context) {
-      console.log('async shorthand')
-    }`)
+    console.log('async shorthand')
+  }`)
   })
 
   test('arrow function', () => {
@@ -40,10 +40,10 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 3)
+    assert.strictEqual(result.lineOffset, 2)
     assert.strictEqual(result.content, `(context) => {
-      console.log('arrow')
-    }`)
+    console.log('arrow')
+  }`)
   })
 
   test('async arrow function', () => {
@@ -54,10 +54,10 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 3)
+    assert.strictEqual(result.lineOffset, 2)
     assert.strictEqual(result.content, `async (context) => {
-      console.log('async arrow')
-    }`)
+    console.log('async arrow')
+  }`)
   })
 
   test('function expression', () => {
@@ -68,10 +68,10 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 3)
+    assert.strictEqual(result.lineOffset, 2)
     assert.strictEqual(result.content, `function(context) {
-      console.log('function expression')
-    }`)
+    console.log('function expression')
+  }`)
   })
 
   test('async function expression', () => {
@@ -82,10 +82,10 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 3)
+    assert.strictEqual(result.lineOffset, 2)
     assert.strictEqual(result.content, `async function(context) {
-      console.log('async function expression')
-    }`)
+    console.log('async function expression')
+  }`)
   })
 
   test('multi-line definition', () => {
@@ -97,10 +97,10 @@ defineComponent({
     }
 })`
     const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 4)
+    assert.strictEqual(result.lineOffset, 3)
     assert.strictEqual(result.content, `(context) => {
-        console.log('multi-line')
-      }`)
+      console.log('multi-line')
+    }`)
   })
 
   test('with comments', () => {
@@ -114,9 +114,9 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.strictEqual(result.lineOffset, 6)
+    assert.strictEqual(result.lineOffset, 5)
     assert.strictEqual(result.content, `function script(context) {
-      console.log('comments')
-    }`)
+    console.log('comments')
+  }`)
   })
 })

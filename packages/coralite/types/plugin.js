@@ -1,8 +1,8 @@
 
 /**
  * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute } from './component.js'
- * @import { HTMLData, CoraliteFilePath } from './core.js'
- * @import { CoraliteModule } from './module.js'
+ * @import { HTMLData, CoraliteFilePath, CoralitePage } from './core.js'
+ * @import { CoraliteModule, CoraliteModuleDefinition } from './module.js'
  * @import { CoraliteElement, CoraliteAnyNode } from './dom.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
@@ -12,6 +12,7 @@
 /**
  * @typedef {Object} CoralitePluginContext
  * @property {Object.<string, string|string[]|CoraliteAnyNode[]>} properties - Key-value pairs of data relevant to plugin execution
+ * @property {CoralitePage} page - The global page object
  * @property {CoraliteComponent} component - The HTML file data being processed by the plugin
  * @property {CoraliteModule} module - The module context the plugin is operating within (contains template/script)
  * @property {CoraliteElement} element - The specific HTML element the plugin is applied to (if applicable)
@@ -34,6 +35,7 @@
  * @param {Object} param
  * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
  * @param {CoraliteFilePath & Object.<string, any>} param.properties - Values associated with the page path
+ * @param {CoralitePage} param.page - The global page object
  * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
@@ -44,6 +46,7 @@
  * @callback CoralitePluginPageUpdateCallback - Async callback triggered when a page is updated. Called with elements, new and old properties.
  * @param {Object} param
  * @param {ParseHTMLResult} param.elements - Updated HTML elements from the page
+ * @param {CoralitePage} param.page - The global page object
  * @param {CoraliteCollectionItem} param.newValue - The updated data item
  * @param {CoraliteCollectionItem} param.oldValue - The previous data item before update
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
@@ -71,7 +74,8 @@
  * @callback CoralitePluginBeforePageRenderCallback - Async callback triggered before a page has been rendered.
  * @param {Object} context
  * @param {CoraliteComponent} context.component - The cloned HTML component data being processed
- * @param {Object} context.properties - Properties associated with the component
+ * @param {Object.<string, CoraliteModuleDefinition>} context.properties - Properties associated with the component
+ * @param {CoralitePage} context.page - The global page object
  * @param {Object} context.renderContext - Render context containing state for the build
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
