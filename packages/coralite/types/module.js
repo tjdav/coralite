@@ -4,6 +4,7 @@
  * @import { CoraliteFilePath, CoraliteProperties } from './core.js'
  * @import { CoraliteComponentValues, CoraliteRef } from './component.js'
  * @import { ScriptContent, CoraliteScriptContent } from './script.js'
+ * @import { CoralitePluginContext } from './plugin.js'
  */
 
 /**
@@ -46,9 +47,13 @@
  */
 
 /**
- * @callback CoraliteModuleSetup
- * @param {CoraliteModuleDefinitions} context
- * @returns {any}
+ * @callback CoraliteModulePropertiesFunction
+ * @param {CoralitePluginContext} context
+ * @returns {CoraliteModuleDefinitions | Promise<CoraliteModuleDefinitions> | CoraliteModulePropertiesFunction | Promise<CoraliteModulePropertiesFunction>}
+ */
+
+/**
+ * @typedef {CoraliteModuleDefinitions | CoraliteModulePropertiesFunction} CoraliteModuleProperties
  */
 
 /**
@@ -58,10 +63,5 @@
  * @returns {CoraliteAnyNode[] | string | void} - The processed nodes, an HTML string, or void to use original content
  */
 
-/**
- * @callback CoraliteModuleTokenFunction
- * @param {CoraliteModuleDefinitions} properties - The current component values
- * @returns {any | Promise<any>} - The computed value for the token
- */
 
 export default {}

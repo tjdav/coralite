@@ -10,7 +10,7 @@
  * @import { CoraliteComponent, CoraliteResult, ParseHTMLResult, CoraliteToken, CoraliteAttributeToken, CoraliteTextNodeToken, CoraliteRef, CoraliteComponentValues, Attribute, CoraliteComponentResult } from './component.js'
  *
  * MODULES
- * @import { CoraliteModule, CoraliteModuleDefinitions, CoraliteModuleDefinition, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleSetup, CoraliteModuleSlotFunction, CoraliteModuleTokenFunction } from './module.js'
+ * @import { CoraliteModule, CoraliteModuleDefinitions, CoraliteModuleDefinition, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleProperties, CoraliteModulePropertiesFunction, CoraliteModuleSlotFunction } from './module.js'
  *
  * COLLECTIONS
  * @import { CoraliteCollectionItem, CoraliteCollectionCallbackResult, CoraliteCollectionEventResult, CoraliteCollectionEventSet, CoraliteCollectionEventDelete, CoraliteCollectionEventUpdate } from './collection.js'
@@ -72,9 +72,9 @@
  * @typedef {import('./module.js').CoraliteModuleDefinition} CoraliteModuleDefinition
  * @typedef {import('./module.js').CoraliteModuleSlotElement} CoraliteModuleSlotElement
  * @typedef {import('./module.js').CoraliteModuleScript} CoraliteModuleScript
- * @typedef {import('./module.js').CoraliteModuleSetup} CoraliteModuleSetup
+ * @typedef {import('./module.js').CoraliteModuleProperties} CoraliteModuleProperties
+ * @typedef {import('./module.js').CoraliteModulePropertiesFunction} CoraliteModulePropertiesFunction
  * @typedef {import('./module.js').CoraliteModuleSlotFunction} CoraliteModuleSlotFunction
- * @typedef {import('./module.js').CoraliteModuleTokenFunction} CoraliteModuleTokenFunction
  */
 
 /**
