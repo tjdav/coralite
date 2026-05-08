@@ -28,13 +28,59 @@ Dynamic components are authored by appending a `<script type="module">` below th
 The state layer of a component is handled entirely by the root `properties` function. It executes strictly on the server during the build.
 * **`properties: async (context)`**: An async function that replaces Top-Level Await (TLA). Used for data fetching, reading files, and computing default state. The returned object is serialized into the HTML and becomes the component's initial state.
 * **Bridging the Serialization Gap:** Because top-level module imports (e.g., `import fs from 'node:fs'`) cannot be used inside the client `script`, the `properties` block is the correct mechanism to utilize those server-side imports, fetch data, and pass the resulting values to the client.
-* **The `context.page` Environment**: Routing and metadata are segregated from the component's state and injected via `context.page`:
-  * `page.url`: Contains `pathname` and `dirname` representing the web-facing route.
-  * `page.file`: Contains `pathname`, `dirname`, and `filename` representing the physical files on disk.
-  * `page.meta`: Contains SEO data extracted by the Metadata plugin (e.g., `lang`, `title`, `viewport`).
-* **Data Passing**: Parent-to-child data is passed via **HTML attributes**, which the framework automatically maps into `context.properties`. Do not pass complex objects as stringified JSON attributes; instead, pass primitives (IDs) and fetch the complex data inside the `properties` block.
+* **The `context.page` Environment**: Routing and metadata are segregated from the component's state and injected via `context.page` (accessible in both `properties` and `script`):
+* `page.url`: Contains `pathname` and `dirname` representing the web-facing route.
+* `page.file`: Contains `pathname`, `dirname`, and `filename` representing the physical files on disk.
+* `page.meta`: Contains SEO data extracted by the Metadata plugin (e.g., `lang`, `title`, `viewport`).
+* **The "Dumb Template, Smart Properties" Paradigm:** HTML templates in Coralite are strictly declarative and "dumb". They do not support JavaScript logic or dot-notation (e.g., `{{ page.url.pathname }}`), nor does the framework magically inject environment variables into the template namespace. The template can *only* render flat keys explicitly returned by your `properties` function. If you need to render environment data like the current URL, you must explicitly map it to the component's state:
+**Example: Mapping Environment to Template State**
+```javascript
+// Smart Properties: The server logic controls what the template sees
+properties: async (context) => {
+  return {
+    title: 'My Component',
+    // Explicitly mapping nested environment data to a flat state key
+    currentPath: context.page.url.pathname 
+  }
+}
 
-### 3.2 Client-Side Execution (`script`)
+```
+
+```html
+<template id="my-component">
+  <h1>{{ title }}</h1>
+  <p>You are here: {{ currentPath }}</p>
+</template>
+
+```
+### 3.2 Data Passing & Complex State Management
+
+Because Coralite enforces a strict serialization boundary between the server and the client, passing complex objects (like nested JSON) directly through declarative HTML attributes is highly discouraged. Instead, Coralite provides several architectural patterns for managing complex data depending on the component's role:
+
+**1. The Primitive Fetch (Independent Components)**
+When a child component is responsible for its own business logic, pass simple primitives (like a primary key, ID, or slug) via HTML attributes. The framework automatically maps these to `context.properties`. The child component then uses its server-side `properties` block to fetch the full, complex object directly from the database or API.
+
+* *Best for:* Highly decoupled components (e.g., `<user-profile user-id="123">`).
+
+**2. Structural Projection via Slots (Presentational Components)**
+If a child component only needs complex data to display it, **do not pass the data at all.** Instead, have the parent component fetch the data, render it into HTML elements using its template, and pass those elements into the child's `<slot>`. The child can then utilize the `slots` API to wrap, style, or logically transform the projected DOM nodes without ever needing to know the underlying JSON structure.
+
+* *Best for:* Reusable UI shells (e.g., `<data-table>`, `<card-layout>`).
+
+**3. Server-Side Modules & Build State (Global SSR Data)**
+For complex data that many components need during the build step (like a global configuration, navigation trees, or localization dictionaries), avoid prop-drilling entirely. Because the `properties` block runs in a native Node.js environment, you can safely `import` a shared server-side caching module directly into the component. Alternatively, you can author a Coralite Plugin to fetch this data once during the `onBeforeBuild` hook and safely inject it into the global pipeline.
+
+* *Best for:* App-wide static data that doesn't change per component instance.
+
+**4. Client-Side Stores via Plugin Context (Interactive Global State)**
+If complex data needs to be shared and mutated dynamically in the browser across multiple imperative Web Components, do not try to sync it via DOM attributes. Instead, author a Coralite Plugin using the `client.context` API to inject a lightweight pub/sub system, signal, or state store directly onto the runtime `context`. Any component can then read or write to this shared memory via `context.myStore` inside their `script` block.
+
+* *Best for:* Complex client-side features like shopping carts, multi-step forms, or live dashboards.
+
+**5. Imperative Property Assignment (Client-Side Only)**
+When a parent component imperatively creates a child component via `document.createElement('my-child')` inside its `script` block, it has direct access to the child's DOM node. While primitive reactivity should be handled via `setAttribute`, the parent can attach complex, non-serializable JavaScript objects (like functions, class instances, or massive datasets) directly to the child node as standard JavaScript properties (e.g., `childNode.massiveDataset = data`) before appending it to the DOM.
+
+### 3.3 Client-Side Execution (`script`)
 The behavior layer is handled by the root `script` function, which is serialized and executed in the browser.
 * **`script: async (context)`**: Runs natively in the browser when the component mounts. 
 * **The Runtime `context` Object**: 
@@ -45,7 +91,7 @@ The behavior layer is handled by the root `script` function, which is serialized
   * *Flattened Plugins*: Plugin utilities are spread directly onto the context (e.g., `context.refs('myBtn')` instead of nesting in helpers).
 * **Reactivity**: Once an imperative Web Component is mounted, updating its attributes (via `setAttribute()`) triggers Coralite's internal `MutationObserver`. This automatically updates `context.properties` and re-renders the DOM.
 
-### 3.3 Zero-Config Dependencies & The Serialization Boundary
+### 3.4 Zero-Config Dependencies & The Serialization Boundary
 Coralite eliminates manual dependency arrays through advanced AST static analysis, but developers must respect the strict boundary between the server environment and the browser.
 
 * **The Serialization Boundary**: The `<script type="module">` tag itself runs in Node.js. You can safely use top-level imports here (e.g., `import { format } from 'date-fns'`). **However, you cannot use these top-level imports inside the `script` block.** The `script` block is stringified and sent to the browser, losing access to the server's module scope.
@@ -54,7 +100,7 @@ Coralite eliminates manual dependency arrays through advanced AST static analysi
 * **Client-Side JavaScript Imports**: To import JavaScript specifically for the browser, use standard dynamic imports (`const { debounce } = await import('lodash');`) directly *inside* the `script` block. These are extracted during the build and resolved natively via Esbuild's virtual module pipeline.
 * **DOM Dependencies**: When imperatively creating child components, write `document.createElement('child-name')`. The AST parser hunts for `createElement` calls with hyphenated string literals and automatically bundles the necessary custom element. Note: The tag name *must* be a string literal, not a dynamic variable.
 
-### 3.4 Imperative Web Components
+### 3.5 Imperative Web Components
 To use a true Web Component with a client-side lifecycle (light DOM manipulation, `MutationObserver`), it cannot be placed statically in your HTML file. A parent component must imperatively instantiate the child component via JavaScript and append it to the DOM.
 
 **Example Pattern:**
