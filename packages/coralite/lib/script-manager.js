@@ -117,7 +117,6 @@ ScriptManager.prototype.registerComponent = function ({
   if (!this.sharedFunctions[id]) {
     this.sharedFunctions[id] = {
       id,
-      imports: [],
       components: [],
       filePath: `/component-${id}.js`
     }
@@ -169,10 +168,6 @@ ScriptManager.prototype.registerComponent = function ({
   }
 
   if (script) {
-    if (script.imports?.length) {
-      target.imports = mergeUniqueObjects(target.imports, script.imports)
-    }
-
     if (script.components?.length) {
       target.components = mergeUniqueObjects(target.components, script.components)
     }
@@ -192,7 +187,6 @@ ScriptManager.prototype.generateInstanceWrapper = function (id, instanceContext)
   return `await coraliteComponentFunctions["${id}"]({
       properties: ${properties},
       helpers,
-      imports,
       instanceId: '${instanceContext.instanceId}'
     });`
 }
@@ -319,10 +313,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     if (this.sharedFunctions[componentId]) {
       const safeId = componentId.replace(regex, '_')
       entryCodeParts.push(`import component_${safeId} from "${namespace}${componentId}";\n`)
-
-      if (this.sharedFunctions[componentId].imports && this.sharedFunctions[componentId].imports.length > 0) {
-        entryCodeParts.push(`import componentImports_${safeId} from "${componentImportsNamespace}${componentId}";\n`)
-      }
     }
   }
 
@@ -335,13 +325,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }
   entryCodeParts.push('};\n')
 
-  entryCodeParts.push('const coraliteComponentImports = {\n')
-  for (const componentId of processedComponentKeys) {
-    if (this.sharedFunctions[componentId] && this.sharedFunctions[componentId].imports && this.sharedFunctions[componentId].imports.length > 0) {
-      entryCodeParts.push(`  "${componentId}": componentImports_${componentId.replace(regex, '_')},\n`)
-    }
-  }
-  entryCodeParts.push('};\n')
 
   entryCodeParts.push('const coraliteComponentDefaults = {\n')
   for (const key of processedComponentKeys) {
@@ -381,12 +364,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     if (this.sharedFunctions[componentId]) {
       const safeId = componentId.replace(regex, '_')
       let componentEntryCode = ''
-
-      let hasImports = false
-      if (this.sharedFunctions[componentId].imports && this.sharedFunctions[componentId].imports.length > 0) {
-        componentEntryCode += `import componentImports from "${componentImportsNamespace}${componentId}";\n`
-        hasImports = true
-      }
 
       if (this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.content && this.sharedFunctions[componentId].script.content.trim() !== 'function(){}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() {}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() { }') {
         componentEntryCode += `import componentScript from "${namespace}${componentId}";\n`
@@ -482,7 +459,7 @@ export default {
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
   slots: (() => { const slots = ${slots}; return slots; })(),
   dependencies: ${dependencies},
-  imports: ${hasImports ? 'componentImports' : '{}'},
+  imports: {},
   script: componentScript
 };
 `
@@ -543,7 +520,6 @@ export default {
 
             // Check for Coralite internal modules first
             if (args.path.startsWith('coralite-component:') ||
-              args.path.startsWith('coralite-component-imports:') ||
               args.path.startsWith('coralite-script-module:') ||
               args.path === 'chunk-shared' ||
               args.path === 'coralite-shared') {
@@ -605,7 +581,7 @@ export default {
       {
         name: 'coralite-component-resolver',
         setup: (pluginBuild) => {
-          // Catch the imports and associate them with the real file paths
+          // Catch the script module, associate with real file paths
           const componentRegex = new RegExp(`^${namespace}`)
 
           pluginBuild.onResolve({ filter: componentRegex }, args => {
@@ -619,17 +595,6 @@ export default {
           })
 
           // Handle script modules
-          const componentImportsRegex = new RegExp(`^${componentImportsNamespace}`)
-
-          pluginBuild.onResolve({ filter: componentImportsRegex }, args => {
-            const componentId = args.path.replace(componentImportsNamespace, '')
-            return {
-              path: args.path,
-              namespace: 'coralite-component-imports',
-              pluginData: { componentId }
-            }
-          })
-
           const moduleRegex = new RegExp(`^${moduleNamespace}`)
           pluginBuild.onResolve({ filter: moduleRegex }, args => {
             const index = parseInt(args.path.replace(moduleNamespace, ''), 10)
@@ -637,68 +602,6 @@ export default {
               path: args.path,
               namespace: 'coralite-script-module',
               pluginData: { index }
-            }
-          })
-
-          pluginBuild.onLoad({
-            filter: /.*/,
-            namespace: 'coralite-component-imports'
-          }, args => {
-            const componentId = args.pluginData.componentId
-            const sharedFn = this.sharedFunctions[componentId]
-            let contents = ''
-
-            const importMap = {}
-            if (sharedFn.imports) {
-              for (const importDefinition of sharedFn.imports) {
-                const specifier = JSON.stringify(importDefinition.specifier)
-                let attributesString = ''
-                if (importDefinition.attributes) {
-                  attributesString = ` with { ${Object.entries(importDefinition.attributes).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')} }`
-                }
-
-                if (importDefinition.namespaceExport) {
-                  contents += `import * as ${importDefinition.namespaceExport} from ${specifier}${attributesString};\n`
-                  importMap[importDefinition.namespaceExport] = importDefinition.namespaceExport
-                }
-
-                const parts = []
-                if (importDefinition.defaultExport) {
-                  parts.push(importDefinition.defaultExport)
-                  importMap[importDefinition.defaultExport] = importDefinition.defaultExport
-                }
-
-                if (importDefinition.namedExports && importDefinition.namedExports.length) {
-                  parts.push(`{ ${importDefinition.namedExports.join(', ')} }`)
-                  for (const namedExport of importDefinition.namedExports) {
-                    if (namedExport.includes(' as ')) {
-                      const [, exportAlias] = namedExport.split(' as ')
-                      importMap[exportAlias.trim()] = exportAlias.trim()
-                    } else {
-                      importMap[namedExport.trim()] = namedExport.trim()
-                    }
-                  }
-                }
-
-                if (parts.length > 0) {
-                  const importStr = parts.join(', ')
-                  contents += `import ${importStr} from ${specifier}${attributesString};\n`
-                }
-              }
-            }
-
-            const importEntries = Object.entries(importMap)
-            const importsObjContent = importEntries.length > 0
-              ? `const componentImports = { ${importEntries.map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
-              : 'const componentImports = {};'
-
-            contents += importsObjContent + '\n'
-            contents += 'export default componentImports;'
-
-            return {
-              contents,
-              loader: 'js',
-              resolveDir: sharedFn && sharedFn.filePath ? dirname(sharedFn.filePath) : process.cwd()
             }
           })
 
@@ -823,7 +726,7 @@ export default {
             return {
               contents: `${padding}export default ${sharedFn.script.content};`,
               loader: 'js',
-              resolveDir: process.cwd()
+              resolveDir: sharedFn.filePath ? dirname(sharedFn.filePath) : process.cwd()
             }
           })
         }
