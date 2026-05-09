@@ -367,10 +367,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       const safeId = componentId.replace(regex, '_')
       let componentEntryCode = ''
 
-      if (this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.content && this.sharedFunctions[componentId].script.content.trim() !== 'function(){}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() {}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() { }') {
-        componentEntryCode += `import componentScript from "${namespace}${componentId}";\n`
-      } else {
-        componentEntryCode += `const componentScript = null;\n`
+      const hasScript = this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.content && this.sharedFunctions[componentId].script.content.trim() !== 'function(){}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() {}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() { }'
+      const hasProperties = this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.propertiesContent
+
+      if (hasScript || hasProperties) {
+        componentEntryCode += `import * as componentModule_${safeId} from "${namespace}${componentId}";\n`
       }
 
       // Use a WeakMap to map original nodes to a unique index
@@ -462,7 +463,8 @@ export default {
   slots: (() => { const slots = ${slots}; return slots; })(),
   dependencies: ${dependencies},
   imports: {},
-  script: componentScript
+  script: ${hasScript ? `componentModule_${safeId}.script` : 'null'},
+  properties: ${hasProperties ? `componentModule_${safeId}.properties` : 'null'}
 };
 `
       entryPoints[componentId] = componentEntryCode
@@ -723,10 +725,26 @@ export default {
             }
 
             const sharedFn = this.sharedFunctions[args.pluginData.componentId]
-            const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
+            let contents = ''
+
+            if (sharedFn.script && sharedFn.script.content) {
+              const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
+              contents += `${padding}export const script = ${sharedFn.script.content};\n`
+              contents += `export default script;\n`
+            } else {
+              contents += `export const script = null;\n`
+              contents += `export default null;\n`
+            }
+
+            if (sharedFn.script && sharedFn.script.propertiesContent) {
+              const padding = '\n'.repeat(Math.max(0, sharedFn.script.propertiesLineOffset || 0))
+              contents += `${padding}export const properties = ${sharedFn.script.propertiesContent};\n`
+            } else {
+              contents += `export const properties = null;\n`
+            }
 
             return {
-              contents: `${padding}export default ${sharedFn.script.content};`,
+              contents,
               loader: 'js',
               resolveDir: sharedFn.filePath ? dirname(sharedFn.filePath) : process.cwd()
             }
