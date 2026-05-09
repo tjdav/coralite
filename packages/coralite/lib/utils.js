@@ -174,7 +174,7 @@ export function normalizeFunction (func) {
     }
 
     // Capture the name (group 1) and allow $ in name
-    return original.replace(/^async\s+([$\w]+)\s*\(/, 'async function $1(')
+    return original.replace(/^async\s+([$\w]+)\s*\(/, 'async function(')
   } else {
     // Check for getters/setters
     if (header.startsWith('get ') || header.startsWith('set ')) {
@@ -182,7 +182,7 @@ export function normalizeFunction (func) {
     }
 
     // Capture the name (group 1) and allow $ in name
-    return original.replace(/^([$\w]+)\s*\(/, 'function $1(')
+    return original.replace(/^([$\w]+)\s*\(/, 'function(')
   }
 }
 

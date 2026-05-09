@@ -143,7 +143,7 @@ describe('defineComponent', () => {
     it('should handle function tokens that return strings', async () => {
       const options = {
         properties: (context) => ({
-          uppercase: context.roperties.title.toUpperCase(),
+          uppercase: context.properties.title.toUpperCase(),
           doubled: context.properties.count * 2,
           concatenated: `${context.properties.title} - ${context.properties.count}`
         })

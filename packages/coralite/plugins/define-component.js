@@ -139,7 +139,7 @@ export const defineComponent = definePlugin({
               createComponentElement: this.createComponentElement.bind(this)
             })
           } else {
-            results[key] = result
+            results[key] = (result === null || result === undefined || result === 0) ? `${result}` : result
           }
         }
       }
