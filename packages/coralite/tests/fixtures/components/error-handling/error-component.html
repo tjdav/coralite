@@ -9,7 +9,7 @@
     properties: async (context) => {
       // intentionally throw an error in dev to test error handling callback
       if (context.properties.triggerError) {
-        throw new Error('Intentional Test Error');
+        throw new Error('Intentional Test Error')
       }
       return {}
     }

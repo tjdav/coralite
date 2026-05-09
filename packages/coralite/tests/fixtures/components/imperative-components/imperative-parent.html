@@ -8,15 +8,15 @@
   export default defineComponent({
     script: async (context) => {
       const container = context.refs('container')
-      
+  
       const child = document.createElement('imperative-child')
       child.setAttribute('title', 'Imperative Mount')
       child.setAttribute('id', '123')
       child.setAttribute('data-testid', 'imperative-child-host')
-      
+  
       // non-serializable property assignment
       child.complexData = ['A', 'B', 'C']
-      
+  
       container.appendChild(child)
     }
   })

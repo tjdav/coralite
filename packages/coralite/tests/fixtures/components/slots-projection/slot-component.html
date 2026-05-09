@@ -10,18 +10,20 @@
   export default defineComponent({
     slots: {
       default: (slotNodes, context) => {
-        if (!slotNodes || slotNodes.length === 0) return void 0;
-        
-        let rawText = '';
-        slotNodes.forEach(node => {
-          rawText += node.data || node.textContent || '';
-        });
-        
-        if (rawText.includes('Transform')) {
-          return `<span data-testid="transformed">Transformed: ${rawText.trim()}</span>`;
+        if (!slotNodes || slotNodes.length === 0) {
+          return void 0
         }
-        
-        return void 0;
+  
+        let rawText = ''
+        slotNodes.forEach(node => {
+          rawText += node.data || node.textContent || ''
+        })
+
+        if (rawText.includes('Transform')) {
+          return `<span data-testid="transformed">Transformed: ${rawText.trim()}</span>`
+        }
+  
+        return void 0
       }
     }
   })

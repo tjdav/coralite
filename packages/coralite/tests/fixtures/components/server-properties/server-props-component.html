@@ -15,7 +15,7 @@
     properties: async (context) => {
       // test server-only import
       const stats = fs.statSync('package.json')
-      
+  
       return {
         title: 'Server Properties Title',
         filePath: context.page.file.pathname,

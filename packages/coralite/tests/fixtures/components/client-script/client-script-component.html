@@ -19,12 +19,12 @@
     script: async (context) => {
       const updateBtn = context.refs('updateBtn')
       const target = document.querySelector('client-script-component')
-      
+  
       updateBtn.addEventListener('click', async () => {
         // test reactivity by updating attribute
         target.setAttribute('title', 'Updated')
         target.setAttribute('status', 'Online')
-        
+  
         // test dynamic imports
         const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
         if (confetti) {
