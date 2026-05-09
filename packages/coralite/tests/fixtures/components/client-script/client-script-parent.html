@@ -1,0 +1,17 @@
+<template id="client-script-parent">
+  <div ref="container"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    script: async (context) => {
+      const container = context.refs('container')
+      const child = document.createElement('client-script-component')
+      child.setAttribute('title', 'Initial Parent')
+      child.setAttribute('data-testid', 'mounted-child')
+      container.appendChild(child)
+    }
+  })
+</script>

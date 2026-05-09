@@ -1,0 +1,27 @@
+<template id="server-props-component">
+  <div>
+    <h2 data-testid="title">{{ title }}</h2>
+    <p data-testid="file-path">{{ filePath }}</p>
+    <p data-testid="server-data">{{ serverData }}</p>
+    <p data-testid="meta-lang">{{ metaLang }}</p>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+  import fs from 'node:fs'
+
+  export default defineComponent({
+    properties: async (context) => {
+      // test server-only import
+      const stats = fs.statSync('package.json')
+      
+      return {
+        title: 'Server Properties Title',
+        filePath: context.page.file.pathname,
+        serverData: stats.isFile() ? 'FileExists' : 'NotFound',
+        metaLang: context.page.meta.lang || 'none'
+      }
+    }
+  })
+</script>

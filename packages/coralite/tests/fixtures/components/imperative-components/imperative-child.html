@@ -1,0 +1,26 @@
+<template id="imperative-child">
+  <div>
+    <h2 ref="title">{{ title }}</h2>
+    <p ref="dataDisplay">{{ dataDisplay }}</p>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    properties: async (context) => {
+      return {
+        title: context.properties.title || 'No Title',
+        dataDisplay: context.properties.id ? `Fetched data for ${context.properties.id}` : 'No Data'
+      }
+    },
+    script: async (context) => {
+      const el = document.querySelector('[data-testid="imperative-child-host"]')
+      // check imperative property assignment
+      if (el && el.complexData) {
+        context.refs('dataDisplay').textContent = el.complexData.join(',')
+      }
+    }
+  })
+</script>

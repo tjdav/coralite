@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Slots Projection Test</title>
+</head>
+<body>
+  <div data-testid="fallback-test">
+    <slot-component></slot-component>
+  </div>
+  
+  <div data-testid="transform-test">
+    <slot-component>Transform Me</slot-component>
+  </div>
+  
+  <div data-testid="preserve-test">
+    <slot-component>
+      <button id="preserve-btn" onclick="this.textContent = 'Clicked'">Unchanged</button>
+    </slot-component>
+  </div>
+</body>
+</html>
