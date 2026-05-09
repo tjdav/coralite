@@ -18,7 +18,7 @@ import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill
  */
 export function ScriptManager (options = {}) {
   this.sharedFunctions = Object.create(null)
-  this.helpers = Object.create(null)
+  this.contextProps = Object.create(null)
   this.plugins = []
   this.scriptModules = []
   this.options = options
@@ -34,7 +34,7 @@ ScriptManager.prototype.use = async function (plugin) {
   if (
     plugin
     && typeof plugin !== 'function'
-    && (plugin.helpers || plugin.context || plugin.imports || typeof plugin.setup === 'function')
+    && (plugin.context || plugin.imports || typeof plugin.setup === 'function')
   ) {
     this.scriptModules.push(plugin)
   }
@@ -44,51 +44,33 @@ ScriptManager.prototype.use = async function (plugin) {
 }
 
 /**
- * Get helpers object content string
- * @returns {string} String containing all helpers as object properties
+ * Get context object content string
+ * @returns {string} String containing all context as object properties
  */
-ScriptManager.prototype.getHelpersContent = function () {
-  let helpers = ''
+ScriptManager.prototype.getClientContextContent = function () {
+  let contextPropsStr = ''
 
-  for (const [key, value] of Object.entries(this.helpers)) {
-    helpers += `"${key}": async (globalContext) => {
+  for (const [key, value] of Object.entries(this.contextProps)) {
+    contextPropsStr += `"${key}": async (globalContext) => {
       const phase1 = ${value};
       const phase2 = await phase1(globalContext);
       return (localContext) => phase2(localContext);
     },`
   }
 
-  return helpers
+  return contextPropsStr
 }
 
 /**
- * Add a helper function with metadata
- * @param {string} name - Helper name
- * @param {function} method - The helper function
+ * Add a context property function
+ * @param {string} name - Property name
+ * @param {function} method - The property function
  * @returns {Promise<ScriptManager>} - Returns this for method chaining
  */
-ScriptManager.prototype.addHelper = async function (name, method) {
-  this.helpers[name] = normalizeFunction(method)
+ScriptManager.prototype.addContextProp = async function (name, method) {
+  this.contextProps[name] = normalizeFunction(method)
 
   return this
-}
-
-/**
- * Get helpers
- * @returns {string} Object containing all helpers
- */
-ScriptManager.prototype.getHelpers = function () {
-  let helpers = ''
-
-  for (const [key, value] of Object.entries(this.helpers)) {
-    helpers += `"${key}": async (globalContext) => {
-      const phase1 = ${value};
-      const phase2 = await phase1(globalContext);
-      return (localContext) => phase2(localContext);
-    },`
-  }
-
-  return `{${helpers}}`
 }
 
 /**
@@ -204,17 +186,17 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const moduleNamespace = 'coralite-script-module:'
   // Generate ESM imports for each script module
   for (let i = 0; i < this.scriptModules.length; i++) {
-    entryCodeParts.push(`import { helpers as helpers_${i}, runSetup as runSetup_${i} } from "${moduleNamespace}${i}";\n`)
+    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, runSetup as runSetup_${i} } from "${moduleNamespace}${i}";\n`)
   }
 
-  // Setup helpers
-  const helperParts = [
-    ...this.scriptModules.map((_, i) => `...helpers_${i}`),
-    this.getHelpersContent()
+  // Setup client context properties
+  const contextParts = [
+    ...this.scriptModules.map((_, i) => `...clientContextProps_${i}`),
+    this.getClientContextContent()
   ].filter(Boolean).join(',\n')
 
-  entryCodeParts.push(`const coraliteComponentScriptHelpers = {
-    ${helperParts}
+  entryCodeParts.push(`const coraliteComponentClientContextProps = {
+    ${contextParts}
   };\n`)
 
   entryCodeParts.push(`const getSetups = async (context) => {
@@ -237,21 +219,21 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     return setupValues;
   });\n`)
 
-  entryCodeParts.push(`const resolvedHelpersPromise = globalSetupPropertiesPromise.then(async () => {
-    const resolvedHelpers = {};
-    for (const [key, helperFn] of Object.entries(coraliteComponentScriptHelpers)) {
-      resolvedHelpers[key] = await helperFn(globalContext);
+  entryCodeParts.push(`const resolvedContextPropsPromise = globalSetupPropertiesPromise.then(async () => {
+    const resolvedProps = {};
+    for (const [key, propFn] of Object.entries(coraliteComponentClientContextProps)) {
+      resolvedProps[key] = await propFn(globalContext);
     }
-    return resolvedHelpers;
+    return resolvedProps;
   });\n`)
 
   entryCodeParts.push(`const getHelpers = async (context) => {
-    const helpers = {}
-    const resolvedHelpers = await resolvedHelpersPromise;
-    for (const [key, resolvedHelper] of Object.entries(resolvedHelpers)) {
-      helpers[key] = resolvedHelper(context)
+    const clientContextProps = {}
+    const resolvedProps = await resolvedContextPropsPromise;
+    for (const [key, resolvedProp] of Object.entries(resolvedProps)) {
+      clientContextProps[key] = resolvedProp(context)
     }
-    return helpers
+    return clientContextProps
   }\n`)
 
   const instanceValues = Object.entries(instances)

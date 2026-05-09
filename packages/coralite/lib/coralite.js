@@ -875,25 +875,15 @@ Coralite.prototype._generatePages = async function* (path, properties = {}) {
         const base = this.options.baseURL.endsWith('/') ? this.options.baseURL : this.options.baseURL + '/'
 
         let scriptContent = `
-import { getHelpers, getSetups, render } from '${base}assets/js/${scriptResult.manifest['chunk-shared']}';
+import { getClientContext, getSetups, render } from '${base}assets/js/${scriptResult.manifest['chunk-shared']}';
 
 // Global setups initialization
 const globalContext = {};
 const globalSetupPropertiesPromise = getSetups(globalContext);
 
 (async () => {
-  window.__coralite_ready__ = window.__coralite_ready__ || new Promise(resolve => {
-    window.__coralite_resolve_ready__ = resolve;
-  });
-  const resolveCoraliteReady = () => {
-    if (window.__coralite_resolve_ready__) {
-      window.__coralite_resolve_ready__();
-    }
-  };
-  const pendingHydrations = [];
-  const addPendingHydration = (promise) => {
-    pendingHydrations.push(promise);
-  };
+  let resolveCoraliteReady;
+  window.__coralite_ready__ = new Promise(resolve => resolveCoraliteReady = resolve);
   const globalAbortController = new AbortController();
   const componentManifest = ${JSON.stringify(chunkManifest)};
   const loadCache = {};
@@ -1029,16 +1019,14 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 properties: this._properties,
                 page: module.default.page || {},
                 root: this, 
-                helpers: {},
                 signal: this._abortController.signal
               };
 
               const setupProperties = await globalSetupPropertiesPromise;
               localContext.properties = { ...localContext.properties, ...setupProperties };
 
-              const helpers = await getHelpers(localContext);
-              localContext.helpers = helpers;
-              Object.assign(localContext, helpers);
+              const pluginContexts = await getClientContext(localContext);
+              Object.assign(localContext, pluginContexts);
               
               localContext.imports = module.default.imports || {};
 
@@ -1318,13 +1306,12 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
       signal: globalAbortController.signal
     };
     const setupPropertiesPromise = globalSetupPropertiesPromise;
-    const helpersPromise = getHelpers(context);
+    const pluginContextsPromise = getClientContext(context);
     const modulePromise = import('${base}assets/js/${scriptResult.manifest[instance.componentId]}');
 
-    const [setupProperties, helpers, module] = await Promise.all([setupPropertiesPromise, helpersPromise, modulePromise]);
+    const [setupProperties, pluginContexts, module] = await Promise.all([setupPropertiesPromise, pluginContextsPromise, modulePromise]);
 
-    context.helpers = helpers;
-    Object.assign(context, helpers);
+    Object.assign(context, pluginContexts);
     context.properties = { ...module.default.defaultValues, ...context.properties, ...setupProperties };
     
     // Explicitly load declarative script dependencies if any
