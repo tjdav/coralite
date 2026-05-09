@@ -825,6 +825,26 @@ Coralite.prototype._generatePages = async function* (path, properties = {}) {
           }
         }
 
+        const readinessScriptElement = createCoraliteElement({
+          type: 'tag',
+          name: 'script',
+          parent: headElement || component.root,
+          attribs: {},
+          children: []
+        })
+
+        readinessScriptElement.children.push(createCoraliteTextNode({
+          type: 'text',
+          data: 'window.__coralite_ready__ = new Promise(resolve => { window.__coralite_resolve_ready__ = resolve; });',
+          parent: readinessScriptElement
+        }))
+
+        if (headElement) {
+          headElement.children.unshift(readinessScriptElement)
+        } else {
+          component.root.children.unshift(readinessScriptElement)
+        }
+
         if (scriptResult.importMap && Object.keys(scriptResult.importMap).length > 0) {
           const importMapElement = createCoraliteElement({
             type: 'tag',
@@ -862,8 +882,18 @@ const globalContext = {};
 const globalSetupPropertiesPromise = getSetups(globalContext);
 
 (async () => {
-  let resolveCoraliteReady;
-  window.__coralite_ready__ = new Promise(resolve => resolveCoraliteReady = resolve);
+  window.__coralite_ready__ = window.__coralite_ready__ || new Promise(resolve => {
+    window.__coralite_resolve_ready__ = resolve;
+  });
+  const resolveCoraliteReady = () => {
+    if (window.__coralite_resolve_ready__) {
+      window.__coralite_resolve_ready__();
+    }
+  };
+  const pendingHydrations = [];
+  const addPendingHydration = (promise) => {
+    pendingHydrations.push(promise);
+  };
   const globalAbortController = new AbortController();
   const componentManifest = ${JSON.stringify(chunkManifest)};
   const loadCache = {};
@@ -950,7 +980,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
               }
             }
 
-            ;(async () => {
+            const initPromise = (async () => {
               const deps = module.default.dependencies || [];
               if (deps.length > 0) {
                 const loadPromises = deps.map(dep => loadComponent(dep));
@@ -1008,6 +1038,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
 
               const helpers = await getHelpers(localContext);
               localContext.helpers = helpers;
+              Object.assign(localContext, helpers);
               
               localContext.imports = module.default.imports || {};
 
@@ -1015,6 +1046,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 await module.default.script(localContext);
               }
             })();
+            addPendingHydration(initPromise);
 
             this._observer = new MutationObserver(async (mutations) => {
               let shouldRender = false;
@@ -1292,6 +1324,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
     const [setupProperties, helpers, module] = await Promise.all([setupPropertiesPromise, helpersPromise, modulePromise]);
 
     context.helpers = helpers;
+    Object.assign(context, helpers);
     context.properties = { ...module.default.defaultValues, ...context.properties, ...setupProperties };
     
     // Explicitly load declarative script dependencies if any
@@ -1323,6 +1356,12 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
   }
   await Promise.all(scriptPromises);
   `}
+  // Wait for all pending hydrations (including dynamically spawned ones) to complete
+  while (pendingHydrations.length > 0) {
+    const currentBatch = [...pendingHydrations];
+    await Promise.all(currentBatch);
+    pendingHydrations.splice(0, currentBatch.length);
+  }
   resolveCoraliteReady();
 })();
 `

@@ -34,7 +34,7 @@ ScriptManager.prototype.use = async function (plugin) {
   if (
     plugin
     && typeof plugin !== 'function'
-    && (plugin.helpers || plugin.imports || typeof plugin.setup === 'function')
+    && (plugin.helpers || plugin.context || plugin.imports || typeof plugin.setup === 'function')
   ) {
     this.scriptModules.push(plugin)
   }

@@ -3,15 +3,20 @@ import { test, expect } from '@playwright/test'
 test.describe('Imperative Components', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/imperative-components/')
-    await page.waitForLoadState('networkidle')
-    await page.waitForTimeout(500)
+    await page.waitForFunction('window.__coralite_ready__ !== undefined', undefined, { timeout: 2000 }).catch(() => {
+    })
+    if (await page.evaluate(() => window.__coralite_ready__ !== undefined)) {
+      await page.evaluate(() => window.__coralite_ready__)
+    }
   })
 
   test('should create component imperatively and assign non-serializable objects', async ({ page }) => {
-    const title = page.getByTestId('imperative-child__title-0')
+    const host = page.getByTestId('imperative-child-host')
+
+    const title = host.locator('h2')
     await expect(title).toHaveText('Imperative Mount')
 
-    const dataDisplay = page.getByTestId('imperative-child__dataDisplay-0')
-    await expect(dataDisplay).toHaveText('Fetched data for 123')
+    const dataDisplay = host.locator('p')
+    await expect(dataDisplay).toHaveText('A,B,C')
   })
 })

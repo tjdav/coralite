@@ -17,7 +17,9 @@
     },
     script: async (context) => {
       // test two-phase currying system context injection
-      context.testHelper('[ref="pluginData"]')
+      // The testing plugin in dev mode duplicates ref to data-testid, so we can use that to query it reliably since refs are dynamic.
+      // Actually we have the context.refs utility but let's just use data-testid.
+      context.testHelper('[data-testid="plugin-component__pluginData-0"]')
     }
   })
 </script>

@@ -66,6 +66,7 @@
  * @property {function(any): void} [setup] - Called when plugin is registered
  * @property {ScriptImport[]} [imports] - Module imports for helpers
  * @property {Object.<string, ScriptPluginHelperGlobalInstance>} [helpers] - Global or instance helpers to add to scripts
+ * @property {Object.<string, ScriptPluginHelperGlobalInstance>} [context] - Global or instance helpers to add to scripts
  */
 
 /**
