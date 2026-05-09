@@ -1,4 +1,4 @@
-import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, extractGlobals, mergePluginState } from './utils.js'
+import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, findAndExtractProperties, extractGlobals, mergePluginState } from './utils.js'
 import { getHtmlFile, getHtmlFiles } from './html.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
 import { transformCss } from './style-transform.js'
@@ -957,6 +957,40 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 await Promise.all(loadPromises);
               }
 
+              // Evaluate client-side properties if available
+              if (module.default.properties) {
+                // Sync current attributes to properties before evaluating
+                const currentAttrs = this.attributes;
+                for (let i = 0; i < currentAttrs.length; i++) {
+                  const attr = currentAttrs[i];
+                  const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                  this._properties[camelName] = attr.value;
+                  if (camelName !== attr.name) {
+                    this._properties[attr.name] = attr.value;
+                  }
+                }
+
+                const propsContext = {
+                  properties: this._properties,
+                  page: module.default.page || {}
+                };
+                let dynamicProps = module.default.properties(propsContext);
+                if (dynamicProps && typeof dynamicProps.then === 'function') {
+                  dynamicProps = await dynamicProps;
+                }
+
+                const merged = Object.assign({}, this._properties);
+                for (const key in dynamicProps) {
+                  const attrName = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+                  if (this.hasAttribute(attrName)) {
+                    merged[key] = this._properties[key];
+                  } else {
+                    merged[key] = dynamicProps[key];
+                  }
+                }
+                this._properties = merged;
+              }
+
               this._render();
               
               const localContext = {
@@ -982,7 +1016,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
               }
             })();
 
-            this._observer = new MutationObserver((mutations) => {
+            this._observer = new MutationObserver(async (mutations) => {
               let shouldRender = false;
               for (const mutation of mutations) {
                 if (mutation.type === 'attributes') {
@@ -1000,6 +1034,39 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 }
               }
               if (shouldRender) {
+                // Re-evaluate client-side properties on attribute change
+                if (module.default.properties) {
+                  // Sync current attributes to properties before evaluating
+                  const currentAttrs = this.attributes;
+                  for (let i = 0; i < currentAttrs.length; i++) {
+                    const attr = currentAttrs[i];
+                    const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+                    this._properties[camelName] = attr.value;
+                    if (camelName !== attr.name) {
+                      this._properties[attr.name] = attr.value;
+                    }
+                  }
+
+                  const propsContext = {
+                    properties: this._properties,
+                    page: module.default.page || {}
+                  };
+                  let dynamicProps = module.default.properties(propsContext);
+                  if (dynamicProps && typeof dynamicProps.then === 'function') {
+                    dynamicProps = await dynamicProps;
+                  }
+
+                  const merged = Object.assign({}, this._properties);
+                  for (const key in dynamicProps) {
+                    const attrName = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+                    if (this.hasAttribute(attrName)) {
+                      merged[key] = this._properties[key];
+                    } else {
+                      merged[key] = dynamicProps[key];
+                    }
+                  }
+                  this._properties = merged;
+                }
                 this._render();
               }
             });
@@ -1718,6 +1785,11 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
         if (extractedScript.components) {
           extractedComponents = extractedScript.components
         }
+      }
+      const extractedProperties = findAndExtractProperties(module.script)
+      if (extractedProperties) {
+        scriptObj.propertiesContent = extractedProperties.content
+        scriptObj.propertiesLineOffset = (module.lineOffset || 0) + extractedProperties.lineOffset
       }
       scriptObj.properties = scriptResult.__script__.properties || {}
 
