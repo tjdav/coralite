@@ -7,9 +7,8 @@ test.describe('Computed Slots Imperative', () => {
     page.on('pageerror', err => console.log(err.message))
 
     await page.goto('/computed-slots-imperative.html')
-
-    await page.waitForFunction(() => typeof window.mountComponent === 'function')
-    await page.evaluate(() => window.mountComponent())
+    // @ts-ignore
+    await page.evaluate(() => window.__coralite_ready__)
 
     // Wait for the custom element to be defined and mounted
     await page.waitForSelector('computed-slots-imperative h1.header-slot')
@@ -51,5 +50,5 @@ test.describe('Computed Slots Imperative', () => {
     expect(node1Text).toContain('Projected Node 1')
     expect(node2Text).toContain('Body: Updated Body')
     expect(node2Text).toContain('Projected Node 2')
-  })
+  }, { timeout: 3000 })
 })

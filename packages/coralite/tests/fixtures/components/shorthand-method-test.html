@@ -9,10 +9,11 @@
 
   export default defineComponent({
     properties: (context) => {
-      const msg = context.properties.msg
       return {
         initialMessage: 'Hello',
-        myShorthand: msg + '!',
+        myShorthand({ msg }) {
+          return msg + '!'
+        },
         generatedMessage: 'Hello world!'
       }
     },

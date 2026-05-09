@@ -7,5 +7,5 @@ test.describe('Shorthand Method Serialization', () => {
     const messageSpan = page.locator('span')
     await expect(messageSpan).toBeVisible()
     await expect(messageSpan).toHaveText('Hello from client!')
-  })
+  }, { timeout: 3000 })
 })

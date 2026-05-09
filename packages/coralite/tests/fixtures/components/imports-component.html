@@ -24,18 +24,23 @@
       }
 
       if (localJsonEl) {
-        localJsonEl.textContent = `Local JSON: ${dummyData.name} v${dummyData.version}`
+        localJsonEl.textContent = `Local JSON: ${dummyData.default.name} v${dummyData.default.version}`
       }
 
       if (remoteBtn) {
-        remoteBtn.addEventListener('click', () => {
-          if (imports.confetti) {
-            imports.confetti({
-              particleCount: 10,
-              spread: 30,
-              origin: { y: 0.6 }
-            })
-            remoteBtn.setAttribute('data-triggered', 'true')
+        remoteBtn.addEventListener('click', async () => {
+          try {
+            const dynamicConfetti = await import('https://esm.sh/canvas-confetti@1.6.0')
+            if (dynamicConfetti.default) {
+              dynamicConfetti.default({
+                particleCount: 10,
+                spread: 30,
+                origin: { y: 0.6 }
+              })
+              remoteBtn.setAttribute('data-triggered', 'true')
+            }
+          } catch (err) {
+            console.error(err)
           }
         })
       }
