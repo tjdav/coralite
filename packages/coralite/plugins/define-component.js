@@ -232,8 +232,9 @@ export const defineComponent = definePlugin({
     }
     const hasScript = typeof script === 'function'
     const hasProperties = initialValues && Object.keys(initialValues).length > 0
+    const hasSlots = slots && Object.keys(slots).length > 0
 
-    if (hasScript || hasProperties) {
+    if (hasScript || hasProperties || hasSlots) {
       if (hasScript) {
         const scriptTextContent = script.toString().trim()
 
