@@ -2324,7 +2324,12 @@ Coralite.prototype._moduleLinker = function (path, context) {
     }
 
     try {
-      const module = await import(specifier, { with: extra.attributes })
+      let module
+      if (extra.attributes && Object.keys(extra.attributes).length > 0) {
+        module = await import(specifier, { with: extra.attributes })
+      } else {
+        module = await import(specifier)
+      }
       let exportModule = ''
 
       for (const key in module) {
