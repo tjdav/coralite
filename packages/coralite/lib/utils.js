@@ -174,7 +174,7 @@ export function normalizeFunction (func) {
     }
 
     // Capture the name (group 1) and allow $ in name
-    return original.replace(/^async\s+([$\w]+)\s*\(/, 'async function(')
+    return original.replace(/^async\s+([$\w]+)\s*\(/, 'async function $1(')
   } else {
     // Check for getters/setters
     if (header.startsWith('get ') || header.startsWith('set ')) {
@@ -182,7 +182,7 @@ export function normalizeFunction (func) {
     }
 
     // Capture the name (group 1) and allow $ in name
-    return original.replace(/^([$\w]+)\s*\(/, 'function(')
+    return original.replace(/^([$\w]+)\s*\(/, 'function $1(')
   }
 }
 
@@ -489,6 +489,80 @@ export function findAndExtractScript (code) {
 
   return result
 }
+
+/**
+ * Extracts and normalizes the properties content from a component definition.
+ *
+ * @param {string} code - The raw script content
+ * @returns {ScriptContent | null}
+ */
+export function findAndExtractProperties (code) {
+  const ast = parseJS(code, {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    locations: true
+  })
+
+  /** @type {ScriptContent | null} */
+  let result = null
+
+  walkJS(ast, {
+    CallExpression (node) {
+      if (
+        node.callee &&
+        node.callee.type === 'Identifier' &&
+        node.callee.name === 'defineComponent'
+      ) {
+        const firstArg = node.arguments[0]
+
+        if (firstArg && firstArg.type === 'ObjectExpression') {
+          const propertiesProp = firstArg.properties.find(
+            prop => prop.type === 'Property' &&
+              prop.key && prop.key.type === 'Identifier' &&
+              prop.key.name === 'properties'
+          )
+
+          if (propertiesProp && propertiesProp.type === 'Property') {
+            const { value, method } = propertiesProp
+            let startLine = value.loc.start.line - 1
+            let prefix = ''
+            let content = ''
+
+            // Get source slice
+            const source = code.slice(value.start, value.end)
+
+            if (value.type === 'ArrowFunctionExpression') {
+              content = prefix + source
+              startLine = value.loc.start.line - 1
+            } else if (value.type === 'FunctionExpression') {
+              if (method) {
+                const isAsync = value.async
+                prefix += (isAsync ? 'async ' : '') + 'function properties'
+                content = prefix + source
+                startLine = propertiesProp.key.loc.start.line - 1
+              } else {
+                content = prefix + source
+                startLine = value.loc.start.line - 1
+              }
+            } else if (value.type === 'ObjectExpression') {
+              // Wrap object in a function returning that object
+              content = `() => (${source})`
+              startLine = value.loc.start.line - 1
+            }
+
+            result = {
+              content,
+              lineOffset: startLine
+            }
+          }
+        }
+      }
+    }
+  })
+
+  return result
+}
+
 
 /**
  * Safely merges partial plugin updates into the main context object.
