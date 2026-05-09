@@ -34,9 +34,10 @@ ScriptManager.prototype.use = async function (plugin) {
   if (
     plugin
     && typeof plugin !== 'function'
-    && (plugin.context || plugin.imports || typeof plugin.setup === 'function')
   ) {
-    this.scriptModules.push(plugin)
+    if (plugin.context || typeof plugin.setup === 'function') {
+      this.scriptModules.push(plugin)
+    }
   }
 
   this.plugins.push(plugin)
@@ -670,12 +671,15 @@ export default {
               return await setup(contextObject);
             };\n`
 
-            // Generate helpers
-            contents += 'export const helpers = {\n'
-            if (module.helpers) {
-              for (const key in module.helpers) {
-                if (Object.hasOwn(module.helpers, key)) {
-                  const fn = normalizeFunction(module.helpers[key])
+            // Generate client context properties
+            contents += 'export const clientContextProps = {\n'
+            if (module.context) {
+              for (const key in module.context) {
+                if (Object.hasOwn(module.context, key)) {
+                  if (['id', 'properties', 'page', 'root', 'signal'].includes(key)) {
+                    throw new Error(`Reserved context key '${key}' cannot be used in plugin context.`)
+                  }
+                  const fn = normalizeFunction(module.context[key])
                   contents += `  "${key}": async (context) => {
                     const globalContext = {
                       ...context,
