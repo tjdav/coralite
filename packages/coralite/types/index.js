@@ -19,7 +19,7 @@
  * @import { CoralitePlugin, CoralitePluginContext, CoralitePluginInstance, CoralitePluginResult, CoralitePluginModule, CoralitePluginPageSetCallback, CoralitePluginPageUpdateCallback, CoralitePluginPageDeleteCallback, CoralitePluginComponentCallback, CoralitePluginAfterPageRenderCallback } from './plugin.js'
  *
  * SCRIPTS
- * @import { ScriptContent, ScriptPlugin, InstanceContext, CoraliteScriptContent, ScriptPluginHelperGlobalContext, ScriptPluginHelperGlobalInstance, ScriptPluginHelperLocalInstance } from './script.js'
+ * @import { ScriptContent, ScriptPlugin, InstanceContext, CoraliteScriptContext, ScriptPluginHelperGlobalContext, ScriptPluginHelperGlobalInstance, ScriptPluginHelperLocalInstance } from './script.js'
  */
 
 /**
@@ -118,7 +118,7 @@
  * @typedef {import('./script.js').ScriptContent} ScriptContent
  * @typedef {import('./script.js').ScriptPlugin} ScriptPlugin
  * @typedef {import('./script.js').InstanceContext} InstanceContext
- * @typedef {import('./script.js').CoraliteScriptContent} CoraliteScriptContent
+ * @typedef {import('./script.js').CoraliteScriptContext} CoraliteScriptContext
  * @typedef {import('./script.js').ScriptPluginHelperGlobalContext} ScriptPluginHelperGlobalContext
  * @typedef {import('./script.js').ScriptPluginHelperGlobalInstance} ScriptPluginHelperGlobalInstance
  * @typedef {import('./script.js').ScriptPluginHelperLocalInstance} ScriptPluginHelperLocalInstance

@@ -99,14 +99,13 @@ export const defineComponent = definePlugin({
     const {
       properties,
       component,
-      element
+      root
     } = context
     /** @type {CoraliteModuleDefinitions} */
     let results = Object.assign({}, properties)
 
     results.__script__ = {
       properties: {},
-      components: [],
       defaultValues: {},
       slots: slots || {}
     }
@@ -139,7 +138,7 @@ export const defineComponent = definePlugin({
               createComponentElement: this.createComponentElement.bind(this)
             })
           } else {
-            results[key] = (result === null || result === undefined || result === 0) ? `${result}` : result
+            results[key] = result
           }
         }
       }
@@ -159,9 +158,9 @@ export const defineComponent = definePlugin({
           // new slot elements
           const elementSlots = []
 
-          if (element && element.slots) {
-            for (let i = 0; i < element.slots.length; i++) {
-              const slot = element.slots[i]
+          if (root && root.slots) {
+            for (let i = 0; i < root.slots.length; i++) {
+              const slot = root.slots[i]
 
               if (slot.name === name) {
                 // slot content to compute
@@ -224,8 +223,8 @@ export const defineComponent = definePlugin({
           }
 
           // update element slots
-          if (element) {
-            element.slots = elementSlots
+          if (root) {
+            root.slots = elementSlots
           }
         }
       }

@@ -79,7 +79,7 @@ describe('defineComponent', () => {
     it('should return empty object when no options provided', async () => {
       const result = await defineComponent.method.call(mockContext, {}, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.deepStrictEqual(result, mockProperties)
@@ -93,7 +93,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.title, 'Test Title')
@@ -104,7 +104,7 @@ describe('defineComponent', () => {
       const options = { properties: () => ({}) }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.deepStrictEqual(result, mockProperties)
@@ -114,7 +114,7 @@ describe('defineComponent', () => {
       const options = { tokens: null }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.deepStrictEqual(result, mockProperties)
@@ -132,7 +132,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.greeting, 'Hello World')
@@ -150,7 +150,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.uppercase, 'TEST TITLE')
@@ -167,7 +167,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.add, 15)
@@ -182,7 +182,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.empty, '')
@@ -198,12 +198,12 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
-      assert.strictEqual(result.nullValue, 'null')
-      assert.strictEqual(result.undefinedValue, 'undefined')
-      assert.strictEqual(result.falsyValue, '0')
+      assert.strictEqual(result.nullValue, null)
+      assert.strictEqual(result.undefinedValue, undefined)
+      assert.strictEqual(result.falsyValue, 0)
     })
 
     it('should handle function tokens with no parameters', async () => {
@@ -214,7 +214,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.staticValue, 'static')
@@ -230,7 +230,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.asyncString, 'async result')
@@ -244,7 +244,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.asyncNumber, 123)
@@ -258,7 +258,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.deepStrictEqual(result.asyncObject, { key: 'value' })
@@ -274,7 +274,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.sync, 'sync value')
@@ -290,7 +290,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.async1, 'result1')
@@ -307,7 +307,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -325,7 +325,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -342,7 +342,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.textOnly, 'Just text content')
@@ -356,7 +356,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.emptyHtml, '')
@@ -373,7 +373,7 @@ describe('defineComponent', () => {
 
       await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -395,7 +395,7 @@ describe('defineComponent', () => {
 
       await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -417,7 +417,7 @@ describe('defineComponent', () => {
 
       await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -437,7 +437,7 @@ describe('defineComponent', () => {
 
       await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -458,7 +458,7 @@ describe('defineComponent', () => {
 
       await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -476,7 +476,7 @@ describe('defineComponent', () => {
 
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -502,7 +502,7 @@ describe('defineComponent', () => {
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
           properties: mockProperties,
-          element: mockElement,
+          root: mockElement,
           component: mockComponent
         })
       }, /Creation Failed/)
@@ -523,7 +523,7 @@ describe('defineComponent', () => {
 
       await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -548,7 +548,7 @@ describe('defineComponent', () => {
 
       await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -582,7 +582,7 @@ describe('defineComponent', () => {
 
       await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -625,7 +625,7 @@ describe('defineComponent', () => {
 
       await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -653,7 +653,7 @@ describe('defineComponent', () => {
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
           properties: mockProperties,
-          element: mockElement,
+          root: mockElement,
           component: mockComponent
         })
       }, /Unexpected slot value/)
@@ -665,7 +665,7 @@ describe('defineComponent', () => {
       const options = {}
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.__script__, undefined)
@@ -680,7 +680,7 @@ describe('defineComponent', () => {
 
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -701,7 +701,7 @@ describe('defineComponent', () => {
 
       const result = await defineComponent.method.call(mockContext, options, {
         properties: extraProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -717,7 +717,7 @@ describe('defineComponent', () => {
         }
       }, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.ok(result.__script__)
@@ -726,7 +726,7 @@ describe('defineComponent', () => {
       result = await defineComponent.method.call(mockContext, {
       }, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.__script__, undefined)
@@ -740,7 +740,7 @@ describe('defineComponent', () => {
         })
       }, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
 
@@ -760,7 +760,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.own, 'own value')
@@ -778,7 +778,7 @@ describe('defineComponent', () => {
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
           properties: mockProperties,
-          element: mockElement,
+          root: mockElement,
           component: mockComponent
         })
       }, /Async error/)
@@ -795,7 +795,7 @@ describe('defineComponent', () => {
       await assert.rejects(async () => {
         await defineComponent.method.call(mockContext, options, {
           properties: mockProperties,
-          element: mockElement,
+          root: mockElement,
           component: mockComponent
         })
       }, /Sync error/)
@@ -810,7 +810,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.large, largeString)
@@ -822,7 +822,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: mockProperties,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.unicode, 'Hello 世界 🌍')
@@ -836,7 +836,7 @@ describe('defineComponent', () => {
       }
       const result = await defineComponent.method.call(mockContext, options, {
         properties: circularValues,
-        element: mockElement,
+        root: mockElement,
         component: mockComponent
       })
       assert.strictEqual(result.ref, 'Test')

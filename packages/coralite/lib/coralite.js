@@ -1793,10 +1793,9 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       }
       scriptObj.properties = scriptResult.__script__.properties || {}
 
-      const scriptComponents = scriptResult.__script__.components || []
       const declarativeComponents = (module.customElements || []).map(el => el.name)
 
-      nestedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents, ...extractedComponents]))
+      nestedComponents = Array.from(new Set([...declarativeComponents, ...extractedComponents]))
       scriptObj.components = nestedComponents
       defaultValues = scriptResult.__script__.defaultValues || {}
 
@@ -2022,8 +2021,7 @@ Coralite.prototype.createComponentElement = async function ({
 
       // Dynamically load any components dynamically inserted if they are explicitly mentioned
       const declarativeComponents = (module.customElements || []).map(el => el.name)
-      const scriptComponents = scriptResult.__script__ ? (scriptResult.__script__.components || []) : []
-      const mergedComponents = Array.from(new Set([...scriptComponents, ...declarativeComponents, ...extractedComponents]))
+      const mergedComponents = Array.from(new Set([...declarativeComponents, ...extractedComponents]))
 
       if (scriptResult.__script__) {
         scriptResult.__script__.components = mergedComponents
@@ -2436,7 +2434,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} data.properties - Replacement tokens for the component
  * @param {CoralitePage} data.page - The global page object
- * @param {CoraliteElement} data.element - The Coralite module to parse
+ * @param {CoraliteElement} data.root - The Coralite module to parse
  * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  * @param {Object} data.renderContext - Render Context
@@ -2447,7 +2445,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
   module,
   properties,
   page,
-  element,
+  root,
   component,
   contextId,
   renderContext
@@ -2474,7 +2472,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
     component,
     properties,
     page,
-    element,
+    root,
     module,
     id: contextId,
     renderContext
@@ -2537,7 +2535,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} data.properties - Replacement tokens for the component
  * @param {CoralitePage} data.page - The global page object
- * @param {CoraliteElement} data.element - The Coralite module to parse
+ * @param {CoraliteElement} data.root - The Coralite module to parse
  * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  * @param {Object} data.renderContext - Render Context
@@ -2548,7 +2546,7 @@ Coralite.prototype._evaluateProduction = async function ({
   module,
   properties,
   page,
-  element,
+  root,
   component,
   contextId,
   renderContext
@@ -2559,7 +2557,7 @@ Coralite.prototype._evaluateProduction = async function ({
     component,
     properties,
     page,
-    element,
+    root,
     module,
     id: contextId,
     renderContext

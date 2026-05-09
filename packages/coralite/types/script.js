@@ -12,8 +12,6 @@
  * @property {string} [setupContent] - Setup string content
  * @property {Object.<string, CoraliteModuleDefinition>} [properties]
  * @property {number} [lineOffset] - Script offset number.
- * @property {ScriptImport[]} [imports] - Script imports.
- * @property {string[]} [tokens] - Extracted reactivity tokens.
  * @property {string[]} [components] - Imperative components array.
  * @property {Object} [defaultValues] - Initial state from setup.
  * @property {Object.<string, CoraliteModuleSlotFunction>} [slots] - Computed slots.
@@ -29,13 +27,14 @@
  */
 
 /**
- * @typedef {Object} CoraliteScriptContent
+ * @typedef {Object} CoraliteScriptContext
  * @property {string} id - Unique instance identifier
  * @property {string} instanceId - Unique instance identifier
  * @property {string} [componentId] - component identifier for shared functions
  * @property {CoralitePath & CoraliteFilePath} [path] - Component AST
  * @property {Object.<string, CoraliteModuleDefinition>} [properties] - Instance properties
  * @property {CoralitePage} [page] - The global page object
+ * @property {HTMLElement} [root] - The custom element instance (available in browser runtime)
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {Object.<string, any>} [helpers] - Plugin helpers available to the script
  * @property {AbortSignal} [signal] - Lifecycle abort signal for unmount events (null for declarative components).
@@ -57,7 +56,7 @@
 /**
  * @async
  * @callback ScriptPluginHelperLocalInstance
- * @param {CoraliteScriptContent} localContext - Local instance context
+ * @param {CoraliteScriptContext} localContext - Local instance context
  * @returns {any}
  */
 
@@ -77,8 +76,6 @@
  * @property {CoralitePage} [page] - The global page object
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {CoraliteComponent} [component] - Component AST
- * @property {Object.<string, any>} [config] - Plugin configuration
- * @property {Object.<string, any>} [imports] - Plugin imports
  */
 
 export default {}

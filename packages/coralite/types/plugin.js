@@ -15,7 +15,7 @@
  * @property {CoralitePage} page - The global page object
  * @property {CoraliteComponent} component - The HTML file data being processed by the plugin
  * @property {CoraliteModule} module - The module context the plugin is operating within (contains template/script)
- * @property {CoraliteElement} element - The specific HTML element the plugin is applied to (if applicable)
+ * @property {CoraliteElement} root - The specific HTML element the plugin is applied to (if applicable)
  * @property {Object} path - File path information for the current component/module being processed
  * @property {Attribute[]} excludeByAttribute - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
