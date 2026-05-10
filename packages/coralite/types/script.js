@@ -36,14 +36,12 @@
  * @property {CoralitePage} [page] - The global page object
  * @property {HTMLElement} [root] - The custom element instance (available in browser runtime)
  * @property {Object.<string, string>} [refs] - Instance refs
- * @property {Object.<string, any>} [helpers] - Plugin helpers available to the script
  * @property {AbortSignal} [signal] - Lifecycle abort signal for unmount events (null for declarative components).
  */
 
 /**
  * @typedef {Object} ScriptPluginHelperGlobalContext
  * @property {Object.<string, any>} [config] - Plugin configuration
- * @property {Object.<string, any>} [imports] - Module imports for helpers
  * @property {Object.<string, CoraliteModuleDefinition>} [properties] - Global context properties
  */
 
@@ -64,9 +62,8 @@
  * @typedef {Object} ScriptPlugin
  * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {function(any): void} [setup] - Called when plugin is registered
- * @property {ScriptImport[]} [imports] - Module imports for helpers
- * @property {Object.<string, ScriptPluginHelperGlobalInstance>} [helpers] - Global or instance helpers to add to scripts
  * @property {Object.<string, ScriptPluginHelperGlobalInstance>} [context] - Global or instance helpers to add to scripts
+ * @property {string[]} [_extractedComponents] - Extracted imperative components
  */
 
 /**

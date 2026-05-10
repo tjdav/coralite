@@ -603,6 +603,50 @@ export function mergePluginState (current, patch) {
  * @param {string} code - The raw script code
  * @returns {Array<string>} - Array of identified global variables
  */
+/**
+ * Extracts all component tag names dynamically created via document.createElement.
+ *
+ * @param {string} code - The raw script content
+ * @returns {Array<string>} - Array of identified imperative component tags
+ */
+export function findAndExtractImperativeComponents (code) {
+  try {
+    const ast = parseJS(code, {
+      ecmaVersion: 'latest',
+      sourceType: 'module'
+    })
+
+    const components = new Set()
+
+    walkJS(ast, {
+      CallExpression (node) {
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object &&
+          node.callee.object.type === 'Identifier' &&
+          node.callee.object.name === 'document' &&
+          node.callee.property &&
+          node.callee.property.type === 'Identifier' &&
+          node.callee.property.name === 'createElement'
+        ) {
+          const arg = node.arguments[0]
+          if (arg && arg.type === 'Literal' && typeof arg.value === 'string' && arg.value.includes('-')) {
+            components.add(arg.value)
+          }
+        }
+      }
+    })
+
+    return [...components]
+  } catch (err) {
+    return []
+  }
+}
+
+/**
+ *
+ */
 export function extractGlobals (code) {
   try {
     const ast = parseJS(code, {

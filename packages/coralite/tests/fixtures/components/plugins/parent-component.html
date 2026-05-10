@@ -1,0 +1,23 @@
+<template id="plugin-parent-component">
+  <div class="parent-wrapper">
+    <h2>Plugin Integration Test</h2>
+    <div ref="injectionTarget">Loading plugin content...</div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+export default defineComponent({
+    // Look at how clean this flattened context destructuring is!
+    script: async ({ renderPluginChild, refs }) => {
+      // 1. Use the built-in refs plugin to safely grab the target
+      const containerElement = refs('injectionTarget')
+
+      // 2. Pass it into your custom plugin utility
+      if (containerElement) {
+        await renderPluginChild(containerElement)
+      }
+    }
+  })
+</script>

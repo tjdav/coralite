@@ -1,6 +1,6 @@
 import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects } from './utils.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, findAndExtractImperativeComponents } from './utils.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
@@ -37,6 +37,21 @@ ScriptManager.prototype.use = async function (plugin) {
   ) {
     if (plugin.context || typeof plugin.setup === 'function') {
       this.scriptModules.push(plugin)
+
+      if (plugin.context) {
+        let extractedComponents = []
+        for (const key in plugin.context) {
+          if (Object.hasOwn(plugin.context, key)) {
+            const contextFn = plugin.context[key]
+            const contextStr = typeof contextFn === 'function' ? `(${contextFn.toString()})` : serialize(contextFn)
+            const foundComponents = findAndExtractImperativeComponents(contextStr)
+            extractedComponents = extractedComponents.concat(foundComponents)
+          }
+        }
+        if (extractedComponents.length > 0) {
+          plugin._extractedComponents = Array.from(new Set(extractedComponents))
+        }
+      }
     }
   }
 
@@ -171,7 +186,7 @@ ScriptManager.prototype.generateInstanceWrapper = function (id, instanceContext)
   return `await coraliteComponentFunctions["${id}"]({
       properties: ${properties},
       page: ${page},
-      helpers,
+      ...pluginContexts,
       instanceId: '${instanceContext.instanceId}'
     });`
 }
@@ -228,7 +243,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     return resolvedProps;
   });\n`)
 
-  entryCodeParts.push(`const getHelpers = async (context) => {
+  entryCodeParts.push(`const getClientContext = async (context) => {
     const clientContextProps = {}
     const resolvedProps = await resolvedContextPropsPromise;
     for (const [key, resolvedProp] of Object.entries(resolvedProps)) {
@@ -260,8 +275,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   // Add plugin dependencies explicitly if they are standalone
   for (const plugin of this.plugins) {
-    if (plugin && plugin.components && Array.isArray(plugin.components)) {
-      for (const compPath of plugin.components) {
+    if (plugin && plugin._extractedComponents && Array.isArray(plugin._extractedComponents)) {
+      for (const compPath of plugin._extractedComponents) {
         for (const [id, fnData] of Object.entries(this.sharedFunctions)) {
           if (compPath.endsWith(`/${id}.html`) || compPath.endsWith(`\\${id}.html`) || compPath === id || compPath.endsWith(`/${id}`)) {
             addComponentAndDependencies(id)
@@ -338,7 +353,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const domSerializerPath = fileURLToPath(import.meta.resolve('dom-serializer'))
 
   entryCodeParts.push(`import render from ${JSON.stringify(domSerializerPath)};\n`)
-  entryCodeParts.push('\nexport { getHelpers, getSetups, render };\n')
+  entryCodeParts.push('\nexport { getClientContext, getSetups, render };\n')
 
   const entryPoints = {
     'chunk-shared': entryCodeParts.join('').trimEnd()
@@ -600,57 +615,6 @@ export default {
             const module = this.scriptModules[index]
             let contents = ''
 
-            // Generate imports
-            const importMap = {}
-            if (module.imports) {
-              for (const importDefinition of module.imports) {
-                const specifier = JSON.stringify(importDefinition.specifier)
-                let attributesString = ''
-                if (importDefinition.attributes) {
-                  attributesString = ` with { ${Object.entries(importDefinition.attributes).map(([key, value]) => `${key}: ${JSON.stringify(value)}`).join(', ')} }`
-                }
-
-                // Handle namespaceExport separately to avoid invalid syntax (e.g. import Def, * as N, { Named })
-                if (importDefinition.namespaceExport) {
-                  contents += `import * as ${importDefinition.namespaceExport} from ${specifier}${attributesString};\n`
-                  importMap[importDefinition.namespaceExport] = importDefinition.namespaceExport
-                }
-
-                // Handle default and namedExport exports together
-                const parts = []
-                if (importDefinition.defaultExport) {
-                  parts.push(importDefinition.defaultExport)
-                  importMap[importDefinition.defaultExport] = importDefinition.defaultExport
-                }
-
-                if (importDefinition.namedExports && importDefinition.namedExports.length) {
-                  parts.push(`{ ${importDefinition.namedExports.join(', ')} }`)
-                  for (const namedExport of importDefinition.namedExports) {
-                    // Check for "as" syntax: "original as exportAlias"
-                    if (namedExport.includes(' as ')) {
-                      const [, exportAlias] = namedExport.split(' as ')
-                      importMap[exportAlias.trim()] = exportAlias.trim()
-                    } else {
-                      importMap[namedExport.trim()] = namedExport.trim()
-                    }
-                  }
-                }
-
-                if (parts.length > 0) {
-                  const importStr = parts.join(', ')
-                  contents += `import ${importStr} from ${specifier}${attributesString};\n`
-                }
-              }
-            }
-
-            // Generate imports object for context injection
-            const importEntries = Object.entries(importMap)
-            const importsObjContent = importEntries.length > 0
-              ? `const pluginImports = { ${importEntries.map(([key, value]) => `"${key}": ${value}`).join(', ')} };`
-              : 'const pluginImports = {};'
-
-            contents += importsObjContent + '\n'
-
             // Generate config object
             const configContent = module.config
               ? `const pluginConfig = ${JSON.stringify(module.config)};`
@@ -664,7 +628,6 @@ export default {
               const setup = ${setupFn};
               if (!setup) return {};
               const contextObject = {
-                imports: pluginImports,
                 config: pluginConfig,
                 ...context
               };
@@ -683,7 +646,6 @@ export default {
                   contents += `  "${key}": async (context) => {
                     const globalContext = {
                       ...context,
-                      imports: pluginImports,
                       config: pluginConfig
                     };
                     const fn = ${fn};

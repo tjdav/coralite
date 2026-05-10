@@ -1,4 +1,4 @@
-import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, findAndExtractProperties, extractGlobals, mergePluginState } from './utils.js'
+import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, findAndExtractProperties, extractGlobals, mergePluginState, findAndExtractImperativeComponents } from './utils.js'
 import { getHtmlFile, getHtmlFiles } from './html.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
 import { transformCss } from './style-transform.js'

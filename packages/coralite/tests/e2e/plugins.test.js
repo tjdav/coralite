@@ -24,4 +24,20 @@ test.describe('Plugins Extensibility', () => {
     const metaInfo = page.getByTestId('meta-info')
     await expect(metaInfo).toHaveText('Title: Plugins Test Page')
   })
+
+  test('should dynamically render child and load dynamic import from plugin context', async ({ page }) => {
+    await page.goto('/plugins/dynamic-plugin/')
+    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
+    try {
+      await page.evaluate(() => window.__coralite_ready__)
+    } catch (e) {
+      await page.waitForTimeout(500)
+    }
+
+    const child = page.locator('plugin-injected-child')
+    await expect(child).toBeVisible()
+
+    // Check that the dynamic module was executed and text assigned
+    await expect(child).toHaveText('Dynamic Module Loaded!')
+  })
 })

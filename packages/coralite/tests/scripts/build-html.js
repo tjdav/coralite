@@ -1,5 +1,6 @@
 import { Coralite, staticAssetPlugin } from '../../lib/index.js'
 import { testContextPlugin } from '../fixtures/plugins/test-context-plugin.js'
+import mockPlugin from '../fixtures/plugins/mock-plugin.js'
 
 const coralite = new Coralite({
   components: 'tests/fixtures/components',
@@ -14,6 +15,7 @@ const coralite = new Coralite({
   ],
   plugins: [
     testContextPlugin,
+    mockPlugin,
     staticAssetPlugin([{
       src: 'package.json',
       dest: 'static-coralite.json'

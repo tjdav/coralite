@@ -56,88 +56,10 @@ function validateStringArray (value, paramName) {
 }
 
 /**
- * Validates that a value is an array of Import Objects
- * @param {*} value - Value to validate
- * @param {string} paramName - Parameter name for error messages
- * @throws {Error} If value is defined but not an array of objects
- */
-function validateImportArray (value, paramName) {
-  if (!Array.isArray(value)) {
-    throw new Error(
-      `Coralite plugin validation failed: "${paramName}" must be an array, received ${typeof value}`
-    )
-  }
-
-  for (let i = 0; i < value.length; i++) {
-    const item = value[i]
-
-    if (typeof item !== 'object') {
-      throw new Error(
-        `Coralite plugin validation failed: "${paramName}[${i}]" must be an object, received ${typeof item}`
-      )
-    }
-
-    if (typeof item.specifier !== 'string' || item.specifier.trim().length === 0) {
-      throw new Error(
-        `Coralite plugin validation failed: "${paramName}[${i}].specifier" must be a non-empty string`
-      )
-    }
-
-    if (item.defaultExport != null && typeof item.defaultExport !== 'string') {
-      throw new Error(
-        `Coralite plugin validation failed: "${paramName}[${i}].defaultExport" must be a string`
-      )
-    }
-
-    if (item.namedExports != null && !Array.isArray(item.namedExports)) {
-      throw new Error(
-        `Coralite plugin validation failed: "${paramName}[${i}].namedExports" must be an array`
-      )
-    }
-
-    if (item.attributes != null && typeof item.attributes !== 'object') {
-      throw new Error(
-        `Coralite plugin validation failed: "${paramName}[${i}].attributes" must be an object`
-      )
-    }
-
-    if (item.namespaceExport != null && typeof item.namespaceExport !== 'string') {
-      throw new Error(
-        `Coralite plugin validation failed: "${paramName}[${i}].namespaceExport" must be a string`
-      )
-    }
-  }
-}
-
-/**
- * Processes a single components file with optional caching
- * @param {string} path - Template file path
- * @returns {HTMLData} Template data
- * @throws {Error} If components file cannot be read or is invalid
- */
-function processComponents (path) {
-  try {
-    const componentData = {
-      path: {
-        pathname: path,
-        dirname: dirname(path),
-        filename: basename(path)
-      }
-    }
-
-    return componentData
-  } catch (error) {
-    throw new Error(
-      `Coralite plugin component processing failed for "${path}": ${error.message}`
-    )
-  }
-}
-
-/**
  * Creates a new Coralite plugin instance based on provided configuration options.
  * @template T
- * @param {CoralitePlugin<T> & ThisType<Coralite> & { components?: string[] }} options - Plugin configuration object
- * @returns {CoralitePlugin<T> & { components: HTMLData[] }} A configured plugin instance ready to be registered with Coralite
+ * @param {CoralitePlugin<T> & ThisType<Coralite>} options - Plugin configuration object
+ * @returns {CoralitePlugin<T>} A configured plugin instance ready to be registered with Coralite
  * @example
  * // Basic plugin
  * const myPlugin = definePlugin({
@@ -173,7 +95,6 @@ function processComponents (path) {
 export function definePlugin ({
   name,
   method,
-  components = [],
   onPageSet,
   onPageUpdate,
   onPageDelete,
@@ -204,9 +125,6 @@ export function definePlugin ({
   validateOptionalFunction(onAfterBuild, 'onAfterBuild')
   validateOptionalFunction(server, 'server')
 
-  // Validate components
-  validateStringArray(components, 'components')
-
   // Validate client plugin if provided
   if (client != null) {
     if (typeof client !== 'object') {
@@ -222,16 +140,6 @@ export function definePlugin ({
       )
     }
 
-    if (client.helpers != null && typeof client.helpers !== 'object') {
-      throw new Error(
-        `Coralite plugin validation failed: "client.helpers" must be an object, received ${typeof client.helpers}`
-      )
-    }
-
-    if (client.imports != null) {
-      validateImportArray(client.imports, 'client.imports')
-    }
-
     if (client.config != null && typeof client.config !== 'object') {
       throw new Error(
         `Coralite plugin validation failed: "client.config" must be an object, received ${typeof client.config}`
@@ -242,26 +150,10 @@ export function definePlugin ({
   // Process component files with error handling
   /** @type {HTMLData[]} */
   const componentHTMLData = []
-
-  if (components.length > 0) {
-    try {
-      // Process all components
-      for (const path of components) {
-        componentHTMLData.push(processComponents(path))
-      }
-    } catch (error) {
-      // Enhance error message with plugin context
-      throw new Error(
-        `Coralite plugin "${name}" failed to load components: ${error.message}`
-      )
-    }
-  }
-
   // Create the plugin object with all configured properties
   return {
     name,
     method,
-    components: componentHTMLData,
     onPageSet,
     onPageUpdate,
     onPageDelete,

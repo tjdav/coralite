@@ -20,7 +20,7 @@ describe('ScriptManager', () => {
       const sm = new ScriptManager()
 
       assert.strictEqual(Object.values(sm.sharedFunctions).length, 0)
-      assert.strictEqual(Object.keys(sm.helpers).length, 0)
+      assert.strictEqual(Object.keys(sm.contextProps).length, 0)
       assert.strictEqual(sm.plugins.length, 0)
     })
   })
@@ -46,12 +46,12 @@ describe('ScriptManager', () => {
       assert.strictEqual(sm.scriptModules[0], plugin)
     })
 
-    it('should register plugin with helpers', async () => {
+    it('should register plugin with context', async () => {
       const helper1 = () => 'helper1'
       const helper2 = (x) => x * 2
 
       const plugin = {
-        helpers: {
+        context: {
           helper1,
           helper2
         }
@@ -60,25 +60,25 @@ describe('ScriptManager', () => {
       await sm.use(plugin)
 
       assert.strictEqual(sm.scriptModules.length, 1)
-      assert.strictEqual(sm.scriptModules[0].helpers.helper1, helper1)
-      assert.strictEqual(sm.scriptModules[0].helpers.helper2, helper2)
+      assert.strictEqual(sm.scriptModules[0].context.helper1, helper1)
+      assert.strictEqual(sm.scriptModules[0].context.helper2, helper2)
       assert.strictEqual(sm.plugins.length, 1)
     })
 
-    it('should register plugin with both setup and helpers', async () => {
+    it('should register plugin with both setup and context', async () => {
       const setupMock = mock.fn()
       const helper = () => 'test'
 
       const plugin = {
         setup: setupMock,
-        helpers: { testHelper: helper }
+        context: { testHelper: helper }
       }
 
       await sm.use(plugin)
 
       assert.strictEqual(setupMock.mock.calls.length, 0)
       assert.strictEqual(sm.scriptModules.length, 1)
-      assert.strictEqual(sm.scriptModules[0].helpers.testHelper, helper)
+      assert.strictEqual(sm.scriptModules[0].context.testHelper, helper)
     })
 
     it('should register function plugin', async () => {
@@ -95,48 +95,48 @@ describe('ScriptManager', () => {
       const helper = () => 'test'
       const plugin = {
         setup: null,
-        helpers: { test: helper }
+        context: { test: helper }
       }
 
       await sm.use(plugin)
 
-      assert.strictEqual(sm.scriptModules[0].helpers.test, helper)
+      assert.strictEqual(sm.scriptModules[0].context.test, helper)
     })
 
     it('should handle plugin with undefined setup', async () => {
       const helper = () => 'test'
       const plugin = {
         setup: undefined,
-        helpers: { test: helper }
+        context: { test: helper }
       }
 
       await sm.use(plugin)
 
-      assert.strictEqual(sm.scriptModules[0].helpers.test, helper)
+      assert.strictEqual(sm.scriptModules[0].context.test, helper)
     })
 
     it('should handle plugin with no setup property', async () => {
       const helper = () => 'test'
-      const plugin = { helpers: { test: helper } }
+      const plugin = { context: { test: helper } }
 
       await sm.use(plugin)
 
-      assert.strictEqual(sm.scriptModules[0].helpers.test, helper)
+      assert.strictEqual(sm.scriptModules[0].context.test, helper)
     })
 
-    it('should skip helpers that are not own properties', async () => {
+    it('should skip context that are not own properties', async () => {
       const protoHelpers = { inherited: () => 'inherited' }
-      const helpers = Object.create(protoHelpers)
-      helpers.own = () => 'own'
+      const context = Object.create(protoHelpers)
+      context.own = () => 'own'
 
-      const plugin = { helpers }
+      const plugin = { context }
 
       await sm.use(plugin)
 
       // ScriptManager does not process inheritance manually when pushing to scriptModules?
       // But compileAllInstances checks Object.hasOwn.
       // So we check if scriptModules has the helper.
-      assert.strictEqual(sm.scriptModules[0].helpers, helpers)
+      assert.strictEqual(sm.scriptModules[0].context, context)
       // The verification of skipping inherited properties happens during compilation (esbuild onLoad).
     })
 
@@ -160,17 +160,17 @@ describe('ScriptManager', () => {
       assert.strictEqual(setupMock.mock.calls.length, 0)
     })
 
-    it('should handle helpers with async methods', async () => {
+    it('should handle context with async methods', async () => {
       const asyncHelper = async () => 'async'
-      const plugin = { helpers: { asyncHelper } }
+      const plugin = { context: { asyncHelper } }
 
       await sm.use(plugin)
 
-      assert.strictEqual(sm.scriptModules[0].helpers.asyncHelper, asyncHelper)
+      assert.strictEqual(sm.scriptModules[0].context.asyncHelper, asyncHelper)
     })
   })
 
-  describe('addHelper() - Helper Registration', () => {
+  describe('addContextProp() - Helper Registration', () => {
     let sm
 
     beforeEach(() => {
@@ -179,18 +179,18 @@ describe('ScriptManager', () => {
 
     it('should add helper function', async () => {
       const helper = (x) => x + 1
-      await sm.addHelper('increment', helper)
+      await sm.addContextProp('increment', helper)
 
-      assert.ok(sm.helpers.increment)
-      assert.strictEqual(sm.helpers.increment, '(x) => x + 1')
+      assert.ok(sm.contextProps.increment)
+      assert.strictEqual(sm.contextProps.increment, '(x) => x + 1')
     })
 
     it('should add async helper function', async () => {
       const asyncHelper = async (x) => x * 2
-      await sm.addHelper('double', asyncHelper)
+      await sm.addContextProp('double', asyncHelper)
 
-      assert.ok(sm.helpers.double)
-      assert.strictEqual(sm.helpers.double, 'async (x) => x * 2')
+      assert.ok(sm.contextProps.double)
+      assert.strictEqual(sm.contextProps.double, 'async (x) => x * 2')
     })
 
     it('should add method shorthand helper', async () => {
@@ -199,22 +199,22 @@ describe('ScriptManager', () => {
           return 'test'
         }
       }
-      await sm.addHelper('methodHelper', obj.method)
+      await sm.addContextProp('methodHelper', obj.method)
 
-      assert.ok(sm.helpers.methodHelper)
-      assert.match(sm.helpers.methodHelper, /function/)
+      assert.ok(sm.contextProps.methodHelper)
+      assert.match(sm.contextProps.methodHelper, /function/)
     })
 
     it('should overwrite existing helper with same name', async () => {
-      await sm.addHelper('test', () => 'first')
-      assert.strictEqual(sm.helpers.test, '() => \'first\'')
+      await sm.addContextProp('test', () => 'first')
+      assert.strictEqual(sm.contextProps.test, '() => \'first\'')
 
-      await sm.addHelper('test', () => 'second')
-      assert.strictEqual(sm.helpers.test, '() => \'second\'')
+      await sm.addContextProp('test', () => 'second')
+      assert.strictEqual(sm.contextProps.test, '() => \'second\'')
     })
 
     it('should return this for method chaining', async () => {
-      const result = await sm.addHelper('test', () => 'test')
+      const result = await sm.addContextProp('test', () => 'test')
       assert.strictEqual(result, sm)
     })
 
@@ -223,17 +223,17 @@ describe('ScriptManager', () => {
         const y = x * 2
         return y + 1
       }
-      await sm.addHelper('complex', arrowWithBlock)
+      await sm.addContextProp('complex', arrowWithBlock)
 
-      assert.ok(sm.helpers.complex.includes('const y = x * 2'))
+      assert.ok(sm.contextProps.complex.includes('const y = x * 2'))
     })
 
     it('should handle function with default parameters', async () => {
       const fn = (a = 1, b = 2) => a + b
-      await sm.addHelper('defaults', fn)
+      await sm.addContextProp('defaults', fn)
 
-      assert.ok(sm.helpers.defaults.includes('a = 1'))
-      assert.ok(sm.helpers.defaults.includes('b = 2'))
+      assert.ok(sm.contextProps.defaults.includes('a = 1'))
+      assert.ok(sm.contextProps.defaults.includes('b = 2'))
     })
 
     it('should handle getter/setter methods', async () => {
@@ -249,31 +249,31 @@ describe('ScriptManager', () => {
       const getterDescriptor = Object.getOwnPropertyDescriptor(obj, 'value')
       const setterDescriptor = Object.getOwnPropertyDescriptor(obj, 'value')
 
-      await sm.addHelper('getter', getterDescriptor.get)
-      await sm.addHelper('setter', setterDescriptor.set)
+      await sm.addContextProp('getter', getterDescriptor.get)
+      await sm.addContextProp('setter', setterDescriptor.set)
 
-      assert.ok(sm.helpers.getter.includes('get value'))
-      assert.ok(sm.helpers.setter.includes('set value'))
+      assert.ok(sm.contextProps.getter.includes('get value'))
+      assert.ok(sm.contextProps.setter.includes('set value'))
     })
   })
 
-  describe('getHelpers() - Helper Retrieval', () => {
+  describe('getClientContextContent() - Client Context Retrieval', () => {
     let sm
 
     beforeEach(() => {
       sm = new ScriptManager()
     })
 
-    it('should return empty object string when no helpers', () => {
-      const result = sm.getHelpers()
-      assert.strictEqual(result, '{}')
+    it('should return empty object string when no context props', () => {
+      const result = sm.getClientContextContent()
+      assert.strictEqual(result, '')
     })
 
-    it('should return formatted helpers string', async () => {
-      await sm.addHelper('helper1', () => 'test1')
-      await sm.addHelper('helper2', (x) => x * 2)
+    it('should return formatted context string', async () => {
+      await sm.addContextProp('helper1', () => 'test1')
+      await sm.addContextProp('helper2', (x) => x * 2)
 
-      const result = sm.getHelpers()
+      const result = sm.getClientContextContent()
 
       assert.ok(result.includes('"helper1": async (globalContext) =>'))
       assert.ok(result.includes('() => \'test1\''))
@@ -281,33 +281,33 @@ describe('ScriptManager', () => {
       assert.ok(result.includes('(x) => x * 2'))
     })
 
-    it('should handle multiple helpers', async () => {
-      await sm.addHelper('a', () => 1)
-      await sm.addHelper('b', () => 2)
-      await sm.addHelper('c', () => 3)
+    it('should handle multiple context', async () => {
+      await sm.addContextProp('a', () => 1)
+      await sm.addContextProp('b', () => 2)
+      await sm.addContextProp('c', () => 3)
 
-      const result = sm.getHelpers()
+      const result = sm.getClientContextContent()
 
       assert.ok(result.includes('"a":'))
       assert.ok(result.includes('"b":'))
       assert.ok(result.includes('"c":'))
     })
 
-    it('should handle helpers with special characters in names', async () => {
-      await sm.addHelper('$private', () => 'private')
-      await sm.addHelper('_internal', () => 'internal')
+    it('should handle context with special characters in names', async () => {
+      await sm.addContextProp('$private', () => 'private')
+      await sm.addContextProp('_internal', () => 'internal')
 
-      const result = sm.getHelpers()
+      const result = sm.getClientContextContent()
 
       assert.ok(result.includes('"$private":'))
       assert.ok(result.includes('"_internal":'))
     })
 
     it('should ignore context parameter (for compatibility)', async () => {
-      await sm.addHelper('test', () => 'value')
+      await sm.addContextProp('test', () => 'value')
 
-      const result1 = sm.getHelpers()
-      const result2 = sm.getHelpers({ instanceId: 'test' })
+      const result1 = sm.getClientContextContent()
+      const result2 = sm.getClientContextContent()
 
       assert.strictEqual(result1, result2)
     })
@@ -497,7 +497,7 @@ describe('ScriptManager', () => {
       sm.registerComponent({
         id: 'test',
         script: {
-          content: `(context) => {
+          content: `({ double, values }) => {
             return context.values.count * 2
           }`
         }
@@ -525,7 +525,7 @@ describe('ScriptManager', () => {
       sm.registerComponent({
         id: 'shared',
         script: {
-          content: `(context) => {
+          content: `({ double, values }) => {
             return context.values.x + context.values.y
           }`
         }
@@ -590,13 +590,13 @@ describe('ScriptManager', () => {
       assert.ok(result.manifest['component2'])
     })
 
-    it('should include helpers in compiled code', async () => {
-      await sm.addHelper('double', () => (x) => x * 2)
+    it('should include context in compiled code', async () => {
+      await sm.addContextProp('double', () => (x) => x * 2)
       sm.registerComponent({
         id: 'test',
         script: {
-          content: `(context, helpers) => {
-            return helpers.double(context.values.x)
+          content: `({ double, properties }) => {
+            return double(properties.x)
           }`
         }
       })
@@ -614,14 +614,14 @@ describe('ScriptManager', () => {
       const chunkSharedHashName = result.manifest['chunk-shared']
       const chunkSharedText = result.outputFiles[chunkSharedHashName].text
       assert.ok(chunkSharedText.includes('double'))
-      assert.ok(chunkSharedText.includes('coraliteComponentScriptHelpers'))
+      assert.ok(chunkSharedText.includes('coraliteComponentClientContextProps'))
     })
 
     it('should handle instances with refs', async () => {
       sm.registerComponent({
         id: 'test',
         script: {
-          content: `(context) => {
+          content: `({ double, values }) => {
             return context.refs.button ? 'found' : 'not found'
           }`
         }
@@ -647,7 +647,7 @@ describe('ScriptManager', () => {
       sm.registerComponent({
         id: 'test',
         script: {
-          content: `(context) => {
+          content: `({ double, values }) => {
             return context.component.title || 'no title'
           }`
         }
@@ -693,7 +693,7 @@ describe('ScriptManager', () => {
       sm.registerComponent({
         id: 'async',
         script: {
-          content: `async (context) => {
+          content: `async ({ double, values }) => {
             await new Promise(resolve => setTimeout(resolve, 1))
             return context.values.x
           }`
@@ -717,15 +717,15 @@ describe('ScriptManager', () => {
     })
 
     it('should handle complex instance contexts', async () => {
-      await sm.addHelper('format', () => (context) => (value) => {
+      await sm.addContextProp('format', () => (context) => (value) => {
         return `${context.instanceId}: ${value}`
       })
 
       sm.registerComponent({
         id: 'complex',
         script: {
-          content: `(context, helpers) => {
-            const formatter = helpers.format(context)
+          content: `({ double, values }) => {
+            const formatter = context.format(context)
             return formatter(context.values.message)
           }`
         }
@@ -780,13 +780,13 @@ describe('ScriptManager', () => {
         setup: () => {
           return { customProperty: 'test' }
         },
-        helpers: {
+        context: {
           add: () => (context) => (a, b) => a + b
         }
       })
 
       // Add another helper
-      await sm.addHelper('multiply', () => (context) => (a, b) => a * b)
+      await sm.addContextProp('multiply', () => (context) => (a, b) => a * b)
 
       // Register component
       sm.registerComponent({
@@ -794,9 +794,9 @@ describe('ScriptManager', () => {
         script: {
           properties: {},
           lineOffset: 0,
-          content: `(context, helpers) => {
-            const sum = helpers.add(context.values.a, context.values.b)
-            const product = helpers.multiply(sum, context.values.multiplier)
+          content: `({ double, values }) => {
+            const sum = context.add(context.values.a, context.values.b)
+            const product = context.multiply(sum, context.values.multiplier)
             // also return customProperty if present to prove setup injected it
             if (context.values.customProperty === 'test') {
               return product + 1000
@@ -830,42 +830,42 @@ describe('ScriptManager', () => {
       assert.ok(result.outputFiles[chunkHashName])
     })
 
-    it('should handle multiple plugins with overlapping helpers', async () => {
+    it('should handle multiple plugins with overlapping context', async () => {
       const sm = new ScriptManager()
 
       await sm.use({
-        helpers: {
+        context: {
           helper1: () => 'first',
           shared: (x) => x * 2
         }
       })
 
       await sm.use({
-        helpers: {
+        context: {
           helper2: () => 'second',
           shared: (x) => x * 3
         }
       })
 
       assert.strictEqual(sm.scriptModules.length, 2)
-      assert.ok(sm.scriptModules[0].helpers.helper1)
-      assert.ok(sm.scriptModules[1].helpers.helper2)
+      assert.ok(sm.scriptModules[0].context.helper1)
+      assert.ok(sm.scriptModules[1].context.helper2)
       // Overwrite behavior is handled by esbuild spreading imports, not internal state
     })
 
     it('should handle method chaining throughout', async () => {
       const sm = new ScriptManager()
 
-      await sm.use({ helpers: { h1: () => 1 } })
-      await sm.addHelper('h2', () => 2)
+      await sm.use({ context: { h1: () => 1 } })
+      await sm.addContextProp('h2', () => 2)
       sm.registerComponent({
         id: 't1',
         script: { content: "() => 'test'" }
       })
 
       assert.strictEqual(sm.scriptModules.length, 1)
-      assert.ok(sm.scriptModules[0].helpers.h1)
-      assert.ok(sm.helpers.h2)
+      assert.ok(sm.scriptModules[0].context.h1)
+      assert.ok(sm.contextProps.h2)
       assert.ok(sm.sharedFunctions['t1'])
     })
   })
@@ -887,14 +887,14 @@ describe('ScriptManager', () => {
       assert.strictEqual(sm.plugins.length, 1)
     })
 
-    it('should handle plugin with empty helpers object', async () => {
-      await sm.use({ helpers: {} })
-      assert.strictEqual(Object.keys(sm.helpers).length, 0)
+    it('should handle plugin with empty context object', async () => {
+      await sm.use({ context: {} })
+      assert.strictEqual(Object.keys(sm.contextProps).length, 0)
     })
 
     it('should handle helper with no name', async () => {
-      await sm.addHelper('', () => 'test')
-      assert.ok(sm.helpers[''])
+      await sm.addContextProp('', () => 'test')
+      assert.ok(sm.contextProps[''])
     })
 
     it('should handle component with non-function script', async () => {
@@ -963,33 +963,33 @@ describe('ScriptManager', () => {
     })
 
     it('should handle special characters in helper names', async () => {
-      await sm.addHelper('$private', () => 'private')
-      await sm.addHelper('_internal', () => 'internal')
-      await sm.addHelper('helper$With$Dollars', () => 'dollars')
+      await sm.addContextProp('$private', () => 'private')
+      await sm.addContextProp('_internal', () => 'internal')
+      await sm.addContextProp('helper$With$Dollars', () => 'dollars')
 
-      assert.ok(sm.helpers.$private)
-      assert.ok(sm.helpers._internal)
-      assert.ok(sm.helpers.helper$With$Dollars)
+      assert.ok(sm.contextProps.$private)
+      assert.ok(sm.contextProps._internal)
+      assert.ok(sm.contextProps.helper$With$Dollars)
     })
 
-    it('should handle helpers that return complex objects', async () => {
+    it('should handle context that return complex objects', async () => {
       const complexHelper = () => ({
         nested: { value: 42 },
         array: [1, 2, 3],
         method: () => 'test'
       })
 
-      await sm.addHelper('complex', complexHelper)
+      await sm.addContextProp('complex', complexHelper)
 
-      assert.ok(sm.helpers.complex)
-      assert.ok(sm.helpers.complex.includes('nested'))
+      assert.ok(sm.contextProps.complex)
+      assert.ok(sm.contextProps.complex.includes('nested'))
     })
 
     it('should handle component that uses all context properties', async () => {
       sm.registerComponent({
         id: 'full',
         script: {
-          content: `(context) => {
+          content: `({ double, values }) => {
             return \`\${context.instanceId}-\${context.componentId}-\${context.values.x}-\${context.refs.el}-\${context.component.title}\`
           }`
         }
@@ -1059,218 +1059,12 @@ describe('ScriptManager', () => {
   })
 
 
-  describe('ScriptManager Context Imports', () => {
-    it('should inject imports into globalContext.imports for helpers', async () => {
-      const sm = new ScriptManager()
-
-      const plugin = {
-        name: 'test-plugin',
-        imports: [
-          {
-            specifier: './temp-test-module.js',
-            defaultExport: 'pkg'
-          }
-        ],
-        helpers: {
-          testHelper: function (globalContext) {
-            return (localContext) => {
-              return () => {
-                return `Default: ${globalContext.imports.pkg}`
-              }
-            }
-          }
-        }
-      }
-
-      await sm.use(plugin)
-
-      sm.registerComponent({
-        id: 'test',
-        script: {
-          content: `(context, helpers) => {
-            return helpers.testHelper()
-          }`
-        }
-      })
-
-      const instances = {
-        'inst-1': {
-          componentId: 'test',
-          instanceId: 'inst-1',
-          properties: {},
-          component: {}
-        }
-      }
-
-      const outputResult = await sm.compileAllInstances(instances, 'development')
-      const chunkSharedHashName = outputResult.manifest['chunk-shared']
-      const output = outputResult.outputFiles[chunkSharedHashName].text
-
-      const injectionRegex = /imports\s*:\s*pluginImports/
-
-      assert.match(output, injectionRegex, 'Context injection logic not found')
-      assert.ok(output.includes('pkg'), 'Expected "pkg" in output')
-    })
-
-    it('should handle multiple plugins with isolated imports (sequentially)', async () => {
-      const sm = new ScriptManager()
-
-      await sm.use({
-        imports: [{
-          specifier: './temp-test-module.js',
-          defaultExport: 'foo'
-        }],
-        helpers: {
-          helperA: (globalContext) => (localContext) => () => globalContext.imports.foo
-        }
-      })
-
-      await sm.use({
-        imports: [{
-          specifier: './temp-test-module.js',
-          defaultExport: 'bar'
-        }],
-        helpers: {
-          helperB: (globalContext) => (localContext) => () => globalContext.imports.bar
-        }
-      })
-
-      sm.registerComponent({
-        id: 'test',
-        script: { content: '() => {}' }
-      })
-      const outputResult = await sm.compileAllInstances({
-        'inst-1': {
-          componentId: 'test',
-          instanceId: '1',
-          properties: {},
-          component: {}
-        }
-      }, 'development')
-
-      const chunkSharedHashName = outputResult.manifest['chunk-shared']
-      const output = outputResult.outputFiles[chunkSharedHashName].text
-
-      const injectionRegex = /imports\s*:\s*pluginImports/g
-      const matches = output.match(injectionRegex)
-
-      assert.ok(matches, 'Matches should not be null')
-      // Both helpers each inject the globalContext config and imports once, plus the getSetups does it once.
-      // Actually esbuild matches two plugin imports.
-      assert.ok(matches.length >= 2, `Expected at least 2 injection patterns, found ${matches ? matches.length : 0}`)
-    })
-
-    it('should handle namedExports with "as" alias syntax', async () => {
-      const sm = new ScriptManager()
-
-      await sm.use({
-        imports: [{
-          specifier: './temp-test-module.js',
-          namedExports: ['version as pkgVersion', 'name']
-        }],
-        helpers: {
-          getVersion: (globalContext) => (localContext) => () => globalContext.imports.pkgVersion
-        }
-      })
-
-      sm.registerComponent({
-        id: 'test',
-        script: { content: '() => {}' }
-      })
-      const outputResult = await sm.compileAllInstances({
-        'inst-1': {
-          componentId: 'test',
-          instanceId: '1',
-          properties: {},
-          component: {}
-        }
-      }, 'development')
-
-      const chunkSharedHashName = outputResult.manifest['chunk-shared']
-      const output = outputResult.outputFiles[chunkSharedHashName].text
-
-      assert.ok(output.includes('pkgVersion'), 'Output should contain aliased import name')
-      assert.ok(output.includes('name'), 'Output should contain regular named import')
-    })
-
-    it('should handle namespaceExport', async () => {
-      const sm = new ScriptManager()
-
-      await sm.use({
-        imports: [{
-          specifier: './temp-test-module.js',
-          namespaceExport: 'pkg'
-        }],
-        helpers: {
-          getPkg: (globalContext) => (localContext) => () => globalContext.imports.pkg
-        }
-      })
-
-      sm.registerComponent({
-        id: 'test',
-        script: { content: '() => {}' }
-      })
-      const outputResult = await sm.compileAllInstances({
-        'inst-1': {
-          componentId: 'test',
-          instanceId: '1',
-          properties: {},
-          component: {}
-        }
-      }, 'development')
-
-      const chunkSharedHashName = outputResult.manifest['chunk-shared']
-      const output = outputResult.outputFiles[chunkSharedHashName].text
-
-      // Esbuild bundles the import, so we check if the key is present in pluginImports
-      assert.ok(output.includes('"pkg": '), 'Namespace should be mapped in pluginImports')
-    })
-
-    it('should handle combined default, namespace, and named exports', async () => {
-      const sm = new ScriptManager()
-
-      await sm.use({
-        imports: [{
-          specifier: './temp-test-module.js',
-          defaultExport: 'defaultPkg',
-          namespaceExport: 'allPkg',
-          namedExports: ['version as v', 'name']
-        }],
-        helpers: {
-          check: (globalContext) => (localContext) => () => true
-        }
-      })
-
-      sm.registerComponent({
-        id: 'test',
-        script: { content: '() => {}' }
-      })
-      const outputResult = await sm.compileAllInstances({
-        'inst-1': {
-          componentId: 'test',
-          instanceId: '1',
-          properties: {},
-          component: {}
-        }
-      }, 'development')
-
-      const chunkSharedHashName = outputResult.manifest['chunk-shared']
-      const output = outputResult.outputFiles[chunkSharedHashName].text
-
-      // Esbuild bundles imports, so we verify keys in pluginImports are present
-      assert.ok(output.includes('"defaultPkg": '), 'Default export mapped')
-      assert.ok(output.includes('"allPkg": '), 'Namespace export mapped')
-      assert.ok(output.includes('"v": '), 'Aliased named export mapped')
-      assert.ok(output.includes('"name": '), 'Named export mapped')
-    })
-  })
-
   describe('Async Helpers', () => {
     it('should support async phase1 initialization', async () => {
       const sm = new ScriptManager()
 
       await sm.use({
-        helpers: {
+        context: {
           testHelper: async (globalContext) => {
             // Simulate async phase1
             await new Promise(resolve => setTimeout(resolve, 10))
@@ -1299,10 +1093,10 @@ describe('ScriptManager', () => {
       const chunkSharedHashName = outputResult.manifest['chunk-shared']
       const compiledScript = outputResult.outputFiles[chunkSharedHashName].text
 
-      // Under the new orchestrator approach with esbuild ESM compilation, `await getHelpers(context)`
-      // is no longer generated as a literal string in the instances wrapper, but the `getHelpers` and
+      // Under the new orchestrator approach with esbuild ESM compilation, `await getClientContext(context)`
+      // is no longer generated as a literal string in the instances wrapper, but the `getClientContext` and
       // `phase2(localContext)` definitions still exist in the generated shared helper block.
-      assert.ok(compiledScript.includes('getHelpers'))
+      assert.ok(compiledScript.includes('getClientContext'))
       assert.ok(compiledScript.includes('phase2(localContext)'))
     })
   })
@@ -1317,7 +1111,7 @@ describe('ScriptManager', () => {
 
       await manager.use({
         config,
-        helpers: {
+        context: {
           testHelper: (globalContext) => (localContext) => {
             return globalContext.config
           }
@@ -1345,17 +1139,13 @@ describe('ScriptManager', () => {
       // Verify config injection in generated code with whitespace-agnostic regex
       // Looks for: pluginConfig = { ... "baseURL": "http://example.com" ... "apiKey": "123" ... }
       assert.match(compiledScript, /pluginConfig\s*=\s*\{\s*"baseURL"\s*:\s*"http:\/\/example\.com"\s*,\s*"apiKey"\s*:\s*"123"\s*\}/)
-
-      // Check for the context injection logic
-      // globalContext = { ...context, imports: pluginImports, config: pluginConfig }
-      assert.match(compiledScript, /const globalContext\w*\s*=\s*\{\s*\.\.\.context\w*,\s*imports\s*:\s*pluginImports\s*,\s*config\s*:\s*pluginConfig\s*\}/)
     })
 
     it('should handle missing config gracefully', async () => {
       const manager = new ScriptManager()
 
       await manager.use({
-        helpers: {
+        context: {
           testHelper: (globalContext) => (localContext) => {
             return globalContext.config
           }
