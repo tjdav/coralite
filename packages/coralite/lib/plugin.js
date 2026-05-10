@@ -56,10 +56,34 @@ function validateStringArray (value, paramName) {
 }
 
 /**
+ * Processes a single components file with optional caching
+ * @param {string} path - Template file path
+ * @returns {HTMLData} Template data
+ * @throws {Error} If components file cannot be read or is invalid
+ */
+function processComponents (path) {
+  try {
+    const componentData = {
+      path: {
+        pathname: path,
+        dirname: dirname(path),
+        filename: basename(path)
+      }
+    }
+
+    return componentData
+  } catch (error) {
+    throw new Error(
+      `Coralite plugin component processing failed for "${path}": ${error.message}`
+    )
+  }
+}
+
+/**
  * Creates a new Coralite plugin instance based on provided configuration options.
  * @template T
- * @param {CoralitePlugin<T> & ThisType<Coralite>} options - Plugin configuration object
- * @returns {CoralitePlugin<T>} A configured plugin instance ready to be registered with Coralite
+ * @param {CoralitePlugin<T> & ThisType<Coralite> & { components?: string[] }} options - Plugin configuration object
+ * @returns {CoralitePlugin<T> & { components: HTMLData[] }} A configured plugin instance ready to be registered with Coralite
  * @example
  * // Basic plugin
  * const myPlugin = definePlugin({
@@ -106,7 +130,8 @@ export function definePlugin ({
   onBeforeBuild,
   onAfterBuild,
   client,
-  server
+  server,
+  components
 }) {
   // Validate required parameters
   validateNonEmptyString(name, 'name')
@@ -147,9 +172,27 @@ export function definePlugin ({
     }
   }
 
+  // Validate components
+  validateStringArray(components, 'components')
+
   // Process component files with error handling
   /** @type {HTMLData[]} */
   const componentHTMLData = []
+
+  if (components.length > 0) {
+    try {
+      // Process all components
+      for (const path of components) {
+        componentHTMLData.push(processComponents(path))
+      }
+    } catch (error) {
+      // Enhance error message with plugin context
+      throw new Error(
+        `Coralite plugin "${name}" failed to load components: ${error.message}`
+      )
+    }
+  }
+
   // Create the plugin object with all configured properties
   return {
     name,
@@ -164,6 +207,7 @@ export function definePlugin ({
     onAfterPageRender,
     onBeforeBuild,
     onAfterBuild,
+    components: componentHTMLData,
     client,
     server
   }
