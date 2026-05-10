@@ -1,4 +1,6 @@
-export default {
+import { definePlugin } from '../../../lib/index.js'
+
+export const mockPlugin = definePlugin({
   name: 'mock-plugin',
   client: {
     context: {
@@ -25,4 +27,4 @@ export default {
       }
     }
   }
-}
+})

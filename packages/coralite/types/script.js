@@ -60,6 +60,7 @@
 
 /**
  * @typedef {Object} ScriptPlugin
+ * @property {string} [rootDir] - The root directory of the plugin
  * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {function(any): void} [setup] - Called when plugin is registered
  * @property {Object.<string, ScriptPluginHelperGlobalInstance>} [context] - Global or instance helpers to add to scripts

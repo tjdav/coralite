@@ -134,6 +134,21 @@ export function definePlugin ({
   components
 }) {
   // Validate required parameters
+
+  let callerDir
+  if (client != null && client.rootDir == null) {
+    const stack = new Error().stack
+    if (stack) {
+      const callerLine = stack.split('\n')[2]
+      if (callerLine) {
+        const match = callerLine.match(/file:\/\/(.+?):/)
+        if (match) {
+          callerDir = dirname(match[1])
+        }
+      }
+    }
+  }
+
   validateNonEmptyString(name, 'name')
 
   // Validate optional parameters
@@ -210,7 +225,10 @@ export function definePlugin ({
     onBeforeBuild,
     onAfterBuild,
     components: componentHTMLData,
-    client,
+    client: client != null ? {
+      ...client,
+      rootDir: client.rootDir || callerDir
+    } : client,
     server
   }
 }
