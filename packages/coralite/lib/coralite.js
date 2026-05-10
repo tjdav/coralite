@@ -884,16 +884,18 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
 (async () => {
   let resolveCoraliteReady;
   window.__coralite_ready__ = new Promise(resolve => resolveCoraliteReady = resolve);
+  const pendingHydrations = [];
+  const addPendingHydration = (promise) => pendingHydrations.push(promise);
   const globalAbortController = new AbortController();
   const componentManifest = ${JSON.stringify(chunkManifest)};
   const loadCache = {};
   const instanceCounters = {};
-  
+
   const loadComponent = (componentId) => {
     if (!componentManifest[componentId]) return Promise.resolve();
     if (customElements.get(componentId)) return Promise.resolve();
     if (loadCache[componentId]) return loadCache[componentId];
-    
+
     loadCache[componentId] = (async () => {
       // Dynamic import to lazy-load the component chunk
       const module = await import('${base}assets/js/' + componentManifest[componentId]);
@@ -904,12 +906,12 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
             super();
             this.componentId = module.default.componentId;
             this._abortController = null;
-            
+
             instanceCounters[this.componentId] = instanceCounters[this.componentId] || 0;
             this._index = instanceCounters[this.componentId]++;
-            
+
             this._instanceId = \`\${this.componentId}-\${this._index}\`;
-            
+
             this._properties = {};
 
             this._styles = ''
@@ -920,18 +922,18 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
 
           connectedCallback() {
             this._abortController = new AbortController();
-            
+
             if (!this._lightDomSlotsCaptured) {
               this._lightDomSlotsCaptured = true;
               this._lightDomSlots = {};
-              
+
               // Capture light DOM children
               const childNodes = Array.from(this.childNodes);
 
               for (let i = 0; i < childNodes.length; i++) {
                 const child = childNodes[i];
                 const slotName = (child.getAttribute && child.getAttribute('slot')) || 'default';
-                
+
                 if (!this._lightDomSlots[slotName]) {
                   this._lightDomSlots[slotName] = [];
                 }
@@ -959,7 +961,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 this._properties[attr.name] = attr.value;
               }
             }
-            
+
             // Merge defaults
             this._properties = Object.assign({}, module.default.defaultValues, this._properties);
 
@@ -1012,13 +1014,13 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
               }
 
               this._render();
-              
+
               const localContext = {
                 instanceId: this._instanceId,
                 componentId: this.componentId,
                 properties: this._properties,
                 page: module.default.page || {},
-                root: this, 
+                root: this,
                 signal: this._abortController.signal
               };
 
@@ -1027,7 +1029,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
 
               const pluginContexts = await getClientContext(localContext);
               Object.assign(localContext, pluginContexts);
-              
+
               localContext.imports = module.default.imports || {};
 
               if (module.default.script) {
@@ -1043,7 +1045,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                   const attrName = mutation.attributeName;
                   const camelName = attrName.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
                   const newValue = this.getAttribute(attrName);
-                  
+
                   if (this._properties[camelName] !== newValue) {
                     this._properties[camelName] = newValue;
                     if (camelName !== attrName) {
@@ -1129,7 +1131,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 for (let j = 0; j < item.tokens.length; j++) {
                   const token = item.tokens[j];
                   let value = this._properties[token.name];
-                  
+
                   if (typeof value === 'function') {
                     value = value(this._properties);
                   }
@@ -1151,7 +1153,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 for (let j = 0; j < item.tokens.length; j++) {
                   const token = item.tokens[j];
                   let value = this._properties[token.name];
-                  
+
                   if (typeof value === 'function') {
                     value = value(this._properties);
                   }
@@ -1180,7 +1182,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
             }
 
             content += render(ast, { decodeEntities: false });
-            
+
             this.innerHTML = content;
 
             // Handle slots projection
@@ -1232,7 +1234,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
             const refElements = this.querySelectorAll('[ref]');
             for (let i = 0; i < refElements.length; i++) {
               const element = refElements[i];
-              
+
               let current = element.parentNode;
               let isNested = false;
               while (current && current !== this) {
@@ -1242,11 +1244,11 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 }
                 current = current.parentNode;
               }
-              
+
               if (isNested) continue;
 
               const refName = element.getAttribute('ref');
-              
+
               const dynamicId = \`\${this.componentId}__\${refName}-\${this._index}\`;
 
               element.setAttribute('ref', dynamicId);
@@ -1255,7 +1257,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
               if (previousTestId !== null) {
                 element.setAttribute('data-testid', dynamicId);
               }
-              
+
               this._properties[\`ref_\${refName}\`] = dynamicId;
             }
           }
@@ -1313,7 +1315,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
 
     Object.assign(context, pluginContexts);
     context.properties = { ...module.default.defaultValues, ...context.properties, ...setupProperties };
-    
+
     // Explicitly load declarative script dependencies if any
     const deps = module.default.dependencies || [];
     if (deps.length > 0) {
@@ -1322,7 +1324,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
     }
 
     context.imports = module.default.imports || {};
-    
+
     return async () => {
       if (module.default.script) {
         await module.default.script(context);
@@ -1330,7 +1332,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
     };
   })());
   `).join('\n')}
-  
+
   const executableScripts = await Promise.all(declarativeFunctions);
   ${this.options.mode === 'development' ? `
   for (let i = 0; i < executableScripts.length; i++) {
