@@ -273,7 +273,6 @@ Plugins are exported from `'coralite/plugins'`. When you import a plugin into a 
 ### 4.3 Client-Side Injection (`client`)
 The `client` object within a plugin definition dictates what gets serialized and bundled for the browser environment. It is strictly validated and supports the following:
 * `config`: A static JSON-serializable object to pass server data to the client.
-* `setup`: An asynchronous function executed strictly on the server during the build.
 * **`context` & The Two-Phase Currying System**: To safely bridge global plugin configuration by mapping the context properties to the coralite components `context`
   1. **Phase 1 (Global Context)**: The outermost function receives the `globalContext` (containing server-side `config`).
   2. **Phase 2 (Local Instance Context)**: It must return a second function that receives the local Web Component instance context (`{ properties, page, signal }`), where `signal` is an `AbortSignal` that triggers when the component unmounts (or `null` for declarative components).
