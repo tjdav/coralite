@@ -1386,6 +1386,50 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
         }
       }
 
+      if (!mappedRenderContextObject.scripts.content[mappedComponent.path.pathname]) {
+        /** @type {CoraliteElement | CoraliteComponentRoot} */
+        let bodyElement = mappedComponent.root
+        let headElement = null
+
+        findBodyLoop: for (let i = 0; i < mappedComponent.root.children.length; i++) {
+          const rootNode = mappedComponent.root.children[i]
+
+          if (rootNode.type === 'tag' && rootNode.name === 'html') {
+            for (let i = 0; i < rootNode.children.length; i++) {
+              const node = rootNode.children[i]
+
+              if (node.type === 'tag' && node.name === 'body') {
+                bodyElement = node
+              }
+              if (node.type === 'tag' && node.name === 'head') {
+                headElement = node
+              }
+            }
+          }
+        }
+        const readinessScriptElement = createCoraliteElement({
+          type: 'tag',
+          name: 'script',
+          parent: headElement || mappedComponent.root,
+          attribs: {},
+          children: []
+        })
+
+        const readinessData = 'window.__coralite_ready__ = Promise.resolve(); window.__coralite_resolve_ready__ = () => {};'
+
+        readinessScriptElement.children.push(createCoraliteTextNode({
+          type: 'text',
+          data: readinessData,
+          parent: readinessScriptElement
+        }))
+
+        if (headElement) {
+          headElement.children.unshift(readinessScriptElement)
+        } else {
+          mappedComponent.root.children.unshift(readinessScriptElement)
+        }
+      }
+
       let rawHTML = ''
       // render document
       rawHTML = this.transform(mappedComponent.root)
