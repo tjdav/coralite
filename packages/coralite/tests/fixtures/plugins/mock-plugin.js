@@ -5,7 +5,7 @@ export default {
       // Phase 1: Global Context
       renderPluginChild: async (globalContext) => {
         // Dynamically resolve mock-module.js
-        const mod = await import('http://localhost:3000/mock-module.js')
+        const mod = await import('./mock-module.js')
         // Phase 2: Local Instance Context
         return (localContext) => {
           // Phase 3: The actual callable utility expecting a target element
