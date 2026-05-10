@@ -3,13 +3,10 @@ import { test, expect } from '@playwright/test'
 test.describe('Plugins Extensibility', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/plugins/')
+    // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    try {
-      await page.evaluate(() => window.__coralite_ready__)
-    } catch (e) {
-      await page.waitForTimeout(500)
-    }
-
+    // @ts-ignore
+    await page.evaluate(() => window.__coralite_ready__)
   })
 
   test('should inject custom context and verify execution', async ({ page }) => {
@@ -27,12 +24,6 @@ test.describe('Plugins Extensibility', () => {
 
   test('should dynamically render child and load dynamic import from plugin context', async ({ page }) => {
     await page.goto('/plugins/dynamic-plugin/')
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    try {
-      await page.evaluate(() => window.__coralite_ready__)
-    } catch (e) {
-      await page.waitForTimeout(500)
-    }
 
     const child = page.locator('plugin-injected-child')
     await expect(child).toBeVisible()

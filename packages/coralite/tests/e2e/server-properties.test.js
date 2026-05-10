@@ -3,13 +3,10 @@ import { test, expect } from '@playwright/test'
 test.describe('Server Properties', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/server-properties/')
+    // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    try {
-      await page.evaluate(() => window.__coralite_ready__)
-    } catch (e) {
-      await page.waitForTimeout(500)
-    }
-
+    // @ts-ignore
+    await page.evaluate(() => window.__coralite_ready__)
   })
 
   test('should render server properties and inject environment', async ({ page }) => {

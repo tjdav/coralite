@@ -8,12 +8,10 @@ test.describe('Error Handling', () => {
 
   test('should render base html when error component does not crash runtime', async ({ page }) => {
     await page.goto('/error-handling/')
+    // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    try {
-      await page.evaluate(() => window.__coralite_ready__)
-    } catch (e) {
-      await page.waitForTimeout(500)
-    }
+    // @ts-ignore
+    await page.evaluate(() => window.__coralite_ready__)
 
 
     // the component doesn't actually throw because context.properties.triggerError is not set
