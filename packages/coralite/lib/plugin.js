@@ -1,6 +1,6 @@
 /**
  * @import Coralite from './coralite.js'
- * @import { CoralitePlugin, CoralitePluginResult, HTMLData, CoralitePluginPageSetCallback, CoralitePluginPageUpdateCallback, CoralitePluginPageDeleteCallback, CoralitePluginTemplateCallback, CoralitePluginBeforePageRenderCallback, CoralitePluginBeforeBuildCallback } from '../types/index.js'
+ * @import { CoralitePlugin, CoralitePluginResult, HTMLData, CoralitePluginPageSetCallback, CoralitePluginPageUpdateCallback, CoralitePluginPageDeleteCallback, CoralitePluginComponentCallback } from '../types/index.js'
  */
 
 import { basename, dirname } from 'path'
@@ -172,24 +172,26 @@ export function definePlugin ({
     }
   }
 
-  // Validate components
-  validateStringArray(components, 'components')
-
   // Process component files with error handling
   /** @type {HTMLData[]} */
   const componentHTMLData = []
 
-  if (components.length > 0) {
-    try {
-      // Process all components
-      for (const path of components) {
-        componentHTMLData.push(processComponents(path))
+  // Validate components
+  if (components) {
+    validateStringArray(components, 'components')
+
+    if (components.length > 0) {
+      try {
+        // Process all components
+        for (const path of components) {
+          componentHTMLData.push(processComponents(path))
+        }
+      } catch (error) {
+        // Enhance error message with plugin context
+        throw new Error(
+          `Coralite plugin "${name}" failed to load components: ${error.message}`
+        )
       }
-    } catch (error) {
-      // Enhance error message with plugin context
-      throw new Error(
-        `Coralite plugin "${name}" failed to load components: ${error.message}`
-      )
     }
   }
 
