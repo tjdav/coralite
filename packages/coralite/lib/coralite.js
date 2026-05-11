@@ -124,6 +124,7 @@ export function Coralite ({
   // Initialize script manager
   this._scriptManager = new ScriptManager(this.options)
 
+  const self = this
   // module source context
   this._source = {
     contextModules: {
@@ -145,8 +146,12 @@ export function Coralite ({
       plugins: {},
       path,
       excludeByAttribute: ignoreByAttribute,
-      components: this.components,
-      pages: this.pages
+      get components () {
+        return self.components
+      },
+      get pages () {
+        return self.pages
+      }
     }
   }
 
@@ -393,9 +398,8 @@ Coralite.prototype.initialise = async function () {
     // define a set of context properties for component rendering
     /** @type {any} */
     const properties = {
-      // DEPRECATED: provide backwards compatibility for legacy plugins
-      $urlPathname: urlPathname,
-      ...data.properties
+      ...data.properties,
+      page
     }
 
     const mappedContext = await this._triggerPluginHook('onPageSet', {
@@ -1822,6 +1826,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
         module,
         properties,
         page: parentComponent.page,
+        root: parentComponent.root,
         component: parentComponent,
         contextId: `dependent-${id}`,
         renderContext
@@ -2039,6 +2044,7 @@ Coralite.prototype.createComponentElement = async function ({
       element,
       properties,
       page: component.page,
+      root: element || component.root,
       component,
       contextId,
       renderContext
@@ -2542,7 +2548,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
     ...this._source.context,
     ...cachedBoundPlugins,
     component,
-    properties,
+    properties: properties || {},
     page,
     root,
     module,
@@ -2627,7 +2633,7 @@ Coralite.prototype._evaluateProduction = async function ({
     ...this._source.contextModules,
     ...this._source.context,
     component,
-    properties,
+    properties: properties || {},
     page,
     root,
     module,
