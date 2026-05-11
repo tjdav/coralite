@@ -4,7 +4,7 @@ import { writeFile } from 'node:fs/promises'
 
 let searchIndex = []
 
-function extractText (node) {
+function extractText(node) {
   let text = ''
   if (node.type === 'text') {
     text += node.data + ' '
@@ -21,14 +21,14 @@ function extractText (node) {
 
 export default definePlugin({
   name: 'search-plugin',
-  onPageSet: async ({ elements, values, data }) => {
+  onPageSet: async ({ elements, page, data }) => {
     if (!data.path.pathname.endsWith('.html')
-      || !values.page_url_dirname.startsWith('/docs')){
+      || !page.url.dirname.startsWith('/docs')) {
       return
     }
 
-    const title = values.page_title || ''
-    const description = values.pageDescription || ''
+    const title = page.meta.title || ''
+    const description = page.meta.description || ''
 
     // Extract full text from body
     let bodyNode = null
@@ -58,7 +58,7 @@ export default definePlugin({
     content = content.replace(/\s+/g, ' ').trim()
 
     searchIndex.push({
-      url: values.page_url_pathname,
+      url: page.url.pathname,
       title,
       description,
       content
