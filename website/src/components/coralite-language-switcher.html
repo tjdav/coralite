@@ -13,7 +13,6 @@
   function getNativeLanguageName (langCode) {
     const displayNames = new Intl.DisplayNames([langCode], { type: 'language' })
     const displayName = displayNames.of(langCode)
-
     return displayName[0].toUpperCase() + displayName.slice(1)
   }
 
@@ -34,33 +33,30 @@
   }
 
   export default defineComponent({
-    tokens: {
-      currentLang (values) {
-        return `<span class="d-none">
-          ${getNativeLanguageName(values.page_lang)}
-        </span>${flags[values.page_lang]} ${values.page_lang.toUpperCase()}`
-      },
-      languageLinks ({ page_lang, languages, sourceLang, page_url_pathname }) {
-        // Split the path into segments
-        const segments = page_url_pathname.split('/').filter(Boolean)
-  
-        // Supported languages
-        const langCodes = languages.split(',')
-  
-        if (!langCodes.length) {
-          return
-        }
+    properties (context) {
+      const pageLang = context.page.meta.lang || context.properties.lang || 'en'
+      const pathname = context.page.url.pathname
+      const languages = context.properties.languages || ''
+      const sourceLang = context.properties.sourceLang || 'en'
 
-        const pathname = normalizePath(page_url_pathname, langCodes)
-        const currentPath = segments.join('/') + (pathname.endsWith('/') && segments.length > 1 ? '/' : '')
+      const currentLang = `<span class="d-none">
+        ${getNativeLanguageName(pageLang)}
+      </span>${flags[pageLang] || ''} ${pageLang.toUpperCase()}`
 
-        return langCodes.map((code) => {
-          if (page_lang === code) {
+      let languageLinks = ''
+      const segments = pathname.split('/').filter(Boolean)
+      const langCodes = languages.split(',')
+
+      if (langCodes.length > 0 && langCodes[0] !== '') {
+        const normalized = normalizePath(pathname, langCodes)
+        const currentPath = segments.join('/') + (normalized.endsWith('/') && segments.length > 1 ? '/' : '')
+
+        languageLinks = langCodes.map((code) => {
+          if (pageLang === code) {
             return ''
           }
 
           let href = '/' + code + '/' + currentPath
-
           if (code === sourceLang) {
             href = currentPath
           }
@@ -68,38 +64,35 @@
           return `<li><a href="${href}" hreflang="${code}">${getNativeLanguageName(code)}</a></li>`
         }).join('')
       }
-    },
-    client: {
-      imports: [
-        {
-          specifier: 'https://esm.sh/@popperjs/core/lib/popper-lite',
-          namedExports: ['createPopper']
-        }
-      ],
-      script ({ imports, helpers }) {
-        const button = helpers.refs('button')
-        const tooltip = helpers.refs('tooltip')
 
-        imports.createPopper(button, tooltip, {
-          placement: 'bottom'
-        })
-
-        // Toggle the dropdown when the button is clicked
-        button.addEventListener('click', (event) => {
-          event.preventDefault()
-          tooltip.classList.toggle('show')
-        })
-
-        // Close the dropdown when clicking anywhere outside of it
-        document.addEventListener('click', (event) => {
-          const isClickInsideMenu = tooltip.contains(event.target)
-          const isClickOnButton = button.contains(event.target)
-
-          if (!isClickInsideMenu && !isClickOnButton) {
-            tooltip.classList.remove('show')
-          }
-        })
+      return {
+        currentLang,
+        languageLinks
       }
+    },
+
+    async script ({ refs, signal }) {
+      const button = refs('button')
+      const tooltip = refs('tooltip')
+      const { createPopper } = await import('https://esm.sh/@popperjs/core/lib/popper-lite')
+
+      createPopper(button, tooltip, {
+        placement: 'bottom'
+      })
+
+      button.addEventListener('click', (event) => {
+        event.preventDefault()
+        tooltip.classList.toggle('show')
+      })
+
+      document.addEventListener('click', (event) => {
+        const isClickInsideMenu = tooltip.contains(event.target)
+        const isClickOnButton = button.contains(event.target)
+
+        if (!isClickInsideMenu && !isClickOnButton) {
+          tooltip.classList.remove('show')
+        }
+      }, { signal })
     }
   })
 </script>

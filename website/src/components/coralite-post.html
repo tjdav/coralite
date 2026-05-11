@@ -5,3 +5,19 @@
     <p>{{ meta_pageDescription }}</p>
   </article>
 </template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    properties (context) {
+      return {
+        page_url_pathname: context.page.url.pathname,
+        page_title: context.page.meta.page_title || 'Untitled Post',
+        meta_author_id: context.page.meta_author_id || 'Unknown Author',
+        meta_published_time: context.page.meta_published_time || new Date().toISOString(),
+        meta_pageDescription: context.page.meta_pageDescription || 'No description provided.'
+      }
+    }
+  })
+</script>

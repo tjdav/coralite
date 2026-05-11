@@ -5,9 +5,9 @@
   import pkg from '../../../packages/coralite/package.json' with { type: 'json' }
 
   export default defineComponent({
-    tokens: {
-      version () {
-        return pkg.version
+    properties (context) {
+      return {
+        version: pkg.version
       }
     }
   })

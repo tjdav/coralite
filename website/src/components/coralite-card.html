@@ -22,9 +22,13 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    tokens: {
-      schemeClass (values) {
-        return values['colour-scheme'] === 'light' ? 'card-light' : ''
+    properties (context) {
+      const scheme = context.properties.colourScheme || 'dark'
+  
+      return {
+        title: context.properties.title || 'Card Title',
+        icon: context.properties.icon || '',
+        schemeClass: scheme === 'light' ? 'card-light' : ''
       }
     }
   })

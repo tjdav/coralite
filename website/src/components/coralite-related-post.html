@@ -1,20 +1,35 @@
 <template id="coralite-related-post">
   <li>
-    <a href="{{ page_url_pathname }}">{{ page_title }}</a> - {{ localeDate }}
+    <a href="{{ pageUrlPathname }}">{{ pageTitle }}</a> - {{ localeDate }}
   </li>
 </template>
+
 
 <script type="module">
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    tokens: {
-      localeDate (values) {
-        return new Date(values.meta_published_time).toLocaleDateString('en-AU', {
-          year: '2-digit',
-          month: 'short',
-          day: 'numeric'
-        })
+    properties (context) {
+      const url = context.page.url
+      const meta = context.page.meta
+
+      let formattedDate = 'N/A'
+      if (meta.publishedTime) {
+        try {
+          formattedDate = new Date(meta.publishedTime).toLocaleDateString('en-AU', {
+            year: '2-digit',
+            month: 'short',
+            day: 'numeric'
+          })
+        } catch (e) {
+          console.error('Failed to format date:', e)
+        }
+      }
+
+      return {
+        pageTitle: context.properties.title || 'Untitled Post',
+        pageUrlPathname: url.pathname,
+        localeDate: formattedDate
       }
     }
   })

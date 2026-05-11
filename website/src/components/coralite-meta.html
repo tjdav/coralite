@@ -25,28 +25,31 @@
 <script type="module">
   import { defineComponent } from 'coralite'
 
-  export default defineComponent({
-    tokens: {
-      ogType (values) {
-        return values.type || 'website'
-      },
-      metaSeoTitle (values) {
-        return values.seoTitle || values.title
-      },
-      metaSeoDescription (values) {
-        return values.seoDescription || values.description
-      },
-      canonical (values) {
-        let result = 'https://coralite.dev'
+export default defineComponent({
+    properties (context) {
+      const properties = context.properties
+      const pageUrlPathname = context.page.url.pathname
+      const baseUrl = 'https://coralite.dev'
+      const ogType = properties.type || 'website'
+      const metaSeoTitle = properties.seoTitle || properties.title
+      const metaSeoDescription = properties.seoDescription || properties.description
 
-        // return root path
-        if (values.page_url_pathname === '/index.html' ) {
-          return result
-        }
+      let canonicalUrl = baseUrl
+      if (pageUrlPathname === '/index.html') {
+        canonicalUrl = baseUrl
+      } else {
+        const nameSplit = pageUrlPathname.split('.html')
+        canonicalUrl = baseUrl + nameSplit.slice(0, nameSplit.length - 1).join('')
+      }
 
-        let nameSplit = values.page_url_pathname.split('.html')
-        // remove .html file extension.
-        return result + nameSplit.slice(0, nameSplit.length - 1).join('')
+      return {
+        ogType: ogType,
+        metaSeoTitle: metaSeoTitle,
+        metaSeoDescription: metaSeoDescription,
+        canonical: canonicalUrl,
+        // Pass through other necessary props for the template to render
+        title: properties.title || 'Default Title',
+        description: properties.description || ''
       }
     }
   })

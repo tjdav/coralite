@@ -1,24 +1,29 @@
 <template id="coralite-heading">
-  {{ heading }}
+  {{ headingHtml }}
 </template>
 
 <script type="module">
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    tokens: {
-      heading (values) {
-        const text = values.text
-        const level = values.level
-        const id = text
-          .toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9-]/g, '')
+    properties ({ properties }) {
+      const text = properties.text || 'Untitled'
+      const level = properties.level || 1
+  
+      // Compute the ID based on the input text
+      const id = text
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^a-z0-9-]/g, '')
 
-        return `<${level} id="${id}">
+      // Construct the full HTML string here as requested by the prompt's intent
+      const headingHtml = `<${level} id="${id}">
           ${text}
           <a href="#${id}" class="anchor-link" aria-label="Link to this section: ${text}">#</a>
         </${level}>`
+
+      return {
+        headingHtml: headingHtml
       }
     }
   })

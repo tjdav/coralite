@@ -57,9 +57,9 @@
   }
 
   export default defineComponent({
-    tokens: {
-      languageClass (attributes) {
-        return attributes.language.toLowerCase()
+    properties ({ properties }) {
+      return {
+        languageClass: properties.language.toLowerCase()
       }
     },
     slots: {
@@ -98,21 +98,18 @@
         return replacePlaceholders(nodes.root.children, placeholders)
       }
     },
-    client: {
-      script ({ helpers }) {
-        const { refs } = helpers
-        const popoverButton = refs('popoverBtn')
-        const popoverTarget = refs('popoverTarget')
-        const codeBody = refs('code')
-        const popoverId = 'copy-' + Math.random().toString(16).substring(2)
+    script ({ refs }) {
+      const popoverButton = refs('popoverBtn')
+      const popoverTarget = refs('popoverTarget')
+      const codeBody = refs('code')
+      const popoverId = 'copy-' + Math.random().toString(16).substring(2)
 
-        popoverTarget.setAttribute('id', popoverId)
-        popoverButton.setAttribute('popovertarget', popoverId)
+      popoverTarget.setAttribute('id', popoverId)
+      popoverButton.setAttribute('popovertarget', popoverId)
 
-        popoverButton.addEventListener('click', () => {
-          navigator.clipboard.writeText(codeBody.textContent)
-        })
-      }
+      popoverButton.addEventListener('click', () => {
+        navigator.clipboard.writeText(codeBody.textContent)
+      })
     }
   })
 </script>
