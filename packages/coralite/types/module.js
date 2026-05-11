@@ -31,7 +31,7 @@
 
 /**
  * A collection of module values associated with a module.
- * @typedef {Object.<string, CoraliteModuleDefinition> & { __script__?: ScriptContent, $urlPathname?: string }} CoraliteModuleDefinitions
+ * @typedef {Object.<string, CoraliteModuleDefinition> & { __script__?: ScriptContent }} CoraliteModuleDefinitions
  */
 
 /**
