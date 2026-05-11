@@ -103,7 +103,14 @@ export function displayError (message, error) {
     const indent = '    '
     let errorDetails = ''
 
-    if (error instanceof Error) {
+    if (error instanceof Error ||
+      (error !== null
+        && typeof error === 'object'
+        && 'message' in error
+        && 'stack' in error
+      )
+    ) {
+      // @ts-ignore
       errorDetails = error.stack || error.message
     } else if (typeof error === 'string') {
       errorDetails = error
