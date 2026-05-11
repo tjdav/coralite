@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <coralite-meta title="Coralite Technical Documentation: Definition, Specification & Implementation Guide"
+  <coralite-meta title="Coralite Type Reference"
     description="Explore comprehensive Coralite technical documentation, including architecture, API specifications, data structure definitions."></coralite-meta>
   <link rel="stylesheet" href="/css/styles.css" inline-css>
 </head>
@@ -23,21 +23,21 @@
         <li><a href="#htmldata">HTMLData</a></li>
         <li><a href="#coralitefilepath">CoraliteFilePath</a></li>
         <li><a href="#coralitepath">CoralitePath</a></li>
-        <li><a href="#coralitepathvalues">CoralitePathValues</a></li>
-        <li><a href="#coralitevalues">CoraliteProperties</a></li>
+        <li><a href="#coralitepathproperties">CoralitePathProperties</a></li>
+        <li><a href="#coraliteproperties">CoraliteProperties</a></li>
         <li><a href="#coralitetoken">CoraliteToken</a></li>
         <li><a href="#coraliteattributetoken">CoraliteAttributeToken</a></li>
         <li><a href="#coraliteref">CoraliteRef</a></li>
         <li><a href="#coralitetextnodetoken">CoraliteTextNodeToken</a></li>
-        <li><a href="#coralitemodulevalues">CoraliteModuleDefinitions</a></li>
+        <li><a href="#coralitemoduleproperties">CoraliteModuleDefinitions</a></li>
         <li><a href="#scriptcontent">ScriptContent</a></li>
-        <li><a href="#coralitemodulevalue">CoraliteModuleDefinition</a></li>
+        <li><a href="#coralitemoduleproperty">CoraliteModuleDefinition</a></li>
         <li><a href="#coraliteerrordata">CoraliteErrorData</a></li>
         <li><a href="#coraliteonerror">CoraliteOnError</a></li>
       </ul>
       <p><a href="#document-and-result-types">Document and Result Types</a></p>
       <ul>
-        <li><a href="#coralitecomponentvalues">CoraliteComponentValues</a></li>
+        <li><a href="#coralitecomponentproperties">CoraliteComponentProperties</a></li>
         <li><a href="#coralitecomponentresult">CoraliteComponentResult</a></li>
         <li><a href="#coraliteresult">CoraliteResult</a></li>
         <li><a href="#coralitecomponentroot">CoraliteComponentRoot</a></li>
@@ -79,6 +79,7 @@
         <li><a href="#coraliteplugininstance">CoralitePluginInstance</a></li>
         <li><a href="#coralitepluginbeforebuildcallback">CoralitePluginBeforeBuildCallback</a></li>
         <li><a href="#coralitepluginbeforepagerendercallback">CoralitePluginBeforePageRenderCallback</a></li>
+        <li><a href="#coralitepluginafterpagerendercallback">CoralitePluginAfterPageRenderCallback</a></li>
         <li><a href="#coralitepluginpagesetcallback">CoralitePluginPageSetCallback</a></li>
         <li><a href="#coralitepluginpageupdatecallback">CoralitePluginPageUpdateCallback</a></li>
         <li><a href="#coralitepluginpagedeletecallback">CoralitePluginPageDeleteCallback</a></li>
@@ -88,7 +89,7 @@
       <ul>
             <li><a href="#constructor">Constructor</a></li>
             <li><a href="#initialise">Initialise Method</a></li>
-            <li><a href="#compile">Compile Method</a></li>
+            <li><a href="#build">Build Method</a></li>
             <li><a href="#save">Save Method</a></li>
             <li><a href="#render">Render Method</a></li>
             <li><a href="#get-page-paths">Get Page Paths Using Custom Element</a></li>
@@ -121,9 +122,9 @@
             <td>The type of HTML file. 'page' for main pages, 'component' for reusable components.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
-            <td><a href="#coralitemodulevalues"><code>CoraliteModuleDefinitions</code></a></td>
-            <td>The initial values for the HTML module.</td>
+            <td><code>properties</code></td>
+            <td><a href="#coralitemoduleproperties"><code>CoraliteModuleDefinitions</code></a></td>
+            <td>The initial properties for the HTML module.</td>
           </tr>
           <tr>
             <td><code>path</code></td>
@@ -196,8 +197,8 @@
       </table>
     </div>
 
-    <coralite-heading level="h3" text="CoralitePathValues"></coralite-heading>
-    <p>Represents URL and file path values available during component rendering.</p>
+    <coralite-heading level="h3" text="CoralitePathProperties"></coralite-heading>
+    <p>Represents URL and file path properties available during component rendering.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -234,16 +235,16 @@
             <td>The filename.</td>
           </tr>
           <tr>
-            <td><code>data.values</code></td>
+            <td><code>data.properties</code></td>
             <td><code>Object&lt;string, string&gt;</code> (optional)</td>
-            <td>Additional values from data.</td>
+            <td>Additional properties from data.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <coralite-heading level="h3" text="CoraliteProperties"></coralite-heading>
-    <p>Union type representing values available for token replacement in components.</p>
+    <p>Union type representing properties available for token replacement in components.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -254,8 +255,8 @@
         </thead>
         <tbody>
           <tr>
-            <td><a href="#coralitepathvalues"><code>CoralitePathValues</code></a></td>
-            <td>URL and file path values.</td>
+            <td><a href="#coralitepathproperties"><code>CoralitePathProperties</code></a></td>
+            <td>URL and file path properties.</td>
           </tr>
           <tr>
             <td><code>Object&lt;string, string&gt;</code></td>
@@ -271,7 +272,7 @@
       <table class="table">
         <thead>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string&gt;</code></td>
             <td>Key-value pairs for token replacement.</td>
           </tr>
@@ -375,7 +376,7 @@
     </div>
 
     <coralite-heading level="h3" text="CoraliteModuleDefinitions"></coralite-heading>
-    <p>A collection of module values associated with a module.</p>
+    <p>A collection of module properties associated with a module.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -388,7 +389,7 @@
         <tbody>
           <tr>
             <td>(Key)</td>
-            <td><a href="#coralitemodulevalue"><code>CoraliteModuleDefinition</code></a></td>
+            <td><a href="#coralitemoduleproperty"><code>CoraliteModuleDefinition</code></a></td>
             <td>Key-value pairs representing module data.</td>
           </tr>
           <tr>
@@ -413,20 +414,20 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>fn</code></td>
-            <td><code>function</code></td>
-            <td>The script function.</td>
+            <td><code>content</code></td>
+            <td><code>string</code></td>
+            <td>The script content string.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
-            <td>Values associated with the script.</td>
+            <td>Properties associated with the script.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
-    <coralite-heading level="h3" text="CoraliteModuleDefinition"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteModuleProperty"></coralite-heading>
     <p>Represents a single value that a module can store or process.</p>
     <div class="table-responsive">
       <table class="table">
@@ -498,7 +499,7 @@
 
     <coralite-heading level="h2" text="Document and Result Types"></coralite-heading>
 
-    <coralite-heading level="h3" text="CoraliteComponentValues"></coralite-heading>
+    <coralite-heading level="h3" text="CoraliteComponentProperties"></coralite-heading>
     <p>Holds tokenized metadata extracted from document attributes, element references and text nodes.</p>
     <div class="table-responsive">
       <table class="table">
@@ -530,7 +531,7 @@
     </div>
 
     <coralite-heading level="h3" text="CoraliteComponentResult"></coralite-heading>
-    <p>Result of document processing containing extracted values and temporary elements.</p>
+    <p>Result of document processing containing extracted properties and temporary elements.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -542,9 +543,9 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>values</code></td>
-            <td><a href="#coralitemodulevalues"><code>CoraliteModuleDefinitions</code></a></td>
-            <td>The module values extracted from the document.</td>
+            <td><code>properties</code></td>
+            <td><a href="#coralitemoduleproperties"><code>CoraliteModuleDefinitions</code></a></td>
+            <td>The module properties extracted from the document.</td>
           </tr>
           <tr>
             <td><code>tempElements</code></td>
@@ -573,7 +574,7 @@
             <td>The document object from the rendering process.</td>
           </tr>
           <tr>
-            <td><code>html</code></td>
+            <td><code>content</code></td>
             <td><code>string</code></td>
             <td>Raw HTML content of the render process as a string.</td>
           </tr>
@@ -644,7 +645,7 @@
           <tr>
             <td><code>ignoreByAttribute</code></td>
             <td><a href="#ignorebyattribute"><code>IgnoreByAttribute[]</code></a></td>
-            <td>An array of attribute names and values to ignore by element type.</td>
+            <td>An array of attribute names and properties to ignore by element type.</td>
           </tr>
         </tbody>
       </table>
@@ -757,9 +758,9 @@
             <td>Module's JavaScript raw code used for logic or behavior associated with this module.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
-            <td><a href="#coralitecomponentvalues"><code>CoraliteComponentValues</code></a></td>
-            <td>Values generated from the module's markup, containing metadata or variable information.</td>
+            <td><code>properties</code></td>
+            <td><a href="#coralitecomponentproperties"><code>CoraliteComponentProperties</code></a></td>
+            <td>Properties generated from the module's markup, containing metadata or variable information.</td>
           </tr>
           <tr>
             <td><code>customElements</code></td>
@@ -844,7 +845,7 @@
           <tr>
             <td><code>skipRenderByAttribute</code></td>
             <td><code><a href="#ignorebyattribute">IgnoreByAttribute[]</a> | string[]</code> (optional)</td>
-            <td>An array of attribute names and values to skip rendering.</td>
+            <td>An array of attribute names and properties to skip rendering.</td>
           </tr>
         </tbody>
       </table>
@@ -863,7 +864,7 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>id</code></td>
+            <td><code>instanceId</code></td>
             <td><code>string</code></td>
             <td>Unique instance identifier.</td>
           </tr>
@@ -873,14 +874,14 @@
             <td>Component identifier for shared functions.</td>
           </tr>
           <tr>
-            <td><code>document</code></td>
-            <td><a href="#coralitecomponent"><code>CoraliteComponent</code></a></td>
-            <td>Coralite document with metadata and rendering structure.</td>
+            <td><code>root</code></td>
+            <td><code>HTMLElement</code></td>
+            <td>The custom element instance (Light DOM).</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code> (optional)</td>
-            <td>Instance values.</td>
+            <td>Instance properties.</td>
           </tr>
           <tr>
             <td><code>refs</code></td>
@@ -900,7 +901,7 @@
     <p>Callback for module script execution.</p>
     <coralite-code-highlight language="JavaScript">/**
       * @callback CoraliteModuleScript
-      * @param {CoraliteProperties} values - The module's current values
+      * @param {CoraliteProperties} properties - The module's current properties
       * @param {CoraliteRef} refs - References template elements
       */</coralite-code-highlight>
 
@@ -964,9 +965,9 @@
             <td>Component identifier.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
-            <td>Instance values.</td>
+            <td>Instance properties.</td>
           </tr>
           <tr>
             <td><code>refs</code></td>
@@ -1307,14 +1308,14 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string | string[] | CoraliteAnyNode[]&gt;</code></td>
             <td>Key-value pairs of data relevant to plugin execution.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
-            <td>Instance values.</td>
+            <td>Instance properties.</td>
           </tr>
           <tr>
             <td><code>refs</code></td>
@@ -1322,24 +1323,24 @@
             <td>Instance refs.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string | string[] | CoraliteAnyNode[]&gt;</code></td>
             <td>Key-value pairs of data relevant to plugin execution.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string | string[] | CoraliteAnyNode[]&gt;</code></td>
             <td>Key-value pairs of data relevant to plugin execution.</td>
           </tr>
           <tr>
-            <td><code>param.values</code></td>
+            <td><code>param.properties</code></td>
             <td><code>CoraliteFilePath &amp; Object&lt;string, any&gt;</code></td>
-            <td>Values associated with the page path.</td>
+            <td>Properties associated with the page path.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
-            <td>Values associated with the script.</td>
+            <td>Properties associated with the script.</td>
           </tr>
         </tbody>
       </table>
@@ -1352,7 +1353,7 @@
       * @this {ThisType<Coralite>}
         * @callback CoralitePluginModule
         * @param {T} options - Configuration options passed to the plugin
-        * @param {CoralitePluginContext} context - Runtime context providing access to values, document data, module
+        * @param {CoralitePluginContext} context - Runtime context providing access to properties, document data, module
         info, and path details
         */</coralite-code-highlight>
 
@@ -1362,9 +1363,9 @@
       <table class="table">
         <thead>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code></td>
-            <td>Instance values.</td>
+            <td>Instance properties.</td>
           </tr>
         </thead>
         <tbody>
@@ -1374,24 +1375,24 @@
             <td>Instance refs.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string | string[] | CoraliteAnyNode[]&gt;</code></td>
             <td>Key-value pairs of data relevant to plugin execution.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string | string[] | CoraliteAnyNode[]&gt;</code></td>
             <td>Key-value pairs of data relevant to plugin execution.</td>
           </tr>
           <tr>
-            <td><code>param.values</code></td>
+            <td><code>param.properties</code></td>
             <td><code>CoraliteFilePath &amp; Object&lt;string, any&gt;</code></td>
-            <td>Values associated with the page path.</td>
+            <td>Properties associated with the page path.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code> (optional)</td>
-            <td>Instance values.</td>
+            <td>Instance properties.</td>
           </tr>
           <tr>
             <td><code>refs</code></td>
@@ -1399,24 +1400,24 @@
             <td>Instance refs.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string | string[] | CoraliteAnyNode[]&gt;</code></td>
             <td>Key-value pairs of data relevant to plugin execution.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string | string[] | CoraliteAnyNode[]&gt;</code></td>
             <td>Key-value pairs of data relevant to plugin execution.</td>
           </tr>
           <tr>
-            <td><code>param.values</code></td>
+            <td><code>param.properties</code></td>
             <td><code>CoraliteFilePath &amp; Object&lt;string, any&gt;</code></td>
-            <td>Values associated with the page path.</td>
+            <td>Properties associated with the page path.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, CoraliteModuleDefinition&gt;</code> (optional)</td>
-            <td>Instance values.</td>
+            <td>Instance properties.</td>
           </tr>
         </tbody>
       </table>
@@ -1435,19 +1436,19 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string | string[] | CoraliteAnyNode[]&gt;</code></td>
             <td>Key-value pairs of data relevant to plugin execution.</td>
           </tr>
           <tr>
-            <td><code>values</code></td>
+            <td><code>properties</code></td>
             <td><code>Object&lt;string, string | string[] | CoraliteAnyNode[]&gt;</code></td>
             <td>Key-value pairs of data relevant to plugin execution.</td>
           </tr>
           <tr>
-            <td><code>param.values</code></td>
+            <td><code>param.properties</code></td>
             <td><code>CoraliteFilePath &amp; Object&lt;string, any&gt;</code></td>
-            <td>Values associated with the page path.</td>
+            <td>Properties associated with the page path.</td>
           </tr>
           <tr>
             <td><code>metadata</code></td>
@@ -1612,10 +1613,10 @@
     <coralite-code-highlight language="JavaScript">/**
       * @this {ThisType<Coralite>}
         * @callback CoralitePluginPageSetCallback
-        * @description Async callback triggered when a page is created. Called with elements, values, and data.
+        * @description Async callback triggered when a page is created. Called with elements, properties, and data.
         * @param {Object} param
         * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
-        * @param {CoraliteFilePath & Object.&lt;string, any>} param.values - Values associated with the page path
+        * @param {CoraliteFilePath & Object.&lt;string, any>} param.properties - Properties associated with the page path
         * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
         * @async
         */</coralite-code-highlight>
@@ -1625,7 +1626,7 @@
     <coralite-code-highlight language="JavaScript">/**
       * @this {ThisType<Coralite>}
         * @callback CoralitePluginPageUpdateCallback
-        * @description Async callback triggered when a page is updated. Called with elements, new and old values.
+        * @description Async callback triggered when a page is updated. Called with elements, new and old properties.
         * @param {Object} param
         * @param {CoraliteElement[]} param.elements - Updated HTML elements from the page
         * @param {CoraliteCollectionItem} param.newValue - The updated data item
@@ -1652,78 +1653,54 @@
         * @param {CoraliteModule} component - The component module that was set, updated, or deleted
         * @async
         */</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="CoralitePluginBeforePageRenderCallback"></coralite-heading>
+    <p>Async callback triggered before a page is rendered.</p>
+    <coralite-code-highlight language="JavaScript">/**
+      * @this {ThisType<Coralite>}
+        * @callback CoralitePluginBeforePageRenderCallback
+        * @param {Object} param
+        * @param {CoraliteComponent} param.component - The page component being rendered
+        * @param {Object} param.properties - The current properties context
+        * @param {CoralitePage} param.page - The page metadata object
+        * @param {Object} param.renderContext - The build's render context
+        * @async
+        */</coralite-code-highlight>
+
+    <coralite-heading level="h3" text="CoralitePluginAfterPageRenderCallback"></coralite-heading>
+    <p>Async callback triggered after a page has been rendered. Results from this hook are aggregated.</p>
+    <coralite-code-highlight language="JavaScript">/**
+      * @this {ThisType<Coralite>}
+        * @callback CoralitePluginAfterPageRenderCallback
+        * @param {CoraliteResult} result - The rendered page result
+        * @returns {CoraliteResult | CoraliteResult[] | void} Additional pages to add to the build
+        * @async
+        */</coralite-code-highlight>
   
     <coralite-heading level="h2" text="Constructor and Methods" id="constructor-and-methods"></coralite-heading>
 
         <coralite-heading level="h2" text="Constructor"></coralite-heading>
-        <p>The Coralite constructor initializes a new instance with configuration options for templates, pages, plugins
-            and ignore attributes.</p>
+        <p>The Coralite constructor initializes a new instance with configuration options for components, pages, plugins
+            and assets.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**
             * @constructor
             * @param {Object} options
-            * @param {string} options.templates - The path to the directory containing Coralite templates.
+            * @param {string} options.components - The path to the directory containing Coralite components.
+            * @param {string} options.pages - The path to the directory containing pages.
             * @param {CoralitePluginInstance[]} [options.plugins=[]]
-            * @param {string} options.pages - The path to the directory containing pages that will be rendered using the
-            provided templates.
-            * @param {IgnoreByAttribute[]} [options.ignoreByAttribute] - Elements to ignore with attribute name value
-            pair
-            * @example
-            * const coralite = new Coralite({
-            * templates: './path/to/templates',
-            * pages: './path/to/pages',
-            * plugins: [myPlugin],
-            * ignoreByAttribute: [{ name: 'data-ignore', value: 'true' }]
-            * });
+            * @param {CoraliteStaticAsset[]} [options.assets=[]]
+            * @param {IgnoreByAttribute[]} [options.ignoreByAttribute]
+            * @param {string[]} [options.skipRenderByAttribute]
+            * @param {CoraliteOnError} [options.onError]
+            * @param {'production' | 'development'} [options.mode='production']
+            * @param {string} [options.output]
             */
         </coralite-code-highlight>
 
-        <coralite-heading level="h3" text="Constructor Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>options</code></td>
-                <td><code>Object</code></td>
-                <td>Configuration options for the Coralite instance</td>
-            </tr>
-        </coralite-table>
-
-        <coralite-heading level="h3" text="Constructor Options Properties"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Property</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>templates</code></td>
-                <td><code>string</code></td>
-                <td>The path to the directory containing Coralite templates.</td>
-            </tr>
-            <tr slot="body">
-                <td><code>plugins</code></td>
-                <td><code>CoralitePluginInstance[]</code></td>
-                <td>Optional array of plugin instances to extend Coralite functionality (default: [])</td>
-            </tr>
-            <tr slot="body">
-                <td><code>pages</code></td>
-                <td><code>string</code></td>
-                <td>The path to the directory containing pages that will be rendered using the provided templates.</td>
-            </tr>
-            <tr slot="body">
-                <td><code>ignoreByAttribute</code></td>
-                <td><code>IgnoreByAttribute[]</code></td>
-                <td>Elements to ignore with attribute name value pair (default: [])</td>
-            </tr>
-        </coralite-table>
-
         <coralite-heading level="h2" text="Initialise Method"></coralite-heading>
-        <p>Initialises the Coralite instance.</p>
+        <p>Initialises the Coralite instance by loading components and pages from the file system.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**
@@ -1734,141 +1711,60 @@
                 }
         </coralite-code-highlight>
 
-        <coralite-heading level="h3" text="Returns"></coralite-heading>
-        <p>A promise that resolves when the initialization is complete.</p>
-
-        <coralite-heading level="h2" text="Compile Method"></coralite-heading>
-        <p>Compiles specified page(s) by rendering their document content and measuring render time. Processes pages
-            based on provided path(s), replacing custom elements with components, and returns rendered results with
-            performance metrics.</p>
+        <coralite-heading level="h2" text="Build Method"></coralite-heading>
+        <p>Compiles pages and collects the results with controlled concurrency. Can optionally transform each result via a callback before collecting.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**
-            * Compiles specified page(s) by rendering their document content and measuring render time.
-            * Processes pages based on provided path(s), replacing custom elements with components,
-            * and returns rendered results with performance metrics.
-            *
-            * @param {string | string[]} [path] - Path to a single page or array of page paths relative to the pages
-            directory. If omitted, compiles all pages.
-            * @return {Promise<Array<CoraliteResult>>}
+            * @param {string | string[]} [path] - Optional page path(s) to build
+            * @param {Object} [options] - Build configuration
+            * @param {BuildPageHandler} [callback] - Transformation callback
+            * @return {Promise<Array<any>>}
                 */
-                Coralite.prototype.compile = async function (path) {
+                Coralite.prototype.build = async function (path, options, callback) {
                 }
         </coralite-code-highlight>
-
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>path</code></td>
-                <td><code>string | string[]</code></td>
-                <td>Path to a single page or array of page paths relative to the pages directory. If omitted, compiles
-                    all pages.</td>
-            </tr>
-        </coralite-table>
-
-        <coralite-heading level="h3" text="Returns"></coralite-heading>
-        <p>An array of rendered results with performance metrics.</p>
 
         <coralite-heading level="h2" text="Save Method"></coralite-heading>
-        <p>Saves processed documents as HTML files to the specified output directory.</p>
+        <p>Compiles and saves pages to the output directory.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**
-            * Saves processed documents as HTML files to the specified output directory.
-            * @param {Array<CoraliteResult>} documents - Array of document objects containing metadata and HTML content
-                * @param {string} output - Base directory path where generated HTML files will be saved
+            * Compiles and saves pages to disk.
+            * @param {string | string[]} [path] - Optional page path(s) to build
+            * @param {Object} [options] - Save configuration
+            * @returns {Promise<Array<{ path: string, duration: number }>>}
                 */
-                Coralite.prototype.save = async function (documents, output) {
+                Coralite.prototype.save = async function (path, options) {
                 }
         </coralite-code-highlight>
 
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>documents</code></td>
-                <td><code>CoraliteResult[]</code></td>
-                <td>Array of document objects containing metadata and HTML content</td>
-            </tr>
-            <tr slot="body">
-                <td><code>output</code></td>
-                <td><code>string</code></td>
-                <td>Base directory path where generated HTML files will be saved</td>
-            </tr>
-        </coralite-table>
-
         <coralite-heading level="h2" text="Render Method"></coralite-heading>
-        <p>Renders the provided node or array of nodes using the render function. This method serves as an internal
-            utility to handle the rendering process.</p>
+        <p>Renders the provided node or array of nodes using the render function.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**
             * Renders the provided node or array of nodes using the render function.
-            * This method serves as an internal utility to handle the rendering process.
-            * @private
             * @param {CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
             * @returns {string} returns raw HTML
             */
-            Coralite.prototype._render = function (root) {
+            Coralite.prototype.transform = function (root) {
             }
         </coralite-code-highlight>
 
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>root</code></td>
-                <td><code>CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[]</code></td>
-                <td>The node(s) to be rendered.</td>
-            </tr>
-        </coralite-table>
-
-        <coralite-heading level="h3" text="Returns"></coralite-heading>
-        <p>Raw HTML string from the rendering process.</p>
-
         <coralite-heading level="h2" text="Get Page Paths Using Custom Element"></coralite-heading>
-        <p>Retrieves page paths associated with a custom element template.</p>
+        <p>Retrieves page paths associated with a custom element component.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**
-            * Retrieves page paths associated with a custom element template.
+            * Retrieves page paths associated with a custom element component.
             *
-            * @param {string} path - The original path potentially prefixed with the templates directory.
-            * @returns {string[]} An array of page paths linked to the custom element template.
+            * @param {string} path - The original path potentially prefixed with the components directory.
+            * @returns {string[]} An array of page paths linked to the custom element component.
             */
             Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
             }
         </coralite-code-highlight>
-
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>path</code></td>
-                <td><code>string</code></td>
-                <td>The original path potentially prefixed with the templates directory.</td>
-            </tr>
-        </coralite-table>
-
-        <coralite-heading level="h3" text="Returns"></coralite-heading>
-        <p>An array of page paths linked to the custom element template.</p>
 
         <coralite-heading level="h2" text="Add Render Queue"></coralite-heading>
         <p>Adds a page to the current render queue.</p>
@@ -1878,258 +1774,80 @@
             * Adds a page to the current render queue.
             * @param {string|CoraliteCollectionItem} value - The path to a page or a CoraliteCollectionItem to add to
             the render queue.
+            * @param {string} buildId - The unique identifier for the current build process.
             */
-            Coralite.prototype.addRenderQueue = async function (value) {
+            Coralite.prototype.addRenderQueue = async function (value, buildId) {
             }
         </coralite-code-highlight>
 
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>value</code></td>
-                <td><code>string | CoraliteCollectionItem</code></td>
-                <td>The path to a page or a CoraliteCollectionItem to add to the render queue.</td>
-            </tr>
-        </coralite-table>
-
         <coralite-heading level="h2" text="Create Component"></coralite-heading>
-        <p>Creates a component by processing the provided parameters and returning a rendered HTML element.</p>
+        <p>Creates a component by processing the provided parameters and returning its template AST.</p>
 
         <coralite-code-highlight language="JavaScript">
           /**
            * @param {Object} options
-           * @param {string} options.id - id - Unique identifier for the component
-           * @param {CoraliteModuleDefinitions} [options.values={}] - Token values available for replacement
-           * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
-           * @param {CoraliteComponent} options.document - Current document being processed
+           * @param {string} options.id - Unique identifier for the component
+           * @param {CoraliteModuleDefinitions} [options.properties={}] - Token properties available for replacement
+           * @param {CoraliteElement} [options.element] - The target custom element
+           * @param {CoraliteComponent} options.component - Current document being processed
            * @param {string} [options.contextId] - Context Id
            * @param {number} [options.index] - Context index
-           * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
+           * @param {Object} [options.renderContext] - The build's render context
            * @returns {Promise<CoraliteElement | void>}
            */
-          Coralite.prototype.createComponentElement = async function ({
-            id,
-            values = {},
-            element,
-            document,
-            contextId,
-            index
-          }, head = true) {
+          Coralite.prototype.createComponentElement = async function (options, head = true) {
           }
         </coralite-code-highlight>
 
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>options.id</code></td>
-                <td><code>string</code></td>
-                <td>Unique identifier for the component</td>
-            </tr>
-            <tr slot="body">
-                <td><code>options.values</code></td>
-                <td><code>CoraliteModuleDefinitions</code></td>
-                <td>Token values available for replacement (default: {})</td>
-            </tr>
-            <tr slot="body">
-                <td><code>options.element</code></td>
-                <td><code>CoraliteElement</code></td>
-                <td>Mapping of component IDs to their module definitions (optional)</td>
-            </tr>
-            <tr slot="body">
-                <td><code>options.document</code></td>
-                <td><code>CoraliteComponent</code></td>
-                <td>Current document being processed</td>
-            </tr>
-            <tr slot="body">
-                <td><code>options.contextId</code></td>
-                <td><code>string</code></td>
-                <td>Context Id (optional)</td>
-            </tr>
-            <tr slot="body">
-                <td><code>options.index</code></td>
-                <td><code>number</code></td>
-                <td>Context index (optional)</td>
-            </tr>
-        </coralite-table>
-
-        <coralite-heading level="h3" text="Returns"></coralite-heading>
-        <p>A promise that resolves to a rendered HTML element or void.</p>
-
         <coralite-heading level="h2" text="Evaluate Method"></coralite-heading>
-        <p>Parses a Coralite module script and compiles it into JavaScript.</p>
+        <p>Parses a Coralite module script and evaluates it using a sandboxed context.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**
-            * Parses a Coralite module script and compiles it into JavaScript.
+            * Parses a Coralite module script and evaluates it.
             * @private
             * @param {Object} data
-            * @param {CoraliteModule} data.module - The Coralite module to parse
-            * @param {CoraliteModuleDefinitions} data.values - Replacement tokens for the component
-            * @param {CoraliteElement} data.element - The Coralite module to parse
-            * @param {CoraliteComponent} data.document - The document context in which the module is being processed
+            * @param {CoraliteModule} data.module - The Coralite module to evaluate
+            * @param {CoraliteModuleDefinitions} data.properties - Replacement properties for the component
+            * @param {CoralitePage} data.page - The global page object
+            * @param {CoraliteElement} data.root - The component's root element
+            * @param {CoraliteComponent} data.component - The document context
             * @param {string} data.contextId - Context Id
+            * @param {Object} data.renderContext - The build's render context
             *
-            * @returns {Promise<Object.<string, string | (CoraliteDirective | CoraliteAnyNode)[]>>}
+            * @returns {Promise<CoraliteModuleDefinitions>}
                 */
-                Coralite.prototype._evaluate = async function ({
-                module,
-                values,
-                element,
-                document,
-                contextId
-                }) {
+                Coralite.prototype._evaluate = async function (data) {
                 }
         </coralite-code-highlight>
 
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>data.module</code></td>
-                <td><code>CoraliteModule</code></td>
-                <td>The Coralite module to parse</td>
-            </tr>
-            <tr slot="body">
-                <td><code>data.values</code></td>
-                <td><code>CoraliteModuleDefinitions</code></td>
-                <td>Replacement tokens for the component</td>
-            </tr>
-            <tr slot="body">
-                <td><code>data.element</code></td>
-                <td><code>CoraliteElement</code></td>
-                <td>The Coralite module to parse</td>
-            </tr>
-            <tr slot="body">
-                <td><code>data.document</code></td>
-                <td><code>CoraliteComponent</code></td>
-                <td>The document context in which the module is being processed</td>
-            </tr>
-            <tr slot="body">
-                <td><code>data.contextId</code></td>
-                <td><code>string</code></td>
-                <td>Context Id</td>
-            </tr>
-        </coralite-table>
-
-        <coralite-heading level="h3" text="Returns"></coralite-heading>
-        <p>A promise that resolves to an object containing compiled JavaScript content.</p>
-
         <coralite-heading level="h2" text="Module Linker"></coralite-heading>
-        <p>Links modules with their file paths for processing.</p>
+        <p>Generates a custom module linker callback for the Node.js VM context.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**
             * @param {CoraliteFilePath} path
+            * @param {Object} context
             * @private
             */
-            Coralite.prototype._moduleLinker = function (path) {
+            Coralite.prototype._moduleLinker = function (path, context) {
             }
         </coralite-code-highlight>
-
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>path</code></td>
-                <td><code>CoraliteFilePath</code></td>
-                <td>The file path information for the module.</td>
-            </tr>
-        </coralite-table>
 
         <coralite-heading level="h2" text="Trigger Plugin Hook"></coralite-heading>
-        <p>Executes all plugin callbacks registered under the specified hook name.</p>
+        <p>Executes all plugin callbacks registered under the specified hook name sequentially.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**
-            * @template {Object} T
+            * @template T
             * @private
-            * Executes all plugin callbacks registered under the specified hook name.
-            * @param
-            {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'}
-            name - The name of the hook to trigger.
-            * @param {T} data - Data to pass to each callback function.
-            * @return {Promise<Array<T>>} A promise that resolves to an array of results from all callbacks.
+            * @param {string} name - The name of the hook to trigger.
+            * @param {T} initialData - Data to pass to each callback function.
+            * @return {Promise<T>} A promise that resolves to the merged data.
                 */
-                Coralite.prototype._triggerPluginHook = async function (name, data) {
+                Coralite.prototype._triggerPluginHook = async function (name, initialData) {
                 }
         </coralite-code-highlight>
-
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>name</code></td>
-                <td><code>'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'</code>
-                </td>
-                <td>The name of the hook to trigger.</td>
-            </tr>
-            <tr slot="body">
-                <td><code>data</code></td>
-                <td><code>T</code></td>
-                <td>Data to pass to each callback function.</td>
-            </tr>
-        </coralite-table>
-
-        <coralite-heading level="h3" text="Returns"></coralite-heading>
-        <p>A promise that resolves to an array of results from all callbacks.</p>
-
-        <coralite-heading level="h2" text="Add Plugin Hook"></coralite-heading>
-        <p>Registers a callback function under the specified hook name.</p>
-
-        <coralite-code-highlight language="JavaScript">
-            /**
-            * Registers a callback function under the specified hook name.
-            * @private
-            * @param
-            {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'}
-            name - The name of the hook to register the callback with.
-            * @param {Function} callback - The callback function to be executed when the hook is triggered.
-            */
-            Coralite.prototype._addPluginHook = function (name, callback) {
-            }
-        </coralite-code-highlight>
-
-        <coralite-heading level="h3" text="Parameters"></coralite-heading>
-        <coralite-table>
-            <tr slot="head">
-                <th>Parameter</th>
-                <th>Type</th>
-                <th>Description</th>
-            </tr>
-            <tr slot="body">
-                <td><code>name</code></td>
-                <td><code>'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'</code>
-                </td>
-                <td>The name of the hook to register the callback with.</td>
-            </tr>
-            <tr slot="body">
-                <td><code>callback</code></td>
-                <td><code>Function</code></td>
-                <td>The callback function to be executed when the hook is triggered.</td>
-            </tr>
-        </coralite-table>
     
 </main>
   <coralite-footer></coralite-footer>

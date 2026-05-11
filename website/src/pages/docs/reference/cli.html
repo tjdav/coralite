@@ -29,15 +29,14 @@
       <li>
         <p><strong><code>-c, --components &lt;path&gt;</code></strong> (required)</p>
         <ul>
-          <li>Description: The file system path to the directory containing Coralite components.</li>
+          <li>Description: The file system path to the directory containing Coralite component files.</li>
           <li>Example: <code>--components path/to/components</code></li>
         </ul>
       </li>
       <li>
         <p><strong><code>-p, --pages &lt;path&gt;</code></strong> (required)</p>
         <ul>
-          <li>Description: The file system path to the directory containing pages that will be rendered using the
-            provided components.</li>
+          <li>Description: The file system path to the directory containing page files that will be rendered.</li>
           <li>Example: <code>--pages path/to/pages</code></li>
         </ul>
       </li>
@@ -47,6 +46,13 @@
           <li>Description: The output directory for the generated site. If the specified directory does not exist, it
             will be created.</li>
           <li>Example: <code>--output path/to/dist</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>-m, --mode &lt;mode&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: The build mode. Can be <code>"production"</code> or <code>"development"</code>. Default is <code>"production"</code>.</li>
+          <li>Example: <code>--mode development</code></li>
         </ul>
       </li>
       <li>
@@ -64,10 +70,10 @@
         </ul>
       </li>
       <li>
-        <p><strong><code>--skip-render-attribute &lt;key=value...&gt;</code></strong> (optional)</p>
+        <p><strong><code>-s, --skip-render-attribute &lt;key...&gt;</code></strong> (optional)</p>
         <ul>
-          <li>Description: Skip rendering elements by attribute name-value pair. Multiple pairs can be provided separated by spaces.</li>
-          <li>Example: <code>--skip-render-attribute data-client-only=true</code></li>
+          <li>Description: Parse elements but exclude them from final render output based on attribute presence.</li>
+          <li>Example: <code>--skip-render-attribute data-client-only</code></li>
         </ul>
       </li>
       <li>
@@ -93,16 +99,7 @@
     </ul>
 
     <coralite-heading level="h2" text="Configuration File Support"></coralite-heading>
-    <p>The Coralite CLI automatically looks for a <code>coralite.config.js</code> file in the current working directory. If found, it will merge any plugins defined in the configuration file with the CLI options.</p>
-    <p>When configuring static assets in the <code>coralite.config.js</code> via <code>defineConfig</code>, you can bypass the package resolution and provide an absolute path to the file using the <code>src</code> property. This handles cases where NPM packages may not explicitly export their <code>package.json</code> or where a custom file path is necessary.</p>
-
-    <coralite-code-highlight language="JavaScript">import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const wasmPath = require.resolve('@matrix-org/matrix-sdk-crypto-wasm/pkg/matrix_sdk_crypto_wasm_bg.wasm');
-
-export default defineConfig({
-  assets: [{ src: wasmPath, dest: 'matrix_sdk_crypto_wasm_bg.wasm' }]
-});</coralite-code-highlight>
+    <p>The Coralite CLI automatically looks for a <code>coralite.config.js</code> file in the current working directory. If found, it will merge its configuration with the CLI options.</p>
 
     <coralite-heading level="h2" text="Examples"></coralite-heading>
 
@@ -115,20 +112,9 @@ export default defineConfig({
     <coralite-code language="bash">coralite -c src/components -p src/pages -o dist --ignore-attribute data-ignore=true class=test-only --dry-run</coralite-code>
 
     <p><strong>3. Using with a configuration file:</strong></p>
-    <p>When a <code>coralite.config.js</code> file exists in your project root, the CLI will automatically load plugins from it:</p>
+    <p>When a <code>coralite.config.js</code> file exists in your project root, the CLI will automatically load it:</p>
     <coralite-code language="bash">coralite -c src/components -p src/pages -o dist</coralite-code>
 
-    <coralite-heading level="h2" text="Technical Details"></coralite-heading>
-    <p>Under the hood, the Coralite CLI does the following:</p>
-    <ol>
-      <li>Parses command-line options using the <code>commander</code> library.</li>
-      <li>Validates and processes provided options (e.g., splits ignore attribute key-value pairs).</li>
-      <li>Checks for and loads plugins from <code>coralite.config.js</code> if it exists.</li>
-      <li>Creates a Coralite instance with the combined options.</li>
-      <li>Initializes the Coralite instance and compiles all pages.</li>
-      <li>Based on the <code>--dry-run</code> option, either displays generated document information or writes rendered
-        HTML files to the specified output directory.</li>
-    </ol>
   </main>
   <coralite-footer></coralite-footer>
 

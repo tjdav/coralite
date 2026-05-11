@@ -112,7 +112,7 @@
           method: (options, context) => {
             // Server-side logic
             return {
-              ...context.values,
+              ...context.properties,
               custom: 'data'
             }
           },
@@ -251,7 +251,7 @@
           </thead>
           <tbody>
             <tr>
-              <td><code>values</code></td>
+              <td><code>properties</code></td>
               <td><code>Object</code></td>
               <td>Page metadata and element attributes</td>
             </tr>
@@ -299,16 +299,16 @@
           export default defineComponent({
             tokens: {
               // Plugin method called with options
-              joinDate: (values) => formatDate({
+              joinDate: (properties) => formatDate({
                 format: 'long'
-              }, values.date)
+              }, properties.date)
             }
           })
         </script>
       </coralite-code-html>
 
-      <coralite-heading level="h3" text="Context Values Difference"></coralite-heading>
-      <p>It's important to understand the difference between values passed to component scripts vs plugin methods:</p>
+      <coralite-heading level="h3" text="Context Properties Difference"></coralite-heading>
+      <p>It's important to understand the difference between properties passed to component scripts vs plugin methods:</p>
 
       <coralite-code-html>
         <!-- Page: user.html -->
@@ -351,7 +351,7 @@
       </coralite-code-highlight>
 
       <p><strong>Key Difference:</strong> Plugin methods get raw metadata/attributes, component scripts get processed
-        token values.</p>
+        token properties.</p>
     </section>
 
     <!-- Page-Level Plugins Section -->
@@ -530,7 +530,7 @@
       <coralite-heading level="h3" text="The Two-Phase Currying System"></coralite-heading>
       <ol>
         <li><strong>Phase 1 (Global Context):</strong> The outermost function receives the <code>globalContext</code> (containing <code>imports</code> and global <code>config</code>).</li>
-        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ values, root, signal }</code>). Here, <code>root</code> is the component's <code>HTMLElement</code> (or Document), and <code>signal</code> is an <code>AbortSignal</code>.</li>
+        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ properties, root, signal }</code>). Here, <code>root</code> is the component's <code>HTMLElement</code> (or Document), and <code>signal</code> is an <code>AbortSignal</code>.</li>
         <li><strong>Phase 3 (Execution):</strong> It finally returns the actual callable utility function used by the user's script in the browser.</li>
       </ol>
 
@@ -547,7 +547,7 @@
               myHelper(globalContext) {
                 
                 // Phase 2: Receives Local Instance Context
-                return ({ values, root, signal }) => {
+                return ({ properties, root, signal }) => {
                   
                   // Phase 3: The actual function accessible via context.myHelper
                   return function (selector) {

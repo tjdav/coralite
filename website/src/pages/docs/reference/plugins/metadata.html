@@ -13,7 +13,7 @@
   <main class="container content">
     <!-- Introduction -->
     <h1 class="display">Metadata Plugin</h1>
-    <p>The <code>metadata</code> plugin is a built-in Coralite tool that extracts metadata from <code>&lt;meta&gt;</code> tags in your page's <code>&lt;head&gt;</code> and makes them available as template variables. This allows you to easily reuse page metadata within your components and layout templates.</p>
+    <p>The <code>metadata</code> plugin is a built-in Coralite tool that extracts metadata from <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags in your page's <code>&lt;head&gt;</code> and makes them available in the <code>context.page.meta</code> object.</p>
 
     <!-- Table of Contents -->
     <nav aria-label="table of contents">
@@ -21,6 +21,7 @@
       <ul>
         <li><a href="#basic-usage">Basic Usage</a></li>
         <li><a href="#dynamic-metadata">Dynamic Metadata</a></li>
+        <li><a href="#accessing-in-templates">Accessing in Templates</a></li>
         <li><a href="#key-points">Key Points</a></li>
       </ul>
     </nav>
@@ -28,7 +29,7 @@
     <!-- Basic Usage -->
     <section id="basic-usage">
       <coralite-heading level="h2" text="Basic Usage"></coralite-heading>
-      <p>The plugin automatically scans the <code>&lt;head&gt;</code> section of your pages for <code>&lt;meta&gt;</code> tags with <code>name</code> and <code>content</code> attributes. These values are exposed to your templates as variables prefixed with <code>meta_</code>.</p>
+      <p>The plugin automatically scans the <code>&lt;head&gt;</code> section of your pages for <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags. These properties are exposed to your component scripts via <code>context.page.meta</code>.</p>
 
       <coralite-heading level="h3" text="Defining Metadata"></coralite-heading>
       <p>Define your metadata in the page HTML:</p>
@@ -36,9 +37,9 @@
       <coralite-code-html>
         <!-- index.html -->
         <!DOCTYPE html>
-        <html>
+        <html lang="en">
         <head>
-          <meta name="title" content="My Awesome Page">
+          <title>My Awesome Page</title>
           <meta name="description" content="This is a description of my page.">
           <meta name="author" content="Coralite Team">
         </head>
@@ -49,24 +50,23 @@
         </html>
       </coralite-code-html>
 
-      <coralite-heading level="h3" text="Accessing Metadata"></coralite-heading>
-      <p>Access the values in your components using the <code>meta_</code> prefix:</p>
+      <coralite-heading level="h3" text="Accessing Metadata in Scripts"></coralite-heading>
+      <p>Access the properties in your <code>defineComponent</code> script block:</p>
 
-      <coralite-code-html>
-        <template id="page-header">
-          <header>
-            <h1 class="display">{{ meta_title }}</h1>
-            <p>By {{ meta_author }}</p>
-            <div class="summary">{{ meta_description }}</div>
-          </header>
-        </template>
-      </coralite-code-html>
+      <coralite-code-highlight language="JavaScript">
+        export default defineComponent({
+          script (context) {
+            console.log('Page Title:', context.page.meta.title);
+            console.log('Description:', context.page.meta.description);
+          }
+        })
+      </coralite-code-highlight>
 
       <p>In this example:</p>
       <ul>
-        <li><code>name="title"</code> becomes <code>meta_title</code></li>
-        <li><code>name="author"</code> becomes <code>meta_author</code></li>
-        <li><code>name="description"</code> becomes <code>meta_description</code></li>
+        <li><code>&lt;title&gt;</code> becomes <code>context.page.meta.title</code></li>
+        <li><code>name="author"</code> becomes <code>context.page.meta.author</code></li>
+        <li><code>name="description"</code> becomes <code>context.page.meta.description</code></li>
       </ul>
     </section>
 
@@ -74,8 +74,6 @@
     <section id="dynamic-metadata">
       <coralite-heading level="h2" text="Dynamic Metadata"></coralite-heading>
       <p>The metadata plugin can also process components placed inside the <code>&lt;head&gt;</code>. This is useful for creating reusable SEO components or dynamic metadata bundles.</p>
-
-      <coralite-heading level="h3" text="Using Components in Head"></coralite-heading>
 
       <coralite-code-html>
         <!-- seo-bundle component -->
@@ -93,19 +91,33 @@
           <meta name="page-specific" content="value">
         </head>
         <body>
-          <debug-panel></debug-panel>
+          <!-- ... -->
         </body>
         </html>
       </coralite-code-html>
 
-      <p>The plugin will render the <code>&lt;seo-bundle&gt;</code> component and extract any <code>&lt;meta&gt;</code> tags it produces. These values will then be available to other components on the page.</p>
+      <p>The plugin will render the <code>&lt;seo-bundle&gt;</code> component and extract any <code>&lt;meta&gt;</code> tags it produces.</p>
+    </section>
+
+    <!-- Accessing in Templates -->
+    <section id="accessing-in-templates">
+      <coralite-heading level="h2" text="Accessing in Templates"></coralite-heading>
+      <p>Coralite templates are "dumb" and cannot access the <code>page</code> object directly. To render metadata in your HTML template, you must explicitly map it to your component's <code>properties</code> in the server-side block:</p>
+
+      <coralite-code-highlight language="JavaScript">
+        export default defineComponent({
+          properties: async (context) => {
+            return {
+              // Map the page meta title to a flat property key
+              pageTitle: context.page.meta.title
+            }
+          }
+        })
+      </coralite-code-highlight>
 
       <coralite-code-html>
-        <template id="debug-panel">
-          <div class="debug">
-            <p>Theme: {{ meta_theme-color }}</p>
-            <p>Generator: {{ meta_generator }}</p>
-          </div>
+        <template id="page-header">
+          <h1>{{ pageTitle }}</h1>
         </template>
       </coralite-code-html>
     </section>
@@ -115,10 +127,9 @@
       <coralite-heading level="h2" text="Key Points"></coralite-heading>
       <ul>
         <li><strong>Built-in</strong>: Included by default in Coralite.</li>
-        <li><strong>Prefix</strong>: All variables are prefixed with <code>meta_</code>.</li>
-        <li><strong>Attributes</strong>: Only tags with both <code>name</code> and <code>content</code> attributes are processed.</li>
-        <li><strong>Scope</strong>: Variables are added to the page's global values and available to all components.</li>
-        <li><strong>Execution</strong>: Runs at build time during the <code>onPageSet</code> lifecycle hook.</li>
+        <li><strong>Namespace</strong>: All properties are stored in <code>context.page.meta</code>.</li>
+        <li><strong>Extraction</strong>: Processes <code>&lt;title&gt;</code> and <code>&lt;meta name="..." content="..."&gt;</code>.</li>
+        <li><strong>Execution</strong>: Runs at build time during the <code>onPageSet</code> and <code>onPageUpdate</code> lifecycle hooks.</li>
       </ul>
     </section>
 
