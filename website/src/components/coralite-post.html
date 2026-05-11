@@ -12,11 +12,11 @@
   export default defineComponent({
     properties (context) {
       return {
-        page_url_pathname: context.page.url.pathname,
-        page_title: context.page.meta.page_title || 'Untitled Post',
-        meta_author_id: context.page.meta_author_id || 'Unknown Author',
-        meta_published_time: context.page.meta_published_time || new Date().toISOString(),
-        meta_pageDescription: context.page.meta_pageDescription || 'No description provided.'
+        page_url_pathname: context.properties.page.url.pathname,
+        page_title: context.properties.page.meta.pageTitle || 'Untitled Post',
+        meta_author_id: context.properties.page.meta.author_id || 'Unknown Author',
+        meta_published_time: context.properties.page.meta.published_time || new Date().toISOString(),
+        meta_pageDescription: context.properties.page.meta.description || 'No description provided.'
       }
     }
   })
