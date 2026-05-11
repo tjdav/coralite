@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <coralite-meta title="Advanced Styles in Coralite: Mastering Scoped CSS & Nesting"
+  <coralite-meta title="Styles in Coralite: Mastering Scoped CSS & Nesting"
     description="Learn how to leverage Coralite's powerful component styling features. Master scoped CSS, selector nesting, and advanced style management for modular web development."></coralite-meta>
   <link rel="stylesheet" href="/css/styles.css" inline-css>
 </head>
@@ -10,7 +10,7 @@
 <body>
   <coralite-navbar></coralite-navbar>
   <main class="container content">
-    <h1 class="display">Advanced Component Styles</h1>
+    <h1 class="display">Component styles</h1>
 
     <p>
       Coralite provides a powerful styling system that allows you to write scoped CSS directly within your components.
@@ -32,14 +32,15 @@
     <coralite-code-html>
       <!-- Source Component -->
       <template id="my-button">
-        <style>
-          button {
-            background: blue;
-            color: white;
-          }
-        </style>
         <button>Click me</button>
       </template>
+
+      <style>
+        button {
+          background: blue;
+          color: white;
+        }
+      </style>
     </coralite-code-html>
 
     <p>
@@ -63,37 +64,38 @@
 
     <coralite-code-html>
       <template id="styled-card">
-        <style>
-          .card {
-            background: #fff;
-            padding: 1rem;
-            border: 1px solid #ddd;
-
-            /* Hover state */
-            &:hover {
-              border-color: #aaa;
-              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-
-            /* Dark theme modifier (if applying a class to the component) */
-            &.dark {
-              background: #333;
-              color: #fff;
-            }
-
-            /* Nested element */
-            & .title {
-              font-size: 1.25rem;
-              font-weight: bold;
-              margin-bottom: 0.5rem;
-            }
-          }
-        </style>
         <div class="card">
           <div class="title">{{ title }}</div>
           <slot></slot>
         </div>
       </template>
+      
+      <style>
+        .card {
+          background: #fff;
+          padding: 1rem;
+          border: 1px solid #ddd;
+
+          /* Hover state */
+          &:hover {
+            border-color: #aaa;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          }
+
+          /* Dark theme modifier (if applying a class to the component) */
+          &.dark {
+            background: #333;
+            color: #fff;
+          }
+
+          /* Nested element */
+          & .title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+          }
+        }
+      </style>
     </coralite-code-html>
 
     <p>
