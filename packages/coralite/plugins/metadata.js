@@ -57,7 +57,8 @@ async function extractMetadata (context) {
                   /** @type {any} */
                   component: {
                     ...elements,
-                    path: data.path
+                    path: data.path,
+                    page
                   },
                   contextId: data.path.pathname + i + element.name,
                   index: i
