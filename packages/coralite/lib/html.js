@@ -45,38 +45,37 @@ export async function getHtmlFiles ({
   collection,
   limit
 }) {
-  try {
-    if (!collection) {
-      collection = new CoraliteCollection({
-        rootDir: path,
-        onSet: onFileSet,
-        onUpdate: onFileUpdate,
-        onDelete: onFileDelete
-      })
+  if (!collection) {
+    collection = new CoraliteCollection({
+      rootDir: path,
+      onSet: onFileSet,
+      onUpdate: onFileUpdate,
+      onDelete: onFileDelete
+    })
+  }
+
+  if (!limit) {
+    limit = pLimit(availableParallelism())
+  }
+
+  const entries = await readdir(path, { withFileTypes: true })
+  const tasks = []
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i]
+
+    // Skip hidden files/directories starting with dot
+    if (entry.name.startsWith('.')) {
+      continue
     }
 
-    if (!limit) {
-      limit = pLimit(availableParallelism())
-    }
+    const pathname = join(entry.parentPath, entry.name)
 
-    const entries = await readdir(path, { withFileTypes: true })
-    const tasks = []
+    // Calculate relative path from root for exclusion checking
+    const relativePath = pathname.replace(path + '/', '')
 
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i]
-
-      // Skip hidden files/directories starting with dot
-      if (entry.name.startsWith('.')) {
-        continue
-      }
-
-      const pathname = join(entry.parentPath, entry.name)
-
-      // Calculate relative path from root for exclusion checking
-      const relativePath = pathname.replace(path + '/', '')
-
-      // Check if entry should be excluded by: name, relative path, or full path
-      const shouldExclude = exclude.includes(entry.name) ||
+    // Check if entry should be excluded by: name, relative path, or full path
+    const shouldExclude = exclude.includes(entry.name) ||
                            exclude.includes(relativePath) ||
                            exclude.includes(pathname) ||
                            exclude.some(excludePath => {
@@ -85,45 +84,42 @@ export async function getHtmlFiles ({
                              return relativePath.startsWith(excludeDir + '/')
                            })
 
-      if (shouldExclude) {
-        continue
-      }
-
-      if (entry.isDirectory() && recursive) {
-        tasks.push(getHtmlFiles({
-          path: pathname,
-          type,
-          recursive,
-          exclude,
-          onFileSet,
-          onFileUpdate,
-          onFileDelete,
-          collection,
-          limit
-        }))
-      } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
-        tasks.push(limit(async () => {
-          const content = await readFile(pathname, { encoding: 'utf8' })
-
-          await collection.setItem({
-            type,
-            content,
-            path: {
-              pathname: pathname,
-              filename: entry.name,
-              dirname: dirname(pathname)
-            }
-          })
-        }))
-      }
+    if (shouldExclude) {
+      continue
     }
 
-    await Promise.all(tasks)
+    if (entry.isDirectory() && recursive) {
+      tasks.push(getHtmlFiles({
+        path: pathname,
+        type,
+        recursive,
+        exclude,
+        onFileSet,
+        onFileUpdate,
+        onFileDelete,
+        collection,
+        limit
+      }))
+    } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
+      tasks.push(limit(async () => {
+        const content = await readFile(pathname, { encoding: 'utf8' })
 
-    return collection
-  } catch (error) {
-    throw error
+        await collection.setItem({
+          type,
+          content,
+          path: {
+            pathname: pathname,
+            filename: entry.name,
+            dirname: dirname(pathname)
+          }
+        })
+      }))
+    }
   }
+
+  await Promise.all(tasks)
+
+  return collection
 }
 
 /**
