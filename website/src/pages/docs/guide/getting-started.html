@@ -75,7 +75,7 @@
       <!-- src/components/counter.html -->
       <template id="my-counter">
         <div class="counter-box">
-          <!-- We replace the hardcoded 0 with our token -->
+          <!-- We replace the hardcoded 0 with our property -->
           <h2>Count: <span class="count-display">{{ currentCount }}</span></h2>
           <button type="button" class="btn">Increment</button>
         </div>
@@ -85,10 +85,10 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          tokens: {
+          properties: () => ({
             // Define our initial value
-            currentCount: () => 0
-          }
+            currentCount: 0
+          })
         })
       </script>
     </coralite-code-html>
@@ -99,7 +99,7 @@
 
     <p>First, add a <code>ref</code> attribute to the elements we want to interact with in our template.</p>
 
-    <p>Second, add a <code>client.script</code> function inside <code>defineComponent</code>. This script is what runs in the user's browser.</p>
+    <p>Second, add a <code>script</code> function inside <code>defineComponent</code>. This script is what runs in the user's browser.</p>
 
     <coralite-code-html>
       <!-- src/components/counter.html -->
@@ -115,25 +115,23 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          tokens: {
-            currentCount: () => 0
-          },
-          client: {
-            // The script function runs in the browser!
-            script: ({ values, helpers }) => {
-              // 1. Get our elements using the refs helper
-              const display = helpers.refs('countDisplay')
-              const btn = helpers.refs('incrementBtn')
+          properties: () => ({
+            currentCount: 0
+          }),
+          // The script function runs in the browser!
+          script: ({ properties, refs }) => {
+            // 1. Get our elements using the refs helper
+            const display = refs('countDisplay')
+            const btn = refs('incrementBtn')
 
-              // 2. Set up our state
-              let count = values.currentCount
+            // 2. Set up our state
+            let count = properties.currentCount
 
-              // 3. Add an event listener
-              btn.addEventListener('click', () => {
-                count++
-                display.textContent = count
-              })
-            }
+            // 3. Add an event listener
+            btn.addEventListener('click', () => {
+              count++
+              display.textContent = count
+            })
           }
         })
       </script>
@@ -147,8 +145,8 @@
       <li>Create a static HTML template component.</li>
       <li>Use the component in a page.</li>
       <li>Turn it into a dynamic component using <code>defineComponent</code>.</li>
-      <li>Bind data using tokens (<code>{{ }}</code>).</li>
-      <li>Add interactivity using <code>client.script</code> and the <code>refs</code> plugin.</li>
+      <li>Bind data using properties (<code>{{ }}</code>).</li>
+      <li>Add interactivity using <code>script</code> and the <code>refs</code> plugin.</li>
     </ul>
 
     <hr>

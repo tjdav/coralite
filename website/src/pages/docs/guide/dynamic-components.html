@@ -117,59 +117,58 @@
       </script>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Server-Side Setup"></coralite-heading>
+    <coralite-heading level="h2" text="Server-Side Properties & Bridging Data"></coralite-heading>
 
-    <p>If your component needs to fetch data from an API or read files before rendering, use the <code>client.setup</code> function.</p>
+    <p>If your component needs to fetch data from an API or read files before rendering, use the <code>properties</code> function. Top-level imports (like reading from the file system or a database) can only be used here on the server side.</p>
 
-    <p>The object returned by <code>setup</code> is seamlessly merged into the component's <code>values</code> object, making that data available to tokens and client scripts. Keep in mind that anything returned by <code>setup</code> will be stringified using <code>serialize-javascript</code> before being sent to the client.</p>
-
-    <p>While <code>setup</code> is used for data fetching on the server, if you need true Top-Level Await (TLA) for client-side functionality (like awaiting a module initialization in the browser), you must use <code>client.imports</code> which is designed to handle TLA natively for the client.</p>
+    <p>The object returned by <code>properties</code> is injected directly into your component's declarative HTML template and merged into the client script's runtime <code>context.properties</code>. This makes it the perfect bridge across the serialization boundary. Keep in mind that anything returned by <code>properties</code> will be stringified using <code>serialize-javascript</code> before being sent to the browser.</p>
 
     <coralite-code-html>
-      <script type="module">
-        import { defineComponent } from 'coralite'
+    <template id="my-data-component">
+      <div class="message">
+        Server says: {{ fetchedData }}
+      </div>
+    </template>
 
-        export default defineComponent({
-          client: {
-            // This runs ON THE SERVER during the build process
-            setup: async (values) => {
-              const response = await fetch('https://api.example.com/data')
-              const data = await response.json()
+    <script type="module">
+      import { defineComponent } from 'coralite/plugins'
+      // Top-level imports are safely allowed here!
+      import myDatabase from 'my-database'
 
-              // Merge this data into the component's values
-              return {
-                fetchedData: data.message
-              }
-            }
-          },
-          tokens: {
-            // Now we can use the fetched data in our template
-            apiMessage: ({ fetchedData }) => fetchedData
+      export default defineComponent({
+        // This runs ON THE SERVER during the build process.
+        // It is marked async because we are awaiting a database call.
+        properties: async (context) => {
+          const data = await myDatabase.fetchData()
+
+          // Return flat primitive data to bridge the serialization gap
+          return {
+            fetchedData: data.message
           }
-        })
-      </script>
+        }
+      })
+    </script>
     </coralite-code-html>
 
     <coralite-heading level="h2" text="Client-Side Interactivity (The Browser Script)"></coralite-heading>
 
-    <p>The <code>client.script</code> function is what makes Coralite components interactive. This function is serialized and bundled to run <strong>in the user's browser</strong> after the page loads.</p>
+    <p>The <code>script</code> function is what makes Coralite components interactive. This function is serialized and bundled to run <strong>in the user's browser</strong> after the page loads[cite: 48, 49].</p>
 
-    <p>The script receives a context object (<code>CoraliteScriptContent</code>) containing things like <code>id</code>, <code>values</code>, <code>root</code>, and <code>helpers</code>. The <code>root</code> property has been removed. Plugins and scripts should query the <code>document</code> directly. Coralite strictly renders into the Light DOM, not the Shadow DOM, so elements inherit global CSS.</p>
+    <p>The script receives a flattened context object containing things like <code>id</code>, <code>properties</code>, and <code>root</code> (the top-level Light DOM node of the custom element)[cite: 50, 51]. The AST parser automatically detects dynamic imports inside this script and bundles them without requiring manual configuration[cite: 55, 61, 62].</p>
 
     <coralite-heading level="h2" text="Reactivity & Imperative Web Components"></coralite-heading>
 
-    <p>Coralite embraces a strictly SSR first approach. Statically placed HTML tags in your templates are <strong>not</strong> reactive. To use a true Web Component with a client-side lifecycle that reacts to attribute changes, you must utilize the <strong>Imperative Requirement</strong>.</p>
-    
+    <p>Coralite embraces a strictly SSR first approach[cite: 9]. Statically placed HTML tags in your templates are <strong>not</strong> reactive. To use a true Web Component with a client-side lifecycle that reacts to attribute changes, you must utilize the <strong>Imperative Requirement</strong>[cite: 66, 67].</p>
+
     <ul>
-      <li><strong>The Imperative Requirement:</strong> A parent component must imperatively instantiate the child component via <code>document.createElement()</code> and append it to the DOM.</li>
-      <li><strong>Bundler Declaration:</strong> Crucially, the parent must declare the dynamically created child's tag name in its <code>client.components</code> array so the bundler knows to include the child's logic in the build.</li>
-      <li><strong>How it Works:</strong> Once mounted, updating attributes on the child element (via <code>setAttribute()</code>) triggers Coralite's internal <code>MutationObserver</code>. This observer automatically updates the <code>values</code> context, re-evaluates computed token functions, and updates the DOM.</li>
+      <li><strong>The Imperative Requirement:</strong> A parent component must imperatively instantiate the child component via <code>document.createElement('child-element')</code> and append it to the DOM[cite: 67].</li>
+      <li><strong>Zero-Config Dependencies:</strong> As long as the string literal contains a hyphen (e.g., <code>'child-element'</code>), the AST parser detects it and automatically bundles the child component[cite: 63, 64]. No manual dependency array is needed!</li>
+      <li><strong>How it Works:</strong> Once mounted, updating attributes on the child element (via <code>setAttribute()</code>) triggers Coralite's internal <code>MutationObserver</code>[cite: 54]. This observer automatically updates the <code>context.properties</code> object and re-renders the affected DOM nodes[cite: 55].</li>
     </ul>
 
     <p>Here is the standard pattern for declarative Reactivity:</p>
 
     <coralite-code-html>
-      <!-- 1. The Child Component (child-element.html) -->
       <template id="child-element">
         <h3 ref="titleDisplay">{{ title }}</h3>
         <p>Status: {{ computedStatus }}</p>
@@ -179,25 +178,25 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          tokens: {
-            title: 'Default Title',
-            computedStatus: (values) => (values.title === 'Active' ? 'Online' : 'Offline')
-          },
-          client: {
-            // Setup runs computed tokens on the client
-            setup: () => ({
-              computedStatus: (values) => (values.title === 'Active' ? 'Online' : 'Offline')
-            }),
-            script: (context) => {
-              console.log('Child mounted with title:', context.values.title)
+          // State: Runs on the server, bridging data to the client
+          properties (context) {
+            const title = context.properties.title || 'Default Title'
+
+            // Return flat primitive data to safely cross the serialization boundary
+            return {
+              title,
+              computedStatus: title === 'Active' ? 'Online' : 'Offline'
             }
+          },
+          // Behavior: Runs natively in the browser
+          script ({ properties }) {
+            console.log('Child mounted with title:', properties.title)
           }
         })
       </script>
     </coralite-code-html>
 
     <coralite-code-html>
-      <!-- 2. The Parent Component (parent-element.html) -->
       <template id="parent-element">
         <div ref="target"></div>
       </template>
@@ -206,31 +205,27 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          client: {
-            // MUST declare the dynamically created component for the bundler
-            components: ['child-element'],
-            script: (context) => {
-              const target = context.helpers.refs('target')
+          // Notice the beautifully flattened, destructured context
+          script ({ refs }) {
+            const target = refs('target')
 
-              // 1. Instantiate the component imperatively
-              const child = document.createElement('child-element')
-              child.setAttribute('title', 'Pending')
+            // 1. Instantiate the component imperatively (AST auto-detects this!) [cite: 63, 64]
+            const child = document.createElement('child-element')
+            child.setAttribute('title', 'Pending')
 
-              // 2. Mount to DOM (Fires connectedCallback & renders DOM)
-              target.replaceWith(child)
+            // 2. Mount to DOM (Fires connectedCallback & renders DOM)
+            target.replaceWith(child)
 
-              // 3. Reactivity test: Updating attribute triggers MutationObserver & re-render
-              setTimeout(() => {
-                child.setAttribute('title', 'Active')
-              }, 1000)
-            }
+            // 3. Reactivity test: Updating attribute triggers MutationObserver & child re-render [cite: 54, 55, 72]
+            setTimeout(() => {
+              child.setAttribute('title', 'Active')
+            }, 1000)
           }
         })
       </script>
     </coralite-code-html>
 
-    <p>Notice the use of <code>ref="target"</code> and <code>context.helpers.refs('target')</code>? This is Coralite's safe way to query the DOM. The refs plugin automatically queries the DOM using uniquely compiled IDs. Learn more in the <a href="./dom-refs.html">Managing the DOM (Refs)</a> guide.</p>
-
+    <p>Notice the clean destructuring of <code>{ refs }</code> on the script context? This is Coralite's safe way to query the DOM. The refs plugin automatically queries the DOM using uniquely compiled IDs[cite: 112, 113]. Learn more in the <a href="./dom-refs.html">Managing the DOM (Refs)</a> guide.</p>
     <hr>
     
     <p>For strict API type definitions, arguments, and return types, see the <a href="/docs/reference/define-component.html">defineComponent API Reference</a>.</p>

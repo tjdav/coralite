@@ -42,24 +42,19 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            client: {
-              script: (context) => {
-                const { helpers } = context
-                const refs = helpers.refs
+            script ({ refs }) {
+              const username = refs('username')
+              const password = refs('password')
+              const submitBtn = refs('submitBtn')
           
-                const username = refs('username')
-                const password = refs('password')
-                const submitBtn = refs('submitBtn')
-          
-                submitBtn.addEventListener('click', () => {
-                  if (username.value && password.value) {
-                    console.log('Login:', username.value)
+              submitBtn.addEventListener('click', () => {
+                if (username.value && password.value) {
+                  console.log('Login:', username.value)
                   // Handle form submission
-                  } else {
-                    alert('Please fill all fields')
-                  }
-                })
-              }
+                } else {
+                  alert('Please fill all fields')
+                }
+              })
             }
           })
         </script>
@@ -85,35 +80,35 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            tokens: {
-              count: ({ initial }) => parseInt(initial) || 0
-            },
-            client: {
-              script: (context) => {
-                const { helpers, root, values } = context
-                const refs = helpers.refs
-                const increment = refs('increment')
-                const decrement = refs('decrement')
-                const reset = refs('reset')
-          
-                let count = values.count
-                const counterDisplay = root.querySelector('h2')
-          
-                increment.addEventListener('click', () => {
-                  count++
-                  counterDisplay.textContent = `Count: ${count}`
-                })
-          
-                decrement.addEventListener('click', () => {
-                  count--
-                  counterDisplay.textContent = `Count: ${count}`
-                })
-          
-                reset.addEventListener('click', () => {
-                  count = 0
-                  counterDisplay.textContent = `Count: ${count}`
-                })
+            properties ({ properties }) {
+              const initial = parseInt(initial) || 0
+
+              return {
+                count: initial
               }
+            },
+            script ({ refs, root, properties }) {
+              const increment = refs('increment')
+              const decrement = refs('decrement')
+              const reset = refs('reset')
+          
+              let count = properties.count
+              const counterDisplay = root.querySelector('h2')
+          
+              increment.addEventListener('click', () => {
+                count++
+                counterDisplay.textContent = `Count: ${count}`
+              })
+          
+              decrement.addEventListener('click', () => {
+                count--
+                counterDisplay.textContent = `Count: ${count}`
+              })
+          
+              reset.addEventListener('click', () => {
+                count = 0
+                counterDisplay.textContent = `Count: ${count}`
+              })
             }
           })
         </script>
@@ -139,50 +134,45 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            client: {
-              script: (context) => {
-                const { helpers } = context
-                const refs = helpers.refs
+            script ({ refs }) {
+              const email = refs('email')
+              const password = refs('password')
+              const emailError = refs('emailError')
+              const passwordError = refs('passwordError')
+              const submitBtn = refs('submitBtn')
           
-                const email = refs('email')
-                const password = refs('password')
-                const emailError = refs('emailError')
-                const passwordError = refs('passwordError')
-                const submitBtn = refs('submitBtn')
-          
-                const validateEmail = (email) => {
-                  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
-                }
-          
-                const validatePassword = (password) => {
-                  return password.length >= 8
-                }
-          
-                submitBtn.addEventListener('click', () => {
-                  let valid = true
-          
-                  // Validate email
-                  if (!validateEmail(email.value)) {
-                    emailError.textContent = 'Invalid email format'
-                    valid = false
-                  } else {
-                    emailError.textContent = ''
-                  }
-          
-                  // Validate password
-                  if (!validatePassword(password.value)) {
-                    passwordError.textContent = 'Password must be 8+ characters'
-                    valid = false
-                  } else {
-                    passwordError.textContent = ''
-                  }
-          
-                  if (valid) {
-                    console.log('Form submitted:', email.value)
-                    // Submit form
-                  }
-                })
+              const validateEmail = (email) => {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
               }
+          
+              const validatePassword = (password) => {
+                return password.length >= 8
+              }
+          
+              submitBtn.addEventListener('click', () => {
+                let valid = true
+          
+                // Validate email
+                if (!validateEmail(email.value)) {
+                  emailError.textContent = 'Invalid email format'
+                  valid = false
+                } else {
+                  emailError.textContent = ''
+                }
+          
+                // Validate password
+                if (!validatePassword(password.value)) {
+                  passwordError.textContent = 'Password must be 8+ characters'
+                  valid = false
+                } else {
+                  passwordError.textContent = ''
+                }
+          
+                if (valid) {
+                  console.log('Form submitted:', email.value)
+                  // Submit form
+                }
+              })
             }
           })
         </script>
@@ -209,30 +199,25 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            client: {
-              script: (context) => {
-                const { helpers } = context
-                const refs = helpers.refs
+            script ({ refs }) {
+              const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
+              const contents = [refs('content1'), refs('content2'), refs('content3')]
           
-                const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
-                const contents = [refs('content1'), refs('content2'), refs('content3')]
-          
-                buttons.forEach((btn, index) => {
-                  btn.addEventListener('click', () => {
+              buttons.forEach((btn, index) => {
+                btn.addEventListener('click', () => {
                   // Hide all contents
-                    contents.forEach(content => {
-                      content.style.display = 'none'
-                    })
-          
-                    // Show selected content
-                    contents[index].style.display = 'block'
-          
-                    // Update button states
-                    buttons.forEach(b => b.classList.remove('active'))
-                    btn.classList.add('active')
+                  contents.forEach(content => {
+                    content.style.display = 'none'
                   })
+          
+                  // Show selected content
+                  contents[index].style.display = 'block'
+          
+                  // Update button states
+                  buttons.forEach(b => b.classList.remove('active'))
+                  btn.classList.add('active')
                 })
-              }
+              })
             }
           })
         </script>
@@ -240,7 +225,7 @@
 
       <coralite-heading level="h3" text="Key Points"></coralite-heading>
       <ul>
-        <li><strong>Runtime Access</strong>: <code>helpers.refs('refName')</code> gets DOM elements</li>
+        <li><strong>Runtime Access</strong>: <code>refs('refName')</code> gets DOM elements</li>
         <li><strong>Automatic Caching</strong>: Elements cached after first access</li>
         <li><strong>Safe Queries</strong>: Returns null if element not found</li>
         <li><strong>Under the Hood</strong>: Framework assigns the generated unique ID to the <code>ref</code> attribute and queries it via <code>root.querySelector('[ref="..."]')</code>. E2E tests should query this compiled ref attribute directly (e.g., <code>[ref="my-component__btn-0"]</code>).</li>

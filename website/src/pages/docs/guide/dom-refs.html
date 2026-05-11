@@ -46,7 +46,7 @@
 
     <coralite-heading level="h3" text="2. Script Usage"></coralite-heading>
 
-    <p>Inside your <code>defineComponent</code>'s <code>client.script</code>, the refs plugin provides a helper function: <code>helpers.refs('yourName')</code>.</p>
+    <p>Inside your <code>defineComponent</code>'s <code>script</code>, the refs plugin provides a helper function: <code>refs('yourName')</code>.</p>
 
     <p>Call this function with the name you defined in the template to retrieve the actual DOM element.</p>
 
@@ -55,22 +55,19 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          client: {
-            script: (context) => {
-              // Extract the refs helper from the context
-              const { helpers } = context
-              const refs = helpers.refs
+          script: (context) => {
+            // Extract the refs helper from the context
+            const { refs } = context
 
-              // Safe DOM element retrieval
-              const input = refs('usernameInput')
-              const button = refs('submitBtn')
+            // Safe DOM element retrieval
+            const input = refs('usernameInput')
+            const button = refs('submitBtn')
 
-              // Now use standard DOM APIs
-              button.addEventListener('click', (e) => {
-                e.preventDefault()
-                console.log(`Submitted username: ${input.value}`)
-              })
-            }
+            // Now use standard DOM APIs
+            button.addEventListener('click', (e) => {
+              e.preventDefault()
+              console.log(`Submitted username: ${input.value}`)
+            })
           }
         })
       </script>
@@ -86,16 +83,25 @@
       <li><strong>Null Safety:</strong> If the element isn't found (perhaps conditionally rendered out), the helper safely returns <code>null</code> without throwing an error.</li>
     </ol>
 
-    <coralite-heading level="h2" text="E2E Testing & External Querying"></coralite-heading>
+    <coralite-heading level="h2" text="E2E Testing & Hydration Readiness"></coralite-heading>
 
-    <p>At build time, Coralite assigns a unique string to the <code>ref</code> attribute using the pattern: <code>&lt;component-id&gt;__&lt;refName&gt;-&lt;index&gt;</code>. For E2E testing frameworks (like Playwright) or external scripts, you should query this compiled <code>ref</code> attribute directly instead of relying on arbitrary CSS classes or standard IDs.</p>
+    <p>To ensure deterministic and flake-free End-to-End (E2E) testing, Coralite provides built-in testing integrations that bridge the gap between Server-Side Rendering and client-side interactivity.</p>
 
-    <p>For example, if you defined <code>&lt;button ref="submitBtn"&gt;</code> in a component named <code>my-form</code>, you could locate it in a Playwright test like this:</p>
+    <coralite-heading level="h3" text="1. Waiting for Hydration"></coralite-heading>
+    <p>Because Coralite components execute their <code>script</code> blocks natively in the browser after the initial HTML is parsed, E2E frameworks (like Playwright) might attempt to interact with elements before their event listeners are bound. To prevent this, your tests <strong>must</strong> await the global readiness promise immediately after navigating to a page.</p>
 
-    <coralite-code language="javascript">
-await page.locator('[ref="my-form__submitBtn-0"]').click();
-    </coralite-code>
+    <coralite-heading level="h3" text="2. Testing Selectors (data-testid)"></coralite-heading>
+    <p>In <code>development</code> mode, Coralite's testing plugin automatically duplicates all <code>ref="xyz"</code> attributes into standard <code>data-testid</code> attributes. It assigns a unique, namespaced string using the pattern: <code>&lt;component-id&gt;__&lt;refName&gt;-&lt;index&gt;</code>.</p>
 
+    <p>For example, if you defined <code>&lt;button ref="submitBtn"&gt;</code> in a component named <code>my-form</code>, you should locate it in a Playwright test using <code>getByTestId</code>:</p>
+
+    <coralite-code-highlight language="javascript">
+    // 1. Wait for Coralite to finish executing all component scripts
+    await page.waitForFunction(() => window.__coralite_ready__);
+
+    // 2. Safely interact using the auto-generated test ID
+    await page.getByTestId('my-form__submitBtn-0').click();
+    </coralite-code-highlight>
   </main>
   <coralite-footer></coralite-footer>
 </body>

@@ -34,6 +34,11 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
         <th>Description</th>
       </tr>
       <tr slot="body">
+        <td><code>properties</code></td>
+        <td><code>(context: CoraliteScriptContent) => Promise&lt;Record&lt;string, any&gt;&gt;</code></td>
+        <td>An asynchronous server-side function used for data fetching. Its returned object is merged into the component's <code>properties</code> context.</td>
+      </tr>
+      <tr slot="body">
         <td><code>tokens</code></td>
         <td><code>Record&lt;string, string | CoraliteModuleTokenFunction&gt;</code></td>
         <td>An object defining computed or static values available for template interpolation.</td>
@@ -41,12 +46,12 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
       <tr slot="body">
         <td><code>slots</code></td>
         <td><code>Record&lt;string, CoraliteModuleSlotFunction&gt;</code></td>
-        <td>An object defining server-side processing functions for component slots.</td>
+        <td>An object defining server-side or client-side processing functions for component slots.</td>
       </tr>
       <tr slot="body">
-        <td><code>client</code></td>
-        <td><code>ClientOptions</code></td>
-        <td>An object defining server-side setup and client-side scripts.</td>
+        <td><code>script</code></td>
+        <td><code>(context: CoraliteScriptContent) => void</code></td>
+        <td>The client-side function executed in the browser post-load.</td>
       </tr>
     </coralite-table>
 
@@ -55,52 +60,22 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
     <coralite-heading level="h3" text="CoraliteModuleTokenFunction"></coralite-heading>
 
     <coralite-code-highlight language="typescript">
-type CoraliteModuleTokenFunction = (values: Record&lt;string, any&gt;) => any | Promise&lt;any&gt;
+type CoraliteModuleTokenFunction = (properties: Record&lt;string, any&gt;) => any | Promise&lt;any&gt;
     </coralite-code-highlight>
 
-    <p>A function that evaluates data at build time. It receives a <code>values</code> object containing element attributes and page metadata (prefixed with <code>meta_</code> and <code>$</code>).</p>
+    <p>A function that evaluates data. It receives a <code>properties</code> object containing element attributes, bridged server data, and page metadata.</p>
 
     <coralite-heading level="h3" text="CoraliteModuleSlotFunction"></coralite-heading>
 
     <coralite-code-highlight language="typescript">
-type CoraliteModuleSlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&lt;string, any&gt;) => ParsedHTMLNode[] | string | void
+type CoraliteModuleSlotFunction = (slotNodes: NodeArray, context: CoraliteScriptContent) => NodeArray | string | void
     </coralite-code-highlight>
 
-    <p>A function that processes slot content. It receives an array of parsed HTML nodes and the current token values, and can return an array of parsed HTML nodes, an HTML string to be parsed, or void/undefined to fallback to the original slot content.</p>
-
-    <coralite-heading level="h3" text="ClientOptions"></coralite-heading>
-
-    <coralite-table>
-      <tr slot="head">
-        <th>Property</th>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-      <tr slot="body">
-        <td><code>setup</code></td>
-        <td><code>(values: Record&lt;string, any&gt;) => Promise&lt;Record&lt;string, any&gt;&gt;</code></td>
-        <td>An asynchronous server-side function. Its returned object is merged into the component's <code>values</code>.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>script</code></td>
-        <td><code>(context: CoraliteScriptContent) => void</code></td>
-        <td>The client-side function executed in the browser post-load.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>imports</code></td>
-        <td><code>Array&lt;ImportDefinition&gt;</code></td>
-        <td>An array defining component-level external dependencies to be bundled.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>components</code></td>
-        <td><code>Array&lt;string&gt;</code></td>
-        <td>An array of string dependencies. Declares other imperative Web Components created in the script.</td>
-      </tr>
-    </coralite-table>
+    <p>A function that processes slot content. It receives an array of nodes (AST nodes on the server, DOM elements on the client) and the runtime context, and can return an array of nodes, an HTML string, or void to fallback to the original slot content.</p>
 
     <coralite-heading level="h3" text="CoraliteScriptContent Context Object"></coralite-heading>
 
-    <p>The context object passed to the <code>client.script</code> function:</p>
+    <p>The flattened context object passed to the <code>script</code> execution block:</p>
 
     <coralite-table>
       <tr slot="head">
@@ -135,7 +110,7 @@ type CoraliteModuleSlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&l
       <tr slot="body">
         <td><code>helpers</code></td>
         <td><code>object</code></td>
-        <td>Client-side utilities provided by plugins (e.g., <code>helpers.refs</code> and <code>helpers.imports</code>).</td>
+        <td>Client-side utilities provided by plugins (e.g., <code>refs</code> and <code>imports</code>).</td>
       </tr>
       <tr slot="body">
         <td><code>components</code></td>
@@ -146,50 +121,3 @@ type CoraliteModuleSlotFunction = (slotNodes: ParsedHTMLNode[], values: Record&l
 
     <coralite-heading level="h3" text="ImportDefinition"></coralite-heading>
 
-    <p>Objects in the <code>client.imports</code> array:</p>
-
-    <coralite-table>
-      <tr slot="head">
-        <th>Property</th>
-        <th>Type</th>
-        <th>Description</th>
-      </tr>
-      <tr slot="body">
-        <td><code>specifier</code></td>
-        <td><code>string</code> (Required)</td>
-        <td>The path or URL of the module.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>defaultExport</code></td>
-        <td><code>string</code></td>
-        <td>The name to assign to the default export.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>namedExports</code></td>
-        <td><code>string[]</code></td>
-        <td>List of named exports to import. Supports <code>"original as alias"</code> syntax.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>namespaceExport</code></td>
-        <td><code>string</code></td>
-        <td>Import the entire module as a namespace (<code>import * as Name</code>).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>attributes</code></td>
-        <td><code>object</code></td>
-        <td>Import attributes (e.g., <code>{ type: 'json' }</code>).</td>
-      </tr>
-    </coralite-table>
-
-    <coralite-alert type="info">
-      <strong>ℹ️ The Static Import Ban</strong>
-      <p>
-        Static <code>import</code> statements cannot be used directly inside a <code>client.script</code> block. Doing so will result in a build failure. Instead, you must declare all external dependencies via the <code>client.imports</code> array, and they will become available at runtime via the <code>helpers.imports</code> object.
-      </p>
-    </coralite-alert>
-
-  </main>
-  <coralite-footer></coralite-footer>
-</body>
-
-</html>
