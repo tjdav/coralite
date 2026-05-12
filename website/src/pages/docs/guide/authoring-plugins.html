@@ -48,7 +48,7 @@
       </li>
       <li><strong>Render Lifecycle:</strong>
         <ul>
-          <li><code>onBeforePageRender(data)</code>: Called right before a specific page's HTML is compiled. Useful for modifying the raw document data before rendering. <em>Note: Mutate the passed context objects directly by reference rather than returning new objects to avoid merge conflicts with other plugins.</em></li>
+          <li><code>onBeforePageRender(data)</code>: Called right before a specific page's HTML is compiled. Useful for modifying the raw document data before rendering. <em>Note: Inside plugin hooks, the <strong>Coralite instance</strong> is bound to <code>this</code>.</em></li>
           <li><code>onAfterPageRender(data)</code>: Called immediately after a specific page's HTML is compiled.</li>
         </ul>
       </li>
@@ -88,10 +88,10 @@
 
             // Phase 2: Receives the local Web Component instance context
             return ({ signal }) => {
-              
+
               // Phase 3: The actual function accessible on the CLIENT
               return (buttonElement, eventName) => {
-                
+
                 // Now we can safely use browser APIs and component lifecycle signals
                 buttonElement.addEventListener('click', () => {
                   window.navigator.sendBeacon('https://api.analytics.com', JSON.stringify({
@@ -99,7 +99,7 @@
                     event: eventName
                   }));
                 }, { signal });
-                
+
               };
             }
           }
@@ -112,7 +112,7 @@
     <p>Unlike earlier versions of Coralite, V1 removes the need for manual dependency arrays like <code>client.imports</code> or <code>client.components</code>. The underlying AST parser automatically detects dynamic imports (e.g., <code>await import('my-analytics-sdk')</code>) inside the actual runtime logic of your context utilities and bundles them automatically.</p>
 
     <hr>
-    
+
     <p>Ready to build your plugin? Consult the strict API signatures and configuration options in the <a href="/docs/reference/define-plugin.html">definePlugin API Reference</a>.</p>
 
   </main>

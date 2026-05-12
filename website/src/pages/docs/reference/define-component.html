@@ -86,6 +86,11 @@ type CoraliteModuleSlotFunction = (slotNodes: NodeArray, context: CoraliteScript
         <td>The <strong>Light DOM element</strong>. This is the custom element instance itself (the wrapper node).</td>
       </tr>
       <tr slot="body">
+        <td><code>module</code></td>
+        <td><code>CoraliteModule</code></td>
+        <td>Static metadata for the component, including the <strong>template AST</strong> and raw script.</td>
+      </tr>
+      <tr slot="body">
         <td><code>properties</code></td>
         <td><code>Record&lt;string, any&gt;</code></td>
         <td>The processed token properties, props, and setup data.</td>

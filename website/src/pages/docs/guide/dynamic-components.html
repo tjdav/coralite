@@ -19,7 +19,7 @@
     <coralite-alert type="warning">
       <strong>⚠️ Warning: AST Splicing (Host Tag Removal)</strong>
       <p>
-        Just like static components, Coralite's server completely deletes the host tag of declarative dynamic components and replaces it with the template's inner HTML. 
+        Just like static components, Coralite's server completely deletes the host tag of declarative dynamic components and replaces it with the template's inner HTML.
         If you try to style the host tag (e.g., <code>&lt;my-component class="foo"&gt;</code>) in CSS or use it as a flex container, it will break because the tag simply won't exist in the final HTML.
       </p>
     </coralite-alert>
@@ -43,11 +43,18 @@
       </script>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Tokens: Build-time Evaluation"></coralite-heading>
+    <coralite-alert type="info">
+      <strong>New in V1: Explicit Imports</strong>
+      <p>
+        Framework utilities like <code>parseHTML</code> or <code>transform</code> are no longer available in the global scope. You must import them from <code>coralite/utils</code>. The <code>defineComponent</code> helper is available via <code>coralite</code> or <code>coralite/plugins</code>.
+      </p>
+    </coralite-alert>
 
-    <p>In a static component, <code>{{ data }}</code> simply maps to an HTML attribute. In a dynamic component, you can define <strong>Tokens</strong>. Tokens evaluate data at build time (during server-side rendering).</p>
+    <coralite-heading level="h2" text="Properties: Build-time Evaluation"></coralite-heading>
 
-    <p>Tokens can be static strings or computed functions. Computed functions receive a <code>values</code> object, which contains all the attributes passed to the component, plus page metadata.</p>
+    <p>In a static component, <code>{{ data }}</code> simply maps to an HTML attribute. In a dynamic component, you use the <code>properties</code> function to evaluate data at build time (during server-side rendering).</p>
+
+    <p>The <code>properties</code> function receives a pruned, localized <code>context</code> object containing <code>properties</code> (attributes), <code>page</code> metadata, the <code>root</code> node, and the <code>module</code> blueprint.</p>
 
     <coralite-code-html>
       <template id="greeting-card">
@@ -61,10 +68,10 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          tokens: {
+          properties: (context) => ({
             // Static string token
             status: 'Active',
-        
+
             // Computed function token receiving 'name' attribute
             formattedGreeting: ({ name }) => {
               const cleanName = name ? name.trim().toUpperCase() : 'GUEST'
@@ -87,7 +94,7 @@
 
     <p>While static components use the standard <code>&lt;slot&gt;</code> tag blindly, <code>defineComponent</code> allows you to intercept and process slot content on the server before it's rendered.</p>
 
-    <p>Slot functions receive an array of parsed HTML nodes (<code>slotNodes</code>) and the current <code>values</code>. You can mutate tags, replace them, or map over them conditionally.</p>
+    <p>Slot functions receive an array of parsed HTML nodes (<code>slotNodes</code>) and the localized <code>context</code>. You can mutate tags, replace them, or map over them conditionally.</p>
 
     <coralite-code-html>
       <template id="smart-list">
@@ -102,7 +109,7 @@
         export default defineComponent({
           slots: {
             // The slot name matches <slot name="items"> in the template
-            items: (slotNodes, values) => {
+            items: (slotNodes, context) => {
               // Transform the content passed into the slot
               return slotNodes.map(node => {
                 // If the user passed <li> elements, automatically add a class
@@ -154,7 +161,7 @@
 
     <p>The <code>script</code> function is what makes Coralite components interactive. This function is serialized and bundled to run <strong>in the user's browser</strong> after the page loads[cite: 48, 49].</p>
 
-    <p>The script receives a flattened context object containing things like <code>id</code>, <code>properties</code>, and <code>root</code> (the top-level Light DOM node of the custom element)[cite: 50, 51]. The AST parser automatically detects dynamic imports inside this script and bundles them without requiring manual configuration[cite: 55, 61, 62].</p>
+    <p>The script receives a flattened context object containing things like <code>id</code>, <code>properties</code>, <code>page</code>, <code>module</code> and <code>root</code> (the top-level Light DOM node of the custom element)[cite: 50, 51]. The AST parser automatically detects dynamic imports inside this script and bundles them without requiring manual configuration[cite: 55, 61, 62].</p>
 
     <coralite-heading level="h2" text="Reactivity & Imperative Web Components"></coralite-heading>
 
@@ -209,14 +216,14 @@
           script ({ refs }) {
             const target = refs('target')
 
-            // 1. Instantiate the component imperatively (AST auto-detects this!) [cite: 63, 64]
+            // Instantiate the component imperatively (AST auto-detects this!) [cite: 63, 64]
             const child = document.createElement('child-element')
             child.setAttribute('title', 'Pending')
 
-            // 2. Mount to DOM (Fires connectedCallback & renders DOM)
+            // Mount to DOM (Fires connectedCallback & renders DOM)
             target.replaceWith(child)
 
-            // 3. Reactivity test: Updating attribute triggers MutationObserver & child re-render [cite: 54, 55, 72]
+            // Reactivity test: Updating attribute triggers MutationObserver & child re-render [cite: 54, 55, 72]
             setTimeout(() => {
               child.setAttribute('title', 'Active')
             }, 1000)
@@ -227,7 +234,7 @@
 
     <p>Notice the clean destructuring of <code>{ refs }</code> on the script context? This is Coralite's safe way to query the DOM. The refs plugin automatically queries the DOM using uniquely compiled IDs[cite: 112, 113]. Learn more in the <a href="./dom-refs.html">Managing the DOM (Refs)</a> guide.</p>
     <hr>
-    
+
     <p>For strict API type definitions, arguments, and return types, see the <a href="/docs/reference/define-component.html">defineComponent API Reference</a>.</p>
 
   </main>
