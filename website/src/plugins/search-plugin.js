@@ -1,10 +1,10 @@
 import { definePlugin } from 'coralite'
 import { join } from 'node:path'
-import { writeFile } from 'node:fs/promises'
+import { writeFile, mkdir } from 'node:fs/promises'
 
 let searchIndex = []
 
-function extractText(node) {
+function extractText (node) {
   let text = ''
   if (node.type === 'text') {
     text += node.data + ' '
@@ -64,11 +64,14 @@ export default definePlugin({
       content
     })
   },
-  onAfterBuild: async () => {
-    // Write index to dist
-    const dest = join(process.cwd(), 'dist', 'search-index.json')
+  async onAfterBuild () {
+
     try {
+      await mkdir(this.options.output, { recursive: true })
+
+      const dest = join(this.options.output, 'search-index.json')
       const content = JSON.stringify(searchIndex)
+
       await writeFile(dest, content)
     } catch (err) {
       console.error('Failed to write search index', err)

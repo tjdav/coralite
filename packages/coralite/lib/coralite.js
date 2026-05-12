@@ -124,12 +124,13 @@ export function Coralite ({
   // Initialize script manager
   this._scriptManager = new ScriptManager(this.options)
 
-  const self = this
-  // module source context
+  // source context
   this._source = {
-    contextModules: {
-      parseHTML: (string, ignoreByAttribute, skipRenderByAttribute) => parseHTML(string, ignoreByAttribute, skipRenderByAttribute, (errorData) => this._handleError(errorData)),
+    utils: {
+      parseHTML: (string, ignoreByAttribute = this.options.ignoreByAttribute, skipRenderByAttribute = this.options.skipRenderByAttribute) => parseHTML(string, ignoreByAttribute, skipRenderByAttribute, (errorData) => this._handleError(errorData)),
       parseModule: (string, options) => parseModule(string, {
+        ignoreByAttribute: this.options.ignoreByAttribute,
+        skipRenderByAttribute: this.options.skipRenderByAttribute,
         onError: (errorData) => this._handleError(errorData),
         ...options
       }),
@@ -142,16 +143,7 @@ export function Coralite ({
       createTextNode,
       transform: this.transform
     },
-    context: {
-      plugins: {},
-      path,
-      excludeByAttribute: ignoreByAttribute,
-      get components () {
-        return self.components
-      },
-      get pages () {
-        return self.pages
-      }
+    plugins: {
     }
   }
 
@@ -176,8 +168,8 @@ export function Coralite ({
       const callback = plugin.method.bind(this)
 
       // extend the source context with a reference to the plugin method.
-      source.context.plugins[name] = function (options, contextInstance) {
-        return callback(options, contextInstance)
+      source.plugins[name] = function (options, context) {
+        return callback(options, context)
       }
     }
 
@@ -225,9 +217,6 @@ export function Coralite ({
       this._scriptManager.use(plugin.client)
     }
   }
-
-  // add defineComponent to module context
-  source.contextModules.defineComponent = source.context.plugins.defineComponent
 
   const propertyDescriptors = {
     enumerable: false,
@@ -2430,10 +2419,11 @@ Coralite.prototype._moduleLinker = function (path, context) {
    * @returns {Promise<import('node:vm').Module>} A promise that resolves to a newly instantiated VM SourceTextModule containing the requested exports.
    */
   return async (specifier, referencingModule, extra) => {
+    const { SourceTextModule } = await import('node:vm')
     const originalSpecifier = specifier
 
     if (specifier == 'coralite/plugins') {
-      const plugins = source.context.plugins
+      const plugins = source.plugins
       let pluginExports = ''
 
       pluginExports = 'const plugins = globalThis.__coralite_plugins__; export default plugins;'
@@ -2444,9 +2434,22 @@ Coralite.prototype._moduleLinker = function (path, context) {
         }
       }
 
-      const { SourceTextModule } = await import('node:vm')
-
       return new SourceTextModule(pluginExports, {
+        context: referencingModule.context
+      })
+    } else if (specifier == 'coralite/utils') {
+      const utils = source.utils
+      let utilsExports = ''
+
+      utilsExports = 'const utils = globalThis.__coralite_utils__; export default utils;'
+
+      for (const key in utils) {
+        if (Object.prototype.hasOwnProperty.call(utils, key)) {
+          utilsExports += `export const ${key} = utils["${key}"];\n`
+        }
+      }
+
+      return new SourceTextModule(utilsExports, {
         context: referencingModule.context
       })
     } else if (specifier === 'coralite') {
@@ -2457,8 +2460,6 @@ Coralite.prototype._moduleLinker = function (path, context) {
           coraliteExports += `export const ${key} = context["${key}"];\n`
         }
       }
-
-      const { SourceTextModule } = await import('node:vm')
 
       return new SourceTextModule(coraliteExports, {
         context: referencingModule.context
@@ -2534,26 +2535,22 @@ Coralite.prototype._evaluateDevelopment = async function ({
     throw new Error('SourceTextModule is not available. Please run Node.js with --experimental-vm-modules to use Development mode.')
   }
 
-  const plugins = this._source.context.plugins
+  const plugins = this._source.plugins
   const cachedBoundPlugins = {}
 
-  for (const key in plugins) {
-    cachedBoundPlugins[key] = typeof plugins[key] === 'function'
-      ? (options) => plugins[key](options, context)
-      : plugins[key]
-  }
-
   const context = {
-    ...this._source.contextModules,
-    ...this._source.context,
-    ...cachedBoundPlugins,
-    component,
     properties: properties || {},
     page,
     root,
     module,
     id: contextId,
     renderContext
+  }
+
+  for (const key in plugins) {
+    cachedBoundPlugins[key] = typeof plugins[key] === 'function'
+      ? (options) => plugins[key](options, context)
+      : plugins[key]
   }
 
   renderContext.source.currentSourceContextId = contextId
@@ -2564,7 +2561,8 @@ Coralite.prototype._evaluateDevelopment = async function ({
   const usedGlobals = extractGlobals(module.script)
   const contextGlobals = {
     __coralite_context__: context,
-    __coralite_plugins__: cachedBoundPlugins
+    __coralite_plugins__: cachedBoundPlugins,
+    __coralite_utils__: this._source.utils
   }
 
   for (const glob of usedGlobals) {
@@ -2630,9 +2628,6 @@ Coralite.prototype._evaluateProduction = async function ({
   renderContext
 }) {
   const context = {
-    ...this._source.contextModules,
-    ...this._source.context,
-    component,
     properties: properties || {},
     page,
     root,
@@ -2670,12 +2665,13 @@ Coralite.prototype._evaluateProduction = async function ({
   const customRequire = (id) => {
     const isCoralite = id === 'coralite'
     const isPlugins = id === 'coralite/plugins'
+    const isUtils = id === 'coralite/utils'
 
     // Handle internal coralite imports
-    if (isCoralite || isPlugins) {
+    if (isCoralite || isPlugins || isUtils) {
       // Lazily bind plugins once per evaluation
       if (!cachedBoundPlugins) {
-        const plugins = this._source.context.plugins
+        const plugins = this._source.plugins
         cachedBoundPlugins = {}
 
         for (const key in plugins) {
@@ -2688,7 +2684,7 @@ Coralite.prototype._evaluateProduction = async function ({
       if (isCoralite) {
         return {
           ...context,
-          ...cachedBoundPlugins,
+          defineComponent: cachedBoundPlugins.defineComponent,
           default: context
         }
       }
@@ -2697,6 +2693,13 @@ Coralite.prototype._evaluateProduction = async function ({
         return {
           ...cachedBoundPlugins,
           default: cachedBoundPlugins
+        }
+      }
+
+      if (isUtils) {
+        return {
+          ...this._source.utils,
+          default: this._source.utils
         }
       }
     }

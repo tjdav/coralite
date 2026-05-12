@@ -45,7 +45,7 @@ describe('Module Resolution', () => {
         <div>{{ message }}</div>
       </template>
       <script type="module">
-        import { defineComponent } from 'coralite'
+        import { defineComponent } from 'coralite/plugins'
         import dummy from 'dummy-pkg'
 
         export default defineComponent({

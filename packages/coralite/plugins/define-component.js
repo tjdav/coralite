@@ -37,7 +37,7 @@ function replaceCustomElementWithTemplate (coraliteElement, element) {
  * @returns {Promise<any>} - Processed value
  */
 async function processTokenValue (value, context) {
-  const { excludeByAttribute, properties, component, createComponentElement, renderContext } = context
+  const { excludeByAttribute, properties, module, createComponentElement, renderContext } = context
   // If not a string, return as-is
   if (typeof value !== 'string') {
     return value
@@ -55,11 +55,11 @@ async function processTokenValue (value, context) {
   for (let i = 0; i < result.customElements.length; i++) {
     const customElement = result.customElements[i]
     const componentElement = await createComponentElement({
-      contextId: `${component.path.pathname}${customElement.name}-${i}`,
+      contextId: `${module.path.pathname}${customElement.name}-${i}`,
       id: customElement.name,
       properties,
       element: customElement,
-      component: context.component,
+      module,
       index: i,
       renderContext
     })
@@ -98,7 +98,7 @@ export const defineComponent = definePlugin({
   context) {
     const {
       properties,
-      component,
+      module,
       root
     } = context
     /** @type {CoraliteModuleDefinitions} */
@@ -217,7 +217,7 @@ export const defineComponent = definePlugin({
               } else {
                 throw new Error('Unexpected slot value, expected a node but found: '
                   + '\n result: ' + JSON.stringify(node)
-                  + '\n path: "' + component.path.pathname + '"')
+                  + '\n path: "' + module.path.pathname + '"')
               }
             }
           }
