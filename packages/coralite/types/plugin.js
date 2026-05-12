@@ -13,7 +13,6 @@
  * @typedef {Object} CoralitePluginContext
  * @property {Object.<string, string|string[]|CoraliteAnyNode[]>} properties - Key-value pairs of data relevant to plugin execution
  * @property {CoralitePage} page - The global page object
- * @property {CoraliteComponent} component - The HTML file data being processed by the plugin
  * @property {CoraliteModule} module - The module context the plugin is operating within (contains template/script)
  * @property {CoraliteElement} root - The specific HTML element the plugin is applied to (if applicable)
  * @property {Object} path - File path information for the current component/module being processed

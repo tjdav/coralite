@@ -686,7 +686,8 @@ Coralite.prototype._generatePages = async function* (path, properties = {}) {
           id: customElement.name,
           properties: mappedRenderContextObject.properties[contextId],
           element: customElement,
-          component: mappedComponent,
+          page: originalDocument.page,
+          root: mappedComponent.root,
           contextId,
           index: i,
           renderContext: mappedRenderContextObject
@@ -1297,7 +1298,6 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
       componentId: '${instance.componentId}',
       properties: ${JSON.stringify(instance.properties || {})},
       page: ${JSON.stringify(instance.page || {})},
-      component: {},
       signal: globalAbortController.signal
     };
     const setupPropertiesPromise = globalSetupPropertiesPromise;
@@ -1786,11 +1786,12 @@ Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
  *
  * @param {string[]} componentIds - Array of component IDs to process.
  * @param {Object} renderContext - The current build render context.
- * @param {CoraliteComponent} parentComponent - The document context in which the module is being processed
+ * @param {CoralitePage} page - The global page object
+ * @param {CoraliteComponentRoot} root - The root element of the component
  * @param {Object} properties - The current token properties and state available
  * @returns {Promise<void>}
  */
-Coralite.prototype._processDependentComponents = async function (componentIds, renderContext, parentComponent, properties = {}) {
+Coralite.prototype._processDependentComponents = async function (componentIds, renderContext, page, root, properties = {}) {
   if (!componentIds || !componentIds.length) {
     return
   }
@@ -1814,9 +1815,8 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       scriptResult = await this._evaluate({
         module,
         properties,
-        page: parentComponent.page,
-        root: parentComponent.root,
-        component: parentComponent,
+        page,
+        root,
         contextId: `dependent-${id}`,
         renderContext
       })
@@ -1935,7 +1935,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       const inheritedProperties = Object.assign({}, properties, scriptResult)
       delete inheritedProperties.__script__
 
-      await this._processDependentComponents(nestedComponents, renderContext, parentComponent, inheritedProperties)
+      await this._processDependentComponents(nestedComponents, renderContext, page, root, inheritedProperties)
     }
   }
 }
@@ -1945,7 +1945,8 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
  * @param {string} options.id - id - Unique identifier for the component
  * @param {CoraliteModuleDefinitions} [options.properties={}] - Token properties available for replacement
  * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
- * @param {CoraliteComponent} options.component - Current document being processed
+ * @param {CoralitePage} options.page - The global page object
+ * @param {CoraliteComponentRoot} options.root - The root element of the component
  * @param {string} [options.contextId] - Context Id
  * @param {number} [options.index] - Context index
  * @param {Object} [options.renderContext] - Render Context
@@ -1956,7 +1957,8 @@ Coralite.prototype.createComponentElement = async function ({
   id,
   properties = {},
   element,
-  component,
+  page,
+  root,
   contextId,
   index,
   renderContext
@@ -2032,9 +2034,8 @@ Coralite.prototype.createComponentElement = async function ({
       module,
       element,
       properties,
-      page: component.page,
-      root: element || component.root,
-      component,
+      page,
+      root: element || root,
       contextId,
       renderContext
     })
@@ -2111,7 +2112,7 @@ Coralite.prototype.createComponentElement = async function ({
         const inheritedProperties = Object.assign({}, properties, scriptResult)
         delete inheritedProperties.__script__
 
-        await this._processDependentComponents(mergedComponents, renderContext, component, inheritedProperties)
+        await this._processDependentComponents(mergedComponents, renderContext, page, root, inheritedProperties)
       }
 
       // Ensure properties object exists in scriptResult
@@ -2134,11 +2135,10 @@ Coralite.prototype.createComponentElement = async function ({
       }
 
       // Store instance data for script manager
-      renderContext.scripts.add(component.path.pathname, {
+      renderContext.scripts.add(page.file.pathname, {
         id: contextId,
         componentId: module.id,
-        component,
-        page: component.page,
+        page,
         properties: scriptResult.__script__.properties
       })
 
@@ -2270,7 +2270,8 @@ Coralite.prototype.createComponentElement = async function ({
         id: customElement.name,
         properties: renderContext.properties[childContextId],
         element: customElement,
-        component,
+        page,
+        root,
         contextId: childContextId,
         index,
         renderContext
@@ -2372,7 +2373,8 @@ Coralite.prototype.createComponentElement = async function ({
                 id: node.name,
                 properties: renderContext.properties[slotContextId],
                 element: node,
-                component,
+                page,
+                root,
                 contextId: slotContextId,
                 index,
                 renderContext
@@ -2514,7 +2516,6 @@ Coralite.prototype._moduleLinker = function (path, context) {
  * @param {CoraliteModuleDefinitions} data.properties - Replacement tokens for the component
  * @param {CoralitePage} data.page - The global page object
  * @param {CoraliteElement} data.root - The Coralite module to parse
- * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  * @param {Object} data.renderContext - Render Context
  *
@@ -2525,7 +2526,6 @@ Coralite.prototype._evaluateDevelopment = async function ({
   properties,
   page,
   root,
-  component,
   contextId,
   renderContext
 }) {
@@ -2555,6 +2555,8 @@ Coralite.prototype._evaluateDevelopment = async function ({
 
   renderContext.source.currentSourceContextId = contextId
   renderContext.source.contextInstances[contextId] = context
+
+  context.defineComponent = cachedBoundPlugins.defineComponent
 
   // Protect fundamental constructors from being extracted and polluting the context realm
   const standardBuiltIns = new Set(['Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Math', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt', 'BigInt64Array', 'BigUint64Array', 'Symbol', 'Infinity', 'NaN', 'undefined', 'globalThis', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'escape', 'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'unescape'])
@@ -2612,7 +2614,6 @@ Coralite.prototype._evaluateDevelopment = async function ({
  * @param {CoraliteModuleDefinitions} data.properties - Replacement tokens for the component
  * @param {CoralitePage} data.page - The global page object
  * @param {CoraliteElement} data.root - The Coralite module to parse
- * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  * @param {Object} data.renderContext - Render Context
  *
@@ -2623,7 +2624,6 @@ Coralite.prototype._evaluateProduction = async function ({
   properties,
   page,
   root,
-  component,
   contextId,
   renderContext
 }) {
@@ -2747,7 +2747,6 @@ Coralite.prototype._evaluateProduction = async function ({
  * @param {CoraliteModuleDefinitions} data.properties - Replacement tokens for the component
  * @param {CoralitePage} data.page - The global page object
  * @param {CoraliteElement} data.element - The Coralite module to parse
- * @param {CoraliteComponent} data.component - The document context in which the module is being processed
  * @param {string} data.contextId - Context Id
  * @param {Object} data.renderContext - Render Context
  *

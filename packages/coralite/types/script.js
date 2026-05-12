@@ -74,7 +74,6 @@
  * @property {Object.<string, CoraliteModuleDefinition>} properties - Instance properties
  * @property {CoralitePage} [page] - The global page object
  * @property {Object.<string, string>} [refs] - Instance refs
- * @property {CoraliteComponent} [component] - Component AST
  */
 
 export default {}

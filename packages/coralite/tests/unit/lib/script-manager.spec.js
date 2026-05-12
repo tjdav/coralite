@@ -643,12 +643,12 @@ describe('ScriptManager', () => {
       assert.ok(typeof result === 'object')
     })
 
-    it('should handle instances with component context', async () => {
+    it('should handle instances with page context', async () => {
       sm.registerComponent({
         id: 'test',
         script: {
           content: `({ double, values }) => {
-            return context.component.title || 'no title'
+            return context.page.meta.title || 'no title'
           }`
         }
       })
@@ -658,7 +658,7 @@ describe('ScriptManager', () => {
           componentId: 'test',
           instanceId: 'inst-1',
           properties: {},
-          component: { title: 'Test Page' }
+          page: { meta: { title: 'Test Page' } }
         }
       }
 
@@ -990,7 +990,7 @@ describe('ScriptManager', () => {
         id: 'full',
         script: {
           content: `({ double, values }) => {
-            return \`\${context.instanceId}-\${context.componentId}-\${context.values.x}-\${context.refs.el}-\${context.component.title}\`
+            return \`\${context.instanceId}-\${context.componentId}-\${context.values.x}-\${context.refs.el}-\${context.page.meta.title}\`
           }`
         }
       })
@@ -1002,7 +1002,7 @@ describe('ScriptManager', () => {
             x: 1,
             ref_el: 'div'
           },
-          component: { title: 'Test' }
+          page: { meta: { title: 'Test' } }
         }
       }
 
