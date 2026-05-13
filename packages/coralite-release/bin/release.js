@@ -260,7 +260,8 @@ program
 
           if (existingFilesToStage.length > 0) {
             prompts.log.step('Committing version changes...')
-            const commitResult = await git.commit(commitMessage, existingFilesToStage)
+            await git.add(existingFilesToStage)
+            const commitResult = await git.commit(commitMessage)
 
             if (commitResult.commit) {
               prompts.log.success(`✅ Committed version changes (${commitResult.commit})`)

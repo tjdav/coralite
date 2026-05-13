@@ -311,7 +311,8 @@ ${commitsText}`
             if (shouldCommit && !prompts.isCancel(shouldCommit)) {
               try {
                 prompts.log.step('Committing release post...')
-                const commitResult = await git.commit(`docs: add release post for ${titleVersion}`, [outputFile])
+                await git.add(outputFile)
+                const commitResult = await git.commit(`docs: add release post for ${titleVersion}`)
 
                 if (commitResult.commit) {
                   prompts.log.success(`✅ Committed release post (${commitResult.commit})`)

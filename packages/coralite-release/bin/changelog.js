@@ -298,7 +298,8 @@ program
           if (shouldCommit && !prompts.isCancel(shouldCommit)) {
             try {
               prompts.log.step('Committing changelog...')
-              const commitResult = await git.commit(`docs: update changelog for ${titleVersion}`, [outputFile])
+              await git.add(outputFile)
+              const commitResult = await git.commit(`docs: update changelog for ${titleVersion}`)
 
               if (commitResult.commit) {
                 prompts.log.success(`✅ Committed changelog (${commitResult.commit})`)
