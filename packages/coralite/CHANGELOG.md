@@ -1,5 +1,92 @@
 # Changelog
 
+## v0.33.0
+
+> Comparing `coralite-v0.32.0` to `HEAD`
+
+**Summary:** 62 commits
+
+### ✨ Features
+
+- inject readiness script into component root (coralite) ([44faba4](https://codeberg.org/tjdavid/coralite/commit/44faba4247e048b3703fa348dd949b8e469075ec))
+- infer client rootDir from caller context (plugin) ([f9d2f34](https://codeberg.org/tjdavid/coralite/commit/f9d2f34d3c2ef5fafae5cde35eb403c60d6f261c))
+- add components processing capability (plugin) ([2d583d2](https://codeberg.org/tjdavid/coralite/commit/2d583d293e63ed3b958234a68b49a6b1b24c5eed))
+- implement dynamic property evaluation and attribute synchronization for components ([c9a07ca](https://codeberg.org/tjdavid/coralite/commit/c9a07ca6489bee35119d8090ac6abb5259515ef3))
+- implement reactive properties support for components with dynamic evaluation and attribute synchronization ([69ed04a](https://codeberg.org/tjdavid/coralite/commit/69ed04a828f79cc8c9e2e41e8c17dcb67192b4ab))
+- add mitata micro-benchmarks suite for core architecture ([6169228](https://codeberg.org/tjdavid/coralite/commit/616922865c8d4e03fccd5a8f7ddd388aa5f97905))
+- implement `_triggerPluginAggregateHook` for array aggregation ([8a43bdf](https://codeberg.org/tjdavid/coralite/commit/8a43bdf0c8b24ba931971a8d081fba365422a066))
+
+### 🐛 Bug Fixes
+
+- remove throwing error twice ([9bd4ca7](https://codeberg.org/tjdavid/coralite/commit/9bd4ca7d4e3df356c6b8e2f6caf381ec46d3729b))
+- correct property typo, sanitize function conversions, and handle non-string results in defineComponent plugin ([110e52c](https://codeberg.org/tjdavid/coralite/commit/110e52c745bcac6211d7c89e2ba936892f6396b0))
+- update async-performance benchmark ([c4f0819](https://codeberg.org/tjdavid/coralite/commit/c4f08197c1aff6160eb4223d18fe7056cfbfb2af))
+- preserve token values in nested dependent components ([f9818f9](https://codeberg.org/tjdavid/coralite/commit/f9818f95556283050faa983b7e9fdca35f504c57))
+- export ScriptImport type from coralite types ([dfdabc4](https://codeberg.org/tjdavid/coralite/commit/dfdabc404b9ff481a6b30c4eb1ee2f1ffd949c50))
+
+### 📚 Documentation
+
+- update all READMEs to V1 API and standardize Node.js requirements ([cfa3f97](https://codeberg.org/tjdavid/coralite/commit/cfa3f971f89c6cddbb5886abf0caca76a8b0c4b7))
+- update client injection documentation (coralite) ([cde021b](https://codeberg.org/tjdavid/coralite/commit/cde021bd84d5d7d60bc25200203939d517493ea4))
+- update documentation on data management paradigms and disable local web server in playwright config ([ec6d0b9](https://codeberg.org/tjdavid/coralite/commit/ec6d0b9b19f8d0dbc0f53651c43f446792c06bd2))
+- standardize module property access from values to properties (coralite) ([004861c](https://codeberg.org/tjdavid/coralite/commit/004861cd90a912c28f82ca2591e71c31777117e9))
+- refine README.md sections and hierarchy (coralite) ([0c0728e](https://codeberg.org/tjdavid/coralite/commit/0c0728e44cde93ad9e90c9a912ccf1db1a6a9dec))
+
+### ♻️ Code Refactoring
+
+- modularize _generatePages and update JSDoc imports ([a564485](https://codeberg.org/tjdavid/coralite/commit/a564485df858e8bd2e840fe7d0aef055158b0fe4))
+- remove component parameter from internal engine functions ([8a23842](https://codeberg.org/tjdavid/coralite/commit/8a238427485181e17cf83cc2cd34e81211b1cd03))
+- overhaul Coralite context architecture ([12bc4d9](https://codeberg.org/tjdavid/coralite/commit/12bc4d9fb0d2b17db259c42f8685acb245a10756))
+- remove optional urlPathname from module definitions (coralite) ([dc84a26](https://codeberg.org/tjdavid/coralite/commit/dc84a26eb5ca199bfbd1849f22f30fb80cbb04dc))
+- include page in component metadata (metadata) ([deb6a38](https://codeberg.org/tjdavid/coralite/commit/deb6a38b2a2c0bd14653b18a94e1d5d14e9151fe))
+- improve component and page accessors (coralite) ([55a2389](https://codeberg.org/tjdavid/coralite/commit/55a2389ea03e20299fbb01a4b9d6538c6246eaf2))
+- update llms documentation for clarity ([0da2df9](https://codeberg.org/tjdavid/coralite/commit/0da2df935dbab252483d2559f421e536452bc336))
+- add pending hydration tracking to coralite ([30247b7](https://codeberg.org/tjdavid/coralite/commit/30247b70dc2a5f4e5c01f59840b7fc1792dca707))
+- improve component loading error handling (coralite) ([7f5f6bf](https://codeberg.org/tjdavid/coralite/commit/7f5f6bfe123272213475cb8ccd4c4b7e0794a011))
+- make component script functions synchronous and update mock plugin import path ([4d1b753](https://codeberg.org/tjdavid/coralite/commit/4d1b753356af9810f2fa4f1c536f6b43e6a779f9))
+- simplify E2E test synchronization by removing redundant error handling and adding type ignore annotations ([be042ae](https://codeberg.org/tjdavid/coralite/commit/be042ae6cfc1a4d5531b1acb8af5eb5f193f421a))
+- flatten plugin context by removing `helpers` namespace ([804503c](https://codeberg.org/tjdavid/coralite/commit/804503c7e3833fb4d008b34eede4db31b5763300))
+- normalize formatting and indentation across component test fixtures ([b17d764](https://codeberg.org/tjdavid/coralite/commit/b17d764cd500a4b895e0e3300ec1f015ba7a560e))
+- enforce reserved context keys in plugins and standardize code formatting across test fixtures ([b1c2721](https://codeberg.org/tjdavid/coralite/commit/b1c272179c21ccfe0779b689589ab8b934579035))
+- remove redundant utility functions no longer used in codebase ([108fb74](https://codeberg.org/tjdavid/coralite/commit/108fb74e7c0d85613f421b74721e28903d6b06a6))
+- rename script helpers to client context properties and simplify initialization logic ([0d23811](https://codeberg.org/tjdavid/coralite/commit/0d2381151fe71428b51e519c6f3e65b71d3181a4))
+- remove extensive legacy e2e tests and optimize core testing infrastructure ([8abece7](https://codeberg.org/tjdavid/coralite/commit/8abece76399b5292deb9b58d6aea258665a2ece4))
+- rename element to root in defineComponent plugin and preserve original data types for property values ([cb9b60a](https://codeberg.org/tjdavid/coralite/commit/cb9b60a9aa078d28b42415a366330ca1a790484d))
+- migrate component scripts and properties to named exports for improved ESM resolution and module handling ([0053cf4](https://codeberg.org/tjdavid/coralite/commit/0053cf45aa407b5e4945d795ab150686003a9fb9))
+- improve import compatibility, preserve function names in utils, and stabilize e2e test execution ([6080fbf](https://codeberg.org/tjdavid/coralite/commit/6080fbf544853c1e5de9243fe466b77780aa6068))
+- replace page-related properties with a centralized global CoralitePage object ([2350ec8](https://codeberg.org/tjdavid/coralite/commit/2350ec82f65873a68d3fa80bcf57f8a142573dff))
+- restructure page information and update context properties handling ([c797298](https://codeberg.org/tjdavid/coralite/commit/c797298d080910648e4082d4df4204078a7787df))
+- update component architecture documentation to reflect the new properties/script API and serialization constraints. ([2b78bf4](https://codeberg.org/tjdavid/coralite/commit/2b78bf48ccf9e0cbf8f57bd4b97ca8a5365bfd64))
+- clean up property token evaluation logic and update E2E tests to use Playwright locators ([4de37e3](https://codeberg.org/tjdavid/coralite/commit/4de37e3344fbccd2e0ab3dba14726a561f829acb))
+- simplify defineComponent properties API and update module definitions ([0297feb](https://codeberg.org/tjdavid/coralite/commit/0297febc429df2b7b8f7a355bb79e8f893b5cbef))
+- adjust script line offset calculation and update component system documentation ([c42bab4](https://codeberg.org/tjdavid/coralite/commit/c42bab4a4cfb4eb09aebed82b5b40f9d0d7c9535))
+- simplify script extraction by removing redundant token/import parsing and consolidating property logic ([dd04d73](https://codeberg.org/tjdavid/coralite/commit/dd04d7316efdb07777d49b390b48a3f9d61c4608))
+- update defineComponent to support dynamic property resolution and improved nested component extraction ([e9206a4](https://codeberg.org/tjdavid/coralite/commit/e9206a4b3fb0121ce3557cfb600162eeb0fa1f50))
+- simplify script extraction by removing redundant tokens and imports processing logic ([4fb0523](https://codeberg.org/tjdavid/coralite/commit/4fb052379aee0de04a5bad29b5e0e6f16aa9046e))
+- Update component definition syntax in tests (coralite) ([1342f20](https://codeberg.org/tjdavid/coralite/commit/1342f20fad9025aa12c995dab058c873af80ac4b))
+- update test api (tests) ([65bea67](https://codeberg.org/tjdavid/coralite/commit/65bea678c37c560734544dc504f53be85b25eed0))
+- update plugin API for client-side injection and helpers (llms) ([ae0e5fc](https://codeberg.org/tjdavid/coralite/commit/ae0e5fc14a8fd9a0d93e09f7450561c1d77a047e))
+- rename 'values' to 'properties' in Coralite context ([8ecd469](https://codeberg.org/tjdavid/coralite/commit/8ecd469e93c4a3cd1fc551c28e521b0a389cca2d))
+- rename module values to definitions across types ([365fa93](https://codeberg.org/tjdavid/coralite/commit/365fa93a32dc4ffee03dd7aa6931e47455e7f2f0))
+- rename 'values' to 'properties' for context data ([f02287e](https://codeberg.org/tjdavid/coralite/commit/f02287e3eb8bdcc03a045d8d4c7507ca67209db0))
+- transition plugin hooks to return state patches instead of mutating data (plugins) ([e56129f](https://codeberg.org/tjdavid/coralite/commit/e56129f9ef7cb4b0e6190b27a7cc3435f3b0abe8))
+
+### ✅ Tests
+
+- implement e2e test suite for imperative components, slots, client scripts, and error handling ([8c3f5fc](https://codeberg.org/tjdavid/coralite/commit/8c3f5fca0a76a2e965f06bc6555421b1631b3bbc))
+- update e2e test fixtures, refactor shorthand method implementation, and disable webServer in Playwright config ([1d1e2a6](https://codeberg.org/tjdavid/coralite/commit/1d1e2a6285fda5cbae621b8dbbead09eeca4fd81))
+- stabilize e2e tests, refactor shorthand methods, and update component loading logic ([b5399b7](https://codeberg.org/tjdavid/coralite/commit/b5399b7c8ecd2104dcd4f47ab66285747038ceaf))
+
+### 🧹 Chores
+
+- use pnpm for dev server command (coralite) ([dc2dae2](https://codeberg.org/tjdavid/coralite/commit/dc2dae267e1304ee810d40833ad9e2cd4d1b0229))
+- prepare e2e refactor ([e0be1c5](https://codeberg.org/tjdavid/coralite/commit/e0be1c53a29d407b14001ffd2e7f37cd2c22640e))
+- update playwright and node types dependencies (deps) ([aef71ed](https://codeberg.org/tjdavid/coralite/commit/aef71ed5b2955da2b9f046e7bfa531337b3f71b7))
+- update license for coralite plugin scripts ([1157c8b](https://codeberg.org/tjdavid/coralite/commit/1157c8b48c35a09ca867817927124d1a674661c6))
+- update license to MPL-2.0 ([f3cc59e](https://codeberg.org/tjdavid/coralite/commit/f3cc59e535b5a111038df6e590bb1b4ca558fb5b))
+- update eslint configuration and fix linting issues ([861d7dd](https://codeberg.org/tjdavid/coralite/commit/861d7ddb27a6f24faaf0065a99c73f4aa2b0f373))
+
+
 ## v0.32.0
 
 > Comparing `coralite-v0.31.7` to `HEAD`
