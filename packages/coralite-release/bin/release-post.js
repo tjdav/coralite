@@ -7,12 +7,12 @@ import { writeFileSync, readFileSync } from 'fs'
 import path from 'path'
 import { globSync } from 'glob'
 
-const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases. 
+const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases.
 Your task is to generate a structured GitHub Release Post based on provided git commit messages.
 
 ### Style Guidelines:
 - **Perspective**: Use "I" (first person singular), never "we." Coralite is a one-person project.
-- **Tone**: Direct, professional, and understated (European style). 
+- **Tone**: Direct, professional, and understated (European style).
 - **Language**: Avoid "hyper" or "marketing" language. Do not use words like "thrilled," "huge," "significant," "game-changer," or "pioneering." Stick to the technical facts.
 - **Formatting**: Use Markdown with clear headers and bullet points for scannability.
 
@@ -42,6 +42,7 @@ program
   .option('--model <model>', 'OpenAI Model to use', 'local-model')
   .option('-y, --yes', 'Skip confirmation')
   .option('--stdout', 'Print to stdout only, ignore output file')
+  .option('--no-git', 'Skip git commit and push')
   .action(async (options) => {
     let packageName = options.package
     let pkgPath = options.path
@@ -301,23 +302,25 @@ ${commitsText}`
           writeFileSync(outputFile, markdown, 'utf8')
           prompts.log.success(`Release post written to ${outputFile}`)
 
-          const shouldCommit = await prompts.confirm({
-            message: 'Commit and push the release post?',
-            initialValue: true
-          })
+          if (options.git) {
+            const shouldCommit = await prompts.confirm({
+              message: 'Commit and push the release post?',
+              initialValue: true
+            })
 
-          if (shouldCommit && !prompts.isCancel(shouldCommit)) {
-            try {
-              prompts.log.step('Committing release post...')
-              await git.add(outputFile)
-              await git.commit(`docs: add release post for ${titleVersion}`)
+            if (shouldCommit && !prompts.isCancel(shouldCommit)) {
+              try {
+                prompts.log.step('Committing release post...')
+                await git.add(outputFile)
+                await git.commit(`docs: add release post for ${titleVersion}`)
 
-              prompts.log.step('Pushing to remote...')
-              await git.push()
+                prompts.log.step('Pushing to remote...')
+                await git.push()
 
-              prompts.log.success('✅ Successfully committed and pushed release post')
-            } catch (error) {
-              prompts.log.error(`Failed to commit/push release post: ${error.message}`)
+                prompts.log.success('✅ Successfully committed and pushed release post')
+              } catch (error) {
+                prompts.log.error(`Failed to commit/push release post: ${error.message}`)
+              }
             }
           }
         }

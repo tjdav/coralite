@@ -188,6 +188,7 @@ program
       }
 
       // Update package.json files
+      const modifiedFiles = []
       for (const pkg of packages) {
         let updated = false
 
@@ -218,6 +219,7 @@ program
 
         if (updated) {
           writeFileSync(pkg.path, JSON.stringify(pkg.data, null, 2) + '\n')
+          modifiedFiles.push(pkg.path)
         }
       }
 
@@ -243,15 +245,24 @@ program
       }
 
       // Git commit if not disabled
-      if (!options.noGitCommit) {
+      if (options.gitCommit) {
         try {
-          await git.add('packages/*/package.json')
-          await git.add('packages/create-coralite/templates/*/package.json')
-          await git.add('packages/create-coralite-plugin/templates/*/package.json')
+          // Track modified files to stage
+          const filesToStage = [...modifiedFiles]
+
+          // Add changelog
           const changelogPath = path.join(pkgDir, 'CHANGELOG.md')
-          await git.add(changelogPath)
-          await git.commit(commitMessage)
-          prompts.log.success('✅ Committed version changes')
+          filesToStage.push(changelogPath)
+
+          // Filter only files that exist on disk and were actually modified
+          const { existsSync } = await import('fs')
+          const existingFilesToStage = filesToStage.filter(f => existsSync(f))
+
+          if (existingFilesToStage.length > 0) {
+            await git.add(existingFilesToStage)
+            await git.commit(commitMessage)
+            prompts.log.success('✅ Committed version changes')
+          }
         } catch (error) {
           prompts.log.error('Failed to commit changes: ' + error.message)
           if (!options.yes) {
@@ -267,7 +278,7 @@ program
       }
 
       // Create git tag if not disabled
-      if (!options.noGitTag) {
+      if (options.gitTag) {
         const tagName = `${selectedPackageName}-v${newVersion}`
 
         try {
@@ -290,7 +301,7 @@ program
           prompts.log.step('Pushing to remote...')
           await git.push()
 
-          if (!options.noGitTag) {
+          if (options.gitTag) {
             await git.pushTags()
           }
 
