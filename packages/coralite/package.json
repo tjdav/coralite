@@ -45,7 +45,8 @@
   },
   "files": [
     "dist",
-    "bin"
+    "bin",
+    "llms.txt"
   ],
   "bin": {
     "coralite": "bin/coralite.js"
