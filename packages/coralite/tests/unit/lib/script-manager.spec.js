@@ -1009,6 +1009,46 @@ describe('ScriptManager', () => {
       const result = await sm.compileAllInstances(instances, 'production')
       assert.ok(typeof result === 'object')
     })
+
+    it('should handle AST nodes in defaultValues by transforming them to HTML strings', async () => {
+      const parent = {
+        type: 'tag',
+        name: 'div',
+        children: [],
+        attribs: {}
+      }
+      const child = {
+        type: 'tag',
+        name: 'span',
+        parent: parent,
+        children: [],
+        attribs: {}
+      }
+      parent.children.push(child)
+
+      sm.registerComponent({
+        id: 'test-ast',
+        defaultValues: {
+          element: child,
+          items: [parent]
+        }
+      })
+
+      const instances = {
+        'inst-1': {
+          componentId: 'test-ast',
+          instanceId: 'inst-1'
+        }
+      }
+
+      const result = await sm.compileAllInstances(instances, 'production')
+      assert.ok(result, 'Should have successfully compiled')
+
+      const chunkHashName = result.manifest['test-ast']
+      const output = result.outputFiles[chunkHashName].text
+      assert.ok(output.includes('<span></span>'), 'Output should contain serialized span HTML')
+      assert.ok(output.includes('<div><span></span></div>'), 'Output should contain serialized parent HTML')
+    })
   })
 
   describe('Source Maps', () => {

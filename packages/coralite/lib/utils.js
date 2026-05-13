@@ -1,5 +1,7 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
+import render from 'dom-serializer'
+import { isCoraliteNode } from './type-helper.js'
 import { createCoraliteTextNode } from './dom.js'
 
 /**
@@ -60,10 +62,18 @@ export function cleanKeys (object) {
  * it finds into a string representation that preserves standard function syntax,
  * bypassing ES6 shorthand method serialization issues.
  * @param {any} target - The object or array to normalize.
+ * @param {Function} [transform] - Optional transform function for each node.
  * @param {WeakMap} [seen=new WeakMap()] - Map of seen objects to handle circular references.
  * @returns {any} A deeply cloned object with normalized functions.
  */
-export function normalizeObjectFunctions (target, seen = new WeakMap()) {
+export function normalizeObjectFunctions (target, transform = null, seen = new WeakMap()) {
+  if (typeof transform === 'function') {
+    const transformed = transform(target)
+    if (transformed !== target) {
+      return transformed
+    }
+  }
+
   if (typeof target !== 'object' || target === null) {
     return target
   }
@@ -76,7 +86,7 @@ export function normalizeObjectFunctions (target, seen = new WeakMap()) {
     const arr = []
     seen.set(target, arr)
     for (let i = 0; i < target.length; i++) {
-      arr.push(normalizeObjectFunctions(target[i], seen))
+      arr.push(normalizeObjectFunctions(target[i], transform, seen))
     }
     return arr
   }
@@ -95,7 +105,7 @@ export function normalizeObjectFunctions (target, seen = new WeakMap()) {
         wrapper.toString = () => normalizedString
         obj[key] = wrapper
       } else {
-        obj[key] = normalizeObjectFunctions(target[key], seen)
+        obj[key] = normalizeObjectFunctions(target[key], transform, seen)
       }
     }
   }
@@ -143,17 +153,12 @@ export function mergeUniqueObjects (arr1, arr2) {
 export function normalizeFunction (func) {
   const original = func.toString().trim()
 
-  // Find the first occurrence of either '{' or '=>'
   const firstBrace = original.indexOf('{')
   const firstArrow = original.indexOf('=>')
 
-  // Determine the "Header Boundary"
-  // If there's an arrow and it comes before a brace (or no brace exists),
-  // it's an arrow function.
   const isArrow = firstArrow !== -1 && (firstBrace === -1 || firstArrow < firstBrace)
 
   if (isArrow) {
-    // Return arrow functions as-is (e.g., log: (a) => a + 1)
     return original
   }
 
@@ -168,20 +173,16 @@ export function normalizeFunction (func) {
 
   // Handle Method Shorthand
   if (header.startsWith('async ')) {
-    // Check for getters/setters
     if (header.startsWith('async get ') || header.startsWith('async set ')) {
       return original
     }
 
-    // Capture the name (group 1) and allow $ in name
     return original.replace(/^async\s+([$\w]+)\s*\(/, 'async function(')
   } else {
-    // Check for getters/setters
     if (header.startsWith('get ') || header.startsWith('set ')) {
       return original
     }
 
-    // Capture the name (group 1) and allow $ in name
     return original.replace(/^([$\w]+)\s*\(/, 'function(')
   }
 }
@@ -197,20 +198,16 @@ export function normalizeFunction (func) {
  * @returns {Object} The newly cloned node.
  */
 export function cloneNode (nodeMap, node, parent) {
-  // Shallow copy the node structure
   const newNode = { ...node }
 
-  // Update parent reference
   if (parent) {
     newNode.parent = parent
   }
 
-  // Deep copy 'attribs' because we mutate them (e.g. data-coralite-ref)
   if (newNode.attribs) {
     newNode.attribs = { ...newNode.attribs }
   }
 
-  // Deep copy 'slots' array because we push to it
   if (newNode.slots) {
     newNode.slots = [...newNode.slots]
   }
@@ -563,6 +560,120 @@ export function findAndExtractProperties (code) {
   return result
 }
 
+
+/**
+ * Transforms Coralite AST nodes into HTML strings for serialization.
+ *
+ * @param {any} target - The target to transform.
+ * @returns {any} The transformed target.
+ */
+export function astTransformer (target) {
+  if (isCoraliteNode(target)) {
+    // @ts-ignore
+    return render(target, { decodeEntities: false })
+  }
+
+  if (Array.isArray(target) && target.length > 0 && isCoraliteNode(target[0])) {
+    // @ts-ignore
+    return render(target, { decodeEntities: false })
+  }
+
+  return target
+}
+
+/**
+ * Recursively adds a component and its dependencies to a tracking object.
+ *
+ * @param {string} componentId - The ID of the component to add.
+ * @param {Object.<string, boolean>} processed - The object tracking processed components.
+ * @param {Object.<string, any>} sharedFunctions - The map of shared component functions.
+ */
+export function addComponentAndDependencies (componentId, processed, sharedFunctions) {
+  if (!processed[componentId] && sharedFunctions[componentId]) {
+    processed[componentId] = true
+
+    // Add all dependencies of this component
+    const dependencies = sharedFunctions[componentId].components || []
+    for (const depId of dependencies) {
+      addComponentAndDependencies(depId, processed, sharedFunctions)
+    }
+  }
+}
+
+/**
+ * Recursively clones an AST node and its children, stripping circular references
+ * and assigning unique IDs for client-side hydration.
+ *
+ * @param {Array<Object>} nodes - The nodes to clean.
+ * @param {WeakMap} nodeMap - Map to track original nodes to their unique IDs.
+ * @param {Object} state - Object containing the current node counter.
+ * @returns {Array<Object>|null} The cleaned AST nodes.
+ */
+export function cleanAST (nodes, nodeMap, state) {
+  if (!nodes) {
+    return null
+  }
+
+  return nodes.map((node) => {
+    const cloned = { ...node }
+    // Assign unique ID for token mapping
+    const id = state.counter++
+    nodeMap.set(node, id)
+    cloned._id = id
+
+    // Remove circular references
+    delete cloned.parent
+    delete cloned.prev
+    delete cloned.next
+    if (cloned.children) {
+      cloned.children = cleanAST(cloned.children, nodeMap, state)
+    }
+    return cloned
+  })
+}
+
+/**
+ * Cleans the template values object, mapping original node references to unique IDs.
+ *
+ * @param {Object} values - The values object to clean.
+ * @param {WeakMap} nodeMap - Map of original nodes to their unique IDs.
+ * @returns {Object|null} The cleaned values object.
+ */
+export function cleanValues (values, nodeMap) {
+  if (!values) {
+    return null
+  }
+
+  const result = { ...values }
+
+  if (result.attributes) {
+    result.attributes = result.attributes.map(item => {
+      const cloned = { ...item }
+      cloned.elementId = nodeMap.get(item.element)
+      delete cloned.element
+      return cloned
+    })
+  }
+
+  if (result.textNodes) {
+    result.textNodes = result.textNodes.map(item => {
+      const cloned = { ...item }
+      cloned.textNodeId = nodeMap.get(item.textNode)
+      delete cloned.textNode
+      return cloned
+    })
+  }
+
+  if (result.refs) {
+    result.refs = result.refs.map(item => {
+      const cloned = { ...item }
+      cloned.elementId = nodeMap.get(item.element)
+      delete cloned.element
+      return cloned
+    })
+  }
+  return result
+}
 
 /**
  * Safely merges partial plugin updates into the main context object.

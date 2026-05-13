@@ -1,6 +1,6 @@
 import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, findAndExtractImperativeComponents } from './utils.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, findAndExtractImperativeComponents, astTransformer, addComponentAndDependencies, cleanAST, cleanValues } from './utils.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname } from 'node:path'
 import { createHash } from 'node:crypto'
@@ -254,23 +254,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   const instanceValues = Object.entries(instances)
   // Collect unique components
+  /** @type {Record<string, boolean>} */
   const processedComponent = {}
 
-  // Recursively add components and their dependencies
-  const addComponentAndDependencies = (componentId) => {
-    if (!processedComponent[componentId] && this.sharedFunctions[componentId]) {
-      processedComponent[componentId] = true
-
-      // Add all dependencies of this component
-      const dependencies = this.sharedFunctions[componentId].components || []
-      for (const depId of dependencies) {
-        addComponentAndDependencies(depId)
-      }
-    }
-  }
-
   for (const instanceData of instanceValues) {
-    addComponentAndDependencies(instanceData[1].componentId)
+    addComponentAndDependencies(instanceData[1].componentId, processedComponent, this.sharedFunctions)
   }
 
   // Add plugin dependencies explicitly if they are standalone
@@ -279,7 +267,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       for (const compPath of plugin._extractedComponents) {
         for (const [id, fnData] of Object.entries(this.sharedFunctions)) {
           if (compPath.endsWith(`/${id}.html`) || compPath.endsWith(`\\${id}.html`) || compPath === id || compPath.endsWith(`/${id}`)) {
-            addComponentAndDependencies(id)
+            addComponentAndDependencies(id, processedComponent, this.sharedFunctions)
           }
         }
       }
@@ -325,11 +313,10 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }
   entryCodeParts.push('};\n')
 
-
   entryCodeParts.push('const coraliteComponentDefaults = {\n')
   for (const key of processedComponentKeys) {
     if (this.sharedFunctions[key] && this.sharedFunctions[key].defaultValues) {
-      const normalizedDefaults = normalizeObjectFunctions(this.sharedFunctions[key].defaultValues)
+      const normalizedDefaults = normalizeObjectFunctions(this.sharedFunctions[key].defaultValues, astTransformer)
 
       entryCodeParts.push(`  "${key}": (() => {\n`)
       entryCodeParts.push(`    const defaults = ${serialize(normalizedDefaults)};\n`)
@@ -374,64 +361,10 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
       // Use a WeakMap to map original nodes to a unique index
       const nodeMap = new WeakMap()
-      let nodeCounter = 0
+      const state = { counter: 0 }
 
-      const cleanAST = (nodes) => {
-        if (!nodes) {
-          return null
-        }
-        return nodes.map((node) => {
-          const cloned = { ...node }
-          // Assign unique ID for token mapping
-          const id = nodeCounter++
-          nodeMap.set(node, id)
-          cloned._id = id
-
-          // Remove circular references
-          delete cloned.parent
-          delete cloned.prev
-          delete cloned.next
-          if (cloned.children) {
-            cloned.children = cleanAST(cloned.children)
-          }
-          return cloned
-        })
-      }
-
-      const cleanValues = (values) => {
-        if (!values) {
-          return null
-        }
-        const result = { ...values }
-        if (result.attributes) {
-          result.attributes = result.attributes.map(item => {
-            const cloned = { ...item }
-            cloned.elementId = nodeMap.get(item.element)
-            delete cloned.element
-            return cloned
-          })
-        }
-        if (result.textNodes) {
-          result.textNodes = result.textNodes.map(item => {
-            const cloned = { ...item }
-            cloned.textNodeId = nodeMap.get(item.textNode)
-            delete cloned.textNode
-            return cloned
-          })
-        }
-        if (result.refs) {
-          result.refs = result.refs.map(item => {
-            const cloned = { ...item }
-            cloned.elementId = nodeMap.get(item.element)
-            delete cloned.element
-            return cloned
-          })
-        }
-        return result
-      }
-
-      const templateAST = serialize(cleanAST(this.sharedFunctions[componentId].templateAST) || [])
-      const templateValues = serialize(cleanValues(this.sharedFunctions[componentId].templateValues) || {
+      const templateAST = serialize(cleanAST(this.sharedFunctions[componentId].templateAST, nodeMap, state) || [])
+      const templateValues = serialize(cleanValues(this.sharedFunctions[componentId].templateValues, nodeMap) || {
         attributes: [],
         textNodes: [],
         refs: []
@@ -440,14 +373,14 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
       let normalizedDefaults = this.sharedFunctions[componentId].defaultValues || {}
       if (this.sharedFunctions[componentId].defaultValues) {
-        normalizedDefaults = normalizeObjectFunctions(this.sharedFunctions[componentId].defaultValues)
+        normalizedDefaults = normalizeObjectFunctions(this.sharedFunctions[componentId].defaultValues, astTransformer)
       }
       const defaults = serialize(normalizedDefaults)
       const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
 
       let normalizedSlots = this.sharedFunctions[componentId].slots || {}
       if (this.sharedFunctions[componentId].slots) {
-        normalizedSlots = normalizeObjectFunctions(this.sharedFunctions[componentId].slots)
+        normalizedSlots = normalizeObjectFunctions(this.sharedFunctions[componentId].slots, astTransformer)
       }
       const slots = serialize(normalizedSlots)
 
