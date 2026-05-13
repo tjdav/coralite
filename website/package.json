@@ -19,8 +19,8 @@
     "lint-css-fix": "stylelint --fix 'src/css/*.css'"
   },
   "devDependencies": {
-    "coralite-plugin-aggregation": "link:../../coralite-plugin-aggregation",
-    "coralite-plugin-inline-css": "link:../../coralite-plugin-inline-css",
+    "coralite-plugin-aggregation": "^0.8.0",
+    "coralite-plugin-inline-css": "^0.4.1",
     "coralite-scripts": "workspace:*",
     "cross-env": "^10.1.0",
     "highlight.js": "^11.11.1",
