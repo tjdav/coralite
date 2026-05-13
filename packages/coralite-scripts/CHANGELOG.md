@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.33.0
+
+> Comparing `coralite-scripts-v0.32.0` to `HEAD`
+
+**Summary:** 5 commits
+
+### 📚 Documentation
+
+- update all READMEs to V1 API and standardize Node.js requirements ([cfa3f97](https://codeberg.org/tjdavid/coralite/commit/cfa3f971f89c6cddbb5886abf0caca76a8b0c4b7))
+
+### ♻️ Code Refactoring
+
+- improve error object detection (build-utils) ([e5efc61](https://codeberg.org/tjdavid/coralite/commit/e5efc611654ead07aff481ccdce0db3705b6dfb5))
+
+### 🧹 Chores
+
+- update license for coralite plugin scripts ([1157c8b](https://codeberg.org/tjdavid/coralite/commit/1157c8b48c35a09ca867817927124d1a674661c6))
+- update license to MPL-2.0 ([f3cc59e](https://codeberg.org/tjdavid/coralite/commit/f3cc59e535b5a111038df6e590bb1b4ca558fb5b))
+- update eslint configuration and fix linting issues ([861d7dd](https://codeberg.org/tjdavid/coralite/commit/861d7ddb27a6f24faaf0065a99c73f4aa2b0f373))
+
+
 ## v0.31.6
 
 > Comparing `coralite-scripts-v0.31.5` to `HEAD`
