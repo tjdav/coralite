@@ -311,13 +311,18 @@ ${commitsText}`
             if (shouldCommit && !prompts.isCancel(shouldCommit)) {
               try {
                 prompts.log.step('Committing release post...')
-                await git.add(outputFile)
-                await git.commit(`docs: add release post for ${titleVersion}`)
+                const commitResult = await git.commit(`docs: add release post for ${titleVersion}`, [outputFile])
+
+                if (commitResult.commit) {
+                  prompts.log.success(`✅ Committed release post (${commitResult.commit})`)
+                } else {
+                  prompts.log.info('Release post already up to date in git')
+                }
 
                 prompts.log.step('Pushing to remote...')
                 await git.push()
 
-                prompts.log.success('✅ Successfully committed and pushed release post')
+                prompts.log.success('✅ Successfully pushed release post')
               } catch (error) {
                 prompts.log.error(`Failed to commit/push release post: ${error.message}`)
               }

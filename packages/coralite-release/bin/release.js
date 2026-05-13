@@ -2,7 +2,7 @@
 
 import { program } from 'commander'
 import * as prompts from '@clack/prompts'
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync } from 'fs'
 import { globSync } from 'glob'
 import { simpleGit } from 'simple-git'
 import { execSync } from 'child_process'
@@ -245,6 +245,7 @@ program
       }
 
       // Git commit if not disabled
+      let commitSuccessful = false
       if (options.gitCommit) {
         try {
           // Track modified files to stage
@@ -255,13 +256,23 @@ program
           filesToStage.push(changelogPath)
 
           // Filter only files that exist on disk and were actually modified
-          const { existsSync } = await import('fs')
           const existingFilesToStage = filesToStage.filter(f => existsSync(f))
 
           if (existingFilesToStage.length > 0) {
-            await git.add(existingFilesToStage)
-            await git.commit(commitMessage)
-            prompts.log.success('✅ Committed version changes')
+            prompts.log.step('Committing version changes...')
+            const commitResult = await git.commit(commitMessage, existingFilesToStage)
+
+            if (commitResult.commit) {
+              prompts.log.success(`✅ Committed version changes (${commitResult.commit})`)
+              commitSuccessful = true
+            } else {
+              prompts.log.warn('No changes were committed (possibly already committed or no changes detected)')
+              // We consider it successful if there was nothing to commit
+              commitSuccessful = true
+            }
+          } else {
+            prompts.log.warn('No modified files found to commit')
+            commitSuccessful = true
           }
         } catch (error) {
           prompts.log.error('Failed to commit changes: ' + error.message)
@@ -278,11 +289,11 @@ program
       }
 
       // Create git tag if not disabled
-      if (options.gitTag) {
+      if (options.gitTag && commitSuccessful) {
         const tagName = `${selectedPackageName}-v${newVersion}`
 
         try {
-          await git.tag(['-a', tagName, '-m', commitMessage])
+          await git.addAnnotatedTag(tagName, commitMessage)
           prompts.log.success(`🔖 Created git tag: ${tagName}`)
         } catch (error) {
           prompts.log.error(`Failed to create git tag: ${tagName} — ${error.message}`)

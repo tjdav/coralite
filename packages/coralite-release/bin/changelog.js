@@ -298,13 +298,18 @@ program
           if (shouldCommit && !prompts.isCancel(shouldCommit)) {
             try {
               prompts.log.step('Committing changelog...')
-              await git.add(outputFile)
-              await git.commit(`docs: update changelog for ${titleVersion}`)
+              const commitResult = await git.commit(`docs: update changelog for ${titleVersion}`, [outputFile])
+
+              if (commitResult.commit) {
+                prompts.log.success(`✅ Committed changelog (${commitResult.commit})`)
+              } else {
+                prompts.log.info('Changelog already up to date in git')
+              }
 
               prompts.log.step('Pushing to remote...')
               await git.push()
 
-              prompts.log.success('✅ Successfully committed and pushed changelog')
+              prompts.log.success('✅ Successfully pushed changelog')
             } catch (error) {
               prompts.log.error(`Failed to commit/push changelog: ${error.message}`)
             }
