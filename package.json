@@ -55,7 +55,8 @@
     "node": ">=20.19.0"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm exec lint-staged -v && pnpm --filter coralite run build-types"
+    "pre-commit": "pnpm exec lint-staged",
+    "pre-push": "pnpm --filter coralite run build-types"
   },
   "lint-staged": {
     "packages/**/*.js": [
