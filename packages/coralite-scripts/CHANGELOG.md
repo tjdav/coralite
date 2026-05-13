@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.33.1
+
+> Comparing `coralite-scripts-v0.33.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🧹 Chores
+
+- update changelog to v0.33.0 (changelog) ([087c63e](https://codeberg.org/tjdavid/coralite/commit/087c63e58690d5e780cebcb1730352ccaca2564a))
+
+
 ## v0.33.0
 
 > Comparing `coralite-scripts-v0.32.0` to `HEAD`
