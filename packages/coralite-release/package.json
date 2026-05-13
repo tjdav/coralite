@@ -20,6 +20,9 @@
     "url": "https://codeberg.org/tjdavid/coralite/issues"
   },
   "license": "MPL-2.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
     "commander": "^13.1.0",

@@ -2,7 +2,7 @@
 
 The `create-coralite` package is a command-line interface (CLI) tool designed to scaffold new projects using the Coralite static-site-generator (SSG).
 
-> **Note**: This guide assumes familiarity with basic terminal operations, Node.js (v22.12.0 or higher), and package managers such as `npm`, `yarn`, or `pnpm`.
+> **Note**: This guide assumes familiarity with basic terminal operations, Node.js v20.19.0 or higher (Node.js v24 LTS recommended), and package managers such as `npm` or `pnpm`.
 
 ---
 
@@ -16,11 +16,7 @@ To initialize a new Coralite project:
 npm create coralite@latest
 ```
 
-Alternatively, use other package managers:
-
-```bash
-yarn create coralite
-```
+Alternatively, use pnpm:
 
 ```bash
 pnpm create coralite

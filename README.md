@@ -29,6 +29,8 @@ To scaffold a new Coralite project, run:
 ```bash
 npm create coralite@latest
 # or
-yarn create coralite
-# or
 pnpm create coralite
+```
+
+### Prerequisites
+* **Node.js** v20.19.0 or higher (Node.js v24 LTS recommended)

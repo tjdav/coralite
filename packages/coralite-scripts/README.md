@@ -104,6 +104,12 @@ Coralite provides real-time development workflows out of the box:
 
 ---
 
+## Prerequisites
+
+* **Node.js** v20.19.0 or higher (Node.js v24 LTS recommended)
+
+---
+
 ## Example usage
 
 1. Create a new file at `src/pages/about.html`:

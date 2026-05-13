@@ -51,6 +51,9 @@
     }
   },
   "license": "MPL-2.0",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "dependencies": {
     "chokidar": "^4.0.3",
     "commander": "^14.0.0",

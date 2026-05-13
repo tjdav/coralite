@@ -1,5 +1,7 @@
 # Coralite release
 
+Requires Node.js v20.19.0 or higher (Node.js v24 LTS recommended).
+
 This package provides two CLI tools for managing releases and generating changelogs:
 
 1. `coralite-release` - Creates new git release tags and bumps package versions

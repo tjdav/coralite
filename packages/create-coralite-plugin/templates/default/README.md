@@ -1,5 +1,7 @@
 # Coralite Plugin Template
 
+Requires Node.js v20.19.0 or higher (Node.js v24 LTS recommended).
+
 This is a template for creating Coralite plugins.
 
 ## Usage
