@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.33.1
+
+> Comparing `coralite-v0.33.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- Include llms.txt in package files (coralite) ([ddcaa01](https://codeberg.org/tjdavid/coralite/commit/ddcaa01cae94eb6b0842ad10851d457d905be05c))
+
+### 🐛 Bug Fixes
+
+- prevent circular structure error during serialization and refactor utilities ([ecdcf9d](https://codeberg.org/tjdavid/coralite/commit/ecdcf9da39f1607773016ac75670f1e4793b5d69))
+
+### 🧹 Chores
+
+- update changelog to v0.33.0 (changelog) ([f7027ac](https://codeberg.org/tjdavid/coralite/commit/f7027ac4a8d02f33bb907e0fad7a9e82565f4ba6))
+
+
 ## v0.33.0
 
 > Comparing `coralite-v0.32.0` to `HEAD`
