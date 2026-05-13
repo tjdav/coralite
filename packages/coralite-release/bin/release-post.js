@@ -300,6 +300,26 @@ ${commitsText}`
 
           writeFileSync(outputFile, markdown, 'utf8')
           prompts.log.success(`Release post written to ${outputFile}`)
+
+          const shouldCommit = await prompts.confirm({
+            message: 'Commit and push the release post?',
+            initialValue: true
+          })
+
+          if (shouldCommit && !prompts.isCancel(shouldCommit)) {
+            try {
+              prompts.log.step('Committing release post...')
+              await git.add(outputFile)
+              await git.commit(`docs: add release post for ${titleVersion}`)
+
+              prompts.log.step('Pushing to remote...')
+              await git.push()
+
+              prompts.log.success('✅ Successfully committed and pushed release post')
+            } catch (error) {
+              prompts.log.error(`Failed to commit/push release post: ${error.message}`)
+            }
+          }
         }
 
         prompts.outro('✅ Release post generated successfully!')

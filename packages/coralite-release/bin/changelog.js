@@ -17,6 +17,7 @@ program
   .option('-o, --output <file>', 'Output file (defaults to package/CHANGELOG.md or stdout)')
   .option('-y, --yes', 'Skip confirmation')
   .option('--stdout', 'Print to stdout only, ignore output file')
+  .option('--no-git', 'Skip git commit and push')
   .action(async (options) => {
     const REPO = 'https://codeberg.org/tjdavid/coralite'
     const packageName = options.package
@@ -287,6 +288,28 @@ program
         // Write to file
         writeFileSync(outputFile, finalContent, 'utf8')
         prompts.log.success(`Changelog written to ${outputFile}`)
+
+        if (options.git) {
+          const shouldCommit = await prompts.confirm({
+            message: 'Commit and push the changelog?',
+            initialValue: true
+          })
+
+          if (shouldCommit && !prompts.isCancel(shouldCommit)) {
+            try {
+              prompts.log.step('Committing changelog...')
+              await git.add(outputFile)
+              await git.commit(`docs: update changelog for ${titleVersion}`)
+
+              prompts.log.step('Pushing to remote...')
+              await git.push()
+
+              prompts.log.success('✅ Successfully committed and pushed changelog')
+            } catch (error) {
+              prompts.log.error(`Failed to commit/push changelog: ${error.message}`)
+            }
+          }
+        }
       }
 
       prompts.outro('✅ Changelog generated successfully!')

@@ -34,6 +34,13 @@ program
         process.exit(1)
       }
 
+      // Check if current branch is main
+      const branchStatus = await git.status()
+      if (branchStatus.current !== 'main') {
+        prompts.log.error(`Releases must be performed on the "main" branch. Current branch is: ${branchStatus.current}`)
+        process.exit(1)
+      }
+
       // Pre-release checks
       prompts.log.info('🔍 Running pre-release checks...')
 
@@ -220,7 +227,7 @@ program
         const __dirname = path.dirname(fileURLToPath(import.meta.url))
         const changelogScript = path.join(__dirname, 'changelog.js')
 
-        execSync(`node ${changelogScript} --next-version ${newVersion} --package ${selectedPkg.name} --path ${pkgDir} -y`, { stdio: 'inherit' })
+        execSync(`node ${changelogScript} --next-version ${newVersion} --package ${selectedPkg.name} --path ${pkgDir} -y --no-git`, { stdio: 'inherit' })
         prompts.log.success('✅ Generated Changelog')
       } catch (error) {
         prompts.log.error(`Failed to generate changelog: ${error.message}`)
@@ -240,6 +247,7 @@ program
         try {
           await git.add('packages/*/package.json')
           await git.add('packages/create-coralite/templates/*/package.json')
+          await git.add('packages/create-coralite-plugin/templates/*/package.json')
           const changelogPath = path.join(pkgDir, 'CHANGELOG.md')
           await git.add(changelogPath)
           await git.commit(commitMessage)
@@ -271,15 +279,28 @@ program
         }
       }
 
-      prompts.log.success('Release completed successfully!')
+      // Push changes and tags
+      const shouldPush = await prompts.confirm({
+        message: 'Push changes and tags to remote?',
+        initialValue: true
+      })
 
-      // Show next steps
-      console.log('\nNext steps:')
-      if (!options.noGitTag) {
-        console.log('  git push && git push --tags')
-      } else {
-        console.log('  git push')
+      if (shouldPush && !prompts.isCancel(shouldPush)) {
+        try {
+          prompts.log.step('Pushing to remote...')
+          await git.push()
+
+          if (!options.noGitTag) {
+            await git.pushTags()
+          }
+
+          prompts.log.success('✅ Successfully pushed to remote')
+        } catch (error) {
+          prompts.log.error(`Failed to push to remote: ${error.message}`)
+        }
       }
+
+      prompts.log.success('Release completed successfully!')
 
     } catch (error) {
       prompts.log.error(`Release failed: ${error.message}`)
