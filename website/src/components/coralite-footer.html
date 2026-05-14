@@ -38,7 +38,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    properties() {
+    properties () {
       const date = new Date()
       let year = date.getFullYear()
 
@@ -46,7 +46,7 @@
         year
       }
     },
-    script({ refs }) {
+    script ({ refs }) {
       const button = refs('popoverBtn')
       const popoverTarget = refs('popoverTarget')
       const codeTarget = refs('code')
