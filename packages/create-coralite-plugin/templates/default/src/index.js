@@ -17,9 +17,10 @@ export default definePlugin({
   /**
    * Called when a page is being processed
    */
-  onPageSet: ({ values }) => {
+  onPageSet: ({ properties }) => {
     // Add data available to all pages
-    // Note: Coralite uses flat keys for tokens, so {{ site.hello }} maps to values['site.hello']
-    values.helloWorld = 'Hello from My Plugin!'
+    return {
+      helloWorld: 'Hello from My Plugin!'
+    }
   }
 })

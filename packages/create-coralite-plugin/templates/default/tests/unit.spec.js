@@ -3,10 +3,10 @@ import assert from 'node:assert'
 import myPlugin from '../src/index.js'
 
 describe('Unit Test', () => {
-  it('should add site.hello to values', () => {
-    const values = {}
-    myPlugin.onPageSet({ values })
-    assert.strictEqual(values.helloWorld, 'Hello from My Plugin!')
+  it('should add helloWorld to properties', () => {
+    const properties = {}
+    const result = myPlugin.onPageSet({ properties })
+    assert.strictEqual(result.helloWorld, 'Hello from My Plugin!')
   })
 
   it('method should return a message', () => {
