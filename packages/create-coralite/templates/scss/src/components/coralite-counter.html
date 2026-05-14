@@ -27,29 +27,22 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client: {
-      imports: [
-        {
-          specifier: 'https://esm.sh/canvas-confetti@latest',
-          defaultExport: 'confetti'
-        }
-      ],
-      script ({ values, helpers, imports }) {
-        const button = helpers.refs('count-button')
-        const step = values.step ? parseInt(values.step) : 1
-        let count = 0
-  
-        button.addEventListener('click', () => {
-          // increment the counter by the specified step value
-          count += step
+    async script ({ properties, refs }) {
+      const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
+      const button = refs('count-button')
+      const step = properties.step ? parseInt(properties.step) : 1
+      let count = 0
 
-          // update the button's text content to reflect the new count value
-          button.textContent = `Count is ${count}`
+      button.addEventListener('click', () => {
+        // increment the counter by the specified step value
+        count += step
 
-          // Explode confetti :)
-          imports.confetti()
-        })
-      }
+        // update the button's text content to reflect the new count value
+        button.textContent = `Count is ${count}`
+
+        // Explode confetti :)
+        confetti()
+      })
     }
   })
 </script>
