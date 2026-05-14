@@ -123,7 +123,7 @@
             return {
               userName: user.name,
               userRole: user.role,
-              currentPage: context.page.url.pathname // Accessing engine context
+              currentPage: context.page.url.pathname
             }
           }
         })
@@ -221,12 +221,12 @@
 
     <coralite-heading level="h2" text="Reactivity & Imperative Web Components"></coralite-heading>
 
-    <p>Coralite embraces a strictly SSR first approach[cite: 9]. Statically placed HTML tags in your templates are <strong>not</strong> reactive. To use a true Web Component with a client-side lifecycle that reacts to attribute changes, you must utilize the <strong>Imperative Requirement</strong>[cite: 66, 67].</p>
+    <p>Coralite embraces a strictly SSR first approach. Statically placed HTML tags in your templates are <strong>not</strong> reactive. To use a true Web Component with a client-side lifecycle that reacts to attribute changes, you must utilize the <strong>Imperative Requirement</strong>[cite: 66, 67].</p>
 
     <ul>
-      <li><strong>The Imperative Requirement:</strong> A parent component must imperatively instantiate the child component via <code>document.createElement('child-element')</code> and append it to the DOM[cite: 67].</li>
+      <li><strong>The Imperative Requirement:</strong> A parent component must imperatively instantiate the child component via <code>document.createElement('child-element')</code> and append it to the DOM.</li>
       <li><strong>Zero-Config Dependencies:</strong> As long as the string literal contains a hyphen (e.g., <code>'child-element'</code>), the AST parser detects it and automatically bundles the child component[cite: 63, 64]. No manual dependency array is needed!</li>
-      <li><strong>How it Works:</strong> Once mounted, updating attributes on the child element (via <code>setAttribute()</code>) triggers Coralite's internal <code>MutationObserver</code>[cite: 54]. This observer automatically updates the <code>context.properties</code> object and re-renders the affected DOM nodes[cite: 55].</li>
+      <li><strong>How it Works:</strong> Once mounted, updating attributes on the child element (via <code>setAttribute()</code>) triggers Coralite's internal <code>MutationObserver</code>. This observer automatically updates the <code>context.properties</code> object and re-renders the affected DOM nodes.</li>
     </ul>
 
     <p>Here is the standard pattern for declarative Reactivity:</p>

@@ -685,27 +685,27 @@
       <p>The <code>metadata</code> plugin automatically extracts SEO data from the document's <code>&lt;head&gt;</code> during the build and exposes it to the <code>context.page.meta</code> environment object[cite: 109, 110]:</p>
 
       <ul>
-        <li>Maps <code>&lt;html lang="..."&gt;</code> to <code>context.page.meta.lang</code>[cite: 110].</li>
-        <li>Maps <code>&lt;title&gt;</code> to <code>context.page.meta.title</code>[cite: 110].</li>
-        <li>Maps <code>&lt;meta name="viewport" content="..."&gt;</code> to <code>context.page.meta.viewport</code>[cite: 111].</li>
-        <li>Removes the need for ugly <code>meta_</code> prefixes or polluting the component's state object[cite: 111].</li>
+        <li>Maps <code>&lt;html lang="..."&gt;</code> to <code>context.page.meta.lang</code>.</li>
+        <li>Maps <code>&lt;title&gt;</code> to <code>context.page.meta.title</code>.</li>
+        <li>Maps <code>&lt;meta name="viewport" content="..."&gt;</code> to <code>context.page.meta.viewport</code>.</li>
+        <li>Removes the need for ugly <code>meta_</code> prefixes or polluting the component's state object.</li>
       </ul>
 
       <p>See the <a href="./metadata.html">Metadata Plugin Reference</a> for full details.</p>
 
       <coralite-heading level="h3" text="Static Assets Plugin"></coralite-heading>
-      <p>The <code>staticAssetPlugin</code> handles the orchestration of copying raw files (like <code>.wasm</code>, images, or pre-compiled scripts) directly into the final build directory[cite: 115].</p>
+      <p>The <code>staticAssetPlugin</code> handles the orchestration of copying raw files (like <code>.wasm</code>, images, or pre-compiled scripts) directly into the final build directory.</p>
 
       <coralite-heading level="h4" text="Configuration"></coralite-heading>
-      <p>It acts as a higher-order function that accepts an <code>assets</code> array and returns a configured Coralite plugin[cite: 117]. Every object in the array <em>must</em> contain a <code>dest</code> (destination) property[cite: 118].</p>
+      <p>It acts as a higher-order function that accepts an <code>assets</code> array and returns a configured Coralite plugin. Every object in the array <em>must</em> contain a <code>dest</code> (destination) property.</p>
 
       <coralite-heading level="h4" text="Lifecycle Hook"></coralite-heading>
-      <p>It triggers on the <code>onBeforeBuild</code> hook, ensuring all required binary/static dependencies are physically present in the output directory before Coralite attempts to render pages or start the dev server[cite: 119].</p>
+      <p>It triggers on the <code>onBeforeBuild</code> hook, ensuring all required binary/static dependencies are physically present in the output directory before Coralite attempts to render pages or start the dev server.</p>
 
       <coralite-heading level="h4" text="Resolution Strategies"></coralite-heading>
       <ul>
-        <li><strong>Local Resolution:</strong> If the asset object contains a <code>src</code> property, it recursively creates the destination directory and copies the file/folder using Node's <code>cp</code>[cite: 120].</li>
-        <li><strong>NPM Package Resolution:</strong> If <code>src</code> is missing, it requires both <code>pkg</code> and <code>path</code> properties[cite: 121]. It uses Node's <code>createRequire</code> and <code>require.resolve</code> to traverse <code>node_modules</code> and locate the root directory of the requested <code>pkg</code>[cite: 122]. It then appends the <code>path</code> to the package root and copies the asset out of the dependency[cite: 123].</li>
+        <li><strong>Local Resolution:</strong> If the asset object contains a <code>src</code> property, it recursively creates the destination directory and copies the file/folder using Node's <code>cp</code>.</li>
+        <li><strong>NPM Package Resolution:</strong> If <code>src</code> is missing, it requires both <code>pkg</code> and <code>path</code> properties. It uses Node's <code>createRequire</code> and <code>require.resolve</code> to traverse <code>node_modules</code> and locate the root directory of the requested <code>pkg</code>. It then appends the <code>path</code> to the package root and copies the asset out of the dependency.</li>
       </ul>
 
       <coralite-heading level="h3" text="Complete Example"></coralite-heading>
