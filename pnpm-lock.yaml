@@ -204,11 +204,11 @@ importers:
         version: 7.3.0
     devDependencies:
       coralite-plugin-aggregation:
-        specifier: ^0.8.0
-        version: 0.8.0(coralite@packages+coralite)
+        specifier: ^0.9.0
+        version: 0.9.0
       coralite-plugin-inline-css:
-        specifier: ^0.4.1
-        version: 0.4.1(coralite@packages+coralite)
+        specifier: ^0.6.0
+        version: 0.6.0
       coralite-scripts:
         specifier: workspace:*
         version: link:../packages/coralite-scripts
@@ -956,15 +956,11 @@ packages:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
-  coralite-plugin-aggregation@0.8.0:
-    resolution: {integrity: sha512-5Rbshnxx/qdC/1HLVntC2EtVp0hJrWEQW8kTPJMfKL7SOZCjFL/LR+vMcGWI0QoKbbnl/c9+32f1MZjE6lCx0A==}
-    peerDependencies:
-      coralite: ^0.32.0
+  coralite-plugin-aggregation@0.9.0:
+    resolution: {integrity: sha512-+O6jnMuolmkV0cH4gvoC2QpHa6ntfdtSSyML4KRtI5HzqdEVq54Swwf+q/CbvSjYQNPO4u25ncTg2DRbJl0ymw==}
 
-  coralite-plugin-inline-css@0.4.1:
-    resolution: {integrity: sha512-mcUV2UMVnouHHtaEULSoP5y76C5LReIepAepIX3huhZdqRpYKZ5wq3gV9RA6MwVlr/+g3ThPH2ExrOh9oE6tzA==}
-    peerDependencies:
-      coralite: ^0.31.7
+  coralite-plugin-inline-css@0.6.0:
+    resolution: {integrity: sha512-pMWaICtoNzJb9egWw79ZVS9sCEUaf4VWVQImHzQgE6u87kVonqy/iPwvvygDuN0Fugh24uTDd44kNklsi4EBNA==}
 
   cosmiconfig-typescript-loader@6.1.0:
     resolution: {integrity: sha512-tJ1w35ZRUiM5FeTzT7DtYWAFFv37ZLqSRkGi2oeCK1gPhvaWjkAtfXvLmvE1pRfxxp9aQo6ba/Pvg1dKj05D4g==}
@@ -3051,13 +3047,10 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.8.0(coralite@packages+coralite):
-    dependencies:
-      coralite: link:packages/coralite
+  coralite-plugin-aggregation@0.9.0: {}
 
-  coralite-plugin-inline-css@0.4.1(coralite@packages+coralite):
+  coralite-plugin-inline-css@0.6.0:
     dependencies:
-      coralite: link:packages/coralite
       postcss: 8.5.6
       postcss-import: 16.1.1(postcss@8.5.6)
       postcss-minify: 1.2.0(postcss@8.5.6)
