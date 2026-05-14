@@ -24,15 +24,33 @@ Static components are purely HTML-based elements without scripting logic.
 ## 3. Dynamic Components (defineComponent)
 Dynamic components are authored by appending a `<script type="module">` below the `<template>`, exporting the core `defineComponent` helper.
 
-### 3.1 Server-Side Execution & State (`properties`)
-The state layer of a component is handled entirely by the root `properties` function. It executes strictly on the server during the build.
-* **`properties: async (context)`**: An async function that replaces Top-Level Await (TLA). Used for data fetching, reading files, and computing default state. The returned object is serialized into the HTML and becomes the component's initial state.
-* **Bridging the Serialization Gap:** Because top-level module imports (e.g., `import fs from 'node:fs'`) cannot be used inside the client `script`, the `properties` block is the correct mechanism to utilize those server-side imports, fetch data, and pass the resulting values to the client.
-* **The `context.page` Environment**: Routing and metadata are segregated from the component's state and injected via `context.page` (accessible in both `properties` and `script`):
-* `page.url`: Contains `pathname` and `dirname` representing the web-facing route.
-* `page.file`: Contains `pathname`, `dirname`, and `filename` representing the physical files on disk.
-* `page.meta`: Contains SEO data extracted by the Metadata plugin (e.g., `lang`, `title`, `viewport`).
-* **The "Dumb Template, Smart Properties" Paradigm:** HTML templates in Coralite are strictly declarative and "dumb". They do not support JavaScript logic or dot-notation (e.g., `{{ page.url.pathname }}`), nor does the framework magically inject environment variables into the template namespace. The template can *only* render flat keys explicitly returned by your `properties` function. If you need to render environment data like the current URL, you must explicitly map it to the component's state:
+### 3.1 Component Properties: Evaluation, Reactivity & Context
+The state layer of a component is handled by the `properties` key. It can be defined as either a top-level function or an object containing functions (computed properties).
+
+#### Top-level Properties Function
+* **Definition**: `properties: async (context) => { ... }`
+* **Context Access**: Has access to the full Coralite engine context, including `context.page` (URL info, file info), `context.module` (AST, raw script), and `context.renderContext`.
+* **Execution**: Runs strictly on the server during the build process. The returned object is processed and its values are stringified for the client.
+* **Use Case**: Ideal for complex logic, heavy operations (like API calls/database fetching), and when multiple property keys depend on a single shared operation.
+* **Bridging the Serialization Gap:** Because top-level module imports (e.g., `import fs from 'node:fs'`) cannot be used inside the client `script`, the top-level `properties` function is the correct mechanism to utilize those server-side imports and pass the resulting values to the client.
+
+#### Computed Property Functions (Object-based)
+* **Definition**: `properties: { key: (props) => ... }`
+* **Context Access**: Only receives the current properties (`props`) as an argument. It lacks access to the broader engine state unless explicitly passed in.
+* **Reactivity (Isomorphic)**: These are automatically added to the component's `defaultValues`. In dynamic components, these functions run on both the server and the client.
+* **Client-Side Update**: If an attribute changes in the browser (via `setAttribute`), the function re-runs to update the UI automatically.
+* **Use Case**: Ideal for isolated, lightweight transformations (e.g., capitalizing a name) that need to remain reactive in the browser.
+
+#### Summary of Differences
+| Feature | Top-level Function | Computed Object Functions |
+| :--- | :--- | :--- |
+| **Execution** | Server-only | Server & Client (Isomorphic) |
+| **Context** | Full Engine Context | Local `props` only |
+| **Encapsulation** | Heavy data fetching/distribution | Isolated transformations |
+
+#### The "Dumb Template, Smart Properties" Paradigm
+HTML templates in Coralite are strictly declarative and "dumb". They do not support JavaScript logic or dot-notation (e.g., `{{ page.url.pathname }}`), nor does the framework magically inject environment variables into the template namespace. The template can *only* render flat keys explicitly returned by your `properties` function. If you need to render environment data like the current URL, you must explicitly map it to the component's state:
+
 **Example: Mapping Environment to Template State**
 ```javascript
 // Smart Properties: The server logic controls what the template sees
@@ -43,7 +61,6 @@ properties: async (context) => {
     currentPath: context.page.url.pathname
   }
 }
-
 ```
 
 ```html
@@ -51,8 +68,13 @@ properties: async (context) => {
   <h1>{{ title }}</h1>
   <p>You are here: {{ currentPath }}</p>
 </template>
-
 ```
+
+#### The `context.page` Environment
+Routing and metadata are segregated from the component's state and injected via `context.page` (accessible in both the top-level `properties` function and the client-side `script`):
+* `page.url`: Contains `pathname` and `dirname` representing the web-facing route.
+* `page.file`: Contains `pathname`, `dirname`, and `filename` representing the physical files on disk.
+* `page.meta`: Contains SEO data extracted by the Metadata plugin (e.g., `lang`, `title`, `viewport`).
 ### 3.2 Data Passing & Complex State Management
 
 Because Coralite enforces a strict serialization boundary between the server and the client, passing complex objects (like nested JSON) directly through declarative HTML attributes is highly discouraged. Instead, Coralite provides several architectural patterns for managing complex data depending on the component's role:

@@ -116,6 +116,43 @@ type CoraliteModuleSlotFunction = (slotNodes: NodeArray, context: CoraliteScript
       <li><strong><code>instanceId</code></strong>: Refers to the unique, mounted instance of that component. The framework assigns this unique identifier to the <code>context</code> during rendering so plugins and scripts can track specific DOM nodes.</li>
     </ul>
 
+    <coralite-heading level="h2" text="Detailed Comparison: Property Definition Patterns"></coralite-heading>
+
+    <p>The <code>properties</code> option supports two patterns. Understanding the difference is critical for optimizing performance and ensuring reactivity.</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Feature</th>
+        <th>Top-level Function Pattern</th>
+        <th>Computed Object Pattern</th>
+      </tr>
+      <tr slot="body">
+        <td><strong>Syntax</strong></td>
+        <td><code>properties: async (context) => ({ ... })</code></td>
+        <td><code>properties: { key: (props) => value }</code></td>
+      </tr>
+      <tr slot="body">
+        <td><strong>Context Access</strong></td>
+        <td>Full access to <code>page</code>, <code>module</code>, and <code>renderContext</code>.</td>
+        <td>Restricted access; only receives current <code>properties</code>.</td>
+      </tr>
+      <tr slot="body">
+        <td><strong>Reactivity</strong></td>
+        <td><strong>Server-only.</strong> Returns static values to the client.</td>
+        <td><strong>Isomorphic.</strong> Re-runs in the browser on attribute changes.</td>
+      </tr>
+      <tr slot="body">
+        <td><strong>API Interaction</strong></td>
+        <td>Best for heavy data fetching (e.g., Database/REST).</td>
+        <td>Best for internal data transformations.</td>
+      </tr>
+      <tr slot="body">
+        <td><strong>Efficiency</strong></td>
+        <td>Processes many keys from one operation.</td>
+        <td>Each key is isolated and independent.</td>
+      </tr>
+    </coralite-table>
+
   </main>
   <coralite-footer></coralite-footer>
 

@@ -84,6 +84,62 @@
 
     <p>When used as <code>&lt;greeting-card name=" alice "&gt;&lt;/greeting-card&gt;</code>, the output will be "Welcome, ALICE!".</p>
 
+    <coralite-heading level="h2" text="Top-level vs. Computed Properties"></coralite-heading>
+
+    <p>In Coralite, the <code>properties</code> key can be defined in two ways: as a single <strong>top-level function</strong> or as an <strong>object containing computed property functions</strong>. The choice between them depends on three factors: Context Access, Reactivity, and Encapsulation.</p>
+
+    <coralite-heading level="h3" text="1. Context Access"></coralite-heading>
+
+    <ul>
+      <li><strong>Top-level function:</strong> Has access to the full Coralite engine context, including <code>context.page</code> (URL, file info), <code>context.module</code> (AST, raw script), and <code>context.renderContext</code>. This is ideal for logic that depends on the environment.</li>
+      <li><strong>Computed property functions:</strong> Only receive the current properties (<code>props</code>) as an argument. They are simpler and don't know about the rest of the engine state unless it was already passed into the properties.</li>
+    </ul>
+
+    <coralite-heading level="h3" text="2. Reactivity (Client-side Execution)"></coralite-heading>
+
+    <ul>
+      <li><strong>Computed property functions:</strong> These are automatically added to the component's <code>defaultValues</code>. If your component is dynamic, these functions run on both the server and the client. If an attribute changes in the browser (e.g., via <code>setAttribute</code>), the function re-runs to update the UI.</li>
+      <li><strong>Top-level function:</strong> This function runs <strong>only on the server</strong>. The object it returns is processed, and its static values are stringified for the client.</li>
+    </ul>
+
+    <coralite-heading level="h3" text="3. Encapsulation and Efficiency"></coralite-heading>
+
+    <ul>
+      <li>The <strong>top-level function</strong> is better for performing a single heavy operation (like an API call) and distributing results into multiple property keys.</li>
+      <li><strong>Computed properties</strong> are better for isolated, lightweight transformations (like capitalizing a name) where you want the logic to be clearly mapped to a specific token and remain reactive.</li>
+    </ul>
+
+    <coralite-heading level="h3" text="Code Example: Side-by-Side Comparison"></coralite-heading>
+
+    <coralite-code-html>
+      <script type="module">
+        import { defineComponent } from 'coralite'
+
+        // Example A: Top-level function (Server-only, full context)
+        export const TopLevelExample = defineComponent({
+          properties: async (context) => {
+            const data = await fetch(`https://api.example.com/user/${context.properties.id}`)
+            const user = await data.json()
+            return {
+              userName: user.name,
+              userRole: user.role,
+              currentPage: context.page.url.pathname // Accessing engine context
+            }
+          }
+        })
+
+        // Example B: Computed properties (Isomorphic, reactive)
+        export const ComputedExample = defineComponent({
+          properties: {
+            // Only has access to props, runs on both server and client
+            fullName: ({ firstName, lastName }) => {
+              return `${firstName} ${lastName}`.trim()
+            }
+          }
+        })
+      </script>
+    </coralite-code-html>
+
     <coralite-heading level="h3" text="Best Practices for Data Binding"></coralite-heading>
 
     <p>Developers should <strong>not</strong> pass complex objects or arrays as stringified JSON attributes to components. Passing <code>data='[{"id": 1}, {"id": 2}]'</code> into an HTML attribute is a common anti-pattern in vanilla HTML/JS, but Coralite actively discourages it.</p>
