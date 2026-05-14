@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.33.1
+
+> Comparing `create-coralite-v0.33.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### ♻️ Code Refactoring
+
+- Update component script handling to use async imports ([08444f8](https://codeberg.org/tjdavid/coralite/commit/08444f813ef79460c811d14ab15f2017b457bd5f))
+
+### 🧹 Chores
+
+- update changelog to v0.33.0 (changelog) ([59422db](https://codeberg.org/tjdavid/coralite/commit/59422db3bde7bb191f4a856272297b3812313cfa))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.33.1 ([0d6f044](https://codeberg.org/tjdavid/coralite/commit/0d6f044c176f15b89d24e909a16a954d424f06d2))
+
+
 ## v0.33.0
 
 > Comparing `create-coralite-v0.32.0` to `HEAD`
