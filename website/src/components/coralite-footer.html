@@ -7,7 +7,8 @@
 
       <div class="d-flex gap justify-content-center">
         <label for="{{ ref_code }}" class="visibility-hidden">Install coralite commandline</label>
-        <input id="{{ ref_code }}" ref="code" class="input hero-input" type="text" value="npm create coralite@latest" readonly>
+        <input id="{{ ref_code }}" ref="code" class="input hero-input" type="text" value="npm create coralite@latest"
+          readonly>
         <button ref="popoverBtn" type="button" class="button button-secondary" aria-label="Copy code">
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
             <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
@@ -23,7 +24,8 @@
   </section>
   <footer class="text-center">
     <p>
-      © 2025 Coralite | Made in Europe 🇪🇺 by <a href="https://thomasjackdavid.com/" target="_blank">Thomas David</a> -
+      © {{ year }} Coralite | Made in Europe 🇪🇺 by <a href="https://thomasjackdavid.com/" target="_blank">Thomas
+        David</a> -
       Hosted at <a href="https://www.statichost.eu/" target="_blank">statichost.eu</a> - Coralite <a
         href="https://codeberg.org/tjdavid/coralite" target="_blank">source code</a>
     </p>
@@ -36,7 +38,15 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script ({ refs }) {
+    properties() {
+      const date = new Date()
+      let year = date.getFullYear()
+
+      return {
+        year
+      }
+    },
+    script({ refs }) {
       const button = refs('popoverBtn')
       const popoverTarget = refs('popoverTarget')
       const codeTarget = refs('code')
