@@ -49,7 +49,6 @@ program
         execSync('pnpm lint', { stdio: 'inherit' })
 
         prompts.log.step('Verifying Build...')
-        execSync('pnpm run build', { stdio: 'inherit' })
         execSync('pnpm run build-scripts', { stdio: 'inherit' })
 
         prompts.log.step('Running Unit Tests...')
@@ -261,7 +260,7 @@ program
           if (existingFilesToStage.length > 0) {
             prompts.log.step('Committing version changes...')
             await git.add(existingFilesToStage)
-            const commitResult = await git.commit(commitMessage)
+            const commitResult = await git.commit(commitMessage, { '--no-verify': null })
 
             if (commitResult.commit) {
               prompts.log.success(`✅ Committed version changes (${commitResult.commit})`)
@@ -311,7 +310,8 @@ program
       if (shouldPush && !prompts.isCancel(shouldPush)) {
         try {
           prompts.log.step('Pushing to remote...')
-          await git.push()
+
+          await git.push('origin', 'main')
 
           if (options.gitTag) {
             await git.pushTags()

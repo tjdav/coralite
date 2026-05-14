@@ -321,7 +321,8 @@ ${commitsText}`
                 }
 
                 prompts.log.step('Pushing to remote...')
-                await git.push()
+                const status = await git.status()
+                await git.push('origin', status.current)
 
                 prompts.log.success('✅ Successfully pushed release post')
               } catch (error) {
