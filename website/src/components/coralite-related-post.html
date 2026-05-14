@@ -9,14 +9,14 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    properties (context) {
+    properties(context) {
       const url = context.page.url
       const meta = context.page.meta
 
       let formattedDate = 'N/A'
-      if (meta.publishedTime) {
+      if (meta.published_time) {
         try {
-          formattedDate = new Date(meta.publishedTime).toLocaleDateString('en-AU', {
+          formattedDate = new Date(meta.published_time).toLocaleDateString('en-AU', {
             year: '2-digit',
             month: 'short',
             day: 'numeric'
