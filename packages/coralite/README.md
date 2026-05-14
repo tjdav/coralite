@@ -113,7 +113,7 @@ Styles defined in the `<style>` block are automatically **scoped** to the compon
 
 ```html
 <template id="user-card">
-  <div class="card">
+  <div class="card" ref="card">
     <h2>{{ formatName }}</h2>
     <p>Role: {{ userRole }}</p>
   </div>
@@ -155,10 +155,10 @@ Styles defined in the `<style>` block are automatically **scoped** to the compon
     },
 
     // Client-side behavior
-    script({ properties, refs, root, page, signal }) {
+    script ({ properties, refs, root, page, signal }) {
       console.log(`Component mounted: ${properties.formatName}`)
       
-      refs.card.addEventListener('click', () => {
+      refs('card').addEventListener('click', () => {
         alert('Hello from the browser!')
       }, { signal })
     }
@@ -185,7 +185,7 @@ export default function seoPlugin(options = {}) {
     name: 'coralite-seo-plugin',
 
     // State Reducers: Patch the page context before rendering
-    onBeforePageRender: async (context) => {
+    onBeforePageRender (context) {
       // Return a patch object; Coralite will safely deep-merge it for you!
       return {
         properties: {
@@ -196,7 +196,7 @@ export default function seoPlugin(options = {}) {
     },
 
     // Data Aggregators: Generate entirely new pages during the build
-    onAfterPageRender: async (basePageResult) => {
+    onAfterPageRender (basePageResult) {
       // Access the engine instance via `this`
       // this.pages.getItem('/index.html')
 
