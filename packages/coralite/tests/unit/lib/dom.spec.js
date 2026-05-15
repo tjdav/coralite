@@ -8,7 +8,7 @@ import {
 } from '../../../lib/dom.js'
 
 describe('createCoraliteElement', () => {
-  it('should enhance an element node with DOM properties', () => {
+  it('should enhance an element node with DOM state', () => {
     const node = {
       type: 'tag',
       name: 'div',

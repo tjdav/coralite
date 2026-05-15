@@ -219,7 +219,7 @@ describe('type-helper.js', () => {
         assert.strictEqual(isCoraliteCollectionItem(item), true)
       })
 
-      it('should return false for missing required properties', () => {
+      it('should return false for missing required state', () => {
         assert.strictEqual(isCoraliteCollectionItem({
           content: '<div>test</div>'
         }), false)
@@ -450,7 +450,7 @@ describe('type-helper.js', () => {
       assert.strictEqual(isRemovableNode(null), false)
     })
 
-    it('should handle objects with extra properties', () => {
+    it('should handle objects with extra state', () => {
       const element = {
         type: 'tag',
         name: 'div',
@@ -462,7 +462,7 @@ describe('type-helper.js', () => {
       assert.strictEqual(hasValidElementStructure(element), true)
     })
 
-    it('should handle objects with missing optional properties', () => {
+    it('should handle objects with missing optional state', () => {
       const slotElement = {
         name: 'content',
         element: {

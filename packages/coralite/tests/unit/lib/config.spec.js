@@ -175,7 +175,7 @@ describe('config.js', () => {
       }), /Config property "output" cannot be empty/)
     })
 
-    it('should preserve valid config with all properties', () => {
+    it('should preserve valid config with all state', () => {
       const fullConfig = {
         output: './dist',
         components: './components',

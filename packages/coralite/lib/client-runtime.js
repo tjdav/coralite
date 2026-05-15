@@ -10,7 +10,8 @@
  * @param {string} options.sharedChunkPath - The filename of the shared chunk.
  * @param {Object} options.chunkManifest - Manifest mapping component IDs to their chunk filenames.
  * @param {Object.<string, InstanceContext>} options.instances - Map of instance data.
- * @param {string} options.mode - Build mode ('development' or 'production').
+ * @param {string} options.mode - Build mode ('development' or 'development').
+ * @param {Object} [options.renderContext] - Build-time render context.
  * @returns {string} The generated JavaScript runtime.
  */
 export function generateClientRuntime ({
@@ -18,14 +19,26 @@ export function generateClientRuntime ({
   sharedChunkPath,
   chunkManifest,
   instances,
-  mode
+  mode,
+  renderContext
 }) {
+  const hydrationData = {}
+  for (const [id, instance] of Object.entries(instances)) {
+    const contextId = instance.instanceId
+    if (renderContext && renderContext.source && renderContext.source.contextInstances[contextId]) {
+      const coraliteContext = renderContext.source.contextInstances[contextId]
+      if (coraliteContext.state.__script__ && coraliteContext.state.__script__.data) {
+        hydrationData[contextId] = coraliteContext.state.__script__.data
+      }
+    }
+  }
+
   const declarativeFunctions = Object.values(instances).map(instance => `
   declarativeFunctions.push((async() => {
     const context = {
       instanceId: '${instance.instanceId}',
       componentId: '${instance.componentId}',
-      properties: ${JSON.stringify(instance.properties || {})},
+      state: ${JSON.stringify(instance.state || {})},
       page: ${JSON.stringify(instance.page || {})},
       signal: globalAbortController.signal
     };
@@ -36,7 +49,7 @@ export function generateClientRuntime ({
     const [setupProperties, pluginContexts, module] = await Promise.all([setupPropertiesPromise, pluginContextsPromise, modulePromise]);
 
     Object.assign(context, pluginContexts);
-    context.properties = { ...module.default.defaultValues, ...context.properties, ...setupProperties };
+    context.state = { ...module.default.defaultValues, ...context.state, ...setupProperties };
 
     // Explicitly load declarative script dependencies if any
     const deps = module.default.dependencies || [];
@@ -71,6 +84,62 @@ export function generateClientRuntime ({
 
   return `
 import { getClientContext, getSetups, render } from '${base}assets/js/${sharedChunkPath}';
+
+function createReactiveProxy(target, onChange, proxies = new WeakMap()) {
+  if (proxies.has(target)) return proxies.get(target);
+  const handler = {
+    get(target, property, receiver) {
+      const value = Reflect.get(target, property, receiver);
+      if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
+        return createReactiveProxy(value, onChange, proxies);
+      }
+      return value;
+    },
+    set(target, property, value, receiver) {
+      const oldValue = target[property];
+      if (oldValue === value && property in target) return true;
+      const result = Reflect.set(target, property, value, receiver);
+      if (result) onChange({ property, value, oldValue, target });
+      return result;
+    },
+    deleteProperty(target, property) {
+      const hadProperty = Object.prototype.hasOwnProperty.call(target, property);
+      const oldValue = target[property];
+      const result = Reflect.deleteProperty(target, property);
+      if (result && hadProperty) onChange({ property, value: undefined, oldValue, target, deleted: true });
+      return result;
+    }
+  };
+  const proxy = new Proxy(target, handler);
+  proxies.set(target, proxy);
+  return proxy;
+}
+
+function createReadOnlyProxy(target, proxies = new WeakMap()) {
+  if (proxies.has(target)) return proxies.get(target);
+  const handler = {
+    get(target, property, receiver) {
+      const value = Reflect.get(target, property, receiver);
+      if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
+        return createReadOnlyProxy(value, proxies);
+      }
+      return value;
+    },
+    set() { throw new Error('Coralite Error: Cannot mutate state inside a getter. State is read-only here.'); },
+    deleteProperty() { throw new Error('Coralite Error: Cannot delete state inside a getter. State is read-only here.'); }
+  };
+  const proxy = new Proxy(target, handler);
+  proxies.set(target, proxy);
+  return proxy;
+}
+
+function coerce(value, type) {
+  if (value === null || value === undefined) return value;
+  if (type === Number) return Number(value);
+  if (type === Boolean) return value !== 'false' && value !== null;
+  if (type === String) return String(value);
+  return value;
+}
 
 // Global setups initialization
 const globalContext = {};
@@ -107,7 +176,10 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
 
             this._instanceId = \`\${this.componentId}-\${this._index}\`;
 
-            this._properties = {};
+            this._stateTarget = {};
+            this._state = null;
+            this._getters = module.default.getters || {};
+            this._getterControllers = new Map();
 
             this._styles = ''
             if (module.default.styles) {
@@ -146,24 +218,48 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
               }
             }
 
-            // Extract attributes to values
-            const attributes = this.attributes;
-            for (let i = 0; i < attributes.length; i++) {
-              const attr = attributes[i];
-              const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-              this._properties[camelName] = attr.value;
-              if (camelName !== attr.name) {
-                this._properties[attr.name] = attr.value;
+            // 1. Initialize attributes with defaults
+            const attributeSchema = module.default.attributes || {};
+            for (const [key, schema] of Object.entries(attributeSchema)) {
+              if (schema.default !== undefined) {
+                this._stateTarget[key] = schema.default;
               }
             }
 
-            // Merge defaults
-            this._properties = Object.assign({}, module.default.defaultValues, this._properties);
+            // 2. Extract and coerce attributes from HTML
+            const htmlAttributes = this.attributes;
+            for (let i = 0; i < htmlAttributes.length; i++) {
+              const attr = htmlAttributes[i];
+              const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+              let value = attr.value;
+
+              if (attributeSchema[camelName]) {
+                value = coerce(value, attributeSchema[camelName].type);
+              }
+
+              this._stateTarget[camelName] = value;
+              if (camelName !== attr.name) {
+                this._stateTarget[attr.name] = value;
+              }
+            }
+
+            // Merge legacy defaults
+            this._stateTarget = Object.assign({}, module.default.defaultValues, this._stateTarget);
+
+            // Hydrate server data
+            const hydrationTag = document.getElementById('__CORALITE_HYDRATION__');
+            if (hydrationTag) {
+              const allHydrationData = JSON.parse(hydrationTag.textContent);
+              const instanceHydration = allHydrationData[this._instanceId];
+              if (instanceHydration) {
+                Object.assign(this._stateTarget, instanceHydration);
+              }
+            }
 
             if (module.default.templateValues && module.default.templateValues.refs) {
               for (let i = 0; i < module.default.templateValues.refs.length; i++) {
                 const ref = module.default.templateValues.refs[i];
-                this._properties['ref_' + ref.name] = this.componentId + '__' + ref.name + '-' + this._index;
+                this._stateTarget['ref_' + ref.name] = this.componentId + '__' + ref.name + '-' + this._index;
               }
             }
 
@@ -174,53 +270,25 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 await Promise.all(loadPromises);
               }
 
-              // Evaluate client-side properties if available
-              if (module.default.properties) {
-                // Sync current attributes to properties before evaluating
-                const currentAttrs = this.attributes;
-                for (let i = 0; i < currentAttrs.length; i++) {
-                  const attr = currentAttrs[i];
-                  const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-                  this._properties[camelName] = attr.value;
-                  if (camelName !== attr.name) {
-                    this._properties[attr.name] = attr.value;
-                  }
-                }
+              const setupProperties = await globalSetupPropertiesPromise;
+              Object.assign(this._stateTarget, setupProperties);
 
-                const propsContext = {
-                  properties: this._properties,
-                  page: module.default.page || {}
-                };
-                let dynamicProps = module.default.properties(propsContext);
-                if (dynamicProps && typeof dynamicProps.then === 'function') {
-                  dynamicProps = await dynamicProps;
-                }
+              this._state = createReactiveProxy(this._stateTarget, () => {
+                this._evaluateGetters();
+                this._render();
+              });
 
-                const merged = Object.assign({}, this._properties);
-                for (const key in dynamicProps) {
-                  const attrName = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-                  if (this.hasAttribute(attrName)) {
-                    merged[key] = this._properties[key];
-                  } else {
-                    merged[key] = dynamicProps[key];
-                  }
-                }
-                this._properties = merged;
-              }
-
+              await this._evaluateGetters();
               this._render();
 
               const localContext = {
                 instanceId: this._instanceId,
                 componentId: this.componentId,
-                properties: this._properties,
+                state: this._state,
                 page: module.default.page || {},
                 root: this,
                 signal: this._abortController.signal
               };
-
-              const setupProperties = await globalSetupPropertiesPromise;
-              localContext.properties = { ...localContext.properties, ...setupProperties };
 
               const pluginContexts = await getClientContext(localContext);
               Object.assign(localContext, pluginContexts);
@@ -228,62 +296,38 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
               localContext.imports = module.default.imports || {};
 
               if (module.default.script) {
+                // Ensure state is the latest proxy
+                localContext.state = this._state;
                 await module.default.script(localContext);
               }
             })();
             addPendingHydration(initPromise);
 
             this._observer = new MutationObserver(async (mutations) => {
-              let shouldRender = false;
+              let shouldUpdate = false;
+              const attributeSchema = module.default.attributes || {};
+
               for (const mutation of mutations) {
                 if (mutation.type === 'attributes') {
                   const attrName = mutation.attributeName;
                   const camelName = attrName.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-                  const newValue = this.getAttribute(attrName);
+                  let newValue = this.getAttribute(attrName);
 
-                  if (this._properties[camelName] !== newValue) {
-                    this._properties[camelName] = newValue;
+                  if (attributeSchema[camelName]) {
+                    newValue = coerce(newValue, attributeSchema[camelName].type);
+                  }
+
+                  if (this._stateTarget[camelName] !== newValue) {
+                    this._state[camelName] = newValue;
                     if (camelName !== attrName) {
-                        this._properties[attrName] = newValue;
+                        this._state[attrName] = newValue;
                     }
-                    shouldRender = true;
+                    shouldUpdate = true;
                   }
                 }
               }
-              if (shouldRender) {
-                // Re-evaluate client-side properties on attribute change
-                if (module.default.properties) {
-                  // Sync current attributes to properties before evaluating
-                  const currentAttrs = this.attributes;
-                  for (let i = 0; i < currentAttrs.length; i++) {
-                    const attr = currentAttrs[i];
-                    const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-                    this._properties[camelName] = attr.value;
-                    if (camelName !== attr.name) {
-                      this._properties[attr.name] = attr.value;
-                    }
-                  }
-
-                  const propsContext = {
-                    properties: this._properties,
-                    page: module.default.page || {}
-                  };
-                  let dynamicProps = module.default.properties(propsContext);
-                  if (dynamicProps && typeof dynamicProps.then === 'function') {
-                    dynamicProps = await dynamicProps;
-                  }
-
-                  const merged = Object.assign({}, this._properties);
-                  for (const key in dynamicProps) {
-                    const attrName = key.replace(/([A-Z])/g, '-$1').toLowerCase();
-                    if (this.hasAttribute(attrName)) {
-                      merged[key] = this._properties[key];
-                    } else {
-                      merged[key] = dynamicProps[key];
-                    }
-                  }
-                  this._properties = merged;
-                }
+              if (shouldUpdate) {
+                await this._evaluateGetters();
                 this._render();
               }
             });
@@ -325,10 +369,10 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
 
                 for (let j = 0; j < item.tokens.length; j++) {
                   const token = item.tokens[j];
-                  let value = this._properties[token.name];
+                  let value = this._state[token.name];
 
                   if (typeof value === 'function') {
-                    value = value(this._properties);
+                    value = value(this._state);
                   }
                   if (value == null) value = '';
 
@@ -347,10 +391,10 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
 
                 for (let j = 0; j < item.tokens.length; j++) {
                   const token = item.tokens[j];
-                  let value = this._properties[token.name];
+                  let value = this._state[token.name];
 
                   if (typeof value === 'function') {
-                    value = value(this._properties);
+                    value = value(this._state);
                   }
                   if (value == null) value = '';
 
@@ -360,6 +404,38 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
             }
 
             return ast;
+          }
+
+          async _evaluateGetters() {
+            const roState = createReadOnlyProxy(this._stateTarget);
+            const promises = [];
+
+            for (const [key, getter] of Object.entries(this._getters)) {
+              if (this._getterControllers.has(key)) {
+                this._getterControllers.get(key).abort();
+              }
+              const controller = new AbortController();
+              this._getterControllers.set(key, controller);
+
+              const result = getter(roState, { signal: controller.signal });
+              if (result && typeof result.then === 'function') {
+                promises.push((async () => {
+                  try {
+                    const value = await result;
+                    if (!controller.signal.aborted) {
+                      this._state[key] = value;
+                    }
+                  } catch (e) {
+                    if (e.name !== 'AbortError') throw e;
+                  }
+                })());
+              } else {
+                this._stateTarget[key] = result;
+              }
+            }
+            if (promises.length > 0) {
+              await Promise.all(promises);
+            }
           }
 
           _render() {
@@ -390,7 +466,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
               const slotFunction = module.default.defaultValues && module.default.defaultValues['slots_method_' + slotName];
 
               if (slotFunction && typeof slotFunction === 'function') {
-                const computedResult = slotFunction(projectedNodes || [], this._properties);
+                const computedResult = slotFunction(projectedNodes || [], this._state);
                 if (typeof computedResult === 'string') {
                   const tempDiv = document.createElement('div');
                   tempDiv.innerHTML = computedResult;
@@ -453,7 +529,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 element.setAttribute('data-testid', dynamicId);
               }
 
-              this._properties[\`ref_\${refName}\`] = dynamicId;
+              this._stateTarget[\`ref_\${refName}\`] = dynamicId;
             }
           }
 
@@ -466,6 +542,10 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
               this._observer.disconnect();
               this._observer = null;
             }
+            for (const controller of this._getterControllers.values()) {
+              controller.abort();
+            }
+            this._getterControllers.clear();
           }
         }
         customElements.define(module.default.componentId, ComponentElement);

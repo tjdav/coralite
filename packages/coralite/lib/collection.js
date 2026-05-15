@@ -268,7 +268,7 @@ CoraliteCollection.prototype.updateItem = async function (value) {
     }
   }
 
-  // update core properties
+  // update core state
   if (value.content !== undefined) {
     originalValue.content = value.content
   }
@@ -283,9 +283,9 @@ CoraliteCollection.prototype.updateItem = async function (value) {
     originalValue.type = value.type
   }
 
-  // update any additional properties
-  if (value.properties !== undefined) {
-    originalValue.properties = value.properties
+  // update any additional state
+  if (value.state !== undefined) {
+    originalValue.state = value.state
   }
 
   return originalValue

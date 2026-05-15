@@ -53,13 +53,27 @@
  */
 
 /**
+ * @callback CoraliteModuleDataFunction
+ * @param {CoralitePluginContext} context
+ * @returns {Object | Promise<Object>}
+ */
+
+/**
+ * @callback CoraliteModuleGetterFunction
+ * @param {CoraliteModuleDefinitions} state
+ * @param {Object} [options]
+ * @param {AbortSignal} [options.signal]
+ * @returns {any | Promise<any>}
+ */
+
+/**
  * @typedef {CoraliteModuleDefinitions | CoraliteModulePropertiesFunction} CoraliteModuleProperties
  */
 
 /**
  * @callback CoraliteModuleSlotFunction
  * @param {CoraliteAnyNode[]} slotNodes - The parsed HTML nodes for the slot content
- * @param {CoraliteModuleDefinitions} properties - The current component values
+ * @param {CoraliteModuleDefinitions} state - The current component values
  * @returns {CoraliteAnyNode[] | string | void} - The processed nodes, an HTML string, or void to use original content
  */
 

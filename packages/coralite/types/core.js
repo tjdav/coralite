@@ -9,7 +9,7 @@
  * Represents HTML file data including path and raw content.
  * @typedef {Object} HTMLData
  * @property {'page'|'component'} [type] - The type of HTML file. 'page' for main pages, 'component' for reusable components.
- * @property {CoraliteModuleDefinitions} [properties] - The initial values for the HTML module.
+ * @property {CoraliteModuleDefinitions} [state] - The initial values for the HTML module.
  * @property {CoraliteFilePath} path - The file's path information within the project structure.
  * @property {string} [content] - The raw HTML string contents of the file (optional, may be omitted for templates).
  */

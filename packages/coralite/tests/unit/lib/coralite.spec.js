@@ -96,7 +96,7 @@ describe('Coralite', () => {
   })
 
   describe('onBeforePageRender hook', () => {
-    it('should be called before rendering each page with component, properties, and renderContext', async () => {
+    it('should be called before rendering each page with component, state, and renderContext', async () => {
       let hookCalledCount = 0
       let hookContext = null
 
@@ -107,7 +107,7 @@ describe('Coralite', () => {
           hookContext = context
 
           // Test mutation
-          context.properties.injectedGlobal = 'test'
+          context.state.injectedGlobal = 'test'
 
           // Modifying AST
           context.component.root.children.push({
@@ -131,7 +131,7 @@ describe('Coralite', () => {
       assert.strictEqual(hookCalledCount, 1, 'onBeforePageRender hook should be called exactly once for 1 page')
       assert.ok(hookContext, 'context should be passed to the hook')
       assert.ok(hookContext.component, 'component should be present in context')
-      assert.ok(hookContext.properties, 'properties should be present in context')
+      assert.ok(hookContext.state, 'state should be present in context')
       assert.ok(hookContext.renderContext, 'renderContext should be present in context')
 
       const html = results[0].content
@@ -363,11 +363,11 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     })
   })
 
-  it('preserves properties context into child components nested dependencies', async () => {
+  it('preserves state context into child components nested dependencies', async () => {
     const parentPlugin = {
       name: 'parent-plugin',
-      onPageSet: async ({ properties }) => {
-        properties.special_value = 'i-am-preserved'
+      onPageSet: async ({ state }) => {
+        state.special_value = 'i-am-preserved'
       }
     }
 
@@ -387,9 +387,9 @@ describe('Bug Fix: Preserving recursive tokens', () => {
 <script type="module">
 import { defineComponent } from 'coralite/plugins'
 export default defineComponent({
-  properties: (context) => ({
-    checkValue: context.properties.special_value || 'missing'
-  })
+  getters: {
+    checkValue: (state) => state.special_value || 'missing'
+  }
 })
 </script>
 `
@@ -409,6 +409,6 @@ export default defineComponent({
     const pageResult = results.find(r => r.path && r.path.filename === 'index.html')
     const htmlOutput = pageResult ? pageResult.content : ''
 
-    assert.ok(htmlOutput.includes('<div>i-am-preserved</div>'), 'nested child token properties should receive context properties')
+    assert.ok(htmlOutput.includes('<div>i-am-preserved</div>'), 'nested child token state should receive context state')
   })
 })

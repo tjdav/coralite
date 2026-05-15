@@ -124,7 +124,7 @@ describe('ScriptManager', () => {
       assert.strictEqual(sm.scriptModules[0].context.test, helper)
     })
 
-    it('should skip context that are not own properties', async () => {
+    it('should skip context that are not own state', async () => {
       const protoHelpers = { inherited: () => 'inherited' }
       const context = Object.create(protoHelpers)
       context.own = () => 'own'
@@ -137,7 +137,7 @@ describe('ScriptManager', () => {
       // But compileAllInstances checks Object.hasOwn.
       // So we check if scriptModules has the helper.
       assert.strictEqual(sm.scriptModules[0].context, context)
-      // The verification of skipping inherited properties happens during compilation (esbuild onLoad).
+      // The verification of skipping inherited state happens during compilation (esbuild onLoad).
     })
 
     it('should return this for method chaining', async () => {
@@ -400,7 +400,7 @@ describe('ScriptManager', () => {
     it('should generate wrapper with values', () => {
       const instanceContext = {
         instanceId: 'inst-1',
-        properties: {
+        state: {
           count: 5,
           name: 'test'
         }
@@ -410,7 +410,7 @@ describe('ScriptManager', () => {
 
       assert.ok(result.includes('await coraliteComponentFunctions["component-1"]'))
       assert.ok(result.includes('instanceId: \'inst-1\''))
-      assert.ok(result.includes('properties:'))
+      assert.ok(result.includes('state:'))
       assert.ok(result.includes('count'))
       assert.ok(result.includes('name'))
     })
@@ -422,14 +422,14 @@ describe('ScriptManager', () => {
 
       const result = sm.generateInstanceWrapper('component-2', instanceContext)
 
-      assert.ok(result.includes('properties: {}'))
+      assert.ok(result.includes('state: {}'))
       assert.ok(result.includes('instanceId: \'inst-2\''))
     })
 
     it('should handle instance context with refs', () => {
       const instanceContext = {
         instanceId: 'inst-3',
-        properties: {
+        state: {
           x: 1,
           ref_button: 'element'
         }
@@ -438,13 +438,13 @@ describe('ScriptManager', () => {
       const result = sm.generateInstanceWrapper('component-3', instanceContext)
 
       assert.ok(result.includes('instanceId: \'inst-3\''))
-      assert.ok(result.includes('properties:'))
+      assert.ok(result.includes('state:'))
     })
 
     it('should serialize complex values', () => {
       const instanceContext = {
         instanceId: 'inst-4',
-        properties: {
+        state: {
           nested: {
             a: 1,
             b: [1, 2, 3]
@@ -465,7 +465,7 @@ describe('ScriptManager', () => {
 
       const result = sm.generateInstanceWrapper('component-5', instanceContext)
 
-      assert.ok(result.includes('properties: {}'))
+      assert.ok(result.includes('state: {}'))
       assert.ok(result.includes('instanceId: \'undefined\''))
     })
 
@@ -507,7 +507,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          properties: { count: 5 },
+          state: { count: 5 },
           component: {}
         }
       }
@@ -535,7 +535,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'shared',
           instanceId: 'inst-1',
-          properties: {
+          state: {
             x: 1,
             y: 2
           },
@@ -544,7 +544,7 @@ describe('ScriptManager', () => {
         'inst-2': {
           componentId: 'shared',
           instanceId: 'inst-2',
-          properties: {
+          state: {
             x: 3,
             y: 4
           },
@@ -572,13 +572,13 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'component1',
           instanceId: 'inst-1',
-          properties: { a: 1 },
+          state: { a: 1 },
           component: {}
         },
         'inst-2': {
           componentId: 'component2',
           instanceId: 'inst-2',
-          properties: { b: 2 },
+          state: { b: 2 },
           component: {}
         }
       }
@@ -595,8 +595,8 @@ describe('ScriptManager', () => {
       sm.registerComponent({
         id: 'test',
         script: {
-          content: `({ double, properties }) => {
-            return double(properties.x)
+          content: `({ double, state }) => {
+            return double(state.x)
           }`
         }
       })
@@ -605,7 +605,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          properties: { x: 5 },
+          state: { x: 5 },
           component: {}
         }
       }
@@ -631,7 +631,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          properties: {
+          state: {
             ref_button: 'element'
           },
           component: {}
@@ -657,7 +657,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          properties: {},
+          state: {},
           page: { meta: { title: 'Test Page' } }
         }
       }
@@ -679,7 +679,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'nonexistent',
           instanceId: 'inst-1',
-          properties: {},
+          state: {},
           component: {}
         }
       }
@@ -704,7 +704,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'async',
           instanceId: 'inst-1',
-          properties: { x: 42 },
+          state: { x: 42 },
           component: {}
         }
       }
@@ -735,7 +735,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'complex',
           instanceId: 'inst-1',
-          properties: {
+          state: {
             message: 'Hello World',
             ref_element: 'div'
           },
@@ -759,7 +759,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId: 'test',
           instanceId: 'inst-1',
-          properties: { x: 1 },
+          state: { x: 1 },
           component: {}
         }
       }
@@ -792,7 +792,7 @@ describe('ScriptManager', () => {
       sm.registerComponent({
         id: 'calculator',
         script: {
-          properties: {},
+          state: {},
           lineOffset: 0,
           content: `({ double, values }) => {
             const sum = context.add(context.values.a, context.values.b)
@@ -811,7 +811,7 @@ describe('ScriptManager', () => {
         'calc-1': {
           componentId: 'calculator',
           instanceId: 'calc-1',
-          properties: {
+          state: {
             a: 2,
             b: 3,
             multiplier: 10
@@ -907,7 +907,7 @@ describe('ScriptManager', () => {
       assert.strictEqual(registered.script, script)
     })
 
-    it('should handle instance with missing properties', async () => {
+    it('should handle instance with missing state', async () => {
       sm.registerComponent({
         id: 'test',
         script: { content: "() => 'test'" }
@@ -934,7 +934,7 @@ describe('ScriptManager', () => {
       for (let i = 0; i < 100; i++) {
         instances[`inst-${i}`] = {
           componentId: 'test',
-          properties: { x: i },
+          state: { x: i },
           component: {}
         }
       }
@@ -985,7 +985,7 @@ describe('ScriptManager', () => {
       assert.ok(sm.contextProps.complex.includes('nested'))
     })
 
-    it('should handle component that uses all context properties', async () => {
+    it('should handle component that uses all context state', async () => {
       sm.registerComponent({
         id: 'full',
         script: {
@@ -998,7 +998,7 @@ describe('ScriptManager', () => {
       const instances = {
         'inst-1': {
           componentId: 'full',
-          properties: {
+          state: {
             x: 1,
             ref_el: 'div'
           },
@@ -1073,7 +1073,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           componentId,
           instanceId: 'inst-1',
-          properties: { message: 'Hello' }
+          state: { message: 'Hello' }
         }
       }
 
@@ -1124,7 +1124,7 @@ describe('ScriptManager', () => {
         'inst-1': {
           instanceId: '1',
           componentId: 'test',
-          properties: {},
+          state: {},
           component: {}
         }
       }
@@ -1162,7 +1162,7 @@ describe('ScriptManager', () => {
         inst1: {
           instanceId: 'inst1',
           componentId: 'temp1',
-          properties: {},
+          state: {},
           component: {}
         }
       }
@@ -1196,7 +1196,7 @@ describe('ScriptManager', () => {
         inst1: {
           instanceId: 'inst1',
           componentId: 'temp1',
-          properties: {},
+          state: {},
           component: {}
         }
       }

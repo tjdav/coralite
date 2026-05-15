@@ -173,7 +173,7 @@ export function definePlugin ({
       )
     }
 
-    // Validate optional client properties
+    // Validate optional client state
     if (client.setup != null && typeof client.setup !== 'function') {
       throw new Error(
         `Coralite plugin validation failed: "client.setup" must be a function, received ${typeof client.setup}`
@@ -210,7 +210,7 @@ export function definePlugin ({
     }
   }
 
-  // Create the plugin object with all configured properties
+  // Create the plugin object with all configured state
   return {
     name,
     method,

@@ -10,10 +10,10 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    properties: async (context) => {
+    state: async (context) => {
       return {
-        title: context.properties.title || 'Initial',
-        status: context.properties.status || 'Offline'
+        title: context.state.title || 'Initial',
+        status: context.state.status || 'Offline'
       }
     },
     script: (context) => {

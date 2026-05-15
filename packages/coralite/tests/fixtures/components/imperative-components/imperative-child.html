@@ -9,10 +9,10 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    properties: async (context) => {
+    state: async (context) => {
       return {
-        title: context.properties.title || 'No Title',
-        dataDisplay: context.properties.id ? `Fetched data for ${context.properties.id}` : 'No Data'
+        title: context.state.title || 'No Title',
+        dataDisplay: context.state.id ? `Fetched data for ${context.state.id}` : 'No Data'
       }
     },
     script: async (context) => {

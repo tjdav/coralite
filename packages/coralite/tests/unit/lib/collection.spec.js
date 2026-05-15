@@ -194,12 +194,12 @@ describe('CoraliteCollection', () => {
   })
 
   describe('updateItem', () => {
-    it('should update existing item properties', async () => {
+    it('should update existing item state', async () => {
       /** @type {HTMLData} */
       const item = {
         type: 'page',
         content: '<h1>Original</h1>',
-        properties: { key: 'value1' },
+        state: { key: 'value1' },
         path: {
           pathname: path.join(testDir, 'test.html'),
           dirname: testDir,
@@ -213,14 +213,14 @@ describe('CoraliteCollection', () => {
       const updatedItem = {
         ...item,
         content: '<h1>Updated</h1>',
-        properties: { key: 'value2' },
+        state: { key: 'value2' },
         type: 'component'
       }
 
       const result = await collection.updateItem(updatedItem)
 
       assert.strictEqual(result.content, '<h1>Updated</h1>')
-      assert.deepStrictEqual(result.properties, { key: 'value2' })
+      assert.deepStrictEqual(result.state, { key: 'value2' })
       assert.strictEqual(result.type, 'component')
     })
 

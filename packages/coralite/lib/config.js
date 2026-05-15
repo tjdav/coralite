@@ -14,7 +14,7 @@ export function defineConfig (options) {
     throw new Error('Config must be an object')
   }
 
-  // Validate required string properties
+  // Validate required string state
   const requiredProps = ['output', 'components', 'pages']
 
   for (const prop of requiredProps) {

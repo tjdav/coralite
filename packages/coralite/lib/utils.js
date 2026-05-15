@@ -58,7 +58,7 @@ export function cleanKeys (object) {
 }
 
 /**
- * Recursively clones an object or array and normalizes any function properties
+ * Recursively clones an object or array and normalizes any function state
  * it finds into a string representation that preserves standard function syntax,
  * bypassing ES6 shorthand method serialization issues.
  * @param {any} target - The object or array to normalize.
@@ -244,7 +244,7 @@ export function cloneNode (nodeMap, node, parent) {
 /**
  * Creates a shallow copy of a CoraliteModule with a deep clone of its DOM tree (template) and re-linked internal references to enable safe independent mutation.
  *
- * Top-level non-DOM properties (id, path, script, isTemplate, lineOffset) are shallow copied. Nested objects within these properties (e.g., path) remain shared references. Only DOM-related structures undergo deep cloning and reference re-linking to isolate mutations from the original module.
+ * Top-level non-DOM state (id, path, script, isTemplate, lineOffset) are shallow copied. Nested objects within these state (e.g., path) remain shared references. Only DOM-related structures undergo deep cloning and reference re-linking to isolate mutations from the original module.
  *
  * @param {CoraliteModule} originalModule - Module to clone.
  * @returns {CoraliteModule}
@@ -391,7 +391,7 @@ export function cloneComponentInstance (originalDocument) {
 
   return {
     ...originalDocument,
-    properties: { ...originalDocument.properties },
+    state: { ...originalDocument.state },
     root: newRoot,
     customElements: newCustomElements,
     tempElements: newTempElements,
@@ -488,7 +488,7 @@ export function findAndExtractScript (code) {
 }
 
 /**
- * Extracts and normalizes the properties content from a component definition.
+ * Extracts and normalizes the state content from a component definition.
  *
  * @param {string} code - The raw script content
  * @returns {ScriptContent | null}
@@ -513,14 +513,14 @@ export function findAndExtractProperties (code) {
         const firstArg = node.arguments[0]
 
         if (firstArg && firstArg.type === 'ObjectExpression') {
-          const propertiesProp = firstArg.properties.find(
+          const stateProp = firstArg.properties.find(
             prop => prop.type === 'Property' &&
               prop.key && prop.key.type === 'Identifier' &&
-              prop.key.name === 'properties'
+              prop.key.name === 'state'
           )
 
-          if (propertiesProp && propertiesProp.type === 'Property') {
-            const { value, method } = propertiesProp
+          if (stateProp && stateProp.type === 'Property') {
+            const { value, method } = stateProp
             let startLine = value.loc.start.line - 1
             let prefix = ''
             let content = ''
@@ -534,9 +534,9 @@ export function findAndExtractProperties (code) {
             } else if (value.type === 'FunctionExpression') {
               if (method) {
                 const isAsync = value.async
-                prefix += (isAsync ? 'async ' : '') + 'function properties'
+                prefix += (isAsync ? 'async ' : '') + 'function state'
                 content = prefix + source
-                startLine = propertiesProp.key.loc.start.line - 1
+                startLine = stateProp.key.loc.start.line - 1
               } else {
                 content = prefix + source
                 startLine = value.loc.start.line - 1
@@ -753,6 +753,99 @@ export function findAndExtractImperativeComponents (code) {
   } catch (err) {
     return []
   }
+}
+
+/**
+ * Creates a reactive proxy that triggers a callback on changes.
+ * Supports deep reactivity via lazy proxying of nested objects.
+ *
+ * @param {Object} target - The object to proxy.
+ * @param {Function} onChange - Callback triggered when a property is set or deleted.
+ * @param {WeakMap} [proxies=new WeakMap()] - Cache for existing proxies to handle circular references and identity.
+ * @returns {Proxy} The reactive proxy.
+ */
+export function createReactiveProxy (target, onChange, proxies = new WeakMap()) {
+  if (proxies.has(target)) {
+    return proxies.get(target)
+  }
+
+  const handler = {
+    get (target, property, receiver) {
+      const value = Reflect.get(target, property, receiver)
+      if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
+        return createReactiveProxy(value, onChange, proxies)
+      }
+      return value
+    },
+    set (target, property, value, receiver) {
+      const oldValue = target[property]
+      if (oldValue === value && property in target) {
+        return true
+      }
+
+      const result = Reflect.set(target, property, value, receiver)
+      if (result) {
+        onChange({
+          property,
+          value,
+          oldValue,
+          target
+        })
+      }
+      return result
+    },
+    deleteProperty (target, property) {
+      const hadProperty = Object.prototype.hasOwnProperty.call(target, property)
+      const oldValue = target[property]
+      const result = Reflect.deleteProperty(target, property)
+      if (result && hadProperty) {
+        onChange({
+          property,
+          value: undefined,
+          oldValue,
+          target,
+          deleted: true
+        })
+      }
+      return result
+    }
+  }
+
+  const proxy = new Proxy(target, handler)
+  proxies.set(target, proxy)
+  return proxy
+}
+
+/**
+ * Creates a read-only proxy that throws on mutation attempts.
+ * @param {Object} target - The object to proxy.
+ * @param {WeakMap} [proxies=new WeakMap()] - Cache for existing proxies.
+ * @returns {Proxy} The read-only proxy.
+ */
+export function createReadOnlyProxy (target, proxies = new WeakMap()) {
+  if (proxies.has(target)) {
+    return proxies.get(target)
+  }
+
+  const handler = {
+    get (target, property, receiver) {
+      const value = Reflect.get(target, property, receiver)
+      if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
+        return createReadOnlyProxy(value, proxies)
+      }
+      return value
+    },
+    set () {
+      throw new Error('Coralite Error: Cannot mutate state inside a getter. State is read-only here.')
+    },
+    deleteProperty () {
+      throw new Error('Coralite Error: Cannot delete state inside a getter. State is read-only here.')
+    }
+  }
+
+  const proxy = new Proxy(target, handler)
+  proxies.set(target, proxy)
+  return proxy
 }
 
 /**

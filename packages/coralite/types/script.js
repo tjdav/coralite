@@ -10,11 +10,14 @@
  * @typedef {Object} ScriptContent
  * @property {string} [content] - Script string content
  * @property {string} [setupContent] - Setup string content
- * @property {Object.<string, CoraliteModuleDefinition>} [properties]
+ * @property {Object.<string, CoraliteModuleDefinition>} [state]
  * @property {number} [lineOffset] - Script offset number.
  * @property {string[]} [components] - Imperative components array.
  * @property {Object} [defaultValues] - Initial state from setup.
  * @property {Object.<string, CoraliteModuleSlotFunction>} [slots] - Computed slots.
+ * @property {Object} [attributes] - Attribute schema.
+ * @property {Object} [getters] - Isomorphic getters.
+ * @property {Object} [data] - Hydrated server data.
  */
 
 /**
@@ -32,17 +35,18 @@
  * @property {string} instanceId - Unique instance identifier
  * @property {string} [componentId] - component identifier for shared functions
  * @property {CoralitePath & CoraliteFilePath} [path] - Component AST
- * @property {Object.<string, CoraliteModuleDefinition>} [properties] - Instance properties
+ * @property {Object.<string, CoraliteModuleDefinition>} [state] - Instance state
  * @property {CoralitePage} [page] - The global page object
  * @property {HTMLElement} [root] - The custom element instance (available in browser runtime)
  * @property {Object.<string, string>} [refs] - Instance refs
+ * @property {Object} [state] - Reactive state proxy.
  * @property {AbortSignal} [signal] - Lifecycle abort signal for unmount events (null for declarative components).
  */
 
 /**
  * @typedef {Object} ScriptPluginHelperGlobalContext
  * @property {Object.<string, any>} [config] - Plugin configuration
- * @property {Object.<string, CoraliteModuleDefinition>} [properties] - Global context properties
+ * @property {Object.<string, CoraliteModuleDefinition>} [state] - Global context state
  */
 
 /**
@@ -71,7 +75,8 @@
  * @typedef {Object} InstanceContext
  * @property {string} instanceId - Unique instance identifier
  * @property {string} componentId - component identifier
- * @property {Object.<string, CoraliteModuleDefinition>} properties - Instance properties
+ * @property {Object.<string, CoraliteModuleDefinition>} state - Instance state
+ * @property {Object} [renderContext] - Build-time render context.
  * @property {CoralitePage} [page] - The global page object
  * @property {Object.<string, string>} [refs] - Instance refs
  */

@@ -10,7 +10,7 @@
  * @import { CoraliteComponent, CoraliteResult, ParseHTMLResult, CoraliteToken, CoraliteAttributeToken, CoraliteTextNodeToken, CoraliteRef, CoraliteComponentValues, Attribute, CoraliteComponentResult } from './component.js'
  *
  * MODULES
- * @import { CoraliteModule, CoraliteModuleDefinitions, CoraliteModuleDefinition, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleProperties, CoraliteModulePropertiesFunction, CoraliteModuleSlotFunction } from './module.js'
+ * @import { CoraliteModule, CoraliteModuleDefinitions, CoraliteModuleDefinition, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleProperties, CoraliteModulePropertiesFunction, CoraliteModuleSlotFunction, CoraliteModuleDataFunction, CoraliteModuleGetterFunction } from './module.js'
  *
  * COLLECTIONS
  * @import { CoraliteCollectionItem, CoraliteCollectionCallbackResult, CoraliteCollectionEventResult, CoraliteCollectionEventSet, CoraliteCollectionEventDelete, CoraliteCollectionEventUpdate } from './collection.js'
@@ -75,6 +75,8 @@
  * @typedef {import('./module.js').CoraliteModuleProperties} CoraliteModuleProperties
  * @typedef {import('./module.js').CoraliteModulePropertiesFunction} CoraliteModulePropertiesFunction
  * @typedef {import('./module.js').CoraliteModuleSlotFunction} CoraliteModuleSlotFunction
+ * @typedef {import('./module.js').CoraliteModuleDataFunction} CoraliteModuleDataFunction
+ * @typedef {import('./module.js').CoraliteModuleGetterFunction} CoraliteModuleGetterFunction
  */
 
 /**

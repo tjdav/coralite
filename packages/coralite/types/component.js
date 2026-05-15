@@ -14,7 +14,7 @@
  * @property {Array<string | Attribute>} ignoreByAttribute - An array of attribute names and values to ignore by element type.
  * @property {string[]} [styles] - Collected styles during build process
  * @property {Set<string>} [sharedStyles] - Set of processed shared style IDs
- * @property {CoraliteModuleDefinitions} [properties] - The initial definitions for the component.
+ * @property {CoraliteModuleDefinitions} [state] - The initial definitions for the component.
  * @property {CoralitePage} [page] - The global page object.
  * @property {CoraliteElement[]} [tempElements] - An array of temporary elements created during the parsing process.
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.
@@ -22,7 +22,7 @@
 
 /**
  * @typedef {Object} CoraliteComponentResult
- * @property {CoraliteModuleDefinitions} properties - The module definitions extracted from the component
+ * @property {CoraliteModuleDefinitions} state - The module definitions extracted from the component
  * @property {CoralitePage} [page] - The global page object.
  * @property {CoraliteElement[]} tempElements - Temporary elements created during processing
  * @property {CoraliteElement[]} [skipRenderElements] - An array of elements to skip rendering.

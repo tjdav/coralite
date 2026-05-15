@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert'
 import { definePlugin } from '#lib'
 
 describe('definePlugin', () => {
-  it('should validate basic plugin properties', () => {
+  it('should validate basic plugin state', () => {
     const plugin = definePlugin({
       name: 'test-plugin',
       method: () => {

@@ -7,7 +7,7 @@ import {
 } from '#lib'
 
 /**
- * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleProperties, CoraliteModuleDefinition, CoraliteModuleDefinitions, CoraliteProperties, CoraliteModuleSlotFunction, CoraliteModulePropertiesFunction } from '../types/index.js'
+ * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleProperties, CoraliteModuleDefinition, CoraliteModuleDefinitions, CoraliteProperties, CoraliteModuleSlotFunction, CoraliteModulePropertiesFunction, CoraliteModuleDataFunction, CoraliteModuleGetterFunction } from '../types/index.js'
  * @import { ScriptImport } from '../types/script.js'
  */
 
@@ -37,7 +37,7 @@ function replaceCustomElementWithTemplate (coraliteElement, element) {
  * @returns {Promise<any>} - Processed value
  */
 async function processTokenValue (value, context) {
-  const { excludeByAttribute, properties, module, createComponentElement, renderContext } = context
+  const { excludeByAttribute, state, module, createComponentElement, renderContext } = context
   // If not a string, return as-is
   if (typeof value !== 'string') {
     return value
@@ -57,7 +57,7 @@ async function processTokenValue (value, context) {
     const componentElement = await createComponentElement({
       contextId: `${module.path.pathname}${customElement.name}-${i}`,
       id: customElement.name,
-      properties,
+      state,
       element: customElement,
       module,
       index: i,
@@ -81,65 +81,73 @@ export const defineComponent = definePlugin({
   name: 'defineComponent',
   /**
    * This function defines a component plugin for the Coralite framework.
-   * It is used to register components with their associated properties and scripts.
+   * It is used to register components with their associated state and scripts.
    *
    * @param {Object} options - Configuration options for the component
-   * @param {CoraliteModulePropertiesFunction} [options.properties] - Component properties setup function or object.
+   * @param {Object.<string, { type: any, default?: any }>} [options.attributes] - Component attributes schema.
+   * @param {CoraliteModuleDataFunction} [options.data] - Component data fetching function (build-time).
+   * @param {Object.<string, CoraliteModuleGetterFunction>} [options.getters] - Isomorphic getters.
    * @param {Object.<string, CoraliteModuleSlotFunction>} [options.slots] - Computed slots for the component.
    * @param {CoraliteModuleScript} [options.script] - Script function that executes on the client-side.
-   * @returns {Promise<CoraliteModuleDefinitions>} A promise resolving to the module properties
+   * @returns {Promise<CoraliteModuleDefinitions>} A promise resolving to the module state
    *   associated with this component.
    */
   async method ({
-    properties: componentProperties,
+    attributes,
+    data,
+    getters,
     slots,
     script
   },
   context) {
     const {
-      properties,
+      state: initialState,
       module,
       root
     } = context
-    /** @type {CoraliteModuleDefinitions} */
-    let results = Object.assign({}, properties)
 
-    results.__script__ = {
-      properties: {},
+    // Validate attributes
+    if (attributes) {
+      for (const [key, value] of Object.entries(attributes)) {
+        if (value.type === Object || value.type === Array) {
+          throw new Error(`Coralite Error: Component "${module.id}" defines attribute "${key}" as ${value.type.name}. Object and Array types are blocked in attributes for V1.1 to prevent "JSON-in-HTML" anti-patterns. Use the data() block for complex data.`)
+        }
+      }
+    }
+    /** @type {CoraliteModuleDefinitions} */
+    let state = Object.assign({}, initialState)
+
+    state.__script__ = {
+      attributes: attributes || {},
+      getters: getters || {},
+      state: {},
       defaultValues: {},
       slots: slots || {}
     }
 
-    let initialValues = null
-    if (typeof componentProperties === 'function') {
-      initialValues = await componentProperties(context)
-    } else if (typeof componentProperties === 'object' && componentProperties !== null) {
-      initialValues = componentProperties
+    if (attributes) {
+      for (const [key, schema] of Object.entries(attributes)) {
+        if (schema.default !== undefined && state[key] === undefined) {
+          state[key] = schema.default
+        }
+      }
     }
 
-    if (initialValues) {
-      for (const key in initialValues) {
-        if (Object.prototype.hasOwnProperty.call(initialValues, key)) {
-          let result = initialValues[key]
-          results.__script__.defaultValues[key] = result
+    if (typeof data === 'function') {
+      const dataResult = await data(context)
+      if (dataResult) {
+        state.__script__.data = dataResult
+        Object.assign(state, dataResult)
+      }
+    }
 
-          if (typeof result === 'function') {
-            result = result(results)
-
-            if (result && typeof result?.then === 'function') {
-              result = await result
-            }
-          }
-
-          if (result) {
-            results[key] = await processTokenValue(result, {
-              ...context,
-              properties: results,
-              createComponentElement: this.createComponentElement.bind(this)
-            })
-          } else {
-            results[key] = result
-          }
+    if (getters) {
+      for (const [key, getter] of Object.entries(getters)) {
+        const result = getter(state)
+        if (result && typeof result.then === 'function') {
+          state[key] = await result
+        } else {
+          state[key] = result
         }
       }
     }
@@ -151,7 +159,7 @@ export const defineComponent = definePlugin({
           const computedSlot = slots[name]
 
           const methodKey = `slots_method_${name}`
-          results.__script__.defaultValues[methodKey] = computedSlot
+          state.__script__.defaultValues[methodKey] = computedSlot
 
           // slot content to compute
           const slotContent = []
@@ -172,14 +180,14 @@ export const defineComponent = definePlugin({
           }
 
           // compute slot nodes
-          const result = computedSlot(slotContent, results) || slotContent
+          const result = computedSlot(slotContent, state) || slotContent
 
           // append new slot nodes
           if (typeof result === 'string') {
             // process string result through unified processor
             const processedResult = await processTokenValue(result, {
               ...context,
-              properties: results,
+              state,
               createComponentElement: this.createComponentElement.bind(this)
             })
 
@@ -230,36 +238,34 @@ export const defineComponent = definePlugin({
       }
     }
     const hasScript = typeof script === 'function'
-    const hasProperties = initialValues && Object.keys(initialValues).length > 0
     const hasSlots = slots && Object.keys(slots).length > 0
 
-    if (hasScript || hasProperties || hasSlots) {
+    if (hasScript || hasSlots) {
       if (hasScript) {
         const scriptTextContent = script.toString().trim()
 
-        // include properties used in script
+        // include state used in script
         /** @type {Object.<string, CoraliteModuleDefinition>} */
         const args = {}
-        for (const key in results) {
-          if (!Object.hasOwn(results, key)) {
+        for (const key in state) {
+          if (!Object.hasOwn(state, key)) {
             continue
           }
 
           if (scriptTextContent.includes(key)) {
-            args[key] = results.__script__.defaultValues[key] !== undefined
-              ? results.__script__.defaultValues[key]
-              : results[key]
+            args[key] = state.__script__.defaultValues[key] !== undefined
+              ? state.__script__.defaultValues[key]
+              : state[key]
           }
         }
 
-        results.__script__.properties = args
+        state.__script__.state = args
       }
     } else {
       // remove custom element parent script
-      delete results.__script__
+      delete state.__script__
     }
 
-    return results
+    return state
   }
 })
-

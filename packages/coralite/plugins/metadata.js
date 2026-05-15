@@ -15,12 +15,12 @@ import { definePlugin } from '#lib'
  * @param {Object} context -
  * @param {ParseHTMLResult} context.elements - The parsed HTML elements including root
  * @param {CoralitePage} context.page - The global page object to store the extracted metadata
- * @param {Object.<string, any>} context.properties - The global properties object to store the extracted metadata
+ * @param {Object.<string, any>} context.state - The global state object to store the extracted metadata
  * @param {CoraliteCollectionItem} context.data - The file data currently being evaluated
  * @returns {Promise<void>}
  */
 async function extractMetadata (context) {
-  const { elements, properties, page, data } = context
+  const { elements, state, page, data } = context
   page.meta.lang = ''
 
   // loop through all children of the root element to process metadata in <head> tags.
@@ -51,7 +51,7 @@ async function extractMetadata (context) {
                 // process component slots by creating a component dynamically.
                 const componentElement = await this.createComponentElement({
                   id: element.name,
-                  properties,
+                  state,
                   element,
                   page,
                   root: elements.root,
@@ -94,10 +94,10 @@ async function extractMetadata (context) {
 
 export const metadataPlugin = definePlugin({
   name: 'metadata',
-  async onPageSet ({ elements, properties, page, data }) {
+  async onPageSet ({ elements, state, page, data }) {
     await extractMetadata.call(this, {
       elements,
-      properties,
+      state,
       page,
       data
     })
@@ -105,7 +105,7 @@ export const metadataPlugin = definePlugin({
   async onPageUpdate ({ elements, page, newValue }) {
     await extractMetadata.call(this, {
       elements,
-      properties: newValue.result.properties,
+      state: newValue.result.state,
       page,
       data: newValue
     })

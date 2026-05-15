@@ -10,7 +10,7 @@ export const testContextPlugin = definePlugin({
       testHelper: (globalContext) => {
         // Phase 1: Global Context
         return (localContext) => {
-          // Phase 2: Local Instance Context (receives properties, page, signal)
+          // Phase 2: Local Instance Context (receives state, page, signal)
           return function (selector) {
             // Phase 3: Callable utility
             const element = document.querySelector(selector)

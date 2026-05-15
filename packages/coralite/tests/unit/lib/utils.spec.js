@@ -142,7 +142,7 @@ describe('normalizeFunction', () => {
           return this._value
         }
       }
-      // Getters are accessed as properties, so we need to get the descriptor
+      // Getters are accessed as state, so we need to get the descriptor
       const descriptor = Object.getOwnPropertyDescriptor(obj, 'value')
       const result = normalizeFunction(descriptor.get)
       assert.strictEqual(result, 'get value () {\n          return this._value\n        }')

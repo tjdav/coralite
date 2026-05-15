@@ -1,5 +1,7 @@
 import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
+import { parse as parseJS } from 'acorn'
+import { simple as walkJS } from 'acorn-walk'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, findAndExtractImperativeComponents, astTransformer, addComponentAndDependencies, cleanAST, cleanValues } from './utils.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname } from 'node:path'
@@ -61,7 +63,7 @@ ScriptManager.prototype.use = async function (plugin) {
 
 /**
  * Get context object content string
- * @returns {string} String containing all context as object properties
+ * @returns {string} String containing all context as object state
  */
 ScriptManager.prototype.getClientContextContent = function () {
   let contextPropsStr = ''
@@ -179,12 +181,12 @@ ScriptManager.prototype.registerComponent = function ({
  * @returns {string} Generated script
  */
 ScriptManager.prototype.generateInstanceWrapper = function (id, instanceContext) {
-  const properties = instanceContext.properties ? serialize(instanceContext.properties) : '{}'
+  const state = instanceContext.state ? serialize(instanceContext.state) : '{}'
   const page = instanceContext.page ? serialize(instanceContext.page) : '{}'
 
   // Generate wrapper that calls shared functions with instance context
   return `await coraliteComponentFunctions["${id}"]({
-      properties: ${properties},
+      state: ${state},
       page: ${page},
       ...pluginContexts,
       instanceId: '${instanceContext.instanceId}'
@@ -205,7 +207,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, runSetup as runSetup_${i} } from "${moduleNamespace}${i}";\n`)
   }
 
-  // Setup client context properties
+  // Setup client context state
   const contextParts = [
     ...this.scriptModules.map((_, i) => `...clientContextProps_${i}`),
     this.getClientContextContent()
@@ -216,16 +218,16 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   };\n`)
 
   entryCodeParts.push(`const getSetups = async (context) => {
-    const properties = {};
+    const state = {};
     const results = await Promise.all([
       ${this.scriptModules.map((_, i) => `runSetup_${i}(context)`).join(',\n      ')}
     ]);
     for (const result of results) {
       if (result && typeof result === 'object') {
-        Object.assign(properties, result);
+        Object.assign(state, result);
       }
     }
-    return properties;
+    return state;
   }\n`)
 
   // Global setups initialization
@@ -353,9 +355,9 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       let componentEntryCode = ''
 
       const hasScript = this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.content && this.sharedFunctions[componentId].script.content.trim() !== 'function(){}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() {}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() { }'
-      const hasProperties = this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.propertiesContent
+      const hasState = this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.stateContent
 
-      if (hasScript || hasProperties) {
+      if (hasScript || hasState) {
         componentEntryCode += `import * as componentModule_${safeId} from "${namespace}${componentId}";\n`
       }
 
@@ -376,6 +378,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
         normalizedDefaults = normalizeObjectFunctions(this.sharedFunctions[componentId].defaultValues, astTransformer)
       }
       const defaults = serialize(normalizedDefaults)
+      const attributes = serialize(this.sharedFunctions[componentId].script?.attributes || {})
+      const getters = serialize(this.sharedFunctions[componentId].script?.getters || {})
       const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
 
       let normalizedSlots = this.sharedFunctions[componentId].slots || {}
@@ -390,12 +394,14 @@ export default {
   templateAST: ${templateAST},
   templateValues: ${templateValues},
   styles: ${styles},
+  attributes: ${attributes},
+  getters: ${getters},
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
   slots: (() => { const slots = ${slots}; return slots; })(),
   dependencies: ${dependencies},
   imports: {},
   script: ${hasScript ? `componentModule_${safeId}.script` : 'null'},
-  properties: ${hasProperties ? `componentModule_${safeId}.properties` : 'null'}
+  state: ${hasState ? `componentModule_${safeId}.state` : 'null'}
 };
 `
       entryPoints[componentId] = componentEntryCode
@@ -567,12 +573,12 @@ export default {
               return await setup(contextObject);
             };\n`
 
-            // Generate client context properties
+            // Generate client context state
             contents += 'export const clientContextProps = {\n'
             if (module.context) {
               for (const key in module.context) {
                 if (Object.hasOwn(module.context, key)) {
-                  if (['id', 'properties', 'page', 'root', 'signal'].includes(key)) {
+                  if (['id', 'state', 'page', 'root', 'signal'].includes(key)) {
                     throw new Error(`Reserved context key '${key}' cannot be used in plugin context.`)
                   }
                   const fn = normalizeFunction(module.context[key])
@@ -608,20 +614,75 @@ export default {
             const sharedFn = this.sharedFunctions[args.pluginData.componentId]
             let contents = ''
 
+
             if (sharedFn.script && sharedFn.script.content) {
               const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
-              contents += `${padding}export const script = ${sharedFn.script.content};\n`
+
+              // More robust way to strip 'data' from defineComponent call
+              let strippedContent = sharedFn.script.content
+
+              try {
+                const ast = parseJS(strippedContent, {
+                  ecmaVersion: 'latest',
+                  sourceType: 'module'
+                })
+                let dataStart = -1
+                let dataEnd = -1
+
+                walkJS(ast, {
+                  CallExpression (node) {
+                    if (node.callee.type === 'Identifier' && node.callee.name === 'defineComponent') {
+                      const firstArg = node.arguments[0]
+                      if (firstArg && firstArg.type === 'ObjectExpression') {
+                        const dataProp = firstArg.properties.find(p => p.type === 'Property' && p.key?.type === 'Identifier' && p.key?.name === 'data')
+                        // @ts-ignore
+                        if (dataProp && dataProp.type === 'Property') {
+                          // @ts-ignore
+                          dataStart = dataProp.start
+                          // @ts-ignore
+                          dataEnd = dataProp.end
+                        }
+                      }
+                    }
+                  }
+                })
+
+                if (dataStart !== -1) {
+                  let start = dataStart
+                  let end = dataEnd
+
+                  // Handle comma to avoid syntax errors
+                  const afterContent = strippedContent.slice(end)
+                  const trailingComma = afterContent.match(/^\s*,/)
+                  if (trailingComma) {
+                    end += trailingComma[0].length
+                  } else {
+                    const beforeContent = strippedContent.slice(0, start)
+                    const leadingComma = beforeContent.match(/,\s*$/)
+                    if (leadingComma) {
+                      start -= leadingComma[0].length
+                    }
+                  }
+                  strippedContent = strippedContent.slice(0, start) + strippedContent.slice(end)
+                }
+              } catch (e) {
+                // Fallback to regex if AST parsing fails
+                strippedContent = strippedContent.replace(/data\s*:\s*async\s*function\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* data stripped */')
+                strippedContent = strippedContent.replace(/async\s*data\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* data stripped */')
+              }
+
+              contents += `${padding}export const script = ${strippedContent};\n`
               contents += `export default script;\n`
             } else {
               contents += `export const script = null;\n`
               contents += `export default null;\n`
             }
 
-            if (sharedFn.script && sharedFn.script.propertiesContent) {
-              const padding = '\n'.repeat(Math.max(0, sharedFn.script.propertiesLineOffset || 0))
-              contents += `${padding}export const properties = ${sharedFn.script.propertiesContent};\n`
+            if (sharedFn.script && sharedFn.script.stateContent) {
+              const padding = '\n'.repeat(Math.max(0, sharedFn.script.stateLineOffset || 0))
+              contents += `${padding}export const state = ${sharedFn.script.stateContent};\n`
             } else {
-              contents += `export const properties = null;\n`
+              contents += `export const state = null;\n`
             }
 
             return {

@@ -27,7 +27,7 @@ describe('staticAssetPlugin', () => {
       async () => {
         await plugin.onBeforeBuild.call({ options: { output: '/dist' } })
       },
-      /staticAssetPlugin requires assets to have pkg and path properties when src is not provided\./
+      /staticAssetPlugin requires assets to have pkg and path state when src is not provided\./
     )
   })
 

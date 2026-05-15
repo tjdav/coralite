@@ -94,7 +94,7 @@ function isCoraliteNode (obj) {
 }
 
 /**
- * Checks if an object has a valid CoraliteElement structure with required properties.
+ * Checks if an object has a valid CoraliteElement structure with required state.
  * @param {any} obj - The object to check.
  * @returns {boolean} True if the object has valid CoraliteElement structure.
  */
@@ -106,7 +106,7 @@ function hasValidElementStructure (obj) {
 }
 
 /**
- * Checks if an object has a valid CoraliteTextNode structure with required properties.
+ * Checks if an object has a valid CoraliteTextNode structure with required state.
  * @param {any} obj - The object to check.
  * @returns {boolean} True if the object has valid CoraliteTextNode structure.
  */
@@ -116,7 +116,7 @@ function hasValidTextNodeStructure (obj) {
 }
 
 /**
- * Checks if an object has a valid CoraliteComment structure with required properties.
+ * Checks if an object has a valid CoraliteComment structure with required state.
  * @param {any} obj - The object to check.
  * @returns {boolean} True if the object has valid CoraliteComment structure.
  */
