@@ -41,13 +41,17 @@ A component definition consists of four primary blocks:
 * **Rule**: These receive a **Read-Only Proxy** of the state. They must never mutate state and cannot be `async`.
 * **Reactivity**: Automatically re-evaluated when any underlying state dependency changes.
 
-#### 4. `script({ state, root, signal })` (Client)
+#### 4. `script({ state, root, signal, refs, ...pluginContext })` (Client)
+
 * **Purpose**: The client-side controller for the component.
-* **Arguments**:
-  * `state`: A **Read/Write Mutable Proxy**. Mutations here trigger re-renders and getter updates.
-  * `root`: The custom element instance (Light DOM node).
-  * `signal`: An `AbortSignal` for cleanup (e.g., event listeners, fetch requests).
-* **Usage**: All DOM events, imperative mutations, and side-effects live here.
+* **Arguments** (Injected via Client Context):
+* `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
+* `root`: The custom element instance (the Light DOM node).
+* `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
+* `refs`: A dictionary of dynamically generated, globally unique IDs for elements marked with the `ref` attribute (provided by the Core `refs` plugin).
+* `...pluginContext`: **Extensible Boundary.** Any active Coralite plugin that augments the `client.context` will inject its properties directly into this destructured argument object.
+
+* **Usage**: All DOM events, imperative state mutations, third-party library initializations, and side-effects must live here.
 
 ### 3.2 The "Smart State, Dumb Template" Paradigm
 HTML templates in Coralite are strictly declarative and "dumb". They do not support JavaScript logic or dot-notation. The template can *only* render flat keys from the unified `state`.
