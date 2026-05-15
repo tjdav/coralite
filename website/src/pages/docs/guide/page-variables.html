@@ -3,7 +3,7 @@
 
 <head>
   <coralite-meta title="Coralite Page Variables: Built-in Path & URL Context"
-    description="Learn about the built-in context variables automatically injected into your components' values object by Coralite during the build phase."></coralite-meta>
+    description="Learn about the built-in context variables automatically injected into your components' state object by Coralite during the build phase."></coralite-meta>
   <link rel="stylesheet" href="/css/styles.css" inline-css>
 </head>
 
@@ -12,7 +12,7 @@
   <main class="container content">
     <h1 class="display">Core Concepts: Built-in Page Variables</h1>
 
-    <p>During the build phase, Coralite automatically injects several context variables into the <code>values</code> object of your components. These variables provide essential information about the current page's URL and file path, making it easy to create dynamic logic like highlighting active navigation links or generating breadcrumbs.</p>
+    <p>During the build phase, Coralite automatically injects several context variables into the <code>state</code> object of your components. These variables provide essential information about the current page's URL and file path, making it easy to create dynamic logic like highlighting active navigation links or generating breadcrumbs.</p>
 
     <p>These core variables all follow the <code>page_*</code> snake_case naming convention and are provided natively by the framework.</p>
 
@@ -37,7 +37,7 @@
 
     <coralite-heading level="h2" text="Example Usage"></coralite-heading>
 
-    <p>Because these variables are injected directly into the <code>values</code> object, you can reference them seamlessly within your components using tokens or computed properties.</p>
+    <p>Because these variables are injected directly into the <code>state</code> object, you can reference them seamlessly within your components using tokens or getters.</p>
 
     <p>Here is an example of a navigation link component that automatically adds an "active" class if the current URL matches its target URL:</p>
 
@@ -53,9 +53,12 @@
         import { defineComponent } from 'coralite/plugins'
 
         export default defineComponent({
-          tokens: {
-            // Computed token that checks if the href prop matches the current URL
-            activeClass: (values) => (values.href === values.page_url_pathname ? 'active' : '')
+          attributes: {
+            href: { type: String }
+          },
+          getters: {
+            // Getter that checks if the href matches the current URL
+            activeClass: (state) => (state.href === state.page_url_pathname ? 'active' : '')
           }
         })
       </script>

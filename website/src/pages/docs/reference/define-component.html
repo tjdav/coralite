@@ -25,7 +25,7 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
 
     <coralite-heading level="h2" text="Options Object (DefineComponentOptions)"></coralite-heading>
 
-    <p>The <code>defineComponent</code> function accepts a single configuration object with the following optional properties:</p>
+    <p>The <code>defineComponent</code> function accepts a single configuration object with the following isolated blocks:</p>
 
     <coralite-table>
       <tr slot="head">
@@ -34,35 +34,82 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
         <th>Description</th>
       </tr>
       <tr slot="body">
-        <td><code>properties</code></td>
-        <td><code>(context: CoraliteScriptContent) => Promise&lt;Record&lt;string, any&gt;&gt; | Record&lt;string, any&gt;</code></td>
-        <td>A server-side function or object used for data fetching and state computation. Its returned object is merged into the component's <code>properties</code> context. If a value is a function, it is evaluated as a computed property.</td>
+        <td><code>attributes</code></td>
+        <td><code>Record&lt;string, AttributeSchema&gt;</code></td>
+        <td>Defines and coerces HTML attributes into JS primitives.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>data</code></td>
+        <td><code>(context: CoraliteServerContext) => Promise&lt;Record&lt;string, any&gt;&gt;</code></td>
+        <td>A server-side async function for fetching initial state. Stripped from the client bundle.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>getters</code></td>
+        <td><code>Record&lt;string, (state: ReadonlyState) => any&gt;</code></td>
+        <td>Pure functions for derived state. Receives a read-only state proxy.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>script</code></td>
+        <td><code>(context: CoraliteScriptContext) => void</code></td>
+        <td>The client-side controller. Receives a read/write state proxy.</td>
       </tr>
       <tr slot="body">
         <td><code>slots</code></td>
         <td><code>Record&lt;string, CoraliteModuleSlotFunction&gt;</code></td>
-        <td>An object defining server-side or client-side processing functions for component slots.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>script</code></td>
-        <td><code>(context: CoraliteScriptContent) => void</code></td>
-        <td>The client-side function executed in the browser post-load.</td>
+        <td>Functions for processing and transforming slot content.</td>
       </tr>
     </coralite-table>
 
-    <coralite-heading level="h2" text="Type Definitions"></coralite-heading>
-
-    <coralite-heading level="h3" text="CoraliteModuleSlotFunction"></coralite-heading>
-
-    <coralite-code-highlight language="typescript">
-type CoraliteModuleSlotFunction = (slotNodes: NodeArray, context: CoraliteScriptContent) => NodeArray | string | void
+    <coralite-heading level="h2" text="1. attributes"></coralite-heading>
+    <p>The <code>attributes</code> block defines the inputs your component accepts from HTML. Coralite automatically coerces these values into the specified types.</p>
+    
+    <coralite-code-highlight language="javascript">
+attributes: { 
+    theme: { type: String, default: 'light' },
+    maxItems: { type: Number, default: 10 },
+    expanded: { type: Boolean, default: false }
+}
     </coralite-code-highlight>
 
-    <p>A function that processes slot content. It receives an array of nodes (AST nodes on the server, DOM elements on the client) and the runtime context, and can return an array of nodes, an HTML string, or void to fallback to the original slot content.</p>
+    <div class="alert alert-info">
+        <strong>Strict Primitive Rule:</strong> To prevent complex JSON-in-HTML parsing errors and ensure performance, attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code>. Use the <code>data</code> block or <code>slots</code> for complex data structures.
+    </div>
 
-    <coralite-heading level="h3" text="CoraliteScriptContent Context Object"></coralite-heading>
+    <coralite-heading level="h2" text="2. data (Server-Side)"></coralite-heading>
+    <p>The <code>data</code> block is used for heavy-lifting, such as database queries or API calls. This code runs <strong>only on the server</strong> during the build process and is completely removed from the JavaScript sent to the browser.</p>
 
-    <p>The flattened context object passed to the <code>script</code> execution block:</p>
+    <coralite-code-highlight language="javascript">
+async data(context) {
+    const users = await db.users.findMany();
+    return { users };
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="h2" text="3. getters (Derived State)"></coralite-heading>
+    <p>Getters are pure functions used to calculate derived data. They are reactive; if an attribute or a data value changes, the getter automatically re-calculates.</p>
+
+    <coralite-code-highlight language="javascript">
+getters: {
+    // state is a Read-Only Proxy here
+    visibleUsers: (state) => state.users.slice(0, state.maxItems)
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="h2" text="4. script (Client-Side)"></coralite-heading>
+    <p>The <code>script</code> block is the controller for your component in the browser. This is where you add event listeners and mutate state.</p>
+
+    <coralite-code-highlight language="javascript">
+script: ({ state, root, signal, refs, ...pluginContext }) => {
+    const btn = root.querySelector('#load-more');
+    
+    btn.addEventListener('click', () => {
+        // Imperative mutation!
+        state.maxItems += 10; 
+    }, { signal });
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="h3" text="CoraliteScriptContext"></coralite-heading>
 
     <coralite-table>
       <tr slot="head">
@@ -71,87 +118,38 @@ type CoraliteModuleSlotFunction = (slotNodes: NodeArray, context: CoraliteScript
         <th>Description</th>
       </tr>
       <tr slot="body">
-        <td><code>instanceId</code></td>
-        <td><code>string</code></td>
-        <td>A unique, autogenerated identifier for the specific mounted instance of the component (e.g., <code>my-widget-1a2b3c</code>).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>componentId</code></td>
-        <td><code>string</code></td>
-        <td>The generic component identifier or tag name (e.g., <code>my-widget</code>) defined in the template <code>id</code>.</td>
+        <td><code>state</code></td>
+        <td><code>Proxy</code></td>
+        <td>The <strong>Read/Write</strong> reactive state (Attributes + Data + Getters).</td>
       </tr>
       <tr slot="body">
         <td><code>root</code></td>
         <td><code>HTMLElement</code></td>
-        <td>The <strong>Light DOM element</strong>. This is the custom element instance itself (the wrapper node).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>module</code></td>
-        <td><code>CoraliteModule</code></td>
-        <td>Static metadata for the component, including the <strong>template AST</strong> and raw script.</td>
-      </tr>
-      <tr slot="body">
-        <td><code>properties</code></td>
-        <td><code>Record&lt;string, any&gt;</code></td>
-        <td>The processed token properties, props, and setup data.</td>
+        <td>The custom element instance (Light DOM node).</td>
       </tr>
       <tr slot="body">
         <td><code>signal</code></td>
-        <td><code>AbortSignal | null</code></td>
-        <td>An <code>AbortSignal</code> tied to the component's unmount lifecycle. Use this to prevent memory leaks in event listeners or fetch requests.</td>
+        <td><code>AbortSignal</code></td>
+        <td>Used for cleaning up event listeners and aborting fetches on unmount.</td>
       </tr>
       <tr slot="body">
         <td><code>page</code></td>
         <td><code>CoralitePage</code></td>
-        <td>The static environment object containing <code>url</code>, <code>file</code>, and <code>meta</code> information.</td>
+        <td>Static environment object (URL, file, meta).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>instanceId</code></td>
+        <td><code>string</code></td>
+        <td>A unique identifier for this specific instance.</td>
       </tr>
     </coralite-table>
 
-    <p><strong>Note:</strong> Plugin utilities (like <code>refs</code>) and <code>imports</code> are spread directly onto this context object and can be accessed as <code>context.refs</code>, <code>context.imports</code>, etc.</p>
+    <coralite-heading level="h2" text="5. slots"></coralite-heading>
+    <p>Allows you to intercept and transform content passed into your component's slots.</p>
 
-    <coralite-heading level="h2" text="Template IDs and Instance IDs"></coralite-heading>
-    <p>It is important to distinguish between the template <code>id</code> and the runtime <code>instanceId</code>:</p>
-    <ul>
-      <li><strong><code>id</code> / <code>componentId</code></strong>: Refers to the definition identifier (e.g., <code>&lt;template id="my-widget"&gt;</code>). This tells the framework <em>what</em> component to render.</li>
-      <li><strong><code>instanceId</code></strong>: Refers to the unique, mounted instance of that component. The framework assigns this unique identifier to the <code>context</code> during rendering so plugins and scripts can track specific DOM nodes.</li>
-    </ul>
-
-    <coralite-heading level="h2" text="Detailed Comparison: Property Definition Patterns"></coralite-heading>
-
-    <p>The <code>properties</code> option supports two patterns. Understanding the difference is critical for optimizing performance and ensuring reactivity.</p>
-
-    <coralite-table>
-      <tr slot="head">
-        <th>Feature</th>
-        <th>Top-level Function Pattern</th>
-        <th>Computed Object Pattern</th>
-      </tr>
-      <tr slot="body">
-        <td><strong>Syntax</strong></td>
-        <td><code>properties: async (context) => ({ ... })</code></td>
-        <td><code>properties: { key: (props) => value }</code></td>
-      </tr>
-      <tr slot="body">
-        <td><strong>Context Access</strong></td>
-        <td>Full access to <code>page</code>, <code>module</code>, and <code>renderContext</code>.</td>
-        <td>Restricted access; only receives current <code>properties</code>.</td>
-      </tr>
-      <tr slot="body">
-        <td><strong>Reactivity</strong></td>
-        <td><strong>Server-only.</strong> Returns static values to the client.</td>
-        <td><strong>Isomorphic.</strong> Re-runs in the browser on attribute changes.</td>
-      </tr>
-      <tr slot="body">
-        <td><strong>API Interaction</strong></td>
-        <td>Best for heavy data fetching (e.g., Database/REST).</td>
-        <td>Best for internal data transformations.</td>
-      </tr>
-      <tr slot="body">
-        <td><strong>Efficiency</strong></td>
-        <td>Processes many keys from one operation.</td>
-        <td>Each key is isolated and independent.</td>
-      </tr>
-    </coralite-table>
+    <coralite-code-highlight language="typescript">
+type CoraliteModuleSlotFunction = (slotNodes: Node[], state: any) => Node[] | string | void
+    </coralite-code-highlight>
 
   </main>
   <coralite-footer></coralite-footer>

@@ -329,7 +329,7 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
     <coralite-code-highlight language="JavaScript">/**
  * @param {Object} options
  * @param {string} options.id - id - Unique identifier for the component
- * @param {CoraliteModuleDefinitions} [options.properties={}] - Token properties available for replacement
+ * @param {Object} [options.state={}] - Initial state available for replacement
  * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
  * @param {CoraliteComponent} options.document - Current document being processed
  * @param {string} [options.contextId] - Context Id
@@ -339,9 +339,9 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
  *
  * @example
  * // example usage:
- * const component = await coralite.createComponentElement{
+ * const component = await coralite.createComponentElement({
  *   id: 'my-component',
- *   properties: {
+ *   state: {
  *     'some-value': 'value-for-component'
  *   },
  *   element: customElement,
@@ -350,7 +350,7 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
  *   index: 0
  * })
  */
-coralite.createComponentElementoptions)</coralite-code-highlight>
+coralite.createComponentElement(options)</coralite-code-highlight>
 
     <coralite-heading level="h3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
@@ -369,9 +369,9 @@ coralite.createComponentElementoptions)</coralite-code-highlight>
             <td>Unique identifier for the component</td>
           </tr>
           <tr>
-            <th scope="row">options.properties</th>
-            <td><code>CoraliteModuleDefinitions</code></td>
-            <td>Token properties available for replacement (default: {})</td>
+            <th scope="row">options.state</th>
+            <td><code>Object</code></td>
+            <td>Initial state available for replacement (default: {})</td>
           </tr>
           <tr>
             <th scope="row">options.element</th>

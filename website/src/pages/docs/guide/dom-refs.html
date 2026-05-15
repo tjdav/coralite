@@ -55,9 +55,7 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          script: (context) => {
-            // Extract the refs helper from the context
-            const { refs } = context
+          script: ({ state, root, signal, refs, ...pluginContext }) => {
 
             // Safe DOM element retrieval
             const input = refs('usernameInput')

@@ -107,7 +107,7 @@
     </coralite-code-highlight>
 
     <coralite-heading level="h2" text="Configuration Reference"></coralite-heading>
-    <p>The <code>defineConfig()</code> function validates and returns your configuration object. All properties are required unless marked as optional.</p>
+    <p>The <code>defineConfig()</code> function validates and returns your configuration object. All options are required unless marked as optional.</p>
 
     <coralite-heading level="h3" text="Required Properties"></coralite-heading>
     <div class="table-responsive">
@@ -192,7 +192,7 @@
     <coralite-heading level="h3" text="Configuration Validation"></coralite-heading>
     <p>The <code>defineConfig()</code> function performs validation and will throw errors for:</p>
     <ul>
-      <li>Missing required properties</li>
+      <li>Missing required options</li>
       <li>Invalid property types</li>
       <li>Invalid style types (must be 'css', 'sass', or 'scss')</li>
       <li>Invalid server port numbers</li>
@@ -366,7 +366,7 @@ coralite-scripts build</coralite-code-highlight>
             <th scope="row"><code>options</code></th>
             <td><code>CoraliteScriptConfig</code></td>
             <td>Yes</td>
-            <td>Configuration object with required and optional properties</td>
+            <td>Configuration object with required and optional options</td>
           </tr>
         </tbody>
       </table>
@@ -378,8 +378,8 @@ coralite-scripts build</coralite-code-highlight>
     <h4>Throws</h4>
     <ul>
       <li><code>Error</code> - If configuration is not a valid object</li>
-      <li><code>Error</code> - If required properties are missing or invalid</li>
-      <li><code>Error</code> - If optional properties have invalid types or properties</li>
+      <li><code>Error</code> - If required options are missing or invalid</li>
+      <li><code>Error</code> - If optional options have invalid types or options</li>
     </ul>
 
     <coralite-heading level="h3" text="Validation Rules"></coralite-heading>
@@ -643,7 +643,7 @@ kill -9 [PID]</coralite-code-highlight>
     <p><strong>Problem:</strong> <code>defineConfig()</code> throws validation errors</p>
     <p><strong>Solutions:</strong></p>
     <ul>
-      <li>Ensure all required properties are present</li>
+      <li>Ensure all required options are present</li>
       <li>Check property types match expected types</li>
       <li>Verify style type is one of: 'css', 'sass', 'scss'</li>
       <li>Ensure server.port is a positive number</li>

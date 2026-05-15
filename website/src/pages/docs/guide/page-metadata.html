@@ -73,7 +73,7 @@
 
     <p>The metadata plugin is smart enough to handle nested components. It recursively processes custom components placed inside the <code>&lt;head&gt;</code> tag.</p>
 
-    <p>This means you can create reusable metadata components, like an <code>&lt;seo-bundle&gt;</code>, that inject standard tags across your site. The plugin will render the component and extract any <code>&lt;meta&gt;</code> tags it generates into the global context.</p>
+    <p>This means you can create reusable metadata components, like an <code>&lt;seo-bundle&gt;</code>, that inject standard tags across your site. The plugin will render the component and extract any <code>&lt;meta&gt;</code> tags it generates into the global state.</p>
 
     <coralite-code-html>
       <!-- src/components/seo-bundle.html -->
@@ -93,7 +93,7 @@
       </head>
     </coralite-code-html>
 
-    <p>The resulting global context will include <code>meta_generator</code>, <code>meta_robots</code>, and <code>meta_theme-color</code>.</p>
+    <p>The resulting global state will include <code>meta_generator</code>, <code>meta_robots</code>, and <code>meta_theme-color</code>.</p>
 
   </main>
   <coralite-footer></coralite-footer>

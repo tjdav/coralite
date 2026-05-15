@@ -21,9 +21,9 @@
     <p>Authoring a plugin involves understanding how Coralite synthesizes server-side rendering and client-side hydration. When you register a plugin, Coralite integrates it through the following flow:</p>
 
     <ol>
-      <li><strong>Registration & Bootstrapping:</strong> Coralite loads your plugin via <code>definePlugin</code>, reading its <code>client.config</code> and executing its <code>client.context</code> setup to prepare client-side utilities.</li>
+      <li><strong>Registration & Bootstrapping:</strong> Coralite loads your plugin via <code>definePlugin</code>, reading its <code>client.config</code> and executing its <code>client.context</code> configuration to prepare client-side utilities.</li>
       <li><strong>Server Execution:</strong> As the generator processes pages and encounters dynamic components, it fires your plugin's lifecycle hooks (e.g., <code>onPageSet</code>, <code>onBeforePageRender</code>).</li>
-      <li><strong>Data Binding & Injection:</strong> Coralite processes the component's tokens, properties, and slots. Any server-fetched data is bridged into the component's <code>properties</code> object.</li>
+      <li><strong>Data Binding & Injection:</strong> Coralite processes the component's tokens, attributes, and slots. Any server-fetched data is bridged into the component's <code>state</code> object.</li>
       <li><strong>Client Hydration:</strong> Finally, Coralite serializes your component's <code>script</code> and your plugin's custom `client.context` utilities. When the browser loads the page, the utilities are securely flattened and spread directly onto the runtime context, enabling dynamic interactions.</li>
     </ol>
 

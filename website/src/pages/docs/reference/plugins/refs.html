@@ -13,7 +13,7 @@
   <main class="container content">
     <!-- Introduction -->
     <h1 class="display">refs Plugin</h1>
-    <p>The <code>refs</code> plugin is a built-in Coralite helper that provides runtime DOM element access. It allows template scripts to safely access and manipulate DOM elements by their <code>ref</code> attributes. The framework handles automatic unique ID generation by assigning the generated ID to the <code>ref</code> attribute, leaving the standard <code>id</code> attribute intact.</p>
+    <p>The <code>refs</code> plugin is a built-in Coralite helper that provides runtime DOM element access. It allows component scripts to safely access and manipulate DOM elements by their <code>ref</code> attributes. The framework handles automatic unique ID generation by assigning the generated ID to the <code>ref</code> attribute, leaving the standard <code>id</code> attribute intact.</p>
 
     <!-- Table of Contents -->
     <nav aria-label="table of contents">
@@ -39,10 +39,10 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite'
+          import { defineComponent } from 'coralite/plugins'
           
           export default defineComponent({
-            script ({ refs }) {
+            script ({ state, root, signal, refs, ...pluginContext }) {
               const username = refs('username')
               const password = refs('password')
               const submitBtn = refs('submitBtn')
@@ -54,7 +54,7 @@
                 } else {
                   alert('Please fill all fields')
                 }
-              })
+              }, { signal })
             }
           })
         </script>
@@ -69,7 +69,7 @@
       <coralite-code-html>
         <template id="counter">
           <div class="counter">
-            <h2>Count: {{ count }}</h2>
+            <h2 ref="display">Count: {{ currentCount }}</h2>
             <button type="button" ref="increment">+</button>
             <button type="button" ref="decrement">-</button>
             <button type="button" ref="reset">Reset</button>
@@ -77,38 +77,33 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite'
+          import { defineComponent } from 'coralite/plugins'
           
           export default defineComponent({
-            properties ({ properties }) {
-              const initial = parseInt(initial) || 0
-
-              return {
-                count: initial
-              }
+            attributes: {
+                initial: { type: Number, default: 0 }
             },
-            script ({ refs, root, properties }) {
+            data({ state }) {
+                return {
+                    currentCount: state.initial
+                }
+            },
+            script ({ state, root, signal, refs, ...pluginContext }) {
               const increment = refs('increment')
               const decrement = refs('decrement')
               const reset = refs('reset')
           
-              let count = properties.count
-              const counterDisplay = root.querySelector('h2')
-          
               increment.addEventListener('click', () => {
-                count++
-                counterDisplay.textContent = `Count: ${count}`
-              })
+                state.currentCount++
+              }, { signal })
           
               decrement.addEventListener('click', () => {
-                count--
-                counterDisplay.textContent = `Count: ${count}`
-              })
+                state.currentCount--
+              }, { signal })
           
               reset.addEventListener('click', () => {
-                count = 0
-                counterDisplay.textContent = `Count: ${count}`
-              })
+                state.currentCount = state.initial
+              }, { signal })
             }
           })
         </script>
@@ -131,10 +126,10 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite'
+          import { defineComponent } from 'coralite/plugins'
           
           export default defineComponent({
-            script ({ refs }) {
+            script ({ state, root, signal, refs, ...pluginContext }) {
               const email = refs('email')
               const password = refs('password')
               const emailError = refs('emailError')
@@ -172,7 +167,7 @@
                   console.log('Form submitted:', email.value)
                   // Submit form
                 }
-              })
+              }, { signal })
             }
           })
         </script>
@@ -196,10 +191,10 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite'
+          import { defineComponent } from 'coralite/plugins'
           
           export default defineComponent({
-            script ({ refs }) {
+            script ({ state, root, signal, refs, ...pluginContext }) {
               const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
               const contents = [refs('content1'), refs('content2'), refs('content3')]
           
@@ -216,7 +211,7 @@
                   // Update button states
                   buttons.forEach(b => b.classList.remove('active'))
                   btn.classList.add('active')
-                })
+                }, { signal })
               })
             }
           })

@@ -69,26 +69,26 @@
 
     <p>To do this, we add a <code>&lt;script type="module"&gt;</code> tag below our template and export the <code>defineComponent</code> function.</p>
 
-    <p>Let's update our <code>counter.html</code> to define an initial count value using <strong>Tokens</strong>. Tokens allow us to pass data into our component using double curly braces (<code>{{ }}</code>).</p>
+    <p>Let's update our <code>counter.html</code> to define an initial count value using <strong>Attributes</strong>. Attributes allow us to pass data into our component using double curly braces (<code>{{ }}</code>).</p>
 
     <coralite-code-html>
       <!-- src/components/counter.html -->
       <template id="my-counter">
         <div class="counter-box">
-          <!-- We replace the hardcoded 0 with our property -->
+          <!-- We replace the hardcoded 0 with our state key -->
           <h2>Count: <span class="count-display">{{ currentCount }}</span></h2>
           <button type="button" class="btn">Increment</button>
         </div>
       </template>
 
       <script type="module">
-        import { defineComponent } from 'coralite'
+        import { defineComponent } from 'coralite/plugins'
 
         export default defineComponent({
-          properties: () => ({
-            // Define our initial value
-            currentCount: 0
-          })
+          attributes: {
+            // Define our initial value via an attribute
+            currentCount: { type: Number, default: 0 }
+          }
         })
       </script>
     </coralite-code-html>
@@ -112,26 +112,21 @@
       </template>
 
       <script type="module">
-        import { defineComponent } from 'coralite'
+        import { defineComponent } from 'coralite/plugins'
 
         export default defineComponent({
-          properties: () => ({
-            currentCount: 0
-          }),
+          attributes: {
+            currentCount: { type: Number, default: 0 }
+          },
           // The script function runs in the browser!
-          script: ({ properties, refs }) => {
-            // 1. Get our elements using the refs helper
-            const display = refs('countDisplay')
+          script: ({ state, root, signal, refs, ...pluginContext }) => {
             const btn = refs('incrementBtn')
 
-            // 2. Set up our state
-            let count = properties.currentCount
-
-            // 3. Add an event listener
+            // Add an event listener using the provided signal for cleanup
             btn.addEventListener('click', () => {
-              count++
-              display.textContent = count
-            })
+              // Mutating state automatically updates the UI!
+              state.currentCount++
+            }, { signal })
           }
         })
       </script>
@@ -145,13 +140,13 @@
       <li>Create a static HTML template component.</li>
       <li>Use the component in a page.</li>
       <li>Turn it into a dynamic component using <code>defineComponent</code>.</li>
-      <li>Bind data using properties (<code>{{ }}</code>).</li>
-      <li>Add interactivity using <code>script</code> and the <code>refs</code> plugin.</li>
+      <li>Bind data using <code>state</code> and attributes.</li>
+      <li>Add interactivity using <code>script</code>, <code>state</code>, and the <code>refs</code> plugin.</li>
     </ul>
 
     <hr>
 
-    <p>Ready to learn more? Dive into the Core Concepts to master <a href="./static-components.html">Static Components</a> and <a href="./dynamic-components.html">Dynamic Components</a>.</p>
+    <p>Ready to learn more? Dive into the <a href="./core-concepts.html">Core Concepts</a> to master Coralite's philosophy.</p>
     
   </main>
   <coralite-footer></coralite-footer>

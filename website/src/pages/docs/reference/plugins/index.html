@@ -55,7 +55,8 @@
       <coralite-heading level="h3" text="Dynamic Components"></coralite-heading>
       <p>Dynamic components require a script tag and are used when you need:</p>
       <ul>
-        <li>Computed tokens or slots</li>
+        <li>Attributes or data fetching</li>
+        <li>Derived state via Getters</li>
         <li>Client-side JavaScript execution</li>
         <li>Access to plugin methods</li>
         <li>DOM element references</li>
@@ -73,21 +74,14 @@
           import { defineComponent } from 'coralite/plugins'
 
           export default defineComponent({
-            // State: Runs on the server.
-            properties (context) {
-              // We extract 'name' from the context (passed via HTML attributes)
-              const name = context.properties.name || 'Guest'
-
-    // Return the flat computed string directly to the template
-    return {
-                greeting: `Hello, ${name}!`
-              }
+            attributes: {
+              name: { type: String, default: 'Guest' }
             },
-          
-            // Behavior: Runs natively in the browser
-            script ({ refs }) {
+            getters: {
+              greeting: (state) => `Hello, ${state.name}!`
+            },
+            script: ({ state, root, signal, refs, ...pluginContext }) => {
               const btn = refs('actionBtn')
-          
               btn.addEventListener('click', () => {
                 console.log('Button clicked!')
               })
@@ -105,14 +99,14 @@
       <p>Use the <code>definePlugin</code> function to define a new plugin with configuration options:</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite'
+        import { definePlugin } from 'coralite/plugins'
 
         const myPlugin = definePlugin({
           name: 'my-plugin',
           method: (options, context) => {
             // Server-side logic
             return {
-              ...context.properties,
+              ...context.state,
               custom: 'data'
             }
           },
@@ -234,7 +228,7 @@
     <!-- Component-Level Plugins Section -->
     <section id="component-level-plugins">
       <coralite-heading level="h2" text="Component-Level Plugins"></coralite-heading>
-      <p>Component-level plugins provide methods that can be called inside <code>defineComponent</code> tokens and slots.
+      <p>Component-level plugins provide methods that can be called inside <code>defineComponent</code> getters and slots.
         These run during the build process and have access to the component's context.</p>
 
       <coralite-heading level="h3" text="Plugin Method Context"></coralite-heading>
@@ -251,7 +245,7 @@
           </thead>
           <tbody>
             <tr>
-              <td><code>properties</code></td>
+              <td><code>state</code></td>
               <td><code>Object</code></td>
               <td>Page metadata and element attributes</td>
             </tr>
@@ -280,8 +274,7 @@
       </div>
 
       <coralite-heading level="h3" text="Using Plugin Methods in Components"></coralite-heading>
-      <p>Import plugin methods from <code>coralite/plugins</code> and use them inside <code>defineComponent</code>
-        tokens:</p>
+      <p>Import plugin methods from <code>coralite/plugins</code> and use them inside <code>defineComponent</code>:</p>
 
       <coralite-code-html>
         <template id="user-profile">
@@ -293,22 +286,24 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite'
+          import { defineComponent } from 'coralite/plugins'
           import { formatDate } from 'coralite/plugins'
 
           export default defineComponent({
-            tokens: {
-              // Plugin method called with options
-              joinDate: (properties) => formatDate({
+            attributes: {
+                date: { type: String }
+            },
+            getters: {
+              joinDate: (state) => formatDate({
                 format: 'long'
-              }, properties.date)
+              }, state.date)
             }
           })
         </script>
       </coralite-code-html>
 
-      <coralite-heading level="h3" text="Context Properties Difference"></coralite-heading>
-      <p>It's important to understand the difference between properties passed to component scripts vs plugin methods:</p>
+      <coralite-heading level="h3" text="State and Context Difference"></coralite-heading>
+      <p>It's important to understand the difference between data passed to component scripts vs plugin methods:</p>
 
       <coralite-code-html>
         <!-- Page: user.html -->
@@ -324,34 +319,26 @@
       </coralite-code-html>
 
       <coralite-code-highlight language="JavaScript">
-        import { defineComponent } from 'coralite'
+        import { defineComponent } from 'coralite/plugins'
 
         export default defineComponent({
-          // State: Runs synchronously on the server
-          properties (context) {
-            // HTML attributes (e.g., <my-profile name="Alice" age="25">) 
-            // are cleanly exposed on context.properties without confusing '$' prefixes.
-            const name = context.properties.name || 'Guest'
-            const age = Number(context.properties.age) || 0
-
-            // Return flat keys to bridge them to the template and the client script
-            return {
-              userName: name,
-              age: age
-            }
+          attributes: {
+              age: { type: Number, default: 0 }
+          },
+          async data(context) {
+            // HTML attributes and page meta
+            const name = context.page.meta.name || 'Guest'
+            return { userName: name }
           },
           
-          // Behavior: Runs natively in the browser
-          script ({ properties }) {
-            // The client script seamlessly receives the data processed by the server
-            // properties = { userName: "Alice", age: 25 }
-            console.log(`User ${properties.userName} is ${properties.age} years old.`);
+          script ({ state, root, signal, refs, ...pluginContext }) {
+            // The client script receives the unified state
+            console.log(`User ${state.userName} is ${state.age} years old.`);
           }
         })
       </coralite-code-highlight>
 
-      <p><strong>Key Difference:</strong> Plugin methods get raw metadata/attributes, component scripts get processed
-        token properties.</p>
+      <p><strong>Key Difference:</strong> Plugin methods get raw metadata/attributes via context, component scripts get the unified reactive <code>state</code>.</p>
     </section>
 
     <!-- Page-Level Plugins Section -->
@@ -384,7 +371,7 @@
         tags:</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite'
+        import { definePlugin } from 'coralite/plugins'
         import { readFile } from 'node:fs/promises'
         import { join, resolve } from 'node:path'
 
@@ -454,12 +441,12 @@
             </tr>
             <tr>
               <td><strong>Access</strong></td>
-              <td>Inside defineComponent tokens</td>
+              <td>Inside defineComponent blocks</td>
               <td>Global lifecycle hooks</td>
             </tr>
             <tr>
               <td><strong>Use Case</strong></td>
-              <td>Data processing, token computation</td>
+              <td>Data processing, state computation</td>
               <td>HTML transformation, optimization</td>
             </tr>
             <tr>
@@ -484,7 +471,7 @@
         name: 'analytics',
         
         // Page Lifecycle
-        onPageSet: async ({ page, elements, properties, data }) => {
+        onPageSet: async ({ page, elements, state, data }) => {
           // Called when a new page is created
           console.log('New page:', page.url.pathname)
         },
@@ -530,7 +517,7 @@
       <coralite-heading level="h3" text="The Two-Phase Currying System"></coralite-heading>
       <ol>
         <li><strong>Phase 1 (Global Context):</strong> The outermost function receives the <code>globalContext</code> (containing <code>imports</code> and global <code>config</code>).</li>
-        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ properties, root, signal }</code>). Here, <code>root</code> is the component's <code>HTMLElement</code> (or Document), and <code>signal</code> is an <code>AbortSignal</code>.</li>
+        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ state, root, signal }</code>). Here, <code>root</code> is the component's <code>HTMLElement</code> (or Document), and <code>signal</code> is an <code>AbortSignal</code>.</li>
         <li><strong>Phase 3 (Execution):</strong> It finally returns the actual callable utility function used by the user's script in the browser.</li>
       </ol>
 
@@ -547,7 +534,7 @@
               myHelper(globalContext) {
                 
                 // Phase 2: Receives Local Instance Context
-                return ({ properties, root, signal }) => {
+                return ({ state, root, signal }) => {
                   
                   // Phase 3: The actual function accessible via context.myHelper
                   return function (selector) {
@@ -574,7 +561,7 @@
       <coralite-code-highlight language="JavaScript">
         // In component script:
         export default defineComponent({
-          script: ({ refs, myHelper }) => {
+          script: ({ state, root, signal, refs, ...pluginContext }) => {
             // myHelper is already curried with Global and Local Context
             const btn = myHelper('.btn-class');
           }
@@ -585,50 +572,47 @@
     <!-- Built-in Plugins Section -->
     <section id="built-in-plugins">
       <coralite-heading level="h2" text="Built-in Plugins"></coralite-heading>
-      <p>Coralite includes three built-in plugins that provide core functionality:</p>
+      <p>Coralite includes built-in plugins that provide core functionality:</p>
 
       <coralite-heading level="h3" text="defineComponent"></coralite-heading>
-      <p>The <code>defineComponent</code> plugin is required for all dynamic components. It provides the structured wrapper for your server-side state (<code>properties</code>), Light DOM transformations (<code>slots</code>), and client-side execution (<code>script</code>):</p>
+      <p>The <code>defineComponent</code> plugin is required for all dynamic components. It provides the structured wrapper for your inputs (<code>attributes</code>), server-side fetching (<code>data</code>), derived state (<code>getters</code>), and client-side execution (<code>script</code>):</p>
 
       <coralite-code-highlight language="JavaScript">
         import { defineComponent } from 'coralite/plugins'
 
         export default defineComponent({
-          // State: Runs on the server during the build process
-          properties (context) {
-            const firstName = context.properties.firstName || ''
-            const lastName = context.properties.lastName || ''
-            const rawDate = context.properties.date
-
-            // Return flat, computed keys to bridge to the template and client script
-            return {
-              fullName: `${firstName} ${lastName}`.trim(),
-              formattedDate: rawDate ? new Date(rawDate).toLocaleDateString() : ''
-            }
+          attributes: {
+              firstName: { type: String, default: '' },
+              lastName: { type: String, default: '' },
+              date: { type: String }
+          },
+          getters: {
+            fullName: (state) => `${state.firstName} ${state.lastName}`.trim(),
+            formattedDate: (state) => state.date ? new Date(state.date).toLocaleDateString() : ''
           },
           slots: {
             // Custom Light DOM interception and transformation
-            // Note the signature now uses the unified 'context'
-            content (slotNodes, context) {
+            content (slotNodes, state) {
               // Transform slot content before it projects into the component
               return slotNodes
             }
           },
           // Behavior: Runs natively in the browser
-          script ({ properties, refs }) {
-            // The client script natively receives the flat data computed by the server
+          script ({ state, root, signal, refs, ...pluginContext }) {
+            // The client script natively receives the unified reactive state
             const btn = refs('actionBtn')
             
             btn.addEventListener('click', () => {
-              console.log(`Hello, ${properties.fullName}!`)
-            })
+              console.log(`Hello, ${state.fullName}!`)
+            }, { signal })
           }
         })
       </coralite-code-highlight>
 
       <coralite-heading level="h4" text="When to Use"></coralite-heading>
       <ul>
-        <li>When your component needs computed tokens</li>
+        <li>When your component needs attributes or data fetching</li>
+        <li>When you need derived state via getters</li>
         <li>When you need custom slot processing</li>
         <li>When you need client-side JavaScript</li>
         <li>When you need to use plugin methods</li>
@@ -641,7 +625,7 @@
       </ul>
 
       <coralite-heading level="h3" text="refs Helper"></coralite-heading>
-      <p>The <code>refs</code> helper provides DOM element access at runtime using the factory pattern:</p>
+      <p>The <code>refs</code> helper provides DOM element access at runtime:</p>
 
       <coralite-code-html>
         <template id="my-component">
@@ -653,10 +637,10 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite'
+          import { defineComponent } from 'coralite/plugins'
 
           export default defineComponent({
-            script ({ refs }) {
+            script ({ state, root, signal, refs, ...pluginContext }) {
               // Get DOM elements by their ref name
               const button = refs('actionBtn')
               const input = refs('userInput')
@@ -665,30 +649,19 @@
               // Use the elements at runtime
               button.addEventListener('click', () => {
                 author.textContent = input.value || 'Anonymous'
-              })
+              }, { signal })
             }
           })
         </script>
       </coralite-code-html>
 
-      <coralite-heading level="h4" text="How refs Works"></coralite-heading>
-      <ul>
-        <li><strong>Factory Definition</strong>: <code>refs({ refs })</code> receives context and returns resolver</li>
-        <li><strong>Factory Execution</strong>: ScriptManager calls <code>refs(context)</code> automatically</li>
-        <li><strong>Context Injection</strong>: Result is injected as <code>refs</code></li>
-        <li><strong>Component Usage</strong>: Scripts use <code>refs</code> directly</li>
-        <li><strong>DOM Access</strong>: Queries elements with generated unique <code>id</code> attributes</li>
-      </ul>
-
-
       <coralite-heading level="h3" text="Metadata Plugin"></coralite-heading>
-      <p>The <code>metadata</code> plugin automatically extracts SEO data from the document's <code>&lt;head&gt;</code> during the build and exposes it to the <code>context.page.meta</code> environment object[cite: 109, 110]:</p>
+      <p>The <code>metadata</code> plugin automatically extracts SEO data from the document's <code>&lt;head&gt;</code> during the build and exposes it to the <code>context.page.meta</code> environment object:</p>
 
       <ul>
         <li>Maps <code>&lt;html lang="..."&gt;</code> to <code>context.page.meta.lang</code>.</li>
         <li>Maps <code>&lt;title&gt;</code> to <code>context.page.meta.title</code>.</li>
         <li>Maps <code>&lt;meta name="viewport" content="..."&gt;</code> to <code>context.page.meta.viewport</code>.</li>
-        <li>Removes the need for ugly <code>meta_</code> prefixes or polluting the component's state object.</li>
       </ul>
 
       <p>See the <a href="./metadata.html">Metadata Plugin Reference</a> for full details.</p>
@@ -705,16 +678,16 @@
       <coralite-heading level="h4" text="Resolution Strategies"></coralite-heading>
       <ul>
         <li><strong>Local Resolution:</strong> If the asset object contains a <code>src</code> property, it recursively creates the destination directory and copies the file/folder using Node's <code>cp</code>.</li>
-        <li><strong>NPM Package Resolution:</strong> If <code>src</code> is missing, it requires both <code>pkg</code> and <code>path</code> properties. It uses Node's <code>createRequire</code> and <code>require.resolve</code> to traverse <code>node_modules</code> and locate the root directory of the requested <code>pkg</code>. It then appends the <code>path</code> to the package root and copies the asset out of the dependency.</li>
+        <li><strong>NPM Package Resolution:</strong> If <code>src</code> is missing, it requires both <code>pkg</code> and <code>path</code> options. It uses Node's <code>createRequire</code> and <code>require.resolve</code> to traverse <code>node_modules</code> and locate the root directory of the requested <code>pkg</code>. It then appends the <code>path</code> to the package root and copies the asset out of the dependency.</li>
       </ul>
 
       <coralite-heading level="h3" text="Complete Example"></coralite-heading>
-      <p>Here's a complete example showing the "Smart Properties, Dumb Template" architecture and built-in plugins working together:</p>
+      <p>Here's a complete example showing the "Smart State, Dumb Template" architecture and built-in plugins working together:</p>
 
       <coralite-code-html>
         <template id="counter">
           <div class="counter">
-            <h2 ref="countDisplay">Count: {{ count }}</h2>
+            <h2 ref="countDisplay">Count: {{ currentCount }}</h2>
             <button type="button" ref="increment">+</button>
             <button type="button" ref="decrement">-</button>
           </div>
@@ -724,28 +697,26 @@
           import { defineComponent } from 'coralite/plugins'
 
           export default defineComponent({
-            properties (context) {
-              return {
-                count: Number(context.properties.initial) || 0
-              }
+            attributes: {
+                initial: { type: Number, default: 0 }
             },
-            // Behavior: Natively query the DOM via refs and handle reactivity
-            script ({ properties, refs }) {
+            data({ state }) {
+                return {
+                    currentCount: state.initial
+                }
+            },
+            script ({ state, root, signal, refs, ...pluginContext }) {
               const increment = refs('increment')
               const decrement = refs('decrement')
               const countDisplay = refs('countDisplay')
 
-              let count = properties.count
-
               increment.addEventListener('click', () => {
-                count++
-                countDisplay.textContent = `Count: ${count}`
-              })
+                state.currentCount++
+              }, { signal })
 
               decrement.addEventListener('click', () => {
-                count--
-                countDisplay.textContent = `Count: ${count}`
-              })
+                state.currentCount--
+              }, { signal })
             }
           })
         </script>

@@ -34,7 +34,7 @@
     <!-- Configuration Options -->
     <section id="configuration">
       <coralite-heading level="h2" text="Configuration Options"></coralite-heading>
-      <p>The <code>definePlugin</code> function accepts a configuration object with the following properties:</p>
+      <p>The <code>definePlugin</code> function accepts a configuration object with the following options:</p>
 
       <coralite-code-highlight language="JavaScript">
        import { definePlugin } from 'coralite'
@@ -69,13 +69,13 @@ const myPlugin = definePlugin({
       <p>Plugins can hook into Coralite's build lifecycle to perform actions when pages or components are processed. All hooks support asynchronous operations.</p>
       <ul>
         <li><code>onBeforeBuild({ path, options })</code>: Called before the build process starts. Useful for copying static assets or initializing global data.</li>
-        <li><code>onPageSet({ elements, properties, page, data })</code>: Called when a page is initially created from a file.</li>
+        <li><code>onPageSet({ elements, options, page, data })</code>: Called when a page is initially created from a file.</li>
         <li><code>onPageUpdate({ elements, page, newValue, oldValue })</code>: Called when a page is updated (e.g., during development watch mode).</li>
         <li><code>onPageDelete(path)</code>: Called when a page file is deleted.</li>
         <li><code>onComponentSet(component)</code>: Called when a component is registered.</li>
         <li><code>onComponentUpdate(component)</code>: Called when a component is updated.</li>
         <li><code>onComponentDelete(component)</code>: Called when a component is deleted.</li>
-        <li><code>onBeforePageRender({ component, properties, page, renderContext })</code>: Called immediately before a specific page begins rendering. Allows for late-stage property or AST mutation.</li>
+        <li><code>onBeforePageRender({ component, options, page, renderContext })</code>: Called immediately before a specific page begins rendering. Allows for late-stage property or AST mutation.</li>
         <li><code>onAfterPageRender(result)</code>: Called after a page has been rendered to HTML. This hook uses an <strong>aggregator</strong>; plugins can return an array of additional <code>CoraliteResult</code> objects (e.g., for generating RSS feeds or paginated sub-pages).</li>
         <li><code>onAfterBuild({ results, error, duration })</code>: Called when the entire build process finishes.</li>
       </ul>
@@ -194,7 +194,7 @@ export default definePlugin({
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
-            script: ({ refs, explode }) => {
+            script: ({ state, root, signal, refs, ...pluginContext }) => {
               const btn = refs('btn')
 
               btn.addEventListener('click', () => {

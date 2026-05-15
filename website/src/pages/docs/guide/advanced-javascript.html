@@ -15,171 +15,107 @@
     <p>
       Coralite's component system allows you to bundle client-side logic directly with your HTML templates using the
       <code>defineComponent</code> helper. This guide explains how to create interactive components, manage data flow,
-      and access DOM elements.
+      and access DOM elements using the "Flat Options" API.
     </p>
 
     <coralite-heading level="h2" text="The defineComponent Helper"></coralite-heading>
 
     <p>
       The <code>defineComponent</code> function is the core of Coralite's component logic. It separates server-side data
-      preparation
-      from client-side interactivity.
+      fetching and attribute coercion from client-side interactivity using four strictly isolated blocks.
     </p>
 
     <coralite-code-highlight language="javascript">
-      import { defineComponent } from 'coralite'
+      import { defineComponent } from 'coralite/plugins'
+      import db from 'node:database' // Stripped from client bundle
 
       export default defineComponent({
-        client: {
-          // Server-side: Asynchronous data preparation
-          async setup() {
-            // Simulate fetching data or reading a file
-            const data = await fetch('https://api.example.com/data').then(r => r.json())
+        // Inputs: Coerced from HTML attributes
+        attributes: {
+            initialCount: { type: Number, default: 0 }
+        },
 
-            return {
-              remoteData: data
-            }
-          },
+        // Server-Side: Asynchronous data fetching (runs at build-time)
+        async data(context) {
+            const user = await db.users.findFirst();
+            return { userName: user.name }
+        },
 
-          // Client-side: Runs in the browser
-          script({ values }) {
-            console.log('Component mounted with props:', values)
-            console.log('Remote data from setup:', values.remoteData)
-          }
+        // Derived State: Pure functions (Read-Only)
+        getters: {
+            greeting: (state) => `Hello, ${state.userName}!`
+        },
+
+        // Client-Side: Controller (Read/Write)
+        script({ state, root, signal, refs, ...pluginContext }) {
+            console.log('Component mounted for user:', state.userName)
+
+            const btn = refs('btn')
+            btn.addEventListener('click', () => {
+                state.initialCount++; // Reactive mutation
+            }, { signal });
         }
       })
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Server-Side Setup"></coralite-heading>
+    <coralite-heading level="h2" text="The Script Context"></coralite-heading>
 
     <p>
-      The <code>setup</code> function runs during the build process (server-side). Its primary purpose is to perform
-      asynchronous operations
-      that prepare data for your component, such as fetching content from an API or reading files from the disk.
+      The <code>script</code> block is executed in the browser when the component mounts. It receives a flattened context object via destructuring:
     </p>
 
     <ul>
-      <li><strong>Async Support:</strong> <code>setup</code> is async, allowing you to <code>await</code> data before
-        rendering.</li>
-      <li><strong>Data Flow:</strong> The object returned by <code>setup</code> is merged into the component's
-        <code>values</code> context.</li>
-      <li><strong>Usage:</strong> These values are available to the template (e.g., <code>{{ remoteData }}</code>),
-        slots, tokens, and the client-side <code>script</code>.</li>
+        <li><code>state</code>: A <strong>Read/Write Reactive Proxy</strong>. This unified state contains state from <code>attributes</code>, <code>data</code>, and <code>getters</code>. Any mutation here triggers a re-render and re-evaluates getters.</li>
+        <li><code>refs</code>: A helper function to query DOM elements within the component's root that have a <code>ref</code> attribute.</li>
+        <li><code>signal</code>: An <code>AbortSignal</code> tied to the component's lifecycle. Always use this to clean up event listeners or abort pending fetch requests when the component unmounts.</li>
+        <li><code>root</code>: The custom element instance (the top-level Light DOM node).</li>
+        <li><code>page</code>: Static environment data including the current URL and file metadata.</li>
     </ul>
 
-    <p>
-      <strong>Note:</strong> You do not need to use <code>setup</code> just to pass props (attributes) to the
-      client-side script. All attributes passed to the component
-      are automatically available in the <code>values</code> object within the <code>script</code> context.
-    </p>
-
-    <coralite-heading level="h2" text="Client-Side Script"></coralite-heading>
+    <coralite-heading level="h2" text="Native Reactivity & Performance"></coralite-heading>
 
     <p>
-      The <code>script</code> function is extracted, compiled, and executed in the browser. It allows you to add
-      interactivity to your component instance.
+      Coralite uses a <strong>Lazy Deep Proxy</strong> system. Unlike frameworks that recursively make your entire data structure reactive upfront, Coralite only pays the performance cost for nested objects the exact moment they are accessed.
     </p>
 
     <p>
-      <strong>Note:</strong> Since this code runs in the browser, it cannot access server-side Node.js modules directly.
-      However, it receives the data returned by <code>setup</code> via the <code>values</code> argument.
+        Additionally, Coralite follows the <strong>Smart State, Dumb Template</strong> philosophy. Instead of a Virtual DOM, Coralite performs direct token replacement (<code>{{ key }}</code>) in the template, making updates extremely fast and memory-efficient.
     </p>
-
-    <coralite-heading level="h3" text="Accessing Data"></coralite-heading>
-
-    <p>
-      The first argument to the <code>script</code> function is the context object, which contains <code>values</code>.
-      This object holds the merged data from:
-    <ol>
-      <li>Attributes passed to the component instance (props)</li>
-      <li>Data returned from the <code>setup</code> function</li>
-    </ol>
-    </p>
-
-    <coralite-heading level="h3" text="Accessing DOM Elements (Refs)"></coralite-heading>
-
-    <p>
-      Coralite provides a <code>refs</code> helper to easily select elements within your component instance.
-      Add the <code>ref="name"</code> attribute to any HTML element in your template, and access it using
-      <code>refs('name')</code> in your script.
-    </p>
-
-    <coralite-code-html>
-      <template id="my-counter">
-        <!-- 'start' attribute is available in values.start automatically -->
-        <button type="button" ref="btn">Count is {{ start }}</button>
-      </template>
-
-      <script type="module">
-        import { defineComponent } from 'coralite'
-
-        export default defineComponent({
-          client: {
-            script: ({ values, helpers }) => {
-              const button = helpers.refs('btn')
-              // Access the 'start' attribute directly from values
-              let count = parseInt(values.start) || 0
-
-              button.textContent = `Count is ${count}`
-
-              button.addEventListener('click', () => {
-                count++
-                button.textContent = `Count is ${count}`
-              })
-            }
-          }
-        })
-      </script>
-    </coralite-code-html>
 
     <coralite-heading level="h2" text="Using External Libraries"></coralite-heading>
 
     <p>
-      Because the client-side script is isolated, you cannot use static <code>import</code> statements for client-side
-      dependencies directly within the <code>script</code> function body.
-      Instead, you can define them inside the <code>imports</code> array in the client object to bundle them at
-      build-time.
+      Because Coralite leverages standard ESM, you can use dynamic <code>import()</code> statements directly inside your <code>script</code> function to load client-side dependencies. These are automatically detected by the build tool and bundled for the browser.
     </p>
 
     <coralite-code-highlight language="javascript">
       export default defineComponent({
-        client: {
-          // Statically declare imports at build time
-          imports: [
-            {
-              specifier: 'https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.module.mjs',
-              defaultExport: 'confetti'
-            }
-          ],
-          // The configured imports become available on the helpers object
-          script: ({ values, helpers }) => {
-            const button = helpers.refs('celebrate-btn')
-            button.addEventListener('click', () => {
-              helpers.imports.confetti()
-            })
-          }
+        async script({ state, root, signal, refs, ...pluginContext }) {
+            const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
+
+            const btn = refs('celebrateBtn')
+            btn.addEventListener('click', () => {
+                confetti();
+            }, { signal })
         }
       })
     </coralite-code-highlight>
 
-    <p>
-      Defining imports within the <code>client</code> object tells Coralite to bundle them. The default, namespace, or
-      named exports you configure will be available within the <code>helpers.imports</code> object.
-    </p>
-
-    <coralite-heading level="h3" text="Import Capabilities & Structure"></coralite-heading>
+    <coralite-heading level="h2" text="Component Communication"></coralite-heading>
 
     <p>
-      The <code>client.imports</code> configuration works <strong>identically</strong> in both dynamic components (via <code>defineComponent</code>) and plugins (via <code>definePlugin</code>). Coralite's Script Manager supports a wide variety of import patterns:
+      Coralite encourages using standard Web APIs for component communication. Use <code>CustomEvent</code> to emit signals from a child to a parent.
     </p>
 
-    <ul>
-      <li><strong>Default & Named Exports:</strong> Use <code>defaultExport: 'Name'</code> or <code>namedExports: ['FunctionA', 'FunctionB as Alias']</code>.</li>
-      <li><strong>Namespace Exports:</strong> Use <code>namespaceExport: 'MyLib'</code> to import an entire module as a namespace object (equivalent to <code>import * as MyLib from '...'</code>).</li>
-      <li><strong>Side-Effect Imports:</strong> If you only provide a <code>specifier</code> (omitting export names), Coralite will execute a side-effect import (e.g., <code>import './my-polyfill.js'</code>), executing the target file without binding exports to the component's context.</li>
-      <li><strong>Component Cross-Imports:</strong> You can import other compiled Coralite components into your script by using the special <code>coralite-component/&lt;component-id&gt;</code> specifier.</li>
-      <li><strong>Import Attributes:</strong> You can import JSON files natively by passing <code>attributes: { type: 'json' }</code>.</li>
-    </ul>
+    <coralite-code-highlight language="javascript">
+        // Inside a child component's script
+        script({ state, root, signal, refs, ...pluginContext }) {
+            root.dispatchEvent(new CustomEvent('user-updated', {
+                bubbles: true,
+                detail: { name: 'Alice' }
+            }));
+        }
+    </coralite-code-highlight>
 
   </main>
   <coralite-footer></coralite-footer>

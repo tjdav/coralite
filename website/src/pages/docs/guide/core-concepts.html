@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <coralite-meta title="Core Concepts - Coralite Documentation" description="Learn the fundamental philosophy and architecture behind Coralite, including Smart State, Dumb Templates, and our Native Reactivity Engine."></coralite-meta>
+  <link rel="stylesheet" href="/css/styles.css" inline-css>
+</head>
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Core Concepts</h1>
+
+    <p>Coralite is built on a "Native Web" philosophy. We believe that the most performant and maintainable web applications are those that embrace standard DOM APIs and minimize framework abstraction layers like the Virtual DOM.</p>
+
+    <coralite-heading level="h2" text="Smart State, Dumb Template"></coralite-heading>
+
+    <p>In Coralite, we follow a strict separation of concerns called <strong>Smart State, Dumb Template</strong>. This approach eliminates the "Virtual DOM tax" by performing direct token replacement during rendering.</p>
+
+    <ul>
+      <li><strong>Smart State:</strong> Your component's logic is responsible for preparing a flat, unified <code>state</code> object. Whether the data comes from an HTML attribute, a database query on the server, or a derived calculation, it all ends up in a single reactive proxy.</li>
+      <li><strong>Dumb Template:</strong> HTML templates are strictly declarative. They do not support JavaScript logic, loops, or complex expressions. They simply use <code>{{ state_key }}</code> placeholders. This allows Coralite to perform lightning-fast updates without the overhead of a diffing engine.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="The Reactivity Engine"></coralite-heading>
+
+    <p>Coralite's reactivity is powered by a sophisticated Proxy-based system that manages the flow of data between your server-side data, your derived logic, and your client-side interactions.</p>
+
+    <coralite-code>
+    +-------------------+           +-------------------+
+    |    Attributes     |           |    Server Data    |
+    | (HTML Attributes) |           |  (Async Fetching) |
+    +---------+---------+           +---------+---------+
+              |                               |
+              +---------------+---------------+
+                              |
+                     +--------v--------+
+                     |  Unified State  | <-----------+
+                     | (Reactive Proxy)|             |
+                     +--------+--------+             |
+                              |                      |
+              +---------------+---------------+      | (triggers)
+              |                               |      |
+      +-------v-------+               +-------^------+-------+
+      |   Template    |               |       Getters        |
+      | (Static HTML) |               | (Derived, Read-Only) |
+      +---------------+               +----------------------+
+              |
+              | (imperative control)
+              |
+      +-------v-------+
+      |    Script     |
+      | (Read / Write)| -- (mutates state) --> [Unified State]
+      +---------------+
+    </coralite-code>
+
+    <p>There are two primary ways to interact with state:</p>
+    <ul>
+      <li><strong>Read-Only Access (Getters):</strong> The <code>getters</code> block provides a safe environment for deriving data. It receives a Read-Only Proxy, ensuring that calculating a value (like a filtered list) can never accidentally trigger a side-effect or an infinite loop.</li>
+      <li><strong>Read/Write Access (Script):</strong> The <code>script</code> block is your component's controller. It receives a full Read/Write Proxy, allowing you to imperatively update state in response to user events.</li>
+    </ul>
+
+    <coralite-heading level="h2" text="Lazy Deep Reactivity"></coralite-heading>
+
+    <p>A common performance bottleneck in modern frameworks is the cost of making large objects or arrays reactive. Coralite solves this with <strong>Lazy Deep Reactivity</strong>.</p>
+
+    <p>Instead of recursively walking your entire data structure the moment it's assigned, Coralite only wraps nested objects in a Proxy the <em>exact moment</em> they are accessed. If your component has a list of 1,000 users but only renders the first 10, you only pay the reactivity cost for those 10 users. This makes Coralite exceptionally efficient for data-heavy applications.</p>
+
+    <coralite-heading level="h2" text="Native Web Standards"></coralite-heading>
+
+    <p>Coralite doesn't invent new ways to solve old problems. We lean on the platform:</p>
+    <ul>
+      <li><strong>Communication:</strong> Components talk to each other using standard <code>CustomEvent</code>.</li>
+      <li><strong>Lifecycle:</strong> Cleanup is handled via <code>AbortSignal</code>, the standard way to cancel ongoing operations in JavaScript.</li>
+      <li><strong>Packaging:</strong> Components are authored as HTML Modules, leveraging the proposed standard for better encapsulation.</li>
+    </ul>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+</html>

@@ -29,7 +29,7 @@
     <!-- Basic Usage -->
     <section id="basic-usage">
       <coralite-heading level="h2" text="Basic Usage"></coralite-heading>
-      <p>The plugin automatically scans the <code>&lt;head&gt;</code> section of your pages for <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags. These properties are exposed to your component scripts via <code>context.page.meta</code>.</p>
+      <p>The plugin automatically scans the <code>&lt;head&gt;</code> section of your pages for <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags. These state are exposed to your component scripts via <code>context.page.meta</code>.</p>
 
       <coralite-heading level="h3" text="Defining Metadata"></coralite-heading>
       <p>Define your metadata in the page HTML:</p>
@@ -51,22 +51,22 @@
       </coralite-code-html>
 
       <coralite-heading level="h3" text="Accessing Metadata in Scripts"></coralite-heading>
-      <p>Access the properties in your <code>defineComponent</code> script block:</p>
+      <p>Access the metadata in your <code>defineComponent</code> script block:</p>
 
       <coralite-code-highlight language="JavaScript">
         export default defineComponent({
-          script (context) {
-            console.log('Page Title:', context.page.meta.title);
-            console.log('Description:', context.page.meta.description);
+          script ({ state, root, signal, refs, ...pluginContext }) {
+            console.log('Page Title:', page.meta.title);
+            console.log('Description:', page.meta.description);
           }
         })
       </coralite-code-highlight>
 
       <p>In this example:</p>
       <ul>
-        <li><code>&lt;title&gt;</code> becomes <code>context.page.meta.title</code></li>
-        <li><code>name="author"</code> becomes <code>context.page.meta.author</code></li>
-        <li><code>name="description"</code> becomes <code>context.page.meta.description</code></li>
+        <li><code>&lt;title&gt;</code> becomes <code>page.meta.title</code></li>
+        <li><code>name="author"</code> becomes <code>page.meta.author</code></li>
+        <li><code>name="description"</code> becomes <code>page.meta.description</code></li>
       </ul>
     </section>
 
@@ -102,13 +102,13 @@
     <!-- Accessing in Templates -->
     <section id="accessing-in-templates">
       <coralite-heading level="h2" text="Accessing in Templates"></coralite-heading>
-      <p>Coralite templates are "dumb" and cannot access the <code>page</code> object directly. To render metadata in your HTML template, you must explicitly map it to your component's <code>properties</code> in the server-side block:</p>
+      <p>Coralite templates are "dumb" and cannot access the <code>page</code> object directly. To render metadata in your HTML template, you must explicitly map it to your component's <code>state</code> using the <code>data</code> block:</p>
 
       <coralite-code-highlight language="JavaScript">
         export default defineComponent({
-          properties: async (context) => {
+          async data(context) {
             return {
-              // Map the page meta title to a flat property key
+              // Map the page meta title to a flat state key
               pageTitle: context.page.meta.title
             }
           }
@@ -127,7 +127,7 @@
       <coralite-heading level="h2" text="Key Points"></coralite-heading>
       <ul>
         <li><strong>Built-in</strong>: Included by default in Coralite.</li>
-        <li><strong>Namespace</strong>: All properties are stored in <code>context.page.meta</code>.</li>
+        <li><strong>Namespace</strong>: All state are stored in <code>context.page.meta</code>.</li>
         <li><strong>Extraction</strong>: Processes <code>&lt;title&gt;</code> and <code>&lt;meta name="..." content="..."&gt;</code>.</li>
         <li><strong>Execution</strong>: Runs at build time during the <code>onPageSet</code> and <code>onPageUpdate</code> lifecycle hooks.</li>
       </ul>
