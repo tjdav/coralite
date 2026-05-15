@@ -10,27 +10,24 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    state: async (context) => {
-      return {
-        title: context.state.title || 'Initial',
-        status: context.state.status || 'Offline'
-      }
+    attributes: {
+      title: { type: String, default: 'Initial' },
+      status: { type: String, default: 'Offline' }
     },
-    script: (context) => {
-      const updateBtn = context.refs('updateBtn')
-      const target = document.querySelector('client-script-component')
+    script: ({ state, root, refs, signal }) => {
+      const updateBtn = refs('updateBtn')
 
       updateBtn.addEventListener('click', async () => {
-        // test reactivity by updating attribute
-        target.setAttribute('title', 'Updated')
-        target.setAttribute('status', 'Online')
+        // test reactivity by updating state
+        state.title = 'Updated'
+        state.status = 'Online'
 
         // test dynamic imports
         const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
         if (confetti) {
-          target.setAttribute('data-confetti', 'loaded')
+          root.setAttribute('data-confetti', 'loaded')
         }
-      })
+      }, { signal })
     }
   })
 </script>

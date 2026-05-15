@@ -1,21 +1,21 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Server Properties', () => {
+test.describe('Server State', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/server-properties/')
+    await page.goto('/server-state/')
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
     await page.evaluate(() => window.__coralite_ready__)
   })
 
-  test('should render server properties and inject environment', async ({ page }) => {
+  test('should render server state and inject environment', async ({ page }) => {
     const title = page.getByTestId('title')
     await expect(title).toHaveText('Server Properties Title')
 
     const filePath = page.getByTestId('file-path')
     const filePathText = await filePath.textContent()
-    expect(filePathText).toContain('tests/fixtures/pages/server-properties')
+    expect(filePathText).toContain('tests/fixtures/pages/server-state')
 
     const serverData = page.getByTestId('server-data')
     await expect(serverData).toHaveText('FileExists')

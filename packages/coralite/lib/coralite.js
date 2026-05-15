@@ -1163,12 +1163,11 @@ Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
  * @returns {Promise<void>}
  */
 Coralite.prototype._processDependentComponents = async function (componentIds, renderContext, page, root, state = {}) {
-  if (!componentIds || !componentIds.length) {
+  if (!componentIds?.length) {
     return
   }
 
   for (const id of componentIds) {
-    // Prevent infinite loops / duplicate processing
     if (this._scriptManager.sharedFunctions[id]) {
       continue
     }
@@ -1180,7 +1179,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
 
     const module = cloneModuleInstance(moduleComponent.result)
 
-    // Evaluate the script to trigger `defineComponent` and extract `__script__`
+    // Evaluate the script
     let scriptResult = {}
     if (module.script) {
       scriptResult = await this._evaluate({
@@ -1193,117 +1192,95 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
       })
     }
 
-    // Pass the AST
-    const templateAST = moduleComponent.result.template.children
-    const templateValues = moduleComponent.result.values
+    // Safely extract __script__ metadata once
+    const scriptMeta = scriptResult.__script__ || {}
+    const templateAST = moduleComponent.result.template?.children || []
+    const templateValues = moduleComponent.result.values || {}
 
-    if (module.styles.length && !moduleComponent.result._processedCss) {
+    //  Process CSS
+    if (module.styles?.length && !moduleComponent.result._processedCss) {
       const rawCss = module.styles.join('\n')
       const { rootClasses, descendantClasses } = moduleComponent.result
-      moduleComponent.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, (errorData) => this._handleError(errorData))
+      moduleComponent.result._processedCss = await transformCss(
+        rawCss, rootClasses, descendantClasses,
+        (errorData) => this._handleError(errorData)
+      )
     }
-
-    // Extract processed styles from the module
     const stylesHTML = moduleComponent.result._processedCss || ''
 
-    let scriptObj = {
+    // Construct script object
+    const scriptObj = {
       content: 'function(){}',
-      state: {}
+      state: scriptMeta.state || {},
+      slots: scriptMeta.slots || {}
     }
-    let nestedComponents = []
-    let defaultValues = {}
 
+    let defaultValues = scriptMeta.defaultValues || {}
+    let extractedComponents = []
+
+    // Extract AST
     if (scriptResult.__script__) {
       const extractedScript = findAndExtractScript(module.script)
-      let extractedComponents = []
       if (extractedScript) {
         scriptObj.content = extractedScript.content
         scriptObj.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
-        if (extractedScript.components) {
-          extractedComponents = extractedScript.components
-        }
+        extractedComponents = extractedScript.components || []
       }
+
       const extractedProperties = findAndExtractProperties(module.script)
       if (extractedProperties) {
         scriptObj.stateContent = extractedProperties.content
         scriptObj.stateLineOffset = (module.lineOffset || 0) + extractedProperties.lineOffset
       }
-      scriptObj.state = scriptResult.__script__.state || {}
-
-      const declarativeComponents = (module.customElements || []).map(el => el.name)
-
-      nestedComponents = Array.from(new Set([...declarativeComponents, ...extractedComponents]))
-      scriptObj.components = nestedComponents
-      defaultValues = scriptResult.__script__.defaultValues || {}
-
-      if (scriptResult.__script__.slots) {
-        scriptObj.slots = scriptResult.__script__.slots
-      }
-
-      delete scriptResult.__script__
-    } else {
-      const declarativeComponents = (module.customElements || []).map(el => el.name)
-      nestedComponents = Array.from(new Set([...declarativeComponents]))
-      scriptObj.components = nestedComponents
     }
 
-    const componentTokens = {}
-    for (let i = 0; i < module.values.attributes.length; i++) {
-      const item = module.values.attributes[i]
-      for (let j = 0; j < item.tokens.length; j++) {
-        componentTokens[item.tokens[j].name] = true
-      }
-    }
-    for (let i = 0; i < module.values.textNodes.length; i++) {
-      const item = module.values.textNodes[i]
-      for (let j = 0; j < item.tokens.length; j++) {
-        componentTokens[item.tokens[j].name] = true
-      }
-    }
+    // Deduplicate nested components
+    const declarativeComponents = (module.customElements || []).map(el => el.name)
+    const nestedComponents = [...new Set([...declarativeComponents, ...extractedComponents])]
 
-    for (const token of Object.keys(componentTokens)) {
-      // Don't overwrite if it's already a function (e.g. from defineComponent)
+    scriptObj.components = nestedComponents
+
+    // Extract tokens
+    const extractTokens = (nodes) => nodes?.flatMap(n => n.tokens?.map(t => t.name) || []) || []
+    const allTokens = new Set([
+      ...extractTokens(module.values?.attributes),
+      ...extractTokens(module.values?.textNodes)
+    ])
+
+    // Apply token values to defaultValues
+    for (const token of allTokens) {
       if (defaultValues[token] === undefined && scriptResult[token] !== undefined) {
         defaultValues[token] = scriptResult[token]
       }
     }
 
-    if (templateValues && templateValues.refs) {
-      for (let i = 0; i < templateValues.refs.length; i++) {
-        const ref = templateValues.refs[i]
-        defaultValues[`ref_${ref.name}`] = ''
-
-        if (!scriptObj.state) {
-          scriptObj.state = {}
-        }
-        scriptObj.state[`ref_${ref.name}`] = ''
-      }
-    }
-
-    // Restore __script__ to maintain consistency with _generatePages logic for components array
-    if (!scriptResult.__script__) {
-      scriptResult.__script__ = { defaultValues }
-    } else {
-      scriptResult.__script__.defaultValues = defaultValues
-    }
+    // Process Template Refs
+    templateValues?.refs?.forEach(ref => {
+      const refKey = `ref_${ref.name}`
+      defaultValues[refKey] = ''
+      scriptObj.state[refKey] = ''
+    })
 
     scriptObj.defaultValues = defaultValues
 
-    // Register with ScriptManager (including the template, defaults, and styles)
     this._scriptManager.registerComponent({
       id: module.id,
+      getters: scriptMeta.getters,
       script: scriptObj,
       filePath: moduleComponent.path.pathname,
       templateAST,
       templateValues,
       defaultValues,
       styles: stylesHTML,
-      slots: scriptObj.slots || {}
+      slots: scriptObj.slots
     })
 
     // Recursively process deeper dependencies
     if (nestedComponents.length > 0) {
-      const inheritedState = Object.assign({}, state, scriptResult)
+      const inheritedState = {
+        ...state,
+        ...scriptResult
+      }
       delete inheritedState.__script__
 
       await this._processDependentComponents(nestedComponents, renderContext, page, root, inheritedState)
@@ -1433,8 +1410,8 @@ Coralite.prototype.createComponentElement = async function ({
 
       const templateAST = moduleComponent.result.template.children
       const templateValues = moduleComponent.result.values
-
       const componentTokens = {}
+
       for (let i = 0; i < module.values.attributes.length; i++) {
         const item = module.values.attributes[i]
         for (let j = 0; j < item.tokens.length; j++) {
@@ -1469,6 +1446,7 @@ Coralite.prototype.createComponentElement = async function ({
       // Register component script with script manager
       this._scriptManager.registerComponent({
         id: module.id,
+        getters: scriptResult.__script__.getters,
         script: scriptResult.__script__,
         filePath: moduleComponent.path.pathname,
         templateAST,

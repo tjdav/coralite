@@ -6,8 +6,8 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    script: async (context) => {
-      const container = context.refs('container')
+    script: async ({ refs }) => {
+      const container = refs('container')
   
       const child = document.createElement('imperative-child')
       child.setAttribute('title', 'Imperative Mount')

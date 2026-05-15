@@ -6,7 +6,10 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    state: async (context) => {
+    attributes: {
+      triggerError: { type: Boolean, default: false }
+    },
+    async data(context) {
       // intentionally throw an error in dev to test error handling callback
       if (context.state.triggerError) {
         throw new Error('Intentional Test Error')

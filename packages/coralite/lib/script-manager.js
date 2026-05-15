@@ -100,6 +100,7 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
  * @param {Array<Object>|null} [options.templateAST=null] - Parsed HTML template AST for the client side rendering
  * @param {Object|null} [options.templateValues=null] - Token positions for AST updates
  * @param {Object} [options.defaultValues={}] - Initial default state from setup()
+ * @param {Object} [options.getters={}] - Component getters
  * @param {string} [options.styles=''] - Raw CSS string for the component
  * @param {Object.<string, Function>} [options.slots={}] - Computed slots
  */
@@ -110,6 +111,7 @@ ScriptManager.prototype.registerComponent = function ({
   templateAST = null,
   templateValues = null,
   defaultValues = {},
+  getters = {},
   styles = '',
   slots = {}
 }) {
@@ -126,6 +128,17 @@ ScriptManager.prototype.registerComponent = function ({
 
   if (hasObjectKeys(script)) {
     target.script = script
+  }
+
+  if (hasObjectKeys(getters)) {
+    if (target.getters) {
+      target.getters = {
+        ...target.getters,
+        ...getters
+      }
+    } else {
+      target.getters = getters
+    }
   }
 
   if (templateAST) {
@@ -379,7 +392,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       }
       const defaults = serialize(normalizedDefaults)
       const attributes = serialize(this.sharedFunctions[componentId].script?.attributes || {})
-      const getters = serialize(this.sharedFunctions[componentId].script?.getters || {})
+      const getters = serialize(this.sharedFunctions[componentId].getters || this.sharedFunctions[componentId].script?.getters || {})
       const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
 
       let normalizedSlots = this.sharedFunctions[componentId].slots || {}

@@ -9,17 +9,17 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    state: async (context) => {
-      return {
-        title: context.state.title || 'No Title',
-        dataDisplay: context.state.id ? `Fetched data for ${context.state.id}` : 'No Data'
-      }
+    attributes: {
+      title: { type: String, default: 'No Title' },
+      id: { type: String }
     },
-    script: async (context) => {
-      const el = document.querySelector('[data-testid="imperative-child-host"]')
+    getters: {
+      dataDisplay: (state) => state.id ? `Fetched data for ${state.id}` : 'No Data'
+    },
+    script: async ({ root, refs }) => {
       // check imperative property assignment
-      if (el && el.complexData) {
-        context.refs('dataDisplay').textContent = el.complexData.join(',')
+      if (root && root.complexData) {
+        refs('dataDisplay').textContent = root.complexData.join(',')
       }
     }
   })

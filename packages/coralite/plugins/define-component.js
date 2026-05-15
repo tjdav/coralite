@@ -3,7 +3,8 @@ import {
   definePlugin,
   isCoraliteComment,
   isCoraliteElement,
-  isCoraliteTextNode
+  isCoraliteTextNode,
+  createReadOnlyProxy
 } from '#lib'
 
 /**
@@ -117,8 +118,18 @@ export const defineComponent = definePlugin({
     /** @type {CoraliteModuleDefinitions} */
     let state = Object.assign({}, initialState)
 
+    const serializableAttributes = {}
+    if (attributes) {
+      for (const [key, schema] of Object.entries(attributes)) {
+        serializableAttributes[key] = {
+          type: schema.type.name || schema.type,
+          default: schema.default
+        }
+      }
+    }
+
     state.__script__ = {
-      attributes: attributes || {},
+      attributes: serializableAttributes,
       getters: getters || {},
       state: {},
       defaultValues: {},
@@ -127,7 +138,18 @@ export const defineComponent = definePlugin({
 
     if (attributes) {
       for (const [key, schema] of Object.entries(attributes)) {
-        if (schema.default !== undefined && state[key] === undefined) {
+        const typeName = schema.type.name || schema.type
+        if (state[key] !== undefined) {
+          // Coerce existing attribute values
+          const value = state[key]
+          if (typeName === 'Number') {
+            state[key] = Number(value)
+          } else if (typeName === 'Boolean') {
+            state[key] = value !== 'false' && value !== null && value !== ''
+          } else if (typeName === 'String') {
+            state[key] = String(value)
+          }
+        } else if (schema.default !== undefined) {
           state[key] = schema.default
         }
       }
@@ -138,17 +160,24 @@ export const defineComponent = definePlugin({
       if (dataResult) {
         state.__script__.data = dataResult
         Object.assign(state, dataResult)
+        // Ensure data results are added to state.__script__.state for serialization to client
+        Object.assign(state.__script__.state, dataResult)
       }
     }
 
     if (getters) {
+      /** @type {any} */
+      const roState = createReadOnlyProxy(state)
       for (const [key, getter] of Object.entries(getters)) {
-        const result = getter(state)
+        const result = getter(roState, { signal: new AbortController().signal })
         if (result && typeof result.then === 'function') {
           state[key] = await result
         } else {
           state[key] = result
         }
+
+        // Add getter result to state.__script__.state so it's serialized to the client
+        state.__script__.state[key] = state[key]
       }
     }
 
@@ -239,8 +268,10 @@ export const defineComponent = definePlugin({
     }
     const hasScript = typeof script === 'function'
     const hasSlots = slots && Object.keys(slots).length > 0
+    const hasGetters = getters && Object.keys(getters).length > 0
+    const hasAttributes = attributes && Object.keys(attributes).length > 0
 
-    if (hasScript || hasSlots) {
+    if (hasScript || hasSlots || hasGetters || hasAttributes) {
       if (hasScript) {
         const scriptTextContent = script.toString().trim()
 

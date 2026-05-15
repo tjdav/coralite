@@ -9,17 +9,15 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    state: async (context) => {
+    async data(context) {
       return {
         // test metadata plugin
         pageTitle: context.page.meta.title || 'No Title'
       }
     },
-    script: async (context) => {
+    script: async ({ testHelper, refs }) => {
       // test two-phase currying system context injection
-      // The testing plugin in dev mode duplicates ref to data-testid, so we can use that to query it reliably since refs are dynamic.
-      // Actually we have the context.refs utility but let's just use data-testid.
-      context.testHelper('[data-testid="plugin-component__pluginData-0"]')
+      testHelper(refs('pluginData'))
     }
   })
 </script>

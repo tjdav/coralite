@@ -14,7 +14,7 @@ test.describe('Error Handling', () => {
     await page.evaluate(() => window.__coralite_ready__)
 
 
-    // the component doesn't actually throw because context.properties.triggerError is not set
+    // the component doesn't actually throw because context.state.triggerError is not set
     await expect(page.locator('body')).toContainText('Error test')
   })
 })

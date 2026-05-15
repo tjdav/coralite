@@ -1,0 +1,35 @@
+<template id="dual-proxy">
+  <div>
+    <p data-testid="doubled">{{ doubled }}</p>
+    <button ref="increment">Increment</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    attributes: {
+      count: {
+        type: Number,
+        default: 0
+      }
+    },
+    getters: {
+      doubled: (state) => {
+        // This mutation should fail or be ignored/warned if ReadOnlyProxy is enforced
+        try {
+          state.count = 999
+        } catch (e) {
+          return 'MutationBlocked'
+        }
+        return state.count * 2
+      }
+    },
+    script: ({ state, refs, signal }) => {
+      refs('increment').addEventListener('click', () => {
+        state.count++
+      }, { signal })
+    }
+  })
+</script>

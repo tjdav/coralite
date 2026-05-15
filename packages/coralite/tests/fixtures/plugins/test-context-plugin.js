@@ -11,9 +11,11 @@ export const testContextPlugin = definePlugin({
         // Phase 1: Global Context
         return (localContext) => {
           // Phase 2: Local Instance Context (receives state, page, signal)
-          return function (selector) {
+          return function (element) {
             // Phase 3: Callable utility
-            const element = document.querySelector(selector)
+            if (typeof element === 'string') {
+              element = document.querySelector(element)
+            }
             if (element) {
               element.textContent = `Global: ${globalContext.config.globalValue}, Path: ${localContext.page.url.pathname}, Signal: ${localContext.signal instanceof AbortSignal}`
             }

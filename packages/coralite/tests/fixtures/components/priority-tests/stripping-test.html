@@ -1,0 +1,20 @@
+<template id="stripping-test">
+  <div data-testid="content">{{ content }}</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+  import fs from 'node:fs'
+
+  export default defineComponent({
+    data(context) {
+      return {
+        content: 'ServerOnlyData'
+      }
+    },
+    script: ({ state }) => {
+      // data() and fs import should be gone from here
+      console.log('Client script running');
+    }
+  })
+</script>

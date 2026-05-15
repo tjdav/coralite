@@ -1,0 +1,41 @@
+<template id="async-race">
+  <div>
+    <p data-testid="result">{{ result }}</p>
+    <button ref="trigger">Trigger</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite/plugins'
+
+  export default defineComponent({
+    attributes: {
+      query: { type: String, default: '' }
+    },
+    getters: {
+      result: async (state, { signal }) => {
+        if (!state.query) return 'Idle';
+        // Simulate async work
+        await new Promise((resolve, reject) => {
+          const timeout = setTimeout(resolve, 100);
+          signal.addEventListener('abort', () => {
+            clearTimeout(timeout);
+            reject(new Error('AbortError'));
+          });
+        });
+        return `Result for ${state.query}`;
+      }
+    },
+    script: ({ state, refs, signal }) => {
+      const btn = refs('trigger');
+      if (btn) {
+        btn.addEventListener('click', () => {
+          // rapid assignments should trigger AbortSignal for previous getter calls
+          state.query = 'q1';
+          state.query = 'q2';
+          state.query = 'q3';
+        }, { signal });
+      }
+    }
+  })
+</script>

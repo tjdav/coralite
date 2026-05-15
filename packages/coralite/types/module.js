@@ -26,7 +26,7 @@
 
 /**
  * Represents a single value that a module can store or process.
- * @typedef {string | string[] | (CoraliteDirective | CoraliteAnyNode)[] | Object.<string, string>} CoraliteModuleDefinition
+ * @typedef {string | number | boolean | string[] | (CoraliteDirective | CoraliteAnyNode)[] | Object.<string, string>} CoraliteModuleDefinition
  */
 
 /**

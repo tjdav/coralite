@@ -14,24 +14,21 @@ export const refsPlugin = definePlugin({
        * @returns {ScriptPluginHelperLocalInstance}
        */
       refs () {
-        return ({ state }) => {
-          const elements = {}
-
+        return ({ state, root }) => {
           return function (id) {
-            if (elements[id]) {
-              return elements[id]
-            }
-
             const refId = state[`ref_${id}`]
 
             if (!refId && typeof refId !== 'string') {
               return null
             }
 
-            const element = document.querySelector(`[ref="${refId}"]`)
+            const selector = `[ref="${refId}"]`
+            // use root context for scoped query when available
+            const element = (root || document).querySelector(selector)
 
-            if (element) {
-              elements[id] = element
+            if (!element && !root) {
+              // fallback to global query if root is missing (declarative)
+              return document.querySelector(selector)
             }
 
             return element

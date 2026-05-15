@@ -49,7 +49,10 @@ export function generateClientRuntime ({
     const [setupProperties, pluginContexts, module] = await Promise.all([setupPropertiesPromise, pluginContextsPromise, modulePromise]);
 
     Object.assign(context, pluginContexts);
-    context.state = { ...module.default.defaultValues, ...context.state, ...setupProperties };
+    const stateTarget = { ...module.default.defaultValues, ...context.state, ...setupProperties };
+    context.state = createReactiveProxy(stateTarget, () => {});
+    if (context.root === undefined) context.root = null;
+    if (context.refs === undefined) context.refs = (id) => null;
 
     // Explicitly load declarative script dependencies if any
     const deps = module.default.dependencies || [];
@@ -135,9 +138,9 @@ function createReadOnlyProxy(target, proxies = new WeakMap()) {
 
 function coerce(value, type) {
   if (value === null || value === undefined) return value;
-  if (type === Number) return Number(value);
-  if (type === Boolean) return value !== 'false' && value !== null;
-  if (type === String) return String(value);
+  if (type === Number || type === 'Number') return Number(value);
+  if (type === Boolean || type === 'Boolean') return value !== 'false' && value !== null && value !== '';
+  if (type === String || type === 'String') return String(value);
   return value;
 }
 
@@ -423,10 +426,13 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                   try {
                     const value = await result;
                     if (!controller.signal.aborted) {
-                      this._state[key] = value;
+                      this._stateTarget[key] = value;
+                      this._render();
                     }
                   } catch (e) {
-                    if (e.name !== 'AbortError') throw e;
+                    if (!controller.signal.aborted) {
+                      if (e && e.name !== 'AbortError' && e.message !== 'AbortError') throw e;
+                    }
                   }
                 })());
               } else {

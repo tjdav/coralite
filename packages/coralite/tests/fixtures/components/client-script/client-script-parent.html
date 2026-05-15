@@ -6,8 +6,8 @@
   import { defineComponent } from 'coralite/plugins'
 
   export default defineComponent({
-    script: (context) => {
-      const container = context.refs('container')
+    script: ({ refs }) => {
+      const container = refs('container')
       const child = document.createElement('client-script-component')
       child.setAttribute('title', 'Initial Parent')
       child.setAttribute('data-testid', 'mounted-child')
