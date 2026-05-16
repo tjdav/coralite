@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.34.0
+
+> Comparing `create-coralite-v0.33.1` to `HEAD`
+
+**Summary:** 2 commits
+
+### ♻️ Code Refactoring
+
+- update Coralite component logic to use reactive state (components) ([f810d37](https://codeberg.org/tjdavid/coralite/commit/f810d37e0a1bc7d380f3d8deb7ae53e1843e3e37))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.34.0 ([9f9b92b](https://codeberg.org/tjdavid/coralite/commit/9f9b92b348e56e238226b23283df66781cf571b4))
+
+
 ## v0.33.1
 
 > Comparing `create-coralite-v0.33.0` to `HEAD`
