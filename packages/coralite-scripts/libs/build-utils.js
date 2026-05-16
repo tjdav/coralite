@@ -94,13 +94,39 @@ export function deleteDirectoryRecursive (dirPath) {
 /**
  * Prettified error display using kleur
  * @param {string} message - Error message
- * @param {unknown} [error] - Optional error object
+ * @param {object} [error] - Optional error object
  */
 export function displayError (message, error) {
   const dash = colours.gray(' ─ ')
   process.stdout.write(toTime() + colours.bgRed().white(' ERROR ') + dash + colours.red(message) + '\n')
   if (error) {
     const indent = '    '
+    const isCoraliteError = error.isCoraliteError || Boolean(error.cause?.isCoraliteError)
+
+    let targetError = error
+
+    // Override the targetError only if the cause is the actual CoraliteError
+    if (!error.isCoraliteError && error.cause?.isCoraliteError) {
+      targetError = error.cause
+    }
+
+    if (isCoraliteError) {
+      process.stdout.write(indent + colours.magenta('Component context:') + '\n')
+      if (targetError.componentId) {
+        process.stdout.write(indent + '  ' + colours.cyan('ID:        ') + targetError.componentId + '\n')
+      }
+      if (targetError.filePath) {
+        process.stdout.write(indent + '  ' + colours.cyan('File:      ') + targetError.filePath + '\n')
+      }
+      if (targetError.pagePath) {
+        process.stdout.write(indent + '  ' + colours.cyan('Page:      ') + targetError.pagePath + '\n')
+      }
+      if (targetError.instanceId) {
+        process.stdout.write(indent + '  ' + colours.cyan('Instance:  ') + targetError.instanceId + '\n')
+      }
+      process.stdout.write('\n')
+    }
+
     let errorDetails = ''
 
     if (error instanceof Error ||

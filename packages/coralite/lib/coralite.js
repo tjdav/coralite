@@ -11,6 +11,7 @@ import { dirname, join, normalize, relative, resolve } from 'node:path'
 import { createRequire } from 'node:module'
 import { transform } from 'esbuild'
 import { isCoraliteElement, isCoraliteCollectionItem } from './type-helper.js'
+import { CoraliteError } from './errors.js'
 import { pathToFileURL } from 'node:url'
 import { availableParallelism } from 'node:os'
 import render from 'dom-serializer'
@@ -1182,14 +1183,24 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
     // Evaluate the script
     let scriptResult = {}
     if (module.script) {
-      scriptResult = await this._evaluate({
-        module,
-        state,
-        page,
-        root,
-        contextId: `dependent-${id}`,
-        renderContext
-      })
+      try {
+        scriptResult = await this._evaluate({
+          module,
+          state,
+          page,
+          root,
+          contextId: `dependent-${id}`,
+          renderContext
+        })
+      } catch (error) {
+        throw new CoraliteError(error.message, {
+          cause: error,
+          componentId: module.id,
+          filePath: moduleComponent.path.pathname,
+          pagePath: page?.file?.pathname,
+          instanceId: `dependent-${id}`
+        })
+      }
     }
 
     // Safely extract __script__ metadata once
@@ -1378,15 +1389,27 @@ Coralite.prototype.createComponentElement = async function ({
 
   // merge state from component script
   if (module.script) {
-    const scriptResult = await this._evaluate({
-      module,
-      element,
-      state,
-      page,
-      root: element || root,
-      contextId,
-      renderContext
-    })
+    let scriptResult = {}
+
+    try {
+      scriptResult = await this._evaluate({
+        module,
+        element,
+        state,
+        page,
+        root: element || root,
+        contextId,
+        renderContext
+      })
+    } catch (error) {
+      throw new CoraliteError(error.message, {
+        cause: error,
+        componentId: module.id,
+        filePath: moduleComponent.path.pathname,
+        pagePath: page?.file?.pathname,
+        instanceId: contextId
+      })
+    }
 
     if (scriptResult.__script__ != null) {
       const extractedScript = findAndExtractScript(module.script)
@@ -1942,7 +1965,17 @@ Coralite.prototype._evaluateDevelopment = async function ({
   await script.link(linker)
 
   // evaluate the module to execute its content
-  await script.evaluate()
+  try {
+    await script.evaluate()
+  } catch (error) {
+    throw new CoraliteError(error.message, {
+      cause: error,
+      componentId: module.id,
+      filePath: moduleComponent.path.pathname,
+      pagePath: page?.file?.pathname,
+      instanceId: contextId
+    })
+  }
 
   // @ts-ignore
   if (script.namespace.default != null) {
@@ -2074,10 +2107,13 @@ Coralite.prototype._evaluateProduction = async function ({
   try {
     await fn(moduleMock, moduleMock.exports, customRequire, context)
   } catch (error) {
-    if (error instanceof Error) {
-      error.message = `Error in "${moduleComponent.path.pathname}": ${error.message}`
-    }
-    throw error
+    throw new CoraliteError(error.message, {
+      cause: error,
+      componentId: module.id,
+      filePath: moduleComponent.path.pathname,
+      pagePath: page?.file?.pathname,
+      instanceId: contextId
+    })
   }
 
   if (moduleMock.exports.default != null) {
