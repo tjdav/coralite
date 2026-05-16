@@ -38,10 +38,18 @@
         import { defineComponent } from 'coralite/plugins'
 
         export default defineComponent({
-          attributes: { ... },
-          async data(context) { ... },
-          getters: { ... },
-          script: ({ state, root, signal, refs, ...pluginContext }) => { ... }
+          attributes: {
+            // ...
+          },
+          async data(context) {
+            // ...
+          },
+          getters: {
+            //...
+          },
+          script: ({ state, root, signal, refs, ...pluginContext }) => {
+            // ...
+          }
         })
       </script>
     </coralite-code-html>
@@ -53,7 +61,7 @@
     <coralite-heading level="h3" text="1. Attributes (Inputs)"></coralite-heading>
     <p>Attributes are the "props" of your component. They are coerced from HTML attributes into JS primitives.</p>
     <coralite-code-highlight language="javascript">
-attributes: { 
+attributes: {
   theme: { type: String, default: 'light' },
   count: { type: Number, default: 0 }
 }
