@@ -30,7 +30,7 @@
       }
 
       return {
-        pageTitle: context.attributes.title || meta.pageTitle || 'Untitled Post',
+        pageTitle: meta.pageTitle || 'Untitled Post',
         pageUrlPathname: page.url.pathname,
         localeDate: formattedDate
       }
