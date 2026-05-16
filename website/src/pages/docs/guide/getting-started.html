@@ -87,7 +87,10 @@
         export default defineComponent({
           attributes: {
             // Define our initial value via an attribute
-            currentCount: { type: Number, default: 0 }
+            currentCount: {
+              type: Number,
+              default: 0
+            }
           }
         })
       </script>
@@ -116,7 +119,10 @@
 
         export default defineComponent({
           attributes: {
-            currentCount: { type: Number, default: 0 }
+            currentCount: {
+      type: Number,
+      default: 0
+    }
           },
           // The script function runs in the browser!
           script: ({ state, root, signal, refs, ...pluginContext }) => {
