@@ -8,13 +8,16 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    properties: {
-      capitaliseName ({ name }) {
-        if (name) {
-          return name[0].toUpperCase() + name.slice(1)
-        }
+    attributes: {
+      name: {
+        type: String,
+        default: 'coralite'
+      }
+    },
 
-        return 'Coralite'
+    getters: {
+      capitaliseName: (state) => {
+        return state.name[0].toUpperCase() + state.name.slice(1)
       }
     }
   })

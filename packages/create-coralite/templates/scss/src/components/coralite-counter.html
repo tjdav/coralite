@@ -1,6 +1,6 @@
 <template id="coralite-counter">
   <button ref="count-button" type="button" class="btn">
-    Count is 0
+    Count is {{ count }}
   </button>
 </template>
 
@@ -27,18 +27,26 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    async script ({ properties, refs }) {
+    attributes: {
+      step: {
+        type: Number,
+        default: 1
+      }
+    },
+
+    async data () {
+      return {
+        count: 0
+      }
+    },
+
+    async script ({ state, refs }) {
       const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
       const button = refs('count-button')
-      const step = properties.step ? parseInt(properties.step) : 1
-      let count = 0
 
       button.addEventListener('click', () => {
-        // increment the counter by the specified step value
-        count += step
-
-        // update the button's text content to reflect the new count value
-        button.textContent = `Count is ${count}`
+        // Coralite automatically patches the {{ count }} token in the template.
+        state.count += state.step
 
         // Explode confetti :)
         confetti()
