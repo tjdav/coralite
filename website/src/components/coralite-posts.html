@@ -6,13 +6,24 @@
   import { defineComponent, aggregation } from 'coralite/plugins'
 
   export default defineComponent({
-    properties (context) {
+    async data (context) {
       return {
-        posts: aggregation({
+        posts: await aggregation({
           path: ['blog'],
           template: 'coralite-post',
           sort (a, b) {
-            return new Date(b.page.meta.published_time) - new Date(a.page.meta.published_time)
+            let dateA = 0
+            let dateB = 0
+
+            if (a) {
+              a.page.meta.published_time
+            }
+
+            if (b) {
+              dateB = b.page.meta.published_time
+            }
+
+            return new Date(dateB) - new Date(dateA)
           },
           limit: 15,
           pagination: {

@@ -11,7 +11,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script ({ refs }) {
+    script ({ refs, signal }) {
       const button = refs('backToTopBtn')
 
       const toggleVisibility = () => {
@@ -22,14 +22,15 @@
         }
       }
 
-      window.addEventListener('scroll', toggleVisibility)
+      window.addEventListener('scroll', toggleVisibility, { signal })
 
       button.addEventListener('click', (e) => {
+        e.preventDefault()
         window.scrollTo({
           top: 0,
           behavior: 'smooth'
         })
-      })
+      }, { signal })
     }
   })
 </script>

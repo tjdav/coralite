@@ -4,7 +4,7 @@
       {{ img }}
       <span>{{ fullName }}</span> -
     </a>
-    <time datetime="{{ date-time }}"> {{ localeDate }}</time>
+    <time datetime="{{ dateTime }}"> {{ localeDate }}</time>
   </div>
 </template>
 
@@ -24,54 +24,44 @@ const authors = {
 }
 
 export default defineComponent({
-  properties (context) {
-    const authorKey = context.properties.name || 'thomas'
-    const currentAuthor = authors[authorKey]
-
-    if (!currentAuthor) {
-      return {
-        url: '',
-        img: '<picture><img class="post-author-img" src="/images/default.png" alt="Unknown Author"></picture>',
-        fullName: 'Unknown',
-        localeDate: ''
+  attributes: {
+    name: {
+      type: String,
+      default: 'thomas'
+    },
+    dateTime: { type: String }
+  },
+  getters: {
+    author: (state) => authors[state.name] || null,
+    url: (state) => state.author?.url || '',
+    fullName: (state) => state.author?.name || 'Unknown',
+    img: (state) => {
+      const currentAuthor = state.author
+      if (!currentAuthor) {
+        return '<picture><img class="post-author-img" src="/images/default.png" alt="Unknown Author"></picture>'
       }
-    }
-
-    const url = currentAuthor.url || ''
-
-    let pictureHtml = '<picture>'
-    if (currentAuthor.img.avif) {
-      pictureHtml += `<source srcset="${currentAuthor.img.avif}" type="image/avif">`
-    }
-
-    // Removed redundant avif check from original code
-    if (!currentAuthor.img.default) {
-      throw new Error('Author image expects a default image')
-    }
-
-    pictureHtml += `<img class="post-author-img" src="${currentAuthor.img.default}" alt="Photo of ${currentAuthor.name}">`
-    pictureHtml += '</picture>'
-
-    const fullName = currentAuthor.name || ''
-
-    let localeDate = ''
-    if (context.properties.dateTime) {
+      let pictureHtml = '<picture>'
+      if (currentAuthor.img.avif) {
+        pictureHtml += `<source srcset="${currentAuthor.img.avif}" type="image/avif">`
+      }
+      pictureHtml += `<img class="post-author-img" src="${currentAuthor.img.default}" alt="Photo of ${currentAuthor.name}">`
+      pictureHtml += '</picture>'
+      return pictureHtml
+    },
+    localeDate: (state) => {
+      if (!state.dateTime) {
+        return ''
+      }
       try {
-        localeDate = new Date(context.properties.dateTime).toLocaleDateString('en-AU', {
+        return new Date(state.dateTime).toLocaleDateString('en-AU', {
           year: '2-digit',
           month: 'short',
           day: 'numeric'
         })
       } catch (e) {
         console.error('Failed to parse date:', e)
+        return ''
       }
-    }
-
-    return {
-      url,
-      img: pictureHtml,
-      fullName,
-      localeDate
     }
   }
 })

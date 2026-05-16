@@ -6,25 +6,25 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    properties ({ properties }) {
-      const text = properties.text || 'Untitled'
-      const level = properties.level || 1
-  
-      // Compute the ID based on the input text
-      const id = text
+    attributes: {
+      text: {
+        type: String,
+        default: 'Untitled'
+      },
+      level: {
+        type: Number,
+        default: 1
+      }
+    },
+    getters: {
+      headingId: (state) => state.text
         .toLowerCase()
         .replace(/\s+/g, '-')
-        .replace(/[^a-z0-9-]/g, '')
-
-      // Construct the full HTML string here as requested by the prompt's intent
-      const headingHtml = `<${level} id="${id}">
-          ${text}
-          <a href="#${id}" class="anchor-link" aria-label="Link to this section: ${text}">#</a>
-        </${level}>`
-
-      return {
-        headingHtml: headingHtml
-      }
+        .replace(/[^a-z0-9-]/g, ''),
+      headingHtml: (state) => `<h${state.level} id="${state.headingId}">
+          ${state.text}
+          <a href="#${state.headingId}" class="anchor-link" aria-label="Link to this section: ${state.text}">#</a>
+        </h${state.level}>`
     }
   })
 </script>

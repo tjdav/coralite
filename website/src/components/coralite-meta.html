@@ -16,7 +16,7 @@
   <meta property="og:image" content="https://coralite.dev/images/social.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  
+
   <link rel="icon" href="/favicon.ico">
 
   <title>{{ title }} | Coralite</title>
@@ -26,18 +26,34 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    properties (context) {
-      const properties = context.properties
+    attributes: {
+      type: {
+        type: String,
+        default: 'website'
+      },
+      title: {
+        type: String,
+        default: 'Default Title'
+      },
+      description: {
+        type: String,
+        default: ''
+      },
+      seoTitle: { type: String },
+      seoDescription: { type: String }
+    },
+    async data (context) {
       const pageUrlPathname = context.page.url.pathname
+      const state = context.state
       const baseUrl = 'https://coralite.dev'
-      const ogType = properties.type || 'website'
-      const metaSeoTitle = properties.seoTitle || properties.title
-      const metaSeoDescription = properties.seoDescription || properties.description
+      const ogType = state.type
+      const metaSeoTitle = state.seoTitle || state.title
+      const metaSeoDescription = state.seoDescription || state.description
 
       let canonicalUrl = baseUrl
       if (pageUrlPathname === '/index.html') {
         canonicalUrl = baseUrl
-      } else {
+      } else if (pageUrlPathname) {
         const nameSplit = pageUrlPathname.split('.html')
         canonicalUrl = baseUrl + nameSplit.slice(0, nameSplit.length - 1).join('')
       }
@@ -47,9 +63,8 @@
         metaSeoTitle: metaSeoTitle,
         metaSeoDescription: metaSeoDescription,
         canonical: canonicalUrl,
-        // Pass through other necessary props for the template to render
-        title: properties.title || 'Default Title',
-        description: properties.description || ''
+        title: state.title,
+        description: state.description
       }
     }
   })

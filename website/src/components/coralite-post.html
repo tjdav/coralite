@@ -1,8 +1,8 @@
 <template id="coralite-post">
   <article class="post">
-    <h2><a href="{{ page_url_pathname }}">{{ page_title }}</a></h2>
-    <coralite-author name="{{ meta_author_id }}" date-time="{{ meta_published_time }}"></coralite-author>
-    <p>{{ meta_pageDescription }}</p>
+    <h2><a href="{{ pageUrlPathname }}">{{ pageTitle }}</a></h2>
+    <coralite-author name="{{ metaAuthorId }}" date-time="{{ metaPublishedTime }}"></coralite-author>
+    <p>{{ metaPageDescription }}</p>
   </article>
 </template>
 
@@ -10,13 +10,16 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    properties (context) {
+    async data (context) {
+      // If this is used inside an aggregation, context.page is the aggregated page
+      const page = context.state.page
+
       return {
-        page_url_pathname: context.properties.page.url.pathname,
-        page_title: context.properties.page.meta.pageTitle || 'Untitled Post',
-        meta_author_id: context.properties.page.meta.author_id || 'Unknown Author',
-        meta_published_time: context.properties.page.meta.published_time || new Date().toISOString(),
-        meta_pageDescription: context.properties.page.meta.description || 'No description provided.'
+        pageUrlPathname: page.url.pathname,
+        pageTitle: page.meta.pageTitle || 'Untitled Post',
+        metaAuthorId: page.meta.author_id || 'Unknown Author',
+        metaPublishedTime: page.meta.published_time || new Date().toISOString(),
+        metaPageDescription: page.meta.description || 'No description provided.'
       }
     }
   })

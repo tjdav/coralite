@@ -33,11 +33,25 @@
   }
 
   export default defineComponent({
-    properties (context) {
-      const pageLang = context.page.meta.lang || context.properties.lang || 'en'
+    attributes: {
+      lang: {
+        type: String,
+        default: 'en'
+      },
+      languages: {
+        type: String,
+        default: ''
+      },
+      sourceLang: {
+        type: String,
+        default: 'en'
+      }
+    },
+    async data (context) {
+      const pageLang = context.page.meta.lang || context.attributes.lang || 'en'
       const pathname = context.page.url.pathname
-      const languages = context.properties.languages || ''
-      const sourceLang = context.properties.sourceLang || 'en'
+      const languages = context.attributes.languages || ''
+      const sourceLang = context.attributes.sourceLang || 'en'
 
       const currentLang = `<span class="d-none">
         ${getNativeLanguageName(pageLang)}
@@ -83,7 +97,7 @@
       button.addEventListener('click', (event) => {
         event.preventDefault()
         tooltip.classList.toggle('show')
-      })
+      }, { signal })
 
       document.addEventListener('click', (event) => {
         const isClickInsideMenu = tooltip.contains(event.target)

@@ -1,6 +1,6 @@
 <template id="coralite-search">
   <div class="search-container">
-    <button type="button" class="search-button" popovertarget="search-popover" aria-label="Search" ref="searchTrigger">
+    <button type="button" class="search-button" popovertarget="{{ ref_searchPopover }}" aria-label="Search">
       <span class="search-icon">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search" viewBox="0 0 16 16">
           <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
@@ -12,14 +12,14 @@
       </span>
     </button>
     
-    <div id="search-popover" class="search-popover bg-glass drop-shadow" popover ref="searchPopover">
+    <div id="{{ ref_searchPopover }}" class="search-popover bg-glass drop-shadow" popover ref="searchPopover">
       <div class="search-header">
         <form class="search-form" ref="searchForm">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-search search-input-icon" viewBox="0 0 16 16">
             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
           </svg>
           <input type="search" class="search-input" ref="searchInput" placeholder="Search documentation..." aria-label="Search input">
-          <button type="button" class="button-close" popovertarget="search-popover" popovertargetaction="hide" aria-label="Close search"></button>
+          <button type="button" class="button-close" popovertarget="{{ ref_searchPopover }}" popovertargetaction="hide" aria-label="Close search"></button>
         </form>
       </div>
       <div class="search-results-container">
@@ -42,7 +42,6 @@
       const { default: Fuse } = await import('fuse.js')
 
       const searchForm = refs('searchForm')
-      const searchTrigger = refs('searchTrigger')
       const searchPopover = refs('searchPopover')
       const searchInput = refs('searchInput')
       const searchResults = refs('searchResults')
@@ -117,22 +116,6 @@
           searchResults.innerHTML = '<li class="search-empty">Type to start searching...</li>'
         }
       }, { signal })
-
-      const escapeHtml = (str) => {
-        if (!str) {
-          return ''
-        }
-        return str.replace(/[&<>"']/g, (m) => {
-          const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#39;'
-          }
-          return map[m]
-        })
-      }
 
       // Handle search
       searchInput.addEventListener('input', (e) => {

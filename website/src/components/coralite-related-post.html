@@ -9,9 +9,12 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    properties (context) {
-      const url = context.page.url
-      const meta = context.page.meta
+    attributes: {
+      title: { type: String }
+    },
+    async data (context) {
+      const page = context.page
+      const meta = page.meta
 
       let formattedDate = 'N/A'
       if (meta.published_time) {
@@ -27,8 +30,8 @@
       }
 
       return {
-        pageTitle: context.properties.title || 'Untitled Post',
-        pageUrlPathname: url.pathname,
+        pageTitle: context.attributes.title || meta.pageTitle || 'Untitled Post',
+        pageUrlPathname: page.url.pathname,
         localeDate: formattedDate
       }
     }

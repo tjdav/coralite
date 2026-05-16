@@ -38,26 +38,20 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    properties () {
-      const date = new Date()
-      let year = date.getFullYear()
-
-      return {
-        year
-      }
+    getters: {
+      year: () => new Date().getFullYear()
     },
-    script ({ refs }) {
+    script ({ refs, signal }) {
       const button = refs('popoverBtn')
       const popoverTarget = refs('popoverTarget')
       const codeTarget = refs('code')
-      const popoverId = 'code__' + Math.random().toString(16).substring(2)
 
-      popoverTarget.setAttribute('id', popoverId)
-      button.setAttribute('popovertarget', popoverId)
+      popoverTarget.setAttribute('id', codeTarget.ref)
+      button.setAttribute('popovertarget', codeTarget.ref)
 
       codeTarget.addEventListener('focus', () => {
         codeTarget.select()
-      })
+      }, { signal })
 
       button.addEventListener('click', async () => {
         try {
@@ -65,7 +59,7 @@
         } catch (error) {
           console.error(error.message)
         }
-      })
+      }, { signal })
     }
   })
 </script>

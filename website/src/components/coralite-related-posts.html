@@ -7,39 +7,49 @@
 </template>
 
 <script type="module">
-  import { aggregation, defineComponent } from 'coralite/plugins'
+  import { defineComponent, aggregation } from 'coralite/plugins'
 
   export default defineComponent({
-    properties (context) {
-      return {
-        posts: async () => {
-          const postItems = await aggregation({
-            path: ['blog'],
-            template: 'coralite-related-post',
-            limit: 3,
-            sort (a, b) {
-              return new Date(b.page.meta.published_time || 0) - new Date(a.page.meta.published_time || 0)
-            }
-          })
+    async data (context) {
+      const postItems = await aggregation({
+        path: ['blog'],
+        template: 'coralite-related-post',
+        limit: 3,
+        sort (a, b) {
+          let dateA = 0
+          let dateB = 0
 
-          if (postItems.length) {
-            const ul = {
-              type: 'tag',
-              name: 'ul',
-              children: postItems
-            }
-
-            for (let i = 0; i < postItems.length; i++) {
-              const item = postItems[i]
-
-              item.parent = ul
-            }
-
-            return ul
+          if (a) {
+            dateA = a.page.meta.published_time
           }
-  
-          return null
+
+          if (b) {
+            dateB = b.page.meta.published_time
+          }
+
+          return new Date(dateB) - new Date(dateA)
         }
+      })
+
+      if (postItems.length) {
+        const ul = {
+          type: 'tag',
+          name: 'ul',
+          children: postItems
+        }
+
+        for (let i = 0; i < postItems.length; i++) {
+          const item = postItems[i]
+          item.parent = ul
+        }
+
+        return {
+          posts: ul
+        }
+      }
+
+      return {
+        posts: null
       }
     }
   })

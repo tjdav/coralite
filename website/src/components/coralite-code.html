@@ -17,6 +17,12 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
+    attributes: {
+      language: {
+        type: String,
+        default: 'text'
+      }
+    },
     slots: {
       default (content) {
         let result = []
@@ -25,12 +31,12 @@
         const firstNode = content[0]
         const lastNode = content[endIndex - 1]
 
-        if (firstNode.type === 'text' && !firstNode.data.trim()) {
+        if (firstNode && firstNode.type === 'text' && !firstNode.data.trim()) {
           // skip first new line
           startIndex = 1
         }
 
-        if (lastNode.type === 'text' && !lastNode.data.trim()) {
+        if (lastNode && lastNode.type === 'text' && !lastNode.data.trim()) {
           endIndex = content.length - 1
         }
 
@@ -41,14 +47,14 @@
         return result
       }
     },
-    script ({ refs }) {
+    script ({ refs, signal }) {
       const button = refs('popoverBtn')
       const popoverTarget = refs('popoverTarget')
       const codeTarget = refs('code')
       const popoverId = 'copy__' + Math.random().toString(16).substring(2)
 
       popoverTarget.setAttribute('id', popoverId)
-      button.setAttribute('popovertarget', popoverTarget.id)
+      button.setAttribute('popovertarget', popoverId)
 
       button.addEventListener('click', async () => {
         try {
@@ -56,7 +62,7 @@
         } catch (error) {
           console.error(error.message)
         }
-      })
+      }, { signal })
     }
   })
 </script>
