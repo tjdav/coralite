@@ -75,7 +75,10 @@
 
           export default defineComponent({
             attributes: {
-              name: { type: String, default: 'Guest' }
+              name: {
+                type: String,
+                default: 'Guest'
+              }
             },
             getters: {
               greeting: (state) => `Hello, ${state.name}!`
@@ -291,7 +294,7 @@
 
           export default defineComponent({
             attributes: {
-                date: { type: String }
+              date: { type: String }
             },
             getters: {
               joinDate: (state) => formatDate({
@@ -698,12 +701,15 @@
 
           export default defineComponent({
             attributes: {
-                initial: { type: Number, default: 0 }
+              initial: {
+                type: Number,
+                default: 0
+              }
             },
-            data({ state }) {
-                return {
-                    currentCount: state.initial
-                }
+            data ({ state }) {
+              return {
+                currentCount: state.initial
+              }
             },
             script ({ state, root, signal, refs, ...pluginContext }) {
               const increment = refs('increment')
