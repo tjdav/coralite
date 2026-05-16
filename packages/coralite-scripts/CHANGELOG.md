@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.34.0
+
+> Comparing `coralite-scripts-v0.33.1` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- improve error reporting with CoraliteError ([3705145](https://codeberg.org/tjdavid/coralite/commit/3705145138a1c395a4f54dbe6acb7045cc929caf))
+
+
 ## v0.33.1
 
 > Comparing `coralite-scripts-v0.33.0` to `HEAD`
