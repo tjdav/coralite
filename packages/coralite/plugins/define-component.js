@@ -169,7 +169,9 @@ export const defineComponent = definePlugin({
       /** @type {any} */
       const roState = createReadOnlyProxy(state)
       for (const [key, getter] of Object.entries(getters)) {
+        // Ensure getters use read-only proxy to preemptively throw error if developer attempts to mutate the state.
         const result = getter(roState, { signal: new AbortController().signal })
+
         if (result && typeof result.then === 'function') {
           state[key] = await result
         } else {
