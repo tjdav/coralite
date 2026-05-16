@@ -10,11 +10,14 @@
 
   export default defineComponent({
     attributes: {
-      title: { type: String, default: 'No Title' },
+      title: {
+        type: String,
+        default: 'No Title'
+      },
       id: { type: String }
     },
     getters: {
-      dataDisplay: (state) => state.id ? `Fetched data for ${state.id}` : 'No Data'
+      dataDisplay: (state) => (state.id ? `Fetched data for ${state.id}` : 'No Data')
     },
     script: async ({ root, refs }) => {
       // check imperative property assignment

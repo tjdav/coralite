@@ -7,14 +7,14 @@
   import fs from 'node:fs'
 
   export default defineComponent({
-    data(context) {
+    data (context) {
       return {
         content: 'ServerOnlyData'
       }
     },
     script: ({ state }) => {
       // data() and fs import should be gone from here
-      console.log('Client script running');
+      console.log('Client script running')
     }
   })
 </script>

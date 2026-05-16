@@ -11,8 +11,14 @@
 
   export default defineComponent({
     attributes: {
-      title: { type: String, default: 'Initial' },
-      status: { type: String, default: 'Offline' }
+      title: {
+        type: String,
+        default: 'Initial'
+      },
+      status: {
+        type: String,
+        default: 'Offline'
+      }
     },
     script: ({ state, root, refs, signal }) => {
       const updateBtn = refs('updateBtn')
