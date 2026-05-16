@@ -81,12 +81,15 @@
           
           export default defineComponent({
             attributes: {
-                initial: { type: Number, default: 0 }
+              initial: {
+                type: Number,
+                default: 0
+              }
             },
-            data({ state }) {
-                return {
-                    currentCount: state.initial
-                }
+            data ({ state }) {
+              return {
+                currentCount: state.initial
+              }
             },
             script ({ state, root, signal, refs, ...pluginContext }) {
               const increment = refs('increment')
