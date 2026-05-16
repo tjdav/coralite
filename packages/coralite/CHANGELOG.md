@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.34.0
+
+> Comparing `coralite-v0.33.1` to `HEAD`
+
+**Summary:** 11 commits
+
+### ✨ Features
+
+- improve error reporting with CoraliteError ([3705145](https://codeberg.org/tjdavid/coralite/commit/3705145138a1c395a4f54dbe6acb7045cc929caf))
+
+### 📚 Documentation
+
+- update user card component example (coralite) ([5f814d4](https://codeberg.org/tjdavid/coralite/commit/5f814d4f5b7ffd7f6c503690f121233b55506a23))
+- update documentation across core concepts ([0c4fc91](https://codeberg.org/tjdavid/coralite/commit/0c4fc91e2bb89a327ab1ac8f83d6b9ad99259c9f))
+- update script context arguments documentation ([6abfc7b](https://codeberg.org/tjdavid/coralite/commit/6abfc7b23a5ed2af606451be4db166a8fa1751d3))
+- update llms directives for coralite ([2fa8ea0](https://codeberg.org/tjdavid/coralite/commit/2fa8ea08f180372ce1c11f1c4deab6c4c9f601ce))
+- update component and plugin APIs (coralite) ([6b01545](https://codeberg.org/tjdavid/coralite/commit/6b0154555ea449e71638d9277522d939f4977b5a))
+- define property patterns in website and llms.txt ([ab5c564](https://codeberg.org/tjdavid/coralite/commit/ab5c5648af47949ae224621f79259dc43447a60a))
+
+### ♻️ Code Refactoring
+
+- Improve attribute and getter formatting in component fixtures (tests) ([3485f64](https://codeberg.org/tjdavid/coralite/commit/3485f641d9de7e9179f33d51c0f9a366db8c3a09))
+- enforce read-only state access in getters (coralite) ([1c58aa7](https://codeberg.org/tjdavid/coralite/commit/1c58aa7d1b316329b6c1a72feac50b4b8aea4407))
+
+### 💥 Breaking Changes
+
+- upgrade Coralite API ([14326e0](https://codeberg.org/tjdavid/coralite/commit/14326e042c08388df6b6fdddfc6a12054e9dbdc2))
+
+### 🔨 Other Changes
+
+- tests: update E2E tests and core for defineComponent ([43d9567](https://codeberg.org/tjdavid/coralite/commit/43d95674341931c96f5ab722246a00dbdc54f0e8))
+
+
 ## v0.33.1
 
 > Comparing `coralite-v0.33.0` to `HEAD`
