@@ -36,7 +36,8 @@ import { createContext } from 'node:vm'
  *  InstanceContext,
  *  CoraliteConfig,
  *  CoraliteFilePath,
- *  CoralitePage
+ *  CoralitePage,
+ *  RenderContext
  * } from '../types/index.js'
  */
 
@@ -549,6 +550,26 @@ Coralite.prototype._handleError = function (data) {
 }
 
 /**
+ * Helper to create CoraliteError during component execution
+ * @internal
+ * @param {Error} error - The caught error
+ * @param {CoraliteModule} module - The component module
+ * @param {CoraliteCollectionItem} moduleComponent - The parent module component
+ * @param {CoralitePage} page - The current page
+ * @param {string} instanceId - The unique instance id
+ * @returns {CoraliteError} The generated error object
+ */
+Coralite.prototype._createExecutionError = function (error, module, moduleComponent, page, instanceId) {
+  return new CoraliteError(error.message, {
+    cause: error,
+    componentId: module.id,
+    filePath: moduleComponent.path.pathname,
+    pagePath: page?.file?.pathname,
+    instanceId
+  })
+}
+
+/**
  * Creates a render context for the build process.
  * @internal
  * @param {string} [buildId] - The unique identifier for the build process.
@@ -585,6 +606,58 @@ Coralite.prototype._createRenderContext = function (buildId) {
  * @param {Object} [state] - Properties to be passed to the page
  * @returns {AsyncGenerator<CoraliteResult>}
  */
+
+/**
+ * Processes custom elements found within a generated page context
+ * @internal
+ * @param {CoraliteComponent & CoraliteComponentResult} mappedComponent - The compiled component instance
+ * @param {CoraliteComponentResult} originalDocument - The original document mapping
+ * @param {Object} state - Local component state
+ * @param {Object} mappedRenderContextObject - Global rendering state
+ * @returns {Promise<void>} Resolves when the elements are processed
+ */
+Coralite.prototype._processCustomElementsInPage = async function (mappedComponent, originalDocument, state, mappedRenderContextObject) {
+  for (let i = 0; i < mappedComponent.customElements.length; i++) {
+    const customElement = mappedComponent.customElements[i]
+
+    const contextId = mappedComponent.path.pathname + i + customElement.name
+    const currentProperties = mappedRenderContextObject.state[contextId] || {}
+
+    if (typeof customElement.attribs === 'object') {
+      mappedRenderContextObject.state[contextId] = {
+        ...currentProperties,
+        ...state,
+        ...mappedComponent.state,
+        ...customElement.attribs
+      }
+    } else {
+      mappedRenderContextObject.state[contextId] = Object.assign(
+        Object.assign(Object.assign({}, currentProperties, state), mappedComponent.state)
+      )
+    }
+
+    const componentElement = await this.createComponentElement({
+      id: customElement.name,
+      state: mappedRenderContextObject.state[contextId],
+      element: customElement,
+      page: originalDocument.page,
+      root: mappedComponent.root,
+      contextId,
+      index: i,
+      renderContext: mappedRenderContextObject
+    })
+
+    if (componentElement) {
+      for (let i = 0; i < componentElement.children.length; i++) {
+        componentElement.children[i].parent = customElement.parent
+      }
+
+      const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
+      customElement.parent.children.splice(index, 1, ...componentElement.children)
+    }
+  }
+}
+
 Coralite.prototype._generatePages = async function* (path, state = {}) {
   const queue = resolvePageQueue(this.pages, path)
 
@@ -627,47 +700,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       // remove temporary elements
       removeElements(mappedComponent.tempElements, false)
 
-      for (let i = 0; i < mappedComponent.customElements.length; i++) {
-        const customElement = mappedComponent.customElements[i]
-
-        const contextId = mappedComponent.path.pathname + i + customElement.name
-        const currentProperties = mappedRenderContextObject.state[contextId] || {}
-
-        if (typeof customElement.attribs === 'object') {
-          mappedRenderContextObject.state[contextId] = {
-            ...currentProperties,
-            ...state,
-            ...mappedComponent.state,
-            ...customElement.attribs
-          }
-        } else {
-          mappedRenderContextObject.state[contextId] = Object.assign(
-            Object.assign(Object.assign({}, currentProperties, state), mappedComponent.state)
-          )
-        }
-
-        const componentElement = await this.createComponentElement({
-          id: customElement.name,
-          state: mappedRenderContextObject.state[contextId],
-          element: customElement,
-          page: originalDocument.page,
-          root: mappedComponent.root,
-          contextId,
-          index: i,
-          renderContext: mappedRenderContextObject
-        })
-
-        if (componentElement) {
-          for (let i = 0; i < componentElement.children.length; i++) {
-            // update component parent
-            componentElement.children[i].parent = customElement.parent
-          }
-
-          const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
-          // replace custom element with component
-          customElement.parent.children.splice(index, 1, ...componentElement.children)
-        }
-      }
+      await this._processCustomElementsInPage(mappedComponent, originalDocument, state, mappedRenderContextObject)
 
       const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
 
@@ -1193,13 +1226,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
           renderContext
         })
       } catch (error) {
-        throw new CoraliteError(error.message, {
-          cause: error,
-          componentId: module.id,
-          filePath: moduleComponent.path.pathname,
-          pagePath: page?.file?.pathname,
-          instanceId: `dependent-${id}`
-        })
+        throw this._createExecutionError(error, module, moduleComponent, page, `dependent-${id}`)
       }
     }
 
@@ -1402,13 +1429,7 @@ Coralite.prototype.createComponentElement = async function ({
         renderContext
       })
     } catch (error) {
-      throw new CoraliteError(error.message, {
-        cause: error,
-        componentId: module.id,
-        filePath: moduleComponent.path.pathname,
-        pagePath: page?.file?.pathname,
-        instanceId: contextId
-      })
+      throw this._createExecutionError(error, module, moduleComponent, page, contextId)
     }
 
     if (scriptResult.__script__ != null) {
@@ -1672,101 +1693,116 @@ Coralite.prototype.createComponentElement = async function ({
     }
   }
 
+  await this._replaceSlots(id, element, module, contextId, state, page, root, index, renderContext)
+
+  return result
+}
+
+
+/**
+ * Replaces slot elements in a component with provided content
+ * @internal
+ * @param {string} id - Component ID
+ * @param {CoraliteElement} element - The original Custom Element node
+ * @param {CoraliteModule} module - The component module configuration
+ * @param {string} contextId - Instance context ID
+ * @param {Object} state - The component state
+ * @param {CoralitePage} page - Active page object
+ * @param {CoraliteComponentRoot} root - The component root element
+ * @param {number} index - Index of element
+ * @param {Object} renderContext - Rendering state
+ * @returns {Promise<void>} Resolves when slots are successfully replaced
+ */
+Coralite.prototype._replaceSlots = async function (id, element, module, contextId, state, page, root, index, renderContext) {
   const slots = module.slotElements[id]
 
-  // replace slot content
-  if (slots) {
-    const slotChildren = {}
-    const slotNames = Object.keys(slots)
+  if (!slots) {
+    return
+  }
 
-    // sort slot content by name
-    for (let i = 0; i < slotNames.length; i++) {
-      const slotName = slotNames[i]
-      slotChildren[slotName] = []
-    }
+  const slotChildren = {}
+  const slotNames = Object.keys(slots)
 
-    // insert slot content by name
-    if (element) {
-      for (let i = 0; i < element.slots.length; i++) {
-        const elementSlotContent = element.slots[i]
-        const slotName = elementSlotContent.name
-        const slot = slots[slotName]
+  for (let i = 0; i < slotNames.length; i++) {
+    const slotName = slotNames[i]
+    slotChildren[slotName] = []
+  }
 
-        if (slot) {
-          if (elementSlotContent.node.attribs) {
-            // remove slot attribute
-            delete elementSlotContent.node.attribs.slot
-          }
+  if (element) {
+    for (let i = 0; i < element.slots.length; i++) {
+      const elementSlotContent = element.slots[i]
+      const slotName = elementSlotContent.name
+      const slot = slots[slotName]
 
-          slotChildren[slotName].push(elementSlotContent.node)
+      if (slot) {
+        if (elementSlotContent.node.attribs) {
+          delete elementSlotContent.node.attribs.slot
         }
+
+        slotChildren[slotName].push(elementSlotContent.node)
       }
     }
+  }
 
-    for (let i = 0; i < slotNames.length; i++) {
-      const slotName = slotNames[i]
-      let slotNodes = slotChildren[slotName]
-      const slot = slots[slotName]
-      const slotIndex = slot.element.parent.children.indexOf(slot.element)
+  for (let i = 0; i < slotNames.length; i++) {
+    const slotName = slotNames[i]
+    let slotNodes = slotChildren[slotName]
+    const slot = slots[slotName]
+    const slotIndex = slot.element.parent.children.indexOf(slot.element)
 
-      // filter out whitespace only text nodes
-      const emptySlot = slotNodes.filter(node => {
-        return node.type !== 'text' || (node.data && node.data.trim().length > 0)
-      })
+    const emptySlot = slotNodes.filter(node => {
+      return node.type !== 'text' || (node.data && node.data.trim().length > 0)
+    })
 
-      if (!emptySlot.length) {
-        // set default content
-        slotNodes = slot.element.children || []
-      } else {
-        const startIndex = slotNodes.length - 1
+    if (!emptySlot.length) {
+      slotNodes = slot.element.children || []
+    } else {
+      const startIndex = slotNodes.length - 1
 
-        for (let i = startIndex; i > -1; i--) {
-          const node = slotNodes[i]
+      for (let i = startIndex; i > -1; i--) {
+        const node = slotNodes[i]
 
-          if (node.name) {
-            const slotComponentItem = this.components.getItem(node.name)
+        if (node.name) {
+          const slotComponentItem = this.components.getItem(node.name)
 
-            if (slotComponentItem) {
-              const slotContextId = contextId + slotName + i + node.name
-              const currentProperties = renderContext.state[slotContextId] || {}
-              const attribValues = cleanKeys(node.attribs)
+          if (slotComponentItem) {
+            const slotContextId = contextId + slotName + i + node.name
+            const currentProperties = renderContext.state[slotContextId] || {}
+            const attribValues = cleanKeys(node.attribs)
 
-              if (typeof node.attribs === 'object') {
-                renderContext.state[slotContextId] = {
-                  ...currentProperties,
-                  ...state,
-                  ...attribValues
-                }
-              } else {
-                renderContext.state[slotContextId] = Object.assign(currentProperties, state)
+            if (typeof node.attribs === 'object') {
+              renderContext.state[slotContextId] = {
+                ...currentProperties,
+                ...state,
+                ...attribValues
               }
+            } else {
+              renderContext.state[slotContextId] = Object.assign(currentProperties, state)
+            }
 
-              const componentElement = await this.createComponentElement({
-                id: node.name,
-                state: renderContext.state[slotContextId],
-                element: node,
-                page,
-                root,
-                contextId: slotContextId,
-                index,
-                renderContext
-              }, false)
+            const componentElement = await this.createComponentElement({
+              id: node.name,
+              state: renderContext.state[slotContextId],
+              element: node,
+              page,
+              root,
+              contextId: slotContextId,
+              index,
+              renderContext
+            }, false)
 
-              if (componentElement) {
-                slotNodes.splice(i, 1, ...componentElement.children)
-              }
+            if (componentElement) {
+              slotNodes.splice(i, 1, ...componentElement.children)
             }
           }
         }
       }
-
-      // replace slot element with content
-      slot.element.parent.children.splice(slotIndex, 1, ...slotNodes)
     }
-  }
 
-  return result
+    slot.element.parent.children.splice(slotIndex, 1, ...slotNodes)
+  }
 }
+
 
 /**
  * Generates a custom module linker callback for the Node.js VM context.
@@ -1968,13 +2004,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
   try {
     await script.evaluate()
   } catch (error) {
-    throw new CoraliteError(error.message, {
-      cause: error,
-      componentId: module.id,
-      filePath: moduleComponent.path.pathname,
-      pagePath: page?.file?.pathname,
-      instanceId: contextId
-    })
+    throw this._createExecutionError(error, module, moduleComponent, page, contextId)
   }
 
   // @ts-ignore
@@ -2107,13 +2137,7 @@ Coralite.prototype._evaluateProduction = async function ({
   try {
     await fn(moduleMock, moduleMock.exports, customRequire, context)
   } catch (error) {
-    throw new CoraliteError(error.message, {
-      cause: error,
-      componentId: module.id,
-      filePath: moduleComponent.path.pathname,
-      pagePath: page?.file?.pathname,
-      instanceId: contextId
-    })
+    throw this._createExecutionError(error, module, moduleComponent, page, contextId)
   }
 
   if (moduleMock.exports.default != null) {

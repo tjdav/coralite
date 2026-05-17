@@ -8,6 +8,65 @@ import {
 } from './dom.js'
 import { isValidCustomElementName, VALID_TAGS } from './tags.js'
 
+
+/**
+ * @internal
+ * @param {CoraliteElement} element - The element being parsed
+ * @param {Record<string, string>} attributes - A dictionary of element attributes
+ * @param {Array<string | Attribute>} skipRenderByAttribute - Keys to search for skip flag
+ */
+function applySkipRenderAttribute (element, attributes, skipRenderByAttribute) {
+  if (skipRenderByAttribute && skipRenderByAttribute.length > 0) {
+    for (let i = 0; i < skipRenderByAttribute.length; i++) {
+      const skipItem = skipRenderByAttribute[i]
+      if (typeof skipItem === 'string') {
+        if (Object.prototype.hasOwnProperty.call(attributes, skipItem)) {
+          element.skipRender = true
+          break
+        }
+      } else if (skipItem && typeof skipItem === 'object') {
+        if (Object.prototype.hasOwnProperty.call(attributes, skipItem.name) && attributes[skipItem.name].includes(skipItem.value)) {
+          element.skipRender = true
+          break
+        }
+      }
+    }
+  }
+}
+
+function handleTemplateOpenTag (attributes) {
+  if (!attributes.id) {
+    throw new Error('Template requires an "id"')
+  }
+  if (!isValidCustomElementName(attributes.id)) {
+    throw new Error('Invalid template id: "' + attributes.id + '" it must match following the pattern https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
+  }
+  return attributes.id
+}
+
+/**
+ * @internal
+ * @param {CoraliteElement} element - The slot element node
+ * @param {Record<string, string>} attributes - A dictionary of element attributes
+ * @param {string} templateId - Current template definition id
+ * @param {Object.<string, Object.<string, CoraliteModuleSlotElement>>} slotElements - State containing slot lists
+ */
+function handleSlotOpenTag (element, attributes, templateId, slotElements) {
+  const name = attributes.name || 'default'
+  if (slotElements[templateId] && slotElements[templateId][name]) {
+    throw new Error('Slot names must be unique: "' + name + '"')
+  }
+  const slot = {
+    name,
+    element
+  }
+  if (!slotElements[templateId]) {
+    slotElements[templateId] = { [name]: slot }
+  } else {
+    slotElements[templateId][name] = slot
+  }
+}
+
 /**
  * @import {
  *  CoraliteToken,
@@ -70,22 +129,7 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
         onError
       })
 
-      if (skipRenderByAttribute && skipRenderByAttribute.length > 0) {
-        for (let i = 0; i < skipRenderByAttribute.length; i++) {
-          const skipItem = skipRenderByAttribute[i]
-          if (typeof skipItem === 'string') {
-            if (Object.prototype.hasOwnProperty.call(attributes, skipItem)) {
-              element.skipRender = true
-              break
-            }
-          } else if (skipItem && typeof skipItem === 'object') {
-            if (Object.prototype.hasOwnProperty.call(attributes, skipItem.name) && attributes[skipItem.name].includes(skipItem.value)) {
-              element.skipRender = true
-              break
-            }
-          }
-        }
-      }
+      applySkipRenderAttribute(element, attributes, skipRenderByAttribute)
 
       if (element.slots) {
         // store custom element
@@ -241,22 +285,7 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
         onError
       })
 
-      if (skipRenderByAttribute && skipRenderByAttribute.length > 0) {
-        for (let i = 0; i < skipRenderByAttribute.length; i++) {
-          const skipItem = skipRenderByAttribute[i]
-          if (typeof skipItem === 'string') {
-            if (Object.prototype.hasOwnProperty.call(attributes, skipItem)) {
-              element.skipRender = true
-              break
-            }
-          } else if (skipItem && typeof skipItem === 'object') {
-            if (Object.prototype.hasOwnProperty.call(attributes, skipItem.name) && attributes[skipItem.name].includes(skipItem.value)) {
-              element.skipRender = true
-              break
-            }
-          }
-        }
-      }
+      applySkipRenderAttribute(element, attributes, skipRenderByAttribute)
 
       if (element.slots) {
         customElements.push(element)
@@ -268,37 +297,10 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
       if (element.name === 'script') {
         isScript = true
       } else if (element.name === 'template') {
-        // enter template tag
         isTemplate = true
-
-        if (!attributes.id) {
-          throw new Error('Template requires an "id"')
-        }
-
-        if (!isValidCustomElementName(attributes.id)) {
-          throw new Error('Invalid template id: "' + attributes.id + '" it must match following the pattern https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
-        }
-
-        templateId = attributes.id
+        templateId = handleTemplateOpenTag(attributes)
       } else if (element.name === 'slot') {
-        const name = attributes.name || 'default'
-
-        if (slotElements[templateId] && slotElements[templateId][name]) {
-          throw new Error('Slot names must be unique: "' + name + '"')
-        }
-
-        const slot = {
-          name,
-          element
-        }
-
-        if (!slotElements[templateId]) {
-          slotElements[templateId] = {
-            [name]: slot
-          }
-        } else {
-          slotElements[templateId][name] = slot
-        }
+        handleSlotOpenTag(element, attributes, templateId, slotElements)
       } else if (isTemplate) {
         const attributeNames = Object.keys(attributes)
 
