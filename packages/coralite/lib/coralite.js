@@ -224,7 +224,7 @@ export function Coralite ({
   const propertyDescriptors = {
     enumerable: false,
     configurable: false,
-    writable: true
+    writable: false
   }
 
   const enumerablePropertyDescriptors = {
@@ -237,7 +237,9 @@ export function Coralite ({
     options: { ...enumerablePropertyDescriptors },
     _plugins: { ...propertyDescriptors },
     _scriptManager: { ...propertyDescriptors },
-    _source: { ...propertyDescriptors }
+    _source: { ...propertyDescriptors },
+    _onErrorCallback: { ...propertyDescriptors },
+    _renderQueues: { ...propertyDescriptors }
   })
 }
 
@@ -308,6 +310,19 @@ Coralite.prototype.initialise = async function () {
    * @type {Object.<string, string>}
    */
   this._childCustomElements = childCustomElements
+
+  Object.defineProperties(this, {
+    _pageCustomElements: {
+      enumerable: false,
+      configurable: false,
+      writable: false
+    },
+    _childCustomElements: {
+      enumerable: false,
+      configurable: false,
+      writable: false
+    }
+  })
 
   /** @type {CoraliteCollectionEventSet} */
   const onFileSet = async (data) => {
@@ -2264,5 +2279,81 @@ Coralite.prototype._addPluginHook = function (name, callback) {
     this._plugins.hooks[name].push(pluginCallback)
   }
 }
+
+Object.defineProperty(Coralite.prototype, '_defaultOnError', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_handleError', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_createExecutionError', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_createRenderContext', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_processCustomElementsInPage', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_generatePages', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_processDependentComponents', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_replaceSlots', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_moduleLinker', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_evaluateDevelopment', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_evaluateProduction', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_evaluate', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_triggerPluginAggregateHook', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_triggerPluginHook', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_addPluginHook', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
 
 export default Coralite
