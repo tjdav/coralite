@@ -244,7 +244,36 @@ The `definePlugin` function accepts an options object with the following schema:
   * `rootDir` (String): The root directory (auto-resolved to the caller directory if omitted).
 * **Lifecycle Hooks** (Functions): `onPageSet`, `onPageUpdate`, `onPageDelete`, `onComponentSet`, `onComponentUpdate`, `onComponentDelete`, `onBeforePageRender`, `onAfterPageRender`, `onBeforeBuild`, `onAfterBuild`.
 
-### 6.2 Two-Phase Currying & Injection
+### 6.2 The `exports` Property Context Binding
+The `exports` property of a plugin defines an execution function (or an object/array of functions) that processes content using plugin logic. 
+**Crucially, these functions access the full `CoralitePluginContext` through `this` binding, rather than receiving it as a trailing argument.** 
+
+The context bound to `this` includes:
+* `this.state`: Key-value pairs of data relevant to the plugin execution.
+* `this.page`: Global metadata about the consuming page.
+* `this.module`: The module context the plugin is operating within.
+* `this.root`: The specific HTML element the plugin is applied to.
+
+**Example: Accessing Context via `this`**
+```javascript
+import { definePlugin } from 'coralite/plugins'
+
+export default definePlugin({
+    name: 'custom-logger-plugin',
+    // 'exports' accesses the context via 'this'
+    exports: function(message) {
+        // Accessing component state and module info via 'this'
+        console.log(`[${this.module.name}] ${message}`, this.state);
+        
+        // Return modified state patch
+        return { logged: true };
+    }
+})
+```
+
+The `exports` property can also be an array or an object of functions, all of which will have their context dynamically bound by the engine.
+
+### 6.3 Two-Phase Currying & Injection
 To ensure safety and isolation, client injections mapped in the `client.context` object use a curried setup:
   * **Phase 1 (Global Setup)**: The first function `(globalContext) =>` runs exactly once when the plugin is registered. **Best Practice:** Declare your plugin's shared state, caches, or singleton instances here. Do NOT declare them in the global module scope.
   * **Phase 2 (Local Instance)**: The returned function `(instanceContext) =>` runs every time a component using the plugin is mounted. **Best Practice:** Return the exact utility, value, or method meant for that single component instance here. The returned value maps directly to the defined key.
