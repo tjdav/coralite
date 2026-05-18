@@ -1,7 +1,7 @@
 import { definePlugin } from '#lib'
 
 /**
- * @import { ScriptPluginHelperGlobalContext, ScriptPluginHelperLocalInstance } from '../types/index.js'
+ * @import { ScriptPluginHelperLocalInstance } from '../types/index.js'
  */
 
 export const refsPlugin = definePlugin({
@@ -23,15 +23,10 @@ export const refsPlugin = definePlugin({
             }
 
             const selector = `[ref="${refId}"]`
-            // use root context for scoped query when available
-            const element = (root || document).querySelector(selector)
+            // Use root context for scoped query when available, fallback to global document
+            const context = root || document
 
-            if (!element && !root) {
-              // fallback to global query if root is missing (declarative)
-              return document.querySelector(selector)
-            }
-
-            return element
+            return context.querySelector(selector) || null
           }
         }
       }

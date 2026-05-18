@@ -8,8 +8,7 @@ import {
 } from '#lib'
 
 /**
- * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleProperties, CoraliteModuleDefinition, CoraliteModuleDefinitions, CoraliteProperties, CoraliteModuleSlotFunction, CoraliteModulePropertiesFunction, CoraliteModuleDataFunction, CoraliteModuleGetterFunction } from '../types/index.js'
- * @import { ScriptImport } from '../types/script.js'
+ * @import { CoraliteElement, CoraliteModuleScript, CoraliteModuleState, CoraliteModuleDefinition, CoraliteModuleDefinitions, CoraliteState, CoraliteModuleSlotFunction, CoraliteModuleStateFunction, CoraliteModuleDataFunction, CoraliteModuleGetterFunction } from '../types/index.js'
  */
 
 /**
@@ -20,8 +19,8 @@ import {
  */
 function replaceCustomElementWithTemplate (coraliteElement, element) {
   // update parent references for new children to maintain the correct structure in the document
-  for (let i = 0; i < element.children.length; i++) {
-    element.children[i].parent = coraliteElement.parent
+  for (const child of element.children) {
+    child.parent = coraliteElement.parent
   }
 
   // determine the index of the original custom element within its parent's child list

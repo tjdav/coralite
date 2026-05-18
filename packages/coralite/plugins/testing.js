@@ -7,15 +7,18 @@ import { definePlugin } from '#lib'
  * @param {Array} children - The AST nodes to traverse.
  */
 function traverseAndAddTestId (children) {
-  if (!children || !Array.isArray(children)) {
+  if (!Array.isArray(children)) {
     return
   }
+
   for (let i = 0; i < children.length; i++) {
     const node = children[i]
-    if (node.type === 'tag' && node.attribs && node.attribs.ref) {
+
+    if (node.type === 'tag' && node.attribs?.ref) {
       node.attribs['data-testid'] = node.attribs.ref
     }
-    if (node.children && node.children.length > 0) {
+
+    if (node.children?.length > 0) {
       traverseAndAddTestId(node.children)
     }
   }
@@ -24,13 +27,15 @@ function traverseAndAddTestId (children) {
 export const testingPlugin = definePlugin({
   name: 'testing',
   onComponentSet: (component) => {
-    if (component && component.template && component.template.children) {
-      traverseAndAddTestId(component.template.children)
+    const children = component?.template?.children
+    if (children) {
+      traverseAndAddTestId(children)
     }
   },
   onPageSet: ({ elements }) => {
-    if (elements && elements.root && elements.root.children) {
-      traverseAndAddTestId(elements.root.children)
+    const children = elements?.root?.children
+    if (children) {
+      traverseAndAddTestId(children)
     }
   }
 })

@@ -8,6 +8,44 @@ import { definePlugin } from '#lib'
  */
 
 /**
+ * Processes a single element to extract metadata.
+ */
+async function processMetadataElement (element, context, index) {
+  const { page, state, data, app, elements } = context
+
+  if (element.type !== 'tag') {
+    return
+  }
+
+  if (element.name === 'meta' && element.attribs?.name && element.attribs?.content) {
+    page.meta[element.attribs.name] = element.attribs.content
+  } else if (element.slots) {
+    const componentElement = await app.createComponentElement({
+      id: element.name,
+      state,
+      element,
+      page,
+      root: elements.root,
+      contextId: data.path.pathname + index + element.name,
+      index
+    })
+
+    if (componentElement) {
+      for (let j = 0; j < componentElement.children.length; j++) {
+        const child = componentElement.children[j]
+        if (child.type === 'tag' && child.name === 'meta' && child.attribs?.name && child.attribs?.content) {
+          page.meta[child.attribs.name] = child.attribs.content
+        } else if (child.type === 'tag' && child.name === 'title' && child.children?.length && child.children[0].type === 'text') {
+          page.meta.title = child.children[0].data
+        }
+      }
+    }
+  } else if (element.name === 'title' && element.children?.length && element.children[0].type === 'text') {
+    page.meta.title = element.children[0].data
+  }
+}
+
+/**
  * Extracts metadata tags from the parsed HTML root elements.
  * Supports static <title> and <meta> tags, as well as resolving dynamic custom
  * element slots inside the <head> segment to compute metadata.
@@ -21,76 +59,27 @@ import { definePlugin } from '#lib'
  * @returns {Promise<void>}
  */
 async function extractMetadata (context) {
-  const { elements, state, page, data } = context
+  const { elements, page } = context
   page.meta.lang = ''
 
-  // loop through all children of the root element to process metadata in <head> tags.
   for (let i = 0; i < elements.root.children.length; i++) {
     const rootNode = elements.root.children[i]
 
-    // traverse html children to find the head element
     if (rootNode.type === 'tag' && rootNode.name === 'html') {
-      page.meta.lang = rootNode.attribs.lang || ''
+      page.meta.lang = rootNode.attribs?.lang || ''
 
-      for (let i = 0; i < rootNode.children.length; i++) {
-        const node = rootNode.children[i]
+      for (let j = 0; j < rootNode.children.length; j++) {
+        const node = rootNode.children[j]
 
-        // check if the current node is a <head> tag where metadata is typically found.
         if (node.type === 'tag' && node.name === 'head') {
-          // iterate over the children of the head element to locate meta tags or component slots.
-          for (let i = 0; i < node.children.length; i++) {
-            const element = node.children[i]
-
-            // if the element is a tag named "meta" with both name and content attributes, store its metadata.
-            if (element.type === 'tag') {
-              if (element.name === 'meta'
-                && element.attribs.name
-                && element.attribs.content
-              ) {
-                page.meta[element.attribs.name] = element.attribs.content
-              } else if (element.slots) {
-                // process component slots by creating a component dynamically.
-                const componentElement = await context.app.createComponentElement({
-                  id: element.name,
-                  state,
-                  element,
-                  page,
-                  root: elements.root,
-                  contextId: data.path.pathname + i + element.name,
-                  index: i
-                })
-
-                // if the created component returns valid children, iterate over them to extract meta information.
-                if (componentElement) {
-                  for (let i = 0; i < componentElement.children.length; i++) {
-                    const element = componentElement.children[i]
-
-                    // for each child element in the component's returned HTML,
-                    // check if it is a meta tag and store its metadata.
-                    if (element.type === 'tag'
-                      && element.name === 'meta'
-                      && element.attribs.name
-                      && element.attribs.content
-                    ) {
-                      page.meta[element.attribs.name] = element.attribs.content
-                    } else if (element.type === 'tag' && element.name === 'title' && element.children.length && element.children[0].type === 'text') {
-                      page.meta.title = element.children[0].data
-                    }
-                  }
-                }
-              } else if (element.name === 'title' && element.children.length && element.children[0].type === 'text') {
-                page.meta.title = element.children[0].data
-              }
-            }
+          for (let k = 0; k < node.children.length; k++) {
+            await processMetadataElement(node.children[k], context, k)
           }
-
           return
         }
       }
     }
   }
-
-  return
 }
 
 export const metadataPlugin = definePlugin({
