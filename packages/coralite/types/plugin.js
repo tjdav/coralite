@@ -29,31 +29,30 @@
  */
 
 /**
- * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageSetCallback - Async callback triggered when a page is created. Called with elements, state, and data.
  * @param {Object} param
  * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
  * @param {CoraliteFilePath & Object.<string, any>} param.state - Values associated with the page path
  * @param {CoralitePage} param.page - The global page object
  * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
+ * @param {Coralite} param.app - The global coralite app instance
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
- * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageUpdateCallback - Async callback triggered when a page is updated. Called with elements, new and old state.
  * @param {Object} param
  * @param {ParseHTMLResult} param.elements - Updated HTML elements from the page
  * @param {CoralitePage} param.page - The global page object
  * @param {CoraliteCollectionItem} param.newValue - The updated data item
  * @param {CoraliteCollectionItem} param.oldValue - The previous data item before update
+ * @param {Coralite} [param.app] - The global coralite app instance
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
- * @this {ThisType<Coralite>}
  * @callback CoralitePluginPageDeleteCallback - Async callback triggered when a page is deleted. Called with the deleted data.
  * @param {CoraliteCollectionItem} value - The data item being deleted
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
@@ -63,13 +62,12 @@
 /**
  * @this {ThisType<Coralite>}
  * @callback CoralitePluginComponentCallback - Async callback triggered for component-related events (set, update, delete).
- * @param {CoraliteModule} component - The component module that was set, updated, or deleted
+ * @param {CoraliteModule & {app?: Coralite}} component - The component module that was set, updated, or deleted
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
- * @this {ThisType<Coralite>}
  * @callback CoralitePluginBeforePageRenderCallback - Async callback triggered before a page has been rendered.
  * @param {Object} context
  * @param {CoraliteComponent} context.component - The cloned HTML component data being processed
@@ -81,17 +79,16 @@
  */
 
 /**
- * @this {ThisType<Coralite>}
  * @callback CoralitePluginBeforeBuildCallback - Async callback triggered before the build begins.
  * @param {Object} context
  * @param {string | string[] | null} context.path - The target directory or an array of specific page paths to build
  * @param {Object} context.options - Configuration options for the build process
+ * @param {Coralite} context.app - The global coralite app instance
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
- * @this {ThisType<Coralite>}
  * @callback CoralitePluginAfterPageRenderCallback - Async callback triggered after a page has been rendered but before saving.
  * @param {CoraliteResult} result - The rendered page result
  * @returns {Promise<CoraliteResult[]|CoraliteResult|void>} New result(s) to add to the build output
@@ -99,21 +96,20 @@
  */
 
 /**
- * @this {ThisType<Coralite>}
  * @callback CoralitePluginAfterBuildCallback - Async callback triggered when a build process completes (success or failure).
  * @param {Object} context
  * @param {CoraliteResult[]} context.results - The results of the build (pages generated)
  * @param {Error|null} context.error - The error if the build failed
  * @param {number} context.duration - The duration of the build in milliseconds
+ * @param {Coralite} context.app - The global coralite app instance
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
- * @template T
  * @typedef {Object} CoralitePlugin
  * @property {string} name - Unique identifier/name of the plugin
- * @property {CoralitePluginModule<T>} [method] - Execution function that processes content using plugin logic
+ * @property {any} [exports] - Execution function that processes content using plugin logic
  * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
@@ -130,10 +126,9 @@
  */
 
 /**
- * @template T
  * @typedef {Object} CoralitePluginResult
  * @property {string} name - Unique identifier/name of the plugin
- * @property {CoralitePluginModule<T>} [method] - Execution function that processes content using plugin logic
+ * @property {any} [exports] - Execution function that processes content using plugin logic
  * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {Object} [metadata] - Plugin metadata
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
@@ -153,7 +148,7 @@
 /**
  * @typedef {Object} CoralitePluginInstance
  * @property {string} name - Unique identifier/name of the plugin
- * @property {Function} [method] - Execution function that processes content using plugin logic
+ * @property {any} [exports] - Execution function that processes content using plugin logic
  * @property {HTMLData[]} [components=[]] - List of custom components to be included in the coralite instance
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated

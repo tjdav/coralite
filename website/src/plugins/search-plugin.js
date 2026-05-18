@@ -64,12 +64,12 @@ export default definePlugin({
       content
     })
   },
-  async onAfterBuild () {
+  async onAfterBuild ({ app }) {
 
     try {
-      await mkdir(this.options.output, { recursive: true })
+      await mkdir(app.options.output, { recursive: true })
 
-      const dest = join(this.options.output, 'search-index.json')
+      const dest = join(app.options.output, 'search-index.json')
       const content = JSON.stringify(searchIndex)
 
       await writeFile(dest, content)

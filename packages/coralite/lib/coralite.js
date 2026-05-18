@@ -166,14 +166,8 @@ export function Coralite ({
     const plugin = plugins[i]
 
     // set plugin method
-    if (typeof plugin.method === 'function') {
-      const name = plugin.name
-      const callback = plugin.method.bind(this)
-
-      // extend the source context with a reference to the plugin method.
-      source.plugins[name] = function (options, context) {
-        return callback(options, context)
-      }
+    if (plugin.exports !== undefined) {
+      source.plugins[plugin.name] = plugin.exports
     }
 
     // queue any components provided by the plugin to be registered.
@@ -1967,13 +1961,25 @@ Coralite.prototype._evaluateDevelopment = async function ({
     root,
     module,
     id: contextId,
-    renderContext
+    renderContext,
+    app: this
   }
 
   for (const key in plugins) {
-    cachedBoundPlugins[key] = typeof plugins[key] === 'function'
-      ? (options) => plugins[key](options, context)
-      : plugins[key]
+    if (typeof plugins[key] === 'function') {
+      cachedBoundPlugins[key] = (...args) => plugins[key](...args, context)
+    } else if (plugins[key] !== null && typeof plugins[key] === 'object') {
+      cachedBoundPlugins[key] = {}
+      for (const prop in plugins[key]) {
+        if (typeof plugins[key][prop] === 'function') {
+          cachedBoundPlugins[key][prop] = (...args) => plugins[key][prop](...args, context)
+        } else {
+          cachedBoundPlugins[key][prop] = plugins[key][prop]
+        }
+      }
+    } else {
+      cachedBoundPlugins[key] = plugins[key]
+    }
   }
 
   renderContext.source.currentSourceContextId = contextId
@@ -2060,7 +2066,8 @@ Coralite.prototype._evaluateProduction = async function ({
     root,
     module,
     id: contextId,
-    renderContext
+    renderContext,
+    app: this
   }
 
   renderContext.source.currentSourceContextId = contextId
@@ -2102,23 +2109,35 @@ Coralite.prototype._evaluateProduction = async function ({
         cachedBoundPlugins = {}
 
         for (const key in plugins) {
-          cachedBoundPlugins[key] = typeof plugins[key] === 'function'
-            ? (options) => plugins[key](options, context)
-            : plugins[key]
+          if (typeof plugins[key] === 'function') {
+            cachedBoundPlugins[key] = (...args) => plugins[key](...args, context)
+          } else if (plugins[key] !== null && typeof plugins[key] === 'object') {
+            const pluginObj = {}
+            for (const prop in plugins[key]) {
+              if (typeof plugins[key][prop] === 'function') {
+                pluginObj[prop] = (...args) => plugins[key][prop](...args, context)
+              } else {
+                pluginObj[prop] = plugins[key][prop]
+              }
+            }
+            cachedBoundPlugins[key] = pluginObj
+          } else {
+            cachedBoundPlugins[key] = plugins[key]
+          }
         }
       }
 
       if (isCoralite) {
         return {
           ...context,
-          defineComponent: cachedBoundPlugins.defineComponent,
+          defineComponent: cachedBoundPlugins?.defineComponent,
           default: context
         }
       }
 
       if (isPlugins) {
         return {
-          ...cachedBoundPlugins,
+          ...(cachedBoundPlugins || {}),
           default: cachedBoundPlugins
         }
       }
@@ -2241,7 +2260,10 @@ Coralite.prototype._triggerPluginHook = async function (name, initialData) {
   // Clone initial data once to prevent accidental root-level mutations
   // leaking backwards if a plugin still mutates it directly.
   let currentData = typeof initialData === 'object' && initialData !== null
-    ? { ...initialData }
+    ? {
+      ...initialData,
+      app: this
+    }
     : initialData
 
   for (let i = 0; i < pluginHooks.length; i++) {
@@ -2273,10 +2295,8 @@ Coralite.prototype._addPluginHook = function (name, callback) {
     throw new Error(`Plugin hook "${name}" must be a function`)
   }
 
-  const pluginCallback = callback.bind(this)
-
   if (this._plugins.hooks[name]) {
-    this._plugins.hooks[name].push(pluginCallback)
+    this._plugins.hooks[name].push(callback)
   }
 }
 

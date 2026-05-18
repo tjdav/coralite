@@ -11,8 +11,8 @@ import { cp, mkdir } from 'node:fs/promises'
 export const staticAssetPlugin = (assets = []) => {
   return definePlugin({
     name: 'static-asset-plugin',
-    onBeforeBuild: async function () {
-      const outputDir = this.options.output || join(process.cwd(), 'dist')
+    onBeforeBuild: async function (context) {
+      const outputDir = context.app.options.output || join(process.cwd(), 'dist')
 
       for (const asset of assets) {
         if (!asset.dest) {

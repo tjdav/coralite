@@ -89,8 +89,7 @@
  */
 
 /**
- * @template T
- * @typedef {import('./plugin.js').CoralitePlugin<T>} CoralitePlugin
+ * @typedef {import('./plugin.js').CoralitePlugin} CoralitePlugin
  */
 
 /**
@@ -99,8 +98,7 @@
  */
 
 /**
- * @template T
- * @typedef {import('./plugin.js').CoralitePluginResult<T>} CoralitePluginResult
+ * @typedef {import('./plugin.js').CoralitePluginResult} CoralitePluginResult
  */
 
 /**

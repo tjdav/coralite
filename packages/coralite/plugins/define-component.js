@@ -93,7 +93,7 @@ export const defineComponent = definePlugin({
    * @returns {Promise<CoraliteModuleDefinitions>} A promise resolving to the module state
    *   associated with this component.
    */
-  async method ({
+  async exports ({
     attributes,
     data,
     getters,
@@ -219,7 +219,7 @@ export const defineComponent = definePlugin({
             const processedResult = await processTokenValue(result, {
               ...context,
               state,
-              createComponentElement: this.createComponentElement.bind(this)
+              createComponentElement: context.app.createComponentElement
             })
 
             if (Array.isArray(processedResult)) {

@@ -6,11 +6,11 @@ describe('definePlugin', () => {
   it('should validate basic plugin state', () => {
     const plugin = definePlugin({
       name: 'test-plugin',
-      method: () => {
+      exports: () => {
       }
     })
 
     assert.strictEqual(plugin.name, 'test-plugin')
-    assert.strictEqual(typeof plugin.method, 'function')
+    assert.strictEqual(typeof plugin.exports, 'function')
   })
 })

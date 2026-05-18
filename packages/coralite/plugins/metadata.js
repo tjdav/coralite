@@ -17,6 +17,7 @@ import { definePlugin } from '#lib'
  * @param {CoralitePage} context.page - The global page object to store the extracted metadata
  * @param {Object.<string, any>} context.state - The global state object to store the extracted metadata
  * @param {CoraliteCollectionItem} context.data - The file data currently being evaluated
+ * @param {Coralite} [context.app] - The global coralite app instance
  * @returns {Promise<void>}
  */
 async function extractMetadata (context) {
@@ -49,7 +50,7 @@ async function extractMetadata (context) {
                 page.meta[element.attribs.name] = element.attribs.content
               } else if (element.slots) {
                 // process component slots by creating a component dynamically.
-                const componentElement = await this.createComponentElement({
+                const componentElement = await context.app.createComponentElement({
                   id: element.name,
                   state,
                   element,
@@ -94,20 +95,22 @@ async function extractMetadata (context) {
 
 export const metadataPlugin = definePlugin({
   name: 'metadata',
-  async onPageSet ({ elements, state, page, data }) {
-    await extractMetadata.call(this, {
+  async onPageSet ({ elements, state, page, data, app }) {
+    await extractMetadata({
       elements,
       state,
       page,
-      data
+      data,
+      app
     })
   },
-  async onPageUpdate ({ elements, page, newValue }) {
-    await extractMetadata.call(this, {
+  async onPageUpdate ({ elements, page, newValue, app }) {
+    await extractMetadata({
       elements,
       state: newValue.result.state,
       page,
-      data: newValue
+      data: newValue,
+      app
     })
 
     return {

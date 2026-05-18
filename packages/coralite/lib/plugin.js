@@ -1,6 +1,5 @@
 /**
- * @import Coralite from './coralite.js'
- * @import { CoralitePlugin, CoralitePluginResult, HTMLData, CoralitePluginPageSetCallback, CoralitePluginPageUpdateCallback, CoralitePluginPageDeleteCallback, CoralitePluginComponentCallback } from '../types/index.js'
+ * @import { CoralitePlugin, HTMLData } from '../types/index.js'
  */
 
 import { basename, dirname } from 'path'
@@ -81,14 +80,13 @@ function processComponents (path) {
 
 /**
  * Creates a new Coralite plugin instance based on provided configuration options.
- * @template T
- * @param {CoralitePlugin<T> & ThisType<Coralite> & { components?: string[] }} options - Plugin configuration object
- * @returns {CoralitePlugin<T> & { components: HTMLData[] }} A configured plugin instance ready to be registered with Coralite
+ * @param {CoralitePlugin & { components?: string[] }} options - Plugin configuration object
+ * @returns {CoralitePlugin & { components: HTMLData[] }} A configured plugin instance ready to be registered with Coralite
  * @example
  * // Basic plugin
  * const myPlugin = definePlugin({
  *   name: 'my-plugin',
- *   method: (options, context) => {
+ *   exports: (options, context) => {
  *     // Plugin logic implementation
  *     return { ...context.values, custom: 'data' }
  *   }
@@ -98,7 +96,7 @@ function processComponents (path) {
  * // Plugin with components and metadata
  * const advancedPlugin = definePlugin({
  *   name: 'advanced-plugin',
- *   method: async (options, context) => {
+ *   exports: async (options, context) => {
  *     // Async plugin logic
  *     return { ...context.values, processed: true }
  *   },
@@ -112,13 +110,13 @@ function processComponents (path) {
  * // Plugin with caching disabled
  * const devPlugin = definePlugin({
  *   name: 'dev-plugin',
- *   method: (options, context) => context.values,
+ *   exports: (options, context) => context.values,
  *   components: ['src/components/dev.html'],
  * })
  */
 export function definePlugin ({
   name,
-  method,
+  exports,
   onPageSet,
   onPageUpdate,
   onPageDelete,
@@ -152,7 +150,6 @@ export function definePlugin ({
   validateNonEmptyString(name, 'name')
 
   // Validate optional parameters
-  validateOptionalFunction(method, 'method')
   validateOptionalFunction(onPageSet, 'onPageSet')
   validateOptionalFunction(onPageUpdate, 'onPageUpdate')
   validateOptionalFunction(onPageDelete, 'onPageDelete')
@@ -185,6 +182,9 @@ export function definePlugin ({
         `Coralite plugin validation failed: "client.config" must be an object, received ${typeof client.config}`
       )
     }
+
+    // append rootDir
+    client.rootDir = client.rootDir || callerDir
   }
 
   // Process component files with error handling
@@ -213,7 +213,7 @@ export function definePlugin ({
   // Create the plugin object with all configured state
   return {
     name,
-    method,
+    exports,
     onPageSet,
     onPageUpdate,
     onPageDelete,
@@ -225,10 +225,7 @@ export function definePlugin ({
     onBeforeBuild,
     onAfterBuild,
     components: componentHTMLData,
-    client: client != null ? {
-      ...client,
-      rootDir: client.rootDir || callerDir
-    } : client,
+    client,
     server
   }
 }
