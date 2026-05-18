@@ -13,8 +13,11 @@
     async data (context) {
       const postItems = await aggregation({
         path: ['blog'],
-        template: 'coralite-related-post',
+        component: 'coralite-related-post',
         limit: 3,
+        filter (state) {
+          return state.page.url.pathname !== context.page.url.pathname
+        },
         sort (a, b) {
           let dateA = 0
           let dateB = 0

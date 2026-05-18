@@ -10,13 +10,13 @@
       return {
         posts: await aggregation({
           path: ['blog'],
-          template: 'coralite-post',
+          component: 'coralite-post',
           sort (a, b) {
             let dateA = 0
             let dateB = 0
 
             if (a) {
-              a.page.meta.published_time
+              dateA = a.page.meta.published_time
             }
 
             if (b) {

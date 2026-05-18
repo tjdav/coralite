@@ -13,8 +13,8 @@
       title: { type: String }
     },
     async data (context) {
-      const page = context.page
-      const meta = page.meta
+      const state = context.state
+      const meta = state.page.meta
 
       let formattedDate = 'N/A'
       if (meta.published_time) {
@@ -31,7 +31,7 @@
 
       return {
         pageTitle: meta.pageTitle || 'Untitled Post',
-        pageUrlPathname: page.url.pathname,
+        pageUrlPathname: state.page.url.pathname,
         localeDate: formattedDate
       }
     }
