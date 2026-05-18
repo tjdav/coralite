@@ -27,14 +27,6 @@
  */
 
 /**
- * @template T
- * @this {ThisType<Coralite>}
- * @callback CoralitePluginModule
- * @param {T} options - Configuration options passed to the plugin
- * @param {CoralitePluginContext} context - Runtime context providing access to values, component data, module info, and path details
- */
-
-/**
  * @callback CoralitePluginPageSetCallback - Async callback triggered when a page is created. Called with elements, state, and data.
  * @param {Object} param
  * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
@@ -122,26 +114,6 @@
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
  * @property {CoralitePluginComponentCallback} [onComponentSet] - Async callback triggered when a component is created
  * @property {CoralitePluginComponentCallback} [onComponentUpdate] - Async callback triggered when a components is updated
- * @property {CoralitePluginComponentCallback} [onComponentDelete] - Async callback triggered when a component is deleted
- * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
- * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
- * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
- * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
- * @property {ScriptPlugin} [client] - Client-side plugin configuration
- * @property {Function} [server] - Server extension hook
- */
-
-/**
- * @typedef {Object} CoralitePluginResult
- * @property {string} name - Unique identifier/name of the plugin
- * @property {CoralitePluginExportFunction<any> | Record<string, CoralitePluginExportFunction<any>> | CoralitePluginExportFunction<any>[]} [exports] - Execution function or object of functions that processes content using plugin logic, dynamically bound with the plugin context as the last argument.
- * @property {HTMLData[]} [components] - Array of loaded component data
- * @property {Object} [metadata] - Plugin metadata
- * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
- * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
- * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
- * @property {CoralitePluginComponentCallback} [onComponentSet] - Async callback triggered when a component is created
- * @property {CoralitePluginComponentCallback} [onComponentUpdate] - Async callback triggered when a component is updated
  * @property {CoralitePluginComponentCallback} [onComponentDelete] - Async callback triggered when a component is deleted
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
