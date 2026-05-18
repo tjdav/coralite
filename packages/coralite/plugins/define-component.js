@@ -99,13 +99,12 @@ export const defineComponent = definePlugin({
     getters,
     slots,
     script
-  },
-  context) {
+  }) {
     const {
       state: initialState,
       module,
       root
-    } = context
+    } = this
 
     // Validate attributes
     if (attributes) {
@@ -156,7 +155,7 @@ export const defineComponent = definePlugin({
     }
 
     if (typeof data === 'function') {
-      const dataResult = await data(context)
+      const dataResult = await data(this)
       if (dataResult) {
         state.__script__.data = dataResult
         Object.assign(state, dataResult)
@@ -217,9 +216,9 @@ export const defineComponent = definePlugin({
           if (typeof result === 'string') {
             // process string result through unified processor
             const processedResult = await processTokenValue(result, {
-              ...context,
+              ...this,
               state,
-              createComponentElement: context.app.createComponentElement
+              createComponentElement: this.app.createComponentElement
             })
 
             if (Array.isArray(processedResult)) {

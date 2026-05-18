@@ -16,7 +16,7 @@
  * @import { CoraliteCollectionItem, CoraliteCollectionCallbackResult, CoraliteCollectionEventResult, CoraliteCollectionEventSet, CoraliteCollectionEventDelete, CoraliteCollectionEventUpdate } from './collection.js'
  *
  * PLUGINS
- * @import { CoralitePlugin, CoralitePluginContext, CoralitePluginInstance, CoralitePluginResult, CoralitePluginModule, CoralitePluginPageSetCallback, CoralitePluginPageUpdateCallback, CoralitePluginPageDeleteCallback, CoralitePluginComponentCallback, CoralitePluginAfterPageRenderCallback } from './plugin.js'
+ * @import { CoralitePlugin, CoralitePluginContext, CoralitePluginExportFunction, CoralitePluginInstance, CoralitePluginResult, CoralitePluginModule, CoralitePluginPageSetCallback, CoralitePluginPageUpdateCallback, CoralitePluginPageDeleteCallback, CoralitePluginComponentCallback, CoralitePluginAfterPageRenderCallback } from './plugin.js'
  *
  * SCRIPTS
  * @import { ScriptContent, ScriptPlugin, InstanceContext, CoraliteScriptContext, ScriptPluginHelperGlobalContext, ScriptPluginHelperGlobalInstance, ScriptPluginHelperLocalInstance } from './script.js'
@@ -94,6 +94,7 @@
 
 /**
  * @typedef {import('./plugin.js').CoralitePluginContext} CoralitePluginContext
+ * @typedef {import('./plugin.js').CoralitePluginExportFunction<any>} CoralitePluginExportFunction
  * @typedef {import('./plugin.js').CoralitePluginInstance} CoralitePluginInstance
  */
 

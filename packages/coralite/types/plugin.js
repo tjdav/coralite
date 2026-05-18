@@ -18,6 +18,12 @@
  * @property {Object} path - File path information for the current component/module being processed
  * @property {Attribute[]} excludeByAttribute - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
+ * @property {Coralite} [app] - The global coralite app instance
+ */
+
+/**
+ * @template {any[]} T
+ * @typedef {(this: CoralitePluginContext, ...args: T) => any} CoralitePluginExportFunction
  */
 
 /**
@@ -109,7 +115,7 @@
 /**
  * @typedef {Object} CoralitePlugin
  * @property {string} name - Unique identifier/name of the plugin
- * @property {any} [exports] - Execution function that processes content using plugin logic
+ * @property {CoralitePluginExportFunction<any> | Record<string, CoralitePluginExportFunction<any>> | CoralitePluginExportFunction<any>[]} [exports] - Execution function or object of functions that processes content using plugin logic, dynamically bound with the plugin context as the last argument.
  * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
@@ -128,7 +134,7 @@
 /**
  * @typedef {Object} CoralitePluginResult
  * @property {string} name - Unique identifier/name of the plugin
- * @property {any} [exports] - Execution function that processes content using plugin logic
+ * @property {CoralitePluginExportFunction<any> | Record<string, CoralitePluginExportFunction<any>> | CoralitePluginExportFunction<any>[]} [exports] - Execution function or object of functions that processes content using plugin logic, dynamically bound with the plugin context as the last argument.
  * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {Object} [metadata] - Plugin metadata
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
@@ -148,7 +154,7 @@
 /**
  * @typedef {Object} CoralitePluginInstance
  * @property {string} name - Unique identifier/name of the plugin
- * @property {any} [exports] - Execution function that processes content using plugin logic
+ * @property {CoralitePluginExportFunction<any> | Record<string, CoralitePluginExportFunction<any>> | CoralitePluginExportFunction<any>[]} [exports] - Execution function or object of functions that processes content using plugin logic, dynamically bound with the plugin context as the last argument.
  * @property {HTMLData[]} [components=[]] - List of custom components to be included in the coralite instance
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated

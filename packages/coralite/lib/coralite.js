@@ -1952,9 +1952,6 @@ Coralite.prototype._evaluateDevelopment = async function ({
     throw new Error('SourceTextModule is not available. Please run Node.js with --experimental-vm-modules to use Development mode.')
   }
 
-  const plugins = this._source.plugins
-  const cachedBoundPlugins = {}
-
   const context = {
     state: state || {},
     page,
@@ -1965,22 +1962,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
     app: this
   }
 
-  for (const key in plugins) {
-    if (typeof plugins[key] === 'function') {
-      cachedBoundPlugins[key] = (...args) => plugins[key](...args, context)
-    } else if (plugins[key] !== null && typeof plugins[key] === 'object') {
-      cachedBoundPlugins[key] = {}
-      for (const prop in plugins[key]) {
-        if (typeof plugins[key][prop] === 'function') {
-          cachedBoundPlugins[key][prop] = (...args) => plugins[key][prop](...args, context)
-        } else {
-          cachedBoundPlugins[key][prop] = plugins[key][prop]
-        }
-      }
-    } else {
-      cachedBoundPlugins[key] = plugins[key]
-    }
-  }
+  const cachedBoundPlugins = this._bindPlugins(this._source.plugins, context)
 
   renderContext.source.currentSourceContextId = contextId
   renderContext.source.contextInstances[contextId] = context
@@ -2105,26 +2087,7 @@ Coralite.prototype._evaluateProduction = async function ({
     if (isCoralite || isPlugins || isUtils) {
       // Lazily bind plugins once per evaluation
       if (!cachedBoundPlugins) {
-        const plugins = this._source.plugins
-        cachedBoundPlugins = {}
-
-        for (const key in plugins) {
-          if (typeof plugins[key] === 'function') {
-            cachedBoundPlugins[key] = (...args) => plugins[key](...args, context)
-          } else if (plugins[key] !== null && typeof plugins[key] === 'object') {
-            const pluginObj = {}
-            for (const prop in plugins[key]) {
-              if (typeof plugins[key][prop] === 'function') {
-                pluginObj[prop] = (...args) => plugins[key][prop](...args, context)
-              } else {
-                pluginObj[prop] = plugins[key][prop]
-              }
-            }
-            cachedBoundPlugins[key] = pluginObj
-          } else {
-            cachedBoundPlugins[key] = plugins[key]
-          }
-        }
+        cachedBoundPlugins = this._bindPlugins(this._source.plugins, context)
       }
 
       if (isCoralite) {
@@ -2237,6 +2200,37 @@ Coralite.prototype._triggerPluginAggregateHook = async function (name, contextDa
   }
 
   return aggregatedResults
+}
+
+/**
+ * @internal Binds plugins to the given context via 'this'.
+ *
+ * @param {Object} plugins - The plugins object
+ * @param {Object} context - The context object to bind
+ * @returns {Object} The bound plugins
+ */
+Coralite.prototype._bindPlugins = function (plugins, context) {
+  const cachedBoundPlugins = {}
+
+  for (const key in plugins) {
+    if (typeof plugins[key] === 'function') {
+      cachedBoundPlugins[key] = plugins[key].bind(context)
+    } else if (plugins[key] !== null && typeof plugins[key] === 'object') {
+      const pluginObj = {}
+      for (const prop in plugins[key]) {
+        if (typeof plugins[key][prop] === 'function') {
+          pluginObj[prop] = plugins[key][prop].bind(context)
+        } else {
+          pluginObj[prop] = plugins[key][prop]
+        }
+      }
+      cachedBoundPlugins[key] = pluginObj
+    } else {
+      cachedBoundPlugins[key] = plugins[key]
+    }
+  }
+
+  return cachedBoundPlugins
 }
 
 /**
@@ -2366,6 +2360,11 @@ Object.defineProperty(Coralite.prototype, '_triggerPluginAggregateHook', {
   writable: false
 })
 Object.defineProperty(Coralite.prototype, '_triggerPluginHook', {
+  enumerable: false,
+  configurable: false,
+  writable: false
+})
+Object.defineProperty(Coralite.prototype, '_bindPlugins', {
   enumerable: false,
   configurable: false,
   writable: false
