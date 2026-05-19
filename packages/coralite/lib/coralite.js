@@ -36,8 +36,7 @@ import { createContext } from 'node:vm'
  *  InstanceContext,
  *  CoraliteConfig,
  *  CoraliteFilePath,
- *  CoralitePage,
- *  RenderContext
+ *  CoralitePage
  * } from '../types/index.js'
  */
 
@@ -320,6 +319,48 @@ Coralite.prototype.initialise = async function () {
 
   /** @type {CoraliteCollectionEventSet} */
   const onFileSet = async (data) => {
+    // Determine the root path based on the data type
+    let rootPath = this.options.path.pages
+
+    if (data.type === 'component') {
+      rootPath = this.options.path.components
+    }
+
+    // Convert relative file path to a URL pathname format
+    const urlPathname = pathToFileURL(join('/', relative(rootPath, data.path.pathname))).pathname
+
+    const page = {
+      url: {
+        pathname: urlPathname,
+        dirname: pathToFileURL(dirname(urlPathname)).pathname
+      },
+      file: {
+        pathname: data.path.pathname,
+        dirname: data.path.dirname,
+        filename: data.path.filename
+      },
+      meta: {}
+    }
+
+    // define a set of context state for component rendering
+    /** @type {any} */
+    const state = {
+      ...data.state,
+      page
+    }
+
+    // If discovered only, skip parsing and plugin hooks to save memory
+    if (data.content === undefined) {
+      return {
+        type: 'page',
+        value: {
+          state,
+          page,
+          path: data.path
+        }
+      }
+    }
+
     const elements = parseHTML(data.content, this.options.ignoreByAttribute, this.options.skipRenderByAttribute, (errorData) => this._handleError(errorData))
 
     // track parent-child relationship between custom elements
@@ -371,36 +412,6 @@ Coralite.prototype.initialise = async function () {
 
       // add page to custom element collection
       item.add(data.path.pathname)
-    }
-
-    // Determine the root path based on the data type
-    let rootPath = this.options.path.pages
-
-    if (data.type === 'component') {
-      rootPath = this.options.path.components
-    }
-
-    // Convert relative file path to a URL pathname format
-    const urlPathname = pathToFileURL(join('/', relative(rootPath, data.path.pathname))).pathname
-
-    const page = {
-      url: {
-        pathname: urlPathname,
-        dirname: pathToFileURL(dirname(urlPathname)).pathname
-      },
-      file: {
-        pathname: data.path.pathname,
-        dirname: data.path.dirname,
-        filename: data.path.filename
-      },
-      meta: {}
-    }
-
-    // define a set of context state for component rendering
-    /** @type {any} */
-    const state = {
-      ...data.state,
-      page
     }
 
     const mappedContext = await this._triggerPluginHook('onPageSet', {
@@ -517,6 +528,7 @@ Coralite.prototype.initialise = async function () {
     path: this.options.pages,
     recursive: true,
     type: 'page',
+    discoverOnly: this.options.mode === 'production',
     collection: this.pages
   })
 }
@@ -625,7 +637,7 @@ Coralite.prototype._createRenderContext = function (buildId) {
  * @param {Object} mappedRenderContextObject - Global rendering state
  * @returns {Promise<void>} Resolves when the elements are processed
  */
-Coralite.prototype._processCustomElementsInPage = async function (mappedComponent, originalDocument, state, mappedRenderContextObject) {
+Coralite.prototype._processCustomElementsInPage = async function (mappedComponent, originalDocument, state, mappedRenderContextObject, pageContext) {
   for (let i = 0; i < mappedComponent.customElements.length; i++) {
     const customElement = mappedComponent.customElements[i]
 
@@ -649,7 +661,7 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
       id: customElement.name,
       state: mappedRenderContextObject.state[contextId],
       element: customElement,
-      page: originalDocument.page,
+      page: pageContext || originalDocument.page,
       root: mappedComponent.root,
       contextId,
       index: i,
@@ -683,8 +695,59 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       /** @type {CoraliteComponent & CoraliteComponentResult} */
       const originalDocument = queue[q].result
 
-      // Deep clone the document to ensure thread safety
-      const component = cloneComponentInstance(originalDocument)
+      /** @type {CoraliteComponent & CoraliteComponentResult} */
+      // @ts-ignore
+      let component
+      let pageContext = originalDocument.page
+
+      // If the page was discovery-only initialized (no root AST), parse it on-demand
+      if (!originalDocument.root) {
+        let content = queue[q].content
+        if (!content) {
+          content = await getHtmlFile(queue[q].path.pathname)
+        }
+
+        const elements = parseHTML(content, this.options.ignoreByAttribute, this.options.skipRenderByAttribute, (errorData) => this._handleError(errorData))
+
+        // Shallow clone page object to avoid polluting state across builds
+        pageContext = {
+          ...originalDocument.page,
+          meta: { ...originalDocument.page.meta }
+        }
+        const pageState = {
+          ...originalDocument.state,
+          page: pageContext
+        }
+
+        const mappedContext = await this._triggerPluginHook('onPageSet', {
+          elements,
+          state: pageState,
+          page: pageContext,
+          data: queue[q]
+        })
+
+        const fullPath = Object.assign({}, mappedContext.data.path, {
+          pages: this.options.path.pages,
+          components: this.options.path.components
+        })
+        /** @type {CoraliteComponent & CoraliteComponentResult} */
+        // @ts-ignore
+        component = {
+          // @ts-ignore
+          state: mappedContext.state,
+          page: mappedContext.page,
+          path: fullPath,
+          root: mappedContext.elements.root,
+          customElements: mappedContext.elements.customElements,
+          tempElements: mappedContext.elements.tempElements,
+          skipRenderElements: mappedContext.elements.skipRenderElements,
+          ignoreByAttribute: this.options.ignoreByAttribute || []
+        }
+      } else {
+        // Deep clone the document to ensure thread safety
+        component = cloneComponentInstance(originalDocument)
+        component.ignoreByAttribute = component.ignoreByAttribute || this.options.ignoreByAttribute || []
+      }
 
       // Merge state into component
       Object.assign(component.state, state)
@@ -696,7 +759,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       const mappedRenderContext = await this._triggerPluginHook('onBeforePageRender', {
         component,
         state,
-        page: originalDocument.page,
+        page: pageContext,
         renderContext
       })
 
@@ -709,7 +772,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       // remove temporary elements
       removeElements(mappedComponent.tempElements, false)
 
-      await this._processCustomElementsInPage(mappedComponent, originalDocument, state, mappedRenderContextObject)
+      await this._processCustomElementsInPage(mappedComponent, originalDocument, state, mappedRenderContextObject, pageContext)
 
       const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
 

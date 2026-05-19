@@ -24,6 +24,7 @@ import CoraliteCollection from './collection.js'
  * @param {CoraliteCollectionEventDelete} [options.onFileDelete]
  * @param {CoraliteCollection} [options.collection] - Optional collection instance to populate
  * @param {import('p-limit').LimitFunction} [options.limit] - Optional concurrency limiter
+ * @param {boolean} [options.discoverOnly=false] - Whether to skip reading file content and only discover paths
  * @returns {Promise<CoraliteCollection>} Array of HTML file data including parent path, name, and content
  *
  * @example
@@ -39,6 +40,7 @@ export async function getHtmlFiles ({
   type,
   recursive = false,
   exclude = [],
+  discoverOnly = false,
   onFileSet,
   onFileUpdate,
   onFileDelete,
@@ -94,6 +96,7 @@ export async function getHtmlFiles ({
         type,
         recursive,
         exclude,
+        discoverOnly,
         onFileSet,
         onFileUpdate,
         onFileDelete,
@@ -102,7 +105,7 @@ export async function getHtmlFiles ({
       }))
     } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
       tasks.push(limit(async () => {
-        const content = await readFile(pathname, { encoding: 'utf8' })
+        const content = discoverOnly ? undefined : await readFile(pathname, { encoding: 'utf8' })
 
         await collection.setItem({
           type,
