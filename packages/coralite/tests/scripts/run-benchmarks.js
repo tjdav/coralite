@@ -1,14 +1,32 @@
 import { execSync } from 'node:child_process'
 import { readdirSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, parse } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { program } from 'commander'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const benchmarksDir = join(__dirname, '../../benchmarks')
 
-const files = readdirSync(benchmarksDir).filter(f => f.endsWith('.js') && statSync(join(benchmarksDir, f)).isFile())
+program
+  .name('run-benchmarks')
+  .description('Run Coralite benchmarks')
+  .argument('[benchmarks...]', 'Benchmark names to run (without extension)')
+  .parse()
 
-console.log(`Found ${files.length} benchmark files.`)
+const selectedBenchmarks = program.args
+
+let files = readdirSync(benchmarksDir).filter(f => f.endsWith('.js') && statSync(join(benchmarksDir, f)).isFile())
+
+if (selectedBenchmarks.length > 0) {
+  files = files.filter(f => selectedBenchmarks.includes(parse(f).name))
+
+  if (files.length === 0) {
+    console.error(`Error: No benchmarks found matching: ${selectedBenchmarks.join(', ')}`)
+    process.exit(1)
+  }
+}
+
+console.log(`Found ${files.length} benchmark file(s).`)
 
 for (const file of files) {
   const filepath = join(benchmarksDir, file)
