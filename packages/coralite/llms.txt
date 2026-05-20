@@ -248,31 +248,30 @@ The `definePlugin` function accepts an options object with the following schema:
 
 ### 6.2 The `exports` System (Explicit Context & Virtual Modules)
 
-The `exports` property of a plugin defines the functions (or an object of functions) that process content and provide utilities to components.
-
+The `exports` property of a plugin defines the functions (or an object of functions) that process content and provide utilities to components during the server-side build process.
 To ensure type safety and standard ES module ergonomics, Coralite enforces two core rules for plugin exports:
 
 1. **Two-Phase Currying**: Functions receive the core engine context explicitly as their first argument, and return the executable function.
-2. **Virtual Module Imports**: Plugins are imported inside components using their `name` property as a bare module specifier.
+2. **Virtual Module Imports**: Plugins are imported inside components using their `name` property as a bare module specifier and are strictly executed within the server-side `data` block.
 
 #### The Two-Phase Execution Flow
 
-* **Phase 1 (Context Injection):** The engine executes the outer function, passing the `CoralitePluginContext`. This context object includes:
-* `state`: Key-value pairs of data relevant to the plugin execution.
-* `page`: Global metadata about the consuming page.
-* `module`: The module context the plugin is operating within.
-* `root`: The specific HTML element the plugin is applied to.
-* **Phase 2 (Execution):** The inner function is returned. This is the actual function that components or other systems will invoke during runtime.
+- **Phase 1 (Context Injection):** The engine executes the outer function, passing the `CoralitePluginContext`. This context object includes:
+  - `state`: Key-value pairs of data relevant to the plugin execution.
+  - `page`: Global metadata about the consuming page.
+  - `module`: The module context the plugin is operating within.
+  - `root`: The specific HTML element the plugin is applied to.
+- **Phase 2 (Execution):** The inner function is returned. This is the actual function that components will invoke during the server build phase.
 
 **Example: Defining the Plugin**
 
 ```javascript
-import { definePlugin } from 'coralite/plugins'
+import { definePlugin } from 'coralite'
 
 export default definePlugin({
     // This unique name becomes the virtual module import specifier
-    name: 'custom-logger-plugin', 
-    
+    name: 'custom-logger-plugin',
+
     // 'exports' strictly uses Two-Phase Currying
     exports: {
         log: (context) => (message) => {
@@ -292,27 +291,37 @@ export default definePlugin({
 
 ```html
 <template id="logger-demo">
-    <button ref="btn">Log Message</button>
+    <div class="demo">
+        <p>Build Status: {{ status }}</p>
+    </div>
 </template>
 
 <script type="module">
 import { defineComponent } from 'coralite/plugins'
 // Import destructured methods directly using the plugin's name
-import { log, warn } from 'custom-logger-plugin' 
+import { log, warn } from 'custom-logger-plugin'
 
 export default defineComponent({
+    // Plugin exports MUST be used in the server-side data block
+    async data({ state }) {
+        // The context is already injected; simply call the Phase 2 function
+        log('Component data is being fetched on the server!');
+
+        if (!state.userId) {
+            warn('No user ID was provided to this component.');
+        }
+
+        return {
+            status: 'Built successfully'
+        }
+    },
+
     script: ({ refs, signal }) => {
-        const btn = refs('btn');
-        
-        btn.addEventListener('click', () => {
-            // The context is already injected; simply call the Phase 2 function
-            log('Button was clicked!');
-            warn('This is a test warning.');
-        }, { signal });
+        // Client-side interactions live here.
+        // Server-only imports (like the logger) are stripped from this bundle.
     }
 })
 </script>
-
 ```
 
 ### 6.3 Two-Phase Currying & Injection
