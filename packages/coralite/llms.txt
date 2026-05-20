@@ -335,11 +335,6 @@ import { definePlugin } from 'coralite/plugins'
 
 export default definePlugin({
     name: 'state-plugin',
-    // Vital core execution method for server-side logic
-    method: (options, context) => {
-        // Access global engine state or modify server configuration here
-        console.log('Server-side plugin initialized.');
-    },
     client: {
         // context is an Object mapping keys to curried functions
         context: {
