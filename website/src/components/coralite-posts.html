@@ -4,12 +4,12 @@
 
 <script type="module">
   import { defineComponent } from 'coralite'
-  import { aggregation } from 'coralite-plugin-aggregation'
+  import { aggregate } from 'aggregation'
 
   export default defineComponent({
     async data (context) {
       return {
-        posts: await aggregation({
+        posts: await aggregate({
           path: ['blog'],
           component: 'coralite-post',
           sort (a, b) {

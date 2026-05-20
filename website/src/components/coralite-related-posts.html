@@ -1,18 +1,16 @@
 <template id="coralite-related-posts">
   <h3>Related posts</h3>
-
   {{ posts }}
-
   <p><a href="/blog">More blog posts</a></p>
 </template>
 
 <script type="module">
   import { defineComponent } from 'coralite'
-  import { aggregation } from 'coralite-plugin-aggregation'
+  import { aggregate } from 'aggregation'
 
   export default defineComponent({
     async data (context) {
-      const postItems = await aggregation({
+      const postItems = await aggregate({
         path: ['blog'],
         component: 'coralite-related-post',
         limit: 3,
