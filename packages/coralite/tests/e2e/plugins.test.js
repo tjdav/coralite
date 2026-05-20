@@ -22,6 +22,11 @@ test.describe('Plugins Extensibility', () => {
     await expect(metaInfo).toHaveText('Title: Plugins Test Page')
   })
 
+  test('should verify server-side plugin export execution', async ({ page }) => {
+    const pluginMessage = page.getByTestId('plugin-message')
+    await expect(pluginMessage).toHaveText('Hello E2E Test from server-side plugin! Page: /plugins/index.html')
+  })
+
   test('should dynamically render child and load dynamic import from plugin context', async ({ page }) => {
     await page.goto('/plugins/dynamic-plugin/')
 

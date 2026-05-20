@@ -2,17 +2,20 @@
   <div data-testid="plugin-container">
     <p ref="pluginData">Loading...</p>
     <p data-testid="meta-info">Title: {{ pageTitle }}</p>
+    <p data-testid="plugin-message">{{ pluginMessage }}</p>
   </div>
 </template>
 
 <script type="module">
   import { defineComponent } from 'coralite'
+  import { getPluginMessage } from 'test-context-plugin'
 
   export default defineComponent({
     async data (context) {
       return {
         // test metadata plugin
-        pageTitle: context.page.meta.title || 'No Title'
+        pageTitle: context.page.meta.title || 'No Title',
+        pluginMessage: getPluginMessage('E2E Test')
       }
     },
     script: async ({ testHelper, refs }) => {

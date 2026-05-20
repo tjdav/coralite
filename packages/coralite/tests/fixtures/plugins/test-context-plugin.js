@@ -1,7 +1,12 @@
-import { definePlugin } from '../../../lib/index.js'
+import { definePlugin } from '#lib'
 
 export const testContextPlugin = definePlugin({
   name: 'test-context-plugin',
+  exports: {
+    getPluginMessage: (context) => (name) => {
+      return `Hello ${name} from server-side plugin! Page: ${context.page.url.pathname}`
+    }
+  },
   client: {
     config: {
       globalValue: 'global-state-123'
