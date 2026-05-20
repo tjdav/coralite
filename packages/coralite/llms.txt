@@ -232,46 +232,88 @@ export default defineComponent({
 Plugins hook into the build lifecycle, provide custom components, or inject utilities into the client runtime.
 
 ### 6.1 The Plugin API Surface
+
 The `definePlugin` function accepts an options object with the following schema:
-* `name` (String): **Required**. The unique name of the plugin.
-* `components` (Array<String>): Paths to internal component `.html` files provided by the plugin to be parsed and made available to consumers.
-* `method(options, context)` (Function): The vital core execution method for server-side plugins. It is the primary entry point to hook into the engine state.
+
+* `name` (String): **Required**. The unique name of the plugin. This name acts as the virtual module import specifier for consuming the plugin inside components.
+* `exports` (Object | Function): The core execution methods provided by the plugin. This uses **Two-Phase Currying** to explicitly receive the framework context, ensuring type safety and standard ES module ergonomics.
+* `components` (Array): Paths to internal component `.html` files provided by the plugin to be parsed and made available to consumers.
 * `server` (Function): A server-specific configuration/method block.
 * `client` (Object): Configuration for the client runtime bundle.
-  * `config` (Object): A serializable configuration object accessible in the client bundle.
-  * `setup` (Function): A client-side setup function that executes when the client runtime initializes.
-  * `context` (Object): An object where each **key** represents the variable name to be injected into the component's `script` destructured argument. The **value** must be a **Two-Phase Curried Function**.
-  * `rootDir` (String): The root directory (auto-resolved to the caller directory if omitted).
+* `config` (Object): A serializable configuration object accessible in the client bundle.
+* `setup` (Function): A client-side setup function that executes when the client runtime initializes.
+* `context` (Object): An object where each **key** represents the variable name to be injected into the component's `script` destructured argument. The **value** must be a **Two-Phase Curried Function**.
+* `rootDir` (String): The root directory (auto-resolved to the caller directory if omitted).
 * **Lifecycle Hooks** (Functions): `onPageSet`, `onPageUpdate`, `onPageDelete`, `onComponentSet`, `onComponentUpdate`, `onComponentDelete`, `onBeforePageRender`, `onAfterPageRender`, `onBeforeBuild`, `onAfterBuild`.
 
-### 6.2 The `exports` Property Context Binding
-The `exports` property of a plugin defines an execution function (or an object/array of functions) that processes content using plugin logic. 
-**Crucially, these functions access the full `CoralitePluginContext` through `this` binding, rather than receiving it as a trailing argument.** 
+### 6.2 The `exports` System (Explicit Context & Virtual Modules)
 
-The context bound to `this` includes:
-* `this.state`: Key-value pairs of data relevant to the plugin execution.
-* `this.page`: Global metadata about the consuming page.
-* `this.module`: The module context the plugin is operating within.
-* `this.root`: The specific HTML element the plugin is applied to.
+The `exports` property of a plugin defines the functions (or an object of functions) that process content and provide utilities to components.
 
-**Example: Accessing Context via `this`**
+To ensure type safety and standard ES module ergonomics, Coralite enforces two core rules for plugin exports:
+
+1. **Two-Phase Currying**: Functions receive the core engine context explicitly as their first argument, and return the executable function.
+2. **Virtual Module Imports**: Plugins are imported inside components using their `name` property as a bare module specifier.
+
+#### The Two-Phase Execution Flow
+
+* **Phase 1 (Context Injection):** The engine executes the outer function, passing the `CoralitePluginContext`. This context object includes:
+* `state`: Key-value pairs of data relevant to the plugin execution.
+* `page`: Global metadata about the consuming page.
+* `module`: The module context the plugin is operating within.
+* `root`: The specific HTML element the plugin is applied to.
+* **Phase 2 (Execution):** The inner function is returned. This is the actual function that components or other systems will invoke during runtime.
+
+**Example: Defining the Plugin**
+
 ```javascript
 import { definePlugin } from 'coralite/plugins'
 
 export default definePlugin({
-    name: 'custom-logger-plugin',
-    // 'exports' accesses the context via 'this'
-    exports: function(message) {
-        // Accessing component state and module info via 'this'
-        console.log(`[${this.module.name}] ${message}`, this.state);
-        
-        // Return modified state patch
-        return { logged: true };
+    // This unique name becomes the virtual module import specifier
+    name: 'custom-logger-plugin', 
+    
+    // 'exports' strictly uses Two-Phase Currying
+    exports: {
+        log: (context) => (message) => {
+            // PHASE 1: Accessing component state and module info via explicit 'context'
+            console.log(`[${context.module.name}] ${message}`, context.state);
+            return { logged: true };
+        },
+        warn: (context) => (message) => {
+            console.warn(`[WARNING on ${context.page.url}] ${message}`);
+        }
     }
 })
+
 ```
 
-The `exports` property can also be an array or an object of functions, all of which will have their context dynamically bound by the engine.
+**Example: Consuming the Plugin in a Component**
+
+```html
+<template id="logger-demo">
+    <button ref="btn">Log Message</button>
+</template>
+
+<script type="module">
+import { defineComponent } from 'coralite/plugins'
+// Import destructured methods directly using the plugin's name
+import { log, warn } from 'custom-logger-plugin' 
+
+export default defineComponent({
+    script: ({ refs, signal }) => {
+        const btn = refs('btn');
+        
+        btn.addEventListener('click', () => {
+            // The context is already injected; simply call the Phase 2 function
+            log('Button was clicked!');
+            warn('This is a test warning.');
+        }, { signal });
+    }
+})
+</script>
+
+```
 
 ### 6.3 Two-Phase Currying & Injection
 To ensure safety and isolation, client injections mapped in the `client.context` object use a curried setup:
