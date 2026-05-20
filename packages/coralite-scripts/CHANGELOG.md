@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.35.0
+
+> Comparing `coralite-scripts-v0.34.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### ⚡ Performance Improvements
+
+- overhaul production memory management for 1M+ page scalability ([8223203](https://codeberg.org/tjdavid/coralite/commit/8223203aca181dee7c8a00fc1571c94ce9c8c7f7))
+
+
 ## v0.34.0
 
 > Comparing `coralite-scripts-v0.33.1` to `HEAD`
