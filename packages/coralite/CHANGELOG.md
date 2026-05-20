@@ -1,5 +1,54 @@
 # Changelog
 
+## v0.35.0
+
+> Comparing `coralite-v0.34.0` to `HEAD`
+
+**Summary:** 18 commits
+
+### ✨ Features
+
+- rename method API to exports and improve context injection (plugin) ([fe165f7](https://codeberg.org/tjdavid/coralite/commit/fe165f7959fa5892e482086c3dca14465890ef5c))
+
+### 🐛 Bug Fixes
+
+- update e2e tests for new plugin exports API ([230dcd2](https://codeberg.org/tjdavid/coralite/commit/230dcd2d8c133f3a84bdf22403c9956807e24e7c))
+- protect internal properties and prototype methods with Object.defineProperties (coralite) ([6fc5e6c](https://codeberg.org/tjdavid/coralite/commit/6fc5e6ccdcffc6bd99936f1f2a800f2fc602b740))
+
+### ⚡ Performance Improvements
+
+- overhaul production memory management for 1M+ page scalability ([8223203](https://codeberg.org/tjdavid/coralite/commit/8223203aca181dee7c8a00fc1571c94ce9c8c7f7))
+- optimize memory footprint by implementing on-demand parsing for pages ([94f90c6](https://codeberg.org/tjdavid/coralite/commit/94f90c67315e577d93d347161c0974d66edd8489))
+
+### 📚 Documentation
+
+- clarified `llms.txt` regarding the plugin exports system and virtual module imports. ([91a895b](https://codeberg.org/tjdavid/coralite/commit/91a895bb826e589ead4e080df2eed532f007cac7))
+- remove deprecated definePlugin method from state plugin ([7b7ef69](https://codeberg.org/tjdavid/coralite/commit/7b7ef697f152cf2391027ab3e0ad1bc393635511))
+- update plugin export documentation for server-side context ([60cadf6](https://codeberg.org/tjdavid/coralite/commit/60cadf6203b710c98ed93d3f53fe801b20cc9844))
+- Revise exports to use two-phase currying and virtual modules. (plugins) ([d796257](https://codeberg.org/tjdavid/coralite/commit/d796257d86c688690fed78c64084b96a2446696a))
+- document plugin exports context binding (website) ([e725a88](https://codeberg.org/tjdavid/coralite/commit/e725a88bc17c7d07076271293f6420d243c261b1))
+
+### ♻️ Code Refactoring
+
+- eliminate code smells and update typings (plugins) ([a2e7ec0](https://codeberg.org/tjdavid/coralite/commit/a2e7ec0a884e6a9b0b30eb8ac4641be5bcd8e9ea))
+- clean up unused plugin typedefs (types) ([188123e](https://codeberg.org/tjdavid/coralite/commit/188123eb5984c376a8f68d903dfe782bdab67532))
+- bind plugin context via 'this' instead of trailing argument ([881c288](https://codeberg.org/tjdavid/coralite/commit/881c288c824c5e7b66421f246fab1e9244423d42))
+- resolve code smells in core engine (coralite) ([f97ccf6](https://codeberg.org/tjdavid/coralite/commit/f97ccf64ef3a01d4e5fcf91624fc9ae1ed6f7bb9))
+- Update LLM directives for Coralite component development ([9080175](https://codeberg.org/tjdavid/coralite/commit/90801756e95581df871681fc98b0c9d2ebba71f6))
+
+### ✅ Tests
+
+- add CLI selection to benchmark script (coralite) ([e3dd4f3](https://codeberg.org/tjdavid/coralite/commit/e3dd4f3f4f0570560d075e3bc94764b3767e9cfc))
+
+### 🧹 Chores
+
+- remove unused file ([725b55c](https://codeberg.org/tjdavid/coralite/commit/725b55c03db6ba17bedf7cd4d7063829931ca420))
+
+### 💥 Breaking Changes
+
+- coralite plugin exports to two-phase currying ([157060c](https://codeberg.org/tjdavid/coralite/commit/157060ca62cba365ca2a337722a4fe567a78cd21))
+
+
 ## v0.34.0
 
 > Comparing `coralite-v0.33.1` to `HEAD`
