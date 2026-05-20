@@ -77,7 +77,7 @@ function isCoraliteCollectionItem (obj) {
   return isObject(obj) &&
          'path' in obj &&
          isObject(obj.path) &&
-         typeof obj.content === 'string'
+         typeof obj.path.pathname === 'string'
 }
 
 /**

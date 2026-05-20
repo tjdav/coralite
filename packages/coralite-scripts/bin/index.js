@@ -107,8 +107,6 @@ if (mode === 'dev') {
         pageCount++
         spinner.text = `Building pages... (${pageCount} completed)`
       }
-
-      return outFile
     })
 
     // Write ESM script assets generated during the build phase

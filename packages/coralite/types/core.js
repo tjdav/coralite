@@ -12,6 +12,7 @@
  * @property {CoraliteModuleDefinitions} [state] - The initial values for the HTML module.
  * @property {CoraliteFilePath} path - The file's path information within the project structure.
  * @property {string} [content] - The raw HTML string contents of the file (optional, may be omitted for templates).
+ * @property {boolean} [physical] - Indicates if the file was discovered from the filesystem.
  */
 
 /**

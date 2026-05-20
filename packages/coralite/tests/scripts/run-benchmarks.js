@@ -34,7 +34,7 @@ for (const file of files) {
   console.log(`Running benchmark: ${file}`)
   console.log(`======================================================\n`)
   try {
-    execSync(`node --experimental-vm-modules ${filepath}`, { stdio: 'inherit' })
+    execSync(`node --experimental-vm-modules --expose-gc ${filepath}`, { stdio: 'inherit' })
   } catch (err) {
     console.error(`Error running ${file}:`, err.message)
   }

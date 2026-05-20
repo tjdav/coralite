@@ -90,10 +90,6 @@ CoraliteCollection.prototype.setItem = async function (value) {
   const dirname = value.path.dirname
   const originalValue = this.collection[pathname]
 
-  if (value.content === undefined && pathname) {
-    value.content = await getHtmlFile(pathname)
-  }
-
   /** @type {CoraliteCollectionItem} */
   const documentValue = value
 
@@ -108,6 +104,10 @@ CoraliteCollection.prototype.setItem = async function (value) {
       }
 
       documentValue.result = result.value
+
+      if (result.state) {
+        documentValue.state = result.state
+      }
 
       if (result.type === 'page' || result.type === 'component') {
         documentValue.type = result.type

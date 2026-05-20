@@ -1,5 +1,5 @@
-import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, findAndExtractProperties, extractGlobals, mergePluginState, findAndExtractImperativeComponents } from './utils.js'
-import { getHtmlFile, getHtmlFiles } from './html.js'
+import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, findAndExtractProperties, extractGlobals, mergePluginState } from './utils.js'
+import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './html.js'
 import { findHeadAndBody, injectStyles, injectReadinessScript, injectImportMap, removeElements, resolvePageQueue } from './render-helpers.js'
 import { generateClientRuntime } from './client-runtime.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
@@ -246,6 +246,10 @@ Coralite.prototype.initialise = async function () {
     recursive: true,
     type: 'component',
     onFileSet: async (value) => {
+      if (value.content === undefined) {
+        value.content = await getHtmlFile(value.path.pathname)
+      }
+
       const component = parseModule(value.content, {
         ignoreByAttribute: this.options.ignoreByAttribute,
         skipRenderByAttribute: this.options.skipRenderByAttribute,
@@ -266,6 +270,10 @@ Coralite.prototype.initialise = async function () {
       }
     },
     onFileUpdate: async (value) => {
+      if (value.content === undefined) {
+        value.content = await getHtmlFile(value.path.pathname)
+      }
+
       const component = parseModule(value.content, {
         ignoreByAttribute: this.options.ignoreByAttribute,
         skipRenderByAttribute: this.options.skipRenderByAttribute,
@@ -277,9 +285,7 @@ Coralite.prototype.initialise = async function () {
         return
       }
 
-      const mappedComponent = await this._triggerPluginHook('onComponentUpdate', component)
-
-      return mappedComponent
+      return await this._triggerPluginHook('onComponentUpdate', component)
     },
     onFileDelete: async (value) => {
       await this._triggerPluginHook('onComponentDelete', value)
@@ -363,55 +369,58 @@ Coralite.prototype.initialise = async function () {
 
     const elements = parseHTML(data.content, this.options.ignoreByAttribute, this.options.skipRenderByAttribute, (errorData) => this._handleError(errorData))
 
-    // track parent-child relationship between custom elements
-    for (let i = 0; i < elements.customElements.length; i++) {
-      const customElement = elements.customElements[i]
-      const name = customElement.name
-      let item = pageCustomElements[name]
+    // track parent-child relationship between custom elements (only in development)
+    if (this.options.mode !== 'production') {
+      const customElementsList = elements ? (elements.customElements || []) : []
+      for (let i = 0; i < customElementsList.length; i++) {
+        const customElement = customElementsList[i]
+        const name = customElement.name
+        let item = pageCustomElements[name]
 
-      if (!item) {
-        pageCustomElements[name] = new Set()
-        item = pageCustomElements[name]
+        if (!item) {
+          pageCustomElements[name] = new Set()
+          item = pageCustomElements[name]
 
-        const component = this.components.getItem(name)
+          const component = this.components.getItem(name)
 
-        if (
-          component &&
-          component.result &&
-          component.result.customElements &&
-          component.result.customElements.length
-        ) {
-          const stack = [component.result.customElements]
+          if (
+            component &&
+            component.result &&
+            component.result.customElements &&
+            component.result.customElements.length
+          ) {
+            const stack = [component.result.customElements]
 
-          while (stack.length > 0) {
-            const current = stack.pop()
+            while (stack.length > 0) {
+              const current = stack.pop()
 
-            for (let i = 0; i < current.length; i++) {
-              const element = current[i]
+              for (let i = 0; i < current.length; i++) {
+                const element = current[i]
 
-              if (!childCustomElements[element.name]) {
-                childCustomElements[element.name] = name
+                if (!childCustomElements[element.name]) {
+                  childCustomElements[element.name] = name
 
-                // process nested elements recursively
-                const component = this.components.getItem(element.name)
+                  // process nested elements recursively
+                  const component = this.components.getItem(element.name)
 
-                if (
-                  component &&
-                  component.result &&
-                  component.result.customElements &&
-                  component.result.customElements.length
-                ) {
-                  // push nested custom elements to stack for processing
-                  stack.push(component.result.customElements)
+                  if (
+                    component &&
+                    component.result &&
+                    component.result.customElements &&
+                    component.result.customElements.length
+                  ) {
+                    // push nested custom elements to stack for processing
+                    stack.push(component.result.customElements)
+                  }
                 }
               }
             }
           }
         }
-      }
 
-      // add page to custom element collection
-      item.add(data.path.pathname)
+        // add page to custom element collection
+        item.add(data.path.pathname)
+      }
     }
 
     const mappedContext = await this._triggerPluginHook('onPageSet', {
@@ -421,21 +430,34 @@ Coralite.prototype.initialise = async function () {
       data
     })
 
+    const isProduction = this.options.mode === 'production'
+
+    if (isProduction && data.physical) {
+      delete data.content
+    }
+
     return {
       type: 'page',
       value: {
         state: mappedContext.state,
         page: mappedContext.page,
         path: mappedContext.data.path,
-        root: mappedContext.elements.root,
-        customElements: mappedContext.elements.customElements,
-        tempElements: mappedContext.elements.tempElements,
-        skipRenderElements: mappedContext.elements.skipRenderElements
-      }
+        // In production, we discard the heavy AST nodes after initialization hooks to save memory.
+        // They will be re-parsed on-demand during the build/render phase.
+        root: isProduction ? null : mappedContext.elements.root,
+        customElements: isProduction ? null : mappedContext.elements.customElements,
+        tempElements: isProduction ? null : mappedContext.elements.tempElements,
+        skipRenderElements: isProduction ? null : mappedContext.elements.skipRenderElements
+      },
+      state: mappedContext.state
     }
   }
 
   const onPageUpdate = async (newValue, oldValue) => {
+    if (this.options.mode === 'production') {
+      return newValue.result
+    }
+
     let newCustomElements
 
     if (!newValue.result) {
@@ -447,7 +469,7 @@ Coralite.prototype.initialise = async function () {
       newCustomElements = newValue.result.customElements
     }
 
-    let oldElements = oldValue.result.customElements.slice()
+    let oldElements = (oldValue.result.customElements || []).slice()
 
     const mappedContext = await this._triggerPluginHook('onPageUpdate', {
       elements: newValue.result,
@@ -459,7 +481,6 @@ Coralite.prototype.initialise = async function () {
     // Assign back the mapped elements to result so that rendering uses the updated AST and state
     newValue.result = mappedContext.elements
     newValue = mappedContext.newValue
-    oldValue = mappedContext.oldValue
 
     for (let i = 0; i < newCustomElements.length; i++) {
       const newElement = newCustomElements[i]
@@ -500,6 +521,10 @@ Coralite.prototype.initialise = async function () {
   }
 
   const onPageDelete = async (value) => {
+    if (this.options.mode === 'production') {
+      return
+    }
+
     value = await this._triggerPluginHook('onPageDelete', value)
 
     // remove page from custom element reference
@@ -523,14 +548,28 @@ Coralite.prototype.initialise = async function () {
     onDelete: onPageDelete
   })
 
-  /** @type {CoraliteCollection} */
-  await getHtmlFiles({
-    path: this.options.pages,
-    recursive: true,
-    type: 'page',
-    discoverOnly: this.options.mode === 'production',
-    collection: this.pages
-  })
+  const isProduction = this.options.mode === 'production'
+
+  if (isProduction) {
+    for await (const file of discoverHtmlFiles({
+      path: this.options.pages,
+      recursive: true,
+      type: 'page',
+      discoverOnly: false
+    })) {
+      // Process file for metadata, then it will be discarded because isProduction is true in onFileSet
+      await this.pages.setItem(file)
+    }
+  } else {
+    /** @type {CoraliteCollection} */
+    await getHtmlFiles({
+      path: this.options.pages,
+      recursive: true,
+      type: 'page',
+      discoverOnly: false,
+      collection: this.pages
+    })
+  }
 }
 
 /**
@@ -638,8 +677,9 @@ Coralite.prototype._createRenderContext = function (buildId) {
  * @returns {Promise<void>} Resolves when the elements are processed
  */
 Coralite.prototype._processCustomElementsInPage = async function (mappedComponent, originalDocument, state, mappedRenderContextObject, pageContext) {
-  for (let i = 0; i < mappedComponent.customElements.length; i++) {
-    const customElement = mappedComponent.customElements[i]
+  const customElementsList = mappedComponent.customElements || []
+  for (let i = 0; i < customElementsList.length; i++) {
+    const customElement = customElementsList[i]
 
     const contextId = mappedComponent.path.pathname + i + customElement.name
     const currentProperties = mappedRenderContextObject.state[contextId] || {}
@@ -680,6 +720,21 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
 }
 
 Coralite.prototype._generatePages = async function* (path, state = {}) {
+  const isProduction = this.options.mode === 'production'
+
+  if (path) {
+    const paths = Array.isArray(path) ? path : [path]
+    for (const p of paths) {
+      if (!this.pages.getItem(p)) {
+        try {
+          await this.pages.setItem(p)
+        } catch (e) {
+          // Path might not be a direct file, could be a glob or dir handled by resolvePageQueue
+        }
+      }
+    }
+  }
+
   const queue = resolvePageQueue(this.pages, path)
 
   const buildId = randomUUID()
@@ -687,13 +742,14 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
   const scriptResultCache = new Map()
 
   try {
-    const queue = this._renderQueues.get(buildId)
+    const activeQueue = this._renderQueues.get(buildId)
 
-    for (let q = 0; q < queue.length; q++) {
+    for (let q = 0; q < activeQueue.length; q++) {
+      const pageItem = activeQueue[q]
       const startTime = performance.now()
 
       /** @type {CoraliteComponent & CoraliteComponentResult} */
-      const originalDocument = queue[q].result
+      const originalDocument = pageItem.result
 
       /** @type {CoraliteComponent & CoraliteComponentResult} */
       // @ts-ignore
@@ -702,10 +758,22 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
 
       // If the page was discovery-only initialized (no root AST), parse it on-demand
       if (!originalDocument.root) {
-        let content = queue[q].content
-        if (!content) {
-          content = await getHtmlFile(queue[q].path.pathname)
+        let content = pageItem.content
+        if (content === undefined) {
+          try {
+            content = await getHtmlFile(pageItem.path.pathname)
+          } catch (e) {
+            // Re-check content in case it was set concurrently or by a plugin (virtual pages)
+            if (pageItem.content !== undefined) {
+              content = pageItem.content
+            } else {
+              throw e
+            }
+          }
         }
+
+        // Temporarily store content so plugins can find it via app.pages.getItem()
+        pageItem.content = content
 
         const elements = parseHTML(content, this.options.ignoreByAttribute, this.options.skipRenderByAttribute, (errorData) => this._handleError(errorData))
 
@@ -723,7 +791,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
           elements,
           state: pageState,
           page: pageContext,
-          data: queue[q]
+          data: pageItem
         })
 
         const fullPath = Object.assign({}, mappedContext.data.path, {
@@ -743,10 +811,14 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
           skipRenderElements: mappedContext.elements.skipRenderElements,
           ignoreByAttribute: this.options.ignoreByAttribute || []
         }
+
       } else {
         // Deep clone the document to ensure thread safety
         component = cloneComponentInstance(originalDocument)
         component.ignoreByAttribute = component.ignoreByAttribute || this.options.ignoreByAttribute || []
+
+        // Ensure pageContext is correctly initialized from cloned component
+        pageContext = component.page
       }
 
       // Merge state into component
@@ -910,6 +982,27 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
         content: rawHTML,
         duration: performance.now() - startTime
       }
+
+      // Explicitly nullify large objects to help GC
+      mappedComponent.root = null
+      mappedComponent.customElements = null
+      mappedComponent.tempElements = null
+      mappedComponent.skipRenderElements = null
+
+      if (isProduction) {
+        // In production, we can discard the yielded content from the item
+        // but we must keep the result object (minus the AST) for metadata and rebuilds.
+        delete pageItem.content
+      }
+
+      // Explicitly nullify render context contents to help GC
+      renderContext.state = null
+      renderContext.styles = null
+      renderContext.scripts = null
+      if (renderContext.source) {
+        renderContext.source.contextInstances = null
+        renderContext.source = null
+      }
     }
   } finally {
     this._renderQueues.delete(buildId)
@@ -1004,6 +1097,7 @@ Coralite.prototype.build = async function (...args) {
   const executing = new Set()
   const results = []
   let buildError = null
+  const isStreaming = !!callback
 
   try {
     for await (const result of this._generatePages(path, variables)) {
@@ -1031,6 +1125,14 @@ Coralite.prototype.build = async function (...args) {
         // Process any dynamically generated pages returned by the plugins
         for (const newPage of additionalPages) {
           if (newPage && newPage.path && newPage.content) {
+            // Mock path data for dynamically generated pages if needed
+            if (typeof newPage.path === 'string') {
+              newPage.path = {
+                pathname: newPage.path,
+                filename: join(newPage.path),
+                dirname: dirname(newPage.path)
+              }
+            }
             items.push(newPage)
           }
         }
@@ -1104,6 +1206,8 @@ Coralite.prototype.build = async function (...args) {
       error: buildError,
       duration
     })
+
+    // Clean up to save memory
   }
 }
 
@@ -1132,7 +1236,8 @@ Coralite.prototype.save = async function (path, options = {}) {
 
   const output = this.options.output
 
-  const results = await this.build(path, options, async (result) => {
+  const results = []
+  await this.build(path, options, async (result) => {
     let relativeDir, outDir, outFile, contentToWrite
 
     // It's a standard HTML page
@@ -1150,10 +1255,13 @@ Coralite.prototype.save = async function (path, options = {}) {
     // Pass signal to writeFile so Node can stop the I/O immediately
     await writeFile(outFile, contentToWrite, { signal })
 
-    return {
+    results.push({
       path: outFile,
       duration: result.duration
-    }
+    })
+
+    // Return undefined to prevent build() from accumulating redundant results
+    return undefined
   })
 
   // Write ESM script assets generated during the build phase
@@ -1233,6 +1341,10 @@ Coralite.prototype.addRenderQueue = async function (value, buildId) {
  * @returns {string[]} An array of page paths linked to the custom element component.
  */
 Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
+  if (this.options.mode === 'production') {
+    return []
+  }
+
   // normalize path by removing the components directory prefix
   if (path.startsWith(this.options.path.components)) {
     path = path.substring(this.options.path.components.length + 1)
@@ -1395,6 +1507,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
 
       await this._processDependentComponents(nestedComponents, renderContext, page, root, inheritedState)
     }
+
   }
 }
 
@@ -1786,7 +1899,7 @@ Coralite.prototype.createComponentElement = async function ({
  * @returns {Promise<void>} Resolves when slots are successfully replaced
  */
 Coralite.prototype._replaceSlots = async function (id, element, module, contextId, state, page, root, index, renderContext) {
-  const slots = module.slotElements[id]
+  const slots = module.slotElements ? module.slotElements[id] : null
 
   if (!slots) {
     return
@@ -1800,7 +1913,7 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
     slotChildren[slotName] = []
   }
 
-  if (element) {
+  if (element && element.slots) {
     for (let i = 0; i < element.slots.length; i++) {
       const elementSlotContent = element.slots[i]
       const slotName = elementSlotContent.name
@@ -1820,6 +1933,11 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
     const slotName = slotNames[i]
     let slotNodes = slotChildren[slotName]
     const slot = slots[slotName]
+
+    if (!slot.element || !slot.element.parent || !slot.element.parent.children) {
+      continue
+    }
+
     const slotIndex = slot.element.parent.children.indexOf(slot.element)
 
     const emptySlot = slotNodes.filter(node => {
@@ -2185,13 +2303,17 @@ Coralite.prototype._evaluateProduction = async function ({
   // Create the function. We pass 'coralite' explicitly to support the
   // "export const document = coralite.document" pattern found in existing modules.
   // Arguments: module, exports, require, coralite
-  const fn = new Function(
-    'module',
-    'exports',
-    'require',
-    'coralite',
-    moduleComponent.result._compiledCode.trim()
-  )
+  if (!moduleComponent.result._compiledFunction) {
+    moduleComponent.result._compiledFunction = new Function(
+      'module',
+      'exports',
+      'require',
+      'coralite',
+      moduleComponent.result._compiledCode.trim()
+    )
+  }
+
+  const fn = moduleComponent.result._compiledFunction
 
   // Execute the function with our mocks and context
   try {

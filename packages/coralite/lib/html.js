@@ -47,14 +47,12 @@ export async function getHtmlFiles ({
   collection,
   limit
 }) {
-  if (!collection) {
-    collection = new CoraliteCollection({
-      rootDir: path,
-      onSet: onFileSet,
-      onUpdate: onFileUpdate,
-      onDelete: onFileDelete
-    })
-  }
+  const resultCollection = collection || new CoraliteCollection({
+    rootDir: path,
+    onSet: onFileSet,
+    onUpdate: onFileUpdate,
+    onDelete: onFileDelete
+  })
 
   if (!limit) {
     limit = pLimit(availableParallelism())
@@ -100,16 +98,17 @@ export async function getHtmlFiles ({
         onFileSet,
         onFileUpdate,
         onFileDelete,
-        collection,
+        collection: resultCollection,
         limit
       }))
     } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
       tasks.push(limit(async () => {
         const content = discoverOnly ? undefined : await readFile(pathname, { encoding: 'utf8' })
 
-        await collection.setItem({
+        await resultCollection.setItem({
           type,
           content,
+          physical: true,
           path: {
             pathname: pathname,
             filename: entry.name,
@@ -122,7 +121,75 @@ export async function getHtmlFiles ({
 
   await Promise.all(tasks)
 
-  return collection
+  return resultCollection
+}
+
+/**
+ * Generator that yields HTML files found in a directory.
+ * Useful for lazy discovery and memory-efficient processing of many files.
+ *
+ * @param {Object} options - Options for searching HTML files
+ * @param {string} options.path - Path to the directory containing HTML files
+ * @param {'page' | 'component'} options.type - Document types
+ * @param {boolean} [options.recursive=false] - Whether to search recursively
+ * @param {string[]} [options.exclude=[]] - Files or directories to exclude
+ * @param {boolean} [options.discoverOnly=false] - Whether to skip reading file content
+ * @yields {Promise<{ type: 'page' | 'component', content: string | undefined, path: { pathname: string, filename: string, dirname: string } }>}
+ */
+export async function* discoverHtmlFiles ({
+  path,
+  type,
+  recursive = false,
+  exclude = [],
+  discoverOnly = false
+}) {
+  const entries = await readdir(path, { withFileTypes: true })
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i]
+
+    if (entry.name.startsWith('.')) {
+      continue
+    }
+
+    const pathname = join(entry.parentPath, entry.name)
+    const relativePath = pathname.replace(path + '/', '')
+
+    const shouldExclude = exclude.includes(entry.name) ||
+                           exclude.includes(relativePath) ||
+                           exclude.includes(pathname) ||
+                           exclude.some(excludePath => {
+                             const excludeDir = excludePath.endsWith('/') ? excludePath.slice(0, -1) : excludePath
+                             return relativePath.startsWith(excludeDir + '/')
+                           })
+
+    if (shouldExclude) {
+      continue
+    }
+
+    if (entry.isDirectory() && recursive) {
+      yield* discoverHtmlFiles({
+        path: pathname,
+        type,
+        recursive,
+        exclude,
+        discoverOnly
+      })
+    } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
+      const content = discoverOnly ? undefined : await readFile(pathname, { encoding: 'utf8' })
+
+      yield {
+        type,
+        content,
+        physical: true,
+        path: {
+          pathname: pathname,
+          filename: entry.name,
+          dirname: dirname(pathname)
+        }
+      }
+    }
+  }
 }
 
 /**

@@ -19,6 +19,7 @@
  * @property {*} value - The processed value
  * @property {'page'|'component'} [type] - Document type
  * @property {string} [id] - Optional identifier for the item
+ * @property {*} [state] - Optional state to associate with the item
  */
 
 /**

@@ -115,6 +115,7 @@ async function runBenchmark (mode, scenario) {
   // console.log(`Setup Time: ${(setupEnd - setupStart).toFixed(2)}ms`)
 
   // Initial Memory
+  global.gc && global.gc()
   const memStart = getMemoryUsage()
 
   // Initialize Coralite
@@ -129,9 +130,17 @@ async function runBenchmark (mode, scenario) {
   const initEnd = performance.now()
   const startupTime = (initEnd - initStart).toFixed(2)
 
-  // First Build
+  // First Build (using streaming mode to test scalability)
   const buildStart = performance.now()
-  const results = await coralite.build()
+  let builtPages = 0
+  const buildCallback = async (result) => {
+    builtPages++
+    // In a real build we would write to disk here.
+    // Return undefined to prevent build() from accumulating results in memory
+    return undefined
+  }
+
+  await coralite.build(buildCallback)
   const buildEnd = performance.now()
   const buildTime = (buildEnd - buildStart).toFixed(2)
 
@@ -141,13 +150,13 @@ async function runBenchmark (mode, scenario) {
 
   // Rebuild (simulating watch mode update or subsequent build)
   const rebuildStart = performance.now()
-  await coralite.build()
+  await coralite.build(buildCallback)
   const rebuildEnd = performance.now()
   const rebuildTime = (rebuildEnd - rebuildStart).toFixed(2)
 
   // Report
   console.log(`Startup Time:   ${startupTime} ms`)
-  console.log(`Build Time:     ${buildTime} ms (${results.length} pages)`)
+  console.log(`Build Time:     ${buildTime} ms (${builtPages} pages)`)
   console.log(`Rebuild Time:   ${rebuildTime} ms`)
 
   console.log('\nMemory Usage (After Build):')
@@ -160,6 +169,10 @@ async function runBenchmark (mode, scenario) {
 
   // Cleanup this run
   await cleanup()
+  global.gc && global.gc()
+
+  const memFinal = getMemoryUsage()
+  console.log('Memory Usage (After Cleanup):', memFinal.heapUsed)
 
   return {
     mode,
@@ -175,7 +188,7 @@ async function runBenchmark (mode, scenario) {
 const scenarios = [
   {
     name: 'Many Small Pages',
-    pages: 1000,
+    pages: 10000,
     components: 5,
     componentsPerPage: 2
   },
@@ -201,20 +214,23 @@ async function main () {
   const summary = []
 
   for (const scenario of scenarios) {
-    // Run Development Mode
-    try {
-      const devResult = await runBenchmark('development', scenario)
-      summary.push(devResult)
-    } catch (e) {
-      console.error(`Failed to run development mode for ${scenario.name}:`, e.message)
-    }
-
-    // Run Production Mode
     try {
       const prodResult = await runBenchmark('production', scenario)
       summary.push(prodResult)
     } catch (e) {
       console.error(`Failed to run production mode for ${scenario.name}:`, e.message)
+    }
+
+    // Skip Development mode for very large page counts to avoid OOM in benchmark runner
+    if (scenario.pages <= 2000) {
+      try {
+        const devResult = await runBenchmark('development', scenario)
+        summary.push(devResult)
+      } catch (e) {
+        console.error(`Failed to run development mode for ${scenario.name}:`, e.message)
+      }
+    } else {
+      console.log(`\nSkipping Development mode for ${scenario.name} (${scenario.pages} pages) to avoid OOM.`)
     }
   }
 
