@@ -86,9 +86,11 @@ function processComponents (path) {
  * // Basic plugin
  * const myPlugin = definePlugin({
  *   name: 'my-plugin',
- *   exports: (options, context) => {
- *     // Plugin logic implementation
- *     return { ...context.values, custom: 'data' }
+ *   exports: {
+ *     getData: (context) => (options) => {
+ *       // Plugin logic implementation
+ *       return { ...context.state, custom: 'data', ...options }
+ *     }
  *   }
  * })
  *
@@ -96,9 +98,11 @@ function processComponents (path) {
  * // Plugin with components and metadata
  * const advancedPlugin = definePlugin({
  *   name: 'advanced-plugin',
- *   exports: async (options, context) => {
- *     // Async plugin logic
- *     return { ...context.values, processed: true }
+ *   exports: {
+ *     process: (context) => async (options) => {
+ *       // Async plugin logic
+ *       return { ...context.state, processed: true, ...options }
+ *     }
  *   },
  *   components: ['src/components/header.html', 'src/components/footer.html'],
  *   onPageSet: async (data) => {
@@ -110,7 +114,9 @@ function processComponents (path) {
  * // Plugin with caching disabled
  * const devPlugin = definePlugin({
  *   name: 'dev-plugin',
- *   exports: (options, context) => context.values,
+ *   exports: {
+ *     getValues: (context) => () => context.state
+ *   },
  *   components: ['src/components/dev.html'],
  * })
  */

@@ -42,9 +42,11 @@
 const myPlugin = definePlugin({
   name: 'my-plugin', // Required: Unique name for the plugin
 
-  // Optional: Execution function or object/array of functions mapped to context via 'this'
-  exports: function() {
-    console.log(this.state, this.page)
+  // Optional: Object of Two-Phase Curried functions mapped to explicit context
+  exports: {
+    log: (context) => () => {
+      console.log(context.state, context.page)
+    }
   },
 
   // Optional: Main server-side logic
@@ -71,18 +73,20 @@ const myPlugin = definePlugin({
     <!-- Context Binding -->
     <section id="context-binding">
       <coralite-heading level="h2" text="Context Binding (`exports`)"></coralite-heading>
-      <p>The <code>exports</code> property is an execution function, or an object/array of execution functions, that processes content using plugin logic.</p>
-      <p>Crucially, these functions access the full <code>CoralitePluginContext</code> through <code>this</code> binding rather than receiving it as a trailing argument.</p>
+      <p>The <code>exports</code> property is an object of functions that processes content using plugin logic.</p>
+      <p>These functions use a <strong>Two-Phase Currying</strong> pattern to receive the <code>CoralitePluginContext</code> explicitly.</p>
       
       <coralite-code-highlight language="JavaScript">
 export default definePlugin({
   name: 'logger-plugin',
-  exports: function(message) {
-    // The plugin context is bound to 'this'
-    console.log(`[${this.module.name}] ${message}`, this.state);
-    
-    // Returning a state patch
-    return { logged: true };
+  exports: {
+    log: (context) => (message) => {
+      // The plugin context is passed explicitly
+      console.log(`[${context.module.name}] ${message}`, context.state);
+      
+      // Returning a state patch
+      return { logged: true };
+    }
   }
 })
       </coralite-code-highlight>

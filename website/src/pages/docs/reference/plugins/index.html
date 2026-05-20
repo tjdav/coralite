@@ -71,7 +71,7 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite/plugins'
+          import { defineComponent } from 'coralite'
 
           export default defineComponent({
             attributes: {
@@ -102,7 +102,7 @@
       <p>Use the <code>definePlugin</code> function to define a new plugin with configuration options:</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite/plugins'
+        import { definePlugin } from 'coralite'
 
         const myPlugin = definePlugin({
           name: 'my-plugin',
@@ -277,7 +277,7 @@
       </div>
 
       <coralite-heading level="h3" text="Using Plugin Methods in Components"></coralite-heading>
-      <p>Import plugin methods from <code>coralite/plugins</code> and use them inside <code>defineComponent</code>:</p>
+      <p>Import plugin methods from <code>coralite</code> and use them inside <code>defineComponent</code>:</p>
 
       <coralite-code-html>
         <template id="user-profile">
@@ -289,8 +289,8 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite/plugins'
-          import { formatDate } from 'coralite/plugins'
+          import { defineComponent } from 'coralite'
+          import { formatDate } from 'custom-plugin-name'
 
           export default defineComponent({
             attributes: {
@@ -322,7 +322,7 @@
       </coralite-code-html>
 
       <coralite-code-highlight language="JavaScript">
-        import { defineComponent } from 'coralite/plugins'
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           attributes: {
@@ -374,7 +374,7 @@
         tags:</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite/plugins'
+        import { definePlugin } from 'coralite'
         import { readFile } from 'node:fs/promises'
         import { join, resolve } from 'node:path'
 
@@ -468,7 +468,7 @@
     <p>Hooks allow plugins to respond to specific events in the Coralite build lifecycle. These execute strictly on the server during the compilation and generation phases, making them perfect for generating sitemaps, indexing search data, or tracking build analytics.</p>
 
     <coralite-code-highlight language="JavaScript">
-      import { definePlugin } from 'coralite/plugins'
+      import { definePlugin } from 'coralite'
 
       export const analyticsPlugin = definePlugin({
         name: 'analytics',
@@ -527,7 +527,7 @@
       <p><strong>Note on <code>signal</code>:</strong> The <code>signal</code> is tied natively to the component's mount lifecycle. It triggers <code>.abort()</code> automatically when an imperative component is unmounted from the DOM, making it perfect for cleaning up event listeners (e.g. <code>element.addEventListener('click', fn, { signal })</code>). For declarative components, <code>signal</code> is <code>null</code>.</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { definePlugin } from 'coralite/plugins'
+        import { definePlugin } from 'coralite'
 
         export const myCustomPlugin = definePlugin({
           name: 'my-custom-plugin',
@@ -581,7 +581,7 @@
       <p>The <code>defineComponent</code> plugin is required for all dynamic components. It provides the structured wrapper for your inputs (<code>attributes</code>), server-side fetching (<code>data</code>), derived state (<code>getters</code>), and client-side execution (<code>script</code>):</p>
 
       <coralite-code-highlight language="JavaScript">
-        import { defineComponent } from 'coralite/plugins'
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           attributes: {
@@ -640,7 +640,7 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite/plugins'
+          import { defineComponent } from 'coralite'
 
           export default defineComponent({
             script ({ state, root, signal, refs, ...pluginContext }) {
@@ -697,7 +697,7 @@
         </template>
 
         <script type="module">
-          import { defineComponent } from 'coralite/plugins'
+          import { defineComponent } from 'coralite'
 
           export default defineComponent({
             attributes: {

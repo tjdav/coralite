@@ -26,7 +26,7 @@ describe('Source Map Generation', () => {
 </template>
 
 <script type="module">
-import { defineComponent } from 'coralite/plugins'
+import { defineComponent } from 'coralite'
 
 export default defineComponent({
   script${componentScriptContent}
@@ -101,7 +101,7 @@ export default defineComponent({
 </template>
 
 <script type="module">
-import { defineComponent } from 'coralite/plugins'
+import { defineComponent } from 'coralite'
 
 export default defineComponent({
   /**

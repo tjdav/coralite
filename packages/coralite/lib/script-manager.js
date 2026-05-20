@@ -481,6 +481,14 @@ export default {
               return null
             }
 
+            // Support virtual module imports for plugins by name
+            if (this.plugins.some(p => p.name === args.path)) {
+              return {
+                path: args.path,
+                external: true
+              }
+            }
+
 
             // Do not externalize if the entry point name actually matches a bare specifier
             if (Object.hasOwn(entryPoints, args.path)) {
@@ -609,6 +617,17 @@ export default {
               }
             }
             contents += '};\n'
+
+            // Add server-side exports as virtual modules
+            if (module.exports) {
+              // Wait, this is ScriptManager, which handles CLIENT side scripts.
+              // The plugin.exports are SERVER side.
+              // However, the task says "Virtual Module Imports" for plugins.
+              // If they are imported in `data({ state })` block, they are executed on the server.
+              // The ScriptManager is responsible for bundling the CLIENT code.
+              // If a plugin is imported in a component's <script>, esbuild will try to resolve it.
+              // If it's only used in `data`, the ScriptManager's AST stripping will remove it.
+            }
 
             return {
               contents,

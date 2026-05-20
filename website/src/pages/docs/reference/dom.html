@@ -243,7 +243,7 @@
     <section id="creating-nodes">
       <coralite-heading level="h2" text="Creating Nodes"></coralite-heading>
       <p>To create new nodes that are correctly enhanced with the Coralite API, use the helper functions exported by the
-        <code>coralite/plugins</code> or <code>coralite/utils</code> package.</p>
+        <code>coralite</code> or <code>coralite/utils</code> package.</p>
 
       <coralite-alert type="info">
         <strong>Note:</strong> These functions automatically append the new node to the parent's children array if a
@@ -295,7 +295,7 @@
 
       <coralite-code-highlight language="JavaScript">
         // component.html script
-        import { defineComponent } from 'coralite/plugins'
+        import { defineComponent } from 'coralite'
         import { createElement } from 'coralite/utils'
 
         export default defineComponent({

@@ -52,7 +52,7 @@ customElements.define('my-component', MyComponent);
 
 **✅ GOOD (Coralite defineComponent):**
 ```javascript
-import { defineComponent } from 'coralite/plugins'
+import { defineComponent } from 'coralite'
 export default defineComponent({
   script: ({ state, root, signal, refs }) => { ... }
 })
@@ -118,7 +118,7 @@ HTML templates in Coralite are strictly declarative and "dumb". They do not supp
 </template>
 
 <script type="module">
-import { defineComponent } from 'coralite/plugins'
+import { defineComponent } from 'coralite'
 import db from 'node:database' // Stripped from client bundle
 
 export default defineComponent({
@@ -152,7 +152,7 @@ export default defineComponent({
 
 **Example: Dispatching a CustomEvent**
 ```javascript
-import { defineComponent } from 'coralite/plugins'
+import { defineComponent } from 'coralite'
 
 export default defineComponent({
     script: ({ root }) => {
@@ -169,7 +169,7 @@ export default defineComponent({
 
 **Example: Aborting a Network Request with `signal`**
 ```javascript
-import { defineComponent } from 'coralite/plugins'
+import { defineComponent } from 'coralite'
 
 export default defineComponent({
     script: async ({ signal }) => {
@@ -208,7 +208,7 @@ You define transformations in the `slots` object. Each key is a slot name (use `
 </template>
 
 <script type="module">
-import { defineComponent } from 'coralite/plugins'
+import { defineComponent } from 'coralite'
 
 export default defineComponent({
     attributes: { title: { type: String, default: 'My App' } },
@@ -297,7 +297,7 @@ export default definePlugin({
 </template>
 
 <script type="module">
-import { defineComponent } from 'coralite/plugins'
+import { defineComponent } from 'coralite'
 // Import destructured methods directly using the plugin's name
 import { log, warn } from 'custom-logger-plugin'
 
@@ -331,7 +331,7 @@ To ensure safety and isolation, client injections mapped in the `client.context`
 
 **Example: Advanced Plugin**
 ```javascript
-import { definePlugin } from 'coralite/plugins'
+import { definePlugin } from 'coralite'
 
 export default definePlugin({
     name: 'state-plugin',

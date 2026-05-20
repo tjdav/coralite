@@ -5,12 +5,17 @@ import { generateClientRuntime } from './client-runtime.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
 import { transformCss } from './style-transform.js'
 import { ScriptManager } from './script-manager.js'
-import { defineComponent, metadataPlugin, refsPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
+import { metadataPlugin, refsPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative, resolve } from 'node:path'
 import { createRequire } from 'node:module'
 import { transform } from 'esbuild'
-import { isCoraliteElement, isCoraliteCollectionItem } from './type-helper.js'
+import {
+  isCoraliteElement,
+  isCoraliteCollectionItem,
+  isCoraliteComment,
+  isCoraliteTextNode
+} from './type-helper.js'
 import { CoraliteError } from './errors.js'
 import { pathToFileURL } from 'node:url'
 import { availableParallelism } from 'node:os'
@@ -20,6 +25,7 @@ import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
 import CoraliteCollection from './collection.js'
 import { randomUUID } from 'node:crypto'
 import { createContext } from 'node:vm'
+import { createReadOnlyProxy } from './utils.js'
 
 /**
  * @import {
@@ -153,7 +159,7 @@ export function Coralite ({
   if (this.options.mode === 'development') {
     plugins.unshift(testingPlugin)
   }
-  plugins.unshift(defineComponent, refsPlugin, metadataPlugin)
+  plugins.unshift(refsPlugin, metadataPlugin)
 
   if (assets) {
     plugins.unshift(staticAssetPlugin(assets))
@@ -1998,7 +2004,7 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
  * Generates a custom module linker callback for the Node.js VM context.
  * This linker is responsible for resolving `import` statements inside evaluated
  * component scripts. It intercepts specific specifiers to provide synthetic modules
- * for `coralite` and `coralite/plugins`, correctly resolves relative paths against
+ * for `coralite` and plugins, correctly resolves relative paths against
  * the component's directory, and safely bridges external Node.js modules into the VM sandbox.
  *
  * @internal
@@ -2022,15 +2028,13 @@ Coralite.prototype._moduleLinker = function (path, context) {
     const { SourceTextModule } = await import('node:vm')
     const originalSpecifier = specifier
 
-    if (specifier == 'coralite/plugins') {
-      const plugins = source.plugins
+    if (source.plugins[specifier]) {
+      const plugin = source.plugins[specifier]
       let pluginExports = ''
 
-      pluginExports = 'const plugins = globalThis.__coralite_plugins__; export default plugins;'
-
-      for (const key in plugins) {
-        if (Object.prototype.hasOwnProperty.call(plugins, key)) {
-          pluginExports += `export const ${key} = plugins["${key}"];\n`
+      for (const key in plugin) {
+        if (Object.prototype.hasOwnProperty.call(plugin, key)) {
+          pluginExports += `export const ${key} = globalThis.__coralite_plugins__["${specifier}"]["${key}"];\n`
         }
       }
 
@@ -2060,6 +2064,8 @@ Coralite.prototype._moduleLinker = function (path, context) {
           coraliteExports += `export const ${key} = context["${key}"];\n`
         }
       }
+
+      coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
 
       return new SourceTextModule(coraliteExports, {
         context: referencingModule.context
@@ -2148,7 +2154,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
   renderContext.source.currentSourceContextId = contextId
   renderContext.source.contextInstances[contextId] = context
 
-  context.defineComponent = cachedBoundPlugins.defineComponent
+  const boundDefineComponent = (options) => this._defineComponent(options, context)
 
   // Protect fundamental constructors from being extracted and polluting the context realm
   const standardBuiltIns = new Set(['Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Math', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt', 'BigInt64Array', 'BigUint64Array', 'Symbol', 'Infinity', 'NaN', 'undefined', 'globalThis', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'escape', 'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'unescape'])
@@ -2156,7 +2162,8 @@ Coralite.prototype._evaluateDevelopment = async function ({
   const contextGlobals = {
     __coralite_context__: context,
     __coralite_plugins__: cachedBoundPlugins,
-    __coralite_utils__: this._source.utils
+    __coralite_utils__: this._source.utils,
+    __coralite_define_component__: boundDefineComponent
   }
 
   for (const glob of usedGlobals) {
@@ -2261,11 +2268,11 @@ Coralite.prototype._evaluateProduction = async function ({
 
   const customRequire = (id) => {
     const isCoralite = id === 'coralite'
-    const isPlugins = id === 'coralite/plugins'
     const isUtils = id === 'coralite/utils'
+    const isPlugin = this._source.plugins[id] !== undefined
 
     // Handle internal coralite imports
-    if (isCoralite || isPlugins || isUtils) {
+    if (isCoralite || isUtils || isPlugin) {
       // Lazily bind plugins once per evaluation
       if (!cachedBoundPlugins) {
         cachedBoundPlugins = this._bindPlugins(this._source.plugins, context)
@@ -2274,15 +2281,18 @@ Coralite.prototype._evaluateProduction = async function ({
       if (isCoralite) {
         return {
           ...context,
-          defineComponent: cachedBoundPlugins?.defineComponent,
-          default: context
+          defineComponent: (options) => this._defineComponent(options, context),
+          default: {
+            ...context,
+            defineComponent: (options) => this._defineComponent(options, context)
+          }
         }
       }
 
-      if (isPlugins) {
+      if (isPlugin) {
         return {
-          ...(cachedBoundPlugins || {}),
-          default: cachedBoundPlugins
+          ...(cachedBoundPlugins[id] || {}),
+          default: cachedBoundPlugins[id]
         }
       }
 
@@ -2388,30 +2398,29 @@ Coralite.prototype._triggerPluginAggregateHook = async function (name, contextDa
 }
 
 /**
- * @internal Binds plugins to the given context via 'this'.
+ * @internal Executes Phase 1 of plugin exports with the given context.
  *
  * @param {Object} plugins - The plugins object
- * @param {Object} context - The context object to bind
- * @returns {Object} The bound plugins
+ * @param {Object} context - The context object to pass to Phase 1
+ * @returns {Object} The Phase 2 functions
  */
 Coralite.prototype._bindPlugins = function (plugins, context) {
   const cachedBoundPlugins = {}
 
   for (const key in plugins) {
-    if (typeof plugins[key] === 'function') {
-      cachedBoundPlugins[key] = plugins[key].bind(context)
-    } else if (plugins[key] !== null && typeof plugins[key] === 'object') {
+    const pluginExports = plugins[key]
+    if (pluginExports !== null && typeof pluginExports === 'object') {
       const pluginObj = {}
-      for (const prop in plugins[key]) {
-        if (typeof plugins[key][prop] === 'function') {
-          pluginObj[prop] = plugins[key][prop].bind(context)
+      for (const prop in pluginExports) {
+        if (typeof pluginExports[prop] === 'function') {
+          pluginObj[prop] = pluginExports[prop](context)
         } else {
-          pluginObj[prop] = plugins[key][prop]
+          pluginObj[prop] = pluginExports[prop]
         }
       }
       cachedBoundPlugins[key] = pluginObj
     } else {
-      cachedBoundPlugins[key] = plugins[key]
+      cachedBoundPlugins[key] = pluginExports
     }
   }
 
@@ -2479,85 +2488,313 @@ Coralite.prototype._addPluginHook = function (name, callback) {
   }
 }
 
-Object.defineProperty(Coralite.prototype, '_defaultOnError', {
+/**
+ * Replaces a custom element with its template content.
+ * @internal
+ * @param {CoraliteElement} coraliteElement - The custom element to be replaced.
+ * @param {CoraliteElement} element - The target element to replace the tokens with.
+ */
+Coralite.prototype._replaceCustomElementWithTemplate = function (coraliteElement, element) {
+  // update parent references for new children to maintain the correct structure in the document
+  for (const child of element.children) {
+    child.parent = coraliteElement.parent
+  }
+
+  // determine the index of the original custom element within its parent's child list
+  const index = coraliteElement.parent.children.indexOf(coraliteElement, coraliteElement.parentChildIndex)
+
+  // replace the custom element with its template children in the document structure
+  coraliteElement.parent.children.splice(index, 1, ...element.children)
+}
+
+/**
+ * Process a token value - parse HTML strings and handle custom elements
+ * @internal
+ * @param {any} value - The value to process
+ * @param {Object} context - Processing context
+ * @returns {Promise<any>} - Processed value
+ */
+Coralite.prototype._processTokenValue = async function (value, context) {
+  const { excludeByAttribute, state, module, createComponentElement, renderContext } = context
+  // If not a string, return as-is
+  if (typeof value !== 'string') {
+    return value
+  }
+
+  // Parse HTML string
+  const result = parseHTML(value, excludeByAttribute)
+
+  // If no children, return undefined (for empty HTML)
+  if (!result.root.children.length) {
+    return undefined
+  }
+
+  // Process custom elements
+  for (let i = 0; i < result.customElements.length; i++) {
+    const customElement = result.customElements[i]
+    const componentElement = await createComponentElement({
+      contextId: `${module.path.pathname}${customElement.name}-${i}`,
+      id: customElement.name,
+      state,
+      element: customElement,
+      module,
+      index: i,
+      renderContext
+    })
+
+    if (componentElement) {
+      this._replaceCustomElementWithTemplate(customElement, componentElement)
+    }
+  }
+
+  // For static strings, optimize single text nodes
+  if (result.root.children.length === 1 && result.root.children[0].type === 'text') {
+    return result.root.children[0].data
+  }
+
+  return result.root.children
+}
+
+/**
+ * This function defines a component for the Coralite framework.
+ * It is used to register components with their associated state and scripts.
+ * @internal
+ * @param {Object} options - Configuration options for the component
+ * @param {Object} context - The evaluation context
+ * @returns {Promise<Object>} A promise resolving to the module state associated with this component.
+ */
+Coralite.prototype._defineComponent = async function (options, context) {
+  const {
+    attributes,
+    data,
+    getters,
+    slots,
+    script
+  } = options
+
+  const {
+    state: initialState,
+    module,
+    root
+  } = context
+
+  // Validate attributes
+  if (attributes) {
+    for (const [key, value] of Object.entries(attributes)) {
+      if (value.type === Object || value.type === Array) {
+        throw new Error(`Coralite Error: Component "${module.id}" defines attribute "${key}" as ${value.type.name}. Object and Array types are blocked in attributes for V1.1 to prevent "JSON-in-HTML" anti-patterns. Use the data() block for complex data.`)
+      }
+    }
+  }
+
+  let state = Object.assign({}, initialState)
+
+  const serializableAttributes = {}
+  if (attributes) {
+    for (const [key, schema] of Object.entries(attributes)) {
+      serializableAttributes[key] = {
+        type: schema.type.name || schema.type,
+        default: schema.default
+      }
+    }
+  }
+
+  state.__script__ = {
+    attributes: serializableAttributes,
+    getters: getters || {},
+    state: {},
+    defaultValues: {},
+    slots: slots || {}
+  }
+
+  if (attributes) {
+    for (const [key, schema] of Object.entries(attributes)) {
+      const typeName = schema.type.name || schema.type
+      if (state[key] !== undefined) {
+        // Coerce existing attribute values
+        const value = state[key]
+        if (typeName === 'Number') {
+          state[key] = Number(value)
+        } else if (typeName === 'Boolean') {
+          state[key] = value !== 'false' && value !== null && value !== ''
+        } else if (typeName === 'String') {
+          state[key] = String(value)
+        }
+      } else if (schema.default !== undefined) {
+        state[key] = schema.default
+      }
+    }
+  }
+
+  if (typeof data === 'function') {
+    const dataResult = await data(context)
+    if (dataResult) {
+      state.__script__.data = dataResult
+      Object.assign(state, dataResult)
+      // Ensure data results are added to state.__script__.state for serialization to client
+      Object.assign(state.__script__.state, dataResult)
+    }
+  }
+
+  if (getters) {
+    const roState = createReadOnlyProxy(state)
+    for (const [key, getter] of Object.entries(getters)) {
+      // Ensure getters use read-only proxy to preemptively throw error if developer attempts to mutate the state.
+      const result = getter(roState, { signal: new AbortController().signal })
+
+      if (result && typeof result.then === 'function') {
+        state[key] = await result
+      } else {
+        state[key] = result
+      }
+
+      // Add getter result to state.__script__.state so it's serialized to the client
+      state.__script__.state[key] = state[key]
+    }
+  }
+
+  // process computed slots
+  if (slots) {
+    for (const name in slots) {
+      if (Object.prototype.hasOwnProperty.call(slots, name)) {
+        const computedSlot = slots[name]
+
+        const methodKey = `slots_method_${name}`
+        state.__script__.defaultValues[methodKey] = computedSlot
+
+        // slot content to compute
+        const slotContent = []
+        // new slot elements
+        const elementSlots = []
+
+        if (root && root.slots) {
+          for (let i = 0; i < root.slots.length; i++) {
+            const slot = root.slots[i]
+
+            if (slot.name === name) {
+              // slot content to compute
+              slotContent.push(slot.node)
+            } else {
+              elementSlots.push(slot)
+            }
+          }
+        }
+
+        // compute slot nodes
+        const result = computedSlot(slotContent, state) || slotContent
+
+        // append new slot nodes
+        if (typeof result === 'string') {
+          // process string result through unified processor
+          const processedResult = await this._processTokenValue(result, {
+            ...context,
+            state,
+            createComponentElement: context.app.createComponentElement
+          })
+
+          if (Array.isArray(processedResult)) {
+            // multiple nodes from parsed HTML
+            for (let i = 0; i < processedResult.length; i++) {
+              elementSlots.push({
+                name,
+                node: processedResult[i]
+              })
+            }
+          } else {
+            // single text node
+            elementSlots.push({
+              name,
+              node: {
+                type: 'text',
+                data: processedResult
+              }
+            })
+          }
+        } else if (Array.isArray(result)) {
+          for (let index = 0; index < result.length; index++) {
+            const node = result[index]
+
+            if (
+              isCoraliteElement(node)
+              || isCoraliteTextNode(node)
+              || isCoraliteComment(node)
+            ) {
+              elementSlots.push({
+                name,
+                node
+              })
+            } else {
+              throw new Error('Unexpected slot value, expected a node but found: '
+                + '\n result: ' + JSON.stringify(node)
+                + '\n path: "' + module.path.pathname + '"')
+            }
+          }
+        }
+
+        // update element slots
+        if (root) {
+          root.slots = elementSlots
+        }
+      }
+    }
+  }
+  const hasScript = typeof script === 'function'
+  const hasSlots = slots && Object.keys(slots).length > 0
+  const hasGetters = getters && Object.keys(getters).length > 0
+  const hasAttributes = attributes && Object.keys(attributes).length > 0
+
+  if (hasScript || hasSlots || hasGetters || hasAttributes) {
+    if (hasScript) {
+      const scriptTextContent = script.toString().trim()
+
+      // include state used in script
+      const args = {}
+      for (const key in state) {
+        if (!Object.hasOwn(state, key)) {
+          continue
+        }
+
+        if (scriptTextContent.includes(key)) {
+          args[key] = state.__script__.defaultValues[key] !== undefined
+            ? state.__script__.defaultValues[key]
+            : state[key]
+        }
+      }
+
+      state.__script__.state = args
+    }
+  } else {
+    // remove custom element parent script
+    delete state.__script__
+  }
+
+  return state
+}
+
+const coraliteInternalProperty = {
   enumerable: false,
   configurable: false,
   writable: false
-})
-Object.defineProperty(Coralite.prototype, '_handleError', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_createExecutionError', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_createRenderContext', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_processCustomElementsInPage', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_generatePages', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_processDependentComponents', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_replaceSlots', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_moduleLinker', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_evaluateDevelopment', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_evaluateProduction', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_evaluate', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_triggerPluginAggregateHook', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_triggerPluginHook', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_bindPlugins', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
-Object.defineProperty(Coralite.prototype, '_addPluginHook', {
-  enumerable: false,
-  configurable: false,
-  writable: false
-})
+}
+
+Object.defineProperty(Coralite.prototype, '_defaultOnError', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_handleError', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_createExecutionError', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_createRenderContext', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_processCustomElementsInPage', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_generatePages', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_processDependentComponents', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_replaceSlots', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_moduleLinker', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_evaluateDevelopment', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_evaluateProduction', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_evaluate', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_triggerPluginAggregateHook', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_triggerPluginHook', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_bindPlugins', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_addPluginHook', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_replaceCustomElementWithTemplate', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_processTokenValue', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_defineComponent', coraliteInternalProperty)
 
 export default Coralite

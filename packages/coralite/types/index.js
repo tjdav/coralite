@@ -94,7 +94,7 @@
 
 /**
  * @typedef {import('./plugin.js').CoralitePluginContext} CoralitePluginContext
- * @typedef {import('./plugin.js').CoralitePluginExportFunction<any>} CoralitePluginExportFunction
+ * @typedef {import('./plugin.js').CoralitePluginExportFunction} CoralitePluginExportFunction
  * @typedef {import('./plugin.js').CoralitePluginInstance} CoralitePluginInstance
  */
 

@@ -52,9 +52,8 @@ describe('Coralite', () => {
       // plugins array should have static-asset-plugin as the first item
       assert.strictEqual(coralite.options.plugins[0].name, 'static-asset-plugin')
       // Followed by core plugins
-      assert.strictEqual(coralite.options.plugins[1].name, 'defineComponent')
-      assert.strictEqual(coralite.options.plugins[2].name, 'refs')
-      assert.strictEqual(coralite.options.plugins[3].name, 'metadata')
+      assert.strictEqual(coralite.options.plugins[1].name, 'refs')
+      assert.strictEqual(coralite.options.plugins[2].name, 'metadata')
     })
   })
 
@@ -227,7 +226,7 @@ describe('Coralite', () => {
           <div>Script Component</div>
         </template>
         <script type="module">
-          import { defineComponent } from 'coralite/plugins'
+          import { defineComponent } from 'coralite'
           export default defineComponent({
             script () {
               console.log('test')
@@ -385,7 +384,7 @@ describe('Bug Fix: Preserving recursive tokens', () => {
 <div>{{ checkValue }}</div>
 </template>
 <script type="module">
-import { defineComponent } from 'coralite/plugins'
+import { defineComponent } from 'coralite'
 export default defineComponent({
   getters: {
     checkValue: (state) => state.special_value || 'missing'

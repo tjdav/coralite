@@ -22,8 +22,7 @@
  */
 
 /**
- * @template {any[]} T
- * @typedef {(this: CoralitePluginContext, ...args: T) => any} CoralitePluginExportFunction
+ * @typedef {(context: CoralitePluginContext) => (...args: any[]) => any} CoralitePluginExportFunction
  */
 
 /**
@@ -107,7 +106,7 @@
 /**
  * @typedef {Object} CoralitePlugin
  * @property {string} name - Unique identifier/name of the plugin
- * @property {CoralitePluginExportFunction<any> | Record<string, CoralitePluginExportFunction<any>> | CoralitePluginExportFunction<any>[]} [exports] - Execution function or object of functions that processes content using plugin logic, dynamically bound with the plugin context as the last argument.
+ * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Two-Phase Curried functions. Phase 1 receives the explicit context, Phase 2 receives the executable arguments.
  * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
@@ -126,7 +125,7 @@
 /**
  * @typedef {Object} CoralitePluginInstance
  * @property {string} name - Unique identifier/name of the plugin
- * @property {CoralitePluginExportFunction<any> | Record<string, CoralitePluginExportFunction<any>> | CoralitePluginExportFunction<any>[]} [exports] - Execution function or object of functions that processes content using plugin logic, dynamically bound with the plugin context as the last argument.
+ * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Two-Phase Curried functions. Phase 1 receives the explicit context, Phase 2 receives the executable arguments.
  * @property {HTMLData[]} [components=[]] - List of custom components to be included in the coralite instance
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated

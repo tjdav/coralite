@@ -83,7 +83,7 @@ npx coralite --components src/components --pages src/pages --output dist
 Coralite uses a `coralite.config.js` file at the root of your project. We provide a `defineConfig` helper to give you full IDE autocomplete and type safety.
 
 ```javascript
-import { defineConfig } from 'coralite/plugins'
+import { defineConfig } from 'coralite'
 import myCustomPlugin from './plugins/my-plugin.js'
 
 export default defineConfig({
@@ -205,7 +205,7 @@ Coralite is built to be extended. The `definePlugin` API lets you tap directly i
 Plugins in Coralite use a functional, immutable API. Instead of mutating shared state, your plugin hooks simply return the specific data patches or pages you want to add. Core utilities are available via `coralite/utils`, and global engine state is accessible through `this` binding.
 
 ```javascript
-import { definePlugin } from 'coralite/plugins'
+import { definePlugin } from 'coralite'
 import { parseHTML } from 'coralite/utils'
 
 export default function seoPlugin(options = {}) {
