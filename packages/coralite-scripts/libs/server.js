@@ -134,7 +134,8 @@ async function server (config, options) {
       }
 
       if (currentConfig.plugins) {
-        extractPluginPaths()
+        await extractPluginPaths()
+
         for (const plugin of currentConfig.plugins) {
           if (typeof plugin.server === 'function') {
             await plugin.server(app, coralite)
