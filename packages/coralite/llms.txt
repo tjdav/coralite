@@ -226,6 +226,14 @@ export default defineComponent({
 </script>
 ```
 
+### 5.6 CSS Scoping (PostCSS)
+
+Coralite components are strictly scoped by default, despite rendering in the global Light DOM.
+
+* **The Mechanism:** You do not need to use Shadow DOM or manual naming conventions. During the server-side build phase, the AST compiler extracts the contents of a component's `<style>` block and processes it via PostCSS.
+* **The Transformation:** The compiler automatically injects a unique instance identifier (e.g., a `data-*` attribute) into the component's root HTML elements. PostCSS then nests all CSS rules defined in the `<style>` block securely beneath that unique attribute selector.
+* **The Result:** Styles authored inside a component are strictly encapsulated. They will style the component's internal HTML, but they are guaranteed not to leak out and mutate the rest of the page.
+
 ---
 
 ## 6. Framework Extensibility (definePlugin)
