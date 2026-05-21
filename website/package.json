@@ -19,7 +19,7 @@
     "lint-css-fix": "stylelint --fix 'src/css/*.css'"
   },
   "devDependencies": {
-    "coralite-plugin-aggregation": "^0.10.0",
+    "coralite-plugin-aggregation": "^0.11.0",
     "coralite-plugin-inline-css": "^0.6.0",
     "coralite-scripts": "workspace:*",
     "cross-env": "^10.1.0",

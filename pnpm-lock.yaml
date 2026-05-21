@@ -204,8 +204,8 @@ importers:
         version: 7.3.0
     devDependencies:
       coralite-plugin-aggregation:
-        specifier: ^0.10.0
-        version: 0.10.0
+        specifier: ^0.11.0
+        version: 0.11.0
       coralite-plugin-inline-css:
         specifier: ^0.6.0
         version: 0.6.0
@@ -956,8 +956,8 @@ packages:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
-  coralite-plugin-aggregation@0.10.0:
-    resolution: {integrity: sha512-/1/KbBKuNeV724IgEQMnCEMwoDOoM6nkNvb8eNALdXGElsRZpRaqWREFTcRWxsUerthNXjSUV3M7cJ7pS3QnPA==}
+  coralite-plugin-aggregation@0.11.0:
+    resolution: {integrity: sha512-0WDhCDNMB0PSF7TGBWYRsfw3S+5FcudasLZ5nEKzQpd7ztF7q/5MFC7xYsyN0Bc800NDY/DJc309oXPVYQeRNg==}
 
   coralite-plugin-inline-css@0.6.0:
     resolution: {integrity: sha512-pMWaICtoNzJb9egWw79ZVS9sCEUaf4VWVQImHzQgE6u87kVonqy/iPwvvygDuN0Fugh24uTDd44kNklsi4EBNA==}
@@ -3047,7 +3047,7 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.10.0: {}
+  coralite-plugin-aggregation@0.11.0: {}
 
   coralite-plugin-inline-css@0.6.0:
     dependencies:
