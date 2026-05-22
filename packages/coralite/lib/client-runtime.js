@@ -23,7 +23,7 @@ export function generateClientRuntime ({
   renderContext
 }) {
   const hydrationData = {}
-  for (const [id, instance] of Object.entries(instances)) {
+  for (const instance of Object.values(instances)) {
     const contextId = instance.instanceId
     if (renderContext && renderContext.source && renderContext.source.contextInstances[contextId]) {
       const coraliteContext = renderContext.source.contextInstances[contextId]
@@ -113,7 +113,8 @@ const BOOLEAN_ATTRIBUTES = new Set([
   'readonly',
   'required',
   'reversed',
-  'selected'
+  'selected',
+  'truespeed'
 ]);
 
 function createReactiveProxy(target, onChange, proxies = new WeakMap()) {
@@ -181,7 +182,6 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
   window.__coralite_ready__ = new Promise(resolve => resolveCoraliteReady = resolve);
   const pendingHydrations = [];
   const addPendingHydration = (promise) => pendingHydrations.push(promise);
-  const globalAbortController = new AbortController();
   const componentManifest = ${JSON.stringify(chunkManifest)};
   const loadCache = {};
   const instanceCounters = {};
@@ -408,7 +408,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                   if (value == null) value = '';
 
                   // Replace exactly the token content string rather than a regex over the whole attribute
-                  if (BOOLEAN_ATTRIBUTES.has(item.name) && node.attribs[item.name] === token.content) {
+                  if (BOOLEAN_ATTRIBUTES.has(item.name) && (node.attribs[item.name] || '').trim() === token.content) {
                     const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '0' || value === 0 || value === '' || value === false || value === null || value === undefined;
 
                     if (isFalsy) {
@@ -618,7 +618,7 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
   const declarativeFunctions = [];
   ${declarativeFunctions}
 
-  const executableScripts = await Promise.all(declarativeFunctions);
+  await Promise.all(declarativeFunctions);
   ${executionBlock}
   // Wait for all pending hydrations (including dynamically spawned ones) to complete
   while (pendingHydrations.length > 0) {

@@ -193,8 +193,8 @@ function sortSlottedChildren (elements) {
   for (let i = 0; i < elements.length; i++) {
     const element = elements[i]
 
-    for (let i = 0; i < element.children.length; i++) {
-      const childNode = element.children[i]
+    for (let k = 0; k < element.children.length; k++) {
+      const childNode = element.children[k]
       let slotName = 'default'
 
       if (childNode.type === 'tag'

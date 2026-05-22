@@ -323,9 +323,8 @@ export function replaceToken ({
   if (
     type === 'attribute'
     && node.type === 'tag'
-    && typeof value === 'string'
   ) {
-    if (BOOLEAN_ATTRIBUTES.has(attribute) && node.attribs[attribute] === content) {
+    if (BOOLEAN_ATTRIBUTES.has(attribute) && (node.attribs[attribute] || '').trim() === content) {
       // @ts-ignore
       const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '0' || value === 0 || value === '' || value === false || value === null || value === undefined
 
@@ -334,7 +333,7 @@ export function replaceToken ({
       } else {
         node.attribs[attribute] = ''
       }
-    } else {
+    } else if (typeof value === 'string') {
       node.attribs[attribute] = node.attribs[attribute].replace(content, value)
     }
   } else if (node.type === 'text') {

@@ -23,7 +23,8 @@ export const BOOLEAN_ATTRIBUTES = new Set([
   'readonly',
   'required',
   'reversed',
-  'selected'
+  'selected',
+  'truespeed'
 ])
 
 export const VALID_TAGS = {

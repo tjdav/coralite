@@ -493,12 +493,12 @@ Coralite.prototype.initialise = async function () {
 
       let hasElement = false
 
-      for (let i = 0; i < oldElements.length; i++) {
-        const oldElement = oldElements[i]
+      for (let j = 0; j < oldElements.length; j++) {
+        const oldElement = oldElements[j]
 
         if (newElement.name === oldElement.name) {
           hasElement = true
-          oldElements.splice(i, 1)
+          oldElements.splice(j, 1)
           break
         }
       }
@@ -715,8 +715,8 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
     })
 
     if (componentElement) {
-      for (let i = 0; i < componentElement.children.length; i++) {
-        componentElement.children[i].parent = customElement.parent
+      for (let j = 0; j < componentElement.children.length; j++) {
+        componentElement.children[j].parent = customElement.parent
       }
 
       const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
@@ -1749,8 +1749,8 @@ Coralite.prototype.createComponentElement = async function ({
   for (let i = 0; i < module.values.attributes.length; i++) {
     const item = module.values.attributes[i]
 
-    for (let i = 0; i < item.tokens.length; i++) {
-      const token = item.tokens[i]
+    for (let j = 0; j < item.tokens.length; j++) {
+      const token = item.tokens[j]
       let value = state[token.name]
 
       if (value == null) {
@@ -1771,8 +1771,8 @@ Coralite.prototype.createComponentElement = async function ({
   for (let i = 0; i < module.values.textNodes.length; i++) {
     const item = module.values.textNodes[i]
 
-    for (let i = 0; i < item.tokens.length; i++) {
-      const token = item.tokens[i]
+    for (let j = 0; j < item.tokens.length; j++) {
+      const token = item.tokens[j]
       let value = state[token.name]
 
       if (value == null) {
@@ -1802,8 +1802,8 @@ Coralite.prototype.createComponentElement = async function ({
       && customElement.children.length
       && !customElement.slots.length
     ) {
-      for (let i = 0; i < customElement.children.length; i++) {
-        const node = customElement.children[i]
+      for (let j = 0; j < customElement.children.length; j++) {
+        const node = customElement.children[j]
         const slotElement = {
           name: 'default',
           node
@@ -2668,8 +2668,8 @@ Coralite.prototype._defineComponent = async function (options, context) {
         const elementSlots = []
 
         if (root && root.slots) {
-          for (let i = 0; i < root.slots.length; i++) {
-            const slot = root.slots[i]
+          for (let j = 0; j < root.slots.length; j++) {
+            const slot = root.slots[j]
 
             if (slot.name === name) {
               // slot content to compute
@@ -2694,10 +2694,10 @@ Coralite.prototype._defineComponent = async function (options, context) {
 
           if (Array.isArray(processedResult)) {
             // multiple nodes from parsed HTML
-            for (let i = 0; i < processedResult.length; i++) {
+            for (let j = 0; j < processedResult.length; j++) {
               elementSlots.push({
                 name,
-                node: processedResult[i]
+                node: processedResult[j]
               })
             }
           } else {
