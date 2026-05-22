@@ -14,17 +14,11 @@
         type: String,
         default: 'No Title'
       },
-      id: { type: String }
+      id: { type: String },
+      complexData: { type: String }
     },
     getters: {
-      dataDisplay: (state) => (state.id ? `Fetched data for ${state.id}` : 'No Data')
-    },
-    script: async ({ refs }) => {
-      // check imperative property assignment
-      const host = refs('title').closest('imperative-child')
-      if (host && host.complexData) {
-        refs('dataDisplay').textContent = host.complexData.join(',')
-      }
+      dataDisplay: (state) => state.complexData || (state.id ? `Fetched data for ${state.id}` : 'No Data')
     }
   })
 </script>
