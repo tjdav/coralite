@@ -51,8 +51,6 @@ export function generateClientRuntime ({
     Object.assign(context, pluginContexts);
     const stateTarget = { ...module.default.defaultValues, ...context.state, ...setupProperties };
     context.state = createReactiveProxy(stateTarget, () => {});
-    if (context.root === undefined) context.root = null;
-    if (context.refs === undefined) context.refs = (id) => null;
 
     // Explicitly load declarative script dependencies if any
     const deps = module.default.dependencies || [];
@@ -289,7 +287,6 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                 componentId: this.componentId,
                 state: this._state,
                 page: module.default.page || {},
-                root: this,
                 signal: this._abortController.signal
               };
 

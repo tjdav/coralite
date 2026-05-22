@@ -47,7 +47,7 @@
         },
 
         // Client-Side: Controller (Read/Write)
-        script({ state, root, signal, refs, ...pluginContext }) {
+        script({ state, signal, refs, ...pluginContext }) {
             console.log('Component mounted for user:', state.userName)
 
             const btn = refs('btn')
@@ -68,7 +68,6 @@
         <li><code>state</code>: A <strong>Read/Write Reactive Proxy</strong>. This unified state contains state from <code>attributes</code>, <code>data</code>, and <code>getters</code>. Any mutation here triggers a re-render and re-evaluates getters.</li>
         <li><code>refs</code>: A helper function to query DOM elements within the component's root that have a <code>ref</code> attribute.</li>
         <li><code>signal</code>: An <code>AbortSignal</code> tied to the component's lifecycle. Always use this to clean up event listeners or abort pending fetch requests when the component unmounts.</li>
-        <li><code>root</code>: The custom element instance (the top-level Light DOM node).</li>
         <li><code>page</code>: Static environment data including the current URL and file metadata.</li>
     </ul>
 
@@ -90,7 +89,7 @@
 
     <coralite-code-highlight language="javascript">
       export default defineComponent({
-        async script({ state, root, signal, refs, ...pluginContext }) {
+        async script({ state, signal, refs, ...pluginContext }) {
             const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
 
             const btn = refs('celebrateBtn')
@@ -104,13 +103,14 @@
     <coralite-heading level="h2" text="Component Communication"></coralite-heading>
 
     <p>
-      Coralite encourages using standard Web APIs for component communication. Use <code>CustomEvent</code> to emit signals from a child to a parent.
+      Coralite encourages using standard Web APIs for component communication. Use <code>CustomEvent</code> to emit signals from a child to a parent. You can dispatch events from any element retrieved via <code>refs</code>.
     </p>
 
     <coralite-code-highlight language="javascript">
         // Inside a child component's script
-        script({ state, root, signal, refs, ...pluginContext }) {
-            root.dispatchEvent(new CustomEvent('user-updated', {
+        script({ state, signal, refs, ...pluginContext }) {
+            const el = refs('main');
+            el.dispatchEvent(new CustomEvent('user-updated', {
                 bubbles: true,
                 detail: { name: 'Alice' }
             }));

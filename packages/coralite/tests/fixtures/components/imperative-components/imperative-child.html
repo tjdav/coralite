@@ -19,10 +19,11 @@
     getters: {
       dataDisplay: (state) => (state.id ? `Fetched data for ${state.id}` : 'No Data')
     },
-    script: async ({ root, refs }) => {
+    script: async ({ refs }) => {
       // check imperative property assignment
-      if (root && root.complexData) {
-        refs('dataDisplay').textContent = root.complexData.join(',')
+      const host = refs('title').closest('imperative-child')
+      if (host && host.complexData) {
+        refs('dataDisplay').textContent = host.complexData.join(',')
       }
     }
   })

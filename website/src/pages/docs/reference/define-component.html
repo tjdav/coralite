@@ -99,8 +99,8 @@ getters: {
     <p>The <code>script</code> block is the controller for your component in the browser. This is where you add event listeners and mutate state.</p>
 
     <coralite-code-highlight language="javascript">
-script: ({ state, root, signal, refs, ...pluginContext }) => {
-    const btn = root.querySelector('#load-more');
+script: ({ state, signal, refs, ...pluginContext }) => {
+    const btn = refs('loadMoreBtn');
     
     btn.addEventListener('click', () => {
         // Imperative mutation!
@@ -121,11 +121,6 @@ script: ({ state, root, signal, refs, ...pluginContext }) => {
         <td><code>state</code></td>
         <td><code>Proxy</code></td>
         <td>The <strong>Read/Write</strong> reactive state (Attributes + Data + Getters).</td>
-      </tr>
-      <tr slot="body">
-        <td><code>root</code></td>
-        <td><code>HTMLElement</code></td>
-        <td>The custom element instance (Light DOM node).</td>
       </tr>
       <tr slot="body">
         <td><code>signal</code></td>

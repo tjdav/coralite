@@ -219,7 +219,7 @@ export default definePlugin({
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
-            script: ({ state, root, signal, refs, ...pluginContext }) => {
+            script: ({ state, signal, refs, ...pluginContext }) => {
               const btn = refs('btn')
 
               btn.addEventListener('click', () => {

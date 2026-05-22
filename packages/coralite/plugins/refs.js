@@ -14,7 +14,7 @@ export const refsPlugin = definePlugin({
        * @returns {ScriptPluginHelperLocalInstance}
        */
       refs () {
-        return ({ state, root }) => {
+        return ({ state }) => {
           return function (id) {
             const refId = state[`ref_${id}`]
 
@@ -22,11 +22,7 @@ export const refsPlugin = definePlugin({
               return null
             }
 
-            const selector = `[ref="${refId}"]`
-            // Use root context for scoped query when available, fallback to global document
-            const context = root || document
-
-            return context.querySelector(selector) || null
+            return document.querySelector(`[ref="${refId}"]`)
           }
         }
       }

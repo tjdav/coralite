@@ -83,7 +83,7 @@
             getters: {
               greeting: (state) => `Hello, ${state.name}!`
             },
-            script: ({ state, root, signal, refs, ...pluginContext }) => {
+            script: ({ state, signal, refs, ...pluginContext }) => {
               const btn = refs('actionBtn')
               btn.addEventListener('click', () => {
                 console.log('Button clicked!')
@@ -334,7 +334,7 @@
             return { userName: name }
           },
           
-          script ({ state, root, signal, refs, ...pluginContext }) {
+          script ({ state, signal, refs, ...pluginContext }) {
             // The client script receives the unified state
             console.log(`User ${state.userName} is ${state.age} years old.`);
           }
@@ -388,7 +388,7 @@
             name: 'inline-css',
             async onPageSet (context) {
               // Walk through all elements in the page
-              let stack = [context.root]
+              let stack = [context.elements.root]
 
               while (stack.length > 0) {
                 const node = stack.pop()
@@ -520,7 +520,7 @@
       <coralite-heading level="h3" text="The Two-Phase Currying System"></coralite-heading>
       <ol>
         <li><strong>Phase 1 (Global Context):</strong> The outermost function receives the <code>globalContext</code> (containing <code>imports</code> and global <code>config</code>).</li>
-        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ state, root, signal }</code>). Here, <code>root</code> is the component's <code>HTMLElement</code> (or Document), and <code>signal</code> is an <code>AbortSignal</code>.</li>
+        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ state, signal }</code>). Here, <code>signal</code> is an <code>AbortSignal</code>.</li>
         <li><strong>Phase 3 (Execution):</strong> It finally returns the actual callable utility function used by the user's script in the browser.</li>
       </ol>
 
@@ -537,12 +537,12 @@
               myHelper(globalContext) {
                 
                 // Phase 2: Receives Local Instance Context
-                return ({ state, root, signal }) => {
+                return ({ state, signal }) => {
                   
                   // Phase 3: The actual function accessible via context.myHelper
                   return function (selector) {
-                     // The plugin queries elements from the local component root
-                     const element = root.querySelector(selector);
+                     // The plugin queries elements from the global document
+                     const element = document.querySelector(selector);
                      
                      // Example using the signal to prevent memory leaks
                      if (signal) {
@@ -564,7 +564,7 @@
       <coralite-code-highlight language="JavaScript">
         // In component script:
         export default defineComponent({
-          script: ({ state, root, signal, refs, ...pluginContext }) => {
+          script: ({ state, signal, refs, ...pluginContext }) => {
             // myHelper is already curried with Global and Local Context
             const btn = myHelper('.btn-class');
           }
@@ -601,7 +601,7 @@
             }
           },
           // Behavior: Runs natively in the browser
-          script ({ state, root, signal, refs, ...pluginContext }) {
+          script ({ state, signal, refs, ...pluginContext }) {
             // The client script natively receives the unified reactive state
             const btn = refs('actionBtn')
             
@@ -643,7 +643,7 @@
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
-            script ({ state, root, signal, refs, ...pluginContext }) {
+            script ({ state, signal, refs, ...pluginContext }) {
               // Get DOM elements by their ref name
               const button = refs('actionBtn')
               const input = refs('userInput')
@@ -711,7 +711,7 @@
                 currentCount: state.initial
               }
             },
-            script ({ state, root, signal, refs, ...pluginContext }) {
+            script ({ state, signal, refs, ...pluginContext }) {
               const increment = refs('increment')
               const decrement = refs('decrement')
               const countDisplay = refs('countDisplay')

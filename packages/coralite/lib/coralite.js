@@ -2057,7 +2057,9 @@ Coralite.prototype._moduleLinker = function (path, context) {
         context: referencingModule.context
       })
     } else if (specifier === 'coralite') {
-      let coraliteExports = 'const context = globalThis.__coralite_context__; export default context;'
+      let coraliteExports = 'const context = globalThis.__coralite_context__;\n'
+      coraliteExports += 'const coralite = { ...context, defineComponent: globalThis.__coralite_define_component__ };\n'
+      coraliteExports += 'export default coralite;\n'
 
       for (const key in context) {
         if (Object.prototype.hasOwnProperty.call(context, key)) {
@@ -2065,7 +2067,10 @@ Coralite.prototype._moduleLinker = function (path, context) {
         }
       }
 
-      coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
+      // Add defineComponent export if it's not already in context
+      if (!context.defineComponent) {
+        coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
+      }
 
       return new SourceTextModule(coraliteExports, {
         context: referencingModule.context
@@ -2142,7 +2147,6 @@ Coralite.prototype._evaluateDevelopment = async function ({
   const context = {
     state: state || {},
     page,
-    root,
     module,
     id: contextId,
     renderContext,
@@ -2154,7 +2158,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
   renderContext.source.currentSourceContextId = contextId
   renderContext.source.contextInstances[contextId] = context
 
-  const boundDefineComponent = (options) => this._defineComponent(options, context)
+  const boundDefineComponent = (options) => this._defineComponent(options, context, root)
 
   // Protect fundamental constructors from being extracted and polluting the context realm
   const standardBuiltIns = new Set(['Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Math', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt', 'BigInt64Array', 'BigUint64Array', 'Symbol', 'Infinity', 'NaN', 'undefined', 'globalThis', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'escape', 'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'unescape'])
@@ -2233,7 +2237,6 @@ Coralite.prototype._evaluateProduction = async function ({
   const context = {
     state: state || {},
     page,
-    root,
     module,
     id: contextId,
     renderContext,
@@ -2279,13 +2282,13 @@ Coralite.prototype._evaluateProduction = async function ({
       }
 
       if (isCoralite) {
-        return {
+        const coraliteExports = {
           ...context,
-          defineComponent: (options) => this._defineComponent(options, context),
-          default: {
-            ...context,
-            defineComponent: (options) => this._defineComponent(options, context)
-          }
+          defineComponent: (options) => this._defineComponent(options, context, root)
+        }
+        return {
+          ...coraliteExports,
+          default: coraliteExports
         }
       }
 
@@ -2561,9 +2564,10 @@ Coralite.prototype._processTokenValue = async function (value, context) {
  * @internal
  * @param {Object} options - Configuration options for the component
  * @param {Object} context - The evaluation context
+ * @param {CoraliteElement} root - The root element
  * @returns {Promise<Object>} A promise resolving to the module state associated with this component.
  */
-Coralite.prototype._defineComponent = async function (options, context) {
+Coralite.prototype._defineComponent = async function (options, context, root) {
   const {
     attributes,
     data,
@@ -2574,8 +2578,7 @@ Coralite.prototype._defineComponent = async function (options, context) {
 
   const {
     state: initialState,
-    module,
-    root
+    module
   } = context
 
   // Validate attributes
@@ -2627,7 +2630,8 @@ Coralite.prototype._defineComponent = async function (options, context) {
   }
 
   if (typeof data === 'function') {
-    const dataResult = await data(context)
+    const { root: _, ...dataContext } = context
+    const dataResult = await data(dataContext)
     if (dataResult) {
       state.__script__.data = dataResult
       Object.assign(state, dataResult)

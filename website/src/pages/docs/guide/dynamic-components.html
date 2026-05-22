@@ -47,7 +47,7 @@
           getters: {
             //...
           },
-          script: ({ state, root, signal, refs, ...pluginContext }) => {
+          script: ({ state, signal, refs, ...pluginContext }) => {
             // ...
           }
         })
@@ -87,8 +87,9 @@ getters: {
     <coralite-heading level="h3" text="4. Script (Client Controller)"></coralite-heading>
     <p>The <code>script</code> block is where interactivity lives. It runs in the browser and has full read/write access to the state.</p>
     <coralite-code-highlight language="javascript">
-script: ({ state, root, signal, refs, ...pluginContext }) => {
-  root.querySelector('button').addEventListener('click', () => {
+script: ({ state, signal, refs, ...pluginContext }) => {
+  const btn = refs('my-btn');
+  btn.addEventListener('click', () => {
     state.count++; // Mutating state triggers a re-render!
   }, { signal });
 }

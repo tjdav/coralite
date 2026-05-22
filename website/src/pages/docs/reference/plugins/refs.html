@@ -42,7 +42,7 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            script ({ state, root, signal, refs, ...pluginContext }) {
+            script ({ state, signal, refs, ...pluginContext }) {
               const username = refs('username')
               const password = refs('password')
               const submitBtn = refs('submitBtn')
@@ -91,7 +91,7 @@
                 currentCount: state.initial
               }
             },
-            script ({ state, root, signal, refs, ...pluginContext }) {
+            script ({ state, signal, refs, ...pluginContext }) {
               const increment = refs('increment')
               const decrement = refs('decrement')
               const reset = refs('reset')
@@ -132,7 +132,7 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            script ({ state, root, signal, refs, ...pluginContext }) {
+            script ({ state, signal, refs, ...pluginContext }) {
               const email = refs('email')
               const password = refs('password')
               const emailError = refs('emailError')
@@ -197,7 +197,7 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            script ({ state, root, signal, refs, ...pluginContext }) {
+            script ({ state, signal, refs, ...pluginContext }) {
               const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
               const contents = [refs('content1'), refs('content2'), refs('content3')]
           
@@ -226,7 +226,7 @@
         <li><strong>Runtime Access</strong>: <code>refs('refName')</code> gets DOM elements</li>
         <li><strong>Automatic Caching</strong>: Elements cached after first access</li>
         <li><strong>Safe Queries</strong>: Returns null if element not found</li>
-        <li><strong>Under the Hood</strong>: Framework assigns the generated unique ID to the <code>ref</code> attribute and queries it via <code>root.querySelector('[ref="..."]')</code>. E2E tests should query this compiled ref attribute directly (e.g., <code>[ref="my-component__btn-0"]</code>).</li>
+        <li><strong>Under the Hood</strong>: Framework assigns the generated unique ID to the <code>ref</code> attribute and queries it via <code>document.querySelector('[ref="..."]')</code>. E2E tests should query this compiled ref attribute directly (e.g., <code>[ref="my-component__btn-0"]</code>).</li>
       </ul>
     </section>
 

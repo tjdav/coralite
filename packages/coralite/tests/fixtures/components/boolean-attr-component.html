@@ -1,6 +1,6 @@
 <template id="boolean-attr-component">
   <input type="checkbox" data-testid="checkbox" checked="{{ isChecked }}" disabled="{{ isDisabled }}">
-  <button data-testid="toggle-btn">Toggle</button>
+  <button ref="toggleBtn">Toggle</button>
   <div data-testid="status">{{ isChecked }}</div>
 </template>
 
@@ -18,8 +18,8 @@ export default defineComponent({
       default: false
     }
   },
-  script ({ state, root }) {
-    const btn = root.querySelector('[data-testid="toggle-btn"]')
+  script ({ state, refs }) {
+    const btn = refs('toggleBtn')
     btn.addEventListener('click', () => {
       state.isChecked = !state.isChecked
     })

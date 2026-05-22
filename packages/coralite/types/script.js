@@ -37,7 +37,6 @@
  * @property {CoralitePath & CoraliteFilePath} [path] - Component AST
  * @property {Object.<string, CoraliteModuleDefinition>} [state] - Instance state
  * @property {CoralitePage} [page] - The global page object
- * @property {HTMLElement} [root] - The custom element instance (available in browser runtime)
  * @property {Object.<string, string>} [refs] - Instance refs
  * @property {Object} [state] - Reactive state proxy.
  * @property {AbortSignal} [signal] - Lifecycle abort signal for unmount events (null for declarative components).

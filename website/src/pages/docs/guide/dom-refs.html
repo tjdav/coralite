@@ -55,7 +55,7 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          script: ({ state, root, signal, refs, ...pluginContext }) => {
+          script: ({ state, signal, refs, ...pluginContext }) => {
 
             // Safe DOM element retrieval
             const input = refs('usernameInput')
@@ -76,7 +76,7 @@
     <p>The refs plugin is highly context-aware. Depending on how your component is compiled, it behaves differently to ensure maximum safety:</p>
 
     <ol>
-      <li><strong>Global Fallback:</strong> For declarative components, the plugin queries <code>root.querySelector('[ref="..."]')</code> where the generated ref ID is assigned. The <code>root</code> represents the ShadowRoot for web components or the Document for declarative components.</li>
+      <li><strong>Global Queries:</strong> For declarative components, the plugin queries <code>document.querySelector('[ref="..."]')</code> where the generated unique ref ID is assigned.</li>
       <li><strong>Caching:</strong> The first time you call <code>refs('myEl')</code>, it performs the DOM query. If found, the DOM node is cached locally in the plugin. The next time you call <code>refs('myEl')</code>, it returns immediately without querying the DOM again.</li>
       <li><strong>Null Safety:</strong> If the element isn't found (perhaps conditionally rendered out), the helper safely returns <code>null</code> without throwing an error.</li>
     </ol>

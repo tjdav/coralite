@@ -54,7 +54,7 @@ customElements.define('my-component', MyComponent);
 ```javascript
 import { defineComponent } from 'coralite'
 export default defineComponent({
-  script: ({ state, root, signal, refs }) => { ... }
+  script: ({ state, signal, refs }) => { ... }
 })
 ```
 
@@ -94,11 +94,10 @@ async data({ state }) {
 * **Rule**: These receive a **Read-Only Proxy** of the state. They must never mutate state and cannot be `async`.
 * **Reactivity**: Automatically re-evaluated when any underlying state dependency changes.
 
-#### 4. `script({ state, root, signal, refs, ...pluginContext })` (Client)
+#### 4. `script({ state, signal, refs, ...pluginContext })` (Client)
 * **Purpose**: The client-side controller for the component.
 * **Arguments** (Injected via Client Context):
   * `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
-  * `root`: The custom element instance (the Light DOM node).
   * `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
   * `refs`: A dictionary of dynamically generated, globally unique IDs for elements marked with the `ref` attribute (provided by the Core `refs` plugin).
   * `...pluginContext`: **Extensible Boundary.** Any active Coralite plugin that augments the `client.context` will inject its attributes directly into this destructured argument object.
@@ -137,7 +136,7 @@ export default defineComponent({
     getters: {
         userCount: (state) => state.users.length
     },
-    script: ({ state, root, signal, refs }) => {
+    script: ({ state, signal, refs }) => {
         const btn = refs('refresh');
         btn.addEventListener('click', () => {
             state.theme = state.theme === 'light' ? 'dark' : 'light';
@@ -155,8 +154,9 @@ export default defineComponent({
 import { defineComponent } from 'coralite'
 
 export default defineComponent({
-    script: ({ root }) => {
-        root.dispatchEvent(new CustomEvent('theme-changed', {
+    script: ({ state, refs, signal }) => {
+        const el = refs('main');
+        el.dispatchEvent(new CustomEvent('theme-changed', {
             detail: { theme: 'dark' },
             bubbles: true,
             composed: true

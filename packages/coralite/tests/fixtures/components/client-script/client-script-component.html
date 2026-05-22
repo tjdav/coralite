@@ -1,5 +1,5 @@
 <template id="client-script-component">
-  <div>
+  <div ref="container">
     <h2 ref="titleDisplay">{{ title }}</h2>
     <p ref="statusDisplay">Status: {{ status }}</p>
     <button ref="updateBtn">Update</button>
@@ -20,7 +20,7 @@
         default: 'Offline'
       }
     },
-    script: ({ state, root, refs, signal }) => {
+    script: ({ state, refs, signal }) => {
       const updateBtn = refs('updateBtn')
 
       updateBtn.addEventListener('click', async () => {
@@ -31,7 +31,9 @@
         // test dynamic imports
         const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
         if (confetti) {
-          root.setAttribute('data-confetti', 'loaded')
+          const container = refs('container')
+
+          container.setAttribute('data-confetti', 'loaded')
         }
       }, { signal })
     }

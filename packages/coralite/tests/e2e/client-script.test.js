@@ -23,6 +23,7 @@ test.describe('Client Script', () => {
     await expect(title).toHaveText('Updated')
     await expect(status).toHaveText('Status: Online')
 
-    await expect(host).toHaveAttribute('data-confetti', 'loaded')
+    const container = host.locator('div')
+    await expect(container).toHaveAttribute('data-confetti', 'loaded')
   })
 })
