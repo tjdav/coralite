@@ -88,6 +88,34 @@ export function generateClientRuntime ({
   return `
 import { getClientContext, getSetups, render } from '${base}assets/js/${sharedChunkPath}';
 
+const BOOLEAN_ATTRIBUTES = new Set([
+  'allowfullscreen',
+  'async',
+  'autofocus',
+  'autoplay',
+  'checked',
+  'controls',
+  'default',
+  'defer',
+  'disabled',
+  'formnovalidate',
+  'hidden',
+  'inert',
+  'ismap',
+  'itemscope',
+  'loop',
+  'multiple',
+  'muted',
+  'nomodule',
+  'novalidate',
+  'open',
+  'playsinline',
+  'readonly',
+  'required',
+  'reversed',
+  'selected'
+]);
+
 function createReactiveProxy(target, onChange, proxies = new WeakMap()) {
   if (proxies.has(target)) return proxies.get(target);
   const handler = {
@@ -380,7 +408,17 @@ const globalSetupPropertiesPromise = getSetups(globalContext);
                   if (value == null) value = '';
 
                   // Replace exactly the token content string rather than a regex over the whole attribute
-                  node.attribs[item.name] = node.attribs[item.name].split(token.content).join(value);
+                  if (BOOLEAN_ATTRIBUTES.has(item.name) && node.attribs[item.name] === token.content) {
+                    const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '0' || value === 0 || value === '' || value === false || value === null || value === undefined;
+
+                    if (isFalsy) {
+                      delete node.attribs[item.name];
+                    } else {
+                      node.attribs[item.name] = '';
+                    }
+                  } else {
+                    node.attribs[item.name] = node.attribs[item.name].split(token.content).join(value);
+                  }
                 }
               }
             }

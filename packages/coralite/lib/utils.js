@@ -3,6 +3,7 @@ import { simple as walkJS } from 'acorn-walk'
 import render from 'dom-serializer'
 import { isCoraliteNode } from './type-helper.js'
 import { createCoraliteTextNode } from './dom.js'
+import { BOOLEAN_ATTRIBUTES } from './tags.js'
 
 /**
  * @import {
@@ -324,7 +325,18 @@ export function replaceToken ({
     && node.type === 'tag'
     && typeof value === 'string'
   ) {
-    node.attribs[attribute] = node.attribs[attribute].replace(content, value)
+    if (BOOLEAN_ATTRIBUTES.has(attribute) && node.attribs[attribute] === content) {
+      // @ts-ignore
+      const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '0' || value === 0 || value === '' || value === false || value === null || value === undefined
+
+      if (isFalsy) {
+        delete node.attribs[attribute]
+      } else {
+        node.attribs[attribute] = ''
+      }
+    } else {
+      node.attribs[attribute] = node.attribs[attribute].replace(content, value)
+    }
   } else if (node.type === 'text') {
     if (typeof value === 'object' && value !== null) {
       if (Array.isArray(value) || value.type) {
