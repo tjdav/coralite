@@ -6,7 +6,7 @@ import server from '../libs/server.js'
 import colours from 'kleur'
 import pkg from '../package.json' with { type: 'json' }
 import buildSass from '../libs/build-sass.js'
-import { join, relative } from 'node:path'
+import { join, relative, dirname } from 'node:path'
 import { deleteDirectoryRecursive, copyDirectory, toMS, toTime, displayError, displayWarning, displayInfo } from '../libs/build-utils.js'
 import buildCSS from '../libs/build-css.js'
 import { Coralite } from 'coralite'
@@ -112,10 +112,10 @@ if (mode === 'dev') {
     // Write ESM script assets generated during the build phase
     if (coralite.outputFiles) {
       const assetsDir = join(config.output, 'assets', 'js')
-      await mkdir(assetsDir, { recursive: true })
 
       const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
         const outFile = join(assetsDir, file.hashedPath)
+        await mkdir(dirname(outFile), { recursive: true })
         await writeFile(outFile, file.text)
         if (options.verbose) {
           process.stdout.write(toTime() + toMS(0) + dash + outFile + '\n')
