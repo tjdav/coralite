@@ -2,6 +2,11 @@ packages:
   - packages/*
   - website
 
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  simple-git-hooks: true
+
 onlyBuiltDependencies:
   - "@parcel/watcher"
   - simple-git-hooks
