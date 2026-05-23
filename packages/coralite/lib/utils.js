@@ -659,11 +659,13 @@ export function generateHydrationMap (templateNodes, templateValues) {
   if (templateValues.textNodes) {
     for (const item of templateValues.textNodes) {
       if (item.textNode) {
-        const targetNode = item.cToken || item.textNode
+        const isHtml = item.type === 'html'
+        const targetNode = isHtml ? item.textNode.parent : item.textNode
+
         map.texts.push({
           path: getNodePath(targetNode, root),
           template: item.textNode.data,
-          type: item.cToken ? 'html' : 'text'
+          type: isHtml ? 'html' : 'text'
         })
       }
     }
