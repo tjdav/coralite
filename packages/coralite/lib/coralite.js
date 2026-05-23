@@ -399,9 +399,9 @@ Coralite.prototype.initialise = async function () {
 
           if (
             component &&
-            component.result &&
-            component.result.customElements &&
-            component.result.customElements.length
+              component.result &&
+              component.result.customElements &&
+              component.result.customElements.length
           ) {
             const stack = [component.result.customElements]
 
@@ -419,9 +419,9 @@ Coralite.prototype.initialise = async function () {
 
                   if (
                     component &&
-                    component.result &&
-                    component.result.customElements &&
-                    component.result.customElements.length
+                      component.result &&
+                      component.result.customElements &&
+                      component.result.customElements.length
                   ) {
                     // push nested custom elements to stack for processing
                     stack.push(component.result.customElements)
@@ -980,12 +980,9 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
         const hydrationData = {}
         for (const [id, instance] of Object.entries(instances)) {
           const contextId = instance.instanceId
-          if (mappedRenderContextObject && mappedRenderContextObject.source && mappedRenderContextObject.source.contextInstances[contextId]) {
-            const coraliteContext = mappedRenderContextObject.source.contextInstances[contextId]
-            if (coraliteContext.state.__script__ && coraliteContext.state.__script__.data) {
-              // Ensure data is normalized to remove circular AST nodes before JSON serialization
-              hydrationData[contextId] = normalizeObjectFunctions(coraliteContext.state.__script__.data, astTransformer)
-            }
+          if (instance.state && Object.keys(instance.state).length > 0) {
+            // Ensure state is normalized to remove circular AST nodes before JSON serialization
+            hydrationData[contextId] = normalizeObjectFunctions(instance.state, astTransformer)
           }
         }
 
@@ -1621,10 +1618,10 @@ Coralite.prototype.createComponentElement = async function ({
     renderContext.instanceCounters[componentId] = 0
   }
   const instanceIndex = renderContext.instanceCounters[componentId]++
-  const cleanInstanceId = `${componentId}-${instanceIndex}`
+  const instanceId = `${componentId}-${instanceIndex}`
 
   if (!contextId) {
-    contextId = cleanInstanceId
+    contextId = instanceId
   }
 
   let componentState = { ...state }
@@ -1648,7 +1645,7 @@ Coralite.prototype.createComponentElement = async function ({
   const mappedComponentContext = await this._triggerPluginHook('onBeforeComponentRender', {
     state: componentState,
     componentId: module.id,
-    instanceId: cleanInstanceId,
+    instanceId,
     refs: module.values.refs,
     textNodes: module.values.textNodes,
     attributes: module.values.attributes,
@@ -1867,8 +1864,8 @@ Coralite.prototype.createComponentElement = async function ({
 
     // update slot elements
     if (customElement.children
-      && customElement.children.length
-      && !customElement.slots.length
+        && customElement.children.length
+        && !customElement.slots.length
     ) {
       for (let j = 0; j < customElement.children.length; j++) {
         const node = customElement.children[j]
@@ -1969,7 +1966,7 @@ Coralite.prototype.createComponentElement = async function ({
     result,
     state: componentState,
     componentId: module.id,
-    instanceId: cleanInstanceId,
+    instanceId,
     refs: module.values.refs,
     textNodes: module.values.textNodes,
     attributes: module.values.attributes,
@@ -2710,20 +2707,7 @@ Coralite.prototype._defineComponent = async function (options, context) {
     getters: getters || {},
     state: {},
     defaultValues: {},
-    slots: slots || {},
-    clientHooks: {}
-  }
-
-  // Register client hooks from plugins
-  for (const plugin of this.options.plugins) {
-    // @ts-ignore
-    if (plugin.client && plugin.client.onAfterComponentRender) {
-      if (!state.__script__.clientHooks.onAfterComponentRender) {
-        state.__script__.clientHooks.onAfterComponentRender = []
-      }
-      // @ts-ignore
-      state.__script__.clientHooks.onAfterComponentRender.push(plugin.client.onAfterComponentRender)
-    }
+    slots: slots || {}
   }
 
   if (attributes) {
@@ -2837,8 +2821,8 @@ Coralite.prototype._defineComponent = async function (options, context) {
 
             if (
               isCoraliteElement(node)
-              || isCoraliteTextNode(node)
-              || isCoraliteComment(node)
+                || isCoraliteTextNode(node)
+                || isCoraliteComment(node)
             ) {
               elementSlots.push({
                 name,
@@ -2846,8 +2830,8 @@ Coralite.prototype._defineComponent = async function (options, context) {
               })
             } else {
               throw new Error('Unexpected slot value, expected a node but found: '
-                + '\n result: ' + JSON.stringify(node)
-                + '\n path: "' + module.path.pathname + '"')
+                  + '\n result: ' + JSON.stringify(node)
+                  + '\n path: "' + module.path.pathname + '"')
             }
           }
         }
@@ -2883,7 +2867,7 @@ Coralite.prototype._defineComponent = async function (options, context) {
         }
       }
 
-      state.__script__.state = args
+      Object.assign(state.__script__.state, args)
     }
   } else {
     // remove custom element parent script

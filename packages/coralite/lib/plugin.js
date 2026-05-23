@@ -131,6 +131,8 @@ export function definePlugin ({
   onComponentDelete,
   onBeforePageRender,
   onAfterPageRender,
+  onBeforeComponentRender,
+  onAfterComponentRender,
   onBeforeBuild,
   onAfterBuild,
   client,
@@ -164,6 +166,8 @@ export function definePlugin ({
   validateOptionalFunction(onComponentDelete, 'onComponentDelete')
   validateOptionalFunction(onBeforePageRender, 'onBeforePageRender')
   validateOptionalFunction(onAfterPageRender, 'onAfterPageRender')
+  validateOptionalFunction(onBeforeComponentRender, 'onBeforeComponentRender')
+  validateOptionalFunction(onAfterComponentRender, 'onAfterComponentRender')
   validateOptionalFunction(onBeforeBuild, 'onBeforeBuild')
   validateOptionalFunction(onAfterBuild, 'onAfterBuild')
   validateOptionalFunction(server, 'server')
@@ -228,6 +232,8 @@ export function definePlugin ({
     onComponentDelete,
     onBeforePageRender,
     onAfterPageRender,
+    onBeforeComponentRender,
+    onAfterComponentRender,
     onBeforeBuild,
     onAfterBuild,
     components: componentHTMLData,
