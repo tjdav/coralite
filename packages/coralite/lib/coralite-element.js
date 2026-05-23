@@ -234,6 +234,12 @@ export class CoraliteElement extends HTMLElement {
     queueMicrotask(() => {
       this._updateDOM()
       this._isUpdatePending = false
+
+      if (this.componentOptions.clientHooks?.onAfterComponentRender) {
+        for (const hook of this.componentOptions.clientHooks.onAfterComponentRender) {
+          hook(this)
+        }
+      }
     })
   }
 

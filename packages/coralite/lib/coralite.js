@@ -1621,10 +1621,10 @@ Coralite.prototype.createComponentElement = async function ({
     renderContext.instanceCounters[componentId] = 0
   }
   const instanceIndex = renderContext.instanceCounters[componentId]++
-  const instanceId = `${componentId}-${instanceIndex}`
+  const cleanInstanceId = `${componentId}-${instanceIndex}`
 
   if (!contextId) {
-    contextId = instanceId
+    contextId = cleanInstanceId
   }
 
   let componentState = { ...state }
@@ -1648,7 +1648,7 @@ Coralite.prototype.createComponentElement = async function ({
   const mappedComponentContext = await this._triggerPluginHook('onBeforeComponentRender', {
     state: componentState,
     componentId: module.id,
-    instanceId,
+    instanceId: cleanInstanceId,
     refs: module.values.refs,
     textNodes: module.values.textNodes,
     attributes: module.values.attributes,
@@ -1969,7 +1969,7 @@ Coralite.prototype.createComponentElement = async function ({
     result,
     state: componentState,
     componentId: module.id,
-    instanceId,
+    instanceId: cleanInstanceId,
     refs: module.values.refs,
     textNodes: module.values.textNodes,
     attributes: module.values.attributes,
@@ -2710,7 +2710,20 @@ Coralite.prototype._defineComponent = async function (options, context) {
     getters: getters || {},
     state: {},
     defaultValues: {},
-    slots: slots || {}
+    slots: slots || {},
+    clientHooks: {}
+  }
+
+  // Register client hooks from plugins
+  for (const plugin of this.options.plugins) {
+    // @ts-ignore
+    if (plugin.client && plugin.client.onAfterComponentRender) {
+      if (!state.__script__.clientHooks.onAfterComponentRender) {
+        state.__script__.clientHooks.onAfterComponentRender = []
+      }
+      // @ts-ignore
+      state.__script__.clientHooks.onAfterComponentRender.push(plugin.client.onAfterComponentRender)
+    }
   }
 
   if (attributes) {

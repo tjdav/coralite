@@ -394,6 +394,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       }
       const defaults = serialize(normalizedDefaults)
       const attributes = serialize(this.sharedFunctions[componentId].script?.attributes || {})
+      const clientHooks = serialize(this.sharedFunctions[componentId].script?.clientHooks || {})
       const hydrationMap = serialize(generateHydrationMap(this.sharedFunctions[componentId].templateAST, this.sharedFunctions[componentId].templateValues))
       const getters = serialize(this.sharedFunctions[componentId].getters || this.sharedFunctions[componentId].script?.getters || {})
       const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
@@ -411,6 +412,7 @@ export default {
   templateValues: ${templateValues},
   styles: ${styles},
   attributes: ${attributes},
+  clientHooks: ${clientHooks},
   hydrationMap: ${hydrationMap},
   getters: ${getters},
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
