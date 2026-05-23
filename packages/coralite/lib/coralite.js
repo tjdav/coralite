@@ -1,4 +1,4 @@
-import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, findAndExtractProperties, extractGlobals, mergePluginState } from './utils.js'
+import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, findAndExtractProperties, extractGlobals, mergePluginState, normalizeObjectFunctions, astTransformer } from './utils.js'
 import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './html.js'
 import { findHeadAndBody, injectStyles, injectReadinessScript, injectImportMap, removeElements, resolvePageQueue } from './render-helpers.js'
 import { generateClientRuntime } from './client-runtime.js'
@@ -646,6 +646,7 @@ Coralite.prototype._createRenderContext = function (buildId) {
     buildId,
     state: {},
     styles: new Map(),
+    componentTags: new Set(),
     scripts: {
       content: {},
       add (id, item) {
@@ -715,12 +716,17 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
     })
 
     if (componentElement) {
-      for (let j = 0; j < componentElement.children.length; j++) {
-        componentElement.children[j].parent = customElement.parent
+      customElement.children = componentElement.children
+      for (let j = 0; j < customElement.children.length; j++) {
+        customElement.children[j].parent = customElement
       }
 
-      const index = customElement.parent.children.indexOf(customElement, customElement.parentChildIndex)
-      customElement.parent.children.splice(index, 1, ...componentElement.children)
+      if (!customElement.attribs) {
+        customElement.attribs = {}
+      }
+      customElement.attribs.cid = contextId
+
+      mappedRenderContextObject.componentTags.add(customElement.name)
     }
   }
 }
@@ -858,6 +864,34 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
         injectStyles(mappedComponent.root, headElement, mappedRenderContextObject.styles)
       }
 
+      if (mappedRenderContextObject.componentTags.size > 0) {
+        const targetElement = headElement || bodyElement || mappedComponent.root
+        const layoutStyleElement = createCoraliteElement({
+          type: 'tag',
+          name: 'style',
+          parent: targetElement,
+          attribs: {
+            id: 'coralite-components'
+          },
+          children: []
+        })
+
+        const selectors = Array.from(mappedRenderContextObject.componentTags)
+        selectors.push('c-token')
+        const selector = selectors.join(', ')
+        layoutStyleElement.children.push(createCoraliteTextNode({
+          type: 'text',
+          data: `${selector} { display: contents; }`,
+          parent: layoutStyleElement
+        }))
+
+        if (targetElement === headElement || targetElement === bodyElement) {
+          targetElement.children.push(layoutStyleElement)
+        } else {
+          targetElement.children.unshift(layoutStyleElement)
+        }
+      }
+
       if (mappedRenderContextObject.scripts.content[mappedComponent.path.pathname]) {
         const scripts = mappedRenderContextObject.scripts.content[mappedComponent.path.pathname]
 
@@ -886,8 +920,18 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
         if (scriptResultCache.has(cacheKey)) {
           scriptResult = scriptResultCache.get(cacheKey)
         } else {
+          // Wrap hydration state in AST-safe normalization to prevent circularity
+          /** @type {Object.<string, InstanceContext>} **/
+          const normalizedInstances = {}
+          for (const [id, instance] of Object.entries(instances)) {
+            normalizedInstances[id] = {
+              ...instance,
+              state: normalizeObjectFunctions(instance.state, astTransformer)
+            }
+          }
+
           // Use script manager to compile all instances
-          scriptResult = await this._scriptManager.compileAllInstances(instances, this.options.mode)
+          scriptResult = await this._scriptManager.compileAllInstances(normalizedInstances, this.options.mode)
           scriptResultCache.set(cacheKey, scriptResult)
 
           // Store the asset results in the coralite instance to be saved later
@@ -928,7 +972,8 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
           if (mappedRenderContextObject && mappedRenderContextObject.source && mappedRenderContextObject.source.contextInstances[contextId]) {
             const coraliteContext = mappedRenderContextObject.source.contextInstances[contextId]
             if (coraliteContext.state.__script__ && coraliteContext.state.__script__.data) {
-              hydrationData[contextId] = coraliteContext.state.__script__.data
+              // Ensure data is normalized to remove circular AST nodes before JSON serialization
+              hydrationData[contextId] = normalizeObjectFunctions(coraliteContext.state.__script__.data, astTransformer)
             }
           }
         }
@@ -990,10 +1035,12 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       }
 
       // Explicitly nullify large objects to help GC
-      mappedComponent.root = null
-      mappedComponent.customElements = null
-      mappedComponent.tempElements = null
-      mappedComponent.skipRenderElements = null
+      if (isProduction) {
+        mappedComponent.root = null
+        mappedComponent.customElements = null
+        mappedComponent.tempElements = null
+        mappedComponent.skipRenderElements = null
+      }
 
       if (isProduction) {
         // In production, we can discard the yielded content from the item
@@ -1280,6 +1327,13 @@ Coralite.prototype.save = async function (path, options = {}) {
 
     const assetWrites = Object.values(this.outputFiles).map(async (file) => {
       const outFile = join(assetsDir, file.hashedPath)
+      const outDir = dirname(outFile)
+
+      if (!createdDir[outDir]) {
+        await mkdir(outDir, { recursive: true })
+        createdDir[outDir] = true
+      }
+
       await writeFile(outFile, file.text, { signal })
       results.push({
         path: outFile,
@@ -1610,10 +1664,12 @@ Coralite.prototype.createComponentElement = async function ({
     let scriptResult = {}
 
     try {
+      const evaluationState = Object.assign({}, state)
+
       scriptResult = await this._evaluate({
         module,
         element,
-        state,
+        state: evaluationState,
         page,
         root: element || root,
         contextId,
@@ -1623,7 +1679,7 @@ Coralite.prototype.createComponentElement = async function ({
       throw this._createExecutionError(error, module, moduleComponent, page, contextId)
     }
 
-    if (scriptResult.__script__ != null) {
+    if (scriptResult && scriptResult.__script__ != null) {
       const extractedScript = findAndExtractScript(module.script)
       let extractedComponents = []
 
@@ -1861,7 +1917,8 @@ Coralite.prototype.createComponentElement = async function ({
         renderContext
       }, false).then(childComponentElement => ({
         childComponentElement,
-        customElement
+        customElement,
+        childContextId
       }))
     )
   }
@@ -1869,18 +1926,21 @@ Coralite.prototype.createComponentElement = async function ({
   const results = await Promise.all(createComponentTasks)
 
   for (let i = 0; i < results.length; i++) {
-    const { childComponentElement, customElement } = results[i]
-    const children = customElement.parent.children
-
-    if (!childIndex) {
-      childIndex = customElement.parentChildIndex
-    } else {
-      childIndex = children.indexOf(customElement, customElement.parentChildIndex)
-    }
+    const { childComponentElement, customElement, childContextId } = results[i]
 
     // replace custom element with component
     if (childComponentElement && typeof childComponentElement === 'object') {
-      children.splice(childIndex, 1, ...childComponentElement.children)
+      customElement.children = childComponentElement.children
+      for (let j = 0; j < customElement.children.length; j++) {
+        customElement.children[j].parent = customElement
+      }
+
+      if (!customElement.attribs) {
+        customElement.attribs = {}
+      }
+      customElement.attribs.cid = childContextId
+
+      renderContext.componentTags.add(customElement.name)
     }
   }
 
@@ -1988,7 +2048,17 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
             }, false)
 
             if (componentElement) {
-              slotNodes.splice(i, 1, ...componentElement.children)
+              node.children = componentElement.children
+              for (let j = 0; j < node.children.length; j++) {
+                node.children[j].parent = node
+              }
+
+              if (!node.attribs) {
+                node.attribs = {}
+              }
+              node.attribs.cid = slotContextId
+
+              renderContext.componentTags.add(node.name)
             }
           }
         }
@@ -2495,16 +2565,10 @@ Coralite.prototype._addPluginHook = function (name, callback) {
  * @param {CoraliteElement} element - The target element to replace the tokens with.
  */
 Coralite.prototype._replaceCustomElementWithTemplate = function (coraliteElement, element) {
-  // update parent references for new children to maintain the correct structure in the document
-  for (const child of element.children) {
-    child.parent = coraliteElement.parent
+  coraliteElement.children = element.children
+  for (let j = 0; j < coraliteElement.children.length; j++) {
+    coraliteElement.children[j].parent = coraliteElement
   }
-
-  // determine the index of the original custom element within its parent's child list
-  const index = coraliteElement.parent.children.indexOf(coraliteElement, coraliteElement.parentChildIndex)
-
-  // replace the custom element with its template children in the document structure
-  coraliteElement.parent.children.splice(index, 1, ...element.children)
 }
 
 /**
@@ -2532,8 +2596,9 @@ Coralite.prototype._processTokenValue = async function (value, context) {
   // Process custom elements
   for (let i = 0; i < result.customElements.length; i++) {
     const customElement = result.customElements[i]
+    const cid = `${module.path.pathname}${customElement.name}-${i}`
     const componentElement = await createComponentElement({
-      contextId: `${module.path.pathname}${customElement.name}-${i}`,
+      contextId: cid,
       id: customElement.name,
       state,
       element: customElement,
@@ -2543,7 +2608,17 @@ Coralite.prototype._processTokenValue = async function (value, context) {
     })
 
     if (componentElement) {
-      this._replaceCustomElementWithTemplate(customElement, componentElement)
+      customElement.children = componentElement.children
+      for (let j = 0; j < customElement.children.length; j++) {
+        customElement.children[j].parent = customElement
+      }
+
+      if (!customElement.attribs) {
+        customElement.attribs = {}
+      }
+      customElement.attribs.cid = cid
+
+      renderContext.componentTags.add(customElement.name)
     }
   }
 
@@ -2649,7 +2724,9 @@ Coralite.prototype._defineComponent = async function (options, context) {
       }
 
       // Add getter result to state.__script__.state so it's serialized to the client
-      state.__script__.state[key] = state[key]
+      if (state.__script__ && state.__script__.state) {
+        state.__script__.state[key] = state[key]
+      }
     }
   }
 

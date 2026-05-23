@@ -85,6 +85,7 @@
     "acorn-walk": "^8.3.5",
     "commander": "^13.1.0",
     "dom-serializer": "^2.0.0",
+    "isomorphic-dompurify": "^3.14.0",
     "esbuild": "^0.25.9",
     "esbuild-plugins-node-modules-polyfill": "^1.8.1",
     "htmlparser2": "^10.0.0",
