@@ -124,6 +124,8 @@ export function Coralite ({
       onComponentDelete: [],
       onBeforePageRender: [],
       onAfterPageRender: [],
+      onBeforeComponentRender: [],
+      onAfterComponentRender: [],
       onBeforeBuild: [],
       onAfterBuild: []
     }
@@ -206,6 +208,12 @@ export function Coralite ({
     }
     if (plugin.onAfterPageRender) {
       this._addPluginHook('onAfterPageRender', plugin.onAfterPageRender)
+    }
+    if (plugin.onBeforeComponentRender) {
+      this._addPluginHook('onBeforeComponentRender', plugin.onBeforeComponentRender)
+    }
+    if (plugin.onAfterComponentRender) {
+      this._addPluginHook('onAfterComponentRender', plugin.onAfterComponentRender)
     }
     if (plugin.onBeforeBuild) {
       this._addPluginHook('onBeforeBuild', plugin.onBeforeBuild)
@@ -647,6 +655,7 @@ Coralite.prototype._createRenderContext = function (buildId) {
     state: {},
     styles: new Map(),
     componentTags: new Set(),
+    instanceCounters: {},
     scripts: {
       content: {},
       add (id, item) {
@@ -699,9 +708,11 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
         ...customElement.attribs
       }
     } else {
-      mappedRenderContextObject.state[contextId] = Object.assign(
-        Object.assign(Object.assign({}, currentProperties, state), mappedComponent.state)
-      )
+      mappedRenderContextObject.state[contextId] = {
+        ...currentProperties,
+        ...state,
+        ...mappedComponent.state
+      }
     }
 
     const componentElement = await this.createComponentElement({
@@ -814,7 +825,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
         // @ts-ignore
         component = {
           // @ts-ignore
-          state: mappedContext.state,
+          state: { ...mappedContext.state },
           page: mappedContext.page,
           path: fullPath,
           root: mappedContext.elements.root,
@@ -1026,6 +1037,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       let rawHTML = ''
       // render document
       rawHTML = this.transform(mappedComponent.root)
+
 
       yield {
         type: 'page',
@@ -1560,8 +1572,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
     // Recursively process deeper dependencies
     if (nestedComponents.length > 0) {
       const inheritedState = {
-        ...state,
-        ...scriptResult
+        ...state
       }
       delete inheritedState.__script__
 
@@ -1575,7 +1586,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, r
  * @param {Object} options
  * @param {string} options.id - id - Unique identifier for the component
  * @param {CoraliteModuleDefinitions} [options.state={}] - Token state available for replacement
- * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
+ * @param {CoraliteElement} [options.element] - The original Custom Element node
  * @param {CoralitePage} options.page - The global page object
  * @param {CoraliteComponentRoot} options.root - The root element of the component
  * @param {string} [options.contextId] - Context Id
@@ -1600,21 +1611,32 @@ Coralite.prototype.createComponentElement = async function ({
 
   const moduleComponent = this.components.getItem(id)
 
-  if (!moduleComponent) {
+  if (!moduleComponent || !moduleComponent.result) {
     return
   }
 
+  const componentId = moduleComponent.result.id
+
+  if (renderContext.instanceCounters[componentId] === undefined) {
+    renderContext.instanceCounters[componentId] = 0
+  }
+  const instanceIndex = renderContext.instanceCounters[componentId]++
+  const instanceId = `${componentId}-${instanceIndex}`
+
+  if (!contextId) {
+    contextId = instanceId
+  }
+
+  let componentState = { ...state }
+
   if (head) {
     if (element && element.attribs) {
-      state = Object.assign(state, element.attribs)
+      componentState = Object.assign(componentState, element.attribs)
     }
 
     // convert object keys to camel case format for consistent naming conventions
-    state = cleanKeys(state)
-  }
-
-  if (!contextId) {
-    contextId = moduleComponent.path.pathname + id
+    // @ts-ignore
+    componentState = cleanKeys(componentState)
   }
 
   /**
@@ -1622,6 +1644,20 @@ Coralite.prototype.createComponentElement = async function ({
    * @type {CoraliteModule}
    */
   const module = cloneModuleInstance(moduleComponent.result)
+
+  const mappedComponentContext = await this._triggerPluginHook('onBeforeComponentRender', {
+    state: componentState,
+    componentId: module.id,
+    instanceId,
+    refs: module.values.refs,
+    textNodes: module.values.textNodes,
+    attributes: module.values.attributes,
+    page,
+    element,
+    renderContext
+  })
+  componentState = mappedComponentContext.state
+
   const result = module.template
 
   if (module.styles.length) {
@@ -1664,7 +1700,7 @@ Coralite.prototype.createComponentElement = async function ({
     let scriptResult = {}
 
     try {
-      const evaluationState = Object.assign({}, state)
+      const evaluationState = Object.assign({}, componentState)
 
       scriptResult = await this._evaluate({
         module,
@@ -1718,10 +1754,10 @@ Coralite.prototype.createComponentElement = async function ({
 
       // Include all computed state into default values so client script can use them
       const componentDefaultValues = scriptResult.__script__.defaultValues || {}
-      if (state) {
+      if (componentState) {
         for (const token of Object.keys(componentTokens)) {
-          if (componentDefaultValues[token] === undefined && state[token] !== undefined) {
-            componentDefaultValues[token] = state[token]
+          if (componentDefaultValues[token] === undefined && componentState[token] !== undefined) {
+            componentDefaultValues[token] = componentState[token]
           }
         }
       }
@@ -1749,7 +1785,7 @@ Coralite.prototype.createComponentElement = async function ({
 
       if (mergedComponents.length > 0) {
         // Merge the evaluated script results into the state context for dependencies
-        const inheritedState = Object.assign({}, state, scriptResult)
+        const inheritedState = Object.assign({}, state)
         delete inheritedState.__script__
 
         await this._processDependentComponents(mergedComponents, renderContext, page, root, inheritedState)
@@ -1760,19 +1796,6 @@ Coralite.prototype.createComponentElement = async function ({
         scriptResult.__script__.state = {}
       }
 
-      for (let i = 0; i < module.values.refs.length; i++) {
-        const ref = module.values.refs[i]
-        const uniqueRefValue = `${module.id}__${ref.name}-${index}`
-
-        // Update the ref attribute value to be unique
-        ref.element.attribs.ref = uniqueRefValue
-        if (ref.element.attribs['data-testid']) {
-          ref.element.attribs['data-testid'] = uniqueRefValue
-        }
-
-        // inject flat token into script instance state
-        scriptResult.__script__.state[`ref_${ref.name}`] = uniqueRefValue
-      }
 
       // Store instance data for script manager
       renderContext.scripts.add(page.file.pathname, {
@@ -1785,29 +1808,18 @@ Coralite.prototype.createComponentElement = async function ({
       delete scriptResult.__script__
     }
 
-    state = Object.assign(state, scriptResult)
-    renderContext.state[contextId] = state
+    componentState = Object.assign(componentState, scriptResult)
   }
 
-  // append ref objects to state
-  for (let i = 0; i < module.values.refs.length; i++) {
-    const ref = module.values.refs[i]
-    const refValue = `${module.id}__${ref.name}-${index}`
+  renderContext.state[contextId] = componentState
 
-    state[`ref_${ref.name}`] = refValue
-
-    if (ref.element && ref.element.attribs && ref.element.attribs['data-testid'] === ref.name) {
-      ref.element.attribs['data-testid'] = refValue
-    }
-  }
-
-  // replace tokens in the component with their state from `state` object and store them into computed value array for later use if needed (e.g., to be injected back).
+  // replace tokens in the component with their state from `componentState` object and store them into computed value array for later use if needed (e.g., to be injected back).
   for (let i = 0; i < module.values.attributes.length; i++) {
     const item = module.values.attributes[i]
 
     for (let j = 0; j < item.tokens.length; j++) {
       const token = item.tokens[j]
-      let value = state[token.name]
+      let value = componentState[token.name]
 
       if (value == null) {
         // console.error('Token "' + token.name +'" was empty used on "' + moduleComponent.id + '"')
@@ -1829,7 +1841,7 @@ Coralite.prototype.createComponentElement = async function ({
 
     for (let j = 0; j < item.tokens.length; j++) {
       const token = item.tokens[j]
-      let value = state[token.name]
+      let value = componentState[token.name]
 
       if (value == null) {
         // console.error('Token "' + token.name +'" was empty used on "' + moduleComponent.id + '"')
@@ -1892,23 +1904,30 @@ Coralite.prototype.createComponentElement = async function ({
     const childContextId = contextId + i + customElement.name
     const currentProperties = renderContext.state[childContextId] || {}
 
+    let childState = { ...state }
+
     // append custom attributes to state
     if (typeof customElement.attribs === 'object') {
       const attribValues = cleanKeys(customElement.attribs)
 
-      renderContext.state[childContextId] = {
+      childState = {
+        ...childState,
         ...currentProperties,
-        ...state,
         ...attribValues
       }
     } else {
-      renderContext.state[childContextId] = Object.assign(currentProperties, state)
+      childState = {
+        ...childState,
+        ...currentProperties
+      }
     }
+
+    renderContext.state[childContextId] = childState
 
     createComponentTasks.push(
       this.createComponentElement({
         id: customElement.name,
-        state: renderContext.state[childContextId],
+        state: childState,
         element: customElement,
         page,
         root,
@@ -1944,9 +1963,21 @@ Coralite.prototype.createComponentElement = async function ({
     }
   }
 
-  await this._replaceSlots(id, element, module, contextId, state, page, root, index, renderContext)
+  await this._replaceSlots(id, element, module, contextId, componentState, page, root, index, renderContext)
 
-  return result
+  const mappedAfterContext = await this._triggerPluginHook('onAfterComponentRender', {
+    result,
+    state: componentState,
+    componentId: module.id,
+    instanceId,
+    refs: module.values.refs,
+    textNodes: module.values.textNodes,
+    attributes: module.values.attributes,
+    page,
+    element,
+    renderContext
+  })
+  return mappedAfterContext.result
 }
 
 
@@ -2504,7 +2535,7 @@ Coralite.prototype._bindPlugins = function (plugins, context) {
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to trigger.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeComponentRender'|'onAfterComponentRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to trigger.
  * @param {T} initialData - Data to pass to each callback function.
  * @returns {Promise<T>} A promise that resolves to the merged data.
  */
@@ -2545,7 +2576,7 @@ Coralite.prototype._triggerPluginHook = async function (name, initialData) {
  *
  * @internal
  *
- * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to register the callback with.
+ * @param {'onPageSet'|'onPageUpdate'|'onPageDelete'|'onComponentSet'|'onComponentUpdate'|'onComponentDelete'|'onBeforePageRender'|'onAfterPageRender'|'onBeforeComponentRender'|'onAfterComponentRender'|'onBeforeBuild'|'onAfterBuild'} name - The name of the hook to register the callback with.
  * @param {Function} callback - The callback function to be executed when the hook is triggered.
  */
 Coralite.prototype._addPluginHook = function (name, callback) {
@@ -2819,8 +2850,9 @@ Coralite.prototype._defineComponent = async function (options, context) {
   const hasSlots = slots && Object.keys(slots).length > 0
   const hasGetters = getters && Object.keys(getters).length > 0
   const hasAttributes = attributes && Object.keys(attributes).length > 0
+  const hasData = typeof data === 'function'
 
-  if (hasScript || hasSlots || hasGetters || hasAttributes) {
+  if (hasScript || hasSlots || hasGetters || hasAttributes || hasData) {
     if (hasScript) {
       const scriptTextContent = script.toString().trim()
 
@@ -2831,7 +2863,7 @@ Coralite.prototype._defineComponent = async function (options, context) {
           continue
         }
 
-        if (scriptTextContent.includes(key)) {
+        if (scriptTextContent.includes(key) || key.startsWith('ref_')) {
           args[key] = state.__script__.defaultValues[key] !== undefined
             ? state.__script__.defaultValues[key]
             : state[key]
