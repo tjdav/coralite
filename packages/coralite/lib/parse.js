@@ -193,8 +193,8 @@ function sortSlottedChildren (elements) {
   for (let i = 0; i < elements.length; i++) {
     const element = elements[i]
 
-    for (let i = 0; i < element.children.length; i++) {
-      const childNode = element.children[i]
+    for (let k = 0; k < element.children.length; k++) {
+      const childNode = element.children[k]
       let slotName = 'default'
 
       if (childNode.type === 'tag'
@@ -348,19 +348,46 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
     },
     ontext (text) {
       const parent = stack[stack.length - 1]
-      const textNode = createTextNode(text, parent)
 
       if (isTemplate && !isScript && text.trim()) {
-        const tokens = getTokensFromString(text)
+        const topLevelTokens = getTokensFromString(text, true)
 
-        // store tokens
-        if (tokens.length) {
-          documentValues.textNodes.push({
-            tokens,
-            textNode
-          })
+        if (topLevelTokens.length) {
+          let lastIndex = 0
+          for (const token of topLevelTokens) {
+            const index = text.indexOf(token.content, lastIndex)
+
+            if (index > lastIndex) {
+              createTextNode(text.substring(lastIndex, index), parent)
+            }
+
+            const cToken = createCoraliteElement({
+              type: 'tag',
+              name: 'c-token',
+              parent,
+              attribs: {},
+              children: []
+            })
+            parent.children.push(cToken)
+
+            const tokenNode = createTextNode(token.content, cToken)
+            documentValues.textNodes.push({
+              tokens: getTokensFromString(token.content),
+              textNode: tokenNode,
+              type: 'html'
+            })
+
+            lastIndex = index + token.content.length
+          }
+
+          if (lastIndex < text.length) {
+            createTextNode(text.substring(lastIndex), parent)
+          }
+          return
         }
       }
+
+      createTextNode(text, parent)
     },
     onclosetag (name) {
       const element = stack[stack.length - 1]
@@ -654,7 +681,7 @@ function getIgnoreAttributeMap (ignoreByAttribute) {
  * - Empty tokens: {{}} (returns empty name)
  * - Malformed tokens: {{unclosed, {{extra}} braces}}
  */
-function getTokensFromString (string) {
+function getTokensFromString (string, topLevelOnly = false) {
   const result = []
   let i = 0
 
@@ -695,15 +722,17 @@ function getTokensFromString (string) {
           content: fullToken
         })
 
-        // Also extract any nested tokens from the content
-        // This handles cases like {{ {{nested}} }} which should extract both
-        const nestedTokens = getTokensFromString(tokenContent)
+        if (!topLevelOnly) {
+          // Also extract any nested tokens from the content
+          // This handles cases like {{ {{nested}} }} which should extract both
+          const nestedTokens = getTokensFromString(tokenContent)
 
-        // Add nested tokens that are different from the full token
-        for (const nested of nestedTokens) {
-          // Only add if it's not the same as what we just added
-          if (nested.content !== fullToken) {
-            result.push(nested)
+          // Add nested tokens that are different from the full token
+          for (const nested of nestedTokens) {
+            // Only add if it's not the same as what we just added
+            if (nested.content !== fullToken) {
+              result.push(nested)
+            }
           }
         }
 

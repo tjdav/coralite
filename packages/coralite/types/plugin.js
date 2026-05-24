@@ -1,12 +1,47 @@
 
 /**
- * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute } from './component.js'
+ * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute, CoraliteRef, CoraliteTextNodeToken, CoraliteAttributeToken } from './component.js'
  * @import { HTMLData, CoraliteFilePath, CoralitePage } from './core.js'
  * @import { CoraliteModule, CoraliteModuleDefinition } from './module.js'
  * @import { CoraliteElement, CoraliteAnyNode } from './dom.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
  * @import { Coralite } from '#lib'
+ */
+
+/**
+ * @callback CoralitePluginBeforeComponentRenderCallback - Async callback triggered before a component is rendered.
+ * @param {Object} context
+ * @param {Object.<string, any>} context.state - Mutable state object
+ * @param {string} context.componentId - Generic component name
+ * @param {string} context.instanceId - Clean unique identifier
+ * @param {CoraliteRef[]} context.refs - Scoped AST pointers for refs
+ * @param {CoraliteTextNodeToken[]} context.textNodes - Scoped AST pointers for text nodes
+ * @param {CoraliteAttributeToken[]} context.attributes - Scoped AST pointers for attributes
+ * @param {CoralitePage} context.page - The current page context
+ * @param {CoraliteElement} [context.element] - The parent AST tag itself
+ * @param {Object} context.renderContext - Global build state
+ * @param {Coralite} [context.app] - The global Coralite app instance
+ * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
+ * @async
+ */
+
+/**
+ * @callback CoralitePluginAfterComponentRenderCallback - Async callback triggered after a component is rendered.
+ * @param {Object} context
+ * @param {CoraliteAnyNode} context.result - The component's rendered AST root
+ * @param {Object.<string, any>} context.state - Final mutable state object
+ * @param {string} context.componentId - Generic component name
+ * @param {string} context.instanceId - Clean unique identifier
+ * @param {CoraliteRef[]} context.refs - Scoped AST pointers for refs
+ * @param {CoraliteTextNodeToken[]} context.textNodes - Scoped AST pointers for text nodes
+ * @param {CoraliteAttributeToken[]} context.attributes - Scoped AST pointers for attributes
+ * @param {CoralitePage} context.page - The current page context
+ * @param {CoraliteElement} [context.element] - The parent AST tag itself
+ * @param {Object} context.renderContext - Global build state
+ * @param {Coralite} [context.app] - The global coralite app instance
+ * @returns {Promise<Object|void>|Object|void} A partial AST patch to be merged.
+ * @async
  */
 
 /**
@@ -116,6 +151,8 @@
  * @property {CoralitePluginComponentCallback} [onComponentDelete] - Async callback triggered when a component is deleted
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
+ * @property {CoralitePluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Async callback triggered before component render
+ * @property {CoralitePluginAfterComponentRenderCallback} [onAfterComponentRender] - Async callback triggered after component render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
  * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
@@ -135,6 +172,8 @@
  * @property {CoralitePluginComponentCallback} [onComponentDelete] - Async callback triggered when a component is deleted
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
+ * @property {CoralitePluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Async callback triggered before component render
+ * @property {CoralitePluginAfterComponentRenderCallback} [onAfterComponentRender] - Async callback triggered after component render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
  * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
  * @property {ScriptPlugin} [client] - Client-side plugin configuration

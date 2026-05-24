@@ -6,6 +6,20 @@ import { definePlugin } from '#lib'
 
 export const refsPlugin = definePlugin({
   name: 'refs',
+  onBeforeComponentRender: ({ state, instanceId, refs }) => {
+    for (let i = 0; i < refs.length; i++) {
+      const ref = refs[i]
+      const uniqueRefValue = `${instanceId}__${ref.name}`
+
+      // Update the ref attribute value to be unique
+      if (ref.element && ref.element.attribs) {
+        ref.element.attribs.ref = uniqueRefValue
+      }
+
+      // inject flat token into component state
+      state[`ref_${ref.name}`] = uniqueRefValue
+    }
+  },
   client: {
     context: {
       /**

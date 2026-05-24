@@ -37,7 +37,7 @@
     "test-e2e-ui": "playwright test --ui",
     "server": "sirv .coralite --dev --port 3000",
     "build": "premove dist && pnpm build-lib && pnpm build-plugins && pnpm build-types",
-    "build-lib": "esbuild ./lib/index.js --bundle --target=esnext --external:postcss --external:postcss-selector-parser --external:esbuild --external:commander --external:dom-serializer --external:dom-htmlparser2 --external:kleur --external:p-limit --external:serialize-javascript --external:esbuild-plugins-node-modules-polyfill --format=esm --outdir=dist/lib --platform=node --sourcemap",
+    "build-lib": "esbuild ./lib/*.js --target=esnext --format=esm --outdir=dist/lib --platform=node --sourcemap",
     "build-plugins": "esbuild ./plugins/*.js --format=esm --outdir=dist/plugins --platform=node",
     "build-types": "tsc",
     "build-html": "premove .coralite && node --experimental-vm-modules ./tests/scripts/build-html.js",
@@ -85,12 +85,13 @@
     "acorn-walk": "^8.3.5",
     "commander": "^13.1.0",
     "dom-serializer": "^2.0.0",
+    "isomorphic-dompurify": "^3.14.0",
     "esbuild": "^0.25.9",
     "esbuild-plugins-node-modules-polyfill": "^1.8.1",
     "htmlparser2": "^10.0.0",
     "kleur": "^4.1.5",
     "p-limit": "^7.2.0",
-    "postcss": "^8.5.6",
+    "postcss": "^8.5.15",
     "postcss-selector-parser": "^7.1.1",
     "serialize-javascript": "^7.0.2"
   }

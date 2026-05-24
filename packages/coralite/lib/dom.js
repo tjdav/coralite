@@ -36,7 +36,34 @@ const nodeTypes = {
  * @param {T} node - The raw DOM node to enhance
  */
 function CoraliteNodeConstructor (node) {
-  Object.assign(this, node)
+  for (const key in node) {
+    if (['parent', 'prev', 'next', 'slots'].includes(key)) {
+      Object.defineProperty(this, key, {
+        value: node[key],
+        enumerable: false,
+        writable: true,
+        configurable: true
+      })
+    } else {
+      // @ts-ignore
+      this[key] = node[key]
+    }
+  }
+}
+
+function makeCircularPropertiesNonEnumerable (node) {
+  for (const key of ['parent', 'prev', 'next', 'slots']) {
+    if (Object.hasOwn(node, key)) {
+      const value = node[key]
+      delete node[key]
+      Object.defineProperty(node, key, {
+        value,
+        enumerable: false,
+        writable: true,
+        configurable: true
+      })
+    }
+  }
 }
 
 Object.defineProperties(CoraliteNodeConstructor.prototype, {
@@ -281,6 +308,7 @@ Object.defineProperties(CoraliteElementConstructor.prototype, {
  * @returns {CoraliteElement} The enhanced Coralite Element
  */
 export function createCoraliteElement (node) {
+  makeCircularPropertiesNonEnumerable(node)
   Object.setPrototypeOf(node, CoraliteElementConstructor.prototype)
   // @ts-ignore
   return node
@@ -347,6 +375,7 @@ Object.defineProperties(CoraliteTextNodeConstructor.prototype, {
  * @returns {CoraliteTextNode} The enhanced Coralite Text Node
  */
 export function createCoraliteTextNode (node) {
+  makeCircularPropertiesNonEnumerable(node)
   Object.setPrototypeOf(node, CoraliteTextNodeConstructor.prototype)
   // @ts-ignore
   return node
@@ -413,6 +442,7 @@ Object.defineProperties(CoraliteCommentConstructor.prototype, {
  * @returns {CoraliteComment} The enhanced Coralite Comment Node
  */
 export function createCoraliteComment (node) {
+  makeCircularPropertiesNonEnumerable(node)
   Object.setPrototypeOf(node, CoraliteCommentConstructor.prototype)
   // @ts-ignore
   return node
@@ -463,6 +493,7 @@ Object.defineProperties(CoraliteDirectiveConstructor.prototype, {
  * @returns {CoraliteDirective} The enhanced Coralite Directive Node
  */
 export function createCoraliteDirective (node) {
+  makeCircularPropertiesNonEnumerable(node)
   Object.setPrototypeOf(node, CoraliteDirectiveConstructor.prototype)
   // @ts-ignore
   return node
@@ -549,6 +580,7 @@ Object.defineProperties(CoraliteComponentConstructor.prototype, {
  * @returns {CoraliteComponentRoot} The enhanced Coralite Document Root
  */
 export function createCoraliteComponent (node) {
+  makeCircularPropertiesNonEnumerable(node)
   Object.setPrototypeOf(node, CoraliteComponentConstructor.prototype)
   // @ts-ignore
   return node

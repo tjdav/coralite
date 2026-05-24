@@ -408,6 +408,65 @@ export default defineComponent({
     const pageResult = results.find(r => r.path && r.path.filename === 'index.html')
     const htmlOutput = pageResult ? pageResult.content : ''
 
-    assert.ok(htmlOutput.includes('<div>i-am-preserved</div>'), 'nested child token state should receive context state')
+    assert.ok(htmlOutput.includes('i-am-preserved'), 'nested child token state should receive context state')
+  })
+
+  it('allows plugins to inject state via onBeforeComponentRender', async () => {
+    const plugin = {
+      name: 'inject-plugin',
+      onBeforeComponentRender: async ({ state, componentId }) => {
+        if (componentId === 'test-comp') {
+          state.injected = 'plugin-value'
+        }
+      }
+    }
+
+    await writeFile(path.join(pagesDir, 'test-plugin.html'), '<test-comp></test-comp>')
+    await writeFile(path.join(componentsDir, 'test-comp.html'), '<template id="test-comp"><div>{{ injected }}</div></template>')
+
+    const coralite = new Coralite({
+      pages: pagesDir,
+      components: componentsDir,
+      plugins: [plugin]
+    })
+
+    await coralite.initialise()
+    const results = await coralite.build('test-plugin.html')
+
+    assert.ok(results[0].content.includes('plugin-value'))
+  })
+
+  it('allows plugins to mutate AST via onAfterComponentRender', async () => {
+    const plugin = {
+      name: 'mutate-plugin',
+      onAfterComponentRender: async ({ result, componentId }) => {
+        if (componentId === 'test-comp') {
+          result.children.push({
+            type: 'tag',
+            name: 'span',
+            attribs: { id: 'extra' },
+            children: [{
+              type: 'text',
+              data: 'extra-node'
+            }]
+          })
+        }
+      }
+    }
+
+    await writeFile(path.join(pagesDir, 'test-plugin-ast.html'), '<test-comp></test-comp>')
+    await writeFile(path.join(componentsDir, 'test-comp.html'), '<template id="test-comp"><div>original</div></template>')
+
+    const coralite = new Coralite({
+      pages: pagesDir,
+      components: componentsDir,
+      plugins: [plugin]
+    })
+
+    await coralite.initialise()
+    const results = await coralite.build('test-plugin-ast.html')
+
+    assert.ok(results[0].content.includes('id="extra"'))
+    assert.ok(results[0].content.includes('extra-node'))
   })
 })

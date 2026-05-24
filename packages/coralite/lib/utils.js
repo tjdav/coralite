@@ -1,8 +1,11 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
 import render from 'dom-serializer'
+import { sanitize } from 'isomorphic-dompurify'
+import { parseHTML } from './parse.js'
 import { isCoraliteNode } from './type-helper.js'
 import { createCoraliteTextNode } from './dom.js'
+import { BOOLEAN_ATTRIBUTES } from './tags.js'
 
 /**
  * @import {
@@ -322,9 +325,19 @@ export function replaceToken ({
   if (
     type === 'attribute'
     && node.type === 'tag'
-    && typeof value === 'string'
   ) {
-    node.attribs[attribute] = node.attribs[attribute].replace(content, value)
+    if (BOOLEAN_ATTRIBUTES.has(attribute) && (node.attribs[attribute] || '').trim() === content) {
+      // @ts-ignore
+      const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '0' || value === 0 || value === '' || value === false || value === null || value === undefined
+
+      if (isFalsy) {
+        delete node.attribs[attribute]
+      } else {
+        node.attribs[attribute] = ''
+      }
+    } else if (typeof value === 'string') {
+      node.attribs[attribute] = node.attribs[attribute].replace(content, value)
+    }
   } else if (node.type === 'text') {
     if (typeof value === 'object' && value !== null) {
       if (Array.isArray(value) || value.type) {
@@ -370,7 +383,27 @@ export function replaceToken ({
     } else {
       // replace token string
       // @ts-ignore
-      node.data = node.data.replace(content, value)
+      const newVal = node.data.replace(content, value)
+      const isHTML = /<[a-z][\s\S]*>/i.test(newVal)
+
+      if (isHTML && node.parent
+          && node.parent.type === 'tag'
+          && node.parent.name === 'c-token'
+      ) {
+        const sanitized = sanitize(newVal)
+        const parsed = parseHTML(sanitized)
+        const children = parsed.root.children
+
+        // Use the existing object-handling logic by recursing with the children array
+        return replaceToken({
+          type,
+          node,
+          attribute,
+          content,
+          value: children
+        })
+      }
+      node.data = newVal
     }
   }
 }
@@ -560,7 +593,6 @@ export function findAndExtractProperties (code) {
   return result
 }
 
-
 /**
  * Transforms Coralite AST nodes into HTML strings for serialization.
  *
@@ -579,6 +611,91 @@ export function astTransformer (target) {
   }
 
   return target
+}
+
+/**
+ * Calculates the DOM path from a node to the root.
+ * @param {Object} node - The node to calculate the path for.
+ * @param {Object} root - The root node.
+ * @returns {Array<number>} An array of indices representing the path.
+ */
+export function getNodePath (node, root) {
+  const path = []
+  let current = node
+  while (current && current !== root) {
+    const parent = current.parent
+    if (!parent) {
+      break
+    }
+    const index = parent.children.indexOf(current)
+    if (index === -1) {
+      break
+    }
+    path.unshift(index)
+    current = parent
+  }
+  return path
+}
+
+/**
+ * Generates a hydration map for the client.
+ * @param {Array<Object>} templateNodes - The component's template nodes.
+ * @param {Object} templateValues - The component's template values.
+ * @returns {Object} The hydration map.
+ */
+export function generateHydrationMap (templateNodes, templateValues) {
+  const map = {
+    texts: [],
+    attributes: [],
+    refs: []
+  }
+
+  if (!templateNodes || !templateValues) {
+    return map
+  }
+
+  const root = { children: templateNodes }
+
+  if (templateValues.textNodes) {
+    for (const item of templateValues.textNodes) {
+      if (item.textNode) {
+        const isHtml = item.type === 'html'
+        const targetNode = isHtml ? item.textNode.parent : item.textNode
+
+        map.texts.push({
+          path: getNodePath(targetNode, root),
+          template: item.textNode.data,
+          type: isHtml ? 'html' : 'text'
+        })
+      }
+    }
+  }
+
+  if (templateValues.attributes) {
+    for (const item of templateValues.attributes) {
+      if (item.element && item.element.attribs) {
+        const originalValue = item.element.attribs[item.name]
+        map.attributes.push({
+          path: getNodePath(item.element, root),
+          name: item.name,
+          template: originalValue
+        })
+      }
+    }
+  }
+
+  if (templateValues.refs) {
+    for (const item of templateValues.refs) {
+      if (item.element) {
+        map.refs.push({
+          path: getNodePath(item.element, root),
+          name: item.name
+        })
+      }
+    }
+  }
+
+  return map
 }
 
 /**
@@ -625,6 +742,8 @@ export function cleanAST (nodes, nodeMap, state) {
     delete cloned.parent
     delete cloned.prev
     delete cloned.next
+    delete cloned.slots
+
     if (cloned.children) {
       cloned.children = cleanAST(cloned.children, nodeMap, state)
     }

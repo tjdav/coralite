@@ -17,7 +17,7 @@ function isObject (obj) {
  * @returns {obj is CoraliteElement} True if the object is a CoraliteElement, false otherwise.
  */
 function isCoraliteElement (obj) {
-  return isObject(obj) && obj.type === 'tag'
+  return isObject(obj) && (obj.type === 'tag' || obj.type === 'script' || obj.type === 'style')
 }
 
 /**

@@ -80,6 +80,7 @@
  * @typedef {Object} CoraliteTextNodeToken
  * @property {CoraliteTextNode} textNode - Text node that contains the token
  * @property {CoraliteToken[]} tokens - Array of associated tokens
+ * @property {'html' | 'text'} type - Type of token
  */
 
 /**

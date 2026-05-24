@@ -2,9 +2,9 @@ import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, findAndExtractImperativeComponents, astTransformer, addComponentAndDependencies, cleanAST, cleanValues } from './utils.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, findAndExtractImperativeComponents, astTransformer, addComponentAndDependencies, cleanAST, cleanValues, generateHydrationMap } from './utils.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
-import { resolve, parse, dirname } from 'node:path'
+import { resolve, parse, dirname, relative } from 'node:path'
 import { createHash } from 'node:crypto'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 
@@ -353,9 +353,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   // Resolve dom-serializer path using import.meta.resolve
   const domSerializerPath = fileURLToPath(import.meta.resolve('dom-serializer'))
+  const coraliteElementPath = fileURLToPath(import.meta.resolve('./coralite-element.js'))
 
   entryCodeParts.push(`import render from ${JSON.stringify(domSerializerPath)};\n`)
-  entryCodeParts.push('\nexport { getClientContext, getSetups, render };\n')
+  entryCodeParts.push(`import { createCoraliteClass } from ${JSON.stringify(coraliteElementPath)};\n`)
+  entryCodeParts.push('\nexport { getClientContext, getSetups, render, createCoraliteClass };\n')
 
   const entryPoints = {
     'chunk-shared': entryCodeParts.join('').trimEnd()
@@ -392,6 +394,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       }
       const defaults = serialize(normalizedDefaults)
       const attributes = serialize(this.sharedFunctions[componentId].script?.attributes || {})
+      const clientHooks = serialize(this.sharedFunctions[componentId].script?.clientHooks || {})
+      const hydrationMap = serialize(generateHydrationMap(this.sharedFunctions[componentId].templateAST, this.sharedFunctions[componentId].templateValues))
       const getters = serialize(this.sharedFunctions[componentId].getters || this.sharedFunctions[componentId].script?.getters || {})
       const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
 
@@ -408,6 +412,8 @@ export default {
   templateValues: ${templateValues},
   styles: ${styles},
   attributes: ${attributes},
+  clientHooks: ${clientHooks},
+  hydrationMap: ${hydrationMap},
   getters: ${getters},
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
   slots: (() => { const slots = ${slots}; return slots; })(),
@@ -445,7 +451,8 @@ export default {
     minify: mode === 'production',
     sourcemap: mode === 'production' ? 'external' : 'inline',
     outdir: 'assets/js',
-    chunkNames: '[name]-[hash]',
+    entryNames: '[name]-[hash]',
+    chunkNames: 'chunks/[name]-[hash]',
     format: 'esm',
     sourceRoot: pathToFileURL(process.cwd()).href,
     define: {
@@ -718,43 +725,36 @@ export default {
     ]
   })
 
-  // Hash the output files to create a manifest
   const manifest = {}
+  if (result.metafile && result.metafile.outputs) {
+    for (const [outputPath, meta] of Object.entries(result.metafile.outputs)) {
+      if (meta.entryPoint) {
+        const entryPoint = meta.entryPoint
+        const cleanEntry = entryPoint.includes(':') ? entryPoint.split(':').pop() : entryPoint
+
+        // 1. STRIP THE EXTENSION (Fixes E2E Bootstrapper Timeout)
+        const tagName = parse(cleanEntry).name
+
+        // 2. USE RELATIVE PATHS (Fixes the chunks/ 404 issue)
+        const relativePath = relative('assets/js', outputPath).replace(/\\/g, '/')
+
+        manifest[tagName] = relativePath
+      }
+    }
+  }
+
+  const outdirAbs = resolve('assets/js')
   const outputFiles = {}
 
   if (result.outputFiles) {
     for (const file of result.outputFiles) {
-      const fileName = parse(file.path).name
-      const fileExt = parse(file.path).ext
+      // Keep the relative path for the physical output file creation
+      const relativePath = relative(outdirAbs, file.path).replace(/\\/g, '/')
 
-      const hash = createHash('md5').update(file.text).digest('hex').substring(0, 8)
-      const hashedName = `${fileName}-${hash}${fileExt}`
-
-      // Store the mapping from original chunk name to hashed chunk name
-      manifest[fileName] = hashedName
-
-      // Keep track of the raw file objects for saving later
-      outputFiles[hashedName] = {
+      outputFiles[relativePath] = {
         ...file,
-        hashedPath: hashedName
-      }
-    }
-
-    // Rewrite imports in the output chunks to use the hashed filenames
-    for (const key in outputFiles) {
-      if (Object.prototype.hasOwnProperty.call(outputFiles, key)) {
-        let content = outputFiles[key].text
-
-        // Find import/export statements to other chunks
-        for (const [originalName, hashedName] of Object.entries(manifest)) {
-          if (originalName !== parse(outputFiles[key].path).name) {
-            // Replace e.g., import "./chunk-shared.js" with import "./chunk-shared-[hash].js"
-            const regex = new RegExp(`(["'])\\.\\/${originalName}\\.js(["'])`, 'g')
-            content = content.replace(regex, `$1./${hashedName}$2`)
-          }
-        }
-
-        outputFiles[key].text = content
+        hashedPath: relativePath,
+        text: file.text
       }
     }
   }
