@@ -64,13 +64,15 @@ describe('Coralite', () => {
 
       const plugin = {
         name: 'test-before-build-plugin',
-        onBeforeBuild: async (context) => {
-          hookCalled = true
-          hookContext = context
+        server: {
+          onBeforeBuild: async (context) => {
+            hookCalled = true
+            hookContext = context
 
-          // Test mutation
-          if (context.options) {
-            context.options.variables = { injected: 'value' }
+            // Test mutation
+            if (context.options) {
+              context.options.variables = { injected: 'value' }
+            }
           }
         }
       }
@@ -101,20 +103,22 @@ describe('Coralite', () => {
 
       const plugin = {
         name: 'test-before-page-render-plugin',
-        onBeforePageRender: async (context) => {
-          hookCalledCount++
-          hookContext = context
+        server: {
+          onBeforePageRender: async (context) => {
+            hookCalledCount++
+            hookContext = context
 
-          // Test mutation
-          context.state.injectedGlobal = 'test'
+            // Test mutation
+            context.state.injectedGlobal = 'test'
 
-          // Modifying AST
-          context.component.root.children.push({
-            type: 'tag',
-            name: 'div',
-            attribs: { class: 'injected' },
-            children: []
-          })
+            // Modifying AST
+            context.component.root.children.push({
+              type: 'tag',
+              name: 'div',
+              attribs: { class: 'injected' },
+              children: []
+            })
+          }
         }
       }
 
@@ -186,11 +190,13 @@ describe('Coralite', () => {
 
       const testPlugin = {
         name: 'test-plugin',
-        onBeforePageRender: (context) => {
-          // Verify it's in the component before rendering
-          const hasTestComponent = context.component.customElements.some(el => el.name === 'test-component')
-          if (hasTestComponent) {
-            testComponentRendered = true
+        server: {
+          onBeforePageRender: (context) => {
+            // Verify it's in the component before rendering
+            const hasTestComponent = context.component.customElements.some(el => el.name === 'test-component')
+            if (hasTestComponent) {
+              testComponentRendered = true
+            }
           }
         }
       }
@@ -274,9 +280,11 @@ describe('Coralite', () => {
 
       const plugin = {
         name: 'test-plugin',
-        onAfterBuild: async (context) => {
-          hookCalled = true
-          hookContext = context
+        server: {
+          onAfterBuild: async (context) => {
+            hookCalled = true
+            hookContext = context
+          }
         }
       }
 
@@ -304,16 +312,20 @@ describe('Coralite', () => {
 
       const plugin = {
         name: 'test-plugin',
-        onAfterBuild: async (context) => {
-          hookCalled = true
-          hookContext = context
+        server: {
+          onAfterBuild: async (context) => {
+            hookCalled = true
+            hookContext = context
+          }
         }
       }
 
       const errorPlugin = {
         name: 'error-plugin',
-        onAfterPageRender: async () => {
-          throw new Error('Test Error')
+        server: {
+          onAfterPageRender: async () => {
+            throw new Error('Test Error')
+          }
         }
       }
 
@@ -365,8 +377,10 @@ describe('Bug Fix: Preserving recursive tokens', () => {
   it('preserves state context into child components nested dependencies', async () => {
     const parentPlugin = {
       name: 'parent-plugin',
-      onPageSet: async ({ state }) => {
-        state.special_value = 'i-am-preserved'
+      server: {
+        onPageSet: async ({ state }) => {
+          state.special_value = 'i-am-preserved'
+        }
       }
     }
 
@@ -414,9 +428,11 @@ export default defineComponent({
   it('allows plugins to inject state via onBeforeComponentRender', async () => {
     const plugin = {
       name: 'inject-plugin',
-      onBeforeComponentRender: async ({ state, componentId }) => {
-        if (componentId === 'test-comp') {
-          state.injected = 'plugin-value'
+      server: {
+        onBeforeComponentRender: async ({ state, componentId }) => {
+          if (componentId === 'test-comp') {
+            state.injected = 'plugin-value'
+          }
         }
       }
     }
@@ -439,17 +455,19 @@ export default defineComponent({
   it('allows plugins to mutate AST via onAfterComponentRender', async () => {
     const plugin = {
       name: 'mutate-plugin',
-      onAfterComponentRender: async ({ result, componentId }) => {
-        if (componentId === 'test-comp') {
-          result.children.push({
-            type: 'tag',
-            name: 'span',
-            attribs: { id: 'extra' },
-            children: [{
-              type: 'text',
-              data: 'extra-node'
-            }]
-          })
+      server: {
+        onAfterComponentRender: async ({ result, componentId }) => {
+          if (componentId === 'test-comp') {
+            result.children.push({
+              type: 'tag',
+              name: 'span',
+              attribs: { id: 'extra' },
+              children: [{
+                type: 'text',
+                data: 'extra-node'
+              }]
+            })
+          }
         }
       }
     }

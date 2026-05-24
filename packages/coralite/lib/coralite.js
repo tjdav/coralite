@@ -172,54 +172,56 @@ export function Coralite ({
   for (let i = 0; i < plugins.length; i++) {
     const plugin = plugins[i]
 
-    // set plugin method
-    if (plugin.exports !== undefined) {
-      source.plugins[plugin.name] = plugin.exports
-    }
-
-    // queue any components provided by the plugin to be registered.
-    if (plugin.components && Array.isArray(plugin.components)) {
-      for (let i = 0; i < plugin.components.length; i++) {
-        this._plugins.components.push(plugin.components[i])
+    if (plugin.server) {
+      // set plugin method
+      if (plugin.server.exports !== undefined) {
+        source.plugins[plugin.name] = plugin.server.exports
       }
-    }
 
-    // add the plugin's hooks to the appropriate Coralite hook lists.
-    if (plugin.onPageSet) {
-      this._addPluginHook('onPageSet', plugin.onPageSet)
-    }
-    if (plugin.onPageDelete) {
-      this._addPluginHook('onPageDelete', plugin.onPageDelete)
-    }
-    if (plugin.onPageUpdate) {
-      this._addPluginHook('onPageUpdate', plugin.onPageUpdate)
-    }
-    if (plugin.onComponentSet) {
-      this._addPluginHook('onComponentSet', plugin.onComponentSet)
-    }
-    if (plugin.onComponentDelete) {
-      this._addPluginHook('onComponentDelete', plugin.onComponentDelete)
-    }
-    if (plugin.onComponentUpdate) {
-      this._addPluginHook('onComponentUpdate', plugin.onComponentUpdate)
-    }
-    if (plugin.onBeforePageRender) {
-      this._addPluginHook('onBeforePageRender', plugin.onBeforePageRender)
-    }
-    if (plugin.onAfterPageRender) {
-      this._addPluginHook('onAfterPageRender', plugin.onAfterPageRender)
-    }
-    if (plugin.onBeforeComponentRender) {
-      this._addPluginHook('onBeforeComponentRender', plugin.onBeforeComponentRender)
-    }
-    if (plugin.onAfterComponentRender) {
-      this._addPluginHook('onAfterComponentRender', plugin.onAfterComponentRender)
-    }
-    if (plugin.onBeforeBuild) {
-      this._addPluginHook('onBeforeBuild', plugin.onBeforeBuild)
-    }
-    if (plugin.onAfterBuild) {
-      this._addPluginHook('onAfterBuild', plugin.onAfterBuild)
+      // queue any components provided by the plugin to be registered.
+      if (plugin.server.components && Array.isArray(plugin.server.components)) {
+        for (let j = 0; j < plugin.server.components.length; j++) {
+          this._plugins.components.push(plugin.server.components[j])
+        }
+      }
+
+      // add the plugin's hooks to the appropriate Coralite hook lists.
+      if (plugin.server.onPageSet) {
+        this._addPluginHook('onPageSet', plugin.server.onPageSet)
+      }
+      if (plugin.server.onPageDelete) {
+        this._addPluginHook('onPageDelete', plugin.server.onPageDelete)
+      }
+      if (plugin.server.onPageUpdate) {
+        this._addPluginHook('onPageUpdate', plugin.server.onPageUpdate)
+      }
+      if (plugin.server.onComponentSet) {
+        this._addPluginHook('onComponentSet', plugin.server.onComponentSet)
+      }
+      if (plugin.server.onComponentDelete) {
+        this._addPluginHook('onComponentDelete', plugin.server.onComponentDelete)
+      }
+      if (plugin.server.onComponentUpdate) {
+        this._addPluginHook('onComponentUpdate', plugin.server.onComponentUpdate)
+      }
+      if (plugin.server.onBeforePageRender) {
+        this._addPluginHook('onBeforePageRender', plugin.server.onBeforePageRender)
+      }
+      if (plugin.server.onAfterPageRender) {
+        this._addPluginHook('onAfterPageRender', plugin.server.onAfterPageRender)
+      }
+      if (plugin.server.onBeforeComponentRender) {
+        this._addPluginHook('onBeforeComponentRender', plugin.server.onBeforeComponentRender)
+      }
+      if (plugin.server.onAfterComponentRender) {
+        this._addPluginHook('onAfterComponentRender', plugin.server.onAfterComponentRender)
+      }
+      if (plugin.server.onBeforeBuild) {
+        this._addPluginHook('onBeforeBuild', plugin.server.onBeforeBuild)
+      }
+      if (plugin.server.onAfterBuild) {
+        this._addPluginHook('onAfterBuild', plugin.server.onAfterBuild)
+      }
     }
 
     // register client-side plugin if provided
@@ -2155,9 +2157,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
         context: referencingModule.context
       })
     } else if (specifier === 'coralite') {
-      let coraliteExports = 'const context = globalThis.__coralite_context__;\n'
-      coraliteExports += 'const coralite = { ...context, defineComponent: globalThis.__coralite_define_component__ };\n'
-      coraliteExports += 'export default coralite;\n'
+      let coraliteExports = 'const context = globalThis.__coralite_context__; export default context;'
 
       for (const key in context) {
         if (Object.prototype.hasOwnProperty.call(context, key)) {
@@ -2165,10 +2165,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
         }
       }
 
-      // Add defineComponent export if it's not already in context
-      if (!context.defineComponent) {
-        coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
-      }
+      coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
 
       return new SourceTextModule(coraliteExports, {
         context: referencingModule.context
@@ -2245,6 +2242,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
   const context = {
     state: state || {},
     page,
+    root,
     module,
     id: contextId,
     renderContext,
@@ -2256,7 +2254,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
   renderContext.source.currentSourceContextId = contextId
   renderContext.source.contextInstances[contextId] = context
 
-  const boundDefineComponent = (options) => this._defineComponent(options, context, root)
+  const boundDefineComponent = (options) => this._defineComponent(options, context)
 
   // Protect fundamental constructors from being extracted and polluting the context realm
   const standardBuiltIns = new Set(['Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Math', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt', 'BigInt64Array', 'BigUint64Array', 'Symbol', 'Infinity', 'NaN', 'undefined', 'globalThis', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'escape', 'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'unescape'])
@@ -2335,6 +2333,7 @@ Coralite.prototype._evaluateProduction = async function ({
   const context = {
     state: state || {},
     page,
+    root,
     module,
     id: contextId,
     renderContext,
@@ -2380,13 +2379,13 @@ Coralite.prototype._evaluateProduction = async function ({
       }
 
       if (isCoralite) {
-        const coraliteExports = {
-          ...context,
-          defineComponent: (options) => this._defineComponent(options, context, root)
-        }
         return {
-          ...coraliteExports,
-          default: coraliteExports
+          ...context,
+          defineComponent: (options) => this._defineComponent(options, context),
+          default: {
+            ...context,
+            defineComponent: (options) => this._defineComponent(options, context)
+          }
         }
       }
 
@@ -2667,10 +2666,9 @@ Coralite.prototype._processTokenValue = async function (value, context) {
  * @internal
  * @param {Object} options - Configuration options for the component
  * @param {Object} context - The evaluation context
- * @param {CoraliteElement} root - The root element
  * @returns {Promise<Object>} A promise resolving to the module state associated with this component.
  */
-Coralite.prototype._defineComponent = async function (options, context, root) {
+Coralite.prototype._defineComponent = async function (options, context) {
   const {
     attributes,
     data,
@@ -2681,7 +2679,8 @@ Coralite.prototype._defineComponent = async function (options, context, root) {
 
   const {
     state: initialState,
-    module
+    module,
+    root
   } = context
 
   // Validate attributes
@@ -2733,8 +2732,7 @@ Coralite.prototype._defineComponent = async function (options, context, root) {
   }
 
   if (typeof data === 'function') {
-    const { root: _, ...dataContext } = context
-    const dataResult = await data(dataContext)
+    const dataResult = await data(context)
     if (dataResult) {
       state.__script__.data = dataResult
       Object.assign(state, dataResult)

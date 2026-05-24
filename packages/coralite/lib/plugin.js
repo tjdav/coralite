@@ -19,20 +19,6 @@ function validateNonEmptyString (value, paramName) {
 }
 
 /**
- * Validates that a value is a function (or undefined/null)
- * @param {*} value - Value to validate
- * @param {string} paramName - Parameter name for error messages
- * @throws {Error} If value is defined but not a function
- */
-function validateOptionalFunction (value, paramName) {
-  if (value != null && typeof value !== 'function') {
-    throw new Error(
-      `Coralite plugin validation failed: "${paramName}" must be a function, received ${typeof value}`
-    )
-  }
-}
-
-/**
  * Validates that a value is an array of strings (or empty array)
  * @param {*} value - Value to validate
  * @param {string} paramName - Parameter name for error messages
@@ -80,16 +66,18 @@ function processComponents (path) {
 
 /**
  * Creates a new Coralite plugin instance based on provided configuration options.
- * @param {CoralitePlugin & { components?: string[] }} options - Plugin configuration object
- * @returns {CoralitePlugin & { components: HTMLData[] }} A configured plugin instance ready to be registered with Coralite
+ * @param {CoralitePlugin & { server?: { components?: string[] } }} options - Plugin configuration object
+ * @returns {CoralitePlugin} A configured plugin instance ready to be registered with Coralite
  * @example
  * // Basic plugin
  * const myPlugin = definePlugin({
  *   name: 'my-plugin',
- *   exports: {
- *     getData: (context) => (options) => {
- *       // Plugin logic implementation
- *       return { ...context.state, custom: 'data', ...options }
+ *   server: {
+ *     exports: {
+ *       getData: (context) => (options) => {
+ *         // Plugin logic implementation
+ *         return { ...context.state, custom: 'data', ...options }
+ *       }
  *     }
  *   }
  * })
@@ -98,48 +86,26 @@ function processComponents (path) {
  * // Plugin with components and metadata
  * const advancedPlugin = definePlugin({
  *   name: 'advanced-plugin',
- *   exports: {
- *     process: (context) => async (options) => {
- *       // Async plugin logic
- *       return { ...context.state, processed: true, ...options }
+ *   server: {
+ *     exports: {
+ *       process: (context) => async (options) => {
+ *         // Async plugin logic
+ *         return { ...context.state, processed: true, ...options }
+ *       }
+ *     },
+ *     components: ['src/components/header.html', 'src/components/footer.html'],
+ *     onPageSet: async (data) => {
+ *       console.log('Page created:', data.path.pathname)
  *     }
- *   },
- *   components: ['src/components/header.html', 'src/components/footer.html'],
- *   onPageSet: async (data) => {
- *     console.log('Page created:', data.path.pathname)
  *   }
- * })
- *
- * @example
- * // Plugin with caching disabled
- * const devPlugin = definePlugin({
- *   name: 'dev-plugin',
- *   exports: {
- *     getValues: (context) => () => context.state
- *   },
- *   components: ['src/components/dev.html'],
  * })
  */
 export function definePlugin ({
   name,
-  exports,
-  onPageSet,
-  onPageUpdate,
-  onPageDelete,
-  onComponentSet,
-  onComponentUpdate,
-  onComponentDelete,
-  onBeforePageRender,
-  onAfterPageRender,
-  onBeforeComponentRender,
-  onAfterComponentRender,
-  onBeforeBuild,
-  onAfterBuild,
-  client,
   server,
-  components
+  client
 }) {
-  // Validate required parameters
+  validateNonEmptyString(name, 'name')
 
   let callerDir
   if (client != null && client.rootDir == null) {
@@ -155,22 +121,36 @@ export function definePlugin ({
     }
   }
 
-  validateNonEmptyString(name, 'name')
+  // Validate server plugin if provided
+  if (server != null) {
+    if (typeof server !== 'object') {
+      throw new Error(
+        `Coralite plugin validation failed: "server" must be an object, received ${typeof server}`
+      )
+    }
 
-  // Validate optional parameters
-  validateOptionalFunction(onPageSet, 'onPageSet')
-  validateOptionalFunction(onPageUpdate, 'onPageUpdate')
-  validateOptionalFunction(onPageDelete, 'onPageDelete')
-  validateOptionalFunction(onComponentSet, 'onComponentSet')
-  validateOptionalFunction(onComponentUpdate, 'onComponentUpdate')
-  validateOptionalFunction(onComponentDelete, 'onComponentDelete')
-  validateOptionalFunction(onBeforePageRender, 'onBeforePageRender')
-  validateOptionalFunction(onAfterPageRender, 'onAfterPageRender')
-  validateOptionalFunction(onBeforeComponentRender, 'onBeforeComponentRender')
-  validateOptionalFunction(onAfterComponentRender, 'onAfterComponentRender')
-  validateOptionalFunction(onBeforeBuild, 'onBeforeBuild')
-  validateOptionalFunction(onAfterBuild, 'onAfterBuild')
-  validateOptionalFunction(server, 'server')
+    server = { ...server }
+
+    // Process component files with error handling
+    if (server.components) {
+      validateStringArray(server.components, 'server.components')
+
+      const componentHTMLData = []
+      try {
+        // Process all components
+        for (const path of server.components) {
+          componentHTMLData.push(processComponents(path))
+        }
+        // @ts-ignore
+        server.components = componentHTMLData
+      } catch (error) {
+        // Enhance error message with plugin context
+        throw new Error(
+          `Coralite plugin "${name}" failed to load components: ${error.message}`
+        )
+      }
+    }
+  }
 
   // Validate client plugin if provided
   if (client != null) {
@@ -197,47 +177,10 @@ export function definePlugin ({
     client.rootDir = client.rootDir || callerDir
   }
 
-  // Process component files with error handling
-  /** @type {HTMLData[]} */
-  const componentHTMLData = []
-
-  // Validate components
-  if (components) {
-    validateStringArray(components, 'components')
-
-    if (components.length > 0) {
-      try {
-        // Process all components
-        for (const path of components) {
-          componentHTMLData.push(processComponents(path))
-        }
-      } catch (error) {
-        // Enhance error message with plugin context
-        throw new Error(
-          `Coralite plugin "${name}" failed to load components: ${error.message}`
-        )
-      }
-    }
-  }
-
   // Create the plugin object with all configured state
   return {
     name,
-    exports,
-    onPageSet,
-    onPageUpdate,
-    onPageDelete,
-    onComponentSet,
-    onComponentUpdate,
-    onComponentDelete,
-    onBeforePageRender,
-    onAfterPageRender,
-    onBeforeComponentRender,
-    onAfterComponentRender,
-    onBeforeBuild,
-    onAfterBuild,
-    components: componentHTMLData,
-    client,
-    server
+    server,
+    client
   }
 }

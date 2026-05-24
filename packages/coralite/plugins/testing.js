@@ -26,26 +26,28 @@ function traverseAndAddTestId (children) {
 
 export const testingPlugin = definePlugin({
   name: 'testing',
-  onBeforeComponentRender: ({ instanceId, refs }) => {
-    for (let i = 0; i < refs.length; i++) {
-      const ref = refs[i]
-      const uniqueRefValue = `${instanceId}__${ref.name}`
+  server: {
+    onBeforeComponentRender: ({ instanceId, refs }) => {
+      for (let i = 0; i < refs.length; i++) {
+        const ref = refs[i]
+        const uniqueRefValue = `${instanceId}__${ref.name}`
 
-      if (ref.element.attribs) {
-        ref.element.attribs['data-testid'] = uniqueRefValue
+        if (ref.element.attribs) {
+          ref.element.attribs['data-testid'] = uniqueRefValue
+        }
       }
-    }
-  },
-  onComponentSet: (component) => {
-    const children = component?.template?.children
-    if (children) {
-      traverseAndAddTestId(children)
-    }
-  },
-  onPageSet: ({ elements }) => {
-    const children = elements?.root?.children
-    if (children) {
-      traverseAndAddTestId(children)
+    },
+    onComponentSet: (component) => {
+      const children = component?.template?.children
+      if (children) {
+        traverseAndAddTestId(children)
+      }
+    },
+    onPageSet: ({ elements }) => {
+      const children = elements?.root?.children
+      if (children) {
+        traverseAndAddTestId(children)
+      }
     }
   }
 })

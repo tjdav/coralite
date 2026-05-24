@@ -33,13 +33,10 @@
  * @typedef {Object} CoraliteScriptContext
  * @property {string} id - Unique instance identifier
  * @property {string} instanceId - Unique instance identifier
- * @property {string} [componentId] - component identifier for shared functions
- * @property {CoralitePath & CoraliteFilePath} [path] - Component AST
- * @property {Object.<string, CoraliteModuleDefinition>} [state] - Instance state
- * @property {CoralitePage} [page] - The global page object
- * @property {Object.<string, string>} [refs] - Instance refs
- * @property {Object} [state] - Reactive state proxy.
- * @property {AbortSignal} [signal] - Lifecycle abort signal for unmount events (null for declarative components).
+ * @property {HTMLElement} root - The custom element instance (available in browser runtime)
+ * @property {Object.<string, CoraliteModuleDefinition>} state - Instance state
+ * @property {Function} refs - Instance refs
+ * @property {AbortSignal} signal - Lifecycle abort signal for unmount events (null for declarative components).
  */
 
 /**

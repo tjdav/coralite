@@ -6,18 +6,20 @@ import { definePlugin } from '#lib'
 
 export const refsPlugin = definePlugin({
   name: 'refs',
-  onBeforeComponentRender: ({ state, instanceId, refs }) => {
-    for (let i = 0; i < refs.length; i++) {
-      const ref = refs[i]
-      const uniqueRefValue = `${instanceId}__${ref.name}`
+  server: {
+    onBeforeComponentRender: ({ state, instanceId, refs }) => {
+      for (let i = 0; i < refs.length; i++) {
+        const ref = refs[i]
+        const uniqueRefValue = `${instanceId}__${ref.name}`
 
-      // Update the ref attribute value to be unique
-      if (ref.element && ref.element.attribs) {
-        ref.element.attribs.ref = uniqueRefValue
+        // Update the ref attribute value to be unique
+        if (ref.element && ref.element.attribs) {
+          ref.element.attribs.ref = uniqueRefValue
+        }
+
+        // inject flat token into component state
+        state[`ref_${ref.name}`] = uniqueRefValue
       }
-
-      // inject flat token into component state
-      state[`ref_${ref.name}`] = uniqueRefValue
     }
   },
   client: {
@@ -28,7 +30,7 @@ export const refsPlugin = definePlugin({
        * @returns {ScriptPluginHelperLocalInstance}
        */
       refs () {
-        return ({ state }) => {
+        return ({ state, root }) => {
           return function (id) {
             const refId = state[`ref_${id}`]
 
@@ -36,7 +38,7 @@ export const refsPlugin = definePlugin({
               return null
             }
 
-            return document.querySelector(`[ref="${refId}"]`)
+            return root.querySelector(`[ref="${refId}"]`)
           }
         }
       }

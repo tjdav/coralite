@@ -84,28 +84,30 @@ async function extractMetadata (context) {
 
 export const metadataPlugin = definePlugin({
   name: 'metadata',
-  async onPageSet ({ elements, state, page, data, app }) {
-    await extractMetadata({
-      elements,
-      state,
-      page,
-      data,
-      app
-    })
-  },
-  async onPageUpdate ({ elements, page, newValue, app }) {
-    await extractMetadata({
-      elements,
-      state: newValue.result.state,
-      page,
-      data: newValue,
-      app
-    })
+  server: {
+    async onPageSet ({ elements, state, page, data, app }) {
+      await extractMetadata({
+        elements,
+        state,
+        page,
+        data,
+        app
+      })
+    },
+    async onPageUpdate ({ elements, page, newValue, app }) {
+      await extractMetadata({
+        elements,
+        state: newValue.result.state,
+        page,
+        data: newValue,
+        app
+      })
 
-    return {
-      newValue: {
-        result: {
-          page
+      return {
+        newValue: {
+          result: {
+            page
+          }
         }
       }
     }

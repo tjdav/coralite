@@ -6,14 +6,16 @@ describe('definePlugin', () => {
   it('should validate basic plugin state', () => {
     const plugin = definePlugin({
       name: 'test-plugin',
-      exports: {
-        test: (context) => () => {
+      server: {
+        exports: {
+          test: (context) => () => {
+          }
         }
       }
     })
 
     assert.strictEqual(plugin.name, 'test-plugin')
-    assert.strictEqual(typeof plugin.exports, 'object')
-    assert.strictEqual(typeof plugin.exports.test, 'function')
+    assert.strictEqual(typeof plugin.server.exports, 'object')
+    assert.strictEqual(typeof plugin.server.exports.test, 'function')
   })
 })

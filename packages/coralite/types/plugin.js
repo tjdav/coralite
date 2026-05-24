@@ -139,8 +139,7 @@
  */
 
 /**
- * @typedef {Object} CoralitePlugin
- * @property {string} name - Unique identifier/name of the plugin
+ * @typedef {Object} CoralitePluginServer
  * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Two-Phase Curried functions. Phase 1 receives the explicit context, Phase 2 receives the executable arguments.
  * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
@@ -155,29 +154,20 @@
  * @property {CoralitePluginAfterComponentRenderCallback} [onAfterComponentRender] - Async callback triggered after component render
  * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
  * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
+ */
+
+/**
+ * @typedef {Object} CoralitePlugin
+ * @property {string} name - Unique identifier/name of the plugin
+ * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
- * @property {Function} [server] - Server extension hook
  */
 
 /**
  * @typedef {Object} CoralitePluginInstance
  * @property {string} name - Unique identifier/name of the plugin
- * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Two-Phase Curried functions. Phase 1 receives the explicit context, Phase 2 receives the executable arguments.
- * @property {HTMLData[]} [components=[]] - List of custom components to be included in the coralite instance
- * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
- * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
- * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
- * @property {CoralitePluginComponentCallback} [onComponentSet] - Async callback triggered when a component is created
- * @property {CoralitePluginComponentCallback} [onComponentUpdate] - Async callback triggered when a component is updated
- * @property {CoralitePluginComponentCallback} [onComponentDelete] - Async callback triggered when a component is deleted
- * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
- * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
- * @property {CoralitePluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Async callback triggered before component render
- * @property {CoralitePluginAfterComponentRenderCallback} [onAfterComponentRender] - Async callback triggered after component render
- * @property {CoralitePluginBeforeBuildCallback} [onBeforeBuild] - Async callback triggered before build starts
- * @property {CoralitePluginAfterBuildCallback} [onAfterBuild] - Async callback triggered when a build completes
+ * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
- * @property {Function} [server] - Server extension hook
  */
 
 export default {}

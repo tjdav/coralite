@@ -64,6 +64,7 @@ export class CoraliteElement extends HTMLElement {
     this._bindings = []
     this._isUpdatePending = false
     this._observer = null
+    this._clientContextGetter = null
     this.componentOptions = null
   }
 
@@ -72,6 +73,7 @@ export class CoraliteElement extends HTMLElement {
    */
   connectedCallback () {
     this._abortController = new AbortController()
+
     if (!this.componentOptions) {
       return
     }
@@ -293,7 +295,6 @@ export class CoraliteElement extends HTMLElement {
       instanceId: this._instanceId,
       state: this._state,
       root: this,
-      refs: (id) => this._state[id] || this.querySelector(`[ref="${this._state['ref_' + id] || id}"]`),
       signal: this._abortController.signal
     }
 

@@ -11,7 +11,7 @@ describe('staticAssetPlugin', () => {
 
     await assert.rejects(
       async () => {
-        await plugin.onBeforeBuild({ app: { options: { output: '/dist' } } })
+        await plugin.server.onBeforeBuild({ app: { options: { output: '/dist' } } })
       },
       /staticAssetPlugin requires assets to have a dest property\./
     )
@@ -25,7 +25,7 @@ describe('staticAssetPlugin', () => {
 
     await assert.rejects(
       async () => {
-        await plugin.onBeforeBuild({ app: { options: { output: '/dist' } } })
+        await plugin.server.onBeforeBuild({ app: { options: { output: '/dist' } } })
       },
       /staticAssetPlugin requires assets to have pkg and path state when src is not provided\./
     )
