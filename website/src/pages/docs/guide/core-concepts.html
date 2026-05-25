@@ -17,7 +17,7 @@
 
     <ul>
       <li><strong>Smart State:</strong> Your component's logic is responsible for preparing a flat, unified <code>state</code> object. Whether the data comes from an HTML attribute, a database query on the server, or a derived calculation, it all ends up in a single reactive proxy.</li>
-      <li><strong>Dumb Template:</strong> HTML templates are strictly declarative. They do not support JavaScript logic, loops, or complex expressions. They simply use <code>{{ state_key }}</code> placeholders. This allows Coralite to perform lightning-fast updates without the overhead of a diffing engine.</li>
+      <li><strong>Dumb Template:</strong> HTML templates are strictly declarative. They do not support JavaScript logic, loops, or complex expressions (e.g., <code>{{ user.name }}</code> or <code>{{ count + 1 }}</code> are forbidden). They simply use <code>{{ state_key }}</code> placeholders for flat keys. This allows Coralite to perform lightning-fast updates without the overhead of a diffing engine.</li>
     </ul>
 
     <coralite-heading level="h2" text="The Reactivity Engine"></coralite-heading>

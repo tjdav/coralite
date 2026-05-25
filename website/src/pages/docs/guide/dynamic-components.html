@@ -14,7 +14,7 @@
 
     <p>While <a href="./static-components.html">Static Components</a> are great for simple layouts, modern web development often requires more power. When your component needs data fetching, reactive state, or client-side interactivity, you must create a <strong>Dynamic Component</strong>.</p>
 
-    <p>Dynamic components are powered by the <code>defineComponent</code> plugin. They follow the <strong>Smart State, Dumb Template</strong> philosophy, where logic is strictly separated into four isolated blocks.</p>
+    <p>Dynamic components are powered by the <code>defineComponent</code> plugin. They follow the <strong>Smart State, Dumb Template</strong> philosophy, where logic is strictly separated into four isolated blocks. <strong>Note:</strong> All component names MUST contain a hyphen (e.g., <code>&lt;my-component&gt;</code>).</p>
 
     <coralite-alert type="warning">
       <strong>⚠️ Warning: AST Splicing (Host Tag Removal)</strong>
@@ -47,7 +47,7 @@
           getters: {
             //...
           },
-          script: ({ state, signal, refs, ...pluginContext }) => {
+          script: ({ state, signal, refs, root, instanceId, ...pluginContext }) => {
             // ...
           }
         })
@@ -87,7 +87,7 @@ getters: {
     <coralite-heading level="h3" text="4. Script (Client Controller)"></coralite-heading>
     <p>The <code>script</code> block is where interactivity lives. It runs in the browser and has full read/write access to the state.</p>
     <coralite-code-highlight language="javascript">
-script: ({ state, signal, refs, ...pluginContext }) => {
+script: ({ state, signal, refs, root, instanceId, ...pluginContext }) => {
   const btn = refs('my-btn');
   btn.addEventListener('click', () => {
     state.count++; // Mutating state triggers a re-render!

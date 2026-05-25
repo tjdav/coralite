@@ -869,7 +869,7 @@
           <tr>
             <td><code>instanceId</code></td>
             <td><code>string</code></td>
-            <td>Unique instance identifier.</td>
+            <td>Unique instance identifier (e.g., <code>my-comp-0</code>).</td>
           </tr>
           <tr>
             <td><code>componentId</code></td>
@@ -879,17 +879,17 @@
           <tr>
             <td><code>state</code></td>
             <td><code>Proxy</code></td>
-            <td>The unified reactive state.</td>
+            <td>The <strong>Read/Write</strong> unified reactive state.</td>
           </tr>
           <tr>
             <td><code>root</code></td>
             <td><code>HTMLElement</code></td>
-            <td>The custom element instance (Light DOM).</td>
+            <td>The physical DOM element instance of the component.</td>
           </tr>
           <tr>
             <td><code>signal</code></td>
             <td><code>AbortSignal</code></td>
-            <td>Used for cleanup on unmount.</td>
+            <td>Used for cleaning up event listeners and aborting fetches on unmount.</td>
           </tr>
           <tr>
             <td><code>page</code></td>
@@ -1432,7 +1432,9 @@
     <p>Async callback for <code>onAfterPageRender</code>.</p>
     <coralite-code-highlight language="JavaScript">/**
         * @callback CoralitePluginAfterPageRenderCallback
-        * @param {CoraliteResult} result - The rendered page result
+        * @param {Object} param
+        * @param {CoraliteResult} param.result - The rendered page result
+        * @param {Object} param.session - The page build session
         * @returns {CoraliteResult | CoraliteResult[] | void}
         */</coralite-code-highlight>
   

@@ -25,7 +25,7 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
 
     <coralite-heading level="h2" text="Options Object (DefineComponentOptions)"></coralite-heading>
 
-    <p>The <code>defineComponent</code> function accepts a single configuration object with the following isolated blocks:</p>
+    <p>The <code>defineComponent</code> function accepts a single configuration object with the following isolated blocks. <strong>Note:</strong> All components MUST have a hyphen in their name (e.g., <code>&lt;my-component&gt;</code>).</p>
 
     <coralite-table>
       <tr slot="head">
@@ -99,7 +99,7 @@ getters: {
     <p>The <code>script</code> block is the controller for your component in the browser. This is where you add event listeners and mutate state.</p>
 
     <coralite-code-highlight language="javascript">
-script: ({ state, signal, refs, ...pluginContext }) => {
+script: ({ state, signal, refs, root, instanceId, ...pluginContext }) => {
     const btn = refs('loadMoreBtn');
     
     btn.addEventListener('click', () => {
@@ -131,6 +131,11 @@ script: ({ state, signal, refs, ...pluginContext }) => {
         <td><code>page</code></td>
         <td><code>CoralitePage</code></td>
         <td>Static environment object (URL, file, meta).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>root</code></td>
+        <td><code>HTMLElement</code></td>
+        <td>The physical DOM element instance of the component.</td>
       </tr>
       <tr slot="body">
         <td><code>instanceId</code></td>
