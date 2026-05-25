@@ -737,7 +737,7 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
       if (!customElement.attribs) {
         customElement.attribs = {}
       }
-      customElement.attribs.cid = contextId
+      customElement.attribs['data-cid'] = contextId
 
       mappedRenderContextObject.componentTags.add(customElement.name)
     }
@@ -969,14 +969,10 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
         delete chunkManifest['chunk-shared']
 
         const base = this.options.baseURL.endsWith('/') ? this.options.baseURL : this.options.baseURL + '/'
-
         const scriptContent = generateClientRuntime({
           base,
           sharedChunkPath: scriptResult.manifest['chunk-shared'],
-          chunkManifest,
-          instances,
-          mode: this.options.mode,
-          renderContext: mappedRenderContextObject
+          chunkManifest
         })
 
         const hydrationData = {}
@@ -1956,7 +1952,7 @@ Coralite.prototype.createComponentElement = async function ({
       if (!customElement.attribs) {
         customElement.attribs = {}
       }
-      customElement.attribs.cid = childContextId
+      customElement.attribs['data-cid'] = childContextId
 
       renderContext.componentTags.add(customElement.name)
     }
@@ -2086,7 +2082,7 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
               if (!node.attribs) {
                 node.attribs = {}
               }
-              node.attribs.cid = slotContextId
+              node.attribs['data-cid'] = slotContextId
 
               renderContext.componentTags.add(node.name)
             }
@@ -2095,7 +2091,13 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
       }
     }
 
-    slot.element.parent.children.splice(slotIndex, 1, ...slotNodes)
+    slot.element.children = slotNodes
+
+    for (let j = 0; j < slotNodes.length; j++) {
+      if (slotNodes[j]) {
+        slotNodes[j].parent = slot.element
+      }
+    }
   }
 }
 
@@ -2646,7 +2648,7 @@ Coralite.prototype._processTokenValue = async function (value, context) {
       if (!customElement.attribs) {
         customElement.attribs = {}
       }
-      customElement.attribs.cid = cid
+      customElement.attribs['data-cid'] = cid
 
       renderContext.componentTags.add(customElement.name)
     }

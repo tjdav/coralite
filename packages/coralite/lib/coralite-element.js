@@ -78,11 +78,35 @@ export class CoraliteElement extends HTMLElement {
       return
     }
 
-    this._instanceId = this.getAttribute('cid') || `${this.componentOptions.componentId}-${Math.random().toString(36).substr(2, 9)}`
+    const isImperative = !this.hasAttribute('data-cid')
+
+    if (isImperative && this.componentOptions.templateHTML) {
+      const originalLightDOM = Array.from(this.childNodes)
+      this.innerHTML = this.componentOptions.templateHTML
+
+      if (originalLightDOM.length > 0) {
+        const slots = this.querySelectorAll('slot')
+        slots.forEach(slot => {
+          const slotName = slot.getAttribute('name') || 'default'
+          const matchingNodes = originalLightDOM.filter(node => {
+            // @ts-ignore
+            const nodeSlot = (node.getAttribute && node.getAttribute('slot')) || 'default'
+            return nodeSlot === slotName
+          })
+          matchingNodes.forEach(n => slot.appendChild(n))
+        })
+      }
+    }
+
+    this._instanceId = this.getAttribute('data-cid') || `${this.componentOptions.componentId}-${Math.random().toString(36).substring(2, 9)}`
+
+    if (isImperative) {
+      this.setAttribute('data-cid', this._instanceId)
+    }
 
     this._setupState()
     this._setupBindings()
-    this._init()
+    this._init(isImperative)
   }
 
   /**
@@ -96,7 +120,7 @@ export class CoraliteElement extends HTMLElement {
    *
    */
   attributeChangedCallback (name, oldVal, newVal) {
-    if (!this._state || oldVal === newVal || name === 'cid') {
+    if (!this._state || oldVal === newVal || name === 'data-cid') {
       return
     }
     const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
@@ -126,7 +150,7 @@ export class CoraliteElement extends HTMLElement {
 
     // Initial attributes
     for (const attr of this.attributes) {
-      if (attr.name === 'cid') {
+      if (attr.name === 'data-cid') {
         continue
       }
       const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
@@ -285,12 +309,48 @@ export class CoraliteElement extends HTMLElement {
         }
       }
     }
+
+    this._processSlots()
   }
 
   /**
    *
    */
-  async _init () {
+  _processSlots () {
+    const slots = this.componentOptions.slots
+    if (!slots || Object.keys(slots).length === 0) {
+      return
+    }
+
+    const slotElements = this.querySelectorAll('slot')
+    slotElements.forEach(slotEl => {
+      const slotName = slotEl.getAttribute('name') || 'default'
+      const slotFn = slots[slotName]
+
+      if (slotFn) {
+        if (!slotEl._originalNodes) {
+          slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
+        }
+
+        const result = slotFn(slotEl._originalNodes, this._state)
+
+        if (typeof result === 'string') {
+          if (slotEl.setHTMLUnsafe) {
+            slotEl.setHTMLUnsafe(result)
+          } else {
+            slotEl.innerHTML = result
+          }
+        } else if (Array.isArray(result)) {
+          slotEl.replaceChildren(...result)
+        }
+      }
+    })
+  }
+
+  /**
+   *
+   */
+  async _init (isImperative = false) {
     const localContext = {
       instanceId: this._instanceId,
       state: this._state,
@@ -301,15 +361,17 @@ export class CoraliteElement extends HTMLElement {
     if (typeof this._clientContextGetter === 'function') {
       const pluginContext = await this._clientContextGetter(localContext)
       Object.assign(localContext, pluginContext)
-    } else if (typeof window.__coralite_get_client_context === 'function') {
-      const pluginContext = await window.__coralite_get_client_context(localContext)
-      Object.assign(localContext, pluginContext)
     }
 
     if (this.componentOptions.script) {
       await this.componentOptions.script(localContext)
     }
-    this._scheduleUpdate()
+
+    if (isImperative) {
+      this._updateDOM()
+    } else {
+      this._scheduleUpdate()
+    }
   }
 }
 

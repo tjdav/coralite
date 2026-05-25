@@ -43,11 +43,26 @@ test.describe('Priority Architecture Tests', () => {
 
   test('Stripping: verify data() and node imports are removed from client bundle', async () => {
     const assetsDir = path.join(process.cwd(), '.coralite', 'assets', 'js')
-    const files = fs.readdirSync(assetsDir)
+
+    // Function to recursively read files in a directory
+    function getFiles (dir, files = []) {
+      const fileList = fs.readdirSync(dir)
+      for (const file of fileList) {
+        const name = path.join(dir, file)
+        if (fs.statSync(name).isDirectory()) {
+          getFiles(name, files)
+        } else {
+          files.push(name)
+        }
+      }
+      return files
+    }
+
+    const files = getFiles(assetsDir)
 
     let foundClientScript = false
-    for (const file of files) {
-      const content = fs.readFileSync(path.join(assetsDir, file), 'utf-8')
+    for (const filePath of files) {
+      const content = fs.readFileSync(filePath, 'utf-8')
       if (content.includes('Client script running')) {
         foundClientScript = true
         expect(content).not.toContain('node:fs')

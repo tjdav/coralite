@@ -5,8 +5,8 @@ import { simple as walkJS } from 'acorn-walk'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, findAndExtractImperativeComponents, astTransformer, addComponentAndDependencies, cleanAST, cleanValues, generateHydrationMap } from './utils.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname, relative } from 'node:path'
-import { createHash } from 'node:crypto'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
+import render from 'dom-serializer'
 
 /**
  * Script Manager for Coralite
@@ -351,13 +351,10 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }
   entryCodeParts.push('};\n')
 
-  // Resolve dom-serializer path using import.meta.resolve
-  const domSerializerPath = fileURLToPath(import.meta.resolve('dom-serializer'))
   const coraliteElementPath = fileURLToPath(import.meta.resolve('./coralite-element.js'))
 
-  entryCodeParts.push(`import render from ${JSON.stringify(domSerializerPath)};\n`)
   entryCodeParts.push(`import { createCoraliteClass } from ${JSON.stringify(coraliteElementPath)};\n`)
-  entryCodeParts.push('\nexport { getClientContext, getSetups, render, createCoraliteClass };\n')
+  entryCodeParts.push('\nexport { getClientContext, getSetups, createCoraliteClass };\n')
 
   const entryPoints = {
     'chunk-shared': entryCodeParts.join('').trimEnd()
@@ -380,7 +377,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       const nodeMap = new WeakMap()
       const state = { counter: 0 }
 
-      const templateAST = serialize(cleanAST(this.sharedFunctions[componentId].templateAST, nodeMap, state) || [])
+      cleanAST(this.sharedFunctions[componentId].templateAST, nodeMap, state)
+      const templateHTML = serialize(this.sharedFunctions[componentId].templateAST ? render(this.sharedFunctions[componentId].templateAST, { decodeEntities: false }) : '')
       const templateValues = serialize(cleanValues(this.sharedFunctions[componentId].templateValues, nodeMap) || {
         attributes: [],
         textNodes: [],
@@ -408,7 +406,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       componentEntryCode += `
 export default {
   componentId: "${componentId}",
-  templateAST: ${templateAST},
+  templateHTML: ${templateHTML},
   templateValues: ${templateValues},
   styles: ${styles},
   attributes: ${attributes},

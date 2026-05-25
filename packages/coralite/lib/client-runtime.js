@@ -9,25 +9,15 @@
  * @param {string} options.base - The base URL for assets.
  * @param {string} options.sharedChunkPath - The filename of the shared chunk.
  * @param {Object} options.chunkManifest - Manifest mapping component IDs to their chunk filenames.
- * @param {Object.<string, InstanceContext>} options.instances - Map of instance data.
- * @param {string} options.mode - Build mode ('development' or 'production').
- * @param {Object} [options.renderContext] - Build-time render context.
  * @returns {string} The generated JavaScript runtime.
  */
 export function generateClientRuntime ({
   base,
   sharedChunkPath,
-  chunkManifest,
-  instances,
-  mode,
-  renderContext
+  chunkManifest
 }) {
   return `
-import { getClientContext, getSetups, render, createCoraliteClass } from '${base}assets/js/${sharedChunkPath}';
-
-window.__coralite_get_client_context = getClientContext;
-window.__coralite_get_setups = getSetups;
-window.__coralite_render = render;
+import { getClientContext, getSetups, createCoraliteClass } from '${base}assets/js/${sharedChunkPath}';
 
 (async () => {
   if (!window.__coralite_ready__) {
@@ -54,8 +44,6 @@ window.__coralite_render = render;
     })();
     return loadCache[componentId];
   };
-
-  window.__coralite_load_component = loadComponent;
 
   const componentTags = Object.keys(componentManifest);
   const loadPromises = [];
