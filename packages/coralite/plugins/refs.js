@@ -42,7 +42,9 @@ export const refsPlugin = definePlugin({
             const refMap = hydrationMap.refs.find(r => r.name === ref.name)
             if (refMap) {
               const node = element.getNodeByPath(refMap.path)
+              // @ts-ignore
               if (node && node.setAttribute) {
+              // @ts-ignore
                 node.setAttribute('ref', uniqueRefValue)
               }
             }
