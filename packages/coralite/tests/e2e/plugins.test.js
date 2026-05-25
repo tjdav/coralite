@@ -13,7 +13,7 @@ test.describe('Plugins Extensibility', () => {
     const pluginData = page.getByTestId('plugin-component-0__pluginData')
     const text = await pluginData.textContent()
     expect(text).toContain('Global: global-state-123')
-    expect(text).toContain('Path: /plugins/')
+    expect(text).toContain('InstanceId: plugin-component-0')
     expect(text).toContain('Signal: true')
   })
 

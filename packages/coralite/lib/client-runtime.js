@@ -9,12 +9,14 @@
  * @param {string} options.base - The base URL for assets.
  * @param {string} options.sharedChunkPath - The filename of the shared chunk.
  * @param {Object} options.chunkManifest - Manifest mapping component IDs to their chunk filenames.
+ * @param {string[]} [options.declarativeTags=[]] - The declarative tags used.
  * @returns {string} The generated JavaScript runtime.
  */
 export function generateClientRuntime ({
   base,
   sharedChunkPath,
-  chunkManifest
+  chunkManifest,
+  declarativeTags = []
 }) {
   return `
 import { getClientContext, getSetups, createCoraliteClass, globalClientHooks } from '${base}assets/js/${sharedChunkPath}';
@@ -45,21 +47,25 @@ import { getClientContext, getSetups, createCoraliteClass, globalClientHooks } f
     return loadCache[componentId];
   };
 
-  const componentTags = Object.keys(componentManifest);
-  const loadPromises = [];
-  for (let i = 0; i < componentTags.length; i++) {
-    const tagName = componentTags[i];
-    if (tagName.includes('-')) {
-      if (document.querySelector(tagName)) {
-        loadPromises.push(loadComponent(tagName));
-      }
-    }
-  }
+  const declarativeTags = ${JSON.stringify(declarativeTags)};
+  const allTags = Object.keys(componentManifest);
+  const imperativeTags = allTags.filter(tag => !declarativeTags.includes(tag));
 
+  const loadPromises = declarativeTags.map(tagName => loadComponent(tagName));
   await Promise.all(loadPromises);
 
   if (typeof window.__coralite_resolve_ready__ === 'function') {
     window.__coralite_resolve_ready__();
+  }
+
+  if (imperativeTags.length > 0) {
+    const lazyLoad = () => imperativeTags.forEach(tagName => loadComponent(tagName));
+    
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(lazyLoad, { timeout: 500 });
+    } else {
+      setTimeout(lazyLoad, 1);
+    }
   }
 })();
 `.trim()

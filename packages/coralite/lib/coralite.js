@@ -651,7 +651,7 @@ Coralite.prototype._createExecutionError = function (error, module, moduleCompon
  * @param {string} [buildId] - The unique identifier for the build process.
  * @returns {Object}
  */
-Coralite.prototype._createSession = function (buildId) {
+Coralite.prototype._createRenderContext = function (buildId) {
   return {
     buildId,
     state: {},
@@ -697,26 +697,26 @@ Coralite.prototype._createSession = function (buildId) {
  * @param {CoraliteComponent & CoraliteComponentResult} mappedComponent - The compiled component instance
  * @param {CoraliteComponentResult} originalDocument - The original document mapping
  * @param {Object} state - Local component state
- * @param {Object} mappedSessionObject - Global rendering state
+ * @param {Object} mappedRenderContextObject - Global rendering state
  * @returns {Promise<void>} Resolves when the elements are processed
  */
-Coralite.prototype._processCustomElementsInPage = async function (mappedComponent, originalDocument, state, mappedSessionObject, pageContext) {
+Coralite.prototype._processCustomElementsInPage = async function (mappedComponent, originalDocument, state, mappedRenderContextObject, pageContext) {
   const customElementsList = mappedComponent.customElements || []
   for (let i = 0; i < customElementsList.length; i++) {
     const customElement = customElementsList[i]
 
-    const contextId = mappedSessionObject.generateId(customElement.name)
-    const currentProperties = mappedSessionObject.state[contextId] || {}
+    const contextId = mappedRenderContextObject.generateId(customElement.name)
+    const currentProperties = mappedRenderContextObject.state[contextId] || {}
 
     if (typeof customElement.attribs === 'object') {
-      mappedSessionObject.state[contextId] = {
+      mappedRenderContextObject.state[contextId] = {
         ...currentProperties,
         ...state,
         ...mappedComponent.state,
         ...customElement.attribs
       }
     } else {
-      mappedSessionObject.state[contextId] = {
+      mappedRenderContextObject.state[contextId] = {
         ...currentProperties,
         ...state,
         ...mappedComponent.state
@@ -725,13 +725,13 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
 
     const componentElement = await this.createComponentElement({
       id: customElement.name,
-      state: mappedSessionObject.state[contextId],
+      state: mappedRenderContextObject.state[contextId],
       element: customElement,
       page: pageContext || originalDocument.page,
       root: mappedComponent.root,
       contextId,
       index: i,
-      session: mappedSessionObject
+      renderContext: mappedRenderContextObject
     })
 
     if (componentElement) {
@@ -745,7 +745,7 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
       }
       customElement.attribs['data-cid'] = contextId
 
-      mappedSessionObject.componentTags.add(customElement.name)
+      mappedRenderContextObject.componentTags.add(customElement.name)
     }
   }
 }
@@ -856,34 +856,34 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       Object.assign(component.state, state)
 
       // Initialize Render Context
-      const session = this._createSession(buildId)
-      session.mode = this.options.mode
+      const renderContext = this._createRenderContext(buildId)
+      renderContext.mode = this.options.mode
 
-      const mappedSession = await this._triggerPluginHook('onBeforePageRender', {
+      const mappedRenderContext = await this._triggerPluginHook('onBeforePageRender', {
         component,
         state,
         page: pageContext,
-        session
+        renderContext
       })
 
-      const mappedComponent = mappedSession.component
-      const mappedSessionObject = mappedSession.session
+      const mappedComponent = mappedRenderContext.component
+      const mappedRenderContextObject = mappedRenderContext.renderContext
 
       // reassign the top-level state object in case it was modified
-      state = mappedSession.state
+      state = mappedRenderContext.state
 
       // remove temporary elements
       removeElements(mappedComponent.tempElements, false)
 
-      await this._processCustomElementsInPage(mappedComponent, originalDocument, state, mappedSessionObject, pageContext)
+      await this._processCustomElementsInPage(mappedComponent, originalDocument, state, mappedRenderContextObject, pageContext)
 
       const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
 
-      if (mappedSessionObject.styles.size > 0) {
-        injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles)
+      if (mappedRenderContextObject.styles.size > 0) {
+        injectStyles(mappedComponent.root, headElement, mappedRenderContextObject.styles)
       }
 
-      if (mappedSessionObject.componentTags.size > 0) {
+      if (mappedRenderContextObject.componentTags.size > 0) {
         const targetElement = headElement || bodyElement || mappedComponent.root
         const layoutStyleElement = createCoraliteElement({
           type: 'tag',
@@ -895,7 +895,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
           children: []
         })
 
-        const selectors = Array.from(mappedSessionObject.componentTags)
+        const selectors = Array.from(mappedRenderContextObject.componentTags)
         selectors.push('c-token')
         const selector = selectors.join(', ')
         layoutStyleElement.children.push(createCoraliteTextNode({
@@ -911,8 +911,8 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
         }
       }
 
-      if (mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
-        const scripts = mappedSessionObject.scripts.content[mappedComponent.path.pathname]
+      if (mappedRenderContextObject.scripts.content[mappedComponent.path.pathname]) {
+        const scripts = mappedRenderContextObject.scripts.content[mappedComponent.path.pathname]
 
         // Build instances object for script manager
         /** @type {Object.<string, InstanceContext>} */
@@ -978,7 +978,8 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
         const scriptContent = generateClientRuntime({
           base,
           sharedChunkPath: scriptResult.manifest['chunk-shared'],
-          chunkManifest
+          chunkManifest,
+          declarativeTags: Array.from(renderContext.componentTags || [])
         })
 
         const hydrationData = {}
@@ -1031,7 +1032,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       // remove skip render elements
       removeElements(mappedComponent.skipRenderElements, true)
 
-      if (!mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
+      if (!mappedRenderContextObject.scripts.content[mappedComponent.path.pathname]) {
         injectReadinessScript(mappedComponent.root, headElement, false)
       }
 
@@ -1044,8 +1045,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
         type: 'page',
         path: mappedComponent.path,
         content: rawHTML,
-        duration: performance.now() - startTime,
-        session
+        duration: performance.now() - startTime
       }
 
       // Explicitly nullify large objects to help GC
@@ -1063,12 +1063,12 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       }
 
       // Explicitly nullify render context contents to help GC
-      session.state = null
-      session.styles = null
-      session.scripts = null
-      if (session.source) {
-        session.source.contextInstances = null
-        session.source = null
+      renderContext.state = null
+      renderContext.styles = null
+      renderContext.scripts = null
+      if (renderContext.source) {
+        renderContext.source.contextInstances = null
+        renderContext.source = null
       }
     }
   } finally {
@@ -1185,10 +1185,7 @@ Coralite.prototype.build = async function (...args) {
         }
 
         // Trigger onAfterPageRender hooks using the aggregate method
-        const additionalPages = await this._triggerPluginAggregateHook('onAfterPageRender', {
-          result,
-          session: result.session
-        })
+        const additionalPages = await this._triggerPluginAggregateHook('onAfterPageRender', result)
 
         const items = [result]
 
@@ -1451,13 +1448,13 @@ Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
  * Recursively resolves imperative component dependencies, bundling their HTML and state for the client.
  *
  * @param {string[]} componentIds - Array of component IDs to process.
- * @param {Object} session - The current build render context.
+ * @param {Object} renderContext - The current build render context.
  * @param {CoralitePage} page - The global page object
  * @param {CoraliteComponentRoot} root - The root element of the component
  * @param {Object} state - The current token state and state available
  * @returns {Promise<void>}
  */
-Coralite.prototype._processDependentComponents = async function (componentIds, session, page, root, state = {}) {
+Coralite.prototype._processDependentComponents = async function (componentIds, renderContext, page, root, state = {}) {
   if (!componentIds?.length) {
     return
   }
@@ -1484,7 +1481,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, s
           page,
           root,
           contextId: `dependent-${id}`,
-          session
+          renderContext
         })
       } catch (error) {
         throw this._createExecutionError(error, module, moduleComponent, page, `dependent-${id}`)
@@ -1581,7 +1578,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, s
       }
       delete inheritedState.__script__
 
-      await this._processDependentComponents(nestedComponents, session, page, root, inheritedState)
+      await this._processDependentComponents(nestedComponents, renderContext, page, root, inheritedState)
     }
 
   }
@@ -1596,7 +1593,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, s
  * @param {CoraliteComponentRoot} options.root - The root element of the component
  * @param {string} [options.contextId] - Context Id
  * @param {number} [options.index] - Context index
- * @param {Object} [options.session] - Render Context
+ * @param {Object} [options.renderContext] - Render Context
  * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
  * @returns {Promise<CoraliteElement | void>}
  */
@@ -1608,10 +1605,10 @@ Coralite.prototype.createComponentElement = async function ({
   root,
   contextId,
   index,
-  session
+  renderContext
 }, head = true) {
-  if (!session) {
-    session = this._createSession()
+  if (!renderContext) {
+    renderContext = this._createRenderContext()
   }
 
   const moduleComponent = this.components.getItem(id)
@@ -1623,7 +1620,7 @@ Coralite.prototype.createComponentElement = async function ({
   const componentId = moduleComponent.result.id
 
   if (!contextId) {
-    contextId = session.generateId(componentId)
+    contextId = renderContext.generateId(componentId)
   }
 
   const instanceId = contextId
@@ -1655,7 +1652,7 @@ Coralite.prototype.createComponentElement = async function ({
     attributes: module.values.attributes,
     page,
     element,
-    session
+    renderContext
   })
   componentState = mappedComponentContext.state
 
@@ -1675,9 +1672,9 @@ Coralite.prototype.createComponentElement = async function ({
       moduleComponent.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, (errorData) => this._handleError(errorData))
     }
 
-    // Add styles to session (idempotent for the build)
-    if (!session.styles.has(selector)) {
-      session.styles.set(selector, moduleComponent.result._processedCss)
+    // Add styles to renderContext (idempotent for the build)
+    if (!renderContext.styles.has(selector)) {
+      renderContext.styles.set(selector, moduleComponent.result._processedCss)
     }
 
     // Inject attribute into component root elements
@@ -1710,7 +1707,7 @@ Coralite.prototype.createComponentElement = async function ({
         page,
         root: element || root,
         contextId,
-        session
+        renderContext
       })
     } catch (error) {
       throw this._createExecutionError(error, module, moduleComponent, page, contextId)
@@ -1789,7 +1786,7 @@ Coralite.prototype.createComponentElement = async function ({
         const inheritedState = Object.assign({}, state)
         delete inheritedState.__script__
 
-        await this._processDependentComponents(mergedComponents, session, page, root, inheritedState)
+        await this._processDependentComponents(mergedComponents, renderContext, page, root, inheritedState)
       }
 
       // Ensure state object exists in scriptResult
@@ -1799,7 +1796,7 @@ Coralite.prototype.createComponentElement = async function ({
 
 
       // Store instance data for script manager
-      session.scripts.add(page.file.pathname, {
+      renderContext.scripts.add(page.file.pathname, {
         id: contextId,
         componentId: module.id,
         page,
@@ -1812,7 +1809,7 @@ Coralite.prototype.createComponentElement = async function ({
     componentState = Object.assign(componentState, scriptResult)
   }
 
-  session.state[contextId] = componentState
+  renderContext.state[contextId] = componentState
 
   // replace tokens in the component with their state from `componentState` object and store them into computed value array for later use if needed (e.g., to be injected back).
   for (let i = 0; i < module.values.attributes.length; i++) {
@@ -1902,8 +1899,8 @@ Coralite.prototype.createComponentElement = async function ({
       continue
     }
 
-    const childContextId = session.generateId(customElement.name)
-    const currentProperties = session.state[childContextId] || {}
+    const childContextId = renderContext.generateId(customElement.name)
+    const currentProperties = renderContext.state[childContextId] || {}
 
     let childState = { ...state }
 
@@ -1923,7 +1920,7 @@ Coralite.prototype.createComponentElement = async function ({
       }
     }
 
-    session.state[childContextId] = childState
+    renderContext.state[childContextId] = childState
 
     createComponentTasks.push(
       this.createComponentElement({
@@ -1934,7 +1931,7 @@ Coralite.prototype.createComponentElement = async function ({
         root,
         contextId: childContextId,
         index,
-        session
+        renderContext
       }, false).then(childComponentElement => ({
         childComponentElement,
         customElement,
@@ -1960,11 +1957,11 @@ Coralite.prototype.createComponentElement = async function ({
       }
       customElement.attribs['data-cid'] = childContextId
 
-      session.componentTags.add(customElement.name)
+      renderContext.componentTags.add(customElement.name)
     }
   }
 
-  await this._replaceSlots(id, element, module, contextId, componentState, page, root, index, session)
+  await this._replaceSlots(id, element, module, contextId, componentState, page, root, index, renderContext)
 
   const mappedAfterContext = await this._triggerPluginHook('onAfterComponentRender', {
     result,
@@ -1976,7 +1973,7 @@ Coralite.prototype.createComponentElement = async function ({
     attributes: module.values.attributes,
     page,
     element,
-    session
+    renderContext
   })
   return mappedAfterContext.result
 }
@@ -1993,10 +1990,10 @@ Coralite.prototype.createComponentElement = async function ({
  * @param {CoralitePage} page - Active page object
  * @param {CoraliteComponentRoot} root - The component root element
  * @param {number} index - Index of element
- * @param {Object} session - Rendering state
+ * @param {Object} renderContext - Rendering state
  * @returns {Promise<void>} Resolves when slots are successfully replaced
  */
-Coralite.prototype._replaceSlots = async function (id, element, module, contextId, state, page, root, index, session) {
+Coralite.prototype._replaceSlots = async function (id, element, module, contextId, state, page, root, index, renderContext) {
   const slots = module.slotElements ? module.slotElements[id] : null
 
   if (!slots) {
@@ -2054,29 +2051,29 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
           const slotComponentItem = this.components.getItem(node.name)
 
           if (slotComponentItem) {
-            const slotContextId = session.generateId(node.name)
-            const currentProperties = session.state[slotContextId] || {}
+            const slotContextId = renderContext.generateId(node.name)
+            const currentProperties = renderContext.state[slotContextId] || {}
             const attribValues = cleanKeys(node.attribs)
 
             if (typeof node.attribs === 'object') {
-              session.state[slotContextId] = {
+              renderContext.state[slotContextId] = {
                 ...currentProperties,
                 ...state,
                 ...attribValues
               }
             } else {
-              session.state[slotContextId] = Object.assign(currentProperties, state)
+              renderContext.state[slotContextId] = Object.assign(currentProperties, state)
             }
 
             const componentElement = await this.createComponentElement({
               id: node.name,
-              state: session.state[slotContextId],
+              state: renderContext.state[slotContextId],
               element: node,
               page,
               root,
               contextId: slotContextId,
               index,
-              session
+              renderContext
             }, false)
 
             if (componentElement) {
@@ -2090,7 +2087,7 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
               }
               node.attribs['data-cid'] = slotContextId
 
-              session.componentTags.add(node.name)
+              renderContext.componentTags.add(node.name)
             }
           }
         }
@@ -2229,7 +2226,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
  * @param {CoralitePage} data.page - The global page object
  * @param {CoraliteElement} data.root - The Coralite module to parse
  * @param {string} data.contextId - Context Id
- * @param {Object} data.session - Render Context
+ * @param {Object} data.renderContext - Render Context
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -2239,7 +2236,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
   page,
   root,
   contextId,
-  session
+  renderContext
 }) {
   const { SourceTextModule } = await import('node:vm')
 
@@ -2253,14 +2250,14 @@ Coralite.prototype._evaluateDevelopment = async function ({
     root,
     module,
     id: contextId,
-    session,
+    renderContext,
     app: this
   }
 
   const cachedBoundPlugins = this._bindPlugins(this._source.plugins, context)
 
-  session.source.currentSourceContextId = contextId
-  session.source.contextInstances[contextId] = context
+  renderContext.source.currentSourceContextId = contextId
+  renderContext.source.contextInstances[contextId] = context
 
   const boundDefineComponent = (options) => this._defineComponent(options, context)
 
@@ -2326,7 +2323,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
  * @param {CoralitePage} data.page - The global page object
  * @param {CoraliteElement} data.root - The Coralite module to parse
  * @param {string} data.contextId - Context Id
- * @param {Object} data.session - Render Context
+ * @param {Object} data.renderContext - Render Context
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -2336,7 +2333,7 @@ Coralite.prototype._evaluateProduction = async function ({
   page,
   root,
   contextId,
-  session
+  renderContext
 }) {
   const context = {
     state: state || {},
@@ -2344,12 +2341,12 @@ Coralite.prototype._evaluateProduction = async function ({
     root,
     module,
     id: contextId,
-    session,
+    renderContext,
     app: this
   }
 
-  session.source.currentSourceContextId = contextId
-  session.source.contextInstances[contextId] = context
+  renderContext.source.currentSourceContextId = contextId
+  renderContext.source.contextInstances[contextId] = context
 
   // Retrieve Template and check cache
   const moduleComponent = this.components.getItem(module.id)
@@ -2457,7 +2454,7 @@ Coralite.prototype._evaluateProduction = async function ({
  * @param {CoralitePage} data.page - The global page object
  * @param {CoraliteElement} data.element - The Coralite module to parse
  * @param {string} data.contextId - Context Id
- * @param {Object} data.session - Render Context
+ * @param {Object} data.renderContext - Render Context
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -2617,7 +2614,7 @@ Coralite.prototype._replaceCustomElementWithTemplate = function (coraliteElement
  * @returns {Promise<any>} - Processed value
  */
 Coralite.prototype._processTokenValue = async function (value, context) {
-  const { excludeByAttribute, state, module, createComponentElement, session } = context
+  const { excludeByAttribute, state, module, createComponentElement, renderContext } = context
   // If not a string, return as-is
   if (typeof value !== 'string') {
     return value
@@ -2642,7 +2639,7 @@ Coralite.prototype._processTokenValue = async function (value, context) {
       element: customElement,
       module,
       index: i,
-      session
+      renderContext
     })
 
     if (componentElement) {
@@ -2656,7 +2653,7 @@ Coralite.prototype._processTokenValue = async function (value, context) {
       }
       customElement.attribs['data-cid'] = cid
 
-      session.componentTags.add(customElement.name)
+      renderContext.componentTags.add(customElement.name)
     }
   }
 
@@ -2896,7 +2893,7 @@ const coraliteInternalProperty = {
 Object.defineProperty(Coralite.prototype, '_defaultOnError', coraliteInternalProperty)
 Object.defineProperty(Coralite.prototype, '_handleError', coraliteInternalProperty)
 Object.defineProperty(Coralite.prototype, '_createExecutionError', coraliteInternalProperty)
-Object.defineProperty(Coralite.prototype, '_createSession', coraliteInternalProperty)
+Object.defineProperty(Coralite.prototype, '_createRenderContext', coraliteInternalProperty)
 Object.defineProperty(Coralite.prototype, '_processCustomElementsInPage', coraliteInternalProperty)
 Object.defineProperty(Coralite.prototype, '_generatePages', coraliteInternalProperty)
 Object.defineProperty(Coralite.prototype, '_processDependentComponents', coraliteInternalProperty)

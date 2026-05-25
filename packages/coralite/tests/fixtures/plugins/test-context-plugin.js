@@ -24,7 +24,7 @@ export const testContextPlugin = definePlugin({
               element = document.querySelector(element)
             }
             if (element) {
-              element.textContent = `Global: ${globalContext.config.globalValue}, Path: ${localContext.page.url.pathname}, Signal: ${localContext.signal instanceof AbortSignal}`
+              element.textContent = `Global: ${globalContext.config.globalValue}, InstanceId: ${localContext.instanceId}, Signal: ${localContext.signal instanceof AbortSignal}`
             }
             return element
           }

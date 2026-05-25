@@ -50,6 +50,38 @@ export function coerce (value, type) {
 }
 
 /**
+ * Creates a read-only proxy that throws on mutation attempts.
+ * @param {Object} target - The object to proxy.
+ * @param {WeakMap} [proxies=new WeakMap()] - Cache for existing proxies.
+ * @returns {Proxy} The read-only proxy.
+ */
+export function createReadOnlyProxy (target, proxies = new WeakMap()) {
+  if (proxies.has(target)) {
+    return proxies.get(target)
+  }
+
+  const handler = {
+    get (target, property, receiver) {
+      const value = Reflect.get(target, property, receiver)
+      if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
+        return createReadOnlyProxy(value, proxies)
+      }
+      return value
+    },
+    set () {
+      throw new Error('Coralite Error: Cannot mutate state inside a getter. State is read-only here.')
+    },
+    deleteProperty () {
+      throw new Error('Coralite Error: Cannot delete state inside a getter. State is read-only here.')
+    }
+  }
+
+  const proxy = new Proxy(target, handler)
+  proxies.set(target, proxy)
+  return proxy
+}
+
+/**
  *
  */
 export class CoraliteElement extends HTMLElement {
@@ -102,7 +134,20 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
-    this._instanceId = this.getAttribute('data-cid') || `${this.componentOptions.componentId}-${Math.random().toString(36).substring(2, 9)}`
+    if (this.hasAttribute('data-cid')) {
+      this._instanceId = this.getAttribute('data-cid')
+    } else {
+      // @ts-ignore
+      window.__coralite_instanceCounters = window.__coralite_instanceCounters || {}
+      const prefix = this.componentOptions.componentId
+      // @ts-ignore
+      if (window.__coralite_instanceCounters[prefix] === undefined) {
+        // @ts-ignore
+        window.__coralite_instanceCounters[prefix] = 0
+      }
+      // @ts-ignore
+      this._instanceId = `${prefix}-${window.__coralite_instanceCounters[prefix]++}`
+    }
 
     if (isImperative) {
       this.setAttribute('data-cid', this._instanceId)
@@ -192,9 +237,18 @@ export class CoraliteElement extends HTMLElement {
     }
 
     // Define reactive getters
+    this._getterAbortControllers = {}
     for (const [key, getter] of Object.entries(options.getters || {})) {
       Object.defineProperty(target, key, {
-        get: () => getter(this._state),
+        get: () => {
+          if (this._getterAbortControllers[key]) {
+            this._getterAbortControllers[key].abort()
+          }
+          this._getterAbortControllers[key] = new AbortController()
+
+          const roState = createReadOnlyProxy(this._state)
+          return getter(roState, { signal: this._getterAbortControllers[key].signal })
+        },
         enumerable: true,
         configurable: true
       })
@@ -394,10 +448,6 @@ export class CoraliteElement extends HTMLElement {
       Object.assign(localContext, pluginContext)
     }
 
-    if (this.componentOptions.script) {
-      await this.componentOptions.script(localContext)
-    }
-
     if (isImperative) {
       this._updateDOM()
 
@@ -412,6 +462,14 @@ export class CoraliteElement extends HTMLElement {
       }
     } else {
       this._scheduleUpdate()
+    }
+
+    if (this.componentOptions.script) {
+      try {
+        this.componentOptions.script(localContext)
+      } catch (error) {
+        console.error(`Coralite Error: Component "${this.componentOptions.componentId}" script failed:`, error)
+      }
     }
   }
 }
