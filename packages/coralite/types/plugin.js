@@ -10,7 +10,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
- * @typedef {Object} CoraliteClientBeforeComponentRenderContext
+ * @typedef {Object} CoraliteClientBeforeComponentSession
  * @property {Object.<string, any>} state - The unproxied initial component state.
  * @property {string} instanceId - The unique ID of the component instance.
  * @property {string} componentId - The tag name of the component.
@@ -20,7 +20,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
- * @typedef {Object} CoraliteClientAfterComponentRenderContext
+ * @typedef {Object} CoraliteClientAfterComponentSession
  * @property {Object.<string, any>} state - The proxied component state.
  * @property {string} instanceId - The unique ID of the component instance.
  * @property {string} componentId - The tag name of the component.
@@ -30,13 +30,13 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 
 /**
  * @callback CoraliteClientPluginBeforeComponentRenderCallback - Callback triggered before a client component state proxy is created and rendered.
- * @param {CoraliteClientBeforeComponentRenderContext} context
+ * @param {CoraliteClientBeforeComponentSession} context
  * @returns {void}
  */
 
 /**
  * @callback CoraliteClientPluginAfterComponentRenderCallback - Callback triggered after a client component DOM is updated.
- * @param {CoraliteClientAfterComponentRenderContext} context
+ * @param {CoraliteClientAfterComponentSession} context
  * @returns {void}
  */
 
