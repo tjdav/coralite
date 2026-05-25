@@ -49,7 +49,7 @@
       <li><strong>Render Lifecycle:</strong>
         <ul>
           <li><code>onBeforePageRender(data)</code>: Called right before a specific page's HTML is compiled. Useful for modifying the raw document data before rendering. <em>Note: Inside plugin hooks, the <strong>Coralite instance</strong> is bound to <code>this</code>.</em></li>
-          <li><code>onAfterPageRender(data)</code>: Called immediately after a specific page's HTML is compiled.</li>
+          <li><code>onAfterPageRender({ result, session })</code>: Called immediately after a specific page's HTML is compiled.</li>
         </ul>
       </li>
       <li><strong>Build Lifecycle:</strong>

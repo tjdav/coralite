@@ -51,7 +51,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @param {CoraliteAttributeToken[]} context.attributes - Scoped AST pointers for attributes
  * @param {CoralitePage} context.page - The current page context
  * @param {CoraliteElement} [context.element] - The parent AST tag itself
- * @param {Object} context.renderContext - Global build state
+ * @param {Object} context.session - Global build state
  * @param {Coralite} [context.app] - The global Coralite app instance
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
@@ -69,7 +69,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @param {CoraliteAttributeToken[]} context.attributes - Scoped AST pointers for attributes
  * @param {CoralitePage} context.page - The current page context
  * @param {CoraliteElement} [context.element] - The parent AST tag itself
- * @param {Object} context.renderContext - Global build state
+ * @param {Object} context.session - Global build state
  * @param {Coralite} [context.app] - The global coralite app instance
  * @returns {Promise<Object|void>|Object|void} A partial AST patch to be merged.
  * @async
@@ -136,7 +136,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @param {CoraliteComponent} context.component - The cloned HTML component data being processed
  * @param {Object.<string, CoraliteModuleDefinition>} context.state - Properties associated with the component
  * @param {CoralitePage} context.page - The global page object
- * @param {Object} context.renderContext - Render context containing state for the build
+ * @param {Object} context.session - Render context containing state for the build
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
@@ -153,7 +153,9 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 
 /**
  * @callback CoralitePluginAfterPageRenderCallback - Async callback triggered after a page has been rendered but before saving.
- * @param {CoraliteResult} result - The rendered page result
+ * @param {Object} context
+ * @param {CoraliteResult} context.result - The rendered page result
+ * @param {Object} context.session - The current page build session
  * @returns {Promise<CoraliteResult[]|CoraliteResult|void>} New result(s) to add to the build output
  * @async
  */

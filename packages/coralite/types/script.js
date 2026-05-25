@@ -74,7 +74,7 @@
  * @property {string} instanceId - Unique instance identifier
  * @property {string} componentId - component identifier
  * @property {Object.<string, CoraliteModuleDefinition>} state - Instance state
- * @property {Object} [renderContext] - Build-time render context.
+ * @property {Object} [session] - Build-time render context.
  * @property {CoralitePage} [page] - The global page object
  * @property {Object.<string, string>} [refs] - Instance refs
  */

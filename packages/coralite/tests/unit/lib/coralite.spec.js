@@ -97,7 +97,7 @@ describe('Coralite', () => {
   })
 
   describe('onBeforePageRender hook', () => {
-    it('should be called before rendering each page with component, state, and renderContext', async () => {
+    it('should be called before rendering each page with component, state, and session', async () => {
       let hookCalledCount = 0
       let hookContext = null
 
@@ -135,7 +135,7 @@ describe('Coralite', () => {
       assert.ok(hookContext, 'context should be passed to the hook')
       assert.ok(hookContext.component, 'component should be present in context')
       assert.ok(hookContext.state, 'state should be present in context')
-      assert.ok(hookContext.renderContext, 'renderContext should be present in context')
+      assert.ok(hookContext.session, 'session should be present in context')
 
       const html = results[0].content
       assert.ok(html.includes('class="injected"'), 'AST modifications should be present in the final HTML')

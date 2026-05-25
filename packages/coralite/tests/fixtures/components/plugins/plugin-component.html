@@ -11,14 +11,14 @@
   import { getPluginMessage } from 'test-context-plugin'
 
   export default defineComponent({
-    async data (context) {
+    data (context) {
       return {
         // test metadata plugin
         pageTitle: context.page.meta.title || 'No Title',
         pluginMessage: getPluginMessage('E2E Test')
       }
     },
-    script: async ({ testHelper, refs }) => {
+    script: ({ testHelper, refs }) => {
       // test two-phase currying system context injection
       testHelper(refs('pluginData'))
     }

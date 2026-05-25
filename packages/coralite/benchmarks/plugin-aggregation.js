@@ -27,8 +27,10 @@ const coralite = new Coralite({
   pages: pagesDir,
   plugins: [{
     name: 'pagination-plugin',
-    onAfterPageRender () {
-      return dummyPages
+    server: {
+      onAfterPageRender ({ result, session }) {
+        return dummyPages
+      }
     }
   }]
 })
@@ -44,7 +46,10 @@ console.log(`\nBenchmark: Plugin Data Aggregation`)
 console.log('--------------------------------------------------')
 
 bench('_triggerPluginAggregateHook (Framework)', async () => {
-  await coralite._triggerPluginAggregateHook('onAfterPageRender', baseContext)
+  await coralite._triggerPluginAggregateHook('onAfterPageRender', {
+    result: baseContext,
+    session: {}
+  })
 })
 
 bench('Array.prototype.concat (Baseline)', () => {

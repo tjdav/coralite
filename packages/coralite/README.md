@@ -224,7 +224,7 @@ export default function seoPlugin(options = {}) {
     },
 
     // Data Aggregators: Generate entirely new pages during the build
-    onAfterPageRender (basePageResult) {
+    onAfterPageRender ({ result, session }) {
       // Access the engine instance via `this`
       // this.pages.getItem('/index.html')
 

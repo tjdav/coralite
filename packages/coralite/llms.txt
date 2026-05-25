@@ -139,7 +139,7 @@ export default definePlugin({
     exports: { ... }, // Two-Phase Curried functions for component data() blocks
     components: [ ... ], // Array of paths to plugin-provided .html components
     onPageSet: (ctx) => { ... }, // And other global SSR hooks...
-    onBeforeComponentRender: ({ state, componentId, instanceId, refs, textNodes, attributes, element, renderContext }) => { ... },
+    onBeforeComponentRender: ({ state, componentId, instanceId, refs, textNodes, attributes, element, session }) => { ... },
     onAfterComponentRender: ({ result, state, ...context }) => { ... }
   },
 
