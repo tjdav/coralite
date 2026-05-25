@@ -658,6 +658,12 @@ Coralite.prototype._createRenderContext = function (buildId) {
     styles: new Map(),
     componentTags: new Set(),
     instanceCounters: {},
+    generateId (prefix) {
+      if (this.instanceCounters[prefix] === undefined) {
+        this.instanceCounters[prefix] = 0
+      }
+      return `${prefix}-${this.instanceCounters[prefix]++}`
+    },
     scripts: {
       content: {},
       add (id, item) {
@@ -699,7 +705,7 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
   for (let i = 0; i < customElementsList.length; i++) {
     const customElement = customElementsList[i]
 
-    const contextId = mappedComponent.path.pathname + i + customElement.name
+    const contextId = mappedRenderContextObject.generateId(customElement.name)
     const currentProperties = mappedRenderContextObject.state[contextId] || {}
 
     if (typeof customElement.attribs === 'object') {
@@ -1612,15 +1618,11 @@ Coralite.prototype.createComponentElement = async function ({
 
   const componentId = moduleComponent.result.id
 
-  if (renderContext.instanceCounters[componentId] === undefined) {
-    renderContext.instanceCounters[componentId] = 0
-  }
-  const instanceIndex = renderContext.instanceCounters[componentId]++
-  const instanceId = `${componentId}-${instanceIndex}`
-
   if (!contextId) {
-    contextId = instanceId
+    contextId = renderContext.generateId(componentId)
   }
+
+  const instanceId = contextId
 
   let componentState = { ...state }
 
@@ -1896,7 +1898,7 @@ Coralite.prototype.createComponentElement = async function ({
       continue
     }
 
-    const childContextId = contextId + i + customElement.name
+    const childContextId = renderContext.generateId(customElement.name)
     const currentProperties = renderContext.state[childContextId] || {}
 
     let childState = { ...state }
@@ -2048,7 +2050,7 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
           const slotComponentItem = this.components.getItem(node.name)
 
           if (slotComponentItem) {
-            const slotContextId = contextId + slotName + i + node.name
+            const slotContextId = renderContext.generateId(node.name)
             const currentProperties = renderContext.state[slotContextId] || {}
             const attribValues = cleanKeys(node.attribs)
 

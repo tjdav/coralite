@@ -25,7 +25,7 @@ test.describe('Boolean Attributes', () => {
 
   test('should update boolean attributes reactively on the client', async ({ page }) => {
     const checkbox = page.getByTestId('checkbox').nth(0)
-    const toggleBtn = page.getByTestId('boolean-attr-component__toggle-btn-0')
+    const toggleBtn = page.getByTestId('boolean-attr-component-0__toggle-btn')
 
     // Initially checked
     await expect(checkbox).toBeChecked()

@@ -10,27 +10,27 @@ test.describe('Priority Architecture Tests', () => {
   })
 
   test('Primitive Coercion: should coerce attributes to correct types', async ({ page }) => {
-    await expect(page.getByTestId('count')).toHaveText('42')
-    await expect(page.getByTestId('active')).toHaveText('true')
-    await expect(page.getByTestId('count-type')).toHaveText('number')
-    await expect(page.getByTestId('active-type')).toHaveText('boolean')
+    await expect(page.getByTestId('primitive-coercion-0__count')).toHaveText('42')
+    await expect(page.getByTestId('primitive-coercion-0__active')).toHaveText('true')
+    await expect(page.getByTestId('primitive-coercion-0__count-type')).toHaveText('number')
+    await expect(page.getByTestId('primitive-coercion-0__active-type')).toHaveText('boolean')
   })
 
   test('Dual-Proxy: should block mutations in getters and allow them in script', async ({ page }) => {
     // Initial state: count=5, doubled=10 (or MutationBlocked if getter is strictly read-only and we catch error)
     // Based on my dual-proxy.html, it returns 'MutationBlocked' if it catches an error.
-    await expect(page.getByTestId('doubled')).toHaveText('MutationBlocked')
+    await expect(page.getByTestId('dual-proxy-0__doubled')).toHaveText('MutationBlocked')
 
     const btn = page.locator('button').filter({ hasText: 'Increment' })
     await btn.click()
 
     // After increment, count=6, doubled should still be MutationBlocked if it fails every time
-    await expect(page.getByTestId('doubled')).toHaveText('MutationBlocked')
+    await expect(page.getByTestId('dual-proxy-0__doubled')).toHaveText('MutationBlocked')
   })
 
   test('Async Race: should handle rapid state changes in async getters', async ({ page }) => {
     const trigger = page.locator('button').filter({ hasText: 'Trigger' })
-    const result = page.getByTestId('result')
+    const result = page.getByTestId('async-race-0__result')
 
     await expect(result).toHaveText('Idle')
 

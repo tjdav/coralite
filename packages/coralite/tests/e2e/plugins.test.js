@@ -10,7 +10,7 @@ test.describe('Plugins Extensibility', () => {
   })
 
   test('should inject custom context and verify execution', async ({ page }) => {
-    const pluginData = page.getByTestId('plugin-component__pluginData-0')
+    const pluginData = page.getByTestId('plugin-component-0__pluginData')
     const text = await pluginData.textContent()
     expect(text).toContain('Global: global-state-123')
     expect(text).toContain('Path: /plugins/')

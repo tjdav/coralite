@@ -10,19 +10,19 @@ test.describe('Client Script', () => {
   })
 
   test('should execute script, setup context, and test reactivity', async ({ page }) => {
-    const title = page.getByTestId(/client-script-component__titleDisplay-\d+/)
+    const title = page.getByTestId(/client-script-component-0__titleDisplay/)
     await expect(title).toHaveText('Initial Parent')
 
-    const status = page.getByTestId(/client-script-component__statusDisplay-\d+/)
+    const status = page.getByTestId(/client-script-component-0__statusDisplay/)
     await expect(status).toHaveText('Status: Offline')
 
-    const btn = page.getByTestId(/client-script-component__updateBtn-\d+/)
+    const btn = page.getByTestId(/client-script-component-0__updateBtn/)
     await btn.click()
 
     await expect(title).toHaveText('Updated')
     await expect(status).toHaveText('Status: Online')
 
-    const container = page.getByTestId(/client-script-component__container-\d+/)
+    const container = page.getByTestId(/client-script-component-0__container/)
     await expect(container).toHaveAttribute('data-confetti', 'loaded')
   })
 })
