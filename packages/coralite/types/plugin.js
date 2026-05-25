@@ -1,4 +1,4 @@
-import { CoraliteElement } from '#lib'
+import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute, CoraliteRef, CoraliteTextNodeToken, CoraliteAttributeToken } from './component.js'
  * @import { HTMLData, CoraliteFilePath, CoralitePage } from './core.js'
