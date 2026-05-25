@@ -143,7 +143,7 @@ export class CoraliteElement extends HTMLElement {
     const refs = []
     if (options.hydrationMap && options.hydrationMap.refs) {
       for (const item of options.hydrationMap.refs) {
-        const node = this._getNodeByPath(item.path)
+        const node = this.getNodeByPath(item.path)
         if (node) {
           refs.push({
             name: item.name,
@@ -159,7 +159,8 @@ export class CoraliteElement extends HTMLElement {
         instanceId: this._instanceId,
         componentId: this.componentOptions.componentId,
         refs,
-        element: this
+        element: this,
+        options: this.componentOptions
       })
     }
 
@@ -222,12 +223,13 @@ export class CoraliteElement extends HTMLElement {
   /**
    *
    */
-  _getNodeByPath (path) {
+  getNodeByPath (path) {
     let node = this
     for (const index of path) {
       if (!node) {
         return null
       }
+      // @ts-ignore
       node = node.childNodes[index]
     }
     return node
@@ -245,7 +247,7 @@ export class CoraliteElement extends HTMLElement {
 
     if (map.texts) {
       for (const item of map.texts) {
-        const node = this._getNodeByPath(item.path)
+        const node = this.getNodeByPath(item.path)
         if (node) {
           this._bindings.push({
             type: 'text',
@@ -258,7 +260,7 @@ export class CoraliteElement extends HTMLElement {
 
     if (map.attributes) {
       for (const item of map.attributes) {
-        const node = this._getNodeByPath(item.path)
+        const node = this.getNodeByPath(item.path)
         if (node) {
           this._bindings.push({
             type: 'attribute',
@@ -288,7 +290,8 @@ export class CoraliteElement extends HTMLElement {
           state: this._state,
           instanceId: this._instanceId,
           componentId: this.componentOptions.componentId,
-          element: this
+          element: this,
+          options: this.componentOptions
         })
       }
     })
@@ -353,10 +356,13 @@ export class CoraliteElement extends HTMLElement {
       const slotFn = slots[slotName]
 
       if (slotFn) {
+        // @ts-ignore
         if (!slotEl._originalNodes) {
+          // @ts-ignore
           slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
         }
 
+        // @ts-ignore
         const result = slotFn(slotEl._originalNodes, this._state)
 
         if (typeof result === 'string') {
@@ -400,7 +406,8 @@ export class CoraliteElement extends HTMLElement {
           state: this._state,
           instanceId: this._instanceId,
           componentId: this.componentOptions.componentId,
-          element: this
+          element: this,
+          options: this.componentOptions
         })
       }
     } else {
@@ -427,7 +434,10 @@ export function createCoraliteClass (options, contextGetter = null, hooks = {}) 
       super()
       this.componentOptions = options
       this._clientContextGetter = contextGetter
-      this._hooks = hooks
+      this._hooks = {
+        onBeforeComponentRender: hooks.onBeforeComponentRender || [],
+        onAfterComponentRender: hooks.onAfterComponentRender || []
+      }
     }
   }
 }

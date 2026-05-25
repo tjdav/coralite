@@ -16,6 +16,7 @@ import { CoraliteElement } from '#lib'
  * @property {string} componentId - The tag name of the component.
  * @property {Array<{name: string, element: HTMLElement}>} refs - The DOM elements mapped by their reference names.
  * @property {CoraliteElement} element - The component instance element.
+ * @property {CoraliteComponent} options - The component options.
  */
 
 /**
@@ -24,6 +25,7 @@ import { CoraliteElement } from '#lib'
  * @property {string} instanceId - The unique ID of the component instance.
  * @property {string} componentId - The tag name of the component.
  * @property {CoraliteElement} element - The component instance element.
+ * @property {CoraliteComponent} options - The component options.
  */
 
 /**

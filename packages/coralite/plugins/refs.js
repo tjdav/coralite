@@ -23,14 +23,12 @@ export const refsPlugin = definePlugin({
     }
   },
   client: {
-    onBeforeComponentRender: (element) => {
-      const componentOptions = element.componentOptions
-      const instanceId = element._instanceId
-      const state = element._state
-      const templateValues = componentOptions.templateValues
+    onBeforeComponentRender: ({ state, instanceId, element, options }) => {
+      // @ts-ignore
+      const hydrationMap = options.hydrationMap
 
-      if (templateValues && templateValues.refs) {
-        for (const ref of templateValues.refs) {
+      if (hydrationMap && hydrationMap.refs) {
+        for (const ref of hydrationMap.refs) {
           const uniqueRefValue = `${instanceId}__${ref.name}`
 
           // Update state if not already set (e.g. by SSR hydration)
@@ -40,10 +38,10 @@ export const refsPlugin = definePlugin({
 
           // Update the actual DOM element if it exists
           // Since this is client side, we need to find the node
-          if (componentOptions.hydrationMap && componentOptions.hydrationMap.refs) {
-            const refMap = componentOptions.hydrationMap.refs.find(r => r.name === ref.name)
+          if (hydrationMap && hydrationMap.refs) {
+            const refMap = hydrationMap.refs.find(r => r.name === ref.name)
             if (refMap) {
-              const node = element._getNodeByPath(refMap.path)
+              const node = element.getNodeByPath(refMap.path)
               if (node && node.setAttribute) {
                 node.setAttribute('ref', uniqueRefValue)
               }
