@@ -49,5 +49,17 @@ export const testingPlugin = definePlugin({
         traverseAndAddTestId(children)
       }
     }
+  },
+  client: {
+    onBeforeComponentRender: ({ instanceId, refs }) => {
+      for (let i = 0; i < refs.length; i++) {
+        const ref = refs[i]
+        const uniqueRefValue = `${instanceId}__${ref.name}`
+
+        if (ref.element && ref.element.setAttribute) {
+          ref.element.setAttribute('data-testid', uniqueRefValue)
+        }
+      }
+    }
   }
 })

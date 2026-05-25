@@ -1,12 +1,41 @@
-
+import { CoraliteElement } from '#lib'
 /**
  * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute, CoraliteRef, CoraliteTextNodeToken, CoraliteAttributeToken } from './component.js'
  * @import { HTMLData, CoraliteFilePath, CoralitePage } from './core.js'
  * @import { CoraliteModule, CoraliteModuleDefinition } from './module.js'
- * @import { CoraliteElement, CoraliteAnyNode } from './dom.js'
+ * @import { CoraliteAnyNode } from './dom.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
  * @import { Coralite } from '#lib'
+ */
+
+/**
+ * @typedef {Object} CoraliteClientBeforeComponentRenderContext
+ * @property {Object.<string, any>} state - The unproxied initial component state.
+ * @property {string} instanceId - The unique ID of the component instance.
+ * @property {string} componentId - The tag name of the component.
+ * @property {Array<{name: string, element: HTMLElement}>} refs - The DOM elements mapped by their reference names.
+ * @property {CoraliteElement} element - The component instance element.
+ */
+
+/**
+ * @typedef {Object} CoraliteClientAfterComponentRenderContext
+ * @property {Object.<string, any>} state - The proxied component state.
+ * @property {string} instanceId - The unique ID of the component instance.
+ * @property {string} componentId - The tag name of the component.
+ * @property {CoraliteElement} element - The component instance element.
+ */
+
+/**
+ * @callback CoraliteClientPluginBeforeComponentRenderCallback - Callback triggered before a client component state proxy is created and rendered.
+ * @param {CoraliteClientBeforeComponentRenderContext} context
+ * @returns {void}
+ */
+
+/**
+ * @callback CoraliteClientPluginAfterComponentRenderCallback - Callback triggered after a client component DOM is updated.
+ * @param {CoraliteClientAfterComponentRenderContext} context
+ * @returns {void}
  */
 
 /**

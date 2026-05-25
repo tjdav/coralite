@@ -65,6 +65,10 @@ export class CoraliteElement extends HTMLElement {
     this._isUpdatePending = false
     this._observer = null
     this._clientContextGetter = null
+    this._hooks = {
+      onBeforeComponentRender: [],
+      onAfterComponentRender: []
+    }
     this.componentOptions = null
   }
 
@@ -136,6 +140,29 @@ export class CoraliteElement extends HTMLElement {
     const options = this.componentOptions
     const target = { ...options.defaultValues }
 
+    const refs = []
+    if (options.hydrationMap && options.hydrationMap.refs) {
+      for (const item of options.hydrationMap.refs) {
+        const node = this._getNodeByPath(item.path)
+        if (node) {
+          refs.push({
+            name: item.name,
+            element: node
+          })
+        }
+      }
+    }
+
+    for (const hook of this._hooks.onBeforeComponentRender) {
+      hook({
+        state: target,
+        instanceId: this._instanceId,
+        componentId: this.componentOptions.componentId,
+        refs,
+        element: this
+      })
+    }
+
     // Hydrate data() block results
     const hydrationTag = document.getElementById('__CORALITE_HYDRATION__')
     if (hydrationTag) {
@@ -159,13 +186,8 @@ export class CoraliteElement extends HTMLElement {
     }
 
     // Hydrate refs into target before proxying
-    if (options.hydrationMap && options.hydrationMap.refs) {
-      for (const item of options.hydrationMap.refs) {
-        const node = this._getNodeByPath(item.path)
-        if (node) {
-          target[item.name] = node
-        }
-      }
+    for (const ref of refs) {
+      target[ref.name] = ref.element
     }
 
     // Define reactive getters
@@ -261,10 +283,13 @@ export class CoraliteElement extends HTMLElement {
       this._updateDOM()
       this._isUpdatePending = false
 
-      if (this.componentOptions.clientHooks?.onAfterComponentRender) {
-        for (const hook of this.componentOptions.clientHooks.onAfterComponentRender) {
-          hook(this)
-        }
+      for (const hook of this._hooks.onAfterComponentRender) {
+        hook({
+          state: this._state,
+          instanceId: this._instanceId,
+          componentId: this.componentOptions.componentId,
+          element: this
+        })
       }
     })
   }
@@ -369,6 +394,15 @@ export class CoraliteElement extends HTMLElement {
 
     if (isImperative) {
       this._updateDOM()
+
+      for (const hook of this._hooks.onAfterComponentRender) {
+        hook({
+          state: this._state,
+          instanceId: this._instanceId,
+          componentId: this.componentOptions.componentId,
+          element: this
+        })
+      }
     } else {
       this._scheduleUpdate()
     }
@@ -378,7 +412,7 @@ export class CoraliteElement extends HTMLElement {
 /**
  *
  */
-export function createCoraliteClass (options, contextGetter = null) {
+export function createCoraliteClass (options, contextGetter = null, hooks = {}) {
   return class extends CoraliteElement {
 
     static get observedAttributes () {
@@ -393,6 +427,7 @@ export function createCoraliteClass (options, contextGetter = null) {
       super()
       this.componentOptions = options
       this._clientContextGetter = contextGetter
+      this._hooks = hooks
     }
   }
 }

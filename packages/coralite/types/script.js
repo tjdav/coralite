@@ -1,8 +1,8 @@
 
 /**
  * @import { CoraliteModuleDefinition, CoraliteModuleSlotFunction } from './module.js'
- * @import { CoralitePath, CoraliteFilePath, CoralitePage } from './core.js'
- * @import { CoraliteComponent } from './component.js'
+ * @import { CoralitePage } from './core.js'
+ * @import { CoraliteClientPluginBeforeComponentRenderCallback, CoraliteClientPluginAfterComponentRenderCallback } from './plugin.js'
  */
 
 /**
@@ -63,6 +63,8 @@
  * @property {string} [rootDir] - The root directory of the plugin
  * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {function(any): void} [setup] - Called when plugin is registered
+ * @property {CoraliteClientPluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Called before component is rendered
+ * @property {CoraliteClientPluginAfterComponentRenderCallback} [onAfterComponentRender] - Called after component is rendered
  * @property {Object.<string, ScriptPluginHelperGlobalInstance>} [context] - Global or instance helpers to add to scripts
  * @property {string[]} [_extractedComponents] - Extracted imperative components
  */

@@ -17,7 +17,7 @@ export function generateClientRuntime ({
   chunkManifest
 }) {
   return `
-import { getClientContext, getSetups, createCoraliteClass } from '${base}assets/js/${sharedChunkPath}';
+import { getClientContext, getSetups, createCoraliteClass, globalClientHooks } from '${base}assets/js/${sharedChunkPath}';
 
 (async () => {
   if (!window.__coralite_ready__) {
@@ -38,7 +38,7 @@ import { getClientContext, getSetups, createCoraliteClass } from '${base}assets/
       const module = await import('${base}assets/js/' + componentManifest[componentId]);
       if (module.default && module.default.componentId) {
         if (!customElements.get(module.default.componentId)) {
-          customElements.define(module.default.componentId, createCoraliteClass(module.default, getClientContext));
+          customElements.define(module.default.componentId, createCoraliteClass(module.default, getClientContext, globalClientHooks));
         }
       }
     })();
