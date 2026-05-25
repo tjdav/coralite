@@ -85,4 +85,21 @@
  * @typedef {Object.<string, string> & { __script__?: import('./script.js').ScriptContent, $urlPathname?: string }} CoraliteProperties
  */
 
+/**
+ * @typedef {Object} CoraliteSession
+ * @property {string} [buildId] - The unique identifier for the build process.
+ * @property {Object.<string, any>} state - Global state for the session.
+ * @property {Map<string, string>} styles - Collected styles during rendering.
+ * @property {Set<string>} componentTags - Set of component tags used in the page.
+ * @property {Object.<string, number>} instanceCounters - Counters for generating unique IDs.
+ * @property {(prefix: string) => string} generateId - Function to generate a unique ID.
+ * @property {Object} scripts - Script collection.
+ * @property {Object.<string, Object.<string, any>>} scripts.content - Collected scripts content.
+ * @property {(id: string, item: any) => void} scripts.add - Function to add a script to the collection.
+ * @property {Object} source - Source context information.
+ * @property {string} source.currentSourceContextId - Current source context ID.
+ * @property {Object.<string, any>} source.contextInstances - Map of context instances.
+ * @property {'production' | 'development'} [mode] - Current build mode.
+ */
+
 export default {}

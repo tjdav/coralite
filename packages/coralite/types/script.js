@@ -1,7 +1,7 @@
 
 /**
  * @import { CoraliteModuleDefinition, CoraliteModuleSlotFunction } from './module.js'
- * @import { CoralitePage } from './core.js'
+ * @import { CoralitePage, CoraliteSession } from './core.js'
  * @import { CoraliteClientPluginBeforeComponentRenderCallback, CoraliteClientPluginAfterComponentRenderCallback } from './plugin.js'
  */
 
@@ -74,7 +74,7 @@
  * @property {string} instanceId - Unique instance identifier
  * @property {string} componentId - component identifier
  * @property {Object.<string, CoraliteModuleDefinition>} state - Instance state
- * @property {Object} [session] - Build-time render context.
+ * @property {CoraliteSession} [session] - Build-time render context.
  * @property {CoralitePage} [page] - The global page object
  * @property {Object.<string, string>} [refs] - Instance refs
  */

@@ -42,7 +42,10 @@ import { createReadOnlyProxy } from './utils.js'
  *  InstanceContext,
  *  CoraliteConfig,
  *  CoraliteFilePath,
- *  CoralitePage
+ *  CoralitePage,
+ *  CoraliteSession,
+ *  CoralitePluginContext,
+ *  Attribute
  * } from '../types/index.js'
  */
 
@@ -649,7 +652,7 @@ Coralite.prototype._createExecutionError = function (error, module, moduleCompon
  * Creates a render context for the build process.
  * @internal
  * @param {string} [buildId] - The unique identifier for the build process.
- * @returns {Object}
+ * @returns {CoraliteSession}
  */
 Coralite.prototype._createSession = function (buildId) {
   return {
@@ -697,7 +700,7 @@ Coralite.prototype._createSession = function (buildId) {
  * @param {CoraliteComponent & CoraliteComponentResult} mappedComponent - The compiled component instance
  * @param {CoraliteComponentResult} originalDocument - The original document mapping
  * @param {Object} state - Local component state
- * @param {Object} mappedSessionObject - Global rendering state
+ * @param {CoraliteSession} mappedSessionObject - Global rendering state
  * @returns {Promise<void>} Resolves when the elements are processed
  */
 Coralite.prototype._processCustomElementsInPage = async function (mappedComponent, originalDocument, state, mappedSessionObject, pageContext) {
@@ -857,6 +860,7 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
 
       // Initialize Render Context
       const session = this._createSession(buildId)
+      // @ts-ignore
       session.mode = this.options.mode
 
       const mappedSession = await this._triggerPluginHook('onBeforePageRender', {
@@ -871,6 +875,9 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
 
       // reassign the top-level state object in case it was modified
       state = mappedSession.state
+
+      // @ts-ignore
+      mappedSessionObject.mode = this.options.mode
 
       // remove temporary elements
       removeElements(mappedComponent.tempElements, false)
@@ -1451,7 +1458,7 @@ Coralite.prototype.getPagePathsUsingCustomElement = function (path) {
  * Recursively resolves imperative component dependencies, bundling their HTML and state for the client.
  *
  * @param {string[]} componentIds - Array of component IDs to process.
- * @param {Object} session - The current build render context.
+ * @param {CoraliteSession} session - The current build render context.
  * @param {CoralitePage} page - The global page object
  * @param {CoraliteComponentRoot} root - The root element of the component
  * @param {Object} state - The current token state and state available
@@ -1593,10 +1600,10 @@ Coralite.prototype._processDependentComponents = async function (componentIds, s
  * @param {CoraliteModuleDefinitions} [options.state={}] - Token state available for replacement
  * @param {CoraliteElement} [options.element] - The original Custom Element node
  * @param {CoralitePage} options.page - The global page object
- * @param {CoraliteComponentRoot} options.root - The root element of the component
+ * @param {any} options.root - The root element of the component
  * @param {string} [options.contextId] - Context Id
  * @param {number} [options.index] - Context index
- * @param {Object} [options.session] - Render Context
+ * @param {CoraliteSession} [options.session] - Render Context
  * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
  * @returns {Promise<CoraliteElement | void>}
  */
@@ -1991,9 +1998,9 @@ Coralite.prototype.createComponentElement = async function ({
  * @param {string} contextId - Instance context ID
  * @param {Object} state - The component state
  * @param {CoralitePage} page - Active page object
- * @param {CoraliteComponentRoot} root - The component root element
+ * @param {any} root - The component root element
  * @param {number} index - Index of element
- * @param {Object} session - Rendering state
+ * @param {CoraliteSession} session - Rendering state
  * @returns {Promise<void>} Resolves when slots are successfully replaced
  */
 Coralite.prototype._replaceSlots = async function (id, element, module, contextId, state, page, root, index, session) {
@@ -2117,7 +2124,7 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
  *
  * @internal
  * @param {CoraliteFilePath} path - The file path metadata of the component currently being evaluated. Used as the base for relative imports.
- * @param {Object.<string, any>} context - Contextual rendering data and state to be exposed when a script imports `'coralite'`.
+ * @param {CoralitePluginContext} context - Contextual rendering data and state to be exposed when a script imports `'coralite'`.
  * @returns {(specifier: string, referencingModule: import('node:vm').Module, extra: { attributes: any }) => Promise<import('node:vm').Module>} The async linker function used by the VM module.
  */
 Coralite.prototype._moduleLinker = function (path, context) {
@@ -2227,9 +2234,9 @@ Coralite.prototype._moduleLinker = function (path, context) {
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} data.state - Replacement tokens for the component
  * @param {CoralitePage} data.page - The global page object
- * @param {CoraliteElement} data.root - The Coralite module to parse
+ * @param {any} data.root - The Coralite module to parse
  * @param {string} data.contextId - Context Id
- * @param {Object} data.session - Render Context
+ * @param {CoraliteSession} data.session - Render Context
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -2324,9 +2331,9 @@ Coralite.prototype._evaluateDevelopment = async function ({
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} data.state - Replacement tokens for the component
  * @param {CoralitePage} data.page - The global page object
- * @param {CoraliteElement} data.root - The Coralite module to parse
+ * @param {any} data.root - The Coralite module to parse
  * @param {string} data.contextId - Context Id
- * @param {Object} data.session - Render Context
+ * @param {CoraliteSession} data.session - Render Context
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -2455,9 +2462,9 @@ Coralite.prototype._evaluateProduction = async function ({
  * @param {CoraliteModule} data.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} data.state - Replacement tokens for the component
  * @param {CoralitePage} data.page - The global page object
- * @param {CoraliteElement} data.element - The Coralite module to parse
+ * @param {any} data.element - The Coralite module to parse
  * @param {string} data.contextId - Context Id
- * @param {Object} data.session - Render Context
+ * @param {CoraliteSession} data.session - Render Context
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -2614,6 +2621,11 @@ Coralite.prototype._replaceCustomElementWithTemplate = function (coraliteElement
  * @internal
  * @param {any} value - The value to process
  * @param {Object} context - Processing context
+ * @param {Attribute[]} [context.excludeByAttribute] - List of attribute name-value pairs to ignore
+ * @param {Object} [context.state] - Replacement tokens for the component
+ * @param {CoraliteModule} [context.module] - The component module
+ * @param {Function} [context.createComponentElement] - The createComponentElement function
+ * @param {CoraliteSession} [context.session] - The current build session
  * @returns {Promise<any>} - Processed value
  */
 Coralite.prototype._processTokenValue = async function (value, context) {
@@ -2673,7 +2685,7 @@ Coralite.prototype._processTokenValue = async function (value, context) {
  * It is used to register components with their associated state and scripts.
  * @internal
  * @param {Object} options - Configuration options for the component
- * @param {Object} context - The evaluation context
+ * @param {CoralitePluginContext} context - The evaluation context
  * @returns {Promise<Object>} A promise resolving to the module state associated with this component.
  */
 Coralite.prototype._defineComponent = async function (options, context) {
@@ -2782,8 +2794,11 @@ Coralite.prototype._defineComponent = async function (options, context) {
         // new slot elements
         const elementSlots = []
 
+        // @ts-ignore
         if (root && root.slots) {
+          // @ts-ignore
           for (let j = 0; j < root.slots.length; j++) {
+            // @ts-ignore
             const slot = root.slots[j]
 
             if (slot.name === name) {
@@ -2848,6 +2863,7 @@ Coralite.prototype._defineComponent = async function (options, context) {
 
         // update element slots
         if (root) {
+          // @ts-ignore
           root.slots = elementSlots
         }
       }
