@@ -61,6 +61,8 @@ export default [
         'error',
         {
           definedTypes: [
+            'AbortController',
+            'MutationObserver',
             'Buffer',
             'DOMHighResTimeStamp',
             'Element',
