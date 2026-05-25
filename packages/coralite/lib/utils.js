@@ -654,7 +654,7 @@ export function generateHydrationMap (templateNodes, templateValues) {
     return map
   }
 
-  const root = { children: templateNodes }
+  const root = templateNodes.length > 0 ? templateNodes[0].parent : { children: templateNodes }
 
   if (templateValues.textNodes) {
     for (const item of templateValues.textNodes) {
