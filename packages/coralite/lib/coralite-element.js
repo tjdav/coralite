@@ -231,11 +231,6 @@ export class CoraliteElement extends HTMLElement {
       target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
     }
 
-    // Hydrate refs into target before proxying
-    for (const ref of refs) {
-      target[ref.name] = ref.element
-    }
-
     // Define reactive getters
     this._getterAbortControllers = {}
     for (const [key, getter] of Object.entries(options.getters || {})) {
