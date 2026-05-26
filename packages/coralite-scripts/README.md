@@ -30,42 +30,33 @@ Create or update your config file with the following:
 import { defineConfig } from 'coralite-scripts'
 
 export default defineConfig({
+  // Directory configuration
   output: 'dist',
   public: 'public',
   pages: 'src/pages',
   components: 'src/components',
+  
+  // Style pipeline (CSS, Sass, PostCSS)
   styles: {
-    // Array of inputs, mixing scss and css
+    // Array of entry points
     input: [
-      'src/css/main.scss',
-      'src/css/tailwind.css'
+      'src/css/main.scss'
     ],
-    // Generic processor configurations
+    // Processor configurations
     processors: {
       scss: {
-        // Native Dart Sass options
         style: 'compressed',
         loadPaths: ['node_modules']
-      },
-      postcss: {
-        plugins: [
-          // tailwindcss(),
-          // autoprefixer()
-        ]
       }
     }
   },
-  // Optional: copy static assets from other packages
+
+  // Plugins
+  plugins: [],
+
+  // Static Assets
   assets: [
     { pkg: 'some-package', path: 'dist/asset.js', dest: 'assets/asset.js' }
-  ],
-  // Optional: ignore processing elements with specific attributes
-  ignoreByAttribute: [
-    { name: 'data-ignore', value: 'true' }
-  ],
-  // Optional: skip rendering elements with specific attributes
-  skipRenderByAttribute: [
-    { name: 'data-skip', value: 'true' }
   ]
 })
 ```

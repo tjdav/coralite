@@ -6,16 +6,18 @@
 
 ## Build for the Web, With the Web
 
-Coralite is a static site generator built around HTML modules and the Native Web.
+Coralite is a **Native-First**, strictly Server-Side Rendered (SSR) framework for building fast, accessible, and future-proof websites.
 
-- **Build with HTML Modules**
-  Build your entire website with modular components using only native web technologies. This provides a simple, stable, and maintainable foundation.
-- **Accessibility and Security First**
-  By leveraging native HTML elements, sites inherit strong accessibility features out-of-the-box. A small footprint with no third-party library dependencies creates a more secure website. 
-- **Progressive Enhancement**
-  Ensures that all basic content and functionality are accessible, even on browsers without JavaScript. JavaScript is treated as an optional enhancement, not a requirement. 
-- **Powerful Plugin System**
-  Extend and customize the build process with a plugin API. Use hooks to manage content, create aggregations like blog posts with pagination, or transform final HTML and CSS output.
+- **True Native Web Components with a "Flat" API**
+  No vanilla boilerplate. Use a clean `defineComponent` flat-options API (`attributes`, `data`, `getters`, `script`) to build powerful Custom Elements without the `class extends HTMLElement` friction.
+- **The "Smart State, Dumb Template" Paradigm**
+  Templates are strictly declarative and "dumb"—no logic loops or dot-notation in HTML. All logic lives in pure JavaScript `getters` which receive a safe, Read-Only Proxy.
+- **Scoped CSS without Shadow DOM**
+  Enjoy perfect style encapsulation using standard CSS. The Coralite compiler automatically injects unique instance identifiers and nests rules, avoiding the accessibility and global styling headaches of Shadow DOM.
+- **Native Async Race-Condition Immunity**
+  Coralite's reactive engine handles asynchronous `data()` and `getters` with built-in version locks, ensuring your DOM never renders stale data from out-of-order Promise resolutions.
+- **Isomorphic, Two-Phase Curried Plugins**
+  Extend the engine with a strict, typed boundary. Plugins use a two-phase currying pattern to inject heavy context during initialization, leaving you with a clean, scoped API at runtime.
 
 ---
 
@@ -113,82 +115,63 @@ Styles defined in the `<style>` block are automatically **scoped** to the compon
 
 ```html
 <template id="user-card">
-  <div class="card" ref="card">
-    <h2>{{ formatName }}</h2>
+  <div class="card">
+    <!-- Templates only render flat keys. Logic belongs in getters! -->
+    <h2 ref="title">{{ formatName }}</h2>
     <p>{{ userMeta }}</p>
-    <slot>
+    
+    <slot></slot>
+    
     <p class="stats">Logins: {{ loginCount }}</p>
   </div>
 </template>
 
 <style>
-  /* These styles are automatically scoped to this component */
+  /* These styles are automatically scoped to this component instance */
   .card {
     border: 1px solid #eaeaea;
     padding: 1.5rem;
     border-radius: 8px;
-    cursor: pointer;
   }
-  h2 {
-    color: coral;
-  }
-  .stats {
-    font-size: 0.85em;
-    color: gray;
-  }
+  h2 { color: coral; }
 </style>
 
 <script type="module">
   import { defineComponent } from 'coralite'
-  import db from 'database'
+  import { userService } from './services.js'
 
   export default defineComponent({
-    // INPUTS (Coerced from HTML string attributes)
+    // ATTRIBUTES: Coerced from HTML (String, Number, Boolean)
     attributes: {
-      firstName: { type: String, default: 'Unknown' },
-      lastName: { type: String, default: '' },
+      userId: { type: Number, default: 0 },
       role: { type: String, default: 'Guest' }
     },
 
-    // SERVER DATA (Async fetching, runs on build/server)
-    async data(context) {
-      // We can use the parsed attributes to fetch specific data
-      const stats = await db.fetchUserStats(context.attributes.firstName)
-      
+    // DATA: Async server-side fetching (Stripped from client bundle)
+    async data({ state }) {
+      const user = await userService.getById(state.userId)
       return {
-        // These will be merged into the base state
-        department: stats.department || 'General',
-        loginCount: stats.loginCount || 0
+        firstName: user.firstName,
+        lastName: user.lastName,
+        loginCount: user.loginCount
       }
     },
 
-    // DERIVED STATE (Sync, pure functions, Read-Only Proxy)
+    // GETTERS: Pure, sync derived state (Read-Only Proxy)
     getters: {
-      // state = attributes + data
       formatName: (state) => `${state.firstName} ${state.lastName}`.trim(),
-      userMeta: (state) => `Role: ${state.role} | Dept: ${state.department}`
+      userMeta: (state) => `Role: ${state.role} | ID: ${state.userId}`
     },
 
-    // Light DOM transformations
-    slots: {
-      default (nodes, context) {
-        return nodes.map(node => node)
-      }
-    },
+    // SCRIPT: Client-side controller (Read/Write Proxy)
+    script({ state, refs, signal }) {
+      // Use the 'refs' utility to get the unique DOM element
+      const titleEl = refs('title')
 
-    // CLIENT CONTROLLER (Mutations, Events, Read/Write Proxy, Teardown)
-    script({ state, refs, root, signal }) {
-      console.log(`Component mounted: ${state.formatName}`)
-      
-      // Use the refs dictionary provided by the core plugin to target the element
-      const cardEl = root.querySelector(`[ref="${refs.card}"]`)
-
-      cardEl.addEventListener('click', () => {
-        alert(`Hello from the browser, ${state.formatName}!`)
-        
-        // automatically updates the DOM, and re-runs any dependent getters.
-        state.loginCount++ 
-      }, { signal })
+      titleEl.addEventListener('click', () => {
+        // Mutations automatically trigger DOM updates & getter re-evaluations
+        state.loginCount++
+      }, { signal }) // Always use 'signal' for auto-cleanup!
     }
   })
 </script>
@@ -200,42 +183,33 @@ Styles defined in the `<style>` block are automatically **scoped** to the compon
 
 ## Extending the Engine (`definePlugin`)
 
-Coralite is built to be extended. The `definePlugin` API lets you tap directly into the framework's build lifecycle.
-
-Plugins in Coralite use a functional, immutable API. Instead of mutating shared state, your plugin hooks simply return the specific data patches or pages you want to add. Core utilities are available via `coralite/utils`, and global engine state is accessible through `this` binding.
+Coralite uses an isomorphic plugin architecture. A plugin is divided into `server` (Node.js) and `client` (Browser) blocks, using a **Two-Phase Curried** API to safely inject context.
 
 ```javascript
 import { definePlugin } from 'coralite'
-import { parseHTML } from 'coralite/utils'
 
-export default function seoPlugin(options = {}) {
+export default function myPlugin(options = {}) {
   return definePlugin({
-    name: 'coralite-seo-plugin',
+    name: 'my-plugin',
 
-    // State Reducers: Patch the page context before rendering
-    onBeforePageRender (context) {
-      // Return a patch object; Coralite will safely deep-merge it for you!
-      return {
-        state: {
-          siteTitle: options.title || 'My Coralite Site',
-          metaDescription: 'Generated by Coralite'
+    server: {
+      // Phase 1: Global Context | Phase 2: Component Arguments
+      exports: {
+        getData: (context) => (query) => {
+          return { custom: 'data' }
         }
+      },
+      onBeforeComponentRender: ({ state }) => {
+        state.pluginAdded = true
       }
     },
 
-    // Data Aggregators: Generate entirely new pages during the build
-    onAfterPageRender ({ result, session }) {
-      // Access the engine instance via `this`
-      // this.pages.getItem('/index.html')
-
-      // Return an array of new pages to append to the final build
-      if (basePageResult.path.filename === 'index.html') {
-        return [
-          {
-            path: { filename: 'sitemap.xml', pathname: '/sitemap.xml' },
-            content: '<xml>...</xml>'
-          }
-        ]
+    client: {
+      // Injects a utility directly into the component's 'script' context
+      context: {
+        myHelper: (globalCtx) => (instanceCtx) => () => {
+          console.log('Hello from component', instanceCtx.instanceId)
+        }
       }
     }
   })
@@ -261,6 +235,7 @@ Coralite plugins tap into specific hooks that execute strictly during the SSG bu
 ### Rendering Hooks
 - **`onBeforePageRender`**: A state-reducing hook to patch the page context just before HTML serialization.
 - **`onAfterPageRender`**: An aggregator hook that runs after a page is rendered, allowing plugins to append additional pages (e.g., RSS feeds, sitemaps) to the build output.
+- **`no-hydration`**: An attribute that can be added to any component tag to completely exclude it from client-side hydration while still rendering its content on the server.
 
 ---
 

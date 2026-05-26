@@ -98,13 +98,14 @@ getters: {
     <p>The <code>script</code> block is the controller for your component in the browser. This is where you add event listeners and mutate state.</p>
 
     <coralite-code-highlight language="javascript">
-script: ({ state, signal, refs, root, instanceId, ...pluginContext }) => {
+script: ({ state, signal, refs }) => {
+    // Access unique DOM elements via the 'refs' utility
     const btn = refs('loadMoreBtn');
     
     btn.addEventListener('click', () => {
-        // Imperative mutation!
+        // Imperative mutation triggers DOM updates
         state.maxItems += 10; 
-    }, { signal });
+    }, { signal }); // Use the provided 'signal' for auto-cleanup
 }
     </coralite-code-highlight>
 
@@ -127,11 +128,6 @@ script: ({ state, signal, refs, root, instanceId, ...pluginContext }) => {
         <td>Used for cleaning up event listeners and aborting fetches on unmount.</td>
       </tr>
       <tr slot="body">
-        <td><code>page</code></td>
-        <td><code>CoralitePage</code></td>
-        <td>Static environment object (URL, file, meta).</td>
-      </tr>
-      <tr slot="body">
         <td><code>root</code></td>
         <td><code>HTMLElement</code></td>
         <td>The physical DOM element instance of the component.</td>
@@ -140,6 +136,11 @@ script: ({ state, signal, refs, root, instanceId, ...pluginContext }) => {
         <td><code>instanceId</code></td>
         <td><code>string</code></td>
         <td>A unique identifier for this specific instance.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>refs</code></td>
+        <td><code>(id: string) => HTMLElement | null</code></td>
+        <td>A utility to query unique elements by their <code>ref</code> name.</td>
       </tr>
     </coralite-table>
 

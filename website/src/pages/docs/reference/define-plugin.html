@@ -130,7 +130,7 @@ export default definePlugin({
   name: 'utils',
   client: {
     context: {
-      formatDate: (globalContext) => (localContext) => (date) => {
+      formatDate: (globalContext) => (instanceContext) => (date) => {
         return new Date(date).toLocaleDateString()
       }
     }
@@ -228,7 +228,7 @@ export default definePlugin({
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
-            script: ({ state, signal, refs, root, instanceId, ...pluginContext }) => {
+            script: ({ state, signal, refs }) => {
               const btn = refs('btn')
 
               btn.addEventListener('click', () => {

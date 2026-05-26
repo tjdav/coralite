@@ -1,28 +1,29 @@
-# Coralite
+# 🪸 Coralite
 
-Coralite is a strictly Server-Side Rendered (SSR) static site generator built around the emerging [HTML modules proposal](https://github.com/WICG/webcomponents/blob/gh-pages/proposals/html-modules-explainer.md). 
+Coralite is a **Native-First**, strictly Server-Side Rendered (SSR) framework for building fast, accessible, and future-proof websites. It leverages standard web technologies—HTML modules, Custom Elements, and standard ES modules—to eliminate framework-specific friction while providing a modern, reactive developer experience.
 
-- **Zero Hydration:** Pure SSR output. No Virtual DOM or heavy client-side frameworks required.
-- **HTML Modules:** Author components natively in HTML using `<template>` `<style>` and `<script type="module">`.
-- **Hybrid Architecture:** Seamlessly mix fully declarative static components with reactive, imperative Web Components.
-- **Extensible Plugin System:** Hook into the build pipeline and inject client-side helpers via a powerful plugin API.
+- **Native-First Architecture:** No custom template languages or proprietary compilers. If you know HTML, CSS, and JS, you know Coralite.
+- **Smart State, Dumb Template:** A strict reactive model that keeps logic in pure JavaScript (getters) and keeps templates clean and declarative.
+- **Zero Hydration by Default:** High-performance SSR output. Opt-in to reactivity only where needed with "Hybrid" Web Components.
+- **Scoped CSS without Shadow DOM:** Enjoy perfect style encapsulation using standard CSS, without the accessibility and styling headaches of Shadow DOM.
+- **Isomorphic Plugin System:** A powerful, two-phase curried API to extend the engine on both the server and the client.
 
 ## Packages
 This repository is a monorepo managed with `pnpm`. It contains the following packages:
 
 ### Core Framework
-- [`coralite`](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite) - The core HTML modules static site generator and CLI.
-- [`create-coralite`](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/create-coralite) - The scaffolding script to initialize new Coralite projects.
-- [`coralite-scripts`](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite-scripts) - Configuration, build, and dev scripts for Coralite projects.
+- [`coralite`](./packages/coralite) - The core reactive engine, HTML module compiler, and CLI.
+- [`coralite-scripts`](./packages/coralite-scripts) - Unified build, dev-server, and asset pipeline for Coralite projects.
+- [`create-coralite`](./packages/create-coralite) - Scaffolding tool to initialize new projects in seconds.
 
 ### Plugin Ecosystem
-- [`create-coralite-plugin`](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/create-coralite-plugin) - Scaffolding script for generating new Coralite plugins.
-- [`coralite-plugin-scripts`](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite-plugin-scripts) - Build and compilation scripts for plugin authors.
+- [`coralite-plugin-scripts`](./packages/coralite-plugin-scripts) - Development and release toolset for plugin authors.
+- [`create-coralite-plugin`](./packages/create-coralite-plugin) - Scaffolding tool for generating new Coralite plugins.
 
-### Internal
-- [`coralite-release`](https://codeberg.org/tjdavid/coralite/src/branch/main/packages/coralite-release) - Internal release and changelog management tools.
+### Release Tools
+- [`coralite-release`](./packages/coralite-release) - Internal monorepo release and changelog management.
 
-## 🚀 Getting Started
+## Getting Started
 
 To scaffold a new Coralite project, run:
 
