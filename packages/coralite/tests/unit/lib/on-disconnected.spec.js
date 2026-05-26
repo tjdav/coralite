@@ -1,12 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-
-// Mock HTMLElement before importing CoraliteElement
-global.HTMLElement = class {
-}
-
-// Use dynamic import to ensure HTMLElement is defined before CoraliteElement is evaluated
-const { CoraliteElement } = await import('../../../lib/coralite-element.js')
+import '../setup.js'
+import { CoraliteElement } from '../../../lib/coralite-element.js'
 
 describe('CoraliteElement onDisconnected hook', () => {
   it('should trigger onDisconnected hooks when the element is removed from the DOM', async () => {
@@ -33,7 +28,8 @@ describe('CoraliteElement onDisconnected hook', () => {
       ]
     }
 
-    const instance = new CoraliteElement()
+    customElements.define('on-disconnected-test', CoraliteElement)
+    const instance = document.createElement('on-disconnected-test')
     instance.componentOptions = options
     instance._hooks = {
       onBeforeComponentRender: [],

@@ -1,5 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
+import '../setup.js'
 import Coralite from '../../../lib/index.js'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -63,40 +64,39 @@ test('strip custom elements with no-hydration attribute', async (t) => {
   assert.ok(indexPage, 'Index page should be built')
 
   const content = indexPage.content
-  console.log('Generated HTML:', content)
+  document.documentElement.innerHTML = content
 
   // 1. Check if <coralite-meta> is removed but its children are present
-  assert.ok(!content.includes('<coralite-meta'), 'Should not contain <coralite-meta> tag')
-  assert.ok(content.includes('<title><c-token>Hello World</c-token></title>'), 'Should contain <title> tag')
-  assert.ok(content.includes('<meta name="description" content="Test description">'), 'Should contain <meta> tag')
+  const coraliteMeta = document.querySelector('coralite-meta')
+  assert.ok(!coraliteMeta, 'Should not contain <coralite-meta> tag')
+
+  const title = document.querySelector('title')
+  assert.ok(title, 'Should contain <title> tag')
+  assert.strictEqual(title.textContent, 'Hello World', 'Title should have correct text')
+
+  const meta = document.querySelector('meta[name="description"]')
+  assert.ok(meta, 'Should contain <meta> tag')
+  assert.strictEqual(meta.getAttribute('content'), 'Test description')
 
   // 2. Check if nested component inside no-hydration is also stripped
-  // It should be stripped because it's inside a no-hydration component
-  // Note: the one in the head should be stripped, the one in the body should NOT (unless it also has no-hydration, but here it doesn't)
+  const headNestedContent = document.head.querySelector('.nested')
+  assert.ok(headNestedContent, 'Should contain nested content in head')
+  assert.strictEqual(headNestedContent.parentElement.tagName, 'HEAD', 'Nested content should be direct child of head (stripped)')
 
-  // Actually, wait. If I have <nested-comp> in body, it should remain as <nested-comp data-cid="...">
-  assert.ok(content.includes('<nested-comp'), 'Should contain <nested-comp> tag from body')
-
-  // How to distinguish? The one from head shouldn't have the tag.
-  // The content from head should be: <title>...</title><meta ...><span class="nested">Nested Content</span>
-  assert.ok(content.includes('<span class="nested">Nested Content</span>'), 'Should contain nested content')
+  // The one in the body should NOT be stripped
+  const bodyNestedComp = document.body.querySelector('nested-comp')
+  assert.ok(bodyNestedComp, 'Should contain <nested-comp> tag from body')
+  assert.ok(bodyNestedComp.hasAttribute('data-cid'), 'Body nested-comp should have a data-cid')
 
   // 3. Check for hydration data
-  // The hydration script should not contain the cid for coralite-meta or the nested-comp from the head
-  const hydrationMatch = content.match(/<script id="__CORALITE_HYDRATION__" type="application\/json">([\s\S]*?)<\/script>/)
-  if (hydrationMatch) {
-    const hydrationData = JSON.parse(hydrationMatch[1])
+  const hydrationTag = document.getElementById('__CORALITE_HYDRATION__')
+  if (hydrationTag) {
+    const hydrationData = JSON.parse(hydrationTag.textContent)
+    const bodyNestedCid = bodyNestedComp.getAttribute('data-cid')
+
+    // coralite-meta should not have hydration data because it's no-hydration
     const cids = Object.keys(hydrationData)
-
-    // Find CID for body's nested-comp
-    const bodyNestedCid = content.match(/<nested-comp data-cid="(nested-comp-\d+)">/)?.[1]
-    assert.ok(bodyNestedCid, 'Body nested-comp should have a data-cid')
-
-    // There should be no CID for coralite-meta
-    const coraliteMetaCid = content.match(/<coralite-meta data-cid="(coralite-meta-\d+)">/)?.[1]
-    assert.ok(!coraliteMetaCid, 'coralite-meta should not have a data-cid')
-
-    // There might be hydration data for bodyNestedCid (if it has state, but here it doesn't have a script/data block, so it might not)
+    assert.ok(!cids.some(cid => cid.startsWith('coralite-meta')), 'coralite-meta should not have hydration data')
   }
 
   // Clean up
