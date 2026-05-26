@@ -37,7 +37,11 @@ ScriptManager.prototype.use = async function (plugin) {
     plugin
     && typeof plugin !== 'function'
   ) {
-    if (plugin.context || typeof plugin.setup === 'function' || typeof plugin.onBeforeComponentRender === 'function' || typeof plugin.onAfterComponentRender === 'function' || typeof plugin.onDisconnected === 'function') {
+    if (plugin.context
+      || typeof plugin.setup === 'function'
+      || typeof plugin.onBeforeComponentRender === 'function'
+      || typeof plugin.onAfterComponentRender === 'function'
+      || typeof plugin.onDisconnected === 'function') {
       this.scriptModules.push(plugin)
 
       if (plugin.context) {
@@ -454,7 +458,7 @@ export default {
     sourcemap: mode === 'production' ? 'external' : 'inline',
     outdir: 'assets/js',
     entryNames: '[name]-[hash]',
-    chunkNames: 'chunks/[name]-[hash]',
+    chunkNames: '[name]-[hash]',
     format: 'esm',
     sourceRoot: pathToFileURL(process.cwd()).href,
     define: {

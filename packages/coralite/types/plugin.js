@@ -101,6 +101,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {Attribute[]} [excludeByAttribute] - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
  * @property {Coralite} [app] - The global coralite app instance
+ * @property {boolean} [noHydration] - Indicates if the component should be stripped and not hydrated
  */
 
 /**

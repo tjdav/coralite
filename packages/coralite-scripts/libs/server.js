@@ -394,6 +394,7 @@ async function server (config, options) {
           // Write ESM script assets generated during the build phase
           if (coralite.outputFiles) {
             const assetsDir = join(config.output, 'assets', 'js')
+
             if (!existsSync(assetsDir)) {
               await mkdir(assetsDir, { recursive: true })
             }

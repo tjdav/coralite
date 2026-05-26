@@ -726,6 +726,7 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
       }
     }
 
+    const noHydration = customElement.attribs && 'no-hydration' in customElement.attribs
     const componentElement = await this.createComponentElement({
       id: customElement.name,
       state: mappedSessionObject.state[contextId],
@@ -734,21 +735,35 @@ Coralite.prototype._processCustomElementsInPage = async function (mappedComponen
       root: mappedComponent.root,
       contextId,
       index: i,
-      session: mappedSessionObject
+      session: mappedSessionObject,
+      noHydration
     })
 
     if (componentElement) {
-      customElement.children = componentElement.children
-      for (let j = 0; j < customElement.children.length; j++) {
-        customElement.children[j].parent = customElement
-      }
+      if (noHydration) {
+        const parent = customElement.parent
+        if (parent && parent.children) {
+          const elementIndex = parent.children.indexOf(customElement)
+          if (elementIndex !== -1) {
+            for (let j = 0; j < componentElement.children.length; j++) {
+              componentElement.children[j].parent = parent
+            }
+            parent.children.splice(elementIndex, 1, ...componentElement.children)
+          }
+        }
+      } else {
+        customElement.children = componentElement.children
+        for (let j = 0; j < customElement.children.length; j++) {
+          customElement.children[j].parent = customElement
+        }
 
-      if (!customElement.attribs) {
-        customElement.attribs = {}
-      }
-      customElement.attribs['data-cid'] = contextId
+        if (!customElement.attribs) {
+          customElement.attribs = {}
+        }
+        customElement.attribs['data-cid'] = contextId
 
-      mappedSessionObject.componentTags.add(customElement.name)
+        mappedSessionObject.componentTags.add(customElement.name)
+      }
     }
   }
 }
@@ -1600,10 +1615,11 @@ Coralite.prototype._processDependentComponents = async function (componentIds, s
  * @param {CoraliteModuleDefinitions} [options.state={}] - Token state available for replacement
  * @param {CoraliteElement} [options.element] - The original Custom Element node
  * @param {CoralitePage} options.page - The global page object
- * @param {CoraliteComponentRoot} [options.root] - The root element of the component
+ * @param {any} options.root - The root element of the component
  * @param {string} [options.contextId] - Context Id
  * @param {number} [options.index] - Context index
  * @param {CoraliteSession} [options.session] - Render Context
+ * @param {boolean} [options.noHydration] - Indicates if the component should be stripped and not hydrated
  * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
  * @returns {Promise<CoraliteElement | void>}
  */
@@ -1615,7 +1631,8 @@ Coralite.prototype.createComponentElement = async function ({
   root,
   contextId,
   index,
-  session
+  session,
+  noHydration
 }, head = true) {
   if (!session) {
     session = this._createSession()
@@ -1717,7 +1734,8 @@ Coralite.prototype.createComponentElement = async function ({
         page,
         root: element || root,
         contextId,
-        session
+        session,
+        noHydration
       })
     } catch (error) {
       throw this._createExecutionError(error, module, moduleComponent, page, contextId)
@@ -1806,12 +1824,14 @@ Coralite.prototype.createComponentElement = async function ({
 
 
       // Store instance data for script manager
-      session.scripts.add(page.file.pathname, {
-        id: contextId,
-        componentId: module.id,
-        page,
-        state: scriptResult.__script__.state
-      })
+      if (!noHydration) {
+        session.scripts.add(page.file.pathname, {
+          id: contextId,
+          componentId: module.id,
+          page,
+          state: scriptResult.__script__.state
+        })
+      }
 
       delete scriptResult.__script__
     }
@@ -1932,6 +1952,8 @@ Coralite.prototype.createComponentElement = async function ({
 
     session.state[childContextId] = childState
 
+    const childNoHydration = noHydration || (customElement.attribs && 'no-hydration' in customElement.attribs)
+
     createComponentTasks.push(
       this.createComponentElement({
         id: customElement.name,
@@ -1941,11 +1963,13 @@ Coralite.prototype.createComponentElement = async function ({
         root,
         contextId: childContextId,
         index,
-        session
+        session,
+        noHydration: childNoHydration
       }, false).then(childComponentElement => ({
         childComponentElement,
         customElement,
-        childContextId
+        childContextId,
+        noHydration: childNoHydration
       }))
     )
   }
@@ -1953,25 +1977,61 @@ Coralite.prototype.createComponentElement = async function ({
   const results = await Promise.all(createComponentTasks)
 
   for (let i = 0; i < results.length; i++) {
-    const { childComponentElement, customElement, childContextId } = results[i]
+    const { childComponentElement, customElement, childContextId, noHydration: childNoHydration } = results[i]
 
     // replace custom element with component
     if (childComponentElement && typeof childComponentElement === 'object') {
-      customElement.children = childComponentElement.children
-      for (let j = 0; j < customElement.children.length; j++) {
-        customElement.children[j].parent = customElement
-      }
+      if (childNoHydration) {
+        const parent = customElement.parent
+        if (parent && parent.children) {
+          const elementIndex = parent.children.indexOf(customElement)
+          if (elementIndex !== -1) {
+            for (let j = 0; j < childComponentElement.children.length; j++) {
+              childComponentElement.children[j].parent = parent
+            }
+            parent.children.splice(elementIndex, 1, ...childComponentElement.children)
+          }
+        }
+      } else {
+        customElement.children = childComponentElement.children
+        for (let j = 0; j < customElement.children.length; j++) {
+          customElement.children[j].parent = customElement
+        }
 
-      if (!customElement.attribs) {
-        customElement.attribs = {}
-      }
-      customElement.attribs['data-cid'] = childContextId
+        if (!customElement.attribs) {
+          customElement.attribs = {}
+        }
+        customElement.attribs['data-cid'] = childContextId
 
-      session.componentTags.add(customElement.name)
+        session.componentTags.add(customElement.name)
+      }
     }
   }
 
-  await this._replaceSlots(id, element, module, contextId, componentState, page, root, index, session)
+  await this._replaceSlots(id, element, module, contextId, componentState, page, root, index, session, noHydration)
+
+  if (noHydration) {
+    const stack = [...result.children]
+    while (stack.length > 0) {
+      const node = stack.pop()
+      if (node.type === 'tag') {
+        if (node.name === 'c-token') {
+          const parent = node.parent
+          if (parent && parent.children) {
+            const index = parent.children.indexOf(node)
+            if (index !== -1) {
+              for (let j = 0; j < node.children.length; j++) {
+                node.children[j].parent = parent
+              }
+              parent.children.splice(index, 1, ...node.children)
+            }
+          }
+        } else {
+          stack.push(...(node.children || []))
+        }
+      }
+    }
+  }
 
   const mappedAfterContext = await this._triggerPluginHook('onAfterComponentRender', {
     result,
@@ -2001,9 +2061,10 @@ Coralite.prototype.createComponentElement = async function ({
  * @param {any} root - The component root element
  * @param {number} index - Index of element
  * @param {CoraliteSession} session - Rendering state
+ * @param {boolean} noHydration - No hydration flag
  * @returns {Promise<void>} Resolves when slots are successfully replaced
  */
-Coralite.prototype._replaceSlots = async function (id, element, module, contextId, state, page, root, index, session) {
+Coralite.prototype._replaceSlots = async function (id, element, module, contextId, state, page, root, index, session, noHydration) {
   const slots = module.slotElements ? module.slotElements[id] : null
 
   if (!slots) {
@@ -2075,6 +2136,8 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
               session.state[slotContextId] = Object.assign(currentProperties, state)
             }
 
+            const childNoHydration = noHydration || (node.attribs && 'no-hydration' in node.attribs)
+
             const componentElement = await this.createComponentElement({
               id: node.name,
               state: session.state[slotContextId],
@@ -2083,21 +2146,35 @@ Coralite.prototype._replaceSlots = async function (id, element, module, contextI
               root,
               contextId: slotContextId,
               index,
-              session
+              session,
+              noHydration: childNoHydration
             }, false)
 
             if (componentElement) {
-              node.children = componentElement.children
-              for (let j = 0; j < node.children.length; j++) {
-                node.children[j].parent = node
-              }
+              if (childNoHydration) {
+                const parent = node.parent
+                if (parent && parent.children) {
+                  const elementIndex = parent.children.indexOf(node)
+                  if (elementIndex !== -1) {
+                    for (let j = 0; j < componentElement.children.length; j++) {
+                      componentElement.children[j].parent = parent
+                    }
+                    parent.children.splice(elementIndex, 1, ...componentElement.children)
+                  }
+                }
+              } else {
+                node.children = componentElement.children
+                for (let j = 0; j < node.children.length; j++) {
+                  node.children[j].parent = node
+                }
 
-              if (!node.attribs) {
-                node.attribs = {}
-              }
-              node.attribs['data-cid'] = slotContextId
+                if (!node.attribs) {
+                  node.attribs = {}
+                }
+                node.attribs['data-cid'] = slotContextId
 
-              session.componentTags.add(node.name)
+                session.componentTags.add(node.name)
+              }
             }
           }
         }
@@ -2237,6 +2314,7 @@ Coralite.prototype._moduleLinker = function (path, context) {
  * @param {any} data.root - The Coralite module to parse
  * @param {string} data.contextId - Context Id
  * @param {CoraliteSession} data.session - Render Context
+ * @param {boolean} data.noHydration - No hydration flag
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -2246,7 +2324,8 @@ Coralite.prototype._evaluateDevelopment = async function ({
   page,
   root,
   contextId,
-  session
+  session,
+  noHydration
 }) {
   const { SourceTextModule } = await import('node:vm')
 
@@ -2261,7 +2340,8 @@ Coralite.prototype._evaluateDevelopment = async function ({
     module,
     id: contextId,
     session,
-    app: this
+    app: this,
+    noHydration
   }
 
   const cachedBoundPlugins = this._bindPlugins(this._source.plugins, context)
@@ -2334,6 +2414,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
  * @param {any} data.root - The Coralite module to parse
  * @param {string} data.contextId - Context Id
  * @param {CoraliteSession} data.session - Render Context
+ * @param {boolean} data.noHydration - No hydration flag
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -2343,7 +2424,8 @@ Coralite.prototype._evaluateProduction = async function ({
   page,
   root,
   contextId,
-  session
+  session,
+  noHydration
 }) {
   const context = {
     state: state || {},
@@ -2352,7 +2434,8 @@ Coralite.prototype._evaluateProduction = async function ({
     module,
     id: contextId,
     session,
-    app: this
+    app: this,
+    noHydration
   }
 
   session.source.currentSourceContextId = contextId
@@ -2626,10 +2709,11 @@ Coralite.prototype._replaceCustomElementWithTemplate = function (coraliteElement
  * @param {CoraliteModule} [context.module] - The component module
  * @param {Function} [context.createComponentElement] - The createComponentElement function
  * @param {CoraliteSession} [context.session] - The current build session
+ * @param {boolean} [context.noHydration] - No hydration flag
  * @returns {Promise<any>} - Processed value
  */
 Coralite.prototype._processTokenValue = async function (value, context) {
-  const { excludeByAttribute, state, module, createComponentElement, session } = context
+  const { excludeByAttribute, state, module, createComponentElement, session, noHydration } = context
   // If not a string, return as-is
   if (typeof value !== 'string') {
     return value
@@ -2647,6 +2731,8 @@ Coralite.prototype._processTokenValue = async function (value, context) {
   for (let i = 0; i < result.customElements.length; i++) {
     const customElement = result.customElements[i]
     const cid = `${module.path.pathname}${customElement.name}-${i}`
+    const childNoHydration = noHydration || (customElement.attribs && 'no-hydration' in customElement.attribs)
+
     const componentElement = await createComponentElement({
       contextId: cid,
       id: customElement.name,
@@ -2654,21 +2740,35 @@ Coralite.prototype._processTokenValue = async function (value, context) {
       element: customElement,
       module,
       index: i,
-      session
+      session,
+      noHydration: childNoHydration
     })
 
     if (componentElement) {
-      customElement.children = componentElement.children
-      for (let j = 0; j < customElement.children.length; j++) {
-        customElement.children[j].parent = customElement
-      }
+      if (childNoHydration) {
+        const parent = customElement.parent
+        if (parent && parent.children) {
+          const elementIndex = parent.children.indexOf(customElement)
+          if (elementIndex !== -1) {
+            for (let j = 0; j < componentElement.children.length; j++) {
+              componentElement.children[j].parent = parent
+            }
+            parent.children.splice(elementIndex, 1, ...componentElement.children)
+          }
+        }
+      } else {
+        customElement.children = componentElement.children
+        for (let j = 0; j < customElement.children.length; j++) {
+          customElement.children[j].parent = customElement
+        }
 
-      if (!customElement.attribs) {
-        customElement.attribs = {}
-      }
-      customElement.attribs['data-cid'] = cid
+        if (!customElement.attribs) {
+          customElement.attribs = {}
+        }
+        customElement.attribs['data-cid'] = cid
 
-      session.componentTags.add(customElement.name)
+        session.componentTags.add(customElement.name)
+      }
     }
   }
 
@@ -2819,7 +2919,8 @@ Coralite.prototype._defineComponent = async function (options, context) {
           const processedResult = await this._processTokenValue(result, {
             ...context,
             state,
-            createComponentElement: context.app.createComponentElement
+            createComponentElement: context.app.createComponentElement,
+            noHydration: context.noHydration
           })
 
           if (Array.isArray(processedResult)) {
