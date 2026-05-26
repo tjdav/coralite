@@ -1,0 +1,31 @@
+# Coralite Framework - Project Guidelines
+
+## CRITICAL DIRECTIVES
+1. **NO VANILLA BOILERPLATE:** Do not write standard `customElements.define()` or `class extends HTMLElement`. Always use Coralite's `defineComponent` exported from `coralite`.
+2. **AST SPLICING AWARENESS:** The server preserves the host tag and injects template contents as Light DOM with deterministic `data-cid` attributes.
+3. **ZERO-CONFIG DEPENDENCIES:** Use standard dynamic imports (`await import('pkg')`) inside the `script` block for client-side JS.
+4. **IMPERATIVE MOUNTING:** To mount a component imperatively, use `document.createElement('my-component')`.
+
+## 1. File Structure: Pages vs. Components
+* **Pages**: Standard `.html` files in `src/pages` that consume components.
+* **Components**: `.html` files in `src/components` consisting of `<template>`, `<style>`, and `<script type="module">`.
+
+## 2. Dynamic Components (defineComponent)
+Always export `defineComponent` from your component's script.
+
+```javascript
+import { defineComponent } from 'coralite'
+export default defineComponent({
+  attributes: { /* Primitives only: String, Number, Boolean */ },
+  async data({ state, page }) { /* Server-side data fetching */ return {}; },
+  getters: { /* Derived state, read-only */ },
+  script({ state, root, instanceId, signal, refs }) { /* Client-side logic */ }
+})
+```
+
+## 3. The "Smart State, Dumb Template" Paradigm
+Templates are strictly declarative. No JavaScript logic or dot-notation. Only render flat keys from the unified `state`: `{{ myKey }}`.
+
+## 4. Native Web APIs
+* **Communication**: Use standard `CustomEvent`.
+* **Cleanup**: Always use the provided `AbortSignal` (`signal`) for event listeners and fetch requests.

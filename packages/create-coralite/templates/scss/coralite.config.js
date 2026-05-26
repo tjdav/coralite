@@ -6,7 +6,6 @@ export default defineConfig({
   pages: 'src/pages',
   components: 'src/components',
   styles: {
-    type: 'scss',
-    input: 'src/scss'
+    input: ['src/scss/styles.scss']
   }
 })

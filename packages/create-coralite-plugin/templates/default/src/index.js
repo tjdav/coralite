@@ -5,22 +5,68 @@ import { definePlugin } from 'coralite'
  */
 export default definePlugin({
   name: 'my-plugin',
-  /**
-   * Called when the plugin is invoked in a component
-   * e.g. {{ myPlugin(options) }}
-   */
-  method: (options, context) => {
-    return {
-      message: options.message || 'Hello from method!'
+
+  // SERVER: Strictly Node.js / Build-Time Execution
+  server: {
+    /**
+     * The exports property defines methods available to components during the server-side build process.
+     * These virtual modules MUST only be invoked within the data() block.
+     * Uses Two-Phase Currying: (session) => (instanceContext) => { ... }
+     */
+    exports: {
+      myPluginMethod: (session) => (instanceContext) => {
+        return {
+          message: instanceContext.message || 'Hello from server export!'
+        }
+      }
+    },
+
+    /**
+     * Called when a page is being processed.
+     * Returns data available to all components on the page.
+     */
+    onPageSet: ({ state, page, session }) => {
+      return {
+        pluginGlobalData: 'Hello from Plugin onPageSet!'
+      }
     }
   },
-  /**
-   * Called when a page is being processed
-   */
-  onPageSet: ({ properties }) => {
-    // Add data available to all pages
-    return {
-      helloWorld: 'Hello from My Plugin!'
+
+  // CLIENT: Strictly Browser / Run-Time Execution
+  client: {
+    /**
+     * Injects utilities into the component's script context.
+     * Uses Two-Phase Currying: (globalContext) => (instanceContext) => { ... }
+     */
+    context: {
+      myClientUtility: (globalContext) => (instanceContext) => {
+        const { state, instanceId } = instanceContext
+        return (msg) => {
+          console.log(`[${instanceId}] Plugin says: ${msg}`)
+        }
+      }
+    },
+
+    /**
+     * Called before the component is rendered on the client.
+     */
+    onBeforeComponentRender: ({ state, instanceId, element, options }) => {
+      // console.log('Before component render:', instanceId)
+    },
+
+    /**
+     * Called after the component is rendered and the DOM is stable.
+     */
+    onAfterComponentRender: ({ state, instanceId, element, options }) => {
+      // console.log('After component render:', instanceId)
+    },
+
+    /**
+     * Called when the component is disconnected from the DOM.
+     * Use this to clean up global event listeners, observers, etc.
+     */
+    onDisconnected: ({ state, instanceId, element, options }) => {
+      // console.log('Component disconnected:', instanceId)
     }
   }
 })

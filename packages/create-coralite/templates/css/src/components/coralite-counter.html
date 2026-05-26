@@ -40,17 +40,18 @@
       }
     },
 
-    async script ({ state, refs }) {
-      const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
+    script ({ state, root, instanceId, signal, refs }) {
       const button = refs('count-button')
 
-      button.addEventListener('click', () => {
+      button.addEventListener('click', async () => {
+        const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
+
         // Coralite automatically patches the {{ count }} token in the template.
         state.count += state.step
 
         // Explode confetti :)
         confetti()
-      })
+      }, { signal })
     }
   })
 </script>
