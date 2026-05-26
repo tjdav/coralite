@@ -1,6 +1,7 @@
 import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute, CoraliteRef, CoraliteTextNodeToken, CoraliteAttributeToken } from './component.js'
+ * @import { CoraliteComponentOptions } from '../lib/coralite-element.js'
  * @import { HTMLData, CoraliteFilePath, CoralitePage, CoraliteSession } from './core.js'
  * @import { CoraliteModule, CoraliteModuleDefinition } from './module.js'
  * @import { CoraliteAnyNode } from './dom.js'
@@ -16,7 +17,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {string} componentId - The tag name of the component.
  * @property {Array<{name: string, element: HTMLElement}>} refs - The DOM elements mapped by their reference names.
  * @property {CoraliteElement} element - The component instance element.
- * @property {CoraliteComponent} options - The component options.
+ * @property {CoraliteComponentOptions} options - The component options.
  */
 
 /**
@@ -25,7 +26,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {string} instanceId - The unique ID of the component instance.
  * @property {string} componentId - The tag name of the component.
  * @property {CoraliteElement} element - The component instance element.
- * @property {CoraliteComponent} options - The component options.
+ * @property {CoraliteComponentOptions} options - The component options.
  */
 
 /**
@@ -34,7 +35,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {string} instanceId - The unique ID of the component instance.
  * @property {string} componentId - The tag name of the component.
  * @property {CoraliteElement} element - The component instance element.
- * @property {CoraliteComponent} options - The component options.
+ * @property {CoraliteComponentOptions} options - The component options.
  */
 
 /**

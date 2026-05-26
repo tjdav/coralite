@@ -320,10 +320,12 @@ export class CoraliteElement extends HTMLElement {
     const options = this.componentOptions
     const target = { ...options.defaultValues }
 
-    /** @type {Array<{name: string, element: Node}>} */
+    /** @type {Array<{name: string, element: HTMLElement}>} */
     const refs = []
     if (options.hydrationMap && options.hydrationMap.refs) {
       for (const item of options.hydrationMap.refs) {
+        /** @type {HTMLElement} */
+        // @ts-ignore
         const node = this.getNodeByPath(item.path)
         if (node) {
           refs.push({
@@ -690,7 +692,7 @@ export class CoraliteElement extends HTMLElement {
 /**
  * Factory function to create a Coralite element class.
  * It dynamically defines the class, including observed attributes and hook initialization.
- * @param {CoraliteComponent} options - Component options and metadata.
+ * @param {CoraliteComponentOptions} options - Component options and metadata.
  * @param {Function|null} [contextGetter=null] - Optional function to retrieve client-side plugin context.
  * @param {Object} [hooks={}] - Lifecycle hooks to register.
  * @param {Array<CoraliteClientPluginBeforeComponentRenderCallback>} [hooks.onBeforeComponentRender] - Hooks to run before render.
