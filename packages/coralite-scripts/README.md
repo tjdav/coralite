@@ -48,7 +48,6 @@ export default defineConfig({
         loadPaths: ['node_modules']
       },
       postcss: {
-        // Native PostCSS plugins (This is how you support Tailwind!)
         plugins: [
           // tailwindcss(),
           // autoprefixer()
