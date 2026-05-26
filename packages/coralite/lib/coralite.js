@@ -1600,7 +1600,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, s
  * @param {CoraliteModuleDefinitions} [options.state={}] - Token state available for replacement
  * @param {CoraliteElement} [options.element] - The original Custom Element node
  * @param {CoralitePage} options.page - The global page object
- * @param {any} options.root - The root element of the component
+ * @param {CoraliteComponentRoot} [options.root] - The root element of the component
  * @param {string} [options.contextId] - Context Id
  * @param {number} [options.index] - Context index
  * @param {CoraliteSession} [options.session] - Render Context
