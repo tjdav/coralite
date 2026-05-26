@@ -29,6 +29,15 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
+ * @typedef {Object} CoraliteClientDisconnectedSession
+ * @property {Object.<string, any>} state - The proxied component state.
+ * @property {string} instanceId - The unique ID of the component instance.
+ * @property {string} componentId - The tag name of the component.
+ * @property {CoraliteElement} element - The component instance element.
+ * @property {CoraliteComponent} options - The component options.
+ */
+
+/**
  * @callback CoraliteClientPluginBeforeComponentRenderCallback - Callback triggered before a client component state proxy is created and rendered.
  * @param {CoraliteClientBeforeComponentSession} context
  * @returns {void}
@@ -37,6 +46,12 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @callback CoraliteClientPluginAfterComponentRenderCallback - Callback triggered after a client component DOM is updated.
  * @param {CoraliteClientAfterComponentSession} context
+ * @returns {void}
+ */
+
+/**
+ * @callback CoraliteClientPluginDisconnectedCallback - Callback triggered when a client component is removed from the DOM.
+ * @param {CoraliteClientDisconnectedSession} context
  * @returns {void}
  */
 

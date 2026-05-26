@@ -2,7 +2,7 @@
 /**
  * @import { CoraliteModuleDefinition, CoraliteModuleSlotFunction } from './module.js'
  * @import { CoralitePage, CoraliteSession } from './core.js'
- * @import { CoraliteClientPluginBeforeComponentRenderCallback, CoraliteClientPluginAfterComponentRenderCallback } from './plugin.js'
+ * @import { CoraliteClientPluginBeforeComponentRenderCallback, CoraliteClientPluginAfterComponentRenderCallback, CoraliteClientPluginDisconnectedCallback } from './plugin.js'
  */
 
 /**
@@ -65,6 +65,7 @@
  * @property {function(any): void} [setup] - Called when plugin is registered
  * @property {CoraliteClientPluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Called before component is rendered
  * @property {CoraliteClientPluginAfterComponentRenderCallback} [onAfterComponentRender] - Called after component is rendered
+ * @property {CoraliteClientPluginDisconnectedCallback} [onDisconnected] - Called when component is removed from the DOM
  * @property {Object.<string, ScriptPluginHelperGlobalInstance>} [context] - Global or instance helpers to add to scripts
  * @property {string[]} [_extractedComponents] - Extracted imperative components
  */

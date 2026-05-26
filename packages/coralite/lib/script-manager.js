@@ -37,7 +37,7 @@ ScriptManager.prototype.use = async function (plugin) {
     plugin
     && typeof plugin !== 'function'
   ) {
-    if (plugin.context || typeof plugin.setup === 'function' || typeof plugin.onBeforeComponentRender === 'function' || typeof plugin.onAfterComponentRender === 'function') {
+    if (plugin.context || typeof plugin.setup === 'function' || typeof plugin.onBeforeComponentRender === 'function' || typeof plugin.onAfterComponentRender === 'function' || typeof plugin.onDisconnected === 'function') {
       this.scriptModules.push(plugin)
 
       if (plugin.context) {
@@ -217,7 +217,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const moduleNamespace = 'coralite-script-module:'
   // Generate ESM imports for each script module
   for (let i = 0; i < this.scriptModules.length; i++) {
-    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, runSetup as runSetup_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i} } from "${moduleNamespace}${i}";\n`)
+    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, runSetup as runSetup_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i} } from "${moduleNamespace}${i}";\n`)
   }
 
   // Setup client context state
@@ -355,7 +355,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   entryCodeParts.push(`const globalClientHooks = {
     onBeforeComponentRender: [${this.scriptModules.map((_, i) => `onBeforeComponentRender_${i}`).join(', ')}].filter(Boolean),
-    onAfterComponentRender: [${this.scriptModules.map((_, i) => `onAfterComponentRender_${i}`).join(', ')}].filter(Boolean)
+    onAfterComponentRender: [${this.scriptModules.map((_, i) => `onAfterComponentRender_${i}`).join(', ')}].filter(Boolean),
+    onDisconnected: [${this.scriptModules.map((_, i) => `onDisconnected_${i}`).join(', ')}].filter(Boolean)
   };\n`)
 
   entryCodeParts.push(`import { createCoraliteClass } from ${JSON.stringify(coraliteElementPath)};\n`)
@@ -608,6 +609,9 @@ export default {
 
             const afterFn = module.onAfterComponentRender ? normalizeFunction(module.onAfterComponentRender) : 'null'
             contents += `export const onAfterComponentRender = ${afterFn};\n`
+
+            const disconnectedFn = module.onDisconnected ? normalizeFunction(module.onDisconnected) : 'null'
+            contents += `export const onDisconnected = ${disconnectedFn};\n`
 
             // Generate client context state
             contents += 'export const clientContextProps = {\n'

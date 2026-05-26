@@ -1,5 +1,10 @@
 /**
- * @import { CoraliteModuleDefinitions, CoraliteScriptContext, CoraliteComponent } from '../types/index.js'
+ * @import { CoraliteComponent } from '../types/index.js'
+ * @import {
+ *  CoraliteClientPluginDisconnectedCallback,
+ *  CoraliteClientPluginAfterComponentRenderCallback,
+ *  CoraliteClientPluginBeforeComponentRenderCallback
+ * } from '../types/plugin.js'
  */
 
 const BOOLEAN_ATTRIBUTES = new Set([
@@ -89,59 +94,121 @@ export function createReadOnlyProxy (target, proxies = new WeakMap()) {
   return proxy
 }
 
+
+/**
+ * @typedef {Object} CoraliteComponentOptions
+ * @property {string} componentId - The unique identifier for the component.
+ * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
+ * @property {Object} [defaultValues] - The initial state values extracted from the server data block.
+ * @property {Object} [attributes] - Schema for coercing HTML attributes into typed primitives.
+ * @property {Object.<string, Function>} [getters] - Pure functions for derived state, supporting Promises.
+ * @property {Object.<string, Function>} [slots] - Transformation functions for projected Light DOM.
+ * @property {Function} [script] - The client-side controller logic.
+ * @property {Object} [hydrationMap] - AST mapping for reactive text nodes, attributes, and refs.
+ */
+
 /**
  * Base class for all Coralite custom elements.
- * Handles component hydration, reactive state management, and DOM synchronization.
- * It manages lifecycle hooks, attribute-to-state mapping, and efficient batch updates.
- * @augments HTMLElement
+ * * This class acts as the client-side runtime engine. It manages DOM hydration,
+ * native Web Component lifecycles, batched reactive state management (via Proxies),
+ * asynchronous getter race-condition locks, and isomorphic plugin hooks.
+ * * @augments HTMLElement
  */
 export class CoraliteElement extends HTMLElement {
   /**
    * Initializes a new instance of the CoraliteElement.
-   * Sets up internal state, binding collections, and hook registries.
+   * Sets up internal state trackers, binding collections, and hook registries.
    */
   constructor () {
     super()
-    /** @type {AbortController|null} @protected */
-    this._abortController = null
-    /** @type {string|null} @protected */
-    this._instanceId = null
-    /** @type {any|null} @protected */
-    this._state = null
-    /** @type {Array<Object>} @protected */
-    this._bindings = []
-    /** @type {boolean} @protected */
-    this._isUpdatePending = false
-    /** @type {symbol|null} @protected */
-    this._currentRenderVersion = null
-    /** @type {MutationObserver|null} @protected */
-    this._observer = null
-    /** @type {Function|null} @protected */
-    this._clientContextGetter = null
-    /** @type {Object.<string, AbortController>|null} @protected */
-    this._getterAbortControllers = null
     /**
-     * Internal lifecycle hooks.
-     * @type {Object}
-     * @property {Array<function(any):void>} onBeforeComponentRender
-     * @property {Array<function(any):void>} onAfterComponentRender
+     * Controls native teardown of event listeners and async fetches upon disconnection.
+     * @type {AbortController|null}
+     * @protected
+     */
+    this._abortController = null
+
+    /**
+     * A globally unique, deterministic identifier (e.g., `my-comp-0`).
+     * @type {string|null}
+     * @protected
+     */
+    this._instanceId = null
+
+    /**
+     * The unified, deeply reactive proxy holding attributes, data, and getters.
+     * @type {Object|null}
+     * @protected
+     */
+    this._state = null
+
+    /**
+     * The collection of DOM nodes mapped to template tokens and attributes.
+     * @type {Array<{type: string, node: Node, template?: string, name?: string}>}
+     * @protected
+     */
+    this._bindings = []
+
+    /**
+     * Flag to prevent multiple synchronous state mutations from triggering multiple DOM paints.
+     * @type {boolean}
+     * @protected
+     */
+    this._isUpdatePending = false
+
+    /**
+     * A unique Symbol generated per render cycle to prevent async getter race conditions.
+     * @type {symbol|null}
+     * @protected
+     */
+    this._currentRenderVersion = null
+
+    /**
+     * @type {MutationObserver|null}
+     * @protected
+     */
+    this._observer = null
+
+    /**
+     * Hook to fetch globally registered Phase-2 plugin contexts.
+     * @type {Function|null}
+     * @protected
+     */
+    this._clientContextGetter = null
+
+    /**
+     * Tracks AbortControllers specifically for cancelling stale async getters.
+     * @type {Object.<string, AbortController>|null}
+     * @protected
+     */
+    this._getterAbortControllers = null
+
+    /**
+     * Internal lifecycle hooks injected by registered Coralite plugins.
+     * @type {{
+     *   onBeforeComponentRender: Array<CoraliteClientPluginBeforeComponentRenderCallback>,
+     *   onAfterComponentRender: Array<CoraliteClientPluginAfterComponentRenderCallback>,
+     *   onDisconnected: Array<CoraliteClientPluginDisconnectedCallback>
+     * }}
      * @protected
      */
     this._hooks = {
       onBeforeComponentRender: [],
-      onAfterComponentRender: []
+      onAfterComponentRender: [],
+      onDisconnected: []
     }
+
     /**
-     * Component definition and options.
-     * @type {CoraliteComponent|any|null}
+     * The definition and schema of the component generated by the compiler.
+     * @type {CoraliteComponentOptions|null}
      */
     this.componentOptions = null
   }
 
   /**
-   * Invoked when the element is added to the document.
-   * Handles initialization, template injection for imperative components,
-   * instance ID generation, and state/binding setup.
+   * Invoked natively when the element is added to the document.
+   * Handles the architectural split between Declarative (SSR) and Imperative (JS) components.
+   * Orchestrates template injection, instance ID generation, and state/binding setup.
    */
   connectedCallback () {
     this._abortController = new AbortController()
@@ -150,8 +217,11 @@ export class CoraliteElement extends HTMLElement {
       return
     }
 
+    // Declarative components receive a data-cid from the server.
+    // Imperative components (created via document.createElement) do not.
     const isImperative = !this.hasAttribute('data-cid')
 
+    // Imperative Flow: Manually stamp the template and project the Light DOM.
     if (isImperative && this.componentOptions.templateHTML) {
       const originalLightDOM = Array.from(this.childNodes)
       this.innerHTML = this.componentOptions.templateHTML
@@ -170,9 +240,11 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
+    // Establish the Deterministic Instance ID
     if (this.hasAttribute('data-cid')) {
       this._instanceId = this.getAttribute('data-cid')
     } else {
+      // Fallback counter for imperatively created components
       // @ts-ignore
       window.__coralite_instanceCounters = window.__coralite_instanceCounters || {}
       const prefix = this.componentOptions.componentId
@@ -195,19 +267,37 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
-   * Invoked when the element is removed from the document.
-   * Aborts any pending async operations via the internal AbortController.
+   * Invoked natively when the element is removed from the document.
+   * Aborts pending requests and triggers `onDisconnected` plugin hooks
+   * to ensure external libraries (e.g., Observers) do not cause memory leaks.
    */
   disconnectedCallback () {
-    this._abortController.abort()
+    if (this._abortController) {
+      this._abortController.abort()
+    }
+
+    if (!this.componentOptions) {
+      return
+    }
+
+    for (const hook of this._hooks.onDisconnected) {
+      hook({
+        state: this._state,
+        instanceId: this._instanceId,
+        componentId: this.componentOptions.componentId,
+        element: this,
+        options: this.componentOptions
+      })
+    }
   }
 
   /**
-   * Invoked when one of the element's observed attributes changes.
-   * Synchronizes the attribute change to the internal reactive state.
-   * @param {string} name - The name of the attribute that changed.
-   * @param {string|null} oldVal - The previous value of the attribute.
-   * @param {string|null} newVal - The new value of the attribute.
+   * Invoked natively when an observed HTML attribute changes.
+   * Coerces the raw string value based on the component's attribute schema
+   * and synchronizes it into the reactive state proxy.
+   * @param {string} name - The kebab-case name of the attribute.
+   * @param {string|null} oldVal - The previous value.
+   * @param {string|null} newVal - The new value.
    */
   attributeChangedCallback (name, oldVal, newVal) {
     if (!this._state || oldVal === newVal || name === 'data-cid') {
@@ -216,13 +306,14 @@ export class CoraliteElement extends HTMLElement {
     const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
     const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
     const value = schema ? coerce(newVal, schema.type) : newVal
+
     this._state[camelName] = value
   }
 
   /**
-   * Sets up the component's state.
-   * Merges default values, hydrated data, and initial attributes.
-   * Triggers `onBeforeComponentRender` hooks and defines reactive getters.
+   * Constructs the unified state object.
+   * Merges `defaultValues`, JSON hydration payloads, and DOM attributes.
+   * Defines getters (wrapping state in a Read-Only proxy) and applies the final Read/Write Proxy.
    * @private
    */
   _setupState () {
@@ -243,6 +334,7 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
+    // Trigger Before-Render hooks BEFORE state is proxied, allowing plugins to inject reactive data
     for (const hook of this._hooks.onBeforeComponentRender) {
       hook({
         state: target,
@@ -254,7 +346,7 @@ export class CoraliteElement extends HTMLElement {
       })
     }
 
-    // Hydrate data() block results
+    // Hydrate data() block results from the SSR JSON payload
     const hydrationTag = document.getElementById('__CORALITE_HYDRATION__')
     if (hydrationTag) {
       try {
@@ -263,10 +355,11 @@ export class CoraliteElement extends HTMLElement {
           Object.assign(target, allData[this._instanceId])
         }
       } catch (e) {
+        console.error('Coralite Element hydration failed:', this._instanceId)
       }
     }
 
-    // Initial attributes
+    // Process initial attributes mapping
     for (const attr of this.attributes) {
       if (attr.name === 'data-cid') {
         continue
@@ -276,7 +369,7 @@ export class CoraliteElement extends HTMLElement {
       target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
     }
 
-    // Define reactive getters
+    // Define derived state getters with isolation controllers
     this._getterAbortControllers = {}
     for (const [key, getter] of Object.entries(options.getters || {})) {
       Object.defineProperty(target, key, {
@@ -286,6 +379,7 @@ export class CoraliteElement extends HTMLElement {
           }
           this._getterAbortControllers[key] = new AbortController()
 
+          // Enforce "Dual-Proxy" safety: Getters cannot mutate state
           const roState = createReadOnlyProxy(this._state)
           return getter(roState, { signal: this._getterAbortControllers[key].signal })
         },
@@ -298,9 +392,9 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
-   * Creates a reactive Proxy for the given state target.
-   * Intercepts property sets to schedule DOM updates when values change.
-   * @param {Object} target - The target state object to wrap in a Proxy.
+   * Wraps the state target in a reactive Proxy.
+   * Intercepts property setters to automatically batch and schedule DOM updates.
+   * @param {Object} target - The state dictionary.
    * @returns {Proxy} The reactive state proxy.
    * @private
    */
@@ -319,9 +413,10 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
-   * Traverses the DOM tree from the component root to find a node by its path index.
-   * @param {number[]} path - Array of child indices representing the path to the target node.
-   * @returns {Node|null} The found node, or null if the path is invalid.
+   * Traverses the DOM tree using an AST-generated path index array.
+   * Allows O(1) element lookups without relying on querySelectors or classes.
+   * @param {number[]} path - Array of childNode indices (e.g., `[0, 1, 2]`).
+   * @returns {Node|null} The physical DOM node, or null if traversal fails.
    */
   getNodeByPath (path) {
     let node = this
@@ -336,8 +431,8 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
-   * Initializes DOM bindings based on the hydration map.
-   * Identifies text nodes and attributes that need to be reactive.
+   * Initializes DOM bindings based on the compiler's hydration map.
+   * Caches physical DOM references to text nodes and attributes that contain template tokens.
    * @private
    */
   _setupBindings () {
@@ -376,8 +471,8 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
-   * Schedules a DOM update in the next microtask.
-   * Batch multiple state changes into a single render cycle.
+   * Schedules a DOM update in the next microtask queue.
+   * This guarantees that multiple synchronous state mutations result in only one render pass.
    * @private
    */
   _scheduleUpdate () {
@@ -392,18 +487,18 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
-   * Performs the physical DOM update.
-   * Evaluates tokens (including async getters), applies changes to text nodes and attributes,
-   * processes slots, and triggers `onAfterComponentRender` hooks.
+   * Performs the physical DOM update and resolves template tokens.
+   * **Async Safety:** Implements a Symbol-based locking mechanism (`renderVersion`)
+   * to guarantee that if state mutates while an async getter is pending, the stale
+   * Promise will be discarded, preventing DOM race conditions.
    * @private
    */
   _updateDOM () {
-    // 1. Create a unique lock for this specific render cycle
-    /** @type {symbol} */
+    // Create a unique lock for this specific render cycle
     const renderVersion = Symbol()
     this._currentRenderVersion = renderVersion
 
-    // 2. Extract unique tokens to prevent double-reading and accidental aborts
+    // Extract unique tokens to prevent double-reading and accidental aborts
     /** @type {Set<string>} */
     const requiredTokens = new Set()
     for (const binding of this._bindings) {
@@ -413,11 +508,10 @@ export class CoraliteElement extends HTMLElement {
       })
     }
 
-    /** @type {Object.<string, any>} */
     const evaluatedTokens = {}
     let hasPromise = false
 
-    // 3. Evaluate getters exactly once per render cycle
+    // Evaluate getters exactly once per render cycle
     for (const key of requiredTokens) {
       let val = this._state[key]
       if (typeof val === 'function') {
@@ -429,10 +523,9 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
-    // 4. The DOM Mutator Function
+    // The DOM Mutator Function
     const applyBindings = (tokenValues) => {
-      // 🚨 RACE CONDITION LOCK: If the state mutated again while we were
-      // waiting for the Promise, bail out and let the newer render handle it!
+      // Race Condition Lock: Abort if a newer render cycle has already begun
       if (this._currentRenderVersion !== renderVersion) {
         return
       }
@@ -447,24 +540,34 @@ export class CoraliteElement extends HTMLElement {
             binding.node.textContent = hydratedValue
           }
         } else if (binding.type === 'html') {
-          if (binding.node.innerHTML !== hydratedValue) {
-            if (binding.node.setHTMLUnsafe) {
-              binding.node.setHTMLUnsafe(hydratedValue)
+          /** @type {HTMLElement} */
+          // @ts-ignore
+          const element = binding.node
+
+          if (element.innerHTML !== hydratedValue) {
+            // @ts-ignore
+            if (element.setHTML) {
+            // @ts-ignore
+              element.setHTML(hydratedValue)
             } else {
-              binding.node.innerHTML = hydratedValue
+              element.innerHTML = hydratedValue
             }
           }
         } else if (binding.type === 'attribute') {
+          /** @type {HTMLElement} */
+          // @ts-ignore
+          const element = binding.node
+
           if (BOOLEAN_ATTRIBUTES.has(binding.name)) {
             const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === '0' || hydratedValue === 'undefined'
             if (isFalsy) {
-              binding.node.removeAttribute(binding.name)
+              element.removeAttribute(binding.name)
             } else {
-              binding.node.setAttribute(binding.name, '')
+              element.setAttribute(binding.name, '')
             }
           } else {
-            if (binding.node.getAttribute(binding.name) !== hydratedValue) {
-              binding.node.setAttribute(binding.name, hydratedValue)
+            if (element.getAttribute(binding.name) !== hydratedValue) {
+              element.setAttribute(binding.name, hydratedValue)
             }
           }
         }
@@ -472,7 +575,7 @@ export class CoraliteElement extends HTMLElement {
 
       this._processSlots()
 
-      // Trigger After Hooks ONLY after the physical DOM is finally flushed
+      // Trigger After-Render hooks ONLY after the physical DOM is stable
       for (const hook of this._hooks.onAfterComponentRender) {
         hook({
           state: this._state,
@@ -506,8 +609,8 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
-   * Processes and renders component slots.
-   * Invokes slot transformation functions defined in component options.
+   * Evaluates and projects Light DOM elements into their respective `<slot>` nodes.
+   * Invokes component-specific slot transformation functions.
    * @private
    */
   _processSlots () {
@@ -545,13 +648,17 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
-   * Final initialization step.
-   * Sets up the client context, performs the initial render, and executes the component's script.
-   * @param {boolean} [isImperative=false] - Whether the component was created imperatively.
+   * The final initialization pipeline.
+   * Injects globally registered client plugins into the local context payload,
+   * triggers the initial DOM render, and invokes the user's `script()` logic.
+   * @param {boolean} [isImperative=false] - If true, initial render runs synchronously.
    * @private
    */
   async _init (isImperative = false) {
-    /** @type {any} */
+    /**
+     * The context payload injected into the user's script block.
+     * @type {Object}
+     */
     const localContext = {
       instanceId: this._instanceId,
       state: this._state,
@@ -583,11 +690,12 @@ export class CoraliteElement extends HTMLElement {
 /**
  * Factory function to create a Coralite element class.
  * It dynamically defines the class, including observed attributes and hook initialization.
- * @param {CoraliteComponent|any} options - Component options and metadata.
+ * @param {CoraliteComponent} options - Component options and metadata.
  * @param {Function|null} [contextGetter=null] - Optional function to retrieve client-side plugin context.
  * @param {Object} [hooks={}] - Lifecycle hooks to register.
- * @param {Array<function(any):void>} [hooks.onBeforeComponentRender] - Hooks to run before render.
- * @param {Array<function(any):void>} [hooks.onAfterComponentRender] - Hooks to run after render.
+ * @param {Array<CoraliteClientPluginBeforeComponentRenderCallback>} [hooks.onBeforeComponentRender] - Hooks to run before render.
+ * @param {Array<CoraliteClientPluginAfterComponentRenderCallback>} [hooks.onAfterComponentRender] - Hooks to run after render.
+ * @param {Array<CoraliteClientPluginDisconnectedCallback>} [hooks.onDisconnected] - Hooks to run after render.
  * @returns {typeof CoraliteElement} A new CoraliteElement subclass.
  */
 export function createCoraliteClass (options, contextGetter = null, hooks = {}) {
@@ -613,7 +721,8 @@ export function createCoraliteClass (options, contextGetter = null, hooks = {}) 
       this._clientContextGetter = contextGetter
       this._hooks = {
         onBeforeComponentRender: hooks.onBeforeComponentRender || [],
-        onAfterComponentRender: hooks.onAfterComponentRender || []
+        onAfterComponentRender: hooks.onAfterComponentRender || [],
+        onDisconnected: hooks.onDisconnected || []
       }
     }
   }
