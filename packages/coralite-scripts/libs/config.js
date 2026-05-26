@@ -60,21 +60,43 @@ export function defineConfig (options) {
     throw new Error('Configuration "server.port" must be a positive number')
   }
 
-  // Validate sass configuration
-  if (options.styles && typeof options.styles !== 'object') {
-    throw new Error('Configuration "styles" must be an object')
-  }
+  // Validate styles configuration
+  if (options.styles) {
+    if (typeof options.styles !== 'object') {
+      throw new Error('Configuration "styles" must be an object')
+    }
 
-  if (options.styles?.input && typeof options.styles.input !== 'string') {
-    throw new Error('Configuration "styles.input" must be a string')
-  }
+    if (options.styles.input) {
+      if (typeof options.styles.input === 'string') {
+        throw new Error('Coralite Config Error: The "styles" configuration has been upgraded. "input" must now be an array, and "type" has been replaced by the "processors" object. Please update your coralite.config.js.')
+      }
 
-  if (options.styles?.type) {
-    const type = options.styles.type
-    if (typeof type !== 'string') {
-      throw new Error('Configuration "styles.type" must be a string')
-    } else if (type !== 'css' && type !== 'sass' && type !== 'scss') {
-      throw new Error('Configuration "styles.type" must be equal to either "css", "sass" or "scss" but found: ' + type)
+      if (!Array.isArray(options.styles.input)) {
+        throw new Error('Configuration "styles.input" must be an array of strings')
+      }
+
+      const outputs = new Set()
+      for (const input of options.styles.input) {
+        if (typeof input !== 'string') {
+          throw new Error('Configuration "styles.input" must be an array of strings')
+        }
+
+        const ext = input.split('.').pop()
+        const filename = input.split('/').pop().replace(`.${ext}`, '.css')
+
+        if (outputs.has(filename)) {
+          throw new Error(`Coralite Build Error: Filename collision detected in styles.input. Multiple inputs will output to "${filename}". Please rename one of the files.`)
+        }
+        outputs.add(filename)
+      }
+    }
+
+    if (options.styles.type) {
+      throw new Error('Coralite Config Error: The "styles" configuration has been upgraded. "input" must now be an array, and "type" has been replaced by the "processors" object. Please update your coralite.config.js.')
+    }
+
+    if (options.styles.processors && typeof options.styles.processors !== 'object') {
+      throw new Error('Configuration "styles.processors" must be an object')
     }
   }
 

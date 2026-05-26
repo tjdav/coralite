@@ -12,7 +12,7 @@ Coralite expects a standard folder layout:
 my-coralite-site/
 ├── src/
 │   ├── pages/        # Your page components (e.g., `about.html`, `index.html`)
-│   ├── scss/         # SCSS/Sass/CSS styles
+│   ├── css/          # SCSS/Sass/CSS global styles
 │   └── components/   # Reusable component files
 ├── public/           # Static assets (CSS, JS, images)
 ├── dist/             # Output directory for built site (auto-generated)
@@ -35,8 +35,26 @@ export default defineConfig({
   pages: 'src/pages',
   components: 'src/components',
   styles: {
-    type: 'scss', // can be 'scss', 'sass', or 'css'
-    input: 'src/scss'
+    // Array of inputs, mixing scss and css
+    input: [
+      'src/css/main.scss',
+      'src/css/tailwind.css'
+    ],
+    // Generic processor configurations
+    processors: {
+      scss: {
+        // Native Dart Sass options
+        style: 'compressed',
+        loadPaths: ['node_modules']
+      },
+      postcss: {
+        // Native PostCSS plugins (This is how you support Tailwind!)
+        plugins: [
+          // tailwindcss(),
+          // autoprefixer()
+        ]
+      }
+    }
   },
   // Optional: copy static assets from other packages
   assets: [
@@ -88,7 +106,7 @@ Coralite provides real-time development workflows out of the box:
 |-------|-------------|
 | **Live Reload** | Automatically reloads browser when any `.html`, `.scss`, `.sass`, or `.css` file changes. |
 | **Hot CSS Updates** | Sass/SCSS files are compiled instantly and injected into your page via Server-Sent Events (SSE). |
-| **File Watching** | Monitors `src/pages`, `src/scss`, `public`, and `src/components`. |
+| **File Watching** | Monitors `src/pages`, `styles.input` files, `public`, and `src/components`. |
 | **Dev Logs** | Shows real-time build times, file changes, and status codes in terminal. |
 
 ---
@@ -97,7 +115,8 @@ Coralite provides real-time development workflows out of the box:
 
 - **Routing**: `/` → `index.html`, `/about` → `about.html`
 - **HTML Compilation**: Pages are compiled with embedded live reload scripts during development.
-- **Sass/CSS Support**: `.scss`, `.sass`, or `.css` files are auto-compiled to CSS in `dist/css`.
+- **Sass/CSS Support**: `.scss`, `.sass`, or `.css` files specified in `styles.input` are auto-compiled to CSS in `dist/assets/css`.
+- **Auto-Injection**: Global styles are automatically injected as `<link>` tags into the `<head>` of every page, before component-scoped styles.
 - **Server-Sent Events (SSE)**: Used for real-time updates without full page refresh.
 
 > No extra tooling needed — everything is built-in!
@@ -125,7 +144,7 @@ Coralite provides real-time development workflows out of the box:
 
 3. Edit the file → see auto-reload!
 
-4. Add a new SCSS file at `src/scss/style.scss`, and import it into an HTML page via `<link rel="stylesheet" href="/css/style.css">`.
+4. Add a new SCSS file at `src/css/style.scss`, add it to `styles.input` in your config, and see it automatically injected into your pages!
 
 ---
 

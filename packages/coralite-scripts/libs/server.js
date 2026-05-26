@@ -2,12 +2,11 @@ import express from 'express'
 import colours from 'kleur'
 import localAccess from 'local-access'
 import chokidar from 'chokidar'
-import buildSass from './build-sass.js'
+import buildStyles from './build-styles.js'
 import { displayError, displayInfo, displayWarning, displaySuccess, toCode, toMS, toTime, deleteDirectoryRecursive } from './build-utils.js'
-import { extname, join, normalize, relative, sep } from 'path'
+import { dirname, extname, join, normalize, relative, sep } from 'path'
 import { access, constants, mkdir, readFile, writeFile } from 'fs/promises'
 import Coralite from 'coralite'
-import buildCSS from './build-css.js'
 import { existsSync, mkdirSync } from 'fs'
 import portfinder from 'portfinder'
 
@@ -107,6 +106,10 @@ async function server (config, options) {
         pages: currentConfig.pages,
         plugins: currentConfig.plugins,
         assets: currentConfig.assets,
+        externalStyles: currentConfig.styles?.input?.map(input => {
+          const ext = input.split('.').pop()
+          return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
+        }),
         baseURL: currentConfig.baseURL,
         ignoreByAttribute: currentConfig.ignoreByAttribute,
         skipRenderByAttribute: currentConfig.skipRenderByAttribute,
@@ -197,50 +200,32 @@ async function server (config, options) {
     // serve compiled components directory
     app.use(express.static(config.output, staticOptions))
 
-    // check if Sass is configured and add its input directory to watchPath for file changes.
-    if (config.styles) {
-      if (config.styles.input) {
-        if (!existsSync(config.styles.input)) {
-          mkdirSync(config.styles.input)
-        }
-
-        watchPath.push(config.styles.input)
-
-        app.use('/assets/css', express.static(join(config.output, 'assets', 'css'), {
-          cacheControl: false
-        }))
-      } else {
-        displayError('Coralite config styles input must not be empty.')
+    // check if styles are configured and add its inputs to watchPath for file changes.
+    if (config.styles && config.styles.input) {
+      for (const input of config.styles.input) {
+        watchPath.push(dirname(input))
       }
 
-      if (config.styles.type === 'sass' || config.styles.type === 'scss') {
-        const start = process.hrtime()
+      app.use('/assets/css', express.static(join(config.output, 'assets', 'css'), {
+        cacheControl: false
+      }))
 
-        // rebuild CSS and send notification
-        const results = await buildSass({
-          ...config.styles,
-          output: join(config.output, 'assets', 'css'),
-          start
-        })
+      const start = process.hrtime()
 
-        let dash = colours.gray(' ─ ')
+      // rebuild CSS and send notification
+      const results = await buildStyles({
+        input: config.styles.input,
+        output: join(config.output, 'assets', 'css'),
+        processors: config.styles.processors,
+        start
+      })
 
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i]
+      const dash = colours.gray(' ─ ')
 
-          process.stdout.write(toTime() + colours.bgGreen(' Compiled SASS ') + dash + toMS(result.duration) + dash + result.input + '\n')
-        }
-      } else if (config.styles.type === 'css') {
-        const start = process.hrtime()
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i]
 
-        await buildCSS({
-          input: config.styles.input,
-          output: join(config.output, 'assets', 'css'),
-          plugins: config.cssPlugins,
-          start
-        })
-      } else {
-        displayError('Coralite config styles type must not be empty')
+        process.stdout.write(toTime() + colours.bgGreen(' Compiled STYLES ') + dash + toMS(result.duration) + dash + result.input + '\n')
       }
     }
 
@@ -476,8 +461,12 @@ async function server (config, options) {
         // Group changes by type
         const pagesChanges = changes.filter(p => p.startsWith(pagesPath))
         const componentChanges = changes.filter(p => p.startsWith(componentPath))
-        const sassChanges = changes.filter(p => p.endsWith('.scss') || p.endsWith('.sass'))
-        const cssChanges = changes.filter(p => p.endsWith('.css'))
+        const stylesChanges = changes.filter(p => {
+          if (!currentConfig.styles?.input) {
+            return false
+          }
+          return currentConfig.styles.input.some(input => p.startsWith(normalize(join(process.cwd(), dirname(input))))) || p.endsWith('.scss') || p.endsWith('.sass') || p.endsWith('.css')
+        })
         const configChanges = changes.filter(p => p === configPathStr || Array.from(pluginPaths).some(pluginPath => p === pluginPath))
 
         try {
@@ -510,39 +499,24 @@ async function server (config, options) {
             await coralite.components.setItem(path)
           }
 
-          // Handle SASS changes - rebuild all SASS files once
-          if (sassChanges.length > 0) {
-            const results = await buildSass({
-              input: config.styles.input,
-              options: config.sassOptions,
+          // Handle STYLES changes - rebuild all STYLES files once
+          if (stylesChanges.length > 0 && currentConfig.styles?.input) {
+            const results = await buildStyles({
+              input: currentConfig.styles.input,
+              processors: currentConfig.styles.processors,
               output: join(config.output, 'assets', 'css'),
               start
             })
 
             for (const result of results) {
-              process.stdout.write(toTime() + colours.bgGreen(' Compiled SASS ') + dash + toMS(result.duration) + dash + result.input + '\n')
-            }
-          }
-
-          // Handle CSS changes - rebuild all CSS files once
-          if (cssChanges.length > 0) {
-            const results = await buildCSS({
-              input: config.styles.input,
-              output: join(config.output, 'assets', 'css'),
-              plugins: config.cssPlugins,
-              start
-            })
-
-            for (const result of results) {
-              process.stdout.write(toTime() + colours.bgGreen(' Compiled CSS ') + dash + toMS(result.duration) + dash + result.input + '\n')
+              process.stdout.write(toTime() + colours.bgGreen(' Compiled STYLES ') + dash + toMS(result.duration) + dash + result.input + '\n')
             }
           }
 
           // Notify clients to reload
           if (pagesChanges.length > 0
             || componentChanges.length > 0
-            || sassChanges.length > 0
-            || cssChanges.length > 0
+            || stylesChanges.length > 0
             || configChanges.length > 0) {
             clients.forEach(client => {
               client.write(`data: reload\n\n`)

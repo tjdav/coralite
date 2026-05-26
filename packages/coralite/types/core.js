@@ -64,6 +64,7 @@
  * @property {Array<string | Attribute>} [ignoreByAttribute] - An array of attribute names and values to ignore by element type.
  * @property {Array<string | Attribute>} [skipRenderByAttribute] - An array of attribute names and values to skip rendering by element type.
  * @property {CoraliteOnError} [onError] - Optional callback function for handling errors and warnings.
+ * @property {string[]} [externalStyles] - Global styles to inject into every page
  * @property {string} [options.mode='production'] - Build mode: "development" or "production"
  */
 

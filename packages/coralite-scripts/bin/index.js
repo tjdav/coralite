@@ -5,10 +5,9 @@ import { Command, Argument } from 'commander'
 import server from '../libs/server.js'
 import colours from 'kleur'
 import pkg from '../package.json' with { type: 'json' }
-import buildSass from '../libs/build-sass.js'
+import buildStyles from '../libs/build-styles.js'
 import { join, relative, dirname } from 'node:path'
 import { deleteDirectoryRecursive, copyDirectory, toMS, toTime, displayError, displayWarning, displayInfo } from '../libs/build-utils.js'
-import buildCSS from '../libs/build-css.js'
 import { Coralite } from 'coralite'
 import { mkdir, writeFile } from 'node:fs/promises'
 import ora from 'ora'
@@ -67,6 +66,10 @@ if (mode === 'dev') {
     pages: config.pages,
     plugins: config.plugins,
     assets: config.assets,
+    externalStyles: config.styles?.input?.map(input => {
+      const ext = input.split('.').pop()
+      return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
+    }),
     baseURL: config.baseURL,
     output: config.output,
     mode: 'production',
@@ -118,6 +121,7 @@ if (mode === 'dev') {
         await mkdir(dirname(outFile), { recursive: true })
         await writeFile(outFile, file.text)
         if (options.verbose) {
+          const dash = colours.gray(' ─ ')
           process.stdout.write(toTime() + toMS(0) + dash + outFile + '\n')
         }
       })
@@ -144,40 +148,22 @@ if (mode === 'dev') {
       }
     }
 
-    if (config.styles) {
+    if (config.styles && config.styles.input) {
       if (!options.verbose) {
         spinner = ora('Building styles...').start()
       }
 
-      if (config.styles.type === 'sass' || config.styles.type === 'scss') {
-        const results = await buildSass({
-          input: config.styles.input,
-          output: join(config.output, 'assets', 'css'),
-          options: config.sassOptions,
-          start
-        })
+      const results = await buildStyles({
+        input: config.styles.input,
+        output: join(config.output, 'assets', 'css'),
+        processors: config.styles.processors
+      })
 
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i]
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i]
 
-          if (options.verbose) {
-            process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
-          }
-        }
-      } else if (config.styles.type === 'css') {
-        const results = await buildCSS({
-          input: config.styles.input,
-          output: join(config.output, 'assets', 'css'),
-          plugins: config.cssPlugins,
-          start
-        })
-
-        for (let i = 0; i < results.length; i++) {
-          const result = results[i]
-
-          if (options.verbose) {
-            process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
-          }
+        if (options.verbose) {
+          process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
         }
       }
 

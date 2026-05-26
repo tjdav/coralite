@@ -9,8 +9,7 @@ export default defineConfig({
   pages: 'src/pages',
   components: 'src/components',
   styles: {
-    type: 'css',
-    input: 'src/css'
+    input: ['src/css/styles.css']
   },
   mode: 'development',
   plugins: [

@@ -48,6 +48,53 @@ export function findHeadAndBody (root) {
 }
 
 /**
+ * Injects external global style link tags into the document head (or root if head is missing).
+ *
+ * @param {CoraliteComponentRoot} root - The root of the AST.
+ * @param {CoraliteElement | null} head - The head element.
+ * @param {string[]} styles - Array of style URLs.
+ */
+export function injectExternalStyles (root, head, styles) {
+  if (!styles || styles.length === 0) {
+    return
+  }
+
+  const existingLinks = new Set()
+  if (head) {
+    head.children.forEach(child => {
+      if (child.type === 'tag' && child.name === 'link' && child.attribs?.href) {
+        existingLinks.add(child.attribs.href)
+      }
+    })
+  }
+
+  for (let i = 0; i < styles.length; i++) {
+    const styleUrl = styles[i]
+
+    if (existingLinks.has(styleUrl)) {
+      continue
+    }
+
+    const linkElement = createCoraliteElement({
+      type: 'tag',
+      name: 'link',
+      parent: head || root,
+      attribs: {
+        rel: 'stylesheet',
+        href: styleUrl
+      },
+      children: []
+    })
+
+    if (head) {
+      head.children.push(linkElement)
+    } else {
+      root.children.unshift(linkElement)
+    }
+  }
+}
+
+/**
  * Injects style tags into the document head (or root if head is missing).
  *
  * @param {CoraliteComponentRoot} root - The root of the AST.

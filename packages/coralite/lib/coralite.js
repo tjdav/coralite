@@ -1,6 +1,6 @@
 import { cleanKeys, cloneModuleInstance, replaceToken, cloneComponentInstance, findAndExtractScript, findAndExtractProperties, extractGlobals, mergePluginState, normalizeObjectFunctions, astTransformer } from './utils.js'
 import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './html.js'
-import { findHeadAndBody, injectStyles, injectReadinessScript, injectImportMap, removeElements, resolvePageQueue } from './render-helpers.js'
+import { findHeadAndBody, injectExternalStyles, injectStyles, injectReadinessScript, injectImportMap, removeElements, resolvePageQueue } from './render-helpers.js'
 import { generateClientRuntime } from './client-runtime.js'
 import { parseHTML, parseModule, createElement, createTextNode } from './parse.js'
 import { transformCss } from './style-transform.js'
@@ -71,6 +71,7 @@ export function Coralite ({
   pages,
   plugins,
   assets,
+  externalStyles,
   baseURL = '/',
   ignoreByAttribute,
   skipRenderByAttribute,
@@ -104,6 +105,7 @@ export function Coralite ({
     pages,
     plugins,
     assets,
+    externalStyles,
     baseURL,
     ignoreByAttribute,
     skipRenderByAttribute,
@@ -900,6 +902,10 @@ Coralite.prototype._generatePages = async function* (path, state = {}) {
       await this._processCustomElementsInPage(mappedComponent, originalDocument, state, mappedSessionObject, pageContext)
 
       const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
+
+      if (this.options.externalStyles && this.options.externalStyles.length > 0) {
+        injectExternalStyles(mappedComponent.root, headElement, this.options.externalStyles)
+      }
 
       if (mappedSessionObject.styles.size > 0) {
         injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles)

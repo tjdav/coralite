@@ -9,10 +9,11 @@
  * @property {Object} [server] - Server configuration options.
  * @property {number} server.port - The port number on which the development server will run.
  * @property {Object} [styles]
- * @property {'css' | 'sass' | 'scss'} styles.type - The style processing type to use for styling files.
- * @property {string} styles.input - The path to the main stylesheet file to process.
- * @property {Options<'async'>} [sassOptions] - Additional options passed to the Sass compiler.
- * @property {import('postcss').AcceptedPlugin[]} [cssPlugins] - Postcss plugins.
+ * @property {string[]} [styles.input] - Array of inputs, mixing scss and css
+ * @property {Object} [styles.processors]
+ * @property {Options<'async'>} [styles.processors.scss] - Native Dart Sass options
+ * @property {Object} [styles.processors.postcss]
+ * @property {import('postcss').AcceptedPlugin[]} [styles.processors.postcss.plugins] - Native PostCSS plugins
  * @property {'production' | 'development'} [mode='production'] - Set build mode for the coralite instance.
  */
 
