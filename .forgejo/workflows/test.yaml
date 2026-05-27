@@ -17,7 +17,7 @@ on:
 
 jobs:
   check:
-    runs-on: codeberg-tiny-lazy
+    runs-on: codeberg-small-lazy
     container:
       image: "guergeiro/pnpm:lts-latest-slim"
     steps:
