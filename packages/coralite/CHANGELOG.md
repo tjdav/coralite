@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.36.1
+
+> Comparing `coralite-v0.36.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- ensure HTML hydration respects binding type and preserves attributes ([63af2d9](https://codeberg.org/tjdavid/coralite/commit/63af2d9c5df4acb284ac21dcbbc71b3b70c2aeea))
+
+
 ## v0.36.0
 
 > Comparing `coralite-v0.35.0` to `HEAD`
