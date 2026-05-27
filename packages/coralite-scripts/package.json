@@ -1,6 +1,6 @@
 {
   "name": "coralite-scripts",
-  "version": "0.36.1",
+  "version": "0.36.2",
   "description": "Configuration and scripts for Create Coralite.",
   "type": "module",
   "bin": {
