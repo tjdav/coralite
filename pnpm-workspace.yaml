@@ -9,6 +9,7 @@ allowBuilds:
 
 minimumReleaseAgeExclude:
   - coralite-plugin-aggregation@0.12.0
+  - coralite-plugin-aggregation@0.12.1
 
 onlyBuiltDependencies:
   - "@parcel/watcher"
