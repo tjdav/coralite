@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.36.2
+
+> Comparing `coralite-v0.36.1` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- build optimization and resolution fix ([5926f5b](https://codeberg.org/tjdavid/coralite/commit/5926f5b85d4cfea4ed144520b57951e0c67cef39))
+
+### ♻️ Code Refactoring
+
+- adjust plugin imports in build script (tests) ([0938669](https://codeberg.org/tjdavid/coralite/commit/09386698a06d7b675d057fad0f77ae8f366914c9))
+
+
 ## v0.36.1
 
 > Comparing `coralite-v0.36.0` to `HEAD`
