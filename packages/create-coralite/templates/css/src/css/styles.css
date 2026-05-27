@@ -1,10 +1,71 @@
-@import url("./_font.css");
-@import url("./_variables.css");
-@import url("./_base.css");
-@import url("./_layout.css");
-@import url("./_card.css");
+/* Imports */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=TikTok+Sans:opsz,wght@12..36,300..900&display=swap');
+
+/* Variables */
+:root {
+  color-scheme: light dark;
+
+  /* Colours */
+  --green-light: #d0ff00;
+  --pink-light: #e685b5;
+  --primary: var(--green-light);
+  --secondary: #639;
+  --light: #f9f9f9;
+  --darker: rgb(14, 7, 19);
+  --body-bg: var(--darker);
+  --body-colour: var(--light);
+  --code-colour: var(--pink-light);
+
+  /* Spacing */
+  --spacer-base: 1rem;
+  --spacer-1: calc(var(--spacer-base) - .3rem);
+  --spacer-2: var(--spacer-base);
+
+  --padding-x: 1rem;
+  --padding-y: .5rem;
+
+  /* Fonts */
+  --font-body: "TikTok Sans", sans-serif;
+  --font-heading: "TikTok Sans", sans-serif;
+  --font-monospace: "JetBrains Mono", monospace;
+  --font-size: 20px;
+
+  /* Text */
+  --line-height: 1.5;
+  --heading-line-height: 1.2;
+
+  /* Border */
+  --border-radius: .5rem;
+
+  /* Shadow */
+  --box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :root {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: var(--font-size);
+}
 
 body {
+  margin: 0;
+  overflow-x: hidden;
+  font-family: var(--font-body);
+  font-size: var(--spacer-base);
+  line-height: var(--line-height);
+  color: var(--body-colour);
+  background-color: var(--body-bg);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -13,7 +74,79 @@ body {
   background-size: cover;
 }
 
+a {
+  color: var(--primary);
+  text-decoration-thickness: 2px;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--secondary);
+  text-underline-offset: .25em;
+
+  &:hover {
+    text-decoration-color: hsl(from var(--secondary) h 60% l);
+  }
+}
+
+p {
+  margin-bottom: var(--spacer-1);
+}
+
+h1 {
+  margin-top: 0;
+  margin-bottom: var(--spacer-1);
+  font-family: var(--font-heading);
+  line-height: var(--heading-line-height);
+  font-size: calc(var(--spacer-base) + 2rem);
+}
+
 img {
   max-width: 100%;
   height: auto;
+}
+
+/* Utilities */
+.img-fluid {
+  max-width: 100%;
+  height: auto;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.gap {
+  gap: var(--spacer-1);
+}
+
+.justify-content-center {
+  justify-content: center;
+}
+
+.d-flex {
+  display: flex;
+}
+
+/* Layout */
+.container {
+  max-width: 1340px;
+  padding: var(--spacer-2);
+  margin: auto;
+}
+
+/* Components */
+.card {
+  --card-border-color: #ffffff2e;
+
+  color: var(--light);
+  background-image: radial-gradient(circle at bottom, rgba(49, 26, 75, .3), rgba(14, 7, 19, .5));
+  backdrop-filter: blur(10px);
+  border-color: var(--card-border-color);
+  border-style: solid;
+  border-width: 0 1px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.card-body {
+  padding: var(--spacer-1);
+  margin: 0;
 }
