@@ -53,3 +53,10 @@ When the `no-hydration` boolean attribute is present on a component:
 * **Communication**: Use standard `CustomEvent`.
 * **Cleanup**: Always use the provided `AbortSignal` (`signal`) for event listeners and fetch requests. The `onDisconnected` hook fires synchronously when the element is removed, and event listeners attached with `signal` are automatically aborted.
 * **Refs**: The standard context provides `refs`, an Array of `{name: string, element: Node}` containing DOM nodes mapped by `ref` attributes.
+
+## 7. Plugins (definePlugin)
+Plugins are critical for extending the framework and enforce a strict isomorphic boundary:
+* **Structure**: Must use `definePlugin` with a `name`, `server: {}` (for Node.js/Build logic), and `client: {}` (for Browser/esbuild logic).
+* **Server Block**: All SSR lifecycle hooks, plugin `exports`, and `components` arrays must reside within the `server` block.
+* **Two-Phase Currying**: The API uses currying for extensibility. `server.exports` uses `(session) => (instanceContext) =>` and `client.context` uses `(globalContext) => (instanceContext) =>`.
+* **Terminology**: `renderContext` is deprecated; always use `session` across the plugin API.
