@@ -1,5 +1,71 @@
 # Changelog
 
+## v0.36.0
+
+> Comparing `coralite-v0.35.0` to `HEAD`
+
+**Summary:** 38 commits
+
+### ✨ Features
+
+- implement modular styles configuration and generic build pipeline ([46f42a4](https://codeberg.org/tjdavid/coralite/commit/46f42a4b1b32e925c18c9061104f7ebf7c8b00cd))
+- implement no-hydration attribute for host-tag and c-token stripping ([132d1e7](https://codeberg.org/tjdavid/coralite/commit/132d1e790a9eb3c28375931e10e787ed68f85853))
+- implement onDisconnected plugin hook (coralite) ([ce18093](https://codeberg.org/tjdavid/coralite/commit/ce18093f1ab23233d67f314c4746a65c02001ac3))
+- implement client-side hooks for onBeforeComponentRender and onAfterComponentRender ([553f2d9](https://codeberg.org/tjdavid/coralite/commit/553f2d958c8a6254db68d0b30c6303e4b3443e91))
+- refactor Coralite to native Web Component hydration ([a8b2391](https://codeberg.org/tjdavid/coralite/commit/a8b2391aa97892e27a1d866140be90349cd59523))
+- implement whitelist-based boolean attribute interception ([22c963f](https://codeberg.org/tjdavid/coralite/commit/22c963fcdb1da9ed67505947de9d3c350d37e9ea))
+
+### 🐛 Bug Fixes
+
+- align types for component options and refs in client runtime (coralite) ([c7f58f0](https://codeberg.org/tjdavid/coralite/commit/c7f58f002105e93a4796fc24a4792be4da6dbb96))
+- prevent ReferenceError: HTMLElement is not defined in Node.js ([3da3ee0](https://codeberg.org/tjdavid/coralite/commit/3da3ee00b2f2795dfbfcd48d86b5676c9e284404))
+- resolve TypeScript errors in coralite-element and refs plugin ([0376524](https://codeberg.org/tjdavid/coralite/commit/037652447a8fa3d1ab9cbd688a0a7e1564476c89))
+- fix hydration map root path boundary (coralite) ([1b3166d](https://codeberg.org/tjdavid/coralite/commit/1b3166dd606836f275da70c28d83a8e70495ab0d))
+- include component render hooks and preserve hydration state ([0424af7](https://codeberg.org/tjdavid/coralite/commit/0424af7e769156bcb7c3b1f3ff06598be2f761ac))
+- resolve website build failure by unbundling coralite lib and improving asset writing ([c247c12](https://codeberg.org/tjdavid/coralite/commit/c247c12d684ed74ee830fa8d9d6e3515c6dc420d))
+- component state isolation & SSR lifecycle hooks ([5ce0d92](https://codeberg.org/tjdavid/coralite/commit/5ce0d92b74b6eb0911fb173abf5f712e697c1a00))
+- implement whitelist-based boolean attribute interception ([e324431](https://codeberg.org/tjdavid/coralite/commit/e324431d17213f4d65d220d6b84b3604f49874fb))
+
+### 📚 Documentation
+
+- update READMEs and website for 1.0.0 release ([c056c60](https://codeberg.org/tjdavid/coralite/commit/c056c60076e9caeb07d1d273835ef6c31bc7db0c))
+- add CoraliteSession typedef and update JSDocs across codebase ([72f0dbf](https://codeberg.org/tjdavid/coralite/commit/72f0dbfd9bfd91ba2ffab1aecd572a917e05ce06))
+- add comprehensive JSDoc to CoraliteElement ([1277f7e](https://codeberg.org/tjdavid/coralite/commit/1277f7ea2c9eae6fb19b5fad361ecf6752723292))
+- update llms directives for ast splicing ([fd8e41a](https://codeberg.org/tjdavid/coralite/commit/fd8e41ae49f362303531262293c231988c70de46))
+- update llms documentation with css scoping details ([bce0deb](https://codeberg.org/tjdavid/coralite/commit/bce0deb72b9d69b4132ef5872bccb5488d054221))
+
+### ♻️ Code Refactoring
+
+- update root element type in signature (coralite) ([892bef2](https://codeberg.org/tjdavid/coralite/commit/892bef299ec48801ff3f7d3b07cd4bad2e4d1ab0))
+- replace render context with session object (coralite) ([48d15a5](https://codeberg.org/tjdavid/coralite/commit/48d15a56d7c65b236af50134f14f6883ec1459c2))
+- introduce render versioning for race condition safety (coralite) ([a0dee82](https://codeberg.org/tjdavid/coralite/commit/a0dee82bac6e546f84d00cc82043e111d7455f6c))
+- remove initial ref hydration in CoraliteElement ([4e98591](https://codeberg.org/tjdavid/coralite/commit/4e98591ede470c957277e15813807954e8be6d09))
+- update context handling to use renderContext (runtime) ([7571207](https://codeberg.org/tjdavid/coralite/commit/7571207703153f1f9f61f6d00cb02c871d8d625e))
+- rename renderContext to session and update hook payloads ([f56536f](https://codeberg.org/tjdavid/coralite/commit/f56536fa900bc704545beacf78846f0c602f626d))
+- implement deterministic component IDs (core) ([834a8c8](https://codeberg.org/tjdavid/coralite/commit/834a8c83d6ad5b662736593e4dce2acd8f94a534))
+- improve slot handling and runtime generation (coralite) ([755ecca](https://codeberg.org/tjdavid/coralite/commit/755ecca7ccb8624a9da12db8ffdbe4c13bd4d021))
+- implement isomorphic plugin API with server/client separation ([cafd013](https://codeberg.org/tjdavid/coralite/commit/cafd013c8439803d374ff6b75c3eb39e76f418b4))
+- adjust hydration map generation logic (coralite) ([43508f4](https://codeberg.org/tjdavid/coralite/commit/43508f4fdace7368adb78768c78e6e2484c35901))
+
+### ✅ Tests
+
+- migrate unit tests to happy-dom ([27447ce](https://codeberg.org/tjdavid/coralite/commit/27447ce51f0c03ebb2cc8c45db61f7f1c587848e))
+- update test fixture selectors to use refs (fixtures) ([d9dcc73](https://codeberg.org/tjdavid/coralite/commit/d9dcc73fd71e116963b8328b4f78a1e1dfb85c0c))
+- update e2e tests to use refs and testingPlugin pattern ([0eb0d5c](https://codeberg.org/tjdavid/coralite/commit/0eb0d5c2261b98fbd25ba543f4052ed2d4201efe))
+- add e2e tests for boolean attributes ([773960e](https://codeberg.org/tjdavid/coralite/commit/773960e5ebb290e06c3fb923c108339942b1e993))
+
+### 🧹 Chores
+
+- update post-css ([2891819](https://codeberg.org/tjdavid/coralite/commit/28918194a34f9038a4b350d3f93d270373d8d961))
+- Updates Playwright test dependency to version 1.60.0. ([fb869d8](https://codeberg.org/tjdavid/coralite/commit/fb869d82a016beb5bc99a85f74a18ae2a8410ede))
+
+### 🔨 Other Changes
+
+- Merge branch 'web-components' ([305aef8](https://codeberg.org/tjdavid/coralite/commit/305aef866363e088241253bdbb901b13296c8c64))
+- Fix component scope leakage and implement isomorphic lifecycle hooks ([64e72d4](https://codeberg.org/tjdavid/coralite/commit/64e72d485daf1ef1266dfc3faccad3acd8fd6e6e))
+- Refactor: Final clean removal of root from all script and plugin contexts ([5567c93](https://codeberg.org/tjdavid/coralite/commit/5567c9357ad0bab5cafe0cfdd8271d0734c41e25))
+
+
 ## v0.35.0
 
 > Comparing `coralite-v0.34.0` to `HEAD`
