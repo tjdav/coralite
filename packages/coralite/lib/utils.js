@@ -963,7 +963,9 @@ export function createReadOnlyProxy (target, proxies = new WeakMap()) {
   }
 
   const proxy = new Proxy(target, handler)
+
   proxies.set(target, proxy)
+
   return proxy
 }
 

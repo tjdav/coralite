@@ -1,11 +1,12 @@
 /**
- * @import { CoraliteComponent } from '../types/index.js'
  * @import {
  *  CoraliteClientPluginDisconnectedCallback,
  *  CoraliteClientPluginAfterComponentRenderCallback,
  *  CoraliteClientPluginBeforeComponentRenderCallback
  * } from '../types/plugin.js'
  */
+
+import { createReadOnlyProxy } from './utils.js'
 
 const BOOLEAN_ATTRIBUTES = new Set([
   'allowfullscreen',
@@ -61,39 +62,6 @@ export function coerce (value, type) {
   }
   return value
 }
-
-/**
- * Creates a read-only proxy that throws on mutation attempts.
- * @param {Object} target - The object to proxy.
- * @param {WeakMap} [proxies=new WeakMap()] - Cache for existing proxies.
- * @returns {Proxy} The read-only proxy.
- */
-export function createReadOnlyProxy (target, proxies = new WeakMap()) {
-  if (proxies.has(target)) {
-    return proxies.get(target)
-  }
-
-  const handler = {
-    get (target, property, receiver) {
-      const value = Reflect.get(target, property, receiver)
-      if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
-        return createReadOnlyProxy(value, proxies)
-      }
-      return value
-    },
-    set () {
-      throw new Error('Coralite Error: Cannot mutate state inside a getter. State is read-only here.')
-    },
-    deleteProperty () {
-      throw new Error('Coralite Error: Cannot delete state inside a getter. State is read-only here.')
-    }
-  }
-
-  const proxy = new Proxy(target, handler)
-  proxies.set(target, proxy)
-  return proxy
-}
-
 
 /**
  * @typedef {Object} CoraliteComponentOptions

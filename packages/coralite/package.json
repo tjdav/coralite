@@ -36,9 +36,8 @@
     "test-e2e-report": "playwright show-report",
     "test-e2e-ui": "playwright test --ui",
     "server": "sirv .coralite --dev --port 3000",
-    "build": "premove dist && pnpm build-lib && pnpm build-plugins && pnpm build-types",
-    "build-lib": "esbuild ./lib/*.js --target=esnext --format=esm --outdir=dist/lib --platform=node --sourcemap",
-    "build-plugins": "esbuild ./plugins/*.js --format=esm --outdir=dist/plugins --platform=node",
+    "build": "premove dist && pnpm build-lib && pnpm build-types",
+    "build-lib": "esbuild ./lib/index.js ./lib/coralite-element.js --bundle --target=esnext --format=esm --outdir=dist/lib --platform=node --sourcemap --packages=external --alias:#lib=./lib/index.js --alias:#plugins=./plugins/index.js",
     "build-types": "tsc",
     "build-html": "premove .coralite && node --experimental-vm-modules ./tests/scripts/build-html.js",
     "bench": "node --experimental-vm-modules ./tests/scripts/run-benchmarks.js"
@@ -59,14 +58,6 @@
     ".": {
       "types": "./dist/lib/index.d.ts",
       "default": "./dist/lib/index.js"
-    },
-    "./plugins": {
-      "types": "./dist/plugins/index.d.ts",
-      "default": "./plugins/index.js"
-    },
-    "./types": {
-      "types": "./dist/types/index.d.ts",
-      "default": "./types/index.js"
     }
   },
   "devDependencies": {
