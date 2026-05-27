@@ -449,7 +449,7 @@ export class CoraliteElement extends HTMLElement {
         const node = this.getNodeByPath(item.path)
         if (node) {
           this._bindings.push({
-            type: 'text',
+            type: item.type || 'text',
             node,
             template: item.template
           })
@@ -547,13 +547,7 @@ export class CoraliteElement extends HTMLElement {
           const element = binding.node
 
           if (element.innerHTML !== hydratedValue) {
-            // @ts-ignore
-            if (element.setHTML) {
-            // @ts-ignore
-              element.setHTML(hydratedValue)
-            } else {
-              element.innerHTML = hydratedValue
-            }
+            element.innerHTML = hydratedValue
           }
         } else if (binding.type === 'attribute') {
           /** @type {HTMLElement} */
@@ -637,11 +631,7 @@ export class CoraliteElement extends HTMLElement {
         const result = slotFn(slotEl._originalNodes, this._state)
 
         if (typeof result === 'string') {
-          if (slotEl.setHTMLUnsafe) {
-            slotEl.setHTMLUnsafe(result)
-          } else {
-            slotEl.innerHTML = result
-          }
+          slotEl.innerHTML = result
         } else if (Array.isArray(result)) {
           slotEl.replaceChildren(...result)
         }

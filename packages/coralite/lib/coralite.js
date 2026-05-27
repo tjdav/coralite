@@ -1621,7 +1621,7 @@ Coralite.prototype._processDependentComponents = async function (componentIds, s
  * @param {CoraliteModuleDefinitions} [options.state={}] - Token state available for replacement
  * @param {CoraliteElement} [options.element] - The original Custom Element node
  * @param {CoralitePage} options.page - The global page object
- * @param {any} options.root - The root element of the component
+ * @param {CoraliteComponentRoot} [options.root] - The root element of the component
  * @param {string} [options.contextId] - Context Id
  * @param {number} [options.index] - Context index
  * @param {CoraliteSession} [options.session] - Render Context
@@ -2014,7 +2014,7 @@ Coralite.prototype.createComponentElement = async function ({
     }
   }
 
-  await this._replaceSlots(id, element, module, contextId, componentState, page, root, index, session, noHydration)
+  await this._replaceSlots(id, element, module, componentState, page, root, index, session, noHydration)
 
   if (noHydration) {
     const stack = [...result.children]
@@ -2061,7 +2061,6 @@ Coralite.prototype.createComponentElement = async function ({
  * @param {string} id - Component ID
  * @param {CoraliteElement} element - The original Custom Element node
  * @param {CoraliteModule} module - The component module configuration
- * @param {string} contextId - Instance context ID
  * @param {Object} state - The component state
  * @param {CoralitePage} page - Active page object
  * @param {any} root - The component root element
@@ -2070,7 +2069,7 @@ Coralite.prototype.createComponentElement = async function ({
  * @param {boolean} noHydration - No hydration flag
  * @returns {Promise<void>} Resolves when slots are successfully replaced
  */
-Coralite.prototype._replaceSlots = async function (id, element, module, contextId, state, page, root, index, session, noHydration) {
+Coralite.prototype._replaceSlots = async function (id, element, module, state, page, root, index, session, noHydration) {
   const slots = module.slotElements ? module.slotElements[id] : null
 
   if (!slots) {
