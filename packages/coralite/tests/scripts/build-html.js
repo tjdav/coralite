@@ -1,4 +1,5 @@
-import { Coralite, staticAssetPlugin } from '../../lib/index.js'
+import { Coralite } from '../../lib/index.js'
+import { staticAssetPlugin } from '../../plugins/index.js'
 import { testContextPlugin } from '../fixtures/plugins/test-context-plugin.js'
 import { mockPlugin } from '../fixtures/plugins/mock-plugin.js'
 
