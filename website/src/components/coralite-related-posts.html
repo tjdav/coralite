@@ -33,20 +33,9 @@
         }
       })
 
-      if (postItems.length) {
-        const ul = {
-          type: 'tag',
-          name: 'ul',
-          children: postItems
-        }
-
-        for (let i = 0; i < postItems.length; i++) {
-          const item = postItems[i]
-          item.parent = ul
-        }
-
+      if (postItems) {
         return {
-          posts: ul
+          posts: `<ul>${postItems}</ul`
         }
       }
 
