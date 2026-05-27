@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.36.0
+
+> Comparing `create-coralite-v0.35.0` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- consolidate and comment CSS partials in create-coralite css template ([7dd821e](https://codeberg.org/tjdavid/coralite/commit/7dd821e192aa87ee0ca08a9b4ca777b0555c089f))
+
+### 📚 Documentation
+
+- add plugins section to llms.txt (create-coralite) ([685d546](https://codeberg.org/tjdavid/coralite/commit/685d546a7d75add65c72c6e073ef1d58860a60c9))
+- improve llms.txt guidelines (create-coralite) ([fb63084](https://codeberg.org/tjdavid/coralite/commit/fb63084d2af548bafb88bc7cd86e6d1cd5ccbe3f))
+
+### 🧹 Chores
+
+- update create-coralite and create-coralite-plugin templates ([6a0e79b](https://codeberg.org/tjdavid/coralite/commit/6a0e79bd6870d8d06ff950ba2c0aabbd0413ccf3))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.36.0 ([c9740d5](https://codeberg.org/tjdavid/coralite/commit/c9740d5b829d4e289238fd059c1e59a6c57943f6))
+
+
 ## v0.35.0
 
 > Comparing `create-coralite-v0.34.0` to `HEAD`
