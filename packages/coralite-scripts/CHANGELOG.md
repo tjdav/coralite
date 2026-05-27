@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.36.0
+
+> Comparing `coralite-scripts-v0.35.0` to `HEAD`
+
+**Summary:** 9 commits
+
+### ✨ Features
+
+- add style compilation utility (scripts) ([90e9625](https://codeberg.org/tjdavid/coralite/commit/90e96254ac43797e57685068aac2d5830ee9a016))
+- implement modular styles configuration and generic build pipeline ([46f42a4](https://codeberg.org/tjdavid/coralite/commit/46f42a4b1b32e925c18c9061104f7ebf7c8b00cd))
+- implement no-hydration attribute for host-tag and c-token stripping ([132d1e7](https://codeberg.org/tjdavid/coralite/commit/132d1e790a9eb3c28375931e10e787ed68f85853))
+
+### 🐛 Bug Fixes
+
+- resolve website build failure by unbundling coralite lib and improving asset writing ([c247c12](https://codeberg.org/tjdavid/coralite/commit/c247c12d684ed74ee830fa8d9d6e3515c6dc420d))
+- ensures plugin paths are extracted asynchronously in server setup. (coralite-scripts) ([07717c3](https://codeberg.org/tjdavid/coralite/commit/07717c3ffc885a359e3c7ae6dffd0f6bd3ab1f36))
+
+### 📚 Documentation
+
+- update READMEs and website for 1.0.0 release ([c056c60](https://codeberg.org/tjdavid/coralite/commit/c056c60076e9caeb07d1d273835ef6c31bc7db0c))
+- update readme for postcss configuration (scripts) ([f5a1c41](https://codeberg.org/tjdavid/coralite/commit/f5a1c41065ce6c8f751b367b5a463a6608b90972))
+
+### 🧹 Chores
+
+- update dependencies and config (deps) ([6cc5547](https://codeberg.org/tjdavid/coralite/commit/6cc5547b47e4aa275d178a268a66f7c5bfa28bc9))
+- make index executable (scripts) ([3606f6e](https://codeberg.org/tjdavid/coralite/commit/3606f6ebe05eea82a098aaa3219b219291aeff9f))
+
+
 ## v0.35.0
 
 > Comparing `coralite-scripts-v0.34.0` to `HEAD`
