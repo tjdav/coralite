@@ -20,8 +20,7 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.5.0",
-    "coralite-plugin-aggregation": "^0.11.0",
-    "coralite-plugin-inline-css": "^0.6.0",
+    "coralite-plugin-aggregation": "^0.12.0",
     "coralite-scripts": "workspace:*",
     "cross-env": "^10.1.0",
     "highlight.js": "^11.11.1",

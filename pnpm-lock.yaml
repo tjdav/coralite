@@ -213,11 +213,8 @@ importers:
         specifier: ^10.5.0
         version: 10.5.0(postcss@8.5.15)
       coralite-plugin-aggregation:
-        specifier: ^0.11.0
-        version: 0.11.0
-      coralite-plugin-inline-css:
-        specifier: ^0.6.0
-        version: 0.6.0
+        specifier: ^0.12.0
+        version: 0.12.0
       coralite-scripts:
         specifier: workspace:*
         version: link:../packages/coralite-scripts
@@ -1064,11 +1061,8 @@ packages:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
 
-  coralite-plugin-aggregation@0.11.0:
-    resolution: {integrity: sha512-0WDhCDNMB0PSF7TGBWYRsfw3S+5FcudasLZ5nEKzQpd7ztF7q/5MFC7xYsyN0Bc800NDY/DJc309oXPVYQeRNg==}
-
-  coralite-plugin-inline-css@0.6.0:
-    resolution: {integrity: sha512-pMWaICtoNzJb9egWw79ZVS9sCEUaf4VWVQImHzQgE6u87kVonqy/iPwvvygDuN0Fugh24uTDd44kNklsi4EBNA==}
+  coralite-plugin-aggregation@0.12.0:
+    resolution: {integrity: sha512-7nAOWKe4xC3xhfzgnZSj4FG6g1Um/j5fZlCa+k8weXy/NZ5KDMQM1tBYiCisvrXEW04ewZRuCp0IT32uQHJcZg==}
 
   cosmiconfig-typescript-loader@6.1.0:
     resolution: {integrity: sha512-tJ1w35ZRUiM5FeTzT7DtYWAFFv37ZLqSRkGi2oeCK1gPhvaWjkAtfXvLmvE1pRfxxp9aQo6ba/Pvg1dKj05D4g==}
@@ -2039,11 +2033,6 @@ packages:
 
   postcss-media-query-parser@0.2.3:
     resolution: {integrity: sha512-3sOlxmbKcSHMjlUXQZKQ06jOswE7oVkXPxmZdoB1r5l0q6gTFTQSHxNxOrCccElbW7dxNytifNEo8qidX2Vsig==}
-
-  postcss-minify@1.2.0:
-    resolution: {integrity: sha512-Cvyz+hW5eBG0okSSOGDeussQy4v9mZHRhMevP2jwADqDS1v2gfoLo94+g4fCeVYtESZKqr+ViMPv3yPkWZFmFQ==}
-    peerDependencies:
-      postcss: ^8.0
 
   postcss-resolve-nested-selector@0.1.6:
     resolution: {integrity: sha512-0sglIs9Wmkzbr8lQwEyIzlDOOC9bGmfVKcJTaxv3vMmd3uo4o4DerC3En0bnmgceeql9BfC8hRkp7cg0fjdVqw==}
@@ -3385,13 +3374,7 @@ snapshots:
 
   cookie@0.7.2: {}
 
-  coralite-plugin-aggregation@0.11.0: {}
-
-  coralite-plugin-inline-css@0.6.0:
-    dependencies:
-      postcss: 8.5.15
-      postcss-import: 16.1.1(postcss@8.5.15)
-      postcss-minify: 1.2.0(postcss@8.5.15)
+  coralite-plugin-aggregation@0.12.0: {}
 
   cosmiconfig-typescript-loader@6.1.0(@types/node@22.18.5)(cosmiconfig@9.0.0(typescript@5.9.2))(typescript@5.9.2):
     dependencies:
@@ -4374,12 +4357,6 @@ snapshots:
       resolve: 1.22.12
 
   postcss-media-query-parser@0.2.3: {}
-
-  postcss-minify@1.2.0(postcss@8.5.15):
-    dependencies:
-      postcss: 8.5.15
-      postcss-selector-parser: 7.1.1
-      postcss-value-parser: 4.2.0
 
   postcss-resolve-nested-selector@0.1.6: {}
 

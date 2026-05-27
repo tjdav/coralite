@@ -7,6 +7,9 @@ allowBuilds:
   esbuild: true
   simple-git-hooks: true
 
+minimumReleaseAgeExclude:
+  - coralite-plugin-aggregation@0.12.0
+
 onlyBuiltDependencies:
   - "@parcel/watcher"
   - simple-git-hooks
