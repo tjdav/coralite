@@ -2581,7 +2581,10 @@ Coralite.prototype._triggerPluginAggregateHook = async function (name, contextDa
   }
 
   for (let i = 0; i < pluginHooks.length; i++) {
-    let result = pluginHooks[i](contextData)
+    let result = pluginHooks[i]({
+      ...contextData,
+      app: this
+    })
 
     if (result !== null && typeof result === 'object' && typeof result.then === 'function') {
       result = await result

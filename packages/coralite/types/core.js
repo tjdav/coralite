@@ -59,13 +59,20 @@
  * @property {string} components - The path to the directory containing Coralite components.
  * @property {string} pages - The path to the directory containing pages that will be rendered using the provided templates.
  * @property {CoralitePluginInstance[]} [plugins] - Optional array of plugin instances to extend Coralite functionality.
- * @property {string} [options.baseURL] - Optional base URL for asset paths. Defaults to '/'.
+ * @property {string} [baseURL] - Optional base URL for asset paths. Defaults to '/'.
  * @property {CoraliteStaticAsset[]} [assets] - Static assets to copy during build.
  * @property {Array<string | Attribute>} [ignoreByAttribute] - An array of attribute names and values to ignore by element type.
  * @property {Array<string | Attribute>} [skipRenderByAttribute] - An array of attribute names and values to skip rendering by element type.
  * @property {CoraliteOnError} [onError] - Optional callback function for handling errors and warnings.
  * @property {string[]} [externalStyles] - Global styles to inject into every page
- * @property {string} [options.mode='production'] - Build mode: "development" or "production"
+ * @property {string} [mode='production'] - Build mode: "development" or "production"
+ */
+
+/**
+ * @typedef {Object} CoraliteBuildOptions
+ * @property {number} [maxConcurrent] - The maximum number of concurrent file write operations.
+ * @property {AbortSignal} [signal] - An AbortSignal to cancel the build operation.
+ * @property {Object.<string, any>} [variables] - Local variables for the page
  */
 
 /**

@@ -7,7 +7,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @import { CoraliteAnyNode } from './dom.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
- * @import { Coralite } from '#lib'
+ * @import { Coralite } from '../lib/coralite.js'
  */
 
 /**
@@ -57,36 +57,44 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
+ * @typedef {Object} CoralitePluginBeforeComponentRenderContext
+ * @property {Object.<string, any>} state - Mutable state object
+ * @property {string} componentId - Generic component name
+ * @property {string} instanceId - Clean unique identifier
+ * @property {CoraliteRef[]} refs - Scoped AST pointers for refs
+ * @property {CoraliteTextNodeToken[]} textNodes - Scoped AST pointers for text nodes
+ * @property {CoraliteAttributeToken[]} attributes - Scoped AST pointers for attributes
+ * @property {CoralitePage} page - The current page context
+ * @property {CoraliteElement} [element] - The parent AST tag itself
+ * @property {CoraliteSession} session - Global build state
+ * @property {Coralite} app - The global Coralite app instance
+ */
+
+/**
  * @callback CoralitePluginBeforeComponentRenderCallback - Async callback triggered before a component is rendered.
- * @param {Object} context
- * @param {Object.<string, any>} context.state - Mutable state object
- * @param {string} context.componentId - Generic component name
- * @param {string} context.instanceId - Clean unique identifier
- * @param {CoraliteRef[]} context.refs - Scoped AST pointers for refs
- * @param {CoraliteTextNodeToken[]} context.textNodes - Scoped AST pointers for text nodes
- * @param {CoraliteAttributeToken[]} context.attributes - Scoped AST pointers for attributes
- * @param {CoralitePage} context.page - The current page context
- * @param {CoraliteElement} [context.element] - The parent AST tag itself
- * @param {CoraliteSession} context.session - Global build state
- * @param {Coralite} [context.app] - The global Coralite app instance
+ * @param {CoralitePluginBeforeComponentRenderContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
+ * @typedef {Object} CoralitePluginAfterComponentRenderContext
+ * @property {CoraliteAnyNode} result - The component's rendered AST root
+ * @property {Object.<string, any>} state - Final mutable state object
+ * @property {string} componentId - Generic component name
+ * @property {string} instanceId - Clean unique identifier
+ * @property {CoraliteRef[]} refs - Scoped AST pointers for refs
+ * @property {CoraliteTextNodeToken[]} textNodes - Scoped AST pointers for text nodes
+ * @property {CoraliteAttributeToken[]} attributes - Scoped AST pointers for attributes
+ * @property {CoralitePage} page - The current page context
+ * @property {CoraliteElement} [element] - The parent AST tag itself
+ * @property {CoraliteSession} session - Global build state
+ * @property {Coralite} app - The global coralite app instance
+ */
+
+/**
  * @callback CoralitePluginAfterComponentRenderCallback - Async callback triggered after a component is rendered.
- * @param {Object} context
- * @param {CoraliteAnyNode} context.result - The component's rendered AST root
- * @param {Object.<string, any>} context.state - Final mutable state object
- * @param {string} context.componentId - Generic component name
- * @param {string} context.instanceId - Clean unique identifier
- * @param {CoraliteRef[]} context.refs - Scoped AST pointers for refs
- * @param {CoraliteTextNodeToken[]} context.textNodes - Scoped AST pointers for text nodes
- * @param {CoraliteAttributeToken[]} context.attributes - Scoped AST pointers for attributes
- * @param {CoralitePage} context.page - The current page context
- * @param {CoraliteElement} [context.element] - The parent AST tag itself
- * @param {CoraliteSession} context.session - Global build state
- * @param {Coralite} [context.app] - The global coralite app instance
+ * @param {CoralitePluginAfterComponentRenderContext} context
  * @returns {Promise<Object|void>|Object|void} A partial AST patch to be merged.
  * @async
  */
@@ -109,81 +117,126 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
+ * @typedef {Object} CoralitePluginPageSetContext
+ * @property {ParseHTMLResult} elements - Parsed HTML elements from the page
+ * @property {CoraliteFilePath & Object.<string, any>} state - Values associated with the page path
+ * @property {CoralitePage} page - The global page object
+ * @property {CoraliteCollectionItem} data - Data item representing the newly created page
+ * @property {Coralite} app - The global coralite app instance
+ */
+
+/**
  * @callback CoralitePluginPageSetCallback - Async callback triggered when a page is created. Called with elements, state, and data.
- * @param {Object} param
- * @param {ParseHTMLResult} param.elements - Parsed HTML elements from the page
- * @param {CoraliteFilePath & Object.<string, any>} param.state - Values associated with the page path
- * @param {CoralitePage} param.page - The global page object
- * @param {CoraliteCollectionItem} param.data - Data item representing the newly created page
- * @param {Coralite} param.app - The global coralite app instance
+ * @param {CoralitePluginPageSetContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
+ */
+
+/**
+ * @typedef {Object} CoralitePluginPageUpdateContext
+ * @property {ParseHTMLResult} elements - Updated HTML elements from the page
+ * @property {CoralitePage} page - The global page object
+ * @property {CoraliteCollectionItem} newValue - The updated data item
+ * @property {CoraliteCollectionItem} oldValue - The previous data item before update
+ * @property {Coralite} app - The global coralite app instance
  */
 
 /**
  * @callback CoralitePluginPageUpdateCallback - Async callback triggered when a page is updated. Called with elements, new and old state.
- * @param {Object} param
- * @param {ParseHTMLResult} param.elements - Updated HTML elements from the page
- * @param {CoralitePage} param.page - The global page object
- * @param {CoraliteCollectionItem} param.newValue - The updated data item
- * @param {CoraliteCollectionItem} param.oldValue - The previous data item before update
- * @param {Coralite} [param.app] - The global coralite app instance
+ * @param {CoralitePluginPageUpdateContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
+ */
+
+/**
+ * @typedef {Object} CoraliteApp
+ * @property {Coralite} app - The global coralite app instance
+ */
+
+/**
+ * @typedef {CoraliteCollectionItem & CoraliteApp} CoralitePluginCollectionItemContext
  */
 
 /**
  * @callback CoralitePluginPageDeleteCallback - Async callback triggered when a page is deleted. Called with the deleted data.
- * @param {CoraliteCollectionItem} value - The data item being deleted
+ * @param {CoralitePluginCollectionItemContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
- * @this {ThisType<Coralite>}
- * @callback CoralitePluginComponentCallback - Async callback triggered for component-related events (set, update, delete).
- * @param {CoraliteModule & {app?: Coralite}} component - The component module that was set, updated, or deleted
+ * @typedef {CoraliteModule & CoraliteApp} CoralitePluginModuleContext
+ */
+
+/**
+ * @callback CoralitePluginComponentCallback - Async callback triggered for component-related events (set and update).
+ * @param {CoralitePluginModuleContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
+ */
+
+/**
+ * @callback CoralitePluginComponentDeleteCallback - Async callback triggered when a component is deleted.
+ * @param {CoralitePluginCollectionItemContext} context
+ * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
+ * @async
+ */
+
+/**
+ * @typedef {Object} CoralitePluginBeforePageRenderContext
+ * @property {CoraliteComponent} component - The cloned HTML component data being processed
+ * @property {Object.<string, CoraliteModuleDefinition>} state - Properties associated with the component
+ * @property {CoralitePage} page - The global page object
+ * @property {CoraliteSession} session - Render context containing state for the build
+ * @property {Coralite} app - The global coralite app instance
  */
 
 /**
  * @callback CoralitePluginBeforePageRenderCallback - Async callback triggered before a page has been rendered.
- * @param {Object} context
- * @param {CoraliteComponent} context.component - The cloned HTML component data being processed
- * @param {Object.<string, CoraliteModuleDefinition>} context.state - Properties associated with the component
- * @param {CoralitePage} context.page - The global page object
- * @param {CoraliteSession} context.session - Render context containing state for the build
+ * @param {CoralitePluginBeforePageRenderContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
+ */
+
+/**
+ * @typedef {Object} CoralitePluginBeforeBuildContext
+ * @property {string | string[] | null} path - The target directory or an array of specific page paths to build
+ * @property {import('./core.js').CoraliteBuildOptions} options - Configuration options for the build process
+ * @property {Coralite} app - The global coralite app instance
  */
 
 /**
  * @callback CoralitePluginBeforeBuildCallback - Async callback triggered before the build begins.
- * @param {Object} context
- * @param {string | string[] | null} context.path - The target directory or an array of specific page paths to build
- * @param {Object} context.options - Configuration options for the build process
- * @param {Coralite} context.app - The global coralite app instance
+ * @param {CoralitePluginBeforeBuildContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
+ * @typedef {Object} CoralitePluginAfterPageRenderContext
+ * @property {CoraliteResult} result - The rendered page result
+ * @property {CoraliteSession} session - The current page build session
+ * @property {Coralite} app - The global coralite app instance
+ */
+
+/**
  * @callback CoralitePluginAfterPageRenderCallback - Async callback triggered after a page has been rendered but before saving.
- * @param {Object} context
- * @param {CoraliteResult} context.result - The rendered page result
- * @param {CoraliteSession} context.session - The current page build session
+ * @param {CoralitePluginAfterPageRenderContext} context
  * @returns {Promise<CoraliteResult[]|CoraliteResult|void>} New result(s) to add to the build output
  * @async
  */
 
 /**
+ * @typedef {Object} CoralitePluginAfterBuildContext
+ * @property {CoraliteResult[]} results - The results of the build (pages generated)
+ * @property {Error|null} error - The error if the build failed
+ * @property {number} duration - The duration of the build in milliseconds
+ * @property {Coralite} app - The global coralite app instance
+ */
+
+/**
  * @callback CoralitePluginAfterBuildCallback - Async callback triggered when a build process completes (success or failure).
- * @param {Object} context
- * @param {CoraliteResult[]} context.results - The results of the build (pages generated)
- * @param {Error|null} context.error - The error if the build failed
- * @param {number} context.duration - The duration of the build in milliseconds
- * @param {Coralite} context.app - The global coralite app instance
+ * @param {CoralitePluginAfterBuildContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
@@ -197,7 +250,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted
  * @property {CoralitePluginComponentCallback} [onComponentSet] - Async callback triggered when a component is created
  * @property {CoralitePluginComponentCallback} [onComponentUpdate] - Async callback triggered when a components is updated
- * @property {CoralitePluginComponentCallback} [onComponentDelete] - Async callback triggered when a component is deleted
+ * @property {CoralitePluginComponentDeleteCallback} [onComponentDelete] - Async callback triggered when a component is deleted
  * @property {CoralitePluginBeforePageRenderCallback} [onBeforePageRender] - Async callback triggered before page render
  * @property {CoralitePluginAfterPageRenderCallback} [onAfterPageRender] - Async callback triggered after page render
  * @property {CoralitePluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Async callback triggered before component render
