@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.36.3
+
+> Comparing `coralite-v0.36.2` to `HEAD`
+
+**Summary:** 3 commits
+
+### 📚 Documentation
+
+- Update README for coralite manual installation instructions ([63c992d](https://codeberg.org/tjdavid/coralite/commit/63c992d7e17ea193d28145139b6856e553bfd2a1))
+- standardize plugin hooks with explicit context objects and improved JSDocs ([91cd45e](https://codeberg.org/tjdavid/coralite/commit/91cd45ebe781b0688db52d725b0bda223daf1173))
+- refine plugin hook JSDocs with flat context intersections ([03aeb33](https://codeberg.org/tjdavid/coralite/commit/03aeb33cf6ffdcff01c5275454f9cfe91e3e6e82))
+
+
 ## v0.36.2
 
 > Comparing `coralite-v0.36.1` to `HEAD`
