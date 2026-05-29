@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.36.3
+
+> Comparing `coralite-scripts-v0.36.2` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- enable serving of virtual pages in development server ([a7a5503](https://codeberg.org/tjdavid/coralite/commit/a7a550388c6dabcb67a678e3f9bc39df7510b6b4))
+
+
 ## v0.36.0
 
 > Comparing `coralite-scripts-v0.35.0` to `HEAD`
