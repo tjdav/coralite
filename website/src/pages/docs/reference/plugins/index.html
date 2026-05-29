@@ -473,35 +473,35 @@
         name: 'analytics',
         
         // Page Lifecycle
-        onPageSet: async ({ page, elements, state, data }) => {
+        onPageSet: async ({ page, elements, state, data, app }) => {
           // Called when a new page is created
           console.log('New page:', page.url.pathname)
         },
-        onPageUpdate: async ({ page, elements, newValue, oldValue }) => {
+        onPageUpdate: async ({ page, elements, newValue, oldValue, app }) => {
           // Called when a page is updated
           console.log('Page updated:', page.url.pathname)
         },
-        onPageDelete: async (value) => {
+        onPageDelete: async ({ ...data, app }) => {
           // Called when a page is deleted
           console.log('Page deleted.')
         },
 
         // Component Lifecycle
-        onComponentSet: async (component) => {
+        onComponentSet: async ({ component, app }) => {
           // Called when a component is created
           console.log('New component:', component.id)
         },
-        onComponentUpdate: async (component) => {
+        onComponentUpdate: async ({ component, app }) => {
           // Called when a component is updated
           console.log('Component updated:', component.id)
         },
-        onComponentDelete: async (component) => {
+        onComponentDelete: async ({ component, app }) => {
           // Called when a component is deleted
           console.log('Component deleted:', component.id)
         },
 
         // Build Orchestration
-        onBeforeBuild: async (context) => {
+        onBeforeBuild: async ({ path, options, app }) => {
           console.log('Build process starting...');
         },
         onAfterBuild: async ({ results, error, duration }) => {

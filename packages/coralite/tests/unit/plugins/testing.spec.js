@@ -25,7 +25,7 @@ describe('testingPlugin', () => {
       }
     }
 
-    testingPlugin.server.onComponentSet(component)
+    testingPlugin.server.onComponentSet({ component })
 
     assert.strictEqual(component.template.children[0].attribs['data-testid'], 'myRef')
     assert.strictEqual(component.template.children[1].attribs['data-testid'], undefined)
@@ -71,7 +71,7 @@ describe('testingPlugin', () => {
       }
     }
 
-    testingPlugin.server.onComponentSet(component)
+    testingPlugin.server.onComponentSet({ component })
 
     assert.strictEqual(component.template.children[0].attribs['data-testid'], undefined)
     assert.strictEqual(component.template.children[0].children[0].attribs['data-testid'], 'nestedBtn')
@@ -79,7 +79,7 @@ describe('testingPlugin', () => {
 
   it('should handle missing template gracefully', () => {
     const component = {}
-    testingPlugin.server.onComponentSet(component)
+    testingPlugin.server.onComponentSet({ component })
     // Should not throw
     assert.ok(true)
   })

@@ -282,12 +282,12 @@ Coralite.prototype.initialise = async function () {
         return
       }
 
-      const mappedComponent = await this._triggerPluginHook('onComponentSet', component)
+      const result = await this._triggerPluginHook('onComponentSet', { component })
 
       return {
         type: 'component',
-        id: mappedComponent.id,
-        value: mappedComponent
+        id: result.component.id,
+        value: result.component
       }
     },
     onFileUpdate: async (value) => {
@@ -306,10 +306,12 @@ Coralite.prototype.initialise = async function () {
         return
       }
 
-      return await this._triggerPluginHook('onComponentUpdate', component)
+      const result = await this._triggerPluginHook('onComponentUpdate', { component })
+
+      return result.component
     },
     onFileDelete: async (value) => {
-      await this._triggerPluginHook('onComponentDelete', value)
+      await this._triggerPluginHook('onComponentDelete', { component: value })
     }
   })
 
@@ -546,7 +548,8 @@ Coralite.prototype.initialise = async function () {
       return
     }
 
-    value = await this._triggerPluginHook('onPageDelete', value)
+    const result = await this._triggerPluginHook('onPageDelete', { data: value })
+    value = result.data
 
     // remove page from custom element reference
     if (value && value.result && value.result.customElements) {

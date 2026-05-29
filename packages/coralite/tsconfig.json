@@ -24,6 +24,7 @@
     "lib/index.js"
   ],
   "exclude": [
+    "tests",
     "node_modules"
   ]
 }

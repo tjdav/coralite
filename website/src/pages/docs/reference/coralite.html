@@ -16,7 +16,7 @@
     <ul>
       <li><a href="#coralite-constructor">Coralite Constructor</a></li>
       <li><a href="#initialise-method">Initialise Method</a></li>
-      <li><a href="#compile-method">Compile Method</a></li>
+      <li><a href="#build-method">Build Method</a></li>
       <li><a href="#save-method">Save Method</a></li>
       <li><a href="#render-method">Render Method</a></li>
       <li><a href="#get-page-paths-using-custom-element">Get Page Paths Using Custom Element</a></li>
@@ -111,7 +111,7 @@ await coralite.initialise()</coralite-code-highlight>
     <coralite-heading level="h3" text="Returns"></coralite-heading>
     <p>A promise that resolves when the initialization is complete.</p>
 
-    <coralite-heading level="h2" text="Compile Method"></coralite-heading>
+    <coralite-heading level="h2" text="Build Method" id="build-method"></coralite-heading>
     <p>Compiles specified page(s) by rendering their document content and measuring render time. Processes pages based on provided path(s), replacing custom elements with components, and returns rendered results with performance metrics.</p>
 
     <coralite-code-highlight language="JavaScript">/**
@@ -120,9 +120,11 @@ await coralite.initialise()</coralite-code-highlight>
  * and returns rendered results with performance metrics.
  *
  * @param {string | string[]} [path] - Path to a single page or array of page paths relative to the pages directory. If omitted, compiles all pages.
- * @return {Promise*Array*CoraliteResult**}
+ * @param {CoraliteBuildOptions} [options] - Build configuration options.
+ * @param {function} [callback] - Optional callback to transform each page result.
+ * @return {Promise<CoraliteResult[]>}
  */
-coralite.compile(path)</coralite-code-highlight>
+coralite.build(path, options, callback)</coralite-code-highlight>
 
     <coralite-heading level="h3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
@@ -142,49 +144,63 @@ coralite.compile(path)</coralite-code-highlight>
             <td>Optional</td>
             <td>The path or array of paths to the HTML files relative to the project's <code>pages</code> directory. If omitted, compiles all <code>pages</code> in the pages directory.</td>
           </tr>
+          <tr>
+            <th scope="row">options</th>
+            <td><code><a href="/docs/reference/types.html#coralitebuildoptions">CoraliteBuildOptions</a></code></td>
+            <td>Optional</td>
+            <td>Configuration options for the build process.</td>
+          </tr>
+          <tr>
+            <th scope="row">callback</th>
+            <td><code>function</code></td>
+            <td>Optional</td>
+            <td>A function invoked for each page to transform the result.</td>
+          </tr>
         </tbody>
       </table>
     </div>
 
     <coralite-heading level="h3" text="Example Usage"></coralite-heading>
-    <p>Compile a single page by providing its file path:</p>
-    <coralite-code-highlight language="JavaScript">coralite.compile('pages/home/index.html')
+    <p>Build a single page by providing its file path:</p>
+    <coralite-code-highlight language="JavaScript">coralite.build('pages/home/index.html')
   .then(documents => {
-    console.log('Compilation result:', documents);
+    console.log('Build result:', documents);
   })
   .catch(error => {
-    console.error('Error during compilation:', error);
+    console.error('Error during build:', error);
   });</coralite-code-highlight>
 
-    <p>Compiling multiple pages using an array of paths:</p>
-    <coralite-code-highlight language="JavaScript">coralite.compile(['pages/home/index.html', 'pages/about/index.html'])
+    <p>Building multiple pages using an array of paths:</p>
+    <coralite-code-highlight language="JavaScript">coralite.build(['pages/home/index.html', 'pages/about/index.html'])
   .then(documents => {
     documents.forEach((document, index) => {
       console.log(`Result for page ${index + 1}:`, document);
     });
   })
   .catch(error => {
-    console.error('Error during compilation:', error);
+    console.error('Error during build:', error);
   });</coralite-code-highlight>
 
-    <p>Compiling all pages by omitting the path parameter:</p>
-    <coralite-code-highlight language="JavaScript">coralite.compile()
+    <p>Building all pages by omitting the path parameter:</p>
+    <coralite-code-highlight language="JavaScript">coralite.build()
   .then(documents => {
-    console.log('All compiled documents:', documents)
+    console.log('All built documents:', documents)
   })
   .catch(error => {
-    console.error('Error compiling all pages:', error)
+    console.error('Error building all pages:', error)
   });</coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Save Method"></coralite-heading>
-    <p>Saves processed documents as HTML files to the specified output directory.</p>
+    <coralite-heading level="h2" text="Save Method" id="save-method"></coralite-heading>
+    <p>Saves processed pages and assets to the output directory configured in the Coralite instance.</p>
 
     <coralite-code-highlight language="JavaScript">/**
- * Saves processed documents as HTML files to the specified output directory.
- * @param {Array*CoraliteResult*} documents - Array of document objects containing metadata and HTML content
- * @param {string} output - Base directory path where generated HTML files will be saved
+ * Compiles and saves pages to disk.
+ *
+ * @param {string | string[]} [path] - Optional page path(s) to build.
+ * @param {CoraliteBuildOptions} [options] - Build configuration options.
+ * @returns {Promise<{ path: string, duration: number }[]>} Array of saved file paths.
  */
-coralite.save(documents, output)</coralite-code-highlight>
+coralite.save(path, options)</coralite-code-highlight>
 
     <coralite-heading level="h3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
@@ -199,29 +215,29 @@ coralite.save(documents, output)</coralite-code-highlight>
         </thead>
         <tbody>
           <tr>
-            <th scope="row">documents</th>
-            <td><code>Array&lt;<a href="/docs/types.html#coralite-result">CoraliteResult</a>&gt;</code></td>
-            <td>Required</td>
-            <td>An array of <code><a href="/docs/types.html#coralite-result">CoraliteResult</a></code> objects containing rendered document data.</td>
+            <th scope="row">path</th>
+            <td><code>string | string[]</code></td>
+            <td>Optional</td>
+            <td>Optional page path(s) to build.</td>
           </tr>
           <tr>
-            <th scope="row">output</th>
-            <td><code>string</code></td>
-            <td>Required</td>
-            <td>The base directory path where HTML files will be saved. Must exist on disk.</td>
+            <th scope="row">options</th>
+            <td><code><a href="/docs/reference/types.html#coralitebuildoptions">CoraliteBuildOptions</a></code></td>
+            <td>Optional</td>
+            <td>Build configuration options.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <coralite-heading level="h3" text="Example Usage"></coralite-heading>
-    <coralite-code-highlight language="JavaScript">coralite.compile()
+    <coralite-code-highlight language="JavaScript">coralite.build()
   .then(async (documents) => {
     // save documents to disk
-    await coralite.save(documents, './output')
+    await coralite.save()
   })
   .catch(error => {
-    console.error('Error compiling all pages:', error)
+    console.error('Error building all pages:', error)
   })</coralite-code-highlight>
 
     <coralite-heading level="h2" text="Render Method"></coralite-heading>

@@ -7,7 +7,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @import { CoraliteAnyNode } from './dom.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
- * @import { Coralite } from '../lib/coralite.js'
+ * @import { Coralite } from '../lib/index.js'
  */
 
 /**
@@ -154,30 +154,40 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
- * @typedef {CoraliteCollectionItem & CoraliteApp} CoralitePluginCollectionItemContext
+ * @typedef {Object} CoralitePluginPageDeleteContext
+ * @property {CoraliteCollectionItem} data - The page data being deleted
+ * @property {Coralite} app - The global coralite app instance
  */
 
 /**
  * @callback CoralitePluginPageDeleteCallback - Async callback triggered when a page is deleted. Called with the deleted data.
- * @param {CoralitePluginCollectionItemContext} context
+ * @param {CoralitePluginPageDeleteContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
- * @typedef {CoraliteModule & CoraliteApp} CoralitePluginModuleContext
+ * @typedef {Object} CoralitePluginComponentContext
+ * @property {CoraliteModule} component - The component module being set or updated
+ * @property {Coralite} app - The global coralite app instance
  */
 
 /**
  * @callback CoralitePluginComponentCallback - Async callback triggered for component-related events (set and update).
- * @param {CoralitePluginModuleContext} context
+ * @param {CoralitePluginComponentContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
 
 /**
+ * @typedef {Object} CoralitePluginComponentDeleteContext
+ * @property {CoraliteCollectionItem} component - The component data being deleted
+ * @property {Coralite} app - The global coralite app instance
+ */
+
+/**
  * @callback CoralitePluginComponentDeleteCallback - Async callback triggered when a component is deleted.
- * @param {CoralitePluginCollectionItemContext} context
+ * @param {CoralitePluginComponentDeleteContext} context
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */

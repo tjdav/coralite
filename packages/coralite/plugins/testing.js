@@ -37,7 +37,7 @@ export const testingPlugin = definePlugin({
         }
       }
     },
-    onComponentSet: (component) => {
+    onComponentSet: ({ component }) => {
       const children = component?.template?.children
       if (children) {
         traverseAndAddTestId(children)

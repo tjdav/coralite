@@ -1387,53 +1387,59 @@
     <p>Async callback for <code>onPageSet</code>.</p>
     <coralite-code-highlight language="JavaScript">/**
         * @callback CoralitePluginPageSetCallback
-        * @param {Object} param
-        * @param {ParseHTMLResult} param.elements - The page AST
-        * @param {Object} param.state - The page state
-        * @param {Object} param.page - Page metadata
+        * @param {Object} context
+        * @param {ParseHTMLResult} context.elements - The page AST
+        * @param {Object} context.state - The page state
+        * @param {Object} context.page - Page metadata
+        * @param {CoraliteCollectionItem} context.data - The page data
+        * @param {Coralite} context.app - The Coralite instance
         */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginPageUpdateCallback"></coralite-heading>
     <p>Async callback for <code>onPageUpdate</code>.</p>
     <coralite-code-highlight language="JavaScript">/**
         * @callback CoralitePluginPageUpdateCallback
-        * @param {Object} param
-        * @param {ParseHTMLResult} param.elements - The updated AST
-        * @param {CoraliteCollectionItem} param.newValue - The new page data
-        * @param {CoraliteCollectionItem} param.oldValue - The old page data
+        * @param {Object} context
+        * @param {ParseHTMLResult} context.elements - The updated AST
+        * @param {CoraliteCollectionItem} context.newValue - The new page data
+        * @param {CoraliteCollectionItem} context.oldValue - The old page data
+        * @param {Coralite} context.app - The Coralite instance
         */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginPageDeleteCallback"></coralite-heading>
     <p>Async callback for <code>onPageDelete</code>.</p>
     <coralite-code-highlight language="JavaScript">/**
         * @callback CoralitePluginPageDeleteCallback
-        * @param {CoraliteCollectionItem} value - The deleted page data
+        * @param {CoraliteCollectionItem & { app: Coralite }} context - The deleted page context
         */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginComponentCallback"></coralite-heading>
-    <p>Async callback for component lifecycle hooks.</p>
+    <p>Async callback for component lifecycle hooks (set, update).</p>
     <coralite-code-highlight language="JavaScript">/**
         * @callback CoralitePluginComponentCallback
-        * @param {CoraliteModule} component - The component module
+        * @param {CoraliteModule & { app: Coralite }} context - The component context
         */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginBeforePageRenderCallback"></coralite-heading>
     <p>Async callback for <code>onBeforePageRender</code>.</p>
     <coralite-code-highlight language="JavaScript">/**
         * @callback CoralitePluginBeforePageRenderCallback
-        * @param {Object} param
-        * @param {CoraliteComponent} param.component - The component being rendered
-        * @param {Object} param.state - The rendering state
-        * @param {Object} param.page - Page metadata
+        * @param {Object} context
+        * @param {CoraliteComponent} context.component - The component being rendered
+        * @param {Object} context.state - The rendering state
+        * @param {Object} context.page - Page metadata
+        * @param {CoraliteSession} context.session - The page build session
+        * @param {Coralite} context.app - The Coralite instance
         */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginAfterPageRenderCallback"></coralite-heading>
     <p>Async callback for <code>onAfterPageRender</code>.</p>
     <coralite-code-highlight language="JavaScript">/**
         * @callback CoralitePluginAfterPageRenderCallback
-        * @param {Object} param
-        * @param {CoraliteResult} param.result - The rendered page result
-        * @param {Object} param.session - The page build session
+        * @param {Object} context
+        * @param {CoraliteResult} context.result - The rendered page result
+        * @param {CoraliteSession} context.session - The page build session
+        * @param {Coralite} context.app - The Coralite instance
         * @returns {CoraliteResult | CoraliteResult[] | void}
         */</coralite-code-highlight>
   
