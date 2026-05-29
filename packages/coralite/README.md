@@ -43,7 +43,7 @@ npm run start
 
 ---
 
-## 📦 Manual Installation & CLI
+## Manual Installation & CLI
 
 If you are adding Coralite to an existing project or building from scratch manually, install the core package:
 
