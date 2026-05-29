@@ -15,6 +15,90 @@ import portfinder from 'portfinder'
  */
 
 /**
+ * Resolves the requested path to a physical file or a virtual page.
+ *
+ * @param {string} reqPath - The requested URL path.
+ * @param {string} extension - The extension of the requested path.
+ * @param {CoraliteScriptConfig} config - The Coralite configuration.
+ * @param {any} coralite - The Coralite instance.
+ * @param {Map<string, string>} memoryPageSource - Map of in-memory page sources.
+ * @returns {Promise<{pathname: string, key: string}|null>}
+ */
+export async function resolveSource (reqPath, extension, config, coralite, memoryPageSource) {
+  const candidates = []
+
+  // Ensure relative path doesn't start with / for joining
+  const relPath = reqPath.startsWith('/') ? reqPath.slice(1) : reqPath
+
+  if (reqPath.endsWith('/')) {
+    const key = join(relPath, 'index.html')
+    candidates.push({
+      path: join(config.pages, key),
+      key
+    })
+  } else if (extension === '.html') {
+    const key = relPath
+    candidates.push({
+      path: join(config.pages, key),
+      key
+    })
+  } else {
+    // No extension, no trailing slash
+    const key1 = relPath + '.html'
+    candidates.push({
+      path: join(config.pages, key1),
+      key: key1
+    })
+
+    const key2 = join(relPath, 'index.html')
+    candidates.push({
+      path: join(config.pages, key2),
+      key: key2
+    })
+  }
+
+  for (const candidate of candidates) {
+    try {
+      await access(candidate.path, constants.R_OK)
+      // Normalize key for consistency (use forward slashes)
+      const normalizedKey = candidate.key.split(sep).join('/')
+      return {
+        pathname: candidate.path,
+        key: normalizedKey
+      }
+    } catch {
+      // continue
+    }
+  }
+
+  // Fallback check coralite pages collection (supports virtual pages)
+  for (const candidate of candidates) {
+    const item = coralite.pages.getItem(candidate.path)
+
+    if (item) {
+      const normalizedKey = candidate.key.split(sep).join('/')
+      return {
+        pathname: candidate.path,
+        key: normalizedKey
+      }
+    }
+  }
+
+  // Fallback check memoryPageSource
+  for (const candidate of candidates) {
+    const normalizedKey = candidate.key.split(sep).join('/')
+    if (memoryPageSource.has(normalizedKey)) {
+      return {
+        pathname: memoryPageSource.get(normalizedKey),
+        key: normalizedKey
+      }
+    }
+  }
+
+  return null
+}
+
+/**
  * Starts a development server with hot-reloading capabilities
  * @param {CoraliteScriptConfig} config - Coralite configuration
  * @param {CoraliteScriptOptions} options - Coralite configuration
@@ -261,68 +345,7 @@ async function server (config, options) {
           return res.sendStatus(404)
         }
 
-        const resolveSource = async () => {
-          const candidates = []
-
-          // Ensure relative path doesn't start with / for joining
-          const relPath = reqPath.startsWith('/') ? reqPath.slice(1) : reqPath
-
-          if (reqPath.endsWith('/')) {
-            const key = join(relPath, 'index.html')
-            candidates.push({
-              path: join(config.pages, key),
-              key
-            })
-          } else if (extension === '.html') {
-            const key = relPath
-            candidates.push({
-              path: join(config.pages, key),
-              key
-            })
-          } else {
-            // No extension, no trailing slash
-            const key1 = relPath + '.html'
-            candidates.push({
-              path: join(config.pages, key1),
-              key: key1
-            })
-
-            const key2 = join(relPath, 'index.html')
-            candidates.push({
-              path: join(config.pages, key2),
-              key: key2
-            })
-          }
-
-          for (const candidate of candidates) {
-            try {
-              await access(candidate.path, constants.R_OK)
-              // Normalize key for consistency (use forward slashes)
-              const normalizedKey = candidate.key.split(sep).join('/')
-              return {
-                pathname: candidate.path,
-                key: normalizedKey
-              }
-            } catch {
-              // continue
-            }
-          }
-
-          // Fallback check memoryPageSource
-          for (const candidate of candidates) {
-            const normalizedKey = candidate.key.split(sep).join('/')
-            if (memoryPageSource.has(normalizedKey)) {
-              return {
-                pathname: memoryPageSource.get(normalizedKey),
-                key: normalizedKey
-              }
-            }
-          }
-
-          return null
-        }
-
-        const result = await resolveSource()
+        const result = await resolveSource(reqPath, extension, config, coralite, memoryPageSource)
 
         if (!result) {
           res.sendStatus(404)
@@ -350,7 +373,13 @@ async function server (config, options) {
           rebuildScript += '  </script>\n'
           rebuildScript += '</body>\n'
 
-          await coralite.pages.setItem(pathname)
+          // Only set item if it's not already in the collection (virtual pages are pre-registered)
+          const item = coralite.pages.getItem(pathname)
+
+          if (!item || item.physical !== false) {
+            await coralite.pages.setItem(pathname)
+          }
+
           // build the HTML for this page using the built-in compiler.
           const documents = await coralite.build(pathname, async (result) => {
             // inject a script to enable live reload via Server-Sent Events

@@ -21,7 +21,8 @@
   ],
   "scripts": {
     "build": "premove dist && pnpm build-types",
-    "build-types": "tsc"
+    "build-types": "tsc",
+    "test-unit": "node --test tests/**/*.spec.js"
   },
   "homepage": "https://coralite.io/docs/create-scripts",
   "author": {
