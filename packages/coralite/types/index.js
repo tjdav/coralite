@@ -23,7 +23,7 @@
  */
 
 /**
- * @typedef {import('#lib').Coralite} Coralite
+ * @typedef {import('../lib/coralite.js').Coralite} Coralite
  */
 
 /**

@@ -1,4 +1,4 @@
-import { definePlugin } from '#lib'
+import { definePlugin } from '../lib/plugin.js'
 
 /**
  * @import { ParseHTMLResult } from '../types/index.js'

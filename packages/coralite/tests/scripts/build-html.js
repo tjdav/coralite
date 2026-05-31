@@ -2,6 +2,9 @@ import { Coralite } from '../../lib/index.js'
 import { staticAssetPlugin } from '../../plugins/index.js'
 import { testContextPlugin } from '../fixtures/plugins/test-context-plugin.js'
 import { mockPlugin } from '../fixtures/plugins/mock-plugin.js'
+import { providerPlugin } from '../fixtures/plugins/provider-plugin.js'
+import { consumerServerPlugin } from '../fixtures/plugins/consumer-server-plugin.js'
+import { consumerClientPlugin } from '../fixtures/plugins/consumer-client-plugin.js'
 
 const coralite = new Coralite({
   components: 'tests/fixtures/components',
@@ -20,7 +23,10 @@ const coralite = new Coralite({
     staticAssetPlugin([{
       src: 'package.json',
       dest: 'static-coralite.json'
-    }])
+    }]),
+    consumerServerPlugin,
+    consumerClientPlugin,
+    providerPlugin
   ],
   onError: (error) => {
     console.log(`[CORALITE-${error.level}]: ${error.message}`)

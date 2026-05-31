@@ -1,0 +1,30 @@
+<template id="registry-test-component">
+  <div id="server-result">{{ serverData }}</div>
+  <div id="client-result">Initial Client State</div>
+  <button id="client-action">Click Me</button>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  import { getServerData } from 'consumer-server-plugin'
+
+  export default defineComponent({
+    data (context) {
+      // getServerData is Phase 2 (returned by Phase 1)
+      const data = getServerData()
+      return {
+        serverData: data
+      }
+    },
+    script: ({ getClientUtility }) => {
+      const btn = document.getElementById('client-action')
+      const resultDiv = document.getElementById('client-result')
+  
+      btn.addEventListener('click', () => {
+        // getClientUtility is Phase 3 (returned by Phase 2)
+        const result = getClientUtility()
+        resultDiv.textContent = result
+      })
+  }
+  })
+</script>

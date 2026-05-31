@@ -1747,7 +1747,8 @@ Coralite.prototype.createComponentElement = async function ({
         id: contextId,
         session,
         app: this,
-        noHydration
+        noHydration,
+        registry: this.registry
       }
 
       const cachedBoundPlugins = await this._bindPlugins(this._source.plugins, pluginContext)
@@ -2372,7 +2373,8 @@ Coralite.prototype._evaluateDevelopment = async function ({
     id: contextId,
     session,
     app: this,
-    noHydration
+    noHydration,
+    registry: this.registry
   }
 
   const cachedBoundPlugins = await this._bindPlugins(this._source.plugins, context)
@@ -2466,7 +2468,8 @@ Coralite.prototype._evaluateProduction = async function ({
     id: contextId,
     session,
     app: this,
-    noHydration
+    noHydration,
+    registry: this.registry
   }
 
   session.source.currentSourceContextId = contextId

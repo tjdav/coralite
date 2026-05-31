@@ -109,13 +109,13 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoraliteSession} session - The current build session
  * @property {Attribute[]} [excludeByAttribute] - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
- * @property {Coralite} [app] - The global coralite app instance
+ * @property {Coralite} app - The global coralite app instance
  * @property {boolean} [noHydration] - Indicates if the component should be stripped and not hydrated
- * @property {RegistryInstance} [registry] - The Service Registry for dependency resolution
+ * @property {RegistryInstance} registry - The Service Registry for dependency resolution
  */
 
 /**
- * @typedef {(context: CoralitePluginContext) => (...args: any[]) => any} CoralitePluginExportFunction
+ * @typedef {(context: CoralitePluginContext) => Promise<(...args: any[]) => any> | ((...args: any[]) => any)} CoralitePluginExportFunction
  */
 
 /**
