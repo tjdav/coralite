@@ -8,6 +8,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
  * @import { Coralite } from '../lib/index.js'
+ * @import { RegistryInstance } from '../lib/registry.js'
  */
 
 /**
@@ -110,6 +111,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {string} id - Unique identifier for the value context.
  * @property {Coralite} [app] - The global coralite app instance
  * @property {boolean} [noHydration] - Indicates if the component should be stripped and not hydrated
+ * @property {RegistryInstance} [registry] - The Service Registry for dependency resolution
  */
 
 /**

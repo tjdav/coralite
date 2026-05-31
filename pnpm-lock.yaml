@@ -98,7 +98,7 @@ importers:
         specifier: ^1.60.0
         version: 1.60.0
       '@types/node':
-        specifier: ^22.18.5
+        specifier: ^22.19.19
         version: 22.19.19
       happy-dom:
         specifier: ^20.9.0

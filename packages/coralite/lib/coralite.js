@@ -22,6 +22,7 @@ import { availableParallelism } from 'node:os'
 import render from 'dom-serializer'
 import pLimit from 'p-limit'
 import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
+import { createRegistry } from './registry.js'
 import CoraliteCollection from './collection.js'
 import { randomUUID } from 'node:crypto'
 import { createContext } from 'node:vm'
@@ -113,6 +114,8 @@ export function Coralite ({
     path,
     output: output ? normalize(output) : undefined
   }
+
+  this.registry = createRegistry()
 
   /** @type {Map<string, CoraliteCollectionItem[]>} */
   this._renderQueues = new Map()
@@ -1736,6 +1739,26 @@ Coralite.prototype.createComponentElement = async function ({
     try {
       const evaluationState = Object.assign({}, componentState)
 
+      const pluginContext = {
+        state: evaluationState,
+        page,
+        root: element || root,
+        module,
+        id: contextId,
+        session,
+        app: this,
+        noHydration
+      }
+
+      const cachedBoundPlugins = await this._bindPlugins(this._source.plugins, pluginContext)
+
+      for (const key in cachedBoundPlugins) {
+        const plugin = cachedBoundPlugins[key]
+        if (plugin !== null && typeof plugin === 'object') {
+          Object.assign(evaluationState, plugin)
+        }
+      }
+
       scriptResult = await this._evaluate({
         module,
         element,
@@ -2352,7 +2375,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
     noHydration
   }
 
-  const cachedBoundPlugins = this._bindPlugins(this._source.plugins, context)
+  const cachedBoundPlugins = await this._bindPlugins(this._source.plugins, context)
 
   session.source.currentSourceContextId = contextId
   session.source.contextInstances[contextId] = context
@@ -2470,7 +2493,7 @@ Coralite.prototype._evaluateProduction = async function ({
   // Create a require function anchored to the moduleComponent's file path to resolve relative imports
   const fileRequire = createRequire(resolve(moduleComponent.path.pathname))
 
-  let cachedBoundPlugins = null
+  const cachedBoundPlugins = await this._bindPlugins(this._source.plugins, context)
 
   const customRequire = (id) => {
     const isCoralite = id === 'coralite'
@@ -2479,11 +2502,6 @@ Coralite.prototype._evaluateProduction = async function ({
 
     // Handle internal coralite imports
     if (isCoralite || isUtils || isPlugin) {
-      // Lazily bind plugins once per evaluation
-      if (!cachedBoundPlugins) {
-        cachedBoundPlugins = this._bindPlugins(this._source.plugins, context)
-      }
-
       if (isCoralite) {
         return {
           ...context,
@@ -2611,27 +2629,46 @@ Coralite.prototype._triggerPluginAggregateHook = async function (name, contextDa
  *
  * @param {Object} plugins - The plugins object
  * @param {Object} context - The context object to pass to Phase 1
- * @returns {Object} The Phase 2 functions
+ * @returns {Promise<Object>} The Phase 2 functions
  */
-Coralite.prototype._bindPlugins = function (plugins, context) {
+Coralite.prototype._bindPlugins = async function (plugins, context) {
   const cachedBoundPlugins = {}
+  const pluginKeys = Object.keys(plugins)
 
-  for (const key in plugins) {
+  const globalContext = {
+    ...context,
+    registry: this.registry
+  }
+
+  const pluginPromises = pluginKeys.map(async (key) => {
     const pluginExports = plugins[key]
     if (pluginExports !== null && typeof pluginExports === 'object') {
       const pluginObj = {}
-      for (const prop in pluginExports) {
+      const propKeys = Object.keys(pluginExports)
+
+      const propPromises = propKeys.map(async (prop) => {
         if (typeof pluginExports[prop] === 'function') {
-          pluginObj[prop] = pluginExports[prop](context)
+          return pluginExports[prop](globalContext)
         } else {
-          pluginObj[prop] = pluginExports[prop]
+          return pluginExports[prop]
         }
-      }
-      cachedBoundPlugins[key] = pluginObj
+      })
+
+      const propResults = await Promise.all(propPromises)
+      propKeys.forEach((prop, i) => {
+        pluginObj[prop] = propResults[i]
+      })
+
+      return pluginObj
     } else {
-      cachedBoundPlugins[key] = pluginExports
+      return pluginExports
     }
-  }
+  })
+
+  const pluginResults = await Promise.all(pluginPromises)
+  pluginKeys.forEach((key, i) => {
+    cachedBoundPlugins[key] = pluginResults[i]
+  })
 
   return cachedBoundPlugins
 }
@@ -2811,7 +2848,8 @@ Coralite.prototype._defineComponent = async function (options, context) {
   const {
     state: initialState,
     module,
-    root
+    root,
+    registry
   } = context
 
   // Validate attributes
@@ -2863,7 +2901,10 @@ Coralite.prototype._defineComponent = async function (options, context) {
   }
 
   if (typeof data === 'function') {
-    const dataResult = await data(context)
+    const dataResult = await data({
+      ...context,
+      ...initialState
+    })
     if (dataResult) {
       state.__script__.data = dataResult
       Object.assign(state, dataResult)

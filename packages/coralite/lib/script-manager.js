@@ -248,7 +248,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }\n`)
 
   // Global setups initialization
-  entryCodeParts.push(`const globalContext = { values: {} };\n`)
+  entryCodeParts.push(`const globalContext = { values: {}, registry: createRegistry() };\n`)
   entryCodeParts.push(`const globalSetupPropertiesPromise = getSetups(globalContext).then(setupValues => {
     Object.assign(globalContext.values, setupValues);
     return setupValues;
@@ -256,9 +256,12 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   entryCodeParts.push(`const resolvedContextPropsPromise = globalSetupPropertiesPromise.then(async () => {
     const resolvedProps = {};
-    for (const [key, propFn] of Object.entries(coraliteComponentClientContextProps)) {
-      resolvedProps[key] = await propFn(globalContext);
-    }
+    const keys = Object.keys(coraliteComponentClientContextProps);
+    const promises = keys.map(key => coraliteComponentClientContextProps[key](globalContext));
+    const results = await Promise.all(promises);
+    keys.forEach((key, i) => {
+      resolvedProps[key] = results[i];
+    });
     return resolvedProps;
   });\n`)
 
@@ -356,6 +359,9 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push('};\n')
 
   const coraliteElementPath = fileURLToPath(import.meta.resolve('./coralite-element.js'))
+  const registryPath = fileURLToPath(import.meta.resolve('./registry.js'))
+
+  entryCodeParts.push(`import { createRegistry } from ${JSON.stringify(registryPath)};\n`)
 
   entryCodeParts.push(`const globalClientHooks = {
     onBeforeComponentRender: [${this.scriptModules.map((_, i) => `onBeforeComponentRender_${i}`).join(', ')}].filter(Boolean),

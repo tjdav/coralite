@@ -18,7 +18,8 @@
       "#plugins": [
         "./plugins/index.js"
       ]
-    }
+    },
+    "types": ["node"]
   },
   "include": [
     "lib/index.js"
