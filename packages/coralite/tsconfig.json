@@ -9,6 +9,7 @@
     "declarationMap": true,
     "module": "nodenext",
     "target": "ES2022",
+    "strict": false,
     "moduleResolution": "nodenext",
     "esModuleInterop": true,
     "paths": {
