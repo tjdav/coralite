@@ -148,7 +148,28 @@ script: ({ state, signal, refs }) => {
     <p>Allows you to intercept and transform content passed into your component's slots.</p>
 
     <coralite-code-highlight language="typescript">
-type CoraliteModuleSlotFunction = (slotNodes: Node[], state: any) => Node[] | string | void
+type CoraliteModuleSlotFunction = (slotNodes: Node[], state: any) => Node[] | string | undefined | null
+    </coralite-code-highlight>
+
+    <coralite-heading level="h3" text="The Void = Bypass Paradigm"></coralite-heading>
+
+    <p>To ensure high performance and prevent unnecessary re-rendering during client-side hydration, Coralite uses a "Void = Bypass" approach for slot transformations:</p>
+
+    <ul>
+        <li><strong><code>undefined</code> (Bypass):</strong> Signals the framework to skip processing and preserve the current content. On the server, it preserves the original AST nodes; on the client, it preserves the existing DOM nodes. <strong>Use this in the browser to prevent flushing SSR-rendered content.</strong></li>
+        <li><strong><code>null</code>, <code>""</code>, or <code>[]</code> (Clear):</strong> Explicitly instructs the framework to remove all content from the slot.</li>
+    </ul>
+
+    <coralite-code-highlight language="javascript">
+slots: {
+    default: (nodes, state) => {
+        // Bypass hydration in the browser to preserve SSR content
+        if (typeof window !== 'undefined') return undefined;
+
+        // Otherwise, perform complex transformation on the server
+        return nodes.map(n => transform(n));
+    }
+}
     </coralite-code-highlight>
 
   </main>

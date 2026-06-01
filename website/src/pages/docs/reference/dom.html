@@ -292,6 +292,8 @@
       <p>When using <code>defineComponent</code>, the <code>slots</code> block allows you to intercept and modify
         slot content. The content is passed as an array of DOM nodes.</p>
 
+      <p>The slot function can return an array of nodes, a string, <code>null</code> (to clear the slot), or <code>undefined</code> to bypass processing and preserve existing content.</p>
+
       <coralite-code-highlight language="JavaScript">
         // component.html script
         import { defineComponent } from 'coralite'
@@ -300,16 +302,16 @@
         export default defineComponent({
           slots: {
             default: (slotNodes, state) => {
-              // slotNodes is an Array<CoraliteAnyNode>
-              
-              // Example: Wrap content in a div
+              // Bypass client-side hydration to preserve SSR-rendered content
+              if (typeof window !== 'undefined') return undefined;
+
+              // Example: Wrap content in a div (Server-side only)
               const wrapper = createElement({
                 name: 'div',
                 attributes: { class: 'wrapper' },
-                parent: null // Don't attach yet
+                parent: null
               });
               
-              // Move nodes to wrapper
               wrapper.children = slotNodes;
               slotNodes.forEach(node => node.parent = wrapper);
               
