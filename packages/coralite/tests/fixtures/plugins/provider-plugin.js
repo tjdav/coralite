@@ -3,21 +3,31 @@ import { definePlugin } from '#lib'
 export const providerPlugin = definePlugin({
   name: 'provider-plugin',
   server: {
-    onBeforeBuild: async ({ app }) => {
-      // Artificial delay to test async resolution
-      await new Promise(resolve => setTimeout(resolve, 50))
-      app.registry.register('db', {
-        getData: () => 'Server Data from DB'
-      })
+    exports: {
+      db: async (globalContext) => {
+        // Artificial delay to test async resolution
+        await new Promise(resolve => setTimeout(resolve, 50))
+        const db = {
+          getData: () => 'Server Data from DB'
+        }
+        // ✨ EXPOSE TO DOWNSTREAM PLUGINS
+        globalContext.db = db
+        return (instanceContext) => db
+      }
     }
   },
   client: {
-    setup: async ({ registry }) => {
-      // Artificial delay to test async resolution
-      await new Promise(resolve => setTimeout(resolve, 50))
-      registry.register('db', {
-        performAction: () => 'Client Action Performed'
-      })
+    context: {
+      db: async (globalContext) => {
+        // Artificial delay to test async resolution
+        await new Promise(resolve => setTimeout(resolve, 50))
+        const db = {
+          performAction: () => 'Client Action Performed'
+        }
+        // ✨ EXPOSE TO DOWNSTREAM PLUGINS
+        globalContext.db = db
+        return (instanceContext) => db
+      }
     }
   }
 })

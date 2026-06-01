@@ -22,7 +22,6 @@ import { availableParallelism } from 'node:os'
 import render from 'dom-serializer'
 import pLimit from 'p-limit'
 import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
-import { createRegistry } from './registry.js'
 import CoraliteCollection from './collection.js'
 import { randomUUID } from 'node:crypto'
 import { createContext } from 'node:vm'
@@ -57,6 +56,7 @@ import { createReadOnlyProxy } from './utils.js'
 /**
  * @class
  * @param {CoraliteConfig} options
+ * @this {any}
  * @example
  * const coralite = new Coralite({
  *   components: './path/to/components',
@@ -114,8 +114,6 @@ export function Coralite ({
     path,
     output: output ? normalize(output) : undefined
   }
-
-  this.registry = createRegistry()
 
   /** @type {Map<string, CoraliteCollectionItem[]>} */
   this._renderQueues = new Map()
@@ -176,65 +174,86 @@ export function Coralite ({
   }
 
   const source = this._source
-  // iterate over each plugin and register its hooks and modules in the Coralite source context.
-  for (let i = 0; i < plugins.length; i++) {
-    const plugin = plugins[i]
+  this._serverGlobalContext = { app: this }
 
-    if (plugin.server) {
-      // set plugin method
-      if (plugin.server.exports !== undefined) {
-        source.plugins[plugin.name] = plugin.server.exports
-      }
+  this._initialisePlugins = async () => {
+    const plugins = this.options.plugins
+    const globalContext = this._serverGlobalContext
 
-      // queue any components provided by the plugin to be registered.
-      if (plugin.server.components && Array.isArray(plugin.server.components)) {
-        for (let j = 0; j < plugin.server.components.length; j++) {
-          this._plugins.components.push(plugin.server.components[j])
+    for (const plugin of plugins) {
+      if (plugin.server) {
+        // Handle phase 1 exports
+        if (plugin.server.exports) {
+          const pluginExports = plugin.server.exports
+          const phase2Obj = {}
+          for (const prop in pluginExports) {
+            if (typeof pluginExports[prop] === 'function') {
+              phase2Obj[prop] = await pluginExports[prop](globalContext)
+            } else {
+              phase2Obj[prop] = pluginExports[prop]
+            }
+          }
+          source.plugins[plugin.name] = phase2Obj
+          // Expose phase 2 result to globalContext under the plugin name
+          globalContext[plugin.name] = phase2Obj
+        }
+
+        // queue any components provided by the plugin to be registered.
+        if (plugin.server.components && Array.isArray(plugin.server.components)) {
+          for (let j = 0; j < plugin.server.components.length; j++) {
+            this._plugins.components.push(plugin.server.components[j])
+          }
+        }
+
+        // add the plugin's hooks to the appropriate Coralite hook lists.
+        if (plugin.server.onPageSet) {
+          this._addPluginHook('onPageSet', plugin.server.onPageSet)
+        }
+        if (plugin.server.onPageDelete) {
+          this._addPluginHook('onPageDelete', plugin.server.onPageDelete)
+        }
+        if (plugin.server.onPageUpdate) {
+          this._addPluginHook('onPageUpdate', plugin.server.onPageUpdate)
+        }
+        if (plugin.server.onComponentSet) {
+          this._addPluginHook('onComponentSet', plugin.server.onComponentSet)
+        }
+        if (plugin.server.onComponentDelete) {
+          this._addPluginHook('onComponentDelete', plugin.server.onComponentDelete)
+        }
+        if (plugin.server.onComponentUpdate) {
+          this._addPluginHook('onComponentUpdate', plugin.server.onComponentUpdate)
+        }
+        if (plugin.server.onBeforePageRender) {
+          this._addPluginHook('onBeforePageRender', plugin.server.onBeforePageRender)
+        }
+        if (plugin.server.onAfterPageRender) {
+          this._addPluginHook('onAfterPageRender', plugin.server.onAfterPageRender)
+        }
+        if (plugin.server.onBeforeComponentRender) {
+          this._addPluginHook('onBeforeComponentRender', plugin.server.onBeforeComponentRender)
+        }
+        if (plugin.server.onAfterComponentRender) {
+          this._addPluginHook('onAfterComponentRender', plugin.server.onAfterComponentRender)
+        }
+        if (plugin.server.onBeforeBuild) {
+          this._addPluginHook('onBeforeBuild', async (context) => {
+            const result = await plugin.server.onBeforeBuild(Object.assign({ app: this }, this._serverGlobalContext, context))
+            if (result && typeof result === 'object') {
+              Object.assign(this._serverGlobalContext, result)
+            }
+            return result
+          })
+        }
+        if (plugin.server.onAfterBuild) {
+          this._addPluginHook('onAfterBuild', plugin.server.onAfterBuild)
         }
       }
 
-      // add the plugin's hooks to the appropriate Coralite hook lists.
-      if (plugin.server.onPageSet) {
-        this._addPluginHook('onPageSet', plugin.server.onPageSet)
+      // register client-side plugin if provided
+      if (plugin.client) {
+        this._scriptManager.use(plugin.client)
       }
-      if (plugin.server.onPageDelete) {
-        this._addPluginHook('onPageDelete', plugin.server.onPageDelete)
-      }
-      if (plugin.server.onPageUpdate) {
-        this._addPluginHook('onPageUpdate', plugin.server.onPageUpdate)
-      }
-      if (plugin.server.onComponentSet) {
-        this._addPluginHook('onComponentSet', plugin.server.onComponentSet)
-      }
-      if (plugin.server.onComponentDelete) {
-        this._addPluginHook('onComponentDelete', plugin.server.onComponentDelete)
-      }
-      if (plugin.server.onComponentUpdate) {
-        this._addPluginHook('onComponentUpdate', plugin.server.onComponentUpdate)
-      }
-      if (plugin.server.onBeforePageRender) {
-        this._addPluginHook('onBeforePageRender', plugin.server.onBeforePageRender)
-      }
-      if (plugin.server.onAfterPageRender) {
-        this._addPluginHook('onAfterPageRender', plugin.server.onAfterPageRender)
-      }
-      if (plugin.server.onBeforeComponentRender) {
-        this._addPluginHook('onBeforeComponentRender', plugin.server.onBeforeComponentRender)
-      }
-      if (plugin.server.onAfterComponentRender) {
-        this._addPluginHook('onAfterComponentRender', plugin.server.onAfterComponentRender)
-      }
-      if (plugin.server.onBeforeBuild) {
-        this._addPluginHook('onBeforeBuild', plugin.server.onBeforeBuild)
-      }
-      if (plugin.server.onAfterBuild) {
-        this._addPluginHook('onAfterBuild', plugin.server.onAfterBuild)
-      }
-    }
-
-    // register client-side plugin if provided
-    if (plugin.client) {
-      this._scriptManager.use(plugin.client)
     }
   }
 
@@ -265,6 +284,8 @@ export function Coralite ({
  * @returns {Promise<void>}
  */
 Coralite.prototype.initialise = async function () {
+  await this._initialisePlugins()
+
   this.components = await getHtmlFiles({
     path: this.options.components,
     recursive: true,
@@ -1747,8 +1768,7 @@ Coralite.prototype.createComponentElement = async function ({
         id: contextId,
         session,
         app: this,
-        noHydration,
-        registry: this.registry
+        noHydration
       }
 
       const cachedBoundPlugins = await this._bindPlugins(this._source.plugins, pluginContext)
@@ -2373,8 +2393,7 @@ Coralite.prototype._evaluateDevelopment = async function ({
     id: contextId,
     session,
     app: this,
-    noHydration,
-    registry: this.registry
+    noHydration
   }
 
   const cachedBoundPlugins = await this._bindPlugins(this._source.plugins, context)
@@ -2468,8 +2487,7 @@ Coralite.prototype._evaluateProduction = async function ({
     id: contextId,
     session,
     app: this,
-    noHydration,
-    registry: this.registry
+    noHydration
   }
 
   session.source.currentSourceContextId = contextId
@@ -2605,10 +2623,7 @@ Coralite.prototype._triggerPluginAggregateHook = async function (name, contextDa
   }
 
   for (let i = 0; i < pluginHooks.length; i++) {
-    let result = pluginHooks[i]({
-      ...contextData,
-      app: this
-    })
+    let result = pluginHooks[i](Object.assign({ app: this }, this._serverGlobalContext, contextData))
 
     if (result !== null && typeof result === 'object' && typeof result.then === 'function') {
       result = await result
@@ -2628,52 +2643,34 @@ Coralite.prototype._triggerPluginAggregateHook = async function (name, contextDa
 }
 
 /**
- * @internal Executes Phase 1 of plugin exports with the given context.
+ * @internal Executes Phase 2 of plugin exports with the given instance context.
  *
- * @param {Object} plugins - The plugins object
- * @param {Object} context - The context object to pass to Phase 1
- * @returns {Promise<Object>} The Phase 2 functions
+ * @param {Object} phase2Functions - The curried phase 2 functions from Phase 1
+ * @param {Object} instanceContext - The component instance context
+ * @returns {Promise<Object>} The bound Phase 3 functions/values
  */
-Coralite.prototype._bindPlugins = async function (plugins, context) {
-  const cachedBoundPlugins = {}
-  const pluginKeys = Object.keys(plugins)
+Coralite.prototype._bindPlugins = async function (phase2Functions, instanceContext) {
+  const boundPlugins = {}
+  const globalContext = Object.assign({ app: this }, this._serverGlobalContext, instanceContext)
 
-  const globalContext = {
-    ...context,
-    registry: this.registry
+  for (const name in phase2Functions) {
+    const pluginExports = phase2Functions[name]
+    if (pluginExports !== null && typeof pluginExports === 'object') {
+      const boundObj = {}
+      for (const prop in pluginExports) {
+        if (typeof pluginExports[prop] === 'function') {
+          boundObj[prop] = await pluginExports[prop](globalContext)
+        } else {
+          boundObj[prop] = pluginExports[prop]
+        }
+      }
+      boundPlugins[name] = boundObj
+    } else {
+      boundPlugins[name] = pluginExports
+    }
   }
 
-  const pluginPromises = pluginKeys.map(async (key) => {
-    const pluginExports = plugins[key]
-    if (pluginExports !== null && typeof pluginExports === 'object') {
-      const pluginObj = {}
-      const propKeys = Object.keys(pluginExports)
-
-      const propPromises = propKeys.map(async (prop) => {
-        if (typeof pluginExports[prop] === 'function') {
-          return pluginExports[prop](globalContext)
-        } else {
-          return pluginExports[prop]
-        }
-      })
-
-      const propResults = await Promise.all(propPromises)
-      propKeys.forEach((prop, i) => {
-        pluginObj[prop] = propResults[i]
-      })
-
-      return pluginObj
-    } else {
-      return pluginExports
-    }
-  })
-
-  const pluginResults = await Promise.all(pluginPromises)
-  pluginKeys.forEach((key, i) => {
-    cachedBoundPlugins[key] = pluginResults[i]
-  })
-
-  return cachedBoundPlugins
+  return boundPlugins
 }
 
 /**
@@ -2694,13 +2691,9 @@ Coralite.prototype._triggerPluginHook = async function (name, initialData) {
     return initialData
   }
 
-  // Clone initial data once to prevent accidental root-level mutations
-  // leaking backwards if a plugin still mutates it directly.
+  // Combined data with global context
   let currentData = typeof initialData === 'object' && initialData !== null
-    ? {
-      ...initialData,
-      app: this
-    }
+    ? Object.assign({ app: this }, this._serverGlobalContext, initialData)
     : initialData
 
   for (let i = 0; i < pluginHooks.length; i++) {
@@ -2851,8 +2844,7 @@ Coralite.prototype._defineComponent = async function (options, context) {
   const {
     state: initialState,
     module,
-    root,
-    registry
+    root
   } = context
 
   // Validate attributes

@@ -4,8 +4,8 @@ export const testContextPlugin = definePlugin({
   name: 'test-context-plugin',
   server: {
     exports: {
-      getPluginMessage: (context) => (name) => {
-        return `Hello ${name} from server-side plugin! Page: ${context.page.url.pathname}`
+      getPluginMessage: (globalContext) => (instanceContext) => (name) => {
+        return `Hello ${name} from server-side plugin! Page: ${instanceContext.page.url.pathname}`
       }
     }
   },
@@ -14,7 +14,7 @@ export const testContextPlugin = definePlugin({
       globalValue: 'global-state-123'
     },
     context: {
-      testHelper: (globalContext) => {
+      testHelper: (globalContext, config) => {
         // Phase 1: Global Context
         return (localContext) => {
           // Phase 2: Local Instance Context (receives state, page, signal)
@@ -24,7 +24,7 @@ export const testContextPlugin = definePlugin({
               element = document.querySelector(element)
             }
             if (element) {
-              element.textContent = `Global: ${globalContext.config.globalValue}, InstanceId: ${localContext.instanceId}, Signal: ${localContext.signal instanceof AbortSignal}`
+              element.textContent = `Global: ${config?.globalValue}, InstanceId: ${localContext.instanceId}, Signal: ${localContext.signal instanceof AbortSignal}`
             }
             return element
           }

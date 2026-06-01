@@ -236,10 +236,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   entryCodeParts.push(`const getSetups = async (context) => {
     const state = {};
-    const results = await Promise.all([
-      ${this.scriptModules.map((_, i) => `runSetup_${i}(context)`).join(',\n      ')}
-    ]);
-    for (const result of results) {
+    for (const runSetup of [${this.scriptModules.map((_, i) => `runSetup_${i}`).join(', ')}]) {
+      const result = await runSetup(context);
       if (result && typeof result === 'object') {
         Object.assign(state, result);
       }
@@ -248,7 +246,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }\n`)
 
   // Global setups initialization
-  entryCodeParts.push(`const globalContext = { values: {}, registry: createRegistry() };\n`)
+  entryCodeParts.push(`const globalContext = { values: {} };\n`)
   entryCodeParts.push(`const globalSetupPropertiesPromise = getSetups(globalContext).then(setupValues => {
     Object.assign(globalContext.values, setupValues);
     return setupValues;
@@ -257,11 +255,9 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push(`const resolvedContextPropsPromise = globalSetupPropertiesPromise.then(async () => {
     const resolvedProps = {};
     const keys = Object.keys(coraliteComponentClientContextProps);
-    const promises = keys.map(key => coraliteComponentClientContextProps[key](globalContext));
-    const results = await Promise.all(promises);
-    keys.forEach((key, i) => {
-      resolvedProps[key] = results[i];
-    });
+    for (const key of keys) {
+      resolvedProps[key] = await coraliteComponentClientContextProps[key](globalContext);
+    }
     return resolvedProps;
   });\n`)
 
@@ -359,9 +355,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push('};\n')
 
   const coraliteElementPath = fileURLToPath(import.meta.resolve('./coralite-element.js'))
-  const registryPath = fileURLToPath(import.meta.resolve('./registry.js'))
-
-  entryCodeParts.push(`import { createRegistry } from ${JSON.stringify(registryPath)};\n`)
 
   entryCodeParts.push(`const globalClientHooks = {
     onBeforeComponentRender: [${this.scriptModules.map((_, i) => `onBeforeComponentRender_${i}`).join(', ')}].filter(Boolean),
@@ -632,13 +625,9 @@ export default {
                     throw new Error(`Reserved context key '${key}' cannot be used in plugin context.`)
                   }
                   const fn = normalizeFunction(module.context[key])
-                  contents += `  "${key}": async (context) => {
-                    const globalContext = {
-                      ...context,
-                      config: pluginConfig
-                    };
+                  contents += `  "${key}": async (globalContext) => {
                     const fn = ${fn};
-                    const phase2 = await fn(globalContext);
+                    const phase2 = await fn(globalContext, pluginConfig);
                     return (localContext) => phase2(localContext);
                   },\n`
                 }

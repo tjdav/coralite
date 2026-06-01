@@ -24,9 +24,9 @@ const coralite = new Coralite({
       src: 'package.json',
       dest: 'static-coralite.json'
     }]),
+    providerPlugin,
     consumerServerPlugin,
-    consumerClientPlugin,
-    providerPlugin
+    consumerClientPlugin
   ],
   onError: (error) => {
     console.log(`[CORALITE-${error.level}]: ${error.message}`)

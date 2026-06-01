@@ -8,7 +8,6 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
  * @import { Coralite } from '../lib/index.js'
- * @import { RegistryInstance } from '../lib/registry.js'
  */
 
 /**
@@ -101,6 +100,15 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
+ * @typedef {Object} CoralitePluginGlobalContext
+ * @property {Coralite} app - The global coralite app instance
+ */
+
+/**
+ * @typedef {CoralitePluginGlobalContext & Object.<string, any>} CoralitePluginGlobalContextWithMutation
+ */
+
+/**
  * @typedef {Object} CoralitePluginContext
  * @property {import('./module.js').CoraliteModuleDefinitions} state - Key-value pairs of data relevant to plugin execution
  * @property {CoralitePage} page - The global page object
@@ -111,11 +119,14 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {string} id - Unique identifier for the value context.
  * @property {Coralite} app - The global coralite app instance
  * @property {boolean} [noHydration] - Indicates if the component should be stripped and not hydrated
- * @property {RegistryInstance} registry - The Service Registry for dependency resolution
  */
 
 /**
- * @typedef {(context: CoralitePluginContext) => Promise<(...args: any[]) => any> | ((...args: any[]) => any)} CoralitePluginExportFunction
+ * @typedef {CoralitePluginContext & Object.<string, any>} CoralitePluginContextWithMutation
+ */
+
+/**
+ * @typedef {(context: CoralitePluginGlobalContextWithMutation) => Promise<(...args: any[]) => any> | ((...args: any[]) => any)} CoralitePluginExportFunction
  */
 
 /**

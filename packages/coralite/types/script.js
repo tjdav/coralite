@@ -40,15 +40,13 @@
  */
 
 /**
- * @typedef {Object} ScriptPluginHelperGlobalContext
- * @property {Object.<string, any>} [config] - Plugin configuration
- * @property {Object.<string, CoraliteModuleDefinition>} [state] - Global context state
- * @property {import('../lib/registry.js').RegistryInstance} registry - The Service Registry for dependency resolution
+ * @typedef {Object.<string, any>} ScriptPluginHelperGlobalContext
  */
 
 /**
  * @callback ScriptPluginHelperGlobalInstance
  * @param {ScriptPluginHelperGlobalContext} globalContext - Global instance context
+ * @param {Object.<string, any>} [config] - Plugin configuration
  * @returns {ScriptPluginHelperLocalInstance | Promise<ScriptPluginHelperLocalInstance>}
  */
 

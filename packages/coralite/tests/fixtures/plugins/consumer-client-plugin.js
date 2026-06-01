@@ -7,8 +7,8 @@ export const consumerClientPlugin = definePlugin({
   },
   client: {
     context: {
-      getClientUtility: async ({ registry }) => {
-        const db = await registry.resolve('db')
+      getClientUtility: async (globalContext) => {
+        const db = globalContext.db
         return (localContext) => {
           return () => db.performAction()
         }
