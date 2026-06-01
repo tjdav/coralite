@@ -50,14 +50,18 @@ let assets
 
 if (options.assets) {
   assets = []
+
   for (const assetStr of options.assets) {
     const parts = assetStr.split(':')
+
     if (parts.length < 2) {
       console.error('Failed to parse asset:', assetStr)
       console.error('Invalid format. Expected pkg:path:dest or pkg:path')
       process.exit(1)
     }
+
     const [pkg, path, dest] = parts
+
     assets.push({
       pkg,
       path,
@@ -114,8 +118,8 @@ const coralite = new Coralite({
 })
 // initializes Coralite with the provided options and compiles documents
 await coralite.initialise()
-// compiles all pages using Coralite
 
+// compiles all pages using Coralite
 if (options.dryRun) {
   const documents = await coralite.build()
 
