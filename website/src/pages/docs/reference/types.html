@@ -74,6 +74,7 @@
         <li><a href="#coraliteplugincontext">CoralitePluginContext</a></li>
         <li><a href="#coralitepluginmodule">CoralitePluginModule</a></li>
         <li><a href="#coraliteplugin">CoralitePlugin</a></li>
+        <li><a href="#coralitepluginglobalcontext">CoralitePluginGlobalContext</a></li>
         <li><a href="#coralitepluginresult">CoralitePluginResult</a></li>
         <li><a href="#coraliteplugininstance">CoralitePluginInstance</a></li>
         <li><a href="#coralitepluginbeforebuildcallback">CoralitePluginBeforeBuildCallback</a></li>
@@ -1282,6 +1283,42 @@
             <td><code>elements</code></td>
             <td><a href="#parsehtmlresult"><code>ParseHTMLResult</code></a></td>
             <td>Parsed HTML document (for page hooks).</td>
+          </tr>
+          <tr>
+            <td><code>app</code></td>
+            <td><code>Coralite</code></td>
+            <td>The Coralite instance.</td>
+          </tr>
+          <tr>
+            <td><code>config</code></td>
+            <td><code>any</code></td>
+            <td>The plugin's configuration object.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="h3" text="CoralitePluginGlobalContext"></coralite-heading>
+    <p>Shared context across all plugins, mutable during Phase 1.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>app</code></td>
+            <td><code>Coralite</code></td>
+            <td>The Coralite instance.</td>
+          </tr>
+          <tr>
+            <td>(Others)</td>
+            <td><code>any</code></td>
+            <td>Any properties added by previous plugins in the sequence.</td>
           </tr>
         </tbody>
       </table>

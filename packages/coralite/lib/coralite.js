@@ -188,7 +188,7 @@ export function Coralite ({
           const phase2Obj = {}
           for (const prop in pluginExports) {
             if (typeof pluginExports[prop] === 'function') {
-              phase2Obj[prop] = await pluginExports[prop](globalContext)
+              phase2Obj[prop] = await pluginExports[prop](globalContext, plugin.server.config)
             } else {
               phase2Obj[prop] = pluginExports[prop]
             }
@@ -206,39 +206,45 @@ export function Coralite ({
         }
 
         // add the plugin's hooks to the appropriate Coralite hook lists.
+        const wrapHook = (hook) => {
+          return (context) => {
+            return hook(Object.assign({ config: plugin.server.config }, context))
+          }
+        }
+
         if (plugin.server.onPageSet) {
-          this._addPluginHook('onPageSet', plugin.server.onPageSet)
+          this._addPluginHook('onPageSet', wrapHook(plugin.server.onPageSet))
         }
         if (plugin.server.onPageDelete) {
-          this._addPluginHook('onPageDelete', plugin.server.onPageDelete)
+          this._addPluginHook('onPageDelete', wrapHook(plugin.server.onPageDelete))
         }
         if (plugin.server.onPageUpdate) {
-          this._addPluginHook('onPageUpdate', plugin.server.onPageUpdate)
+          this._addPluginHook('onPageUpdate', wrapHook(plugin.server.onPageUpdate))
         }
         if (plugin.server.onComponentSet) {
-          this._addPluginHook('onComponentSet', plugin.server.onComponentSet)
+          this._addPluginHook('onComponentSet', wrapHook(plugin.server.onComponentSet))
         }
         if (plugin.server.onComponentDelete) {
-          this._addPluginHook('onComponentDelete', plugin.server.onComponentDelete)
+          this._addPluginHook('onComponentDelete', wrapHook(plugin.server.onComponentDelete))
         }
         if (plugin.server.onComponentUpdate) {
-          this._addPluginHook('onComponentUpdate', plugin.server.onComponentUpdate)
+          this._addPluginHook('onComponentUpdate', wrapHook(plugin.server.onComponentUpdate))
         }
         if (plugin.server.onBeforePageRender) {
-          this._addPluginHook('onBeforePageRender', plugin.server.onBeforePageRender)
+          this._addPluginHook('onBeforePageRender', wrapHook(plugin.server.onBeforePageRender))
         }
         if (plugin.server.onAfterPageRender) {
-          this._addPluginHook('onAfterPageRender', plugin.server.onAfterPageRender)
+          this._addPluginHook('onAfterPageRender', wrapHook(plugin.server.onAfterPageRender))
         }
         if (plugin.server.onBeforeComponentRender) {
-          this._addPluginHook('onBeforeComponentRender', plugin.server.onBeforeComponentRender)
+          this._addPluginHook('onBeforeComponentRender', wrapHook(plugin.server.onBeforeComponentRender))
         }
         if (plugin.server.onAfterComponentRender) {
-          this._addPluginHook('onAfterComponentRender', plugin.server.onAfterComponentRender)
+          this._addPluginHook('onAfterComponentRender', wrapHook(plugin.server.onAfterComponentRender))
         }
         if (plugin.server.onBeforeBuild) {
           this._addPluginHook('onBeforeBuild', async (context) => {
-            const result = await plugin.server.onBeforeBuild(Object.assign({ app: this }, this._serverGlobalContext, context))
+            const result = await plugin.server.onBeforeBuild(Object.assign({ config: plugin.server.config }, context))
             if (result && typeof result === 'object') {
               Object.assign(this._serverGlobalContext, result)
             }
@@ -246,7 +252,7 @@ export function Coralite ({
           })
         }
         if (plugin.server.onAfterBuild) {
-          this._addPluginHook('onAfterBuild', plugin.server.onAfterBuild)
+          this._addPluginHook('onAfterBuild', wrapHook(plugin.server.onAfterBuild))
         }
       }
 

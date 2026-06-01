@@ -160,7 +160,8 @@ The `server.exports` property defines methods available to components **during t
 
 * **Top-Level Imports**: Plugins are imported at the top level of the component's `<script>` block using the plugin's `name` as the module specifier.
 * **Server-Only Execution**: Because these modules are virtual, imported functions **MUST** only be invoked within the `data()` block. The build tool strips these imports before sending the script to the client.
-* **Two-Phase Currying**: Functions receive the `CoralitePluginContext` in Phase 1, and return the function the component developer uses in Phase 2.
+* **Two-Phase Currying**: Functions receive the `globalContext` and `config` in Phase 1, and return the function the component developer uses in Phase 2.
+* **Sequential Mutation**: Phase 1 can mutate the shared `globalContext` to expose services or state to downstream plugins.
 
 ### 6.3 Isomorphic Component Lifecycle Hooks
 
@@ -206,7 +207,7 @@ export default defineConfig({
 
 Client injections mapped in `client.context` use a curried setup:
 
-* **Phase 1 (Global Setup)**: `(globalContext) => ...` Runs exactly once when the plugin registers. Use this for shared plugin state.
+* **Phase 1 (Global Setup)**: `(globalContext, config) => ...` Runs exactly once when the plugin registers. Use this for shared plugin state. Phase 1 can mutate the shared `globalContext` to expose services to downstream plugins.
 * **Phase 2 (Local Instance)**: `(instanceContext) => ...` Runs when a component mounts. Returns the actual utility injected into the script context.
 
 ### 6.5 The Plugin Serialization Boundary
