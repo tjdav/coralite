@@ -25,6 +25,10 @@
     },
     slots: {
       default (content) {
+        if (typeof window !== 'undefined') {
+          return
+        }
+
         let result = []
         let endIndex = content.length
         let startIndex = 0

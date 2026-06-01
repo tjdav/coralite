@@ -2964,7 +2964,19 @@ Coralite.prototype._defineComponent = async function (options, context) {
         }
 
         // compute slot nodes
-        const result = computedSlot(slotContent, state) || slotContent
+        let result = computedSlot(slotContent, state)
+
+        if (result === undefined) {
+          result = slotContent
+        }
+
+        if (result === null || result === '' || (Array.isArray(result) && result.length === 0)) {
+          if (root) {
+            // @ts-ignore
+            root.slots = root.slots.filter(s => s.name !== name)
+          }
+          continue
+        }
 
         // append new slot nodes
         if (typeof result === 'string') {

@@ -69,6 +69,10 @@
     },
     slots: {
       default (content, state) {
+        if (typeof window !== 'undefined') {
+          return
+        }
+
         let fullText = ''
         const placeholders = {}
         let placeholderIndex = 0

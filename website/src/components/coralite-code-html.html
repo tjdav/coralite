@@ -195,6 +195,10 @@
   export default defineComponent({
     slots: {
       default (content) {
+        if (typeof window !== 'undefined') {
+          return
+        }
+
         const children = []
         let endIndex = content.length
         let startIndex = 0

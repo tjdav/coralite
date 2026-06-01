@@ -598,6 +598,15 @@ export class CoraliteElement extends HTMLElement {
         // @ts-ignore
         const result = slotFn(slotEl._originalNodes, this._state)
 
+        if (result === undefined) {
+          return
+        }
+
+        if (result === null || result === '' || (Array.isArray(result) && result.length === 0)) {
+          slotEl.innerHTML = ''
+          return
+        }
+
         if (typeof result === 'string') {
           slotEl.innerHTML = result
         } else if (Array.isArray(result)) {
