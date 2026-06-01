@@ -15,8 +15,8 @@ mkdirSync(pagesDir, { recursive: true })
 const HOOK_COUNT = 100
 
 // Setup synchronous and asynchronous baseline arrays
-const syncFns = Array.from({ length: HOOK_COUNT }, () => () => ({ test: true }))
-const asyncFns = Array.from({ length: HOOK_COUNT }, () => async () => ({ test: true }))
+const syncFns = Array.from({ length: HOOK_COUNT }, () => (ctx) => ({ test: true }))
+const asyncFns = Array.from({ length: HOOK_COUNT }, () => async (ctx) => ({ test: true }))
 
 // Setup coralite instances for testing framework waterfall
 const syncPlugins = syncFns.map((fn, i) => ({
@@ -31,6 +31,7 @@ const asyncPlugins = asyncFns.map((fn, i) => ({
 const syncCoralite = new Coralite({
   components: componentsDir,
   pages: pagesDir,
+  output: '.coralite',
   plugins: syncPlugins
 })
 
@@ -52,7 +53,8 @@ console.log(`\nBenchmark: Hook Waterfall Chain (${HOOK_COUNT} plugins)`)
 console.log('--------------------------------------------------')
 
 bench('_triggerPluginHook (Framework - Sync)', async () => {
-  await syncCoralite._triggerPluginHook('onBeforePageRender', baseContext)
+  // @ts-ignore
+  await syncCoralite._triggerPluginHook('onBeforePageRender', baseContext, {})
 })
 
 bench('Raw Array for Loop (Baseline - Sync)', () => {
@@ -64,7 +66,8 @@ bench('Raw Array for Loop (Baseline - Sync)', () => {
 })
 
 bench('_triggerPluginHook (Framework - Async)', async () => {
-  await asyncCoralite._triggerPluginHook('onBeforePageRender', baseContext)
+  // @ts-ignore
+  await asyncCoralite._triggerPluginHook('onBeforePageRender', baseContext, {})
 })
 
 bench('Raw Array for Loop (Baseline - Async)', async () => {

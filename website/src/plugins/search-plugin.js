@@ -21,60 +21,61 @@ function extractText (node) {
 
 export default definePlugin({
   name: 'search-plugin',
-  onPageSet: async ({ elements, page, data }) => {
-    if (!data.path.pathname.endsWith('.html')
-      || !page.url.dirname.startsWith('/docs')) {
-      return
-    }
-
-    const title = page.meta.title || ''
-    const description = page.meta.description || ''
-
-    // Extract full text from body
-    let bodyNode = null
-    const findBody = (node) => {
-      if (node.type === 'tag' && node.name === 'body') {
-        bodyNode = node
+  server: {
+    onPageSet: async ({ elements, page, data }) => {
+      if (!data.path.pathname.endsWith('.html') ||
+        !page.url.dirname.startsWith('/docs')) {
         return
       }
-      if (node.children) {
-        for (const child of node.children) {
-          findBody(child)
-          if (bodyNode) {
-            return
+
+      const title = page.meta.title || ''
+      const description = page.meta.description || ''
+
+      // Extract full text from body
+      let bodyNode = null
+      const findBody = (node) => {
+        if (node.type === 'tag' && node.name === 'body') {
+          bodyNode = node
+          return
+        }
+        if (node.children) {
+          for (const child of node.children) {
+            findBody(child)
+            if (bodyNode) {
+              return
+            }
           }
         }
       }
-    }
 
-    findBody(elements.root)
+      findBody(elements.root)
 
-    let content = ''
-    if (bodyNode) {
-      content = extractText(bodyNode)
-    }
+      let content = ''
+      if (bodyNode) {
+        content = extractText(bodyNode)
+      }
 
-    // Clean up text
-    content = content.replace(/\s+/g, ' ').trim()
+      // Clean up text
+      content = content.replace(/\s+/g, ' ').trim()
 
-    searchIndex.push({
-      url: page.url.pathname,
-      title,
-      description,
-      content
-    })
-  },
-  async onAfterBuild ({ app }) {
+      searchIndex.push({
+        url: page.url.pathname,
+        title,
+        description,
+        content
+      })
+    },
+    async onAfterBuild ({ app }) {
+      try {
+        await mkdir(app.options.output, { recursive: true })
 
-    try {
-      await mkdir(app.options.output, { recursive: true })
+        const dest = join(app.options.output, 'search-index.json')
+        const content = JSON.stringify(searchIndex)
 
-      const dest = join(app.options.output, 'search-index.json')
-      const content = JSON.stringify(searchIndex)
-
-      await writeFile(dest, content)
-    } catch (err) {
-      console.error('Failed to write search index', err)
+        await writeFile(dest, content)
+      } catch (err) {
+        console.error('Failed to write search index', err)
+      }
     }
   }
 })

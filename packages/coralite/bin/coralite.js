@@ -130,6 +130,7 @@ if (options.dryRun) {
     process.stdout.write(PAD + `${kleur.bold('- Path:')}      ${document.path.pathname}\n`)
     process.stdout.write(PAD + `${kleur.bold('- Built in:')}  ${Math.floor(document.duration)}ms\n\n`)
     process.stdout.write(border + kleur.inverse(' Content start ') + border + '\n\n')
+    // @ts-ignore
     process.stdout.write(document.html)
     process.stdout.write('\n\n' + border + kleur.inverse(' Content end ') + border + '\n')
   }

@@ -4,9 +4,11 @@ import { Coralite } from '../lib/index.js'
 const TOTAL_PAGES = 10000
 
 // Simulate an array of pages
+/** @type {any[]} */
 const dummyPages = Array.from({ length: TOTAL_PAGES }, (_, i) => ({
-  path: `/page-${i}.html`,
-  html: `<h1>Page ${i}</h1>`
+  type: 'page',
+  path: { pathname: `/page-${i}.html` },
+  content: `<h1>Page ${i}</h1>`
 }))
 
 import { join } from 'node:path'
@@ -29,7 +31,7 @@ const coralite = new Coralite({
     name: 'pagination-plugin',
     server: {
       onAfterPageRender ({ result, session }) {
-        return dummyPages
+        return Promise.resolve(dummyPages)
       }
     }
   }]
@@ -37,9 +39,11 @@ const coralite = new Coralite({
 await coralite.initialise()
 
 // A dummy base context array
+/** @type {any[]} */
 const baseContext = [{
-  path: '/index.html',
-  html: '<h1>Index</h1>'
+  type: 'page',
+  path: { pathname: '/index.html' },
+  content: '<h1>Index</h1>'
 }]
 
 console.log(`\nBenchmark: Plugin Data Aggregation`)

@@ -91,6 +91,7 @@ export function defineConfig (options) {
       }
     }
 
+    // @ts-ignore
     if (options.styles.type) {
       throw new Error('Coralite Config Error: The "styles" configuration has been upgraded. "input" must now be an array, and "type" has been replaced by the "processors" object. Please update your coralite.config.js.')
     }

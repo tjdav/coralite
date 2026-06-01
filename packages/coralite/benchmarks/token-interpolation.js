@@ -8,6 +8,10 @@ const contentBase = Array.from({ length: TOKEN_COUNT }, (_, i) => `Prefix {{ use
 
 // Dummy framework nodes simulation
 const dummyNodes = Array.from({ length: TOKEN_COUNT }, (_, i) => ({
+  nodeName: '#text',
+  tagName: undefined,
+  nodeType: 3,
+  nodeValue: `{{ user.name_${i} }}`,
   type: 'text',
   data: `{{ user.name_${i} }}`,
   parent: { children: [] }
@@ -32,6 +36,7 @@ bench('replaceToken (Framework) (Simulating iterating AST nodes)', () => {
     const node = { ...dummyNodes[i] }
     replaceToken({
       type: 'text',
+      // @ts-ignore
       node: node,
       content: node.data,
       value: computedValues[`user.name_${i}`]

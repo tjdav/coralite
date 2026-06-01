@@ -225,6 +225,7 @@ async function server (config, options) {
 
         for (const plugin of currentConfig.plugins) {
           if (typeof plugin.server === 'function') {
+            // @ts-ignore
             await plugin.server(app, coralite)
           }
         }
@@ -300,8 +301,7 @@ async function server (config, options) {
       const results = await buildStyles({
         input: config.styles.input,
         output: join(config.output, 'assets', 'css'),
-        processors: config.styles.processors,
-        start
+        processors: config.styles.processors
       })
 
       const dash = colours.gray(' ─ ')
@@ -470,6 +470,7 @@ async function server (config, options) {
     // Helper function to debounce compilations
     const debounceCompile = () => {
       if (compileTimeout) {
+        // @ts-ignore
         clearTimeout(compileTimeout)
       }
       compileTimeout = setTimeout(async () => {
@@ -533,8 +534,7 @@ async function server (config, options) {
             const results = await buildStyles({
               input: currentConfig.styles.input,
               processors: currentConfig.styles.processors,
-              output: join(config.output, 'assets', 'css'),
-              start
+              output: join(config.output, 'assets', 'css')
             })
 
             for (const result of results) {

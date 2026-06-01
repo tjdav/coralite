@@ -55,7 +55,7 @@
     "node": ">=20.19.0"
   },
   "simple-git-hooks": {
-    "pre-commit": "pnpm exec tsc --noEmit && pnpm exec lint-staged --concurrent false --quiet"
+    "pre-commit": "pnpm exec tsc --noEmit && pnpm exec lint-staged --concurrent false"
   },
   "lint-staged": {
     "packages/**/*.js": [

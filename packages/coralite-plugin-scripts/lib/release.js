@@ -19,17 +19,19 @@ export async function release (type, options) {
   try {
     // If type is not provided, prompt for it
     if (!type) {
-      type = await prompts.select({
+      const selectedType = await prompts.select({
         message: 'Select release type:',
         options: RELEASE_TYPES.map(t => ({
           value: t,
           label: t
         }))
       })
-      if (prompts.isCancel(type)) {
+      if (prompts.isCancel(selectedType)) {
         prompts.log.info('Release cancelled')
         process.exit(0)
       }
+      // @ts-ignore
+      type = selectedType
     } else if (!RELEASE_TYPES.includes(type)) {
       prompts.log.error(`Invalid release type: ${type}. Must be one of: ${RELEASE_TYPES.join(', ')}`)
       process.exit(1)

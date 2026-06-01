@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "allowJs": true,
+    "module": "nodenext",
+    "target": "es2024",
+    "noEmit": true,
+    "moduleResolution": "nodenext",
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "allowSyntheticDefaultImports": true,
+    "types": ["node"],
+    "paths": {
+      "coralite": ["./packages/coralite/lib/index.js"],
+      "coralite/types": ["./packages/coralite/types/index.js"],
+      "#lib": ["./packages/coralite/lib/index.js"]
+    }
+  },
+  "include": ["packages/**/*", "scripts/**/*", "website/**/*"],
+  "exclude": [
+    "node_modules",
+    "website/dist",
+    "website/.coralite",
+    "packages/*/dist",
+    "packages/*/tests",
+    "packages/*/templates"
+  ]
+}

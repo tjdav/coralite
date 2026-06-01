@@ -29,6 +29,7 @@ async function buildStyles ({
   const scssOptions = {
     sourceMap: true,
     loadPaths: ['node_modules'],
+    // @ts-ignore
     silenceDeprecations: [
       'color-functions',
       'import',
@@ -50,6 +51,7 @@ async function buildStyles ({
     let map
 
     if (ext === '.scss' || ext === '.sass') {
+      // @ts-ignore
       const result = await sass.compileAsync(filePath, scssOptions)
       css = result.css
       map = result.sourceMap

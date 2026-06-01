@@ -9,9 +9,11 @@ const SCRIPT_CONTENT = `
   };
 `
 // Dummy linker returning a synthetic module, no external resolution
+/** @type {import('node:vm').ModuleLinker} */
 const DUMMY_LINKER = async (specifier, referencingModule) => {
   const mod = new SourceTextModule('export default {}', { context: referencingModule.context })
   await mod.link(() => {
+    return Promise.resolve(mod)
   })
   await mod.evaluate()
   return mod

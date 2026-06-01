@@ -8,8 +8,11 @@ import path from 'path'
  * Generates a changelog file based on git history.
  * @param {Object} [options={}] - Options for generating the changelog
  * @param {string} [options.nextVersion] - The next version string
+ * @param {string} [options.from] - Start tag or commit
+ * @param {string} [options.to] - End tag or commit
  * @param {string} [options.output] - Output file path, relative to process.cwd()
  * @param {boolean} [options.yes] - Auto-confirm prompts if true
+ * @param {boolean} [options.stdout] - Output to stdout if true
  * @returns {Promise<void>} Resolves when the changelog is generated
  */
 export async function changelog (options = {}) {
