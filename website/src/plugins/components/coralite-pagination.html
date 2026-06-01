@@ -1,0 +1,131 @@
+<template id="coralite-pagination">
+  <nav aria-label="{{ ariaLabel }}">
+    <ul class="pagination">
+      {{ paginationLinks }}
+    </ul>
+  </nav>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      ariaLabel: {
+        type: String,
+        default: 'Page navigation'
+      },
+      currentPage: {
+        type: Number,
+        default: 1
+      },
+      totalPages: {
+        type: Number,
+        default: 1
+      },
+      maxVisible: {
+        type: Number,
+        default: 5
+      },
+      baseUrl: {
+        type: String,
+        default: ''
+      },
+      urlPrefix: {
+        type: String,
+        default: ''
+      },
+      segment: {
+        type: String,
+        default: 'page'
+      },
+      ellipsis: {
+        type: String,
+        default: '...'
+      }
+    },
+    getters: {
+      paginationLinks: (state) => {
+        const getPageUrl = (page) => {
+          if (page === 1) {
+            return state.baseUrl
+          }
+
+          const cleanPrefix = state.urlPrefix.endsWith('/') ? state.urlPrefix : `${state.urlPrefix}/`
+          return `${cleanPrefix}${state.segment}/${page}.html`
+        }
+
+        const createItem = (page, text, isActive, isDisabled) => {
+          let className = 'page-item'
+          if (isActive) {
+            className += ' active'
+          }
+          if (isDisabled) {
+            className += ' disabled'
+          }
+
+          let attr = ''
+          if (isActive) {
+            attr += ' aria-current="page"'
+          }
+          if (isDisabled) {
+            attr += ' tabindex="-1" aria-disabled="true"'
+          }
+
+          const href = isDisabled ? '#' : getPageUrl(page)
+
+          return `<li class="${className}"><a class="page-link" href="${href}"${attr}>${text}</a></li>`
+        }
+
+        let links = ''
+
+        // Previous Link
+        links += createItem(state.currentPage - 1, 'Previous', false, state.currentPage <= 1)
+
+        // Calculate Window (Start/End)
+        const half = Math.floor(state.maxVisible / 2)
+        let start = state.currentPage - half
+        let end = state.currentPage + half
+
+        if (start < 1) {
+          start = 1
+          end = Math.min(state.totalPages, state.maxVisible)
+        }
+
+        if (end > state.totalPages) {
+          end = state.totalPages
+          start = Math.max(1, state.totalPages - (state.maxVisible + 1))
+        }
+
+        const showFirst = start > 1
+        const showLast = end < state.totalPages
+
+        // First page + ellipsis
+        if (showFirst) {
+          links += createItem(1, '1', false, false)
+          if (start > 2) {
+            links += `<li class="page-item disabled"><span class="page-link">${state.ellipsis}</span></li>`
+          }
+        }
+
+        // Main window loop
+        for (let i = start; i <= end; i++) {
+          links += createItem(i, i, i === state.currentPage, false)
+        }
+
+        // Last page + ellipsis
+        if (showLast) {
+          if (end < state.totalPages - 1) {
+            links += `<li class="page-item disabled"><span class="page-link">${state.ellipsis}</span></li>`
+          }
+          links += createItem(state.totalPages, state.totalPages, false, false)
+        }
+
+        // Next Link
+        links += createItem(state.currentPage + 1, 'Next', false, state.currentPage >= state.totalPages)
+
+        return links
+      }
+    }
+  })
+</script>

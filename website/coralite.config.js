@@ -1,5 +1,5 @@
 import { defineConfig } from 'coralite-scripts'
-import aggregation from 'coralite-plugin-aggregation'
+import aggregation from './src/plugins/aggregation.js'
 import searchPlugin from './src/plugins/search-plugin.js'
 import postcssImport from 'postcss-import'
 import autoprefixer from 'autoprefixer'
