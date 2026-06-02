@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import path, { join } from 'node:path'
 import { existsSync } from 'node:fs'
 import fs from 'node:fs'
 
@@ -39,19 +39,22 @@ try {
     cwd: join(process.cwd(), 'packages/coralite')
   }).toString().trim()
   const coraliteTarName = coralitePackOutput.split('\n').pop()
-  const coraliteTarPath = coraliteTarName.startsWith('/') ? coraliteTarName : join(TEMP_DIR, coraliteTarName)
+  const coraliteTarPath = path.isAbsolute(coraliteTarName) ? coraliteTarName : join(TEMP_DIR, coraliteTarName)
 
   const scriptsPackOutput = execSync('pnpm pack --pack-destination ' + TEMP_DIR, {
     cwd: join(process.cwd(), 'packages/coralite-scripts')
   }).toString().trim()
   const scriptsTarName = scriptsPackOutput.split('\n').pop()
-  const scriptsTarPath = scriptsTarName.startsWith('/') ? scriptsTarName : join(TEMP_DIR, scriptsTarName)
+  const scriptsTarPath = path.isAbsolute(scriptsTarName) ? scriptsTarName : join(TEMP_DIR, scriptsTarName)
 
   const pkgJsonPath = join(PROJECT_PATH, 'package.json')
   const pkgJson = JSON.parse(await fs.promises.readFile(pkgJsonPath, 'utf8'))
 
-  pkgJson.devDependencies['coralite'] = 'file:' + coraliteTarPath
-  pkgJson.devDependencies['coralite-scripts'] = 'file:' + scriptsTarPath
+  const relativeCoralitePath = path.relative(PROJECT_PATH, coraliteTarPath).split(path.sep).join('/')
+  const relativeScriptsPath = path.relative(PROJECT_PATH, scriptsTarPath).split(path.sep).join('/')
+
+  pkgJson.devDependencies['coralite'] = 'file:' + relativeCoralitePath
+  pkgJson.devDependencies['coralite-scripts'] = 'file:' + relativeScriptsPath
 
   await fs.promises.writeFile(pkgJsonPath, JSON.stringify(pkgJson, null, 2))
 
