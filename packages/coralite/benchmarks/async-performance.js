@@ -1,4 +1,4 @@
-import { Coralite } from '../lib/index.js'
+import { createCoralite } from '../lib/index.js'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -61,13 +61,12 @@ async function runBenchmark () {
   console.log(`- Component Count: ${COMPONENT_COUNT}`)
   console.log(`- Theoretical Serial Time: ${COMPONENT_DELAY_MS * COMPONENT_COUNT}ms`)
 
-  const coralite = new Coralite({
+  const coralite = await createCoralite({
     components: COMPONENT_DIR,
     pages: PAGES_DIR
   })
 
   console.log('\nInitializing Coralite...')
-  await coralite.initialise()
 
   console.log('Building page...')
   const start = performance.now()

@@ -1,4 +1,4 @@
-import Coralite from './coralite.js'
+import { createCoralite } from './coralite.js'
 
 export * from './html.js'
 export * from './parse.js'
@@ -9,5 +9,5 @@ export * from './type-helper.js'
 export * from './errors.js'
 export * from './script-manager.js'
 
-export { Coralite }
-export default Coralite
+export { createCoralite }
+export default createCoralite

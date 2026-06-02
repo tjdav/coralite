@@ -3,6 +3,7 @@
  * @import { CoraliteModuleDefinitions } from './module.js'
  * @import { CoralitePluginInstance } from './plugin.js'
  * @import { Attribute } from './component.js'
+ * @import CoraliteCollection from './collection.js'
  */
 
 /**
@@ -108,6 +109,19 @@
  * @property {string} source.currentSourceContextId - Current source context ID.
  * @property {Object.<string, any>} source.contextInstances - Map of context instances.
  * @property {'production' | 'development'} [mode] - Current build mode.
+ */
+
+/**
+ * @typedef {Object} CoraliteInstance
+ * @property {CoraliteConfig} options - The configuration options used to initialize the instance.
+ * @property {CoraliteCollection} pages - Collection of pages.
+ * @property {CoraliteCollection} components - Collection of components.
+ * @property {Function} build - Compiles specified page(s).
+ * @property {Function} save - Compiles and saves pages to disk.
+ * @property {Function} transform - Renders nodes to raw HTML.
+ * @property {Function} addRenderQueue - Adds a page to the current render queue.
+ * @property {Function} getPagePathsUsingCustomElement - Retrieves page paths associated with a custom element.
+ * @property {Function} createComponentElement - Creates a component element.
  */
 
 export default {}

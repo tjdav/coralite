@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import Coralite from '#lib'
+import { createCoralite } from '#lib'
 
 describe('Module Resolution', () => {
   let testDir
@@ -70,13 +70,12 @@ describe('Module Resolution', () => {
   }
 
   it('should resolve imports from project node_modules in development mode', async () => {
-    coralite = new Coralite({
+    coralite = await createCoralite({
       pages: pagesDir,
       components: componentDir,
       mode: 'development'
     })
 
-    await coralite.initialise()
 
     // We expect this to fail currently because resolution is relative to coralite lib
     // but pass after the fix

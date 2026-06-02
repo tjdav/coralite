@@ -25,7 +25,7 @@
     </ul>
 
     <coralite-heading level="h2" text="Coralite Constructor"></coralite-heading>
-    <p>Initializes a new Coralite instance with configuration options for components, pages, plugins, and ignore attributes.</p>
+    <p>Initializes a Coralite instance using the await createCoralite factory with configuration options for components, pages, plugins, and ignore attributes.</p>
 
     <coralite-heading level="h3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
@@ -86,7 +86,7 @@
     </div>
 
     <coralite-heading level="h3" text="Example Usage"></coralite-heading>
-    <coralite-code-highlight language="JavaScript">const coralite = new Coralite({
+    <coralite-code-highlight language="JavaScript">const coralite = await createCoralite({
   components: './src/components',
   pages: './src/pages',
   plugins: [myCustomPlugin],
@@ -106,7 +106,6 @@
  * Initialises the Coralite instance.
  * @returns {Promise*void*}
  */
-await coralite.initialise()</coralite-code-highlight>
 
     <coralite-heading level="h3" text="Returns"></coralite-heading>
     <p>A promise that resolves when the initialization is complete.</p>

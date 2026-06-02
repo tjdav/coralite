@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert'
 import path from 'node:path'
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { Coralite } from '#lib'
+import { createCoralite } from '#lib'
 
 describe('Coralite Build Modes', () => {
   let testDir
@@ -54,12 +54,11 @@ describe('Coralite Build Modes', () => {
   })
 
   it('should build in production mode by default (esbuild strategy)', async () => {
-    coralite = new Coralite({
+    coralite = await createCoralite({
       pages: pagesDir,
       components: componentDir
     })
 
-    await coralite.initialise()
     const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)
@@ -81,13 +80,12 @@ describe('Coralite Build Modes', () => {
       return
     }
 
-    coralite = new Coralite({
+    coralite = await createCoralite({
       pages: pagesDir,
       components: componentDir,
       mode: 'development'
     })
 
-    await coralite.initialise()
     const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)

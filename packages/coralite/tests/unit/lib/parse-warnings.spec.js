@@ -1,6 +1,8 @@
 import { describe, it, mock } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { parseHTML } from '../../../lib/parse.js'
+import { createCoralite } from '../../../lib/index.js'
+import { defaultOnError } from '../../../lib/errors.js'
 
 describe('parseHTML warnings', () => {
   it('should call onError when an invalid custom element name is used', (t) => {
@@ -47,24 +49,13 @@ describe('parseHTML warnings', () => {
   })
 
   it('should throw Error on ERR level in default handler', async (t) => {
-    const Coralite = (await import('../../../lib/index.js')).default
-    // We can't easily test Coralite's internal _defaultOnError via parseHTML default fallback
-    // because parseHTML uses its own console.warn fallback if onError is not provided to it.
-    // However, Coralite.prototype._handleError uses _defaultOnError
-    // when not provided to the constructor.
-
-    // Manual check of _defaultOnError behavior
-    const coralite = new Coralite({
-      components: 'tests/fixtures/components',
-      pages: 'tests/fixtures/pages'
-    })
-
-    assert.throws(() => coralite._defaultOnError({
+    // Manual check of defaultOnError behavior
+    assert.throws(() => defaultOnError({
       level: 'ERR',
       message: 'test'
     }), /test/)
     const testErr = new Error('nested')
-    assert.throws(() => coralite._defaultOnError({
+    assert.throws(() => defaultOnError({
       level: 'ERR',
       message: 'test',
       error: testErr

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import Coralite from 'coralite'
+import { createCoralite } from 'coralite'
 import myPlugin from '../src/index.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -20,14 +20,13 @@ describe('Smoke Test', () => {
       })
     }
 
-    const coralite = new Coralite({
+    const coralite = await createCoralite({
       pages: path.join(fixtures, 'pages'),
       components: path.join(fixtures, 'components'),
       output,
       plugins: [myPlugin]
     })
 
-    await coralite.initialise()
     await coralite.save()
 
     const indexPath = path.join(output, 'index.html')

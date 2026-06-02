@@ -1,5 +1,5 @@
 import { bench, run } from 'mitata'
-import { Coralite } from '../lib/index.js'
+import { createCoralite } from '../lib/index.js'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { mkdirSync, rmSync } from 'node:fs'
@@ -28,21 +28,19 @@ const asyncPlugins = asyncFns.map((fn, i) => ({
   onBeforePageRender: fn
 }))
 
-const syncCoralite = new Coralite({
+const syncCoralite = await createCoralite({
   components: componentsDir,
   pages: pagesDir,
   output: '.coralite',
   plugins: syncPlugins
 })
 
-const asyncCoralite = new Coralite({
+const asyncCoralite = await createCoralite({
   components: componentsDir,
   pages: pagesDir,
   plugins: asyncPlugins
 })
 
-await syncCoralite.initialise()
-await asyncCoralite.initialise()
 
 const baseContext = {
   values: {},

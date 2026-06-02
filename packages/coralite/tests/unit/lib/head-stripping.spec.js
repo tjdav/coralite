@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert'
 import '../setup.js'
-import Coralite from '../../../lib/index.js'
+import { createCoralite } from '../../../lib/index.js'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 
@@ -52,12 +52,11 @@ test('strip custom elements with no-hydration attribute', async (t) => {
 </html>
   `)
 
-  const coralite = new Coralite({
+  const coralite = await createCoralite({
     components: componentsDir,
     pages: pagesDir
   })
 
-  await coralite.initialise()
   const results = await coralite.build()
 
   const indexPage = results.find(r => r.path.filename === 'index.html')

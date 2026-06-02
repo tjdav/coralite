@@ -8,7 +8,7 @@ import pkg from '../package.json' with { type: 'json' }
 import buildStyles from '../libs/build-styles.js'
 import { join, relative, dirname } from 'node:path'
 import { deleteDirectoryRecursive, copyDirectory, toMS, toTime, displayError, displayWarning, displayInfo } from '../libs/build-utils.js'
-import { Coralite } from 'coralite'
+import { createCoralite } from 'coralite'
 import { mkdir, writeFile } from 'node:fs/promises'
 import ora from 'ora'
 
@@ -61,7 +61,7 @@ if (mode === 'dev') {
   const start = process.hrtime()
 
   // start coralite
-  const coralite = new Coralite({
+  const coralite = await createCoralite({
     components: config.components,
     pages: config.pages,
     plugins: config.plugins,
@@ -83,7 +83,6 @@ if (mode === 'dev') {
       }
     }
   })
-  await coralite.initialise()
 
   let spinner
   let pageCount = 0
