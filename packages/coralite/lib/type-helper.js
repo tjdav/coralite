@@ -147,12 +147,12 @@ function isParentNode (obj) {
 }
 
 /**
- * Checks if an object is a removable node (has remove property set to true).
+ * Checks if an object is a removable node (has _markedForRemoval property set to true).
  * @param {any} obj - The object to check.
- * @returns {boolean} True if the object has remove property set to true.
+ * @returns {boolean} True if the object has _markedForRemoval property set to true.
  */
 function isRemovableNode (obj) {
-  return isObject(obj) && obj.remove === true
+  return isObject(obj) && obj._markedForRemoval === true
 }
 
 export {

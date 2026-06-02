@@ -1,5 +1,6 @@
 import render from 'dom-serializer'
 import { parseHTML } from './parse.js'
+import { relinkChildren } from './dom.js'
 
 /**
  * @import { CoraliteElement, CoraliteAnyNode, CoraliteComponentRoot, Attribute, CoraliteModule, CoraliteSession } from '../types/index.js'
@@ -29,9 +30,7 @@ export function transformNode (root, options) {
  */
 export function replaceCustomElementWithTemplate (coraliteElement, element) {
   coraliteElement.children = element.children
-  for (let j = 0; j < coraliteElement.children.length; j++) {
-    coraliteElement.children[j].parent = coraliteElement
-  }
+  relinkChildren(coraliteElement)
 }
 
 /**
@@ -84,17 +83,13 @@ export async function processTokenValue (value, context) {
         if (parent && parent.children) {
           const elementIndex = parent.children.indexOf(customElement)
           if (elementIndex !== -1) {
-            for (let j = 0; j < componentElement.children.length; j++) {
-              componentElement.children[j].parent = parent
-            }
             parent.children.splice(elementIndex, 1, ...componentElement.children)
+            relinkChildren(parent)
           }
         }
       } else {
         customElement.children = componentElement.children
-        for (let j = 0; j < customElement.children.length; j++) {
-          customElement.children[j].parent = customElement
-        }
+        relinkChildren(customElement)
 
         if (!customElement.attribs) {
           customElement.attribs = {}

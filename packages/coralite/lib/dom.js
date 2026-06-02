@@ -31,33 +31,13 @@ const nodeTypes = {
 }
 
 /**
- * Base enhancer for all Coralite nodes
- * @template {RawCoraliteElement | RawCoraliteTextNode | RawCoraliteComment | RawCoraliteDirective | RawCoraliteComponentRoot} T
- * @param {T} node - The raw DOM node to enhance
+ * Ensures circular properties are non-enumerable to prevent serialization issues.
+ * @param {any} node - The node to enhance
  */
-function CoraliteNodeConstructor (node) {
-  for (const key in node) {
-    if (['parent', 'prev', 'next', 'slots'].includes(key)) {
-      Object.defineProperty(this, key, {
-        value: node[key],
-        enumerable: false,
-        writable: true,
-        configurable: true
-      })
-    } else {
-      // @ts-ignore
-      this[key] = node[key]
-    }
-  }
-}
-
 function makeCircularPropertiesNonEnumerable (node) {
   for (const key of ['parent', 'prev', 'next', 'slots']) {
     if (Object.hasOwn(node, key)) {
-      const value = node[key]
-      delete node[key]
       Object.defineProperty(node, key, {
-        value,
         enumerable: false,
         writable: true,
         configurable: true
@@ -66,238 +46,498 @@ function makeCircularPropertiesNonEnumerable (node) {
   }
 }
 
-Object.defineProperties(CoraliteNodeConstructor.prototype, {
+/**
+ * Base prototype for all Coralite nodes.
+ */
+const CoraliteNodePrototype = {
+  /**
+   * Removes the node from its parent's children list and updates siblings.
+   */
+  remove () {
+    if (this.parent && this.parent.children) {
+      const index = this.parent.children.indexOf(this)
+      if (index > -1) {
+        this.parent.children.splice(index, 1)
+      }
+    }
+
+    // Re-stitch the linked list
+    if (this.prev) {
+      this.prev.next = this.next
+    }
+    if (this.next) {
+      this.next.prev = this.prev
+    }
+
+    this.parent = null
+    this.next = null
+    this.prev = null
+  }
+}
+
+Object.defineProperties(CoraliteNodePrototype, {
   nodeType: {
-    /**
-     * Returns an integer identifying the type of the node.
-     * @returns {number}
-     */
     get () {
       return nodeTypes[this.type] || ELEMENT_NODE
     }
   },
   parentNode: {
-    /**
-     * Returns the parent of the specified node in the DOM tree.
-     * @returns {CoraliteAnyNode | CoraliteComponentRoot}
-     */
     get () {
-      return this.parent
+      return this.parent || null
     },
-    /**
-     * Sets the parent of the node.
-     * @param {CoraliteAnyNode | CoraliteComponentRoot} value - The parent node to set
-     */
     set (value) {
       this.parent = value
     }
   },
   parentElement: {
-    /**
-     * Returns the DOM node's parent Element, or null if the node either has no parent, or its parent isn't a DOM Element.
-     * @returns {CoraliteAnyNode | CoraliteComponentRoot}
-     */
     get () {
-      return this.parent
+      return this.parent || null
     },
-    /**
-     * Sets the parent element of the node.
-     * @param {CoraliteAnyNode | CoraliteComponentRoot} value - The parent element to set
-     */
     set (value) {
       this.parent = value
     }
   },
   previousSibling: {
-    /**
-     * Returns the node immediately preceding the specified one in its parent's childNodes list, or null if the specified node is the first in that list.
-     * @returns {CoraliteAnyNode | null}
-     */
     get () {
-      if (!this.parent || !this.parent.children) {
-        return null
-      }
-      const index = this.parent.children.indexOf(this)
-      return index > 0 ? this.parent.children[index - 1] : null
+      return this.prev || null
     }
   },
   nextSibling: {
-    /**
-     * Returns the node immediately following the specified one in its parent's childNodes list, or null if the specified node is the last node in that list.
-     * @returns {CoraliteAnyNode | null}
-     */
     get () {
-      if (!this.parent || !this.parent.children) {
-        return null
-      }
-      const index = this.parent.children.indexOf(this)
-      return index > -1 && index < this.parent.children.length - 1 ? this.parent.children[index + 1] : null
+      return this.next || null
     }
   }
 })
 
 /**
- * Coralite Element Node Constructor
- * @param {RawCoraliteElement} node - The raw element node
+ * Enhances a raw node by applying the correct prototype based on its type.
+ * @param {any} node - The node to enhance
+ * @returns {any} The enhanced node
  */
-function CoraliteElementConstructor (node) {
-  CoraliteNodeConstructor.call(this, node)
+export function enhanceNode (node) {
+  if (!node || node.__coralite_enhanced__) {
+    return node
+  }
+
+  makeCircularPropertiesNonEnumerable(node)
+
+  let prototype
+  switch (node.type) {
+    case 'tag':
+    case 'script':
+    case 'style':
+      prototype = CoraliteElementPrototype
+      break
+    case 'text':
+      prototype = CoraliteTextNodePrototype
+      break
+    case 'comment':
+      prototype = CoraliteCommentPrototype
+      break
+    case 'directive':
+      prototype = CoraliteDirectivePrototype
+      break
+    case 'root':
+      prototype = CoraliteComponentPrototype
+      break
+    default:
+      prototype = CoraliteNodePrototype
+  }
+
+  Object.setPrototypeOf(node, prototype)
+  Object.defineProperty(node, '__coralite_enhanced__', {
+    value: true,
+    enumerable: false,
+    configurable: true
+  })
+
+  return node
 }
 
-CoraliteElementConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
-CoraliteElementConstructor.prototype.constructor = CoraliteElementConstructor
+/**
+ * Re-links all children of a parent node, ensuring parent, prev, and next pointers are correct.
+ * @param {any} parent - The parent node whose children should be re-linked
+ */
+export function relinkChildren (parent) {
+  if (!parent || !parent.children || !Array.isArray(parent.children)) {
+    return
+  }
 
+  for (let i = 0; i < parent.children.length; i++) {
+    const child = parent.children[i]
+    if (!child) {
+      continue
+    }
 
-Object.defineProperties(CoraliteElementConstructor.prototype, {
+    enhanceNode(child)
+    child.parent = parent
+    child.prev = parent.children[i - 1] || null
+    child.next = parent.children[i + 1] || null
+
+    if (child.children) {
+      relinkChildren(child)
+    }
+  }
+}
+
+/**
+ * Prototype for Coralite Elements.
+ */
+const CoraliteElementPrototype = Object.create(CoraliteNodePrototype)
+
+/**
+ * Returns the value of a specified attribute on the element.
+ * @param {string} name - The name of the attribute
+ * @returns {string | null}
+ */
+CoraliteElementPrototype.getAttribute = function (name) {
+  return this.attribs && Object.hasOwn(this.attribs, name) ? this.attribs[name] : null
+}
+
+/**
+ * Sets the value of an attribute on the element.
+ * @param {string} name - The name of the attribute
+ * @param {any} value - The value to set
+ */
+CoraliteElementPrototype.setAttribute = function (name, value) {
+  if (!this.attribs) {
+    this.attribs = {}
+  }
+  this.attribs[name] = String(value)
+}
+
+/**
+ * Returns a boolean value indicating whether the specified element has the specified attribute or not.
+ * @param {string} name - The name of the attribute
+ * @returns {boolean}
+ */
+CoraliteElementPrototype.hasAttribute = function (name) {
+  return !!(this.attribs && Object.hasOwn(this.attribs, name))
+}
+
+/**
+ * Removes an attribute from the element.
+ * @param {string} name - The name of the attribute
+ */
+CoraliteElementPrototype.removeAttribute = function (name) {
+  if (this.attribs) {
+    delete this.attribs[name]
+  }
+}
+
+/**
+ * Adds a node to the end of the list of children of a specified parent node.
+ * @param {any} node - The node to append
+ * @returns {any}
+ */
+CoraliteElementPrototype.appendChild = function (node) {
+  if (node.parent) {
+    node.remove()
+  }
+
+  if (!this.children) {
+    this.children = []
+  }
+
+  const lastChild = this.children[this.children.length - 1]
+  if (lastChild) {
+    lastChild.next = node
+    node.prev = lastChild
+  } else {
+    node.prev = null
+  }
+
+  node.next = null
+  node.parent = this
+  this.children.push(node)
+
+  return node
+}
+
+/**
+ * Inserts a set of Node objects or string objects after the last child of the Element.
+ * @param {...(any)} nodes - The nodes or strings to append
+ */
+CoraliteElementPrototype.append = function (...nodes) {
+  for (let node of nodes) {
+    if (typeof node === 'string') {
+      node = createCoraliteTextNode({
+        type: 'text',
+        data: node
+      })
+    }
+    this.appendChild(node)
+  }
+}
+
+Object.defineProperties(CoraliteElementPrototype, {
   nodeName: {
-    /**
-     * Returns the name of the node (uppercase tag name for elements).
-     * @returns {string}
-     */
     get () {
       return this.name.toUpperCase()
     }
   },
   tagName: {
-    /**
-     * Returns the tag name of the element (uppercase).
-     * @returns {string}
-     */
     get () {
       return this.name.toUpperCase()
     },
-    /**
-     * Sets the tag name of the element (converted to lowercase).
-     * @param {string} value - The tag name to set
-     */
     set (value) {
       this.name = value.toLowerCase()
     }
   },
   nodeValue: {
-    /**
-     * Returns null for elements.
-     * @returns {null}
-     */
     get () {
       return null
     },
-    /**
-     * Setting nodeValue on an element has no effect.
-     */
     set (value) {
       // Elements do not have nodeValue
     }
   },
   attributes: {
-    /**
-     * Returns a collection of the element's attributes.
-     * @returns {Object.<string, string>}
-     */
     get () {
       return this.attribs
     },
-    /**
-     * Sets the attributes of the element.
-     * @param {Object.<string, string>} value - The attributes object to set
-     */
     set (value) {
       this.attribs = value
     }
   },
   childNodes: {
-    /**
-     * Returns a live collection of child nodes of the given element.
-     * @returns {CoraliteAnyNode[]}
-     */
     get () {
       return this.children || []
     },
-    /**
-     * Sets the child nodes of the element.
-     * @param {CoraliteAnyNode[]} value - The array of child nodes to set
-     */
     set (value) {
       this.children = value
     }
   },
   firstChild: {
-    /**
-     * Returns the node's first child in the tree, or null if the node has no children.
-     * @returns {CoraliteAnyNode | null}
-     */
     get () {
-      return this.children && this.children.length > 0 ? this.children[0] : null
+      return (this.children && this.children[0]) || null
     }
   },
   lastChild: {
-    /**
-     * Returns the last child of the node, or null if there are no child nodes.
-     * @returns {CoraliteAnyNode | null}
-     */
     get () {
-      return this.children && this.children.length > 0 ? this.children[this.children.length - 1] : null
+      return (this.children && this.children[this.children.length - 1]) || null
     }
   },
   textContent: {
-    /**
-     * Returns the text content of the node and its descendants.
-     * @returns {string}
-     */
     get () {
       if (this.children) {
         return this.children.map(child => child.textContent).join('')
       }
       return ''
     },
-    /**
-     * Sets the text content of the node. Replaces all children with a single text node.
-     * @param {string} value - The text content to set
-     */
     set (value) {
-      // Replace all children with a single text node
+      if (this.children) {
+        for (const child of this.children) {
+          child.parent = null
+          child.prev = null
+          child.next = null
+        }
+      }
+
       const textNode = createCoraliteTextNode({
         type: 'text',
         data: value,
-        parent: this
+        parent: this,
+        prev: null,
+        next: null
       })
       this.children = [textNode]
     }
   },
   id: {
-    /**
-     * Returns the element's ID attribute.
-     * @returns {string}
-     */
     get () {
       return this.attribs ? this.attribs.id : ''
     },
-    /**
-     * Sets the element's ID attribute.
-     * @param {string} value - The ID to set
-     */
     set (value) {
-      if (this.attribs) {
-        this.attribs.id = value
+      if (!this.attribs) {
+        this.attribs = {}
       }
+      this.attribs.id = value
     }
   },
   className: {
-    /**
-     * Returns the element's class attribute.
-     * @returns {string}
-     */
     get () {
       return this.attribs ? this.attribs.class : ''
     },
-    /**
-     * Sets the element's class attribute.
-     * @param {string} value - The class names to set
-     */
     set (value) {
-      if (this.attribs) {
-        this.attribs.class = value
+      if (!this.attribs) {
+        this.attribs = {}
       }
+      this.attribs.class = value
+    }
+  },
+  classList: {
+    get () {
+      if (!this._classList) {
+        const self = this
+        const classList = {
+          add (...classes) {
+            const current = self.className ? self.className.split(/\s+/).filter(Boolean) : []
+            const set = new Set(current)
+            classes.forEach(c => set.add(c))
+            self.className = Array.from(set).join(' ')
+          },
+          remove (...classes) {
+            const current = self.className ? self.className.split(/\s+/).filter(Boolean) : []
+            const set = new Set(current)
+            classes.forEach(c => set.delete(c))
+            self.className = Array.from(set).join(' ')
+          },
+          contains (cls) {
+            const current = self.className ? self.className.split(/\s+/).filter(Boolean) : []
+            return current.includes(cls)
+          },
+          toggle (cls, force) {
+            const current = self.className ? self.className.split(/\s+/).filter(Boolean) : []
+            const set = new Set(current)
+            if (force !== undefined) {
+              if (force) {
+                set.add(cls)
+              } else {
+                set.delete(cls)
+              }
+            } else {
+              if (set.has(cls)) {
+                set.delete(cls)
+              } else {
+                set.add(cls)
+              }
+            }
+            self.className = Array.from(set).join(' ')
+            return set.has(cls)
+          },
+          get value () {
+            return self.className
+          }
+        }
+        Object.defineProperty(this, '_classList', {
+          value: classList,
+          enumerable: false,
+          writable: true,
+          configurable: true
+        })
+      }
+      return this._classList
+    }
+  }
+})
+
+/**
+ * Prototype for Coralite Text Nodes.
+ */
+const CoraliteTextNodePrototype = Object.create(CoraliteNodePrototype)
+
+Object.defineProperties(CoraliteTextNodePrototype, {
+  nodeName: {
+    get () {
+      return '#text'
+    }
+  },
+  nodeValue: {
+    get () {
+      return this.data
+    },
+    set (value) {
+      this.data = value
+    }
+  },
+  textContent: {
+    get () {
+      return this.data
+    },
+    set (value) {
+      this.data = value
+    }
+  }
+})
+
+/**
+ * Prototype for Coralite Comment Nodes.
+ */
+const CoraliteCommentPrototype = Object.create(CoraliteNodePrototype)
+
+Object.defineProperties(CoraliteCommentPrototype, {
+  nodeName: {
+    get () {
+      return '#comment'
+    }
+  },
+  nodeValue: {
+    get () {
+      return this.data
+    },
+    set (value) {
+      this.data = value
+    }
+  },
+  textContent: {
+    get () {
+      return this.data
+    },
+    set (value) {
+      this.data = value
+    }
+  }
+})
+
+/**
+ * Prototype for Coralite Directive Nodes.
+ */
+const CoraliteDirectivePrototype = Object.create(CoraliteNodePrototype)
+
+Object.defineProperties(CoraliteDirectivePrototype, {
+  nodeName: {
+    get () {
+      return this.name
+    }
+  },
+  nodeValue: {
+    get () {
+      return this.data
+    },
+    set (value) {
+      this.data = value
+    }
+  }
+})
+
+/**
+ * Prototype for Coralite Component Roots (Document).
+ */
+const CoraliteComponentPrototype = Object.create(CoraliteNodePrototype)
+
+Object.defineProperties(CoraliteComponentPrototype, {
+  nodeName: {
+    get () {
+      return '#document'
+    }
+  },
+  nodeValue: {
+    get () {
+      return null
+    }
+  },
+  childNodes: {
+    get () {
+      return this.children || []
+    },
+    set (value) {
+      this.children = value
+    }
+  },
+  firstChild: {
+    get () {
+      return (this.children && this.children[0]) || null
+    }
+  },
+  lastChild: {
+    get () {
+      return (this.children && this.children[this.children.length - 1]) || null
+    }
+  },
+  textContent: {
+    get () {
+      return null
     }
   }
 })
@@ -308,66 +548,9 @@ Object.defineProperties(CoraliteElementConstructor.prototype, {
  * @returns {CoraliteElement} The enhanced Coralite Element
  */
 export function createCoraliteElement (node) {
-  makeCircularPropertiesNonEnumerable(node)
-  Object.setPrototypeOf(node, CoraliteElementConstructor.prototype)
-  // @ts-ignore
-  return node
+  node.type = node.type || 'tag'
+  return enhanceNode(node)
 }
-
-/**
- * Coralite Text Node Constructor
- * @param {RawCoraliteTextNode} node - The raw text node
- */
-function CoraliteTextNodeConstructor (node) {
-  CoraliteNodeConstructor.call(this, node)
-}
-
-CoraliteTextNodeConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
-CoraliteTextNodeConstructor.prototype.constructor = CoraliteTextNodeConstructor
-
-Object.defineProperties(CoraliteTextNodeConstructor.prototype, {
-  nodeName: {
-    /**
-     * Returns the name of the node (#text).
-     * @returns {string}
-     */
-    get () {
-      return '#text'
-    }
-  },
-  nodeValue: {
-    /**
-     * Returns the text content of the node.
-     * @returns {string}
-     */
-    get () {
-      return this.data
-    },
-    /**
-     * Sets the text content of the node.
-     * @param {string} value - The text content to set
-     */
-    set (value) {
-      this.data = value
-    }
-  },
-  textContent: {
-    /**
-     * Returns the text content of the node.
-     * @returns {string}
-     */
-    get () {
-      return this.data
-    },
-    /**
-     * Sets the text content of the node.
-     * @param {string} value - The text content to set
-     */
-    set (value) {
-      this.data = value
-    }
-  }
-})
 
 /**
  * Creates an enhanced Coralite Text Node
@@ -375,66 +558,9 @@ Object.defineProperties(CoraliteTextNodeConstructor.prototype, {
  * @returns {CoraliteTextNode} The enhanced Coralite Text Node
  */
 export function createCoraliteTextNode (node) {
-  makeCircularPropertiesNonEnumerable(node)
-  Object.setPrototypeOf(node, CoraliteTextNodeConstructor.prototype)
-  // @ts-ignore
-  return node
+  node.type = 'text'
+  return enhanceNode(node)
 }
-
-/**
- * Coralite Comment Node Constructor
- * @param {RawCoraliteComment} node - The raw comment node
- */
-function CoraliteCommentConstructor (node) {
-  CoraliteNodeConstructor.call(this, node)
-}
-
-CoraliteCommentConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
-CoraliteCommentConstructor.prototype.constructor = CoraliteCommentConstructor
-
-Object.defineProperties(CoraliteCommentConstructor.prototype, {
-  nodeName: {
-    /**
-     * Returns the name of the node (#comment).
-     * @returns {string}
-     */
-    get () {
-      return '#comment'
-    }
-  },
-  nodeValue: {
-    /**
-     * Returns the content of the comment.
-     * @returns {string}
-     */
-    get () {
-      return this.data
-    },
-    /**
-     * Sets the content of the comment.
-     * @param {string} value - The content to set
-     */
-    set (value) {
-      this.data = value
-    }
-  },
-  textContent: {
-    /**
-     * Returns the content of the comment.
-     * @returns {string}
-     */
-    get () {
-      return this.data
-    },
-    /**
-     * Sets the content of the comment.
-     * @param {string} value - The content to set
-     */
-    set (value) {
-      this.data = value
-    }
-  }
-})
 
 /**
  * Creates an enhanced Coralite Comment Node
@@ -442,50 +568,9 @@ Object.defineProperties(CoraliteCommentConstructor.prototype, {
  * @returns {CoraliteComment} The enhanced Coralite Comment Node
  */
 export function createCoraliteComment (node) {
-  makeCircularPropertiesNonEnumerable(node)
-  Object.setPrototypeOf(node, CoraliteCommentConstructor.prototype)
-  // @ts-ignore
-  return node
+  node.type = 'comment'
+  return enhanceNode(node)
 }
-
-/**
- * Coralite Directive Node Constructor
- * @param {RawCoraliteDirective} node - The raw directive node
- */
-function CoraliteDirectiveConstructor (node) {
-  CoraliteNodeConstructor.call(this, node)
-}
-
-CoraliteDirectiveConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
-CoraliteDirectiveConstructor.prototype.constructor = CoraliteDirectiveConstructor
-
-Object.defineProperties(CoraliteDirectiveConstructor.prototype, {
-  nodeName: {
-    /**
-     * Returns the name of the directive (e.g., !DOCTYPE).
-     * @returns {string}
-     */
-    get () {
-      return this.name
-    }
-  },
-  nodeValue: {
-    /**
-     * Returns the content of the directive.
-     * @returns {string}
-     */
-    get () {
-      return this.data
-    },
-    /**
-     * Sets the content of the directive.
-     * @param {string} value - The content to set
-     */
-    set (value) {
-      this.data = value
-    }
-  }
-})
 
 /**
  * Creates an enhanced Coralite Directive Node (e.g. DOCTYPE)
@@ -493,86 +578,9 @@ Object.defineProperties(CoraliteDirectiveConstructor.prototype, {
  * @returns {CoraliteDirective} The enhanced Coralite Directive Node
  */
 export function createCoraliteDirective (node) {
-  makeCircularPropertiesNonEnumerable(node)
-  Object.setPrototypeOf(node, CoraliteDirectiveConstructor.prototype)
-  // @ts-ignore
-  return node
+  node.type = 'directive'
+  return enhanceNode(node)
 }
-
-/**
- * Coralite Document Node Constructor
- * @param {RawCoraliteComponentRoot} node - The raw document node
- */
-function CoraliteComponentConstructor (node) {
-  CoraliteNodeConstructor.call(this, node)
-}
-
-CoraliteComponentConstructor.prototype = Object.create(CoraliteNodeConstructor.prototype)
-CoraliteComponentConstructor.prototype.constructor = CoraliteComponentConstructor
-
-Object.defineProperties(CoraliteComponentConstructor.prototype, {
-  nodeName: {
-    /**
-     * Returns the name of the node (#document).
-     * @returns {string}
-     */
-    get () {
-      return '#document'
-    }
-  },
-  nodeValue: {
-    /**
-     * Returns null for document nodes.
-     * @returns {null}
-     */
-    get () {
-      return null
-    }
-  },
-  childNodes: {
-    /**
-     * Returns a live collection of child nodes of the document.
-     * @returns {CoraliteAnyNode[]}
-     */
-    get () {
-      return this.children || []
-    },
-    /**
-     * Sets the child nodes of the document.
-     * @param {CoraliteAnyNode[]} value - The array of child nodes to set
-     */
-    set (value) {
-      this.children = value
-    }
-  },
-  firstChild: {
-    /**
-     * Returns the document's first child in the tree, or null if the document has no children.
-     * @returns {CoraliteAnyNode | null}
-     */
-    get () {
-      return this.children && this.children.length > 0 ? this.children[0] : null
-    }
-  },
-  lastChild: {
-    /**
-     * Returns the last child of the document, or null if there are no child nodes.
-     * @returns {CoraliteAnyNode | null}
-     */
-    get () {
-      return this.children && this.children.length > 0 ? this.children[this.children.length - 1] : null
-    }
-  },
-  textContent: {
-    /**
-     * Returns null for document nodes.
-     * @returns {null}
-     */
-    get () {
-      return null
-    }
-  }
-})
 
 /**
  * Creates an enhanced Coralite Document Root
@@ -580,8 +588,6 @@ Object.defineProperties(CoraliteComponentConstructor.prototype, {
  * @returns {CoraliteComponentRoot} The enhanced Coralite Document Root
  */
 export function createCoraliteComponent (node) {
-  makeCircularPropertiesNonEnumerable(node)
-  Object.setPrototypeOf(node, CoraliteComponentConstructor.prototype)
-  // @ts-ignore
-  return node
+  node.type = 'root'
+  return enhanceNode(node)
 }

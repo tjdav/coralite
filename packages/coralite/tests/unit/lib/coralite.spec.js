@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert'
 import path from 'node:path'
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { createCoralite } from '#lib'
+import { createCoralite, createCoraliteElement, createCoraliteTextNode } from '#lib'
 
 describe('Coralite', () => {
   let testDir
@@ -111,12 +111,13 @@ describe('Coralite', () => {
             context.state.injectedGlobal = 'test'
 
             // Modifying AST
-            context.component.root.children.push({
+            context.component.root.children.push(createCoraliteElement({
               type: 'tag',
               name: 'div',
               attribs: { class: 'injected' },
-              children: []
-            })
+              children: [],
+              parent: context.component.root
+            }))
           }
         }
       }
@@ -150,7 +151,8 @@ describe('Coralite', () => {
         ignoreByAttribute: [{
           name: 'data-ignore',
           value: 'true'
-        }]
+        }],
+        output: path.join(testDir, 'ignore-out')
       })
 
 
@@ -167,7 +169,8 @@ describe('Coralite', () => {
       coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
-        ignoreByAttribute: ['data-ignore']
+        ignoreByAttribute: ['data-ignore'],
+        output: path.join(testDir, 'ignore-out-2')
       })
 
 
@@ -201,7 +204,8 @@ describe('Coralite', () => {
         pages: pagesDir,
         components: componentDir,
         plugins: [testPlugin],
-        skipRenderByAttribute: ['data-skip']
+        skipRenderByAttribute: ['data-skip'],
+        output: path.join(testDir, 'skip-out')
       })
 
 
@@ -405,7 +409,8 @@ export default defineComponent({
       components: componentsDir,
       output: outputDir,
       plugins: [parentPlugin],
-      mode: 'production'
+      mode: 'production',
+      baseURL: '/'
     })
 
     const results = await coralite.build()
@@ -434,7 +439,8 @@ export default defineComponent({
     const coralite = await createCoralite({
       pages: pagesDir,
       components: componentsDir,
-      plugins: [plugin]
+      plugins: [plugin],
+      output: path.join(tmpDir, 'inject-out')
     })
 
     const results = await coralite.build('test-plugin.html')
@@ -448,15 +454,15 @@ export default defineComponent({
       server: {
         onAfterComponentRender: async ({ result, componentId }) => {
           if (componentId === 'test-comp') {
-            result.children.push({
+            result.appendChild(createCoraliteElement({
               type: 'tag',
               name: 'span',
               attribs: { id: 'extra' },
-              children: [{
+              children: [createCoraliteTextNode({
                 type: 'text',
                 data: 'extra-node'
-              }]
-            })
+              })]
+            }))
           }
         }
       }
@@ -468,7 +474,8 @@ export default defineComponent({
     const coralite = await createCoralite({
       pages: pagesDir,
       components: componentsDir,
-      plugins: [plugin]
+      plugins: [plugin],
+      output: path.join(tmpDir, 'mutate-out')
     })
 
     const results = await coralite.build('test-plugin-ast.html')

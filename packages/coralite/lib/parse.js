@@ -4,7 +4,8 @@ import {
   createCoraliteTextNode,
   createCoraliteComment,
   createCoraliteDirective,
-  createCoraliteComponent
+  createCoraliteComponent,
+  relinkChildren
 } from './dom.js'
 import { isValidCustomElementName, VALID_TAGS } from './tags.js'
 
@@ -148,7 +149,7 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
       const element = stack[stack.length - 1]
 
       if (element.type === 'tag') {
-        if (element.remove) {
+        if (element._markedForRemoval) {
           // store element for removal
           // @ts-ignore
           tempElements.push(element.parent.children[element.parent.children.length - 1])
@@ -175,6 +176,7 @@ export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onE
   parser.write(string)
   parser.end()
 
+  relinkChildren(root)
   sortSlottedChildren(customElements)
 
   return {
@@ -392,7 +394,7 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
     onclosetag (name) {
       const element = stack[stack.length - 1]
 
-      if (element.type === 'tag' && element.remove) {
+      if (element.type === 'tag' && element._markedForRemoval) {
         // remove element from tree
         element.parent.children.pop()
       }
@@ -421,6 +423,8 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
 
   parser.write(string)
   parser.end()
+
+  relinkChildren(root)
 
   /** @type {CoraliteElement} */
   let template
@@ -515,7 +519,7 @@ export function createElement ({
     const ignore = findAttributesToIgnore(ignoreByAttribute, attributes)
 
     if (ignore) {
-      element.remove = true
+      element._markedForRemoval = true
     }
   }
 

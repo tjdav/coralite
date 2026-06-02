@@ -30,7 +30,7 @@ import {
   isCoraliteElement,
   isCoraliteCollectionItem
 } from './type-helper.js'
-import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
+import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './dom.js'
 
 /**
  * @import {
@@ -193,10 +193,8 @@ export function createRenderer ({
                         children = componentElement.children
                       }
 
-                      for (let j = 0; j < children.length; j++) {
-                        children[j].parent = parent
-                      }
                       parent.children.splice(idx, 1, ...children)
+                      relinkChildren(parent)
                     }
                   }
                 } else {
@@ -209,10 +207,7 @@ export function createRenderer ({
                   }
 
                   node.children = children
-
-                  for (let j = 0; j < children.length; j++) {
-                    children[j].parent = node
-                  }
+                  relinkChildren(node)
 
                   if (!node.attribs) {
                     node.attribs = {}
@@ -227,11 +222,7 @@ export function createRenderer ({
         }
       }
       slot.element.children = slotNodes
-      for (let j = 0; j < slotNodes.length; j++) {
-        if (slotNodes[j]) {
-          slotNodes[j].parent = slot.element
-        }
-      }
+      relinkChildren(slot.element)
     }
   }
 
@@ -610,19 +601,15 @@ export function createRenderer ({
             if (idx !== -1) {
               // @ts-ignore
               const children = Array.isArray(childComponentElement) ? childComponentElement : childComponentElement.children
-              children.forEach(c => {
-                c.parent = parent
-              })
               parent.children.splice(idx, 1, ...children)
+              relinkChildren(parent)
             }
           }
         } else {
           // @ts-ignore
           const children = Array.isArray(childComponentElement) ? childComponentElement : childComponentElement.children
           customElement.children = children
-          customElement.children.forEach(c => {
-            c.parent = customElement
-          })
+          relinkChildren(customElement)
           if (!customElement.attribs) {
             customElement.attribs = {}
           }
@@ -644,10 +631,8 @@ export function createRenderer ({
             if (parent && parent.children) {
               const idx = parent.children.indexOf(node)
               if (idx !== -1) {
-                node.children.forEach(c => {
-                  c.parent = parent
-                })
                 parent.children.splice(idx, 1, ...node.children)
+                relinkChildren(parent)
               }
             }
           } else {
@@ -712,19 +697,15 @@ export function createRenderer ({
             if (elementIndex !== -1) {
               // @ts-ignore
               const children = Array.isArray(componentElement) ? componentElement : componentElement.children
-              children.forEach(c => {
-                c.parent = parent
-              })
               parent.children.splice(elementIndex, 1, ...children)
+              relinkChildren(parent)
             }
           }
         } else {
           // @ts-ignore
           const children = Array.isArray(componentElement) ? componentElement : componentElement.children
           customElement.children = children
-          customElement.children.forEach(c => {
-            c.parent = customElement
-          })
+          relinkChildren(customElement)
           if (!customElement.attribs) {
             customElement.attribs = {}
           }

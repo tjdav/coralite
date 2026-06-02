@@ -4,7 +4,7 @@ import render from 'dom-serializer'
 import { sanitize } from 'isomorphic-dompurify'
 import { parseHTML } from './parse.js'
 import { isCoraliteNode } from './type-helper.js'
-import { createCoraliteTextNode } from './dom.js'
+import { createCoraliteTextNode, enhanceNode, relinkChildren } from './dom.js'
 import { BOOLEAN_ATTRIBUTES } from './tags.js'
 
 /**
@@ -203,6 +203,8 @@ export function normalizeFunction (func) {
 export function cloneNode (nodeMap, node, parent) {
   const newNode = { ...node }
 
+  enhanceNode(newNode)
+
   if (parent) {
     newNode.parent = parent
   }
@@ -225,6 +227,10 @@ export function cloneNode (nodeMap, node, parent) {
     for (let i = 0; i < node.children.length; i++) {
       // @ts-ignore
       newNode.children[i] = cloneNode(nodeMap, node.children[i], newNode)
+      if (i > 0) {
+        newNode.children[i].prev = newNode.children[i - 1]
+        newNode.children[i - 1].next = newNode.children[i]
+      }
     }
   }
 
@@ -376,6 +382,7 @@ export function replaceToken ({
             parent: node.parent
           })
         )
+        relinkChildren(node.parent)
       } else {
         // Handle object values like refs stringification
         node.data = node.data.replace(content, JSON.stringify(value))

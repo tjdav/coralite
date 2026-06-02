@@ -229,7 +229,7 @@ export function removeElements (elements, matchInstance = true) {
 
     for (const parent of parents) {
       if (parent.children) {
-        parent.children = parent.children.filter(child => !child.remove)
+        parent.children = parent.children.filter(child => !child._markedForRemoval)
       }
     }
   }

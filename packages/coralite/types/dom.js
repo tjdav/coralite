@@ -4,12 +4,14 @@
  * @typedef {Object} RawCoraliteElement
  * @property {'tag'} type - Element type
  * @property {string} name - Tag name
- * @property {Object.<string, string>} attribs - Element attributes
- * @property {CoraliteAnyNode[]} children - Child nodes of the element
- * @property {CoraliteContentNode} parent - Parent element
+ * @property {Object.<string, string>} [attribs] - Element attributes
+ * @property {CoraliteAnyNode[]} [children] - Child nodes of the element
+ * @property {CoraliteContentNode} [parent] - Parent element
+ * @property {CoraliteAnyNode} [prev] - Previous sibling
+ * @property {CoraliteAnyNode} [next] - Next sibling
  * @property {number} [parentChildIndex] - Position in parent's child list
  * @property {Object[]} [slots]
- * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  * @property {boolean} [skipRender] - Mark element to be removed before rendering
  */
 
@@ -21,9 +23,11 @@
  * @property {Object.<string, string>} attribs - Element attributes
  * @property {CoraliteAnyNode[]} children - Child nodes of the element
  * @property {CoraliteContentNode} parent - Parent element
+ * @property {CoraliteAnyNode} [prev] - Previous sibling
+ * @property {CoraliteAnyNode} [next] - Next sibling
  * @property {number} [parentChildIndex] - Position in parent's child list
  * @property {Object[]} [slots]
- * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  * @property {boolean} [skipRender] - Mark element to be removed before rendering
  * @property {string} nodeName - The name of the node (uppercase tag name)
  * @property {string} tagName - The tag name of the element (uppercase)
@@ -47,8 +51,10 @@
  * @typedef {Object} RawCoraliteTextNode
  * @property {'text'} type - Text node type
  * @property {string} data - Additional attributes for the text node
- * @property {CoraliteContentNode} parent - Parent element of the text node
- * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {CoraliteContentNode} [parent] - Parent element of the text node
+ * @property {CoraliteAnyNode} [prev] - Previous sibling
+ * @property {CoraliteAnyNode} [next] - Next sibling
+ * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  */
 
 /**
@@ -57,7 +63,9 @@
  * @property {'text'} type - Text node type
  * @property {string} data - Additional attributes for the text node
  * @property {CoraliteContentNode} parent - Parent element of the text node
- * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {CoraliteAnyNode} [prev] - Previous sibling
+ * @property {CoraliteAnyNode} [next] - Next sibling
+ * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  * @property {string} nodeName - The name of the node (#text)
  * @property {undefined} tagName - Undefined for text nodes
  * @property {number} nodeType - The node type constant (3 for text nodes)
@@ -78,8 +86,10 @@
  * @typedef {Object} RawCoraliteComment
  * @property {'comment'} type - Comment type
  * @property {string} data - Additional attributes for the text node
- * @property {CoraliteContentNode} parent - Parent element of the text node
- * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {CoraliteContentNode} [parent] - Parent element of the text node
+ * @property {CoraliteAnyNode} [prev] - Previous sibling
+ * @property {CoraliteAnyNode} [next] - Next sibling
+ * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  */
 
 /**
@@ -88,7 +98,9 @@
  * @property {'comment'} type - Comment type
  * @property {string} data - Additional attributes for the text node
  * @property {CoraliteContentNode} parent - Parent element of the text node
- * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {CoraliteAnyNode} [prev] - Previous sibling
+ * @property {CoraliteAnyNode} [next] - Next sibling
+ * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  * @property {string} nodeName - The name of the node (#comment)
  * @property {undefined} tagName - Undefined for comment nodes
  * @property {number} nodeType - The node type constant (8 for comment nodes)
@@ -110,8 +122,10 @@
  * @property {'directive'} type - Node type
  * @property {string} data - Raw HTML Doctype
  * @property {string} name - Doctype name
- * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  * @property {CoraliteContentNode} [parent] - Parent element of the directive
+ * @property {CoraliteAnyNode} [prev] - Previous sibling
+ * @property {CoraliteAnyNode} [next] - Next sibling
  */
 
 /**
@@ -120,8 +134,10 @@
  * @property {'directive'} type - Node type
  * @property {string} data - Raw HTML Doctype
  * @property {string} name - Doctype name
- * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  * @property {CoraliteContentNode} [parent] - Parent element of the directive
+ * @property {CoraliteAnyNode} [prev] - Previous sibling
+ * @property {CoraliteAnyNode} [next] - Next sibling
  */
 
 /**

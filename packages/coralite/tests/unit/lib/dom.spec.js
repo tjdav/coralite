@@ -74,6 +74,145 @@ describe('createCoraliteElement', () => {
     assert.equal(element.children[0].data, 'world')
     assert.equal(element.children[0].parent, element)
     assert.equal(element.children[0].nodeType, 3)
+
+    // Test detachment
+    const oldText = text
+    assert.equal(oldText.parent, null)
+  })
+
+  it('should support attribute methods', () => {
+    const element = createCoraliteElement({
+      type: 'tag',
+      name: 'div'
+    })
+
+    element.setAttribute('data-test', 'value')
+    assert.equal(element.getAttribute('data-test'), 'value')
+    assert.equal(element.hasAttribute('data-test'), true)
+
+    element.removeAttribute('data-test')
+    assert.equal(element.getAttribute('data-test'), null)
+    assert.equal(element.hasAttribute('data-test'), false)
+  })
+
+  it('should support appendChild and maintain AST integrity', () => {
+    const parent = createCoraliteElement({
+      type: 'tag',
+      name: 'div'
+    })
+    const child1 = createCoraliteElement({
+      type: 'tag',
+      name: 'span'
+    })
+    const child2 = createCoraliteTextNode({
+      type: 'text',
+      data: 'hello'
+    })
+
+    parent.appendChild(child1)
+    assert.equal(parent.children.length, 1)
+    assert.equal(child1.parent, parent)
+    assert.equal(child1.prev, null)
+    assert.equal(child1.next, null)
+
+    parent.appendChild(child2)
+    assert.equal(parent.children.length, 2)
+    assert.equal(child2.parent, parent)
+    assert.equal(child2.prev, child1)
+    assert.equal(child1.next, child2)
+    assert.equal(child2.next, null)
+
+    // Test moving a node
+    const otherParent = createCoraliteElement({
+      type: 'tag',
+      name: 'section'
+    })
+    otherParent.appendChild(child1)
+    assert.equal(parent.children.length, 1)
+    assert.equal(parent.children[0], child2)
+    assert.equal(child2.prev, null)
+    assert.equal(child1.parent, otherParent)
+    assert.equal(child1.prev, null)
+    assert.equal(child1.next, null)
+  })
+
+  it('should support append with strings and nodes', () => {
+    const parent = createCoraliteElement({
+      type: 'tag',
+      name: 'div'
+    })
+    const child1 = createCoraliteElement({
+      type: 'tag',
+      name: 'span'
+    })
+
+    parent.append(child1, ' world')
+    assert.equal(parent.children.length, 2)
+    assert.equal(parent.children[0], child1)
+    assert.equal(parent.children[1].type, 'text')
+    assert.equal(parent.children[1].data, ' world')
+    assert.equal(parent.children[1].prev, child1)
+    assert.equal(child1.next, parent.children[1])
+  })
+
+  it('should support remove and maintain AST integrity', () => {
+    const parent = createCoraliteElement({
+      type: 'tag',
+      name: 'div'
+    })
+    const child1 = createCoraliteElement({
+      type: 'tag',
+      name: 'span'
+    })
+    const child2 = createCoraliteElement({
+      type: 'tag',
+      name: 'p'
+    })
+    const child3 = createCoraliteElement({
+      type: 'tag',
+      name: 'b'
+    })
+
+    parent.appendChild(child1)
+    parent.appendChild(child2)
+    parent.appendChild(child3)
+
+    child2.remove()
+    assert.equal(parent.children.length, 2)
+    assert.equal(parent.children[0], child1)
+    assert.equal(parent.children[1], child3)
+    assert.equal(child1.next, child3)
+    assert.equal(child3.prev, child1)
+    assert.equal(child2.parent, null)
+    assert.equal(child2.prev, null)
+    assert.equal(child2.next, null)
+  })
+
+  it('should support classList with memoization', () => {
+    const element = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: {
+        class: 'a b'
+      }
+    })
+    const cl = element.classList
+    assert.strictEqual(cl, element.classList)
+
+    assert.equal(cl.contains('a'), true)
+    assert.equal(cl.contains('c'), false)
+
+    cl.add('c')
+    assert.equal(element.className, 'a b c')
+    assert.equal(cl.contains('c'), true)
+
+    cl.remove('b')
+    assert.equal(element.className, 'a c')
+
+    cl.toggle('d')
+    assert.equal(element.className, 'a c d')
+    cl.toggle('d')
+    assert.equal(element.className, 'a c')
   })
 })
 
@@ -132,26 +271,28 @@ describe('createCoraliteComponent', () => {
 
 describe('Sibling Traversal (Common)', () => {
   it('should traverse siblings correctly', () => {
-    const parent = { children: [] }
+    const parent = createCoraliteElement({
+      type: 'tag',
+      name: 'div'
+    })
     const child1 = createCoraliteElement({
       type: 'tag',
       name: 'div',
-      parent,
       attribs: {},
       children: []
     })
     const child2 = createCoraliteTextNode({
       type: 'text',
-      data: 'text',
-      parent
+      data: 'text'
     })
     const child3 = createCoraliteComment({
       type: 'comment',
-      data: 'comment',
-      parent
+      data: 'comment'
     })
 
-    parent.children = [child1, child2, child3]
+    parent.appendChild(child1)
+    parent.appendChild(child2)
+    parent.appendChild(child3)
 
     assert.equal(child1.nextSibling, child2)
     assert.equal(child1.previousSibling, null)
