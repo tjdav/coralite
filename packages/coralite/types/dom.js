@@ -111,6 +111,7 @@
  * @property {string} data - Raw HTML Doctype
  * @property {string} name - Doctype name
  * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {CoraliteContentNode} [parent] - Parent element of the directive
  */
 
 /**
@@ -120,12 +121,13 @@
  * @property {string} data - Raw HTML Doctype
  * @property {string} name - Doctype name
  * @property {boolean} [remove] - Mark element to be removed from stack
+ * @property {CoraliteContentNode} [parent] - Parent element of the directive
  */
 
 /**
  * Union type representing any content node in the Coralite content tree.
  * Can be an HTML element, text node, or comment node.
- * @typedef {CoraliteElement | CoraliteTextNode | CoraliteComment} CoraliteAnyNode
+ * @typedef {CoraliteElement | CoraliteTextNode | CoraliteComment | CoraliteDirective} CoraliteAnyNode
  */
 
 /**

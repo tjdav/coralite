@@ -6,7 +6,7 @@ import buildStyles from './build-styles.js'
 import { displayError, displayInfo, displayWarning, displaySuccess, toCode, toMS, toTime, deleteDirectoryRecursive } from './build-utils.js'
 import { dirname, extname, join, normalize, relative, sep } from 'path'
 import { access, constants, mkdir, readFile, writeFile } from 'fs/promises'
-import Coralite from 'coralite'
+import { createCoralite } from 'coralite'
 import { existsSync, mkdirSync } from 'fs'
 import portfinder from 'portfinder'
 
@@ -185,7 +185,7 @@ async function server (config, options) {
 
       pageCache.clear()
 
-      coralite = new Coralite({
+      coralite = await createCoralite({
         components: currentConfig.components,
         pages: currentConfig.pages,
         plugins: currentConfig.plugins,
@@ -210,7 +210,6 @@ async function server (config, options) {
         }
       })
 
-      await coralite.initialise()
 
       displaySuccess('Coralite initialized successfully')
 

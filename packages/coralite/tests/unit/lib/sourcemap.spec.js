@@ -1,6 +1,6 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
-import { Coralite } from '#lib'
+import { createCoralite } from '#lib'
 import { join } from 'node:path'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -41,13 +41,12 @@ export default defineComponent({
 `
     await writeFile(join(pagesDir, 'index.html'), pageContent)
 
-    const coralite = new Coralite({
+    const coralite = await createCoralite({
       components: componentsDir,
       pages: pagesDir,
       mode: 'development'
     })
 
-    await coralite.initialise()
     const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)
@@ -55,7 +54,7 @@ export default defineComponent({
 
     // Extract the script content
     // Because sourcemaps are emitted as separate files now or as inline in the built chunks,
-    // we need to examine coralite.outputFiles.
+    // we need to examine outputFiles.
     const outputFiles = coralite.outputFiles
     const chunkFile = Object.values(outputFiles).find(f => f.path.includes('my-component'))
     assert.ok(chunkFile, 'Component chunk file not found')
@@ -121,13 +120,12 @@ export default defineComponent({
 `
     await writeFile(join(pagesDir, 'index.html'), pageContent)
 
-    const coralite = new Coralite({
+    const coralite = await createCoralite({
       components: componentsDir,
       pages: pagesDir,
       mode: 'development'
     })
 
-    await coralite.initialise()
     const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)

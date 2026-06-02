@@ -1,5 +1,5 @@
 import { bench, run } from 'mitata'
-import { Coralite } from '../lib/index.js'
+import { createCoralite } from '../lib/index.js'
 
 const TOTAL_PAGES = 10000
 
@@ -24,7 +24,7 @@ const pagesDir = join(__dirname, 'temp-pages')
 mkdirSync(componentsDir, { recursive: true })
 mkdirSync(pagesDir, { recursive: true })
 
-const coralite = new Coralite({
+const coralite = await createCoralite({
   components: componentsDir,
   pages: pagesDir,
   plugins: [{
@@ -36,7 +36,6 @@ const coralite = new Coralite({
     }
   }]
 })
-await coralite.initialise()
 
 // A dummy base context array
 /** @type {any[]} */

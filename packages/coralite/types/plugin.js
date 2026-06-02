@@ -2,12 +2,11 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute, CoraliteRef, CoraliteTextNodeToken, CoraliteAttributeToken } from './component.js'
  * @import { CoraliteComponentOptions } from '../lib/coralite-element.js'
- * @import { HTMLData, CoraliteFilePath, CoralitePage, CoraliteSession } from './core.js'
- * @import { CoraliteModule, CoraliteModuleDefinition } from './module.js'
- * @import { CoraliteAnyNode } from './dom.js'
+ * @import { HTMLData, CoraliteFilePath, CoralitePage, CoraliteSession, CoraliteInstance, CoraliteBuildOptions } from './core.js'
+ * @import { CoraliteModule, CoraliteModuleDefinition, CoraliteModuleDefinitions } from './module.js'
+ * @import { CoraliteAnyNode, CoraliteComponentRoot } from './dom.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
- * @import { Coralite } from '../lib/index.js'
  */
 
 /**
@@ -67,7 +66,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoralitePage} page - The current page context
  * @property {CoraliteElement} [element] - The parent AST tag itself
  * @property {CoraliteSession} session - Global build state
- * @property {Coralite} app - The global Coralite app instance
+ * @property {CoraliteInstance} app - The global Coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -90,7 +89,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoralitePage} page - The current page context
  * @property {CoraliteElement} [element] - The parent AST tag itself
  * @property {CoraliteSession} session - Global build state
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -103,7 +102,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 
 /**
  * @typedef {Object} CoralitePluginGlobalContext
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  */
 
 /**
@@ -112,14 +111,14 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 
 /**
  * @typedef {Object} CoralitePluginContext
- * @property {import('./module.js').CoraliteModuleDefinitions} state - Key-value pairs of data relevant to plugin execution
+ * @property {CoraliteModuleDefinitions} state - Key-value pairs of data relevant to plugin execution
  * @property {CoralitePage} page - The global page object
  * @property {CoraliteModule} module - The module context the plugin is operating within (contains template/script)
- * @property {import('./dom.js').CoraliteAnyNode | import('./dom.js').CoraliteComponentRoot} root - The specific HTML element the plugin is applied to (if applicable)
+ * @property {CoraliteAnyNode | CoraliteComponentRoot} root - The specific HTML element the plugin is applied to (if applicable)
  * @property {CoraliteSession} session - The current build session
  * @property {Attribute[]} [excludeByAttribute] - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {boolean} [noHydration] - Indicates if the component should be stripped and not hydrated
  * @property {any} [config] - Plugin configuration object
  */
@@ -138,7 +137,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoraliteFilePath & Object.<string, any>} state - Values associated with the page path
  * @property {CoralitePage} page - The global page object
  * @property {CoraliteCollectionItem} data - Data item representing the newly created page
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -155,7 +154,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoralitePage} page - The global page object
  * @property {CoraliteCollectionItem} newValue - The updated data item
  * @property {CoraliteCollectionItem} oldValue - The previous data item before update
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -168,13 +167,13 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 
 /**
  * @typedef {Object} CoraliteApp
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  */
 
 /**
  * @typedef {Object} CoralitePluginPageDeleteContext
  * @property {CoraliteCollectionItem} data - The page data being deleted
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -188,7 +187,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @typedef {Object} CoralitePluginComponentContext
  * @property {CoraliteModule} component - The component module being set or updated
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -202,7 +201,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @typedef {Object} CoralitePluginComponentDeleteContext
  * @property {CoraliteCollectionItem} component - The component data being deleted
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -219,7 +218,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {Object.<string, CoraliteModuleDefinition>} state - Properties associated with the component
  * @property {CoralitePage} page - The global page object
  * @property {CoraliteSession} session - Render context containing state for the build
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -233,8 +232,8 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @typedef {Object} CoralitePluginBeforeBuildContext
  * @property {string | string[] | null} path - The target directory or an array of specific page paths to build
- * @property {import('./core.js').CoraliteBuildOptions} options - Configuration options for the build process
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteBuildOptions} options - Configuration options for the build process
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -249,7 +248,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @typedef {Object} CoralitePluginAfterPageRenderContext
  * @property {CoraliteResult} result - The rendered page result
  * @property {CoraliteSession} session - The current page build session
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -265,7 +264,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoraliteResult[]} results - The results of the build (pages generated)
  * @property {Error|null} error - The error if the build failed
  * @property {number} duration - The duration of the build in milliseconds
- * @property {Coralite} app - The global coralite app instance
+ * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
 
@@ -278,6 +277,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 
 /**
  * @typedef {Object} CoralitePluginServer
+ * @property {any} [config] - Plugin configuration object
  * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Two-Phase Curried functions. Phase 1 receives the explicit context, Phase 2 receives the executable arguments.
  * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created

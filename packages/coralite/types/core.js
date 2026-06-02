@@ -3,6 +3,10 @@
  * @import { CoraliteModuleDefinitions } from './module.js'
  * @import { CoralitePluginInstance } from './plugin.js'
  * @import { Attribute } from './component.js'
+ * @import { DomSerializerOptions } from 'dom-serializer'
+ * @import { CoraliteAnyNode, CoraliteComponentRoot } from './dom.js'
+ * @import { ScriptContent } from './script.js'
+ * @import { CoraliteCollectionItem, CoraliteCollection } from './collection.js'
  */
 
 /**
@@ -66,6 +70,7 @@
  * @property {CoraliteOnError} [onError] - Optional callback function for handling errors and warnings.
  * @property {string[]} [externalStyles] - Global styles to inject into every page
  * @property {string} [mode='production'] - Build mode: "development" or "production"
+ * @property {CoralitePath} [path] - Internal path mapping.
  */
 
 /**
@@ -73,6 +78,27 @@
  * @property {number} [maxConcurrent] - The maximum number of concurrent file write operations.
  * @property {AbortSignal} [signal] - An AbortSignal to cancel the build operation.
  * @property {Object.<string, any>} [variables] - Local variables for the page
+ */
+
+/**
+ * @typedef {Object} CoraliteBuildResult
+ * @property {'page'} type - The type of result.
+ * @property {CoraliteFilePath & { pages: string, components: string }} path - Path information.
+ * @property {string} content - The rendered HTML content.
+ * @property {number} duration - Time taken to render in milliseconds.
+ * @property {CoraliteSession} session - The session associated with the render.
+ */
+
+/**
+ * @typedef {Object} CoraliteSaveResult
+ * @property {string} path - The absolute path where the file was saved.
+ * @property {number} duration - Time taken in milliseconds.
+ */
+
+/**
+ * @callback CoraliteBuildCallback
+ * @param {CoraliteBuildResult} result - The build result for a single page.
+ * @returns {Promise<any>|any}
  */
 
 /**
@@ -90,7 +116,7 @@
 
 /**
  * Union type representing values available for token replacement in components.
- * @typedef {Object.<string, string> & { __script__?: import('./script.js').ScriptContent, $urlPathname?: string }} CoraliteProperties
+ * @typedef {Object.<string, string> & { __script__?: ScriptContent, $urlPathname?: string }} CoraliteProperties
  */
 
 /**
@@ -108,6 +134,37 @@
  * @property {string} source.currentSourceContextId - Current source context ID.
  * @property {Object.<string, any>} source.contextInstances - Map of context instances.
  * @property {'production' | 'development'} [mode] - Current build mode.
+ */
+
+/**
+ * Configuration options for creating a component element.
+ * @typedef {Object} ComponentElementOptions
+ * @property {string} id - The unique identifier of the component to render.
+ * @property {Object.<string, any>} [state={}] - Initial state or properties to pass to the component.
+ * @property {CoraliteAnyNode} [element] - The original AST node representing the component in the template.
+ * @property {CoralitePage} [page] - Contextual information about the page being rendered.
+ * @property {CoraliteAnyNode} [root] - The root node of the current rendering context.
+ * @property {string} [contextId] - A unique identifier for this specific component instance.
+ * @property {number} [index] - The index of the component within its parent's children.
+ * @property {CoraliteSession} [session] - The current rendering session object.
+ * @property {boolean} [noHydration] - If true, hydration scripts will not be generated for this component.
+ */
+
+/**
+ * @typedef {Object} CoraliteInstance
+ * @property {CoraliteConfig} options
+ * @property {CoraliteCollection} pages
+ * @property {CoraliteCollection} components
+ * @property {(pathOrOptions?: string | string[] | CoraliteBuildCallback, optionsOrCallback?: CoraliteBuildOptions | CoraliteBuildCallback, callback?: CoraliteBuildCallback) => Promise<CoraliteBuildResult[]>} build
+ * @property {(savePath?: string | string[], saveOptions?: CoraliteBuildOptions) => Promise<CoraliteSaveResult[]>} save
+ * @property {(root: CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[], options?: DomSerializerOptions) => string} transform
+ * @property {(value: string | CoraliteCollectionItem, buildId: string) => Promise<void>} addRenderQueue
+ * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement
+ * @property {(options: ComponentElementOptions, head?: boolean) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement
+ * @property {Record<string, { hashedPath: string, text: string }>} outputFiles
+ * @property {(name: string, initialData: any) => Promise<any>} _triggerPluginHook
+ * @property {(name: string, contextData: any) => Promise<any[]>} _triggerPluginAggregateHook
+ * @property {Object} [source]
  */
 
 export default {}

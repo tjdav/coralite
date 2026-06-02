@@ -11,7 +11,8 @@ import render from 'dom-serializer'
 /**
  * Script Manager for Coralite
  * Manages shared functions across component instances and provides plugin extensibility
- * @import {ScriptPlugin, InstanceContext} from '../types/index.js'
+ * @import { ScriptPlugin, InstanceContext } from '../types/index.js'
+ * @import { ScriptContent } from '../types/script.js'
  */
 
 /**
@@ -99,7 +100,7 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
  * Register shared functions for a component
  * @param {Object} options
  * @param {string} options.id - component identifier
- * @param {import('../types/script.js').ScriptContent} [options.script={}] - Script content or function
+ * @param {ScriptContent} [options.script={}] - Script content or function
  * @param {string} [options.filePath] - The source file path to map back to
  * @param {Array<Object>|null} [options.templateAST=null] - Parsed HTML template AST for the client side rendering
  * @param {Object|null} [options.templateValues=null] - Token positions for AST updates
@@ -742,10 +743,10 @@ export default {
         const entryPoint = meta.entryPoint
         const cleanEntry = entryPoint.includes(':') ? entryPoint.split(':').pop() : entryPoint
 
-        // 1. STRIP THE EXTENSION (Fixes E2E Bootstrapper Timeout)
+        // STRIP THE EXTENSION (Fixes E2E Bootstrapper Timeout)
         const tagName = parse(cleanEntry).name
 
-        // 2. USE RELATIVE PATHS (Fixes the chunks/ 404 issue)
+        // USE RELATIVE PATHS (Fixes the chunks/ 404 issue)
         const relativePath = relative('assets/js', outputPath).replace(/\\/g, '/')
 
         manifest[tagName] = relativePath

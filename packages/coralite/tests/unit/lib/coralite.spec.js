@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert'
 import path from 'node:path'
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import Coralite from '#lib'
+import { createCoralite } from '#lib'
 
 describe('Coralite', () => {
   let testDir
@@ -43,7 +43,7 @@ describe('Coralite', () => {
         }
       ]
 
-      coralite = new Coralite({
+      coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
         assets
@@ -77,13 +77,12 @@ describe('Coralite', () => {
         }
       }
 
-      coralite = new Coralite({
+      coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
         plugins: [plugin]
       })
 
-      await coralite.initialise()
 
       const buildOptions = { maxConcurrent: 5 }
       await coralite.build(pagesDir, buildOptions)
@@ -122,13 +121,12 @@ describe('Coralite', () => {
         }
       }
 
-      coralite = new Coralite({
+      coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
         plugins: [plugin]
       })
 
-      await coralite.initialise()
       const results = await coralite.build()
 
       assert.strictEqual(hookCalledCount, 1, 'onBeforePageRender hook should be called exactly once for 1 page')
@@ -146,7 +144,7 @@ describe('Coralite', () => {
     it('should drop elements from AST when they match ignoreByAttribute (Object format)', async () => {
       await writeFile(path.join(pagesDir, 'ignore.html'), '<div><span data-ignore="true">Ignored</span><span data-keep="true">Kept</span></div>')
 
-      coralite = new Coralite({
+      coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
         ignoreByAttribute: [{
@@ -155,7 +153,6 @@ describe('Coralite', () => {
         }]
       })
 
-      await coralite.initialise()
 
       const result = await coralite.build('ignore.html')
 
@@ -167,13 +164,12 @@ describe('Coralite', () => {
     it('should drop elements from AST when they match ignoreByAttribute (String format)', async () => {
       await writeFile(path.join(pagesDir, 'ignore2.html'), '<div><span data-ignore>Ignored</span><span data-keep="true">Kept</span></div>')
 
-      coralite = new Coralite({
+      coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
         ignoreByAttribute: ['data-ignore']
       })
 
-      await coralite.initialise()
 
       const result = await coralite.build('ignore2.html')
 
@@ -201,14 +197,13 @@ describe('Coralite', () => {
         }
       }
 
-      coralite = new Coralite({
+      coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
         plugins: [testPlugin],
         skipRenderByAttribute: ['data-skip']
       })
 
-      await coralite.initialise()
 
       const result = await coralite.build('skip.html')
 
@@ -243,14 +238,13 @@ describe('Coralite', () => {
 
       await writeFile(path.join(pagesDir, 'with-script.html'), '<script-component></script-component>')
 
-      coralite = new Coralite({
+      coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
         mode: 'development',
         output: outputDir
       })
 
-      await coralite.initialise()
       await coralite.save()
 
       // Read output directory contents
@@ -288,14 +282,13 @@ describe('Coralite', () => {
         }
       }
 
-      coralite = new Coralite({
+      coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
         plugins: [plugin],
         output: '/'
       })
 
-      await coralite.initialise()
       await coralite.build()
 
       assert.ok(hookCalled, 'onAfterBuild hook should be called')
@@ -330,7 +323,7 @@ describe('Coralite', () => {
       }
 
       // swallow the error so it doesn't crash the test runner
-      coralite = new Coralite({
+      coralite = await createCoralite({
         pages: pagesDir,
         components: componentDir,
         plugins: [plugin, errorPlugin],
@@ -338,7 +331,6 @@ describe('Coralite', () => {
         }
       })
 
-      await coralite.initialise()
 
       try {
         await coralite.build()
@@ -408,7 +400,7 @@ export default defineComponent({
 `
     await writeFile(path.join(componentsDir, 'child-component.html'), childHtml)
 
-    const coralite = new Coralite({
+    const coralite = await createCoralite({
       pages: pagesDir,
       components: componentsDir,
       output: outputDir,
@@ -416,7 +408,6 @@ export default defineComponent({
       mode: 'production'
     })
 
-    await coralite.initialise()
     const results = await coralite.build()
 
     const pageResult = results.find(r => r.path && r.path.filename === 'index.html')
@@ -440,13 +431,12 @@ export default defineComponent({
     await writeFile(path.join(pagesDir, 'test-plugin.html'), '<test-comp></test-comp>')
     await writeFile(path.join(componentsDir, 'test-comp.html'), '<template id="test-comp"><div>{{ injected }}</div></template>')
 
-    const coralite = new Coralite({
+    const coralite = await createCoralite({
       pages: pagesDir,
       components: componentsDir,
       plugins: [plugin]
     })
 
-    await coralite.initialise()
     const results = await coralite.build('test-plugin.html')
 
     assert.ok(results[0].content.includes('plugin-value'))
@@ -475,13 +465,12 @@ export default defineComponent({
     await writeFile(path.join(pagesDir, 'test-plugin-ast.html'), '<test-comp></test-comp>')
     await writeFile(path.join(componentsDir, 'test-comp.html'), '<template id="test-comp"><div>original</div></template>')
 
-    const coralite = new Coralite({
+    const coralite = await createCoralite({
       pages: pagesDir,
       components: componentsDir,
       plugins: [plugin]
     })
 
-    await coralite.initialise()
     const results = await coralite.build('test-plugin-ast.html')
 
     assert.ok(results[0].content.includes('id="extra"'))

@@ -1,4 +1,4 @@
-import { Coralite } from '../lib/index.js'
+import { createCoralite } from '../lib/index.js'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -34,7 +34,6 @@ async function setup (scenario) {
   await mkdir(TEMPLATES_DIR, { recursive: true })
   await mkdir(PAGES_DIR, { recursive: true })
 
-  // 1. Generate Components based on complexity
   const componentCount = scenario.components || 5
 
   for (let i = 0; i < componentCount; i++) {
@@ -62,7 +61,7 @@ async function setup (scenario) {
     await writeFile(join(TEMPLATES_DIR, `comp-${i}.html`), componentContent)
   }
 
-  // 2. Generate Pages based on count and complexity
+  // Generate Pages based on count and complexity
   const pageCount = scenario.pages || 10
   const componentsPerPage = scenario.componentsPerPage || 2
 
@@ -120,13 +119,12 @@ async function runBenchmark (mode, scenario) {
 
   // Initialize Coralite
   const initStart = performance.now()
-  const coralite = new Coralite({
+  const coralite = await createCoralite({
     components: TEMPLATES_DIR,
     pages: PAGES_DIR,
     mode: mode
   })
 
-  await coralite.initialise()
   const initEnd = performance.now()
   const startupTime = (initEnd - initStart).toFixed(2)
 

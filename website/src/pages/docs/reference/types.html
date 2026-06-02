@@ -1429,7 +1429,7 @@
         * @param {Object} context.state - The page state
         * @param {Object} context.page - Page metadata
         * @param {CoraliteCollectionItem} context.data - The page data
-        * @param {Coralite} context.app - The Coralite instance
+        * @param {CoraliteInstance} context.app - The Coralite instance
         */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginPageUpdateCallback"></coralite-heading>
@@ -1440,7 +1440,7 @@
         * @param {ParseHTMLResult} context.elements - The updated AST
         * @param {CoraliteCollectionItem} context.newValue - The new page data
         * @param {CoraliteCollectionItem} context.oldValue - The old page data
-        * @param {Coralite} context.app - The Coralite instance
+        * @param {CoraliteInstance} context.app - The Coralite instance
         */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginPageDeleteCallback"></coralite-heading>
@@ -1466,7 +1466,7 @@
         * @param {Object} context.state - The rendering state
         * @param {Object} context.page - Page metadata
         * @param {CoraliteSession} context.session - The page build session
-        * @param {Coralite} context.app - The Coralite instance
+        * @param {CoraliteInstance} context.app - The Coralite instance
         */</coralite-code-highlight>
 
     <coralite-heading level="h3" text="CoralitePluginAfterPageRenderCallback"></coralite-heading>
@@ -1476,14 +1476,14 @@
         * @param {Object} context
         * @param {CoraliteResult} context.result - The rendered page result
         * @param {CoraliteSession} context.session - The page build session
-        * @param {Coralite} context.app - The Coralite instance
+        * @param {CoraliteInstance} context.app - The Coralite instance
         * @returns {CoraliteResult | CoraliteResult[] | void}
         */</coralite-code-highlight>
   
     <coralite-heading level="h2" text="Constructor and Methods" id="constructor-and-methods"></coralite-heading>
 
         <coralite-heading level="h2" text="Constructor"></coralite-heading>
-        <p>Initializes a new Coralite instance.</p>
+        <p>Initializes a new Coralite instance using the await createCoralite factory.</p>
 
         <coralite-code-highlight language="JavaScript">
             /**

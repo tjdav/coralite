@@ -10,6 +10,7 @@ import CoraliteCollection from './collection.js'
  *  CoraliteCollectionEventSet,
  *  CoraliteCollectionEventUpdate,
  *  CoraliteCollectionEventDelete } from '../types/index.js'
+ * @import { LimitFunction } from 'p-limit'
  */
 
 /**
@@ -23,7 +24,7 @@ import CoraliteCollection from './collection.js'
  * @param {CoraliteCollectionEventUpdate} [options.onFileUpdate]
  * @param {CoraliteCollectionEventDelete} [options.onFileDelete]
  * @param {CoraliteCollection} [options.collection] - Optional collection instance to populate
- * @param {import('p-limit').LimitFunction} [options.limit] - Optional concurrency limiter
+ * @param {LimitFunction} [options.limit] - Optional concurrency limiter
  * @param {boolean} [options.discoverOnly=false] - Whether to skip reading file content and only discover paths
  * @returns {Promise<CoraliteCollection>} Array of HTML file data including parent path, name, and content
  *

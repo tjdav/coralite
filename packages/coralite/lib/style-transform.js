@@ -2,11 +2,15 @@ import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
 
 /**
+ * @import { CoraliteOnError } from '../types/index.js'
+ */
+
+/**
  * Transforms CSS to automatically apply `&.` prefix to classes present on the root element.
  * @param {string} css - The CSS content
  * @param {Set<string>} rootClasses - Set of classes found on the root element
  * @param {Set<string>} descendantClasses - Set of classes found on descendant elements
- * @param {import('../types/index.js').CoraliteOnError} [onError] - Error handler
+ * @param {CoraliteOnError} [onError] - Error handler
  * @returns {Promise<string>} Transformed CSS
  */
 export async function transformCss (css, rootClasses, descendantClasses, onError) {

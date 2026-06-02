@@ -3,8 +3,7 @@ import { definePlugin } from '../lib/plugin.js'
 /**
  * @import { ParseHTMLResult } from '../types/index.js'
  * @import { CoraliteCollectionItem } from '../types/collection.js'
- * @import { Coralite } from '../lib/index.js'
- * @import { CoralitePage } from '../types/core.js'
+ * @import { CoraliteInstance, CoralitePage } from '../types/core.js'
  */
 
 /**
@@ -55,7 +54,7 @@ async function processMetadataElement (element, context, index) {
  * @param {CoralitePage} context.page - The global page object to store the extracted metadata
  * @param {Object.<string, any>} context.state - The global state object to store the extracted metadata
  * @param {CoraliteCollectionItem} context.data - The file data currently being evaluated
- * @param {Coralite} [context.app] - The global coralite app instance
+ * @param {CoraliteInstance} [context.app] - The global CoraliteInstance
  * @returns {Promise<void>}
  */
 async function extractMetadata (context) {

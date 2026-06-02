@@ -141,8 +141,8 @@ try {
     console.log('Verifying Library Import...')
     const testScriptPath = join(TEMP_DIR, 'test-import.mjs')
     const testScriptContent = `
-        import { Coralite } from 'coralite';
-        console.log('Import successful:', typeof Coralite);
+        import { createCoralite } from 'coralite';
+        console.log('Import successful:', typeof createCoralite);
       `
     writeFileSync(testScriptPath, testScriptContent)
     const importOutput = execSync(`node "${testScriptPath}"`, { cwd: TEMP_DIR }).toString()

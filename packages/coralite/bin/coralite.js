@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
-import { Coralite } from '../dist/lib/index.js'
+import { createCoralite } from '../dist/lib/index.js'
 import { Command } from 'commander'
 import kleur from 'kleur'
 import { pathToFileURL } from 'node:url'
@@ -97,7 +97,7 @@ if (config && config.plugins) {
 }
 
 // Create coralite instance
-const coralite = new Coralite({
+const coralite = await createCoralite({
   ...coraliteOptions,
   onError: ({ level, message, error }) => {
     if (level === 'ERR') {
@@ -113,7 +113,6 @@ const coralite = new Coralite({
   }
 })
 // initializes Coralite with the provided options and compiles documents
-await coralite.initialise()
 // compiles all pages using Coralite
 
 if (options.dryRun) {

@@ -1,121 +1,207 @@
 
 /**
- * CORE TYPES
- * @import { HTMLData, CoraliteFilePath, CoralitePath, CoraliteConfig, CoralitePage, CoraliteProperties, CoraliteErrorData, CoraliteOnError, CoraliteSession } from './core.js'
+ * @import {
+ *   HTMLData as _HTMLData,
+ *   CoraliteFilePath as _CoraliteFilePath,
+ *   CoralitePath as _CoralitePath,
+ *   CoraliteConfig as _CoraliteConfig,
+ *   CoralitePage as _CoralitePage,
+ *   CoraliteProperties as _CoraliteProperties,
+ *   CoraliteStaticAsset as _CoraliteStaticAsset,
+ *   CoraliteErrorData as _CoraliteErrorData,
+ *   CoraliteOnError as _CoraliteOnError,
+ *   CoraliteSession as _CoraliteSession,
+ *   CoraliteInstance as _CoraliteInstance,
+ *   CoraliteBuildOptions as _CoraliteBuildOptions,
+ *   CoraliteBuildResult as _CoraliteBuildResult,
+ *   CoraliteSaveResult as _CoraliteSaveResult,
+ *   CoraliteBuildCallback as _CoraliteBuildCallback,
+ *   ComponentElementOptions as _ComponentElementOptions
+ * } from './core.js'
  *
  * DOM & AST
- * @import { CoraliteElement, RawCoraliteElement, CoraliteTextNode, RawCoraliteTextNode, CoraliteComment, RawCoraliteComment, CoraliteDirective, RawCoraliteDirective, CoraliteAnyNode, CoraliteComponentRoot, RawCoraliteComponentRoot, CoraliteContentNode } from './dom.js'
+ * @import {
+ *   CoraliteElement as _CoraliteElement,
+ *   RawCoraliteElement as _RawCoraliteElement,
+ *   CoraliteTextNode as _CoraliteTextNode,
+ *   RawCoraliteTextNode as _RawCoraliteTextNode,
+ *   CoraliteComment as _CoraliteComment,
+ *   RawCoraliteComment as _RawCoraliteComment,
+ *   CoraliteDirective as _CoraliteDirective,
+ *   RawCoraliteDirective as _RawCoraliteDirective,
+ *   CoraliteAnyNode as _CoraliteAnyNode,
+ *   CoraliteComponentRoot as _CoraliteComponentRoot,
+ *   RawCoraliteComponentRoot as _RawCoraliteComponentRoot,
+ *   CoraliteContentNode as _CoraliteContentNode
+ * } from './dom.js'
  *
  * DOCUMENT
- * @import { CoraliteComponent, CoraliteResult, ParseHTMLResult, CoraliteToken, CoraliteAttributeToken, CoraliteTextNodeToken, CoraliteRef, CoraliteComponentValues, Attribute, CoraliteComponentResult } from './component.js'
+ * @import {
+ *   CoraliteComponent as _CoraliteComponent,
+ *   CoraliteResult as _CoraliteResult,
+ *   ParseHTMLResult as _ParseHTMLResult,
+ *   CoraliteToken as _CoraliteToken,
+ *   CoraliteAttributeToken as _CoraliteAttributeToken,
+ *   CoraliteTextNodeToken as _CoraliteTextNodeToken,
+ *   CoraliteRef as _CoraliteRef,
+ *   CoraliteComponentValues as _CoraliteComponentValues,
+ *   Attribute as _Attribute,
+ *   CoraliteComponentResult as _CoraliteComponentResult
+ * } from './component.js'
  *
  * MODULES
- * @import { CoraliteModule, CoraliteModuleDefinitions, CoraliteModuleDefinition, CoraliteModuleSlotElement, CoraliteModuleScript, CoraliteModuleProperties, CoraliteModulePropertiesFunction, CoraliteModuleSlotFunction, CoraliteModuleDataFunction, CoraliteModuleGetterFunction } from './module.js'
+ * @import {
+ *   CoraliteModule as _CoraliteModule,
+ *   CoraliteModuleDefinitions as _CoraliteModuleDefinitions,
+ *   CoraliteModuleDefinition as _CoraliteModuleDefinition,
+ *   CoraliteModuleSlotElement as _CoraliteModuleSlotElement,
+ *   CoraliteModuleScript as _CoraliteModuleScript,
+ *   CoraliteModuleProperties as _CoraliteModuleProperties,
+ *   CoraliteModulePropertiesFunction as _CoraliteModulePropertiesFunction,
+ *   CoraliteModuleSlotFunction as _CoraliteModuleSlotFunction,
+ *   CoraliteModuleDataFunction as _CoraliteModuleDataFunction,
+ *   CoraliteModuleGetterFunction as _CoraliteModuleGetterFunction
+ * } from './module.js'
  *
  * COLLECTIONS
- * @import { CoraliteCollectionItem, CoraliteCollectionCallbackResult, CoraliteCollectionEventResult, CoraliteCollectionEventSet, CoraliteCollectionEventDelete, CoraliteCollectionEventUpdate } from './collection.js'
+ * @import {
+ *   CoraliteCollection as _CoraliteCollection,
+ *   CoraliteCollectionItem as _CoraliteCollectionItem,
+ *   CoraliteCollectionCallbackResult as _CoraliteCollectionCallbackResult,
+ *   CoraliteCollectionEventResult as _CoraliteCollectionEventResult,
+ *   CoraliteCollectionEventSet as _CoraliteCollectionEventSet,
+ *   CoraliteCollectionEventDelete as _CoraliteCollectionEventDelete,
+ *   CoraliteCollectionEventUpdate as _CoraliteCollectionEventUpdate
+ * } from './collection.js'
  *
  * PLUGINS
- * @import { CoralitePlugin, CoralitePluginContext, CoralitePluginExportFunction, CoralitePluginInstance, CoralitePluginPageSetCallback, CoralitePluginPageUpdateCallback, CoralitePluginPageDeleteCallback, CoralitePluginComponentCallback, CoralitePluginAfterPageRenderCallback } from './plugin.js'
+ * @import {
+ *   CoralitePlugin as _CoralitePlugin,
+ *   CoralitePluginContext as _CoralitePluginContext,
+ *   CoralitePluginExportFunction as _CoralitePluginExportFunction,
+ *   CoralitePluginInstance as _CoralitePluginInstance,
+ *   CoralitePluginPageSetCallback as _CoralitePluginPageSetCallback,
+ *   CoralitePluginPageUpdateCallback as _CoralitePluginPageUpdateCallback,
+ *   CoralitePluginPageDeleteCallback as _CoralitePluginPageDeleteCallback,
+ *   CoralitePluginComponentCallback as _CoralitePluginComponentCallback,
+ *   CoralitePluginAfterPageRenderCallback as _CoralitePluginAfterPageRenderCallback
+ * } from './plugin.js'
  *
  * SCRIPTS
- * @import { ScriptContent, ScriptPlugin, InstanceContext, CoraliteScriptContext, ScriptPluginHelperGlobalContext, ScriptPluginHelperGlobalInstance, ScriptPluginHelperLocalInstance } from './script.js'
+ * @import {
+ *   ScriptContent as _ScriptContent,
+ *   ScriptPlugin as _ScriptPlugin,
+ *   InstanceContext as _InstanceContext,
+ *   CoraliteScriptContext as _CoraliteScriptContext,
+ *   ScriptPluginHelperGlobalContext as _ScriptPluginHelperGlobalContext,
+ *   ScriptPluginHelperGlobalInstance as _ScriptPluginHelperGlobalInstance,
+ *   ScriptPluginHelperLocalInstance as _ScriptPluginHelperLocalInstance,
+ *   ScriptImport as _ScriptImport
+ * } from './script.js'
  */
 
 /**
- * @typedef {import('../lib/coralite.js').Coralite} Coralite
+ * @typedef {_CoraliteInstance} CoraliteInstance
+ * @typedef {_CoraliteInstance} Coralite
  */
 
 /**
- * @typedef {import('./core.js').HTMLData} HTMLData
- * @typedef {import('./core.js').CoraliteFilePath} CoraliteFilePath
- * @typedef {import('./core.js').CoralitePath} CoralitePath
- * @typedef {import('./core.js').CoraliteConfig} CoraliteConfig
- * @typedef {import('./core.js').CoralitePage} CoralitePage
- * @typedef {import('./core.js').CoraliteProperties} CoraliteProperties
- * @typedef {import('./core.js').CoraliteStaticAsset} CoraliteStaticAsset
- * @typedef {import('./core.js').CoraliteErrorData} CoraliteErrorData
- * @typedef {import('./core.js').CoraliteOnError} CoraliteOnError
- * @typedef {import('./core.js').CoraliteSession} CoraliteSession
+ * @typedef {_HTMLData} HTMLData
+ * @typedef {_CoraliteFilePath} CoraliteFilePath
+ * @typedef {_CoralitePath} CoralitePath
+ * @typedef {_CoraliteConfig} CoraliteConfig
+ * @typedef {_CoralitePage} CoralitePage
+ * @typedef {_CoraliteProperties} CoraliteProperties
+ * @typedef {_CoraliteStaticAsset} CoraliteStaticAsset
+ * @typedef {_CoraliteErrorData} CoraliteErrorData
+ * @typedef {_CoraliteOnError} CoraliteOnError
+ * @typedef {_CoraliteSession} CoraliteSession
+ * @typedef {_CoraliteBuildOptions} CoraliteBuildOptions
+ * @typedef {_CoraliteBuildResult} CoraliteBuildResult
+ * @typedef {_CoraliteSaveResult} CoraliteSaveResult
+ * @typedef {_CoraliteBuildCallback} CoraliteBuildCallback
+ * @typedef {_ComponentElementOptions} ComponentElementOptions
  */
 
 /**
- * @typedef {import('./dom.js').CoraliteElement} CoraliteElement
- * @typedef {import('./dom.js').RawCoraliteElement} RawCoraliteElement
- * @typedef {import('./dom.js').CoraliteTextNode} CoraliteTextNode
- * @typedef {import('./dom.js').RawCoraliteTextNode} RawCoraliteTextNode
- * @typedef {import('./dom.js').CoraliteComment} CoraliteComment
- * @typedef {import('./dom.js').RawCoraliteComment} RawCoraliteComment
- * @typedef {import('./dom.js').CoraliteDirective} CoraliteDirective
- * @typedef {import('./dom.js').RawCoraliteDirective} RawCoraliteDirective
- * @typedef {import('./dom.js').CoraliteAnyNode} CoraliteAnyNode
- * @typedef {import('./dom.js').CoraliteComponentRoot} CoraliteComponentRoot
- * @typedef {import('./dom.js').RawCoraliteComponentRoot} RawCoraliteComponentRoot
- * @typedef {import('./dom.js').CoraliteContentNode} CoraliteContentNode
+ * @typedef {_CoraliteElement} CoraliteElement
+ * @typedef {_RawCoraliteElement} RawCoraliteElement
+ * @typedef {_CoraliteTextNode} CoraliteTextNode
+ * @typedef {_RawCoraliteTextNode} RawCoraliteTextNode
+ * @typedef {_CoraliteComment} CoraliteComment
+ * @typedef {_RawCoraliteComment} RawCoraliteComment
+ * @typedef {_CoraliteDirective} CoraliteDirective
+ * @typedef {_RawCoraliteDirective} RawCoraliteDirective
+ * @typedef {_CoraliteAnyNode} CoraliteAnyNode
+ * @typedef {_CoraliteComponentRoot} CoraliteComponentRoot
+ * @typedef {_RawCoraliteComponentRoot} RawCoraliteComponentRoot
+ * @typedef {_CoraliteContentNode} CoraliteContentNode
  */
 
 /**
- * @typedef {import('./component.js').CoraliteComponent} CoraliteComponent
- * @typedef {import('./component.js').CoraliteResult} CoraliteResult
- * @typedef {import('./component.js').ParseHTMLResult} ParseHTMLResult
- * @typedef {import('./component.js').CoraliteToken} CoraliteToken
- * @typedef {import('./component.js').CoraliteAttributeToken} CoraliteAttributeToken
- * @typedef {import('./component.js').CoraliteTextNodeToken} CoraliteTextNodeToken
- * @typedef {import('./component.js').CoraliteRef} CoraliteRef
- * @typedef {import('./component.js').CoraliteComponentValues} CoraliteComponentValues
- * @typedef {import('./component.js').Attribute} Attribute
- * @typedef {import('./component.js').CoraliteComponentResult} CoraliteComponentResult
+ * @typedef {_CoraliteComponent} CoraliteComponent
+ * @typedef {_CoraliteResult} CoraliteResult
+ * @typedef {_ParseHTMLResult} ParseHTMLResult
+ * @typedef {_CoraliteToken} CoraliteToken
+ * @typedef {_CoraliteAttributeToken} CoraliteAttributeToken
+ * @typedef {_CoraliteTextNodeToken} CoraliteTextNodeToken
+ * @typedef {_CoraliteRef} CoraliteRef
+ * @typedef {_CoraliteComponentValues} CoraliteComponentValues
+ * @typedef {_Attribute} Attribute
+ * @typedef {_CoraliteComponentResult} CoraliteComponentResult
  */
 
 /**
- * @typedef {import('./module.js').CoraliteModule} CoraliteModule
- * @typedef {import('./module.js').CoraliteModuleDefinitions} CoraliteModuleDefinitions
- * @typedef {import('./module.js').CoraliteModuleDefinition} CoraliteModuleDefinition
- * @typedef {import('./module.js').CoraliteModuleSlotElement} CoraliteModuleSlotElement
- * @typedef {import('./module.js').CoraliteModuleScript} CoraliteModuleScript
- * @typedef {import('./module.js').CoraliteModuleProperties} CoraliteModuleProperties
- * @typedef {import('./module.js').CoraliteModulePropertiesFunction} CoraliteModulePropertiesFunction
- * @typedef {import('./module.js').CoraliteModuleSlotFunction} CoraliteModuleSlotFunction
- * @typedef {import('./module.js').CoraliteModuleDataFunction} CoraliteModuleDataFunction
- * @typedef {import('./module.js').CoraliteModuleGetterFunction} CoraliteModuleGetterFunction
+ * @typedef {_CoraliteModule} CoraliteModule
+ * @typedef {_CoraliteModuleDefinitions} CoraliteModuleDefinitions
+ * @typedef {_CoraliteModuleDefinition} CoraliteModuleDefinition
+ * @typedef {_CoraliteModuleSlotElement} CoraliteModuleSlotElement
+ * @typedef {_CoraliteModuleScript} CoraliteModuleScript
+ * @typedef {_CoraliteModuleProperties} CoraliteModuleProperties
+ * @typedef {_CoraliteModulePropertiesFunction} CoraliteModulePropertiesFunction
+ * @typedef {_CoraliteModuleSlotFunction} CoraliteModuleSlotFunction
+ * @typedef {_CoraliteModuleDataFunction} CoraliteModuleDataFunction
+ * @typedef {_CoraliteModuleGetterFunction} CoraliteModuleGetterFunction
  */
 
 /**
- * @typedef {import('./collection.js').CoraliteCollectionItem} CoraliteCollectionItem
- * @typedef {import('./collection.js').CoraliteCollectionCallbackResult} CoraliteCollectionCallbackResult
- * @typedef {import('./collection.js').CoraliteCollectionEventResult} CoraliteCollectionEventResult
- * @typedef {import('./collection.js').CoraliteCollectionEventSet} CoraliteCollectionEventSet
- * @typedef {import('./collection.js').CoraliteCollectionEventDelete} CoraliteCollectionEventDelete
- * @typedef {import('./collection.js').CoraliteCollectionEventUpdate} CoraliteCollectionEventUpdate
+ * @typedef {_CoraliteCollection} CoraliteCollection
+ * @typedef {_CoraliteCollectionItem} CoraliteCollectionItem
+ * @typedef {_CoraliteCollectionCallbackResult} CoraliteCollectionCallbackResult
+ * @typedef {_CoraliteCollectionEventResult} CoraliteCollectionEventResult
+ * @typedef {_CoraliteCollectionEventSet} CoraliteCollectionEventSet
+ * @typedef {_CoraliteCollectionEventDelete} CoraliteCollectionEventDelete
+ * @typedef {_CoraliteCollectionEventUpdate} CoraliteCollectionEventUpdate
  */
 
 /**
- * @typedef {import('./plugin.js').CoralitePlugin} CoralitePlugin
+ * @typedef {_CoralitePlugin} CoralitePlugin
  */
 
 /**
- * @typedef {import('./plugin.js').CoralitePluginContext} CoralitePluginContext
- * @typedef {import('./plugin.js').CoralitePluginExportFunction} CoralitePluginExportFunction
- * @typedef {import('./plugin.js').CoralitePluginInstance} CoralitePluginInstance
+ * @typedef {_CoralitePluginContext} CoralitePluginContext
+ * @typedef {_CoralitePluginExportFunction} CoralitePluginExportFunction
+ * @typedef {_CoralitePluginInstance} CoralitePluginInstance
  */
 
 /**
- * @typedef {import('./plugin.js').CoralitePluginPageSetCallback} CoralitePluginPageSetCallback
- * @typedef {import('./plugin.js').CoralitePluginPageUpdateCallback} CoralitePluginPageUpdateCallback
- * @typedef {import('./plugin.js').CoralitePluginPageDeleteCallback} CoralitePluginPageDeleteCallback
- * @typedef {import('./plugin.js').CoralitePluginComponentCallback} CoralitePluginComponentCallback
- * @typedef {import('./plugin.js').CoralitePluginAfterPageRenderCallback} CoralitePluginAfterPageRenderCallback
+ * @typedef {_CoralitePluginPageSetCallback} CoralitePluginPageSetCallback
+ * @typedef {_CoralitePluginPageUpdateCallback} CoralitePluginPageUpdateCallback
+ * @typedef {_CoralitePluginPageDeleteCallback} CoralitePluginPageDeleteCallback
+ * @typedef {_CoralitePluginComponentCallback} CoralitePluginComponentCallback
+ * @typedef {_CoralitePluginAfterPageRenderCallback} CoralitePluginAfterPageRenderCallback
  */
 
 /**
- * @typedef {import('./script.js').ScriptContent} ScriptContent
- * @typedef {import('./script.js').ScriptPlugin} ScriptPlugin
- * @typedef {import('./script.js').InstanceContext} InstanceContext
- * @typedef {import('./script.js').CoraliteScriptContext} CoraliteScriptContext
- * @typedef {import('./script.js').ScriptPluginHelperGlobalContext} ScriptPluginHelperGlobalContext
- * @typedef {import('./script.js').ScriptPluginHelperGlobalInstance} ScriptPluginHelperGlobalInstance
- * @typedef {import('./script.js').ScriptPluginHelperLocalInstance} ScriptPluginHelperLocalInstance
- * @typedef {import('./script.js').ScriptImport} ScriptImport
+ * @typedef {_ScriptContent} ScriptContent
+ * @typedef {_ScriptPlugin} ScriptPlugin
+ * @typedef {_InstanceContext} InstanceContext
+ * @typedef {_CoraliteScriptContext} CoraliteScriptContext
+ * @typedef {_ScriptPluginHelperGlobalContext} ScriptPluginHelperGlobalContext
+ * @typedef {_ScriptPluginHelperGlobalInstance} ScriptPluginHelperGlobalInstance
+ * @typedef {_ScriptPluginHelperLocalInstance} ScriptPluginHelperLocalInstance
+ * @typedef {_ScriptImport} ScriptImport
  */
 
 export default {}
+
