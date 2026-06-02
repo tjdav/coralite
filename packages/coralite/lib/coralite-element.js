@@ -551,7 +551,7 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
-    // 5. Await Promises or Apply Synchronously
+    // Await Promises or Apply Synchronously
     if (hasPromise) {
       const keys = Object.keys(evaluatedTokens)
       const promises = keys.map(k => Promise.resolve(evaluatedTokens[k]))

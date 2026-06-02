@@ -44,13 +44,13 @@
       import { test, expect } from '@playwright/test';
 
       test('component should increment counter', async ({ page }) => {
-        // 1. Navigate to the page
+        // Navigate to the page
         await page.goto('/my-page');
 
-        // 2. Wait for Coralite hydration to complete
+        // Wait for Coralite hydration to complete
         await page.waitForFunction(() => window.__coralite_ready__);
 
-        // 3. Now it is safe to interact with the DOM using the namespaced pattern
+        // Now it is safe to interact with the DOM using the namespaced pattern
         const button = page.getByTestId('my-counter__increment-btn-0');
         await button.click();
 
@@ -63,15 +63,15 @@
     <coralite-code-highlight language="javascript">
       describe('Counter Component', () => {
         it('should increment counter', () => {
-          // 1. Navigate to the page
+          // Navigate to the page
           cy.visit('/my-page');
 
-          // 2. Wait for Coralite hydration to complete
+          // Wait for Coralite hydration to complete
           cy.window().then((win) => {
             return win.__coralite_ready__;
           });
 
-          // 3. Now it is safe to interact with the DOM using the namespaced pattern
+          // Now it is safe to interact with the DOM using the namespaced pattern
           cy.get('[data-testid="my-counter__increment-btn-0"]').click();
           cy.get('[data-testid="my-counter__count-display-0"]').should('have.text', '1');
         });

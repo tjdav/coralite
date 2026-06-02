@@ -743,10 +743,10 @@ export default {
         const entryPoint = meta.entryPoint
         const cleanEntry = entryPoint.includes(':') ? entryPoint.split(':').pop() : entryPoint
 
-        // 1. STRIP THE EXTENSION (Fixes E2E Bootstrapper Timeout)
+        // STRIP THE EXTENSION (Fixes E2E Bootstrapper Timeout)
         const tagName = parse(cleanEntry).name
 
-        // 2. USE RELATIVE PATHS (Fixes the chunks/ 404 issue)
+        // USE RELATIVE PATHS (Fixes the chunks/ 404 issue)
         const relativePath = relative('assets/js', outputPath).replace(/\\/g, '/')
 
         manifest[tagName] = relativePath

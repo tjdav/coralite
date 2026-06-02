@@ -181,13 +181,13 @@ context: {
 export default definePlugin({
   name: 'confetti-plugin',
   client: {
-    // 1. Define default configuration
+    // Define default configuration
     config: {
       particleCount: 100,
       spread: 70
     },
 
-    // 2. Create the context utility
+    // Create the context utility
     context: {
       explode: (globalContext) => ({ state }) => async () => {
         // Access config from global context

@@ -197,13 +197,13 @@ context: {
 export default definePlugin({
   name: 'confetti-plugin',
   client: {
-    // 1. Define configuration
+    // Define configuration
     config: {
       particleCount: 100,
       spread: 70
     },
 
-    // 2. Create the context utility
+    // Create the context utility
     context: {
       explode: (globalContext, config) => (localContext) => async () => {
         // Dynamically import the library (auto-bundled by AST)

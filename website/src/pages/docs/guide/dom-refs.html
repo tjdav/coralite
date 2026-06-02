@@ -93,10 +93,10 @@
     <p>For example, if you defined <code>&lt;button ref="submitBtn"&gt;</code> in a component named <code>my-form</code>, you should locate it in a Playwright test using <code>getByTestId</code>:</p>
 
     <coralite-code-highlight language="javascript">
-    // 1. Wait for Coralite to finish executing all component scripts
+    // Wait for Coralite to finish executing all component scripts
     await page.waitForFunction(() => window.__coralite_ready__);
 
-    // 2. Safely interact using the auto-generated test ID
+    // Safely interact using the auto-generated test ID
     await page.getByTestId('my-form__submitBtn-0').click();
     </coralite-code-highlight>
   </main>

@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { dirname, join, relative } from 'node:path'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { availableParallelism } from 'node:os'
 import pLimit from 'p-limit'
 import {
@@ -29,23 +28,19 @@ import { transformCss } from './style-transform.js'
 import { transformNode } from './parser.js'
 import {
   isCoraliteElement,
-  isCoraliteCollectionItem,
-  isCoraliteComment,
-  isCoraliteTextNode
+  isCoraliteCollectionItem
 } from './type-helper.js'
 import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
 
 /**
  * @import {
  *  CoraliteInstance,
- *  CoraliteConfig,
  *  CoraliteSession,
  *  CoraliteBuildResult,
  *  CoraliteBuildCallback,
  *  CoraliteBuildOptions,
  *  CoraliteOnError,
  *  CoraliteAnyNode,
- *  CoralitePage,
  *  CoraliteCollectionItem,
  *  ComponentElementOptions
  * } from '../types/index.js'
@@ -984,7 +979,6 @@ export function createRenderer ({
     }
   }
 
-  // 3. The Public/Exposed Methods
   /**
    * Adds a page or a collection item to the current render queue.
    *
@@ -1148,7 +1142,6 @@ export function createRenderer ({
     }
   }
 
-  // 4. Return what the orchestrator needs to attach to `app`
   return {
     outputFiles,
     addRenderQueue,

@@ -65,7 +65,7 @@ test('strip custom elements with no-hydration attribute', async (t) => {
   const content = indexPage.content
   document.documentElement.innerHTML = content
 
-  // 1. Check if <coralite-meta> is removed but its children are present
+  // Check if <coralite-meta> is removed but its children are present
   const coraliteMeta = document.querySelector('coralite-meta')
   assert.ok(!coraliteMeta, 'Should not contain <coralite-meta> tag')
 
@@ -77,7 +77,7 @@ test('strip custom elements with no-hydration attribute', async (t) => {
   assert.ok(meta, 'Should contain <meta> tag')
   assert.strictEqual(meta.getAttribute('content'), 'Test description')
 
-  // 2. Check if nested component inside no-hydration is also stripped
+  // Check if nested component inside no-hydration is also stripped
   const headNestedContent = document.head.querySelector('.nested')
   assert.ok(headNestedContent, 'Should contain nested content in head')
   assert.strictEqual(headNestedContent.parentElement.tagName, 'HEAD', 'Nested content should be direct child of head (stripped)')
@@ -87,7 +87,7 @@ test('strip custom elements with no-hydration attribute', async (t) => {
   assert.ok(bodyNestedComp, 'Should contain <nested-comp> tag from body')
   assert.ok(bodyNestedComp.hasAttribute('data-cid'), 'Body nested-comp should have a data-cid')
 
-  // 3. Check for hydration data
+  // Check for hydration data
   const hydrationTag = document.getElementById('__CORALITE_HYDRATION__')
   if (hydrationTag) {
     const hydrationData = JSON.parse(hydrationTag.textContent)
