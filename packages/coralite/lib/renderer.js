@@ -39,16 +39,20 @@ import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
  * @import {
  *  CoraliteInstance,
  *  CoraliteConfig,
- *  CoraliteSession
+ *  CoraliteSession,
+ *  CoraliteBuildResult,
+ *  CoraliteBuildCallback,
+ *  CoraliteBuildOptions,
+ *  CoraliteOnError,
+ *  CoraliteAnyNode,
+ *  CoralitePage,
+ *  CoraliteCollectionItem,
+ *  ComponentElementOptions
  * } from '../types/index.js'
  */
 
 /**
  * @import { InstanceContext } from '../types/script.js'
- */
-
-/**
- * @import { CoraliteOnError } from '../types/index.js'
  * @import { ScriptManager } from './script-manager.js'
  */
 
@@ -76,11 +80,9 @@ export function createRenderer ({
   options: normalizedOptions,
   createExecutionError
 }) {
-  // 1. Private Rendering State
   const renderQueues = new Map()
   const outputFiles = {}
 
-  // 2. Internal Rendering Utilities
   /**
    * Creates a new rendering session.
    * @param {string} [buildId] - Unique identifier for the build
@@ -155,6 +157,7 @@ export function createRenderer ({
           const node = slotNodes[i]
           if (node.name) {
             const slotComponentItem = app.components.getItem(node.name)
+
             if (slotComponentItem) {
               const slotContextId = session.generateId(node.name)
               const currentProperties = session.state[slotContextId] || {}
@@ -183,23 +186,43 @@ export function createRenderer ({
               if (componentElement) {
                 if (childNoHydration) {
                   const parent = node.parent
-                  if (parent && parent.children) {
+
+                  if (parent && Array.isArray(parent.children)) {
                     const idx = parent.children.indexOf(node)
                     if (idx !== -1) {
-                      for (let j = 0; j < componentElement.children.length; j++) {
-                        componentElement.children[j].parent = parent
+                      let children = []
+
+                      if (Array.isArray(componentElement)) {
+                        children = componentElement
+                      } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
+                        children = componentElement.children
                       }
-                      parent.children.splice(idx, 1, ...componentElement.children)
+
+                      for (let j = 0; j < children.length; j++) {
+                        children[j].parent = parent
+                      }
+                      parent.children.splice(idx, 1, ...children)
                     }
                   }
                 } else {
-                  node.children = componentElement.children
-                  for (let j = 0; j < node.children.length; j++) {
-                    node.children[j].parent = node
+                  let children = []
+
+                  if (Array.isArray(componentElement)) {
+                    children = componentElement
+                  } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
+                    children = componentElement.children
                   }
+
+                  node.children = children
+
+                  for (let j = 0; j < children.length; j++) {
+                    children[j].parent = node
+                  }
+
                   if (!node.attribs) {
                     node.attribs = {}
                   }
+
                   node.attribs['data-cid'] = slotContextId
                   session.componentTags.add(node.name)
                 }
@@ -319,6 +342,13 @@ export function createRenderer ({
     }
   }
 
+  /**
+   * Creates and initializes a component element from its definition and state.
+   *
+   * @param {ComponentElementOptions} options - Configuration and context for the component instance.
+   * @param {boolean} [head=true] - Whether this component is being processed as a top-level head element.
+   * @returns {Promise<CoraliteAnyNode | CoraliteAnyNode[] | void>} The rendered AST node(s) for the component.
+   */
   const createComponentElement = async ({ id, state = {}, element, page, root, contextId, index, session, noHydration }, head = true) => {
     if (!session) {
       session = _createSession()
@@ -334,7 +364,9 @@ export function createRenderer ({
     const instanceId = contextId
     let componentState = { ...state }
     if (head) {
+      // @ts-ignore
       if (element && element.attribs) {
+        // @ts-ignore
         componentState = Object.assign(componentState, element.attribs)
       }
       componentState = cleanKeys(componentState)
@@ -581,14 +613,18 @@ export function createRenderer ({
           if (parent && parent.children) {
             const idx = parent.children.indexOf(customElement)
             if (idx !== -1) {
-              childComponentElement.children.forEach(c => {
+              // @ts-ignore
+              const children = Array.isArray(childComponentElement) ? childComponentElement : childComponentElement.children
+              children.forEach(c => {
                 c.parent = parent
               })
-              parent.children.splice(idx, 1, ...childComponentElement.children)
+              parent.children.splice(idx, 1, ...children)
             }
           }
         } else {
-          customElement.children = childComponentElement.children
+          // @ts-ignore
+          const children = Array.isArray(childComponentElement) ? childComponentElement : childComponentElement.children
+          customElement.children = children
           customElement.children.forEach(c => {
             c.parent = customElement
           })
@@ -679,14 +715,18 @@ export function createRenderer ({
           if (parent && parent.children) {
             const elementIndex = parent.children.indexOf(customElement)
             if (elementIndex !== -1) {
-              componentElement.children.forEach(c => {
+              // @ts-ignore
+              const children = Array.isArray(componentElement) ? componentElement : componentElement.children
+              children.forEach(c => {
                 c.parent = parent
               })
-              parent.children.splice(elementIndex, 1, ...componentElement.children)
+              parent.children.splice(elementIndex, 1, ...children)
             }
           }
         } else {
-          customElement.children = componentElement.children
+          // @ts-ignore
+          const children = Array.isArray(componentElement) ? componentElement : componentElement.children
+          customElement.children = children
           customElement.children.forEach(c => {
             c.parent = customElement
           })
@@ -920,13 +960,15 @@ export function createRenderer ({
         }
         const rawHTML = transformNode(mappedComponent.root)
 
-        yield {
+        /** @type {CoraliteBuildResult} */
+        const result = {
           type: 'page',
           path: mappedComponent.path,
           content: rawHTML,
           duration: performance.now() - startTime,
           session
         }
+        yield result
 
         if (isProduction) {
           mappedComponent.root = null; mappedComponent.customElements = null; mappedComponent.tempElements = null; mappedComponent.skipRenderElements = null
@@ -943,6 +985,14 @@ export function createRenderer ({
   }
 
   // 3. The Public/Exposed Methods
+  /**
+   * Adds a page or a collection item to the current render queue.
+   *
+   * @param {string | CoraliteCollectionItem} value - The ID of the page or the collection item to add.
+   * @param {string} buildId - The unique identifier for the current build session.
+   * @throws {Error} If the buildId is missing or invalid, or if the page ID is not found.
+   * @returns {Promise<void>}
+   */
   const addRenderQueue = async (value, buildId) => {
     if (!buildId) {
       throw new Error('addRenderQueue requires a buildId')
@@ -964,18 +1014,42 @@ export function createRenderer ({
     }
   }
 
-  const build = async (...args) => {
+  /**
+   * Compiles and renders specified pages.
+   *
+   * @overload
+   * @param {CoraliteBuildCallback} callback - Optional callback executed for each rendered page.
+   * @returns {Promise<CoraliteBuildResult[]>}
+   *
+   * @overload
+   * @param {string|string[]} path - The path(s) to build.
+   * @param {CoraliteBuildCallback} [callback] - Optional callback executed for each rendered page.
+   * @returns {Promise<CoraliteBuildResult[]>}
+   *
+   * @overload
+   * @param {string|string[]} path - The path(s) to build.
+   * @param {CoraliteBuildOptions} options - Build options.
+   * @param {CoraliteBuildCallback} [callback] - Optional callback executed for each rendered page.
+   * @returns {Promise<CoraliteBuildResult[]>}
+   *
+   * @param {string | string[] | CoraliteBuildCallback} [pathOrOptions] - The path(s) to build, or a callback if no path is provided.
+   * @param {CoraliteBuildOptions | CoraliteBuildCallback} [optionsOrCallback] - Build options or a callback.
+   * @param {CoraliteBuildCallback} [callback] - Optional callback executed for each rendered page.
+   * @returns {Promise<CoraliteBuildResult[]>} A promise resolving to an array of build results.
+   */
+  const build = async (pathOrOptions, optionsOrCallback, callback) => {
     const startTime = performance.now()
-    let buildPath = args[0]
+    let buildPath = pathOrOptions
     let buildOptions
-    let buildCallback
+    let buildCallback = callback
 
-    if (typeof args[0] === 'function') {
-      buildPath = null; buildCallback = args[0]
-    } else if (typeof args[1] === 'function') {
-      buildCallback = args[1]
+    if (typeof pathOrOptions === 'function') {
+      buildPath = null
+      buildCallback = pathOrOptions
+    } else if (typeof optionsOrCallback === 'function') {
+      buildCallback = optionsOrCallback
     } else {
-      buildOptions = args[1]; buildCallback = args[2]
+      buildOptions = optionsOrCallback
     }
 
     if (!buildOptions) {

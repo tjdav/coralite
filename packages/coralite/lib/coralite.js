@@ -32,7 +32,9 @@ import { createRenderer } from './renderer.js'
 /**
  * @import {
  *  CoraliteConfig,
- *  CoraliteInstance
+ *  CoraliteInstance,
+ *  CoraliteBuildOptions,
+ *  CoraliteSaveResult
  * } from '../types/index.js'
  */
 
@@ -87,7 +89,6 @@ export async function createCoralite ({
   // @ts-ignore
   const app = {
     options: normalizedOptions,
-    // Initialize properties that will be added later to satisfy type checker
     pages: null,
     components: null,
     build: null,
@@ -123,8 +124,6 @@ export async function createCoralite ({
   // Development only state
   const pageCustomElements = {}
   const childCustomElements = {}
-
-  // --- Internal Orchestrators ---
 
   const _handleErrorLocal = (data) => handleError({
     onErrorCallback: onError,
@@ -209,6 +208,13 @@ export async function createCoralite ({
     outputFiles: renderer.outputFiles,
     createComponentElement: renderer.createComponentElement,
     build: renderer.build,
+    /**
+     * Executes a full build and saves the generated pages to the configured output directory.
+     *
+     * @param {string | string[]} [savePath] - The target path or directory to build.
+     * @param {CoraliteBuildOptions} [saveOptions={}] - Additional configuration for the save process.
+     * @returns {Promise<CoraliteSaveResult[]>} A promise resolving to an array of all saved file results.
+     */
     save: async (savePath, saveOptions = {}) => {
       const signal = saveOptions?.signal
       const createdDir = {}
@@ -222,29 +228,38 @@ export async function createCoralite ({
         const relativeDir = relative(app.options.path.pages, result.path.dirname)
         const outDir = join(outputDir, relativeDir)
         const outFile = join(outDir, result.path.filename)
+
         if (!createdDir[outDir]) {
           await mkdir(outDir, { recursive: true }); createdDir[outDir] = true
         }
+
         await writeFile(outFile, result.content, { signal })
+
         results.push({
           path: outFile,
           duration: result.duration
         })
+
         return undefined
       })
 
       if (renderer.outputFiles) {
         const assetsDir = join(outputDir, 'assets', 'js')
+
         if (!createdDir[assetsDir]) {
           await mkdir(assetsDir, { recursive: true }); createdDir[assetsDir] = true
         }
+
         const assetWrites = Object.values(renderer.outputFiles).map(async (file) => {
           const outFile = join(assetsDir, file.hashedPath)
           const outDir = dirname(outFile)
+
           if (!createdDir[outDir]) {
             await mkdir(outDir, { recursive: true }); createdDir[outDir] = true
           }
+
           await writeFile(outFile, file.text, { signal })
+
           results.push({
             path: outFile,
             duration: 0
@@ -259,6 +274,12 @@ export async function createCoralite ({
 
     _triggerPluginAggregateHook: _triggerPluginAggregateHookLocal,
     _triggerPluginHook: _triggerPluginHookLocal,
+    /**
+     * Retrieves all page paths that utilize a specific custom element.
+     *
+     * @param {string} targetPath - The path or ID of the custom element (component) to search for.
+     * @returns {string[]} An array of page pathnames that include the specified component.
+     */
     getPagePathsUsingCustomElement: (targetPath) => {
       if (app.options.mode === 'production') {
         return []
@@ -320,7 +341,6 @@ export async function createCoralite ({
 
   await Promise.all(plugins.components.map(c => app.components.setItem(c)))
 
-  // @ts-ignore
   app.pages = new CoraliteCollection({
     rootDir: app.options.pages,
     onSet: handlers.onPageSet,

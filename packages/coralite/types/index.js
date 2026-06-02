@@ -12,9 +12,11 @@
  *   CoraliteOnError as _CoraliteOnError,
  *   CoraliteSession as _CoraliteSession,
  *   CoraliteInstance as _CoraliteInstance,
+ *   CoraliteBuildOptions as _CoraliteBuildOptions,
  *   CoraliteBuildResult as _CoraliteBuildResult,
  *   CoraliteSaveResult as _CoraliteSaveResult,
- *   CoraliteBuildCallback as _CoraliteBuildCallback
+ *   CoraliteBuildCallback as _CoraliteBuildCallback,
+ *   ComponentElementOptions as _ComponentElementOptions
  * } from './core.js'
  *
  * DOM & AST
@@ -114,9 +116,11 @@
  * @typedef {_CoraliteErrorData} CoraliteErrorData
  * @typedef {_CoraliteOnError} CoraliteOnError
  * @typedef {_CoraliteSession} CoraliteSession
+ * @typedef {_CoraliteBuildOptions} CoraliteBuildOptions
  * @typedef {_CoraliteBuildResult} CoraliteBuildResult
  * @typedef {_CoraliteSaveResult} CoraliteSaveResult
  * @typedef {_CoraliteBuildCallback} CoraliteBuildCallback
+ * @typedef {_ComponentElementOptions} ComponentElementOptions
  */
 
 /**

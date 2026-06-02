@@ -6,8 +6,7 @@
  * @import { DomSerializerOptions } from 'dom-serializer'
  * @import { CoraliteAnyNode, CoraliteComponentRoot } from './dom.js'
  * @import { ScriptContent } from './script.js'
- * @import { CoraliteCollectionItem } from './collection.js'
- * @import CoraliteCollection from './collection.js'
+ * @import { CoraliteCollectionItem, CoraliteCollection } from './collection.js'
  */
 
 /**
@@ -138,20 +137,34 @@
  */
 
 /**
+ * Configuration options for creating a component element.
+ * @typedef {Object} ComponentElementOptions
+ * @property {string} id - The unique identifier of the component to render.
+ * @property {Object.<string, any>} [state={}] - Initial state or properties to pass to the component.
+ * @property {CoraliteAnyNode} [element] - The original AST node representing the component in the template.
+ * @property {CoralitePage} [page] - Contextual information about the page being rendered.
+ * @property {CoraliteAnyNode} [root] - The root node of the current rendering context.
+ * @property {string} [contextId] - A unique identifier for this specific component instance.
+ * @property {number} [index] - The index of the component within its parent's children.
+ * @property {CoraliteSession} [session] - The current rendering session object.
+ * @property {boolean} [noHydration] - If true, hydration scripts will not be generated for this component.
+ */
+
+/**
  * @typedef {Object} CoraliteInstance
- * @property {CoraliteConfig} options - The configuration options used to initialize the instance.
- * @property {CoraliteCollection} pages - Collection of pages.
- * @property {CoraliteCollection} components - Collection of components.
- * @property {(path?: string | string[] | CoraliteBuildCallback, options?: CoraliteBuildOptions | CoraliteBuildCallback, callback?: CoraliteBuildCallback) => Promise<CoraliteBuildResult[]>} build - Compiles specified page(s).
- * @property {(savePath?: string | string[], saveOptions?: CoraliteBuildOptions) => Promise<CoraliteSaveResult[]>} save - Compiles and saves pages to disk.
- * @property {(root: CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[], options?: DomSerializerOptions) => string} transform - Renders nodes to raw HTML.
- * @property {(value: string | CoraliteCollectionItem, buildId: string) => Promise<void>} addRenderQueue - Adds a page to the current render queue.
- * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement - Retrieves page paths associated with a custom element.
- * @property {(options: { id: string, state?: Object, element?: CoraliteAnyNode, page?: CoralitePage, root?: CoraliteAnyNode, contextId?: string, index?: number, session?: CoraliteSession, noHydration?: boolean }, head?: boolean) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement - Creates a component element.
- * @property {Record<string, { hashedPath: string, text: string }>} outputFiles - Map of generated output files.
- * @property {(name: string, initialData: any) => Promise<any>} _triggerPluginHook - Internal plugin hook trigger.
- * @property {(name: string, contextData: any) => Promise<any[]>} _triggerPluginAggregateHook - Internal plugin aggregate hook trigger.
- * @property {Object} [source] - Internal source utilities.
+ * @property {CoraliteConfig} options
+ * @property {CoraliteCollection} pages
+ * @property {CoraliteCollection} components
+ * @property {(pathOrOptions?: string | string[] | CoraliteBuildCallback, optionsOrCallback?: CoraliteBuildOptions | CoraliteBuildCallback, callback?: CoraliteBuildCallback) => Promise<CoraliteBuildResult[]>} build
+ * @property {(savePath?: string | string[], saveOptions?: CoraliteBuildOptions) => Promise<CoraliteSaveResult[]>} save
+ * @property {(root: CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[], options?: DomSerializerOptions) => string} transform
+ * @property {(value: string | CoraliteCollectionItem, buildId: string) => Promise<void>} addRenderQueue
+ * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement
+ * @property {(options: ComponentElementOptions, head?: boolean) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement
+ * @property {Record<string, { hashedPath: string, text: string }>} outputFiles
+ * @property {(name: string, initialData: any) => Promise<any>} _triggerPluginHook
+ * @property {(name: string, contextData: any) => Promise<any[]>} _triggerPluginAggregateHook
+ * @property {Object} [source]
  */
 
 export default {}
