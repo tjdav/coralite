@@ -3,6 +3,10 @@
  * @import { CoraliteModuleDefinitions } from './module.js'
  * @import { CoralitePluginInstance } from './plugin.js'
  * @import { Attribute } from './component.js'
+ * @import { DomSerializerOptions } from 'dom-serializer'
+ * @import { CoraliteAnyNode, CoraliteComponentRoot } from './dom.js'
+ * @import { ScriptContent } from './script.js'
+ * @import { CoraliteCollectionItem } from './collection.js'
  * @import CoraliteCollection from './collection.js'
  */
 
@@ -78,6 +82,27 @@
  */
 
 /**
+ * @typedef {Object} CoraliteBuildResult
+ * @property {'page'} type - The type of result.
+ * @property {CoraliteFilePath & { pages: string, components: string }} path - Path information.
+ * @property {string} content - The rendered HTML content.
+ * @property {number} duration - Time taken to render in milliseconds.
+ * @property {CoraliteSession} session - The session associated with the render.
+ */
+
+/**
+ * @typedef {Object} CoraliteSaveResult
+ * @property {string} path - The absolute path where the file was saved.
+ * @property {number} duration - Time taken in milliseconds.
+ */
+
+/**
+ * @callback CoraliteBuildCallback
+ * @param {CoraliteBuildResult} result - The build result for a single page.
+ * @returns {Promise<any>|any}
+ */
+
+/**
  * Represents structured page URL, file, and meta information.
  * @typedef {Object} CoralitePage
  * @property {Object} url - URL path info.
@@ -92,7 +117,7 @@
 
 /**
  * Union type representing values available for token replacement in components.
- * @typedef {Object.<string, string> & { __script__?: import('./script.js').ScriptContent, $urlPathname?: string }} CoraliteProperties
+ * @typedef {Object.<string, string> & { __script__?: ScriptContent, $urlPathname?: string }} CoraliteProperties
  */
 
 /**
@@ -117,12 +142,15 @@
  * @property {CoraliteConfig} options - The configuration options used to initialize the instance.
  * @property {CoraliteCollection} pages - Collection of pages.
  * @property {CoraliteCollection} components - Collection of components.
- * @property {Function} build - Compiles specified page(s).
- * @property {Function} save - Compiles and saves pages to disk.
- * @property {Function} transform - Renders nodes to raw HTML.
- * @property {Function} addRenderQueue - Adds a page to the current render queue.
- * @property {Function} getPagePathsUsingCustomElement - Retrieves page paths associated with a custom element.
- * @property {Function} createComponentElement - Creates a component element.
+ * @property {(path?: string | string[] | CoraliteBuildCallback, options?: CoraliteBuildOptions | CoraliteBuildCallback, callback?: CoraliteBuildCallback) => Promise<CoraliteBuildResult[]>} build - Compiles specified page(s).
+ * @property {(savePath?: string | string[], saveOptions?: CoraliteBuildOptions) => Promise<CoraliteSaveResult[]>} save - Compiles and saves pages to disk.
+ * @property {(root: CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[], options?: DomSerializerOptions) => string} transform - Renders nodes to raw HTML.
+ * @property {(value: string | CoraliteCollectionItem, buildId: string) => Promise<void>} addRenderQueue - Adds a page to the current render queue.
+ * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement - Retrieves page paths associated with a custom element.
+ * @property {(options: { id: string, state?: Object, element?: CoraliteAnyNode, page?: CoralitePage, root?: CoraliteAnyNode, contextId?: string, index?: number, session?: CoraliteSession, noHydration?: boolean }, head?: boolean) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement - Creates a component element.
+ * @property {Record<string, { hashedPath: string, text: string }>} outputFiles - Map of generated output files.
+ * @property {(name: string, initialData: any) => Promise<any>} _triggerPluginHook - Internal plugin hook trigger.
+ * @property {(name: string, contextData: any) => Promise<any[]>} _triggerPluginAggregateHook - Internal plugin aggregate hook trigger.
  * @property {Object} [source] - Internal source utilities.
  */
 

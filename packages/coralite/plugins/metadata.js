@@ -6,8 +6,6 @@ import { definePlugin } from '../lib/plugin.js'
  * @import { CoraliteInstance, CoralitePage } from '../types/core.js'
  */
 
-/** @typedef {import('../types/core.js').CoraliteInstance} Coralite */
-
 /**
  * Processes a single element to extract metadata.
  */

@@ -42,4 +42,17 @@
  * @async
  */
 
+/**
+ * @typedef {Object} CoraliteCollection
+ * @property {string} rootDir - Root directory where collection items are located
+ * @property {CoraliteCollectionItem[]} list - An array of HTMLData objects representing the list of documents.
+ * @property {Object.<string, CoraliteCollectionItem[]>} listByPath - An object mapping paths to arrays of HTMLData objects.
+ * @property {Object.<string, CoraliteCollectionItem>} collection - An object mapping unique identifiers to HTMLData objects.
+ * @property {(value: HTMLData|string) => Promise<CoraliteCollectionItem>} setItem - Adds or updates an HTMLData object in the collection.
+ * @property {(value: CoraliteCollectionItem|string) => Promise<void>} deleteItem - Deletes an item from the collection.
+ * @property {(value: HTMLData|string) => Promise<CoraliteCollectionItem>} updateItem - Updates an existing item in the collection.
+ * @property {(id: string) => CoraliteCollectionItem | undefined} getItem - Retrieves an item by its ID.
+ * @property {(dirname: string) => CoraliteCollectionItem[] | undefined} getListByPath - Retrieves a list of items grouped by directory path.
+ */
+
 export default {}

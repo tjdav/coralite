@@ -408,7 +408,6 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
       stack.pop()
     },
     oncdatastart (csb) {
-      console.log(csb)
     },
 
     oncomment (data) {

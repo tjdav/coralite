@@ -48,14 +48,19 @@ import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
  */
 
 /**
+ * @import { CoraliteOnError } from '../types/index.js'
+ * @import { ScriptManager } from './script-manager.js'
+ */
+
+/**
  * Factory for the rendering pipeline.
  *
  * @param {Object} dependencies
  * @param {CoraliteInstance} dependencies.app
- * @param {import('./script-manager.js').ScriptManager} dependencies.scriptManager
+ * @param {ScriptManager} dependencies.scriptManager
  * @param {Object} dependencies.source
  * @param {Function} dependencies.evaluate
- * @param {import('../types/core.js').CoraliteOnError} dependencies.handleError
+ * @param {CoraliteOnError} dependencies.handleError
  * @param {Object} dependencies.hooks
  * @param {any} dependencies.options
  * @param {Function} dependencies.createExecutionError
@@ -77,7 +82,8 @@ export function createRenderer ({
 
   // 2. Internal Rendering Utilities
   /**
-   * @param {string} [buildId]
+   * Creates a new rendering session.
+   * @param {string} [buildId] - Unique identifier for the build
    * @returns {CoraliteSession}
    */
   const _createSession = (buildId) => ({
@@ -710,7 +716,8 @@ export function createRenderer ({
       }
     }
 
-    const queue = resolvePageQueue(/** @type {any} */ (app.pages), path)
+    // @ts-ignore
+    const queue = resolvePageQueue(app.pages, path)
     const buildId = randomUUID()
     renderQueues.set(buildId, queue)
     const scriptResultCache = new Map()
@@ -774,7 +781,8 @@ export function createRenderer ({
 
         Object.assign(component.state, state)
         const session = _createSession(buildId)
-        session.mode = /** @type {"production" | "development"} */ (normalizedOptions.mode)
+        // @ts-ignore
+        session.mode = normalizedOptions.mode
         const mappedSession = await hooks.trigger('onBeforePageRender', {
           component,
           state,
@@ -784,7 +792,8 @@ export function createRenderer ({
         const mappedComponent = mappedSession.component
         const mappedSessionObject = mappedSession.session
         state = mappedSession.state
-        mappedSessionObject.mode = /** @type {"production" | "development"} */ (normalizedOptions.mode)
+        // @ts-ignore
+        mappedSessionObject.mode = normalizedOptions.mode
         removeElements(mappedComponent.tempElements, false)
         await _processCustomElementsInPage(mappedComponent, originalDocument, state, mappedSessionObject, pageContext)
         const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)

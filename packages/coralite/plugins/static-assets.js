@@ -25,8 +25,12 @@ function findPackageRoot (startDir) {
 }
 
 /**
+ * @import { CoraliteStaticAsset } from '../types/index.js'
+ */
+
+/**
  * Coralite plugin to copy static assets during build
- * @param {import('../types/index.js').CoraliteStaticAsset[]} assets - Static assets to copy during build.
+ * @param {CoraliteStaticAsset[]} assets - Static assets to copy during build.
  */
 export const staticAssetPlugin = (assets = []) => {
   return definePlugin({

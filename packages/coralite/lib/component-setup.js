@@ -8,7 +8,8 @@ import {
 
 /**
  * @import {
- *  CoralitePluginContext
+ *  CoralitePluginContext,
+ *  CoraliteInstance
  * } from '../types/index.js'
  */
 
@@ -16,7 +17,7 @@ import {
  * Factory to create the component definition function.
  *
  * @param {Object} dependencies
- * @param {import('../types/index.js').CoraliteInstance} dependencies.app
+ * @param {CoraliteInstance} dependencies.app
  * @returns {Function}
  */
 export function createComponentDefinition ({ app }) {

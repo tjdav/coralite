@@ -84,17 +84,18 @@ export async function createCoralite ({
   }
 
   /** @type {CoraliteInstance} */
+  // @ts-ignore
   const app = {
     options: normalizedOptions,
     // Initialize properties that will be added later to satisfy type checker
-    pages: /** @type {any} */ (null),
-    components: /** @type {any} */ (null),
-    build: /** @type {any} */ (null),
-    save: /** @type {any} */ (null),
+    pages: null,
+    components: null,
+    build: null,
+    save: null,
     transform: transformNode,
-    addRenderQueue: /** @type {any} */ (null),
-    getPagePathsUsingCustomElement: /** @type {any} */ (null),
-    createComponentElement: /** @type {any} */ (null)
+    addRenderQueue: null,
+    getPagePathsUsingCustomElement: null,
+    createComponentElement: null
   }
 
   // State
@@ -116,6 +117,7 @@ export async function createCoralite ({
     }
   }
   const scriptManager = new ScriptManager(normalizedOptions)
+  // @ts-ignore
   const serverGlobalContext = { app }
 
   // Development only state
@@ -292,7 +294,8 @@ export async function createCoralite ({
 
   await setupPlugins({
     app,
-    serverGlobalContext: /** @type {any} */ (serverGlobalContext),
+    // @ts-ignore
+    serverGlobalContext,
     plugins,
     scriptManager,
     source
@@ -317,12 +320,13 @@ export async function createCoralite ({
 
   await Promise.all(plugins.components.map(c => app.components.setItem(c)))
 
-  app.pages = /** @type {any} */ (new CoraliteCollection({
+  // @ts-ignore
+  app.pages = new CoraliteCollection({
     rootDir: app.options.pages,
     onSet: handlers.onPageSet,
     onUpdate: handlers.onPageUpdate,
     onDelete: handlers.onPageDelete
-  }))
+  })
 
   if (app.options.mode === 'production') {
     for await (const file of discoverHtmlFiles({

@@ -1,13 +1,18 @@
 import { addPluginHook } from './hooks.js'
 
 /**
+ * @import { CoraliteInstance, CoralitePluginContext } from '../types/index.js'
+ * @import { ScriptManager } from './script-manager.js'
+ */
+
+/**
  * Logic for initializing plugins.
  *
  * @param {Object} dependencies
- * @param {import('../types/index.js').CoraliteInstance} dependencies.app
- * @param {import('../types/index.js').CoralitePluginContext} dependencies.serverGlobalContext
+ * @param {CoraliteInstance} dependencies.app
+ * @param {CoralitePluginContext} dependencies.serverGlobalContext
  * @param {Object} dependencies.plugins
- * @param {import('./script-manager.js').ScriptManager} dependencies.scriptManager
+ * @param {ScriptManager} dependencies.scriptManager
  * @param {Object} dependencies.source
  * @returns {Promise<void>}
  */

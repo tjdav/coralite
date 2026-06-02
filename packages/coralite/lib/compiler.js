@@ -7,6 +7,7 @@ import { extractGlobals } from './utils.js'
 
 /**
  * @import { CoraliteModule, CoraliteModuleDefinitions, CoralitePage, CoraliteSession, CoraliteFilePath, CoralitePluginContext } from '../types/index.js'
+ * @import { Module } from 'node:vm'
  */
 
 /**
@@ -17,7 +18,7 @@ import { extractGlobals } from './utils.js'
  * @param {CoralitePluginContext} options.context - Contextual rendering data
  * @param {Object} options.source - Framework source context
  * @param {Object} options.plugins - Bound plugins
- * @returns {(specifier: string, referencingModule: import('node:vm').Module, extra: { attributes: any }) => Promise<import('node:vm').Module>}
+ * @returns {(specifier: string, referencingModule: Module, extra: { attributes: any }) => Promise<Module>}
  */
 export function createModuleLinker ({ path, context, source, plugins }) {
   const componentDirURL = pathToFileURL(resolve(path.dirname)).href
@@ -351,7 +352,8 @@ export async function evaluateProduction ({
 }
 
 /**
- * @param {any} options
+ * Evaluates a Coralite module script using the appropriate engine for the current mode.
+ * @param {any} options - Evaluation options
  */
 export async function evaluate (options) {
   if (options.mode === 'development') {

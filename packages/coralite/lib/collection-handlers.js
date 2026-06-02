@@ -60,14 +60,14 @@ export function createPageHandlers ({
     const elements = parseHTML(data.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
 
     if (app.options.mode !== 'production') {
-      const customElementsList = elements?.customElements || []
+      const customElementsList = elements && elements.customElements ? elements.customElements : []
       for (let i = 0; i < customElementsList.length; i++) {
         const name = customElementsList[i].name
         if (!pageCustomElements[name]) {
           pageCustomElements[name] = new Set()
           const component = app.components.getItem(name)
 
-          if (component?.result?.customElements?.length) {
+          if (component && component.result && component.result.customElements && component.result.customElements.length) {
             const stack = [component.result.customElements]
 
             while (stack.length > 0) {
@@ -80,7 +80,7 @@ export function createPageHandlers ({
                   childCustomElements[element.name] = name
                   const comp = app.components.getItem(element.name)
 
-                  if (comp?.result?.customElements?.length) {
+                  if (comp && comp.result && comp.result.customElements && comp.result.customElements.length) {
                     stack.push(comp.result.customElements)
                   }
                 }

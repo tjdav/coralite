@@ -96,7 +96,7 @@ export const aggregation = definePlugin({
               currentPage = parseInt(match[1], 10)
             }
 
-            startIndex = offset + (currentPage - 1) * limit
+            startIndex = offset + ((currentPage - 1) * limit)
             endIndex = startIndex + limit
             totalPages = Math.ceil(allPages.length / limit)
 

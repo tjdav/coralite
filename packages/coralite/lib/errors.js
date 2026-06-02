@@ -56,11 +56,15 @@ export function handleError ({ onErrorCallback, data }) {
 }
 
 /**
+ * @import { CoraliteModule, CoraliteCollectionItem, CoralitePage } from '../types/index.js'
+ */
+
+/**
  * Helper to create CoraliteError during component execution
  * @param {Error} error - The caught error
- * @param {import('../types/index.js').CoraliteModule} module - The component module
- * @param {import('../types/index.js').CoraliteCollectionItem} moduleComponent - The parent module component
- * @param {import('../types/index.js').CoralitePage} page - The current page
+ * @param {CoraliteModule} module - The component module
+ * @param {CoraliteCollectionItem} moduleComponent - The parent module component
+ * @param {CoralitePage} page - The current page
  * @param {string} instanceId - The unique instance id
  * @returns {CoraliteError} The generated error object
  */

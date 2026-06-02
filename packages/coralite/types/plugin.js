@@ -2,9 +2,9 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute, CoraliteRef, CoraliteTextNodeToken, CoraliteAttributeToken } from './component.js'
  * @import { CoraliteComponentOptions } from '../lib/coralite-element.js'
- * @import { HTMLData, CoraliteFilePath, CoralitePage, CoraliteSession, CoraliteInstance } from './core.js'
- * @import { CoraliteModule, CoraliteModuleDefinition } from './module.js'
- * @import { CoraliteAnyNode } from './dom.js'
+ * @import { HTMLData, CoraliteFilePath, CoralitePage, CoraliteSession, CoraliteInstance, CoraliteBuildOptions } from './core.js'
+ * @import { CoraliteModule, CoraliteModuleDefinition, CoraliteModuleDefinitions } from './module.js'
+ * @import { CoraliteAnyNode, CoraliteComponentRoot } from './dom.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
  */
@@ -64,7 +64,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoraliteTextNodeToken[]} textNodes - Scoped AST pointers for text nodes
  * @property {CoraliteAttributeToken[]} attributes - Scoped AST pointers for attributes
  * @property {CoralitePage} page - The current page context
- * @property {import('./dom.js').CoraliteElement} [element] - The parent AST tag itself
+ * @property {CoraliteElement} [element] - The parent AST tag itself
  * @property {CoraliteSession} session - Global build state
  * @property {CoraliteInstance} app - The global Coralite app instance
  * @property {any} [config] - Plugin configuration object
@@ -79,7 +79,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 
 /**
  * @typedef {Object} CoralitePluginAfterComponentRenderContext
- * @property {import('./dom.js').CoraliteAnyNode} result - The component's rendered AST root
+ * @property {CoraliteAnyNode} result - The component's rendered AST root
  * @property {Object.<string, any>} state - Final mutable state object
  * @property {string} componentId - Generic component name
  * @property {string} instanceId - Clean unique identifier
@@ -87,7 +87,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoraliteTextNodeToken[]} textNodes - Scoped AST pointers for text nodes
  * @property {CoraliteAttributeToken[]} attributes - Scoped AST pointers for attributes
  * @property {CoralitePage} page - The current page context
- * @property {import('./dom.js').CoraliteElement} [element] - The parent AST tag itself
+ * @property {CoraliteElement} [element] - The parent AST tag itself
  * @property {CoraliteSession} session - Global build state
  * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
@@ -111,10 +111,10 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 
 /**
  * @typedef {Object} CoralitePluginContext
- * @property {import('./module.js').CoraliteModuleDefinitions} state - Key-value pairs of data relevant to plugin execution
+ * @property {CoraliteModuleDefinitions} state - Key-value pairs of data relevant to plugin execution
  * @property {CoralitePage} page - The global page object
  * @property {CoraliteModule} module - The module context the plugin is operating within (contains template/script)
- * @property {import('./dom.js').CoraliteAnyNode | import('./dom.js').CoraliteComponentRoot} root - The specific HTML element the plugin is applied to (if applicable)
+ * @property {CoraliteAnyNode | CoraliteComponentRoot} root - The specific HTML element the plugin is applied to (if applicable)
  * @property {CoraliteSession} session - The current build session
  * @property {Attribute[]} [excludeByAttribute] - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
@@ -232,7 +232,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @typedef {Object} CoralitePluginBeforeBuildContext
  * @property {string | string[] | null} path - The target directory or an array of specific page paths to build
- * @property {import('./core.js').CoraliteBuildOptions} options - Configuration options for the build process
+ * @property {CoraliteBuildOptions} options - Configuration options for the build process
  * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */
