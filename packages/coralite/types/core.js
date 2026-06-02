@@ -67,6 +67,7 @@
  * @property {CoraliteOnError} [onError] - Optional callback function for handling errors and warnings.
  * @property {string[]} [externalStyles] - Global styles to inject into every page
  * @property {string} [mode='production'] - Build mode: "development" or "production"
+ * @property {CoralitePath} [path] - Internal path mapping.
  */
 
 /**
@@ -122,6 +123,7 @@
  * @property {Function} addRenderQueue - Adds a page to the current render queue.
  * @property {Function} getPagePathsUsingCustomElement - Retrieves page paths associated with a custom element.
  * @property {Function} createComponentElement - Creates a component element.
+ * @property {Object} [source] - Internal source utilities.
  */
 
 export default {}
