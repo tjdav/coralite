@@ -1,0 +1,41 @@
+<template id="child-component">
+  <div class="child-container">
+    <h3>Child</h3>
+    <div id="default-slot-wrapper">
+      <slot name="default"></slot>
+    </div>
+    <div id="other-slot-wrapper">
+      <slot name="other"></slot>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    slots: {
+      default: (nodes, state) => {
+        // Transformation logic using Node API
+        if (nodes && nodes.length > 0) {
+          nodes.forEach(node => {
+            if (node.type === 'tag' && (node.name === 'div' || node.tagName === 'DIV')) {
+              if (node.classList) {
+                node.classList.add('transformed-slot')
+              } else if (node.attribs) {
+                node.attribs.class = (node.attribs.class || '') + ' transformed-slot'
+              }
+              if (node.setAttribute) {
+                node.setAttribute('data-server-transformed', 'true')
+              } else if (node.attribs) {
+                node.attribs['data-server-transformed'] = 'true'
+              }
+            }
+          })
+        }
+        // Bypass to preserve nodes
+        return void 0
+      }
+    }
+  })
+</script>

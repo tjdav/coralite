@@ -1,0 +1,24 @@
+<template id="nested-component">
+  <div class="nested-box">
+    <button id="nested-btn">Nested Click</button>
+    <span id="nested-val">{{ localCount }}</span>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    data() {
+      return {
+        localCount: 10
+      }
+    },
+    script: ({ state, root, signal }) => {
+      const btn = root.querySelector('#nested-btn')
+      btn.addEventListener('click', () => {
+        state.localCount++
+      }, { signal })
+    }
+  })
+</script>

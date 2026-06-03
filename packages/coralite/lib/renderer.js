@@ -506,6 +506,43 @@ export function createRenderer ({
 
     session.state[contextId] = componentState
 
+    // Inject hydration markers into cloned template
+    if (module.values.textNodes) {
+      for (let i = 0; i < module.values.textNodes.length; i++) {
+        const item = module.values.textNodes[i]
+        const targetNode = item.type === 'html' ? item.textNode.parent : item.textNode
+        if (targetNode.type === 'tag') {
+          if (!targetNode.attribs) {
+            targetNode.attribs = {}
+          }
+          targetNode.attribs['data-crt'] = `t-${i}`
+          targetNode.attribs['data-owner'] = instanceId
+        }
+      }
+    }
+
+    if (module.values.attributes) {
+      for (let i = 0; i < module.values.attributes.length; i++) {
+        const item = module.values.attributes[i]
+        if (item.element && item.element.attribs) {
+          const id = `a-${i}`
+          item.element.attribs['data-cra'] = (item.element.attribs['data-cra'] ? item.element.attribs['data-cra'] + ' ' : '') + id
+          item.element.attribs['data-owner'] = instanceId
+        }
+      }
+    }
+
+    if (module.values.refs) {
+      for (let i = 0; i < module.values.refs.length; i++) {
+        const item = module.values.refs[i]
+        if (item.element && item.element.attribs) {
+          const id = `r-${i}`
+          item.element.attribs['data-crr'] = (item.element.attribs['data-crr'] ? item.element.attribs['data-crr'] + ' ' : '') + id
+          item.element.attribs['data-owner'] = instanceId
+        }
+      }
+    }
+
     module.values.attributes.forEach(item => item.tokens.forEach(token => {
       let value = componentState[token.name]
       if (value == null) {
@@ -891,7 +928,8 @@ export function createRenderer ({
           const scriptContent = generateClientRuntime({
             base,
             sharedChunkPath: scriptResult.manifest['chunk-shared'],
-            chunkManifest
+            chunkManifest,
+            declarativeTags: Array.from(mappedSessionObject.componentTags)
           })
           const hydrationData = {}
           for (const [id, instance] of Object.entries(instances)) {

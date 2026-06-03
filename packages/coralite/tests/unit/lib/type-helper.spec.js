@@ -403,16 +403,16 @@ describe('type-helper.js', () => {
     })
 
     describe('isRemovableNode', () => {
-      it('should return true for nodes with remove=true', () => {
+      it('should return true for nodes with _markedForRemoval=true', () => {
         const node = {
           type: 'tag',
           name: 'div',
-          remove: true
+          _markedForRemoval: true
         }
         assert.strictEqual(isRemovableNode(node), true)
       })
 
-      it('should return false for nodes without remove property or remove=false', () => {
+      it('should return false for nodes without _markedForRemoval property or _markedForRemoval=false', () => {
         assert.strictEqual(isRemovableNode({
           type: 'tag',
           name: 'div'
@@ -420,12 +420,12 @@ describe('type-helper.js', () => {
         assert.strictEqual(isRemovableNode({
           type: 'tag',
           name: 'div',
-          remove: false
+          _markedForRemoval: false
         }), false)
         assert.strictEqual(isRemovableNode({
           type: 'tag',
           name: 'div',
-          remove: 'true'
+          _markedForRemoval: 'true'
         }), false)
       })
     })

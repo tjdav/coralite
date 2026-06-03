@@ -14,6 +14,8 @@
  * } from '../types/index.js'
  */
 
+import { transformNode } from './parser.js'
+
 const ELEMENT_NODE = 1
 const TEXT_NODE = 3
 const COMMENT_NODE = 8
@@ -72,6 +74,25 @@ const CoraliteNodePrototype = {
     this.parent = null
     this.next = null
     this.prev = null
+  },
+
+  /**
+   * Checks if this node contains another node.
+   * @param {any} otherNode - The node to check
+   * @returns {boolean}
+   */
+  contains (otherNode) {
+    if (otherNode === this) {
+      return true
+    }
+    let node = otherNode.parent
+    while (node) {
+      if (node === this) {
+        return true
+      }
+      node = node.parent
+    }
+    return false
   }
 }
 
@@ -180,10 +201,180 @@ export function relinkChildren (parent) {
   }
 }
 
+const ManipulationMethods = {
+  /**
+   * Adds a node to the end of the list of children of a specified parent node.
+   * @this {any}
+   * @param {any} node - The node to append
+   * @returns {any}
+   */
+  appendChild (node) {
+    if (node.parent) {
+      node.remove()
+    }
+
+    if (!this.children) {
+      this.children = []
+    }
+
+    const lastChild = this.children[this.children.length - 1]
+    if (lastChild) {
+      lastChild.next = node
+      node.prev = lastChild
+    } else {
+      node.prev = null
+    }
+
+    node.next = null
+    node.parent = this
+    this.children.push(node)
+
+    enhanceNode(node)
+
+    return node
+  },
+
+  /**
+   * Inserts a set of Node objects or string objects after the last child of the Element.
+   * @this {any}
+   * @param {...(any)} nodes - The nodes or strings to append
+   */
+  append (...nodes) {
+    for (let node of nodes) {
+      if (typeof node === 'string') {
+        node = createCoraliteTextNode({
+          type: 'text',
+          data: node
+        })
+      }
+      this.appendChild(node)
+    }
+  },
+
+  /**
+   * Inserts a set of Node objects or string objects before the first child of the Element.
+   * @this {any}
+   * @param {...(any)} nodes - The nodes or strings to prepend
+   */
+  prepend (...nodes) {
+    if (!this.children) {
+      this.children = []
+    }
+    for (let i = nodes.length - 1; i >= 0; i--) {
+      let node = nodes[i]
+      if (typeof node === 'string') {
+        node = createCoraliteTextNode({
+          type: 'text',
+          data: node
+        })
+      }
+      if (node.parent) {
+        node.remove()
+      }
+
+      const firstChild = this.children[0]
+      if (firstChild) {
+        firstChild.prev = node
+        node.next = firstChild
+      } else {
+        node.next = null
+      }
+
+      node.prev = null
+      node.parent = this
+      this.children.unshift(node)
+      enhanceNode(node)
+    }
+  },
+
+  /**
+   * Inserts a node before a reference node as a child of a specified parent node.
+   * @this {any}
+   * @param {any} newNode - The node to insert
+   * @param {any} referenceNode - The node before which newNode is inserted
+   * @returns {any}
+   */
+  insertBefore (newNode, referenceNode) {
+    if (!this.children) {
+      this.children = []
+    }
+
+    if (!referenceNode) {
+      return this.appendChild(newNode)
+    }
+
+    const index = this.children.indexOf(referenceNode)
+    if (index === -1) {
+      throw new Error('Reference node is not a child of this node')
+    }
+
+    if (newNode.parent) {
+      newNode.remove()
+    }
+
+    newNode.parent = this
+    newNode.prev = referenceNode.prev
+    newNode.next = referenceNode
+
+    if (referenceNode.prev) {
+      referenceNode.prev.next = newNode
+    }
+    referenceNode.prev = newNode
+
+    this.children.splice(index, 0, newNode)
+    enhanceNode(newNode)
+
+    return newNode
+  },
+
+  /**
+   * Replaces one child node of the specified node with another.
+   * @this {any}
+   * @param {any} newNode - The new node to replace oldNode
+   * @param {any} oldNode - The node to be replaced
+   * @returns {any}
+   */
+  replaceChild (newNode, oldNode) {
+    if (!this.children) {
+      throw new Error('Node has no children')
+    }
+
+    const index = this.children.indexOf(oldNode)
+    if (index === -1) {
+      throw new Error('Old node is not a child of this node')
+    }
+
+    if (newNode.parent) {
+      newNode.remove()
+    }
+
+    newNode.parent = this
+    newNode.prev = oldNode.prev
+    newNode.next = oldNode.next
+
+    if (oldNode.prev) {
+      oldNode.prev.next = newNode
+    }
+    if (oldNode.next) {
+      oldNode.next.prev = newNode
+    }
+
+    this.children.splice(index, 1, newNode)
+
+    oldNode.parent = null
+    oldNode.prev = null
+    oldNode.next = null
+
+    enhanceNode(newNode)
+
+    return oldNode
+  }
+}
+
 /**
  * Prototype for Coralite Elements.
  */
-const CoraliteElementPrototype = Object.create(CoraliteNodePrototype)
+const CoraliteElementPrototype = Object.assign(Object.create(CoraliteNodePrototype), ManipulationMethods)
 
 /**
  * Returns the value of a specified attribute on the element.
@@ -226,48 +417,19 @@ CoraliteElementPrototype.removeAttribute = function (name) {
 }
 
 /**
- * Adds a node to the end of the list of children of a specified parent node.
- * @param {any} node - The node to append
- * @returns {any}
+ * Returns an array containing the names of the attributes of the current element.
+ * @returns {string[]}
  */
-CoraliteElementPrototype.appendChild = function (node) {
-  if (node.parent) {
-    node.remove()
-  }
-
-  if (!this.children) {
-    this.children = []
-  }
-
-  const lastChild = this.children[this.children.length - 1]
-  if (lastChild) {
-    lastChild.next = node
-    node.prev = lastChild
-  } else {
-    node.prev = null
-  }
-
-  node.next = null
-  node.parent = this
-  this.children.push(node)
-
-  return node
+CoraliteElementPrototype.getAttributeNames = function () {
+  return this.attribs ? Object.keys(this.attribs) : []
 }
 
 /**
- * Inserts a set of Node objects or string objects after the last child of the Element.
- * @param {...(any)} nodes - The nodes or strings to append
+ * Returns a boolean value indicating whether the specified element has any attributes or not.
+ * @returns {boolean}
  */
-CoraliteElementPrototype.append = function (...nodes) {
-  for (let node of nodes) {
-    if (typeof node === 'string') {
-      node = createCoraliteTextNode({
-        type: 'text',
-        data: node
-      })
-    }
-    this.appendChild(node)
-  }
+CoraliteElementPrototype.hasAttributes = function () {
+  return this.attribs && Object.keys(this.attribs).length > 0
 }
 
 Object.defineProperties(CoraliteElementPrototype, {
@@ -318,6 +480,41 @@ Object.defineProperties(CoraliteElementPrototype, {
       return (this.children && this.children[this.children.length - 1]) || null
     }
   },
+  firstElementChild: {
+    get () {
+      return (this.children || []).find(child => child.type === 'tag' || child.type === 'script' || child.type === 'style') || null
+    }
+  },
+  lastElementChild: {
+    get () {
+      const elements = (this.children || []).filter(child => child.type === 'tag' || child.type === 'script' || child.type === 'style')
+      return elements[elements.length - 1] || null
+    }
+  },
+  nextElementSibling: {
+    get () {
+      let next = this.next
+      while (next) {
+        if (next.type === 'tag' || next.type === 'script' || next.type === 'style') {
+          return next
+        }
+        next = next.next
+      }
+      return null
+    }
+  },
+  previousElementSibling: {
+    get () {
+      let prev = this.prev
+      while (prev) {
+        if (prev.type === 'tag' || prev.type === 'script' || prev.type === 'style') {
+          return prev
+        }
+        prev = prev.prev
+      }
+      return null
+    }
+  },
   textContent: {
     get () {
       if (this.children) {
@@ -336,12 +533,15 @@ Object.defineProperties(CoraliteElementPrototype, {
 
       const textNode = createCoraliteTextNode({
         type: 'text',
-        data: value,
-        parent: this,
-        prev: null,
-        next: null
+        data: String(value)
       })
+      textNode.parent = this
       this.children = [textNode]
+    }
+  },
+  innerHTML: {
+    get () {
+      return transformNode(this.children)
     }
   },
   id: {
@@ -364,6 +564,50 @@ Object.defineProperties(CoraliteElementPrototype, {
         this.attribs = {}
       }
       this.attribs.class = value
+    }
+  },
+  dataset: {
+    get () {
+      if (!this._dataset) {
+        const self = this
+        this._dataset = new Proxy({}, {
+          get (target, prop) {
+            if (typeof prop !== 'string') {
+              return undefined
+            }
+            const attrName = 'data-' + prop.replace(/([A-Z])/g, '-$1').toLowerCase()
+            return self.getAttribute(attrName)
+          },
+          set (target, prop, value) {
+            if (typeof prop !== 'string') {
+              return false
+            }
+            const attrName = 'data-' + prop.replace(/([A-Z])/g, '-$1').toLowerCase()
+            self.setAttribute(attrName, value)
+            return true
+          },
+          deleteProperty (target, prop) {
+            if (typeof prop !== 'string') {
+              return false
+            }
+            const attrName = 'data-' + prop.replace(/([A-Z])/g, '-$1').toLowerCase()
+            self.removeAttribute(attrName)
+            return true
+          },
+          ownKeys (target) {
+            return self.getAttributeNames()
+              .filter(name => name.startsWith('data-'))
+              .map(name => name.slice(5).replace(/-([a-z])/g, (g) => g[1].toUpperCase()))
+          },
+          getOwnPropertyDescriptor (target, prop) {
+            return {
+              enumerable: true,
+              configurable: true
+            }
+          }
+        })
+      }
+      return this._dataset
     }
   },
   classList: {
@@ -405,6 +649,20 @@ Object.defineProperties(CoraliteElementPrototype, {
             }
             self.className = Array.from(set).join(' ')
             return set.has(cls)
+          },
+          replace (oldClass, newClass) {
+            const current = self.className ? self.className.split(/\s+/).filter(Boolean) : []
+            const index = current.indexOf(oldClass)
+            if (index !== -1) {
+              current[index] = newClass
+              self.className = current.join(' ')
+              return true
+            }
+            return false
+          },
+          item (index) {
+            const current = self.className ? self.className.split(/\s+/).filter(Boolean) : []
+            return current[index] || null
           },
           get value () {
             return self.className
@@ -504,7 +762,30 @@ Object.defineProperties(CoraliteDirectivePrototype, {
 /**
  * Prototype for Coralite Component Roots (Document).
  */
-const CoraliteComponentPrototype = Object.create(CoraliteNodePrototype)
+const CoraliteComponentPrototype = Object.assign(Object.create(CoraliteNodePrototype), ManipulationMethods)
+
+CoraliteComponentPrototype.createElement = function (tagName) {
+  return createCoraliteElement({
+    type: 'tag',
+    name: tagName.toLowerCase(),
+    children: [],
+    attribs: {}
+  })
+}
+
+CoraliteComponentPrototype.createTextNode = function (data) {
+  return createCoraliteTextNode({
+    type: 'text',
+    data
+  })
+}
+
+CoraliteComponentPrototype.createComment = function (data) {
+  return createCoraliteComment({
+    type: 'comment',
+    data
+  })
+}
 
 Object.defineProperties(CoraliteComponentPrototype, {
   nodeName: {
@@ -558,7 +839,7 @@ export function createCoraliteElement (node) {
  * @returns {CoraliteTextNode} The enhanced Coralite Text Node
  */
 export function createCoraliteTextNode (node) {
-  node.type = 'text'
+  node.type = node.type || 'text'
   return enhanceNode(node)
 }
 
@@ -568,7 +849,7 @@ export function createCoraliteTextNode (node) {
  * @returns {CoraliteComment} The enhanced Coralite Comment Node
  */
 export function createCoraliteComment (node) {
-  node.type = 'comment'
+  node.type = node.type || 'comment'
   return enhanceNode(node)
 }
 
@@ -578,7 +859,7 @@ export function createCoraliteComment (node) {
  * @returns {CoraliteDirective} The enhanced Coralite Directive Node
  */
 export function createCoraliteDirective (node) {
-  node.type = 'directive'
+  node.type = node.type || 'directive'
   return enhanceNode(node)
 }
 
@@ -588,6 +869,6 @@ export function createCoraliteDirective (node) {
  * @returns {CoraliteComponentRoot} The enhanced Coralite Document Root
  */
 export function createCoraliteComponent (node) {
-  node.type = 'root'
+  node.type = node.type || 'root'
   return enhanceNode(node)
 }

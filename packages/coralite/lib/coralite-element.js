@@ -194,6 +194,10 @@ export class CoraliteElement extends HTMLElement {
       const originalLightDOM = Array.from(this.childNodes)
       this.innerHTML = this.componentOptions.templateHTML
 
+      // Identify markers in the newly set HTML and assign owner
+      const markers = this.querySelectorAll('[data-crt], [data-cra], [data-crr]')
+      markers.forEach(m => m.setAttribute('data-owner', this._instanceId))
+
       if (originalLightDOM.length > 0) {
         const slots = this.querySelectorAll('slot')
         slots.forEach(slot => {
@@ -294,12 +298,22 @@ export class CoraliteElement extends HTMLElement {
       for (const item of options.hydrationMap.refs) {
         /** @type {HTMLElement} */
         // @ts-ignore
-        const node = this.getNodeByPath(item.path)
+        const node = document.querySelector(`[data-crr~="${item.id}"][data-owner="${this._instanceId}"]`)
         if (node) {
           refs.push({
             name: item.name,
             element: node
           })
+        } else {
+          // Fallback to path if not found by ID or in projected slot
+          const pathNode = this.getNodeByPath(item.path)
+          if (pathNode) {
+            refs.push({
+              name: item.name,
+              // @ts-ignore
+              element: pathNode
+            })
+          }
         }
       }
     }
@@ -359,6 +373,8 @@ export class CoraliteElement extends HTMLElement {
     }
 
     this._state = this._createReactiveProxy(target)
+    /** @type {any} */
+    this.state = this._state
   }
 
   /**
@@ -414,8 +430,19 @@ export class CoraliteElement extends HTMLElement {
 
     if (map.texts) {
       for (const item of map.texts) {
-        const node = this.getNodeByPath(item.path)
+        /** @type {any} */
+        let node = document.querySelector(`[data-crt="${item.id}"][data-owner="${this._instanceId}"]`)
+        if (!node) {
+          node = this.getNodeByPath(item.path)
+        }
+
         if (node) {
+          // If it's a text binding but not HTML type, it might be a text node inside the marked element
+          if (item.type !== 'html' && node.nodeType === 1) {
+            // Find the text node child that matches the template
+            node = Array.from(node.childNodes).find(n => n.nodeType === 3 && n.textContent.includes(item.template)) || node
+          }
+
           this._bindings.push({
             type: item.type || 'text',
             node,
@@ -427,7 +454,12 @@ export class CoraliteElement extends HTMLElement {
 
     if (map.attributes) {
       for (const item of map.attributes) {
-        const node = this.getNodeByPath(item.path)
+        /** @type {any} */
+        let node = document.querySelector(`[data-cra~="${item.id}"][data-owner="${this._instanceId}"]`)
+        if (!node) {
+          node = this.getNodeByPath(item.path)
+        }
+
         if (node) {
           this._bindings.push({
             type: 'attribute',
@@ -463,10 +495,15 @@ export class CoraliteElement extends HTMLElement {
    * Promise will be discarded, preventing DOM race conditions.
    * @private
    */
-  _updateDOM () {
+  _updateDOM (tokenValues = null) {
     // Create a unique lock for this specific render cycle
     const renderVersion = Symbol()
     this._currentRenderVersion = renderVersion
+
+    if (tokenValues) {
+      this._applyBindings(tokenValues, renderVersion)
+      return
+    }
 
     // Extract unique tokens to prevent double-reading and accidental aborts
     /** @type {Set<string>} */
@@ -493,64 +530,6 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
-    // The DOM Mutator Function
-    const applyBindings = (tokenValues) => {
-      // Race Condition Lock: Abort if a newer render cycle has already begun
-      if (this._currentRenderVersion !== renderVersion) {
-        return
-      }
-
-      for (const binding of this._bindings) {
-        const hydratedValue = binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
-          return tokenValues[key] ?? ''
-        })
-
-        if (binding.type === 'text') {
-          if (binding.node.textContent !== hydratedValue) {
-            binding.node.textContent = hydratedValue
-          }
-        } else if (binding.type === 'html') {
-          /** @type {HTMLElement} */
-          // @ts-ignore
-          const element = binding.node
-
-          if (element.innerHTML !== hydratedValue) {
-            element.innerHTML = hydratedValue
-          }
-        } else if (binding.type === 'attribute') {
-          /** @type {HTMLElement} */
-          // @ts-ignore
-          const element = binding.node
-
-          if (BOOLEAN_ATTRIBUTES.has(binding.name)) {
-            const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === '0' || hydratedValue === 'undefined'
-            if (isFalsy) {
-              element.removeAttribute(binding.name)
-            } else {
-              element.setAttribute(binding.name, '')
-            }
-          } else {
-            if (element.getAttribute(binding.name) !== hydratedValue) {
-              element.setAttribute(binding.name, hydratedValue)
-            }
-          }
-        }
-      }
-
-      this._processSlots()
-
-      // Trigger After-Render hooks ONLY after the physical DOM is stable
-      for (const hook of this._hooks.onAfterComponentRender) {
-        hook({
-          state: this._state,
-          instanceId: this._instanceId,
-          componentId: this.componentOptions.componentId,
-          element: this,
-          options: this.componentOptions
-        })
-      }
-    }
-
     // Await Promises or Apply Synchronously
     if (hasPromise) {
       const keys = Object.keys(evaluatedTokens)
@@ -561,14 +540,77 @@ export class CoraliteElement extends HTMLElement {
         keys.forEach((k, i) => {
           resolvedMap[k] = resolvedValues[i]
         })
-        applyBindings(resolvedMap)
+        this._applyBindings(resolvedMap, renderVersion)
       }).catch(e => {
         if (e.name !== 'AbortError') {
           console.error('Coralite Async Getter Error:', e)
         }
       })
     } else {
-      applyBindings(evaluatedTokens)
+      this._applyBindings(evaluatedTokens, renderVersion)
+    }
+  }
+
+  /**
+   * Internal DOM mutator that applies token values to bindings.
+   * @param {Object} tokenValues - Map of token names to their current values.
+   * @param {symbol} renderVersion - The version lock for this render pass.
+   * @private
+   */
+  _applyBindings (tokenValues, renderVersion) {
+    // Race Condition Lock: Abort if a newer render cycle has already begun
+    if (this._currentRenderVersion !== renderVersion) {
+      return
+    }
+
+    for (const binding of this._bindings) {
+      const hydratedValue = binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
+        return tokenValues[key] ?? ''
+      })
+
+      if (binding.type === 'text') {
+        if (binding.node.textContent !== hydratedValue) {
+          binding.node.textContent = hydratedValue
+        }
+      } else if (binding.type === 'html') {
+        /** @type {HTMLElement} */
+        // @ts-ignore
+        const element = binding.node
+
+        if (element.innerHTML !== hydratedValue) {
+          element.innerHTML = hydratedValue
+        }
+      } else if (binding.type === 'attribute') {
+        /** @type {HTMLElement} */
+        // @ts-ignore
+        const element = binding.node
+
+        if (BOOLEAN_ATTRIBUTES.has(binding.name)) {
+          const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === '0' || hydratedValue === 'undefined'
+          if (isFalsy) {
+            element.removeAttribute(binding.name)
+          } else {
+            element.setAttribute(binding.name, '')
+          }
+        } else {
+          if (element.getAttribute(binding.name) !== hydratedValue) {
+            element.setAttribute(binding.name, hydratedValue)
+          }
+        }
+      }
+    }
+
+    this._processSlots()
+
+    // Trigger After-Render hooks ONLY after the physical DOM is stable
+    for (const hook of this._hooks.onAfterComponentRender) {
+      hook({
+        state: this._state,
+        instanceId: this._instanceId,
+        componentId: this.componentOptions.componentId,
+        element: this,
+        options: this.componentOptions
+      })
     }
   }
 
@@ -643,7 +685,14 @@ export class CoraliteElement extends HTMLElement {
     if (isImperative) {
       this._updateDOM()
     } else {
-      this._scheduleUpdate()
+      const tokens = {}
+      for (const binding of this._bindings) {
+        binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
+          tokens[key] = this._state[key]
+          return ''
+        })
+      }
+      this._updateDOM(tokens)
     }
 
     if (this.componentOptions.script) {

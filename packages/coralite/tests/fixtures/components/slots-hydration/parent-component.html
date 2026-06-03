@@ -1,0 +1,30 @@
+<template id="parent-component">
+  <div>
+    <button id="increment-btn">Increment</button>
+    <span id="parent-count">{{ count }}</span>
+    <child-component id="child-inst" count="{{ count }}">
+      <div id="projected-content" ref="myProjected">
+        Count is: <span id="projected-count">{{ count }}</span>
+      </div>
+      <nested-component slot="other"></nested-component>
+    </child-component>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    data () {
+      return {
+        count: 0
+      }
+    },
+    script: ({ state, root, refs, signal }) => {
+      const btn = root.querySelector('#increment-btn')
+      btn.addEventListener('click', () => {
+        state.count++
+      }, { signal })
+    }
+  })
+</script>
