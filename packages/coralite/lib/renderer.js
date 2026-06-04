@@ -370,7 +370,8 @@ export function createRenderer ({
       attributes: module.values.attributes,
       page,
       element,
-      session
+      session,
+      app
     })
     componentState = mappedComponentContext.state
     const result = module.template
@@ -655,7 +656,8 @@ export function createRenderer ({
       attributes: module.values.attributes,
       page,
       element,
-      session
+      session,
+      app
     })
     return mappedAfterContext.result
   }
@@ -765,7 +767,7 @@ export function createRenderer ({
           const elements = parseHTML(content, normalizedOptions.ignoreByAttribute, normalizedOptions.skipRenderByAttribute, handleError)
           pageContext = {
             ...originalDocument.page,
-            meta: { ...originalDocument.page.meta }
+            meta: { ...(originalDocument.page?.meta || {}) }
           }
           const pageState = {
             ...originalDocument.state,
@@ -775,7 +777,8 @@ export function createRenderer ({
             elements,
             state: pageState,
             page: pageContext,
-            data: pageItem
+            data: pageItem,
+            app
           })
           // @ts-ignore
           const fullPath = Object.assign({}, mappedContext.data.path, {
@@ -806,7 +809,8 @@ export function createRenderer ({
           component,
           state,
           page: pageContext,
-          session
+          session,
+          app
         })
         const mappedComponent = mappedSession.component
         const mappedSessionObject = mappedSession.session
@@ -1035,7 +1039,8 @@ export function createRenderer ({
     }
     const mappedBeforeBuild = await hooks.trigger('onBeforeBuild', {
       path: buildPath,
-      options: buildOptions
+      options: buildOptions,
+      app
     })
     buildPath = mappedBeforeBuild.path
     buildOptions = mappedBeforeBuild.options
@@ -1062,7 +1067,8 @@ export function createRenderer ({
           }
           const additionalPages = await hooks.triggerAggregate('onAfterPageRender', {
             result,
-            session: result.session
+            session: result.session,
+            app
           })
           const items = [result]
           for (const newPage of additionalPages) {
@@ -1121,7 +1127,8 @@ export function createRenderer ({
       await hooks.trigger('onAfterBuild', {
         results,
         error: buildError,
-        duration
+        duration,
+        app
       })
     }
   }

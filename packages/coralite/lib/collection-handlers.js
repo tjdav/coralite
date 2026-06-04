@@ -41,7 +41,7 @@ export function createPageHandlers ({
         dirname: data.path.dirname,
         filename: data.path.filename
       },
-      meta: {}
+      meta: data.state?.page?.meta || {}
     }
     const state = {
       ...data.state,
@@ -96,7 +96,8 @@ export function createPageHandlers ({
       elements,
       state,
       page,
-      data
+      data,
+      app
     })
     const isProduction = app.options.mode === 'production'
     if (isProduction && data.physical) {
@@ -132,7 +133,8 @@ export function createPageHandlers ({
       elements: newValue.result,
       page: newValue.result.page,
       newValue,
-      oldValue
+      oldValue,
+      app
     })
     newValue.result = mappedContext.elements; newValue = mappedContext.newValue
     for (let i = 0; i < newCustomElements.length; i++) {
@@ -161,7 +163,10 @@ export function createPageHandlers ({
     if (app.options.mode === 'production') {
       return
     }
-    const res = await triggerHook('onPageDelete', { data: value })
+    const res = await triggerHook('onPageDelete', {
+      data: value,
+      app
+    })
     value = res.data
     if (value?.result?.customElements) {
       value.result.customElements.forEach(ce => {
@@ -185,7 +190,10 @@ export function createPageHandlers ({
     if (!component.isTemplate) {
       return
     }
-    const res = await triggerHook('onComponentSet', { component })
+    const res = await triggerHook('onComponentSet', {
+      component,
+      app
+    })
     return {
       type: 'component',
       id: res.component.id,
@@ -205,12 +213,18 @@ export function createPageHandlers ({
     if (!component.isTemplate) {
       return
     }
-    const res = await triggerHook('onComponentUpdate', { component })
+    const res = await triggerHook('onComponentUpdate', {
+      component,
+      app
+    })
     return res.component
   }
 
   const onComponentDeleteLocal = async (v) => {
-    await triggerHook('onComponentDelete', { component: v })
+    await triggerHook('onComponentDelete', {
+      component: v,
+      app
+    })
   }
 
   // Internal helper for reading HTML files
