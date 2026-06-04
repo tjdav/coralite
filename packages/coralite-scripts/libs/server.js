@@ -7,7 +7,7 @@ import { displayError, displayInfo, displayWarning, displaySuccess, toCode, toMS
 import { dirname, extname, join, normalize, relative, sep } from 'path'
 import { access, constants, mkdir, readFile, writeFile } from 'fs/promises'
 import { createCoralite } from 'coralite'
-import { existsSync, mkdirSync } from 'fs'
+import { existsSync } from 'fs'
 import portfinder from 'portfinder'
 
 /**

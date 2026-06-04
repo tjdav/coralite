@@ -425,7 +425,8 @@ export function createRenderer ({
           root: element || root,
           contextId,
           session,
-          noHydration
+          noHydration,
+          mode: app.options.mode
         })
       } catch (error) {
         throw createExecutionError(error, module, moduleComponent, page, contextId)

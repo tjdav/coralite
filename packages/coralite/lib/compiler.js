@@ -192,8 +192,8 @@ export async function evaluateDevelopment ({
     initializeImportMeta (meta) {
       meta.url = pathToFileURL(resolve(moduleComponent.path.pathname)).href
     },
-    lineOffset: module.lineOffset,
-    identifier: resolve(moduleComponent.path.pathname),
+    lineOffset: module.lineOffset || 0,
+    identifier: pathToFileURL(resolve(moduleComponent.path.pathname)).href,
     context: contextifiedObject
   })
 

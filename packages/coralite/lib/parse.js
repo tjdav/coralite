@@ -470,7 +470,8 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
   }
 
   const scriptIndex = string.indexOf('<script')
-  const stringHead = string.substring(0, scriptIndex)
+  const scriptTagEnd = string.indexOf('>', scriptIndex) + 1
+  const stringHead = string.substring(0, scriptTagEnd)
   const lineOffset = stringHead.split(/\r\n|\r|\n/).length - 1
 
   return {
