@@ -2,7 +2,8 @@ import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, findAndExtractImperativeComponents, astTransformer, addComponentAndDependencies, cleanAST, cleanValues, generateHydrationMap } from './utils.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, addComponentAndDependencies, cleanAST, cleanValues, generateHydrationMap } from './utils.js'
+import { findAndExtractImperativeComponents, astTransformer } from './server-utils.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname, relative } from 'node:path'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
@@ -494,6 +495,19 @@ export default {
               return null
             }
 
+            if (args.path === 'coralite') {
+              return {
+                path: 'coralite',
+                namespace: 'coralite-virtual'
+              }
+            }
+
+            if (args.path === 'coralite/utils') {
+              return {
+                path: fileURLToPath(import.meta.resolve('./utils.js'))
+              }
+            }
+
             // Support virtual module imports for plugins by name
             if (this.plugins.some(p => p.name === args.path)) {
               return {
@@ -530,6 +544,23 @@ export default {
       {
         name: 'coralite-virtual-modules',
         setup: (pluginBuild) => {
+          pluginBuild.onLoad({
+            filter: /.*/,
+            namespace: 'coralite-virtual'
+          }, args => {
+            if (args.path === 'coralite') {
+              const utilsPath = fileURLToPath(import.meta.resolve('./utils.js'))
+              const pluginPath = fileURLToPath(import.meta.resolve('./plugin.js'))
+              return {
+                contents: `
+                  export { defineComponent } from '${utilsPath.replace(/\\/g, '/')}';
+                  export { definePlugin } from '${pluginPath.replace(/\\/g, '/')}';
+                `,
+                loader: 'js'
+              }
+            }
+          })
+
           pluginBuild.onResolve({ filter: /^virtual-entry-point:/ }, args => {
             const key = args.path.replace('virtual-entry-point:', '')
             if (entryPoints[key]) {

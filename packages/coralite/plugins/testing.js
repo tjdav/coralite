@@ -1,4 +1,4 @@
-import { definePlugin } from '#lib'
+import { definePlugin } from '../lib/plugin.js'
 
 /**
  * Traverses an AST recursively and duplicates 'ref' attributes to 'data-testid'.

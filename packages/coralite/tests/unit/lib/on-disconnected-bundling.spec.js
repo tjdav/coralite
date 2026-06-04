@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { ScriptManager } from '#lib'
+import { ScriptManager } from '../../../lib/script-manager.js'
 
 describe('ScriptManager onDisconnected bundling', () => {
   it('should include onDisconnected in the compiled shared chunk', async () => {

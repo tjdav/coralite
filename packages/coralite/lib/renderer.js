@@ -5,13 +5,15 @@ import pLimit from 'p-limit'
 import {
   cleanKeys,
   cloneModuleInstance,
-  replaceToken,
   cloneComponentInstance,
+  normalizeObjectFunctions
+} from './utils.js'
+import {
+  replaceToken,
   findAndExtractScript,
   findAndExtractProperties,
-  normalizeObjectFunctions,
   astTransformer
-} from './utils.js'
+} from './server-utils.js'
 import { getHtmlFile } from './html.js'
 import { parseHTML } from './parse.js'
 import {

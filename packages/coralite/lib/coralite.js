@@ -1,19 +1,10 @@
-import {
-  cloneComponentInstance,
-  normalizeObjectFunctions,
-  astTransformer
-} from './utils.js'
 import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './html.js'
-import {
-  removeElements
-} from './render-helpers.js'
 import { parseHTML, parseModule } from './parse.js'
 import { ScriptManager } from './script-manager.js'
 import { metadataPlugin, refsPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative } from 'node:path'
 import { handleError, createExecutionError } from './errors.js'
-import { pathToFileURL } from 'node:url'
 import { transformNode } from './parser.js'
 import { evaluate } from './compiler.js'
 import {

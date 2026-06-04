@@ -1,7 +1,7 @@
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
-import { findAndExtractScript } from '../../../lib/utils.js'
+import { findAndExtractScript } from '../../../lib/server-utils.js'
 
 describe('Script Extraction', () => {
   test('shorthand method', () => {

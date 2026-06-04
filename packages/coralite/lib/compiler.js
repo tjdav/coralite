@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { createContext } from 'node:vm'
 import { transform } from 'esbuild'
 import { createRequire } from 'node:module'
-import { extractGlobals } from './utils.js'
+import { extractGlobals } from './server-utils.js'
 
 /**
  * @import { CoraliteModule, CoraliteModuleDefinitions, CoralitePage, CoraliteSession, CoraliteFilePath, CoralitePluginContext } from '../types/index.js'

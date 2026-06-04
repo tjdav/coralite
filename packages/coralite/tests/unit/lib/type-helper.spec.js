@@ -407,7 +407,7 @@ describe('type-helper.js', () => {
         const node = {
           type: 'tag',
           name: 'div',
-          remove: true
+          _markedForRemoval: true
         }
         assert.strictEqual(isRemovableNode(node), true)
       })
@@ -420,12 +420,12 @@ describe('type-helper.js', () => {
         assert.strictEqual(isRemovableNode({
           type: 'tag',
           name: 'div',
-          remove: false
+          _markedForRemoval: false
         }), false)
         assert.strictEqual(isRemovableNode({
           type: 'tag',
           name: 'div',
-          remove: 'true'
+          _markedForRemoval: 'true'
         }), false)
       })
     })

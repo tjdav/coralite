@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, mock, after } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { ScriptManager } from '#lib'
+import { ScriptManager } from '../../../lib/script-manager.js'
 import fs from 'node:fs'
 import path from 'node:path'
 
