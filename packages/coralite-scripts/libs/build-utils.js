@@ -146,7 +146,7 @@ export function displayError (message, error) {
                 // and replace all non-whitespace characters with spaces.
                 const prefix = errorLine.substring(0, targetError.column - 1)
                 const padding = ' '.repeat(gutter.length) + prefix.replace(/\S/g, ' ')
-                process.stdout.write(padding + colours.green('^') + '\n')
+                process.stdout.write(padding + colours.cyan('~') + '\n')
               }
             }
           } catch (e) {
