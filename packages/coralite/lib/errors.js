@@ -13,6 +13,9 @@ export class CoraliteError extends Error {
     this.filePath = options.filePath
     this.instanceId = options.instanceId
     this.pagePath = options.pagePath
+    this.line = options.line
+    this.column = options.column
+    this.stackFile = options.stackFile
 
     // Polyfill cause if necessary (node version differences)
     if (options.cause && !this.cause) {
@@ -68,12 +71,42 @@ export function handleError ({ onErrorCallback, data }) {
  * @param {string} instanceId - The unique instance id
  * @returns {CoraliteError} The generated error object
  */
+const CURRENT_FILE_URL = import.meta.url
+
+/**
+ *
+ */
 export function createExecutionError (error, module, moduleComponent, page, instanceId) {
+  let line, column, stackFile
+  if (error.stack) {
+    const stackLines = error.stack.split('\n')
+    // Find the first line that doesn't belong to the error handling internal logic
+    // Usually the first line is the error message, and subsequent lines are stack frames.
+    // We look for the first frame that is NOT from errors.js or internal node vm modules if possible,
+    // but typically the first frame after the message is the most relevant.
+    for (let i = 1; i < stackLines.length; i++) {
+      const stackLine = stackLines[i]
+      if (stackLine.includes(CURRENT_FILE_URL) || stackLine.includes('packages/coralite/lib/errors.js')) {
+        continue
+      }
+      const match = stackLine.match(/\((.*):(\d+):(\d+)\)$/) || stackLine.match(/at (.*):(\d+):(\d+)$/)
+      if (match) {
+        stackFile = match[1]
+        line = parseInt(match[2], 10)
+        column = parseInt(match[3], 10)
+        break
+      }
+    }
+  }
+
   return new CoraliteError(error.message, {
     cause: error,
     componentId: module.id,
     filePath: moduleComponent.path.pathname,
     pagePath: page?.file?.pathname,
-    instanceId
+    instanceId,
+    line,
+    column,
+    stackFile
   })
 }

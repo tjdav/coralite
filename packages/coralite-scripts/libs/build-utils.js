@@ -2,6 +2,7 @@ import colours from 'kleur'
 import fs from 'node:fs'
 import path from 'node:path'
 import { cp } from 'node:fs/promises'
+import { fileURLToPath } from 'node:url'
 
 /**
  * Creates current time in format [HH:MM:SS].mmm (milliseconds), colored with ANSI colors, and formatted as bold white string for better readability of logs or console output
@@ -111,6 +112,49 @@ export function displayError (message, error) {
     }
 
     if (isCoraliteError) {
+      const displayFile = targetError.stackFile || targetError.filePath
+      if (displayFile) {
+        let absolutePath = displayFile
+        if (absolutePath.startsWith('file://')) {
+          try {
+            absolutePath = fileURLToPath(absolutePath)
+          } catch (e) {
+          }
+        }
+
+        const relativePath = path.relative(process.cwd(), absolutePath)
+        let location = relativePath
+        if (targetError.line) {
+          location += `:${targetError.line}`
+          if (targetError.column) {
+            location += `:${targetError.column}`
+          }
+        }
+
+        process.stdout.write(colours.bold(`> ${location}: `) + colours.red('error: ') + targetError.message + '\n')
+
+        if (fs.existsSync(absolutePath) && targetError.line) {
+          try {
+            const content = fs.readFileSync(absolutePath, 'utf8')
+            const lines = content.split('\n')
+            const errorLine = lines[targetError.line - 1]
+            if (errorLine !== undefined) {
+              const gutter = ` ${targetError.line} | `
+              process.stdout.write(colours.grey(gutter) + errorLine + '\n')
+              if (targetError.column) {
+                // To handle tabs correctly, we take the prefix of the line up to the error column
+                // and replace all non-whitespace characters with spaces.
+                const prefix = errorLine.substring(0, targetError.column - 1)
+                const padding = ' '.repeat(gutter.length) + prefix.replace(/\S/g, ' ')
+                process.stdout.write(padding + colours.cyan('~') + '\n')
+              }
+            }
+          } catch (e) {
+          }
+        }
+        process.stdout.write('\n')
+      }
+
       process.stdout.write(indent + colours.magenta('Component context:') + '\n')
       if (targetError.componentId) {
         process.stdout.write(indent + '  ' + colours.cyan('ID:        ') + targetError.componentId + '\n')
@@ -129,15 +173,17 @@ export function displayError (message, error) {
 
     let errorDetails = ''
 
-    if (error instanceof Error ||
-      (error !== null
-        && typeof error === 'object'
-        && 'message' in error
-        && 'stack' in error
+    const errorToStack = error.cause && error.cause.stack ? error.cause : error
+
+    if (errorToStack instanceof Error ||
+      (errorToStack !== null
+        && typeof errorToStack === 'object'
+        && 'message' in errorToStack
+        && 'stack' in errorToStack
       )
     ) {
       // @ts-ignore
-      errorDetails = error.stack || error.message
+      errorDetails = errorToStack.stack || errorToStack.message
     } else if (typeof error === 'string') {
       errorDetails = error
     } else if (typeof error === 'object' && error !== null) {
