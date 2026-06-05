@@ -16,6 +16,12 @@ export default [
       }
     },
     rules: {
+      'no-unused-vars': ['error', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_'
+      }],
+      'jsdoc/check-param-names': 'error',
       'no-inline-comments': 'error',
       curly: ['error', 'all'],
       'no-nested-ternary': 'error',
