@@ -15,7 +15,7 @@
 
     <p>These core variables are organized into <code>url</code> and <code>file</code> objects within the <code>page</code> context.</p>
 
-    <coralite-heading level="h2" text="Available Page Variables"></coralite-heading>
+    <coralite-heading level="2" text="Available Page Variables"></coralite-heading>
 
     <ul>
       <li><strong><code>page.url.pathname</code></strong>: The final URL path that the user navigates to (e.g., <code>/docs/guide/page-variables.html</code>).</li>
@@ -25,7 +25,7 @@
       <li><strong><code>page.file.filename</code></strong>: The filename of the source page file (e.g., <code>page-variables.html</code>).</li>
     </ul>
 
-    <coralite-heading level="h2" text="Metadata Variables"></coralite-heading>
+    <coralite-heading level="2" text="Metadata Variables"></coralite-heading>
     
     <p>In addition to the path-related variables, if you are using the built-in <a href="/docs/guide/page-metadata.html">metadata plugin</a>, it injects metadata from the page's <code>&lt;head&gt;</code> into the <code>page.meta</code> object:</p>
 
@@ -34,7 +34,7 @@
       <li><strong><code>page.meta.lang</code></strong>: Extracted from the <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Example Usage"></coralite-heading>
+    <coralite-heading level="2" text="Example Usage"></coralite-heading>
 
     <p>Because templates do not support dot notation for tokens (e.g., <code>{{ page.url.pathname }}</code>), you must map these variables to local properties in your component's <code>state</code> (via the <code>data</code> function) or <code>getters</code>.</p>
 

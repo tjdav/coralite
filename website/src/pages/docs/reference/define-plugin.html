@@ -19,7 +19,7 @@
 
     <!-- Table of Contents -->
     <nav aria-label="table of contents">
-      <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
       <ul>
         <li><a href="#configuration">Configuration Options</a></li>
         <li><a href="#server-hooks">Server-Side Hooks</a></li>
@@ -32,7 +32,7 @@
 
     <!-- Configuration Options -->
     <section id="configuration">
-      <coralite-heading level="h2" text="Configuration Options"></coralite-heading>
+      <coralite-heading level="2" text="Configuration Options"></coralite-heading>
       <p>The <code>definePlugin</code> function accepts a configuration object with the following options:</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -72,7 +72,7 @@ const myPlugin = definePlugin({
 
     <!-- Context Binding -->
     <section id="context-binding">
-      <coralite-heading level="h2" text="Context Binding (`server.exports`)"></coralite-heading>
+      <coralite-heading level="2" text="Context Binding (`server.exports`)"></coralite-heading>
       <p>The <code>server.exports</code> property is an object of functions that processes content using plugin logic during the server-side build process. These functions are available to component <code>data()</code> blocks.</p>
       <p>These functions use a <strong>Two-Phase Currying</strong> pattern to receive the <code>globalContext</code> and <code>config</code> explicitly.</p>
       
@@ -99,7 +99,7 @@ export default definePlugin({
 
     <!-- Server-Side Hooks -->
     <section id="server-hooks">
-      <coralite-heading level="h2" text="Server-Side Hooks"></coralite-heading>
+      <coralite-heading level="2" text="Server-Side Hooks"></coralite-heading>
       <p>Plugins can hook into Coralite's build lifecycle within the <code>server</code> block. All hooks support asynchronous operations. All hooks receive the shared <code>globalContext</code> (as properties) and the plugin's <code>config</code> in their context object.</p>
       <ul>
         <li><code>onBeforeBuild({ path, options, app, config, ...globalContext })</code>: Called before the build process starts.</li>
@@ -119,12 +119,12 @@ export default definePlugin({
 
     <!-- Client-Side Scripting -->
     <section id="client-scripting">
-      <coralite-heading level="h2" text="Client-Side Scripting"></coralite-heading>
+      <coralite-heading level="2" text="Client-Side Scripting"></coralite-heading>
       <p>The <code>client</code> property is powerful: it allows you to inject code that runs in the browser. This code
         is bundled with your application.</p>
 
 
-      <coralite-heading level="h3" text="client.context"></coralite-heading>
+      <coralite-heading level="3" text="client.context"></coralite-heading>
       <p>Define utilities that will be flattened directly onto the <code>context</code> object in <code>defineComponent</code> scripts in the browser.</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -144,7 +144,7 @@ export default definePlugin({
 
     <!-- Script Configuration -->
     <section id="script-config">
-      <coralite-heading level="h2" text="Client Configuration"></coralite-heading>
+      <coralite-heading level="2" text="Client Configuration"></coralite-heading>
       <p>The <code>client.config</code> object allows you to pass static configuration data from the server (where the
         plugin is defined) to the client. This is useful for API keys, theme settings, or feature flags.</p>
 
@@ -164,7 +164,7 @@ export default definePlugin({
 
     <!-- Context Injection -->
     <section id="context-injection">
-      <coralite-heading level="h2" text="Context Injection"></coralite-heading>
+      <coralite-heading level="2" text="Context Injection"></coralite-heading>
       <p>The <code>client.config</code> is automatically passed as the second argument to your context factories. Additionally, you can mutate <code>globalContext</code> in Phase 1 to expose services to downstream plugins.
       </p>
 
@@ -188,7 +188,7 @@ context: {
 
     <!-- Complete Example -->
     <section id="complete-example">
-      <coralite-heading level="h2" text="Complete Example: Confetti Plugin"></coralite-heading>
+      <coralite-heading level="2" text="Complete Example: Confetti Plugin"></coralite-heading>
       <p>Let's build a plugin that triggers a confetti explosion using a remote library and allows configuration of particle count.</p>
 
       <coralite-code-highlight language="JavaScript">

@@ -17,7 +17,7 @@
 
     <p>Coralite’s latest release, **v0.4.0**, introduces foundational updates to its HTML module static site generator, with a focus on improving template handling and End-to-End (E2E) testing infrastructure. This update includes a breaking change that renames the <code>-c/--components</code> option to <code>-t/--templates</code>, reflecting a shift in architecture toward explicit template management.</p> 
      
-    <coralite-heading level="h2" text="Key Changes"></coralite-heading>
+    <coralite-heading level="2" text="Key Changes"></coralite-heading>
 
     <ul>  
       <li><strong>BREAKING CHANGE:</strong> The <code>-c/--components</code> command-line option has been deprecated in favor of <code>-t/--templates</code>, aligning with a new emphasis on template-driven rendering. Documentation and type definitions have been updated accordingly.</li>  
@@ -25,14 +25,14 @@
       <li>Updated <code>evalComputedTokens</code> function to ensure compatibility with modern Node.js versions through revised <code>Dirent</code> handling in package.json parsing.</li>  
       <li>Enhanced TypeScript definitions by adding the <code>CoraliteComment</code> type and updating <code>CoralTypePath</code> for better template-specific metadata extraction.</li>  
     </ul>  
-    <coralite-heading level="h2" text="Infrastructure Improvements"></coralite-heading>
+    <coralite-heading level="2" text="Infrastructure Improvements"></coralite-heading>
 
     <ul>  
       <li>Integrated Playwright for E2E testing, including a dedicated debug webserver and updated CI/CD pipelines to run tests across one browser per branch event.</li>  
       <li>Added E2E test coverage for <code>index.html</code>, ensuring core rendering logic is validated during development and deployment workflows.</li>  
       <li>Refactored CI configurations, including the addition of <code>--experimental-vm-modules</code> to the HTML script for broader compatibility.</li>  
     </ul>  
-    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+    <coralite-heading level="2" text="Get the release"></coralite-heading>
 
     <coralite-code-highlight language="bash">npm install coralite@0.4.0</coralite-code-highlight>
 

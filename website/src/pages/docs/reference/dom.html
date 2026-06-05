@@ -18,7 +18,7 @@
       standard DOM-like API (getters and setters) to make manipulation more intuitive.</p>
 
     <nav aria-label="table of contents">
-      <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
       <ul>
         <li><a href="#node-types">Node Types</a></li>
         <li><a href="#coralite-element">CoraliteElement API</a></li>
@@ -31,7 +31,7 @@
     </nav>
 
     <section id="node-types">
-      <coralite-heading level="h2" text="Node Types"></coralite-heading>
+      <coralite-heading level="2" text="Node Types"></coralite-heading>
       <p>The Coralite DOM consists of several node types, all inheriting from a base node structure:</p>
       <ul>
         <li><strong>CoraliteElement</strong> (Type 1): Represents HTML tags (e.g., <code>&lt;div&gt;</code>,
@@ -44,7 +44,7 @@
     </section>
 
     <section id="coralite-element">
-      <coralite-heading level="h2" text="CoraliteElement API"></coralite-heading>
+      <coralite-heading level="2" text="CoraliteElement API"></coralite-heading>
       <p>Elements are the most common nodes you will interact with. They are standard objects enhanced with the
         following options:</p>
 
@@ -139,7 +139,7 @@
     </section>
 
     <section id="coralite-text-node">
-      <coralite-heading level="h2" text="CoraliteTextNode API"></coralite-heading>
+      <coralite-heading level="2" text="CoraliteTextNode API"></coralite-heading>
       <p>Text nodes represent the text content within elements.</p>
       <div class="table-responsive">
         <table class="table">
@@ -182,7 +182,7 @@
     </section>
 
     <section id="traversing-the-dom">
-      <coralite-heading level="h2" text="Traversing the DOM"></coralite-heading>
+      <coralite-heading level="2" text="Traversing the DOM"></coralite-heading>
       <p>You can traverse the DOM tree using the relationship options defined above.</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -203,11 +203,11 @@
     </section>
 
     <section id="manipulating-the-dom">
-      <coralite-heading level="h2" text="Manipulating the DOM"></coralite-heading>
+      <coralite-heading level="2" text="Manipulating the DOM"></coralite-heading>
       <p>Since Coralite nodes are JavaScript objects, you can manipulate them directly. However, for adding or removing
         nodes, you interact with the <code>childNodes</code> (or <code>children</code>) array.</p>
 
-      <coralite-heading level="h3" text="Changing Content"></coralite-heading>
+      <coralite-heading level="3" text="Changing Content"></coralite-heading>
       <coralite-code-highlight language="JavaScript">
         // Change text content
         element.textContent = "New text content";
@@ -220,7 +220,7 @@
         element.attributes['data-id'] = '123';
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="Adding/Removing Children"></coralite-heading>
+      <coralite-heading level="3" text="Adding/Removing Children"></coralite-heading>
       <p>Coralite does not implement methods like <code>appendChild</code>, <code>removeChild</code> or <code>setAttribute</code>. Instead, use
         standard Array methods on <code>childNodes</code> and direct access to <code>attributes</code>.</p>
 
@@ -240,7 +240,7 @@
     </section>
 
     <section id="creating-nodes">
-      <coralite-heading level="h2" text="Creating Nodes"></coralite-heading>
+      <coralite-heading level="2" text="Creating Nodes"></coralite-heading>
       <p>To create new nodes that are correctly enhanced with the Coralite API, use the helper functions exported by the
         <code>coralite</code> or <code>coralite/utils</code> package.</p>
 
@@ -263,7 +263,7 @@
         createTextNode('Hello World', newDiv);
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="createElement Options"></coralite-heading>
+      <coralite-heading level="3" text="createElement Options"></coralite-heading>
       <ul>
         <li><code>name</code> (string): The tag name (e.g., 'div').</li>
         <li><code>attributes</code> (object): Key-value pairs of attributes.</li>
@@ -272,10 +272,10 @@
     </section>
 
     <section id="usage-in-plugins">
-      <coralite-heading level="h2" text="Usage in Plugins"></coralite-heading>
+      <coralite-heading level="2" text="Usage in Plugins"></coralite-heading>
       <p>You will encounter the Coralite DOM in several places when developing plugins.</p>
 
-      <coralite-heading level="h3" text="Page-Level Plugins"></coralite-heading>
+      <coralite-heading level="3" text="Page-Level Plugins"></coralite-heading>
       <p>In hooks like <code>onPageSet</code>, you receive the full document tree.</p>
       <coralite-code-highlight language="JavaScript">
         // coralite.config.js
@@ -288,7 +288,7 @@
         })
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="Modifying Slots"></coralite-heading>
+      <coralite-heading level="3" text="Modifying Slots"></coralite-heading>
       <p>When using <code>defineComponent</code>, the <code>slots</code> block allows you to intercept and modify
         slot content. The content is passed as an array of DOM nodes.</p>
 

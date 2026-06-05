@@ -12,7 +12,7 @@
     <h1 class="display">Handling Binary Assets</h1>
     <p>Some libraries, like the Matrix JS SDK, require loading external binary dependencies like `.wasm` files. Coralite provides a seamless way to handle these files during both development and production builds.</p>
 
-    <coralite-heading level="h2" text="The `assets` Configuration"></coralite-heading>
+    <coralite-heading level="2" text="The `assets` Configuration"></coralite-heading>
     <p>In your `coralite.config.js` file, you can specify an `assets` array. This array tells Coralite to copy specific files from an NPM package into your project's build output.</p>
 
     <p>Each object in the `assets` array must define a <code>dest</code> (the destination path relative to your output directory). To determine the source file, you must provide either:</p>
@@ -21,7 +21,7 @@
       <li><strong>OR</strong> <code>src</code> (an absolute local path to the source file or directory, which completely bypasses package resolution).</li>
     </ul>
 
-    <coralite-heading level="h2" text="Example: Matrix JS SDK"></coralite-heading>
+    <coralite-heading level="2" text="Example: Matrix JS SDK"></coralite-heading>
     <p>Here is an example of configuring your project to include the WebAssembly files required by the Matrix SDK.</p>
 
     <coralite-code-highlight language="JavaScript" title="coralite.config.js">
@@ -44,7 +44,7 @@
     <p>When you run the development server (`pnpm run dev`) or build your project (`pnpm run build`), Coralite will automatically extract `matrix.wasm` from your `node_modules` and place it in your configured output folder under `wasm/matrix.wasm`.</p>
     <p>You can then point your library configuration to fetch the file from `/wasm/matrix.wasm`.</p>
 
-    <coralite-heading level="h2" text="Bypassing Package Resolution"></coralite-heading>
+    <coralite-heading level="2" text="Bypassing Package Resolution"></coralite-heading>
     <p>If a package does not explicitly export its <code>package.json</code>, the plugin will attempt an upward directory traversal. However, if you need to bypass package resolution entirely, you can provide an absolute path via the <code>src</code> property.</p>
 
     <coralite-code-highlight language="JavaScript" title="coralite.config.js">
@@ -58,7 +58,7 @@
       });
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="MIME Type Support"></coralite-heading>
+    <coralite-heading level="2" text="MIME Type Support"></coralite-heading>
     <p>To ensure `.wasm` files execute correctly for streaming compilation, the Coralite development server automatically configures the appropriate `application/wasm` MIME type headers for any files ending in `.wasm`.</p>
 
   </main>

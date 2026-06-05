@@ -18,7 +18,7 @@
 
     <!-- Table of Contents -->
     <nav aria-label="table of contents">
-      <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
       <ul>
         <li><a href="#component-types">Component Types</a></li>
         <li><a href="#creating-plugins">Creating Plugins</a></li>
@@ -33,10 +33,10 @@
 
     <!-- Component Types Section -->
     <section id="component-types">
-      <coralite-heading level="h2" text="Component Types"></coralite-heading>
+      <coralite-heading level="2" text="Component Types"></coralite-heading>
       <p>Coralite supports two types of components, each with different requirements:</p>
 
-      <coralite-heading level="h3" text="Static Components"></coralite-heading>
+      <coralite-heading level="3" text="Static Components"></coralite-heading>
       <p>Static components are simple HTML files that support basic token replacement but don't require any script
         processing:</p>
 
@@ -51,7 +51,7 @@
 
       <p><strong>No script tag needed</strong> - Coralite will process token replacements automatically.</p>
 
-      <coralite-heading level="h3" text="Dynamic Components"></coralite-heading>
+      <coralite-heading level="3" text="Dynamic Components"></coralite-heading>
       <p>Dynamic components require a script tag and are used when you need:</p>
       <ul>
         <li>Attributes or data fetching</li>
@@ -97,7 +97,7 @@
 
     <!-- Creating Plugins Section -->
     <section id="creating-plugins">
-      <coralite-heading level="h2" text="Creating Plugins"></coralite-heading>
+      <coralite-heading level="2" text="Creating Plugins"></coralite-heading>
       <p>Use the <code>definePlugin</code> function to define a new plugin with configuration options:</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -126,7 +126,7 @@
         })
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="definePlugin Parameters"></coralite-heading>
+      <coralite-heading level="3" text="definePlugin Parameters"></coralite-heading>
       <div class="table-responsive">
         <table class="table">
           <thead>
@@ -229,11 +229,11 @@
 
     <!-- Component-Level Plugins Section -->
     <section id="component-level-plugins">
-      <coralite-heading level="h2" text="Component-Level Plugins"></coralite-heading>
+      <coralite-heading level="2" text="Component-Level Plugins"></coralite-heading>
       <p>Component-level plugins provide methods that can be called inside <code>defineComponent</code> getters and slots.
         These run during the build process and have access to the component's context.</p>
 
-      <coralite-heading level="h3" text="Plugin Method Context"></coralite-heading>
+      <coralite-heading level="3" text="Plugin Method Context"></coralite-heading>
       <p>Plugin methods receive two parameters: <code>options</code> and <code>context</code>. The context contains:</p>
 
       <div class="table-responsive">
@@ -275,7 +275,7 @@
         </table>
       </div>
 
-      <coralite-heading level="h3" text="Using Plugin Methods in Components"></coralite-heading>
+      <coralite-heading level="3" text="Using Plugin Methods in Components"></coralite-heading>
       <p>Import plugin methods from <code>coralite</code> and use them inside <code>defineComponent</code>:</p>
 
       <coralite-code-html>
@@ -304,7 +304,7 @@
         </script>
       </coralite-code-html>
 
-      <coralite-heading level="h3" text="State and Context Difference"></coralite-heading>
+      <coralite-heading level="3" text="State and Context Difference"></coralite-heading>
       <p>It's important to understand the difference between data passed to component scripts vs plugin methods:</p>
 
       <coralite-code-html>
@@ -345,11 +345,11 @@
 
     <!-- Page-Level Plugins Section -->
     <section id="page-level-plugins">
-      <coralite-heading level="h2" text="Page-Level Plugins"></coralite-heading>
+      <coralite-heading level="2" text="Page-Level Plugins"></coralite-heading>
       <p>Page-level plugins use lifecycle hooks to modify the final HTML output. They work across all pages and
         components.</p>
 
-      <coralite-heading level="h3" text="How Page-Level Plugins Work"></coralite-heading>
+      <coralite-heading level="3" text="How Page-Level Plugins Work"></coralite-heading>
       <p>These plugins are registered in your coralite.config.js and automatically process pages during the build:</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -368,7 +368,7 @@
         }
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="Example: Inline CSS Plugin"></coralite-heading>
+      <coralite-heading level="3" text="Example: Inline CSS Plugin"></coralite-heading>
       <p>Here's how a page-level plugin transforms <code>&lt;link&gt;</code> tags to inline <code>&lt;style&gt;</code>
         tags:</p>
 
@@ -420,7 +420,7 @@
         }
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="Component-Level vs Page-Level"></coralite-heading>
+      <coralite-heading level="3" text="Component-Level vs Page-Level"></coralite-heading>
       <div class="table-responsive">
         <table class="table">
           <thead>
@@ -463,7 +463,7 @@
 
     <!-- Lifecycle Hooks Section -->
     <section id="lifecycle-hooks">
-    <coralite-heading level="h2" text="Server-Side Lifecycle Hooks"></coralite-heading>
+    <coralite-heading level="2" text="Server-Side Lifecycle Hooks"></coralite-heading>
     <p>Hooks allow plugins to respond to specific events in the Coralite build lifecycle. These execute strictly on the server during the compilation and generation phases, making them perfect for generating sitemaps, indexing search data, or tracking build analytics.</p>
 
     <coralite-code-highlight language="JavaScript">
@@ -513,10 +513,10 @@
 
     <!-- Client Plugins Section -->
     <section id="client-plugins">
-      <coralite-heading level="h2" text="Client Plugins & Helpers"></coralite-heading>
+      <coralite-heading level="2" text="Client Plugins & Helpers"></coralite-heading>
       <p>Client plugins provide client-side utilities that are available in component scripts. To safely bridge global plugin configuration with local Web Component instances, Coralite requires <code>client.context</code> to be authored using a strict <strong>Two-Phase Currying System</strong>.</p>
 
-      <coralite-heading level="h3" text="The Two-Phase Currying System"></coralite-heading>
+      <coralite-heading level="3" text="The Two-Phase Currying System"></coralite-heading>
       <ol>
         <li><strong>Phase 1 (Global Context):</strong> The outermost function receives the <code>globalContext</code> (containing <code>imports</code> and global <code>config</code>).</li>
         <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ state, signal }</code>). Here, <code>signal</code> is an <code>AbortSignal</code>.</li>
@@ -557,7 +557,7 @@
         })
       </coralite-code-highlight>
 
-      <coralite-heading level="h3" text="Usage in Components"></coralite-heading>
+      <coralite-heading level="3" text="Usage in Components"></coralite-heading>
       <p>Once injected, the user interacts strictly with the Phase 3 Execution function.</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -573,10 +573,10 @@
 
     <!-- Built-in Plugins Section -->
     <section id="built-in-plugins">
-      <coralite-heading level="h2" text="Built-in Plugins"></coralite-heading>
+      <coralite-heading level="2" text="Built-in Plugins"></coralite-heading>
       <p>Coralite includes built-in plugins that provide core functionality:</p>
 
-      <coralite-heading level="h3" text="defineComponent"></coralite-heading>
+      <coralite-heading level="3" text="defineComponent"></coralite-heading>
       <p>The <code>defineComponent</code> plugin is required for all dynamic components. It provides the structured wrapper for your inputs (<code>attributes</code>), server-side fetching (<code>data</code>), derived state (<code>getters</code>), and client-side execution (<code>script</code>):</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -611,7 +611,7 @@
         })
       </coralite-code-highlight>
 
-      <coralite-heading level="h4" text="When to Use"></coralite-heading>
+      <coralite-heading level="4" text="When to Use"></coralite-heading>
       <ul>
         <li>When your component needs attributes or data fetching</li>
         <li>When you need derived state via getters</li>
@@ -620,13 +620,13 @@
         <li>When you need to use plugin methods</li>
       </ul>
 
-      <coralite-heading level="h4" text="When NOT to Use"></coralite-heading>
+      <coralite-heading level="4" text="When NOT to Use"></coralite-heading>
       <ul>
         <li>Simple static components with only token replacement</li>
         <li>Components that don't need script processing</li>
       </ul>
 
-      <coralite-heading level="h3" text="refs Helper"></coralite-heading>
+      <coralite-heading level="3" text="refs Helper"></coralite-heading>
       <p>The <code>refs</code> helper provides DOM element access at runtime:</p>
 
       <coralite-code-html>
@@ -657,7 +657,7 @@
         </script>
       </coralite-code-html>
 
-      <coralite-heading level="h3" text="Metadata Plugin"></coralite-heading>
+      <coralite-heading level="3" text="Metadata Plugin"></coralite-heading>
       <p>The <code>metadata</code> plugin automatically extracts SEO data from the document's <code>&lt;head&gt;</code> during the build and exposes it to the <code>context.page.meta</code> environment object:</p>
 
       <ul>
@@ -668,22 +668,22 @@
 
       <p>See the <a href="./metadata.html">Metadata Plugin Reference</a> for full details.</p>
 
-      <coralite-heading level="h3" text="Static Assets Plugin"></coralite-heading>
+      <coralite-heading level="3" text="Static Assets Plugin"></coralite-heading>
       <p>The <code>staticAssetPlugin</code> handles the orchestration of copying raw files (like <code>.wasm</code>, images, or pre-compiled scripts) directly into the final build directory.</p>
 
-      <coralite-heading level="h4" text="Configuration"></coralite-heading>
+      <coralite-heading level="4" text="Configuration"></coralite-heading>
       <p>It acts as a higher-order function that accepts an <code>assets</code> array and returns a configured Coralite plugin. Every object in the array <em>must</em> contain a <code>dest</code> (destination) property.</p>
 
-      <coralite-heading level="h4" text="Lifecycle Hook"></coralite-heading>
+      <coralite-heading level="4" text="Lifecycle Hook"></coralite-heading>
       <p>It triggers on the <code>onBeforeBuild</code> hook, ensuring all required binary/static dependencies are physically present in the output directory before Coralite attempts to render pages or start the dev server.</p>
 
-      <coralite-heading level="h4" text="Resolution Strategies"></coralite-heading>
+      <coralite-heading level="4" text="Resolution Strategies"></coralite-heading>
       <ul>
         <li><strong>Local Resolution:</strong> If the asset object contains a <code>src</code> property, it recursively creates the destination directory and copies the file/folder using Node's <code>cp</code>.</li>
         <li><strong>NPM Package Resolution:</strong> If <code>src</code> is missing, it requires both <code>pkg</code> and <code>path</code> options. It uses Node's <code>createRequire</code> and <code>require.resolve</code> to traverse <code>node_modules</code> and locate the root directory of the requested <code>pkg</code>. It then appends the <code>path</code> to the package root and copies the asset out of the dependency.</li>
       </ul>
 
-      <coralite-heading level="h3" text="Complete Example"></coralite-heading>
+      <coralite-heading level="3" text="Complete Example"></coralite-heading>
       <p>Here's a complete example showing the "Smart State, Dumb Template" architecture and built-in plugins working together:</p>
 
       <coralite-code-html>

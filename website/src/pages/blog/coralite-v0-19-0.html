@@ -21,11 +21,11 @@
 
     <p>I am excited to announce Coralite v0.19.0, a major release focused on improving the script system architecture and developer experience. This update includes 157 commits and 24 pull requests, bringing significant enhancements to type safety, validation, and workflow efficiency.</p>
 
-    <coralite-heading level="h2" text="Breaking Change: Script Function Signature"></coralite-heading>
+    <coralite-heading level="2" text="Breaking Change: Script Function Signature"></coralite-heading>
 
     <p>The most significant change in v0.19.0 is the refactored script function signature. This is a <strong>breaking change</strong> that requires updating existing template scripts.</p>
 
-    <coralite-heading level="h3" text="Migration Guide"></coralite-heading>
+    <coralite-heading level="3" text="Migration Guide"></coralite-heading>
 
     <p><strong>Before v0.19.0:</strong></p>
 
@@ -69,7 +69,7 @@ export default defineComponent({
 })
     </coralite-code-highlight>
 
-    <coralite-heading level="h3" text="What Changed"></coralite-heading>
+    <coralite-heading level="3" text="What Changed"></coralite-heading>
 
     <ul>
       <li><strong>context</strong> parameter now only contains instance data (values, etc.)</li>
@@ -77,7 +77,7 @@ export default defineComponent({
       <li>This separation improves code organization and extensibility</li>
     </ul>
 
-    <coralite-heading level="h2" text="New Type Guard Utilities"></coralite-heading>
+    <coralite-heading level="2" text="New Type Guard Utilities"></coralite-heading>
 
     <p>v0.19.0 introduces comprehensive type guard functions for validating Coralite nodes and elements. These utilities enhance type safety and make error handling more robust.</p>
 
@@ -111,7 +111,7 @@ if (isCoraliteSlotElement(slot)) {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="h3" text="Script Helper System"></coralite-heading>
+    <coralite-heading level="3" text="Script Helper System"></coralite-heading>
 
     <p>Plugins can now provide script helpers using a factory pattern:</p>
 
@@ -132,7 +132,7 @@ const myScriptPlugin = createPlugin({
 })
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Additional Features & Fixes"></coralite-heading>
+    <coralite-heading level="2" text="Additional Features & Fixes"></coralite-heading>
 
     <ul>
       <li><strong>Script Content Support:</strong> Added <code>__script__</code> property to module values for better script handling</li>
@@ -142,7 +142,7 @@ const myScriptPlugin = createPlugin({
       <li><strong>Config Validation:</strong> Added validation to <code>defineConfig</code> function</li>
     </ul>
 
-    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
 
     <p>Update your project with one of the following commands:</p>
 
@@ -152,7 +152,7 @@ const myScriptPlugin = createPlugin({
 
     <coralite-code-highlight language="bash">npm install coralite-scripts@0.19.0</coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Get the Release"></coralite-heading>
+    <coralite-heading level="2" text="Get the Release"></coralite-heading>
 
     <p>For detailed information on all changes, refer to the <a href="https://codeberg.org/tjdavid/coralite/compare/v0.18.7...v0.19.0" target="_blank" rel="noopener">full changelog on Codeberg</a>.</p>
 

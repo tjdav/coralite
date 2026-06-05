@@ -13,7 +13,7 @@
 
     <p>Coralite provides a centralised <code>onError</code> configuration callback. By default, it will use <code>console.warn</code> and <code>console.log</code> for non-critical information and throw for <code>ERR</code> level. However, for production pipelines or advanced build tools, you might want to integrate custom loggers or external error tracking systems.</p>
 
-    <coralite-heading level="h2" text="Building a Custom CLI Logger"></coralite-heading>
+    <coralite-heading level="2" text="Building a Custom CLI Logger"></coralite-heading>
     
     <p>You can use tools like <code>chalk</code> to build beautifully styled console outputs for your builds.</p>
 
@@ -45,7 +45,7 @@ export default defineConfig({
 });
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Integrating Sentry during the Build"></coralite-heading>
+    <coralite-heading level="2" text="Integrating Sentry during the Build"></coralite-heading>
     
     <p>If you're running Coralite as part of a CI/CD pipeline, capturing errors directly to a service like Sentry ensures your DevOps team gets real-time stack traces for build failures.</p>
 

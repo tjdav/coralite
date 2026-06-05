@@ -36,7 +36,7 @@ export default defineConfig({
 });
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Configuration Options"></coralite-heading>
+    <coralite-heading level="2" text="Configuration Options"></coralite-heading>
 
     <p>The <code>CoraliteConfig</code> object accepts the following options:</p>
 
@@ -109,7 +109,7 @@ export default defineConfig({
       </tr>
     </coralite-table>
 
-    <coralite-heading level="h2" text="Error & Warning Handling (onError)"></coralite-heading>
+    <coralite-heading level="2" text="Error & Warning Handling (onError)"></coralite-heading>
 
     <p>Coralite provides a centralized <code>onError</code> callback in its configuration to handle framework-level issues.</p>
 
@@ -124,7 +124,7 @@ export default defineConfig({
     <h3>The Default Behavior</h3>
     <p>If omitted, Coralite defaults to using <code>console.warn</code> and <code>console.log</code> for warnings and logs. However, for level <code>'ERR'</code>, the default handler <strong>throws</strong> an actual Error with the provided message to intentionally break the build pipeline if an unrecoverable issue occurs.</p>
 
-    <coralite-heading level="h2" text="Environment Considerations"></coralite-heading>
+    <coralite-heading level="2" text="Environment Considerations"></coralite-heading>
 
     <p>When running Coralite using the <code>coralite-scripts</code> development mode (e.g., <code>npm run dev</code> or <code>mode === 'development'</code>), the <code>output</code> directory is automatically overridden to a temporary <code>.coralite/build</code> folder to isolate build artifacts from production outputs.</p>
 

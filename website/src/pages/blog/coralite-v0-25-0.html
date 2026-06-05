@@ -21,7 +21,7 @@
       exclude elements from rendering, powerful new plugin hooks for interacting with the build and render processes, a
       switch to an ESM bundler format, and an important breaking change to normalize our hook naming conventions.</p>
 
-    <coralite-heading level="h2" text="Skip Render By Attribute"></coralite-heading>
+    <coralite-heading level="2" text="Skip Render By Attribute"></coralite-heading>
 
     <p>This release introduces a new <code>skipRenderByAttribute</code> option to <code>CoraliteOptions</code> and the
       CLI (<code>-s</code>, <code>--skip-render-attribute</code>). This feature allows you to parse tags but exclude
@@ -31,7 +31,7 @@
       stripped right before the final HTML generation. This is extremely useful for keeping certain components or
       metadata in the AST without making them visible in the final HTML output.</p>
 
-    <coralite-heading level="h2" text="New Plugin Hooks"></coralite-heading>
+    <coralite-heading level="2" text="New Plugin Hooks"></coralite-heading>
 
     <p>We've introduced two new plugin hooks to allow for powerful mutations of the AST and configuration:</p>
 
@@ -42,7 +42,7 @@
         the build process globally.</li>
     </ul>
 
-    <coralite-heading level="h2" text="ESM Bundler Format"></coralite-heading>
+    <coralite-heading level="2" text="ESM Bundler Format"></coralite-heading>
 
     <p>The Script Manager's Rollup build format has been changed from IIFE to <strong>ESM</strong> to support modern
       module loading. We've also added external configuration to prevent bundling of <code>http://</code> and
@@ -52,7 +52,7 @@
     <p>This update allows for seamless external library imports via plugin and component client script imports,
       drastically improving integration with modern dependencies.</p>
 
-    <coralite-heading level="h2" text="Breaking Change: Hook Renaming"></coralite-heading>
+    <coralite-heading level="2" text="Breaking Change: Hook Renaming"></coralite-heading>
 
     <p>To normalize the naming pattern with other lifecycle hooks (like <code>onBeforeBuild</code> and
       <code>onAfterPageRender</code>), we have renamed the <code>onBuildComplete</code> hook to
@@ -62,7 +62,7 @@
     <p>If you have authored or are maintaining a Coralite plugin, you will need to update your plugin definitions and
       hook registrations to use <code>onAfterBuild</code> instead.</p>
 
-    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
 
     <p>To upgrade to the latest version, update your project dependencies:</p>
 

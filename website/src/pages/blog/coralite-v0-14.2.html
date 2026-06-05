@@ -23,7 +23,7 @@
 
     <p>Coralite v0.14.2 is a targeted update focused on stability, correctness, and safety. This release addresses critical parsing edge cases and strengthens validation across template and custom element handling. It follows the v0.14.0 release, which introduced foundational improvements to the parser and runtime.</p>
 
-    <coralite-heading level="h2" text="Bug Fixes"></coralite-heading>
+    <coralite-heading level="2" text="Bug Fixes"></coralite-heading>
 
     <ul>
       <li><code>getTokensFromString</code> now enforces a maximum token length to prevent memory exhaustion during parsing of overly long or malformed strings.</li>
@@ -32,13 +32,13 @@
       <li>Template <code>id</code> attributes and custom element tag names are capped at 1000 characters to prevent abuse and ensure compatibility with underlying DOM APIs.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Impact and Value"></coralite-heading>
+    <coralite-heading level="2" text="Impact and Value"></coralite-heading>
 
     <p>These fixes reduce the risk of crashes, improve security by rejecting malformed input, and ensure compliance with web standards. They make Coralite more resilient in production environments and easier to debug when issues arise.</p>
 
     <p>Developers using Coralite in templates with complex or dynamic content will benefit from more predictable parsing behavior, especially when handling user-generated or external HTML.</p>
 
-    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
 
     <p>To upgrade to Coralite v0.14.2, run the following command:</p>
 

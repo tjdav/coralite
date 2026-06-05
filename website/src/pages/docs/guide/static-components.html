@@ -13,7 +13,7 @@
 
     <p>Static components are the building blocks of Coralite. They are purely HTML-based elements without complex scripting logic. If a piece of UI doesn't need to fetch data, handle user events, or compute complex state, it should be a static component.</p>
 
-    <coralite-heading level="h2" text="Component Definition"></coralite-heading>
+    <coralite-heading level="2" text="Component Definition"></coralite-heading>
 
     <p>Every component in Coralite is defined inside an HTML file using the standard <code>&lt;template&gt;</code> tag. The most important part of a component is its <code>id</code> attribute. This ID becomes the custom HTML tag name you will use to include the component in your pages.</p>
 
@@ -33,7 +33,7 @@
       </template>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Using Components"></coralite-heading>
+    <coralite-heading level="2" text="Using Components"></coralite-heading>
 
     <p>To use the component in your pages (or inside other components), the custom element tag name must exactly match the component's <code>id</code>.</p>
 
@@ -57,7 +57,7 @@
       </html>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Basic Data Binding"></coralite-heading>
+    <coralite-heading level="2" text="Basic Data Binding"></coralite-heading>
 
     <p>You can pass data into static components using standard HTML attributes. Coralite allows you to display these attribute state inside your component using double curly braces (<code>{{ }}</code>).</p>
 
@@ -97,7 +97,7 @@
       </body>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Standard Slots"></coralite-heading>
+    <coralite-heading level="2" text="Standard Slots"></coralite-heading>
 
     <p>Sometimes you need to pass entire blocks of HTML into a component, not just simple text attributes. Coralite supports standard HTML <code>&lt;slot&gt;</code> elements for this purpose.</p>
 
@@ -129,7 +129,7 @@
       </alert-box>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Summary"></coralite-heading>
+    <coralite-heading level="2" text="Summary"></coralite-heading>
 
     <p>Static components are perfect for layout structures, simple UI elements, and reusable content blocks. However, when you need complex logic, computed state, or client-side interactivity, you need to upgrade your component to a <a href="./dynamic-components.html">Dynamic Component</a>.</p>
 

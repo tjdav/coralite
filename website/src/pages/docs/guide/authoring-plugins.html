@@ -15,7 +15,7 @@
 
     <p>With plugins, you can hook deep into the build lifecycle, register custom components globally, bundle external scripts, and inject custom helper functions directly into the frontend.</p>
 
-    <coralite-heading level="h2" text="The Conceptual Flow"></coralite-heading>
+    <coralite-heading level="2" text="The Conceptual Flow"></coralite-heading>
 
     <p>Authoring a plugin involves understanding how Coralite synthesizes server-side rendering and client-side hydration. When you register a plugin, Coralite integrates it through the following flow:</p>
 
@@ -26,7 +26,7 @@
       <li><strong>Client Hydration:</strong> Finally, Coralite serializes your component's <code>script</code> and your plugin's custom `client.context` utilities. When the browser loads the page, the utilities are securely flattened and spread directly onto the runtime context, enabling dynamic interactions.</li>
     </ol>
 
-    <coralite-heading level="h2" text="Server-Side Lifecycle Hooks"></coralite-heading>
+    <coralite-heading level="2" text="Server-Side Lifecycle Hooks"></coralite-heading>
 
     <p>Plugins can hook into almost every phase of Coralite's build lifecycle to perform actions when files are processed or rendering occurs.</p>
 
@@ -59,19 +59,19 @@
       </li>
     </ul>
 
-    <coralite-heading level="h2" text="Global Component Registration"></coralite-heading>
+    <coralite-heading level="2" text="Global Component Registration"></coralite-heading>
 
     <p>Plugins can distribute their own HTML components. By providing an array of file paths to the <code>components</code> property in your plugin configuration, Coralite automatically reads, parses, and registers these files as global components during initialization.</p>
 
     <p>This means users of your plugin can instantly use your custom tags (e.g., <code>&lt;my-awesome-slider&gt;</code>) without having to copy the HTML files into their own project's <code>src/components/</code> directory.</p>
 
-    <coralite-heading level="h2" text="Injecting Client Helpers"></coralite-heading>
+    <coralite-heading level="2" text="Injecting Client Helpers"></coralite-heading>
 
     <p>The most powerful feature of Coralite plugins is the ability to provide reusable functionality directly to component scripts using <code>client.context</code>.</p>
 
     <p>Context utilities are flattened directly onto the root <code>context</code> object available in every <code>script</code> execution block. However, because Coralite is a static site generator, there is a strict boundary between server code and client code.</p>
 
-    <coralite-heading level="h3" text="The Factory Pattern"></coralite-heading>
+    <coralite-heading level="3" text="The Factory Pattern"></coralite-heading>
 
     <p>Helpers must be structured using a two-phase currying system that executes server-side. The outermost function receives the global context, and it must return a second function that receives the local Web Component instance context. This second function then returns the actual callable utility function used by the user's script.</p>
 
@@ -106,7 +106,7 @@
       }
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Zero-Config Dependencies"></coralite-heading>
+    <coralite-heading level="2" text="Zero-Config Dependencies"></coralite-heading>
 
     <p>Unlike earlier versions of Coralite, V1 removes the need for manual dependency arrays like <code>client.imports</code> or <code>client.components</code>. The underlying AST parser automatically detects dynamic imports (e.g., <code>await import('my-analytics-sdk')</code>) inside the actual runtime logic of your context utilities and bundles them automatically.</p>
 

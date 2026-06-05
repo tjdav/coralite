@@ -16,7 +16,7 @@
 
     <!-- Table of Contents -->
     <nav aria-label="table of contents">
-      <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
       <ul>
         <li><a href="#basic-usage">Basic Usage</a></li>
         <li><a href="#dynamic-metadata">Dynamic Metadata</a></li>
@@ -27,10 +27,10 @@
 
     <!-- Basic Usage -->
     <section id="basic-usage">
-      <coralite-heading level="h2" text="Basic Usage"></coralite-heading>
+      <coralite-heading level="2" text="Basic Usage"></coralite-heading>
       <p>The plugin automatically scans the <code>&lt;head&gt;</code> section of your pages for <code>&lt;title&gt;</code> and <code>&lt;meta&gt;</code> tags. These state are exposed to your component scripts via <code>context.page.meta</code>.</p>
 
-      <coralite-heading level="h3" text="Defining Metadata"></coralite-heading>
+      <coralite-heading level="3" text="Defining Metadata"></coralite-heading>
       <p>Define your metadata in the page HTML:</p>
 
       <coralite-code-html>
@@ -49,7 +49,7 @@
         </html>
       </coralite-code-html>
 
-      <coralite-heading level="h3" text="Accessing Metadata in Scripts"></coralite-heading>
+      <coralite-heading level="3" text="Accessing Metadata in Scripts"></coralite-heading>
       <p>Access the metadata in your <code>defineComponent</code> script block:</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -71,7 +71,7 @@
 
     <!-- Dynamic Metadata -->
     <section id="dynamic-metadata">
-      <coralite-heading level="h2" text="Dynamic Metadata"></coralite-heading>
+      <coralite-heading level="2" text="Dynamic Metadata"></coralite-heading>
       <p>The metadata plugin can also process components placed inside the <code>&lt;head&gt;</code>. This is useful for creating reusable SEO components or dynamic metadata bundles.</p>
 
       <coralite-code-html>
@@ -100,7 +100,7 @@
 
     <!-- Accessing in Templates -->
     <section id="accessing-in-templates">
-      <coralite-heading level="h2" text="Accessing in Templates"></coralite-heading>
+      <coralite-heading level="2" text="Accessing in Templates"></coralite-heading>
       <p>Coralite templates are "dumb" and cannot access the <code>page</code> object directly. To render metadata in your HTML template, you must explicitly map it to your component's <code>state</code> using the <code>data</code> block:</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -123,7 +123,7 @@
 
     <!-- Key Points -->
     <section id="key-points">
-      <coralite-heading level="h2" text="Key Points"></coralite-heading>
+      <coralite-heading level="2" text="Key Points"></coralite-heading>
       <ul>
         <li><strong>Built-in</strong>: Included by default in Coralite.</li>
         <li><strong>Namespace</strong>: All state are stored in <code>context.page.meta</code>.</li>

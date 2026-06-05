@@ -21,7 +21,7 @@
 
     <p>I am excited to announce the release of <strong>Coralite v0.22.0</strong>! This update brings powerful new styling capabilities, concurrent rendering for faster builds, and significant performance improvements across the board.</p>
 
-    <coralite-heading level="h2" text="Automatic Scoped Styles"></coralite-heading>
+    <coralite-heading level="2" text="Automatic Scoped Styles"></coralite-heading>
 
     <p>Component styles are now scoped by default, with automatic CSS transformation handling root class selectors. This means you can write standard CSS without worrying about manual scoping, and Coralite will automatically apply the correct selectors based on where the class is used.</p>
 
@@ -69,13 +69,13 @@
 
     <p>This ensures that styles remain encapsulated within the component while still allowing you to target the root element easily.</p>
 
-    <coralite-heading level="h2" text="Concurrent Rendering"></coralite-heading>
+    <coralite-heading level="2" text="Concurrent Rendering"></coralite-heading>
 
     <p>The build process now supports concurrent rendering with build-scoped render queues. This allows Coralite to process multiple pages in parallel, significantly reducing build times for large sites.</p>
     
     <p>The new <code>addRenderQueue(page, buildId)</code> method enables plugins to safely add pages to the current build queue without race conditions.</p>
 
-    <coralite-heading level="h2" text="Performance Improvements"></coralite-heading>
+    <coralite-heading level="2" text="Performance Improvements"></coralite-heading>
 
     <p>This release includes several performance optimizations:</p>
 
@@ -85,7 +85,7 @@
       <li><strong>Optimized CSS Transformation:</strong> The style transformation logic has been unified and optimized for better performance.</li>
     </ul>
 
-    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
 
     <p>To upgrade to the latest version, update your project dependencies:</p>
 

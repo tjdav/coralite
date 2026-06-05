@@ -17,7 +17,7 @@
 
     <p>Coralite v0.9.0 introduces foundational features for building and rendering static websites, with a focus on component-based architecture, plugin integration, and metadata extraction.</p>
 
-    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
 
     <ul>
       <li>Introduced support for defining and processing custom HTML elements using the <code>Coralite</code> class API through the new <code>defineComponent()</code> plugin. This enables dynamic attribute replacements during template processing.</li>
@@ -29,7 +29,7 @@
       <li>Introduced metadata tracking for HTML documents, including the addition of a <code>type</code> field to differentiate between main pages (<code>’page’</code>) and reusable templates (<code>’template’</code>).</li>
     </ul>
 
-    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+    <coralite-heading level="2" text="Key Improvements"></coralite-heading>
 
     <ul>
       <li><strong>Improved Type Definitions:</strong> Updated TypeScript interfaces to better reflect the current data handling patterns, including renaming of document-related types to align with the new collection-based architecture.</li>
@@ -37,7 +37,7 @@
       <li><strong>Better Documentation:</strong> Extended documentation to include project structure examples, usage patterns for templates and pages, ignored element handling, and recursive template directory support. A new type definitions reference document has been added for easier navigation of core types.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Breaking Changes"></coralite-heading>
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
 
     <ul>
       <li>The <code>coralite()</code> function is now a class constructor that must be instantiated using the new <code>Coralite(…).compile()</code> API.</li>
@@ -46,7 +46,7 @@
       <li>The <code>CoraliteComponent</code> typedef was removed from the codebase. Any code relying on this type must be adjusted accordingly.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+    <coralite-heading level="2" text="Get the release"></coralite-heading>
     
     <coralite-code-highlight language="bash">npm install coralite@0.9.0</coralite-code-highlight>
 

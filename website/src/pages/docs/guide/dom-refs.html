@@ -15,18 +15,18 @@
 
     <p>In Coralite, direct DOM querying is typically replaced by the built-in <strong>refs plugin</strong>. This plugin provides a safe, runtime DOM element targeting system specifically designed for component encapsulation. The Coralite refs system generates unique IDs directly assigned to the <code>ref</code> attribute, allowing you to leave the standard <code>id</code> attribute intact for other uses (like linking a label's <code>for</code> attribute to an input's <code>id</code>).</p>
 
-    <coralite-heading level="h2" text="Why Use Refs Instead of querySelector?"></coralite-heading>
+    <coralite-heading level="2" text="Why Use Refs Instead of querySelector?"></coralite-heading>
 
     <ul>
       <li><strong>Encapsulation:</strong> When you use <code>document.querySelector</code>, you risk selecting an element outside your component, or selecting an element from a <em>different instance</em> of the same component on the page.</li>
       <li><strong>Performance:</strong> The refs plugin caches DOM lookups, so subsequent calls to retrieve the same element are instant.</li>
     </ul>
 
-    <coralite-heading level="h2" text="How to Use Refs"></coralite-heading>
+    <coralite-heading level="2" text="How to Use Refs"></coralite-heading>
 
     <p>Using the refs plugin is a simple two-step process: defining the reference in your HTML template, and accessing it in your client-side script.</p>
 
-    <coralite-heading level="h3" text="1. Template Setup"></coralite-heading>
+    <coralite-heading level="3" text="1. Template Setup"></coralite-heading>
 
     <p>Add a <code>ref="yourName"</code> attribute to any HTML element inside your component's <code>&lt;template&gt;</code>.</p>
 
@@ -43,7 +43,7 @@
       </template>
     </coralite-code-html>
 
-    <coralite-heading level="h3" text="2. Script Usage"></coralite-heading>
+    <coralite-heading level="3" text="2. Script Usage"></coralite-heading>
 
     <p>Inside your <code>defineComponent</code>'s <code>script</code>, the refs plugin provides a helper function: <code>refs('yourName')</code>.</p>
 
@@ -70,7 +70,7 @@
       </script>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Under the Hood: Scoping & Safety"></coralite-heading>
+    <coralite-heading level="2" text="Under the Hood: Scoping & Safety"></coralite-heading>
 
     <p>The refs plugin is highly context-aware. Depending on how your component is compiled, it behaves differently to ensure maximum safety:</p>
 
@@ -80,14 +80,14 @@
       <li><strong>Null Safety:</strong> If the element isn't found (perhaps conditionally rendered out), the helper safely returns <code>null</code> without throwing an error.</li>
     </ol>
 
-    <coralite-heading level="h2" text="E2E Testing & Hydration Readiness"></coralite-heading>
+    <coralite-heading level="2" text="E2E Testing & Hydration Readiness"></coralite-heading>
 
     <p>To ensure deterministic and flake-free End-to-End (E2E) testing, Coralite provides built-in testing integrations that bridge the gap between Server-Side Rendering and client-side interactivity.</p>
 
-    <coralite-heading level="h3" text="1. Waiting for Hydration"></coralite-heading>
+    <coralite-heading level="3" text="1. Waiting for Hydration"></coralite-heading>
     <p>Because Coralite components execute their <code>script</code> blocks natively in the browser after the initial HTML is parsed, E2E frameworks (like Playwright) might attempt to interact with elements before their event listeners are bound. To prevent this, your tests <strong>must</strong> await the global readiness promise immediately after navigating to a page.</p>
 
-    <coralite-heading level="h3" text="2. Testing Selectors (data-testid)"></coralite-heading>
+    <coralite-heading level="3" text="2. Testing Selectors (data-testid)"></coralite-heading>
     <p>In <code>development</code> mode, Coralite's testing plugin automatically duplicates all <code>ref="xyz"</code> attributes into standard <code>data-testid</code> attributes. It assigns a unique, namespaced string using the pattern: <code>&lt;component-id&gt;__&lt;refName&gt;-&lt;index&gt;</code>.</p>
 
     <p>For example, if you defined <code>&lt;button ref="submitBtn"&gt;</code> in a component named <code>my-form</code>, you should locate it in a Playwright test using <code>getByTestId</code>:</p>

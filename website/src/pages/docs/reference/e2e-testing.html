@@ -13,7 +13,7 @@
 
     <p>This reference details the technical specifications of Coralite's client-side hydration phase and how it exposes its state for End-to-End (E2E) testing frameworks.</p>
 
-    <coralite-heading level="h2" text="Testing Plugin (data-testid)"></coralite-heading>
+    <coralite-heading level="2" text="Testing Plugin (data-testid)"></coralite-heading>
 
     <p>When Coralite is configured with <code>mode: 'development'</code>, it automatically activates a built-in testing plugin.</p>
 
@@ -21,11 +21,11 @@
 
     <p>This ensures that E2E testing frameworks can target highly specific element instances deterministically using the standard <code>data-testid</code> selector pattern without requiring developers to manually maintain duplicate attributes, and guaranteeing these testing hooks are entirely stripped from production builds.</p>
 
-    <coralite-heading level="h2" text="The window.__coralite_ready__ Promise"></coralite-heading>
+    <coralite-heading level="2" text="The window.__coralite_ready__ Promise"></coralite-heading>
 
     <p>Coralite injects a global promise named <code>window.__coralite_ready__</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
 
-    <coralite-heading level="h3" text="Resolution Lifecycle Pipelines"></coralite-heading>
+    <coralite-heading level="3" text="Resolution Lifecycle Pipelines"></coralite-heading>
 
     <p>The framework strict-awaits the hydration process, ensuring the <code>window.__coralite_ready__</code> promise only resolves after two critical asynchronous pipelines finish:</p>
 
@@ -47,7 +47,7 @@
       </tr>
     </coralite-table>
 
-    <coralite-heading level="h2" text="E2E Testing Implications"></coralite-heading>
+    <coralite-heading level="2" text="E2E Testing Implications"></coralite-heading>
 
     <p>Because end-to-end testing frameworks (like Playwright or Cypress) interact with the DOM much faster than front-end hydration completes, tests <strong>MUST</strong> wait for this promise immediately after page navigation.</p>
 

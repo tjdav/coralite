@@ -23,7 +23,7 @@
       </p>
     </coralite-alert>
 
-    <coralite-heading level="h2" text="Upgrading a Component"></coralite-heading>
+    <coralite-heading level="2" text="Upgrading a Component"></coralite-heading>
 
     <p>To turn a static component into a dynamic one, append a <code>&lt;script type="module"&gt;</code> tag below your <code>&lt;template&gt;</code> and export <code>defineComponent</code>.</p>
 
@@ -53,11 +53,11 @@
       </script>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="The Four Pillars of State"></coralite-heading>
+    <coralite-heading level="2" text="The Four Pillars of State"></coralite-heading>
 
     <p>Coralite unifies four different sources of data into a single reactive <code>state</code> object available to your template and scripts.</p>
 
-    <coralite-heading level="h3" text="1. Attributes (Inputs)"></coralite-heading>
+    <coralite-heading level="3" text="1. Attributes (Inputs)"></coralite-heading>
     <p>Attributes are the "props" of your component. They are coerced from HTML attributes into JS primitives.</p>
     <coralite-code-highlight language="javascript">
 attributes: {
@@ -66,7 +66,7 @@ attributes: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="h3" text="2. Data (Server-Side Fetching)"></coralite-heading>
+    <coralite-heading level="3" text="2. Data (Server-Side Fetching)"></coralite-heading>
     <p>The <code>data</code> block runs strictly on the server during build-time. It's the place for database queries or API calls. This code is completely stripped from the client bundle.</p>
     <coralite-code-highlight language="javascript">
 async data(context) {
@@ -75,7 +75,7 @@ async data(context) {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="h3" text="3. Getters (Derived State)"></coralite-heading>
+    <coralite-heading level="3" text="3. Getters (Derived State)"></coralite-heading>
     <p>Getters calculate state based on other state. They are pure, synchronous, and reactive.</p>
     <coralite-code-highlight language="javascript">
 getters: {
@@ -83,7 +83,7 @@ getters: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="h3" text="4. Script (Client Controller)"></coralite-heading>
+    <coralite-heading level="3" text="4. Script (Client Controller)"></coralite-heading>
     <p>The <code>script</code> block is where interactivity lives. It runs in the browser and has full read/write access to the state.</p>
     <coralite-code-highlight language="javascript">
 script: ({ state, signal, refs, root, instanceId, ...pluginContext }) => {
@@ -94,11 +94,11 @@ script: ({ state, signal, refs, root, instanceId, ...pluginContext }) => {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Reactivity & Performance"></coralite-heading>
+    <coralite-heading level="2" text="Reactivity & Performance"></coralite-heading>
 
     <p>Coralite uses a <strong>Lazy Deep Proxy</strong> system. This means that even if you have massive datasets in your <code>state</code>, you only pay the performance cost for the parts of the state that you actually access or mutate. This ensures that Coralite stays fast even as your application grows.</p>
 
-    <coralite-heading level="h2" text="Best Practices: Smart State, Dumb Template"></coralite-heading>
+    <coralite-heading level="2" text="Best Practices: Smart State, Dumb Template"></coralite-heading>
 
     <ul>
       <li><strong>Keep Templates Simple:</strong> Templates should only contain HTML and <code>{{ token }}</code> placeholders. Avoid complex logic in HTML.</li>

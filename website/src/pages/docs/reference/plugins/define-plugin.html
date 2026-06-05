@@ -19,7 +19,7 @@
 
     <!-- Table of Contents -->
     <nav aria-label="table of contents">
-      <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+      <coralite-heading level="2" text="Table of Contents"></coralite-heading>
       <ul>
         <li><a href="#configuration">Configuration Options</a></li>
         <li><a href="#server-hooks">Server-Side Hooks</a></li>
@@ -32,7 +32,7 @@
 
     <!-- Configuration Options -->
     <section id="configuration">
-      <coralite-heading level="h2" text="Configuration Options"></coralite-heading>
+      <coralite-heading level="2" text="Configuration Options"></coralite-heading>
       <p>The <code>definePlugin</code> function accepts a configuration object with the following blocks:</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -71,7 +71,7 @@ const myPlugin = definePlugin({
 
     <!-- Context Binding -->
     <section id="context-binding">
-      <coralite-heading level="h2" text="Context Binding (`exports`)"></coralite-heading>
+      <coralite-heading level="2" text="Context Binding (`exports`)"></coralite-heading>
       <p>The <code>exports</code> property is an object of functions that processes content using plugin logic.</p>
       <p>These functions use a <strong>Two-Phase Currying</strong> pattern to receive the <code>CoralitePluginContext</code> explicitly.</p>
       
@@ -93,7 +93,7 @@ export default definePlugin({
 
     <!-- Server-Side Hooks -->
     <section id="server-hooks">
-      <coralite-heading level="h2" text="Server-Side Hooks"></coralite-heading>
+      <coralite-heading level="2" text="Server-Side Hooks"></coralite-heading>
       <p>Plugins can hook into Coralite's build lifecycle to perform actions when pages or components are processed.</p>
       <ul>
         <li><code>onPageSet({ elements, state, page, data, app })</code>: Called when a page is created.</li>
@@ -107,12 +107,12 @@ export default definePlugin({
 
     <!-- Client-Side Scripting -->
     <section id="client-scripting">
-      <coralite-heading level="h2" text="Client-Side Scripting"></coralite-heading>
+      <coralite-heading level="2" text="Client-Side Scripting"></coralite-heading>
       <p>The <code>client</code> block is powerful: it allows you to inject code that runs in the browser. This code
         is bundled with your application.</p>
 
 
-      <coralite-heading level="h3" text="client.context"></coralite-heading>
+      <coralite-heading level="3" text="client.context"></coralite-heading>
       <p>Define utilities that will be flattened directly onto the <code>context</code> object in <code>defineComponent</code> scripts in the browser.</p>
 
       <coralite-code-highlight language="JavaScript">
@@ -132,7 +132,7 @@ export default definePlugin({
 
     <!-- Script Configuration -->
     <section id="script-config">
-      <coralite-heading level="h2" text="Client Configuration"></coralite-heading>
+      <coralite-heading level="2" text="Client Configuration"></coralite-heading>
       <p>The <code>client.config</code> object allows you to pass static configuration data from the server (where the
         plugin is defined) to the client. This is useful for API keys, theme settings, or feature flags.</p>
 
@@ -152,7 +152,7 @@ export default definePlugin({
 
     <!-- Context Injection -->
     <section id="context-injection">
-      <coralite-heading level="h2" text="Context Injection"></coralite-heading>
+      <coralite-heading level="2" text="Context Injection"></coralite-heading>
       <p>The <code>client.config</code> is automatically passed as the <code>config</code> property on the
         <code>globalContext</code> passed to your context factories.
       </p>
@@ -172,7 +172,7 @@ context: {
 
     <!-- Complete Example -->
     <section id="complete-example">
-      <coralite-heading level="h2" text="Complete Example: Confetti Plugin"></coralite-heading>
+      <coralite-heading level="2" text="Complete Example: Confetti Plugin"></coralite-heading>
       <p>Let's build a plugin that triggers a confetti explosion using a remote library and allows configuration of particle count.</p>
 
       <coralite-code-highlight language="JavaScript">

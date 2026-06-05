@@ -16,31 +16,31 @@
 
     <p>Coralite’s v0.8.1 release introduces critical improvements to its HTML module static site generator, focusing on robustness in CI/CD pipelines, parser reliability, and code maintainability.</p>
     
-    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
 
     <ul>  
       <li>Enhanced the parser with a safety check to verify the presence of slot attributes before assigning them to named slots, preventing runtime errors during template processing. </li>  
     </ul>  
-    <coralite-heading level="h2" text="Infrastructure Improvements"></coralite-heading>
+    <coralite-heading level="2" text="Infrastructure Improvements"></coralite-heading>
 
     <ul>  
       <li>Added a new CI workflow step to execute <code>pnpm link</code>, ensuring consistent package linking across build and test environments.</li>  
       <li>Resolved symlink-related issues on Linux by updating compatibility checks in CI configurations.</li>  
     </ul>  
-    <coralite-heading level="h2" text="Code Refactoring"></coralite-heading>
+    <coralite-heading level="2" text="Code Refactoring"></coralite-heading>
 
     <ul>  
       <li>Simplified directory handling by replacing custom functions with standard <code>document.path</code> properties for better consistency.</li>  
       <li>Standardised template variable notation to use <code>$prefix</code> syntax, improving readability and maintainability of templates.</li>  
       <li>Removed redundant utility functions, streamlining the codebase for future enhancements.</li>  
     </ul>  
-    <coralite-heading level="h2" text="Administrative Updates"></coralite-heading>
+    <coralite-heading level="2" text="Administrative Updates"></coralite-heading>
 
     <ul>  
       <li>Updated package metadata with a dedicated bugs reporting URL for user feedback.</li>  
       <li>Refactored bin path configurations to align with modern module structures.</li>  
     </ul>  
-    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+    <coralite-heading level="2" text="Get the release"></coralite-heading>
 
     <coralite-code-highlight language="bash">npm install coralite@0.8.1</coralite-code-highlight>
 

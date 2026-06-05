@@ -21,13 +21,13 @@
 
     <p>I am thrilled to announce the release of <strong>Coralite v0.20.1</strong> and <strong>Coralite Scripts v0.20.0</strong>! This major update focuses on significantly improving build performance, simplifying the development environment, and introducing powerful new APIs for metadata and DOM manipulation.</p>
 
-    <coralite-heading level="h2" text="Major Performance Improvements"></coralite-heading>
+    <coralite-heading level="2" text="Major Performance Improvements"></coralite-heading>
 
     <p>Build times and page generation have been majorly improved in this release. The core compilation process now parallelizes custom element creation, especially for asynchronous operations. In  benchmarks, this resulted in a dramatic speedup (up to 10x faster for complex component trees), reducing build times from seconds to milliseconds.</p>
 
     <p>Additionally, the development server now features <strong>in-memory page caching</strong>. This means subsequent requests to unchanged pages are served instantly, and multi-page builds are handled more efficiently, making the developer experience smoother and faster.</p>
 
-    <coralite-heading level="h2" text="New Metadata Plugin"></coralite-heading>
+    <coralite-heading level="2" text="New Metadata Plugin"></coralite-heading>
 
     <p>Managing page metadata is now easier than ever with the new built-in Metadata Plugin. This plugin automatically extracts <code>&lt;meta&gt;</code> tags from your HTML head sections and component slots, making them available as variables in your templates.</p>
 
@@ -43,17 +43,17 @@
       <p>Description: &#123;&#123; meta_description &#125;&#125;</p>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Enhanced DOM API"></coralite-heading>
+    <coralite-heading level="2" text="Enhanced DOM API"></coralite-heading>
 
     <p>This release includes a refactored internal DOM node creation logic designed for greater robustness and type safety. It also introduces the new factory functions <code>createCoraliteElement</code> and <code>createCoraliteTextNode</code>, which provide a standardized approach for programmatically creating nodes in plugins and scripts.
     
     <p>The new <code>coralite.build</code> API replaces the older compilation methods, offering better error handling and a callback overload for more flexible build scripts.</p>
 
-    <coralite-heading level="h2" text="Simplified Environment Setup"></coralite-heading>
+    <coralite-heading level="2" text="Simplified Environment Setup"></coralite-heading>
 
     <p>The system no longer depends on any experimental Node.js flags! You can now run Coralite without the <code>--experimental-vm-modules</code> flag, simplifying your <code>package.json</code> scripts and CI/CD pipelines.</p>
 
-    <coralite-heading level="h2" text="Bug Fixes & Improvements"></coralite-heading>
+    <coralite-heading level="2" text="Bug Fixes & Improvements"></coralite-heading>
 
     <p>This release also includes numerous bug fixes and quality-of-life improvements:</p>
 
@@ -65,7 +65,7 @@
       <li><strong>Dependencies:</strong> Runtime dependencies have been correctly moved from <code>devDependencies</code> to <code>dependencies</code> for better stability.</li>
     </ul>
 
-    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
 
     <p>To upgrade to the latest version, update your project dependencies:</p>
 

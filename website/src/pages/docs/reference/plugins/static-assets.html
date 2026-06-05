@@ -13,10 +13,10 @@
     <h1 class="display">Static Assets Plugin</h1>
     <p>The <code>staticAssetPlugin</code> is a built-in Coralite utility that orchestrates copying raw files directly into the final build directory. It supports both local path resolution and NPM package traversal to pull binary assets (like <code>.wasm</code> files), images, or scripts out of <code>node_modules</code>.</p>
 
-    <coralite-heading level="h2" text="Configuration"></coralite-heading>
+    <coralite-heading level="2" text="Configuration"></coralite-heading>
     <p>The plugin is automatically initialized if you provide an <code>assets</code> array to the Coralite configuration. Each object in the array must contain a <code>dest</code> (destination) property.</p>
 
-    <coralite-heading level="h3" text="Local File Resolution"></coralite-heading>
+    <coralite-heading level="3" text="Local File Resolution"></coralite-heading>
     <p>If the asset object contains a <code>src</code> property, the plugin copies the file or directory directly from your local file system.</p>
 
     <coralite-code-highlight language="JavaScript">
@@ -29,7 +29,7 @@ export default defineConfig({
 });
     </coralite-code-highlight>
 
-    <coralite-heading level="h3" text="NPM Package Resolution"></coralite-heading>
+    <coralite-heading level="3" text="NPM Package Resolution"></coralite-heading>
     <p>If <code>src</code> is missing, you must provide <code>pkg</code> and <code>path</code> options. The plugin uses Node's resolution logic to find the package root and then appends the provided path.</p>
 
     <coralite-code-highlight language="JavaScript">
@@ -45,7 +45,7 @@ export default defineConfig({
 });
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="How it Works"></coralite-heading>
+    <coralite-heading level="2" text="How it Works"></coralite-heading>
     <ul>
       <li><strong>Hook</strong>: The plugin triggers during the <code>onBeforeBuild</code> lifecycle hook.</li>
       <li><strong>Reliability</strong>: It ensures all required binary or static dependencies are physically present in the output directory before Coralite attempts to render pages or start the development server.</li>

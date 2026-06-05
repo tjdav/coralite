@@ -18,7 +18,7 @@
 
     <p>Coralite’s v0.8.0 release introduces robust pagination support, improved HTML parsing, and metadata enhancements while addressing critical type handling and breaking changes to ensure compatibility with modern workflows.</p>
 
-    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
 
     <ul>
       <li>Introduced full pagination system with dynamic attribute generation, document handling, and template rendering based on configuration (BREAKING CHANGE: replaces previous sort function logic).</li>
@@ -27,7 +27,7 @@
       <li>Refactored aggregation logic with Aggregation typedef, structured data collection, and enhanced type safety through CoraliteFilePath and HTMLData interfaces.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Breaking Changes"></coralite-heading>
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
 
     <ul>
       <li><strong>Metadata Token Prefix:</strong> All references to metadata tokens must now use the ’$' prefix instead of ‘meta_’.</li>
@@ -35,7 +35,7 @@
       <li><strong>Return Type Change:</strong> createComponent now returns a CoraliteComponent object instead of a raw CoraliteElement. Access the element property on the returned object.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+    <coralite-heading level="2" text="Get the release"></coralite-heading>
 
     <coralite-code-highlight language="bash">npm install coralite@0.8.0</coralite-code-highlight>
     

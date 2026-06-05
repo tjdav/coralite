@@ -12,7 +12,7 @@
       The Coralite library is used for processing and rendering HTML documents with custom elements, components, and plugins. It provides a structured way to manage document metadata, component paths, plugin configurations, and ignored attributes during rendering.
     </p>
 
-    <coralite-heading level="h2" text="Table of Contents"></coralite-heading>
+    <coralite-heading level="2" text="Table of Contents"></coralite-heading>
     <ul>
       <li><a href="#coralite-constructor">Coralite Constructor</a></li>
       <li><a href="#initialise-method">Initialise Method</a></li>
@@ -24,10 +24,10 @@
       <li><a href="#create-component">Create Component</a></li>
     </ul>
 
-    <coralite-heading level="h2" text="Coralite Constructor"></coralite-heading>
+    <coralite-heading level="2" text="Coralite Constructor"></coralite-heading>
     <p>Initializes a Coralite instance using the await createCoralite factory with configuration options for components, pages, plugins, and ignore attributes.</p>
 
-    <coralite-heading level="h3" text="Parameters"></coralite-heading>
+    <coralite-heading level="3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -85,7 +85,7 @@
       </table>
     </div>
 
-    <coralite-heading level="h3" text="Example Usage"></coralite-heading>
+    <coralite-heading level="3" text="Example Usage"></coralite-heading>
     <coralite-code-highlight language="JavaScript">const coralite = await createCoralite({
   components: './src/components',
   pages: './src/pages',
@@ -99,7 +99,7 @@
   ]
 });</coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Initialise Method"></coralite-heading>
+    <coralite-heading level="2" text="Initialise Method"></coralite-heading>
     <p>Initialises the Coralite instance by loading components and setting up collections for pages and custom elements.</p>
 
     <coralite-code-highlight language="JavaScript">/**
@@ -107,10 +107,10 @@
  * @returns {Promise*void*}
  */
 
-    <coralite-heading level="h3" text="Returns"></coralite-heading>
+    <coralite-heading level="3" text="Returns"></coralite-heading>
     <p>A promise that resolves when the initialization is complete.</p>
 
-    <coralite-heading level="h2" text="Build Method" id="build-method"></coralite-heading>
+    <coralite-heading level="2" text="Build Method" id="build-method"></coralite-heading>
     <p>Compiles specified page(s) by rendering their document content and measuring render time. Processes pages based on provided path(s), replacing custom elements with components, and returns rendered results with performance metrics.</p>
 
     <coralite-code-highlight language="JavaScript">/**
@@ -125,7 +125,7 @@
  */
 coralite.build(path, options, callback)</coralite-code-highlight>
 
-    <coralite-heading level="h3" text="Parameters"></coralite-heading>
+    <coralite-heading level="3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -159,7 +159,7 @@ coralite.build(path, options, callback)</coralite-code-highlight>
       </table>
     </div>
 
-    <coralite-heading level="h3" text="Example Usage"></coralite-heading>
+    <coralite-heading level="3" text="Example Usage"></coralite-heading>
     <p>Build a single page by providing its file path:</p>
     <coralite-code-highlight language="JavaScript">coralite.build('pages/home/index.html')
   .then(documents => {
@@ -189,7 +189,7 @@ coralite.build(path, options, callback)</coralite-code-highlight>
     console.error('Error building all pages:', error)
   });</coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Save Method" id="save-method"></coralite-heading>
+    <coralite-heading level="2" text="Save Method" id="save-method"></coralite-heading>
     <p>Saves processed pages and assets to the output directory configured in the Coralite instance.</p>
 
     <coralite-code-highlight language="JavaScript">/**
@@ -201,7 +201,7 @@ coralite.build(path, options, callback)</coralite-code-highlight>
  */
 coralite.save(path, options)</coralite-code-highlight>
 
-    <coralite-heading level="h3" text="Parameters"></coralite-heading>
+    <coralite-heading level="3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -229,7 +229,7 @@ coralite.save(path, options)</coralite-code-highlight>
       </table>
     </div>
 
-    <coralite-heading level="h3" text="Example Usage"></coralite-heading>
+    <coralite-heading level="3" text="Example Usage"></coralite-heading>
     <coralite-code-highlight language="JavaScript">coralite.build()
   .then(async (documents) => {
     // save documents to disk
@@ -239,7 +239,7 @@ coralite.save(path, options)</coralite-code-highlight>
     console.error('Error building all pages:', error)
   })</coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Render Method"></coralite-heading>
+    <coralite-heading level="2" text="Render Method"></coralite-heading>
     <p>Renders the provided node or array of nodes using the render function. This method serves as an internal utility to handle the rendering process.</p>
 
     <coralite-code-highlight language="JavaScript">/**
@@ -251,7 +251,7 @@ coralite.save(path, options)</coralite-code-highlight>
  */
 coralite._render(root)</coralite-code-highlight>
 
-    <coralite-heading level="h3" text="Parameters"></coralite-heading>
+    <coralite-heading level="3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -271,10 +271,10 @@ coralite._render(root)</coralite-code-highlight>
       </table>
     </div>
 
-    <coralite-heading level="h3" text="Returns"></coralite-heading>
+    <coralite-heading level="3" text="Returns"></coralite-heading>
     <p>Raw HTML string from the rendering process.</p>
 
-    <coralite-heading level="h2" text="Get Page Paths Using Custom Element"></coralite-heading>
+    <coralite-heading level="2" text="Get Page Paths Using Custom Element"></coralite-heading>
     <p>Retrieves page paths associated with a custom element component.</p>
 
     <coralite-code-highlight language="JavaScript">/**
@@ -285,7 +285,7 @@ coralite._render(root)</coralite-code-highlight>
  */
 coralite.getPagePathsUsingCustomElement(path)</coralite-code-highlight>
 
-    <coralite-heading level="h3" text="Parameters"></coralite-heading>
+    <coralite-heading level="3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -305,10 +305,10 @@ coralite.getPagePathsUsingCustomElement(path)</coralite-code-highlight>
       </table>
     </div>
 
-    <coralite-heading level="h3" text="Returns"></coralite-heading>
+    <coralite-heading level="3" text="Returns"></coralite-heading>
     <p>An array of page paths linked to the custom element component.</p>
 
-    <coralite-heading level="h2" text="Add Render Queue"></coralite-heading>
+    <coralite-heading level="2" text="Add Render Queue"></coralite-heading>
     <p>Adds a page to the current render queue.</p>
 
     <coralite-code-highlight language="JavaScript">/**
@@ -317,7 +317,7 @@ coralite.getPagePathsUsingCustomElement(path)</coralite-code-highlight>
  */
 coralite.addRenderQueue(value)</coralite-code-highlight>
 
-    <coralite-heading level="h3" text="Parameters"></coralite-heading>
+    <coralite-heading level="3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -337,7 +337,7 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
       </table>
     </div>
 
-    <coralite-heading level="h2" text="Create Component"></coralite-heading>
+    <coralite-heading level="2" text="Create Component"></coralite-heading>
     <p>Creates a component by processing the provided parameters and returning a rendered HTML element.</p>
 
     <coralite-code-highlight language="JavaScript">/**
@@ -366,7 +366,7 @@ coralite.addRenderQueue(value)</coralite-code-highlight>
  */
 coralite.createComponentElement(options)</coralite-code-highlight>
 
-    <coralite-heading level="h3" text="Parameters"></coralite-heading>
+    <coralite-heading level="3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -411,7 +411,7 @@ coralite.createComponentElement(options)</coralite-code-highlight>
       </table>
     </div>
 
-    <coralite-heading level="h3" text="Returns"></coralite-heading>
+    <coralite-heading level="3" text="Returns"></coralite-heading>
     <p>A promise that resolves to a rendered HTML element or void.</p>
   </main>
   <coralite-footer></coralite-footer>

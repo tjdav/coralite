@@ -17,7 +17,7 @@
       and access DOM elements using the "Flat Options" API.
     </p>
 
-    <coralite-heading level="h2" text="The defineComponent Helper"></coralite-heading>
+    <coralite-heading level="2" text="The defineComponent Helper"></coralite-heading>
 
     <p>
       The <code>defineComponent</code> function is the core of Coralite's component logic. It separates server-side data
@@ -57,7 +57,7 @@
       })
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="The Script Context"></coralite-heading>
+    <coralite-heading level="2" text="The Script Context"></coralite-heading>
 
     <p>
       The <code>script</code> block is executed in the browser when the component mounts. It receives a flattened context object via destructuring:
@@ -70,7 +70,7 @@
         <li><code>page</code>: Static environment data including the current URL and file metadata.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Native Reactivity & Performance"></coralite-heading>
+    <coralite-heading level="2" text="Native Reactivity & Performance"></coralite-heading>
 
     <p>
       Coralite uses a <strong>Lazy Deep Proxy</strong> system. Unlike frameworks that recursively make your entire data structure reactive upfront, Coralite only pays the performance cost for nested objects the exact moment they are accessed.
@@ -80,7 +80,7 @@
         Additionally, Coralite follows the <strong>Smart State, Dumb Template</strong> philosophy. Instead of a Virtual DOM, Coralite performs direct token replacement (<code>{{ key }}</code>) in the template, making updates extremely fast and memory-efficient.
     </p>
 
-    <coralite-heading level="h2" text="Using External Libraries"></coralite-heading>
+    <coralite-heading level="2" text="Using External Libraries"></coralite-heading>
 
     <p>
       Because Coralite leverages standard ESM, you can use dynamic <code>import()</code> statements directly inside your <code>script</code> function to load client-side dependencies. These are automatically detected by the build tool and bundled for the browser.
@@ -99,7 +99,7 @@
       })
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Component Communication"></coralite-heading>
+    <coralite-heading level="2" text="Component Communication"></coralite-heading>
 
     <p>
       Coralite encourages using standard Web APIs for component communication. Use <code>CustomEvent</code> to emit signals from a child to a parent. You can dispatch events from any element retrieved via <code>refs</code>.

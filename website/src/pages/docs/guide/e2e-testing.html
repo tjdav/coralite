@@ -15,7 +15,7 @@
 
     <p>End-to-end testing frameworks like Playwright or Cypress interact with the DOM incredibly fast. If you try to click a button or assert the state of a dynamic component immediately after navigating to a page, your tests will likely fail due to a race condition: the framework hasn't finished mounting or initializing the component's internal state.</p>
 
-    <coralite-heading level="h2" text="Testing Selectors (data-testid)"></coralite-heading>
+    <coralite-heading level="2" text="Testing Selectors (data-testid)"></coralite-heading>
 
     <p>When Coralite is run in <code>development</code> mode, it automatically activates a built-in testing plugin. This plugin parses your component templates and duplicates the resolved <code>ref</code> attributes into <code>data-testid</code> attributes for both declarative and imperative components.</p>
     
@@ -32,13 +32,13 @@
 
     <p>This allows you to write highly specific E2E tests using the standard <code>data-testid</code> pattern without polluting your production builds.</p>
 
-    <coralite-heading level="h2" text="The window.__coralite_ready__ Promise"></coralite-heading>
+    <coralite-heading level="2" text="The window.__coralite_ready__ Promise"></coralite-heading>
 
     <p>To solve this, Coralite injects a global promise named <code>window.__coralite_ready__</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
 
     <p>Your testing frameworks <strong>MUST</strong> wait for this promise to resolve immediately after performing a page navigation before interacting with any Coralite components.</p>
 
-    <coralite-heading level="h3" text="Playwright Example"></coralite-heading>
+    <coralite-heading level="3" text="Playwright Example"></coralite-heading>
 
     <coralite-code-highlight language="javascript">
       import { test, expect } from '@playwright/test';
@@ -58,7 +58,7 @@
       });
     </coralite-code-highlight>
 
-    <coralite-heading level="h3" text="Cypress Example"></coralite-heading>
+    <coralite-heading level="3" text="Cypress Example"></coralite-heading>
 
     <coralite-code-highlight language="javascript">
       describe('Counter Component', () => {
@@ -78,7 +78,7 @@
       });
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="What Does It Wait For?"></coralite-heading>
+    <coralite-heading level="2" text="What Does It Wait For?"></coralite-heading>
 
     <p>The <code>window.__coralite_ready__</code> promise ensures two critical hydration pipelines have completed:</p>
 

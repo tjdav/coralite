@@ -16,7 +16,7 @@
       This guide explores advanced styling techniques, including how scoping works and how to use modern CSS features like nesting.
     </p>
 
-    <coralite-heading level="h2" text="Scoped Styles"></coralite-heading>
+    <coralite-heading level="2" text="Scoped Styles"></coralite-heading>
 
     <p>
       When you define styles inside a Coralite component template, they are automatically scoped to that component.
@@ -46,14 +46,14 @@
       <code>[data-style-selector="my-button"] button</code> (conceptually), ensuring it only targets buttons within instances of this component.
     </p>
 
-    <coralite-heading level="h2" text="CSS Nesting"></coralite-heading>
+    <coralite-heading level="2" text="CSS Nesting"></coralite-heading>
 
     <p>
       Coralite supports CSS nesting syntax out of the box, allowing you to write cleaner and more hierarchical styles.
       You can use the <code>&</code> selector to reference the parent selector.
     </p>
 
-    <coralite-heading level="h3" text="The Parent Selector (&)"></coralite-heading>
+    <coralite-heading level="3" text="The Parent Selector (&)"></coralite-heading>
 
     <p>
       The ampersand (<code>&</code>) refers to the parent rule's selector. It's particularly useful for pseudo-classes,
@@ -99,7 +99,7 @@
       This nesting capability makes it easy to encapsulate all styles related to a component within a readable structure.
     </p>
 
-    <coralite-heading level="h2" text="Global vs. Component Styles"></coralite-heading>
+    <coralite-heading level="2" text="Global vs. Component Styles"></coralite-heading>
 
     <p>
       While component styles are scoped, you often need global styles for things like typography, resets, and utility classes.
@@ -114,7 +114,7 @@
       You can use global utility classes (like Bootstrap or Tailwind) within your components alongside your scoped styles.
     </p>
 
-    <coralite-heading level="h2" text="Using Preprocessors"></coralite-heading>
+    <coralite-heading level="2" text="Using Preprocessors"></coralite-heading>
 
     <p>
       If your project is configured to use Sass or PostCSS (via <code>coralite-scripts</code>), these transformations occur before the component styles are scoped.

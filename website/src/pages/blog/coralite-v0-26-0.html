@@ -19,13 +19,13 @@
 
     <p>I am excited to announce the release of <strong>Coralite v0.26.0</strong>! This update brings an important architectural shift by renaming the script plugin to client and moving its setup process directly into the frontend bundle.</p>
 
-    <coralite-heading level="h2" text="Client Plugins & Bundle Setup"></coralite-heading>
+    <coralite-heading level="2" text="Client Plugins & Bundle Setup"></coralite-heading>
 
     <p>This release introduces a significant refactor to how scripts are handled. We have renamed the <code>script</code> configuration to <code>client</code> in <code>createPlugin</code>. Additionally, the <code>client.setup</code> execution has been moved from the server-side <code>ScriptManager.prototype.use</code> to the frontend bundle.</p>
     
     <p>By bundling <code>client.setup</code> into the frontend output, it now executes globally during initialization, and its result is deeply merged into <code>context.values</code>. This simplifies the execution flow and improves consistency between the server and the client environment.</p>
 
-    <coralite-heading level="h2" text="Breaking Changes"></coralite-heading>
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
 
     <p>Due to the architectural improvements mentioned above, there are a few breaking changes to be aware of when upgrading to v0.26.0:</p>
 
@@ -35,7 +35,7 @@
       <li><strong>Bundled Execution:</strong> `ScriptManager.prototype.compileAllInstances` now bundles `client.setup` into the frontend output. Ensure any setup logic is compatible with the client environment.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Code Refactoring"></coralite-heading>
+    <coralite-heading level="2" text="Code Refactoring"></coralite-heading>
 
     <p>Alongside the main architectural changes, we've also cleaned up some types and tests:</p>
     
@@ -44,7 +44,7 @@
       <li>Renamed the `IgnoreByAttribute` type to simply `Attribute`, streamlining our type definitions.</li>
     </ul>
 
-    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
 
     <p>To upgrade to the latest version, update your project dependencies:</p>
 

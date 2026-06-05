@@ -10,7 +10,7 @@
 
     <p>Welcome to Coralite! This tutorial will walk you through building your very first interactive web component using Coralite's unique HTML-first approach. We'll start with a simple static template and slowly make it dynamic.</p>
 
-    <coralite-heading level="h2" text="1. The Setup"></coralite-heading>
+    <coralite-heading level="2" text="1. The Setup"></coralite-heading>
 
     <p>First, make sure you have a basic Coralite project structure. If you used the <code>create-coralite</code> CLI (from the <a href="./quick-start.html">Quick Start</a> guide), you're already good to go. Otherwise, create the following folders:</p>
 
@@ -23,7 +23,7 @@
   └── package.json</pre>
   </coralite-code>
 
-    <coralite-heading level="h2" text="2. Creating a Static Component"></coralite-heading>
+    <coralite-heading level="2" text="2. Creating a Static Component"></coralite-heading>
 
     <p>In Coralite, components are just standard HTML <code>&lt;template&gt;</code> tags. Let's create a simple counter component. Create a file named <code>counter.html</code> inside your <code>src/components/</code> directory.</p>
 
@@ -39,7 +39,7 @@
       </template>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="3. Using the Component in a Page"></coralite-heading>
+    <coralite-heading level="2" text="3. Using the Component in a Page"></coralite-heading>
 
     <p>Now, let's use this static component. Create an <code>index.html</code> file inside your <code>src/pages/</code> directory. You can use your component simply by writing its tag name.</p>
 
@@ -62,7 +62,7 @@
 
     <p>If you run your build command (<code>npm run build</code>), Coralite will generate an HTML page where the <code>&lt;my-counter&gt;</code> tag is replaced by the contents of your template.</p>
 
-    <coralite-heading level="h2" text="4. Making It Dynamic with defineComponent"></coralite-heading>
+    <coralite-heading level="2" text="4. Making It Dynamic with defineComponent"></coralite-heading>
 
     <p>Right now, our counter is just static HTML. Clicking the button does nothing. To add interactivity and data processing, we need to turn this into a <strong>Dynamic Component</strong>.</p>
 
@@ -95,7 +95,7 @@
       </script>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="5. Adding Interactivity with Refs"></coralite-heading>
+    <coralite-heading level="2" text="5. Adding Interactivity with Refs"></coralite-heading>
 
     <p>We have data, but we still need the button to actually do something! Coralite provides a built-in <strong>refs plugin</strong> to easily target DOM elements without needing to use <code>document.querySelector</code>.</p>
 
@@ -137,7 +137,7 @@
       </script>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Congratulations!"></coralite-heading>
+    <coralite-heading level="2" text="Congratulations!"></coralite-heading>
 
     <p>You have just built your first fully functional, interactive Coralite component! You learned how to:</p>
 

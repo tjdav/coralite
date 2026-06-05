@@ -16,7 +16,7 @@
 
     <p>Coralite v0.10.0 introduces foundational improvements for building and rendering static websites, with a focus on component-based architecture, metadata extraction, and type system refinements.</p>  
       
-    <coralite-heading level="h2" text="Core Functionality"></coralite-heading>
+    <coralite-heading level="2" text="Core Functionality"></coralite-heading>
 
     <ul>  
       <li>Introduced support for templates within plugins (feat: add support for templates in plugins) to enable dynamic content generation during site rendering. </li>  
@@ -24,7 +24,7 @@
       <li>Implemented context-aware scoping for component values using unique context IDs derived from path, element name, and position to isolate value management and improve modularity (feat: introduce context ID for scoped component value management) (BREAKING CHANGE).</li>  
     </ul>  
     
-    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+    <coralite-heading level="2" text="Key Improvements"></coralite-heading>
 
     <ul>  
       <li>Refactored type definitions to include an <code>id</code> property in the value context type and standardised plugin and types directory configurations (types: add id property, types configuration for plugins). </li>
@@ -32,7 +32,7 @@
       <li>Improved tracking of custom elements during file updates to avoid duplicates and ensure accurate removal of outdated references. </li>
     </ul>  
 
-    <coralite-heading level="h2" text="Breaking Changes"></coralite-heading>
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
 
     <ul>  
       <li>The <code>parseHTMLMeta</code> function has been removed; use the <code>meta</code> property in <code>parseHTML</code> return values instead (BREAKING CHANGE). </li>  
@@ -40,7 +40,7 @@
       <li>Component value overrides may require modification when using nested components due to context-aware scoping refactoring (BREAKING CHANGE). </li>  
     </ul> 
 
-    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+    <coralite-heading level="2" text="Get the release"></coralite-heading>
 
     <coralite-code-highlight language="bash">npm install coralite@0.10.0</coralite-code-highlight>
 

@@ -24,7 +24,7 @@
 
     <p>Coralite v0.18.5 is a maintenance release focused on fixing a critical CSS build issue in <code>coralite-scripts</code>, ensuring consistent output during the build process.</p>
 
-    <coralite-heading level="h2" text="Bug Fixes"></coralite-heading>
+    <coralite-heading level="2" text="Bug Fixes"></coralite-heading>
 
     <ul>
       <li>Fixed a bug in the <code>coralite-scripts</code> build system that prevented correct processing of <code>type: 'css'</code> stylesheets. Prior to this fix, CSS files were not being compiled or output correctly, even when configured in the build settings.</li>
@@ -32,13 +32,13 @@
       <li>Build logic now properly distinguishes between Sass/SCSS and plain CSS inputs, ensuring that each is processed with the appropriate compiler—Sass for <code>sass</code> or <code>scss</code> types, and the new <code>buildCSS</code> function for <code>css</code> type.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Chores"></coralite-heading>
+    <coralite-heading level="2" text="Chores"></coralite-heading>
 
     <ul>
       <li>Upgraded <code>coralite-scripts</code> to version 0.18.5 to include recent improvements and bug fixes.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Get the release"></coralite-heading>
+    <coralite-heading level="2" text="Get the release"></coralite-heading>
 
     <coralite-code-highlight language="bash">npm install coralite@0.18.5</coralite-code-highlight>
 

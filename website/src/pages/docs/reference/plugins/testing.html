@@ -13,10 +13,10 @@
     <h1 class="display">Testing Plugin</h1>
     <p>The <code>testingPlugin</code> is a built-in Coralite utility activated when the <code>mode: 'development'</code> configuration option is set. It is designed to assist in End-to-End (E2E) testing by providing deterministic selectors for DOM elements.</p>
 
-    <coralite-heading level="h2" text="Automatic data-testid Generation"></coralite-heading>
+    <coralite-heading level="2" text="Automatic data-testid Generation"></coralite-heading>
     <p>In development mode, the testing plugin automatically duplicates all <code>ref="xyz"</code> attributes into <code>data-testid</code> attributes. Because Coralite isolates references across component instances, these <code>data-testid</code> attributes are resolved into a strict namespace pattern.</p>
 
-    <coralite-heading level="h3" text="Namespace Pattern"></coralite-heading>
+    <coralite-heading level="3" text="Namespace Pattern"></coralite-heading>
     <p>The generated <code>data-testid</code> follows this format:</p>
     <coralite-code language="text">[componentId]__[refName]-[instanceIndex]</coralite-code>
 
@@ -31,7 +31,7 @@
 <button ref="my-button__btn-0" data-testid="my-button__btn-0">Click me</button>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="E2E Testing Usage"></coralite-heading>
+    <coralite-heading level="2" text="E2E Testing Usage"></coralite-heading>
     <p>When using a testing framework like Playwright, you can use these deterministic IDs to select elements even if they are deeply nested or part of multiple component instances.</p>
 
     <coralite-code-highlight language="JavaScript">
@@ -46,7 +46,7 @@ test('should click the button', async ({ page }) => {
 });
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Key Points"></coralite-heading>
+    <coralite-heading level="2" text="Key Points"></coralite-heading>
     <ul>
       <li><strong>Dev-Only</strong>: The plugin only runs when <code>mode</code> is <code>'development'</code>. It does not bloat your production HTML.</li>
       <li><strong>Automatic</strong>: No manual configuration is required; it hooks into <code>onComponentSet</code> and <code>onPageSet</code>.</li>

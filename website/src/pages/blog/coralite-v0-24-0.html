@@ -13,8 +13,7 @@
   <coralite-navbar></coralite-navbar>
 
   <main class="container content post">
-    <coralite-heading level="h1"
-      text="Coralite v0.24.0: Build Modes, Client/Server Separation, and Plugin Enhancements"></coralite-heading>
+    <h1 class="display">Coralite v0.24.0: Build Modes, Client/Server Separation, and Plugin Enhancements</h1>
 
     <coralite-author name="thomas" date="2026-03-01T14:05:16.000Z"></coralite-author>
 
@@ -33,7 +32,7 @@
         configuration options for script compilation.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Development & Production Build Modes"></coralite-heading>
+    <coralite-heading level="2" text="Development & Production Build Modes"></coralite-heading>
 
     <p>With v0.24.0, we have introduced explicit <strong>Development</strong> and <strong>Production</strong> build
       modes. This foundational change allows Coralite to optimize its internal behavior based on what you are trying to
@@ -48,7 +47,7 @@
       <code>esbuild</code> transformations to compile your server-side scripts for maximum performance.
     </p>
 
-    <coralite-heading level="h2" text="Client/Server Separation in defineComponent"></coralite-heading>
+    <coralite-heading level="2" text="Client/Server Separation in defineComponent"></coralite-heading>
 
     <p>We've completely restructured the <code>defineComponent</code> API to enforce a strict and clear separation
       between server-side Server-Side Rendering (SSR) logic and client-side browser execution.</p>
@@ -74,14 +73,14 @@
       })
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Sourcemap Support for Easier Debugging"></coralite-heading>
+    <coralite-heading level="2" text="Sourcemap Support for Easier Debugging"></coralite-heading>
 
     <p>As part of the new Development mode, Coralite now automatically generates and maps <strong>inline
         sourcemaps</strong> for the code you write inside your <code>client.script</code> functions. Say goodbye to
       struggling with minified or obscured errors in the browser console. Stack traces will now point directly back to
       the original source lines in your component templates!</p>
 
-    <coralite-heading level="h2" text="Plugin Enhancements & The onBuildComplete Hook"></coralite-heading>
+    <coralite-heading level="2" text="Plugin Enhancements & The onBuildComplete Hook"></coralite-heading>
 
     <p>We continue to expand the power available to plugin authors:</p>
     <ul>
@@ -94,7 +93,7 @@
         support, ensuring valid ESM syntax when combined with default or named exports.</li>
     </ul>
 
-    <coralite-heading level="h2" text="How to Upgrade"></coralite-heading>
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
 
     <p>You can upgrade your projects today by updating your dependencies:</p>
     <coralite-code-highlight language="bash">npm install coralite@latest</coralite-code-highlight>

@@ -16,13 +16,13 @@
 
     <p><em>For a conceptual guide on how to use dynamic components, see the <a href="/docs/guide/dynamic-components.html">Dynamic Components Guide</a>.</em></p>
 
-    <coralite-heading level="h2" text="Signature"></coralite-heading>
+    <coralite-heading level="2" text="Signature"></coralite-heading>
 
     <coralite-code-highlight language="typescript">
 function defineComponent(options: DefineComponentOptions): PluginDefinition
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="Options Object (DefineComponentOptions)"></coralite-heading>
+    <coralite-heading level="2" text="Options Object (DefineComponentOptions)"></coralite-heading>
 
     <p>The <code>defineComponent</code> function accepts a single configuration object with the following isolated blocks. <strong>Note:</strong> All components MUST have a hyphen in their name (e.g., <code>&lt;my-component&gt;</code>).</p>
 
@@ -59,7 +59,7 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
       </tr>
     </coralite-table>
 
-    <coralite-heading level="h2" text="1. attributes"></coralite-heading>
+    <coralite-heading level="2" text="1. attributes"></coralite-heading>
     <p>The <code>attributes</code> block defines the inputs your component accepts from HTML. Coralite automatically coerces these values into the specified types.</p>
     
     <coralite-code-highlight language="javascript">
@@ -74,7 +74,7 @@ attributes: {
         <strong>Strict Primitive Rule:</strong> To prevent complex JSON-in-HTML parsing errors and ensure performance, attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code>. Use the <code>data</code> block or <code>slots</code> for complex data structures.
     </div>
 
-    <coralite-heading level="h2" text="2. data (Server-Side)"></coralite-heading>
+    <coralite-heading level="2" text="2. data (Server-Side)"></coralite-heading>
     <p>The <code>data</code> block is used for heavy-lifting, such as database queries or API calls. This code runs <strong>only on the server</strong> during the build process and is completely removed from the JavaScript sent to the browser.</p>
 
     <coralite-code-highlight language="javascript">
@@ -84,7 +84,7 @@ async data(context) {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="3. getters (Derived State)"></coralite-heading>
+    <coralite-heading level="2" text="3. getters (Derived State)"></coralite-heading>
     <p>Getters are pure functions used to calculate derived data. They are reactive; if an attribute or a data value changes, the getter automatically re-calculates.</p>
 
     <coralite-code-highlight language="javascript">
@@ -94,7 +94,7 @@ getters: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="h2" text="4. script (Client-Side)"></coralite-heading>
+    <coralite-heading level="2" text="4. script (Client-Side)"></coralite-heading>
     <p>The <code>script</code> block is the controller for your component in the browser. This is where you add event listeners and mutate state.</p>
 
     <coralite-code-highlight language="javascript">
@@ -109,7 +109,7 @@ script: ({ state, signal, refs }) => {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="h3" text="CoraliteScriptContext"></coralite-heading>
+    <coralite-heading level="3" text="CoraliteScriptContext"></coralite-heading>
 
     <coralite-table>
       <tr slot="head">
@@ -144,14 +144,14 @@ script: ({ state, signal, refs }) => {
       </tr>
     </coralite-table>
 
-    <coralite-heading level="h2" text="5. slots"></coralite-heading>
+    <coralite-heading level="2" text="5. slots"></coralite-heading>
     <p>Allows you to intercept and transform content passed into your component's slots.</p>
 
     <coralite-code-highlight language="typescript">
 type CoraliteModuleSlotFunction = (slotNodes: Node[], state: any) => Node[] | string | undefined | null
     </coralite-code-highlight>
 
-    <coralite-heading level="h3" text="The Void = Bypass Paradigm"></coralite-heading>
+    <coralite-heading level="3" text="The Void = Bypass Paradigm"></coralite-heading>
 
     <p>To ensure high performance and prevent unnecessary re-rendering during client-side hydration, Coralite uses a "Void = Bypass" approach for slot transformations:</p>
 

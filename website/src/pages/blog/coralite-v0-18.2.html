@@ -23,27 +23,27 @@
 
     <p>Coralite v0.18.2 delivers targeted improvements to tooling, build reliability, and code maintainability. This release focuses on the developer experience through refined configuration, better dependency resolution, and cleaner output pipelines.</p>
 
-    <coralite-heading level="h2" text="Key Improvements"></coralite-heading>
+    <coralite-heading level="2" text="Key Improvements"></coralite-heading>
 
     <ul>
       <li>Added a dedicated CLI testing workflow to validate command-line behavior across environments.</li>
       <li>Introduced <code>coralite-scripts</code> with build scripts and standardized <code>dist</code> output support for consistent project scaffolding.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Bug Fixes"></coralite-heading>
+    <coralite-heading level="2" text="Bug Fixes"></coralite-heading>
 
     <ul>
       <li>Replaced the <code>#types</code> path alias with relative imports in type declarations, resolving issues with bundlers and IDEs that do not support custom aliases.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Code Refactoring"></coralite-heading>
+    <coralite-heading level="2" text="Code Refactoring"></coralite-heading>
 
     <ul>
       <li>Added path aliases for <code>lib</code> and <code>plugins</code> modules in the core package, improving readability and reducing import path complexity.</li>
       <li>Removed <code>minify-whitespace</code> from esbuild configurations to preserve readable output in development builds and reduce unintended side effects during debugging.</li>
     </ul>
 
-    <coralite-heading level="h2" text="What This Means for You"></coralite-heading>
+    <coralite-heading level="2" text="What This Means for You"></coralite-heading>
 
     <p>With v0.18.2, Coralite continues to evolve as a lightweight, predictable toolchain for modular application development. The new <code>coralite-scripts</code> setup enables faster project initialization and consistent output structure. Fixing the type import issue ensures compatibility across different build environments, while path aliases and cleaner build configurations make the codebase easier to navigate and extend.</p>
 
