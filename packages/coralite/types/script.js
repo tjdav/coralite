@@ -44,9 +44,12 @@
  */
 
 /**
+ * @typedef {ScriptPluginHelperGlobalContext & { config: Object.<string, any> }} ScriptPluginHelperPhase1Context
+ */
+
+/**
  * @callback ScriptPluginHelperGlobalInstance
- * @param {ScriptPluginHelperGlobalContext} globalContext - Global instance context
- * @param {Object.<string, any>} [config] - Plugin configuration
+ * @param {ScriptPluginHelperPhase1Context} pluginContext - Global instance context containing config
  * @returns {ScriptPluginHelperLocalInstance | Promise<ScriptPluginHelperLocalInstance>}
  */
 

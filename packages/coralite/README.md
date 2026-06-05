@@ -193,9 +193,9 @@ export default function myPlugin(options = {}) {
     name: 'my-plugin',
 
     server: {
-      // Phase 1: Global Context | Phase 2: Component Arguments
+      // Phase 1: Plugin Context | Phase 2: Component Arguments
       exports: {
-        getData: (context) => (query) => {
+        getData: (pluginContext) => (query) => {
           return { custom: 'data' }
         }
       },
@@ -207,7 +207,7 @@ export default function myPlugin(options = {}) {
     client: {
       // Injects a utility directly into the component's 'script' context
       context: {
-        myHelper: (globalCtx) => (instanceCtx) => () => {
+        myHelper: (pluginContext) => (instanceCtx) => () => {
           console.log('Hello from component', instanceCtx.instanceId)
         }
       }

@@ -11,10 +11,10 @@ export default definePlugin({
     /**
      * The exports property defines methods available to components during the server-side build process.
      * These virtual modules MUST only be invoked within the data() block.
-     * Uses Two-Phase Currying: (session) => (instanceContext) => { ... }
+     * Uses Two-Phase Currying: (pluginContext) => (instanceContext) => { ... }
      */
     exports: {
-      myPluginMethod: (session) => (instanceContext) => {
+      myPluginMethod: (pluginContext) => (instanceContext) => {
         return {
           message: instanceContext.message || 'Hello from server export!'
         }
@@ -36,10 +36,10 @@ export default definePlugin({
   client: {
     /**
      * Injects utilities into the component's script context.
-     * Uses Two-Phase Currying: (globalContext) => (instanceContext) => { ... }
+     * Uses Two-Phase Currying: (pluginContext) => (instanceContext) => { ... }
      */
     context: {
-      myClientUtility: (globalContext) => (instanceContext) => {
+      myClientUtility: (pluginContext) => (instanceContext) => {
         const { state, instanceId } = instanceContext
         return (msg) => {
           console.log(`[${instanceId}] Plugin says: ${msg}`)

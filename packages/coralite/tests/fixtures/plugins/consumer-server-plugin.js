@@ -4,8 +4,8 @@ export const consumerServerPlugin = definePlugin({
   name: 'consumer-server-plugin',
   server: {
     exports: {
-      getServerData: (globalContext) => (instanceContext) => {
-        const db = globalContext.db
+      getServerData: (pluginContext) => () => {
+        const db = pluginContext.db
         return () => db.getData()
       }
     }

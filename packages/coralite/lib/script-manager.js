@@ -632,10 +632,8 @@ export default {
             contents += `export const runSetup = async (context) => {
               const setup = ${setupFn};
               if (!setup) return {};
-              const contextObject = {
-                config: pluginConfig,
-                ...context
-              };
+              const contextObject = Object.create(context);
+              contextObject.config = pluginConfig;
               return await setup(contextObject);
             };\n`
 
@@ -659,7 +657,9 @@ export default {
                   const fn = normalizeFunction(module.context[key])
                   contents += `  "${key}": async (globalContext) => {
                     const fn = ${fn};
-                    const phase2 = await fn(globalContext, pluginConfig);
+                    const pluginContext = Object.create(globalContext);
+                    pluginContext.config = pluginConfig;
+                    const phase2 = await fn(pluginContext);
                     return (localContext) => phase2(localContext);
                   },\n`
                 }

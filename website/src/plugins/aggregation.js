@@ -5,8 +5,8 @@ export const aggregation = definePlugin({
   name: 'aggregation',
   server: {
     exports: {
-      aggregate: () => (context) => async (options) => {
-        const { state = {}, page: currentPageContext, app, session: currentRenderContext } = context
+      aggregate: ({ app }) => (context) => async (options) => {
+        const { state = {}, page: currentPageContext, session: currentRenderContext } = context
         const {
           path: paths = [],
           component,

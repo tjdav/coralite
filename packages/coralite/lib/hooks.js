@@ -96,15 +96,15 @@ export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name
  * Executes Phase 2 of plugin exports with the given instance context.
  *
  * @param {Object} options
- * @param {Object} options.app - Coralite instance
  * @param {Object} options.serverGlobalContext - Global context
  * @param {Object} options.phase2Functions - Phase 2 functions
  * @param {Object} options.instanceContext - Instance context
  * @returns {Promise<Object>} Bound plugins
  */
-export async function bindPlugins ({ app, serverGlobalContext, phase2Functions, instanceContext }) {
+export async function bindPlugins ({ serverGlobalContext, phase2Functions, instanceContext }) {
   const boundPlugins = {}
-  const globalContext = Object.assign({ app }, serverGlobalContext, instanceContext)
+  const { app: _, ...restGlobalContext } = serverGlobalContext
+  const globalContext = Object.assign({}, restGlobalContext, instanceContext)
 
   for (const name in phase2Functions) {
     const pluginExports = phase2Functions[name]

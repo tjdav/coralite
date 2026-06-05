@@ -118,9 +118,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @property {CoraliteSession} session - The current build session
  * @property {Attribute[]} [excludeByAttribute] - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
- * @property {CoraliteInstance} app - The global coralite app instance
  * @property {boolean} [noHydration] - Indicates if the component should be stripped and not hydrated
- * @property {any} [config] - Plugin configuration object
  */
 
 /**
@@ -128,7 +126,11 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
- * @typedef {(globalContext: CoralitePluginGlobalContextWithMutation, config?: any) => Promise<(instanceContext: CoralitePluginContextWithMutation) => any> | ((instanceContext: CoralitePluginContextWithMutation) => any)} CoralitePluginExportFunction
+ * @typedef {CoralitePluginGlobalContextWithMutation & { config: any }} CoralitePluginPhase1Context
+ */
+
+/**
+ * @typedef {(pluginContext: CoralitePluginPhase1Context) => Promise<(instanceContext: CoralitePluginContextWithMutation) => any> | ((instanceContext: CoralitePluginContextWithMutation) => any)} CoralitePluginExportFunction
  */
 
 /**
@@ -278,7 +280,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @typedef {Object} CoralitePluginServer
  * @property {any} [config] - Plugin configuration object
- * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Three-Phase Curried functions. Phase 1 receives the global context and config, Phase 2 receives the instance context, Phase 3 is the executable result.
+ * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Three-Phase Curried functions. Phase 1 receives a single context object containing the global context and config, Phase 2 receives the instance context, Phase 3 is the executable result.
  * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated

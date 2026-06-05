@@ -1152,8 +1152,8 @@ describe('ScriptManager', () => {
       await manager.use({
         config,
         context: {
-          testHelper: (globalContext) => (localContext) => {
-            return globalContext.config
+          testHelper: (pluginContext) => (localContext) => {
+            return pluginContext.config
           }
         }
       })

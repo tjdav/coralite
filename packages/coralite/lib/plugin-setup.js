@@ -29,10 +29,14 @@ export async function setupPlugins ({
       if (plugin.server.exports) {
         const phase2Obj = {}
         for (const prop in plugin.server.exports) {
-          phase2Obj[prop] = typeof plugin.server.exports[prop] === 'function'
+          if (typeof plugin.server.exports[prop] === 'function') {
+            const pluginContext = Object.create(serverGlobalContext)
+            pluginContext.config = plugin.server.config || {}
             // @ts-ignore
-            ? await plugin.server.exports[prop](serverGlobalContext, plugin.server.config)
-            : plugin.server.exports[prop]
+            phase2Obj[prop] = await plugin.server.exports[prop](pluginContext)
+          } else {
+            phase2Obj[prop] = plugin.server.exports[prop]
+          }
         }
         source.plugins[plugin.name] = phase2Obj
         serverGlobalContext[plugin.name] = phase2Obj
@@ -40,7 +44,11 @@ export async function setupPlugins ({
       if (plugin.server.components) {
         plugin.server.components.forEach(c => plugins.components.push(c))
       }
-      const wrapHook = (hook) => (ctx) => hook(Object.assign({ config: plugin.server.config }, ctx))
+      const wrapHook = (hook) => (ctx) => {
+        const hookContext = Object.create(ctx)
+        hookContext.config = plugin.server.config || {}
+        return hook(hookContext)
+      }
 
       if (plugin.server.onPageSet) {
         addPluginHook(plugins.hooks, 'onPageSet', wrapHook(plugin.server.onPageSet))
@@ -74,7 +82,9 @@ export async function setupPlugins ({
       }
       if (plugin.server.onBeforeBuild) {
         addPluginHook(plugins.hooks, 'onBeforeBuild', async (ctx) => {
-          const res = await plugin.server.onBeforeBuild(Object.assign({ config: plugin.server.config }, ctx))
+          const hookContext = Object.create(ctx)
+          hookContext.config = plugin.server.config || {}
+          const res = await plugin.server.onBeforeBuild(hookContext)
           if (res && typeof res === 'object') {
             Object.assign(serverGlobalContext, res)
           }

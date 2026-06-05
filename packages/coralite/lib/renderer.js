@@ -408,7 +408,6 @@ export function createRenderer ({
           module,
           id: contextId,
           session,
-          app,
           noHydration
         }
         const cachedBoundPlugins = await hooks.bind(source.plugins, pluginContext)
