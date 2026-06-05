@@ -128,7 +128,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
- * @typedef {(globalContext: CoralitePluginGlobalContextWithMutation, config?: any) => Promise<(...args: any[]) => any> | ((...args: any[]) => any)} CoralitePluginExportFunction
+ * @typedef {(globalContext: CoralitePluginGlobalContextWithMutation, config?: any) => Promise<(instanceContext: CoralitePluginContextWithMutation) => any> | ((instanceContext: CoralitePluginContextWithMutation) => any)} CoralitePluginExportFunction
  */
 
 /**
@@ -278,7 +278,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @typedef {Object} CoralitePluginServer
  * @property {any} [config] - Plugin configuration object
- * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Two-Phase Curried functions. Phase 1 receives the explicit context, Phase 2 receives the executable arguments.
+ * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Three-Phase Curried functions. Phase 1 receives the global context and config, Phase 2 receives the instance context, Phase 3 is the executable result.
  * @property {HTMLData[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated

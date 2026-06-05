@@ -133,6 +133,7 @@ export const aggregation = definePlugin({
               for (let i = 2; i <= totalPages; i++) {
                 const newPathname = path.join(targetDir, segment, `${i}.html`)
 
+                /** @type {import('../../../packages/coralite/dist/types/collection.js').CoraliteCollectionItem} */
                 const virtualItem = {
                   content: currentItem ? currentItem.content : '',
                   path: {
@@ -184,7 +185,7 @@ export const aggregation = definePlugin({
               session: currentRenderContext
             })
 
-            if (componentElement && componentElement.children) {
+            if (componentElement && 'children' in componentElement) {
               resultNodes.push(...componentElement.children)
             }
           }
@@ -197,11 +198,11 @@ export const aggregation = definePlugin({
           let baseUrl = urlPathname
           let urlPrefix = ''
 
-          if (state.paginationBaseUrl) {
+          if (typeof state.paginationBaseUrl === 'string') {
             baseUrl = state.paginationBaseUrl
           }
 
-          if (state.paginationUrlPrefix) {
+          if (typeof state.paginationUrlPrefix === 'string') {
             urlPrefix = state.paginationUrlPrefix
           } else {
             if (baseUrl.endsWith('/index.html') || baseUrl.endsWith('/')) {
@@ -234,7 +235,7 @@ export const aggregation = definePlugin({
             session: currentRenderContext
           })
 
-          if (componentElement && componentElement.children) {
+          if (componentElement && 'children' in componentElement) {
             resultNodes.push(...componentElement.children)
           }
         }
