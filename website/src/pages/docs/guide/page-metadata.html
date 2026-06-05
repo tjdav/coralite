@@ -13,21 +13,23 @@
 
     <p>In a standard HTML page, the <code>&lt;head&gt;</code> element contains metadata crucial for SEO, social sharing, and page structure. Coralite provides a built-in <strong>metadata plugin</strong> that automatically extracts this information and makes it available globally to all your components during the build process.</p>
 
-    <coralite-heading level="h2" text="How It Works"></coralite-heading>
+    <coralite-heading level="2" text="How It Works"></coralite-heading>
 
     <p>During the <code>onPageSet</code> lifecycle hook, the metadata plugin scans the <code>&lt;head&gt;</code> of your page (e.g., <code>src/pages/index.html</code>) for standard <code>&lt;meta&gt;</code> and <code>&lt;title&gt;</code> tags.</p>
 
     <p>It extracts the data and stores it globally with a specific prefix format, making it accessible as tokens inside your components.</p>
 
-    <coralite-heading level="h2" text="Prefixes and Structure"></coralite-heading>
+    <coralite-heading level="2" text="Prefixes and Structure"></coralite-heading>
+
+    <p>Extracted metadata is stored in the <code>page.meta</code> object within the component's state.</p>
 
     <ul>
-      <li><strong>Meta Tags:</strong> Tags formatted as <code>&lt;meta name="X" content="Y"&gt;</code> are stored as <code>meta_X</code>. For example, <code>&lt;meta name="author" content="Coralite Team"&gt;</code> becomes accessible via the token <code>{{ meta_author }}</code>.</li>
-      <li><strong>Title Tag:</strong> The text content of the <code>&lt;title&gt;</code> tag is stored specifically as <code>page_title</code>.</li>
-      <li><strong>Language:</strong> The <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag is extracted and stored as <code>page_lang</code>.</li>
+      <li><strong>Meta Tags:</strong> Tags formatted as <code>&lt;meta name="X" content="Y"&gt;</code> are stored as <code>page.meta.X</code>. For example, <code>&lt;meta name="author" content="Coralite Team"&gt;</code> is stored in <code>page.meta.author</code>.</li>
+      <li><strong>Title Tag:</strong> The text content of the <code>&lt;title&gt;</code> tag is stored as <code>page.meta.title</code>.</li>
+      <li><strong>Language:</strong> The <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag is extracted and stored as <code>page.meta.lang</code>.</li>
     </ul>
 
-    <coralite-heading level="h2" text="Example Usage"></coralite-heading>
+    <coralite-heading level="2" text="Example Usage"></coralite-heading>
 
     <p>Let's define a page with metadata:</p>
 
@@ -48,27 +50,45 @@
       </html>
     </coralite-code-html>
 
-    <p>Now, any component used on that page can access the metadata via tokens without needing the data passed manually as attributes!</p>
+    <p>Now, any component used on that page can access the metadata by mapping it in their <code>data</code> or <code>getters</code>.</p>
+
+    <p><em>Note: Templates do not support dot notation for tokens, so you must map <code>page.meta</code> properties to flat state variables.</em></p>
 
     <coralite-code-html>
       <!-- src/components/post-header.html -->
       <template id="post-header">
         <header class="blog-header">
           <!-- Accessing the title -->
-          <h1 class="display">{{ page_title }}</h1>
+          <h1 class="display">{{ title }}</h1>
           
           <div class="meta-info">
             <!-- Accessing the custom meta tags -->
-            <span>Written by: {{ meta_author }}</span>
-            <span>Published: {{ meta_publishDate }}</span>
-            <span class="badge">{{ meta_category }}</span>
-            <span>Language: {{ page_lang }}</span>
+            <span>Written by: {{ author }}</span>
+            <span>Published: {{ publishDate }}</span>
+            <span class="badge">{{ category }}</span>
+            <span>Language: {{ language }}</span>
           </div>
         </header>
       </template>
+
+      <script type="module">
+        import { defineComponent } from 'coralite'
+
+        export default defineComponent({
+          data ({ page }) {
+            return {
+              title: page.meta.title,
+              author: page.meta.author,
+              publishDate: page.meta.publishDate,
+              category: page.meta.category,
+              language: page.meta.lang
+            }
+          }
+        })
+      </script>
     </coralite-code-html>
 
-    <coralite-heading level="h2" text="Dynamic Components in <head>"></coralite-heading>
+    <coralite-heading level="2" text="Dynamic Components in <head>"></coralite-heading>
 
     <p>The metadata plugin is smart enough to handle nested components. It recursively processes custom components placed inside the <code>&lt;head&gt;</code> tag.</p>
 
@@ -92,7 +112,7 @@
       </head>
     </coralite-code-html>
 
-    <p>The resulting global state will include <code>meta_generator</code>, <code>meta_robots</code>, and <code>meta_theme-color</code>.</p>
+    <p>The resulting <code>page.meta</code> object will include <code>generator</code>, <code>robots</code>, and <code>theme-color</code> properties.</p>
 
   </main>
   <coralite-footer></coralite-footer>

@@ -11,32 +11,32 @@
   <main class="container content">
     <h1 class="display">Core Concepts: Built-in Page Variables</h1>
 
-    <p>During the build phase, Coralite automatically injects several context variables into the <code>state</code> object of your components. These variables provide essential information about the current page's URL and file path, making it easy to create dynamic logic like highlighting active navigation links or generating breadcrumbs.</p>
+    <p>During the build phase, Coralite automatically injects a <code>page</code> object into the <code>state</code> of your components. This object provides essential information about the current page's URL and file path, making it easy to create dynamic logic like highlighting active navigation links or generating breadcrumbs.</p>
 
-    <p>These core variables all follow the <code>page_*</code> snake_case naming convention and are provided natively by the framework.</p>
+    <p>These core variables are organized into <code>url</code> and <code>file</code> objects within the <code>page</code> context.</p>
 
     <coralite-heading level="h2" text="Available Page Variables"></coralite-heading>
 
     <ul>
-      <li><strong><code>page_url_pathname</code></strong>: The final URL path that the user navigates to (e.g., <code>/docs/guide/page-variables.html</code>).</li>
-      <li><strong><code>page_url_dirname</code></strong>: The directory component of the URL path (e.g., <code>/docs/guide</code>).</li>
-      <li><strong><code>page_pathname</code></strong>: The file path name relative to your pages directory (e.g., <code>docs/guide/page-variables.html</code>).</li>
-      <li><strong><code>page_dirname</code></strong>: The directory name of the source page file (e.g., <code>docs/guide</code>).</li>
-      <li><strong><code>page_filename</code></strong>: The filename of the source page file (e.g., <code>page-variables.html</code>).</li>
+      <li><strong><code>page.url.pathname</code></strong>: The final URL path that the user navigates to (e.g., <code>/docs/guide/page-variables.html</code>).</li>
+      <li><strong><code>page.url.dirname</code></strong>: The directory component of the URL path (e.g., <code>/docs/guide</code>).</li>
+      <li><strong><code>page.file.pathname</code></strong>: The physical file path name relative to your pages directory (e.g., <code>docs/guide/page-variables.html</code>).</li>
+      <li><strong><code>page.file.dirname</code></strong>: The physical directory name of the source page file (e.g., <code>docs/guide</code>).</li>
+      <li><strong><code>page.file.filename</code></strong>: The filename of the source page file (e.g., <code>page-variables.html</code>).</li>
     </ul>
 
     <coralite-heading level="h2" text="Metadata Variables"></coralite-heading>
     
-    <p>In addition to the path-related variables, if you are using the built-in <a href="/docs/guide/page-metadata.html">metadata plugin</a>, it injects the following special variables from the page's <code>&lt;head&gt;</code>:</p>
+    <p>In addition to the path-related variables, if you are using the built-in <a href="/docs/guide/page-metadata.html">metadata plugin</a>, it injects metadata from the page's <code>&lt;head&gt;</code> into the <code>page.meta</code> object:</p>
 
     <ul>
-      <li><strong><code>page_title</code></strong>: Extracted from the page's <code>&lt;title&gt;</code> tag.</li>
-      <li><strong><code>page_lang</code></strong>: Extracted from the <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag.</li>
+      <li><strong><code>page.meta.title</code></strong>: Extracted from the page's <code>&lt;title&gt;</code> tag.</li>
+      <li><strong><code>page.meta.lang</code></strong>: Extracted from the <code>lang</code> attribute on the root <code>&lt;html&gt;</code> tag.</li>
     </ul>
 
     <coralite-heading level="h2" text="Example Usage"></coralite-heading>
 
-    <p>Because these variables are injected directly into the <code>state</code> object, you can reference them seamlessly within your components using tokens or getters.</p>
+    <p>Because templates do not support dot notation for tokens (e.g., <code>{{ page.url.pathname }}</code>), you must map these variables to local properties in your component's <code>state</code> (via the <code>data</code> function) or <code>getters</code>.</p>
 
     <p>Here is an example of a navigation link component that automatically adds an "active" class if the current URL matches its target URL:</p>
 
@@ -56,24 +56,38 @@
             href: { type: String }
           },
           getters: {
-            // Getter that checks if the href matches the current URL
-            activeClass: (state) => (state.href === state.page_url_pathname ? 'active' : '')
+            // Mapping nested page variable to a flat state property
+            activeClass: (state) => (state.href === state.page.url.pathname ? 'active' : '')
           }
         })
       </script>
     </coralite-code-html>
 
-    <p>You can also use these variables purely declaratively inside your static templates:</p>
+    <p>For static values that don't require reactivity on the client, mapping them in <code>data</code> is the preferred approach:</p>
 
     <coralite-code-html>
       <!-- src/components/page-info.html -->
       <template id="page-info">
         <div class="page-info-box">
-          <p>Current URL: <strong>{{ page_url_pathname }}</strong></p>
-          <p>Source File: <strong>{{ page_filename }}</strong></p>
-          <p>Language: <strong>{{ page_lang }}</strong></p>
+          <p>Current URL: <strong>{{ currentUrl }}</strong></p>
+          <p>Source File: <strong>{{ fileName }}</strong></p>
+          <p>Language: <strong>{{ language }}</strong></p>
         </div>
       </template>
+
+      <script type="module">
+        import { defineComponent } from 'coralite'
+
+        export default defineComponent({
+          data({ page }) {
+            return {
+              currentUrl: page.url.pathname,
+              fileName: page.file.filename,
+              language: page.meta.lang
+            }
+          }
+        })
+      </script>
     </coralite-code-html>
 
   </main>
