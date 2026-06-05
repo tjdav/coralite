@@ -136,6 +136,11 @@
             <td><code>string</code> (optional)</td>
             <td>The raw HTML string contents of the file (optional, may be omitted for templates).</td>
           </tr>
+          <tr>
+            <td><code>virtual</code></td>
+            <td><code>boolean</code> (optional)</td>
+            <td>Indicates if the file is virtual (in-memory) rather than from the filesystem.</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -884,7 +889,7 @@
           <tr>
             <td><code>root</code></td>
             <td><code>HTMLElement</code></td>
-            <td>The physical DOM element instance of the component.</td>
+            <td>The DOM element instance of the component.</td>
           </tr>
           <tr>
             <td><code>signal</code></td>

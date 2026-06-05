@@ -790,7 +790,7 @@ export default {
 
   if (result.outputFiles) {
     for (const file of result.outputFiles) {
-      // Keep the relative path for the physical output file creation
+      // Keep the relative path for the output file creation on disk
       const relativePath = relative(outdirAbs, file.path).replace(/\\/g, '/')
 
       outputFiles[relativePath] = {

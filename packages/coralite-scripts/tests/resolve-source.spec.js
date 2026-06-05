@@ -25,27 +25,27 @@ describe('resolveSource', () => {
     })
   })
 
-  test('should resolve physical index.html for root path', async () => {
+  test('should resolve index.html for root path', async () => {
     const coralite = { pages: { getItem: () => null } }
     const result = await resolveSource('/', '', config, coralite, memoryPageSource)
     assert.strictEqual(result.key, 'index.html')
     assert.strictEqual(result.pathname, join(pagesDir, 'index.html'))
   })
 
-  test('should resolve physical about.html for extension-less path', async () => {
+  test('should resolve about.html for extension-less path', async () => {
     const coralite = { pages: { getItem: () => null } }
     const result = await resolveSource('/about', '', config, coralite, memoryPageSource)
     assert.strictEqual(result.key, 'about.html')
     assert.strictEqual(result.pathname, join(pagesDir, 'about.html'))
   })
 
-  test('should resolve virtual page when physical file is missing', async () => {
+  test('should resolve virtual page when file is missing on disk', async () => {
     const virtualPath = join(pagesDir, 'virtual.html')
     const coralite = {
       pages: {
         getItem: (path) => {
           if (path === virtualPath) {
-            return { physical: false }
+            return { virtual: true }
           }
           return null
         }
@@ -57,7 +57,7 @@ describe('resolveSource', () => {
     assert.strictEqual(result.pathname, virtualPath)
   })
 
-  test('should return null if neither physical nor virtual page exists', async () => {
+  test('should return null if neither file nor virtual page exists', async () => {
     const coralite = { pages: { getItem: () => null } }
     const result = await resolveSource('/non-existent', '', config, coralite, memoryPageSource)
     assert.strictEqual(result, null)

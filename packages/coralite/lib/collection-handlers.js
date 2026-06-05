@@ -100,7 +100,7 @@ export function createPageHandlers ({
       app
     })
     const isProduction = app.options.mode === 'production'
-    if (isProduction && data.physical) {
+    if (isProduction && !data.virtual) {
       delete data.content
     }
     return {

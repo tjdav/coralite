@@ -136,6 +136,7 @@ export const aggregation = definePlugin({
                 /** @type {import('../../../packages/coralite/dist/types/collection.js').CoraliteCollectionItem} */
                 const virtualItem = {
                   content: currentItem ? currentItem.content : '',
+                  virtual: true,
                   path: {
                     pathname: newPathname,
                     dirname: path.dirname(newPathname),

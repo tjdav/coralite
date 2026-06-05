@@ -15,7 +15,7 @@ import portfinder from 'portfinder'
  */
 
 /**
- * Resolves the requested path to a physical file or a virtual page.
+ * Resolves the requested path to a file or a virtual page.
  *
  * @param {string} reqPath - The requested URL path.
  * @param {string} extension - The extension of the requested path.
@@ -375,7 +375,7 @@ async function server (config, options) {
           // Only set item if it's not already in the collection (virtual pages are pre-registered)
           const item = coralite.pages.getItem(pathname)
 
-          if (!item || item.physical !== false) {
+          if (!item || item.virtual !== true) {
             await coralite.pages.setItem(pathname)
           }
 

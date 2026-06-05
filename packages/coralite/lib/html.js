@@ -109,7 +109,7 @@ export async function getHtmlFiles ({
         await resultCollection.setItem({
           type,
           content,
-          physical: true,
+          virtual: false,
           path: {
             pathname: pathname,
             filename: entry.name,
@@ -182,7 +182,7 @@ export async function* discoverHtmlFiles ({
       yield {
         type,
         content,
-        physical: true,
+        virtual: false,
         path: {
           pathname: pathname,
           filename: entry.name,
