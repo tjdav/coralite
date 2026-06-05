@@ -11,18 +11,6 @@
 <script type="module">
 import { defineComponent } from 'coralite'
 
-const authors = {
-  thomas: {
-    url: 'https://thomasjackdavid.com',
-    img: {
-      avif: '/images/thomas-avatar.avif',
-      webp: '/images/thomas-avatar.webp',
-      default: '/images/thomas-avatar.png'
-    },
-    name: 'Thomas David'
-  }
-}
-
 export default defineComponent({
   attributes: {
     name: {
@@ -31,8 +19,23 @@ export default defineComponent({
     },
     dateTime: { type: String }
   },
+  data () {
+    return {
+      authors: {
+        thomas: {
+          url: 'https://thomasjackdavid.com',
+          img: {
+            avif: '/images/thomas-avatar.avif',
+            webp: '/images/thomas-avatar.webp',
+            default: '/images/thomas-avatar.png'
+          },
+          name: 'Thomas David'
+        }
+      }
+    }
+  },
   getters: {
-    author: (state) => authors[state.name] || null,
+    author: (state) => state.authors[state.name] || null,
     url: (state) => state.author?.url || '',
     fullName: (state) => state.author?.name || 'Unknown',
     img: (state) => {
