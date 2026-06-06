@@ -16,7 +16,8 @@
         serverData: data
       }
     },
-    script: ({ getClientUtility }) => {
+    script: (context) => {
+      const { getClientUtility } = context['consumer-client-plugin']
       const btn = document.getElementById('client-action')
       const resultDiv = document.getElementById('client-result')
   

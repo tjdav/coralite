@@ -18,7 +18,9 @@
         pluginMessage: getPluginMessage('E2E Test')
       }
     },
-    script: ({ testHelper, refs }) => {
+    script: (context) => {
+      const { testHelper } = context['test-context-plugin']
+      const { refs } = context.refs
       // test two-phase currying system context injection
       testHelper(refs('pluginData'))
     }

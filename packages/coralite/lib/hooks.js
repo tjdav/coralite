@@ -103,8 +103,7 @@ export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name
  */
 export async function bindPlugins ({ serverGlobalContext, phase2Functions, instanceContext }) {
   const boundPlugins = {}
-  const { app: _, ...restGlobalContext } = serverGlobalContext
-  const globalContext = Object.assign({}, restGlobalContext, instanceContext)
+  const globalContext = Object.assign({ app: serverGlobalContext.app }, instanceContext)
 
   for (const name in phase2Functions) {
     const pluginExports = phase2Functions[name]

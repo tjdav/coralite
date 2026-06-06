@@ -248,26 +248,27 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }\n`)
 
   // Global setups initialization
-  entryCodeParts.push(`const globalContext = { values: {} };\n`)
-  entryCodeParts.push(`const globalSetupPropertiesPromise = getSetups(globalContext).then(setupValues => {
-    Object.assign(globalContext.values, setupValues);
-    return setupValues;
-  });\n`)
+  entryCodeParts.push('const globalContext = { values: {} };\n')
 
-  entryCodeParts.push(`const resolvedContextPropsPromise = globalSetupPropertiesPromise.then(async () => {
+  entryCodeParts.push(`const resolvedContextPropsPromise = (async () => {
+    const setupValues = await getSetups(globalContext);
+    Object.assign(globalContext.values, setupValues);
+
     const resolvedProps = {};
     const keys = Object.keys(coraliteComponentClientContextProps);
     for (const key of keys) {
       resolvedProps[key] = await coraliteComponentClientContextProps[key](globalContext);
+      globalContext[key] = await resolvedProps[key](globalContext);
     }
     return resolvedProps;
-  });\n`)
+  })();\n`)
 
   entryCodeParts.push(`const getClientContext = async (context) => {
     const clientContextProps = {}
     const resolvedProps = await resolvedContextPropsPromise;
     for (const [key, resolvedProp] of Object.entries(resolvedProps)) {
-      clientContextProps[key] = resolvedProp(context)
+      const bound = resolvedProp(context);
+      clientContextProps[key] = bound;
     }
     return clientContextProps
   }\n`)
@@ -649,21 +650,38 @@ export default {
             // Generate client context state
             contents += 'export const clientContextProps = {\n'
             if (module.context) {
+              contents += `  "${module.name}": async (globalContext) => {\n`
+              contents += '    const props = {};\n'
               for (const key in module.context) {
                 if (Object.hasOwn(module.context, key)) {
                   if (['id', 'state', 'page', 'root', 'signal'].includes(key)) {
                     throw new Error(`Reserved context key '${key}' cannot be used in plugin context.`)
                   }
                   const fn = normalizeFunction(module.context[key])
-                  contents += `  "${key}": async (globalContext) => {
-                    const fn = ${fn};
-                    const pluginContext = Object.create(globalContext);
-                    pluginContext.config = pluginConfig;
-                    const phase2 = await fn(pluginContext);
-                    return (localContext) => phase2(localContext);
-                  },\n`
+                  contents += `    props["${key}"] = await (async (globalContext) => {
+                      const fn = ${fn};
+                      const pluginContext = new Proxy(globalContext, {
+                        get (target, prop) {
+                          if (prop === 'config') return pluginConfig;
+                          return target[prop];
+                        },
+                        set (target, prop, value) {
+                          return Reflect.set(target, prop, value);
+                        }
+                      });
+                      const phase2 = await fn(pluginContext);
+                      return (localContext) => phase2(localContext);
+                    })(globalContext);\n`
                 }
               }
+              contents += '    return (localContext) => {\n'
+              contents += '      const bound = {};\n'
+              contents += '      for (const [key, fn] of Object.entries(props)) {\n'
+              contents += '        bound[key] = fn(localContext);\n'
+              contents += '      }\n'
+              contents += '      return bound;\n'
+              contents += '    };\n'
+              contents += '  },\n'
             }
             contents += '};\n'
 

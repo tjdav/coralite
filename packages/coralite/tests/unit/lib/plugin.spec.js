@@ -57,6 +57,7 @@ describe('definePlugin', () => {
     assert.ok(capturedContext)
     assert.strictEqual(capturedContext.global, true)
     assert.strictEqual(capturedContext.config.foo, 'bar')
-    assert.strictEqual(Object.getPrototypeOf(capturedContext), serverGlobalContext)
+    // Protocol updated to snapshot instead of prototype to avoid pollution
+    assert.notStrictEqual(Object.getPrototypeOf(capturedContext), serverGlobalContext)
   })
 })

@@ -8,7 +8,7 @@ export const consumerClientPlugin = definePlugin({
   client: {
     context: {
       getClientUtility: async (globalContext) => {
-        const db = globalContext.db
+        const db = globalContext['provider-plugin'].db()
         return (localContext) => {
           return () => db.performAction()
         }

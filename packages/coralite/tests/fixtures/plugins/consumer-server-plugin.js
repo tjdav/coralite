@@ -5,7 +5,7 @@ export const consumerServerPlugin = definePlugin({
   server: {
     exports: {
       getServerData: (pluginContext) => () => {
-        const db = pluginContext.db
+        const db = pluginContext['provider-plugin'].db()
         return () => db.getData()
       }
     }

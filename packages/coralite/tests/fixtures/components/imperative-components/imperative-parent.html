@@ -6,7 +6,8 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script: async ({ refs }) => {
+    script: async (context) => {
+      const { refs } = context.refs
       const container = refs('container')
   
       const child = document.createElement('imperative-child')

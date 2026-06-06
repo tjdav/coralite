@@ -20,7 +20,9 @@
         default: 'Offline'
       }
     },
-    script: ({ state, refs, signal }) => {
+    script: (context) => {
+      const { state, signal } = context
+      const { refs } = context.refs
       const updateBtn = refs('updateBtn')
 
       updateBtn.addEventListener('click', async () => {

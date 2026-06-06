@@ -27,11 +27,23 @@ export async function setupPlugins ({
   for (const plugin of pluginsToInit) {
     if (plugin.server) {
       if (plugin.server.exports) {
+        // @ts-ignore
+        const { app: _, ...restGlobalContext } = serverGlobalContext
+        // @ts-ignore
+        const pluginContext = new Proxy(Object.assign({ app: serverGlobalContext.app }, restGlobalContext), {
+          get (target, prop) {
+            if (prop === 'config') return plugin.server.config || {}
+            return target[prop]
+          },
+          set (target, prop, value) {
+            serverGlobalContext[prop] = value
+            return Reflect.set(target, prop, value)
+          }
+        })
+
         const phase2Obj = {}
         for (const prop in plugin.server.exports) {
           if (typeof plugin.server.exports[prop] === 'function') {
-            const pluginContext = Object.create(serverGlobalContext)
-            pluginContext.config = plugin.server.config || {}
             // @ts-ignore
             phase2Obj[prop] = await plugin.server.exports[prop](pluginContext)
           } else {
