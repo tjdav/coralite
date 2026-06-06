@@ -14,18 +14,16 @@
 
     <coralite-heading level="2" text="Table of Contents"></coralite-heading>
     <ul>
-      <li><a href="#coralite-constructor">Coralite Constructor</a></li>
-      <li><a href="#initialise-method">Initialise Method</a></li>
+      <li><a href="#create-coralite">createCoralite Factory</a></li>
       <li><a href="#build-method">Build Method</a></li>
       <li><a href="#save-method">Save Method</a></li>
-      <li><a href="#render-method">Render Method</a></li>
       <li><a href="#get-page-paths-using-custom-element">Get Page Paths Using Custom Element</a></li>
       <li><a href="#add-render-queue">Add Render Queue</a></li>
       <li><a href="#create-component">Create Component</a></li>
     </ul>
 
-    <coralite-heading level="2" text="Coralite Constructor"></coralite-heading>
-    <p>Initializes a Coralite instance using the await createCoralite factory with configuration options for components, pages, plugins, and ignore attributes.</p>
+    <coralite-heading level="2" text="createCoralite Factory" id="create-coralite"></coralite-heading>
+    <p>Initializes a Coralite instance using the <code>await createCoralite</code> factory function. This replaces the legacy <code>new Coralite()</code> constructor.</p>
 
     <coralite-heading level="3" text="Parameters"></coralite-heading>
     <div class="table-responsive">
@@ -43,7 +41,7 @@
             <th scope="row">options</th>
             <td><code>Object</code></td>
             <td>Required</td>
-            <td>Configuration options for the <code>Coralite</code> constructor.</td>
+            <td>Configuration options for the Coralite instance.</td>
           </tr>
           <tr>
             <th scope="row">options.components</th>
@@ -55,364 +53,104 @@
             <th scope="row">options.pages</th>
             <td><code>string</code></td>
             <td>Required</td>
-            <td>The absolute or relative path to the directory containing pages to be rendered with the provided components.</td>
+            <td>The absolute or relative path to the directory containing pages to be rendered.</td>
           </tr>
           <tr>
             <th scope="row">options.plugins</th>
-            <td><code><a href="/docs/coralite-plugin.html">CoralitePluginInstance</a>[]</code></td>
+            <td><code>CoralitePluginInstance[]</code></td>
             <td>Optional</td>
-            <td>An array of plugin instances that extend Coralite's functionality.</td>
+            <td>An array of plugin instances.</td>
+          </tr>
+          <tr>
+            <th scope="row">options.mode</th>
+            <td><code>'production' | 'development'</code></td>
+            <td>Optional</td>
+            <td>Build mode. Defaults to <code>'production'</code>.</td>
           </tr>
           <tr>
             <th scope="row">options.ignoreByAttribute</th>
-            <td><code><a href="/docs/types.html#ignore-by-attribute">IgnoreByAttribute</a>[]</code> | <code>string[]</code></td>
+            <td><code>IgnoreByAttribute[] | string[]</code></td>
             <td>Optional</td>
-            <td>An array of strings or objects specifying attribute name-value pairs to ignore during document processing. Objects must have a name and value property.</td>
+            <td>Attributes to ignore during processing.</td>
           </tr>
           <tr>
             <th scope="row">options.skipRenderByAttribute</th>
-            <td><code><a href="/docs/types.html#ignore-by-attribute">IgnoreByAttribute</a>[]</code> | <code>string[]</code></td>
+            <td><code>IgnoreByAttribute[] | string[]</code></td>
             <td>Optional</td>
-            <td>An array of strings or objects specifying attribute name-value pairs to skip rendering.</td>
+            <td>Attributes that trigger skipping element rendering.</td>
           </tr>
           <tr>
             <th scope="row">options.onError</th>
-            <td><code><a href="/docs/reference/types.html#coraliteonerror">CoraliteOnError</a></code></td>
+            <td><code>CoraliteOnError</code></td>
             <td>Optional</td>
-            <td>A callback function for handling errors, warnings, and logs from the framework. The <code>Coralite</code> instance uses an internal <code>handleError</code> method to wrap and manage this callback. If not provided, level <code>'ERR'</code> will throw by default.</td>
+            <td>A callback function for handling errors and warnings.</td>
           </tr>
         </tbody>
       </table>
     </div>
 
     <coralite-heading level="3" text="Example Usage"></coralite-heading>
-    <coralite-code-highlight language="JavaScript">const coralite = await createCoralite({
+    <coralite-code-highlight language="JavaScript">import { createCoralite } from 'coralite';
+
+const app = await createCoralite({
   components: './src/components',
   pages: './src/pages',
-  plugins: [myCustomPlugin],
-  ignoreByAttribute: [
-    { name: 'data-ignore', value: 'true' },
-    { name: 'aria-hidden', value: 'true' }
-  ],
-  skipRenderByAttribute: [
-    'data-client-only'
-  ]
+  mode: 'production',
+  plugins: [myCustomPlugin]
 });</coralite-code-highlight>
 
-    <coralite-heading level="2" text="Initialise Method"></coralite-heading>
-    <p>Initialises the Coralite instance by loading components and setting up collections for pages and custom elements.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * Initialises the Coralite instance.
- * @returns {Promise*void*}
- */
-
-    <coralite-heading level="3" text="Returns"></coralite-heading>
-    <p>A promise that resolves when the initialization is complete.</p>
-
     <coralite-heading level="2" text="Build Method" id="build-method"></coralite-heading>
-    <p>Compiles specified page(s) by rendering their document content and measuring render time. Processes pages based on provided path(s), replacing custom elements with components, and returns rendered results with performance metrics.</p>
+    <p>Compiles specified page(s) using the <strong>Three-Phase Sealed Queue</strong> architecture. It handles discovery, ISR invalidation, and parallel rendering.</p>
 
     <coralite-code-highlight language="JavaScript">/**
- * Compiles specified page(s) by rendering their document content and measuring render time.
- * Processes pages based on provided path(s), replacing custom elements with components,
- * and returns rendered results with performance metrics.
+ * Compiles specified page(s).
  *
- * @param {string | string[]} [path] - Path to a single page or array of page paths relative to the pages directory. If omitted, compiles all pages.
- * @param {CoraliteBuildOptions} [options] - Build configuration options.
- * @param {function} [callback] - Optional callback to transform each page result.
- * @return {Promise<CoraliteResult[]>}
+ * @param {string | string[]} [path] - Path(s) to build. If omitted, builds all invalidated pages.
+ * @param {CoraliteBuildOptions} [options] - Build configuration.
+ * @param {function} [callback] - Optional per-page transform callback.
+ * @return {Promise<CoraliteBuildResult[]>}
  */
-coralite.build(path, options, callback)</coralite-code-highlight>
-
-    <coralite-heading level="3" text="Parameters"></coralite-heading>
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Type</th>
-            <th scope="col">Attribute</th>
-            <th scope="col">Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">path</th>
-            <td><code>string</code> | <code>string[]</code></td>
-            <td>Optional</td>
-            <td>The path or array of paths to the HTML files relative to the project's <code>pages</code> directory. If omitted, compiles all <code>pages</code> in the pages directory.</td>
-          </tr>
-          <tr>
-            <th scope="row">options</th>
-            <td><code><a href="/docs/reference/types.html#coralitebuildoptions">CoraliteBuildOptions</a></code></td>
-            <td>Optional</td>
-            <td>Configuration options for the build process.</td>
-          </tr>
-          <tr>
-            <th scope="row">callback</th>
-            <td><code>function</code></td>
-            <td>Optional</td>
-            <td>A function invoked for each page to transform the result.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <coralite-heading level="3" text="Example Usage"></coralite-heading>
-    <p>Build a single page by providing its file path:</p>
-    <coralite-code-highlight language="JavaScript">coralite.build('pages/home/index.html')
-  .then(documents => {
-    console.log('Build result:', documents);
-  })
-  .catch(error => {
-    console.error('Error during build:', error);
-  });</coralite-code-highlight>
-
-    <p>Building multiple pages using an array of paths:</p>
-    <coralite-code-highlight language="JavaScript">coralite.build(['pages/home/index.html', 'pages/about/index.html'])
-  .then(documents => {
-    documents.forEach((document, index) => {
-      console.log(`Result for page ${index + 1}:`, document);
-    });
-  })
-  .catch(error => {
-    console.error('Error during build:', error);
-  });</coralite-code-highlight>
-
-    <p>Building all pages by omitting the path parameter:</p>
-    <coralite-code-highlight language="JavaScript">coralite.build()
-  .then(documents => {
-    console.log('All built documents:', documents)
-  })
-  .catch(error => {
-    console.error('Error building all pages:', error)
-  });</coralite-code-highlight>
+await app.build(path, options, callback)</coralite-code-highlight>
 
     <coralite-heading level="2" text="Save Method" id="save-method"></coralite-heading>
-    <p>Saves processed pages and assets to the output directory configured in the Coralite instance.</p>
+    <p>Saves processed pages and generated client-side assets to the configured output directory.</p>
 
     <coralite-code-highlight language="JavaScript">/**
  * Compiles and saves pages to disk.
  *
  * @param {string | string[]} [path] - Optional page path(s) to build.
- * @param {CoraliteBuildOptions} [options] - Build configuration options.
- * @returns {Promise<{ path: string, duration: number }[]>} Array of saved file paths.
+ * @param {CoraliteBuildOptions} [options] - Build options.
+ * @returns {Promise<CoraliteSaveResult[]>} Array of saved file results.
  */
-coralite.save(path, options)</coralite-code-highlight>
-
-    <coralite-heading level="3" text="Parameters"></coralite-heading>
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Type</th>
-            <th scope="col">Attribute</th>
-            <th scope="col">Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">path</th>
-            <td><code>string | string[]</code></td>
-            <td>Optional</td>
-            <td>Optional page path(s) to build.</td>
-          </tr>
-          <tr>
-            <th scope="row">options</th>
-            <td><code><a href="/docs/reference/types.html#coralitebuildoptions">CoraliteBuildOptions</a></code></td>
-            <td>Optional</td>
-            <td>Build configuration options.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <coralite-heading level="3" text="Example Usage"></coralite-heading>
-    <coralite-code-highlight language="JavaScript">coralite.build()
-  .then(async (documents) => {
-    // save documents to disk
-    await coralite.save()
-  })
-  .catch(error => {
-    console.error('Error building all pages:', error)
-  })</coralite-code-highlight>
-
-    <coralite-heading level="2" text="Render Method"></coralite-heading>
-    <p>Renders the provided node or array of nodes using the render function. This method serves as an internal utility to handle the rendering process.</p>
-
-    <coralite-code-highlight language="JavaScript">/**
- * Renders the provided node or array of nodes using the render function.
- * This method serves as an internal utility to handle the rendering process.
- * @private
- * @param {CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[]} root - The node(s) to be rendered.
- * @returns {string} returns raw HTML
- */
-coralite._render(root)</coralite-code-highlight>
-
-    <coralite-heading level="3" text="Parameters"></coralite-heading>
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Type</th>
-            <th scope="col">Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">root</th>
-            <td><code>CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[]</code></td>
-            <td>The node(s) to be rendered.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <coralite-heading level="3" text="Returns"></coralite-heading>
-    <p>Raw HTML string from the rendering process.</p>
+await app.save(path, options)</coralite-code-highlight>
 
     <coralite-heading level="2" text="Get Page Paths Using Custom Element"></coralite-heading>
-    <p>Retrieves page paths associated with a custom element component.</p>
+    <p>Uses the internal dependency graph to find all pages that consume a specific component.</p>
 
     <coralite-code-highlight language="JavaScript">/**
- * Retrieves page paths associated with a custom element component.
- *
- * @param {string} path - The original path potentially prefixed with the components directory.
- * @returns {string[]} An array of page paths linked to the custom element component.
+ * @param {string} path - Component path or ID.
+ * @returns {string[]} Page paths consuming this component.
  */
-coralite.getPagePathsUsingCustomElement(path)</coralite-code-highlight>
-
-    <coralite-heading level="3" text="Parameters"></coralite-heading>
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Type</th>
-            <th scope="col">Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">path</th>
-            <td><code>string</code></td>
-            <td>The original path potentially prefixed with the components directory.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <coralite-heading level="3" text="Returns"></coralite-heading>
-    <p>An array of page paths linked to the custom element component.</p>
+app.getPagePathsUsingCustomElement(path)</coralite-code-highlight>
 
     <coralite-heading level="2" text="Add Render Queue"></coralite-heading>
-    <p>Adds a page to the current render queue.</p>
+    <p>Adds a page (physical or virtual) to the current render queue. Virtual pages must be added during the <code>onBeforeBuild</code> hook.</p>
 
     <coralite-code-highlight language="JavaScript">/**
- * Adds a page to the current render queue.
- * @param {string|CoraliteCollectionItem} value - The path to a page or a CoraliteCollectionItem to add to the render queue.
+ * @param {string | Object} value - Page path or virtual page object.
+ * @param {string} buildId - The current build ID.
  */
-coralite.addRenderQueue(value)</coralite-code-highlight>
+await app.addRenderQueue(value, buildId)</coralite-code-highlight>
 
-    <coralite-heading level="3" text="Parameters"></coralite-heading>
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Name</th>
-            <th scope="col">Type</th>
-            <th scope="col">Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">value</th>
-            <td><code>string | CoraliteCollectionItem</code></td>
-            <td>The path to a page or a CoraliteCollectionItem to add to the render queue.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <coralite-heading level="2" text="Create Component"></coralite-heading>
-    <p>Creates a component by processing the provided parameters and returning a rendered HTML element.</p>
+    <coralite-heading level="2" text="Create Component" id="create-component"></coralite-heading>
+    <p>Imperatively creates a component element for inclusion in the AST.</p>
 
     <coralite-code-highlight language="JavaScript">/**
- * @param {Object} options
- * @param {string} options.id - id - Unique identifier for the component
- * @param {Object} [options.state={}] - Initial state available for replacement
- * @param {CoraliteElement} [options.element] - Mapping of component IDs to their module definitions
- * @param {CoraliteComponent} options.document - Current document being processed
- * @param {string} [options.contextId] - Context Id
- * @param {number} [options.index] - Context index
- * @param {boolean} [head=true] - Indicates if the current function call is for the head of the recursion
- * @returns {Promise&lt;CoraliteElement | void&gt;}
- *
- * @example
- * // example usage:
- * const component = await coralite.createComponentElement({
- *   id: 'my-component',
- *   state: {
- *     'some-value': 'value-for-component'
- *   },
- *   element: customElement,
- *   document: documentInstance,
- *   contextId: 'unique-context-id',
- *   index: 0
- * })
+ * @param {ComponentElementOptions} options
+ * @returns {Promise<CoraliteAnyNode | void>}
  */
-coralite.createComponentElement(options)</coralite-code-highlight>
+await app.createComponentElement(options)</coralite-code-highlight>
 
-    <coralite-heading level="3" text="Parameters"></coralite-heading>
-    <div class="table-responsive">
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Parameter</th>
-            <th scope="col">Type</th>
-            <th scope="col">Description</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <th scope="row">options.id</th>
-            <td><code>string</code></td>
-            <td>Unique identifier for the component</td>
-          </tr>
-          <tr>
-            <th scope="row">options.state</th>
-            <td><code>Object</code></td>
-            <td>Initial state available for replacement (default: {})</td>
-          </tr>
-          <tr>
-            <th scope="row">options.element</th>
-            <td><code>CoraliteElement</code></td>
-            <td>Mapping of component IDs to their module definitions (optional)</td>
-          </tr>
-          <tr>
-            <th scope="row">options.document</th>
-            <td><code>CoraliteComponent</code></td>
-            <td>Current document being processed</td>
-          </tr>
-          <tr>
-            <th scope="row">options.contextId</th>
-            <td><code>string</code></td>
-            <td>Context Id (optional)</td>
-          </tr>
-          <tr>
-            <th scope="row">options.index</th>
-            <td><code>number</code></td>
-            <td>Context index (optional)</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <coralite-heading level="3" text="Returns"></coralite-heading>
-    <p>A promise that resolves to a rendered HTML element or void.</p>
   </main>
   <coralite-footer></coralite-footer>
 </body>

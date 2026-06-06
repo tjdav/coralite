@@ -69,13 +69,18 @@ A component definition consists of four primary blocks:
 * **Rule**: Strictly limited to primitives (`String`, `Number`, `Boolean`). `Object` and `Array` types are strictly blocked to avoid JSON-in-HTML parsing errors.
 * **Reactivity**: Changes to HTML attributes (via `setAttribute`) automatically trigger updates to the unified `state`.
 
-#### 2. `data({ state, page, ...context })` (Async/Server)
+#### 2. `data({ state, page, root, module, id, session, app, noHydration })` (Async/Server)
 
 * **Purpose**: Fetches initial state on the server during the build process.
 * **Arguments** (The Context Object):
-* `state`: Contains the component's resolved attributes (e.g., `state.category`). **Always use this to read HTML attribute values passed to the component.**
-* `page`: Contains global metadata about the consuming page/route (e.g., URL, file info). **Do NOT use this to look up component attributes.**
-
+  * `state`: Contains the component's resolved attributes (e.g., `state.category`). **Always use this to read HTML attribute values passed to the component.**
+  * `page`: Contains global metadata about the consuming page/route (e.g., URL, file info).
+  * `root`: The root AST node of the component.
+  * `module`: The component module definition.
+  * `id`: The unique instance ID.
+  * `session`: The current rendering session.
+  * `app`: The Coralite instance.
+  * `noHydration`: Boolean indicating if hydration is disabled for this instance.
 
 * **Serialization**: This block is fully stripped from the client bundle by the build tool. The returned object is serialized and merged into the unified client-side `state`.
 
@@ -91,7 +96,7 @@ A component definition consists of four primary blocks:
 * **Arguments** (Injected via Client Context):
 * `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
 * `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
-* `refs`: A dictionary of dynamically generated, globally unique IDs (e.g., `my-comp-0__btn`) for elements marked with the `ref` attribute (provided by the Core `refs` plugin).
+* `refs`: A dictionary of dynamically generated, globally unique IDs (e.g., `my-comp-0__btn`) for elements marked with the `ref` attribute (integrated into the Core framework).
 * `...pluginContext`: **Extensible Boundary.** Any active Coralite plugin that augments the `client.context` will inject its attributes directly into this destructured argument object.
 
 
@@ -220,7 +225,6 @@ Client injections mapped in `client.context` use a curried setup:
 ## 8. Built-In Plugins
 
 * **Metadata Plugin**: Extracts SEO data during the build phase.
-* **Refs Plugin**: Generates clean deterministic IDs (e.g., `my-comp-0__btn`) natively bridging the SSR/Client gap. Provides a `refs('name')` dictionary function directly within the `script` context.
 * **Static Asset Plugin**: Copies static assets to the build output folder.
 * **Testing Plugin**: Automates E2E testing preparation by duplicating all `ref` attributes to `data-testid` deterministically on both server and client.
 
