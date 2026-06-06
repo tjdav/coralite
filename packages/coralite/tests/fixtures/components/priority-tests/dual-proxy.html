@@ -27,8 +27,7 @@
       }
     },
     script: (context) => {
-      const { state, signal } = context
-      const { refs } = context.refs
+      const { state, signal, refs } = context
       refs('increment').addEventListener('click', () => {
         state.count++
       }, { signal })

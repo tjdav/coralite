@@ -21,8 +21,7 @@
       }
     },
     script: (context) => {
-      const { state, signal } = context
-      const { refs } = context.refs
+      const { state, signal, refs } = context
       const updateBtn = refs('updateBtn')
 
       updateBtn.addEventListener('click', async () => {

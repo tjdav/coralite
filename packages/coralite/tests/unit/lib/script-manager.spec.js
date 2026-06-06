@@ -622,7 +622,7 @@ describe('ScriptManager', () => {
         id: 'test',
         script: {
           content: `({ double, values }) => {
-            return context.refs.button ? 'found' : 'not found'
+            return context.refs('button') ? 'found' : 'not found'
           }`
         }
       })
@@ -991,7 +991,7 @@ describe('ScriptManager', () => {
         id: 'full',
         script: {
           content: `({ double, values }) => {
-            return \`\${context.instanceId}-\${context.componentId}-\${context.values.x}-\${context.refs.el}-\${context.page.meta.title}\`
+            return \`\${context.instanceId}-\${context.componentId}-\${context.values.x}-\${context.refs('el')}-\${context.page.meta.title}\`
           }`
         }
       })

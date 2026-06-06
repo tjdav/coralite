@@ -12,7 +12,7 @@ export default defineComponent({
     // Look at how clean this flattened context destructuring is!
     script: async (context) => {
       const { renderPluginChild } = context['mock-plugin']
-      const { refs } = context.refs
+      const { refs } = context
       // Use the built-in refs plugin to safely grab the target
       const containerElement = refs('injectionTarget')
 

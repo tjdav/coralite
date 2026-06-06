@@ -52,8 +52,7 @@ describe('Coralite', () => {
       // plugins array should have static-asset-plugin as the first item
       assert.strictEqual(coralite.options.plugins[0].name, 'static-asset-plugin')
       // Followed by core plugins
-      assert.strictEqual(coralite.options.plugins[1].name, 'refs')
-      assert.strictEqual(coralite.options.plugins[2].name, 'metadata')
+      assert.strictEqual(coralite.options.plugins[1].name, 'metadata')
     })
   })
 

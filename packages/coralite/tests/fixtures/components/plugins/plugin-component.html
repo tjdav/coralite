@@ -20,7 +20,7 @@
     },
     script: (context) => {
       const { testHelper } = context['test-context-plugin']
-      const { refs } = context.refs
+      const { refs } = context
       // test two-phase currying system context injection
       testHelper(refs('pluginData'))
     }

@@ -6,8 +6,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script: async (context) => {
-      const { refs } = context.refs
+    script: async ({ refs }) => {
       const container = refs('container')
   
       const dp = document.createElement('dual-proxy')

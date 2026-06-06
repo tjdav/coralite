@@ -291,13 +291,20 @@ export class CoraliteElement extends HTMLElement {
     /** @type {Array<{name: string, element: HTMLElement}>} */
     const refs = []
     if (options.hydrationMap && options.hydrationMap.refs) {
-      for (const item of options.hydrationMap.refs) {
-        /** @type {HTMLElement} */
-        // @ts-ignore
-        const node = this.getNodeByPath(item.path)
+      for (const ref of options.hydrationMap.refs) {
+        const uniqueRefValue = `${this._instanceId}__${ref.name}`
+
+        if (!target[`ref_${ref.name}`]) {
+          target[`ref_${ref.name}`] = uniqueRefValue
+        }
+
+        const node = this.getNodeByPath(ref.path)
         if (node) {
+          if (node.setAttribute) {
+            node.setAttribute('ref', uniqueRefValue)
+          }
           refs.push({
-            name: item.name,
+            name: ref.name,
             element: node
           })
         }
@@ -625,6 +632,7 @@ export class CoraliteElement extends HTMLElement {
    * @private
    */
   async _init (isImperative = false) {
+    const self = this
     /**
      * The context payload injected into the user's script block.
      * @type {Object}
@@ -633,7 +641,14 @@ export class CoraliteElement extends HTMLElement {
       instanceId: this._instanceId,
       state: this._state,
       root: this,
-      signal: this._abortController.signal
+      signal: this._abortController.signal,
+      refs (id) {
+        const refId = self._state[`ref_${id}`]
+        if (!refId && typeof refId !== 'string') {
+          return null
+        }
+        return self.querySelector(`[ref="${refId}"]`)
+      }
     }
 
     if (typeof this._clientContextGetter === 'function') {

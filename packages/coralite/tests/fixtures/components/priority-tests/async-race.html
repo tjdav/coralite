@@ -32,8 +32,7 @@
       }
     },
     script: (context) => {
-      const { state, signal } = context
-      const { refs } = context.refs
+      const { state, signal, refs } = context
       const btn = refs('trigger')
       if (btn) {
         btn.addEventListener('click', () => {

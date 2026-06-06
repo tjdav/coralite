@@ -1,7 +1,7 @@
 import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './html.js'
 import { parseHTML, parseModule } from './parse.js'
 import { ScriptManager } from './script-manager.js'
-import { metadataPlugin, refsPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
+import { metadataPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative } from 'node:path'
 import { handleError, createExecutionError } from './errors.js'
@@ -305,7 +305,7 @@ export async function createCoralite ({
   if (app.options.mode === 'development') {
     app.options.plugins.unshift(testingPlugin)
   }
-  app.options.plugins.unshift(refsPlugin, metadataPlugin)
+  app.options.plugins.unshift(metadataPlugin)
   if (assets) {
     app.options.plugins.unshift(staticAssetPlugin(assets))
   }

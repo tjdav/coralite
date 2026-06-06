@@ -364,6 +364,20 @@ export function createRenderer ({
     }
 
     const module = cloneModuleInstance(moduleComponent.result)
+
+    if (module.values && module.values.refs) {
+      for (let i = 0; i < module.values.refs.length; i++) {
+        const ref = module.values.refs[i]
+        const uniqueRefValue = `${instanceId}__${ref.name}`
+
+        if (ref.element && ref.element.attribs) {
+          ref.element.attribs.ref = uniqueRefValue
+        }
+
+        componentState[`ref_${ref.name}`] = uniqueRefValue
+      }
+    }
+
     const mappedComponentContext = await hooks.trigger('onBeforeComponentRender', {
       state: componentState,
       componentId: module.id,
