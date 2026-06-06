@@ -1,4 +1,3 @@
-import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @import { CoraliteResult, CoraliteComponent, ParseHTMLResult, Attribute, CoraliteRef, CoraliteTextNodeToken, CoraliteAttributeToken } from './component.js'
  * @import { CoraliteComponentOptions } from '../lib/coralite-element.js'
@@ -7,6 +6,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
  * @import { CoraliteAnyNode, CoraliteComponentRoot } from './dom.js'
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
+ * @import { CoraliteElement } from '../lib/coralite-element.js'
  */
 
 /**
@@ -233,16 +233,16 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 
 /**
  * @typedef {Object} CoralitePluginBeforeBuildContext
- * @property {string | string[] | null} path - The target directory or an array of specific page paths to build
- * @property {CoraliteBuildOptions} options - Configuration options for the build process
  * @property {CoraliteInstance} app - The global coralite app instance
+ * @property {string} buildId - The unique identifier for the current build session.
+ * @property {CoraliteBuildOptions} options - Configuration options for the build process
  * @property {any} [config] - Plugin configuration object
  */
 
 /**
  * @callback CoralitePluginBeforeBuildCallback - Async callback triggered before the build begins.
  * @param {CoralitePluginBeforeBuildContext} context
- * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
+ * @returns {Promise<{ options?: CoraliteBuildOptions }|void>|{ options?: CoraliteBuildOptions }|void}
  * @async
  */
 
@@ -257,7 +257,7 @@ import { CoraliteElement } from '../lib/coralite-element.js'
 /**
  * @callback CoralitePluginAfterPageRenderCallback - Async callback triggered after a page has been rendered but before saving.
  * @param {CoralitePluginAfterPageRenderContext} context
- * @returns {Promise<CoraliteResult[]|CoraliteResult|void>} New result(s) to add to the build output
+ * @returns {Promise<void>|void}
  * @async
  */
 

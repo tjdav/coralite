@@ -77,10 +77,8 @@ export function coerce (value, type) {
 
 /**
  * Base class for all Coralite custom elements.
- * * This class acts as the client-side runtime engine. It manages DOM hydration,
- * native Web Component lifecycles, batched reactive state management (via Proxies),
- * asynchronous getter race-condition locks, and isomorphic plugin hooks.
- * * @augments HTMLElement
+ *
+ * @augments HTMLElement
  */
 export class CoraliteElement extends HTMLElement {
   /**
@@ -238,6 +236,7 @@ export class CoraliteElement extends HTMLElement {
    * Invoked natively when the element is removed from the document.
    * Aborts pending requests and triggers `onDisconnected` plugin hooks
    * to ensure external libraries (e.g., Observers) do not cause memory leaks.
+   * @this {any}
    */
   disconnectedCallback () {
     if (this._abortController) {
@@ -282,6 +281,7 @@ export class CoraliteElement extends HTMLElement {
    * Constructs the unified state object.
    * Merges `defaultValues`, JSON hydration payloads, and DOM attributes.
    * Defines getters (wrapping state in a Read-Only proxy) and applies the final Read/Write Proxy.
+   * @this {any}
    * @private
    */
   _setupState () {
@@ -461,6 +461,7 @@ export class CoraliteElement extends HTMLElement {
    * **Async Safety:** Implements a Symbol-based locking mechanism (`renderVersion`)
    * to guarantee that if state mutates while an async getter is pending, the stale
    * Promise will be discarded, preventing DOM race conditions.
+   * @this {any}
    * @private
    */
   _updateDOM () {

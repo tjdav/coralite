@@ -42,6 +42,7 @@ export async function createCoralite ({
   assets,
   externalStyles,
   baseURL = '/',
+  projectRoot = process.cwd(),
   ignoreByAttribute,
   skipRenderByAttribute,
   onError,
@@ -69,6 +70,7 @@ export async function createCoralite ({
     assets,
     externalStyles,
     baseURL,
+    projectRoot: normalize(projectRoot),
     ignoreByAttribute,
     skipRenderByAttribute,
     mode,
@@ -87,7 +89,15 @@ export async function createCoralite ({
     transform: transformNode,
     addRenderQueue: null,
     getPagePathsUsingCustomElement: null,
-    createComponentElement: null
+    createComponentElement: null,
+    _dependencyGraph: {
+      pageCustomElements: {},
+      childCustomElements: {}
+    },
+    _clearDependencies: () => {
+      app._dependencyGraph.pageCustomElements = {}
+      app._dependencyGraph.childCustomElements = {}
+    }
   }
 
   // State
@@ -111,10 +121,6 @@ export async function createCoralite ({
   const scriptManager = new ScriptManager(normalizedOptions)
   // @ts-ignore
   const serverGlobalContext = { app }
-
-  // Development only state
-  const pageCustomElements = {}
-  const childCustomElements = {}
 
   const _handleErrorLocal = (data) => handleError({
     onErrorCallback: onError,
@@ -219,6 +225,10 @@ export async function createCoralite ({
         const outDir = join(outputDir, relativeDir)
         const outFile = join(outDir, result.path.filename)
 
+        if (result.status === 'skipped') {
+          return undefined
+        }
+
         if (!createdDir[outDir]) {
           await mkdir(outDir, { recursive: true }); createdDir[outDir] = true
         }
@@ -271,9 +281,6 @@ export async function createCoralite ({
      * @returns {string[]} An array of page pathnames that include the specified component.
      */
     getPagePathsUsingCustomElement: (targetPath) => {
-      if (app.options.mode === 'production') {
-        return []
-      }
       // @ts-ignore
       if (targetPath.startsWith(app.options.path.components)) {
         // @ts-ignore
@@ -282,8 +289,8 @@ export async function createCoralite ({
       const item = app.components.getItem(targetPath)
       const results = []
       if (item) {
-        const id = childCustomElements[item.result.id] || item.result.id
-        const pce = pageCustomElements[id]
+        const id = app._dependencyGraph.childCustomElements[item.result.id] || item.result.id
+        const pce = app._dependencyGraph.pageCustomElements[id]
         if (pce) {
           pce.forEach(p => results.push(p))
         }
@@ -314,8 +321,6 @@ export async function createCoralite ({
 
   const handlers = createPageHandlers({
     app,
-    pageCustomElements,
-    childCustomElements,
     triggerHook: _triggerPluginHookLocal,
     handleError: _handleErrorLocal
   })

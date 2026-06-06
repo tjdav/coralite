@@ -17,6 +17,8 @@
  * @property {CoraliteFilePath} path - The file's path information within the project structure.
  * @property {string} [content] - The raw HTML string contents of the file (optional, may be omitted for templates).
  * @property {boolean} [virtual] - Indicates if the file is virtual (in-memory) rather than from the filesystem.
+ * @property {string} [cacheKey] - Cache key for ISR.
+ * @property {boolean} [volatile] - Volatile flag for ISR.
  */
 
 /**
@@ -70,6 +72,7 @@
  * @property {CoraliteOnError} [onError] - Optional callback function for handling errors and warnings.
  * @property {string[]} [externalStyles] - Global styles to inject into every page
  * @property {string} [mode='production'] - Build mode: "development" or "production"
+ * @property {string} [projectRoot] - The root directory of the project.
  * @property {CoralitePath} [path] - Internal path mapping.
  */
 
@@ -84,9 +87,10 @@
  * @typedef {Object} CoraliteBuildResult
  * @property {'page'} type - The type of result.
  * @property {CoraliteFilePath & { pages: string, components: string }} path - Path information.
- * @property {string} content - The rendered HTML content.
- * @property {number} duration - Time taken to render in milliseconds.
- * @property {CoraliteSession} session - The session associated with the render.
+ * @property {string} [content] - The rendered HTML content.
+ * @property {number} [duration] - Time taken to render in milliseconds.
+ * @property {CoraliteSession} [session] - The session associated with the render.
+ * @property {'skipped'} [status] - Optional status if the build was skipped via ISR.
  */
 
 /**
@@ -158,10 +162,14 @@
  * @property {(pathOrOptions?: string | string[] | CoraliteBuildCallback, optionsOrCallback?: CoraliteBuildOptions | CoraliteBuildCallback, callback?: CoraliteBuildCallback) => Promise<CoraliteBuildResult[]>} build
  * @property {(savePath?: string | string[], saveOptions?: CoraliteBuildOptions) => Promise<CoraliteSaveResult[]>} save
  * @property {(root: CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[], options?: DomSerializerOptions) => string} transform
- * @property {(value: string | CoraliteCollectionItem, buildId: string) => Promise<void>} addRenderQueue
+ * @property {(value: string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, volatile?: boolean }, buildId: string) => Promise<void>} addRenderQueue
  * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement
  * @property {(options: ComponentElementOptions, head?: boolean) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement
  * @property {Record<string, { hashedPath: string, text: string }>} outputFiles
+ * @property {Object} _dependencyGraph
+ * @property {Record<string, Set<string>>} _dependencyGraph.pageCustomElements
+ * @property {Record<string, string>} _dependencyGraph.childCustomElements
+ * @property {() => void} _clearDependencies
  * @property {(name: string, initialData: any) => Promise<any>} _triggerPluginHook
  * @property {(name: string, contextData: any) => Promise<any[]>} _triggerPluginAggregateHook
  * @property {Object} [source]

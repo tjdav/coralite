@@ -288,6 +288,17 @@ CoraliteCollection.prototype.updateItem = async function (value) {
     originalValue.state = value.state
   }
 
+  // update ISR related fields
+  if (value.cacheKey !== undefined) {
+    originalValue.cacheKey = value.cacheKey
+  }
+  if (value.volatile !== undefined) {
+    originalValue.volatile = value.volatile
+  }
+  if (value.virtual !== undefined) {
+    originalValue.virtual = value.virtual
+  }
+
   return originalValue
 }
 

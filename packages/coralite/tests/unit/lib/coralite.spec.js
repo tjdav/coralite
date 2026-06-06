@@ -89,7 +89,7 @@ describe('Coralite', () => {
 
       assert.ok(hookCalled, 'onBeforeBuild hook should be called')
       assert.ok(hookContext, 'context should be passed to the hook')
-      assert.strictEqual(hookContext.path, pagesDir, 'path should be passed')
+      assert.ok(hookContext.buildId, 'buildId should be passed')
       assert.strictEqual(hookContext.options, buildOptions, 'options should be passed')
       assert.strictEqual(buildOptions.variables.injected, 'value', 'options should be mutable')
     })
@@ -338,7 +338,7 @@ describe('Coralite', () => {
 
       try {
         await coralite.build()
-      } catch (e) {
+      } catch (_err) {
         // Expected error
       }
 

@@ -5,7 +5,6 @@ import { relinkChildren } from './dom.js'
 /**
  * @import { CoraliteElement, CoraliteAnyNode, CoraliteComponentRoot, Attribute, CoraliteModule, CoraliteSession } from '../types/index.js'
  * @import { DomSerializerOptions } from 'dom-serializer'
- * @import { AnyNode } from 'domhandler'
  */
 
 /**

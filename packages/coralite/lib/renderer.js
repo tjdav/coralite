@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { dirname, join } from 'node:path'
 import { availableParallelism } from 'node:os'
+import { readFile, writeFile, mkdir, rename } from 'node:fs/promises'
 import pLimit from 'p-limit'
 import {
   cleanKeys,
@@ -28,6 +29,7 @@ import {
 import { generateClientRuntime } from './client-runtime.js'
 import { transformCss } from './style-transform.js'
 import { transformNode } from './parser.js'
+import { checkFileChange } from './manifest.js'
 import {
   isCoraliteElement,
   isCoraliteCollectionItem
@@ -78,6 +80,7 @@ export function createRenderer ({
   createExecutionError
 }) {
   const renderQueues = new Map()
+  const sealedQueues = new Set()
   const outputFiles = {}
 
   /**
@@ -720,30 +723,11 @@ export function createRenderer ({
     }
   }
 
-  const _generatePages = async function* (path, state = {}) {
+  const _generatePages = async function* (activeQueue, buildId, state = {}) {
     const isProduction = normalizedOptions.mode === 'production'
-    if (path) {
-      const paths = Array.isArray(path) ? path : [path]
-      for (const p of paths) {
-        // @ts-ignore
-        if (!app.pages.getItem(p)) {
-          try {
-            // @ts-ignore
-            await app.pages.setItem(p)
-          } catch (e) {
-          }
-        }
-      }
-    }
-
-    // @ts-ignore
-    const queue = resolvePageQueue(app.pages, path)
-    const buildId = randomUUID()
-    renderQueues.set(buildId, queue)
     const scriptResultCache = new Map()
 
     try {
-      const activeQueue = renderQueues.get(buildId)
       for (let q = 0; q < activeQueue.length; q++) {
         const pageItem = activeQueue[q]
         const startTime = performance.now()
@@ -751,12 +735,17 @@ export function createRenderer ({
         let component
         let pageContext = originalDocument.page
 
-        if (!originalDocument.root) {
+        if (!originalDocument.root || pageItem.virtual) {
           let content = pageItem.content
+
           if (content === undefined) {
             try {
               content = await getHtmlFile(pageItem.path.pathname)
             } catch (e) {
+              if (pageItem.virtual) {
+                // If a virtual page is missing content, it's a critical error
+                throw new Error(`Virtual page missing content: ${pageItem.path.pathname}`)
+              }
               content = pageItem.content !== undefined ? pageItem.content : (()=>{
                 throw e
               })()
@@ -969,7 +958,7 @@ export function createRenderer ({
   /**
    * Adds a page or a collection item to the current render queue.
    *
-   * @param {string | CoraliteCollectionItem} value - The ID of the page or the collection item to add.
+   * @param {string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, volatile?: boolean }} value - The ID of the page or the collection item to add.
    * @param {string} buildId - The unique identifier for the current build session.
    * @throws {Error} If the buildId is missing or invalid, or if the page ID is not found.
    * @returns {Promise<void>}
@@ -978,10 +967,15 @@ export function createRenderer ({
     if (!buildId) {
       throw new Error('addRenderQueue requires a buildId')
     }
+    if (sealedQueues.has(buildId)) {
+      console.warn(`[Coralite] Attempted to add to sealed queue for build "${buildId}". All virtual pages must be added in onBeforeBuild.`)
+      return
+    }
     const queue = renderQueues.get(buildId)
     if (!queue) {
       throw new Error(`addRenderQueue - buildId not found: "${buildId}"`)
     }
+
     if (typeof value === 'string') {
       // @ts-ignore
       const component = app.pages.getItem(value)
@@ -992,26 +986,48 @@ export function createRenderer ({
     } else if (isCoraliteCollectionItem(value)) {
       // @ts-ignore
       queue.push(await app.pages.setItem(value))
+    } else if (value && typeof value === 'object' && 'pathname' in value) {
+      const pathname = value.pathname
+      /** @type {import('../types/index.js').HTMLData} */
+      const item = {
+        type: 'page',
+        content: value.content,
+        virtual: true,
+        cacheKey: value.cacheKey,
+        volatile: value.volatile,
+        path: {
+          pathname,
+          filename: join(pathname),
+          dirname: dirname(pathname)
+        }
+      }
+      // Set content again to ensure it's not deleted if it matches collection's onSet/onUpdate criteria
+      const setItem = await app.pages.setItem({
+        ...item,
+        content: value.content
+      })
+      // Force properties directly on the item that resolvePageQueue might return
+      setItem.content = value.content
+      setItem.virtual = true
+      setItem.cacheKey = value.cacheKey
+      setItem.volatile = value.volatile
+
+      // Also ensure the collection item itself has these
+      const collectionItem = app.pages.getItem(pathname)
+      if (collectionItem) {
+        collectionItem.content = value.content
+        collectionItem.virtual = true
+        collectionItem.cacheKey = value.cacheKey
+        collectionItem.volatile = value.volatile
+      }
+      if (!queue.includes(setItem)) {
+        queue.push(setItem)
+      }
     }
   }
 
   /**
    * Compiles and renders specified pages.
-   *
-   * @overload
-   * @param {CoraliteBuildCallback} callback - Optional callback executed for each rendered page.
-   * @returns {Promise<CoraliteBuildResult[]>}
-   *
-   * @overload
-   * @param {string|string[]} path - The path(s) to build.
-   * @param {CoraliteBuildCallback} [callback] - Optional callback executed for each rendered page.
-   * @returns {Promise<CoraliteBuildResult[]>}
-   *
-   * @overload
-   * @param {string|string[]} path - The path(s) to build.
-   * @param {CoraliteBuildOptions} options - Build options.
-   * @param {CoraliteBuildCallback} [callback] - Optional callback executed for each rendered page.
-   * @returns {Promise<CoraliteBuildResult[]>}
    *
    * @param {string | string[] | CoraliteBuildCallback} [pathOrOptions] - The path(s) to build, or a callback if no path is provided.
    * @param {CoraliteBuildOptions | CoraliteBuildCallback} [optionsOrCallback] - Build options or a callback.
@@ -1020,6 +1036,7 @@ export function createRenderer ({
    */
   const build = async (pathOrOptions, optionsOrCallback, callback) => {
     const startTime = performance.now()
+    const buildId = randomUUID()
     let buildPath = pathOrOptions
     let buildOptions
     let buildCallback = callback
@@ -1036,13 +1053,174 @@ export function createRenderer ({
     if (!buildOptions) {
       buildOptions = {}
     }
-    const mappedBeforeBuild = await hooks.trigger('onBeforeBuild', {
-      path: buildPath,
-      options: buildOptions,
-      app
-    })
-    buildPath = mappedBeforeBuild.path
-    buildOptions = mappedBeforeBuild.options
+
+    // Phase 1: Discovery & Pre-Render Staging
+    if (buildPath) {
+      const paths = Array.isArray(buildPath) ? buildPath : [buildPath]
+      for (const p of paths) {
+        // @ts-ignore
+        if (!app.pages.getItem(p)) {
+          try {
+            // @ts-ignore
+            await app.pages.setItem(p)
+          } catch (_err) {
+          }
+        }
+      }
+    }
+
+    // @ts-ignore
+    const queue = resolvePageQueue(app.pages, buildPath).slice()
+    renderQueues.set(buildId, queue)
+
+    let mappedBeforeBuild
+    try {
+      mappedBeforeBuild = await hooks.trigger('onBeforeBuild', {
+        app,
+        buildId,
+        options: buildOptions
+      })
+    } catch (errorHook) {
+      const error = new Error(`Error in onBeforeBuild hook: ${errorHook.message}`, { cause: errorHook })
+      handleError({
+        level: 'ERR',
+        message: error.message,
+        error
+      })
+      throw error
+    }
+    buildOptions = mappedBeforeBuild.options || buildOptions
+
+    // Seal the queue
+    sealedQueues.add(buildId)
+
+    // Phase 2: ISR & Manifest Invalidation
+    const projectRoot = app.options.projectRoot || process.cwd()
+    const cacheDir = join(projectRoot, '.coralite')
+    const manifestPath = join(cacheDir, 'manifest.json')
+    let manifest = {
+      physical: {},
+      virtual: {},
+      dependencies: {}
+    }
+
+    try {
+      const content = await readFile(manifestPath, 'utf8')
+      manifest = JSON.parse(content)
+    } catch (e) {
+      // Manifest missing (cold start) or corrupt, use default
+      if (e.code !== 'ENOENT') {
+        handleError({
+          level: 'WARN',
+          message: `Could not parse manifest at ${manifestPath}: ${e.message}. Starting with fresh manifest.`
+        })
+      }
+    }
+
+    const pagesToRender = []
+    const skippedPages = []
+    const newManifest = {
+      physical: {},
+      virtual: {},
+      dependencies: {}
+    }
+
+    // Check components first for dependency cascading
+    const componentChanges = new Map()
+    const allComponents = app.components.list
+    for (const component of allComponents) {
+      const { changed, metadata } = await checkFileChange(component.path.pathname, manifest.physical[component.path.pathname])
+      newManifest.physical[component.path.pathname] = metadata
+      if (changed) {
+        componentChanges.set(component.result.id, true)
+        // Force re-parse
+        await app.components.updateItem(component.path.pathname)
+      }
+    }
+
+    const pageCustomElements = {
+      ...manifest.dependencies,
+      ...app._dependencyGraph.pageCustomElements
+    }
+
+    for (const pageItem of queue) {
+      let shouldRebuild = false
+
+      // Check if any dependent component changed
+      const componentIds = Object.keys(pageCustomElements).filter(id => {
+        const pages = pageCustomElements[id]
+        if (pages instanceof Set) {
+          return pages.has(pageItem.path.pathname)
+        }
+        return Array.isArray(pages) && pages.includes(pageItem.path.pathname)
+      })
+      if (componentIds.some(id => componentChanges.get(id))) {
+        shouldRebuild = true
+      }
+
+      if (pageItem.virtual) {
+        if (pageItem.volatile || !manifest.virtual || !manifest.virtual[pageItem.path.pathname] || String(manifest.virtual[pageItem.path.pathname].cacheKey) !== String(pageItem.cacheKey)) {
+          shouldRebuild = true
+        } else {
+          shouldRebuild = false
+        }
+        if (!shouldRebuild) {
+          /** @type {import('../types/index.js').CoraliteBuildResult} */
+          const skippedResult = {
+            type: 'page',
+            // @ts-ignore
+            path: {
+              ...pageItem.path,
+              pages: normalizedOptions.path.pages,
+              components: normalizedOptions.path.components
+            },
+            status: 'skipped'
+          }
+          skippedPages.push(skippedResult)
+          if (!newManifest.virtual) {
+            newManifest.virtual = {}
+          }
+          newManifest.virtual[pageItem.path.pathname] = { cacheKey: pageItem.cacheKey }
+        } else {
+          pagesToRender.push(pageItem)
+          if (!newManifest.virtual) {
+            newManifest.virtual = {}
+          }
+          newManifest.virtual[pageItem.path.pathname] = { cacheKey: pageItem.cacheKey }
+        }
+      } else {
+        const { changed, metadata } = await checkFileChange(pageItem.path.pathname, manifest.physical[pageItem.path.pathname])
+        newManifest.physical[pageItem.path.pathname] = metadata
+        if (changed || shouldRebuild) {
+          pagesToRender.push(pageItem)
+        } else {
+          /** @type {import('../types/index.js').CoraliteBuildResult} */
+          const skippedResult = {
+            type: 'page',
+            // @ts-ignore
+            path: {
+              ...pageItem.path,
+              pages: normalizedOptions.path.pages,
+              components: normalizedOptions.path.components
+            },
+            status: 'skipped'
+          }
+          skippedPages.push(skippedResult)
+        }
+      }
+    }
+
+    // Update dependency graph in manifest
+    const { pageCustomElements: livePageCustomElements } = app._dependencyGraph
+    for (const [id, pages] of Object.entries(livePageCustomElements)) {
+      newManifest.dependencies[id] = Array.from(pages)
+    }
+    // Carry over old dependencies if not overwritten
+    for (const [id, pages] of Object.entries(manifest.dependencies || {})) {
+      if (!newManifest.dependencies[id]) {
+        newManifest.dependencies[id] = pages
+      }
+    }
 
     const signal = buildOptions?.signal
     const maxConcurrent = buildOptions?.maxConcurrent || availableParallelism()
@@ -1053,7 +1231,8 @@ export function createRenderer ({
     let buildError = null
 
     try {
-      for await (const result of _generatePages(buildPath, variables)) {
+      // Phase 3: The Render Engine
+      for await (const result of _generatePages(pagesToRender, buildId, variables)) {
         if (signal?.aborted) {
           throw signal.reason
         }
@@ -1064,24 +1243,14 @@ export function createRenderer ({
           if (signal?.aborted) {
             throw signal.reason
           }
-          const additionalPages = await hooks.triggerAggregate('onAfterPageRender', {
+          // Note: additionalPages from onAfterPageRender are now ignored/warned if added via addRenderQueue
+          await hooks.triggerAggregate('onAfterPageRender', {
             result,
             session: result.session,
             app
           })
+
           const items = [result]
-          for (const newPage of additionalPages) {
-            if (newPage && newPage.path && newPage.content) {
-              if (typeof newPage.path === 'string') {
-                newPage.path = {
-                  pathname: newPage.path,
-                  filename: join(newPage.path),
-                  dirname: dirname(newPage.path)
-                }
-              }
-              items.push(newPage)
-            }
-          }
           const finalResults = []
           for (const item of items) {
             if (typeof buildCallback === 'function') {
@@ -1110,6 +1279,32 @@ export function createRenderer ({
           })
       }
       await Promise.all(executing)
+
+      // Combine with skipped pages
+      for (const skipped of skippedPages) {
+        if (typeof buildCallback === 'function') {
+          const transformed = await buildCallback(skipped)
+          if (transformed) {
+            results.push(transformed)
+          }
+        } else {
+          results.push(skipped)
+        }
+      }
+
+      // Write updated manifest atomically
+      try {
+        await mkdir(cacheDir, { recursive: true })
+        const tempManifestPath = `${manifestPath}.tmp`
+        await writeFile(tempManifestPath, JSON.stringify(newManifest, null, 2))
+        await rename(tempManifestPath, manifestPath)
+      } catch (e) {
+        handleError({
+          level: 'WARN',
+          message: `Failed to write manifest: ${e.message}`
+        })
+      }
+
       return results
     } catch (error) {
       await Promise.allSettled(executing)
@@ -1129,6 +1324,12 @@ export function createRenderer ({
         duration,
         app
       })
+      renderQueues.delete(buildId)
+      sealedQueues.delete(buildId)
+      app._clearDependencies()
+      // Clean up local arrays to help GC
+      pagesToRender.length = 0
+      skippedPages.length = 0
     }
   }
 

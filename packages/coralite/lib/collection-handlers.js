@@ -12,21 +12,18 @@ import { parseHTML, parseModule } from './parse.js'
 /**
  * Factory for collection handlers.
  *
- * @param {Object} dependencies
- * @param {CoraliteInstance} dependencies.app
- * @param {Object} dependencies.pageCustomElements
- * @param {Object} dependencies.childCustomElements
- * @param {Function} dependencies.triggerHook
- * @param {CoraliteOnError} dependencies.handleError
+ * @param {Object} context
+ * @param {CoraliteInstance} context.app
+ * @param {Function} context.triggerHook
+ * @param {CoraliteOnError} context.handleError
  * @returns {Object}
  */
 export function createPageHandlers ({
   app,
-  pageCustomElements,
-  childCustomElements,
   triggerHook,
   handleError
 }) {
+  const { pageCustomElements, childCustomElements } = app._dependencyGraph
   const onFileSetLocal = async (data) => {
     // @ts-ignore
     const rootPath = data.type === 'component' ? app.options.path.components : app.options.path.pages
@@ -59,12 +56,15 @@ export function createPageHandlers ({
     }
     const elements = parseHTML(data.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
 
-    if (app.options.mode !== 'production') {
+    if (true) {
       const customElementsList = elements && elements.customElements ? elements.customElements : []
       for (let i = 0; i < customElementsList.length; i++) {
         const name = customElementsList[i].name
         if (!pageCustomElements[name]) {
           pageCustomElements[name] = new Set()
+          // Always track dependencies for ISR
+          // @ts-ignore
+          app._dependencyGraph.pageCustomElements[name] = pageCustomElements[name]
           const component = app.components.getItem(name)
 
           if (component && component.result && component.result.customElements && component.result.customElements.length) {
@@ -88,7 +88,9 @@ export function createPageHandlers ({
             }
           }
         }
-        pageCustomElements[name].add(data.path.pathname)
+        /** @type {Set<string>} */
+        const customElements = pageCustomElements[name]
+        customElements.add(data.path.pathname)
       }
     }
 
@@ -148,12 +150,21 @@ export function createPageHandlers ({
       if (!hasElement) {
         if (!pageCustomElements[name]) {
           pageCustomElements[name] = new Set()
-        } pageCustomElements[name].add(newValue.path.pathname)
+          // Always track dependencies for ISR
+          // @ts-ignore
+          app._dependencyGraph.pageCustomElements[name] = pageCustomElements[name]
+        }
+        /** @type {Set<string>} */
+        const customElements = pageCustomElements[name]
+        customElements.add(newValue.path.pathname)
       }
     }
     oldElements.forEach(oe => {
       if (pageCustomElements[oe.name]) {
-        pageCustomElements[oe.name].delete(newValue.path.pathname)
+        // Track deletions for ISR
+        /** @type {Set<string>} */
+        const customElements = pageCustomElements[oe.name]
+        customElements.delete(newValue.path.pathname)
       }
     })
     return newValue.result
@@ -172,7 +183,10 @@ export function createPageHandlers ({
       value.result.customElements.forEach(ce => {
         const ceName = typeof ce === 'string' ? ce : ce.name
         if (pageCustomElements[ceName]) {
-          pageCustomElements[ceName].delete(value.path.pathname)
+          // Track deletions for ISR
+          /** @type {Set<string>} */
+          const customElements = pageCustomElements[ceName]
+          customElements.delete(value.path.pathname)
         }
       })
     }
