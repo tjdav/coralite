@@ -110,6 +110,7 @@ export async function setupPlugins ({
       }
     }
     if (plugin.client) {
+      plugin.client.name = plugin.client.name || plugin.name
       scriptManager.use(plugin.client)
     }
   }

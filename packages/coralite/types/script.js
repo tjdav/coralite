@@ -62,6 +62,7 @@
 
 /**
  * @typedef {Object} ScriptPlugin
+ * @property {string} [name] - The name of the plugin
  * @property {string} [rootDir] - The root directory of the plugin
  * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {function(any): void} [setup] - Called when plugin is registered

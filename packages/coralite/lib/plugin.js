@@ -175,6 +175,7 @@ export function definePlugin ({
 
     // append rootDir
     client.rootDir = client.rootDir || callerDir
+    client.name = client.name || name
   }
 
   // Create the plugin object with all configured state

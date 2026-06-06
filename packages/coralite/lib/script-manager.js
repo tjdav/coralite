@@ -258,7 +258,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     const keys = Object.keys(coraliteComponentClientContextProps);
     for (const key of keys) {
       resolvedProps[key] = await coraliteComponentClientContextProps[key](globalContext);
-      globalContext[key] = await resolvedProps[key](globalContext);
+      globalContext[key] = resolvedProps[key];
     }
     return resolvedProps;
   })();\n`)
@@ -672,13 +672,15 @@ export default {
                     })(globalContext);\n`
                 }
               }
-              contents += '    return (localContext) => {\n'
+              contents += '    const resolver = (localContext) => {\n'
               contents += '      const bound = {};\n'
               contents += '      for (const [key, fn] of Object.entries(props)) {\n'
               contents += '        bound[key] = fn(localContext);\n'
               contents += '      }\n'
               contents += '      return bound;\n'
               contents += '    };\n'
+              contents += '    Object.assign(resolver, props);\n'
+              contents += '    return resolver;\n'
               contents += '  },\n'
             }
             contents += '};\n'
