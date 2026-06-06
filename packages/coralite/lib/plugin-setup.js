@@ -32,7 +32,9 @@ export async function setupPlugins ({
         // @ts-ignore
         const pluginContext = new Proxy(Object.assign({ app: serverGlobalContext.app }, restGlobalContext), {
           get (target, prop) {
-            if (prop === 'config') return plugin.server.config || {}
+            if (prop === 'config') {
+              return plugin.server.config || {}
+            }
             return target[prop]
           },
           set (target, prop, value) {

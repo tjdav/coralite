@@ -14,7 +14,7 @@ export default definePlugin({
      * Uses Two-Phase Currying: (pluginContext) => (instanceContext) => { ... }
      */
     exports: {
-      myPluginMethod: (pluginContext) => (instanceContext) => {
+      myPluginMethod: () => (instanceContext) => {
         return {
           message: instanceContext.message || 'Hello from server export!'
         }
@@ -25,7 +25,7 @@ export default definePlugin({
      * Called when a page is being processed.
      * Returns data available to all components on the page.
      */
-    onPageSet: ({ state, page, session }) => {
+    onPageSet: () => {
       return {
         pluginGlobalData: 'Hello from Plugin onPageSet!'
       }
@@ -39,8 +39,8 @@ export default definePlugin({
      * Uses Two-Phase Currying: (pluginContext) => (instanceContext) => { ... }
      */
     context: {
-      myClientUtility: (pluginContext) => (instanceContext) => {
-        const { state, instanceId } = instanceContext
+      myClientUtility: () => (instanceContext) => {
+        const { instanceId } = instanceContext
         return (msg) => {
           console.log(`[${instanceId}] Plugin says: ${msg}`)
         }
@@ -50,14 +50,14 @@ export default definePlugin({
     /**
      * Called before the component is rendered on the client.
      */
-    onBeforeComponentRender: ({ state, instanceId, element, options }) => {
+    onBeforeComponentRender: () => {
       // console.log('Before component render:', instanceId)
     },
 
     /**
      * Called after the component is rendered and the DOM is stable.
      */
-    onAfterComponentRender: ({ state, instanceId, element, options }) => {
+    onAfterComponentRender: () => {
       // console.log('After component render:', instanceId)
     },
 
@@ -65,7 +65,7 @@ export default definePlugin({
      * Called when the component is disconnected from the DOM.
      * Use this to clean up global event listeners, observers, etc.
      */
-    onDisconnected: ({ state, instanceId, element, options }) => {
+    onDisconnected: () => {
       // console.log('Component disconnected:', instanceId)
     }
   }

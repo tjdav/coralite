@@ -4,15 +4,14 @@
 
 <script type="module">
   import { defineComponent } from 'coralite'
-  import fs from 'node:fs'
 
   export default defineComponent({
-    data (context) {
+    data () {
       return {
         content: 'ServerOnlyData'
       }
     },
-    script: ({ state }) => {
+    script: () => {
       // data() and fs import should be gone from here
       console.log('Client script running')
     }

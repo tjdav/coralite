@@ -8,7 +8,7 @@ describe('definePlugin', () => {
       name: 'test-plugin',
       server: {
         exports: {
-          test: (context) => () => {
+          test: () => () => {
           }
         }
       }

@@ -5,7 +5,7 @@ import { createCoralite } from '../../../lib/index.js'
 import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 
-test('strip custom elements with no-hydration attribute', async (t) => {
+test('strip custom elements with no-hydration attribute', async () => {
   const tmpDir = join(process.cwd(), 'tmp-test-no-hydration')
   const componentsDir = join(tmpDir, 'components')
   const pagesDir = join(tmpDir, 'pages')
@@ -91,7 +91,6 @@ test('strip custom elements with no-hydration attribute', async (t) => {
   const hydrationTag = document.getElementById('__CORALITE_HYDRATION__')
   if (hydrationTag) {
     const hydrationData = JSON.parse(hydrationTag.textContent)
-    const bodyNestedCid = bodyNestedComp.getAttribute('data-cid')
 
     // coralite-meta should not have hydration data because it's no-hydration
     const cids = Object.keys(hydrationData)

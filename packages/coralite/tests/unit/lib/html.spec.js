@@ -527,7 +527,7 @@ describe('html.js', () => {
         const collection = await getHtmlFiles({
           path: testDir,
           type: 'page',
-          onFileSet: async (value) => {
+          onFileSet: async () => {
             hookCalled = true
             return {
               value: 'hook-result',

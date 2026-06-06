@@ -124,7 +124,7 @@
     }
           },
           // The script function runs in the browser!
-          script: ({ state, signal, refs, ...pluginContext }) => {
+          script: ({ state, signal, refs }) => {
             const btn = refs('incrementBtn')
 
             // Add an event listener using the provided signal for cleanup

@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach } from 'node:test'
+import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import '../setup.js'
 import { createCoraliteClass } from '../../../lib/coralite-element.js'

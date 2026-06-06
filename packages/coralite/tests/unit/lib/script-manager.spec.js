@@ -717,15 +717,15 @@ describe('ScriptManager', () => {
     })
 
     it('should handle complex instance contexts', async () => {
-      await sm.addContextProp('format', () => (context) => (value) => {
-        return `${context.instanceId}: ${value}`
+      await sm.addContextProp('format', () => () => (value) => {
+        return `instance-id: ${value}`
       })
 
       sm.registerComponent({
         id: 'complex',
         script: {
           content: `({ double, values }) => {
-            const formatter = context.format(context)
+            const formatter = context.format()
             return formatter(context.values.message)
           }`
         }
@@ -777,16 +777,17 @@ describe('ScriptManager', () => {
 
       // Register plugin with helper
       await sm.use({
+        name: 'test-plugin',
         setup: () => {
           return { customProperty: 'test' }
         },
         context: {
-          add: () => (context) => (a, b) => a + b
+          add: () => () => (a, b) => a + b
         }
       })
 
       // Add another helper
-      await sm.addContextProp('multiply', () => (context) => (a, b) => a * b)
+      await sm.addContextProp('multiply', () => () => (a, b) => a * b)
 
       // Register component
       sm.registerComponent({
@@ -1104,11 +1105,12 @@ describe('ScriptManager', () => {
       const sm = new ScriptManager()
 
       await sm.use({
+        name: 'test-plugin',
         context: {
-          testHelper: async (globalContext) => {
+          testHelper: async () => {
             // Simulate async phase1
             await new Promise(resolve => setTimeout(resolve, 10))
-            return (localContext) => {
+            return () => {
               return 'sync_result'
             }
           }
@@ -1150,9 +1152,10 @@ describe('ScriptManager', () => {
       }
 
       await manager.use({
+        name: 'test-plugin',
         config,
         context: {
-          testHelper: (pluginContext) => (localContext) => {
+          testHelper: (pluginContext) => () => {
             return pluginContext.config
           }
         }
@@ -1185,8 +1188,9 @@ describe('ScriptManager', () => {
       const manager = new ScriptManager()
 
       await manager.use({
+        name: 'test-plugin',
         context: {
-          testHelper: (globalContext) => (localContext) => {
+          testHelper: (globalContext) => () => {
             return globalContext.config
           }
         }

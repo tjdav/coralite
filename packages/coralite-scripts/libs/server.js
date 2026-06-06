@@ -137,7 +137,7 @@ async function server (config, options) {
 
         try {
           await access(configPath, constants.F_OK)
-        } catch (err) {
+        } catch {
           return
         }
 
@@ -157,7 +157,7 @@ async function server (config, options) {
             }
           }
         }
-      } catch (error) {
+      } catch {
         // ignore any other unexpected errors during reading/parsing
       }
     }
@@ -255,9 +255,8 @@ async function server (config, options) {
 
     // middleware to log request information including response time and status code
     app.use(function (req, res, next) {
-      const start = process.hrtime()
-
       if (options.verbose) {
+        const start = process.hrtime()
         // when the response is finished, calculate duration and log details
         res.on('finish', function () {
           const dash = colours.gray(' ─ ')
@@ -293,8 +292,6 @@ async function server (config, options) {
       app.use('/assets/css', express.static(join(config.output, 'assets', 'css'), {
         cacheControl: false
       }))
-
-      const start = process.hrtime()
 
       // rebuild CSS and send notification
       const results = await buildStyles({
@@ -480,7 +477,6 @@ async function server (config, options) {
         pageCache.clear()
 
         isCompiling = true
-        const start = process.hrtime()
         let dash = colours.gray(' ─ ')
 
         // Process all pending changes

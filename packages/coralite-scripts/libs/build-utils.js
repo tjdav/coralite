@@ -118,7 +118,7 @@ export function displayError (message, error) {
         if (absolutePath.startsWith('file://')) {
           try {
             absolutePath = fileURLToPath(absolutePath)
-          } catch (e) {
+          } catch {
           }
         }
 
@@ -149,7 +149,7 @@ export function displayError (message, error) {
                 process.stdout.write(padding + colours.cyan('~') + '\n')
               }
             }
-          } catch (e) {
+          } catch {
           }
         }
         process.stdout.write('\n')

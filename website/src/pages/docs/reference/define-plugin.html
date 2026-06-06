@@ -61,7 +61,7 @@ const myPlugin = definePlugin({
     config: { /* static configuration */ },
     context: {
       // Two-Phase Curried utilities for script context
-      myHelper: (globalContext) => (localContext) => () => {
+      myHelper: () => () => () => {
         return 'hello'
       }
     }
@@ -132,7 +132,7 @@ export default definePlugin({
   name: 'utils',
   client: {
     context: {
-      formatDate: (pluginContext) => (instanceContext) => (date) => {
+      formatDate: () => () => (date) => {
         return new Date(date).toLocaleDateString()
       }
     }
@@ -177,7 +177,7 @@ context: {
     // ✨ EXPOSE TO DOWNSTREAM PLUGINS
     pluginContext.analyticsReady = true;
 
-    return (localContext) => async (eventName) => {
+    return () => async (eventName) => {
       const { default: analyticsLib } = await import('analytics-lib')
       analyticsLib.send(trackingId, eventName)
     }
@@ -205,7 +205,7 @@ export default definePlugin({
 
     // Create the context utility
     context: {
-      explode: (pluginContext) => (localContext) => async () => {
+      explode: (pluginContext) => () => async () => {
         // Dynamically import the library (auto-bundled by AST)
         const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
 
@@ -231,7 +231,7 @@ export default definePlugin({
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
-            script: ({ state, signal, refs }) => {
+            script: ({ refs }) => {
               const btn = refs('btn')
 
               btn.addEventListener('click', () => {

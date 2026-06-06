@@ -324,7 +324,7 @@ export class CoraliteElement extends HTMLElement {
         if (allData[this._instanceId]) {
           Object.assign(target, allData[this._instanceId])
         }
-      } catch (e) {
+      } catch {
         console.error('Coralite Element hydration failed:', this._instanceId)
       }
     }

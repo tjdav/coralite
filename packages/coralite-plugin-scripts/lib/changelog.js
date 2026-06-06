@@ -2,7 +2,6 @@
 import { simpleGit } from 'simple-git'
 import * as prompts from '@clack/prompts'
 import { writeFileSync, existsSync, readFileSync } from 'fs'
-import path from 'path'
 
 /**
  * Generates a changelog file based on git history.
@@ -23,7 +22,7 @@ export async function changelog (options = {}) {
       const url = typeof pkg.repository === 'string' ? pkg.repository : pkg.repository.url
       repoUrl = url.replace(/\.git$/, '').replace(/^git\+/, '')
     }
-  } catch (e) {
+  } catch {
     // ignore
   }
 
@@ -62,7 +61,7 @@ export async function changelog (options = {}) {
           if (toCommit.trim() === latestCommit.trim()) {
             fromTag = sortedTags[1] || null
           }
-        } catch (e) {
+        } catch {
           // ignore
         }
       }
@@ -74,7 +73,7 @@ export async function changelog (options = {}) {
       try {
         const firstCommit = await git.raw(['rev-list', '--max-parents=0', 'HEAD'])
         fromTag = firstCommit.trim()
-      } catch (e) {
+      } catch {
         prompts.log.warn('Could not determine start commit. Changelog might be empty.')
       }
     }
@@ -127,7 +126,7 @@ export async function changelog (options = {}) {
     Object.keys(categories).forEach(key => changelogData.sections[key] = [])
 
     for (const commit of log.all) {
-      const { message, hash, author_name, author_email } = commit
+      const { message, hash, author_name } = commit
       const firstLine = message.split('\n')[0].trim()
 
       const prMatch = firstLine.match(/#(\d+)|Pull\s+Request\s+#(\d+)/i)

@@ -54,7 +54,7 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          script: ({ state, signal, refs, ...pluginContext }) => {
+          script: ({ refs }) => {
 
             // Safe DOM element retrieval
             const input = refs('usernameInput')

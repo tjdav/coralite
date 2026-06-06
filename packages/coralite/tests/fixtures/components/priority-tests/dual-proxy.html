@@ -20,7 +20,7 @@
         // This mutation should fail or be ignored/warned if ReadOnlyProxy is enforced
         try {
           state.count = 999
-        } catch (e) {
+        } catch {
           return 'MutationBlocked'
         }
         return state.count * 2

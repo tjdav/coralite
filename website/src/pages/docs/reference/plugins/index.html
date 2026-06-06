@@ -82,7 +82,7 @@
             getters: {
               greeting: (state) => `Hello, ${state.name}!`
             },
-            script: ({ state, signal, refs, ...pluginContext }) => {
+            script: ({ refs }) => {
               const btn = refs('actionBtn')
               btn.addEventListener('click', () => {
                 console.log('Button clicked!')
@@ -333,7 +333,7 @@
             return { userName: name }
           },
           
-          script ({ state, signal, refs, ...pluginContext }) {
+          script ({ state }) {
             // The client script receives the unified state
             console.log(`User ${state.userName} is ${state.age} years old.`);
           }
@@ -600,7 +600,7 @@
             }
           },
           // Behavior: Runs natively in the browser
-          script ({ state, signal, refs, ...pluginContext }) {
+          script ({ signal, refs }) {
             // The client script natively receives the unified reactive state
             const btn = refs('actionBtn')
             
@@ -642,7 +642,7 @@
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
-            script ({ state, signal, refs, ...pluginContext }) {
+            script ({ signal, refs }) {
               // Get DOM elements by their ref name
               const button = refs('actionBtn')
               const input = refs('userInput')
@@ -689,7 +689,7 @@
       <coralite-code-html>
         <template id="counter">
           <div class="counter">
-            <h2 ref="countDisplay">Count: {{ currentCount }}</h2>
+            <h2>Count: {{ currentCount }}</h2>
             <button type="button" ref="increment">+</button>
             <button type="button" ref="decrement">-</button>
           </div>
@@ -710,10 +710,9 @@
                 currentCount: state.initial
               }
             },
-            script ({ state, signal, refs, ...pluginContext }) {
+            script ({ state, signal, refs }) {
               const increment = refs('increment')
               const decrement = refs('decrement')
-              const countDisplay = refs('countDisplay')
 
               increment.addEventListener('click', () => {
                 state.currentCount++

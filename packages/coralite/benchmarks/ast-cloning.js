@@ -41,7 +41,7 @@ bench('Naive Recursive copy (Baseline - Without circulars)', () => {
 bench('structuredClone (Baseline - Fails on Circulars)', () => {
   try {
     structuredClone(rootNode)
-  } catch (e) {
+  } catch {
     // Ignore DataCloneError for circulars
   }
 })

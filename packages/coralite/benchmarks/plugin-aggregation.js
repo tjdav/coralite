@@ -30,7 +30,7 @@ const coralite = await createCoralite({
   plugins: [{
     name: 'pagination-plugin',
     server: {
-      onAfterPageRender ({ result, session }) {
+      onAfterPageRender () {
         return Promise.resolve(dummyPages)
       }
     }

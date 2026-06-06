@@ -58,7 +58,7 @@ program
         execSync('pnpm run test-e2e', { stdio: 'inherit' })
 
         prompts.log.success('✅ All checks passed!')
-      } catch (error) {
+      } catch {
         prompts.log.error('❌ Pre-release checks failed. Fix errors before releasing.')
         process.exit(1)
       }

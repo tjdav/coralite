@@ -15,8 +15,8 @@ mkdirSync(pagesDir, { recursive: true })
 const HOOK_COUNT = 100
 
 // Setup synchronous and asynchronous baseline arrays
-const syncFns = Array.from({ length: HOOK_COUNT }, () => (ctx) => ({ test: true }))
-const asyncFns = Array.from({ length: HOOK_COUNT }, () => async (ctx) => ({ test: true }))
+const syncFns = Array.from({ length: HOOK_COUNT }, () => () => ({ test: true }))
+const asyncFns = Array.from({ length: HOOK_COUNT }, () => async () => ({ test: true }))
 
 // Setup coralite instances for testing framework waterfall
 const syncPlugins = syncFns.map((fn, i) => ({

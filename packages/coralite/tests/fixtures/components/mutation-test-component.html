@@ -9,7 +9,7 @@
   import { getServerData } from 'consumer-server-plugin'
 
   export default defineComponent({
-    data (context) {
+    data () {
       // getServerData is Phase 2 (returned by Phase 1)
       const data = getServerData()
       return {

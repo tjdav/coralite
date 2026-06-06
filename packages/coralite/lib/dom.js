@@ -288,7 +288,7 @@ Object.defineProperties(CoraliteElementPrototype, {
     get () {
       return null
     },
-    set (value) {
+    set () {
       // Elements do not have nodeValue
     }
   },

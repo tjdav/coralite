@@ -58,8 +58,6 @@ if (mode === 'dev') {
   // delete old output files
   deleteDirectoryRecursive(config.output)
 
-  const start = process.hrtime()
-
   // start coralite
   const coralite = await createCoralite({
     components: config.components,

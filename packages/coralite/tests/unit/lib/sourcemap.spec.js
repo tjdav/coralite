@@ -50,7 +50,6 @@ export default defineComponent({
     const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)
-    const html = results[0].content
 
     // Extract the script content
     // Because sourcemaps are emitted as separate files now or as inline in the built chunks,
@@ -129,7 +128,6 @@ export default defineComponent({
     const results = (await coralite.build()).filter(result => result.type === 'page')
 
     assert.strictEqual(results.length, 1)
-    const html = results[0].content
 
     // Extract the script content
     const outputFiles = coralite.outputFiles

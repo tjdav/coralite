@@ -213,7 +213,7 @@ export function findAndExtractImperativeComponents (code) {
     })
 
     return [...components]
-  } catch (err) {
+  } catch {
     return []
   }
 }
@@ -238,7 +238,7 @@ export function extractGlobals (code) {
     })
 
     return [...globals]
-  } catch (err) {
+  } catch {
     return []
   }
 }

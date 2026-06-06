@@ -4,7 +4,7 @@ export const testContextPlugin = definePlugin({
   name: 'test-context-plugin',
   server: {
     exports: {
-      getPluginMessage: (globalContext) => (instanceContext) => (name) => {
+      getPluginMessage: () => (instanceContext) => (name) => {
         return `Hello ${name} from server-side plugin! Page: ${instanceContext.page.url.pathname}`
       }
     }

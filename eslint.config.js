@@ -6,19 +6,19 @@ const localCustomRules = {
   rules: {
     'no-restricted-comment-patterns': {
       /**
-       * 
-       * @param {*} context 
-       * @returns 
+       *
+       * @param {*} context The ESLint rule context.
+       * @returns {Object} The rule listeners.
        */
-      create(context) {
+      create (context) {
         return {
-          Program() {
+          Program () {
             const sourceCode = context.sourceCode || context.getSourceCode()
             const comments = sourceCode.getAllComments()
-            
+
             // Matches anything starting with optional spaces, then '---', any text, and ending with '---'
             const separatorRegex = /^\s*---[\s\S]*---\s*$/
-            
+
             // Matches starting with optional spaces, a number, a period, and a space (e.g., " 1. ")
             const numberedRegex = /^\s*\d+\.\s/
 

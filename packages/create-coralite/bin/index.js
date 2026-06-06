@@ -41,7 +41,7 @@ program.parse()
 
 const options = program.opts()
 const cwd = process.cwd()
-const { blue, magenta, cyan } = colours
+const { magenta, cyan } = colours
 const TEMPLATES = [
   {
     value: 'css',

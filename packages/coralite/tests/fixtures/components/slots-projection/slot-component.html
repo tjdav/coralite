@@ -9,7 +9,7 @@
 
   export default defineComponent({
     slots: {
-      default: (slotNodes, context) => {
+      default: (slotNodes) => {
         if (!slotNodes || slotNodes.length === 0) {
           return void 0
         }

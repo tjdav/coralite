@@ -61,11 +61,11 @@ export const staticAssetPlugin = (assets = []) => {
 
           try {
             pkgPath = dirname(require.resolve(`${asset.pkg}/package.json`))
-          } catch (e) {
+          } catch {
             try {
               const resolvedPath = require.resolve(asset.pkg)
               pkgPath = findPackageRoot(dirname(resolvedPath))
-            } catch (resolutionError) {
+            } catch {
               throw new Error(`staticAssetPlugin could not resolve package.json for package: ${asset.pkg}`)
             }
           }

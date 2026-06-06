@@ -5,11 +5,11 @@ export const mockPlugin = definePlugin({
   client: {
     context: {
       // Phase 1: Global Context
-      renderPluginChild: async (globalContext) => {
+      renderPluginChild: async () => {
         // Dynamically resolve mock-module.js
         const mod = await import('./mock-module.js')
         // Phase 2: Local Instance Context
-        return (localContext) => {
+        return () => {
           // Phase 3: The actual callable utility expecting a target element
           return async (containerElement) => {
             if (!containerElement || !containerElement.replaceWith) {

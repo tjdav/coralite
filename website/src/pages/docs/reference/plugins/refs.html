@@ -41,7 +41,7 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            script ({ state, signal, refs, ...pluginContext }) {
+            script ({ signal, refs }) {
               const username = refs('username')
               const password = refs('password')
               const submitBtn = refs('submitBtn')
@@ -90,7 +90,7 @@
                 currentCount: state.initial
               }
             },
-            script ({ state, signal, refs, ...pluginContext }) {
+            script ({ state, signal, refs }) {
               const increment = refs('increment')
               const decrement = refs('decrement')
               const reset = refs('reset')
@@ -131,7 +131,7 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            script ({ state, signal, refs, ...pluginContext }) {
+            script ({ signal, refs }) {
               const email = refs('email')
               const password = refs('password')
               const emailError = refs('emailError')
@@ -196,7 +196,7 @@
           import { defineComponent } from 'coralite'
           
           export default defineComponent({
-            script ({ state, signal, refs, ...pluginContext }) {
+            script ({ signal, refs }) {
               const buttons = [refs('tab1'), refs('tab2'), refs('tab3')]
               const contents = [refs('content1'), refs('content2'), refs('content3')]
           

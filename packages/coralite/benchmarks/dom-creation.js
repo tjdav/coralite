@@ -13,8 +13,7 @@ function legacyCreate (node) {
       get () {
         return this.parent
       },
-      set (v) {
-        this.parent = v
+      set () {
       }
     }
     // ... minimal properties to be fair
@@ -46,8 +45,7 @@ function legacyCreate (node) {
       get () {
         return this.children || []
       },
-      set (v) {
-        this.children = v
+      set () {
       }
     },
     // Simplified set of properties for benchmark fairness (key ones)
@@ -55,7 +53,7 @@ function legacyCreate (node) {
       get () {
         return ''
       },
-      set (v) {
+      set () {
         // no-op for bench
       }
     }

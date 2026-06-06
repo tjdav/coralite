@@ -108,14 +108,10 @@ async function runBenchmark (mode, scenario) {
   console.log('--------------------------------------------------')
 
   // Setup files
-  const setupStart = performance.now()
   await setup(scenario)
-  const setupEnd = performance.now()
-  // console.log(`Setup Time: ${(setupEnd - setupStart).toFixed(2)}ms`)
 
   // Initial Memory
   global.gc && global.gc()
-  const memStart = getMemoryUsage()
 
   // Initialize Coralite
   const initStart = performance.now()
@@ -131,7 +127,7 @@ async function runBenchmark (mode, scenario) {
   // First Build (using streaming mode to test scalability)
   const buildStart = performance.now()
   let builtPages = 0
-  const buildCallback = async (result) => {
+  const buildCallback = async () => {
     builtPages++
     // In a real build we would write to disk here.
     // Return undefined to prevent build() from accumulating results in memory

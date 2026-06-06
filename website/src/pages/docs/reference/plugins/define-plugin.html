@@ -120,7 +120,7 @@ export default definePlugin({
   name: 'utils',
   client: {
     context: {
-      formatDate: (globalContext) => ({ state }) => (date) => {
+      formatDate: () => () => (date) => {
         return new Date(date).toLocaleDateString()
       }
     }
@@ -160,7 +160,7 @@ export default definePlugin({
       <coralite-code-highlight language="JavaScript">
         // Inside client.context
 context: {
-  trackEvent: (globalContext) => ({ state }) => async (eventName) => {
+      trackEvent: (globalContext) => () => async (eventName) => {
     const { trackingId } = globalContext.config
     const { default: analyticsLib } = await import('analytics-lib')
 
@@ -189,7 +189,7 @@ export default definePlugin({
 
     // Create the context utility
     context: {
-      explode: (globalContext) => ({ state }) => async () => {
+      explode: (globalContext) => () => async () => {
         // Access config from global context
         const config = globalContext.config
 
@@ -218,7 +218,7 @@ export default definePlugin({
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
-            script: ({ state, signal, refs, ...pluginContext }) => {
+            script: ({ refs }) => {
               const btn = refs('btn')
 
               btn.addEventListener('click', () => {

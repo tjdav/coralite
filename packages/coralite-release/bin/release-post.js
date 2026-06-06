@@ -70,7 +70,7 @@ program
                   path: path.dirname(filepath)
                 })
               }
-            } catch (e) {
+            } catch {
               // ignore
             }
           }

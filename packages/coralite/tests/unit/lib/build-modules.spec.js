@@ -72,7 +72,7 @@ describe('Coralite Build Modes', () => {
     try {
       const vm = await import('node:vm')
       SourceTextModule = vm.SourceTextModule
-    } catch (e) {
+    } catch {
     }
 
     if (!SourceTextModule) {

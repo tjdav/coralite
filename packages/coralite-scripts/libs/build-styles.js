@@ -16,9 +16,6 @@ import path from 'path'
  * @param {string[]} options.input - Array of input file paths
  * @param {string} options.output - Output directory for compiled CSS files
  * @param {Object} [options.processors] - Processor configurations
- * @param {import('sass').Options<'async'>} [options.processors.scss] - Sass options
- * @param {Object} [options.processors.postcss] - PostCSS options
- * @param {import('postcss').AcceptedPlugin[]} [options.processors.postcss.plugins] - PostCSS plugins
  * @returns {Promise<BuildStylesResult[]>}
  */
 async function buildStyles ({

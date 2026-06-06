@@ -50,7 +50,7 @@ export async function release (type, options) {
         execSync('npm run build', { stdio: 'inherit' })
       }
       prompts.log.success('✅ All checks passed!')
-    } catch (error) {
+    } catch {
       prompts.log.error('❌ Pre-release checks failed. Fix errors before releasing.')
       process.exit(1)
     }

@@ -82,7 +82,7 @@ program
             // We are generating changelog for new changes since latest tag
             fromTag = latestTag
           }
-        } catch (error) {
+        } catch {
           // Fallback if git commands fail (e.g. invalid ref)
           fromTag = sortedTags[1] || latestTag
         }

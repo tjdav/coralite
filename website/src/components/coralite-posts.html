@@ -7,7 +7,7 @@
   import { aggregate } from 'aggregation'
 
   export default defineComponent({
-    async data (context) {
+    async data () {
       return {
         posts: await aggregate({
           path: ['blog'],

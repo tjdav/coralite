@@ -7,9 +7,6 @@ import {
   existsSync,
   rmSync
 } from 'fs'
-import colours from 'kleur'
-
-const { blue, magenta } = colours
 
 
 /**

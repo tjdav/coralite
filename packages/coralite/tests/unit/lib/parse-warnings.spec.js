@@ -1,7 +1,6 @@
-import { describe, it, mock } from 'node:test'
+import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { parseHTML } from '../../../lib/parse.js'
-import { createCoralite } from '../../../lib/index.js'
 import { defaultOnError } from '../../../lib/errors.js'
 
 describe('parseHTML warnings', () => {
@@ -48,7 +47,7 @@ describe('parseHTML warnings', () => {
     assert.strictEqual(warnMock.mock.callCount(), 1, 'Should have called console.warn when onError is missing')
   })
 
-  it('should throw Error on ERR level in default handler', async (t) => {
+  it('should throw Error on ERR level in default handler', async () => {
     // Manual check of defaultOnError behavior
     assert.throws(() => defaultOnError({
       level: 'ERR',

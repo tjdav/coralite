@@ -409,7 +409,7 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
       // remove current element from stack as we're done with its children
       stack.pop()
     },
-    oncdatastart (csb) {
+    oncdatastart () {
     },
 
     oncomment (data) {

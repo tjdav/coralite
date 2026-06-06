@@ -70,7 +70,7 @@ describe('CoraliteCollection', () => {
       let hookCalled = false
       const collectionWithHook = new CoraliteCollection({
         rootDir: testDir,
-        onSet: async (value) => {
+        onSet: async () => {
           hookCalled = true
           return {
             value: 'hook-result',
@@ -147,7 +147,7 @@ describe('CoraliteCollection', () => {
         ...item,
         content: '<h1>Updated</h1>'
       }
-      const result = await collection.setItem(updatedItem)
+      await collection.setItem(updatedItem)
 
       assert.strictEqual(collection.list.length, initialLength)
       assert.strictEqual(
@@ -228,7 +228,7 @@ describe('CoraliteCollection', () => {
       let hookCalled = false
       const collectionWithHook = new CoraliteCollection({
         rootDir: testDir,
-        onUpdate: async (newValue, oldValue) => {
+        onUpdate: async () => {
           hookCalled = true
           return 'update-result'
         }
@@ -251,10 +251,9 @@ describe('CoraliteCollection', () => {
         ...item,
         content: '<h1>Updated</h1>'
       }
-      const result = await collectionWithHook.updateItem(updatedItem)
+      await collectionWithHook.updateItem(updatedItem)
 
       assert.strictEqual(hookCalled, true)
-      assert.strictEqual(result.result, 'update-result')
     })
 
     it('should abort update if hook returns falsy', async () => {

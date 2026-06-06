@@ -286,7 +286,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   for (const plugin of this.plugins) {
     if (plugin && plugin._extractedComponents && Array.isArray(plugin._extractedComponents)) {
       for (const compPath of plugin._extractedComponents) {
-        for (const [id, fnData] of Object.entries(this.sharedFunctions)) {
+        for (const id of Object.keys(this.sharedFunctions)) {
           if (compPath.endsWith(`/${id}.html`) || compPath.endsWith(`\\${id}.html`) || compPath === id || compPath.endsWith(`/${id}`)) {
             addComponentAndDependencies(id, processedComponent, this.sharedFunctions)
           }
@@ -315,7 +315,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const processedComponentKeys = Object.keys(processedComponent).sort()
   const regex = /[-.:]/g
   const namespace = 'coralite-component:'
-  const componentImportsNamespace = 'coralite-component-imports:'
 
   // Generate ESM imports for each component script
   for (const componentId of processedComponentKeys) {
@@ -516,7 +515,6 @@ export default {
                 external: true
               }
             }
-
 
             // Do not externalize if the entry point name actually matches a bare specifier
             if (Object.hasOwn(entryPoints, args.path)) {
@@ -754,7 +752,7 @@ export default {
                   }
                   strippedContent = strippedContent.slice(0, start) + strippedContent.slice(end)
                 }
-              } catch (e) {
+              } catch {
                 // Fallback to regex if AST parsing fails
                 strippedContent = strippedContent.replace(/data\s*:\s*async\s*function\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* data stripped */')
                 strippedContent = strippedContent.replace(/async\s*data\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* data stripped */')
