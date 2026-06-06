@@ -1173,7 +1173,7 @@ export function createRenderer ({
       }
 
       if (pageItem.virtual) {
-        if (pageItem.volatile || !manifest.virtual || !manifest.virtual[pageItem.path.pathname] || String(manifest.virtual[pageItem.path.pathname].cacheKey) !== String(pageItem.cacheKey)) {
+        if (pageItem.volatile || !manifest.virtual || !manifest.virtual[pageItem.path.pathname] || String(manifest.virtual[pageItem.path.pathname].cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development') {
           shouldRebuild = true
         } else {
           shouldRebuild = false
@@ -1205,7 +1205,7 @@ export function createRenderer ({
       } else {
         const { changed, metadata } = await checkFileChange(pageItem.path.pathname, manifest.physical[pageItem.path.pathname])
         newManifest.physical[pageItem.path.pathname] = metadata
-        if (changed || shouldRebuild) {
+        if (changed || shouldRebuild || normalizedOptions.mode === 'development') {
           pagesToRender.push(pageItem)
         } else {
           /** @type {import('../types/index.js').CoraliteBuildResult} */
