@@ -257,7 +257,7 @@
 /**
  * @callback CoralitePluginAfterPageRenderCallback - Async callback triggered after a page has been rendered but before saving.
  * @param {CoralitePluginAfterPageRenderContext} context
- * @returns {Promise<void>|void}
+ * @returns {Promise<any[]|any|void>|any[]|any|void}
  * @async
  */
 
