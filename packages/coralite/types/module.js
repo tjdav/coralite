@@ -22,6 +22,7 @@
  * @property {boolean} isTemplate - Indicates whether the module is a template
  * @property {Set<string>} [rootClasses] - Root classes relative to template.
  * @property {Set<string>} [descendantClasses] - Descendant classes.
+ * @property {string[]} [_globalsCache] - Internal cache for script globals.
  */
 
 /**

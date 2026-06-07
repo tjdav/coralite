@@ -82,6 +82,7 @@ export function createRenderer ({
   const renderQueues = new Map()
   const sealedQueues = new Set()
   const outputFiles = {}
+  const scriptResultCache = new Map()
 
   /**
    * Creates a new rendering session.
@@ -141,6 +142,8 @@ export function createRenderer ({
       }
     }
 
+    const slotTasks = []
+
     for (let i = 0; i < slotNames.length; i++) {
       const slotName = slotNames[i]
       let slotNodes = slotChildren[slotName]
@@ -152,9 +155,12 @@ export function createRenderer ({
       const emptySlot = slotNodes.filter(node => node.type !== 'text' || (node.data && node.data.trim().length > 0))
       if (!emptySlot.length) {
         slotNodes = slot.element.children || []
+        slot.element.children = slotNodes
+        relinkChildren(slot.element)
       } else {
-        for (let i = slotNodes.length - 1; i > -1; i--) {
-          const node = slotNodes[i]
+        const componentTasks = []
+        for (let j = slotNodes.length - 1; j > -1; j--) {
+          const node = slotNodes[j]
           if (node.name) {
             const slotComponentItem = app.components.getItem(node.name)
 
@@ -171,7 +177,7 @@ export function createRenderer ({
                 : Object.assign(currentProperties, state)
 
               const childNoHydration = noHydration || (node.attribs && 'no-hydration' in node.attribs)
-              const componentElement = await createComponentElement({
+              componentTasks.push(createComponentElement({
                 id: node.name,
                 state: session.state[slotContextId],
                 element: node,
@@ -181,54 +187,64 @@ export function createRenderer ({
                 index,
                 session,
                 noHydration: childNoHydration
-              }, false)
-
-              if (componentElement) {
-                if (childNoHydration) {
-                  const parent = node.parent
-
-                  if (parent && Array.isArray(parent.children)) {
-                    const idx = parent.children.indexOf(node)
-                    if (idx !== -1) {
-                      let children = []
-
-                      if (Array.isArray(componentElement)) {
-                        children = componentElement
-                      } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
-                        children = componentElement.children
-                      }
-
-                      parent.children.splice(idx, 1, ...children)
-                      relinkChildren(parent)
-                    }
-                  }
-                } else {
-                  let children = []
-
-                  if (Array.isArray(componentElement)) {
-                    children = componentElement
-                  } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
-                    children = componentElement.children
-                  }
-
-                  node.children = children
-                  relinkChildren(node)
-
-                  if (!node.attribs) {
-                    node.attribs = {}
-                  }
-
-                  node.attribs['data-cid'] = slotContextId
-                  session.componentTags.add(node.name)
-                }
-              }
+              }, false).then(componentElement => ({
+                componentElement,
+                node,
+                slotContextId,
+                childNoHydration
+              })))
             }
           }
         }
+
+        slotTasks.push(Promise.all(componentTasks).then(results => {
+          for (const { componentElement, node, slotContextId, childNoHydration } of results) {
+            if (componentElement) {
+              if (childNoHydration) {
+                const parent = node.parent
+
+                if (parent && Array.isArray(parent.children)) {
+                  const idx = parent.children.indexOf(node)
+                  if (idx !== -1) {
+                    let children = []
+
+                    if (Array.isArray(componentElement)) {
+                      children = componentElement
+                    } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
+                      children = componentElement.children
+                    }
+
+                    parent.children.splice(idx, 1, ...children)
+                    relinkChildren(parent)
+                  }
+                }
+              } else {
+                let children = []
+
+                if (Array.isArray(componentElement)) {
+                  children = componentElement
+                } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
+                  children = componentElement.children
+                }
+
+                node.children = children
+                relinkChildren(node)
+
+                if (!node.attribs) {
+                  node.attribs = {}
+                }
+
+                node.attribs['data-cid'] = slotContextId
+                session.componentTags.add(node.name)
+              }
+            }
+          }
+          slot.element.children = slotNodes
+          relinkChildren(slot.element)
+        }))
       }
-      slot.element.children = slotNodes
-      relinkChildren(slot.element)
     }
+    await Promise.all(slotTasks)
   }
 
   const _processDependentComponents = async (componentIds, session, page, root, state = {}) => {
@@ -281,13 +297,22 @@ export function createRenderer ({
       let extractedComponents = []
 
       if (scriptResult.__script__) {
-        const extractedScript = findAndExtractScript(module.script)
+        if (!moduleComponent.result._extractedScript) {
+          moduleComponent.result._extractedScript = findAndExtractScript(module.script)
+        }
+        const extractedScript = moduleComponent.result._extractedScript
+
         if (extractedScript) {
           scriptObj.content = extractedScript.content
           scriptObj.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
           extractedComponents = extractedScript.components || []
         }
-        const extractedProperties = findAndExtractProperties(module.script)
+
+        if (!moduleComponent.result._extractedProperties) {
+          moduleComponent.result._extractedProperties = findAndExtractProperties(module.script)
+        }
+        const extractedProperties = moduleComponent.result._extractedProperties
+
         if (extractedProperties) {
           scriptObj.stateContent = extractedProperties.content
           scriptObj.stateLineOffset = (module.lineOffset || 0) + extractedProperties.lineOffset
@@ -450,7 +475,11 @@ export function createRenderer ({
       }
 
       if (scriptResult && scriptResult.__script__ != null) {
-        const extractedScript = findAndExtractScript(module.script)
+        if (!moduleComponent.result._extractedScript) {
+          moduleComponent.result._extractedScript = findAndExtractScript(module.script)
+        }
+        const extractedScript = moduleComponent.result._extractedScript
+
         let extractedComponents = []
         if (extractedScript) {
           scriptResult.__script__.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
@@ -614,6 +643,7 @@ export function createRenderer ({
     })
 
     const results = await Promise.all(createComponentTasks)
+
     results.forEach(({ childComponentElement, customElement, childContextId, noHydration: childNoHydration }) => {
       if (childComponentElement && typeof childComponentElement === 'object') {
         if (childNoHydration) {
@@ -682,6 +712,8 @@ export function createRenderer ({
 
   const _processCustomElementsInPage = async (mappedComponent, originalDocument, state, mappedSessionObject, pageContext) => {
     const customElementsList = mappedComponent.customElements || []
+    const tasks = []
+
     for (let i = 0; i < customElementsList.length; i++) {
       const customElement = customElementsList[i]
       const contextId = mappedSessionObject.generateId(customElement.name)
@@ -700,7 +732,7 @@ export function createRenderer ({
         }
 
       const noHydration = customElement.attribs && 'no-hydration' in customElement.attribs
-      const componentElement = await createComponentElement({
+      tasks.push(createComponentElement({
         id: customElement.name,
         state: mappedSessionObject.state[contextId],
         element: customElement,
@@ -710,8 +742,17 @@ export function createRenderer ({
         index: i,
         session: mappedSessionObject,
         noHydration
-      })
+      }).then(componentElement => ({
+        componentElement,
+        customElement,
+        contextId,
+        noHydration
+      })))
+    }
 
+    const results = await Promise.all(tasks)
+
+    for (const { componentElement, customElement, contextId, noHydration } of results) {
       if (componentElement) {
         if (noHydration) {
           const parent = customElement.parent
@@ -741,7 +782,6 @@ export function createRenderer ({
 
   const _generatePages = async function* (activeQueue, buildId, state = {}) {
     const isProduction = normalizedOptions.mode === 'production'
-    const scriptResultCache = new Map()
 
     try {
       for (let q = 0; q < activeQueue.length; q++) {

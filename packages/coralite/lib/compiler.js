@@ -10,6 +10,8 @@ import { extractGlobals } from './server-utils.js'
  * @import { Module } from 'node:vm'
  */
 
+let SourceTextModuleCache = null
+
 /**
  * Generates a custom module linker callback for the Node.js VM context.
  *
@@ -24,7 +26,11 @@ export function createModuleLinker ({ path, context, source, plugins }) {
   const componentDirURL = pathToFileURL(resolve(path.dirname)).href
 
   return async (specifier, referencingModule, extra) => {
-    const { SourceTextModule } = await import('node:vm')
+    if (!SourceTextModuleCache) {
+      SourceTextModuleCache = (await import('node:vm')).SourceTextModule
+    }
+
+    const SourceTextModule = SourceTextModuleCache
     const originalSpecifier = specifier
 
     if (plugins[specifier]) {
@@ -100,8 +106,6 @@ export function createModuleLinker ({ path, context, source, plugins }) {
         referencingModule.context[originalSpecifier] = module
       }
 
-      const { SourceTextModule } = await import('node:vm')
-
       return new SourceTextModule(exportModule, {
         context: referencingModule.context
       })
@@ -146,7 +150,10 @@ export async function evaluateDevelopment ({
   createExecutionError,
   getComponent
 }) {
-  const { SourceTextModule } = await import('node:vm')
+  if (!SourceTextModuleCache) {
+    SourceTextModuleCache = (await import('node:vm')).SourceTextModule
+  }
+  const SourceTextModule = SourceTextModuleCache
 
   if (!SourceTextModule) {
     throw new Error('SourceTextModule is not available. Please run Node.js with --experimental-vm-modules to use Development mode.')
@@ -171,7 +178,11 @@ export async function evaluateDevelopment ({
   const boundDefineComponent = (options) => defineComponent(options, context)
 
   const standardBuiltIns = new Set(['Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Math', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt', 'BigInt64Array', 'BigUint64Array', 'Symbol', 'Infinity', 'NaN', 'undefined', 'globalThis', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'escape', 'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'unescape'])
-  const usedGlobals = extractGlobals(module.script)
+  if (!module._globalsCache) {
+    module._globalsCache = extractGlobals(module.script)
+  }
+  const usedGlobals = module._globalsCache
+
   const contextGlobals = {
     __coralite_context__: context,
     __coralite_plugins__: cachedBoundPlugins,

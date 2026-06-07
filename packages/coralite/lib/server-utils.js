@@ -16,6 +16,22 @@ import { BOOLEAN_ATTRIBUTES } from './tags.js'
  * } from '../types/index.js'
  */
 
+const astCache = new Map()
+
+function getAST (code, locations = false) {
+  const cacheKey = `${code}_${locations}`
+  if (astCache.has(cacheKey)) {
+    return astCache.get(cacheKey)
+  }
+  const ast = parseJS(code, {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    locations
+  })
+  astCache.set(cacheKey, ast)
+  return ast
+}
+
 /**
  * Extracts and normalizes the script content from a component definition.
  *
@@ -23,11 +39,7 @@ import { BOOLEAN_ATTRIBUTES } from './tags.js'
  * @returns {ScriptContent | null}
  */
 export function findAndExtractScript (code) {
-  const ast = parseJS(code, {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    locations: true
-  })
+  const ast = getAST(code, true)
 
   /** @type {ScriptContent | null} */
   let result = null
@@ -111,11 +123,7 @@ export function findAndExtractScript (code) {
  * @returns {ScriptContent | null}
  */
 export function findAndExtractProperties (code) {
-  const ast = parseJS(code, {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    locations: true
-  })
+  const ast = getAST(code, true)
 
   /** @type {ScriptContent | null} */
   let result = null
@@ -185,10 +193,7 @@ export function findAndExtractProperties (code) {
  */
 export function findAndExtractImperativeComponents (code) {
   try {
-    const ast = parseJS(code, {
-      ecmaVersion: 'latest',
-      sourceType: 'module'
-    })
+    const ast = getAST(code)
 
     const components = new Set()
 
@@ -225,10 +230,7 @@ export function findAndExtractImperativeComponents (code) {
  */
 export function extractGlobals (code) {
   try {
-    const ast = parseJS(code, {
-      ecmaVersion: 'latest',
-      sourceType: 'module'
-    })
+    const ast = getAST(code)
 
     const globals = new Set()
     walkJS(ast, {
