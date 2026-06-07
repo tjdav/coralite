@@ -1,6 +1,6 @@
 #!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
-import { createCoralite } from '../dist/lib/index.js'
+import { createCoralite } from '../lib/index.js'
 import { Command } from 'commander'
 import kleur from 'kleur'
 import { pathToFileURL } from 'node:url'

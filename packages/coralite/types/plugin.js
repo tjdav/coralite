@@ -281,7 +281,7 @@
  * @typedef {Object} CoralitePluginServer
  * @property {any} [config] - Plugin configuration object
  * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Three-Phase Curried functions. Phase 1 receives a single context object containing the global context and config, Phase 2 receives the instance context, Phase 3 is the executable result.
- * @property {HTMLData[]} [components] - Array of loaded component data
+ * @property {(HTMLData | string)[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
  * @property {CoralitePluginPageDeleteCallback} [onPageDelete] - Async callback triggered when a page is deleted

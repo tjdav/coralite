@@ -41,7 +41,7 @@ export default defineConfig({
             dateB = b.page.meta.published_time
           }
 
-          return new Date(dateB) - new Date(dateA)
+          return new Date(dateB).getTime() - new Date(dateA).getTime()
         },
         pagination: {
           maxVisible: 3
@@ -68,7 +68,7 @@ export default defineConfig({
             dateB = b.page.meta.published_time
           }
 
-          return new Date(dateB) - new Date(dateA)
+          return new Date(dateB).getTime() - new Date(dateA).getTime()
         }
       }
     ]),

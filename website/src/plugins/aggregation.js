@@ -4,8 +4,8 @@ import path from 'node:path'
 /**
  * Collects and filters pages based on the provided configuration.
  *
- * @param {import('coralite').CoraliteInstance} app
- * @param {Object} config
+ * @param {import('coralite').CoraliteInstance} app -
+ * @param {Object} config -
  * @returns {import('coralite').CoraliteCollectionItem[]}
  */
 const collectPages = (app, config) => {
@@ -137,6 +137,7 @@ export const aggregation = (configs = []) => {
             for (let i = 2; i <= totalPages; i++) {
               const newPathname = path.join(targetDir, segment, `${i}.html`)
 
+              /** @type {import('coralite').HTMLData} */
               const virtualItem = {
                 content: basePage.content || await app.source.utils.getHtmlFile(basePage.path.pathname),
                 virtual: true,
