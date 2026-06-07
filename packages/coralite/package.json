@@ -58,6 +58,9 @@
     ".": {
       "types": "./dist/lib/index.d.ts",
       "default": "./dist/lib/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts"
     }
   },
   "devDependencies": {

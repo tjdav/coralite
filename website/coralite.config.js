@@ -53,7 +53,10 @@ export default defineConfig({
         component: 'coralite-related-post',
         limit: 3,
         filter (state, context) {
-          if (!context || !context.page) return true
+          if (!context || !context.page) {
+            return true
+          }
+
           return state.page.url.pathname !== context.page.url.pathname
         },
         sort (a, b) {
