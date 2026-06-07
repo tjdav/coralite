@@ -2,72 +2,31 @@ import { test } from 'node:test'
 import assert from 'node:assert'
 import '../setup.js'
 import { createCoralite } from '../../../lib/index.js'
-import { mkdir, writeFile, rm } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 test('strip custom elements with no-hydration attribute', async () => {
-  const tmpDir = join(process.cwd(), 'tmp-test-no-hydration')
-  const componentsDir = join(tmpDir, 'components')
-  const pagesDir = join(tmpDir, 'pages')
-
-  await mkdir(componentsDir, { recursive: true })
-  await mkdir(pagesDir, { recursive: true })
-
-  // Define a nested component
-  await writeFile(join(componentsDir, 'nested-comp.html'), `
-<template id="nested-comp">
-  <span class="nested">Nested Content</span>
-</template>
-  `)
-
-  // Define a component to be used with no-hydration
-  await writeFile(join(componentsDir, 'coralite-meta.html'), `
-<template id="coralite-meta">
-  <title>{{ title }}</title>
-  <meta name="description" content="{{ description }}">
-  <nested-comp></nested-comp>
-</template>
-<script type="module">
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    attributes: {
-      title: { type: String, default: 'Default Title' },
-      description: { type: String, default: 'Default Description' }
-    }
-  })
-</script>
-  `)
-
-  // Define a page using the component with no-hydration
-  await writeFile(join(pagesDir, 'index.html'), `
-<!DOCTYPE html>
-<html>
-<head>
-  <coralite-meta no-hydration title="Hello World" description="Test description"></coralite-meta>
-</head>
-<body>
-  <h1>Content</h1>
-  <nested-comp></nested-comp>
-</body>
-</html>
-  `)
+  const fixtureDir = join(__dirname, '../../fixtures/head-stripping')
 
   const coralite = await createCoralite({
-    components: componentsDir,
-    pages: pagesDir
+    components: fixtureDir,
+    pages: fixtureDir
   })
 
   const results = await coralite.build()
 
-  const indexPage = results.find(r => r.path.filename === 'index.html')
-  assert.ok(indexPage, 'Index page should be built')
+  const indexPage = results.find(r => r.path.filename === 'head-stripping-page.html')
+  assert.ok(indexPage, 'Head stripping page should be built')
 
   const content = indexPage.content
   document.documentElement.innerHTML = content
 
-  // Check if <coralite-meta> is removed but its children are present
-  const coraliteMeta = document.querySelector('coralite-meta')
-  assert.ok(!coraliteMeta, 'Should not contain <coralite-meta> tag')
+  // Check if <head-stripping-meta> is removed but its children are present
+  const coraliteMeta = document.querySelector('head-stripping-meta')
+  assert.ok(!coraliteMeta, 'Should not contain <head-stripping-meta> tag')
 
   const title = document.querySelector('title')
   assert.ok(title, 'Should contain <title> tag')
@@ -92,14 +51,8 @@ test('strip custom elements with no-hydration attribute', async () => {
   if (hydrationTag) {
     const hydrationData = JSON.parse(hydrationTag.textContent)
 
-    // coralite-meta should not have hydration data because it's no-hydration
+    // head-stripping-meta should not have hydration data because it's no-hydration
     const cids = Object.keys(hydrationData)
-    assert.ok(!cids.some(cid => cid.startsWith('coralite-meta')), 'coralite-meta should not have hydration data')
+    assert.ok(!cids.some(cid => cid.startsWith('head-stripping-meta')), 'head-stripping-meta should not have hydration data')
   }
-
-  // Clean up
-  await rm(tmpDir, {
-    recursive: true,
-    force: true
-  })
 })

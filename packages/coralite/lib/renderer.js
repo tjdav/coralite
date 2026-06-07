@@ -571,7 +571,9 @@ export function createRenderer ({
 
     const createComponentTasks = []
     customElements.forEach(customElement => {
-      if (customElement.parent && 'slots' in customElement.parent) {
+      const parent = customElement.parent
+
+      if (parent && 'slots' in parent && Array.isArray(parent.slots)) {
         return
       }
 

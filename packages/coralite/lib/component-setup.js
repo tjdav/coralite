@@ -108,7 +108,7 @@ export function createComponentDefinition ({ app }) {
           const slotContent = []
           const elementSlots = []
 
-          if (root && 'slots' in root) {
+          if (root && 'slots' in root && Array.isArray(root.slots)) {
             for (let j = 0; j < root.slots.length; j++) {
               const slot = root.slots[j]
 
@@ -125,7 +125,7 @@ export function createComponentDefinition ({ app }) {
             result = slotContent
           }
           if (result === null || result === '' || (Array.isArray(result) && result.length === 0)) {
-            if (root && 'slots' in root) {
+            if (root && 'slots' in root && Array.isArray(root.slots)) {
               root.slots = root.slots.filter(s => s.name !== name)
             }
 
@@ -169,7 +169,7 @@ export function createComponentDefinition ({ app }) {
             }
           }
 
-          if (root && 'slots' in root) {
+          if (root && 'slots' in root && Array.isArray(root.slots)) {
             root.slots = elementSlots
           }
         }

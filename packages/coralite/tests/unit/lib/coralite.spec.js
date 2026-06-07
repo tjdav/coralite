@@ -3,6 +3,7 @@ import { strict as assert } from 'node:assert'
 import path from 'node:path'
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { fileURLToPath } from 'node:url'
 import { createCoralite, createCoraliteElement, createCoraliteTextNode } from '#lib'
 
 describe('Coralite', () => {
@@ -379,33 +380,13 @@ describe('Bug Fix: Preserving recursive tokens', () => {
       }
     }
 
-    await writeFile(path.join(pagesDir, 'index.html'), '<parent-component></parent-component>')
-
-    const parentHtml = `
-<template id="parent-component">
-<child-component></child-component>
-</template>
-`
-    await writeFile(path.join(componentsDir, 'parent-component.html'), parentHtml)
-
-    const childHtml = `
-<template id="child-component">
-<div>{{ checkValue }}</div>
-</template>
-<script type="module">
-import { defineComponent } from 'coralite'
-export default defineComponent({
-  getters: {
-    checkValue: (state) => state.special_value || 'missing'
-  }
-})
-</script>
-`
-    await writeFile(path.join(componentsDir, 'child-component.html'), childHtml)
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
+    const fixtureDir = path.join(__dirname, '../../fixtures/nested-dependencies')
 
     const coralite = await createCoralite({
-      pages: pagesDir,
-      components: componentsDir,
+      pages: fixtureDir,
+      components: fixtureDir,
       output: outputDir,
       plugins: [parentPlugin],
       mode: 'production',
@@ -414,9 +395,8 @@ export default defineComponent({
 
     const results = await coralite.build()
 
-    const pageResult = results.find(r => r.path && r.path.filename === 'index.html')
+    const pageResult = results.find(r => r.path && r.path.filename === 'nested-dependencies-page.html')
     const htmlOutput = pageResult ? pageResult.content : ''
-
     assert.ok(htmlOutput.includes('i-am-preserved'), 'nested child token state should receive context state')
   })
 

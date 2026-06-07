@@ -1,0 +1,20 @@
+<template id="head-stripping-meta">
+  <title>{{ title }}</title>
+  <meta name="description" content="{{ description }}">
+  <nested-comp></nested-comp>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      title: {
+        type: String,
+        default: 'Default Title'
+      },
+      description: {
+        type: String,
+        default: 'Default Description'
+      }
+    }
+  })
+</script>

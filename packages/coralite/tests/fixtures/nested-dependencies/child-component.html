@@ -1,0 +1,11 @@
+<template id="child-component">
+<div>{{ checkValue }}</div>
+</template>
+<script type="module">
+import { defineComponent } from 'coralite'
+export default defineComponent({
+  getters: {
+    checkValue: (state) => state.special_value || 'missing'
+  }
+})
+</script>
