@@ -1,5 +1,3 @@
-import { enhanceNode } from './dom.js'
-
 /**
  * @import {
  * CoraliteModule,
@@ -185,9 +183,10 @@ export function normalizeFunction (func) {
  * @returns {Object} The newly cloned node.
  */
 export function cloneNode (nodeMap, node, parent) {
-  const newNode = { ...node }
+  const newNode = Object.create(Object.getPrototypeOf(node))
 
-  enhanceNode(newNode)
+  // Copy all own enumerable properties
+  Object.assign(newNode, node)
 
   if (parent) {
     newNode.parent = parent
@@ -197,39 +196,51 @@ export function cloneNode (nodeMap, node, parent) {
     newNode.attribs = { ...newNode.attribs }
   }
 
-  if (newNode.slots) {
-    newNode.slots = [...newNode.slots]
-  }
-
   // Register in map
   nodeMap.set(node, newNode)
 
   // Recursively clone children
-  if (newNode.children) {
-    newNode.children = new Array(node.children.length)
+  if (node.children) {
+    const children = node.children
+    const length = children.length
+    const clonedChildren = new Array(length)
+    newNode.children = clonedChildren
 
-    for (let i = 0; i < node.children.length; i++) {
-      // @ts-ignore
-      newNode.children[i] = cloneNode(nodeMap, node.children[i], newNode)
+    for (let i = 0; i < length; i++) {
+      const clonedChild = cloneNode(nodeMap, children[i], newNode)
+      clonedChildren[i] = clonedChild
       if (i > 0) {
-        newNode.children[i].prev = newNode.children[i - 1]
-        newNode.children[i - 1].next = newNode.children[i]
+        clonedChild.prev = clonedChildren[i - 1]
+        clonedChildren[i - 1].next = clonedChild
       }
     }
   }
 
   // Update slot references to point to new cloned nodes
-  if (newNode.slots) {
-    for (let i = 0; i < newNode.slots.length; i++) {
-      const slot = newNode.slots[i]
+  if (node.slots) {
+    const slots = node.slots
+    const length = slots.length
+    const clonedSlots = new Array(length)
+    for (let i = 0; i < length; i++) {
+      const slot = slots[i]
+      const clonedSlot = { ...slot }
       if (slot.node) {
         const clonedNode = nodeMap.get(slot.node)
         if (clonedNode) {
-          slot.node = clonedNode
+          clonedSlot.node = clonedNode
         }
       }
+      clonedSlots[i] = clonedSlot
     }
+    newNode.slots = clonedSlots
   }
+
+  // Preserve the enhanced flag without re-running enhanceNode
+  Object.defineProperty(newNode, '__coralite_enhanced__', {
+    value: true,
+    enumerable: false,
+    configurable: true
+  })
 
   return newNode
 }
@@ -638,4 +649,3 @@ export function createReadOnlyProxy (target, proxies = new WeakMap()) {
 export function defineComponent (options) {
   return options
 }
-

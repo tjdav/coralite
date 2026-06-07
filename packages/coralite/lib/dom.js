@@ -30,6 +30,11 @@ const nodeTypes = {
   directive: DOCUMENT_TYPE_NODE
 }
 
+const PARENT_SYM = Symbol('parent')
+const PREV_SYM = Symbol('prev')
+const NEXT_SYM = Symbol('next')
+const SLOTS_SYM = Symbol('slots')
+
 /**
  * Ensures circular properties are non-enumerable to prevent serialization issues.
  * @param {any} node - The node to enhance
@@ -37,11 +42,11 @@ const nodeTypes = {
 function makeCircularPropertiesNonEnumerable (node) {
   for (const key of ['parent', 'prev', 'next', 'slots']) {
     if (Object.hasOwn(node, key)) {
-      Object.defineProperty(node, key, {
-        enumerable: false,
-        writable: true,
-        configurable: true
-      })
+      const val = node[key]
+      delete node[key]
+      if (val !== undefined) {
+        node[key] = val
+      }
     }
   }
 }
@@ -81,6 +86,42 @@ Object.defineProperties(CoraliteNodePrototype, {
       return nodeTypes[this.type] || ELEMENT_NODE
     }
   },
+  parent: {
+    get () {
+      return this[PARENT_SYM] || null
+    },
+    set (v) {
+      this[PARENT_SYM] = v
+    },
+    enumerable: false
+  },
+  prev: {
+    get () {
+      return this[PREV_SYM] || null
+    },
+    set (v) {
+      this[PREV_SYM] = v
+    },
+    enumerable: false
+  },
+  next: {
+    get () {
+      return this[NEXT_SYM] || null
+    },
+    set (v) {
+      this[NEXT_SYM] = v
+    },
+    enumerable: false
+  },
+  slots: {
+    get () {
+      return this[SLOTS_SYM] || null
+    },
+    set (v) {
+      this[SLOTS_SYM] = v
+    },
+    enumerable: false
+  },
   parentNode: {
     get () {
       return this.parent || null
@@ -108,77 +149,6 @@ Object.defineProperties(CoraliteNodePrototype, {
     }
   }
 })
-
-/**
- * Enhances a raw node by applying the correct prototype based on its type.
- * @param {any} node - The node to enhance
- * @returns {any} The enhanced node
- */
-export function enhanceNode (node) {
-  if (!node || node.__coralite_enhanced__) {
-    return node
-  }
-
-  makeCircularPropertiesNonEnumerable(node)
-
-  let prototype
-  switch (node.type) {
-    case 'tag':
-    case 'script':
-    case 'style':
-      prototype = CoraliteElementPrototype
-      break
-    case 'text':
-      prototype = CoraliteTextNodePrototype
-      break
-    case 'comment':
-      prototype = CoraliteCommentPrototype
-      break
-    case 'directive':
-      prototype = CoraliteDirectivePrototype
-      break
-    case 'root':
-      prototype = CoraliteComponentPrototype
-      break
-    default:
-      prototype = CoraliteNodePrototype
-  }
-
-  Object.setPrototypeOf(node, prototype)
-  Object.defineProperty(node, '__coralite_enhanced__', {
-    value: true,
-    enumerable: false,
-    configurable: true
-  })
-
-  return node
-}
-
-/**
- * Re-links all children of a parent node, ensuring parent, prev, and next pointers are correct.
- * @param {any} parent - The parent node whose children should be re-linked
- */
-export function relinkChildren (parent) {
-  if (!parent || !parent.children || !Array.isArray(parent.children)) {
-    return
-  }
-
-  for (let i = 0; i < parent.children.length; i++) {
-    const child = parent.children[i]
-    if (!child) {
-      continue
-    }
-
-    enhanceNode(child)
-    child.parent = parent
-    child.prev = parent.children[i - 1] || null
-    child.next = parent.children[i + 1] || null
-
-    if (child.children) {
-      relinkChildren(child)
-    }
-  }
-}
 
 /**
  * Prototype for Coralite Elements.
@@ -273,15 +243,15 @@ CoraliteElementPrototype.append = function (...nodes) {
 Object.defineProperties(CoraliteElementPrototype, {
   nodeName: {
     get () {
-      return this.name.toUpperCase()
+      return (this.name || '').toUpperCase()
     }
   },
   tagName: {
     get () {
-      return this.name.toUpperCase()
+      return (this.name || '').toUpperCase()
     },
     set (value) {
-      this.name = value.toLowerCase()
+      this.name = (value || '').toLowerCase()
     }
   },
   nodeValue: {
@@ -541,6 +511,77 @@ Object.defineProperties(CoraliteComponentPrototype, {
     }
   }
 })
+
+/**
+ * Internal helper to get prototype based on node type.
+ */
+function getPrototypeForType (type) {
+  switch (type) {
+    case 'tag':
+    case 'script':
+    case 'style':
+      return CoraliteElementPrototype
+    case 'text':
+      return CoraliteTextNodePrototype
+    case 'comment':
+      return CoraliteCommentPrototype
+    case 'directive':
+      return CoraliteDirectivePrototype
+    case 'root':
+      return CoraliteComponentPrototype
+    default:
+      return CoraliteNodePrototype
+  }
+}
+
+/**
+ * Enhances a raw node by applying the correct prototype based on its type.
+ * @param {any} node - The node to enhance
+ * @returns {any} The enhanced node
+ */
+export function enhanceNode (node) {
+  if (!node || node.__coralite_enhanced__) {
+    return node
+  }
+
+  const prototype = getPrototypeForType(node.type)
+  Object.setPrototypeOf(node, prototype)
+  makeCircularPropertiesNonEnumerable(node)
+
+  Object.defineProperty(node, '__coralite_enhanced__', {
+    value: true,
+    enumerable: false,
+    configurable: true
+  })
+
+  return node
+}
+
+/**
+ * Re-links all children of a parent node, ensuring parent, prev, and next pointers are correct.
+ * @param {any} parent - The parent node whose children should be re-linked
+ */
+export function relinkChildren (parent) {
+  if (!parent || !parent.children || !Array.isArray(parent.children)) {
+    return
+  }
+
+  for (let i = 0; i < parent.children.length; i++) {
+    const child = parent.children[i]
+    if (!child) {
+      continue
+    }
+
+    enhanceNode(child)
+    child.parent = parent
+    child.prev = parent.children[i - 1] || null
+    child.next = parent.children[i + 1] || null
+
+    if (child.children) {
+      relinkChildren(child)
+    }
+  }
+}
 
 /**
  * Creates an enhanced Coralite Element
