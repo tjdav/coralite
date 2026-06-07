@@ -29,6 +29,7 @@ import {
 import { generateClientRuntime } from './client-runtime.js'
 import { transformCss } from './style-transform.js'
 import { transformNode } from './parser.js'
+import { CoraliteError } from './errors.js'
 import { checkFileChange } from './manifest.js'
 import {
   isCoraliteElement,
@@ -452,9 +453,13 @@ export function createRenderer ({
           session,
           noHydration
         }
-
-        await hooks.bind(source.plugins, pluginContext)
-
+        const cachedBoundPlugins = await hooks.bind(source.plugins, pluginContext)
+        for (const key in cachedBoundPlugins) {
+          const plugin = cachedBoundPlugins[key]
+          if (plugin !== null && typeof plugin === 'object') {
+            Object.assign(evaluationState, plugin)
+          }
+        }
         scriptResult = await evaluate({
           module,
           element,
@@ -796,7 +801,9 @@ export function createRenderer ({
             } catch (e) {
               if (pageItem.virtual) {
                 // If a virtual page is missing content, it's a critical error
-                throw new Error(`Virtual page missing content: ${pageItem.path.pathname}`)
+                throw new CoraliteError(`Virtual page missing content: ${pageItem.path.pathname}`, {
+                  pagePath: pageItem.path.pathname
+                })
               }
               content = pageItem.content !== undefined ? pageItem.content : (()=>{
                 throw e
@@ -1017,7 +1024,7 @@ export function createRenderer ({
    */
   const addRenderQueue = async (value, buildId) => {
     if (!buildId) {
-      throw new Error('addRenderQueue requires a buildId')
+      throw new CoraliteError('addRenderQueue requires a buildId')
     }
     if (sealedQueues.has(buildId)) {
       console.warn(`[Coralite] Attempted to add to sealed queue for build "${buildId}". All virtual pages must be added in onBeforeBuild.`)
@@ -1025,14 +1032,14 @@ export function createRenderer ({
     }
     const queue = renderQueues.get(buildId)
     if (!queue) {
-      throw new Error(`addRenderQueue - buildId not found: "${buildId}"`)
+      throw new CoraliteError(`addRenderQueue - buildId not found: "${buildId}"`)
     }
 
     if (typeof value === 'string') {
       // @ts-ignore
       const component = app.pages.getItem(value)
       if (!component) {
-        throw new Error(`addRenderQueue - unexpected page ID: "${value}"`)
+        throw new CoraliteError(`addRenderQueue - unexpected page ID: "${value}"`)
       }
       queue.push(component)
     } else if (isCoraliteCollectionItem(value)) {
@@ -1133,7 +1140,7 @@ export function createRenderer ({
         options: buildOptions
       })
     } catch (errorHook) {
-      const error = new Error(`Error in onBeforeBuild hook: ${errorHook.message}`, { cause: errorHook })
+      const error = new CoraliteError(`Error in onBeforeBuild hook: ${errorHook.message}`, { cause: errorHook })
       handleError({
         level: 'ERR',
         message: error.message,
@@ -1366,7 +1373,7 @@ export function createRenderer ({
           message: 'Build cancelled by user.'
         })
       }
-      buildError = error instanceof Error ? error : new Error(`Build failed: ${error.message}`, { cause: error })
+      buildError = error instanceof Error ? error : new CoraliteError(`Build failed: ${error.message}`, { cause: error })
       throw buildError
     } finally {
       const duration = performance.now() - startTime

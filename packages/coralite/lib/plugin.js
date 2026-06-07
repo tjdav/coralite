@@ -3,6 +3,7 @@
  */
 
 import { basename, dirname } from 'path'
+import { CoraliteError } from './errors.js'
 
 /**
  * Validates that a value is a non-empty string
@@ -12,7 +13,7 @@ import { basename, dirname } from 'path'
  */
 function validateNonEmptyString (value, paramName) {
   if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(
+    throw new CoraliteError(
       `Coralite plugin validation failed: "${paramName}" must be a non-empty string, received ${typeof value}`
     )
   }
@@ -26,14 +27,14 @@ function validateNonEmptyString (value, paramName) {
  */
 function validateStringArray (value, paramName) {
   if (!Array.isArray(value)) {
-    throw new Error(
+    throw new CoraliteError(
       `Coralite plugin validation failed: "${paramName}" must be an array, received ${typeof value}`
     )
   }
 
   for (let i = 0; i < value.length; i++) {
     if (typeof value[i] !== 'string') {
-      throw new Error(
+      throw new CoraliteError(
         `Coralite plugin validation failed: "${paramName}[${i}]" must be a string, received ${typeof value[i]}`
       )
     }
@@ -58,8 +59,12 @@ function processComponents (path) {
 
     return componentData
   } catch (error) {
-    throw new Error(
-      `Coralite plugin component processing failed for "${path}": ${error.message}`
+    throw new CoraliteError(
+      `Coralite plugin component processing failed for "${path}": ${error.message}`,
+      {
+        cause: error,
+        filePath: path
+      }
     )
   }
 }
@@ -124,7 +129,7 @@ export function definePlugin ({
   // Validate server plugin if provided
   if (server != null) {
     if (typeof server !== 'object') {
-      throw new Error(
+      throw new CoraliteError(
         `Coralite plugin validation failed: "server" must be an object, received ${typeof server}`
       )
     }
@@ -145,8 +150,9 @@ export function definePlugin ({
         server.components = componentHTMLData
       } catch (error) {
         // Enhance error message with plugin context
-        throw new Error(
-          `Coralite plugin "${name}" failed to load components: ${error.message}`
+        throw new CoraliteError(
+          `Coralite plugin "${name}" failed to load components: ${error.message}`,
+          { cause: error }
         )
       }
     }
@@ -155,20 +161,20 @@ export function definePlugin ({
   // Validate client plugin if provided
   if (client != null) {
     if (typeof client !== 'object') {
-      throw new Error(
+      throw new CoraliteError(
         `Coralite plugin validation failed: "client" must be an object, received ${typeof client}`
       )
     }
 
     // Validate optional client state
     if (client.setup != null && typeof client.setup !== 'function') {
-      throw new Error(
+      throw new CoraliteError(
         `Coralite plugin validation failed: "client.setup" must be a function, received ${typeof client.setup}`
       )
     }
 
     if (client.config != null && typeof client.config !== 'object') {
-      throw new Error(
+      throw new CoraliteError(
         `Coralite plugin validation failed: "client.config" must be an object, received ${typeof client.config}`
       )
     }

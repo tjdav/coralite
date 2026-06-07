@@ -4,6 +4,7 @@ import { createContext } from 'node:vm'
 import { transform } from 'esbuild'
 import { createRequire } from 'node:module'
 import { extractGlobals } from './server-utils.js'
+import { CoraliteError } from './errors.js'
 
 /**
  * @import { CoraliteModule, CoraliteModuleDefinitions, CoralitePage, CoraliteSession, CoraliteFilePath, CoralitePluginContext } from '../types/index.js'
@@ -110,7 +111,10 @@ export function createModuleLinker ({ path, context, source, plugins }) {
         context: referencingModule.context
       })
     } catch (error) {
-      throw new Error(error)
+      throw new CoraliteError(error.message, {
+        cause: error,
+        filePath: specifier
+      })
     }
   }
 }
@@ -156,7 +160,7 @@ export async function evaluateDevelopment ({
   const SourceTextModule = SourceTextModuleCache
 
   if (!SourceTextModule) {
-    throw new Error('SourceTextModule is not available. Please run Node.js with --experimental-vm-modules to use Development mode.')
+    throw new CoraliteError('SourceTextModule is not available. Please run Node.js with --experimental-vm-modules to use Development mode.')
   }
 
   const context = {
@@ -229,7 +233,10 @@ export async function evaluateDevelopment ({
     return await script.namespace.default
   }
 
-  throw new Error(`Module "${module.id}" has no default export`)
+  throw new CoraliteError(`Module "${module.id}" has no default export`, {
+    componentId: module.id,
+    filePath: moduleComponent.path.pathname
+  })
 }
 
 /**
@@ -359,7 +366,10 @@ export async function evaluateProduction ({
     return moduleMock.exports.default
   }
 
-  throw new Error(`Module "${module.id}" has no default export`)
+  throw new CoraliteError(`Module "${module.id}" has no default export`, {
+    componentId: module.id,
+    filePath: moduleComponent.path.pathname
+  })
 }
 
 /**

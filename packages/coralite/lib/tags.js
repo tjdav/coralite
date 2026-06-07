@@ -1,3 +1,5 @@
+import { CoraliteError } from './errors.js'
+
 export const BOOLEAN_ATTRIBUTES = new Set([
   'allowfullscreen',
   'async',
@@ -250,7 +252,7 @@ export function isValidCustomElementName (name, maxLength = 100) {
 
   // Check against reserved names first (case-insensitive)
   if (RESERVED_ELEMENT_NAMES[name.toLowerCase()]) {
-    throw new Error('Element name is reserved: "'+ name +'"')
+    throw new CoraliteError('Element name is reserved: "'+ name +'"')
   }
 
   // Length check to prevent ReDoS

@@ -1,5 +1,6 @@
 import { createReadOnlyProxy } from './utils.js'
 import { processTokenValue } from './parser.js'
+import { CoraliteError } from './errors.js'
 import {
   isCoraliteElement,
   isCoraliteTextNode,
@@ -34,7 +35,10 @@ export function createComponentDefinition ({ app }) {
     if (attributes) {
       for (const [key, value] of Object.entries(attributes)) {
         if (value.type === Object || value.type === Array) {
-          throw new Error(`Coralite Error: Component "${module.id}" defines attribute "${key}" as ${value.type.name}. Object and Array types are blocked in attributes. Use data() for complex data.`)
+          throw new CoraliteError(`Component "${module.id}" defines attribute "${key}" as ${value.type.name}. Object and Array types are blocked in attributes. Use data() for complex data.`, {
+            componentId: module.id,
+            filePath: module.path?.pathname
+          })
         }
       }
     }
@@ -164,7 +168,10 @@ export function createComponentDefinition ({ app }) {
                   node
                 })
               } else {
-                throw new Error(`Unexpected slot value in "${module.path.pathname}"`)
+                throw new CoraliteError(`Unexpected slot value in "${module.path.pathname}"`, {
+                  componentId: module.id,
+                  filePath: module.path.pathname
+                })
               }
             }
           }

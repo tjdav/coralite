@@ -5,6 +5,7 @@
  * CoraliteComponentResult,
  * } from '../types/index.js'
  */
+import { CoraliteError } from './errors.js'
 
 const KEBAB_REGEX = /[-|:]([a-z])/g
 
@@ -626,10 +627,10 @@ export function createReadOnlyProxy (target, proxies = new WeakMap()) {
       return value
     },
     set () {
-      throw new Error('Coralite Error: Cannot mutate state inside a getter. State is read-only here.')
+      throw new CoraliteError('Cannot mutate state inside a getter. State is read-only here.')
     },
     deleteProperty () {
-      throw new Error('Coralite Error: Cannot delete state inside a getter. State is read-only here.')
+      throw new CoraliteError('Cannot delete state inside a getter. State is read-only here.')
     }
   }
 

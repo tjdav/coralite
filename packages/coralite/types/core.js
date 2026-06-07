@@ -50,6 +50,13 @@
  * @property {'WARN'|'ERR'|'LOG'} level - The severity level.
  * @property {string} message - The message describing the error or warning.
  * @property {Error} [error] - Optional error object for tracing.
+ * @property {string} [componentId] - The ID of the component where the error occurred.
+ * @property {string} [filePath] - The path to the file where the error occurred.
+ * @property {string} [instanceId] - The unique ID of the component instance.
+ * @property {string} [pagePath] - The path to the page being rendered.
+ * @property {number} [line] - The line number where the error occurred.
+ * @property {number} [column] - The column number where the error occurred.
+ * @property {string} [stackFile] - The file name from the stack trace.
  */
 
 /**

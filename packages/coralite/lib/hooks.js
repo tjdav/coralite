@@ -1,4 +1,5 @@
 import { mergePluginState } from './utils.js'
+import { CoraliteError } from './errors.js'
 
 /**
  * Registers a callback function under the specified hook name.
@@ -9,7 +10,7 @@ import { mergePluginState } from './utils.js'
  */
 export function addPluginHook (hooks, name, callback) {
   if (typeof callback !== 'function') {
-    throw new Error(`Plugin hook "${name}" must be a function`)
+    throw new CoraliteError(`Plugin hook "${name}" must be a function`)
   }
 
   if (hooks[name]) {

@@ -51,11 +51,23 @@ export async function createCoralite ({
 }) {
   // Validate required parameters
   if (!components || typeof components !== 'string') {
-    throw new Error('createCoralite requires "components" option to be defined as a string')
+    handleError({
+      onErrorCallback: onError,
+      data: {
+        level: 'ERR',
+        message: 'createCoralite requires "components" option to be defined as a string'
+      }
+    })
   }
 
   if (!pages || typeof pages !== 'string') {
-    throw new Error('createCoralite requires "pages" option to be defined as a string')
+    handleError({
+      onErrorCallback: onError,
+      data: {
+        level: 'ERR',
+        message: 'createCoralite requires "pages" option to be defined as a string'
+      }
+    })
   }
 
   const path = {
@@ -215,7 +227,13 @@ export async function createCoralite ({
       const signal = saveOptions?.signal
       const createdDir = {}
       if (!app.options.output) {
-        throw new Error('Coralite instance must be configured with an "output" option to use save()')
+        handleError({
+          onErrorCallback: onError,
+          data: {
+            level: 'ERR',
+            message: 'Coralite instance must be configured with an "output" option to use save()'
+          }
+        })
       }
       const outputDir = app.options.output
       const results = []

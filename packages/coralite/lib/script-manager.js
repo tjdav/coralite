@@ -4,6 +4,7 @@ import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, addComponentAndDependencies, cleanAST, cleanValues, generateHydrationMap } from './utils.js'
 import { findAndExtractImperativeComponents, astTransformer } from './server-utils.js'
+import { CoraliteError } from './errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname, relative } from 'node:path'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
@@ -645,7 +646,7 @@ export default {
               for (const key in module.context) {
                 if (Object.hasOwn(module.context, key)) {
                   if (['id', 'state', 'page', 'root', 'signal'].includes(key)) {
-                    throw new Error(`Reserved context key '${key}' cannot be used in plugin context.`)
+                    throw new CoraliteError(`Reserved context key '${key}' cannot be used in plugin context.`)
                   }
                   const fn = normalizeFunction(module.context[key])
                   contents += `    props["${key}"] = await (async (globalContext) => {

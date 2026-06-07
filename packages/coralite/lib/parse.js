@@ -8,6 +8,7 @@ import {
   relinkChildren
 } from './dom.js'
 import { isValidCustomElementName, VALID_TAGS } from './tags.js'
+import { CoraliteError } from './errors.js'
 
 
 /**
@@ -37,10 +38,10 @@ function applySkipRenderAttribute (element, attributes, skipRenderByAttribute) {
 
 function handleTemplateOpenTag (attributes) {
   if (!attributes.id) {
-    throw new Error('Template requires an "id"')
+    throw new CoraliteError('Template requires an "id"')
   }
   if (!isValidCustomElementName(attributes.id)) {
-    throw new Error('Invalid template id: "' + attributes.id + '" it must match following the pattern https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
+    throw new CoraliteError('Invalid template id: "' + attributes.id + '" it must match following the pattern https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name')
   }
   return attributes.id
 }
@@ -55,7 +56,9 @@ function handleTemplateOpenTag (attributes) {
 function handleSlotOpenTag (element, attributes, templateId, slotElements) {
   const name = attributes.name || 'default'
   if (slotElements[templateId] && slotElements[templateId][name]) {
-    throw new Error('Slot names must be unique: "' + name + '"')
+    throw new CoraliteError('Slot names must be unique: "' + name + '"', {
+      componentId: templateId
+    })
   }
   const slot = {
     name,
@@ -436,7 +439,9 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
     if (node.type === 'tag') {
       if (node.name === 'template') {
         if (template) {
-          throw new Error('One template element is permitted')
+          throw new CoraliteError('One template element is permitted', {
+            componentId: templateId
+          })
         }
 
         // @ts-ignore
@@ -444,12 +449,16 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
 
       } else if (node.name === 'script') {
         if (node.attribs.type !== 'module') {
-          throw new Error('Template "' + templateId + '" script tag must contain the `type="module"` attribute')
+          throw new CoraliteError('Template "' + templateId + '" script tag must contain the `type="module"` attribute', {
+            componentId: templateId
+          })
         }
         const scriptString = node.children[0]
 
         if (scriptString.type !== 'text') {
-          throw new Error('Script tag must contain text')
+          throw new CoraliteError('Script tag must contain text', {
+            componentId: templateId
+          })
         }
 
         script = scriptString.data

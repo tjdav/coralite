@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { getHtmlFile } from './html.js'
+import { CoraliteError } from './errors.js'
 import { access } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 
@@ -29,7 +30,9 @@ function CoraliteCollection (options = { rootDir: '' }) {
   this.rootDir = path.join(options.rootDir)
 
   if (!existsSync(this.rootDir)) {
-    throw new Error('Root directory was not found: ' + this.rootDir)
+    throw new CoraliteError('Root directory was not found: ' + this.rootDir, {
+      filePath: this.rootDir
+    })
   }
 
   /**
@@ -83,7 +86,7 @@ CoraliteCollection.prototype.setItem = async function (value) {
   }
 
   if (!value || !value.path) {
-    throw new Error('Valid HTMLData object must be provided')
+    throw new CoraliteError('Valid HTMLData object must be provided')
   }
 
   const pathname = value.path.pathname
@@ -150,7 +153,7 @@ CoraliteCollection.prototype.setItem = async function (value) {
  */
 CoraliteCollection.prototype.deleteItem = async function (value) {
   if (!value) {
-    throw new Error('Valid pathname must be provided')
+    throw new CoraliteError('Valid pathname must be provided')
   }
 
   let pathname
@@ -171,7 +174,7 @@ CoraliteCollection.prototype.deleteItem = async function (value) {
     valuesByPath = this.listByPath[dirname]
     originalValue = this.collection[pathname]
   } else {
-    throw new Error('Valid pathname must be provided')
+    throw new CoraliteError('Valid pathname must be provided')
   }
 
   if (!originalValue) {
@@ -231,7 +234,7 @@ CoraliteCollection.prototype.updateItem = async function (value) {
   }
 
   if (!value || !value.path) {
-    throw new Error('Valid HTMLData object must be provided')
+    throw new CoraliteError('Valid HTMLData object must be provided')
   }
 
   const pathname = value.path.pathname
@@ -344,7 +347,9 @@ CoraliteCollection.prototype._loadByPath = async function (filepath) {
 
       await access(filepath)
     } catch {
-      throw new Error('Could not find collection item: ' + filepath)
+      throw new CoraliteError('Could not find collection item: ' + filepath, {
+        filePath: filepath
+      })
     }
   }
 

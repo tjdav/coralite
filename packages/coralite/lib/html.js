@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import pLimit from 'p-limit'
 import CoraliteCollection from './collection.js'
+import { CoraliteError } from './errors.js'
 
 /**
  * @import {
@@ -206,7 +207,9 @@ export function getHtmlFileSync (pathname) {
       return readFileSync(pathname, 'utf8')
     }
 
-    throw new Error('Unexpected filename extension "' + extension +'"')
+    throw new CoraliteError('Unexpected filename extension "' + extension +'"', {
+      filePath: pathname
+    })
   } catch (err) {
     throw err
   }
@@ -225,7 +228,9 @@ export async function getHtmlFile (pathname) {
       return await readFile(pathname, 'utf8')
     }
 
-    throw new Error('Unexpected filename extension "' + extension +'"')
+    throw new CoraliteError('Unexpected filename extension "' + extension +'"', {
+      filePath: pathname
+    })
   } catch (err) {
     throw err
   }
