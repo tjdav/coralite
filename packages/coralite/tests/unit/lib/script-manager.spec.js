@@ -1241,5 +1241,59 @@ describe('ScriptManager', () => {
         b: 2
       })
     })
+
+    it('should not externalize imports matching plugin names', async () => {
+      const sm = new ScriptManager()
+
+      // Create a dummy package in node_modules for esbuild to find
+      const nodeModulesPath = path.resolve('node_modules')
+      const dummyPath = path.resolve(nodeModulesPath, 'dummy-plugin-pkg')
+      if (!fs.existsSync(dummyPath)) {
+        fs.mkdirSync(dummyPath, { recursive: true })
+      }
+      fs.writeFileSync(path.resolve(dummyPath, 'package.json'), JSON.stringify({
+        name: 'dummy-plugin-pkg',
+        type: 'module',
+        main: 'index.js'
+      }))
+      fs.writeFileSync(path.resolve(dummyPath, 'index.js'), 'export default "dummy"')
+
+      try {
+        await sm.use({
+          name: 'dummy-plugin-pkg',
+          context: {
+            test: async () => {
+              // @ts-ignore
+              const { default: dummy } = await import('dummy-plugin-pkg')
+              return () => dummy
+            }
+          }
+        })
+
+        sm.registerComponent({
+          id: 'test',
+          script: { content: '() => {}' }
+        })
+
+        const result = await sm.compileAllInstances({
+          inst: {
+            componentId: 'test',
+            instanceId: 'inst'
+          }
+        }, 'development')
+
+        const chunkShared = result.manifest['chunk-shared']
+        const content = result.outputFiles[chunkShared].text
+
+        assert.ok(!content.includes('import("dummy-plugin-pkg")'), 'Should have bundled or transformed the import, not left it as a bare specifier')
+      } finally {
+        if (fs.existsSync(dummyPath)) {
+          fs.rmSync(dummyPath, {
+            recursive: true,
+            force: true
+          })
+        }
+      }
+    })
   })
 })

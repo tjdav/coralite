@@ -509,14 +509,6 @@ export default {
               }
             }
 
-            // Support virtual module imports for plugins by name
-            if (this.plugins.some(p => p.name === args.path)) {
-              return {
-                path: args.path,
-                external: true
-              }
-            }
-
             // Do not externalize if the entry point name actually matches a bare specifier
             if (Object.hasOwn(entryPoints, args.path)) {
               return null
