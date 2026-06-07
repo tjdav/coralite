@@ -7,30 +7,9 @@
   import { aggregate } from 'aggregation'
 
   export default defineComponent({
-    async data () {
+    async data (context) {
       return {
-        posts: await aggregate({
-          path: ['blog'],
-          component: 'coralite-post',
-          sort (a, b) {
-            let dateA = 0
-            let dateB = 0
-
-            if (a) {
-              dateA = a.page.meta.published_time
-            }
-
-            if (b) {
-              dateB = b.page.meta.published_time
-            }
-
-            return new Date(dateB) - new Date(dateA)
-          },
-          limit: 15,
-          pagination: {
-            maxVisible: 3
-          }
-        })
+        posts: await aggregate('blog-posts', context)
       }
     }
   })

@@ -22,7 +22,56 @@ export default defineConfig({
   },
   mode: 'development',
   plugins: [
-    aggregation,
+    aggregation([
+      {
+        name: 'blog-posts',
+        path: ['blog'],
+        page: 'blog.html',
+        component: 'coralite-post',
+        limit: 15,
+        sort (a, b) {
+          let dateA = 0
+          let dateB = 0
+
+          if (a && a.page && a.page.meta) {
+            dateA = a.page.meta.published_time
+          }
+
+          if (b && b.page && b.page.meta) {
+            dateB = b.page.meta.published_time
+          }
+
+          return new Date(dateB) - new Date(dateA)
+        },
+        pagination: {
+          maxVisible: 3
+        }
+      },
+      {
+        name: 'related-posts',
+        path: ['blog'],
+        component: 'coralite-related-post',
+        limit: 3,
+        filter (state, context) {
+          if (!context || !context.page) return true
+          return state.page.url.pathname !== context.page.url.pathname
+        },
+        sort (a, b) {
+          let dateA = 0
+          let dateB = 0
+
+          if (a && a.page && a.page.meta) {
+            dateA = a.page.meta.published_time
+          }
+
+          if (b && b.page && b.page.meta) {
+            dateB = b.page.meta.published_time
+          }
+
+          return new Date(dateB) - new Date(dateA)
+        }
+      }
+    ]),
     searchPlugin
   ]
 })

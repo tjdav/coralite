@@ -10,32 +10,11 @@
 
   export default defineComponent({
     async data (context) {
-      const postItems = await aggregate({
-        path: ['blog'],
-        component: 'coralite-related-post',
-        limit: 3,
-        filter (state) {
-          return state.page.url.pathname !== context.page.url.pathname
-        },
-        sort (a, b) {
-          let dateA = 0
-          let dateB = 0
-
-          if (a) {
-            dateA = a.page.meta.published_time
-          }
-
-          if (b) {
-            dateB = b.page.meta.published_time
-          }
-
-          return new Date(dateB) - new Date(dateA)
-        }
-      })
+      const postItems = await aggregate('related-posts', context)
 
       if (postItems) {
         return {
-          posts: `<ul>${postItems}</ul`
+          posts: `<ul>${postItems}</ul>`
         }
       }
 
