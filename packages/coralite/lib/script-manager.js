@@ -491,15 +491,23 @@ export default {
             // Check for Coralite internal modules first
             if (args.path.startsWith('coralite-component:') ||
               args.path.startsWith('coralite-script-module:') ||
-              args.path === 'chunk-shared' ||
-              args.path === 'coralite-shared') {
+              args.path === 'chunk-shared') {
               return null
             }
 
             if (args.path === 'coralite') {
+              const utilsPath = fileURLToPath(import.meta.resolve('./utils.js'))
+              const pluginPath = fileURLToPath(import.meta.resolve('./plugin.js'))
+
               return {
                 path: 'coralite',
-                namespace: 'coralite-virtual'
+                namespace: 'coralite-entry',
+                pluginData: {
+                  contents: `
+                    export { defineComponent } from '${utilsPath.replace(/\\/g, '/')}';
+                    export { definePlugin } from '${pluginPath.replace(/\\/g, '/')}';
+                  `
+                }
               }
             }
 
@@ -536,23 +544,6 @@ export default {
       {
         name: 'coralite-virtual-modules',
         setup: (pluginBuild) => {
-          pluginBuild.onLoad({
-            filter: /.*/,
-            namespace: 'coralite-virtual'
-          }, args => {
-            if (args.path === 'coralite') {
-              const utilsPath = fileURLToPath(import.meta.resolve('./utils.js'))
-              const pluginPath = fileURLToPath(import.meta.resolve('./plugin.js'))
-              return {
-                contents: `
-                  export { defineComponent } from '${utilsPath.replace(/\\/g, '/')}';
-                  export { definePlugin } from '${pluginPath.replace(/\\/g, '/')}';
-                `,
-                loader: 'js'
-              }
-            }
-          })
-
           pluginBuild.onResolve({ filter: /^virtual-entry-point:/ }, args => {
             const key = args.path.replace('virtual-entry-point:', '')
             if (entryPoints[key]) {
@@ -567,6 +558,14 @@ export default {
             filter: /.*/,
             namespace: 'coralite-entry'
           }, args => {
+            if (args.pluginData && args.pluginData.contents) {
+              return {
+                contents: args.pluginData.contents,
+                loader: 'js',
+                resolveDir: process.cwd()
+              }
+            }
+
             if (entryPoints[args.path]) {
               return {
                 contents: entryPoints[args.path],
