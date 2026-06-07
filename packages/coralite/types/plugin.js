@@ -39,19 +39,19 @@
 
 /**
  * @callback CoraliteClientPluginBeforeComponentRenderCallback - Callback triggered before a client component state proxy is created and rendered.
- * @param {CoraliteClientBeforeComponentSession} context
+ * @param {CoraliteClientBeforeComponentSession} context - The session context before component rendering.
  * @returns {void}
  */
 
 /**
  * @callback CoraliteClientPluginAfterComponentRenderCallback - Callback triggered after a client component DOM is updated.
- * @param {CoraliteClientAfterComponentSession} context
+ * @param {CoraliteClientAfterComponentSession} context - The session context after component rendering.
  * @returns {void}
  */
 
 /**
  * @callback CoraliteClientPluginDisconnectedCallback - Callback triggered when a client component is removed from the DOM.
- * @param {CoraliteClientDisconnectedSession} context
+ * @param {CoraliteClientDisconnectedSession} context - The session context when a component is disconnected.
  * @returns {void}
  */
 
@@ -72,7 +72,7 @@
 
 /**
  * @callback CoralitePluginBeforeComponentRenderCallback - Async callback triggered before a component is rendered.
- * @param {CoralitePluginBeforeComponentRenderContext} context
+ * @param {CoralitePluginBeforeComponentRenderContext} context - The context before component rendering.
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
@@ -95,7 +95,7 @@
 
 /**
  * @callback CoralitePluginAfterComponentRenderCallback - Async callback triggered after a component is rendered.
- * @param {CoralitePluginAfterComponentRenderContext} context
+ * @param {CoralitePluginAfterComponentRenderContext} context - The context after component rendering.
  * @returns {Promise<Object|void>|Object|void} A partial AST patch to be merged.
  * @async
  */
@@ -145,7 +145,7 @@
 
 /**
  * @callback CoralitePluginPageSetCallback - Async callback triggered when a page is created. Called with elements, state, and data.
- * @param {CoralitePluginPageSetContext} context
+ * @param {CoralitePluginPageSetContext} context - The context when a page is set.
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
@@ -162,7 +162,7 @@
 
 /**
  * @callback CoralitePluginPageUpdateCallback - Async callback triggered when a page is updated. Called with elements, new and old state.
- * @param {CoralitePluginPageUpdateContext} context
+ * @param {CoralitePluginPageUpdateContext} context - The context when a page is updated.
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
@@ -181,7 +181,7 @@
 
 /**
  * @callback CoralitePluginPageDeleteCallback - Async callback triggered when a page is deleted. Called with the deleted data.
- * @param {CoralitePluginPageDeleteContext} context
+ * @param {CoralitePluginPageDeleteContext} context - The context when a page is deleted.
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
@@ -195,7 +195,7 @@
 
 /**
  * @callback CoralitePluginComponentCallback - Async callback triggered for component-related events (set and update).
- * @param {CoralitePluginComponentContext} context
+ * @param {CoralitePluginComponentContext} context - The context for component-related events.
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
@@ -209,7 +209,7 @@
 
 /**
  * @callback CoralitePluginComponentDeleteCallback - Async callback triggered when a component is deleted.
- * @param {CoralitePluginComponentDeleteContext} context
+ * @param {CoralitePluginComponentDeleteContext} context - The context when a component is deleted.
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
@@ -226,7 +226,7 @@
 
 /**
  * @callback CoralitePluginBeforePageRenderCallback - Async callback triggered before a page has been rendered.
- * @param {CoralitePluginBeforePageRenderContext} context
+ * @param {CoralitePluginBeforePageRenderContext} context - The context before page rendering.
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */
@@ -241,7 +241,7 @@
 
 /**
  * @callback CoralitePluginBeforeBuildCallback - Async callback triggered before the build begins.
- * @param {CoralitePluginBeforeBuildContext} context
+ * @param {CoralitePluginBeforeBuildContext} context - The context before the build process begins.
  * @returns {Promise<{ options?: CoraliteBuildOptions }|void>|{ options?: CoraliteBuildOptions }|void}
  * @async
  */
@@ -256,7 +256,7 @@
 
 /**
  * @callback CoralitePluginAfterPageRenderCallback - Async callback triggered after a page has been rendered but before saving.
- * @param {CoralitePluginAfterPageRenderContext} context
+ * @param {CoralitePluginAfterPageRenderContext} context - The context after page rendering.
  * @returns {Promise<any[]|any|void>|any[]|any|void}
  * @async
  */
@@ -272,7 +272,7 @@
 
 /**
  * @callback CoralitePluginAfterBuildCallback - Async callback triggered when a build process completes (success or failure).
- * @param {CoralitePluginAfterBuildContext} context
+ * @param {CoralitePluginAfterBuildContext} context - The context after the build process completes.
  * @returns {Promise<Object|void>|Object|void} A partial state patch to be merged.
  * @async
  */

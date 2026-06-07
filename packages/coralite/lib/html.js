@@ -20,9 +20,9 @@ import CoraliteCollection from './collection.js'
  * @param {'page' | 'component'} options.type - Document types
  * @param {boolean} [options.recursive=false] - Whether to search recursively in subdirectories
  * @param {string[]} [options.exclude=[]] - Files or directories to exclude from search
- * @param {CoraliteCollectionEventSet} [options.onFileSet]
- * @param {CoraliteCollectionEventUpdate} [options.onFileUpdate]
- * @param {CoraliteCollectionEventDelete} [options.onFileDelete]
+ * @param {CoraliteCollectionEventSet} [options.onFileSet] - The callback triggered when a file is set in the collection.
+ * @param {CoraliteCollectionEventUpdate} [options.onFileUpdate] - The callback triggered when a file is updated in the collection.
+ * @param {CoraliteCollectionEventDelete} [options.onFileDelete] - The callback triggered when a file is deleted from the collection.
  * @param {CoraliteCollection} [options.collection] - Optional collection instance to populate
  * @param {LimitFunction} [options.limit] - Optional concurrency limiter
  * @param {boolean} [options.discoverOnly=false] - Whether to skip reading file content and only discover paths

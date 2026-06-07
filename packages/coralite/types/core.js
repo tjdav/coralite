@@ -156,23 +156,23 @@
 
 /**
  * @typedef {Object} CoraliteInstance
- * @property {CoraliteConfig} options
- * @property {CoraliteCollection} pages
- * @property {CoraliteCollection} components
- * @property {(pathOrOptions?: string | string[] | CoraliteBuildCallback, optionsOrCallback?: CoraliteBuildOptions | CoraliteBuildCallback, callback?: CoraliteBuildCallback) => Promise<CoraliteBuildResult[]>} build
- * @property {(savePath?: string | string[], saveOptions?: CoraliteBuildOptions) => Promise<CoraliteSaveResult[]>} save
- * @property {(root: CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[], options?: DomSerializerOptions) => string} transform
- * @property {(value: string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, volatile?: boolean }, buildId: string) => Promise<void>} addRenderQueue
- * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement
- * @property {(options: ComponentElementOptions, head?: boolean) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement
- * @property {Record<string, { hashedPath: string, text: string }>} outputFiles
- * @property {Object} _dependencyGraph
- * @property {Record<string, Set<string>>} _dependencyGraph.pageCustomElements
- * @property {Record<string, string>} _dependencyGraph.childCustomElements
- * @property {() => void} _clearDependencies
- * @property {(name: string, initialData: any) => Promise<any>} _triggerPluginHook
- * @property {(name: string, contextData: any) => Promise<any[]>} _triggerPluginAggregateHook
- * @property {Object} [source]
+ * @property {CoraliteConfig} options - The configuration options for the Coralite instance.
+ * @property {CoraliteCollection} pages - The collection of page documents.
+ * @property {CoraliteCollection} components - The collection of component documents.
+ * @property {(pathOrOptions?: string | string[] | CoraliteBuildCallback, optionsOrCallback?: CoraliteBuildOptions | CoraliteBuildCallback, callback?: CoraliteBuildCallback) => Promise<CoraliteBuildResult[]>} build - The function that builds the project or specific pages.
+ * @property {(savePath?: string | string[], saveOptions?: CoraliteBuildOptions) => Promise<CoraliteSaveResult[]>} save - The function that builds and saves the project or specific pages to disk.
+ * @property {(root: CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[], options?: DomSerializerOptions) => string} transform - The function that transforms an AST back into an HTML string.
+ * @property {(value: string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, volatile?: boolean }, buildId: string) => Promise<void>} addRenderQueue - The function that adds a page to the current render queue.
+ * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement - The function that retrieves all page paths using a specific custom element.
+ * @property {(options: ComponentElementOptions, head?: boolean) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement - The function that creates a component element from its definition.
+ * @property {Record<string, { hashedPath: string, text: string }>} outputFiles - The record of generated output files.
+ * @property {Object} _dependencyGraph - The internal dependency graph for the project.
+ * @property {Record<string, Set<string>>} _dependencyGraph.pageCustomElements - The mapping of custom elements to the pages that use them.
+ * @property {Record<string, string>} _dependencyGraph.childCustomElements - The mapping of child custom elements to their parent components.
+ * @property {() => void} _clearDependencies - The internal function to clear the dependency graph.
+ * @property {(name: string, initialData: any) => Promise<any>} _triggerPluginHook - The internal function to trigger a sequential plugin hook.
+ * @property {(name: string, contextData: any) => Promise<any[]>} _triggerPluginAggregateHook - The internal function to trigger an aggregated plugin hook.
+ * @property {Object} [source] - The framework source utilities and context.
  */
 
 export default {}

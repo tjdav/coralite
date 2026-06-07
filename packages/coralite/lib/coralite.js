@@ -32,7 +32,7 @@ import { createRenderer } from './renderer.js'
 /**
  * Factory function to create and initialize a Coralite instance.
  *
- * @param {CoraliteConfig} options
+ * @param {CoraliteConfig} options - The configuration options for the Coralite instance.
  * @returns {Promise<CoraliteInstance>} A fully initialized Coralite instance.
  */
 export async function createCoralite ({

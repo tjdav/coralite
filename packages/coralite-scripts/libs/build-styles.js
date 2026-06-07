@@ -12,7 +12,7 @@ import path from 'path'
 
 /**
  * Compiles SCSS and CSS files with optional PostCSS processing
- * @param {Object} options
+ * @param {Object} options - The configuration options for building styles.
  * @param {string[]} options.input - Array of input file paths
  * @param {string} options.output - Output directory for compiled CSS files
  * @param {Object} [options.processors] - Processor configurations

@@ -49,7 +49,7 @@ async function processMetadataElement (element, context, index) {
  * Supports static <title> and <meta> tags, as well as resolving dynamic custom
  * element slots inside the <head> segment to compute metadata.
  *
- * @param {Object} context -
+ * @param {Object} context - The context used to extract metadata from the document.
  * @param {ParseHTMLResult} context.elements - The parsed HTML elements including root
  * @param {CoralitePage} context.page - The global page object to store the extracted metadata
  * @param {Object.<string, any>} context.state - The global state object to store the extracted metadata

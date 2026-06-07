@@ -20,12 +20,12 @@ export function addPluginHook (hooks, name, callback) {
 /**
  * Executes a collecting plugin hook where the results are aggregated.
  *
- * @param {Object} options
- * @param {Object} options.app - Coralite instance
- * @param {Object} options.hooks - Registered hooks
- * @param {Object} options.serverGlobalContext - Global context
- * @param {string} options.name - Hook name
- * @param {any} options.contextData - Context data
+ * @param {Object} options - The options used to trigger the aggregated plugin hook.
+ * @param {Object} options.app - The global Coralite app instance.
+ * @param {Object} options.hooks - The collection of registered plugin hooks.
+ * @param {Object} options.serverGlobalContext - The global server-side context.
+ * @param {string} options.name - The name of the hook to trigger.
+ * @param {any} options.contextData - The data associated with the hook context.
  * @returns {Promise<any[]>} Aggregated results
  */
 export async function triggerPluginAggregateHook ({ app, hooks, serverGlobalContext, name, contextData }) {
@@ -58,12 +58,12 @@ export async function triggerPluginAggregateHook ({ app, hooks, serverGlobalCont
 /**
  * Executes all plugin callbacks registered under the specified hook name sequentially.
  *
- * @param {Object} options
- * @param {Object} options.app - Coralite instance
- * @param {Object} options.hooks - Registered hooks
- * @param {Object} options.serverGlobalContext - Global context
- * @param {string} options.name - Hook name
- * @param {any} options.initialData - Initial data
+ * @param {Object} options - The options used to trigger the plugin hook.
+ * @param {Object} options.app - The global Coralite app instance.
+ * @param {Object} options.hooks - The collection of registered plugin hooks.
+ * @param {Object} options.serverGlobalContext - The global server-side context.
+ * @param {string} options.name - The name of the hook to trigger.
+ * @param {any} options.initialData - The initial data to be modified by the hooks.
  * @returns {Promise<any>} Merged data
  */
 export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name, initialData }) {
@@ -95,10 +95,10 @@ export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name
 /**
  * Executes Phase 2 of plugin exports with the given instance context.
  *
- * @param {Object} options
- * @param {Object} options.serverGlobalContext - Global context
- * @param {Object} options.phase2Functions - Phase 2 functions
- * @param {Object} options.instanceContext - Instance context
+ * @param {Object} options - The options used to bind plugins.
+ * @param {Object} options.serverGlobalContext - The global server-side context.
+ * @param {Object} options.phase2Functions - The map of Phase 2 plugin functions to be bound.
+ * @param {Object} options.instanceContext - The specific instance context to bind the functions to.
  * @returns {Promise<Object>} Bound plugins
  */
 export async function bindPlugins ({ serverGlobalContext, phase2Functions, instanceContext }) {

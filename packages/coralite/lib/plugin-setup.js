@@ -8,12 +8,12 @@ import { addPluginHook } from './hooks.js'
 /**
  * Logic for initializing plugins.
  *
- * @param {Object} dependencies
- * @param {CoraliteInstance} dependencies.app
- * @param {CoralitePluginContext} dependencies.serverGlobalContext
- * @param {Object} dependencies.plugins
- * @param {ScriptManager} dependencies.scriptManager
- * @param {Object} dependencies.source
+ * @param {Object} dependencies - The dependencies required to initialize the plugins.
+ * @param {CoraliteInstance} dependencies.app - The global Coralite app instance.
+ * @param {CoralitePluginContext} dependencies.serverGlobalContext - The global server context for plugins.
+ * @param {Object} dependencies.plugins - The collection of registered plugins and hooks.
+ * @param {ScriptManager} dependencies.scriptManager - The script manager for handling client-side scripts.
+ * @param {Object} dependencies.source - The framework source utilities and context.
  * @returns {Promise<void>}
  */
 export async function setupPlugins ({

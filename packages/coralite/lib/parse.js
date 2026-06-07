@@ -220,7 +220,7 @@ function sortSlottedChildren (elements) {
  * Parses HTML string containing meta tags or generates Coralite module structure from markup.
  *
  * @param {string} string - HTML content containing meta tags or module markup
- * @param {Object} options
+ * @param {Object} options - The options for parsing the module.
  * @param {Array<string | Attribute>} options.ignoreByAttribute - An array of attribute names and values to ignore during parsing
  * @param {Array<string | Attribute>} [options.skipRenderByAttribute] - An array of attributes that exclude element from rendering
  * @param {CoraliteOnError} [options.onError] - Callback function for error and warning handling

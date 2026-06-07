@@ -19,6 +19,7 @@ import render from 'dom-serializer'
 /**
  * ScriptManager constructor function
  * @class
+ * @param {Object} options - The configuration options for the script manager.
  */
 export function ScriptManager (options = {}) {
   this.sharedFunctions = Object.create(null)
@@ -99,16 +100,16 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
 
 /**
  * Register shared functions for a component
- * @param {Object} options
- * @param {string} options.id - component identifier
- * @param {ScriptContent} [options.script={}] - Script content or function
- * @param {string} [options.filePath] - The source file path to map back to
- * @param {Array<Object>|null} [options.templateAST=null] - Parsed HTML template AST for the client side rendering
- * @param {Object|null} [options.templateValues=null] - Token positions for AST updates
- * @param {Object} [options.defaultValues={}] - Initial default state from setup()
- * @param {Object} [options.getters={}] - Component getters
- * @param {string} [options.styles=''] - Raw CSS string for the component
- * @param {Object.<string, Function>} [options.slots={}] - Computed slots
+ * @param {Object} options - The options used to register the component.
+ * @param {string} options.id - The component identifier.
+ * @param {ScriptContent} [options.script={}] - The script content or function associated with the component.
+ * @param {string} [options.filePath] - The source file path used to map back to the original source.
+ * @param {Array<Object>|null} [options.templateAST=null] - The parsed HTML template AST for client-side rendering.
+ * @param {Object|null} [options.templateValues=null] - The token positions for AST updates.
+ * @param {Object} [options.defaultValues={}] - The initial default state from setup().
+ * @param {Object} [options.getters={}] - The component getters.
+ * @param {string} [options.styles=''] - The raw CSS string for the component.
+ * @param {Object.<string, Function>} [options.slots={}] - The transformation functions for computed slots.
  */
 ScriptManager.prototype.registerComponent = function ({
   id,

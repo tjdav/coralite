@@ -10,7 +10,7 @@
  * @property {CoraliteAnyNode} [prev] - Previous sibling
  * @property {CoraliteAnyNode} [next] - Next sibling
  * @property {number} [parentChildIndex] - Position in parent's child list
- * @property {Object[]} [slots]
+ * @property {Object[]} [slots] - The projected slot content for the element.
  * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  * @property {boolean} [skipRender] - Mark element to be removed before rendering
  */
@@ -26,7 +26,7 @@
  * @property {CoraliteAnyNode} [prev] - Previous sibling
  * @property {CoraliteAnyNode} [next] - Next sibling
  * @property {number} [parentChildIndex] - Position in parent's child list
- * @property {Object[]} [slots]
+ * @property {Object[]} [slots] - The projected slot content for the element.
  * @property {boolean} [_markedForRemoval] - Mark element to be removed from stack
  * @property {boolean} [skipRender] - Mark element to be removed before rendering
  * @property {string} nodeName - The name of the node (uppercase tag name)

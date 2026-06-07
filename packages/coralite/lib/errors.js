@@ -26,10 +26,10 @@ export class CoraliteError extends Error {
 
 /**
  * Default error handler.
- * @param {Object} data
- * @param {'WARN' | 'ERR' | 'LOG'} data.level
- * @param {string} data.message
- * @param {Error} [data.error]
+ * @param {Object} data - The data object containing error details.
+ * @param {'WARN' | 'ERR' | 'LOG'} data.level - The severity level of the error or warning.
+ * @param {string} data.message - The descriptive message for the error or warning.
+ * @param {Error} [data.error] - The optional original error object for debugging purposes.
  */
 export function defaultOnError ({ level, message, error }) {
   if (level === 'ERR') {
@@ -46,9 +46,9 @@ export function defaultOnError ({ level, message, error }) {
 
 /**
  * Handles errors using an optional callback or the default handler.
- * @param {Object} options
- * @param {Function} [options.onErrorCallback]
- * @param {Object} options.data
+ * @param {Object} options - The options for handling the error.
+ * @param {Function} [options.onErrorCallback] - The optional custom error callback function.
+ * @param {Object} options.data - The error data to be handled.
  */
 export function handleError ({ onErrorCallback, data }) {
   if (onErrorCallback) {

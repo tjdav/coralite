@@ -12,10 +12,10 @@ import { parseHTML, parseModule } from './parse.js'
 /**
  * Factory for collection handlers.
  *
- * @param {Object} context
- * @param {CoraliteInstance} context.app
- * @param {Function} context.triggerHook
- * @param {CoraliteOnError} context.handleError
+ * @param {Object} context - The context containing shared dependencies for the handlers.
+ * @param {CoraliteInstance} context.app - The global Coralite app instance.
+ * @param {Function} context.triggerHook - The function used to trigger plugin hooks.
+ * @param {CoraliteOnError} context.handleError - The callback for handling errors during collection events.
  * @returns {Object}
  */
 export function createPageHandlers ({

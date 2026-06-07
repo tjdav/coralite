@@ -49,21 +49,21 @@
 
 /**
  * @callback CoraliteModulePropertiesFunction
- * @param {CoralitePluginContext} context
+ * @param {CoralitePluginContext} context - The plugin context used to resolve properties.
  * @returns {CoraliteModuleDefinitions | Promise<CoraliteModuleDefinitions> | CoraliteModulePropertiesFunction | Promise<CoraliteModulePropertiesFunction>}
  */
 
 /**
  * @callback CoraliteModuleDataFunction
- * @param {CoralitePluginContext} context
+ * @param {CoralitePluginContext} context - The plugin context used to generate component data.
  * @returns {Object | Promise<Object>}
  */
 
 /**
  * @callback CoraliteModuleGetterFunction
- * @param {CoraliteModuleDefinitions} state
- * @param {Object} [options]
- * @param {AbortSignal} [options.signal]
+ * @param {CoraliteModuleDefinitions} state - The current state used to compute the getter value.
+ * @param {Object} [options] - The configuration options for the getter.
+ * @param {AbortSignal} [options.signal] - The optional abort signal to cancel the operation.
  * @returns {any | Promise<any>}
  */
 

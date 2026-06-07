@@ -5,7 +5,7 @@
 /**
  * Generates the client-side runtime script for Coralite pages.
  *
- * @param {Object} options
+ * @param {Object} options - The options used to configure the client-side runtime.
  * @param {string} options.base - The base URL for assets.
  * @param {string} options.sharedChunkPath - The filename of the shared chunk.
  * @param {Object} options.chunkManifest - Manifest mapping component IDs to their chunk filenames.

@@ -58,15 +58,15 @@ import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from '.
 /**
  * Factory for the rendering pipeline.
  *
- * @param {Object} dependencies
- * @param {CoraliteInstance} dependencies.app
- * @param {ScriptManager} dependencies.scriptManager
- * @param {Object} dependencies.source
- * @param {Function} dependencies.evaluate
- * @param {CoraliteOnError} dependencies.handleError
- * @param {Object} dependencies.hooks
- * @param {any} dependencies.options
- * @param {Function} dependencies.createExecutionError
+ * @param {Object} dependencies - The dependencies required to create the renderer.
+ * @param {CoraliteInstance} dependencies.app - The global Coralite app instance.
+ * @param {ScriptManager} dependencies.scriptManager - The script manager for handling client-side scripts.
+ * @param {Object} dependencies.source - The framework source utilities and context.
+ * @param {Function} dependencies.evaluate - The function used to evaluate component scripts.
+ * @param {CoraliteOnError} dependencies.handleError - The callback for handling errors during rendering.
+ * @param {Object} dependencies.hooks - The collection of bound plugin hooks.
+ * @param {any} dependencies.options - The normalized configuration options for the framework.
+ * @param {Function} dependencies.createExecutionError - The factory function for creating detailed execution errors.
  * @returns {Object}
  */
 export function createRenderer ({

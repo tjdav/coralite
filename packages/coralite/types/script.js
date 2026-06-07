@@ -10,7 +10,7 @@
  * @typedef {Object} ScriptContent
  * @property {string} [content] - Script string content
  * @property {string} [setupContent] - Setup string content
- * @property {Object.<string, CoraliteModuleDefinition>} [state]
+ * @property {Object.<string, CoraliteModuleDefinition>} [state] - The initial state to be applied to the instance.
  * @property {number} [lineOffset] - Script offset number.
  * @property {string[]} [components] - Imperative components array.
  * @property {Object} [defaultValues] - Initial state from setup.

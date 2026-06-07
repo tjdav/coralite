@@ -15,7 +15,7 @@ let SourceTextModuleCache = null
 /**
  * Generates a custom module linker callback for the Node.js VM context.
  *
- * @param {Object} options
+ * @param {Object} options - The options used to create the module linker.
  * @param {CoraliteFilePath} options.path - The file path metadata of the component
  * @param {CoralitePluginContext} options.context - Contextual rendering data
  * @param {Object} options.source - Framework source context
@@ -118,7 +118,7 @@ export function createModuleLinker ({ path, context, source, plugins }) {
 /**
  * Parses a Coralite module script and evaluates it using SourceTextModule.
  *
- * @param {Object} options
+ * @param {Object} options - The options used for module evaluation in development mode.
  * @param {CoraliteModule} options.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} options.state - Replacement tokens for the component
  * @param {CoralitePage} options.page - The global page object
@@ -235,7 +235,7 @@ export async function evaluateDevelopment ({
 /**
  * Parses a Coralite module script and compiles it into JavaScript using esbuild.
  *
- * @param {Object} options
+ * @param {Object} options - The options used for module evaluation.
  * @param {CoraliteModule} options.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} options.state - Replacement tokens for the component
  * @param {CoralitePage} options.page - The global page object
@@ -364,7 +364,7 @@ export async function evaluateProduction ({
 
 /**
  * Evaluates a Coralite module script using the appropriate engine for the current mode.
- * @param {any} options - Evaluation options
+ * @param {any} options - The evaluation options for the module.
  */
 export async function evaluate (options) {
   if (options.mode === 'development') {

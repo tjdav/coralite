@@ -16,8 +16,8 @@ import {
 /**
  * Factory to create the component definition function.
  *
- * @param {Object} dependencies
- * @param {CoraliteInstance} dependencies.app
+ * @param {Object} dependencies - The dependencies required to create the component definition.
+ * @param {CoraliteInstance} dependencies.app - The global Coralite app instance.
  * @returns {Function}
  */
 export function createComponentDefinition ({ app }) {
