@@ -1,0 +1,17 @@
+<template id="test-comp">
+  <div id="leak">{{ leaked }}</div>
+  <div id="secret">{{ importedSecret }}</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  import * as myPlugin from 'my-plugin'
+
+  export default defineComponent({
+    data (context) {
+      return {
+        leaked: context.myFunc !== undefined,
+        importedSecret: myPlugin.myFunc()
+      }
+    }
+  })
+</script>

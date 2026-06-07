@@ -24,6 +24,8 @@ export async function setupPlugins ({
   source
 }) {
   const pluginsToInit = app.options.plugins
+  const allExportNames = new Set()
+
   for (const plugin of pluginsToInit) {
     if (plugin.server) {
       if (plugin.server.exports) {
@@ -45,6 +47,12 @@ export async function setupPlugins ({
 
         const phase2Obj = {}
         for (const prop in plugin.server.exports) {
+          if (allExportNames.has(prop)) {
+            throw new Error(`Coralite Error: Plugin export name conflict. The export name "${prop}" from plugin "${plugin.name}" is already defined by another plugin.`)
+          }
+
+          allExportNames.add(prop)
+
           if (typeof plugin.server.exports[prop] === 'function') {
             // @ts-ignore
             phase2Obj[prop] = await plugin.server.exports[prop](pluginContext)
