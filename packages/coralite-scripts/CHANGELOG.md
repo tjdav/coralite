@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.37.0
+
+> Comparing `coralite-scripts-v0.36.3` to `HEAD`
+
+**Summary:** 14 commits
+
+### ✨ Features
+
+- Improve path resolution security in source resolver (coralite-scripts) ([ad57077](https://codeberg.org/tjdavid/coralite/commit/ad5707739a1f57d317664ed74fa5e7b5c6e95280))
+- added skipped page tracking (coralite-scripts) ([a0f4fa8](https://codeberg.org/tjdavid/coralite/commit/a0f4fa8890e06db0b5a86944ed352d191014f335))
+- Skip website build if coralite compilation is skipped ([ed78de4](https://codeberg.org/tjdavid/coralite/commit/ed78de4c83c61397d2744d63493ee483f602f6e6))
+- advanced visual error reporting with source snippets and robust VM location recovery ([04982d9](https://codeberg.org/tjdavid/coralite/commit/04982d95bb510b3860f5f85e99b755427a381207))
+- visual error reporting with code snippets and source pointers ([9c3faf8](https://codeberg.org/tjdavid/coralite/commit/9c3faf88cda8c4066b17182aa52d4eede799579b))
+
+### 🐛 Bug Fixes
+
+- resolve all pnpm run lint errors\n\nSystematically addressed all lint errors across the repository by:\n\n- Removing unused variables, arguments, and imports.\n- Refactoring `catch (e)` to `catch` where the error object was unused.\n- Adding missing JSDoc descriptions in `eslint.config.js`.\n- Fixing indentation issues in documentation files.\n- Ensuring all unit tests pass after changes. ([632fa7d](https://codeberg.org/tjdavid/coralite/commit/632fa7dd67c4de87e936539f57dac84a5e2633ce))
+- Change error indicator from cyan tilde to green caret (build-utils) ([89a1e34](https://codeberg.org/tjdavid/coralite/commit/89a1e34be4d5032db0651e5760c7badf25567b17))
+- improve component debugging and sourcemap accuracy (core) ([799162a](https://codeberg.org/tjdavid/coralite/commit/799162ac96ca1bfd4cdb774e348f473c4b64d89d))
+
+### 📚 Documentation
+
+- add missing JSDoc descriptions to @params and @propertys ([d48c4a8](https://codeberg.org/tjdavid/coralite/commit/d48c4a8c9b983304ab9e41058a9dd95735387f77))
+
+### ♻️ Code Refactoring
+
+- rename HTMLData physical property to virtual ([0cd533d](https://codeberg.org/tjdavid/coralite/commit/0cd533d2adad84003ca29c0fdb95a3803aec7b5c))
+- convert Coralite class to async factory function ([0827da6](https://codeberg.org/tjdavid/coralite/commit/0827da6d04dadd5df2bf3a87dc8041128ca5c367))
+
+### 🧹 Chores
+
+- Update release scripts permissions ([a0764bd](https://codeberg.org/tjdavid/coralite/commit/a0764bd6065b686c6b04d9c946cc2db8c911d929))
+- Update executable permissions for coralite scripts binary (deps) ([363f6af](https://codeberg.org/tjdavid/coralite/commit/363f6afb1e311c6ee21ae2ae21650cfd939a21c9))
+- replace jsconfig.json with tsconfig.json and fix type errors ([49dfd0d](https://codeberg.org/tjdavid/coralite/commit/49dfd0db7c8181c1bf03845497d3890c880107e1))
+
+
 ## v0.36.3
 
 > Comparing `coralite-scripts-v0.36.2` to `HEAD`
