@@ -90,14 +90,14 @@ A component definition consists of four primary blocks:
 * **Rule**: These receive a **Read-Only Proxy** of the state. They must never mutate state and cannot be `async`.
 * **Reactivity**: Automatically re-evaluated when any underlying state dependency changes.
 
-#### 4. `script({ state, signal, refs, ...pluginContext })` (Client)
+#### 4. `script({ state, signal, refs, ...plugins })` (Client)
 
 * **Purpose**: The client-side controller for the component.
 * **Arguments** (Injected via Client Context):
-* `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
-* `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
-* `refs`: A dictionary of dynamically generated, globally unique IDs (e.g., `my-comp-0__btn`) for elements marked with the `ref` attribute (integrated into the Core framework).
-* `...pluginContext`: **Extensible Boundary.** Any active Coralite plugin that augments the `client.context` will inject its attributes directly into this destructured argument object.
+  * `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
+  * `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
+  * `refs`: A dictionary of dynamically generated, globally unique IDs (e.g., `my-comp-0__btn`) for elements marked with the `ref` attribute (integrated into the Core framework).
+  * `[pluginName | client.name]`: **Namespaced Plugin Context.** Injected context helpers from plugins are isolated under their namespace key (either the plugin `name` or `client.name`). For example, if a plugin has `client.name: 'event'` and defines `context: { bus: ... }`, the component's script block will receive it as `event.bus` (e.g., `script: ({ event }) => { event.bus.emit(...) }`).
 
 
 * **Usage**: All DOM events, imperative mutations, third-party library initializations, and side-effects live here.
@@ -136,7 +136,7 @@ Plugins use a strictly isomorphic API boundary, divided clearly into `server` (N
 
 ### 6.1 The Plugin API Schema
 
-The `definePlugin` function enforces the following schema:
+The `definePlugin` function enforces the following schema. A plugin consists of a server-side build lifecycle layer (`server`) and a client-side browser runtime lifecycle layer (`client`).
 
 ```javascript
 import { definePlugin } from 'coralite'
@@ -146,18 +146,67 @@ export default definePlugin({
   
   // SERVER: Strictly Node.js / Build-Time Execution
   server: {
+    config: { ... }, // Optional plugin-specific configuration settings
     exports: { ... }, // Two-Phase Curried functions for component data() blocks
-    components: [ ... ], // Array of paths to plugin-provided .html components
-    onPageSet: (ctx) => { ... }, // And other global SSR hooks...
-    onBeforeComponentRender: ({ state, componentId, instanceId, refs, textNodes, attributes, element, session }) => { ... },
-    onAfterComponentRender: ({ result, state, ...context }) => { ... }
+    components: [ ... ], // Array of string paths to plugin-provided .html components
+
+    // Server Build Hooks
+    onBeforeBuild: async ({ app, buildId, options, config }) => {
+      // Runs before the build process starts. Can return a partial options object to override build options.
+    },
+    onPageSet: async ({ elements, state, page, data, app, config }) => {
+      // Called when a new page is added to the collection.
+    },
+    onPageUpdate: async ({ elements, page, newValue, oldValue, app, config }) => {
+      // Called when a page document is updated.
+    },
+    onPageDelete: async ({ data, app, config }) => {
+      // Called when a page document is deleted.
+    },
+    onComponentSet: async ({ component, app, config }) => {
+      // Called when a component is added to the collection.
+    },
+    onComponentUpdate: async ({ component, app, config }) => {
+      // Called when a component document is updated.
+    },
+    onComponentDelete: async ({ component, app, config }) => {
+      // Called when a component is deleted.
+    },
+    onBeforePageRender: async ({ component, state, page, session, app, config }) => {
+      // Called before a page's AST tree is compiled.
+    },
+    onBeforeComponentRender: async ({ state, componentId, instanceId, refs, textNodes, attributes, page, element, session, app, config }) => {
+      // Called before a component is rendered. Can return a partial state object to merge.
+    },
+    onAfterComponentRender: async ({ result, state, componentId, instanceId, refs, textNodes, attributes, page, element, session, app, config }) => {
+      // Called after a component is rendered. Can return a partial AST node/array patch.
+    },
+    onAfterPageRender: async ({ result, session, app, config }) => {
+      // Called after a page is rendered, but before it is written to the filesystem.
+    },
+    onAfterBuild: async ({ results, error, duration, app, config }) => {
+      // Called when the build completes (succeeds or fails).
+    }
   },
 
   // CLIENT: Strictly Browser / Run-Time Execution
   client: {
+    config: { ... }, // Optional plugin-specific client-side configuration
     context: { ... }, // Client-side context injections (Two-Phase Currying)
-    onBeforeComponentRender: ({ state, instanceId, element, options }) => { ... },
-    onAfterComponentRender: (element) => { ... }
+    
+    // Client Runtime Hooks
+    setup: async ({ values, config }) => {
+      // Called when the plugin registers. Can return an object to merge into global context values.
+    },
+    onBeforeComponentRender: ({ state, instanceId, componentId, refs, element, options }) => {
+      // Called before the component state is proxied and rendered.
+    },
+    onAfterComponentRender: ({ state, instanceId, componentId, element, options }) => {
+      // Called after the component DOM is updated and stable.
+    },
+    onDisconnected: ({ state, instanceId, componentId, element, options }) => {
+      // Called when the component is removed from the DOM.
+    }
   }
 })
 ```
@@ -175,18 +224,69 @@ The `server.exports` property defines methods available to components **during t
 Plugins can intercept specific components during AST generation (Server) and DOM hydration (Client):
 
 * `onBeforeComponentRender`: Runs before tokens are replaced/proxied. Perfect for injecting variables into the local `state`.
-* **Server Payload**: AST Pointers (`refs`, `textNodes`, `attributes`).
-* **Client Payload**: Mutable State, Physical Element Reference.
+  * **Server Payload**: AST Pointers (`refs`, `textNodes`, `attributes`).
+  * **Client Payload**: Mutable State, Physical Element Reference.
 
 * `onAfterComponentRender`: Runs after the component is rendered.
-* **Server Payload**: The completed AST array (`result`).
-* **Client Payload**: Executes after the browser's microtask queue flushes the DOM.
+  * **Server Payload**: The completed AST array (`result`).
+  * **Client Payload**: Executes after the browser's microtask queue flushes the DOM.
 
-## 7. Asset Management (coralite.config.js)
+### 6.4 Client Context Injection (Two-Phase Currying)
+
+Client injections mapped in `client.context` use a curried setup:
+
+* **Phase 1 (Global Setup)**: `(globalContext) => ...` Runs exactly once when the plugin registers. Use this for shared plugin state.
+* **Phase 2 (Local Instance)**: `(instanceContext) => ...` Runs when a component mounts. Returns the actual utility injected into the script context.
+
+**Namespacing**: Injected context helpers are namespaced on the script argument object using either the plugin's `name` or `client.name` property. For example, if a plugin defines `name: 'store'` and has a context helper `fetch`, the component `script` block accesses it as `store.fetch(...)` rather than a flat global export.
+
+### 6.5 The Plugin Serialization Boundary
+**CRITICAL RULE:** Variables defined in the top-level scope of the plugin file or inside the plugin factory function (e.g., `export default function myPlugin(options) { ... }`) are NOT accessible in the `client` block. The framework serializes the `client` functions for the browser.
+*   **Phase 1 (`globalContext`)**: Use this scope to define shared state (e.g., caches) that must persist across all component instances in the browser.
+*   **Phase 2 (`instanceContext`)**: Use this scope for logic specific to a single component instance.
+
+## 7. Configuration (defineConfig)
+
+Coralite projects are configured using `defineConfig` exported from `coralite`. This helper validates the configuration object structure and options at startup.
+
+### 7.1 Required Properties
+*   `output` (string): The path to the output directory where built files will be placed.
+*   `components` (string): The path to the directory containing Coralite components.
+*   `pages` (string): The path to the directory containing pages that will be rendered.
+
+These strings must be non-empty.
+
+### 7.2 Optional Properties
+*   `plugins` (array): Array of plugin instances. Each plugin must be an object with a valid non-empty `name` string.
+*   `baseURL` (string): Base URL for asset paths (defaults to `/`).
+*   `assets` (array): Static assets to copy during the build.
+*   `externalStyles` (array of strings): Global stylesheets to inject into every page.
+*   `mode` (string): Build mode, either `'production'` or `'development'`.
+*   `projectRoot` (string): The root directory of the project.
+*   `ignoreByAttribute` (array): Attributes to ignore during parse.
+*   `skipRenderByAttribute` (array): Attributes to skip rendering.
+*   `onError` (function): Custom callback for handling errors and warnings.
+
+### 7.3 Schema Example
+```javascript
+import { defineConfig } from 'coralite';
+
+export default defineConfig({
+  output: './dist',
+  components: './src/components',
+  pages: './src/pages',
+  mode: 'production',
+  assets: [
+    { src: './src/assets/images', dest: 'assets/images' }
+  ]
+});
+```
+
+## 8. Asset Management
 
 The `assets` array in the configuration allows you to copy files or directories to the build output. **Prefer this over manually copying vendor files into the `public` directory.**
 
-### 7.1 Local File Resolution
+### 8.1 Local File Resolution
 If the asset object contains a `src` property, it copies from your local file system.
 ```javascript
 export default defineConfig({
@@ -196,7 +296,7 @@ export default defineConfig({
 });
 ```
 
-### 7.2 NPM Package Resolution
+### 8.2 NPM Package Resolution
 If `src` is missing, use `pkg` and `path` to resolve assets from `node_modules`.
 ```javascript
 export default defineConfig({
@@ -210,32 +310,20 @@ export default defineConfig({
 });
 ```
 
-### 6.4 Client Context Injection (Two-Phase Currying)
-
-Client injections mapped in `client.context` use a curried setup:
-
-* **Phase 1 (Global Setup)**: `(globalContext) => ...` Runs exactly once when the plugin registers. Use this for shared plugin state.
-* **Phase 2 (Local Instance)**: `(instanceContext) => ...` Runs when a component mounts. Returns the actual utility injected into the script context.
-
-### 6.5 The Plugin Serialization Boundary
-**CRITICAL RULE:** Variables defined in the top-level scope of the plugin file or inside the plugin factory function (e.g., `export default function myPlugin(options) { ... }`) are NOT accessible in the `client` block. The framework serializes the `client` functions for the browser.
-*   **Phase 1 (`globalContext`)**: Use this scope to define shared state (e.g., caches) that must persist across all component instances in the browser.
-*   **Phase 2 (`instanceContext`)**: Use this scope for logic specific to a single component instance.
-
-## 8. Built-In Plugins
+## 9. Built-In Plugins
 
 * **Metadata Plugin**: Extracts SEO data during the build phase.
 * **Static Asset Plugin**: Copies static assets to the build output folder.
 * **Testing Plugin**: Automates E2E testing preparation by duplicating all `ref` attributes to `data-testid` deterministically on both server and client.
 
-## 9. E2E Testing
+## 10. E2E Testing
 
 * **Readiness**: Await `window.__coralite_ready__` after navigation.
 * **Selectors**: Rely on `data-testid` generated by the **Testing Plugin** (e.g., `[data-testid="my-component-0__submit-btn"]`) for robust selectors.
 
-## 10. Form Integration and Interaction Patterns
+## 11. Form Integration and Interaction Patterns
 
-### 10.1 Toggleable Components (Checkbox/Radio)
+### 11.1 Toggleable Components (Checkbox/Radio)
 For components that act as filters or toggles, prefer native browser behaviors over manual JavaScript state toggling.
 *   **The Pattern**: Wrap the visual component in a `<label>` and link it to a hidden `<input>` using unique IDs.
 *   **Unique IDs**: Use Coralite's `instanceId` or `ref` system to generate unique IDs for `id` and `for` attributes.
@@ -247,7 +335,7 @@ For components that act as filters or toggles, prefer native browser behaviors o
     </template>
     ```
 
-### 10.2 Data Collection with FormData
+### 11.2 Data Collection with FormData
 When multiple components form a filter set or a form, wrap them in a `<form>` element and use the `FormData` API.
 *   **Reactivity**: Listen for the `change` event on the form to detect state updates from any child component.
 *   **Efficiency**: `FormData` automatically collects all values from named inputs, avoiding manual DOM traversal and individual attribute checking.
@@ -263,7 +351,7 @@ When multiple components form a filter set or a form, wrap them in a `<form>` el
     }
     ```
 
-### 10.3 State Synchronization
+### 11.3 State Synchronization
 If CSS styling depends on the host element's attributes (e.g., `filter-button[checked]`), manually sync the internal input state back to the host attribute during the `change` event.
 ```javascript
 form.addEventListener('change', () => {
@@ -273,3 +361,41 @@ form.addEventListener('change', () => {
   else btn.removeAttribute('checked');
 });
 ```
+
+## 12. Collections (CoraliteCollection)
+
+Coralite tracks pages and components in structured, queryable collections accessible on the Coralite application instance as `app.pages` and `app.components`.
+
+### 12.1 Collection Properties
+Each collection maintains three internal views:
+*   `list` (array of `CoraliteCollectionItem`): A flat list of all items in the collection.
+*   `listByPath` (object): Groupings of collection items by their folder path.
+*   `collection` (object): Direct map of unique identifiers (pathname or custom ID) to items.
+
+### 12.2 Callback Hooks
+During initialization, a collection registers callback hooks to handle document lifecycle events:
+*   `onSet(value)`: Triggers when a new document is added. Can return an object containing `{ value, id, state, type }` to customize mapping or abort insertion by returning a falsy value.
+*   `onUpdate(newValue, oldValue)`: Triggers when an existing document is updated. Can customize state or abort update by returning a falsy value.
+*   `onDelete(value)`: Triggers when a document is deleted.
+
+### 12.3 Key Methods
+*   `setItem(value)`: Adds or updates a page or component document. Supports string filepath or `HTMLData` objects.
+*   `deleteItem(value)`: Removes a document from the collection.
+*   `getItem(id)`: Retrieves a document by its ID or pathname.
+*   `getListByPath(dirname)`: Retrieves documents under a specific directory.
+
+## 13. Error Handling (CoraliteError)
+
+Coralite implements `CoraliteError` to encapsulate context about errors encountered during AST compilation, page rendering, or plugin execution.
+
+### 13.1 CoraliteError Context Properties
+Every `CoraliteError` exposes detailed diagnostic metadata:
+*   `message`: Description of the error.
+*   `componentId` (string): The custom tag name of the component where the error occurred.
+*   `filePath` (string): The path to the file containing the error.
+*   `instanceId` (string): The unique instance identifier of the component.
+*   `pagePath` (string): The path to the page currently being built.
+*   `line` (number): The line number in the source file.
+*   `column` (number): The column number in the source file.
+*   `stackFile` (string): The file name extracted from the stack trace.
+*   `cause` (Error): The original error instance (if wrapped).
