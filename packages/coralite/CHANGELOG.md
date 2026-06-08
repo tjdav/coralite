@@ -1,5 +1,92 @@
 # Changelog
 
+## v0.37.0
+
+> Comparing `coralite-v0.36.3` to `HEAD`
+
+**Summary:** 59 commits
+
+### ✨ Features
+
+- replace md5 with xxHash64 for manifest hashing ([b89a71d](https://codeberg.org/tjdavid/coralite/commit/b89a71dd6cafedf3d90bb27d619d78e957e3acb1))
+- reintegrate CoraliteError across the engine ([805a475](https://codeberg.org/tjdavid/coralite/commit/805a475af72347bf10a0158d61f72834e2ac7458))
+- force rebuild in development mode for renderer (coralite) ([e44c954](https://codeberg.org/tjdavid/coralite/commit/e44c9545bf50839e606ce21d8f1acdbd45bc185d))
+- integrate refs plugin into core ([43e81bd](https://codeberg.org/tjdavid/coralite/commit/43e81bd167b30c40c765d27d8f460bf04c218c2c))
+- Inject plugin name into client context ([9c9aeb2](https://codeberg.org/tjdavid/coralite/commit/9c9aeb251d45c3da3355ebb4f263d60e933a92d5))
+- advanced visual error reporting with source snippets and robust VM location recovery ([04982d9](https://codeberg.org/tjdavid/coralite/commit/04982d95bb510b3860f5f85e99b755427a381207))
+- visual error reporting with code snippets and source pointers ([9c3faf8](https://codeberg.org/tjdavid/coralite/commit/9c3faf88cda8c4066b17182aa52d4eede799579b))
+- replace coralite-plugin-aggregation with local implementation ([dd9522a](https://codeberg.org/tjdavid/coralite/commit/dd9522a81b8c0e724a54cabc0c53da8aa8dfb578))
+- add isomorphic e2e registry test and update plugin typedefs ([64cb3e0](https://codeberg.org/tjdavid/coralite/commit/64cb3e068829eb55f5651727f850bcba74d488e1))
+- implement Plugin Service Registry and parallel initialization ([dd3d39c](https://codeberg.org/tjdavid/coralite/commit/dd3d39ca29303e384f8ce0a87e80caf96f5e3f98))
+- Enhance documentation with asset management and plugin details ([ba50d9b](https://codeberg.org/tjdavid/coralite/commit/ba50d9b860488e4acd2145cf92275216030575b2))
+
+### 🐛 Bug Fixes
+
+- harden regular expressions against ReDoS in error handling ([508b67e](https://codeberg.org/tjdavid/coralite/commit/508b67e5c543fa8387e1bb26e545f2575d368fd0))
+- move build queue resolution after onBeforeBuild hooks ([885bad3](https://codeberg.org/tjdavid/coralite/commit/885bad35b867039c3a007b7b295f25ccb0b3152b))
+- move defaultValues out of compiled js and refactor base registration ([7fcce0f](https://codeberg.org/tjdavid/coralite/commit/7fcce0fa110578745bef8dc1911446a238a4b781))
+- implement robust importModuleDynamically for VM modules ([593bc82](https://codeberg.org/tjdavid/coralite/commit/593bc823a830d0c6c073923308ec72d689b28d67))
+- prevent server-side utility leakage into client bundle ([5797410](https://codeberg.org/tjdavid/coralite/commit/5797410b2057bec0029842185a91487d8602cf20))
+- prevent server.exports leaking into component data state ([c80400c](https://codeberg.org/tjdavid/coralite/commit/c80400c1b606f96570fc2560de9b7b10a056dced))
+- prevent plugin exports from leaking into component state (with physical fixtures) ([e2349ae](https://codeberg.org/tjdavid/coralite/commit/e2349aecbfa8b86922e021053e69bea6f7bc3f24))
+- resolve plugin name conflict and clean up dead code ([79f2e79](https://codeberg.org/tjdavid/coralite/commit/79f2e79d987d04e208ebac316473ff26df7c79e8))
+- prevent plugin name conflict from externalizing imports ([9512db1](https://codeberg.org/tjdavid/coralite/commit/9512db101d5332f421d1c548d2d940db301138ae))
+- resolve all tsc errors and export types from coralite ([75f5466](https://codeberg.org/tjdavid/coralite/commit/75f5466019807e0b565eb31a557133e82be42998))
+- resolve all pnpm run lint errors\n\nSystematically addressed all lint errors across the repository by:\n\n- Removing unused variables, arguments, and imports.\n- Refactoring `catch (e)` to `catch` where the error object was unused.\n- Adding missing JSDoc descriptions in `eslint.config.js`.\n- Fixing indentation issues in documentation files.\n- Ensuring all unit tests pass after changes. ([632fa7d](https://codeberg.org/tjdavid/coralite/commit/632fa7dd67c4de87e936539f57dac84a5e2633ce))
+- namespaced plugin context and cleanup phase 2 pollution ([292c95a](https://codeberg.org/tjdavid/coralite/commit/292c95ad84817c9abe05e467d11bc1a44d9a1355))
+- improve plugin export function types ([a4d3536](https://codeberg.org/tjdavid/coralite/commit/a4d353696971de5e778f3fee463eb0fba3192cd5))
+- handle page object correctly in head components ([cc2002d](https://codeberg.org/tjdavid/coralite/commit/cc2002d4f1e1b7edf44f345a4950721aa379ad50))
+- improve component debugging and sourcemap accuracy (core) ([799162a](https://codeberg.org/tjdavid/coralite/commit/799162ac96ca1bfd4cdb774e348f473c4b64d89d))
+- isolate server-side dependencies from client runtime ([cdd57ed](https://codeberg.org/tjdavid/coralite/commit/cdd57ed304203c4d1019a62de0ff2c75681dad9a))
+- implement "Void = Bypass" paradigm for slots (core) ([251d41c](https://codeberg.org/tjdavid/coralite/commit/251d41cf74e5634839bf1d8c8e3dd32a49bce957))
+- Correct indentation in registry test fixture HTML (coralite) ([15fdda2](https://codeberg.org/tjdavid/coralite/commit/15fdda28d5e3fecda10cc4baa8cdd162e8c5fa57))
+
+### ⚡ Performance Improvements
+
+- optimize dev-mode rendering performance ([b56b3e4](https://codeberg.org/tjdavid/coralite/commit/b56b3e44a71c00a342ab815fdd9d5ba879f5d816))
+- optimize AST node creation and cloning ([7650ca3](https://codeberg.org/tjdavid/coralite/commit/7650ca3cd1262f9f44a86f0a1b25d9e2fe4e1b18))
+
+### 📚 Documentation
+
+- update plugin context documentation and API schema (api) ([0c3968b](https://codeberg.org/tjdavid/coralite/commit/0c3968bdbe119fe106fdf0dd553d838ccb1a3bc1))
+- add missing JSDoc descriptions to @params and @propertys ([d48c4a8](https://codeberg.org/tjdavid/coralite/commit/d48c4a8c9b983304ab9e41058a9dd95735387f77))
+- update architecture documentation ([1e36a80](https://codeberg.org/tjdavid/coralite/commit/1e36a8019bc513b5b4f5fe15f3ca97aae9ae4073))
+- "Void = Bypass" for slots (core) ([b55cf10](https://codeberg.org/tjdavid/coralite/commit/b55cf1045090df324b329cce4a23ecc696476193))
+- refine plugin documentation and implementation for global context and config ([d0a8d86](https://codeberg.org/tjdavid/coralite/commit/d0a8d861cd5e3ac1331598f03bd4ee58b0ae80eb))
+
+### ♻️ Code Refactoring
+
+- Update type definition for XXHash64Raw in manifest (coralite) ([bdc7013](https://codeberg.org/tjdavid/coralite/commit/bdc7013af9d86d689bf4928a24302cdca6076006))
+- Update imports to use core and server utilities (benchmarks) ([f906471](https://codeberg.org/tjdavid/coralite/commit/f906471745a128a417993caa0e88c1d83df55225))
+- reoganise utilities (coralite) ([5b3e385](https://codeberg.org/tjdavid/coralite/commit/5b3e38597ee43c0aa818fcca1b84248e98bfad4c))
+- Ensure slots property is an array before processing ([601ca8e](https://codeberg.org/tjdavid/coralite/commit/601ca8e947c962bafbf207c8d2274ea03b96a8db))
+- simplify JSDoc type organization and exports ([34354c9](https://codeberg.org/tjdavid/coralite/commit/34354c9efba398c1ece54dc9ee513b0a45bccdb9))
+- Update plugin callback signatures for better type safety ([d281db0](https://codeberg.org/tjdavid/coralite/commit/d281db053a7ef30168ffaec1cc959889b806e293))
+- update plugin Phase 1 signature to single argument ([6704122](https://codeberg.org/tjdavid/coralite/commit/6704122ffa0fda48daabd555b7eac04304d3383a))
+- rename HTMLData physical property to virtual ([0cd533d](https://codeberg.org/tjdavid/coralite/commit/0cd533d2adad84003ca29c0fdb95a3803aec7b5c))
+- enhance server-side DOM API and ensure AST integrity ([df003b6](https://codeberg.org/tjdavid/coralite/commit/df003b6e90267804bba49529a2cb4b8f69823959))
+- removes numbered comments across various files ([861eeda](https://codeberg.org/tjdavid/coralite/commit/861eeda65924a6a2e25ef9881c97e3e1fcd0b412))
+- resolve JSDoc and type check nitpicks ([1e96f31](https://codeberg.org/tjdavid/coralite/commit/1e96f3175b6fce5d7247b6e600ac537019577b4f))
+- convert Coralite class to async factory function ([0827da6](https://codeberg.org/tjdavid/coralite/commit/0827da6d04dadd5df2bf3a87dc8041128ca5c367))
+- Include registry in library build process (coralite) ([ce4ae83](https://codeberg.org/tjdavid/coralite/commit/ce4ae834b49382137c8a5938c63dfb2455673998))
+- Update TypeScript target to ES2024 (coralite) ([824a700](https://codeberg.org/tjdavid/coralite/commit/824a700b5536f1f38a4a0197fb46e8cfd70dc6d3))
+- Disable strict mode in tsconfig.json (coralite) ([cb20ce6](https://codeberg.org/tjdavid/coralite/commit/cb20ce6fec09b66d7caf1c4c12e67bb34eeec215))
+
+### 🧹 Chores
+
+- Update coralite executable permissions (build) ([33abe6b](https://codeberg.org/tjdavid/coralite/commit/33abe6bcb4de1a5567914ebe465419d08251f0d2))
+- replace jsconfig.json with tsconfig.json and fix type errors ([49dfd0d](https://codeberg.org/tjdavid/coralite/commit/49dfd0db7c8181c1bf03845497d3890c880107e1))
+- Add @types/serialize-javascript dependency to coralite package ([339d8b5](https://codeberg.org/tjdavid/coralite/commit/339d8b588a781f63c6cee8df34fcb2b5505050e3))
+
+### 🔨 Other Changes
+
+- Implement ISR and Three-Phase Sealed Queue Architecture ([31df5e6](https://codeberg.org/tjdavid/coralite/commit/31df5e67371263bf038e83b1762abae496354182))
+- Refactor JSDoc types and improve public API definition ([2ceefa6](https://codeberg.org/tjdavid/coralite/commit/2ceefa61aae06aea9fc0410ab437dade3e505e05))
+- Refactor: Modularize Coralite engine into specialized factories ([a64ca3e](https://codeberg.org/tjdavid/coralite/commit/a64ca3eb6897b8fd007493e66459989a218c8b2d))
+- styles: add spacing ([4097b61](https://codeberg.org/tjdavid/coralite/commit/4097b61909a23ae27c4cc7269d541dbe13c5cc15))
+- Refactor plugin system to use sequential global context mutation ([31e9ea8](https://codeberg.org/tjdavid/coralite/commit/31e9ea8c82b7ebb9d8ad6e232abf5cb100036e93))
+
+
 ## v0.36.3
 
 > Comparing `coralite-v0.36.2` to `HEAD`
