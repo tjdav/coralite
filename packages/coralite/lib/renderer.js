@@ -453,13 +453,9 @@ export function createRenderer ({
           session,
           noHydration
         }
-        const cachedBoundPlugins = await hooks.bind(source.plugins, pluginContext)
-        for (const key in cachedBoundPlugins) {
-          const plugin = cachedBoundPlugins[key]
-          if (plugin !== null && typeof plugin === 'object') {
-            Object.assign(evaluationState, plugin)
-          }
-        }
+
+        await hooks.bind(source.plugins, pluginContext)
+
         scriptResult = await evaluate({
           module,
           element,

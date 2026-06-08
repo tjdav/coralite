@@ -9,7 +9,7 @@
   export default defineComponent({
     data (context) {
       return {
-        leaked: context.myFunc !== undefined,
+        leaked: context.myFunc !== undefined || context['my-plugin'] !== undefined,
         importedSecret: myPlugin.myFunc()
       }
     }

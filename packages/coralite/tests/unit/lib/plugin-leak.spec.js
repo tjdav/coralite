@@ -30,7 +30,6 @@ describe('Plugin Exports Leakage', async () => {
     })
 
     const results = await app.build()
-    console.log('BUILD RESULTS IS:', results)
     const indexResult = results.find(r => r.path.filename === 'index.html')
 
     // Check if leaked is false (we want it to be false)
