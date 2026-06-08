@@ -26,35 +26,56 @@ import portfinder from 'portfinder'
  */
 export async function resolveSource (reqPath, extension, config, coralite, memoryPageSource) {
   const candidates = []
+  const pagesRoot = normalize(config.pages)
+  const isPathInsideRoot = (rootPath, candidatePath) => {
+    const rel = relative(rootPath, candidatePath)
+    return rel !== '..' && !rel.startsWith(`..${sep}`) && rel !== '' ? true : candidatePath === rootPath
+  }
 
   // Ensure relative path doesn't start with / for joining
   const relPath = reqPath.startsWith('/') ? reqPath.slice(1) : reqPath
 
   if (reqPath.endsWith('/')) {
     const key = join(relPath, 'index.html')
-    candidates.push({
-      path: join(config.pages, key),
-      key
-    })
+    const candidatePath = normalize(join(config.pages, key))
+
+    if (isPathInsideRoot(pagesRoot, candidatePath)) {
+      candidates.push({
+        path: candidatePath,
+        key
+      })
+    }
   } else if (extension === '.html') {
     const key = relPath
-    candidates.push({
-      path: join(config.pages, key),
-      key
-    })
+    const candidatePath = normalize(join(config.pages, key))
+
+    if (isPathInsideRoot(pagesRoot, candidatePath)) {
+      candidates.push({
+        path: candidatePath,
+        key
+      })
+    }
   } else {
     // No extension, no trailing slash
     const key1 = relPath + '.html'
-    candidates.push({
-      path: join(config.pages, key1),
-      key: key1
-    })
+    const candidatePath1 = normalize(join(config.pages, key1))
+
+    if (isPathInsideRoot(pagesRoot, candidatePath1)) {
+      candidates.push({
+        path: candidatePath1,
+        key: key1
+      })
+    }
 
     const key2 = join(relPath, 'index.html')
-    candidates.push({
-      path: join(config.pages, key2),
-      key: key2
-    })
+    const candidatePath2 = normalize(join(config.pages, key1))
+
+    if (isPathInsideRoot(pagesRoot, candidatePath2)) {
+      candidates.push({
+        path: candidatePath2,
+        key: key2
+      })
+    }
   }
 
   for (const candidate of candidates) {
