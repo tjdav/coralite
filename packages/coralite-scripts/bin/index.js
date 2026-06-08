@@ -84,6 +84,7 @@ if (mode === 'dev') {
 
   let spinner
   let pageCount = 0
+  let skippedCount = 0
 
   try {
     let componentCount = 0
@@ -92,9 +93,21 @@ if (mode === 'dev') {
       spinner = ora('Building pages...').start()
     }
 
+    const updateSpinnerText = () => {
+      if (skippedCount > 0) {
+        spinner.text = `Building pages... (${pageCount} completed, ${skippedCount} skipped)`
+      } else {
+        spinner.text = `Building pages... (${pageCount} completed)`
+      }
+    }
+
     // compile website
     await coralite.build(async (result) => {
       if (result.status === 'skipped') {
+        skippedCount++
+        if (!options.verbose) {
+          updateSpinnerText()
+        }
         return
       }
 
@@ -109,7 +122,7 @@ if (mode === 'dev') {
         process.stdout.write(toTime() + toMS(result.duration) + dash + result.path.pathname + '\n')
       } else {
         pageCount++
-        spinner.text = `Building pages... (${pageCount} completed)`
+        updateSpinnerText()
       }
     })
 
@@ -131,7 +144,11 @@ if (mode === 'dev') {
     }
 
     if (!options.verbose) {
-      spinner.succeed(`Pages built (${pageCount} completed)`)
+      if (skippedCount > 0) {
+        spinner.succeed(`Pages built (${pageCount} completed, ${skippedCount} skipped)`)
+      } else {
+        spinner.succeed(`Pages built (${pageCount} completed)`)
+      }
       if (componentCount > 0) {
         ora(`Components built (${componentCount} completed)`).succeed()
       }
