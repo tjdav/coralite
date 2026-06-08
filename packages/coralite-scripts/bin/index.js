@@ -94,6 +94,10 @@ if (mode === 'dev') {
 
     // compile website
     await coralite.build(async (result) => {
+      if (result.status === 'skipped') {
+        return
+      }
+
       const relativeDir = relative(config.pages, result.path.dirname)
       const outDir = join(config.output, relativeDir)
       const outFile = join(outDir, result.path.filename)
