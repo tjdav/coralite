@@ -2,10 +2,10 @@ import { readFile, stat } from 'node:fs/promises'
 import xxhash from 'xxhash-wasm'
 
 /**
- * @typedef {import('xxhash-wasm').XXHashAPI['h64Raw']} XXHash64Raw
+ * @import { XXHashAPI } from 'xxhash-wasm'
  */
 
-/** @type {XXHash64Raw | undefined} */
+/** @type {XXHashAPI['h64Raw'] | undefined} */
 let hasher
 
 /** @type {Promise<void> | null} */
