@@ -1,4 +1,5 @@
 export * from './dom.js'
+export * from './errors.js'
 export * from './html.js'
 export * from './manifest.js'
 export * from './parse.js'
