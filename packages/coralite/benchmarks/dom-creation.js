@@ -1,4 +1,4 @@
-import { createCoraliteElement as optimizedCreate } from '../lib/dom.js'
+import { createCoraliteElement as optimizedCreate } from '../lib/utils/server/dom.js'
 
 // Legacy implementation (Object.defineProperties) for comparison
 function legacyCreate (node) {

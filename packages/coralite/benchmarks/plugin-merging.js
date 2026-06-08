@@ -1,5 +1,5 @@
 import { bench, run } from 'mitata'
-import { mergePluginState } from '../lib/utils.js'
+import { mergePluginState } from '../lib/utils/core.js'
 import { massiveState } from './utils/dummy-data.js'
 
 const patch = {

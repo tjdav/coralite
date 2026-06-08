@@ -1,6 +1,6 @@
 import { bench, run } from 'mitata'
-import { cloneNode } from '../lib/utils.js'
-import { parseHTML } from '../lib/parse.js'
+import { cloneNode } from '../lib/utils/core.js'
+import { parseHTML } from '../lib/utils/server/parse.js'
 import { massiveHTML } from './utils/dummy-data.js'
 
 console.log('Generating AST for cloning benchmark...')

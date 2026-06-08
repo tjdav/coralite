@@ -1,5 +1,5 @@
 import { bench, run } from 'mitata'
-import { replaceToken } from '../lib/server-utils.js'
+import { replaceToken } from '../lib/utils/server/server.js'
 
 const TOKEN_COUNT = 5000
 
