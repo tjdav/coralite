@@ -236,6 +236,7 @@
  * @property {CoraliteInstance} app - The global coralite app instance
  * @property {string} buildId - The unique identifier for the current build session.
  * @property {CoraliteBuildOptions} options - Configuration options for the build process
+ * @property {(value: string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, volatile?: boolean }) => Promise<void>} addRenderQueue - Adds a page or collection item to the current build queue.
  * @property {any} [config] - Plugin configuration object
  */
 

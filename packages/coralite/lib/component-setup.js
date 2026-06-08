@@ -138,6 +138,7 @@ export function createComponentDefinition ({ app }) {
           if (result === undefined) {
             result = slotContent
           }
+
           if (result === null || result === '' || (Array.isArray(result) && result.length === 0)) {
             if (root && 'slots' in root && Array.isArray(root.slots)) {
               root.slots = root.slots.filter(s => s.name !== name)
@@ -207,6 +208,7 @@ export function createComponentDefinition ({ app }) {
           if (!Object.hasOwn(state, key)) {
             continue
           }
+
           if (scriptTextContent.includes(key) || key.startsWith('ref_')) {
             args[key] = state.__script__.defaultValues[key] !== undefined
               ? state.__script__.defaultValues[key]
@@ -322,7 +324,7 @@ export async function registerBaseComponent ({
         override: true
       })
     }
-  } catch (_err) {
+  } catch {
     // Base evaluation is allowed to fail silently
   }
 }

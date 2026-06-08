@@ -47,7 +47,8 @@ import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from '.
  *  CoraliteOnError,
  *  CoraliteAnyNode,
  *  CoraliteCollectionItem,
- *  ComponentElementOptions
+ *  ComponentElementOptions,
+ *  HTMLData
  * } from '../types/index.js'
  */
 
@@ -1017,20 +1018,20 @@ export function createRenderer ({
       throw new CoraliteError(`addRenderQueue - buildId not found: "${buildId}"`)
     }
 
+    let item
     if (typeof value === 'string') {
       // @ts-ignore
-      const component = app.pages.getItem(value)
-      if (!component) {
+      item = app.pages.getItem(value)
+      if (!item) {
         throw new CoraliteError(`addRenderQueue - unexpected page ID: "${value}"`)
       }
-      queue.push(component)
     } else if (isCoraliteCollectionItem(value)) {
       // @ts-ignore
-      queue.push(await app.pages.setItem(value))
+      item = await app.pages.setItem(value)
     } else if (value && typeof value === 'object' && 'pathname' in value) {
       const pathname = value.pathname
-      /** @type {import('../types/index.js').HTMLData} */
-      const item = {
+      /** @type {HTMLData} */
+      const itemData = {
         type: 'page',
         content: value.content,
         virtual: true,
@@ -1042,16 +1043,18 @@ export function createRenderer ({
           dirname: dirname(pathname)
         }
       }
+
       // Set content again to ensure it's not deleted if it matches collection's onSet/onUpdate criteria
-      const setItem = await app.pages.setItem({
-        ...item,
+      item = await app.pages.setItem({
+        ...itemData,
         content: value.content
       })
+
       // Force properties directly on the item that resolvePageQueue might return
-      setItem.content = value.content
-      setItem.virtual = true
-      setItem.cacheKey = value.cacheKey
-      setItem.volatile = value.volatile
+      item.content = value.content
+      item.virtual = true
+      item.cacheKey = value.cacheKey
+      item.volatile = value.volatile
 
       // Also ensure the collection item itself has these
       const collectionItem = app.pages.getItem(pathname)
@@ -1061,9 +1064,10 @@ export function createRenderer ({
         collectionItem.cacheKey = value.cacheKey
         collectionItem.volatile = value.volatile
       }
-      if (!queue.includes(setItem)) {
-        queue.push(setItem)
-      }
+    }
+
+    if (item && !queue.includes(item)) {
+      queue.push(item)
     }
   }
 
@@ -1110,16 +1114,15 @@ export function createRenderer ({
       }
     }
 
-    // @ts-ignore
-    const queue = resolvePageQueue(app.pages, buildPath).slice()
-    renderQueues.set(buildId, queue)
+    renderQueues.set(buildId, [])
 
     let mappedBeforeBuild
     try {
       mappedBeforeBuild = await hooks.trigger('onBeforeBuild', {
         app,
         buildId,
-        options: buildOptions
+        options: buildOptions,
+        addRenderQueue: (value) => addRenderQueue(value, buildId)
       })
     } catch (errorHook) {
       const error = new CoraliteError(`Error in onBeforeBuild hook: ${errorHook.message}`, { cause: errorHook })
@@ -1131,6 +1134,17 @@ export function createRenderer ({
       throw error
     }
     buildOptions = mappedBeforeBuild.options || buildOptions
+
+    // @ts-ignore
+    const resolvedQueue = resolvePageQueue(app.pages, buildPath)
+    const queue = renderQueues.get(buildId)
+
+    for (let i = 0; i < resolvedQueue.length; i++) {
+      const item = resolvedQueue[i]
+      if (!queue.includes(item)) {
+        queue.push(item)
+      }
+    }
 
     // Seal the queue
     sealedQueues.add(buildId)

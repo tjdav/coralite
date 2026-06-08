@@ -47,10 +47,12 @@ export function createPageHandlers ({
       },
       meta: data.state?.page?.meta || {}
     }
+
     const state = {
       ...data.state,
       page
     }
+
     if (data.content === undefined) {
       return ({
         type: 'page',
@@ -61,6 +63,7 @@ export function createPageHandlers ({
         }
       })
     }
+
     const elements = parseHTML(data.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
 
     if (true) {
@@ -95,6 +98,7 @@ export function createPageHandlers ({
             }
           }
         }
+
         /** @type {Set<string>} */
         const customElements = pageCustomElements[name]
         customElements.add(data.path.pathname)
@@ -108,10 +112,12 @@ export function createPageHandlers ({
       data,
       app
     })
+
     const isProduction = app.options.mode === 'production'
     if (isProduction && !data.virtual) {
       delete data.content
     }
+
     return {
       type: 'page',
       value: {
@@ -131,12 +137,15 @@ export function createPageHandlers ({
     if (app.options.mode === 'production') {
       return newValue.result
     }
+
     let newCustomElements
+
     if (!newValue.result) {
       const res = await onFileSetLocal(newValue); newValue.result = res.value; newCustomElements = res.value.customElements
     } else {
       newCustomElements = newValue.result.customElements
     }
+
     const oldElements = (oldValue.result.customElements || []).slice()
     const mappedContext = await triggerHook('onPageUpdate', {
       elements: newValue.result,
@@ -145,7 +154,9 @@ export function createPageHandlers ({
       oldValue,
       app
     })
+
     newValue.result = mappedContext.elements; newValue = mappedContext.newValue
+
     for (let i = 0; i < newCustomElements.length; i++) {
       const name = newCustomElements[i].name
       let hasElement = false
@@ -154,6 +165,7 @@ export function createPageHandlers ({
           hasElement = true; oldElements.splice(j, 1); break
         }
       }
+
       if (!hasElement) {
         if (!pageCustomElements[name]) {
           pageCustomElements[name] = new Set()
@@ -181,10 +193,12 @@ export function createPageHandlers ({
     if (app.options.mode === 'production') {
       return
     }
+
     const res = await triggerHook('onPageDelete', {
       data: value,
       app
     })
+
     value = res.data
     if (value?.result?.customElements) {
       value.result.customElements.forEach(ce => {
@@ -203,18 +217,22 @@ export function createPageHandlers ({
     if (v.content === undefined) {
       v.content = await getHtmlFile(v.path.pathname)
     }
+
     const component = parseModule(v.content, {
       ignoreByAttribute: app.options.ignoreByAttribute,
       skipRenderByAttribute: app.options.skipRenderByAttribute,
       onError: handleError
     })
+
     if (!component.isTemplate) {
       return
     }
+
     const res = await triggerHook('onComponentSet', {
       component,
       app
     })
+
     return {
       type: 'component',
       id: res.component.id,
@@ -226,14 +244,17 @@ export function createPageHandlers ({
     if (v.content === undefined) {
       v.content = await getHtmlFile(v.path.pathname)
     }
+
     const component = parseModule(v.content, {
       ignoreByAttribute: app.options.ignoreByAttribute,
       skipRenderByAttribute: app.options.skipRenderByAttribute,
       onError: handleError
     })
+
     if (!component.isTemplate) {
       return
     }
+
     const res = await triggerHook('onComponentUpdate', {
       component,
       app
