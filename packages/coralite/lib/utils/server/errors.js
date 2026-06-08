@@ -30,7 +30,7 @@ export function createExecutionError (error, module, moduleComponent, page, inst
       if (stackLine.includes(CURRENT_FILE_URL) || stackLine.includes('packages/coralite/lib/errors.js')) {
         continue
       }
-      const match = stackLine.match(/\((.*):(\d+):(\d+)\)$/) || stackLine.match(/at (.*):(\d+):(\d+)$/)
+      const match = stackLine.match(/\(([^)]*):(\d+):(\d+)\)$/) || stackLine.match(/at\s+(.*?):(\d+):(\d+)$/)
       if (match) {
         stackFile = match[1]
         line = parseInt(match[2], 10)
@@ -83,7 +83,7 @@ export function createExecutionError (error, module, moduleComponent, page, inst
 
     // For import errors, try to find the problematic import line
     if (isImportError && !line && module.script) {
-      const match = error.message.match(/module '(.*)' does not provide an export named '(.*)'/)
+      const match = error.message.match(/module '([^']*)' does not provide an export named '([^']*)'/)
 
       if (match) {
         const [, moduleName, exportName] = match
