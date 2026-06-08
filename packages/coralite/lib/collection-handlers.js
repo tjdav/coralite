@@ -1,6 +1,7 @@
 import { dirname, join, relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseHTML, parseModule } from './utils/server/parse.js'
+import { registerBaseComponent } from './component-setup.js'
 
 /**
  * @import {
@@ -16,12 +17,18 @@ import { parseHTML, parseModule } from './utils/server/parse.js'
  * @param {CoraliteInstance} context.app - The global Coralite app instance.
  * @param {Function} context.triggerHook - The function used to trigger plugin hooks.
  * @param {CoraliteOnError} context.handleError - The callback for handling errors during collection events.
+ * @param {Function} [context.evaluate] - The evaluation function for components.
+ * @param {any} [context.scriptManager] - The script manager for components.
+ * @param {Function} [context.createSession] - The session creation function.
  * @returns {Object}
  */
 export function createPageHandlers ({
   app,
   triggerHook,
-  handleError
+  handleError,
+  evaluate,
+  scriptManager,
+  createSession
 }) {
   const { pageCustomElements, childCustomElements } = app._dependencyGraph
   const onFileSetLocal = async (data) => {
@@ -231,6 +238,15 @@ export function createPageHandlers ({
       component,
       app
     })
+
+    await registerBaseComponent({
+      component: res.component,
+      evaluate,
+      scriptManager,
+      createSession,
+      mode: app.options.mode
+    })
+
     return res.component
   }
 

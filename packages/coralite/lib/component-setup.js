@@ -6,6 +6,7 @@ import {
   isCoraliteTextNode,
   isCoraliteComment
 } from './utils/types.js'
+import { findAndExtractScript, findAndExtractProperties } from './utils/server/server.js'
 
 /**
  * @import {
@@ -54,11 +55,20 @@ export function createComponentDefinition ({ app }) {
       }
     }
 
+    const scriptDefaultValues = {}
+    if (attributes) {
+      for (const [key, schema] of Object.entries(attributes)) {
+        if (schema.default !== undefined) {
+          scriptDefaultValues[key] = schema.default
+        }
+      }
+    }
+
     state.__script__ = {
       attributes: serializableAttributes,
       getters: getters || {},
       state: {},
-      defaultValues: {},
+      defaultValues: scriptDefaultValues,
       slots: slots || {}
     }
 
@@ -210,5 +220,109 @@ export function createComponentDefinition ({ app }) {
     }
 
     return state
+  }
+}
+
+/**
+ * Performs base evaluation and registers a component in the script manager.
+ * Used during discovery and updates to lock in the pristine component definition.
+ *
+ * @param {Object} options - The registration options.
+ * @param {any} options.component - The component document.
+ * @param {Function} options.evaluate - The evaluation function.
+ * @param {any} options.scriptManager - The script manager instance.
+ * @param {Function} options.createSession - The session creation function.
+ * @param {string} options.mode - The current build mode.
+ * @returns {Promise<void>}
+ */
+export async function registerBaseComponent ({
+  component,
+  evaluate,
+  scriptManager,
+  createSession,
+  mode
+}) {
+  if (!component || !component.script) {
+    return
+  }
+
+  try {
+    const baseSession = createSession('base-evaluation')
+    const scriptResult = await evaluate({
+      module: component,
+      state: {},
+      page: {
+        url: { pathname: '' },
+        file: { pathname: '' },
+        meta: {}
+      },
+      root: null,
+      contextId: `base-${component.id}`,
+      session: baseSession,
+      mode
+    })
+
+    if (scriptResult && scriptResult.__script__) {
+      const scriptMeta = scriptResult.__script__
+      const templateAST = component.template?.children || []
+      const templateValues = component.values || {}
+      const stylesHTML = component._processedCss || ''
+
+      const scriptObj = {
+        ...scriptMeta,
+        content: 'function(){}',
+        state: scriptMeta.state || {},
+        slots: scriptMeta.slots || {}
+      }
+      let defaultValues = scriptMeta.defaultValues || {}
+      let extractedComponents = []
+
+      if (!component._extractedScript) {
+        component._extractedScript = findAndExtractScript(component.script)
+      }
+      const extractedScript = component._extractedScript
+
+      if (extractedScript) {
+        scriptObj.content = extractedScript.content
+        scriptObj.lineOffset = (component.lineOffset || 0) + extractedScript.lineOffset
+        extractedComponents = extractedScript.components || []
+      }
+
+      if (!component._extractedProperties) {
+        component._extractedProperties = findAndExtractProperties(component.script)
+      }
+      const extractedProperties = component._extractedProperties
+
+      if (extractedProperties) {
+        scriptObj.stateContent = extractedProperties.content
+        scriptObj.stateLineOffset = (component.lineOffset || 0) + extractedProperties.lineOffset
+      }
+
+      const declarativeComponents = (component.customElements || []).map(el => el.name)
+      const nestedComponents = [...new Set([...declarativeComponents, ...extractedComponents])]
+      scriptObj.components = nestedComponents
+
+      templateValues?.refs?.forEach(ref => {
+        const refKey = `ref_${ref.name}`
+        defaultValues[refKey] = ''
+        scriptObj.state[refKey] = ''
+      })
+      scriptObj.defaultValues = defaultValues
+
+      scriptManager.registerComponent({
+        id: component.id,
+        getters: scriptMeta.getters,
+        script: scriptObj,
+        filePath: component.filePath || (component.path && component.path.pathname),
+        templateAST,
+        templateValues,
+        defaultValues,
+        styles: stylesHTML,
+        slots: scriptMeta.slots,
+        override: true
+      })
+    }
+  } catch (_err) {
+    // Base evaluation is allowed to fail silently
   }
 }

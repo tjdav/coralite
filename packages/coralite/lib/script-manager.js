@@ -111,6 +111,7 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
  * @param {Object} [options.getters={}] - The component getters.
  * @param {string} [options.styles=''] - The raw CSS string for the component.
  * @param {Object.<string, Function>} [options.slots={}] - The transformation functions for computed slots.
+ * @param {boolean} [options.override=false] - Whether to override existing component definition.
  */
 ScriptManager.prototype.registerComponent = function ({
   id,
@@ -121,10 +122,12 @@ ScriptManager.prototype.registerComponent = function ({
   defaultValues = {},
   getters = {},
   styles = '',
-  slots = {}
+  slots = {},
+  override = false
 }) {
   // Initialize base object if it's the first time we are seeing this ID
-  if (!this.sharedFunctions[id]) {
+  const isNew = !this.sharedFunctions[id]
+  if (isNew) {
     this.sharedFunctions[id] = {
       id,
       components: [],
@@ -135,62 +138,61 @@ ScriptManager.prototype.registerComponent = function ({
   const target = this.sharedFunctions[id]
 
   if (hasObjectKeys(script)) {
-    target.script = script
+    if (isNew || override) {
+      target.script = script
+    }
   }
 
   if (hasObjectKeys(getters)) {
-    if (target.getters) {
-      target.getters = {
-        ...target.getters,
-        ...getters
-      }
-    } else {
+    if (isNew || override) {
       target.getters = getters
     }
   }
 
   if (templateAST) {
-    target.templateAST = templateAST
+    if (isNew || override) {
+      target.templateAST = templateAST
+    }
   }
 
   if (templateValues) {
-    target.templateValues = templateValues
+    if (isNew || override) {
+      target.templateValues = templateValues
+    }
   }
 
   if (styles) {
-    target.styles = styles
+    if (isNew || override) {
+      target.styles = styles
+    }
   }
 
   if (filePath) {
-    target.filePath = resolve(filePath)
+    if (isNew || override) {
+      target.filePath = resolve(filePath)
+    }
   }
 
 
   if (hasObjectKeys(defaultValues)) {
-    if (target.defaultValues) {
-      target.defaultValues = {
-        ...target.defaultValues,
-        ...defaultValues
-      }
-    } else {
+    if (isNew || override) {
       target.defaultValues = defaultValues
     }
   }
 
   if (hasObjectKeys(slots)) {
-    if (target.slots) {
-      target.slots = {
-        ...target.slots,
-        ...slots
-      }
-    } else {
+    if (isNew || override) {
       target.slots = slots
     }
   }
 
   if (script) {
     if (script.components?.length) {
-      target.components = mergeUniqueObjects(target.components, script.components)
+      if (isNew || override) {
+        target.components = script.components
+      } else {
+        target.components = mergeUniqueObjects(target.components, script.components)
+      }
     }
   }
 }

@@ -324,13 +324,6 @@ export function createRenderer ({
       const nestedComponents = [...new Set([...declarativeComponents, ...extractedComponents])]
       scriptObj.components = nestedComponents
 
-      const extractTokens = (nodes) => nodes?.flatMap(n => n.tokens?.map(t => t.name) || []) || []
-      const allTokens = new Set([...extractTokens(module.values?.attributes), ...extractTokens(module.values?.textNodes)])
-      for (const token of allTokens) {
-        if (defaultValues[token] === undefined && scriptResult[token] !== undefined) {
-          defaultValues[token] = scriptResult[token]
-        }
-      }
       templateValues?.refs?.forEach(ref => {
         const refKey = `ref_${ref.name}`
         defaultValues[refKey] = ''
@@ -501,13 +494,6 @@ export function createRenderer ({
         }))
 
         const componentDefaultValues = scriptResult.__script__.defaultValues || {}
-        if (componentState) {
-          for (const token of Object.keys(componentTokens)) {
-            if (componentDefaultValues[token] === undefined && componentState[token] !== undefined) {
-              componentDefaultValues[token] = componentState[token]
-            }
-          }
-        }
 
         const declarativeComponents = (module.customElements || []).map(el => el.name)
         const mergedComponents = Array.from(new Set([...declarativeComponents, ...extractedComponents]))
@@ -1390,6 +1376,7 @@ export function createRenderer ({
 
   return {
     outputFiles,
+    createSession: _createSession,
     addRenderQueue,
     createComponentElement,
     build

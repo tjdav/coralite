@@ -120,6 +120,10 @@ CoraliteCollection.prototype.setItem = async function (value) {
       if (typeof result.id === 'string' && result.id) {
         this.collection[result.id] = documentValue
       }
+
+      if (documentValue.result && typeof documentValue.result === 'object') {
+        documentValue.result.path = documentValue.path
+      }
     }
 
     // always update the collection with current pathname
@@ -300,6 +304,10 @@ CoraliteCollection.prototype.updateItem = async function (value) {
   }
   if (value.virtual !== undefined) {
     originalValue.virtual = value.virtual
+  }
+
+  if (originalValue.result && typeof originalValue.result === 'object') {
+    originalValue.result.path = originalValue.path
   }
 
   return originalValue

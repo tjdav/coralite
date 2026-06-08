@@ -16,7 +16,7 @@ import {
 import CoraliteCollection from './collection.js'
 
 // Refactored helper imports
-import { createComponentDefinition } from './component-setup.js'
+import { createComponentDefinition, registerBaseComponent } from './component-setup.js'
 import { setupPlugins } from './plugin-setup.js'
 import { createPageHandlers } from './collection-handlers.js'
 import { createRenderer } from './renderer.js'
@@ -345,7 +345,10 @@ export async function createCoralite ({
   const handlers = createPageHandlers({
     app,
     triggerHook: _triggerPluginHookLocal,
-    handleError: _handleErrorLocal
+    handleError: _handleErrorLocal,
+    evaluate: _evaluateLocal,
+    scriptManager,
+    createSession: renderer.createSession
   })
 
   app.components = await getHtmlFiles({
@@ -358,6 +361,17 @@ export async function createCoralite ({
   })
 
   await Promise.all(plugins.components.map(c => app.components.setItem(c)))
+
+  // Perform base evaluation for all discovered components
+  for (const component of app.components.list) {
+    await registerBaseComponent({
+      component: component.result,
+      evaluate: _evaluateLocal,
+      scriptManager,
+      createSession: renderer.createSession,
+      mode: app.options.mode
+    })
+  }
 
   app.pages = new CoraliteCollection({
     rootDir: app.options.pages,

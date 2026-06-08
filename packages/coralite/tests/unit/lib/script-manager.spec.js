@@ -351,13 +351,15 @@ describe('ScriptManager', () => {
 
       sm.registerComponent({
         id: 'test',
-        script: script1
+        script: script1,
+        override: true
       })
       assert.strictEqual(sm.sharedFunctions['test'].script, script1)
 
       sm.registerComponent({
         id: 'test',
-        script: script2
+        script: script2,
+        override: true
       })
       assert.strictEqual(sm.sharedFunctions['test'].script, script2)
     })
@@ -1223,7 +1225,8 @@ describe('ScriptManager', () => {
       manager.registerComponent({
         id: 'test',
         script: { content: '() => {}' },
-        defaultValues: { a: 1 }
+        defaultValues: { a: 1 },
+        override: true
       })
 
       // Register again with new defaultValues
@@ -1232,13 +1235,13 @@ describe('ScriptManager', () => {
         defaultValues: {
           b: 2,
           a: 3
-        }
+        },
+        override: false
       })
 
       const registered = manager.sharedFunctions['test']
       assert.deepStrictEqual(registered.defaultValues, {
-        a: 3,
-        b: 2
+        a: 1
       })
     })
 
