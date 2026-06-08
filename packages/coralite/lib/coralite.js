@@ -19,6 +19,7 @@ import { createComponentDefinition } from './component-setup.js'
 import { setupPlugins } from './plugin-setup.js'
 import { createPageHandlers } from './collection-handlers.js'
 import { createRenderer } from './renderer.js'
+import { initHasher } from './utils/server/manifest.js'
 
 /**
  * @import {
@@ -328,14 +329,17 @@ export async function createCoralite ({
     app.options.plugins.unshift(staticAssetPlugin(assets))
   }
 
-  await setupPlugins({
-    app,
-    // @ts-ignore
-    serverGlobalContext,
-    plugins,
-    scriptManager,
-    source
-  })
+  await Promise.all([
+    initHasher(),
+    setupPlugins({
+      app,
+      // @ts-ignore
+      serverGlobalContext,
+      plugins,
+      scriptManager,
+      source
+    })
+  ])
 
   const handlers = createPageHandlers({
     app,

@@ -101,6 +101,7 @@
     "p-limit": "^7.2.0",
     "postcss": "^8.5.15",
     "postcss-selector-parser": "^7.1.1",
-    "serialize-javascript": "^7.0.2"
+    "serialize-javascript": "^7.0.2",
+    "xxhash-wasm": "^1.1.0"
   }
 }

@@ -26,7 +26,17 @@ const coralite = await createCoralite({
     }]),
     providerPlugin,
     consumerServerPlugin,
-    consumerClientPlugin
+    consumerClientPlugin,
+    {
+      name: 'my-plugin',
+      server: {
+        exports: {
+          myFunc: () => {
+            return () => () => 'secret'
+          }
+        }
+      }
+    }
   ],
   onError: (error) => {
     console.log(`[CORALITE-${error.level}]: ${error.message}`)
