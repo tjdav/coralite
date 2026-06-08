@@ -1,6 +1,6 @@
 import render from 'dom-serializer'
-import { parseHTML } from './parse.js'
-import { relinkChildren } from './dom.js'
+import { parseHTML } from './utils/server/parse.js'
+import { relinkChildren } from './utils/server/dom.js'
 
 /**
  * @import { CoraliteElement, CoraliteAnyNode, CoraliteComponentRoot, Attribute, CoraliteModule, CoraliteSession } from '../types/index.js'

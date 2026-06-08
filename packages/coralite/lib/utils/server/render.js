@@ -5,11 +5,11 @@ import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
  *  CoraliteElement,
  *  CoraliteComponentRoot,
  *  CoraliteCollectionItem
- * } from '../types/index.js'
+ * } from '../../../types/index.js'
  */
 
 /**
- * @import CoraliteCollection from './collection.js'
+ * @import CoraliteCollection from '../../collection.js'
  */
 
 /**

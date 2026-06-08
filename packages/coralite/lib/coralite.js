@@ -1,10 +1,10 @@
-import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './html.js'
-import { parseHTML, parseModule } from './parse.js'
+import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './utils/server/html.js'
+import { parseHTML, parseModule } from './utils/server/parse.js'
 import { ScriptManager } from './script-manager.js'
 import { metadataPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative } from 'node:path'
-import { handleError, createExecutionError } from './errors.js'
+import { handleError, createExecutionError } from './utils/errors.js'
 import { transformNode } from './parser.js'
 import { evaluate } from './compiler.js'
 import {

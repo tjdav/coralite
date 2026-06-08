@@ -3,14 +3,14 @@ import { readdir, readFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { availableParallelism } from 'node:os'
 import pLimit from 'p-limit'
-import CoraliteCollection from './collection.js'
-import { CoraliteError } from './errors.js'
+import CoraliteCollection from '../../collection.js'
+import { CoraliteError } from '../errors.js'
 
 /**
  * @import {
  *  CoraliteCollectionEventSet,
  *  CoraliteCollectionEventUpdate,
- *  CoraliteCollectionEventDelete } from '../types/index.js'
+ *  CoraliteCollectionEventDelete } from '../../../types/index.js'
  * @import { LimitFunction } from 'p-limit'
  */
 

@@ -1,6 +1,6 @@
 import { dirname, join, relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { parseHTML, parseModule } from './parse.js'
+import { parseHTML, parseModule } from './utils/server/parse.js'
 
 /**
  * @import {

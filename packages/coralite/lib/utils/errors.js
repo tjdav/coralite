@@ -1,5 +1,8 @@
+
+import { parse as parseJS } from 'acorn'
+
 /**
- * @import { CoraliteErrorData } from '../types/index.js'
+ * @import { CoraliteModule, CoraliteCollectionItem, CoralitePage, CoraliteErrorData } from '../../types/index.js'
  */
 
 /**
@@ -86,12 +89,6 @@ export function handleError ({ onErrorCallback, data }) {
     defaultOnError(data)
   }
 }
-
-import { parse as parseJS } from 'acorn'
-
-/**
- * @import { CoraliteModule, CoraliteCollectionItem, CoralitePage } from '../types/index.js'
- */
 
 /**
  * Helper to create CoraliteError during component execution

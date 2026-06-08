@@ -3,9 +3,9 @@ import { simple as walkJS } from 'acorn-walk'
 import render from 'dom-serializer'
 import { sanitize } from 'isomorphic-dompurify'
 import { parseHTML } from './parse.js'
-import { isCoraliteNode } from './type-helper.js'
+import { isCoraliteNode } from '../types.js'
 import { createCoraliteTextNode, relinkChildren } from './dom.js'
-import { BOOLEAN_ATTRIBUTES } from './tags.js'
+import { BOOLEAN_ATTRIBUTES } from '../tags.js'
 
 /**
  * @import {
@@ -13,7 +13,7 @@ import { BOOLEAN_ATTRIBUTES } from './tags.js'
  * CoraliteModuleDefinition,
  * CoraliteTextNode,
  * ScriptContent
- * } from '../types/index.js'
+ * } from '../../../types/index.js'
  */
 
 const astCache = new Map()

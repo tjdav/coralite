@@ -11,7 +11,7 @@
  *  RawCoraliteComment,
  *  RawCoraliteDirective,
  *  RawCoraliteComponentRoot
- * } from '../types/index.js'
+ * } from '../../../types/index.js'
  */
 
 const ELEMENT_NODE = 1

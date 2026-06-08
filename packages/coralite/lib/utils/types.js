@@ -1,5 +1,13 @@
 /**
- * @import { CoraliteCollectionItem, CoraliteComment, CoraliteDirective, CoraliteComponentRoot, CoraliteElement, CoraliteTextNode, CoraliteAnyNode, CoraliteSlotElement } from '../types/index.js'
+ * @import {
+ *   CoraliteCollectionItem,
+ *   CoraliteComment,
+ *   CoraliteDirective,
+ *   CoraliteComponentRoot,
+ *   CoraliteElement,
+ *   CoraliteTextNode,
+ *   CoraliteAnyNode,
+ *   CoraliteSlotElement } from '../../types/index.js'
  */
 
 /**

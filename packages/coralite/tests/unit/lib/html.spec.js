@@ -4,7 +4,7 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { getHtmlFiles, getHtmlFile } from '../../../lib/html.js'
+import { getHtmlFiles, getHtmlFile } from '../../../lib/utils/server/html.js'
 import path from 'node:path'
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'

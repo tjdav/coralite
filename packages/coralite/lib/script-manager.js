@@ -2,9 +2,9 @@ import { build } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, addComponentAndDependencies, cleanAST, cleanValues, generateHydrationMap } from './utils.js'
-import { findAndExtractImperativeComponents, astTransformer } from './server-utils.js'
-import { CoraliteError } from './errors.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, addComponentAndDependencies, cleanAST, cleanValues, generateHydrationMap } from './utils/core.js'
+import { findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
+import { CoraliteError } from './utils/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname, relative } from 'node:path'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
@@ -497,7 +497,7 @@ export default {
             }
 
             if (args.path === 'coralite') {
-              const utilsPath = fileURLToPath(import.meta.resolve('./utils.js'))
+              const utilsPath = fileURLToPath(import.meta.resolve('./utils/core.js'))
               const pluginPath = fileURLToPath(import.meta.resolve('./plugin.js'))
 
               return {
@@ -514,7 +514,7 @@ export default {
 
             if (args.path === 'coralite/utils') {
               return {
-                path: fileURLToPath(import.meta.resolve('./utils.js'))
+                path: fileURLToPath(import.meta.resolve('./utils/index.js'))
               }
             }
 

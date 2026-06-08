@@ -1,11 +1,12 @@
+import { CoraliteError } from './errors.js'
+
 /**
  * @import {
  * CoraliteModule,
  * CoraliteComponent,
  * CoraliteComponentResult,
- * } from '../types/index.js'
+ * } from '../../types/index.js'
  */
-import { CoraliteError } from './errors.js'
 
 const KEBAB_REGEX = /[-|:]([a-z])/g
 

@@ -8,15 +8,15 @@ import {
   cloneModuleInstance,
   cloneComponentInstance,
   normalizeObjectFunctions
-} from './utils.js'
+} from './utils/core.js'
 import {
   replaceToken,
   findAndExtractScript,
   findAndExtractProperties,
   astTransformer
-} from './server-utils.js'
-import { getHtmlFile } from './html.js'
-import { parseHTML } from './parse.js'
+} from './utils/server/server.js'
+import { getHtmlFile } from './utils/server/html.js'
+import { parseHTML } from './utils/server/parse.js'
 import {
   findHeadAndBody,
   injectExternalStyles,
@@ -25,17 +25,17 @@ import {
   injectImportMap,
   removeElements,
   resolvePageQueue
-} from './render-helpers.js'
-import { generateClientRuntime } from './client-runtime.js'
-import { transformCss } from './style-transform.js'
+} from './utils/server/render.js'
+import { generateClientRuntime } from './utils/client/runtime.js'
+import { transformCss } from './utils/server/style.js'
 import { transformNode } from './parser.js'
-import { CoraliteError } from './errors.js'
-import { checkFileChange } from './manifest.js'
+import { CoraliteError } from './utils/errors.js'
+import { checkFileChange } from './utils/server/manifest.js'
 import {
   isCoraliteElement,
   isCoraliteCollectionItem
-} from './type-helper.js'
-import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './dom.js'
+} from './utils/types.js'
+import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './utils/server/dom.js'
 
 /**
  * @import {

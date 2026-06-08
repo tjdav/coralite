@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { parseHTML } from '../../../lib/parse.js'
-import { defaultOnError } from '../../../lib/errors.js'
+import { parseHTML } from '../../../lib/utils/server/parse.js'
+import { defaultOnError } from '../../../lib/utils/errors.js'
 
 describe('parseHTML warnings', () => {
   it('should call onError when an invalid custom element name is used', (t) => {

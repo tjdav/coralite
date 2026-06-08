@@ -3,7 +3,7 @@
  */
 
 import { basename, dirname } from 'path'
-import { CoraliteError } from './errors.js'
+import { CoraliteError } from './utils/errors.js'
 
 /**
  * Validates that a value is a non-empty string

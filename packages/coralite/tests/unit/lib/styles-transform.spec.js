@@ -1,8 +1,8 @@
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { transformCss } from '../../../lib/style-transform.js'
-import { parseModule } from '../../../lib/parse.js'
+import { transformCss } from '../../../lib/utils/server/style.js'
+import { parseModule } from '../../../lib/utils/server/parse.js'
 
 test('Style Transformation Logic', async (t) => {
   await t.test('parseModule correctly identifies root and descendant classes', () => {

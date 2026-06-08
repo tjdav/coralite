@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { parseModule } from '../../../lib/parse.js'
+import { parseModule } from '../../../lib/utils/server/parse.js'
 
 /**
  * Test suite for the improved getTokensFromString function

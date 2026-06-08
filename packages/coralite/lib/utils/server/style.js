@@ -2,7 +2,7 @@ import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
 
 /**
- * @import { CoraliteOnError } from '../types/index.js'
+ * @import { CoraliteOnError } from '../../../types/index.js'
  */
 
 /**

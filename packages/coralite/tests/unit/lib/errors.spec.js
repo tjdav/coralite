@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { CoraliteError, handleError, defaultOnError } from '../../../lib/errors.js'
+import { CoraliteError, handleError, defaultOnError } from '../../../lib/utils/errors.js'
 
 describe('errors.js', () => {
   describe('CoraliteError', () => {

@@ -6,7 +6,7 @@
  * } from '../types/plugin.js'
  */
 
-import { createReadOnlyProxy } from './utils.js'
+import { createReadOnlyProxy } from './utils/core.js'
 
 const BOOLEAN_ATTRIBUTES = new Set([
   'allowfullscreen',

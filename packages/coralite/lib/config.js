@@ -1,7 +1,7 @@
 /**
  * @import {CoraliteConfig} from '../types/index.js'
  */
-import { CoraliteError } from './errors.js'
+import { CoraliteError } from './utils/errors.js'
 
 /**
  * Validates and defines a Coralite configuration object

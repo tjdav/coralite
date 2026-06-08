@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { normalizeFunction } from '#lib'
-import { extractGlobals } from '../../../lib/server-utils.js'
+import { extractGlobals } from '../../../lib/utils/server/server.js'
 
 describe('normalizeFunction', () => {
   describe('Arrow Functions - should return as-is', () => {

@@ -1,11 +1,11 @@
-import { createReadOnlyProxy } from './utils.js'
+import { createReadOnlyProxy } from './utils/core.js'
 import { processTokenValue } from './parser.js'
-import { CoraliteError } from './errors.js'
+import { CoraliteError } from './utils/errors.js'
 import {
   isCoraliteElement,
   isCoraliteTextNode,
   isCoraliteComment
-} from './type-helper.js'
+} from './utils/types.js'
 
 /**
  * @import {

@@ -8,7 +8,7 @@ import {
   VALID_TAGS,
   RESERVED_ELEMENT_NAMES,
   isValidCustomElementName
-} from '../../../lib/tags.js'
+} from '../../../lib/utils/tags.js'
 
 describe('tags.js', () => {
   describe('VALID_TAGS', () => {

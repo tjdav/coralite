@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { parseHTML } from '../../../lib/parse.js'
+import { parseHTML } from '../../../lib/utils/server/parse.js'
 import render from 'dom-serializer'
 
 describe('Entity Handling Reproduction', () => {

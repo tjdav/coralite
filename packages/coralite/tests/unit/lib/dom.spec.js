@@ -5,7 +5,7 @@ import {
   createCoraliteTextNode,
   createCoraliteComment,
   createCoraliteComponent
-} from '../../../lib/dom.js'
+} from '../../../lib/utils/server/dom.js'
 
 describe('createCoraliteElement', () => {
   it('should enhance an element node with DOM state', () => {

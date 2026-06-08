@@ -61,6 +61,18 @@
     },
     "./types": {
       "types": "./dist/types/index.d.ts"
+    },
+    "./utils": {
+      "types": "./dist/lib/utils/index.d.ts",
+      "default": "./dist/lib/utils/index.js"
+    },
+    "./utils/server": {
+      "types": "./dist/lib/utils/server/index.d.ts",
+      "default": "./dist/lib/utils/server/index.js"
+    },
+    "./utils/client": {
+      "types": "./dist/lib/utils/client/index.d.ts",
+      "default": "./dist/lib/utils/client/index.js"
     }
   },
   "devDependencies": {

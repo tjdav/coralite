@@ -7,8 +7,8 @@ import {
   createCoraliteComponent,
   relinkChildren
 } from './dom.js'
-import { isValidCustomElementName, VALID_TAGS } from './tags.js'
-import { CoraliteError } from './errors.js'
+import { isValidCustomElementName, VALID_TAGS } from '../tags.js'
+import { CoraliteError } from '../errors.js'
 
 
 /**
@@ -83,7 +83,7 @@ function handleSlotOpenTag (element, attributes, templateId, slotElements) {
  *  CoraliteContentNode,
  *  Attribute,
  *  ParseHTMLResult,
- *  CoraliteOnError} from '../types/index.js'
+ *  CoraliteOnError} from '../../../types/index.js'
  */
 
 /**
