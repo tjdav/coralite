@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.37.0
+
+> Comparing `create-coralite-v0.36.3` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- resolve all pnpm run lint errors\n\nSystematically addressed all lint errors across the repository by:\n\n- Removing unused variables, arguments, and imports.\n- Refactoring `catch (e)` to `catch` where the error object was unused.\n- Adding missing JSDoc descriptions in `eslint.config.js`.\n- Fixing indentation issues in documentation files.\n- Ensuring all unit tests pass after changes. ([632fa7d](https://codeberg.org/tjdavid/coralite/commit/632fa7dd67c4de87e936539f57dac84a5e2633ce))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.37.0 ([45537fc](https://codeberg.org/tjdavid/coralite/commit/45537fc35c6e0bd61ffcf502accff466889bb06a))
+
+
 ## v0.36.3
 
 > Comparing `create-coralite-v0.36.2` to `HEAD`
