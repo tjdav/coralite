@@ -21,9 +21,10 @@ let SourceTextModuleCache = null
  * @param {CoralitePluginContext} options.context - Contextual rendering data
  * @param {Object} options.source - Framework source context
  * @param {Object} options.plugins - Bound plugins
+ * @param {Function} options.importModuleDynamically - The dynamic import callback
  * @returns {(specifier: string, referencingModule: Module, extra: { attributes: any }) => Promise<Module>}
  */
-export function createModuleLinker ({ path, context, source, plugins }) {
+export function createModuleLinker ({ path, context, source, plugins, importModuleDynamically }) {
   const componentDirURL = pathToFileURL(resolve(path.dirname)).href
 
   return async (specifier, referencingModule, extra) => {
@@ -45,7 +46,8 @@ export function createModuleLinker ({ path, context, source, plugins }) {
       }
 
       return new SourceTextModule(pluginExports, {
-        context: referencingModule.context
+        context: referencingModule.context,
+        importModuleDynamically
       })
     } else if (specifier == 'coralite/utils') {
       const utils = source.utils
@@ -60,7 +62,8 @@ export function createModuleLinker ({ path, context, source, plugins }) {
       }
 
       return new SourceTextModule(utilsExports, {
-        context: referencingModule.context
+        context: referencingModule.context,
+        importModuleDynamically
       })
     } else if (specifier === 'coralite') {
       let coraliteExports = 'const context = globalThis.__coralite_context__; export default context;'
@@ -74,7 +77,8 @@ export function createModuleLinker ({ path, context, source, plugins }) {
       coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
 
       return new SourceTextModule(coraliteExports, {
-        context: referencingModule.context
+        context: referencingModule.context,
+        importModuleDynamically
       })
     } else if (specifier.startsWith('.')) {
       // handle relative path
@@ -108,7 +112,8 @@ export function createModuleLinker ({ path, context, source, plugins }) {
       }
 
       return new SourceTextModule(exportModule, {
-        context: referencingModule.context
+        context: referencingModule.context,
+        importModuleDynamically
       })
     } catch (error) {
       throw new CoraliteError(error.message, {
@@ -203,20 +208,35 @@ export async function evaluateDevelopment ({
   const contextifiedObject = createContext(contextGlobals)
   const moduleComponent = getComponent(module.id)
 
+  let linker
+
+  const importModuleDynamically = async (specifier, referencingModule, extra) => {
+    const mod = await linker(specifier, referencingModule, extra)
+    if (mod.status === 'unlinked') {
+      await mod.link(linker)
+    }
+    if (mod.status === 'linked') {
+      await mod.evaluate()
+    }
+    return mod
+  }
+
+  linker = createModuleLinker({
+    path: moduleComponent.path,
+    context,
+    source,
+    plugins: cachedBoundPlugins,
+    importModuleDynamically
+  })
+
   const script = new SourceTextModule(module.script, {
     initializeImportMeta (meta) {
       meta.url = pathToFileURL(resolve(moduleComponent.path.pathname)).href
     },
+    importModuleDynamically,
     lineOffset: module.lineOffset || 0,
     identifier: pathToFileURL(resolve(moduleComponent.path.pathname)).href,
     context: contextifiedObject
-  })
-
-  const linker = createModuleLinker({
-    path: moduleComponent.path,
-    context,
-    source,
-    plugins: cachedBoundPlugins
   })
 
   await script.link(linker)
