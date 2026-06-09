@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.37.1
+
+> Comparing `coralite-scripts-v0.37.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- clear script cache on component changes in dev server ([2e90be0](https://codeberg.org/tjdavid/coralite/commit/2e90be03f20776d2219af8650945e3589c1abb32))
+
+
 ## v0.37.0
 
 > Comparing `coralite-scripts-v0.36.3` to `HEAD`
