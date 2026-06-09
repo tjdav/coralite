@@ -49,6 +49,9 @@ jobs:
           pnpm config set fetch-retries 0
           pnpm config set fetch-timeout 600000
 
+          # Disable automatic package manager version management to prevent fetching pnpm from Codeberg
+          pnpm config set manage-package-manager-versions false
+
       - name: Publish to Codeberg
         run: |
           # Check if private
