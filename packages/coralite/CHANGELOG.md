@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.37.1
+
+> Comparing `coralite-v0.37.0` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- clear script cache on component changes in dev server ([2e90be0](https://codeberg.org/tjdavid/coralite/commit/2e90be03f20776d2219af8650945e3589c1abb32))
+- robust filesystem operations in staticAssetPlugin (plugins) ([b6aa2c3](https://codeberg.org/tjdavid/coralite/commit/b6aa2c3f5955d608d5a34000dbcd89223dbf3c56))
+
+
 ## v0.37.0
 
 > Comparing `coralite-v0.36.3` to `HEAD`
