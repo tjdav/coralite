@@ -212,10 +212,10 @@ export async function createCoralite ({
     createExecutionError
   })
 
-  // --- Public API Population ---
-
   Object.assign(app, {
-    outputFiles: renderer.outputFiles,
+    get outputFiles () {
+      return renderer.outputFiles
+    },
     createComponentElement: renderer.createComponentElement,
     build: renderer.build,
     /**
@@ -291,6 +291,7 @@ export async function createCoralite ({
     },
 
     addRenderQueue: renderer.addRenderQueue,
+    clearCache: renderer.clearCache,
 
     _triggerPluginAggregateHook: _triggerPluginAggregateHookLocal,
     _triggerPluginHook: _triggerPluginHookLocal,

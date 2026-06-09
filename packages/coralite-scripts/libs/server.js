@@ -496,6 +496,7 @@ async function server (config, options) {
         }
 
         pageCache.clear()
+        coralite.clearCache()
 
         isCompiling = true
         let dash = colours.gray(' ─ ')

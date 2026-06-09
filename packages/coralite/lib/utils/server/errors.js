@@ -30,7 +30,9 @@ export function createExecutionError (error, module, moduleComponent, page, inst
       if (stackLine.includes(CURRENT_FILE_URL) || stackLine.includes('packages/coralite/lib/errors.js')) {
         continue
       }
+
       const match = stackLine.match(/\(([^)]*):(\d+):(\d+)\)$/) || stackLine.match(/at\s+(.*?):(\d+):(\d+)$/)
+
       if (match) {
         stackFile = match[1]
         line = parseInt(match[2], 10)

@@ -10,6 +10,20 @@ import {
 import { isValidCustomElementName, VALID_TAGS } from '../tags.js'
 import { CoraliteError } from '../errors.js'
 
+/**
+ * @import {
+ *  CoraliteToken,
+ *  CoraliteModule,
+ *  CoraliteTextNode,
+ *  CoraliteElement,
+ *  CoraliteModuleSlotElement,
+ *  CoraliteComponentValues,
+ *  CoraliteComponentRoot,
+ *  CoraliteContentNode,
+ *  Attribute,
+ *  ParseHTMLResult,
+ *  CoraliteOnError} from '../../../types/index.js'
+ */
 
 /**
  * @internal
@@ -70,21 +84,6 @@ function handleSlotOpenTag (element, attributes, templateId, slotElements) {
     slotElements[templateId][name] = slot
   }
 }
-
-/**
- * @import {
- *  CoraliteToken,
- *  CoraliteModule,
- *  CoraliteTextNode,
- *  CoraliteElement,
- *  CoraliteModuleSlotElement,
- *  CoraliteComponentValues,
- *  CoraliteComponentRoot,
- *  CoraliteContentNode,
- *  Attribute,
- *  ParseHTMLResult,
- *  CoraliteOnError} from '../../../types/index.js'
- */
 
 /**
  * Parse HTML content and return a CoraliteComponent object representing the parsed component structure

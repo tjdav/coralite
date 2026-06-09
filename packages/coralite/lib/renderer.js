@@ -313,6 +313,7 @@ export function createRenderer ({
         if (!moduleComponent.result._extractedProperties) {
           moduleComponent.result._extractedProperties = findAndExtractProperties(module.script)
         }
+
         const extractedProperties = moduleComponent.result._extractedProperties
 
         if (extractedProperties) {
@@ -330,6 +331,7 @@ export function createRenderer ({
         defaultValues[refKey] = ''
         scriptObj.state[refKey] = ''
       })
+
       scriptObj.defaultValues = defaultValues
 
       scriptManager.registerComponent({
@@ -368,10 +370,12 @@ export function createRenderer ({
     if (!moduleComponent || !moduleComponent.result) {
       return
     }
+
     const componentId = moduleComponent.result.id
     if (!contextId) {
       contextId = session.generateId(componentId)
     }
+
     const instanceId = contextId
     let componentState = { ...state }
     if (head) {
@@ -487,9 +491,11 @@ export function createRenderer ({
         const templateAST = moduleComponent.result.template.children
         const templateValues = moduleComponent.result.values
         const componentTokens = {}
+
         module.values.attributes.forEach(item => item.tokens.forEach(t => {
           componentTokens[t.name] = true
         }))
+
         module.values.textNodes.forEach(item => item.tokens.forEach(t => {
           componentTokens[t.name] = true
         }))
@@ -592,6 +598,7 @@ export function createRenderer ({
 
       const childContextId = session.generateId(customElement.name)
       const currentProperties = session.state[childContextId] || {}
+
       let childState = { ...state }
       if (typeof customElement.attribs === 'object') {
         const attribValues = cleanKeys(customElement.attribs)
@@ -606,8 +613,10 @@ export function createRenderer ({
           ...currentProperties
         }
       }
+
       session.state[childContextId] = childState
       const childNoHydration = noHydration || (customElement.attribs && 'no-hydration' in customElement.attribs)
+
       createComponentTasks.push(createComponentElement({
         id: customElement.name,
         state: childState,
@@ -635,20 +644,22 @@ export function createRenderer ({
           if (parent && parent.children) {
             const idx = parent.children.indexOf(customElement)
             if (idx !== -1) {
-              // @ts-ignore
               const children = Array.isArray(childComponentElement) ? childComponentElement : childComponentElement.children
               parent.children.splice(idx, 1, ...children)
+
               relinkChildren(parent)
             }
           }
         } else {
-          // @ts-ignore
           const children = Array.isArray(childComponentElement) ? childComponentElement : childComponentElement.children
           customElement.children = children
+
           relinkChildren(customElement)
+
           if (!customElement.attribs) {
             customElement.attribs = {}
           }
+
           customElement.attribs['data-cid'] = childContextId
           session.componentTags.add(customElement.name)
         }
@@ -659,6 +670,7 @@ export function createRenderer ({
 
     if (noHydration) {
       const stack = [...result.children]
+
       while (stack.length > 0) {
         const node = stack.pop()
         if (node.type === 'tag') {
@@ -716,6 +728,7 @@ export function createRenderer ({
         }
 
       const noHydration = customElement.attribs && 'no-hydration' in customElement.attribs
+
       tasks.push(createComponentElement({
         id: customElement.name,
         state: mappedSessionObject.state[contextId],
@@ -742,21 +755,34 @@ export function createRenderer ({
           const parent = customElement.parent
           if (parent && parent.children) {
             const elementIndex = parent.children.indexOf(customElement)
+
             if (elementIndex !== -1) {
-              // @ts-ignore
-              const children = Array.isArray(componentElement) ? componentElement : componentElement.children
-              parent.children.splice(elementIndex, 1, ...children)
-              relinkChildren(parent)
+              let children = componentElement
+
+              if ('children' in componentElement && Array.isArray(componentElement.children)) {
+                children = componentElement.children
+              }
+
+              if (Array.isArray(children)) {
+                parent.children.splice(elementIndex, 1, ...children)
+
+                relinkChildren(parent)
+              }
             }
           }
         } else {
-          // @ts-ignore
-          const children = Array.isArray(componentElement) ? componentElement : componentElement.children
-          customElement.children = children
+          if (Array.isArray(componentElement)) {
+            customElement.children = componentElement
+          } else if ('children' in componentElement && Array.isArray(componentElement.children)) {
+            customElement.children = componentElement.children
+          }
+
           relinkChildren(customElement)
+
           if (!customElement.attribs) {
             customElement.attribs = {}
           }
+
           customElement.attribs['data-cid'] = contextId
           mappedSessionObject.componentTags.add(customElement.name)
         }
@@ -793,16 +819,21 @@ export function createRenderer ({
               })()
             }
           }
+
           pageItem.content = content
+
           const elements = parseHTML(content, normalizedOptions.ignoreByAttribute, normalizedOptions.skipRenderByAttribute, handleError)
+
           pageContext = {
             ...originalDocument.page,
             meta: { ...(originalDocument.page?.meta || {}) }
           }
+
           const pageState = {
             ...originalDocument.state,
             page: pageContext
           }
+
           const mappedContext = await hooks.trigger('onPageSet', {
             elements,
             state: pageState,
@@ -810,11 +841,12 @@ export function createRenderer ({
             data: pageItem,
             app
           })
-          // @ts-ignore
+
           const fullPath = Object.assign({}, mappedContext.data.path, {
             pages: normalizedOptions.path.pages,
             components: normalizedOptions.path.components
           })
+
           component = {
             state: { ...mappedContext.state },
             page: mappedContext.page,
@@ -833,8 +865,8 @@ export function createRenderer ({
 
         Object.assign(component.state, state)
         const session = _createSession(buildId)
-        // @ts-ignore
         session.mode = normalizedOptions.mode
+
         const mappedSession = await hooks.trigger('onBeforePageRender', {
           component,
           state,
@@ -842,21 +874,27 @@ export function createRenderer ({
           session,
           app
         })
+
         const mappedComponent = mappedSession.component
         const mappedSessionObject = mappedSession.session
+
         state = mappedSession.state
-        // @ts-ignore
         mappedSessionObject.mode = normalizedOptions.mode
+
         removeElements(mappedComponent.tempElements, false)
+
         await _processCustomElementsInPage(mappedComponent, originalDocument, state, mappedSessionObject, pageContext)
+
         const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
 
         if (normalizedOptions.externalStyles && normalizedOptions.externalStyles.length > 0) {
           injectExternalStyles(mappedComponent.root, headElement, normalizedOptions.externalStyles)
         }
+
         if (mappedSessionObject.styles.size > 0) {
           injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles)
         }
+
         if (mappedSessionObject.componentTags.size > 0) {
           const targetElement = headElement || bodyElement || mappedComponent.root
           const layoutStyleElement = createCoraliteElement({
@@ -866,13 +904,17 @@ export function createRenderer ({
             attribs: { id: 'coralite-components' },
             children: []
           })
+
           const selectors = Array.from(mappedSessionObject.componentTags)
+
           selectors.push('c-token')
+
           layoutStyleElement.children.push(createCoraliteTextNode({
             type: 'text',
             data: `${selectors.join(', ')} { display: contents; }`,
             parent: layoutStyleElement
           }))
+
           if (targetElement === headElement || targetElement === bodyElement) {
             targetElement.children.push(layoutStyleElement)
           } else {
@@ -894,8 +936,10 @@ export function createRenderer ({
               state: script.state
             }
           }
+
           const cacheKey = Array.from(componentIds).sort().join(',')
           let scriptResult
+
           if (scriptResultCache.has(cacheKey)) {
             scriptResult = scriptResultCache.get(cacheKey)
           } else {
@@ -913,6 +957,7 @@ export function createRenderer ({
             scriptResultCache.set(cacheKey, scriptResult)
             Object.assign(outputFiles, scriptResult.outputFiles)
           }
+
           if (!scriptResult.manifest['chunk-shared']) {
             handleError({
               level: 'ERR',
@@ -920,6 +965,7 @@ export function createRenderer ({
               error: new Error(JSON.stringify(scriptResult.manifest))
             })
           }
+
           injectReadinessScript(mappedComponent.root, headElement, true)
           injectImportMap(mappedComponent.root, headElement, scriptResult.importMap)
           const chunkManifest = { ...scriptResult.manifest }
@@ -931,11 +977,13 @@ export function createRenderer ({
             chunkManifest
           })
           const hydrationData = {}
+
           for (const [id, instance] of Object.entries(instances)) {
             if (instance.state && Object.keys(instance.state).length > 0) {
               hydrationData[id] = normalizeObjectFunctions(instance.state, astTransformer)
             }
           }
+
           const hydrationScriptElement = createCoraliteElement({
             type: 'tag',
             name: 'script',
@@ -946,11 +994,13 @@ export function createRenderer ({
             },
             children: []
           })
+
           hydrationScriptElement.children.push(createCoraliteTextNode({
             type: 'text',
             data: JSON.stringify(hydrationData),
             parent: hydrationScriptElement
           }))
+
           bodyElement.children.push(hydrationScriptElement)
           const scriptElement = createCoraliteElement({
             type: 'tag',
@@ -959,6 +1009,7 @@ export function createRenderer ({
             attribs: { type: 'module' },
             children: []
           })
+
           scriptElement.children.push(createCoraliteTextNode({
             type: 'text',
             data: scriptContent,
@@ -968,9 +1019,11 @@ export function createRenderer ({
         }
 
         removeElements(mappedComponent.skipRenderElements, true)
+
         if (!mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
           injectReadinessScript(mappedComponent.root, headElement, false)
         }
+
         const rawHTML = transformNode(mappedComponent.root)
 
         /** @type {CoraliteBuildResult} */
@@ -981,13 +1034,16 @@ export function createRenderer ({
           duration: performance.now() - startTime,
           session
         }
+
         yield result
 
         if (isProduction) {
           mappedComponent.root = null; mappedComponent.customElements = null; mappedComponent.tempElements = null; mappedComponent.skipRenderElements = null
           delete pageItem.content
         }
+
         session.state = null; session.styles = null; session.scripts = null
+
         if (session.source) {
           session.source.contextInstances = null; session.source = null
         }
@@ -1020,13 +1076,11 @@ export function createRenderer ({
 
     let item
     if (typeof value === 'string') {
-      // @ts-ignore
       item = app.pages.getItem(value)
       if (!item) {
         throw new CoraliteError(`addRenderQueue - unexpected page ID: "${value}"`)
       }
     } else if (isCoraliteCollectionItem(value)) {
-      // @ts-ignore
       item = await app.pages.setItem(value)
     } else if (value && typeof value === 'object' && 'pathname' in value) {
       const pathname = value.pathname
@@ -1103,10 +1157,8 @@ export function createRenderer ({
     if (buildPath) {
       const paths = Array.isArray(buildPath) ? buildPath : [buildPath]
       for (const p of paths) {
-        // @ts-ignore
-        if (!app.pages.getItem(p)) {
+        if (typeof p === 'string' && !app.pages.getItem(p)) {
           try {
-            // @ts-ignore
             await app.pages.setItem(p)
           } catch (_err) {
           }
@@ -1133,6 +1185,7 @@ export function createRenderer ({
       })
       throw error
     }
+
     buildOptions = mappedBeforeBuild.options || buildOptions
 
     // @ts-ignore
@@ -1220,7 +1273,7 @@ export function createRenderer ({
           shouldRebuild = false
         }
         if (!shouldRebuild) {
-          /** @type {import('../types/index.js').CoraliteBuildResult} */
+          /** @type {CoraliteBuildResult} */
           const skippedResult = {
             type: 'page',
             // @ts-ignore
@@ -1231,10 +1284,12 @@ export function createRenderer ({
             },
             status: 'skipped'
           }
+
           skippedPages.push(skippedResult)
           if (!newManifest.virtual) {
             newManifest.virtual = {}
           }
+
           newManifest.virtual[pageItem.path.pathname] = { cacheKey: pageItem.cacheKey }
         } else {
           pagesToRender.push(pageItem)
@@ -1249,7 +1304,7 @@ export function createRenderer ({
         if (changed || shouldRebuild || normalizedOptions.mode === 'development') {
           pagesToRender.push(pageItem)
         } else {
-          /** @type {import('../types/index.js').CoraliteBuildResult} */
+          /** @type {CoraliteBuildResult} */
           const skippedResult = {
             type: 'page',
             // @ts-ignore
@@ -1260,6 +1315,7 @@ export function createRenderer ({
             },
             status: 'skipped'
           }
+
           skippedPages.push(skippedResult)
         }
       }
@@ -1267,9 +1323,11 @@ export function createRenderer ({
 
     // Update dependency graph in manifest
     const { pageCustomElements: livePageCustomElements } = app._dependencyGraph
+
     for (const [id, pages] of Object.entries(livePageCustomElements)) {
       newManifest.dependencies[id] = Array.from(pages)
     }
+
     // Carry over old dependencies if not overwritten
     for (const [id, pages] of Object.entries(manifest.dependencies || {})) {
       if (!newManifest.dependencies[id]) {
@@ -1388,8 +1446,21 @@ export function createRenderer ({
     }
   }
 
+  /**
+   * Clears the internal script result cache and output files.
+   * This is useful during development to ensure that changes to components
+   * are reflected in the generated client-side script bundles.
+   */
+  const clearCache = () => {
+    scriptResultCache.clear()
+    for (const key in outputFiles) {
+      delete outputFiles[key]
+    }
+  }
+
   return {
     outputFiles,
+    clearCache,
     createSession: _createSession,
     addRenderQueue,
     createComponentElement,
