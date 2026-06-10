@@ -51,9 +51,6 @@ jobs:
           npm config set fetch-timeout 600000
 
       - name: Publish to Codeberg
-        env:
-          # Disable automatic package manager version management to prevent fetching pnpm from Codeberg
-          PNPM_CONFIG_MANAGE_PACKAGE_MANAGER_VERSIONS: false
         run: |
           # Check if private
           IS_PRIVATE=$(node -p "require('${{ env.PACKAGE_PATH }}/package.json').private || false")
@@ -62,6 +59,8 @@ jobs:
             echo "::notice::Skipping publish for $PACKAGE_NAME (Private package)."
           else
             echo "🚀 Publishing $PACKAGE_NAME to Codeberg..."
-            pnpm --filter "${{ env.PACKAGE_NAME }}" publish \
-              --no-git-checks
+            
+            # Navigate to the specific workspace directory and publish using npm
+            cd "${{ env.PACKAGE_PATH }}"
+            npm publish
           fi
