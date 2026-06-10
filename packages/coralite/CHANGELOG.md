@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.37.2
+
+> Comparing `coralite-v0.37.1` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- bundle missing plugin and utility files for browser runtime (build) ([8bbcf1f](https://codeberg.org/tjdavid/coralite/commit/8bbcf1f50fa3a53f4338e51084cbba9448974c04))
+
+
 ## v0.37.1
 
 > Comparing `coralite-v0.37.0` to `HEAD`
