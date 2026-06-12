@@ -107,7 +107,7 @@
         return replacePlaceholders(nodes.root.children, placeholders)
       }
     },
-    script ({ refs, signal }) {
+    client ({ refs, signal }) {
       const popoverButton = refs('popoverBtn')
       const popoverTarget = refs('popoverTarget')
       const codeBody = refs('code')

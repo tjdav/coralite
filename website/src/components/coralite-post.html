@@ -10,7 +10,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    async data (context) {
+    async server (context) {
       // If this is used inside an aggregation, context.page is the aggregated page
       const page = context.state.page
 

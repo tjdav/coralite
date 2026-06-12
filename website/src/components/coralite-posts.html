@@ -4,12 +4,11 @@
 
 <script type="module">
   import { defineComponent } from 'coralite'
-  import { aggregate } from 'aggregation'
 
   export default defineComponent({
-    async data (context) {
+    async server (context) {
       return {
-        posts: await aggregate('blog-posts', context)
+        posts: await context.aggregation.aggregate('blog-posts', context)
       }
     }
   })

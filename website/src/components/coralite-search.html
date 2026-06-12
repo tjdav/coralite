@@ -38,7 +38,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    async script ({ refs, signal }) {
+    async client ({ refs, signal }) {
       const { default: Fuse } = await import('fuse.js')
 
       const searchForm = refs('searchForm')

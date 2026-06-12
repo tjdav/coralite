@@ -42,7 +42,7 @@
       seoTitle: { type: String },
       seoDescription: { type: String }
     },
-    async data (context) {
+    async server (context) {
       const pageUrlPathname = context.page.url.pathname
       const state = context.state
       const baseUrl = 'https://coralite.dev'

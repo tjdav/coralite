@@ -6,11 +6,10 @@
 
 <script type="module">
   import { defineComponent } from 'coralite'
-  import { aggregate } from 'aggregation'
 
   export default defineComponent({
-    async data (context) {
-      const postItems = await aggregate('related-posts', context)
+    async server (context) {
+      const postItems = await context.aggregation.aggregate('related-posts', context)
 
       if (postItems) {
         return {

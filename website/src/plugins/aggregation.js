@@ -158,28 +158,30 @@ export const aggregation = (configs = []) => {
           }
         }
       },
-      exports: {
-        aggregate: ({ app }) => (context) => async (nameOrOptions) => {
-          let config
+      context: ({ app }) => (instanceContext) => {
+        return {
+          aggregate: async (nameOrOptions, contextOverride) => {
+            const context = contextOverride || instanceContext
+            let config
 
-          if (typeof nameOrOptions === 'object' && nameOrOptions !== null) {
-            config = nameOrOptions
-          } else {
-            config = configMap.get(nameOrOptions)
-            if (!config) {
-              throw new Error(`Aggregation config "${nameOrOptions}" not found`)
+            if (typeof nameOrOptions === 'object' && nameOrOptions !== null) {
+              config = nameOrOptions
+            } else {
+              config = configMap.get(nameOrOptions)
+              if (!config) {
+                throw new Error(`Aggregation config "${nameOrOptions}" not found`)
+              }
             }
-          }
 
-          const {
-            component,
-            pagination,
-            limit,
-            offset = 0,
-            transformState
-          } = config
+            const {
+              component,
+              pagination,
+              limit,
+              offset = 0,
+              transformState
+            } = config
 
-          const { state = {}, page: currentPageContext, session: currentRenderContext } = context || {}
+            const { state = {}, page: currentPageContext, session: currentRenderContext } = context || {}
 
           const allPages = collectPages(app, {
             ...config,
@@ -304,8 +306,9 @@ export const aggregation = (configs = []) => {
 
           return app.transform(resultNodes)
         }
-      },
-      components: [
+      }
+    },
+    components: [
         path.join(import.meta.dirname, 'components/coralite-pagination.html')
       ]
     }

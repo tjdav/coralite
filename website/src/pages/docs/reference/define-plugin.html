@@ -43,10 +43,12 @@ const myPlugin = definePlugin({
 
   // Optional: Server-side logic
   server: {
-    // Two-Phase Curried functions for component data() blocks
-    exports: {
-      log: (context) => (message) => {
-        console.log(`[${context.id}] ${message}`, context.state)
+    // Context resolver for component server() blocks
+    context: (pluginContext) => (instanceContext) => {
+      return {
+        log: (message) => {
+          console.log(`[${instanceContext.id}] ${message}`, instanceContext.state)
+        }
       }
     },
     // Register custom components
@@ -59,10 +61,9 @@ const myPlugin = definePlugin({
   // Optional: Client-side logic
   client: {
     config: { /* static configuration */ },
-    context: {
-      // Two-Phase Curried utilities for script context
-      myHelper: () => () => () => {
-        return 'hello'
+    context: (pluginContext) => (instanceContext) => {
+      return {
+        myHelper: () => 'hello'
       }
     }
   }
@@ -72,24 +73,25 @@ const myPlugin = definePlugin({
 
     <!-- Context Binding -->
     <section id="context-binding">
-      <coralite-heading level="2" text="Context Binding (`server.exports`)"></coralite-heading>
-      <p>The <code>server.exports</code> property is an object of functions that processes content using plugin logic during the server-side build process. These functions are available to component <code>data()</code> blocks.</p>
-      <p>These functions use a <strong>Two-Phase Currying</strong> pattern to receive the plugin context in Phase 1.</p>
+      <coralite-heading level="2" text="Context Binding (`server.context`)"></coralite-heading>
+      <p>The <code>server.context</code> property is a function that processes content using plugin logic during the server-side build process. These functions are available to component <code>server()</code> blocks via the plugin's namespace (e.g. <code>context.myPlugin</code>).</p>
+      <p>These functions use a <strong>Two-Phase Resolver</strong> pattern to receive the plugin context in Phase 1 and the component instance context in Phase 2.</p>
       
       <coralite-code-highlight language="JavaScript">
 export default definePlugin({
   name: 'logger-plugin',
   server: {
     config: { prefix: 'LOG' },
-    exports: {
-      log: (pluginContext) => (instanceContext) => (message) => {
-        // Phase 1: Receive a single context object containing globalContext and config
-        // Phase 2: Receive instanceContext (session, state, page, etc.)
-        // Phase 3: Receive arguments from component data() block
-        console.log(`[${pluginContext.config.prefix}] [${instanceContext.id}] ${message}`, instanceContext.state);
-        
-        // Returning a state patch to be merged into component state
-        return { logged: true };
+    context: (pluginContext) => (instanceContext) => {
+      return {
+        log: (message) => {
+          // Phase 1: Receive pluginContext containing globalContext and config
+          // Phase 2: Receive instanceContext (session, state, page, etc.)
+          console.log(`[${pluginContext.config.prefix}] [${instanceContext.id}] ${message}`, instanceContext.state);
+          
+          // Returning a state patch to be merged into component state
+          return { logged: true };
+        }
       }
     }
   }
@@ -125,21 +127,23 @@ export default definePlugin({
 
 
       <coralite-heading level="3" text="client.context"></coralite-heading>
-      <p>Define utilities that will be flattened directly onto the <code>context</code> object in <code>defineComponent</code> scripts in the browser.</p>
+      <p>Define utilities that will be available via the plugin's namespace on the <code>context</code> object in <code>defineComponent</code> client-side scripts.</p>
 
       <coralite-code-highlight language="JavaScript">
         definePlugin({
   name: 'utils',
   client: {
-    context: {
-      formatDate: () => () => (date) => {
-        return new Date(date).toLocaleDateString()
+    context: (pluginContext) => (instanceContext) => {
+      return {
+        formatDate: (date) => {
+          return new Date(date).toLocaleDateString()
+        }
       }
     }
   }
 })
       </coralite-code-highlight>
-      <p><strong>Note:</strong> Context utilities must use the Two-Phase Currying System.</p>
+      <p><strong>Note:</strong> Context utilities use the Two-Phase Resolver pattern.</p>
     </section>
 
     <!-- Script Configuration -->
@@ -170,16 +174,18 @@ export default definePlugin({
 
       <coralite-code-highlight language="JavaScript">
         // Inside client.context
-context: {
-  trackEvent: (pluginContext) => {
-    const { trackingId } = pluginContext.config;
-    
-    // ✨ EXPOSE TO DOWNSTREAM PLUGINS
-    pluginContext.analyticsReady = true;
+context: (pluginContext) => {
+  const { trackingId } = pluginContext.config;
+  
+  // ✨ EXPOSE TO DOWNSTREAM PLUGINS
+  pluginContext.analyticsReady = true;
 
-    return () => async (eventName) => {
-      const { default: analyticsLib } = await import('analytics-lib')
-      analyticsLib.send(trackingId, eventName)
+  return (instanceContext) => {
+    return {
+      trackEvent: async (eventName) => {
+        const { default: analyticsLib } = await import('analytics-lib')
+        analyticsLib.send(trackingId, eventName)
+      }
     }
   }
 }
@@ -204,17 +210,19 @@ export default definePlugin({
     },
 
     // Create the context utility
-    context: {
-      explode: (pluginContext) => () => async () => {
-        // Dynamically import the library (auto-bundled by AST)
-        const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
+    context: (pluginContext) => (instanceContext) => {
+      return {
+        explode: async () => {
+          // Dynamically import the library (auto-bundled by AST)
+          const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
 
-        // Use the library with the config
-        confetti({
-          particleCount: pluginContext.config.particleCount,
-          spread: pluginContext.config.spread,
-          origin: { y: 0.6 }
-        })
+          // Use the library with the config
+          confetti({
+            particleCount: pluginContext.config.particleCount,
+            spread: pluginContext.config.spread,
+            origin: { y: 0.6 }
+          })
+        }
       }
     }
   }
@@ -231,8 +239,9 @@ export default definePlugin({
           import { defineComponent } from 'coralite'
 
           export default defineComponent({
-            script: ({ refs }) => {
-              const btn = refs('btn')
+            client: (context) => {
+              const btn = context.refs('btn')
+              const { explode } = context['confetti-plugin']
 
               btn.addEventListener('click', () => {
                 explode()

@@ -11,7 +11,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script ({ refs, signal }) {
+    client ({ refs, signal }) {
       const button = refs('backToTopBtn')
 
       const toggleVisibility = () => {

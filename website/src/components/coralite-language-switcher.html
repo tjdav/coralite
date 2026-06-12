@@ -47,7 +47,7 @@
         default: 'en'
       }
     },
-    async data (context) {
+    async server (context) {
       const pageLang = context.page.meta.lang || context.attributes.lang || 'en'
       const pathname = context.page.url.pathname
       const languages = context.attributes.languages || ''
@@ -85,7 +85,7 @@
       }
     },
 
-    async script ({ refs, signal }) {
+    async client ({ refs, signal }) {
       const button = refs('button')
       const tooltip = refs('tooltip')
       const { createPopper } = await import('https://esm.sh/@popperjs/core/lib/popper-lite')
