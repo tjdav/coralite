@@ -280,8 +280,9 @@
 
 /**
  * @typedef {Object} CoralitePluginServer
+ * @property {string} [name] - The name of the server plugin
  * @property {any} [config] - Plugin configuration object
- * @property {Record<string, CoralitePluginExportFunction>} [exports] - Object of Three-Phase Curried functions. Phase 1 receives a single context object containing the global context and config, Phase 2 receives the instance context, Phase 3 is the executable result.
+ * @property {(pluginContext: CoralitePluginPhase1Context) => Promise<any> | any} [context] - Symmetrical context function
  * @property {(HTMLData | string)[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated

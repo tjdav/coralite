@@ -3,15 +3,13 @@ import { definePlugin } from '../../../lib/index.js'
 export const mockPlugin = definePlugin({
   name: 'mock-plugin',
   client: {
-    context: {
+    context: async () => {
       // Phase 1: Global Context
-      renderPluginChild: async () => {
-        // Dynamically resolve mock-module.js
-        const mod = await import('./mock-module.js')
+      const mod = await import('./mock-module.js')
+      return () => {
         // Phase 2: Local Instance Context
-        return () => {
-          // Phase 3: The actual callable utility expecting a target element
-          return async (containerElement) => {
+        return {
+          renderPluginChild: async (containerElement) => {
             if (!containerElement || !containerElement.replaceWith) {
               throw new Error('renderPluginChild requires a valid DOM element to replace.')
             }

@@ -12,8 +12,7 @@ import render from 'dom-serializer'
 
 /**
  * Script Manager for Coralite
- * Manages shared functions across component instances and provides plugin extensibility
- * @import { ScriptPlugin, InstanceContext } from '../types/index.js'
+ * @import { ScriptPlugin, InstanceContext, CoralitePlugin } from '../types/index.js'
  * @import { ScriptContent } from '../types/script.js'
  */
 
@@ -32,7 +31,7 @@ export function ScriptManager (options = {}) {
 
 /**
  * Register a plugin
- * @param {ScriptPlugin} plugin - Plugin object or setup function
+ * @param {CoralitePlugin | ScriptPlugin} plugin - Plugin object or setup function
  * @returns {Promise<ScriptManager>} - Returns this for method chaining
  */
 ScriptManager.prototype.use = async function (plugin) {
@@ -41,25 +40,21 @@ ScriptManager.prototype.use = async function (plugin) {
     plugin
     && typeof plugin !== 'function'
   ) {
-    if (plugin.context
-      || typeof plugin.setup === 'function'
-      || typeof plugin.onBeforeComponentRender === 'function'
-      || typeof plugin.onAfterComponentRender === 'function'
-      || typeof plugin.onDisconnected === 'function') {
+    // @ts-ignore
+    const client = plugin.client || plugin
+    if (client.context
+      || typeof client.setup === 'function'
+      || typeof client.onBeforeComponentRender === 'function'
+      || typeof client.onAfterComponentRender === 'function'
+      || typeof client.onDisconnected === 'function') {
       this.scriptModules.push(plugin)
 
-      if (plugin.context) {
-        let extractedComponents = []
-        for (const key in plugin.context) {
-          if (Object.hasOwn(plugin.context, key)) {
-            const contextFn = plugin.context[key]
-            const contextStr = typeof contextFn === 'function' ? `(${contextFn.toString()})` : serialize(contextFn)
-            const foundComponents = findAndExtractImperativeComponents(contextStr)
-            extractedComponents = extractedComponents.concat(foundComponents)
-          }
-        }
+      if (client.context) {
+        const contextStr = serialize(client.context)
+        const extractedComponents = findAndExtractImperativeComponents(contextStr)
+
         if (extractedComponents.length > 0) {
-          plugin._extractedComponents = Array.from(new Set(extractedComponents))
+          client._extractedComponents = Array.from(new Set(extractedComponents))
         }
       }
     }
@@ -271,8 +266,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     const clientContextProps = {}
     const resolvedProps = await resolvedContextPropsPromise;
     for (const [key, resolvedProp] of Object.entries(resolvedProps)) {
-      const bound = resolvedProp(context);
-      clientContextProps[key] = bound;
+      clientContextProps[key] = typeof resolvedProp === 'function' ? resolvedProp(context) : resolvedProp;
     }
     return clientContextProps
   }\n`)
@@ -430,8 +424,8 @@ export default {
   slots: (() => { const slots = ${slots}; return slots; })(),
   dependencies: ${dependencies},
   imports: {},
-  script: ${hasScript ? `componentModule_${safeId}.script` : 'null'},
-  state: ${hasState ? `componentModule_${safeId}.state` : 'null'}
+  client: ${hasScript ? `componentModule_${safeId}.script` : 'null'},
+  server: ${hasState ? `componentModule_${safeId}.state` : 'null'}
 };
 `
       entryPoints[componentId] = componentEntryCode
@@ -643,17 +637,15 @@ export default {
             // Generate client context state
             contents += 'export const clientContextProps = {\n'
             if (module.context) {
-              contents += `  "${module.name}": async (globalContext) => {\n`
-              contents += '    const props = {};\n'
-              for (const key in module.context) {
-                if (Object.hasOwn(module.context, key)) {
-                  if (['id', 'state', 'page', 'root', 'signal'].includes(key)) {
-                    throw new CoraliteError(`Reserved context key '${key}' cannot be used in plugin context.`)
-                  }
-                  const fn = normalizeFunction(module.context[key])
-                  contents += `    props["${key}"] = await (async (globalContext) => {
-                      const fn = ${fn};
-                      const pluginContext = new Proxy(globalContext, {
+              const clientName = module.name
+              if (['id', 'state', 'page', 'root', 'signal'].includes(clientName)) {
+                throw new CoraliteError(`Reserved context key '${clientName}' cannot be used in plugin context.`)
+              }
+
+              const fn = normalizeFunction(module.context)
+              contents += `  "${clientName}": async (globalContext) => {\n`
+              contents += `    const fn = ${fn};\n`
+              contents += `    const pluginContext = new Proxy(globalContext, {
                         get (target, prop) {
                           if (prop === 'config') return pluginConfig;
                           return target[prop];
@@ -662,21 +654,8 @@ export default {
                           return Reflect.set(target, prop, value);
                         }
                       });
-                      const phase2 = await fn(pluginContext);
-                      return (localContext) => phase2(localContext);
-                    })(globalContext);\n`
-                }
-              }
-              contents += '    const resolver = (localContext) => {\n'
-              contents += '      const bound = {};\n'
-              contents += '      for (const [key, fn] of Object.entries(props)) {\n'
-              contents += '        bound[key] = fn(localContext);\n'
-              contents += '      }\n'
-              contents += '      return bound;\n'
-              contents += '    };\n'
-              contents += '    Object.assign(resolver, props);\n'
-              contents += '    return resolver;\n'
-              contents += '  },\n'
+                      return await fn(pluginContext);
+                    },\n`
             }
             contents += '};\n'
 
@@ -702,7 +681,7 @@ export default {
             if (sharedFn.script && sharedFn.script.content) {
               const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
 
-              // More robust way to strip 'data' from defineComponent call
+              // More robust way to strip 'server' from defineComponent call
               let strippedContent = sharedFn.script.content
 
               try {
@@ -718,7 +697,7 @@ export default {
                     if (node.callee.type === 'Identifier' && node.callee.name === 'defineComponent') {
                       const firstArg = node.arguments[0]
                       if (firstArg && firstArg.type === 'ObjectExpression') {
-                        const dataProp = firstArg.properties.find(p => p.type === 'Property' && p.key?.type === 'Identifier' && p.key?.name === 'data')
+                        const dataProp = firstArg.properties.find(p => p.type === 'Property' && p.key?.type === 'Identifier' && p.key?.name === 'server')
                         // @ts-ignore
                         if (dataProp && dataProp.type === 'Property') {
                           // @ts-ignore
@@ -751,8 +730,8 @@ export default {
                 }
               } catch {
                 // Fallback to regex if AST parsing fails
-                strippedContent = strippedContent.replace(/data\s*:\s*async\s*function\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* data stripped */')
-                strippedContent = strippedContent.replace(/async\s*data\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* data stripped */')
+                strippedContent = strippedContent.replace(/server\s*:\s*async\s*function\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* server stripped */')
+                strippedContent = strippedContent.replace(/async\s*server\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* server stripped */')
               }
 
               contents += `${padding}export const script = ${strippedContent};\n`
@@ -762,12 +741,7 @@ export default {
               contents += `export default null;\n`
             }
 
-            if (sharedFn.script && sharedFn.script.stateContent) {
-              const padding = '\n'.repeat(Math.max(0, sharedFn.script.stateLineOffset || 0))
-              contents += `${padding}export const state = ${sharedFn.script.stateContent};\n`
-            } else {
-              contents += `export const state = null;\n`
-            }
+            contents += `export const state = null;\n`
 
             return {
               contents,

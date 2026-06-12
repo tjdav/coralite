@@ -78,10 +78,11 @@ function processComponents (path) {
  * const myPlugin = definePlugin({
  *   name: 'my-plugin',
  *   server: {
- *     exports: {
- *       getData: (context) => (options) => {
- *         // Plugin logic implementation
- *         return { ...context.state, custom: 'data', ...options }
+ *     context: ({ app }) => {
+ *       return {
+ *         getData: (options) => {
+ *            return { custom: 'data', ...options }
+ *         }
  *       }
  *     }
  *   }
@@ -92,10 +93,11 @@ function processComponents (path) {
  * const advancedPlugin = definePlugin({
  *   name: 'advanced-plugin',
  *   server: {
- *     exports: {
- *       process: (context) => async (options) => {
- *         // Async plugin logic
- *         return { ...context.state, processed: true, ...options }
+ *     context: () => {
+ *       return {
+ *         process: async (options) => {
+ *           return { processed: true, ...options }
+ *         }
  *       }
  *     },
  *     components: ['src/components/header.html', 'src/components/footer.html'],
@@ -135,6 +137,13 @@ export function definePlugin ({
     }
 
     server = { ...server }
+    server.name = server.name || name
+
+    if (server.context != null && typeof server.context !== 'function') {
+      throw new CoraliteError(
+        `Coralite plugin validation failed: "server.context" must be a function, received ${typeof server.context}`
+      )
+    }
 
     // Process component files with error handling
     if (server.components) {
@@ -163,6 +172,12 @@ export function definePlugin ({
     if (typeof client !== 'object') {
       throw new CoraliteError(
         `Coralite plugin validation failed: "client" must be an object, received ${typeof client}`
+      )
+    }
+
+    if (client.context != null && typeof client.context !== 'function') {
+      throw new CoraliteError(
+        `Coralite plugin validation failed: "client.context" must be a function, received ${typeof client.context}`
       )
     }
 

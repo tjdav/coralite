@@ -452,7 +452,8 @@ export function createRenderer ({
           noHydration
         }
 
-        await hooks.bind(source.plugins, pluginContext)
+        const boundPlugins = await hooks.bind(source.plugins, pluginContext)
+        Object.assign(pluginContext, boundPlugins)
 
         scriptResult = await evaluate({
           module,

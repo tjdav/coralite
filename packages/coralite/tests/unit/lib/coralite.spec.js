@@ -233,7 +233,7 @@ describe('Coralite', () => {
         <script type="module">
           import { defineComponent } from 'coralite'
           export default defineComponent({
-            script () {
+            client () {
               console.log('test')
             }
           })

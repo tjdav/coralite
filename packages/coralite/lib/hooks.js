@@ -94,34 +94,24 @@ export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name
 }
 
 /**
- * Executes Phase 2 of plugin exports with the given instance context.
+ * Binds plugins to the instance context.
+ * In the new symmetrical API, plugins are already evaluated during setup,
+ * so this simply returns the pre-evaluated plugin APIs.
  *
  * @param {Object} options - The options used to bind plugins.
- * @param {Object} options.serverGlobalContext - The global server-side context.
- * @param {Object} options.phase2Functions - The map of Phase 2 plugin functions to be bound.
- * @param {Object} options.instanceContext - The specific instance context to bind the functions to.
+ * @param {Object} options.phase2Functions - The map of pre-evaluated plugin functions.
+ * @param {Object} [options.instanceContext] - The specific instance context.
  * @returns {Promise<Object>} Bound plugins
  */
-export async function bindPlugins ({ serverGlobalContext, phase2Functions, instanceContext }) {
-  const boundPlugins = {}
-  const globalContext = Object.assign({ app: serverGlobalContext.app }, instanceContext)
-
+export async function bindPlugins ({ phase2Functions, instanceContext }) {
+  const bound = {}
   for (const name in phase2Functions) {
     const pluginExports = phase2Functions[name]
-    if (pluginExports !== null && typeof pluginExports === 'object') {
-      const boundObj = {}
-      for (const prop in pluginExports) {
-        if (typeof pluginExports[prop] === 'function') {
-          boundObj[prop] = await pluginExports[prop](globalContext)
-        } else {
-          boundObj[prop] = pluginExports[prop]
-        }
-      }
-      boundPlugins[name] = boundObj
+    if (typeof pluginExports === 'function') {
+      bound[name] = pluginExports(instanceContext)
     } else {
-      boundPlugins[name] = pluginExports
+      bound[name] = pluginExports
     }
   }
-
-  return boundPlugins
+  return bound
 }

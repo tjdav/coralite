@@ -47,38 +47,40 @@ describe('ScriptManager', () => {
     })
 
     it('should register plugin with context', async () => {
-      const helper1 = () => 'helper1'
-      const helper2 = (x) => x * 2
+      const context = () => {
+        return {
+          helper1: () => 'helper1',
+          helper2: (x) => x * 2
+        }
+      }
 
       const plugin = {
-        context: {
-          helper1,
-          helper2
-        }
+        name: 'test',
+        context
       }
 
       await sm.use(plugin)
 
       assert.strictEqual(sm.scriptModules.length, 1)
-      assert.strictEqual(sm.scriptModules[0].context.helper1, helper1)
-      assert.strictEqual(sm.scriptModules[0].context.helper2, helper2)
+      assert.strictEqual(sm.scriptModules[0].context, context)
       assert.strictEqual(sm.plugins.length, 1)
     })
 
     it('should register plugin with both setup and context', async () => {
       const setupMock = mock.fn()
-      const helper = () => 'test'
+      const context = () => ({ testHelper: () => 'test' })
 
       const plugin = {
+        name: 'test',
         setup: setupMock,
-        context: { testHelper: helper }
+        context
       }
 
       await sm.use(plugin)
 
       assert.strictEqual(setupMock.mock.calls.length, 0)
       assert.strictEqual(sm.scriptModules.length, 1)
-      assert.strictEqual(sm.scriptModules[0].context.testHelper, helper)
+      assert.strictEqual(sm.scriptModules[0].context, context)
     })
 
     it('should register function plugin', async () => {
@@ -92,52 +94,54 @@ describe('ScriptManager', () => {
     })
 
     it('should handle plugin with null setup', async () => {
-      const helper = () => 'test'
+      const context = () => ({ test: () => 'test' })
       const plugin = {
+        name: 'test',
         setup: null,
-        context: { test: helper }
+        context
       }
 
       await sm.use(plugin)
 
-      assert.strictEqual(sm.scriptModules[0].context.test, helper)
+      assert.strictEqual(sm.scriptModules[0].context, context)
     })
 
     it('should handle plugin with undefined setup', async () => {
-      const helper = () => 'test'
+      const context = () => ({ test: () => 'test' })
       const plugin = {
+        name: 'test',
         setup: undefined,
-        context: { test: helper }
+        context
       }
 
       await sm.use(plugin)
 
-      assert.strictEqual(sm.scriptModules[0].context.test, helper)
+      assert.strictEqual(sm.scriptModules[0].context, context)
     })
 
     it('should handle plugin with no setup property', async () => {
-      const helper = () => 'test'
-      const plugin = { context: { test: helper } }
+      const context = () => ({ test: () => 'test' })
+      const plugin = {
+        name: 'test',
+        context
+      }
 
       await sm.use(plugin)
 
-      assert.strictEqual(sm.scriptModules[0].context.test, helper)
+      assert.strictEqual(sm.scriptModules[0].context, context)
     })
 
-    it('should skip context that are not own state', async () => {
-      const protoHelpers = { inherited: () => 'inherited' }
-      const context = Object.create(protoHelpers)
-      context.own = () => 'own'
+    it('should register plugin context', async () => {
+      const context = () => ({ own: () => 'own' })
 
-      const plugin = { context }
+      const plugin = {
+        name: 'test',
+        context
+      }
 
       await sm.use(plugin)
 
-      // ScriptManager does not process inheritance manually when pushing to scriptModules?
-      // But compileAllInstances checks Object.hasOwn.
-      // So we check if scriptModules has the helper.
       assert.strictEqual(sm.scriptModules[0].context, context)
-      // The verification of skipping inherited state happens during compilation (esbuild onLoad).
     })
 
     it('should return this for method chaining', async () => {
@@ -161,12 +165,15 @@ describe('ScriptManager', () => {
     })
 
     it('should handle context with async methods', async () => {
-      const asyncHelper = async () => 'async'
-      const plugin = { context: { asyncHelper } }
+      const context = () => ({ asyncHelper: async () => 'async' })
+      const plugin = {
+        name: 'test',
+        context
+      }
 
       await sm.use(plugin)
 
-      assert.strictEqual(sm.scriptModules[0].context.asyncHelper, asyncHelper)
+      assert.strictEqual(sm.scriptModules[0].context, context)
     })
   })
 
@@ -779,12 +786,14 @@ describe('ScriptManager', () => {
 
       // Register plugin with helper
       await sm.use({
-        name: 'test-plugin',
+        name: 'test_plugin',
         setup: () => {
           return { customProperty: 'test' }
         },
-        context: {
-          add: () => () => (a, b) => a + b
+        context: () => {
+          return {
+            add: (a, b) => a + b
+          }
         }
       })
 
@@ -795,13 +804,15 @@ describe('ScriptManager', () => {
       sm.registerComponent({
         id: 'calculator',
         script: {
-          state: {},
+          stateContent: '{}',
           lineOffset: 0,
-          content: `({ double, values }) => {
-            const sum = context.add(context.values.a, context.values.b)
-            const product = context.multiply(sum, context.values.multiplier)
+          content: `(context) => {
+            const { add } = context.test_plugin;
+            const multiply = context.multiply;
+            const sum = add(context.state.a, context.state.b)
+            const product = multiply(sum, context.state.multiplier)
             // also return customProperty if present to prove setup injected it
-            if (context.values.customProperty === 'test') {
+            if (context.state.customProperty === 'test') {
               return product + 1000
             }
             return product
@@ -837,29 +848,34 @@ describe('ScriptManager', () => {
       const sm = new ScriptManager()
 
       await sm.use({
-        context: {
+        name: 'p1',
+        context: () => ({
           helper1: () => 'first',
           shared: (x) => x * 2
-        }
+        })
       })
 
       await sm.use({
-        context: {
+        name: 'p2',
+        context: () => ({
           helper2: () => 'second',
           shared: (x) => x * 3
-        }
+        })
       })
 
       assert.strictEqual(sm.scriptModules.length, 2)
-      assert.ok(sm.scriptModules[0].context.helper1)
-      assert.ok(sm.scriptModules[1].context.helper2)
+      assert.ok(sm.scriptModules[0].context)
+      assert.ok(sm.scriptModules[1].context)
       // Overwrite behavior is handled by esbuild spreading imports, not internal state
     })
 
     it('should handle method chaining throughout', async () => {
       const sm = new ScriptManager()
 
-      await sm.use({ context: { h1: () => 1 } })
+      await sm.use({
+        name: 'p1',
+        context: () => ({ h1: () => 1 })
+      })
       await sm.addContextProp('h2', () => 2)
       sm.registerComponent({
         id: 't1',
@@ -867,7 +883,6 @@ describe('ScriptManager', () => {
       })
 
       assert.strictEqual(sm.scriptModules.length, 1)
-      assert.ok(sm.scriptModules[0].context.h1)
       assert.ok(sm.contextProps.h2)
       assert.ok(sm.sharedFunctions['t1'])
     })
@@ -1107,14 +1122,12 @@ describe('ScriptManager', () => {
       const sm = new ScriptManager()
 
       await sm.use({
-        name: 'test-plugin',
-        context: {
-          testHelper: async () => {
-            // Simulate async phase1
-            await new Promise(resolve => setTimeout(resolve, 10))
-            return () => {
-              return 'sync_result'
-            }
+        name: 'test_plugin',
+        context: async () => {
+          // Simulate async phase1
+          await new Promise(resolve => setTimeout(resolve, 10))
+          return {
+            testHelper: () => 'sync_result'
           }
         }
       })
@@ -1139,9 +1152,9 @@ describe('ScriptManager', () => {
 
       // Under the new orchestrator approach with esbuild ESM compilation, `await getClientContext(context)`
       // is no longer generated as a literal string in the instances wrapper, but the `getClientContext` and
-      // `phase2(localContext)` definitions still exist in the generated shared helper block.
+      // `globalContext` definitions still exist in the generated shared helper block.
       assert.ok(compiledScript.includes('getClientContext'))
-      assert.ok(compiledScript.includes('phase2(localContext)'))
+      assert.ok(compiledScript.includes('globalContext'))
     })
   })
 
@@ -1154,11 +1167,11 @@ describe('ScriptManager', () => {
       }
 
       await manager.use({
-        name: 'test-plugin',
+        name: 'test_plugin',
         config,
-        context: {
-          testHelper: (pluginContext) => () => {
-            return pluginContext.config
+        context: (pluginContext) => {
+          return {
+            testHelper: () => pluginContext.config
           }
         }
       })
@@ -1190,10 +1203,10 @@ describe('ScriptManager', () => {
       const manager = new ScriptManager()
 
       await manager.use({
-        name: 'test-plugin',
-        context: {
-          testHelper: (globalContext) => () => {
-            return globalContext.config
+        name: 'test_plugin',
+        context: (globalContext) => {
+          return {
+            testHelper: () => globalContext.config
           }
         }
       })
@@ -1250,12 +1263,12 @@ describe('ScriptManager', () => {
 
       // Create a dummy package in node_modules for esbuild to find
       const nodeModulesPath = path.resolve('node_modules')
-      const dummyPath = path.resolve(nodeModulesPath, 'dummy-plugin-pkg')
+      const dummyPath = path.resolve(nodeModulesPath, 'dummy_plugin_pkg')
       if (!fs.existsSync(dummyPath)) {
         fs.mkdirSync(dummyPath, { recursive: true })
       }
       fs.writeFileSync(path.resolve(dummyPath, 'package.json'), JSON.stringify({
-        name: 'dummy-plugin-pkg',
+        name: 'dummy_plugin_pkg',
         type: 'module',
         main: 'index.js'
       }))
@@ -1263,12 +1276,12 @@ describe('ScriptManager', () => {
 
       try {
         await sm.use({
-          name: 'dummy-plugin-pkg',
-          context: {
-            test: async () => {
-              // @ts-ignore
-              const { default: dummy } = await import('dummy-plugin-pkg')
-              return () => dummy
+          name: 'dummy_plugin_pkg',
+          context: async () => {
+            // @ts-ignore
+            const { default: dummy } = await import('dummy_plugin_pkg')
+            return {
+              test: () => dummy
             }
           }
         })

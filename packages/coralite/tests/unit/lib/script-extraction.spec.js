@@ -7,13 +7,13 @@ describe('Script Extraction', () => {
   test('shorthand method', () => {
     const code = `
 defineComponent({
-  script(context) {
+  client(context) {
     console.log('shorthand')
   }
 })`
     const result = findAndExtractScript(code)
     assert.strictEqual(result.lineOffset, 2)
-    assert.strictEqual(result.content, `function script(context) {
+    assert.strictEqual(result.content, `function client(context) {
     console.log('shorthand')
   }`)
   })
@@ -21,13 +21,13 @@ defineComponent({
   test('async shorthand method', () => {
     const code = `
 defineComponent({
-  async script(context) {
+  async client(context) {
     console.log('async shorthand')
   }
 })`
     const result = findAndExtractScript(code)
     assert.strictEqual(result.lineOffset, 2)
-    assert.strictEqual(result.content, `async function script(context) {
+    assert.strictEqual(result.content, `async function client(context) {
     console.log('async shorthand')
   }`)
   })
@@ -35,7 +35,7 @@ defineComponent({
   test('arrow function', () => {
     const code = `
 defineComponent({
-  script: (context) => {
+  client: (context) => {
     console.log('arrow')
   }
 })`
@@ -49,7 +49,7 @@ defineComponent({
   test('async arrow function', () => {
     const code = `
 defineComponent({
-  script: async (context) => {
+  client: async (context) => {
     console.log('async arrow')
   }
 })`
@@ -63,7 +63,7 @@ defineComponent({
   test('function expression', () => {
     const code = `
 defineComponent({
-  script: function(context) {
+  client: function(context) {
     console.log('function expression')
   }
 })`
@@ -77,7 +77,7 @@ defineComponent({
   test('async function expression', () => {
     const code = `
 defineComponent({
-  script: async function(context) {
+  client: async function(context) {
     console.log('async function expression')
   }
 })`
@@ -91,7 +91,7 @@ defineComponent({
   test('multi-line definition', () => {
     const code = `
 defineComponent({
-  script: 
+  client: 
     (context) => {
       console.log('multi-line')
     }
@@ -109,13 +109,13 @@ defineComponent({
   /**
    * My script
    */
-  script(context) {
+  client(context) {
     console.log('comments')
   }
 })`
     const result = findAndExtractScript(code)
     assert.strictEqual(result.lineOffset, 5)
-    assert.strictEqual(result.content, `function script(context) {
+    assert.strictEqual(result.content, `function client(context) {
     console.log('comments')
   }`)
   })

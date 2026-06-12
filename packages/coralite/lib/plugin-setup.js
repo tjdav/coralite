@@ -28,11 +28,16 @@ export async function setupPlugins ({
 
   for (const plugin of pluginsToInit) {
     if (plugin.server) {
-      if (plugin.server.exports) {
+      const serverName = plugin.server.name || plugin.name
+
+      if (plugin.server.context) {
         // @ts-ignore
         const { app: _, ...restGlobalContext } = serverGlobalContext
+        const pluginContext = new Proxy(Object.assign({
         // @ts-ignore
-        const pluginContext = new Proxy(Object.assign({ app: serverGlobalContext.app }, restGlobalContext), {
+          app: serverGlobalContext.app,
+          config: null
+        }, restGlobalContext), {
           get (target, prop) {
             if (prop === 'config') {
               return plugin.server.config || {}
@@ -45,23 +50,16 @@ export async function setupPlugins ({
           }
         })
 
-        const phase2Obj = {}
-        for (const prop in plugin.server.exports) {
-          if (allExportNames.has(prop)) {
-            throw new Error(`Coralite Error: Plugin export name conflict. The export name "${prop}" from plugin "${plugin.name}" is already defined by another plugin.`)
-          }
-
-          allExportNames.add(prop)
-
-          if (typeof plugin.server.exports[prop] === 'function') {
-            // @ts-ignore
-            phase2Obj[prop] = await plugin.server.exports[prop](pluginContext)
-          } else {
-            phase2Obj[prop] = plugin.server.exports[prop]
-          }
+        if (allExportNames.has(serverName)) {
+          throw new Error(`Coralite Error: Plugin export name conflict. The export name "${serverName}" from plugin "${plugin.name}" is already defined by another plugin.`)
         }
-        source.plugins[plugin.name] = phase2Obj
-        serverGlobalContext[plugin.name] = phase2Obj
+
+        allExportNames.add(serverName)
+
+        const contextResult = await plugin.server.context(pluginContext)
+
+        source.plugins[serverName] = contextResult
+        serverGlobalContext[serverName] = contextResult
       }
       if (plugin.server.components) {
         plugin.server.components.forEach(c => plugins.components.push(c))

@@ -30,7 +30,7 @@ export function createComponentDefinition ({ app }) {
    * @returns {Promise<Object>}
    */
   return async (options, context) => {
-    const { attributes, data, getters, slots, script } = options
+    const { attributes, server, getters, slots, client } = options
     const { state: initialState, module, root } = context
 
     if (attributes) {
@@ -90,15 +90,15 @@ export function createComponentDefinition ({ app }) {
       }
     }
 
-    if (typeof data === 'function') {
-      const dataResult = await data({
+    if (typeof server === 'function') {
+      const serverResult = await server({
         ...context,
         ...initialState
       })
-      if (dataResult) {
-        state.__script__.data = dataResult
-        Object.assign(state, dataResult)
-        Object.assign(state.__script__.state, dataResult)
+      if (serverResult) {
+        state.__script__.server = serverResult
+        Object.assign(state, serverResult)
+        Object.assign(state.__script__.state, serverResult)
       }
     }
 
@@ -194,22 +194,22 @@ export function createComponentDefinition ({ app }) {
       }
     }
 
-    const hasScript = typeof script === 'function'
+    const hasClient = typeof client === 'function'
     const hasSlots = slots && Object.keys(slots).length > 0
     const hasGetters = getters && Object.keys(getters).length > 0
     const hasAttributes = attributes && Object.keys(attributes).length > 0
-    const hasData = typeof data === 'function'
+    const hasServer = typeof server === 'function'
 
-    if (hasScript || hasSlots || hasGetters || hasAttributes || hasData) {
-      if (hasScript) {
-        const scriptTextContent = script.toString().trim()
+    if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer) {
+      if (hasClient) {
+        const clientTextContent = client.toString().trim()
         const args = {}
         for (const key in state) {
           if (!Object.hasOwn(state, key)) {
             continue
           }
 
-          if (scriptTextContent.includes(key) || key.startsWith('ref_')) {
+          if (clientTextContent.includes(key) || key.startsWith('ref_')) {
             args[key] = state.__script__.defaultValues[key] !== undefined
               ? state.__script__.defaultValues[key]
               : state[key]
@@ -279,25 +279,25 @@ export async function registerBaseComponent ({
       let defaultValues = scriptMeta.defaultValues || {}
       let extractedComponents = []
 
-      if (!component._extractedScript) {
-        component._extractedScript = findAndExtractScript(component.script)
+      if (!component._extractedClient) {
+        component._extractedClient = findAndExtractScript(component.script)
       }
-      const extractedScript = component._extractedScript
+      const extractedClient = component._extractedClient
 
-      if (extractedScript) {
-        scriptObj.content = extractedScript.content
-        scriptObj.lineOffset = (component.lineOffset || 0) + extractedScript.lineOffset
-        extractedComponents = extractedScript.components || []
+      if (extractedClient) {
+        scriptObj.content = extractedClient.content
+        scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
+        extractedComponents = extractedClient.components || []
       }
 
-      if (!component._extractedProperties) {
-        component._extractedProperties = findAndExtractProperties(component.script)
+      if (!component._extractedServer) {
+        component._extractedServer = findAndExtractProperties(component.script)
       }
-      const extractedProperties = component._extractedProperties
+      const extractedServer = component._extractedServer
 
-      if (extractedProperties) {
-        scriptObj.stateContent = extractedProperties.content
-        scriptObj.stateLineOffset = (component.lineOffset || 0) + extractedProperties.lineOffset
+      if (extractedServer) {
+        scriptObj.stateContent = extractedServer.content
+        scriptObj.stateLineOffset = (component.lineOffset || 0) + extractedServer.lineOffset
       }
 
       const declarativeComponents = (component.customElements || []).map(el => el.name)

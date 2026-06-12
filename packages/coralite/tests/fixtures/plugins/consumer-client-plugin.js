@@ -3,14 +3,14 @@ import { definePlugin } from '#lib'
 export const consumerClientPlugin = definePlugin({
   name: 'consumer-client-plugin',
   server: {
-    exports: {}
+    context: () => ({})
   },
   client: {
-    context: {
-      getClientUtility: async (globalContext) => {
-        const db = globalContext['provider-plugin'].db()
-        return () => {
-          return () => db.performAction()
+    context: async (globalContext) => {
+      const db = globalContext['provider-plugin'].db()
+      return {
+        getClientUtility: () => {
+          return db.performAction()
         }
       }
     }

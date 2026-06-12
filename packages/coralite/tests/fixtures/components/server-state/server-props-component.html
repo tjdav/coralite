@@ -12,7 +12,7 @@
   import fs from 'node:fs'
 
   export default defineComponent({
-    async data (context) {
+    async server (context) {
       // test server-only import
       const stats = fs.statSync('package.json')
   

@@ -7,9 +7,9 @@
   import * as myPlugin from 'my-plugin'
 
   export default defineComponent({
-    data (context) {
+    server (context) {
       return {
-        leaked: context.myFunc !== undefined || context['my-plugin'] !== undefined,
+        leaked: context.myFunc !== undefined,
         importedSecret: myPlugin.myFunc()
       }
     }

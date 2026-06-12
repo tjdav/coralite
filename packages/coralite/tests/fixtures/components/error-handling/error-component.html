@@ -12,7 +12,7 @@
         default: false
       }
     },
-    async data (context) {
+    async server (context) {
       // intentionally throw an error in dev to test error handling callback
       if (context.state.triggerError) {
         throw new Error('Intentional Test Error')

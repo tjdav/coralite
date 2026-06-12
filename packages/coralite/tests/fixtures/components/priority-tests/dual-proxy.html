@@ -26,7 +26,7 @@
         return state.count * 2
       }
     },
-    script: (context) => {
+    client: (context) => {
       const { state, signal, refs } = context
       refs('increment').addEventListener('click', () => {
         state.count++

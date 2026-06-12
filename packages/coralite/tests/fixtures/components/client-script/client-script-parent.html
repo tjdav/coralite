@@ -6,7 +6,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    script: ({ refs }) => {
+    client: ({ refs }) => {
       const container = refs('container')
       const child = document.createElement('client-script-component')
       child.setAttribute('title', 'Initial Parent')

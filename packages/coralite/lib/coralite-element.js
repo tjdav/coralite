@@ -71,7 +71,7 @@ export function coerce (value, type) {
  * @property {Object} [attributes] - Schema for coercing HTML attributes into typed primitives.
  * @property {Object.<string, Function>} [getters] - Pure functions for derived state, supporting Promises.
  * @property {Object.<string, Function>} [slots] - Transformation functions for projected Light DOM.
- * @property {Function} [script] - The client-side controller logic.
+ * @property {Function} [client] - The client-side controller logic.
  * @property {Object} [hydrationMap] - AST mapping for reactive text nodes, attributes, and refs.
  */
 
@@ -662,9 +662,9 @@ export class CoraliteElement extends HTMLElement {
       this._scheduleUpdate()
     }
 
-    if (this.componentOptions.script) {
+    if (this.componentOptions.client) {
       try {
-        this.componentOptions.script(localContext)
+        this.componentOptions.client(localContext)
       } catch (error) {
         console.error(`Coralite Error: Component "${this.componentOptions.componentId}" script failed:`, error)
       }

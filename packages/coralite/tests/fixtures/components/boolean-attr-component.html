@@ -18,7 +18,7 @@ export default defineComponent({
       default: false
     }
   },
-  script ({ state, refs }) {
+  client ({ state, refs }) {
     const btn = refs('toggle-btn')
 
     btn.addEventListener('click', () => {

@@ -7,28 +7,29 @@ describe('definePlugin', () => {
     const plugin = definePlugin({
       name: 'test-plugin',
       server: {
-        exports: {
-          test: () => () => {
+        context: () => {
+          return {
+            test: () => {
+            }
           }
         }
       }
     })
 
     assert.strictEqual(plugin.name, 'test-plugin')
-    assert.strictEqual(typeof plugin.server.exports, 'object')
-    assert.strictEqual(typeof plugin.server.exports.test, 'function')
+    assert.strictEqual(typeof plugin.server.context, 'function')
   })
 
-  it('should receive context and config in Phase 1', async () => {
+  it('should receive context and config in server.context', async () => {
     let capturedContext = null
     const plugin = definePlugin({
       name: 'test-plugin',
       server: {
         config: { foo: 'bar' },
-        exports: {
-          test: (context) => {
-            capturedContext = context
-            return () => {
+        context: (context) => {
+          capturedContext = context
+          return {
+            test: () => {
             }
           }
         }

@@ -9,14 +9,14 @@
   import { getServerData } from 'consumer-server-plugin'
 
   export default defineComponent({
-    data () {
+    server () {
       // getServerData is Phase 2 (returned by Phase 1)
       const data = getServerData()
       return {
         serverData: data
       }
     },
-    script: (context) => {
+    client: (context) => {
       const { getClientUtility } = context['consumer-client-plugin']
       const btn = document.getElementById('client-action')
       const resultDiv = document.getElementById('client-result')

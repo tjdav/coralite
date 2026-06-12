@@ -58,7 +58,7 @@ export function findAndExtractScript (code) {
           const scriptProp = firstArg.properties.find(
             prop => prop.type === 'Property' &&
               prop.key && prop.key.type === 'Identifier' &&
-              prop.key.name === 'script'
+              prop.key.name === 'client'
           )
 
           if (scriptProp && scriptProp.type === 'Property') {
@@ -76,7 +76,7 @@ export function findAndExtractScript (code) {
             } else if (value.type === 'FunctionExpression') {
               if (method) {
                 const isAsync = value.async
-                prefix += (isAsync ? 'async ' : '') + 'function script'
+                prefix += (isAsync ? 'async ' : '') + 'function client'
                 content = prefix + source
                 startLine = scriptProp.key.loc.start.line - 1
               } else {
@@ -141,7 +141,7 @@ export function findAndExtractProperties (code) {
           const stateProp = firstArg.properties.find(
             prop => prop.type === 'Property' &&
               prop.key && prop.key.type === 'Identifier' &&
-              prop.key.name === 'state'
+              prop.key.name === 'server'
           )
 
           if (stateProp && stateProp.type === 'Property') {
@@ -159,7 +159,7 @@ export function findAndExtractProperties (code) {
             } else if (value.type === 'FunctionExpression') {
               if (method) {
                 const isAsync = value.async
-                prefix += (isAsync ? 'async ' : '') + 'function state'
+                prefix += (isAsync ? 'async ' : '') + 'function server'
                 content = prefix + source
                 startLine = stateProp.key.loc.start.line - 1
               } else {

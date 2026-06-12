@@ -13,6 +13,8 @@ import { CoraliteError } from './utils/errors.js'
 
 let SourceTextModuleCache = null
 
+const isValidIdentifier = (name) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
+
 /**
  * Generates a custom module linker callback for the Node.js VM context.
  *
@@ -25,7 +27,7 @@ let SourceTextModuleCache = null
  * @returns {(specifier: string, referencingModule: Module, extra: { attributes: any }) => Promise<Module>}
  */
 export function createModuleLinker ({ path, context, source, plugins, importModuleDynamically }) {
-  const componentDirURL = pathToFileURL(resolve(path.dirname)).href
+  const componentFileURL = pathToFileURL(resolve(path.pathname)).href
 
   return async (specifier, referencingModule, extra) => {
     if (!SourceTextModuleCache) {
@@ -40,7 +42,7 @@ export function createModuleLinker ({ path, context, source, plugins, importModu
       let pluginExports = ''
 
       for (const key in plugin) {
-        if (Object.prototype.hasOwnProperty.call(plugin, key)) {
+        if (Object.prototype.hasOwnProperty.call(plugin, key) && isValidIdentifier(key)) {
           pluginExports += `export const ${key} = globalThis.__coralite_plugins__["${specifier}"]["${key}"];\n`
         }
       }
@@ -56,7 +58,7 @@ export function createModuleLinker ({ path, context, source, plugins, importModu
       utilsExports = 'const utils = globalThis.__coralite_utils__; export default utils;'
 
       for (const key in utils) {
-        if (Object.prototype.hasOwnProperty.call(utils, key)) {
+        if (Object.prototype.hasOwnProperty.call(utils, key) && isValidIdentifier(key)) {
           utilsExports += `export const ${key} = utils["${key}"];\n`
         }
       }
@@ -69,7 +71,7 @@ export function createModuleLinker ({ path, context, source, plugins, importModu
       let coraliteExports = 'const context = globalThis.__coralite_context__; export default context;'
 
       for (const key in context) {
-        if (Object.prototype.hasOwnProperty.call(context, key)) {
+        if (Object.prototype.hasOwnProperty.call(context, key) && isValidIdentifier(key)) {
           coraliteExports += `export const ${key} = context["${key}"];\n`
         }
       }
@@ -85,7 +87,7 @@ export function createModuleLinker ({ path, context, source, plugins, importModu
       specifier = pathToFileURL(resolve(path.dirname, specifier)).href
     } else {
       // handle modules
-      specifier = import.meta.resolve(specifier, componentDirURL)
+      specifier = import.meta.resolve(specifier, componentFileURL)
     }
 
     try {
@@ -184,7 +186,7 @@ export async function evaluateDevelopment ({
   session.source.currentSourceContextId = contextId
   session.source.contextInstances[contextId] = context
 
-  const boundDefineComponent = (options) => defineComponent(options, context)
+  const boundDefineComponent = (options) => defineComponent(options, symmetricalContext)
 
   const standardBuiltIns = new Set(['Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Math', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt', 'BigInt64Array', 'BigUint64Array', 'Symbol', 'Infinity', 'NaN', 'undefined', 'globalThis', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'escape', 'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'unescape'])
   if (!module._globalsCache) {
@@ -192,8 +194,13 @@ export async function evaluateDevelopment ({
   }
   const usedGlobals = module._globalsCache
 
+  const symmetricalContext = {
+    ...context,
+    ...cachedBoundPlugins
+  }
+
   const contextGlobals = {
-    __coralite_context__: context,
+    __coralite_context__: symmetricalContext,
     __coralite_plugins__: cachedBoundPlugins,
     __coralite_utils__: source.utils,
     __coralite_define_component__: boundDefineComponent
@@ -223,7 +230,7 @@ export async function evaluateDevelopment ({
 
   linker = createModuleLinker({
     path: moduleComponent.path,
-    context,
+    context: symmetricalContext,
     source,
     plugins: cachedBoundPlugins,
     importModuleDynamically
@@ -327,6 +334,11 @@ export async function evaluateProduction ({
   const fileRequire = createRequire(resolve(moduleComponent.path.pathname))
   const cachedBoundPlugins = await bindPlugins(source.plugins, context)
 
+  const symmetricalContext = {
+    ...context,
+    ...cachedBoundPlugins
+  }
+
   const customRequire = (id) => {
     const isCoralite = id === 'coralite'
     const isUtils = id === 'coralite/utils'
@@ -335,11 +347,11 @@ export async function evaluateProduction ({
     if (isCoralite || isUtils || isPlugin) {
       if (isCoralite) {
         return {
-          ...context,
-          defineComponent: (options) => defineComponent(options, context),
+          ...symmetricalContext,
+          defineComponent: (options) => defineComponent(options, symmetricalContext),
           default: {
-            ...context,
-            defineComponent: (options) => defineComponent(options, context)
+            ...symmetricalContext,
+            defineComponent: (options) => defineComponent(options, symmetricalContext)
           }
         }
       }

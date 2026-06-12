@@ -15,9 +15,9 @@ describe('Plugin Exports Leakage', async () => {
     const myPlugin = definePlugin({
       name: 'my-plugin',
       server: {
-        exports: {
-          myFunc: () => {
-            return () => () => 'secret'
+        context: () => {
+          return {
+            myFunc: () => 'secret'
           }
         }
       }
@@ -42,8 +42,9 @@ describe('Plugin Exports Leakage', async () => {
     const plugin1 = definePlugin({
       name: 'plugin1',
       server: {
-        exports: {
-          conflict: () => () => 'p1'
+        name: 'conflict',
+        context: () => {
+          return { conflict: () => 'p1' }
         }
       }
     })
@@ -51,8 +52,9 @@ describe('Plugin Exports Leakage', async () => {
     const plugin2 = definePlugin({
       name: 'plugin2',
       server: {
-        exports: {
-          conflict: () => () => 'p2'
+        name: 'conflict',
+        context: () => {
+          return { conflict: () => 'p2' }
         }
       }
     })

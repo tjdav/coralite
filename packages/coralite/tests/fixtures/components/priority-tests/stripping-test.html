@@ -6,13 +6,13 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    data () {
+    server () {
       return {
         content: 'ServerOnlyData'
       }
     },
-    script: () => {
-      // data() and fs import should be gone from here
+    client: () => {
+      // server() and fs import should be gone from here
       console.log('Client script running')
     }
   })

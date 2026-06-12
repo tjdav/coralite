@@ -179,7 +179,6 @@ export async function createCoralite ({
   })
 
   const _bindPluginsLocal = (phase2Functions, instanceContext) => bindPlugins({
-    serverGlobalContext,
     phase2Functions,
     instanceContext
   })

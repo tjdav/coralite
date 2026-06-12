@@ -17,7 +17,7 @@
  * @property {Object.<string, CoraliteModuleSlotFunction>} [slots] - Computed slots.
  * @property {Object} [attributes] - Attribute schema.
  * @property {Object} [getters] - Isomorphic getters.
- * @property {Object} [data] - Hydrated server data.
+ * @property {Object} [server] - Hydrated server data.
  */
 
 /**
@@ -48,19 +48,6 @@
  */
 
 /**
- * @callback ScriptPluginHelperGlobalInstance
- * @param {ScriptPluginHelperPhase1Context} pluginContext - Global instance context containing config
- * @returns {ScriptPluginHelperLocalInstance | Promise<ScriptPluginHelperLocalInstance>}
- */
-
-/**
- * @async
- * @callback ScriptPluginHelperLocalInstance
- * @param {CoraliteScriptContext} localContext - Local instance context
- * @returns {any}
- */
-
-/**
  * @typedef {Object} ScriptPlugin
  * @property {string} [name] - The name of the plugin
  * @property {string} [rootDir] - The root directory of the plugin
@@ -69,7 +56,7 @@
  * @property {CoraliteClientPluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Called before component is rendered
  * @property {CoraliteClientPluginAfterComponentRenderCallback} [onAfterComponentRender] - Called after component is rendered
  * @property {CoraliteClientPluginDisconnectedCallback} [onDisconnected] - Called when component is removed from the DOM
- * @property {Object.<string, ScriptPluginHelperGlobalInstance>} [context] - Global or instance helpers to add to scripts
+ * @property {(pluginContext: ScriptPluginHelperPhase1Context) => any} [context] - Symmetrical context function
  * @property {string[]} [_extractedComponents] - Extracted imperative components
  */
 
