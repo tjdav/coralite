@@ -8,14 +8,14 @@
 
 <script type="module">
   import { defineComponent } from 'coralite'
-  import { getPluginMessage } from 'test-context-plugin'
 
   export default defineComponent({
     server (context) {
+      const { getPluginMessage } = context['test-context-plugin']
       return {
         // test metadata plugin
         pageTitle: context.page.meta.title || 'No Title',
-        pluginMessage: getPluginMessage('E2E Test')
+        pluginMessage: getPluginMessage('E2E Test', context)
       }
     },
     client: (context) => {

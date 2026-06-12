@@ -4,13 +4,12 @@
 </template>
 <script type="module">
   import { defineComponent } from 'coralite'
-  import * as myPlugin from 'my-plugin'
 
   export default defineComponent({
     server (context) {
       return {
         leaked: context.myFunc !== undefined,
-        importedSecret: myPlugin.myFunc()
+        importedSecret: context['my-plugin'].myFunc()
       }
     }
   })

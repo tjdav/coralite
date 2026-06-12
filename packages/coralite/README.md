@@ -9,13 +9,13 @@
 Coralite is a **Native-First**, strictly Server-Side Rendered (SSR) framework for building fast, accessible, and future-proof websites.
 
 - **True Native Web Components with a "Flat" API**
-  No vanilla boilerplate. Use a clean `defineComponent` flat-options API (`attributes`, `data`, `getters`, `script`) to build powerful Custom Elements without the `class extends HTMLElement` friction.
+  No vanilla boilerplate. Use a clean `defineComponent` flat-options API (`attributes`, `server`, `getters`, `client`) to build powerful Custom Elements without the `class extends HTMLElement` friction.
 - **The "Smart State, Dumb Template" Paradigm**
   Templates are strictly declarative and "dumb"—no logic loops or dot-notation in HTML. All logic lives in pure JavaScript `getters` which receive a safe, Read-Only Proxy.
 - **Scoped CSS without Shadow DOM**
   Enjoy perfect style encapsulation using standard CSS. The Coralite compiler automatically injects unique instance identifiers and nests rules, avoiding the accessibility and global styling headaches of Shadow DOM.
 - **Native Async Race-Condition Immunity**
-  Coralite's reactive engine handles asynchronous `data()` and `getters` with built-in version locks, ensuring your DOM never renders stale data from out-of-order Promise resolutions.
+  Coralite's reactive engine handles asynchronous `server()` and `getters` with built-in version locks, ensuring your DOM never renders stale data from out-of-order Promise resolutions.
 - **Isomorphic, Two-Phase Curried Plugins**
   Extend the engine with a strict, typed boundary. Plugins use a two-phase currying pattern to inject heavy context during initialization, leaving you with a clean, scoped API at runtime.
 
@@ -147,8 +147,8 @@ Styles defined in the `<style>` block are automatically **scoped** to the compon
       role: { type: String, default: 'Guest' }
     },
 
-    // DATA: Async server-side fetching (Stripped from client bundle)
-    async data({ state }) {
+    // SERVER: Async server-side fetching (Stripped from client bundle)
+    async server({ state }) {
       const user = await userService.getById(state.userId)
       return {
         firstName: user.firstName,
@@ -163,8 +163,8 @@ Styles defined in the `<style>` block are automatically **scoped** to the compon
       userMeta: (state) => `Role: ${state.role} | ID: ${state.userId}`
     },
 
-    // SCRIPT: Client-side controller (Read/Write Proxy)
-    script({ state, refs, signal }) {
+    // CLIENT: Client-side controller (Read/Write Proxy)
+    client({ state, refs, signal }) {
       // Use the 'refs' utility to get the unique DOM element
       const titleEl = refs('title')
 
@@ -193,10 +193,12 @@ export default function myPlugin(options = {}) {
     name: 'my-plugin',
 
     server: {
-      // Phase 1: Plugin Context | Phase 2: Component Arguments
-      exports: {
-        getData: (pluginContext) => (query) => {
-          return { custom: 'data' }
+      // Symmetrical context: available in defineComponent server block
+      context: (pluginContext) => {
+        return {
+          getData: (query) => {
+            return { custom: 'data' }
+          }
         }
       },
       onBeforeComponentRender: ({ state }) => {
@@ -205,10 +207,12 @@ export default function myPlugin(options = {}) {
     },
 
     client: {
-      // Injects a utility directly into the component's 'script' context
-      context: {
-        myHelper: (pluginContext) => (instanceCtx) => () => {
-          console.log('Hello from component', instanceCtx.instanceId)
+      // Injects context helpers directly into the component's client block
+      context: (pluginContext) => (instanceContext) => {
+        return {
+          myHelper: () => {
+            console.log('Hello from component', instanceContext.instanceId)
+          }
         }
       }
     }

@@ -22,11 +22,10 @@ const isValidIdentifier = (name) => /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(name)
  * @param {CoraliteFilePath} options.path - The file path metadata of the component
  * @param {CoralitePluginContext} options.context - Contextual rendering data
  * @param {Object} options.source - Framework source context
- * @param {Object} options.plugins - Bound plugins
  * @param {Function} options.importModuleDynamically - The dynamic import callback
  * @returns {(specifier: string, referencingModule: Module, extra: { attributes: any }) => Promise<Module>}
  */
-export function createModuleLinker ({ path, context, source, plugins, importModuleDynamically }) {
+export function createModuleLinker ({ path, context, source, importModuleDynamically }) {
   const componentFileURL = pathToFileURL(resolve(path.pathname)).href
 
   return async (specifier, referencingModule, extra) => {
@@ -37,21 +36,7 @@ export function createModuleLinker ({ path, context, source, plugins, importModu
     const SourceTextModule = SourceTextModuleCache
     const originalSpecifier = specifier
 
-    if (plugins[specifier]) {
-      const plugin = plugins[specifier]
-      let pluginExports = ''
-
-      for (const key in plugin) {
-        if (Object.prototype.hasOwnProperty.call(plugin, key) && isValidIdentifier(key)) {
-          pluginExports += `export const ${key} = globalThis.__coralite_plugins__["${specifier}"]["${key}"];\n`
-        }
-      }
-
-      return new SourceTextModule(pluginExports, {
-        context: referencingModule.context,
-        importModuleDynamically
-      })
-    } else if (specifier == 'coralite/utils') {
+    if (specifier == 'coralite/utils') {
       const utils = source.utils
       let utilsExports = ''
 
@@ -232,7 +217,6 @@ export async function evaluateDevelopment ({
     path: moduleComponent.path,
     context: symmetricalContext,
     source,
-    plugins: cachedBoundPlugins,
     importModuleDynamically
   })
 
@@ -328,7 +312,7 @@ export async function evaluateProduction ({
       platform: 'node'
     })
 
-    moduleComponent.result._compiledCode = `(async() => {${code}})();`
+    moduleComponent.result._compiledCode = `return (async() => {${code}})();`
   }
 
   const fileRequire = createRequire(resolve(moduleComponent.path.pathname))
@@ -342,9 +326,8 @@ export async function evaluateProduction ({
   const customRequire = (id) => {
     const isCoralite = id === 'coralite'
     const isUtils = id === 'coralite/utils'
-    const isPlugin = source.plugins[id] !== undefined
 
-    if (isCoralite || isUtils || isPlugin) {
+    if (isCoralite || isUtils) {
       if (isCoralite) {
         return {
           ...symmetricalContext,
@@ -353,13 +336,6 @@ export async function evaluateProduction ({
             ...symmetricalContext,
             defineComponent: (options) => defineComponent(options, symmetricalContext)
           }
-        }
-      }
-
-      if (isPlugin) {
-        return {
-          ...(cachedBoundPlugins[id] || {}),
-          default: cachedBoundPlugins[id]
         }
       }
 

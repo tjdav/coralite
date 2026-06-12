@@ -57,6 +57,6 @@ When the `no-hydration` boolean attribute is present on a component:
 ## 7. Plugins (definePlugin)
 Plugins are critical for extending the framework and enforce a strict isomorphic boundary:
 * **Structure**: Must use `definePlugin` with a `name`, `server: {}` (for Node.js/Build logic), and `client: {}` (for Browser/esbuild logic).
-* **Server Block**: All SSR lifecycle hooks, plugin `exports`, and `components` arrays must reside within the `server` block.
-* **Two-Phase Currying**: The API uses currying for extensibility. `server.exports` uses `(session) => (instanceContext) =>` and `client.context` uses `(globalContext) => (instanceContext) =>`.
+* **Server Block**: All SSR lifecycle hooks, plugin `context`, and `components` arrays must reside within the `server` block.
+* **Two-Phase Currying**: The API uses currying for client extensibility. `client.context` uses `(globalContext) => (instanceContext) =>`. `server.context` uses a single phase `(pluginContext) => { ... }`.
 * **Terminology**: `renderContext` is deprecated; always use `session` across the plugin API.

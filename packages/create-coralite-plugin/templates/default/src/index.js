@@ -9,14 +9,16 @@ export default definePlugin({
   // SERVER: Strictly Node.js / Build-Time Execution
   server: {
     /**
-     * The exports property defines methods available to components during the server-side build process.
-     * These virtual modules MUST only be invoked within the data() block.
-     * Uses Two-Phase Currying: (pluginContext) => (instanceContext) => { ... }
+     * The context function defines methods and data available to components during the server-side build process.
+     * These are available in the first argument of the defineComponent server function.
+     * evaluated once per build session and provided to every component instance.
      */
-    exports: {
-      myPluginMethod: () => (instanceContext) => {
-        return {
-          message: instanceContext.message || 'Hello from server export!'
+    context: () => {
+      return {
+        myPluginMethod: (message) => {
+          return {
+            message: message || 'Hello from server context!'
+          }
         }
       }
     },

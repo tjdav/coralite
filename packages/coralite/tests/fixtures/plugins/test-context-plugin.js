@@ -3,10 +3,10 @@ import { definePlugin } from '#lib'
 export const testContextPlugin = definePlugin({
   name: 'test-context-plugin',
   server: {
-    context: () => (instanceContext) => {
+    context: () => {
       return {
-        getPluginMessage: (name) => {
-          return `Hello ${name} from server-side plugin! Page: ${instanceContext.page.url.pathname}`
+        getPluginMessage: (name, context) => {
+          return `Hello ${name} from server-side plugin! Page: ${context.page.url.pathname}`
         }
       }
     }

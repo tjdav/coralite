@@ -4,12 +4,12 @@
 When generating code or answering questions about Coralite, you MUST adhere to the following rules:
 1. **NO VANILLA BOILERPLATE:** Do not write standard `customElements.define()` or `class extends HTMLElement` blocks for components. You MUST always use Coralite's `defineComponent` exported from `coralite`.
 2. **AST SPLICING AWARENESS:** If a component is written declaratively in HTML (e.g., `<my-component>`), the server **preserves** the host tag to act as the Web Component container. It injects the component's template contents as children (Light DOM) and attaches deterministic tracking attributes (e.g., `data-cid="my-component-0"`) to the host tag itself.
-3. **ZERO-CONFIG DEPENDENCIES:** Coralite uses AST static analysis. To import JavaScript on the client, use standard dynamic imports (`await import('pkg')`) inside the `script` block.
+3. **ZERO-CONFIG DEPENDENCIES:** Coralite uses AST static analysis. To import JavaScript on the client, use standard dynamic imports (`await import('pkg')`) inside the `client` block.
 4. To mount a Web Component imperatively, use `document.createElement('my-component')` using a string literal containing a hyphen, which the bundler automatically detects.
 ---
 
 ## 1. The Serialization Boundary
-**CRITICAL RULE:** You cannot use top-level imports or variables (declared outside `defineComponent`) directly inside the `script` block. The `script` block is serialized and sent to the browser. To bridge server-side data to the client, you must use the `data` block.
+**CRITICAL RULE:** You cannot use top-level imports or variables (declared outside `defineComponent`) directly inside the `client` block. The `client` block is serialized and sent to the browser. To bridge server-side data to the client, you must use the `server` block.
 
 ## 2. File Structure: Pages vs. Components
 * **Pages**: Pages are standard `.html` files (e.g., `index.html`) that serve as route entry points. They act as the **consumers** of components by declaring custom element tags within their HTML body (e.g., `<my-navbar></my-navbar>`).
@@ -17,14 +17,14 @@ When generating code or answering questions about Coralite, you MUST adhere to t
   1. `<template id="component-name">` (**Required**): Defines the declarative HTML structure.
   2. `<style>` (**Optional**): Defines component-specific styles.
   3. `<script type="module">` (**Optional**): Defines the reactive logic using `defineComponent`.
-* **The Relationship**: When a Page consumes a component tag, the server-side build process discovers the component, **preserves the custom element host tag**, and splices the component's inner `<template>` HTML into it. It then processes the `<style>`, and bundles the serialized `<script>` into the client-side JavaScript chunk.
+* **The Relationship**: When a Page consumes a component tag, the server-side build process discovers the component, **preserves the custom element host tag**, and splices the component's inner `<template>` HTML into it. It then processes the `<style>`, and bundles the serialized `client` block into the client-side JavaScript chunk.
 
 ## 3. System Architecture
 * **Rendering**: Strictly Server-Side Rendered (SSR) with deterministic ID generation (`my-component-0`). No heavy client-side AST rendering.
 * **Architecture**: Coralite utilizes a hybrid model where components are either fully declarative (SSR-only) or true imperative Web Components. Imperative components lazily loaded via JavaScript use native HTML template stamping (`this.innerHTML = templateHTML`) with Light DOM projection, entirely eliminating the need for client-side HTML parsers.
-* **API Paradigm**: Coralite uses a "Flat Options" API. All logic is defined within four strictly isolated blocks: `attributes`, `data`, `getters`, and `script`.
-* **State Equation**: `Attributes + Data + Getters = State`. The template only sees this unified reactive proxy.
-* **Scope Isolation**: Component state (like variables defined in the script or internal `ref` IDs) is strictly isolated. It does **not** cascade down to child components. Only explicitly passed HTML attributes and globally injected plugin states cascade.
+* **API Paradigm**: Coralite uses a "Flat Options" API. All logic is defined within four strictly isolated blocks: `attributes`, `server`, `getters`, and `client`.
+* **State Equation**: `Attributes + ServerState + Getters = State`. The template only sees this unified reactive proxy.
+* **Scope Isolation**: Component state (like variables defined in the client script or internal `ref` IDs) is strictly isolated. It does **not** cascade down to child components. Only explicitly passed HTML attributes and globally injected plugin states cascade.
 
 ## 4. Static Components
 Static components are purely HTML-based elements without scripting logic.
@@ -55,7 +55,7 @@ customElements.define('my-component', MyComponent);
 ```javascript
 import { defineComponent } from 'coralite'
 export default defineComponent({
-  script: ({ state, signal, refs }) => { ... }
+  client: ({ state, signal, refs }) => { ... }
 })
 ```
 
@@ -69,9 +69,9 @@ A component definition consists of four primary blocks:
 * **Rule**: Strictly limited to primitives (`String`, `Number`, `Boolean`). `Object` and `Array` types are strictly blocked to avoid JSON-in-HTML parsing errors.
 * **Reactivity**: Changes to HTML attributes (via `setAttribute`) automatically trigger updates to the unified `state`.
 
-#### 2. `data({ state, page, root, module, id, session, app, noHydration })` (Async/Server)
+#### 2. `server({ state, page, root, module, id, session, app, noHydration, ...plugins })` (Async/Server)
 
-* **Purpose**: Fetches initial state on the server during the build process.
+* **Purpose**: Fetches initial state on the server during the build process. Formerly known as `data`.
 * **Arguments** (The Context Object):
   * `state`: Contains the component's resolved attributes (e.g., `state.category`). **Always use this to read HTML attribute values passed to the component.**
   * `page`: Contains global metadata about the consuming page/route (e.g., URL, file info).
@@ -81,6 +81,7 @@ A component definition consists of four primary blocks:
   * `session`: The current rendering session.
   * `app`: The Coralite instance.
   * `noHydration`: Boolean indicating if hydration is disabled for this instance.
+  * `...plugins`: Namespaced plugin contexts from `server.context`.
 
 * **Serialization**: This block is fully stripped from the client bundle by the build tool. The returned object is serialized and merged into the unified client-side `state`.
 
@@ -90,14 +91,14 @@ A component definition consists of four primary blocks:
 * **Rule**: These receive a **Read-Only Proxy** of the state. They must never mutate state and cannot be `async`.
 * **Reactivity**: Automatically re-evaluated when any underlying state dependency changes.
 
-#### 4. `script({ state, signal, refs, ...plugins })` (Client)
+#### 4. `client({ state, signal, refs, ...plugins })` (Client)
 
-* **Purpose**: The client-side controller for the component.
+* **Purpose**: The client-side controller for the component. Formerly known as `script`.
 * **Arguments** (Injected via Client Context):
   * `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
   * `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
   * `refs`: A dictionary of dynamically generated, globally unique IDs (e.g., `my-comp-0__btn`) for elements marked with the `ref` attribute (integrated into the Core framework).
-  * `[pluginName | client.name]`: **Namespaced Plugin Context.** Injected context helpers from plugins are isolated under their namespace key (either the plugin `name` or `client.name`). For example, if a plugin has `client.name: 'event'` and defines `context: { bus: ... }`, the component's script block will receive it as `event.bus` (e.g., `script: ({ event }) => { event.bus.emit(...) }`).
+  * `[pluginName | client.name]`: **Namespaced Plugin Context.** Injected context helpers from plugins are isolated under their namespace key (either the plugin `name` or `client.name`). For example, if a plugin has `client.name: 'event'` and defines `context: { bus: ... }`, the component's client block will receive it as `event.bus` (e.g., `client: ({ event }) => { event.bus.emit(...) }`).
 
 
 * **Usage**: All DOM events, imperative mutations, third-party library initializations, and side-effects live here.
@@ -142,12 +143,12 @@ The `definePlugin` function enforces the following schema. A plugin consists of 
 import { definePlugin } from 'coralite'
 
 export default definePlugin({
-  name: 'my-plugin', // Required. Acts as the virtual module import specifier.
+  name: 'my-plugin', // Required. Acts as the namespace key on the evaluation context (e.g. context['my-plugin']).
   
   // SERVER: Strictly Node.js / Build-Time Execution
   server: {
     config: { ... }, // Optional plugin-specific configuration settings
-    exports: { ... }, // Two-Phase Curried functions for component data() blocks
+    context: (pluginContext) => (instanceContext) => { ... }, // Symmetrical context function available in defineComponent server block
     components: [ ... ], // Array of string paths to plugin-provided .html components
 
     // Server Build Hooks
@@ -192,7 +193,7 @@ export default definePlugin({
   // CLIENT: Strictly Browser / Run-Time Execution
   client: {
     config: { ... }, // Optional plugin-specific client-side configuration
-    context: { ... }, // Client-side context injections (Two-Phase Currying)
+    context: (pluginContext) => (instanceContext) => { ... }, // Client-side context injections (Two-Phase Resolver)
     
     // Client Runtime Hooks
     setup: async ({ values, config }) => {
@@ -211,13 +212,13 @@ export default definePlugin({
 })
 ```
 
-### 6.2 The `server.exports` System (Server-Side Virtual Modules)
+### 6.2 The `server.context` System
 
-The `server.exports` property defines methods available to components **during the server-side build process**.
+The `server.context` property defines methods and data available to components **during the server-side build process** via the first argument of the `server` block in `defineComponent`.
 
-* **Top-Level Imports**: Plugins are imported at the top level of the component's `<script>` block using the plugin's `name` as the module specifier.
-* **Server-Only Execution**: Because these modules are virtual, imported functions **MUST** only be invoked within the `data()` block. The build tool strips these imports before sending the script to the client.
-* **Two-Phase Currying**: Functions receive the `CoralitePluginContext` in Phase 1, and return the function the component developer uses in Phase 2.
+* **Injection**: Plugins are injected into the context object passed to the `server` function. The key matches the plugin's name.
+* **Usage**: `async server(context) { const data = await context['my-plugin'].getData(); return { data }; }`
+* **Lifecycle**: These are evaluated once per build session and provided to every component instance.
 
 ### 6.3 Isomorphic Component Lifecycle Hooks
 
@@ -231,18 +232,18 @@ Plugins can intercept specific components during AST generation (Server) and DOM
   * **Server Payload**: The completed AST array (`result`).
   * **Client Payload**: Executes after the browser's microtask queue flushes the DOM.
 
-### 6.4 Client Context Injection (Two-Phase Currying)
+### 6.4 Client Context Injection (Two-Phase Resolver)
 
-Client injections mapped in `client.context` use a curried setup:
+Client injections mapped in `client.context` use a Two-Phase Resolver setup:
 
-* **Phase 1 (Global Setup)**: `(globalContext) => ...` Runs exactly once when the plugin registers. Use this for shared plugin state.
-* **Phase 2 (Local Instance)**: `(instanceContext) => ...` Runs when a component mounts. Returns the actual utility injected into the script context.
+* **Phase 1 (Global Setup)**: `(pluginContext) => ...` Runs exactly once when the plugin registers. Use this for shared plugin state.
+* **Phase 2 (Local Instance)**: `(instanceContext) => ...` Runs when a component mounts. Returns the actual utility/context mapped to the plugin's namespace on the component's client context.
 
-**Namespacing**: Injected context helpers are namespaced on the script argument object using either the plugin's `name` or `client.name` property. For example, if a plugin defines `name: 'store'` and has a context helper `fetch`, the component `script` block accesses it as `store.fetch(...)` rather than a flat global export.
+**Namespacing**: Injected context helpers are namespaced on the client context object using either the plugin's `name` or `client.name` property. For example, if a plugin defines `name: 'store'` and has a context helper `fetch`, the component `client` block accesses it as `context.store.fetch(...)` rather than a flat global export.
 
 ### 6.5 The Plugin Serialization Boundary
 **CRITICAL RULE:** Variables defined in the top-level scope of the plugin file or inside the plugin factory function (e.g., `export default function myPlugin(options) { ... }`) are NOT accessible in the `client` block. The framework serializes the `client` functions for the browser.
-*   **Phase 1 (`globalContext`)**: Use this scope to define shared state (e.g., caches) that must persist across all component instances in the browser.
+*   **Phase 1 (`pluginContext`)**: Use this scope to define shared state (e.g., caches) that must persist across all component instances in the browser.
 *   **Phase 2 (`instanceContext`)**: Use this scope for logic specific to a single component instance.
 
 ## 7. Configuration (defineConfig)
@@ -341,7 +342,7 @@ When multiple components form a filter set or a form, wrap them in a `<form>` el
 *   **Efficiency**: `FormData` automatically collects all values from named inputs, avoiding manual DOM traversal and individual attribute checking.
 *   **Implementation**:
     ```javascript
-    script: ({ refs }) => {
+    client: ({ refs }) => {
       const form = refs('filterForm');
       form.addEventListener('change', () => {
         const data = new FormData(form);
@@ -398,4 +399,4 @@ Every `CoraliteError` exposes detailed diagnostic metadata:
 *   `line` (number): The line number in the source file.
 *   `column` (number): The column number in the source file.
 *   `stackFile` (string): The file name extracted from the stack trace.
-*   `cause` (Error): The original error instance (if wrapped).
+*   Cause (Error): The original error instance (if wrapped).
