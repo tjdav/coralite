@@ -84,8 +84,8 @@ export function createRenderer ({
   const renderQueues = new Map()
   const sealedQueues = new Set()
   const outputFiles = {}
-  const scriptResultCache = new Map()
   let globalScriptResult = null
+  let siteWideBundlePromise = null
 
   /**
    * Creates a new rendering session.
@@ -939,33 +939,9 @@ export function createRenderer ({
             }
           }
 
-          let scriptResult
+          const scriptResult = globalScriptResult
 
-          if (isProduction && globalScriptResult) {
-            scriptResult = globalScriptResult
-          } else {
-            const cacheKey = Array.from(componentIds).sort().join(',')
-
-            if (scriptResultCache.has(cacheKey)) {
-              scriptResult = scriptResultCache.get(cacheKey)
-            } else {
-              /** @type {Object.<string, InstanceContext>} */
-              const normalizedInstances = {}
-
-              for (const [id, instance] of Object.entries(instances)) {
-                normalizedInstances[id] = {
-                  ...instance,
-                  state: normalizeObjectFunctions(instance.state, astTransformer)
-                }
-              }
-
-              scriptResult = await scriptManager.compileAllInstances(normalizedInstances, normalizedOptions.mode)
-              scriptResultCache.set(cacheKey, scriptResult)
-              Object.assign(outputFiles, scriptResult.outputFiles)
-            }
-          }
-
-          if (!scriptResult.manifest['coralite-runtime']) {
+          if (!scriptResult || !scriptResult.manifest['coralite-runtime']) {
             handleError({
               level: 'ERR',
               message: 'MANIFEST MISSING coralite-runtime!',
@@ -1166,6 +1142,27 @@ export function createRenderer ({
       const allComponentIds = app.components.list.map(c => c.result.id)
       globalScriptResult = await scriptManager.compileAllInstances(allComponentIds, normalizedOptions.mode)
       Object.assign(outputFiles, globalScriptResult.outputFiles)
+    } else if (normalizedOptions.mode === 'development') {
+      // Atomic site-wide rebuild for development
+      if (!siteWideBundlePromise) {
+        const bundlePromise = (async () => {
+          const allComponentIds = app.components.list.map(c => c.result.id)
+          const result = await scriptManager.compileAllInstances(allComponentIds, normalizedOptions.mode)
+
+          // Only update if this is still the active build session
+          if (siteWideBundlePromise === bundlePromise) {
+            globalScriptResult = result
+            // Clear old output files but keep newest
+            for (const key in outputFiles) {
+              delete outputFiles[key]
+            }
+            Object.assign(outputFiles, result.outputFiles)
+          }
+          return result
+        })()
+        siteWideBundlePromise = bundlePromise
+      }
+      await siteWideBundlePromise
     }
 
     if (buildPath) {
@@ -1464,10 +1461,15 @@ export function createRenderer ({
    * Clears the internal script result cache and output files.
    * This is useful during development to ensure that changes to components
    * are reflected in the generated client-side script bundles.
+   *
+   * @param {boolean} [structural=false] - If true, disposes the esbuild context.
    */
-  const clearCache = () => {
-    scriptResultCache.clear()
+  const clearCache = async (structural = false) => {
     globalScriptResult = null
+    siteWideBundlePromise = null
+    if (structural) {
+      await scriptManager.disposeContext()
+    }
     for (const key in outputFiles) {
       delete outputFiles[key]
     }

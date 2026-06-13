@@ -1,4 +1,4 @@
-import { build } from 'esbuild'
+import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
@@ -27,6 +27,7 @@ export function ScriptManager (options = {}) {
   this.plugins = []
   this.scriptModules = []
   this.options = options
+  this.context = null
 }
 
 /**
@@ -189,6 +190,17 @@ ScriptManager.prototype.registerComponent = function ({
         target.components = mergeUniqueObjects(target.components, script.components)
       }
     }
+  }
+}
+
+/**
+ * Disposes the current esbuild context if it exists.
+ * @returns {Promise<void>}
+ */
+ScriptManager.prototype.disposeContext = async function () {
+  if (this.context) {
+    await this.context.dispose()
+    this.context = null
   }
 }
 
@@ -396,7 +408,8 @@ export default {
   const injectPath = fileURLToPath(import.meta.resolve('./utils/client/inject.js'))
 
   // Build and bundle
-  const result = await build({
+  /** @type {import('esbuild').BuildOptions} */
+  const esbuildOptions = {
     entryPoints: virtualEntryPoints,
     inject: [injectPath],
     bundle: true,
@@ -649,7 +662,17 @@ export default {
         }
       }
     ]
-  })
+  }
+
+  let result
+  if (mode === 'development') {
+    if (!this.context) {
+      this.context = await context(esbuildOptions)
+    }
+    result = await this.context.rebuild()
+  } else {
+    result = await build(esbuildOptions)
+  }
 
   const manifest = {}
   if (result.metafile && result.metafile.outputs) {

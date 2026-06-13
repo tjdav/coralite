@@ -481,6 +481,7 @@ async function server (config, options) {
     let compileTimeout = null
     let isCompiling = false
     const pendingChanges = new Set()
+    const structuralChanges = new Set()
     const configPathStr = join(process.cwd(), 'coralite.config.js')
 
 
@@ -496,7 +497,6 @@ async function server (config, options) {
         }
 
         pageCache.clear()
-        coralite.clearCache()
 
         isCompiling = true
         let dash = colours.gray(' ─ ')
@@ -504,6 +504,10 @@ async function server (config, options) {
         // Process all pending changes
         const changes = Array.from(pendingChanges)
         pendingChanges.clear()
+        const isStructural = structuralChanges.size > 0
+        structuralChanges.clear()
+
+        await coralite.clearCache(isStructural)
 
         // Group changes by type
         const pagesChanges = changes.filter(p => p.startsWith(pagesPath))
@@ -580,6 +584,9 @@ async function server (config, options) {
       .on('unlink', async (path) => {
         try {
           if (path.startsWith(componentPath)) {
+            structuralChanges.add(path)
+            pendingChanges.add(path)
+            debounceCompile()
             await coralite.components.deleteItem(path)
           } else if (path.startsWith(pagesPath)) {
             await coralite.pages.deleteItem(path)
@@ -597,6 +604,9 @@ async function server (config, options) {
         try {
           if (path.startsWith(componentPath)) {
             // set component item
+            structuralChanges.add(path)
+            pendingChanges.add(path)
+            debounceCompile()
             coralite.components.setItem(path)
           } else if (path.endsWith('.scss') || path.endsWith('.sass') || path === configPathStr || Array.from(pluginPaths).some(pluginPath => path === pluginPath)) {
             // Add to pending changes and trigger debounced compilation
