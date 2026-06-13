@@ -50,13 +50,14 @@
       </coralite-code-html>
 
       <coralite-heading level="3" text="Accessing Metadata in Scripts"></coralite-heading>
-      <p>Access the metadata in your <code>defineComponent</code> script block:</p>
+      <p>Access the metadata in your component's <code>server</code> block:</p>
 
       <coralite-code-highlight language="JavaScript">
         export default defineComponent({
-          script ({ state, signal, refs, ...pluginContext }) {
-            console.log('Page Title:', page.meta.title);
-            console.log('Description:', page.meta.description);
+          server (context) {
+            console.log('Page Title:', context.page.meta.title);
+            console.log('Description:', context.page.meta.description);
+            return {};
           }
         })
       </coralite-code-highlight>
@@ -101,11 +102,11 @@
     <!-- Accessing in Templates -->
     <section id="accessing-in-templates">
       <coralite-heading level="2" text="Accessing in Templates"></coralite-heading>
-      <p>Coralite templates are "dumb" and cannot access the <code>page</code> object directly. To render metadata in your HTML template, you must explicitly map it to your component's <code>state</code> using the <code>data</code> block:</p>
+      <p>Coralite templates are "dumb" and cannot access the <code>page</code> object directly. To render metadata in your HTML template, you must explicitly map it to your component's <code>state</code> using the <code>server</code> block:</p>
 
       <coralite-code-highlight language="JavaScript">
         export default defineComponent({
-          async data(context) {
+          async server(context) {
             return {
               // Map the page meta title to a flat state key
               pageTitle: context.page.meta.title

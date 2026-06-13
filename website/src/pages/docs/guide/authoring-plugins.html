@@ -23,7 +23,7 @@
       <li><strong>Registration & Bootstrapping:</strong> Coralite loads your plugin via <code>definePlugin</code>, reading its <code>client.config</code> and executing its <code>client.context</code> configuration to prepare client-side utilities.</li>
       <li><strong>Server Execution:</strong> As the generator processes pages and encounters dynamic components, it fires your plugin's lifecycle hooks (e.g., <code>onPageSet</code>, <code>onBeforePageRender</code>).</li>
       <li><strong>Data Binding & Injection:</strong> Coralite processes the component's tokens, attributes, and slots. Any server-fetched data is bridged into the component's <code>state</code> object.</li>
-      <li><strong>Client Hydration:</strong> Finally, Coralite serializes your component's <code>script</code> and your plugin's custom `client.context` utilities. When the browser loads the page, the utilities are securely flattened and spread directly onto the runtime context, enabling dynamic interactions.</li>
+      <li><strong>Client Hydration:</strong> Finally, Coralite serializes your component's <code>client</code> block and your plugin's custom `client.context` utilities. When the browser loads the page, the utilities are securely namespaced and made available directly on the runtime context, enabling dynamic interactions.</li>
     </ol>
 
     <coralite-heading level="2" text="Server-Side Lifecycle Hooks"></coralite-heading>
@@ -67,30 +67,30 @@
 
     <coralite-heading level="2" text="Injecting Client Helpers"></coralite-heading>
 
-    <p>The most powerful feature of Coralite plugins is the ability to provide reusable functionality directly to component scripts using <code>client.context</code>.</p>
+    <p>The most powerful feature of Coralite plugins is the ability to provide reusable functionality directly to component client blocks using <code>client.context</code>.</p>
 
-    <p>Context utilities are flattened directly onto the root <code>context</code> object available in every <code>script</code> execution block. However, because Coralite is a static site generator, there is a strict boundary between server code and client code.</p>
+    <p>Context utilities are namespaced on the <code>context</code> object available in every component's <code>client</code> execution block (e.g. <code>context['my-plugin']</code>). However, because Coralite is a static site generator, there is a strict boundary between server code and client code.</p>
 
-    <coralite-heading level="3" text="The Factory Pattern"></coralite-heading>
+    <coralite-heading level="3" text="The Two-Phase Resolver"></coralite-heading>
 
-    <p>Helpers must be structured using a two-phase currying system that executes server-side. The outermost function receives the global context, and it must return a second function that receives the local Web Component instance context. This second function then returns the actual callable utility function used by the user's script.</p>
+    <p>Helpers must be structured using a Two-Phase Resolver function that executes during setup. The outermost function receives the plugin context (Phase 1, runs on the server and contains the global application instance and plugin configuration), and it must return a second function that receives the local Web Component instance context (Phase 2). This second function then returns an object containing the actual utility functions accessible on the client.</p>
 
-    <p>To use client-only APIs (like <code>window</code>, <code>document</code>, or the injected <code>AbortSignal</code>), the injected helper function must encapsulate that logic within the final returned function.</p>
+    <p>To use client-only APIs (like <code>window</code>, <code>document</code>, or the component's <code>AbortSignal</code>), the returned helper functions encapsulate that logic within their own bodies.</p>
 
     <coralite-code-highlight language="javascript">
       // Server-side definition in definePlugin
       client: {
-        context: {
-          // Phase 1: Runs on the SERVER and receives global context
-          trackEvent: (globalContext) => {
-            const apiKey = globalContext.config.apiKey;
+        context: (pluginContext) => {
+          // Phase 1: Runs on the SERVER and receives pluginContext (including config)
+          const apiKey = pluginContext.config.apiKey;
 
-            // Phase 2: Receives the local Web Component instance context
-            return ({ signal }) => {
+          return (instanceContext) => {
+            // Phase 2: Receives the local Web Component instance context (signal, state, etc.)
+            const { signal } = instanceContext;
 
-              // Phase 3: The actual function accessible on the CLIENT
-              return (buttonElement, eventName) => {
-
+            // Phase 3: Return the actual helper object accessible in the browser
+            return {
+              trackEvent: (buttonElement, eventName) => {
                 // Now we can safely use browser APIs and component lifecycle signals
                 buttonElement.addEventListener('click', () => {
                   window.navigator.sendBeacon('https://api.analytics.com', JSON.stringify({
@@ -98,9 +98,8 @@
                     event: eventName
                   }));
                 }, { signal });
-
-              };
-            }
+              }
+            };
           }
         }
       }

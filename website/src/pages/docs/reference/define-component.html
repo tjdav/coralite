@@ -38,9 +38,9 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
         <td>Defines and coerces HTML attributes into JS primitives.</td>
       </tr>
       <tr slot="body">
-        <td><code>data</code></td>
+        <td><code>server</code></td>
         <td><code>(context: CoraliteServerContext) => Promise&lt;Record&lt;string, any&gt;&gt;</code></td>
-        <td>A server-side async function for fetching initial state. Stripped from the client bundle.</td>
+        <td>A server-side async function for fetching initial state. Stripped from the client bundle. Formerly known as <code>data</code>.</td>
       </tr>
       <tr slot="body">
         <td><code>getters</code></td>
@@ -48,9 +48,9 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
         <td>Pure functions for derived state. Receives a read-only state proxy.</td>
       </tr>
       <tr slot="body">
-        <td><code>script</code></td>
+        <td><code>client</code></td>
         <td><code>(context: CoraliteScriptContext) => void</code></td>
-        <td>The client-side controller. Receives a read/write state proxy.</td>
+        <td>The client-side controller. Receives a read/write state proxy. Formerly known as <code>script</code>.</td>
       </tr>
       <tr slot="body">
         <td><code>slots</code></td>
@@ -71,14 +71,14 @@ attributes: {
     </coralite-code-highlight>
 
     <div class="alert alert-info">
-        <strong>Strict Primitive Rule:</strong> To prevent complex JSON-in-HTML parsing errors and ensure performance, attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code>. Use the <code>data</code> block or <code>slots</code> for complex data structures.
+        <strong>Strict Primitive Rule:</strong> To prevent complex JSON-in-HTML parsing errors and ensure performance, attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code>. Use the <code>server</code> block or <code>slots</code> for complex data structures.
     </div>
 
-    <coralite-heading level="2" text="2. data (Server-Side)"></coralite-heading>
-    <p>The <code>data</code> block is used for heavy-lifting, such as database queries or API calls. This code runs <strong>only on the server</strong> during the build process and is completely removed from the JavaScript sent to the browser.</p>
+    <coralite-heading level="2" text="2. server (Server-Side)"></coralite-heading>
+    <p>The <code>server</code> block is used for heavy-lifting, such as database queries or API calls. This code runs <strong>only on the server</strong> during the build process and is completely removed from the JavaScript sent to the browser. Formerly known as <code>data</code>.</p>
 
     <coralite-code-highlight language="javascript">
-async data(context) {
+async server(context) {
     const users = await db.users.findMany();
     return { users };
 }
@@ -94,11 +94,11 @@ getters: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="2" text="4. script (Client-Side)"></coralite-heading>
-    <p>The <code>script</code> block is the controller for your component in the browser. This is where you add event listeners and mutate state.</p>
+    <coralite-heading level="2" text="4. client (Client-Side)"></coralite-heading>
+    <p>The <code>client</code> block is the controller for your component in the browser. This is where you add event listeners and mutate state. Formerly known as <code>script</code>.</p>
 
     <coralite-code-highlight language="javascript">
-script: ({ state, signal, refs }) => {
+client: ({ state, signal, refs }) => {
     // Access unique DOM elements via the 'refs' utility
     const btn = refs('loadMoreBtn');
     

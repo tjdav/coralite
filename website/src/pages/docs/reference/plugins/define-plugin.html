@@ -44,10 +44,10 @@ const myPlugin = definePlugin({
   // Optional: Server-side logic
   server: {
     // Context resolver for component server() blocks
-    context: (pluginContext) => (instanceContext) => {
+    context: (pluginContext) => {
       return {
-        log: (message) => {
-          console.log(`[${instanceContext.id}] ${message}`, instanceContext.state)
+        log: (message, context) => {
+          console.log(`[${context.id}] ${message}`, context.state)
         }
       }
     },
@@ -74,23 +74,19 @@ const myPlugin = definePlugin({
     <!-- Context Binding -->
     <section id="context-binding">
       <coralite-heading level="2" text="Context Binding (`server.context`)"></coralite-heading>
-      <p>The <code>server.context</code> property is a function that processes content using plugin logic during the server-side build process. These functions are available to component <code>server()</code> blocks via the plugin's namespace (e.g. <code>context.myPlugin</code>).</p>
-      <p>These functions use a <strong>Two-Phase Resolver</strong> pattern to receive the plugin context in Phase 1 and the component instance context in Phase 2.</p>
+      <p>The <code>server.context</code> property is a function evaluated once per build session to define methods and data available to component <code>server()</code> blocks via the plugin's namespace (e.g. <code>context['logger-plugin']</code>).</p>
+      <p>Unlike the client context, <code>server.context</code> runs in a single phase and receives the plugin context (Phase 1, containing the global application instance and plugin configuration) during build initialization. Because there is no second phase automatically providing the component instance context, any methods that require component-specific data (such as the current page metadata or component state) should accept the component's context object as an argument.</p>
       
       <coralite-code-highlight language="JavaScript">
 export default definePlugin({
   name: 'logger-plugin',
   server: {
     config: { prefix: 'LOG' },
-    context: (pluginContext) => (instanceContext) => {
+    context: (pluginContext) => {
+      // Phase 1: Receive pluginContext containing globalContext and config
       return {
-        log: (message) => {
-          // Phase 1: Receive pluginContext containing globalContext and config
-          // Phase 2: Receive instanceContext (session, state, page, etc.)
-          console.log(`[${pluginContext.config.prefix}] [${instanceContext.id}] ${message}`, instanceContext.state);
-          
-          // Returning a state patch to be merged into component state
-          return { logged: true };
+        log: (message, componentContext) => {
+          console.log(`[${pluginContext.config.prefix}] [${componentContext.id}] ${message}`, componentContext.state);
         }
       }
     }

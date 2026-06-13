@@ -35,7 +35,7 @@
         },
 
         // Server-Side: Asynchronous data fetching (runs at build-time)
-        async data(context) {
+        async server(context) {
             const user = await db.users.findFirst();
             return { userName: user.name }
         },
@@ -46,7 +46,7 @@
         },
 
         // Client-Side: Controller (Read/Write)
-        script({ state, signal, refs, ...pluginContext }) {
+        client({ state, signal, refs, ...pluginContext }) {
             console.log('Component mounted for user:', state.userName)
 
             const btn = refs('btn')
@@ -57,14 +57,14 @@
       })
     </coralite-code-highlight>
 
-    <coralite-heading level="2" text="The Script Context"></coralite-heading>
+    <coralite-heading level="2" text="The Client Context"></coralite-heading>
 
     <p>
-      The <code>script</code> block is executed in the browser when the component mounts. It receives a flattened context object via destructuring:
+      The <code>client</code> block is executed in the browser when the component mounts. It receives a flattened context object via destructuring:
     </p>
 
     <ul>
-        <li><code>state</code>: A <strong>Read/Write Reactive Proxy</strong>. This unified state contains state from <code>attributes</code>, <code>data</code>, and <code>getters</code>. Any mutation here triggers a re-render and re-evaluates getters.</li>
+        <li><code>state</code>: A <strong>Read/Write Reactive Proxy</strong>. This unified state contains state from <code>attributes</code>, <code>server</code> state, and <code>getters</code>. Any mutation here triggers a re-render and re-evaluates getters.</li>
         <li><code>refs</code>: A helper function to query DOM elements within the component's root that have a <code>ref</code> attribute.</li>
         <li><code>signal</code>: An <code>AbortSignal</code> tied to the component's lifecycle. Always use this to clean up event listeners or abort pending fetch requests when the component unmounts.</li>
         <li><code>page</code>: Static environment data including the current URL and file metadata.</li>
@@ -83,12 +83,12 @@
     <coralite-heading level="2" text="Using External Libraries"></coralite-heading>
 
     <p>
-      Because Coralite leverages standard ESM, you can use dynamic <code>import()</code> statements directly inside your <code>script</code> function to load client-side dependencies. These are automatically detected by the build tool and bundled for the browser.
+      Because Coralite leverages standard ESM, you can use dynamic <code>import()</code> statements directly inside your <code>client</code> function to load client-side dependencies. These are automatically detected by the build tool and bundled for the browser.
     </p>
 
     <coralite-code-highlight language="javascript">
       export default defineComponent({
-        async script({ state, signal, refs, ...pluginContext }) {
+        async client({ state, signal, refs, ...pluginContext }) {
             const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
 
             const btn = refs('celebrateBtn')
@@ -106,8 +106,8 @@
     </p>
 
     <coralite-code-highlight language="javascript">
-        // Inside a child component's script
-        script({ state, signal, refs, ...pluginContext }) {
+        // Inside a child component's client block
+        client({ state, signal, refs, ...pluginContext }) {
             const el = refs('main');
             el.dispatchEvent(new CustomEvent('user-updated', {
                 bubbles: true,

@@ -860,7 +860,7 @@
     </div>
 
     <coralite-heading level="3" text="CoraliteScriptContext"></coralite-heading>
-    <p>Context object passed to the component <code>script</code> in the browser.</p>
+    <p>Context object passed to the component <code>client</code> function in the browser.</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -872,14 +872,14 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>instanceId</code></td>
+            <td><code>id</code></td>
             <td><code>string</code></td>
             <td>Unique instance identifier (e.g., <code>my-comp-0</code>).</td>
           </tr>
           <tr>
-            <td><code>componentId</code></td>
+            <td><code>instanceId</code></td>
             <td><code>string</code></td>
-            <td>The component's tag name.</td>
+            <td>Unique instance identifier.</td>
           </tr>
           <tr>
             <td><code>state</code></td>
@@ -897,9 +897,9 @@
             <td>Used for cleaning up event listeners and aborting fetches on unmount.</td>
           </tr>
           <tr>
-            <td><code>page</code></td>
-            <td><code>Object</code></td>
-            <td>Static page metadata (url, file).</td>
+            <td><code>refs</code></td>
+            <td><code>(id: string) => HTMLElement | null</code></td>
+            <td>A helper function to query elements in the component by their <code>ref</code> name.</td>
           </tr>
         </tbody>
       </table>
@@ -913,7 +913,7 @@
       */</coralite-code-highlight>
 
     <coralite-heading level="3" text="ClientPlugin"></coralite-heading>
-    <p>Configuration for client-side plugins.</p>
+    <p>Configuration for client-side plugins (referred to as <code>ScriptPlugin</code> in type definitions).</p>
     <div class="table-responsive">
       <table class="table">
         <thead>
@@ -925,19 +925,39 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>data</code></td>
-            <td><code>function(any): any</code> (optional)</td>
-            <td>Initial data fetching function, results merged into state.</td>
-          </tr>
-          <tr>
-            <td><code>context</code></td>
-            <td><code>Object&lt;string, function&gt;</code> (optional)</td>
-            <td>Curried utilities added to script context.</td>
+            <td><code>name</code></td>
+            <td><code>string</code> (optional)</td>
+            <td>Unique identifier/name of the client plugin.</td>
           </tr>
           <tr>
             <td><code>config</code></td>
             <td><code>Object</code> (optional)</td>
-            <td>Static config passed from server to client.</td>
+            <td>Static configuration passed from server to client. Available in <code>pluginContext.config</code>.</td>
+          </tr>
+          <tr>
+            <td><code>context</code></td>
+            <td><code>(pluginContext: any) => (instanceContext: any) => Object</code> (optional)</td>
+            <td>Two-Phase Resolver function returning helper methods exposed under the plugin namespace.</td>
+          </tr>
+          <tr>
+            <td><code>setup</code></td>
+            <td><code>(globalContext: any) => void</code> (optional)</td>
+            <td>Hook triggered when the plugin is initially registered.</td>
+          </tr>
+          <tr>
+            <td><code>onBeforeComponentRender</code></td>
+            <td><code>function</code> (optional)</td>
+            <td>Hook triggered before a component proxy is created and rendered.</td>
+          </tr>
+          <tr>
+            <td><code>onAfterComponentRender</code></td>
+            <td><code>function</code> (optional)</td>
+            <td>Hook triggered after a component DOM is updated in the browser.</td>
+          </tr>
+          <tr>
+            <td><code>onDisconnected</code></td>
+            <td><code>function</code> (optional)</td>
+            <td>Hook triggered when a component is unmounted and removed from the DOM.</td>
           </tr>
         </tbody>
       </table>
@@ -1352,22 +1372,58 @@
           <tr>
             <td><code>name</code></td>
             <td><code>string</code></td>
-            <td>Unique name.</td>
+            <td>Unique identifier/name of the plugin.</td>
           </tr>
           <tr>
-            <td><code>method</code></td>
-            <td><code>function</code> (optional)</td>
-            <td>Main server-side function.</td>
+            <td><code>server</code></td>
+            <td><a href="#coralitepluginserver"><code>CoralitePluginServer</code></a> (optional)</td>
+            <td>Server-side configuration and lifecycle hooks.</td>
           </tr>
           <tr>
             <td><code>client</code></td>
             <td><a href="#clientplugin"><code>ClientPlugin</code></a> (optional)</td>
-            <td>Client-side script configuration.</td>
+            <td>Client-side runtime configuration and hooks.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoralitePluginServer"></coralite-heading>
+    <p>Server-side plugin configuration.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>name</code></td>
+            <td><code>string</code> (optional)</td>
+            <td>Unique name for server scope. Defaults to plugin name.</td>
           </tr>
           <tr>
-            <td><code>onPageSet</code></td>
+            <td><code>config</code></td>
+            <td><code>Object</code> (optional)</td>
+            <td>Plugin-specific configuration options.</td>
+          </tr>
+          <tr>
+            <td><code>context</code></td>
+            <td><code>(pluginContext: any) => Object</code> (optional)</td>
+            <td>Function evaluated once per build session to return helper methods for component <code>server()</code> blocks.</td>
+          </tr>
+          <tr>
+            <td><code>components</code></td>
+            <td><code>string[]</code> (optional)</td>
+            <td>Array of paths to component files registered globally.</td>
+          </tr>
+          <tr>
+            <td>(Lifecycle Hooks)</td>
             <td><code>function</code> (optional)</td>
-            <td>Triggered when a page is created.</td>
+            <td>Server-side hooks: <code>onBeforeBuild</code>, <code>onAfterBuild</code>, <code>onPageSet</code>, <code>onPageUpdate</code>, <code>onPageDelete</code>, <code>onComponentSet</code>, <code>onComponentUpdate</code>, <code>onComponentDelete</code>, <code>onBeforePageRender</code>, <code>onAfterPageRender</code>, <code>onBeforeComponentRender</code>, <code>onAfterComponentRender</code>.</td>
           </tr>
         </tbody>
       </table>
@@ -1414,12 +1470,17 @@
           <tr>
             <td><code>name</code></td>
             <td><code>string</code></td>
-            <td>Unique name.</td>
+            <td>Unique identifier/name of the plugin.</td>
           </tr>
           <tr>
-            <td><code>components</code></td>
-            <td><a href="#htmldata"><code>HTMLData[]</code></a></td>
-            <td>Components registered by the plugin.</td>
+            <td><code>server</code></td>
+            <td><a href="#coralitepluginserver"><code>CoralitePluginServer</code></a> (optional)</td>
+            <td>Server-side plugin configuration.</td>
+          </tr>
+          <tr>
+            <td><code>client</code></td>
+            <td><a href="#clientplugin"><code>ClientPlugin</code></a> (optional)</td>
+            <td>Client-side plugin configuration.</td>
           </tr>
         </tbody>
       </table>

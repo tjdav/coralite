@@ -24,7 +24,7 @@
 
     <coralite-heading level="2" text="How to Use Refs"></coralite-heading>
 
-    <p>Using the refs plugin is a simple two-step process: defining the reference in your HTML template, and accessing it in your client-side script.</p>
+    <p>Using the refs plugin is a simple two-step process: defining the reference in your HTML template, and accessing it in your client-side client block.</p>
 
     <coralite-heading level="3" text="1. Template Setup"></coralite-heading>
 
@@ -43,9 +43,9 @@
       </template>
     </coralite-code-html>
 
-    <coralite-heading level="3" text="2. Script Usage"></coralite-heading>
+    <coralite-heading level="3" text="2. Client-Side Client Block"></coralite-heading>
 
-    <p>Inside your <code>defineComponent</code>'s <code>script</code>, the refs plugin provides a helper function: <code>refs('yourName')</code>.</p>
+    <p>Inside your <code>defineComponent</code>'s <code>client</code> block, the refs plugin provides a helper function: <code>refs('yourName')</code>.</p>
 
     <p>Call this function with the name you defined in the template to retrieve the actual DOM element.</p>
 
@@ -54,7 +54,7 @@
         import { defineComponent } from 'coralite'
 
         export default defineComponent({
-          script: ({ refs }) => {
+          client: ({ refs }) => {
 
             // Safe DOM element retrieval
             const input = refs('usernameInput')
@@ -85,7 +85,7 @@
     <p>To ensure deterministic and flake-free End-to-End (E2E) testing, Coralite provides built-in testing integrations that bridge the gap between Server-Side Rendering and client-side interactivity.</p>
 
     <coralite-heading level="3" text="1. Waiting for Hydration"></coralite-heading>
-    <p>Because Coralite components execute their <code>script</code> blocks natively in the browser after the initial HTML is parsed, E2E frameworks (like Playwright) might attempt to interact with elements before their event listeners are bound. To prevent this, your tests <strong>must</strong> await the global readiness promise immediately after navigating to a page.</p>
+    <p>Because Coralite components execute their <code>client</code> blocks natively in the browser after the initial HTML is parsed, E2E frameworks (like Playwright) might attempt to interact with elements before their event listeners are bound. To prevent this, your tests <strong>must</strong> await the global readiness promise immediately after navigating to a page.</p>
 
     <coralite-heading level="3" text="2. Testing Selectors (data-testid)"></coralite-heading>
     <p>In <code>development</code> mode, Coralite's testing plugin automatically duplicates all <code>ref="xyz"</code> attributes into standard <code>data-testid</code> attributes. It assigns a unique, namespaced string using the pattern: <code>&lt;component-id&gt;__&lt;refName&gt;-&lt;index&gt;</code>.</p>

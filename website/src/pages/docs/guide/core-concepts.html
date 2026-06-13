@@ -25,7 +25,7 @@
 
     <coralite-code>
     +-------------------+           +-------------------+
-    |    Attributes     |           |    Server Data    |
+    |    Attributes     |           |   Server State    |
     | (HTML Attributes) |           |  (Async Fetching) |
     +---------+---------+           +---------+---------+
               |                               |
@@ -46,7 +46,7 @@
               | (imperative control)
               |
       +-------v-------+
-      |    Script     |
+      |    Client     |
       | (Read / Write)| -- (mutates state) --> [Unified State]
       +---------------+
     </coralite-code>
@@ -54,7 +54,7 @@
     <p>There are two primary ways to interact with state:</p>
     <ul>
       <li><strong>Read-Only Access (Getters):</strong> The <code>getters</code> block provides a safe environment for deriving data. It receives a Read-Only Proxy, ensuring that calculating a value (like a filtered list) can never accidentally trigger a side-effect or an infinite loop.</li>
-      <li><strong>Read/Write Access (Script):</strong> The <code>script</code> block is your component's controller. It receives a full Read/Write Proxy, allowing you to imperatively update state in response to user events.</li>
+      <li><strong>Read/Write Access (Client):</strong> The <code>client</code> block is your component's controller. It receives a full Read/Write Proxy, allowing you to imperatively update state in response to user events.</li>
     </ul>
 
     <coralite-heading level="2" text="Lazy Deep Reactivity"></coralite-heading>

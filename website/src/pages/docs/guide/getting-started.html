@@ -101,7 +101,7 @@
 
     <p>First, add a <code>ref</code> attribute to the elements we want to interact with in our template.</p>
 
-    <p>Second, add a <code>script</code> function inside <code>defineComponent</code>. This script is what runs in the user's browser.</p>
+    <p>Second, add a <code>client</code> function inside <code>defineComponent</code>. This script is what runs in the user's browser.</p>
 
     <coralite-code-html>
       <!-- src/components/counter.html -->
@@ -123,8 +123,8 @@
       default: 0
     }
           },
-          // The script function runs in the browser!
-          script: ({ state, signal, refs }) => {
+          // The client function runs in the browser!
+          client: ({ state, signal, refs }) => {
             const btn = refs('incrementBtn')
 
             // Add an event listener using the provided signal for cleanup
@@ -146,7 +146,7 @@
       <li>Use the component in a page.</li>
       <li>Turn it into a dynamic component using <code>defineComponent</code>.</li>
       <li>Bind data using <code>state</code> and attributes.</li>
-      <li>Add interactivity using <code>script</code>, <code>state</code>, and the <code>refs</code> system.</li>
+      <li>Add interactivity using <code>client</code>, <code>state</code>, and the <code>refs</code> system.</li>
     </ul>
 
     <hr>

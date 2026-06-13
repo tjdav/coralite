@@ -40,13 +40,13 @@
           attributes: {
             // ...
           },
-          async data () {
+          async server () {
             // ...
           },
           getters: {
             //...
           },
-          script: () => {
+          client: () => {
             // ...
           }
         })
@@ -55,7 +55,7 @@
 
     <coralite-heading level="2" text="The Four Pillars of State"></coralite-heading>
 
-    <p>Coralite unifies four different sources of data into a single reactive <code>state</code> object available to your template and scripts.</p>
+    <p>Coralite unifies four different sources of data into a single reactive <code>state</code> object available to your template and client blocks.</p>
 
     <coralite-heading level="3" text="1. Attributes (Inputs)"></coralite-heading>
     <p>Attributes are the "props" of your component. They are coerced from HTML attributes into JS primitives.</p>
@@ -66,10 +66,10 @@ attributes: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="3" text="2. Data (Server-Side Fetching)"></coralite-heading>
-    <p>The <code>data</code> block runs strictly on the server during build-time. It's the place for database queries or API calls. This code is completely stripped from the client bundle.</p>
+    <coralite-heading level="3" text="2. Server (Server-Side Fetching)"></coralite-heading>
+    <p>The <code>server</code> block runs strictly on the server during build-time. It's the place for database queries or API calls. This code is completely stripped from the client bundle.</p>
     <coralite-code-highlight language="javascript">
-async data(context) {
+async server(context) {
   const posts = await db.getPosts();
   return { posts };
 }
@@ -83,10 +83,10 @@ getters: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="3" text="4. Script (Client Controller)"></coralite-heading>
-    <p>The <code>script</code> block is where interactivity lives. It runs in the browser and has full read/write access to the state.</p>
+    <coralite-heading level="3" text="4. Client (Client Controller)"></coralite-heading>
+    <p>The <code>client</code> block is where interactivity lives. It runs in the browser and has full read/write access to the state.</p>
     <coralite-code-highlight language="javascript">
-script: ({ state, signal, refs }) => {
+client: ({ state, signal, refs }) => {
   const btn = refs('my-btn');
   btn.addEventListener('click', () => {
     state.count++; // Mutating state triggers a re-render!
@@ -102,8 +102,8 @@ script: ({ state, signal, refs }) => {
 
     <ul>
       <li><strong>Keep Templates Simple:</strong> Templates should only contain HTML and <code>{{ token }}</code> placeholders. Avoid complex logic in HTML.</li>
-      <li><strong>Prefer Primitives for Attributes:</strong> Only pass Strings, Numbers, and Booleans via attributes. Use <code>data</code> for complex objects.</li>
-      <li><strong>Clean Up with AbortSignal:</strong> Always pass the <code>signal</code> to <code>addEventListener</code> or <code>fetch</code> inside your <code>script</code> to prevent memory leaks when a component is removed from the DOM.</li>
+      <li><strong>Prefer Primitives for Attributes:</strong> Only pass Strings, Numbers, and Booleans via attributes. Use <code>server</code> for complex objects.</li>
+      <li><strong>Clean Up with AbortSignal:</strong> Always pass the <code>signal</code> to <code>addEventListener</code> or <code>fetch</code> inside your <code>client</code> to prevent memory leaks when a component is removed from the DOM.</li>
     </ul>
 
     <hr>
