@@ -45,6 +45,9 @@ describe('Coralite Build Modes', () => {
   })
 
   afterEach(async () => {
+    if (coralite) {
+      await coralite.clearCache(true)
+    }
     if (testDir) {
       await rm(testDir, {
         recursive: true,

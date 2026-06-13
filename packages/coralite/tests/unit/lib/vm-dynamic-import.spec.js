@@ -9,6 +9,7 @@ describe('VM Dynamic Import', () => {
   let testDir
   let pagesDir
   let componentDir
+  let coralite
 
   beforeEach(async () => {
     testDir = await mkdtemp(join(tmpdir(), 'coralite-vm-dynamic-'))
@@ -25,6 +26,9 @@ describe('VM Dynamic Import', () => {
   })
 
   afterEach(async () => {
+    if (coralite) {
+      await coralite.clearCache(true)
+    }
     await rm(testDir, {
       recursive: true,
       force: true
@@ -50,7 +54,7 @@ describe('VM Dynamic Import', () => {
       </script>
     `)
 
-    const coralite = await createCoralite({
+    coralite = await createCoralite({
       pages: pagesDir,
       components: componentDir,
       mode: 'development'
@@ -95,7 +99,7 @@ describe('VM Dynamic Import', () => {
       </script>
     `)
 
-    const coralite = await createCoralite({
+    coralite = await createCoralite({
       pages: pagesDir,
       components: componentDir,
       mode: 'development'

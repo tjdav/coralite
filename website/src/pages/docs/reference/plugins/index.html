@@ -208,7 +208,7 @@
             attributes: {
               userId: { type: String }
             },
-            async server(context) {
+            async server (context) {
               const { getUser } = context['db-plugin']
               const user = await getUser(context.state.userId)
               return {

@@ -62,6 +62,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       }
 
       coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
+      coraliteExports += 'export const createCoraliteElement = globalThis.__coralite_create_coralite_element__;\n'
 
       return new SourceTextModule(coraliteExports, {
         context: referencingModule.context,
@@ -188,7 +189,13 @@ export async function evaluateDevelopment ({
     __coralite_context__: symmetricalContext,
     __coralite_plugins__: cachedBoundPlugins,
     __coralite_utils__: source.utils,
-    __coralite_define_component__: boundDefineComponent
+    __coralite_define_component__: boundDefineComponent,
+    __coralite_create_coralite_element__: (tag, options) => {
+      if (typeof globalThis.createCoraliteElement === 'function') {
+        return globalThis.createCoraliteElement(tag, options)
+      }
+      return globalThis.document.createElement(tag, options)
+    }
   }
 
   for (const glob of usedGlobals) {
@@ -329,12 +336,20 @@ export async function evaluateProduction ({
 
     if (isCoralite || isUtils) {
       if (isCoralite) {
+        const createCoraliteElement = (tag, options) => {
+          if (typeof globalThis.createCoraliteElement === 'function') {
+            return globalThis.createCoraliteElement(tag, options)
+          }
+          return globalThis.document.createElement(tag, options)
+        }
         return {
           ...symmetricalContext,
           defineComponent: (options) => defineComponent(options, symmetricalContext),
+          createCoraliteElement,
           default: {
             ...symmetricalContext,
-            defineComponent: (options) => defineComponent(options, symmetricalContext)
+            defineComponent: (options) => defineComponent(options, symmetricalContext),
+            createCoraliteElement
           }
         }
       }

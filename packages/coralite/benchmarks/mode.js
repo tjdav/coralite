@@ -163,6 +163,8 @@ async function runBenchmark (mode, scenario) {
 
   // Cleanup this run
   await cleanup()
+  await coralite.clearCache(true)
+
   global.gc && global.gc()
 
   const memFinal = getMemoryUsage()

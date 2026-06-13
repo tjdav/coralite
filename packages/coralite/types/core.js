@@ -172,6 +172,7 @@
  * @property {(value: string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, volatile?: boolean }, buildId: string) => Promise<void>} addRenderQueue - The function that adds a page to the current render queue.
  * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement - The function that retrieves all page paths using a specific custom element.
  * @property {(options: ComponentElementOptions, head?: boolean) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement - The function that creates a component element from its definition.
+ * @property {(structural?: boolean) => Promise<void>} clearCache - Clears the internal script cache and disposes esbuild context.
  * @property {Record<string, { hashedPath: string, text: string }>} outputFiles - The record of generated output files.
  * @property {Object} _dependencyGraph - The internal dependency graph for the project.
  * @property {Record<string, Set<string>>} _dependencyGraph.pageCustomElements - The mapping of custom elements to the pages that use them.

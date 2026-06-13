@@ -244,7 +244,38 @@ export async function registerBaseComponent ({
   createSession,
   mode
 }) {
-  if (!component || !component.script) {
+  if (!component) {
+    return
+  }
+
+  if (!component.script) {
+    const templateAST = component.template?.children || []
+    const templateValues = component.values || {}
+    const stylesHTML = component._processedCss || ''
+    const defaultValues = {}
+
+    templateValues?.refs?.forEach(ref => {
+      defaultValues[`ref_${ref.name}`] = ''
+    })
+
+    scriptManager.registerComponent({
+      id: component.id,
+      getters: {},
+      script: {
+        content: 'function(){}',
+        state: {},
+        slots: {},
+        components: (component.customElements || []).map(el => el.name),
+        defaultValues
+      },
+      filePath: component.filePath || (component.path && component.path.pathname),
+      templateAST,
+      templateValues,
+      defaultValues,
+      styles: stylesHTML,
+      slots: {},
+      override: true
+    })
     return
   }
 

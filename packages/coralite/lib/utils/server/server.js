@@ -49,6 +49,24 @@ export function findAndExtractScript (code) {
     CallExpression (node) {
       if (
         node.callee &&
+        node.callee.type === 'MemberExpression' &&
+        node.callee.object &&
+        node.callee.object.type === 'Identifier' &&
+        node.callee.object.name === 'document' &&
+        node.callee.property &&
+        node.callee.property.type === 'Identifier' &&
+        node.callee.property.name === 'createElement'
+      ) {
+        const arg = node.arguments[0]
+        if (arg && (arg.type !== 'Literal' || (typeof arg.value === 'string' && arg.value.includes('-')))) {
+          if (arg.type === 'Literal' && typeof arg.value === 'string') {
+            components.add(arg.value)
+          }
+        }
+      }
+
+      if (
+        node.callee &&
         node.callee.type === 'Identifier' &&
         node.callee.name === 'defineComponent'
       ) {
@@ -68,7 +86,42 @@ export function findAndExtractScript (code) {
             let content = ''
 
             // Get source slice
-            const source = code.slice(value.start, value.end)
+            let source = code.slice(value.start, value.end)
+
+            // Collect all document.createElement calls within this client block for transformation
+            const replacements = []
+            walkJS(value, {
+              CallExpression (node) {
+                if (
+                  node.callee &&
+                  node.callee.type === 'MemberExpression' &&
+                  node.callee.object &&
+                  node.callee.object.type === 'Identifier' &&
+                  node.callee.object.name === 'document' &&
+                  node.callee.property &&
+                  node.callee.property.type === 'Identifier' &&
+                  node.callee.property.name === 'createElement'
+                ) {
+                  const arg = node.arguments[0]
+                  if (arg && (arg.type !== 'Literal' || (typeof arg.value === 'string' && arg.value.includes('-')))) {
+                    if (arg.type === 'Literal' && typeof arg.value === 'string') {
+                      components.add(arg.value)
+                    }
+                    replacements.push({
+                      start: node.callee.start - value.start,
+                      end: node.callee.end - value.start,
+                      replacement: 'createCoraliteElement'
+                    })
+                  }
+                }
+              }
+            })
+
+            // Apply replacements from end to start to maintain offsets
+            replacements.sort((a, b) => b.start - a.start)
+            for (const r of replacements) {
+              source = source.slice(0, r.start) + r.replacement + source.slice(r.end)
+            }
 
             if (value.type === 'ArrowFunctionExpression') {
               content = prefix + source
@@ -93,13 +146,8 @@ export function findAndExtractScript (code) {
         }
       } else if (
         node.callee &&
-        node.callee.type === 'MemberExpression' &&
-        node.callee.object &&
-        node.callee.object.type === 'Identifier' &&
-        node.callee.object.name === 'document' &&
-        node.callee.property &&
-        node.callee.property.type === 'Identifier' &&
-        node.callee.property.name === 'createElement'
+        node.callee.type === 'Identifier' &&
+        node.callee.name === 'createCoraliteElement'
       ) {
         const arg = node.arguments[0]
         if (arg && arg.type === 'Literal' && typeof arg.value === 'string') {
@@ -201,13 +249,15 @@ export function findAndExtractImperativeComponents (code) {
       CallExpression (node) {
         if (
           node.callee &&
-          node.callee.type === 'MemberExpression' &&
+          ((node.callee.type === 'MemberExpression' &&
           node.callee.object &&
           node.callee.object.type === 'Identifier' &&
           node.callee.object.name === 'document' &&
           node.callee.property &&
           node.callee.property.type === 'Identifier' &&
-          node.callee.property.name === 'createElement'
+          node.callee.property.name === 'createElement') ||
+          (node.callee.type === 'Identifier' &&
+          node.callee.name === 'createCoraliteElement'))
         ) {
           const arg = node.arguments[0]
           if (arg && arg.type === 'Literal' && typeof arg.value === 'string' && arg.value.includes('-')) {

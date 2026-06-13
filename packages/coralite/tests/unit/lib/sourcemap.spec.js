@@ -1,4 +1,4 @@
-import { describe, test } from 'node:test'
+import { describe, test, afterEach } from 'node:test'
 import assert from 'node:assert'
 import { createCoralite } from '#lib'
 import { join } from 'node:path'
@@ -6,6 +6,13 @@ import { mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
 describe('Source Map Generation', () => {
+  let coralite
+
+  afterEach(async () => {
+    if (coralite) {
+      await coralite.clearCache(true)
+    }
+  })
 
   test('defineComponent script sourcemap', async () => {
     const tmpDir = await mkdir(join(tmpdir(), 'coralite-sourcemap-test-' + Date.now()), { recursive: true })
@@ -41,7 +48,7 @@ export default defineComponent({
 `
     await writeFile(join(pagesDir, 'index.html'), pageContent)
 
-    const coralite = await createCoralite({
+    coralite = await createCoralite({
       components: componentsDir,
       pages: pagesDir,
       mode: 'development'
@@ -119,7 +126,7 @@ export default defineComponent({
 `
     await writeFile(join(pagesDir, 'index.html'), pageContent)
 
-    const coralite = await createCoralite({
+    coralite = await createCoralite({
       components: componentsDir,
       pages: pagesDir,
       mode: 'development'

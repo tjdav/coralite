@@ -28,6 +28,9 @@ describe('Coralite', () => {
   })
 
   afterEach(async () => {
+    if (coralite) {
+      await coralite.clearCache(true)
+    }
     await rm(testDir, {
       recursive: true,
       force: true
@@ -351,7 +354,7 @@ describe('Coralite', () => {
 })
 
 describe('Bug Fix: Preserving recursive tokens', () => {
-  let tmpDir, pagesDir, componentsDir, outputDir
+  let tmpDir, pagesDir, componentsDir, outputDir, coralite
 
   beforeEach(async () => {
     tmpDir = await mkdtemp(path.join(tmpdir(), 'coralite-nested-test-'))
@@ -364,6 +367,9 @@ describe('Bug Fix: Preserving recursive tokens', () => {
   })
 
   afterEach(async () => {
+    if (coralite) {
+      await coralite.clearCache(true)
+    }
     await rm(tmpDir, {
       recursive: true,
       force: true
@@ -384,7 +390,7 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     const __dirname = path.dirname(__filename)
     const fixtureDir = path.join(__dirname, '../../fixtures/nested-dependencies')
 
-    const coralite = await createCoralite({
+    coralite = await createCoralite({
       pages: fixtureDir,
       components: fixtureDir,
       output: outputDir,
@@ -415,7 +421,7 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     await writeFile(path.join(pagesDir, 'test-plugin.html'), '<test-comp></test-comp>')
     await writeFile(path.join(componentsDir, 'test-comp.html'), '<template id="test-comp"><div>{{ injected }}</div></template>')
 
-    const coralite = await createCoralite({
+    coralite = await createCoralite({
       pages: pagesDir,
       components: componentsDir,
       plugins: [plugin],
@@ -450,7 +456,7 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     await writeFile(path.join(pagesDir, 'test-plugin-ast.html'), '<test-comp></test-comp>')
     await writeFile(path.join(componentsDir, 'test-comp.html'), '<template id="test-comp"><div>original</div></template>')
 
-    const coralite = await createCoralite({
+    coralite = await createCoralite({
       pages: pagesDir,
       components: componentsDir,
       plugins: [plugin],

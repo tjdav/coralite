@@ -119,4 +119,18 @@ defineComponent({
     console.log('comments')
   }`)
   })
+
+  test('document.createElement transformation', () => {
+    const code = `
+defineComponent({
+  client(context) {
+    const el1 = document.createElement('coralite-btn')
+    const el2 = document.createElement('div')
+  }
+})`
+    const result = findAndExtractScript(code)
+    assert.match(result.content, /createCoraliteElement\('coralite-btn'\)/)
+    assert.match(result.content, /document\.createElement\('div'\)/)
+  })
 })
+

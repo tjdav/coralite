@@ -286,6 +286,7 @@ export async function createCoralite ({
         })
         await Promise.all(assetWrites)
       }
+      await renderer.clearCache(true)
       return results
     },
 

@@ -537,7 +537,8 @@ export function createRenderer ({
             id: contextId,
             componentId: module.id,
             page,
-            state: scriptResult.__script__.state
+            state: scriptResult.__script__.state,
+            components: mergedComponents
           })
         }
         delete scriptResult.__script__
@@ -927,10 +928,10 @@ export function createRenderer ({
         if (mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
           const scripts = mappedSessionObject.scripts.content[mappedComponent.path.pathname]
           const instances = {}
-          const componentIds = new Set()
+          const declarativeTags = new Set()
           for (const key in scripts) {
             const script = scripts[key]
-            componentIds.add(script.componentId)
+            declarativeTags.add(script.componentId)
             instances[script.id] = {
               instanceId: script.id,
               componentId: script.componentId,
@@ -949,16 +950,48 @@ export function createRenderer ({
             })
           }
 
+          // Filter manifest to only include components used on this page (declarative + cascading imperative)
+          const chunkManifest = {}
+          const componentsToInclude = new Set()
+
+          const addComponentAndDependencies = (id) => {
+            if (componentsToInclude.has(id)) {
+              return
+            }
+            componentsToInclude.add(id)
+            const sharedFn = scriptManager.sharedFunctions[id]
+            if (sharedFn && sharedFn.components) {
+              sharedFn.components.forEach(depId => addComponentAndDependencies(depId))
+            }
+          }
+
+          // In pages, we might have multiple instances of the same component,
+          // or different components. We need to collect all imperative dependencies
+          // from all instances present on the page.
+          for (const instanceId in scripts) {
+            const script = scripts[instanceId]
+            addComponentAndDependencies(script.componentId)
+            if (script.components) {
+              script.components.forEach(depId => addComponentAndDependencies(depId))
+            }
+          }
+
+          declarativeTags.forEach(tag => addComponentAndDependencies(tag))
+
+          for (const tag of componentsToInclude) {
+            if (scriptResult.manifest[tag]) {
+              chunkManifest[tag] = scriptResult.manifest[tag]
+            }
+          }
+
           injectReadinessScript(mappedComponent.root, headElement, true)
           injectImportMap(mappedComponent.root, headElement, scriptResult.importMap)
-          const chunkManifest = { ...scriptResult.manifest }
-          delete chunkManifest['coralite-runtime']
           const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
           const scriptContent = generateClientRuntime({
             base,
             sharedChunkPath: scriptResult.manifest['coralite-runtime'],
             chunkManifest,
-            declarativeTags: Array.from(componentIds)
+            declarativeTags: Array.from(declarativeTags)
           })
           const hydrationData = {}
 
@@ -1467,9 +1500,11 @@ export function createRenderer ({
   const clearCache = async (structural = false) => {
     globalScriptResult = null
     siteWideBundlePromise = null
+
     if (structural) {
       await scriptManager.disposeContext()
     }
+
     for (const key in outputFiles) {
       delete outputFiles[key]
     }

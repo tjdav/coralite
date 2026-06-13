@@ -9,6 +9,7 @@ describe('Symmetrical API Integration', () => {
   let testDir
   let pagesDir
   let componentDir
+  let coralite
 
   beforeEach(async () => {
     testDir = await mkdtemp(path.join(tmpdir(), 'coralite-symmetry-'))
@@ -20,6 +21,9 @@ describe('Symmetrical API Integration', () => {
   })
 
   afterEach(async () => {
+    if (coralite) {
+      await coralite.clearCache(true)
+    }
     await rm(testDir, {
       recursive: true,
       force: true
@@ -74,7 +78,7 @@ describe('Symmetrical API Integration', () => {
 
     await writeFile(path.join(pagesDir, 'index.html'), '<greeting-banner></greeting-banner>')
 
-    const coralite = await createCoralite({
+    coralite = await createCoralite({
       pages: pagesDir,
       components: componentDir,
       plugins: [i18nPlugin],

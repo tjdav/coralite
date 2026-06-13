@@ -48,8 +48,6 @@ import { getClientContext, getSetups, createCoraliteClass, globalClientHooks } f
   };
 
   const declarativeTags = ${JSON.stringify(declarativeTags)};
-  const allTags = Object.keys(componentManifest);
-  const imperativeTags = allTags.filter(tag => !declarativeTags.includes(tag));
 
   const loadPromises = declarativeTags.map(tagName => loadComponent(tagName));
   await Promise.all(loadPromises);
@@ -58,15 +56,12 @@ import { getClientContext, getSetups, createCoraliteClass, globalClientHooks } f
     window.__coralite_resolve_ready__();
   }
 
-  if (imperativeTags.length > 0) {
-    const lazyLoad = () => imperativeTags.forEach(tagName => loadComponent(tagName));
-    
-    if ('requestIdleCallback' in window) {
-      requestIdleCallback(lazyLoad, { timeout: 500 });
-    } else {
-      setTimeout(lazyLoad, 1);
+  window.createCoraliteElement = (tag, options) => {
+    if (componentManifest[tag]) {
+      loadComponent(tag);
     }
-  }
+    return document.createElement(tag, options);
+  };
 })();
 `.trim()
 }

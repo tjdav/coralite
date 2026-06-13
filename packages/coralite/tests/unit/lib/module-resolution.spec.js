@@ -58,6 +58,9 @@ describe('Module Resolution', () => {
   })
 
   afterEach(async () => {
+    if (coralite) {
+      await coralite.clearCache(true)
+    }
     await rm(testDir, {
       recursive: true,
       force: true

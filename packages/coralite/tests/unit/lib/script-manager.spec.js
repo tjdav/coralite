@@ -1,10 +1,25 @@
-import { describe, it, beforeEach, mock, after } from 'node:test'
+import { describe, it, beforeEach, afterEach, mock, after } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { ScriptManager } from '../../../lib/script-manager.js'
+import { ScriptManager as OriginalScriptManager } from '../../../lib/script-manager.js'
 import fs from 'node:fs'
 import path from 'node:path'
 
+const activeManagers = []
+class ScriptManager extends OriginalScriptManager {
+  constructor (...args) {
+    super(...args)
+    activeManagers.push(this)
+  }
+}
+
 describe('ScriptManager', () => {
+  afterEach(async () => {
+    for (const sm of activeManagers) {
+      await sm.disposeContext()
+    }
+    activeManagers.length = 0
+  })
+
   // Setup temp test file for imports
   const tempFile = path.resolve('temp-test-module.js')
   fs.writeFileSync(tempFile, 'export const version = "1.0.0"; export const name = "test"; export default "default-value";')

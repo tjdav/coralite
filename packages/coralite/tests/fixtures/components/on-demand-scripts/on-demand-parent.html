@@ -1,0 +1,25 @@
+<template id="on-demand-parent">
+  <div ref="container"></div>
+  <button ref="btnA" data-testid="loadA">Load A</button>
+  <button ref="btnB" data-testid="loadB">Load B</button>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: ({ refs }) => {
+      const container = refs('container')
+  
+      refs('btnA').onclick = () => {
+        const el = document.createElement('on-demand-a')
+        container.appendChild(el)
+      }
+
+      refs('btnB').onclick = () => {
+        const el = document.createElement('on-demand-b')
+        container.appendChild(el)
+      }
+    }
+  })
+</script>

@@ -1,4 +1,4 @@
-import { describe, it } from 'node:test'
+import { describe, it, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { createCoralite, definePlugin } from '#lib'
 import { join } from 'node:path'
@@ -13,6 +13,14 @@ const componentsDir = join(fixtureRoot, 'components/plugin-leak')
 const pagesDir = join(fixtureRoot, 'pages/plugin-leak')
 
 describe('Plugin Exports Leakage', async () => {
+  let app
+
+  afterEach(async () => {
+    if (app) {
+      await app.clearCache(true)
+    }
+  })
+
   it('should not leak plugin exports into component state', async () => {
     const myPlugin = definePlugin({
       name: 'my-plugin',
@@ -27,7 +35,7 @@ describe('Plugin Exports Leakage', async () => {
 
     const testDir = await mkdtemp(join(tmpdir(), 'coralite-leak-'))
     try {
-      const app = await createCoralite({
+      app = await createCoralite({
         components: componentsDir,
         pages: pagesDir,
         plugins: [myPlugin],
@@ -69,7 +77,6 @@ describe('Plugin Exports Leakage', async () => {
     const failingCompPath = join(componentsDir, 'failing-comp.html')
     const failingPagePath = join(pagesDir, 'failing-page.html')
 
-    let app
     try {
       app = await createCoralite({
         components: componentsDir,

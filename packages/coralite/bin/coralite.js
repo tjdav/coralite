@@ -137,3 +137,5 @@ if (options.dryRun) {
   // save the generated documents to output directory
   await coralite.save()
 }
+
+await coralite.clearCache(true)

@@ -35,5 +35,7 @@ describe('ScriptManager onDisconnected bundling', () => {
 
     // Check if onDisconnected is present in globalClientHooks
     assert.ok(compiledScript.includes('onDisconnected:'), 'globalClientHooks should contain onDisconnected')
+
+    await sm.disposeContext()
   })
 })

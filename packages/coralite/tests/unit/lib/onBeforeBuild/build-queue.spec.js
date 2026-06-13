@@ -1,4 +1,4 @@
-import { test, describe } from 'node:test'
+import { test, describe, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { createCoralite } from '../../../../lib/coralite.js'
 import { join } from 'node:path'
@@ -11,6 +11,14 @@ const components = join(projectRoot, 'tests/fixtures/components/static-component
 const pages = join(projectRoot, 'tests/fixtures/pages/static-components')
 
 describe('onBeforeBuild Build Queue', () => {
+  let app
+
+  afterEach(async () => {
+    if (app) {
+      await app.clearCache(true)
+    }
+  })
+
   test('dynamic pages added via app.pages.setItem in onBeforeBuild are included in full build', async () => {
     const plugin = {
       name: 'test-plugin',
@@ -29,7 +37,7 @@ describe('onBeforeBuild Build Queue', () => {
       }
     }
 
-    const app = await createCoralite({
+    app = await createCoralite({
       components,
       pages,
       plugins: [plugin],
@@ -59,7 +67,7 @@ describe('onBeforeBuild Build Queue', () => {
       }
     }
 
-    const app = await createCoralite({
+    app = await createCoralite({
       components,
       pages,
       plugins: [plugin],
@@ -85,7 +93,7 @@ describe('onBeforeBuild Build Queue', () => {
       }
     }
 
-    const app = await createCoralite({
+    app = await createCoralite({
       components,
       pages,
       plugins: [plugin],
@@ -119,7 +127,7 @@ describe('onBeforeBuild Build Queue', () => {
       }
     }
 
-    const app = await createCoralite({
+    app = await createCoralite({
       components,
       pages,
       plugins: [plugin],
