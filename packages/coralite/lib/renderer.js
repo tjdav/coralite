@@ -85,6 +85,7 @@ export function createRenderer ({
   const sealedQueues = new Set()
   const outputFiles = {}
   const scriptResultCache = new Map()
+  let globalScriptResult = null
 
   /**
    * Creates a new rendering session.
@@ -938,31 +939,36 @@ export function createRenderer ({
             }
           }
 
-          const cacheKey = Array.from(componentIds).sort().join(',')
           let scriptResult
 
-          if (scriptResultCache.has(cacheKey)) {
-            scriptResult = scriptResultCache.get(cacheKey)
+          if (isProduction && globalScriptResult) {
+            scriptResult = globalScriptResult
           } else {
-            /** @type {Object.<string, InstanceContext>} */
-            const normalizedInstances = {}
+            const cacheKey = Array.from(componentIds).sort().join(',')
 
-            for (const [id, instance] of Object.entries(instances)) {
-              normalizedInstances[id] = {
-                ...instance,
-                state: normalizeObjectFunctions(instance.state, astTransformer)
+            if (scriptResultCache.has(cacheKey)) {
+              scriptResult = scriptResultCache.get(cacheKey)
+            } else {
+              /** @type {Object.<string, InstanceContext>} */
+              const normalizedInstances = {}
+
+              for (const [id, instance] of Object.entries(instances)) {
+                normalizedInstances[id] = {
+                  ...instance,
+                  state: normalizeObjectFunctions(instance.state, astTransformer)
+                }
               }
-            }
 
-            scriptResult = await scriptManager.compileAllInstances(normalizedInstances, normalizedOptions.mode)
-            scriptResultCache.set(cacheKey, scriptResult)
-            Object.assign(outputFiles, scriptResult.outputFiles)
+              scriptResult = await scriptManager.compileAllInstances(normalizedInstances, normalizedOptions.mode)
+              scriptResultCache.set(cacheKey, scriptResult)
+              Object.assign(outputFiles, scriptResult.outputFiles)
+            }
           }
 
-          if (!scriptResult.manifest['chunk-shared']) {
+          if (!scriptResult.manifest['coralite-runtime']) {
             handleError({
               level: 'ERR',
-              message: 'MANIFEST MISSING chunk-shared!',
+              message: 'MANIFEST MISSING coralite-runtime!',
               error: new Error(JSON.stringify(scriptResult.manifest))
             })
           }
@@ -970,12 +976,13 @@ export function createRenderer ({
           injectReadinessScript(mappedComponent.root, headElement, true)
           injectImportMap(mappedComponent.root, headElement, scriptResult.importMap)
           const chunkManifest = { ...scriptResult.manifest }
-          delete chunkManifest['chunk-shared']
+          delete chunkManifest['coralite-runtime']
           const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
           const scriptContent = generateClientRuntime({
             base,
-            sharedChunkPath: scriptResult.manifest['chunk-shared'],
-            chunkManifest
+            sharedChunkPath: scriptResult.manifest['coralite-runtime'],
+            chunkManifest,
+            declarativeTags: Array.from(componentIds)
           })
           const hydrationData = {}
 
@@ -1155,6 +1162,12 @@ export function createRenderer ({
     }
 
     // Phase 1: Discovery & Pre-Render Staging
+    if (normalizedOptions.mode === 'production') {
+      const allComponentIds = app.components.list.map(c => c.result.id)
+      globalScriptResult = await scriptManager.compileAllInstances(allComponentIds, normalizedOptions.mode)
+      Object.assign(outputFiles, globalScriptResult.outputFiles)
+    }
+
     if (buildPath) {
       const paths = Array.isArray(buildPath) ? buildPath : [buildPath]
       for (const p of paths) {
@@ -1454,6 +1467,7 @@ export function createRenderer ({
    */
   const clearCache = () => {
     scriptResultCache.clear()
+    globalScriptResult = null
     for (const key in outputFiles) {
       delete outputFiles[key]
     }

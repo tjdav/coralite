@@ -399,100 +399,6 @@ describe('ScriptManager', () => {
     })
   })
 
-  describe('generateInstanceWrapper() - Instance Wrapper Generation', () => {
-    let sm
-
-    beforeEach(() => {
-      sm = new ScriptManager()
-    })
-
-    it('should generate wrapper with values', () => {
-      const instanceContext = {
-        instanceId: 'inst-1',
-        state: {
-          count: 5,
-          name: 'test'
-        }
-      }
-
-      const result = sm.generateInstanceWrapper('component-1', instanceContext)
-
-      assert.ok(result.includes('await coraliteComponentFunctions["component-1"]'))
-      assert.ok(result.includes('instanceId: \'inst-1\''))
-      assert.ok(result.includes('state:'))
-      assert.ok(result.includes('count'))
-      assert.ok(result.includes('name'))
-    })
-
-    it('should generate wrapper without values', () => {
-      const instanceContext = {
-        instanceId: 'inst-2'
-      }
-
-      const result = sm.generateInstanceWrapper('component-2', instanceContext)
-
-      assert.ok(result.includes('state: {}'))
-      assert.ok(result.includes('instanceId: \'inst-2\''))
-    })
-
-    it('should handle instance context with refs', () => {
-      const instanceContext = {
-        instanceId: 'inst-3',
-        state: {
-          x: 1,
-          ref_button: 'element'
-        }
-      }
-
-      const result = sm.generateInstanceWrapper('component-3', instanceContext)
-
-      assert.ok(result.includes('instanceId: \'inst-3\''))
-      assert.ok(result.includes('state:'))
-    })
-
-    it('should serialize complex values', () => {
-      const instanceContext = {
-        instanceId: 'inst-4',
-        state: {
-          nested: {
-            a: 1,
-            b: [1, 2, 3]
-          },
-          func: () => 'test'
-        }
-      }
-
-      const result = sm.generateInstanceWrapper('component-4', instanceContext)
-
-      assert.ok(result.includes('nested'))
-      assert.ok(result.includes('a'))
-      assert.ok(result.includes('b'))
-    })
-
-    it('should handle empty instance context', () => {
-      const instanceContext = {}
-
-      const result = sm.generateInstanceWrapper('component-5', instanceContext)
-
-      assert.ok(result.includes('state: {}'))
-      assert.ok(result.includes('instanceId: \'undefined\''))
-    })
-
-    it('should handle instance context with page object', () => {
-      const instanceContext = {
-        instanceId: 'inst-6',
-        page: {
-          url: { pathname: '/example' }
-        }
-      }
-
-      const result = sm.generateInstanceWrapper('component-6', instanceContext)
-
-      assert.ok(result.includes('page:'))
-      assert.ok(result.includes('pathname'))
-      assert.ok(result.includes('example'))
-    })
-  })
 
 
   describe('compileAllInstances() - Full Compilation', () => {
@@ -620,10 +526,10 @@ describe('ScriptManager', () => {
       }
 
       const result = await sm.compileAllInstances(instances, 'development')
-      const chunkSharedHashName = result.manifest['chunk-shared']
-      const chunkSharedText = result.outputFiles[chunkSharedHashName].text
-      assert.ok(chunkSharedText.includes('double'))
-      assert.ok(chunkSharedText.includes('coraliteComponentClientContextProps'))
+      const runtimeHashName = result.manifest['coralite-runtime']
+      const runtimeText = result.outputFiles[runtimeHashName].text
+      assert.ok(runtimeText.includes('double'))
+      assert.ok(runtimeText.includes('coraliteComponentClientContextProps'))
     })
 
     it('should handle instances with refs', async () => {
@@ -680,7 +586,7 @@ describe('ScriptManager', () => {
       const result = await sm.compileAllInstances({}, 'production')
 
       assert.ok(typeof result === 'object')
-      assert.ok(result.manifest['chunk-shared'])
+      assert.ok(result.manifest['coralite-runtime'])
     })
 
     it('should handle instances without shared functions', async () => {
@@ -1097,8 +1003,8 @@ describe('ScriptManager', () => {
 
       const outputResult = await sm.compileAllInstances(instances, 'development')
 
-      const chunkSharedHashName = outputResult.manifest['chunk-shared']
-      const output = outputResult.outputFiles[chunkSharedHashName].text
+      const runtimeHashName = outputResult.manifest['coralite-runtime']
+      const output = outputResult.outputFiles[runtimeHashName].text
 
       // Check for inline source map
       assert.ok(output.includes('//# sourceMappingURL=data:application/json;base64,'), 'Output should contain inline source map')
@@ -1110,9 +1016,9 @@ describe('ScriptManager', () => {
 
       // Check if sources array contains the file path
       // esbuild uses the exact virtual entry point ID
-      const hasFile = sourceMap.sources.some(source => source.includes('chunk-shared'))
+      const hasFile = sourceMap.sources.some(source => source.includes('coralite-runtime'))
 
-      assert.ok(hasFile, `Source map sources should contain chunk-shared. Found: ${JSON.stringify(sourceMap.sources)}`)
+      assert.ok(hasFile, `Source map sources should contain coralite-runtime. Found: ${JSON.stringify(sourceMap.sources)}`)
     })
   })
 
@@ -1147,8 +1053,8 @@ describe('ScriptManager', () => {
       }
 
       const outputResult = await sm.compileAllInstances(instances, 'development')
-      const chunkSharedHashName = outputResult.manifest['chunk-shared']
-      const compiledScript = outputResult.outputFiles[chunkSharedHashName].text
+      const runtimeHashName = outputResult.manifest['coralite-runtime']
+      const compiledScript = outputResult.outputFiles[runtimeHashName].text
 
       // Under the new orchestrator approach with esbuild ESM compilation, `await getClientContext(context)`
       // is no longer generated as a literal string in the instances wrapper, but the `getClientContext` and
@@ -1191,8 +1097,8 @@ describe('ScriptManager', () => {
       })
 
       const outputResult = await manager.compileAllInstances(instances, 'development')
-      const chunkSharedHashName = outputResult.manifest['chunk-shared']
-      const compiledScript = outputResult.outputFiles[chunkSharedHashName].text
+      const runtimeHashName = outputResult.manifest['coralite-runtime']
+      const compiledScript = outputResult.outputFiles[runtimeHashName].text
 
       // Verify config injection in generated code with whitespace-agnostic regex
       // Looks for: pluginConfig = { ... "baseURL": "http://example.com" ... "apiKey": "123" ... }
@@ -1226,8 +1132,8 @@ describe('ScriptManager', () => {
       })
 
       const outputResult = await manager.compileAllInstances(instances, 'development')
-      const chunkSharedHashName = outputResult.manifest['chunk-shared']
-      const compiledScript = outputResult.outputFiles[chunkSharedHashName].text
+      const runtimeHashName = outputResult.manifest['coralite-runtime']
+      const compiledScript = outputResult.outputFiles[runtimeHashName].text
 
       assert.match(compiledScript, /pluginConfig\s*=\s*\{\}/)
     })
@@ -1298,8 +1204,8 @@ describe('ScriptManager', () => {
           }
         }, 'development')
 
-        const chunkShared = result.manifest['chunk-shared']
-        const content = result.outputFiles[chunkShared].text
+        const runtime = result.manifest['coralite-runtime']
+        const content = result.outputFiles[runtime].text
 
         assert.ok(!content.includes('import("dummy-plugin-pkg")'), 'Should have bundled or transformed the import, not left it as a bare specifier')
       } finally {

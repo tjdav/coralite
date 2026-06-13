@@ -193,36 +193,20 @@ ScriptManager.prototype.registerComponent = function ({
 }
 
 /**
- * Generate instance-specific script wrapper
- * @param {string} id - component identifier
- * @param {InstanceContext} instanceContext - Instance context
- * @returns {string} Generated script
- */
-ScriptManager.prototype.generateInstanceWrapper = function (id, instanceContext) {
-  const state = instanceContext.state ? serialize(instanceContext.state) : '{}'
-  const page = instanceContext.page ? serialize(instanceContext.page) : '{}'
-
-  // Generate wrapper that calls shared functions with instance context
-  return `await coraliteComponentFunctions["${id}"]({
-      state: ${state},
-      page: ${page},
-      ...pluginContexts,
-      instanceId: '${instanceContext.instanceId}'
-    });`
-}
-
-/**
  * Compile all instances for a component
- * @param {Object.<string, InstanceContext>} instances - Map of instanceId -> instance data
+ * @param {Object.<string, InstanceContext> | string[]} instances - The map of instanceId to instance data (development) or an array of component IDs (production).
  * @param {string} mode - Build mode
  * @returns {Promise<any>} Compiled script
  */
 ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const entryCodeParts = []
   const moduleNamespace = 'coralite-script-module:'
+  const componentNamespace = 'coralite-component:'
+  const virtualPrefix = 'coralite-virtual:'
+
   // Generate ESM imports for each script module
   for (let i = 0; i < this.scriptModules.length; i++) {
-    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, runSetup as runSetup_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i} } from "${moduleNamespace}${i}";\n`)
+    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, runSetup as runSetup_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i} } from "${virtualPrefix}${moduleNamespace}${i}";\n`)
   }
 
   // Setup client context state
@@ -271,89 +255,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     return clientContextProps
   }\n`)
 
-  const instanceValues = Object.entries(instances)
-  // Collect unique components
-  /** @type {Record<string, boolean>} */
-  const processedComponent = {}
-
-  for (const instanceData of instanceValues) {
-    addComponentAndDependencies(instanceData[1].componentId, processedComponent, this.sharedFunctions)
-  }
-
-  // Add plugin dependencies explicitly if they are standalone
-  for (const plugin of this.plugins) {
-    if (plugin && plugin._extractedComponents && Array.isArray(plugin._extractedComponents)) {
-      for (const compPath of plugin._extractedComponents) {
-        for (const id of Object.keys(this.sharedFunctions)) {
-          if (compPath.endsWith(`/${id}.html`) || compPath.endsWith(`\\${id}.html`) || compPath === id || compPath.endsWith(`/${id}`)) {
-            addComponentAndDependencies(id, processedComponent, this.sharedFunctions)
-          }
-        }
-      }
-    }
-  }
-
-  // Force inclusion of all components that evaluate something inside
-  // This is required because if a parent is ONLY instantiated via script dynamically,
-  // it might not be in instances or plugin explicit references.
-  for (const [componentId, fnData] of Object.entries(this.sharedFunctions)) {
-    // "forcing all imperative components into the final chunks bundle, is fine, but it must not include the children of the imperative components since the imperative should load its own dependent components."
-    if (fnData.script && fnData.script.content) {
-      const scriptContent = fnData.script.content.replace(/\s+/g, '')
-      if (scriptContent !== 'function(){}') {
-        processedComponent[componentId] = true
-      }
-    } else if (fnData.script && fnData.script.components && fnData.script.components.length > 0) {
-      processedComponent[componentId] = true
-    } else if (hasObjectKeys(fnData.defaultValues)) {
-      processedComponent[componentId] = true
-    }
-  }
-
-  const processedComponentKeys = Object.keys(processedComponent).sort()
-  const regex = /[-.:]/g
-  const namespace = 'coralite-component:'
-
-  // Generate ESM imports for each component script
-  for (const componentId of processedComponentKeys) {
-    if (this.sharedFunctions[componentId]) {
-      const safeId = componentId.replace(regex, '_')
-      entryCodeParts.push(`import component_${safeId} from "${namespace}${componentId}";\n`)
-    }
-  }
-
-  // Map imports to the functions object
-  entryCodeParts.push('const coraliteComponentFunctions = {\n')
-  for (const componentId of processedComponentKeys) {
-    if (this.sharedFunctions[componentId]) {
-      entryCodeParts.push(`  "${componentId}": component_${componentId.replace(regex, '_')},\n`)
-    }
-  }
-  entryCodeParts.push('};\n')
-
-  entryCodeParts.push('const coraliteComponentDefaults = {\n')
-  for (const key of processedComponentKeys) {
-    if (this.sharedFunctions[key] && this.sharedFunctions[key].defaultValues) {
-      const normalizedDefaults = normalizeObjectFunctions(this.sharedFunctions[key].defaultValues, astTransformer)
-
-      entryCodeParts.push(`  "${key}": (() => {\n`)
-      entryCodeParts.push(`    const defaults = ${serialize(normalizedDefaults)};\n`)
-      entryCodeParts.push(`    return defaults;\n`)
-      entryCodeParts.push(`  })(),\n`)
-    } else {
-      entryCodeParts.push(`  "${key}": {},\n`)
-    }
-  }
-  entryCodeParts.push('};\n')
-
-  entryCodeParts.push('const coraliteComponentStyles = {\n')
-  for (const key of processedComponentKeys) {
-    if (this.sharedFunctions[key] && this.sharedFunctions[key].styles) {
-      entryCodeParts.push(`  "${key}": ${JSON.stringify(this.sharedFunctions[key].styles)},\n`)
-    }
-  }
-  entryCodeParts.push('};\n')
-
   const coraliteElementPath = fileURLToPath(import.meta.resolve('./coralite-element.js'))
 
   entryCodeParts.push(`const globalClientHooks = {
@@ -366,8 +267,55 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push('\nexport { getClientContext, getSetups, createCoraliteClass, globalClientHooks };\n')
 
   const entryPoints = {
-    'chunk-shared': entryCodeParts.join('').trimEnd()
+    'coralite-runtime': entryCodeParts.join('').trimEnd()
   }
+
+  // Determine which components to bundle
+  /** @type {Record<string, boolean>} */
+  const processedComponent = {}
+
+  if (Array.isArray(instances)) {
+    // Production: instances is an array of IDs
+    for (const id of instances) {
+      processedComponent[id] = true
+    }
+  } else {
+    // Development: instances is a map of instanceId -> instance data
+    const instanceValues = Object.entries(instances)
+    for (const instanceData of instanceValues) {
+      addComponentAndDependencies(instanceData[1].componentId, processedComponent, this.sharedFunctions)
+    }
+
+    // Add plugin dependencies explicitly if they are standalone
+    for (const plugin of this.plugins) {
+      if (plugin && plugin._extractedComponents && Array.isArray(plugin._extractedComponents)) {
+        for (const compPath of plugin._extractedComponents) {
+          for (const id of Object.keys(this.sharedFunctions)) {
+            if (compPath.endsWith(`/${id}.html`) || compPath.endsWith(`\\${id}.html`) || compPath === id || compPath.endsWith(`/${id}`)) {
+              addComponentAndDependencies(id, processedComponent, this.sharedFunctions)
+            }
+          }
+        }
+      }
+    }
+
+    // Force inclusion of all components that evaluate something inside
+    for (const [componentId, fnData] of Object.entries(this.sharedFunctions)) {
+      if (fnData.script && fnData.script.content) {
+        const scriptContent = fnData.script.content.replace(/\s+/g, '')
+        if (scriptContent !== 'function(){}') {
+          processedComponent[componentId] = true
+        }
+      } else if (fnData.script && fnData.script.components && fnData.script.components.length > 0) {
+        processedComponent[componentId] = true
+      } else if (hasObjectKeys(fnData.defaultValues)) {
+        processedComponent[componentId] = true
+      }
+    }
+  }
+
+  const processedComponentKeys = Object.keys(processedComponent).sort()
+  const regex = /[-.:]/g
 
   // Create virtual entry points for each component
   for (const componentId of processedComponentKeys) {
@@ -379,7 +327,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       const hasState = this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.stateContent
 
       if (hasScript || hasState) {
-        componentEntryCode += `import * as componentModule_${safeId} from "${namespace}${componentId}";\n`
+        componentEntryCode += `import * as componentModule_${safeId} from "${virtualPrefix}${componentNamespace}${componentId}";\n`
       }
 
       // Use a WeakMap to map original nodes to a unique index
@@ -442,12 +390,15 @@ export default {
   /** @type {Record<string, string>} */
   const virtualEntryPoints = {}
   for (const key of Object.keys(entryPoints)) {
-    virtualEntryPoints[key] = `virtual-entry-point:${key}`
+    virtualEntryPoints[key] = `${virtualPrefix}${key}`
   }
+
+  const injectPath = fileURLToPath(import.meta.resolve('./utils/client/inject.js'))
 
   // Build and bundle
   const result = await build({
     entryPoints: virtualEntryPoints,
+    inject: [injectPath],
     bundle: true,
     write: false,
     treeShaking: true,
@@ -468,6 +419,14 @@ export default {
     plugins: [
       nodeModulesPolyfillPlugin(),
       {
+        name: 'coralite-externaliser',
+        setup: (pluginBuild) => {
+          pluginBuild.onResolve({ filter: /\.(spec|test)\.js$|\.md$/ }, () => {
+            return { external: true }
+          })
+        }
+      },
+      {
         name: 'coralite-import-map-resolver',
         setup: (pluginBuild) => {
           // Regex to catch bare specifiers (doesn't start with ., .., /, or http)
@@ -481,30 +440,20 @@ export default {
             }
 
             // Do not externalize if the path resolves to a virtual module
-            if (args.namespace === 'coralite-entry') {
+            if (args.namespace === 'coralite-virtual') {
               return null
             }
 
             // Check for Coralite internal modules first
-            if (args.path.startsWith('coralite-component:') ||
-              args.path.startsWith('coralite-script-module:') ||
-              args.path === 'chunk-shared') {
+            if (args.path.startsWith(virtualPrefix) ||
+              args.path === 'coralite-runtime' ||
+              Object.hasOwn(entryPoints, args.path)) {
               return null
             }
 
             if (args.path === 'coralite') {
-              const utilsPath = fileURLToPath(import.meta.resolve('./utils/core.js'))
-              const pluginPath = fileURLToPath(import.meta.resolve('./plugin.js'))
-
               return {
-                path: 'coralite',
-                namespace: 'coralite-entry',
-                pluginData: {
-                  contents: `
-                    export { defineComponent } from '${utilsPath.replace(/\\/g, '/')}';
-                    export { definePlugin } from '${pluginPath.replace(/\\/g, '/')}';
-                  `
-                }
+                path: injectPath
               }
             }
 
@@ -512,11 +461,6 @@ export default {
               return {
                 path: fileURLToPath(import.meta.resolve('./utils/index.js'))
               }
-            }
-
-            // Do not externalize if the entry point name actually matches a bare specifier
-            if (Object.hasOwn(entryPoints, args.path)) {
-              return null
             }
 
             // Ignore absolute URLs that are already explicitly defined
@@ -541,212 +485,165 @@ export default {
       {
         name: 'coralite-virtual-modules',
         setup: (pluginBuild) => {
-          pluginBuild.onResolve({ filter: /^virtual-entry-point:/ }, args => {
-            const key = args.path.replace('virtual-entry-point:', '')
-            if (entryPoints[key]) {
-              return {
-                path: key,
-                namespace: 'coralite-entry'
-              }
-            }
-          })
-
-          pluginBuild.onLoad({
-            filter: /.*/,
-            namespace: 'coralite-entry'
-          }, args => {
-            if (args.pluginData && args.pluginData.contents) {
-              return {
-                contents: args.pluginData.contents,
-                loader: 'js',
-                resolveDir: process.cwd()
-              }
-            }
-
-            if (entryPoints[args.path]) {
-              return {
-                contents: entryPoints[args.path],
-                loader: 'js',
-                resolveDir: process.cwd()
-              }
-            }
-          })
-        }
-      },
-      {
-        name: 'coralite-component-resolver',
-        setup: (pluginBuild) => {
-          // Catch the script module, associate with real file paths
-          const componentRegex = new RegExp(`^${namespace}`)
-
-          pluginBuild.onResolve({ filter: componentRegex }, args => {
-            const componentId = args.path.replace(namespace, '')
-            const sharedFn = this.sharedFunctions[componentId]
-
-            return {
-              path: sharedFn.filePath,
-              pluginData: { componentId }
-            }
-          })
-
-          // Handle script modules
-          const moduleRegex = new RegExp(`^${moduleNamespace}`)
-          pluginBuild.onResolve({ filter: moduleRegex }, args => {
-            const index = parseInt(args.path.replace(moduleNamespace, ''), 10)
+          pluginBuild.onResolve({ filter: new RegExp(`^${virtualPrefix}`) }, args => {
             return {
               path: args.path,
-              namespace: 'coralite-script-module',
-              pluginData: { index }
+              namespace: 'coralite-virtual'
             }
           })
 
           pluginBuild.onLoad({
             filter: /.*/,
-            namespace: 'coralite-script-module'
+            namespace: 'coralite-virtual'
           }, args => {
-            const index = args.pluginData.index
-            const module = this.scriptModules[index]
-            let contents = ''
+            const path = args.path.replace(virtualPrefix, '')
 
-            // Generate config object
-            const configContent = module.config
-              ? `const pluginConfig = ${JSON.stringify(module.config)};`
-              : 'const pluginConfig = {};'
-
-            contents += configContent + '\n'
-
-            // Generate setup function
-            const setupFn = module.setup ? normalizeFunction(module.setup) : 'null'
-            contents += `export const runSetup = async (context) => {
-              const setup = ${setupFn};
-              if (!setup) return {};
-              const contextObject = Object.create(context);
-              contextObject.config = pluginConfig;
-              return await setup(contextObject);
-            };\n`
-
-            const beforeFn = module.onBeforeComponentRender ? normalizeFunction(module.onBeforeComponentRender) : 'null'
-            contents += `export const onBeforeComponentRender = ${beforeFn};\n`
-
-            const afterFn = module.onAfterComponentRender ? normalizeFunction(module.onAfterComponentRender) : 'null'
-            contents += `export const onAfterComponentRender = ${afterFn};\n`
-
-            const disconnectedFn = module.onDisconnected ? normalizeFunction(module.onDisconnected) : 'null'
-            contents += `export const onDisconnected = ${disconnectedFn};\n`
-
-            // Generate client context state
-            contents += 'export const clientContextProps = {\n'
-            if (module.context) {
-              const clientName = module.name
-              if (['id', 'state', 'page', 'root', 'signal'].includes(clientName)) {
-                throw new CoraliteError(`Reserved context key '${clientName}' cannot be used in plugin context.`)
+            if (entryPoints[path]) {
+              return {
+                contents: entryPoints[path],
+                loader: 'js',
+                resolveDir: process.cwd()
               }
-
-              const fn = normalizeFunction(module.context)
-              contents += `  "${clientName}": async (globalContext) => {\n`
-              contents += `    const fn = ${fn};\n`
-              contents += `    const pluginContext = new Proxy(globalContext, {
-                        get (target, prop) {
-                          if (prop === 'config') return pluginConfig;
-                          return target[prop];
-                        },
-                        set (target, prop, value) {
-                          return Reflect.set(target, prop, value);
-                        }
-                      });
-                      return await fn(pluginContext);
-                    },\n`
-            }
-            contents += '};\n'
-
-            return {
-              contents,
-              loader: 'js',
-              resolveDir: module.rootDir || (module.filePath ? dirname(module.filePath) : process.cwd())
-            }
-          })
-
-          // Provide the script content to esbuild when it loads those file paths
-          pluginBuild.onLoad({
-            filter: /.*/
-          }, args => {
-            if (!args.pluginData || !args.pluginData.componentId) {
-              return
             }
 
-            const sharedFn = this.sharedFunctions[args.pluginData.componentId]
-            let contents = ''
+            if (path.startsWith(moduleNamespace)) {
+              const index = parseInt(path.replace(moduleNamespace, ''), 10)
+              const module = this.scriptModules[index]
+              let contents = ''
 
+              // Generate config object
+              const configContent = module.config
+                ? `const pluginConfig = ${JSON.stringify(module.config)};`
+                : 'const pluginConfig = {};'
 
-            if (sharedFn.script && sharedFn.script.content) {
-              const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
+              contents += configContent + '\n'
 
-              // More robust way to strip 'server' from defineComponent call
-              let strippedContent = sharedFn.script.content
+              // Generate setup function
+              const setupFn = module.setup ? normalizeFunction(module.setup) : 'null'
+              contents += `export const runSetup = async (context) => {
+                const setup = ${setupFn};
+                if (!setup) return {};
+                const contextObject = Object.create(context);
+                contextObject.config = pluginConfig;
+                return await setup(contextObject);
+              };\n`
 
-              try {
-                const ast = parseJS(strippedContent, {
-                  ecmaVersion: 'latest',
-                  sourceType: 'module'
-                })
-                let dataStart = -1
-                let dataEnd = -1
+              const beforeFn = module.onBeforeComponentRender ? normalizeFunction(module.onBeforeComponentRender) : 'null'
+              contents += `export const onBeforeComponentRender = ${beforeFn};\n`
 
-                walkJS(ast, {
-                  CallExpression (node) {
-                    if (node.callee.type === 'Identifier' && node.callee.name === 'defineComponent') {
-                      const firstArg = node.arguments[0]
-                      if (firstArg && firstArg.type === 'ObjectExpression') {
-                        const dataProp = firstArg.properties.find(p => p.type === 'Property' && p.key?.type === 'Identifier' && p.key?.name === 'server')
-                        // @ts-ignore
-                        if (dataProp && dataProp.type === 'Property') {
+              const afterFn = module.onAfterComponentRender ? normalizeFunction(module.onAfterComponentRender) : 'null'
+              contents += `export const onAfterComponentRender = ${afterFn};\n`
+
+              const disconnectedFn = module.onDisconnected ? normalizeFunction(module.onDisconnected) : 'null'
+              contents += `export const onDisconnected = ${disconnectedFn};\n`
+
+              // Generate client context state
+              contents += 'export const clientContextProps = {\n'
+              if (module.context) {
+                const clientName = module.name
+                if (['id', 'state', 'page', 'root', 'signal'].includes(clientName)) {
+                  throw new CoraliteError(`Reserved context key '${clientName}' cannot be used in plugin context.`)
+                }
+
+                const fn = normalizeFunction(module.context)
+                contents += `  "${clientName}": async (globalContext) => {\n`
+                contents += `    const fn = ${fn};\n`
+                contents += `    const pluginContext = new Proxy(globalContext, {
+                          get (target, prop) {
+                            if (prop === 'config') return pluginConfig;
+                            return target[prop];
+                          },
+                          set (target, prop, value) {
+                            return Reflect.set(target, prop, value);
+                          }
+                        });
+                        return await fn(pluginContext);
+                      },\n`
+              }
+              contents += '};\n'
+
+              return {
+                contents,
+                loader: 'js',
+                resolveDir: module.rootDir || (module.filePath ? dirname(module.filePath) : process.cwd())
+              }
+            }
+
+            if (path.startsWith(componentNamespace)) {
+              const componentId = path.replace(componentNamespace, '')
+              const sharedFn = this.sharedFunctions[componentId]
+              let contents = ''
+
+              if (sharedFn.script && sharedFn.script.content) {
+                const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
+
+                // More robust way to strip 'server' from defineComponent call
+                let strippedContent = sharedFn.script.content
+
+                try {
+                  const ast = parseJS(strippedContent, {
+                    ecmaVersion: 'latest',
+                    sourceType: 'module'
+                  })
+                  let dataStart = -1
+                  let dataEnd = -1
+
+                  walkJS(ast, {
+                    CallExpression (node) {
+                      if (node.callee.type === 'Identifier' && node.callee.name === 'defineComponent') {
+                        const firstArg = node.arguments[0]
+                        if (firstArg && firstArg.type === 'ObjectExpression') {
+                          const dataProp = firstArg.properties.find(p => p.type === 'Property' && p.key?.type === 'Identifier' && p.key?.name === 'server')
                           // @ts-ignore
-                          dataStart = dataProp.start
-                          // @ts-ignore
-                          dataEnd = dataProp.end
+                          if (dataProp && dataProp.type === 'Property') {
+                            // @ts-ignore
+                            dataStart = dataProp.start
+                            // @ts-ignore
+                            dataEnd = dataProp.end
+                          }
                         }
                       }
                     }
-                  }
-                })
+                  })
 
-                if (dataStart !== -1) {
-                  let start = dataStart
-                  let end = dataEnd
+                  if (dataStart !== -1) {
+                    let start = dataStart
+                    let end = dataEnd
 
-                  // Handle comma to avoid syntax errors
-                  const afterContent = strippedContent.slice(end)
-                  const trailingComma = afterContent.match(/^\s*,/)
-                  if (trailingComma) {
-                    end += trailingComma[0].length
-                  } else {
-                    const beforeContent = strippedContent.slice(0, start)
-                    const leadingComma = beforeContent.match(/,\s*$/)
-                    if (leadingComma) {
-                      start -= leadingComma[0].length
+                    // Handle comma to avoid syntax errors
+                    const afterContent = strippedContent.slice(end)
+                    const trailingComma = afterContent.match(/^\s*,/)
+                    if (trailingComma) {
+                      end += trailingComma[0].length
+                    } else {
+                      const beforeContent = strippedContent.slice(0, start)
+                      const leadingComma = beforeContent.match(/,\s*$/)
+                      if (leadingComma) {
+                        start -= leadingComma[0].length
+                      }
                     }
+                    strippedContent = strippedContent.slice(0, start) + strippedContent.slice(end)
                   }
-                  strippedContent = strippedContent.slice(0, start) + strippedContent.slice(end)
+                } catch {
+                  // Fallback to regex if AST parsing fails
+                  strippedContent = strippedContent.replace(/server\s*:\s*async\s*function\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* server stripped */')
+                  strippedContent = strippedContent.replace(/async\s*server\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* server stripped */')
                 }
-              } catch {
-                // Fallback to regex if AST parsing fails
-                strippedContent = strippedContent.replace(/server\s*:\s*async\s*function\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* server stripped */')
-                strippedContent = strippedContent.replace(/async\s*server\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* server stripped */')
+
+                contents += `${padding}export const script = ${strippedContent};\n`
+                contents += `export default script;\n`
+              } else {
+                contents += `export const script = null;\n`
+                contents += `export default null;\n`
               }
 
-              contents += `${padding}export const script = ${strippedContent};\n`
-              contents += `export default script;\n`
-            } else {
-              contents += `export const script = null;\n`
-              contents += `export default null;\n`
-            }
+              contents += `export const state = null;\n`
 
-            contents += `export const state = null;\n`
-
-            return {
-              contents,
-              loader: 'js',
-              resolveDir: sharedFn.filePath ? dirname(sharedFn.filePath) : process.cwd()
+              return {
+                contents,
+                loader: 'js',
+                resolveDir: sharedFn.filePath ? dirname(sharedFn.filePath) : process.cwd()
+              }
             }
           })
         }

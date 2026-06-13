@@ -264,7 +264,7 @@ describe('Coralite', () => {
 
         // Verify the orchestrator in the HTML file points to the right chunk
         const htmlContent = await fs.readFile(path.join(outputDir, 'with-script.html'), 'utf-8')
-        assert.ok(htmlContent.includes('/assets/js/chunk-shared'), 'HTML orchestrator should reference the assets directory')
+        assert.ok(htmlContent.includes('/assets/js/coralite-runtime'), 'HTML orchestrator should reference the assets directory')
       } catch (err) {
         assert.fail(`Asset directory or files missing: ${err.message}`)
       }

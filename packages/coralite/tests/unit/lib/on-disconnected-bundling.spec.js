@@ -30,8 +30,8 @@ describe('ScriptManager onDisconnected bundling', () => {
 
     const result = await sm.compileAllInstances(instances, 'development')
 
-    const chunkSharedHashName = result.manifest['chunk-shared']
-    const compiledScript = result.outputFiles[chunkSharedHashName].text
+    const runtimeHashName = result.manifest['coralite-runtime']
+    const compiledScript = result.outputFiles[runtimeHashName].text
 
     // Check if onDisconnected is present in globalClientHooks
     assert.ok(compiledScript.includes('onDisconnected:'), 'globalClientHooks should contain onDisconnected')
