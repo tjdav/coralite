@@ -5,16 +5,12 @@ import { createTestProject } from '../utils/project.js'
 
 describe('Plugin Exports Leakage', () => {
   let project
-  let app
 
   beforeEach(async () => {
     project = await createTestProject()
   })
 
   afterEach(async () => {
-    if (app) {
-      await app.clearCache(true)
-    }
     await project.cleanup()
   })
 
@@ -50,11 +46,8 @@ describe('Plugin Exports Leakage', () => {
 </script>
     `)
 
-    app = await createCoralite({
-      components: project.componentsDir,
-      pages: project.pagesDir,
-      plugins: [myPlugin],
-      projectRoot: project.testDir
+    const app = await project.createCoralite({
+      plugins: [myPlugin]
     })
 
     const results = await app.build()
@@ -81,11 +74,8 @@ describe('Plugin Exports Leakage', () => {
       }
     })
 
-    app = await createCoralite({
-      components: project.componentsDir,
-      pages: project.pagesDir,
-      plugins: [myPlugin],
-      projectRoot: project.testDir
+    const app = await project.createCoralite({
+      plugins: [myPlugin]
     })
 
     const failingComponent = `

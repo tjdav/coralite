@@ -1,11 +1,9 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoralite } from '#lib'
 import { createTestProject } from '../utils/project.js'
 
 describe('Coralite Build Modes', () => {
   let project
-  let coralite
 
   beforeEach(async () => {
     project = await createTestProject()
@@ -36,17 +34,11 @@ describe('Coralite Build Modes', () => {
   })
 
   afterEach(async () => {
-    if (coralite) {
-      await coralite.clearCache(true)
-    }
     await project.cleanup()
   })
 
   it('should build in production mode by default (esbuild strategy)', async () => {
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir
-    })
+    const coralite = await project.createCoralite()
 
     const results = (await coralite.build()).filter(result => result.type === 'page')
 
@@ -69,9 +61,7 @@ describe('Coralite Build Modes', () => {
       return
     }
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
+    const coralite = await project.createCoralite({
       mode: 'development'
     })
 

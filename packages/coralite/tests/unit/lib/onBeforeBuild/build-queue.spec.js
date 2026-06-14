@@ -1,11 +1,9 @@
 import { test, describe, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { createCoralite } from '../../../../lib/coralite.js'
 import { createTestProject } from '../../utils/project.js'
 
 describe('onBeforeBuild Build Queue', () => {
   let project
-  let app
 
   beforeEach(async () => {
     project = await createTestProject()
@@ -14,9 +12,6 @@ describe('onBeforeBuild Build Queue', () => {
   })
 
   afterEach(async () => {
-    if (app) {
-      await app.clearCache(true)
-    }
     await project.cleanup()
   })
 
@@ -38,11 +33,8 @@ describe('onBeforeBuild Build Queue', () => {
       }
     }
 
-    app = await createCoralite({
-      components: project.componentsDir,
-      pages: project.pagesDir,
-      plugins: [plugin],
-      projectRoot: project.testDir
+    const app = await project.createCoralite({
+      plugins: [plugin]
     })
 
     const results = await app.build()
@@ -68,11 +60,8 @@ describe('onBeforeBuild Build Queue', () => {
       }
     }
 
-    app = await createCoralite({
-      components: project.componentsDir,
-      pages: project.pagesDir,
-      plugins: [plugin],
-      projectRoot: project.testDir
+    const app = await project.createCoralite({
+      plugins: [plugin]
     })
 
     // Targeted build for a specific page
@@ -94,11 +83,8 @@ describe('onBeforeBuild Build Queue', () => {
       }
     }
 
-    app = await createCoralite({
-      components: project.componentsDir,
-      pages: project.pagesDir,
-      plugins: [plugin],
-      projectRoot: project.testDir
+    const app = await project.createCoralite({
+      plugins: [plugin]
     })
 
     const results = await app.build('/index.html')
@@ -128,11 +114,8 @@ describe('onBeforeBuild Build Queue', () => {
       }
     }
 
-    app = await createCoralite({
-      components: project.componentsDir,
-      pages: project.pagesDir,
-      plugins: [plugin],
-      projectRoot: project.testDir
+    const app = await project.createCoralite({
+      plugins: [plugin]
     })
 
     const results = await app.build()

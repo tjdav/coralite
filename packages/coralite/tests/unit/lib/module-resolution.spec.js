@@ -2,12 +2,10 @@ import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { createCoralite } from '#lib'
 import { createTestProject } from '../utils/project.js'
 
 describe('Module Resolution', () => {
   let project
-  let coralite
 
   beforeEach(async () => {
     project = await createTestProject()
@@ -51,16 +49,11 @@ describe('Module Resolution', () => {
   })
 
   afterEach(async () => {
-    if (coralite) {
-      await coralite.clearCache(true)
-    }
     await project.cleanup()
   })
 
   it('should resolve imports from project node_modules in development mode', async () => {
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
+    const coralite = await project.createCoralite({
       mode: 'development'
     })
 

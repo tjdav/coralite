@@ -1,26 +1,28 @@
-import { describe, test, afterEach } from 'node:test'
+import { describe, test, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import '../setup.js'
-import { createCoralite } from '../../../lib/index.js'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { createTestProject } from '../utils/project.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 describe('Head Stripping', () => {
-  let coralite
+  let project
+
+  beforeEach(async () => {
+    project = await createTestProject()
+  })
 
   afterEach(async () => {
-    if (coralite) {
-      await coralite.clearCache(true)
-    }
+    await project.cleanup()
   })
 
   test('strip custom elements with no-hydration attribute', async () => {
     const fixtureDir = join(__dirname, '../../fixtures/head-stripping')
 
-    coralite = await createCoralite({
+    const coralite = await project.createCoralite({
       components: fixtureDir,
       pages: fixtureDir
     })

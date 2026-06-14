@@ -2,13 +2,11 @@ import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import path from 'node:path'
 import { writeFile, readFile } from 'node:fs/promises'
-import { createCoralite } from '#lib'
 import { createTestProject } from '../utils/project.js'
 
 describe('Incremental Static Regeneration (ISR)', () => {
   let project
   let cacheDir
-  let coralite
 
   beforeEach(async () => {
     project = await createTestProject()
@@ -16,21 +14,13 @@ describe('Incremental Static Regeneration (ISR)', () => {
   })
 
   afterEach(async () => {
-    if (coralite) {
-      await coralite.clearCache(true)
-    }
     await project.cleanup()
   })
 
   it('should skip rendering unchanged files on subsequent builds', async () => {
     await project.writePage('index.html', '<h1>Home</h1>')
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
-      output: project.outputDir,
-      projectRoot: project.testDir
-    })
+    const coralite = await project.createCoralite()
 
     const results1 = await coralite.build()
     assert.strictEqual(results1.length, 1)
@@ -45,12 +35,7 @@ describe('Incremental Static Regeneration (ISR)', () => {
   it('should rebuild when a file content changes', async () => {
     const pagePath = await project.writePage('index.html', '<h1>Home</h1>')
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
-      output: project.outputDir,
-      projectRoot: project.testDir
-    })
+    const coralite = await project.createCoralite()
 
     await coralite.build()
 
@@ -67,12 +52,7 @@ describe('Incremental Static Regeneration (ISR)', () => {
     await project.writePage('index.html', '<my-comp></my-comp>')
     await project.writeComponent('my-comp.html', '<template id="my-comp"><div>Original</div></template>')
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
-      output: project.outputDir,
-      projectRoot: project.testDir
-    })
+    const coralite = await project.createCoralite()
 
     // First build to establish dependencies
     await coralite.build()
@@ -103,12 +83,8 @@ describe('Incremental Static Regeneration (ISR)', () => {
       }
     }
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
-      output: project.outputDir,
-      plugins: [plugin],
-      projectRoot: project.testDir
+    const coralite = await project.createCoralite({
+      plugins: [plugin]
     })
 
     const results1 = await coralite.build()
@@ -140,12 +116,8 @@ describe('Incremental Static Regeneration (ISR)', () => {
       }
     }
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
-      output: project.outputDir,
-      plugins: [plugin],
-      projectRoot: project.testDir
+    const coralite = await project.createCoralite({
+      plugins: [plugin]
     })
 
     await coralite.build()
@@ -175,12 +147,8 @@ describe('Incremental Static Regeneration (ISR)', () => {
       }
     }
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
-      output: project.outputDir,
-      plugins: [plugin],
-      projectRoot: project.testDir
+    const coralite = await project.createCoralite({
+      plugins: [plugin]
     })
 
     await coralite.build()
@@ -193,12 +161,7 @@ describe('Incremental Static Regeneration (ISR)', () => {
   it('should not save skipped pages to disk', async () => {
     await project.writePage('index.html', '<h1>Home</h1>')
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
-      output: project.outputDir,
-      projectRoot: project.testDir
-    })
+    const coralite = await project.createCoralite()
 
     // First build and save
     await coralite.save()
@@ -218,12 +181,7 @@ describe('Incremental Static Regeneration (ISR)', () => {
   it('should handle cold start (missing .coralite directory)', async () => {
     await project.writePage('index.html', '<h1>Cold Start</h1>')
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
-      output: project.outputDir,
-      projectRoot: project.testDir
-    })
+    const coralite = await project.createCoralite()
 
     const results = await coralite.build()
     assert.strictEqual(results.length, 1)
@@ -244,11 +202,8 @@ describe('Incremental Static Regeneration (ISR)', () => {
       }
     }
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
+    const coralite = await project.createCoralite({
       plugins: [errorPlugin],
-      projectRoot: project.testDir,
       onError: () => {
       }
     })

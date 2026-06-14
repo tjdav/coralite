@@ -2,12 +2,10 @@ import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { createCoralite } from '#lib'
 import { createTestProject } from '../utils/project.js'
 
 describe('VM Dynamic Import', () => {
   let project
-  let coralite
 
   beforeEach(async () => {
     project = await createTestProject()
@@ -19,9 +17,6 @@ describe('VM Dynamic Import', () => {
   })
 
   afterEach(async () => {
-    if (coralite) {
-      await coralite.clearCache(true)
-    }
     await project.cleanup()
   })
 
@@ -44,9 +39,7 @@ describe('VM Dynamic Import', () => {
       </script>
     `)
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
+    const coralite = await project.createCoralite({
       mode: 'development'
     })
 
@@ -89,9 +82,7 @@ describe('VM Dynamic Import', () => {
       </script>
     `)
 
-    coralite = await createCoralite({
-      pages: project.pagesDir,
-      components: project.componentsDir,
+    const coralite = await project.createCoralite({
       mode: 'development'
     })
 

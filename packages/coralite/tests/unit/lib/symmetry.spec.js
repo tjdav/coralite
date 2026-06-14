@@ -1,33 +1,17 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import path from 'node:path'
-import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
-import { createCoralite, definePlugin } from '#lib'
+import { definePlugin } from '#lib'
+import { createTestProject } from '../utils/project.js'
 
 describe('Symmetrical API Integration', () => {
-  let testDir
-  let pagesDir
-  let componentDir
-  let coralite
+  let project
 
   beforeEach(async () => {
-    testDir = await mkdtemp(path.join(tmpdir(), 'coralite-symmetry-'))
-    pagesDir = path.join(testDir, 'pages')
-    componentDir = path.join(testDir, 'components')
-
-    await mkdir(pagesDir, { recursive: true })
-    await mkdir(componentDir, { recursive: true })
+    project = await createTestProject()
   })
 
   afterEach(async () => {
-    if (coralite) {
-      await coralite.clearCache(true)
-    }
-    await rm(testDir, {
-      recursive: true,
-      force: true
-    })
+    await project.cleanup()
   })
 
   it('should support symmetrical access to plugin context in server and client', async () => {
@@ -49,7 +33,7 @@ describe('Symmetrical API Integration', () => {
       }
     })
 
-    await writeFile(path.join(componentDir, 'greeting-banner.html'), `
+    await project.writeComponent('greeting-banner.html', `
 <template id="greeting-banner">
   <div class="banner">
     <h2 ref="heading">{{ headingText }}</h2>
@@ -76,11 +60,9 @@ describe('Symmetrical API Integration', () => {
 </script>
 `)
 
-    await writeFile(path.join(pagesDir, 'index.html'), '<greeting-banner></greeting-banner>')
+    await project.writePage('index.html', '<greeting-banner></greeting-banner>')
 
-    coralite = await createCoralite({
-      pages: pagesDir,
-      components: componentDir,
+    const coralite = await project.createCoralite({
       plugins: [i18nPlugin],
       mode: 'development'
     })

@@ -1,20 +1,15 @@
 import { describe, test, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
-import { createCoralite } from '#lib'
 import { createTestProject } from '../utils/project.js'
 
 describe('Source Map Generation', () => {
   let project
-  let coralite
 
   beforeEach(async () => {
     project = await createTestProject()
   })
 
   afterEach(async () => {
-    if (coralite) {
-      await coralite.clearCache(true)
-    }
     await project.cleanup()
   })
 
@@ -45,9 +40,7 @@ export default defineComponent({
 `
     await project.writePage('index.html', pageContent)
 
-    coralite = await createCoralite({
-      components: project.componentsDir,
-      pages: project.pagesDir,
+    const coralite = await project.createCoralite({
       mode: 'development'
     })
 
@@ -110,9 +103,7 @@ export default defineComponent({
 `
     await project.writePage('index.html', pageContent)
 
-    coralite = await createCoralite({
-      components: project.componentsDir,
-      pages: project.pagesDir,
+    const coralite = await project.createCoralite({
       mode: 'development'
     })
 
