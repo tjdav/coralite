@@ -1,3 +1,5 @@
+> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite).
+
 # 🪸 Coralite
 
 Coralite is a **Native-First**, strictly Server-Side Rendered (SSR) framework for building fast, accessible, and future-proof websites. It leverages standard web technologies—HTML modules, Custom Elements, and standard ES modules—to eliminate framework-specific friction while providing a modern, reactive developer experience.

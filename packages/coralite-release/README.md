@@ -1,3 +1,5 @@
+> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite).
+
 # Coralite release
 
 Requires Node.js v20.19.0 or higher (Node.js v24 LTS recommended).
