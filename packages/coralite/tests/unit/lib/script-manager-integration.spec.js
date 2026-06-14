@@ -27,10 +27,8 @@ describe('ScriptManager Integration & Edge Cases', () => {
       // Register plugin with helper
       await sm.use({
         name: 'test_plugin',
-        setup: () => {
-          return { customProperty: 'test' }
-        },
-        context: () => {
+        context: (pluginContext) => {
+          pluginContext.values.customProperty = 'test'
           return {
             add: (a, b) => a + b
           }
@@ -51,8 +49,8 @@ describe('ScriptManager Integration & Edge Cases', () => {
             const multiply = context.multiply;
             const sum = add(context.state.a, context.state.b)
             const product = multiply(sum, context.state.multiplier)
-            // also return customProperty if present to prove setup injected it
-            if (context.state.customProperty === 'test') {
+            // also return customProperty if present to prove it was injected in context phase 1
+            if (context.values.customProperty === 'test') {
               return product + 1000
             }
             return product

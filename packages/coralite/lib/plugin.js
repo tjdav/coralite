@@ -181,13 +181,6 @@ export function definePlugin ({
       )
     }
 
-    // Validate optional client state
-    if (client.setup != null && typeof client.setup !== 'function') {
-      throw new CoraliteError(
-        `Coralite plugin validation failed: "client.setup" must be a function, received ${typeof client.setup}`
-      )
-    }
-
     if (client.config != null && typeof client.config !== 'object') {
       throw new CoraliteError(
         `Coralite plugin validation failed: "client.config" must be an object, received ${typeof client.config}`

@@ -52,7 +52,6 @@
  * @property {string} [name] - The name of the plugin
  * @property {string} [rootDir] - The root directory of the plugin
  * @property {Object.<string, any>} [config] - Plugin configuration
- * @property {function(any): void} [setup] - Called when plugin is registered
  * @property {CoraliteClientPluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Called before component is rendered
  * @property {CoraliteClientPluginAfterComponentRenderCallback} [onAfterComponentRender] - Called after component is rendered
  * @property {CoraliteClientPluginDisconnectedCallback} [onDisconnected] - Called when component is removed from the DOM

@@ -196,9 +196,6 @@ export default definePlugin({
     context: (pluginContext) => (instanceContext) => { ... }, // Client-side context injections (Two-Phase Resolver)
     
     // Client Runtime Hooks
-    setup: async ({ values, config }) => {
-      // Called when the plugin registers. Can return an object to merge into global context values.
-    },
     onBeforeComponentRender: ({ state, instanceId, componentId, refs, element, options }) => {
       // Called before the component state is proxied and rendered.
     },

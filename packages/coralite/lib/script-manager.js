@@ -44,7 +44,6 @@ ScriptManager.prototype.use = async function (plugin) {
     // @ts-ignore
     const client = plugin.client || plugin
     if (client.context
-      || typeof client.setup === 'function'
       || typeof client.onBeforeComponentRender === 'function'
       || typeof client.onAfterComponentRender === 'function'
       || typeof client.onDisconnected === 'function') {
@@ -218,7 +217,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   // Generate ESM imports for each script module
   for (let i = 0; i < this.scriptModules.length; i++) {
-    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, runSetup as runSetup_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i} } from "${virtualPrefix}${moduleNamespace}${i}";\n`)
+    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i} } from "${virtualPrefix}${moduleNamespace}${i}";\n`)
   }
 
   // Setup client context state
@@ -231,24 +230,10 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     ${contextParts}
   };\n`)
 
-  entryCodeParts.push(`const getSetups = async (context) => {
-    const state = {};
-    for (const runSetup of [${this.scriptModules.map((_, i) => `runSetup_${i}`).join(', ')}]) {
-      const result = await runSetup(context);
-      if (result && typeof result === 'object') {
-        Object.assign(state, result);
-      }
-    }
-    return state;
-  }\n`)
-
-  // Global setups initialization
+  // Global context initialization
   entryCodeParts.push('const globalContext = { values: {} };\n')
 
   entryCodeParts.push(`const resolvedContextPropsPromise = (async () => {
-    const setupValues = await getSetups(globalContext);
-    Object.assign(globalContext.values, setupValues);
-
     const resolvedProps = {};
     const keys = Object.keys(coraliteComponentClientContextProps);
     for (const key of keys) {
@@ -276,7 +261,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   };\n`)
 
   entryCodeParts.push(`import { createCoraliteClass } from ${JSON.stringify(coraliteElementPath)};\n`)
-  entryCodeParts.push('\nexport { getClientContext, getSetups, createCoraliteClass, globalClientHooks };\n')
+  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, globalClientHooks };\n')
 
   const entryPoints = {
     'coralite-runtime': entryCodeParts.join('').trimEnd()
@@ -530,16 +515,6 @@ export default {
                 : 'const pluginConfig = {};'
 
               contents += configContent + '\n'
-
-              // Generate setup function
-              const setupFn = module.setup ? normalizeFunction(module.setup) : 'null'
-              contents += `export const runSetup = async (context) => {
-                const setup = ${setupFn};
-                if (!setup) return {};
-                const contextObject = Object.create(context);
-                contextObject.config = pluginConfig;
-                return await setup(contextObject);
-              };\n`
 
               const beforeFn = module.onBeforeComponentRender ? normalizeFunction(module.onBeforeComponentRender) : 'null'
               contents += `export const onBeforeComponentRender = ${beforeFn};\n`

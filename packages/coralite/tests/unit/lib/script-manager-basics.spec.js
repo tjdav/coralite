@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach, mock } from 'node:test'
+import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { ScriptManager as OriginalScriptManager } from '../../../lib/script-manager.js'
 
@@ -35,20 +35,6 @@ describe('ScriptManager Basics', () => {
       sm = new ScriptManager()
     })
 
-    it('should register plugin with setup function', async () => {
-      const setupMock = mock.fn()
-      const plugin = { setup: setupMock }
-
-      await sm.use(plugin)
-
-      // setup is no longer called during registration, it's run client-side
-      assert.strictEqual(setupMock.mock.calls.length, 0)
-      assert.strictEqual(sm.plugins.length, 1)
-      assert.strictEqual(sm.plugins[0], plugin)
-      assert.strictEqual(sm.scriptModules.length, 1)
-      assert.strictEqual(sm.scriptModules[0], plugin)
-    })
-
     it('should register plugin with context', async () => {
       const context = () => {
         return {
@@ -69,23 +55,6 @@ describe('ScriptManager Basics', () => {
       assert.strictEqual(sm.plugins.length, 1)
     })
 
-    it('should register plugin with both setup and context', async () => {
-      const setupMock = mock.fn()
-      const context = () => ({ testHelper: () => 'test' })
-
-      const plugin = {
-        name: 'test',
-        setup: setupMock,
-        context
-      }
-
-      await sm.use(plugin)
-
-      assert.strictEqual(setupMock.mock.calls.length, 0)
-      assert.strictEqual(sm.scriptModules.length, 1)
-      assert.strictEqual(sm.scriptModules[0].context, context)
-    })
-
     it('should register function plugin', async () => {
       const pluginFn = () => {
       }
@@ -94,32 +63,6 @@ describe('ScriptManager Basics', () => {
 
       assert.strictEqual(sm.plugins.length, 1)
       assert.strictEqual(sm.plugins[0], pluginFn)
-    })
-
-    it('should handle plugin with null setup', async () => {
-      const context = () => ({ test: () => 'test' })
-      const plugin = {
-        name: 'test',
-        setup: null,
-        context
-      }
-
-      await sm.use(plugin)
-
-      assert.strictEqual(sm.scriptModules[0].context, context)
-    })
-
-    it('should handle plugin with undefined setup', async () => {
-      const context = () => ({ test: () => 'test' })
-      const plugin = {
-        name: 'test',
-        setup: undefined,
-        context
-      }
-
-      await sm.use(plugin)
-
-      assert.strictEqual(sm.scriptModules[0].context, context)
     })
 
     it('should handle plugin with no setup property', async () => {
@@ -149,22 +92,10 @@ describe('ScriptManager Basics', () => {
 
     it('should return this for method chaining', async () => {
       const result = await sm.use({
-        setup: () => {
+        context: () => {
         }
       })
       assert.strictEqual(result, sm)
-    })
-
-    it('should handle async setup function', async () => {
-      const setupMock = mock.fn(async () => {
-        await Promise.resolve()
-      })
-      const plugin = { setup: setupMock }
-
-      await sm.use(plugin)
-
-      // setup is no longer called during registration
-      assert.strictEqual(setupMock.mock.calls.length, 0)
     })
 
     it('should handle context with async methods', async () => {

@@ -19,7 +19,7 @@ export function generateClientRuntime ({
   declarativeTags = []
 }) {
   return `
-import { getClientContext, getSetups, createCoraliteClass, globalClientHooks } from '${base}assets/js/${sharedChunkPath}';
+import { getClientContext, createCoraliteClass, globalClientHooks } from '${base}assets/js/${sharedChunkPath}';
 
 (async () => {
   if (!window.__coralite_ready__) {

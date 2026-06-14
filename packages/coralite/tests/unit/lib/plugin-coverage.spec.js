@@ -62,13 +62,6 @@ describe('definePlugin Coverage Gaps', () => {
     }), /"client.context" must be a function/)
   })
 
-  it('should throw if client.setup is not a function', () => {
-    assert.throws(() => definePlugin({
-      name: 'test',
-      client: { setup: 'invalid' }
-    }), /"client.setup" must be a function/)
-  })
-
   it('should throw if client.config is not an object', () => {
     assert.throws(() => definePlugin({
       name: 'test',
