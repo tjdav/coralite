@@ -13,13 +13,15 @@
 
     <p>While <a href="./static-components.html">Static Components</a> are great for simple layouts, modern web development often requires more power. When your component needs data fetching, reactive state, or client-side interactivity, you must create a <strong>Dynamic Component</strong>.</p>
 
-    <p>Dynamic components are powered by the <code>defineComponent</code> plugin. They follow the <strong>Smart State, Dumb Template</strong> philosophy, where logic is strictly separated into four isolated blocks. <strong>Note:</strong> All component names MUST contain a hyphen (e.g., <code>&lt;my-component&gt;</code>).</p>
+    <p>Dynamic components are powered by the <code>defineComponent</code> plugin. They follow the <strong>Smart State, Dumb Template</strong> philosophy, where logic is strictly separated into five isolated blocks. <strong>Note:</strong> All component names MUST contain a hyphen (e.g., <code>&lt;my-component&gt;</code>).</p>
 
     <coralite-alert type="warning">
-      <strong>⚠️ Warning: AST Splicing (Host Tag Removal)</strong>
+      <strong>⚠️ Warning: Host Tags & display: contents</strong>
       <p>
-        Just like static components, Coralite's server completely deletes the host tag of declarative dynamic components and replaces it with the template's inner HTML.
-        If you try to style the host tag (e.g., <code>&lt;my-component class="foo"&gt;</code>) in CSS, it will break because the tag won't exist in the final HTML.
+        By default, Coralite preserves the host tag of dynamic components in the final HTML but applies <code>display: contents</code> via an internal stylesheet. This ensures the tag doesn't affect your layout while remaining available for hydration.
+      </p>
+      <p>
+        <strong>Note:</strong> If you use the <code>no-hydration</code> attribute, the host tag is completely removed (spliced) and replaced by its contents, just like a static component.
       </p>
     </coralite-alert>
 
@@ -46,6 +48,9 @@
           getters: {
             //...
           },
+          slots: {
+            //...
+          },
           client: () => {
             // ...
           }
@@ -53,12 +58,13 @@
       </script>
     </coralite-code-html>
 
-    <coralite-heading level="2" text="The Four Pillars of State"></coralite-heading>
+    <coralite-heading level="2" text="The Five Pillars of State"></coralite-heading>
 
-    <p>Coralite unifies four different sources of data into a single reactive <code>state</code> object available to your template and client blocks.</p>
+    <p>Coralite unifies five different sources of data and logic into a single reactive <code>state</code> object available to your template and client blocks.</p>
 
     <coralite-heading level="3" text="1. Attributes (Inputs)"></coralite-heading>
     <p>Attributes are the "props" of your component. They are coerced from HTML attributes into JS primitives.</p>
+    <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data.</p>
     <coralite-code-highlight language="javascript">
 attributes: {
   theme: { type: String, default: 'light' },
@@ -66,12 +72,12 @@ attributes: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="3" text="2. Server (Server-Side Fetching)"></coralite-heading>
-    <p>The <code>server</code> block runs strictly on the server during build-time. It's the place for database queries or API calls. This code is completely stripped from the client bundle.</p>
+    <coralite-heading level="3" text="2. Server (Server-Side Logic)"></coralite-heading>
+    <p>The <code>server</code> block runs strictly on the server during build-time. It's the place for database queries or API calls. You can also access plugin results from the context.</p>
     <coralite-code-highlight language="javascript">
-async server(context) {
+async server({ myPlugin }) {
   const posts = await db.getPosts();
-  return { posts };
+  return { posts, pluginData: myPlugin.data };
 }
     </coralite-code-highlight>
 
@@ -83,10 +89,24 @@ getters: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="3" text="4. Client (Client Controller)"></coralite-heading>
-    <p>The <code>client</code> block is where interactivity lives. It runs in the browser and has full read/write access to the state.</p>
+    <coralite-heading level="3" text="4. Slots (Light DOM Transformation)"></coralite-heading>
+    <p>The <code>slots</code> block allows you to intercept and transform the Light DOM nodes passed to your component before they are rendered.</p>
     <coralite-code-highlight language="javascript">
-client: ({ state, signal, refs }) => {
+slots: {
+  default: (nodes, state) => {
+    // Wrap all nodes in a div if count is even
+    if (state.count % 2 === 0) {
+      return `<div class="wrapper">${nodes.map(n => n.outerHTML).join('')}</div>`;
+    }
+    return nodes;
+  }
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="5. Client (Client Controller)"></coralite-heading>
+    <p>The <code>client</code> block is where interactivity lives. It runs in the browser and has full read/write access to the state, as well as access to the element instance and unique IDs.</p>
+    <coralite-code-highlight language="javascript">
+client: ({ state, signal, refs, root, instanceId }) => {
   const btn = refs('my-btn');
   btn.addEventListener('click', () => {
     state.count++; // Mutating state triggers a re-render!

@@ -36,7 +36,7 @@ export function createComponentDefinition ({ app }) {
     if (attributes) {
       for (const [key, value] of Object.entries(attributes)) {
         if (value.type === Object || value.type === Array) {
-          throw new CoraliteError(`Component "${module.id}" defines attribute "${key}" as ${value.type.name}. Object and Array types are blocked in attributes. Use data() for complex data.`, {
+          throw new CoraliteError(`Component "${module.id}" defines attribute "${key}" as ${value.type.name}. Object and Array types are blocked in attributes. Use server() for complex data.`, {
             componentId: module.id,
             filePath: module.path?.pathname
           })
