@@ -11,10 +11,9 @@ test.describe('Plugins Extensibility', () => {
 
   test('should inject custom context and verify execution', async ({ page }) => {
     const pluginData = page.getByTestId('plugin-component-0__pluginData')
-    const text = await pluginData.textContent()
-    expect(text).toContain('Global: global-state-123')
-    expect(text).toContain('InstanceId: plugin-component-0')
-    expect(text).toContain('Signal: true')
+    await expect(pluginData).toContainText('Global: global-state-123')
+    await expect(pluginData).toContainText('InstanceId: plugin-component-0')
+    await expect(pluginData).toContainText('Signal: true')
   })
 
   test('should verify metadata plugin mapping', async ({ page }) => {

@@ -14,8 +14,7 @@ test.describe('Server State', () => {
     await expect(title).toHaveText('Server Properties Title')
 
     const filePath = page.getByTestId('file-path')
-    const filePathText = await filePath.textContent()
-    expect(filePathText).toContain('tests/fixtures/pages/server-state')
+    await expect(filePath).toContainText('tests/fixtures/pages/server-state')
 
     const serverData = page.getByTestId('server-data')
     await expect(serverData).toHaveText('FileExists')
