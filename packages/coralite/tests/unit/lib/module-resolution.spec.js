@@ -1,27 +1,20 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { mkdir, writeFile, rm } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { createCoralite } from '#lib'
+import { createTestProject } from '../utils/project.js'
 
 describe('Module Resolution', () => {
-  let testDir
-  let pagesDir
-  let componentDir
-  let nodeModulesDir
-  let pkgDir
+  let project
   let coralite
 
   beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'coralite-resolution-'))
-    pagesDir = join(testDir, 'pages')
-    componentDir = join(testDir, 'components')
-    nodeModulesDir = join(testDir, 'node_modules')
-    pkgDir = join(nodeModulesDir, 'dummy-pkg')
+    project = await createTestProject()
 
-    await mkdir(pagesDir, { recursive: true })
-    await mkdir(componentDir, { recursive: true })
+    const nodeModulesDir = join(project.testDir, 'node_modules')
+    const pkgDir = join(nodeModulesDir, 'dummy-pkg')
+
     await mkdir(pkgDir, { recursive: true })
 
     // Create a dummy package in node_modules
@@ -34,13 +27,13 @@ describe('Module Resolution', () => {
     await writeFile(join(pkgDir, 'index.js'), 'export default "Hello from Dummy Package"')
 
     // Create a page that uses a component
-    await writeFile(join(pagesDir, 'index.html'), `
+    await project.writePage('index.html', `
       <my-component></my-component>
     `)
 
     // Create a component that imports the dummy package
     // This is the crucial part: it imports 'dummy-pkg' which is in the project's node_modules
-    await writeFile(join(componentDir, 'my-component.html'), `
+    await project.writeComponent('my-component.html', `
       <template id="my-component">
         <div>{{ message }}</div>
       </template>
@@ -61,21 +54,13 @@ describe('Module Resolution', () => {
     if (coralite) {
       await coralite.clearCache(true)
     }
-    await rm(testDir, {
-      recursive: true,
-      force: true
-    })
+    await project.cleanup()
   })
-
-  async function mkdtemp (prefix) {
-    const fs = await import('node:fs/promises')
-    return fs.mkdtemp(prefix)
-  }
 
   it('should resolve imports from project node_modules in development mode', async () => {
     coralite = await createCoralite({
-      pages: pagesDir,
-      components: componentDir,
+      pages: project.pagesDir,
+      components: project.componentsDir,
       mode: 'development'
     })
 

@@ -28,8 +28,10 @@ describe('CoraliteElement onDisconnected hook', () => {
       ]
     }
 
-    customElements.define('on-disconnected-test', CoraliteElement)
-    const instance = document.createElement('on-disconnected-test')
+    const tagName = 'on-disconnected-test-' + Math.random().toString(36).substring(2, 9)
+    customElements.define(tagName, class extends CoraliteElement {
+    })
+    const instance = document.createElement(tagName)
     instance.componentOptions = options
     instance._hooks = {
       onBeforeComponentRender: [],

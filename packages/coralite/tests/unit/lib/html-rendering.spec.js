@@ -22,10 +22,11 @@ describe('Coralite HTML Rendering', () => {
       }
     }
 
+    const tagName = 'html-rendering-test-' + Math.random().toString(36).substring(2, 9)
     const TestComp = createCoraliteClass(options)
-    customElements.define('test-comp', TestComp)
+    customElements.define(tagName, TestComp)
 
-    const el = document.createElement('test-comp')
+    const el = document.createElement(tagName)
     document.body.appendChild(el)
 
     // Wait for microtask (updateDOM)

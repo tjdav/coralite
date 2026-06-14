@@ -1,33 +1,29 @@
-import { describe, it, before, after } from 'node:test'
+import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import { staticAssetPlugin } from '../../../plugins/static-assets.js'
 import { join } from 'node:path'
-import { rm, mkdir, writeFile, readFile, stat } from 'node:fs/promises'
+import { mkdir, writeFile, readFile, stat, utimes } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { createTestProject } from '../utils/project.js'
 
 describe('staticAssetPlugin', () => {
-  const tmpDir = join(process.cwd(), 'packages/coralite/tests/unit/plugins/tmp-static-assets')
-  const outputDir = join(tmpDir, 'dist')
-  const srcDir = join(tmpDir, 'src')
+  let project
+  let tmpDir
+  let outputDir
+  let srcDir
 
-  before(async () => {
-    if (existsSync(tmpDir)) {
-      await rm(tmpDir, {
-        recursive: true,
-        force: true
-      })
-    }
+  beforeEach(async () => {
+    project = await createTestProject()
+    tmpDir = project.testDir
+    outputDir = project.outputDir
+    srcDir = join(tmpDir, 'src')
+
     await mkdir(srcDir, { recursive: true })
     await writeFile(join(srcDir, 'test.txt'), 'hello world')
   })
 
-  after(async () => {
-    if (existsSync(tmpDir)) {
-      await rm(tmpDir, {
-        recursive: true,
-        force: true
-      })
-    }
+  afterEach(async () => {
+    await project.cleanup()
   })
 
   it('should throw an error if dest is missing', async () => {
@@ -140,9 +136,10 @@ describe('staticAssetPlugin', () => {
     await plugin.server.onBeforeBuild(context)
     assert.strictEqual(await readFile(destFile, 'utf8'), 'initial')
 
-    // Update source
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Update source with future mtime to avoid waiting
+    const future = new Date(Date.now() + 2000)
     await writeFile(srcFile, 'updated content')
+    await utimes(srcFile, future, future)
 
     await plugin.server.onBeforeBuild(context)
     assert.strictEqual(await readFile(destFile, 'utf8'), 'updated content')
@@ -228,8 +225,12 @@ describe('staticAssetPlugin', () => {
     assert.strictEqual(await readFile(destFile, 'utf8'), 'v1')
 
     // Update file deep inside directory
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const future = new Date(Date.now() + 2000)
     await writeFile(nestedFile, 'v2')
+    // We don't necessarily need to update mtime of the file here because
+    // directories are always copied, but it helps if the plugin check was different.
+    // The key is that we don't WAIT 1000ms.
+    await utimes(nestedFile, future, future)
 
     // Directory mtime might not change, but we should copy anyway
     await plugin.server.onBeforeBuild(context)

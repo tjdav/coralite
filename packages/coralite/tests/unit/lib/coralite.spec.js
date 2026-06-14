@@ -1,40 +1,29 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import path from 'node:path'
-import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { createCoralite, createCoraliteElement, createCoraliteTextNode } from '#lib'
+import { createTestProject } from '../utils/project.js'
 
 describe('Coralite', () => {
-  let testDir
-  let pagesDir
-  let componentDir
+  let project
   let coralite
 
   beforeEach(async () => {
-    testDir = await mkdtemp(path.join(tmpdir(), 'coralite-test-'))
-    pagesDir = path.join(testDir, 'pages')
-    componentDir = path.join(testDir, 'component')
-
-    await mkdir(pagesDir)
-    await mkdir(componentDir)
+    project = await createTestProject()
 
     // Create a basic page
-    await writeFile(path.join(pagesDir, 'index.html'), '<h1>Hello World</h1>')
+    await project.writePage('index.html', '<h1>Hello World</h1>')
 
     // Create a basic component
-    await writeFile(path.join(componentDir, 'layout.html'), '<slot></slot>')
+    await project.writeComponent('layout.html', '<slot></slot>')
   })
 
   afterEach(async () => {
     if (coralite) {
       await coralite.clearCache(true)
     }
-    await rm(testDir, {
-      recursive: true,
-      force: true
-    })
+    await project.cleanup()
   })
 
   describe('Plugins Initialization', () => {
@@ -48,8 +37,8 @@ describe('Coralite', () => {
       ]
 
       coralite = await createCoralite({
-        pages: pagesDir,
-        components: componentDir,
+        pages: project.pagesDir,
+        components: project.componentsDir,
         assets
       })
 
@@ -81,14 +70,14 @@ describe('Coralite', () => {
       }
 
       coralite = await createCoralite({
-        pages: pagesDir,
-        components: componentDir,
+        pages: project.pagesDir,
+        components: project.componentsDir,
         plugins: [plugin]
       })
 
 
       const buildOptions = { maxConcurrent: 5 }
-      await coralite.build(pagesDir, buildOptions)
+      await coralite.build(project.pagesDir, buildOptions)
 
       assert.ok(hookCalled, 'onBeforeBuild hook should be called')
       assert.ok(hookContext, 'context should be passed to the hook')
@@ -126,8 +115,8 @@ describe('Coralite', () => {
       }
 
       coralite = await createCoralite({
-        pages: pagesDir,
-        components: componentDir,
+        pages: project.pagesDir,
+        components: project.componentsDir,
         plugins: [plugin]
       })
 
@@ -146,16 +135,16 @@ describe('Coralite', () => {
 
   describe('Ignore/Skip Attributes', () => {
     it('should drop elements from AST when they match ignoreByAttribute (Object format)', async () => {
-      await writeFile(path.join(pagesDir, 'ignore.html'), '<div><span data-ignore="true">Ignored</span><span data-keep="true">Kept</span></div>')
+      await project.writePage('ignore.html', '<div><span data-ignore="true">Ignored</span><span data-keep="true">Kept</span></div>')
 
       coralite = await createCoralite({
-        pages: pagesDir,
-        components: componentDir,
+        pages: project.pagesDir,
+        components: project.componentsDir,
         ignoreByAttribute: [{
           name: 'data-ignore',
           value: 'true'
         }],
-        output: path.join(testDir, 'ignore-out')
+        output: path.join(project.testDir, 'ignore-out')
       })
 
 
@@ -167,13 +156,13 @@ describe('Coralite', () => {
     })
 
     it('should drop elements from AST when they match ignoreByAttribute (String format)', async () => {
-      await writeFile(path.join(pagesDir, 'ignore2.html'), '<div><span data-ignore>Ignored</span><span data-keep="true">Kept</span></div>')
+      await project.writePage('ignore2.html', '<div><span data-ignore>Ignored</span><span data-keep="true">Kept</span></div>')
 
       coralite = await createCoralite({
-        pages: pagesDir,
-        components: componentDir,
+        pages: project.pagesDir,
+        components: project.componentsDir,
         ignoreByAttribute: ['data-ignore'],
-        output: path.join(testDir, 'ignore-out-2')
+        output: path.join(project.testDir, 'ignore-out-2')
       })
 
 
@@ -185,8 +174,8 @@ describe('Coralite', () => {
     })
 
     it('should parse elements but remove them from render output when they match skipRenderByAttribute (String format)', async () => {
-      await writeFile(path.join(pagesDir, 'skip.html'), '<div><test-component data-skip></test-component><span data-keep="true">Kept</span></div>')
-      await writeFile(path.join(componentDir, 'test-component.html'), '<span id="rendered-test-component">Test Component</span>')
+      await project.writePage('skip.html', '<div><test-component data-skip></test-component><span data-keep="true">Kept</span></div>')
+      await project.writeComponent('test-component.html', '<span id="rendered-test-component">Test Component</span>')
 
       let testComponentRendered = false
 
@@ -204,11 +193,11 @@ describe('Coralite', () => {
       }
 
       coralite = await createCoralite({
-        pages: pagesDir,
-        components: componentDir,
+        pages: project.pagesDir,
+        components: project.componentsDir,
         plugins: [testPlugin],
         skipRenderByAttribute: ['data-skip'],
-        output: path.join(testDir, 'skip-out')
+        output: path.join(project.testDir, 'skip-out')
       })
 
 
@@ -225,11 +214,10 @@ describe('Coralite', () => {
 
   describe('save() method', () => {
     it('should save assets to the assets directory', async () => {
-      const outputDir = path.join(testDir, 'dist')
-      await mkdir(outputDir)
+      const outputDir = project.outputDir
 
       // Need a component with a script so that it generates an asset chunk
-      await writeFile(path.join(componentDir, 'script-component.html'), `
+      await project.writeComponent('script-component.html', `
         <template id="script-component">
           <div>Script Component</div>
         </template>
@@ -243,11 +231,11 @@ describe('Coralite', () => {
         </script>
       `)
 
-      await writeFile(path.join(pagesDir, 'with-script.html'), '<script-component></script-component>')
+      await project.writePage('with-script.html', '<script-component></script-component>')
 
       coralite = await createCoralite({
-        pages: pagesDir,
-        components: componentDir,
+        pages: project.pagesDir,
+        components: project.componentsDir,
         mode: 'development',
         output: outputDir
       })
@@ -290,8 +278,8 @@ describe('Coralite', () => {
       }
 
       coralite = await createCoralite({
-        pages: pagesDir,
-        components: componentDir,
+        pages: project.pagesDir,
+        components: project.componentsDir,
         plugins: [plugin],
         output: '/'
       })
@@ -331,8 +319,8 @@ describe('Coralite', () => {
 
       // swallow the error so it doesn't crash the test runner
       coralite = await createCoralite({
-        pages: pagesDir,
-        components: componentDir,
+        pages: project.pagesDir,
+        components: project.componentsDir,
         plugins: [plugin, errorPlugin],
         onError: () => {
         }
@@ -354,26 +342,18 @@ describe('Coralite', () => {
 })
 
 describe('Bug Fix: Preserving recursive tokens', () => {
-  let tmpDir, pagesDir, componentsDir, outputDir, coralite
+  let project
+  let coralite
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(path.join(tmpdir(), 'coralite-nested-test-'))
-    pagesDir = path.join(tmpDir, 'pages')
-    componentsDir = path.join(tmpDir, 'components')
-    outputDir = path.join(tmpDir, 'dist')
-
-    await mkdir(pagesDir)
-    await mkdir(componentsDir)
+    project = await createTestProject()
   })
 
   afterEach(async () => {
     if (coralite) {
       await coralite.clearCache(true)
     }
-    await rm(tmpDir, {
-      recursive: true,
-      force: true
-    })
+    await project.cleanup()
   })
 
   it('preserves state context into child components nested dependencies', async () => {
@@ -393,7 +373,7 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     coralite = await createCoralite({
       pages: fixtureDir,
       components: fixtureDir,
-      output: outputDir,
+      output: project.outputDir,
       plugins: [parentPlugin],
       mode: 'production',
       baseURL: '/'
@@ -418,14 +398,14 @@ describe('Bug Fix: Preserving recursive tokens', () => {
       }
     }
 
-    await writeFile(path.join(pagesDir, 'test-plugin.html'), '<test-comp></test-comp>')
-    await writeFile(path.join(componentsDir, 'test-comp.html'), '<template id="test-comp"><div>{{ injected }}</div></template>')
+    await project.writePage('test-plugin.html', '<test-comp></test-comp>')
+    await project.writeComponent('test-comp.html', '<template id="test-comp"><div>{{ injected }}</div></template>')
 
     coralite = await createCoralite({
-      pages: pagesDir,
-      components: componentsDir,
+      pages: project.pagesDir,
+      components: project.componentsDir,
       plugins: [plugin],
-      output: path.join(tmpDir, 'inject-out')
+      output: path.join(project.testDir, 'inject-out')
     })
 
     const results = await coralite.build('test-plugin.html')
@@ -453,14 +433,14 @@ describe('Bug Fix: Preserving recursive tokens', () => {
       }
     }
 
-    await writeFile(path.join(pagesDir, 'test-plugin-ast.html'), '<test-comp></test-comp>')
-    await writeFile(path.join(componentsDir, 'test-comp.html'), '<template id="test-comp"><div>original</div></template>')
+    await project.writePage('test-plugin-ast.html', '<test-comp></test-comp>')
+    await project.writeComponent('test-comp.html', '<template id="test-comp"><div>original</div></template>')
 
     coralite = await createCoralite({
-      pages: pagesDir,
-      components: componentsDir,
+      pages: project.pagesDir,
+      components: project.componentsDir,
       plugins: [plugin],
-      output: path.join(tmpDir, 'mutate-out')
+      output: path.join(project.testDir, 'mutate-out')
     })
 
     const results = await coralite.build('test-plugin-ast.html')

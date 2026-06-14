@@ -1,27 +1,24 @@
-import { describe, test, afterEach } from 'node:test'
+import { describe, test, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import { createCoralite } from '#lib'
-import { join } from 'node:path'
-import { mkdir, writeFile, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { createTestProject } from '../utils/project.js'
 
 describe('Source Map Generation', () => {
+  let project
   let coralite
+
+  beforeEach(async () => {
+    project = await createTestProject()
+  })
 
   afterEach(async () => {
     if (coralite) {
       await coralite.clearCache(true)
     }
+    await project.cleanup()
   })
 
   test('defineComponent script sourcemap', async () => {
-    const tmpDir = await mkdir(join(tmpdir(), 'coralite-sourcemap-test-' + Date.now()), { recursive: true })
-    const componentsDir = join(tmpDir, 'components')
-    const pagesDir = join(tmpDir, 'pages')
-
-    await mkdir(componentsDir, { recursive: true })
-    await mkdir(pagesDir, { recursive: true })
-
     // Create a component with a script at a specific line
     const componentScriptContent = `(context) {
 
@@ -40,17 +37,17 @@ export default defineComponent({
 })
 </script>
 `
-    await writeFile(join(componentsDir, 'my-component.html'), componentContent)
+    await project.writeComponent('my-component.html', componentContent)
 
     // Create a page using the component
     const pageContent = `
 <my-component></my-component>
 `
-    await writeFile(join(pagesDir, 'index.html'), pageContent)
+    await project.writePage('index.html', pageContent)
 
     coralite = await createCoralite({
-      components: componentsDir,
-      pages: pagesDir,
+      components: project.componentsDir,
+      pages: project.pagesDir,
       mode: 'development'
     })
 
@@ -84,22 +81,9 @@ export default defineComponent({
     // since we use a virtual module strategy now.
     const hasNormalisedScript = sourceMap.sourcesContent[sourceIndex].includes('componentId: "my-component"') || sourceMap.sourcesContent[sourceIndex].includes('my-component')
     assert.ok(hasNormalisedScript, 'Source map sourcesContent does not contain expected script')
-
-    // Cleanup
-    await rm(tmpDir, {
-      recursive: true,
-      force: true
-    })
   })
 
   test('defineComponent complex script sourcemap', async () => {
-    const tmpDir = await mkdir(join(tmpdir(), 'coralite-sourcemap-test-complex-' + Date.now()), { recursive: true })
-    const componentsDir = join(tmpDir, 'components')
-    const pagesDir = join(tmpDir, 'pages')
-
-    await mkdir(componentsDir, { recursive: true })
-    await mkdir(pagesDir, { recursive: true })
-
     const componentContent = `
 <template id="complex-component">
   <button>Complex</button>
@@ -118,17 +102,17 @@ export default defineComponent({
 })
 </script>
 `
-    await writeFile(join(componentsDir, 'complex-component.html'), componentContent)
+    await project.writeComponent('complex-component.html', componentContent)
 
     // Create a page using the component
     const pageContent = `
 <complex-component></complex-component>
 `
-    await writeFile(join(pagesDir, 'index.html'), pageContent)
+    await project.writePage('index.html', pageContent)
 
     coralite = await createCoralite({
-      components: componentsDir,
-      pages: pagesDir,
+      components: project.componentsDir,
+      pages: project.pagesDir,
       mode: 'development'
     })
 
@@ -158,11 +142,5 @@ export default defineComponent({
     // since we use a virtual module strategy now.
     const hasScriptContent = sourceMap.sourcesContent[sourceIndex].includes('componentId: "complex-component"') || sourceMap.sourcesContent[sourceIndex].includes('complex-component')
     assert.ok(hasScriptContent, 'Source map sourcesContent does not contain expected script')
-
-    // Cleanup
-    await rm(tmpDir, {
-      recursive: true,
-      force: true
-    })
   })
 })

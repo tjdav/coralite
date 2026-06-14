@@ -1,22 +1,23 @@
-import { test, describe, afterEach } from 'node:test'
+import { test, describe, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { createCoralite } from '../../../../lib/coralite.js'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { dirname } from 'node:path'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const projectRoot = join(__dirname, '../../../../')
-const components = join(projectRoot, 'tests/fixtures/components/static-components')
-const pages = join(projectRoot, 'tests/fixtures/pages/static-components')
+import { createTestProject } from '../../utils/project.js'
 
 describe('onBeforeBuild Build Queue', () => {
+  let project
   let app
+
+  beforeEach(async () => {
+    project = await createTestProject()
+    await project.writePage('index.html', '<h1>Index</h1>')
+    await project.writeComponent('my-comp.html', '<template id="my-comp"><div>Comp</div></template>')
+  })
 
   afterEach(async () => {
     if (app) {
       await app.clearCache(true)
     }
+    await project.cleanup()
   })
 
   test('dynamic pages added via app.pages.setItem in onBeforeBuild are included in full build', async () => {
@@ -38,10 +39,10 @@ describe('onBeforeBuild Build Queue', () => {
     }
 
     app = await createCoralite({
-      components,
-      pages,
+      components: project.componentsDir,
+      pages: project.pagesDir,
       plugins: [plugin],
-      projectRoot
+      projectRoot: project.testDir
     })
 
     const results = await app.build()
@@ -68,10 +69,10 @@ describe('onBeforeBuild Build Queue', () => {
     }
 
     app = await createCoralite({
-      components,
-      pages,
+      components: project.componentsDir,
+      pages: project.pagesDir,
       plugins: [plugin],
-      projectRoot
+      projectRoot: project.testDir
     })
 
     // Targeted build for a specific page
@@ -94,10 +95,10 @@ describe('onBeforeBuild Build Queue', () => {
     }
 
     app = await createCoralite({
-      components,
-      pages,
+      components: project.componentsDir,
+      pages: project.pagesDir,
       plugins: [plugin],
-      projectRoot
+      projectRoot: project.testDir
     })
 
     const results = await app.build('/index.html')
@@ -128,10 +129,10 @@ describe('onBeforeBuild Build Queue', () => {
     }
 
     app = await createCoralite({
-      components,
-      pages,
+      components: project.componentsDir,
+      pages: project.pagesDir,
       plugins: [plugin],
-      projectRoot
+      projectRoot: project.testDir
     })
 
     const results = await app.build()

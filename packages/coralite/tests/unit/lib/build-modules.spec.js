@@ -1,26 +1,17 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import path from 'node:path'
-import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { createCoralite } from '#lib'
+import { createTestProject } from '../utils/project.js'
 
 describe('Coralite Build Modes', () => {
-  let testDir
-  let pagesDir
-  let componentDir
+  let project
   let coralite
 
   beforeEach(async () => {
-    testDir = await mkdtemp(path.join(tmpdir(), 'coralite-test-mode-'))
-    pagesDir = path.join(testDir, 'pages')
-    componentDir = path.join(testDir, 'components')
-
-    await mkdir(pagesDir, { recursive: true })
-    await mkdir(componentDir, { recursive: true })
+    project = await createTestProject()
 
     // Create a basic page
-    await writeFile(path.join(pagesDir, 'index.html'), `
+    await project.writePage('index.html', `
       <!DOCTYPE html>
       <html>
         <head></head>
@@ -32,7 +23,7 @@ describe('Coralite Build Modes', () => {
 
     // Create a component with a script that exports a default
     // We export a simple string message to verify execution
-    await writeFile(path.join(componentDir, 'my-component.html'), `
+    await project.writeComponent('my-component.html', `
       <template id="my-component">
         <div>{{ message }}</div>
         <script>
@@ -48,18 +39,13 @@ describe('Coralite Build Modes', () => {
     if (coralite) {
       await coralite.clearCache(true)
     }
-    if (testDir) {
-      await rm(testDir, {
-        recursive: true,
-        force: true
-      })
-    }
+    await project.cleanup()
   })
 
   it('should build in production mode by default (esbuild strategy)', async () => {
     coralite = await createCoralite({
-      pages: pagesDir,
-      components: componentDir
+      pages: project.pagesDir,
+      components: project.componentsDir
     })
 
     const results = (await coralite.build()).filter(result => result.type === 'page')
@@ -84,8 +70,8 @@ describe('Coralite Build Modes', () => {
     }
 
     coralite = await createCoralite({
-      pages: pagesDir,
-      components: componentDir,
+      pages: project.pagesDir,
+      components: project.componentsDir,
       mode: 'development'
     })
 

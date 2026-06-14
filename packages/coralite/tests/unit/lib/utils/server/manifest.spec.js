@@ -1,23 +1,20 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { writeFile, mkdtemp, rm } from 'node:fs/promises'
+import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { hash, hashFile, checkFileChange, initHasher } from '../../../../../lib/utils/server/manifest.js'
+import { createTestProject } from '../../../utils/project.js'
 
 describe('Manifest Utils', () => {
-  let testDir
+  let project
 
   beforeEach(async () => {
     await initHasher()
-    testDir = await mkdtemp(join(tmpdir(), 'coralite-manifest-test-'))
+    project = await createTestProject()
   })
 
   afterEach(async () => {
-    await rm(testDir, {
-      recursive: true,
-      force: true
-    })
+    await project.cleanup()
   })
 
   it('should generate xxHash64 hash', () => {
@@ -28,14 +25,14 @@ describe('Manifest Utils', () => {
   })
 
   it('should hash a file', async () => {
-    const filePath = join(testDir, 'test.txt')
+    const filePath = join(project.testDir, 'test.txt')
     await writeFile(filePath, 'hello world')
     const h = await hashFile(filePath)
     assert.strictEqual(h, '45ab6734b21e6968')
   })
 
   it('should detect file changes', async () => {
-    const filePath = join(testDir, 'test.txt')
+    const filePath = join(project.testDir, 'test.txt')
     await writeFile(filePath, 'content v1')
 
     const { changed: changed1, metadata: meta1 } = await checkFileChange(filePath)

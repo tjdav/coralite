@@ -1,26 +1,19 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { mkdir, writeFile, rm, mkdtemp } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
-import { tmpdir } from 'node:os'
 import { createCoralite } from '#lib'
+import { createTestProject } from '../utils/project.js'
 
 describe('VM Dynamic Import', () => {
-  let testDir
-  let pagesDir
-  let componentDir
+  let project
   let coralite
 
   beforeEach(async () => {
-    testDir = await mkdtemp(join(tmpdir(), 'coralite-vm-dynamic-'))
-    pagesDir = join(testDir, 'pages')
-    componentDir = join(testDir, 'components')
-
-    await mkdir(pagesDir, { recursive: true })
-    await mkdir(componentDir, { recursive: true })
+    project = await createTestProject()
 
     // Create a page that uses a component
-    await writeFile(join(pagesDir, 'index.html'), `
+    await project.writePage('index.html', `
       <my-component></my-component>
     `)
   })
@@ -29,14 +22,11 @@ describe('VM Dynamic Import', () => {
     if (coralite) {
       await coralite.clearCache(true)
     }
-    await rm(testDir, {
-      recursive: true,
-      force: true
-    })
+    await project.cleanup()
   })
 
   it('should handle direct dynamic import in component script', async () => {
-    await writeFile(join(componentDir, 'my-component.html'), `
+    await project.writeComponent('my-component.html', `
       <template id="my-component">
         <div>{{ message }}</div>
       </template>
@@ -55,8 +45,8 @@ describe('VM Dynamic Import', () => {
     `)
 
     coralite = await createCoralite({
-      pages: pagesDir,
-      components: componentDir,
+      pages: project.pagesDir,
+      components: project.componentsDir,
       mode: 'development'
     })
 
@@ -67,7 +57,7 @@ describe('VM Dynamic Import', () => {
 
   it('should handle dynamic import within an external package', async () => {
     // Create a dummy package
-    const pkgDir = join(testDir, 'node_modules', 'dummy-pkg')
+    const pkgDir = join(project.testDir, 'node_modules', 'dummy-pkg')
     await mkdir(pkgDir, { recursive: true })
     await writeFile(join(pkgDir, 'package.json'), JSON.stringify({
       name: 'dummy-pkg',
@@ -81,7 +71,7 @@ describe('VM Dynamic Import', () => {
       }
     `)
 
-    await writeFile(join(componentDir, 'my-component.html'), `
+    await project.writeComponent('my-component.html', `
       <template id="my-component">
         <div>{{ message }}</div>
       </template>
@@ -100,8 +90,8 @@ describe('VM Dynamic Import', () => {
     `)
 
     coralite = await createCoralite({
-      pages: pagesDir,
-      components: componentDir,
+      pages: project.pagesDir,
+      components: project.componentsDir,
       mode: 'development'
     })
 
@@ -109,5 +99,4 @@ describe('VM Dynamic Import', () => {
     assert.ok(results.length > 0)
     assert.match(results[0].content, /Success/)
   })
-
 })

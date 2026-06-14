@@ -1,24 +1,21 @@
-import { describe, it, afterEach } from 'node:test'
+import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { createCoralite, definePlugin } from '#lib'
-import { join } from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { dirname } from 'node:path'
-import { writeFile, unlink, mkdtemp, rm } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
+import { createTestProject } from '../utils/project.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-const fixtureRoot = join(__dirname, '../../fixtures')
-const componentsDir = join(fixtureRoot, 'components/plugin-leak')
-const pagesDir = join(fixtureRoot, 'pages/plugin-leak')
-
-describe('Plugin Exports Leakage', async () => {
+describe('Plugin Exports Leakage', () => {
+  let project
   let app
+
+  beforeEach(async () => {
+    project = await createTestProject()
+  })
 
   afterEach(async () => {
     if (app) {
       await app.clearCache(true)
     }
+    await project.cleanup()
   })
 
   it('should not leak plugin exports into component state', async () => {
@@ -33,32 +30,43 @@ describe('Plugin Exports Leakage', async () => {
       }
     })
 
-    const testDir = await mkdtemp(join(tmpdir(), 'coralite-leak-'))
-    try {
-      app = await createCoralite({
-        components: componentsDir,
-        pages: pagesDir,
-        plugins: [myPlugin],
-        projectRoot: testDir
-      })
+    await project.writePage('index.html', '<test-comp></test-comp>')
+    await project.writeComponent('test-comp.html', `
+<template id="test-comp">
+  <div id="leak">{{ leaked }}</div>
+  <div id="secret">{{ importedSecret }}</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
 
-      const results = await app.build()
-      const indexResult = results.find(r => r.path && r.path.filename === 'index.html')
-
-      assert.ok(indexResult, 'index.html should be in results')
-
-      const content = indexResult.content || ''
-
-      // Check if leaked is false (we want it to be false)
-      assert.ok(content.includes('false'), 'Plugin exports SHOULD NOT be leaked into state')
-      assert.ok(content.includes('secret'), 'Imported secret should be present')
-    } finally {
-      await rm(testDir, {
-        recursive: true,
-        force: true
-      }).catch(() => {
-      })
+  export default defineComponent({
+    server (context) {
+      return {
+        leaked: context.myFunc !== undefined,
+        importedSecret: context['my-plugin'].myFunc()
+      }
     }
+  })
+</script>
+    `)
+
+    app = await createCoralite({
+      components: project.componentsDir,
+      pages: project.pagesDir,
+      plugins: [myPlugin],
+      projectRoot: project.testDir
+    })
+
+    const results = await app.build()
+    const indexResult = results.find(r => r.path && r.path.filename === 'index.html')
+
+    assert.ok(indexResult, 'index.html should be in results')
+
+    const content = indexResult.content || ''
+
+    // Check if leaked is false (we want it to be false)
+    assert.ok(content.includes('false'), 'Plugin exports SHOULD NOT be leaked into state')
+    assert.ok(content.includes('secret'), 'Imported secret should be present')
   })
 
   it('should fail to import plugin via virtual module', async () => {
@@ -73,19 +81,14 @@ describe('Plugin Exports Leakage', async () => {
       }
     })
 
-    const testDir = await mkdtemp(join(tmpdir(), 'coralite-leak-failing-'))
-    const failingCompPath = join(componentsDir, 'failing-comp.html')
-    const failingPagePath = join(pagesDir, 'failing-page.html')
+    app = await createCoralite({
+      components: project.componentsDir,
+      pages: project.pagesDir,
+      plugins: [myPlugin],
+      projectRoot: project.testDir
+    })
 
-    try {
-      app = await createCoralite({
-        components: componentsDir,
-        pages: pagesDir,
-        plugins: [myPlugin],
-        projectRoot: testDir
-      })
-
-      const failingComponent = `
+    const failingComponent = `
 <template id="failing-comp"><div></div></template>
 <script type="module">
   import { defineComponent } from 'coralite'
@@ -95,14 +98,15 @@ describe('Plugin Exports Leakage', async () => {
   })
 </script>`
 
-      const failingPage = '<failing-comp></failing-comp>'
+    const failingPage = '<failing-comp></failing-comp>'
 
-      await writeFile(failingCompPath, failingComponent)
-      await app.components.setItem(failingCompPath)
+    const compPath = await project.writeComponent('failing-comp.html', failingComponent)
+    await app.components.setItem(compPath)
 
-      await writeFile(failingPagePath, failingPage)
-      await app.pages.setItem(failingPagePath)
+    const pagePath = await project.writePage('failing-page.html', failingPage)
+    await app.pages.setItem(pagePath)
 
+    try {
       await app.build()
       assert.fail('Should have failed to build due to missing virtual module')
     } catch (error) {
@@ -115,22 +119,6 @@ describe('Plugin Exports Leakage', async () => {
                                msg.includes('ERR_MODULE_NOT_FOUND')
 
       assert.ok(isResolutionError, 'Error should be about module resolution, got: ' + msg)
-    } finally {
-      await unlink(failingCompPath).catch(() => {
-      })
-      if (app) {
-        app.components.deleteItem(failingCompPath)
-      }
-      await unlink(failingPagePath).catch(() => {
-      })
-      if (app) {
-        app.pages.deleteItem(failingPagePath)
-      }
-      await rm(testDir, {
-        recursive: true,
-        force: true
-      }).catch(() => {
-      })
     }
   })
 
@@ -157,8 +145,8 @@ describe('Plugin Exports Leakage', async () => {
 
     try {
       await createCoralite({
-        components: componentsDir,
-        pages: pagesDir,
+        components: project.componentsDir,
+        pages: project.pagesDir,
         plugins: [plugin1, plugin2]
       })
       assert.fail('Should have thrown an error due to conflicting export names')

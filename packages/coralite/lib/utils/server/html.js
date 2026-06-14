@@ -27,6 +27,7 @@ import { CoraliteError } from '../errors.js'
  * @param {CoraliteCollection} [options.collection] - Optional collection instance to populate
  * @param {LimitFunction} [options.limit] - Optional concurrency limiter
  * @param {boolean} [options.discoverOnly=false] - Whether to skip reading file content and only discover paths
+ * @param {string} [options.rootPath] - Optional root path to calculate relative paths for exclusions
  * @returns {Promise<CoraliteCollection>} Array of HTML file data including parent path, name, and content
  *
  * @example
@@ -47,7 +48,8 @@ export async function getHtmlFiles ({
   onFileUpdate,
   onFileDelete,
   collection,
-  limit
+  limit,
+  rootPath = path
 }) {
   const resultCollection = collection || new CoraliteCollection({
     rootDir: path,
@@ -74,7 +76,7 @@ export async function getHtmlFiles ({
     const pathname = join(entry.parentPath, entry.name)
 
     // Calculate relative path from root for exclusion checking
-    const relativePath = pathname.replace(path + '/', '')
+    const relativePath = pathname.replace(rootPath + '/', '')
 
     // Check if entry should be excluded by: name, relative path, or full path
     const shouldExclude = exclude.includes(entry.name) ||
@@ -101,7 +103,8 @@ export async function getHtmlFiles ({
         onFileUpdate,
         onFileDelete,
         collection: resultCollection,
-        limit
+        limit,
+        rootPath
       }))
     } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
       tasks.push(limit(async () => {
@@ -136,6 +139,7 @@ export async function getHtmlFiles ({
  * @param {boolean} [options.recursive=false] - Whether to search recursively
  * @param {string[]} [options.exclude=[]] - Files or directories to exclude
  * @param {boolean} [options.discoverOnly=false] - Whether to skip reading file content
+ * @param {string} [options.rootPath] - Optional root path to calculate relative paths for exclusions
  * @yields {Promise<{ type: 'page' | 'component', content: string | undefined, path: { pathname: string, filename: string, dirname: string } }>}
  */
 export async function* discoverHtmlFiles ({
@@ -143,7 +147,8 @@ export async function* discoverHtmlFiles ({
   type,
   recursive = false,
   exclude = [],
-  discoverOnly = false
+  discoverOnly = false,
+  rootPath = path
 }) {
   const entries = await readdir(path, { withFileTypes: true })
 
@@ -155,7 +160,7 @@ export async function* discoverHtmlFiles ({
     }
 
     const pathname = join(entry.parentPath, entry.name)
-    const relativePath = pathname.replace(path + '/', '')
+    const relativePath = pathname.replace(rootPath + '/', '')
 
     const shouldExclude = exclude.includes(entry.name) ||
                            exclude.includes(relativePath) ||
@@ -175,7 +180,8 @@ export async function* discoverHtmlFiles ({
         type,
         recursive,
         exclude,
-        discoverOnly
+        discoverOnly,
+        rootPath
       })
     } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
       const content = discoverOnly ? undefined : await readFile(pathname, { encoding: 'utf8' })
