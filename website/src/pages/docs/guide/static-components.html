@@ -9,13 +9,13 @@
 <body>
   <coralite-navbar></coralite-navbar>
   <main class="container content">
-    <h1 class="display">Core Concepts: Static Components</h1>
+    <h1 class="display">Static Components</h1>
 
     <p>Static components are the building blocks of Coralite. They are purely HTML-based elements without complex scripting logic. If a piece of UI doesn't need to fetch data, handle user events, or compute complex state, it should be a static component.</p>
 
     <coralite-heading level="2" text="Component Definition"></coralite-heading>
 
-    <p>Every component in Coralite is defined inside an HTML file using the standard <code>&lt;template&gt;</code> tag. The most important part of a component is its <code>id</code> attribute. This ID becomes the custom HTML tag name you will use to include the component in your pages.</p>
+    <p>Every component in Coralite is defined inside an HTML file using the standard <code>&lt;template&gt;</code> tag. The most important part of a component is its <code>id</code> attribute. This ID becomes the custom HTML tag name you will use to include the component in your pages. <strong>Note:</strong> All component IDs MUST contain a hyphen (e.g., <code>my-header</code>).</p>
 
     <p>For example, if you create a file <code>src/components/header.html</code>, the component definition looks like this:</p>
 
@@ -37,7 +37,7 @@
 
     <p>To use the component in your pages (or inside other components), the custom element tag name must exactly match the component's <code>id</code>.</p>
 
-    <p>Coralite components are server-side rendered (SSR). When you run the build command, Coralite replaces the custom tag with the actual HTML content of your template.</p>
+    <p>Coralite components are server-side rendered (SSR). By default, Coralite preserves your custom host tag in the final HTML and injects the template content inside it.</p>
 
     <coralite-code-html>
       <!-- src/pages/index.html -->
@@ -77,11 +77,17 @@
 
     <p>Now, when using the component, simply pass the data as attributes:</p>
 
-    <coralite-alert type="warning">
-      <strong>⚠️ Warning: AST Splicing (Host Tag Removal)</strong>
+    <coralite-alert type="info">
+      <strong>💡 Opt-in AST Splicing: no-hydration</strong>
       <p>
-        Coralite's server completely deletes the host tag of declarative components and replaces it with the template's inner HTML. 
-        If you try to style the host tag (e.g., <code>&lt;user-card class="foo"&gt;</code>) in CSS or use it as a flex container, it will break because the tag simply won't exist in the final HTML.
+        While Coralite preserves host tags by default, you can choose to completely remove them and only render the template's inner HTML (a process called AST Splicing) by adding the <code>no-hydration</code> attribute to your component instance.
+      </p>
+    </coralite-alert>
+
+    <coralite-alert type="warning">
+      <strong>⚠️ Styling the Host Tag</strong>
+      <p>
+        Even though host tags are preserved, Coralite's <strong>Scoped CSS</strong> system automatically targets elements <em>inside</em> your template. Any styles you write in a component's <code>&lt;style&gt;</code> block are nested under a unique data selector that is applied to the template's children. If you need to style the component "outer shell", it is best to wrap your template content in a container element (like a <code>&lt;div&gt;</code>) and style that.
       </p>
     </coralite-alert>
 
