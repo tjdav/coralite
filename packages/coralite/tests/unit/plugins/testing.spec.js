@@ -83,4 +83,43 @@ describe('testingPlugin', () => {
     // Should not throw
     assert.ok(true)
   })
+
+  it('should not overwrite existing data-testid attribute on component set', () => {
+    const component = {
+      template: {
+        children: [
+          {
+            type: 'tag',
+            name: 'div',
+            attribs: {
+              ref: 'myRef',
+              'data-testid': 'customId'
+            }
+          }
+        ]
+      }
+    }
+
+    testingPlugin.server.onComponentSet({ component })
+
+    assert.strictEqual(component.template.children[0].attribs['data-testid'], 'customId')
+  })
+
+  it('should not overwrite existing non-ref data-testid in onBeforeComponentRender', () => {
+    const element = {
+      attribs: {
+        ref: 'myRef',
+        'data-testid': 'customId'
+      }
+    }
+    const refs = [{
+      name: 'myRef',
+      element
+    }]
+    testingPlugin.server.onBeforeComponentRender({
+      instanceId: 'comp-0',
+      refs
+    })
+    assert.strictEqual(element.attribs['data-testid'], 'customId')
+  })
 })

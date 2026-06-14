@@ -15,7 +15,9 @@ function traverseAndAddTestId (children) {
     const node = children[i]
 
     if (node.type === 'tag' && node.attribs?.ref) {
-      node.attribs['data-testid'] = node.attribs.ref
+      if (!node.attribs['data-testid']) {
+        node.attribs['data-testid'] = node.attribs.ref
+      }
     }
 
     if (node.children?.length > 0) {
@@ -33,7 +35,11 @@ export const testingPlugin = definePlugin({
         const uniqueRefValue = `${instanceId}__${ref.name}`
 
         if (ref.element.attribs) {
-          ref.element.attribs['data-testid'] = uniqueRefValue
+          const currentTestId = ref.element.attribs['data-testid']
+
+          if (!currentTestId || currentTestId === ref.name) {
+            ref.element.attribs['data-testid'] = uniqueRefValue
+          }
         }
       }
     },
@@ -57,7 +63,11 @@ export const testingPlugin = definePlugin({
         const uniqueRefValue = `${instanceId}__${ref.name}`
 
         if (ref.element && ref.element.setAttribute) {
-          ref.element.setAttribute('data-testid', uniqueRefValue)
+          const currentTestId = ref.element.getAttribute('data-testid')
+
+          if (!currentTestId || currentTestId === ref.name) {
+            ref.element.setAttribute('data-testid', uniqueRefValue)
+          }
         }
       }
     }
