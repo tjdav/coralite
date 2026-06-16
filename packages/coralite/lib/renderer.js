@@ -328,11 +328,15 @@ export function createRenderer ({
       const nestedComponents = [...new Set([...declarativeComponents, ...extractedComponents])]
       scriptObj.components = nestedComponents
 
-      templateValues?.refs?.forEach(ref => {
-        const refKey = `ref_${ref.name}`
-        defaultValues[refKey] = ''
-        scriptObj.state[refKey] = ''
-      })
+      if (templateValues && templateValues.refs) {
+        const refs = templateValues.refs
+        for (let i = 0; i < refs.length; i++) {
+          const ref = refs[i]
+          const refKey = `ref_${ref.name}`
+          defaultValues[refKey] = ''
+          scriptObj.state[refKey] = ''
+        }
+      }
 
       scriptObj.defaultValues = defaultValues
 
@@ -500,13 +504,21 @@ export function createRenderer ({
         const templateValues = moduleComponent.result.values
         const componentTokens = {}
 
-        module.values.attributes.forEach(item => item.tokens.forEach(t => {
-          componentTokens[t.name] = true
-        }))
+        const attributes = module.values.attributes
+        for (let i = 0; i < attributes.length; i++) {
+          const tokens = attributes[i].tokens
+          for (let j = 0; j < tokens.length; j++) {
+            componentTokens[tokens[j].name] = true
+          }
+        }
 
-        module.values.textNodes.forEach(item => item.tokens.forEach(t => {
-          componentTokens[t.name] = true
-        }))
+        const textNodes = module.values.textNodes
+        for (let i = 0; i < textNodes.length; i++) {
+          const tokens = textNodes[i].tokens
+          for (let j = 0; j < tokens.length; j++) {
+            componentTokens[tokens[j].name] = true
+          }
+        }
 
         const componentDefaultValues = scriptResult.__script__.defaultValues || {}
 
@@ -560,37 +572,54 @@ export function createRenderer ({
 
     session.state[contextId] = componentState
 
-    module.values.attributes.forEach(item => item.tokens.forEach(token => {
-      let value = componentState[token.name]
-      if (value == null) {
-        value = ''
+    const attributes = module.values.attributes
+    for (let i = 0; i < attributes.length; i++) {
+      const item = attributes[i]
+      const tokens = item.tokens
+      for (let j = 0; j < tokens.length; j++) {
+        const token = tokens[j]
+        let value = componentState[token.name]
+        if (value == null) {
+          value = ''
+        }
+        replaceToken({
+          type: 'attribute',
+          node: item.element,
+          attribute: item.name,
+          content: token.content,
+          value
+        })
       }
-      replaceToken({
-        type: 'attribute',
-        node: item.element,
-        attribute: item.name,
-        content: token.content,
-        value
-      })
-    }))
+    }
 
-    module.values.textNodes.forEach(item => item.tokens.forEach(token => {
-      let value = componentState[token.name]
-      if (value == null) {
-        value = ''
+    const textNodes = module.values.textNodes
+    for (let i = 0; i < textNodes.length; i++) {
+      const item = textNodes[i]
+      const tokens = item.tokens
+      for (let j = 0; j < tokens.length; j++) {
+        const token = tokens[j]
+        let value = componentState[token.name]
+        if (value == null) {
+          value = ''
+        }
+        replaceToken({
+          type: 'textNode',
+          node: item.textNode,
+          content: token.content,
+          value
+        })
       }
-      replaceToken({
-        type: 'textNode',
-        node: item.textNode,
-        content: token.content,
-        value
-      })
-    }))
+    }
 
     const customElements = module.customElements
-    customElements.forEach(customElement => {
+    for (let i = 0; i < customElements.length; i++) {
+      const customElement = customElements[i]
+
       if (customElement.children && customElement.children.length && !customElement.slots.length) {
-        customElement.children.forEach(node => {
+        const children = customElement.children
+
+        for (let j = 0; j < children.length; j++) {
+          const node = children[j]
           const slotElement = {
             name: 'default',
             node
@@ -599,12 +628,13 @@ export function createRenderer ({
             slotElement.name = node.attribs.slot
           }
           customElement.slots.push(slotElement)
-        })
+        }
       }
-    })
+    }
 
     const createComponentTasks = []
-    customElements.forEach(customElement => {
+    for (let i = 0; i < customElements.length; i++) {
+      const customElement = customElements[i]
       const parent = customElement.parent
 
       if (parent && 'slots' in parent && Array.isArray(parent.slots)) {
@@ -649,27 +679,34 @@ export function createRenderer ({
         childContextId,
         noHydration: childNoHydration
       })))
-    })
+    }
 
     const results = await Promise.all(createComponentTasks)
 
-    results.forEach(({ childComponentElement, customElement, childContextId, noHydration: childNoHydration }) => {
+    for (let i = 0; i < results.length; i++) {
+      const { childComponentElement, customElement, childContextId, noHydration: childNoHydration } = results[i]
+
       if (childComponentElement && typeof childComponentElement === 'object') {
+        let children = []
+
+        if (Array.isArray(childComponentElement)) {
+          children = childComponentElement
+        } else if ('children' in childComponentElement && Array.isArray(childComponentElement.children)) {
+          children = childComponentElement.children
+        }
+
         if (childNoHydration) {
           const parent = customElement.parent
-          if (parent && parent.children) {
+
+          if (parent && parent.children && Array.isArray(parent.children)) {
             const idx = parent.children.indexOf(customElement)
             if (idx !== -1) {
-              const children = Array.isArray(childComponentElement) ? childComponentElement : childComponentElement.children
               parent.children.splice(idx, 1, ...children)
-
               relinkChildren(parent)
             }
           }
         } else {
-          const children = Array.isArray(childComponentElement) ? childComponentElement : childComponentElement.children
           customElement.children = children
-
           relinkChildren(customElement)
 
           if (!customElement.attribs) {
@@ -680,7 +717,7 @@ export function createRenderer ({
           session.componentTags.add(customElement.name)
         }
       }
-    })
+    }
 
     await _replaceSlots({
       id,
@@ -990,7 +1027,10 @@ export function createRenderer ({
             componentsToInclude.add(id)
             const sharedFn = scriptManager.sharedFunctions[id]
             if (sharedFn && sharedFn.components) {
-              sharedFn.components.forEach(depId => addComponentAndDependencies(depId))
+              const components = sharedFn.components
+              for (let i = 0; i < components.length; i++) {
+                addComponentAndDependencies(components[i])
+              }
             }
           }
 
@@ -1001,11 +1041,16 @@ export function createRenderer ({
             const script = scripts[instanceId]
             addComponentAndDependencies(script.componentId)
             if (script.components) {
-              script.components.forEach(depId => addComponentAndDependencies(depId))
+              const components = script.components
+              for (let i = 0; i < components.length; i++) {
+                addComponentAndDependencies(components[i])
+              }
             }
           }
 
-          declarativeTags.forEach(tag => addComponentAndDependencies(tag))
+          for (const tag of declarativeTags) {
+            addComponentAndDependencies(tag)
+          }
 
           for (const tag of componentsToInclude) {
             if (scriptResult.manifest[tag]) {
