@@ -3,10 +3,11 @@ import { definePlugin } from '#lib'
 export const consumerServerPlugin = definePlugin({
   name: 'consumer-server-plugin',
   server: {
-    context: (pluginContext) => {
-      return () => ({
+    context: () => {
+      return (instanceContext) => ({
         getServerData: () => {
-          const db = pluginContext.db
+          const provider = instanceContext['provider-plugin']
+          const db = provider.db()
           return db.getData()
         }
       })

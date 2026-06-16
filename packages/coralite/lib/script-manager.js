@@ -248,28 +248,64 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   // Global context initialization
   entryCodeParts.push('const globalContext = { values: {} };\n')
 
-  entryCodeParts.push(`const resolvedContextPropsPromise = (async () => {
-    const resolvedProps = {};
+  entryCodeParts.push(`const resolvedContextFactoriesPromise = (async () => {
+    const factories = {};
     const keys = Object.keys(coraliteComponentClientContextProps);
     for (const key of keys) {
       try {
-        resolvedProps[key] = await coraliteComponentClientContextProps[key](globalContext);
+        factories[key] = await coraliteComponentClientContextProps[key](globalContext);
       } catch (e) {
         console.error('Coralite Plugin Error: Failed to initialize client context for plugin "' + key + '":', e);
         throw e;
       }
-      globalContext[key] = resolvedProps[key];
     }
-    return resolvedProps;
+    return factories;
   })();\n`)
 
-  entryCodeParts.push(`const getClientContext = async (context) => {
-    const clientContextProps = {}
-    const resolvedProps = await resolvedContextPropsPromise;
-    for (const [key, resolvedProp] of Object.entries(resolvedProps)) {
-      clientContextProps[key] = typeof resolvedProp === 'function' ? resolvedProp(context) : resolvedProp;
-    }
-    return clientContextProps
+  entryCodeParts.push(`const getClientContext = async (instanceContext) => {
+    const factories = await resolvedContextFactoriesPromise;
+    const cache = new Map();
+
+    return new Proxy(instanceContext, {
+      get(target, prop, receiver) {
+        if (prop === 'then') return undefined;
+        if (Reflect.has(target, prop)) return Reflect.get(target, prop, receiver);
+        if (cache.has(prop)) return cache.get(prop);
+
+        const factory = factories[prop];
+        if (factory === undefined) return undefined;
+
+        if (typeof factory !== 'function') {
+           throw new Error('Coralite Plugin Error: The plugin "' + String(prop) + '" must be a function for the second phase (instance context). Received: ' + typeof factory);
+        }
+
+        const resolved = factory(receiver);
+        cache.set(prop, resolved);
+        return resolved;
+      },
+      has(target, prop) {
+        return Reflect.has(target, prop) || prop in factories;
+      },
+      ownKeys(target) {
+        return Array.from(new Set([
+          ...Reflect.ownKeys(target),
+          ...Object.keys(factories)
+        ]));
+      },
+      getOwnPropertyDescriptor(target, prop) {
+        if (Reflect.has(target, prop)) {
+          return Reflect.getOwnPropertyDescriptor(target, prop);
+        }
+        if (prop in factories) {
+          return {
+            enumerable: true,
+            configurable: true,
+            writable: true
+          };
+        }
+        return undefined;
+      }
+    });
   }\n`)
 
   const coraliteElementPath = fileURLToPath(import.meta.resolve('./coralite-element.js'))

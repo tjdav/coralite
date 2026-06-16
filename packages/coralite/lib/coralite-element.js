@@ -637,7 +637,7 @@ export class CoraliteElement extends HTMLElement {
      * The context payload injected into the user's script block.
      * @type {Object}
      */
-    const localContext = {
+    let localContext = {
       instanceId: this._instanceId,
       state: this._state,
       root: this,
@@ -652,8 +652,7 @@ export class CoraliteElement extends HTMLElement {
     }
 
     if (typeof this._clientContextGetter === 'function') {
-      const pluginContext = await this._clientContextGetter(localContext)
-      Object.assign(localContext, pluginContext)
+      localContext = await this._clientContextGetter(localContext)
     }
 
     if (isImperative) {

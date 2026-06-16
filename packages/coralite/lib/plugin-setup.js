@@ -32,18 +32,23 @@ export async function setupPlugins ({
       const serverName = plugin.server.name || plugin.name
 
       if (plugin.server.context) {
-        // @ts-ignore
-        const { app: _, ...restGlobalContext } = serverGlobalContext
-        const pluginContext = new Proxy(Object.assign({
-        // @ts-ignore
-          app: serverGlobalContext.app,
+        /** @type {any} */
+        const pluginContext = new Proxy({
+          app,
           config: null
-        }, restGlobalContext), {
+        }, {
           get (target, prop) {
             if (prop === 'config') {
               return plugin.server.config || {}
             }
-            return target[prop]
+            if (prop in target) {
+              return target[prop]
+            }
+            // Block access to other plugins' Phase 2 factories in Phase 1
+            if (allExportNames.has(prop)) {
+              return undefined
+            }
+            return serverGlobalContext[prop]
           },
           set (target, prop, value) {
             serverGlobalContext[prop] = value

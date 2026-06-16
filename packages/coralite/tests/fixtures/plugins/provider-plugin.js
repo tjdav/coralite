@@ -9,7 +9,7 @@ export const providerPlugin = definePlugin({
       const db = {
         getData: () => 'Server Data from DB'
       }
-      // ✨ EXPOSE TO DOWNSTREAM PLUGINS
+      // ✨ EXPOSE TO DOWNSTREAM PLUGINS (Still allowed as per user clarification)
       pluginContext.db = db
       return () => ({
         db: () => db
@@ -23,7 +23,7 @@ export const providerPlugin = definePlugin({
       const db = {
         performAction: () => 'Client Action Performed'
       }
-      // ✨ EXPOSE TO DOWNSTREAM PLUGINS
+      // ✨ EXPOSE TO DOWNSTREAM PLUGINS (Still allowed)
       pluginContext.db = db
       return () => ({
         db: () => db

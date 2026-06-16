@@ -94,23 +94,66 @@ export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name
 }
 
 /**
- * Binds plugins to the instance context.
- * In the new symmetrical API, plugins are already evaluated during setup,
- * so this simply returns the pre-evaluated plugin APIs.
+ * Binds plugins to the instance context using a lazy, cached Proxy.
  *
  * @param {Object} options - The options used to bind plugins.
- * @param {Object} options.pluginFactories - The map of pre-evaluated plugin functions.
+ * @param {Object} options.pluginFactories - The map of Phase 2 factory functions.
  * @param {Object} [options.instanceContext] - The specific instance context.
- * @returns {Promise<Object>} Bound plugins
+ * @returns {Object} A Proxy that resolves plugins lazily.
  */
-export async function bindPlugins ({ pluginFactories, instanceContext }) {
-  const bound = {}
-  for (const name in pluginFactories) {
-    const pluginExports = pluginFactories[name]
-    if (typeof pluginExports !== 'function') {
-      throw new CoraliteError(`Coralite Plugin Error: The plugin "${name}" must be a function for the second phase (instance context). Received: ${typeof pluginExports}`)
+export function bindPlugins ({ pluginFactories, instanceContext = {} }) {
+  const cache = new Map()
+
+  const proxy = new Proxy(instanceContext, {
+    get (target, prop) {
+      if (prop === 'then') {
+        return undefined
+      }
+
+      if (Reflect.has(target, prop)) {
+        return Reflect.get(target, prop)
+      }
+
+      if (cache.has(prop)) {
+        return cache.get(prop)
+      }
+
+      const factory = pluginFactories[prop]
+      if (factory === undefined) {
+        return undefined
+      }
+
+      if (typeof factory !== 'function') {
+        throw new CoraliteError(`Coralite Plugin Error: The plugin "${String(prop)}" must be a function for the second phase (instance context). Received: ${typeof factory}`)
+      }
+
+      const resolved = factory(proxy)
+      cache.set(prop, resolved)
+      return resolved
+    },
+    has (target, prop) {
+      return Reflect.has(target, prop) || prop in pluginFactories
+    },
+    ownKeys (target) {
+      return Array.from(new Set([
+        ...Reflect.ownKeys(target),
+        ...Object.keys(pluginFactories)
+      ]))
+    },
+    getOwnPropertyDescriptor (target, prop) {
+      if (Reflect.has(target, prop)) {
+        return Reflect.getOwnPropertyDescriptor(target, prop)
+      }
+      if (prop in pluginFactories) {
+        return {
+          enumerable: true,
+          configurable: true,
+          writable: true
+        }
+      }
+      return undefined
     }
-    bound[name] = pluginExports(instanceContext)
-  }
-  return bound
+  })
+
+  return proxy
 }
