@@ -119,7 +119,7 @@ export function createRenderer ({
     }
   })
 
-  const _replaceSlots = async (id, element, module, state, page, root, index, session, noHydration) => {
+  const _replaceSlots = async ({ id, element, module, state, page, root, index, session, noHydration }) => {
     const slots = module.slotElements ? module.slotElements[id] : null
     if (!slots) {
       return
@@ -189,8 +189,9 @@ export function createRenderer ({
                 contextId: slotContextId,
                 index,
                 session,
-                noHydration: childNoHydration
-              }, false).then(componentElement => ({
+                noHydration: childNoHydration,
+                head: false
+              }).then(componentElement => ({
                 componentElement,
                 node,
                 slotContextId,
@@ -250,7 +251,7 @@ export function createRenderer ({
     await Promise.all(slotTasks)
   }
 
-  const _processDependentComponents = async (componentIds, session, page, root, state = {}) => {
+  const _processDependentComponents = async ({ componentIds, session, page, root, state = {} }) => {
     if (!componentIds?.length) {
       return
     }
@@ -351,7 +352,13 @@ export function createRenderer ({
         const inheritedState = { ...state }
         // @ts-ignore
         delete inheritedState.__script__
-        await _processDependentComponents(nestedComponents, session, page, root, inheritedState)
+        await _processDependentComponents({
+          componentIds: nestedComponents,
+          session,
+          page,
+          root,
+          state: inheritedState
+        })
       }
     }
   }
@@ -360,10 +367,9 @@ export function createRenderer ({
    * Creates and initializes a component element from its definition and state.
    *
    * @param {ComponentElementOptions} options - Configuration and context for the component instance.
-   * @param {boolean} [head=true] - Whether this component is being processed as a top-level head element.
    * @returns {Promise<CoraliteAnyNode | CoraliteAnyNode[] | void>} The rendered AST node(s) for the component.
    */
-  const createComponentElement = async ({ id, state = {}, element, page, root, contextId, index, session, noHydration }, head = true) => {
+  const createComponentElement = async ({ id, state = {}, element, page, root, contextId, index, session, noHydration, head = true }) => {
     if (!session) {
       session = _createSession()
     }
@@ -526,7 +532,13 @@ export function createRenderer ({
           const inheritedState = { ...state }
           // @ts-ignore
           delete inheritedState.__script__
-          await _processDependentComponents(mergedComponents, session, page, root, inheritedState)
+          await _processDependentComponents({
+            componentIds: mergedComponents,
+            session,
+            page,
+            root,
+            state: inheritedState
+          })
         }
 
         if (!scriptResult.__script__.state) {
@@ -629,8 +641,9 @@ export function createRenderer ({
         contextId: childContextId,
         index,
         session,
-        noHydration: childNoHydration
-      }, false).then(childComponentElement => ({
+        noHydration: childNoHydration,
+        head: false
+      }).then(childComponentElement => ({
         childComponentElement,
         customElement,
         childContextId,
@@ -669,7 +682,17 @@ export function createRenderer ({
       }
     })
 
-    await _replaceSlots(id, element, module, componentState, page, root, index, session, noHydration)
+    await _replaceSlots({
+      id,
+      element,
+      module,
+      state: componentState,
+      page,
+      root,
+      index,
+      session,
+      noHydration
+    })
 
     if (noHydration) {
       const stack = [...result.children]
@@ -709,7 +732,7 @@ export function createRenderer ({
     return mappedAfterContext.result
   }
 
-  const _processCustomElementsInPage = async (mappedComponent, originalDocument, state, mappedSessionObject, pageContext) => {
+  const _processCustomElementsInPage = async ({ mappedComponent, originalDocument, state, mappedSessionObject, pageContext }) => {
     const customElementsList = mappedComponent.customElements || []
     const tasks = []
 
@@ -886,7 +909,13 @@ export function createRenderer ({
 
         removeElements(mappedComponent.tempElements, false)
 
-        await _processCustomElementsInPage(mappedComponent, originalDocument, state, mappedSessionObject, pageContext)
+        await _processCustomElementsInPage({
+          mappedComponent,
+          originalDocument,
+          state,
+          mappedSessionObject,
+          pageContext
+        })
 
         const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
 

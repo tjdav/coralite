@@ -73,7 +73,8 @@ export async function processTokenValue (value, context) {
       module,
       index: i,
       session,
-      noHydration: childNoHydration
+      noHydration: childNoHydration,
+      head: false
     })
 
     if (componentElement) {

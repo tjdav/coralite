@@ -26,7 +26,8 @@ async function processMetadataElement (element, context, index) {
       page,
       root: elements.root,
       contextId: data.path.pathname + index + element.name,
-      index
+      index,
+      head: false
     })
 
     if (componentElement) {

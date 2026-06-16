@@ -159,6 +159,7 @@
  * @property {number} [index] - The index of the component within its parent's children.
  * @property {CoraliteSession} [session] - The current rendering session object.
  * @property {boolean} [noHydration] - If true, hydration scripts will not be generated for this component.
+ * @property {boolean} [head=true] - Whether this component is being processed as a top-level head element.
  */
 
 /**
@@ -171,7 +172,7 @@
  * @property {(root: CoraliteComponentRoot | CoraliteAnyNode | CoraliteAnyNode[], options?: DomSerializerOptions) => string} transform - The function that transforms an AST back into an HTML string.
  * @property {(value: string | CoraliteCollectionItem | { pathname: string, content: string, cacheKey?: string, volatile?: boolean }, buildId: string) => Promise<void>} addRenderQueue - The function that adds a page to the current render queue.
  * @property {(targetPath: string) => string[]} getPagePathsUsingCustomElement - The function that retrieves all page paths using a specific custom element.
- * @property {(options: ComponentElementOptions, head?: boolean) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement - The function that creates a component element from its definition.
+ * @property {(options: ComponentElementOptions) => Promise<CoraliteAnyNode | CoraliteAnyNode[]>} createComponentElement - The function that creates a component element from its definition.
  * @property {(structural?: boolean) => Promise<void>} clearCache - Clears the internal script cache and disposes esbuild context.
  * @property {Record<string, { hashedPath: string, text: string }>} outputFiles - The record of generated output files.
  * @property {Object} _dependencyGraph - The internal dependency graph for the project.

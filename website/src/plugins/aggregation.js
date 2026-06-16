@@ -246,7 +246,8 @@ export const aggregation = (configs = []) => {
                   id: component,
                   state: itemProps,
                   page: item.result?.page || item.state?.page,
-                  session: currentRenderContext
+                  session: currentRenderContext,
+                  head: false
                 })
 
                 if (componentElement && 'children' in componentElement) {
@@ -296,7 +297,8 @@ export const aggregation = (configs = []) => {
                 id: paginationComponentId,
                 state: paginationProps,
                 page: currentPageContext,
-                session: currentRenderContext
+                session: currentRenderContext,
+                head: false
               })
 
               if (componentElement && 'children' in componentElement) {
