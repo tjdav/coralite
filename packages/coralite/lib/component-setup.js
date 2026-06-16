@@ -285,8 +285,8 @@ export async function registerBaseComponent ({
       module: component,
       state: {},
       page: {
-        url: { pathname: '' },
-        file: { pathname: '' },
+        url: { pathname: component.path?.pathname || '' },
+        file: { pathname: component.path?.pathname || '' },
         meta: {}
       },
       root: null,

@@ -99,19 +99,18 @@ export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name
  * so this simply returns the pre-evaluated plugin APIs.
  *
  * @param {Object} options - The options used to bind plugins.
- * @param {Object} options.phase2Functions - The map of pre-evaluated plugin functions.
+ * @param {Object} options.pluginFactories - The map of pre-evaluated plugin functions.
  * @param {Object} [options.instanceContext] - The specific instance context.
  * @returns {Promise<Object>} Bound plugins
  */
-export async function bindPlugins ({ phase2Functions, instanceContext }) {
+export async function bindPlugins ({ pluginFactories, instanceContext }) {
   const bound = {}
-  for (const name in phase2Functions) {
-    const pluginExports = phase2Functions[name]
-    if (typeof pluginExports === 'function') {
-      bound[name] = pluginExports(instanceContext)
-    } else {
-      bound[name] = pluginExports
+  for (const name in pluginFactories) {
+    const pluginExports = pluginFactories[name]
+    if (typeof pluginExports !== 'function') {
+      throw new CoraliteError(`Coralite Plugin Error: The plugin "${name}" must be a function for the second phase (instance context). Received: ${typeof pluginExports}`)
     }
+    bound[name] = pluginExports(instanceContext)
   }
   return bound
 }

@@ -31,9 +31,9 @@ const coralite = await createCoralite({
       name: 'my-plugin',
       server: {
         context: () => {
-          return {
+          return () => ({
             myFunc: () => 'secret'
-          }
+          })
         }
       }
     }

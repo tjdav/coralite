@@ -79,11 +79,13 @@ function processComponents (path) {
  *   name: 'my-plugin',
  *   server: {
  *     context: ({ app }) => {
- *       return {
+ *       // Phase 1: Singleton/Global Context
+ *       return () => ({
+ *         // Phase 2: Instance Context
  *         getData: (options) => {
  *            return { custom: 'data', ...options }
  *         }
- *       }
+ *       })
  *     }
  *   }
  * })
@@ -94,11 +96,13 @@ function processComponents (path) {
  *   name: 'advanced-plugin',
  *   server: {
  *     context: () => {
- *       return {
+ *       // Phase 1: Singleton/Global Context
+ *       return () => ({
+ *         // Phase 2: Instance Context
  *         process: async (options) => {
  *           return { processed: true, ...options }
  *         }
- *       }
+ *       })
  *     },
  *     components: ['src/components/header.html', 'src/components/footer.html'],
  *     onPageSet: async (data) => {

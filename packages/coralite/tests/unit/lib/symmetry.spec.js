@@ -19,16 +19,16 @@ describe('Symmetrical API Integration', () => {
       name: 'i18n',
       server: {
         context: () => {
-          return {
+          return () => ({
             t: (key) => (key === 'greeting' ? 'Greetings from Server' : key)
-          }
+          })
         }
       },
       client: {
         context: () => {
-          return {
+          return () => ({
             t: (key) => (key === 'greeting' ? 'Hello from Client' : key)
-          }
+          })
         }
       }
     })

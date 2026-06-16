@@ -219,9 +219,9 @@ describe('ScriptManager Compilation', () => {
         context: async () => {
           // Simulate async phase1
           await Promise.resolve()
-          return {
+          return () => ({
             testHelper: () => 'sync_result'
-          }
+          })
         }
       })
 

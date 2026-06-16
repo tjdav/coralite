@@ -8,10 +8,10 @@ describe('definePlugin', () => {
       name: 'test-plugin',
       server: {
         context: () => {
-          return {
+          return () => ({
             test: () => {
             }
-          }
+          })
         }
       }
     })
@@ -28,10 +28,10 @@ describe('definePlugin', () => {
         config: { foo: 'bar' },
         context: (context) => {
           capturedContext = context
-          return {
+          return () => ({
             test: () => {
             }
-          }
+          })
         }
       }
     })

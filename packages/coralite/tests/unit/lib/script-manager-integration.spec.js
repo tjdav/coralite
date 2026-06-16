@@ -29,9 +29,9 @@ describe('ScriptManager Integration & Edge Cases', () => {
         name: 'test_plugin',
         context: (pluginContext) => {
           pluginContext.values.customProperty = 'test'
-          return {
+          return () => ({
             add: (a, b) => a + b
-          }
+          })
         }
       })
 
@@ -87,7 +87,7 @@ describe('ScriptManager Integration & Edge Cases', () => {
 
       await sm.use({
         name: 'p1',
-        context: () => ({
+        context: () => () => ({
           helper1: () => 'first',
           shared: (x) => x * 2
         })
@@ -95,7 +95,7 @@ describe('ScriptManager Integration & Edge Cases', () => {
 
       await sm.use({
         name: 'p2',
-        context: () => ({
+        context: () => () => ({
           helper2: () => 'second',
           shared: (x) => x * 3
         })
@@ -111,7 +111,7 @@ describe('ScriptManager Integration & Edge Cases', () => {
 
       await sm.use({
         name: 'p1',
-        context: () => ({ h1: () => 1 })
+        context: () => () => ({ h1: () => 1 })
       })
       await sm.addContextProp('h2', () => 2)
       sm.registerComponent({
@@ -368,9 +368,9 @@ describe('ScriptManager Integration & Edge Cases', () => {
           name: 'dummy_plugin_pkg',
           context: async () => {
             const { default: dummy } = await import('dummy_plugin_pkg')
-            return {
+            return () => ({
               test: () => dummy
-            }
+            })
           }
         })
 

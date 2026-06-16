@@ -4,12 +4,12 @@ export const consumerServerPlugin = definePlugin({
   name: 'consumer-server-plugin',
   server: {
     context: (pluginContext) => {
-      return {
+      return () => ({
         getServerData: () => {
-          const db = pluginContext['provider-plugin'].db()
+          const db = pluginContext.db
           return db.getData()
         }
-      }
+      })
     }
   }
 })

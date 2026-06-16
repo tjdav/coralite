@@ -11,9 +11,9 @@ export const providerPlugin = definePlugin({
       }
       // ✨ EXPOSE TO DOWNSTREAM PLUGINS
       pluginContext.db = db
-      return {
+      return () => ({
         db: () => db
-      }
+      })
     }
   },
   client: {
@@ -25,9 +25,9 @@ export const providerPlugin = definePlugin({
       }
       // ✨ EXPOSE TO DOWNSTREAM PLUGINS
       pluginContext.db = db
-      return {
+      return () => ({
         db: () => db
-      }
+      })
     }
   }
 })

@@ -37,10 +37,10 @@ describe('ScriptManager Basics', () => {
 
     it('should register plugin with context', async () => {
       const context = () => {
-        return {
+        return () => ({
           helper1: () => 'helper1',
           helper2: (x) => x * 2
-        }
+        })
       }
 
       const plugin = {
@@ -66,7 +66,7 @@ describe('ScriptManager Basics', () => {
     })
 
     it('should handle plugin with no setup property', async () => {
-      const context = () => ({ test: () => 'test' })
+      const context = () => () => ({ test: () => 'test' })
       const plugin = {
         name: 'test',
         context
@@ -78,7 +78,7 @@ describe('ScriptManager Basics', () => {
     })
 
     it('should register plugin context', async () => {
-      const context = () => ({ own: () => 'own' })
+      const context = () => () => ({ own: () => 'own' })
 
       const plugin = {
         name: 'test',
@@ -99,7 +99,7 @@ describe('ScriptManager Basics', () => {
     })
 
     it('should handle context with async methods', async () => {
-      const context = () => ({ asyncHelper: async () => 'async' })
+      const context = () => () => ({ asyncHelper: async () => 'async' })
       const plugin = {
         name: 'test',
         context
@@ -289,9 +289,9 @@ describe('ScriptManager Basics', () => {
         name: 'test_plugin',
         config,
         context: (pluginContext) => {
-          return {
+          return () => ({
             testHelper: () => pluginContext.config
-          }
+          })
         }
       })
 

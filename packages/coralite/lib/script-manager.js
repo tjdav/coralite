@@ -87,6 +87,9 @@ ScriptManager.prototype.getClientContextContent = function () {
     contextPropsStr += `"${key}": async (globalContext) => {
       const phase1 = ${value};
       const phase2 = await phase1(globalContext);
+      if (typeof phase2 !== 'function') {
+        throw new Error('Coralite Plugin Error: The "context" function of client plugin "${key}" must return a function for the second phase (instance context). Received: ' + typeof phase2);
+      }
       return (localContext) => phase2(localContext);
     },`
   }
@@ -249,7 +252,12 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     const resolvedProps = {};
     const keys = Object.keys(coraliteComponentClientContextProps);
     for (const key of keys) {
-      resolvedProps[key] = await coraliteComponentClientContextProps[key](globalContext);
+      try {
+        resolvedProps[key] = await coraliteComponentClientContextProps[key](globalContext);
+      } catch (e) {
+        console.error('Coralite Plugin Error: Failed to initialize client context for plugin "' + key + '":', e);
+        throw e;
+      }
       globalContext[key] = resolvedProps[key];
     }
     return resolvedProps;
@@ -559,7 +567,11 @@ export default {
                             return Reflect.set(target, prop, value);
                           }
                         });
-                        return await fn(pluginContext);
+                        const phase2 = await fn(pluginContext);
+                        if (typeof phase2 !== 'function') {
+                          throw new Error('Coralite Plugin Error: The "context" function of client plugin "${clientName}" must return a function for the second phase (instance context). Received: ' + typeof phase2);
+                        }
+                        return phase2;
                       },\n`
               }
               contents += '};\n'

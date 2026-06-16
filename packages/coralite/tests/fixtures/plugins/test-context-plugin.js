@@ -4,11 +4,11 @@ export const testContextPlugin = definePlugin({
   name: 'test-context-plugin',
   server: {
     context: () => {
-      return {
-        getPluginMessage: (name, context) => {
+      return (context) => ({
+        getPluginMessage: (name) => {
           return `Hello ${name} from server-side plugin! Page: ${context.page.url.pathname}`
         }
-      }
+      })
     }
   },
   client: {

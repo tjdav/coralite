@@ -19,9 +19,9 @@ describe('Plugin Exports Leakage', () => {
       name: 'my-plugin',
       server: {
         context: () => {
-          return {
+          return () => ({
             myFunc: () => 'secret'
-          }
+          })
         }
       }
     })
@@ -67,9 +67,9 @@ describe('Plugin Exports Leakage', () => {
       name: 'my-plugin',
       server: {
         context: () => {
-          return {
+          return () => ({
             myFunc: () => 'secret'
-          }
+          })
         }
       }
     })
@@ -118,7 +118,7 @@ describe('Plugin Exports Leakage', () => {
       server: {
         name: 'conflict',
         context: () => {
-          return { conflict: () => 'p1' }
+          return () => ({ conflict: () => 'p1' })
         }
       }
     })
@@ -128,7 +128,7 @@ describe('Plugin Exports Leakage', () => {
       server: {
         name: 'conflict',
         context: () => {
-          return { conflict: () => 'p2' }
+          return () => ({ conflict: () => 'p2' })
         }
       }
     })

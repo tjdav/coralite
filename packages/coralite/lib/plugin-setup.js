@@ -1,4 +1,5 @@
 import { addPluginHook } from './hooks.js'
+import { CoraliteError } from './utils/errors.js'
 
 /**
  * @import { CoraliteInstance, CoralitePluginContext } from '../types/index.js'
@@ -57,6 +58,10 @@ export async function setupPlugins ({
         allExportNames.add(serverName)
 
         const contextResult = await plugin.server.context(pluginContext)
+
+        if (typeof contextResult !== 'function') {
+          throw new CoraliteError(`Coralite Plugin Error: The "context" function of server plugin "${plugin.name}" must return a function for the second phase (instance context). Received: ${typeof contextResult}`)
+        }
 
         source.plugins[serverName] = contextResult
         serverGlobalContext[serverName] = contextResult
