@@ -1,5 +1,7 @@
 <template id="mutation-test-component">
   <div id="server-result">{{ serverData }}</div>
+  <div id="observer-result">{{ observerData }}</div>
+  <div id="inter-plugin-result">{{ interPluginData }}</div>
   <div id="client-result">Initial Client State</div>
   <button id="client-action">Click Me</button>
 </template>
@@ -9,11 +11,13 @@
 
   export default defineComponent({
     server (context) {
-      const { getServerData } = context['consumer-server-plugin']
-      // getServerData is Phase 2 (returned by Phase 1)
-      const data = getServerData()
+      const { getServerData, getInterPluginData } = context['consumer-server-plugin']
+      const { getObservedData } = context['observer-plugin']
+  
       return {
-        serverData: data
+        serverData: getServerData(),
+        observerData: getObservedData(),
+        interPluginData: getInterPluginData()
       }
     },
     client: (context) => {

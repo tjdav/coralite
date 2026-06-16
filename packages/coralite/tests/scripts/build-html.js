@@ -3,6 +3,7 @@ import { staticAssetPlugin } from '../../plugins/index.js'
 import { testContextPlugin } from '../fixtures/plugins/test-context-plugin.js'
 import { mockPlugin } from '../fixtures/plugins/mock-plugin.js'
 import { providerPlugin } from '../fixtures/plugins/provider-plugin.js'
+import { observerPlugin } from '../fixtures/plugins/observer-plugin.js'
 import { consumerServerPlugin } from '../fixtures/plugins/consumer-server-plugin.js'
 import { consumerClientPlugin } from '../fixtures/plugins/consumer-client-plugin.js'
 
@@ -25,6 +26,7 @@ const coralite = await createCoralite({
       dest: 'static-coralite.json'
     }]),
     providerPlugin,
+    observerPlugin,
     consumerServerPlugin,
     consumerClientPlugin,
     {

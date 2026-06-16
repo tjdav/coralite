@@ -9,10 +9,14 @@ export const providerPlugin = definePlugin({
       const db = {
         getData: () => 'Server Data from DB'
       }
-      // ✨ EXPOSE TO DOWNSTREAM PLUGINS (Still allowed as per user clarification)
       pluginContext.db = db
-      return () => ({
-        db: () => db
+
+      return (instanceContext) => ({
+        db: () => db,
+        getOtherData: () => {
+          const testPlugin = instanceContext['test-context-plugin']
+          return testPlugin.getPluginMessage('Provider')
+        }
       })
     }
   },
@@ -23,10 +27,14 @@ export const providerPlugin = definePlugin({
       const db = {
         performAction: () => 'Client Action Performed'
       }
-      // ✨ EXPOSE TO DOWNSTREAM PLUGINS (Still allowed)
       pluginContext.db = db
+
       return () => ({
-        db: () => db
+        db: () => db,
+        getOtherData: () => {
+          // Client side equivalent if needed, though the task mostly mentioned server-side interop
+          return 'Client Other Data'
+        }
       })
     }
   }
