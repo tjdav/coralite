@@ -64,7 +64,7 @@
 
     <p>While <code>client.context</code> is for the browser, <code>server.context</code> allows you to provide utilities to the <code>server</code> block of a <code>defineComponent</code>. This is useful for providing data fetching helpers, logging, or shared business logic that should only run during the build.</p>
 
-    <p>Unlike the client context, <code>server.context</code> is <strong>single-phase</strong>. It receives the global application context and returns an object that is merged into the component's server context.</p>
+    <p>Just like the client context, <code>server.context</code> uses a <strong>Two-Phase Resolver</strong>. The first phase allows for global setup and inter-plugin registration, while the second phase provides the actual utilities to the component instance.</p>
 
     <coralite-code-highlight language="javascript">
       // Plugin definition
@@ -72,14 +72,24 @@
         name: 'data-helper',
         server: {
           context: (pluginContext) => {
-            return {
-              fetchSecure: async (url) => {
-                const response = await fetch(url, {
-                  headers: { 'Authorization': `Bearer ${pluginContext.config.token}` }
-                });
-                return response.json();
-              }
-            };
+            // Phase 1: Global setup. Mutate pluginContext to share with other plugins.
+            pluginContext.db = initializeDB();
+
+            return (instanceContext) => {
+              // Phase 2: Per-instance resolver. 
+              // Use instanceContext to access other plugins.
+              const logger = instanceContext['logger-plugin'];
+
+              return {
+                fetchSecure: async (url) => {
+                  logger.log(`Fetching: ${url}`);
+                  const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${pluginContext.config.token}` }
+                  });
+                  return response.json();
+                }
+              };
+            }
           }
         }
       });
@@ -143,15 +153,20 @@
         context: (pluginContext) => {
           // Phase 1: Runs on the SERVER and receives pluginContext (including config)
           const apiKey = pluginContext.config.apiKey;
+          
+          // Share data with other plugins in Phase 1
+          pluginContext.sharedClientData = { version: '1.0' };
 
           return (instanceContext) => {
             // Phase 2: Receives the local Web Component instance context (signal, state, etc.)
+            // and the namespaced proxy to other plugins.
             const { signal } = instanceContext;
+            const uiPlugin = instanceContext['ui-plugin'];
 
             // Phase 3: Return the actual helper object accessible in the browser
             return {
               trackEvent: (buttonElement, eventName) => {
-                // Now we can safely use browser APIs and component lifecycle signals
+                uiPlugin.showToast(`Tracking: ${eventName}`);
                 buttonElement.addEventListener('click', () => {
                   window.navigator.sendBeacon('https://api.analytics.com', JSON.stringify({
                     key: apiKey,

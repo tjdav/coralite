@@ -74,19 +74,28 @@ const myPlugin = definePlugin({
     <!-- Context Binding -->
     <section id="context-binding">
       <coralite-heading level="2" text="Context Binding (`server.context`)"></coralite-heading>
-      <p>The <code>server.context</code> property is a function evaluated once per build session to define methods and data available to component <code>server()</code> blocks via the plugin's namespace (e.g. <code>context['logger-plugin']</code>).</p>
-      <p>Unlike the client context, <code>server.context</code> runs in a single phase and receives the plugin context (Phase 1, containing the global application instance and plugin configuration) during build initialization. Because there is no second phase automatically providing the component instance context, any methods that require component-specific data (such as the current page metadata or component state) should accept the component's context object as an argument.</p>
+      <p>The <code>server.context</code> property is used to define methods and data available to component <code>server()</code> blocks via the plugin's namespace (e.g. <code>context['logger-plugin']</code>). It follows the <strong>Two-Phase Resolver</strong> pattern.</p>
       
+      <ul>
+        <li><strong>Phase 1 (Global)</strong>: Receives <code>pluginContext</code>. Used for global initialization and sharing data with other plugins via mutation.</li>
+        <li><strong>Phase 2 (Instance)</strong>: Receives <code>instanceContext</code>. Returns the object exposed to the component. Use <code>instanceContext</code> to access other plugins.</li>
+      </ul>
+
       <coralite-code-highlight language="JavaScript">
 export default definePlugin({
   name: 'logger-plugin',
   server: {
     config: { prefix: 'LOG' },
     context: (pluginContext) => {
-      // Phase 1: Receive pluginContext containing globalContext and config
-      return {
-        log: (message, componentContext) => {
-          console.log(`[${pluginContext.config.prefix}] [${componentContext.id}] ${message}`, componentContext.state);
+      // Phase 1: Global setup
+      pluginContext.sharedLogBuffer = [];
+
+      return (instanceContext) => {
+        // Phase 2: Per-instance setup
+        return {
+          log: (message) => {
+            console.log(`[${pluginContext.config.prefix}] ${message}`);
+          }
         }
       }
     }
