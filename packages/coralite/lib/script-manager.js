@@ -11,6 +11,18 @@ import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill
 import render from 'dom-serializer'
 
 /**
+ * Helper to unify empty function checks
+ * @param {string} content - The content of the function to check.
+ * @returns {boolean} - Returns true if the function is empty or has only whitespace.
+ */
+const isEmptyFunction = (content) => {
+  if (!content) {
+    return true
+  }
+  return content.replace(/\s+/g, '') === 'function(){}'
+}
+
+/**
  * Script Manager for Coralite
  * @import { ScriptPlugin, InstanceContext, CoralitePlugin } from '../types/index.js'
  * @import { ScriptContent } from '../types/script.js'
@@ -299,8 +311,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     // Force inclusion of all components that evaluate something inside
     for (const [componentId, fnData] of Object.entries(this.sharedFunctions)) {
       if (fnData.script && fnData.script.content) {
-        const scriptContent = fnData.script.content.replace(/\s+/g, '')
-        if (scriptContent !== 'function(){}') {
+        if (!isEmptyFunction(fnData.script.content)) {
           processedComponent[componentId] = true
         }
       } else if (fnData.script && fnData.script.components && fnData.script.components.length > 0) {
@@ -316,12 +327,15 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
   // Create virtual entry points for each component
   for (const componentId of processedComponentKeys) {
-    if (this.sharedFunctions[componentId]) {
+    const sharedFn = this.sharedFunctions[componentId]
+
+    if (sharedFn) {
       const safeId = componentId.replace(regex, '_')
       let componentEntryCode = ''
 
-      const hasScript = this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.content && this.sharedFunctions[componentId].script.content.trim() !== 'function(){}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() {}' && this.sharedFunctions[componentId].script.content.trim() !== 'function() { }'
-      const hasState = this.sharedFunctions[componentId].script && this.sharedFunctions[componentId].script.stateContent
+      const scriptContent = sharedFn.script?.content
+      const hasScript = scriptContent && !isEmptyFunction(scriptContent)
+      const hasState = sharedFn.script?.stateContent
 
       if (hasScript || hasState) {
         componentEntryCode += `import * as componentModule_${safeId} from "${virtualPrefix}${componentNamespace}${componentId}";\n`
@@ -331,28 +345,28 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       const nodeMap = new WeakMap()
       const state = { counter: 0 }
 
-      cleanAST(this.sharedFunctions[componentId].templateAST, nodeMap, state)
-      const templateHTML = serialize(this.sharedFunctions[componentId].templateAST ? render(this.sharedFunctions[componentId].templateAST, { decodeEntities: false }) : '')
-      const templateValues = serialize(cleanValues(this.sharedFunctions[componentId].templateValues, nodeMap) || {
+      cleanAST(sharedFn.templateAST, nodeMap, state)
+      const templateHTML = serialize(sharedFn.templateAST ? render(sharedFn.templateAST, { decodeEntities: false }) : '')
+      const templateValues = serialize(cleanValues(sharedFn.templateValues, nodeMap) || {
         attributes: [],
         textNodes: [],
         refs: []
       })
-      const styles = JSON.stringify(this.sharedFunctions[componentId].styles || '')
+      const styles = JSON.stringify(sharedFn.styles || '')
 
-      let normalizedDefaults = this.sharedFunctions[componentId].defaultValues || {}
-      if (this.sharedFunctions[componentId].defaultValues) {
-        normalizedDefaults = normalizeObjectFunctions(this.sharedFunctions[componentId].defaultValues, astTransformer)
+      let normalizedDefaults = sharedFn.defaultValues || {}
+      if (sharedFn.defaultValues) {
+        normalizedDefaults = normalizeObjectFunctions(sharedFn.defaultValues, astTransformer)
       }
       const defaults = serialize(normalizedDefaults)
-      const attributes = serialize(this.sharedFunctions[componentId].script?.attributes || {})
-      const hydrationMap = serialize(generateHydrationMap(this.sharedFunctions[componentId].templateAST, this.sharedFunctions[componentId].templateValues))
-      const getters = serialize(this.sharedFunctions[componentId].getters || this.sharedFunctions[componentId].script?.getters || {})
-      const dependencies = JSON.stringify(this.sharedFunctions[componentId].components || [])
+      const attributes = serialize(sharedFn.script?.attributes || {})
+      const hydrationMap = serialize(generateHydrationMap(sharedFn.templateAST, sharedFn.templateValues))
+      const getters = serialize(sharedFn.getters || sharedFn.script?.getters || {})
+      const dependencies = JSON.stringify(sharedFn.components || [])
 
-      let normalizedSlots = this.sharedFunctions[componentId].slots || {}
-      if (this.sharedFunctions[componentId].slots) {
-        normalizedSlots = normalizeObjectFunctions(this.sharedFunctions[componentId].slots, astTransformer)
+      let normalizedSlots = sharedFn.slots || {}
+      if (sharedFn.slots) {
+        normalizedSlots = normalizeObjectFunctions(sharedFn.slots, astTransformer)
       }
       const slots = serialize(normalizedSlots)
 
