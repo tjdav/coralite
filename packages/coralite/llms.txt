@@ -211,11 +211,16 @@ export default definePlugin({
 
 ### 6.2 The `server.context` System
 
-The `server.context` property defines methods and data available to components **during the server-side build process** via the first argument of the `server` block in `defineComponent`.
+The `server.context` property defines methods and data available to components **during the server-side build process** via the first argument of the `server` block in `defineComponent`. It uses a **Two-Phase Resolver** pattern.
 
-* **Injection**: Plugins are injected into the context object passed to the `server` function. The key matches the plugin's name.
+* **Phase 1 (Global Initialization)**: `(pluginContext) => ...` Runs exactly once during framework setup.
+    * **`pluginContext`**: A Proxy containing the global `app` instance and the plugin's `config`.
+    * **Mutation**: Any property added to `pluginContext` during this phase (e.g., `pluginContext.db = ...`) is persisted to the global server context and becomes visible to all subsequent plugins registered in the system.
+* **Phase 2 (Instance Resolver)**: `(instanceContext) => ...` The function returned by Phase 1. It runs per component instance rendering.
+    * **`instanceContext`**: A namespaced Proxy that allows this plugin to lazily access other plugins' Phase 2 APIs (e.g., `instanceContext['other-plugin'].getData()`). It also contains the `app` instance.
+    * **Result**: Returns the final object exposed to the component's `server` block under the plugin's name.
+
 * **Usage**: `async server(context) { const data = await context['my-plugin'].getData(); return { data }; }`
-* **Lifecycle**: These are evaluated once per build session and provided to every component instance.
 
 ### 6.3 Isomorphic Component Lifecycle Hooks
 
@@ -240,8 +245,8 @@ Client injections mapped in `client.context` use a Two-Phase Resolver setup:
 
 ### 6.5 The Plugin Serialization Boundary
 **CRITICAL RULE:** Variables defined in the top-level scope of the plugin file or inside the plugin factory function (e.g., `export default function myPlugin(options) { ... }`) are NOT accessible in the `client` block. The framework serializes the `client` functions for the browser.
-*   **Phase 1 (`pluginContext`)**: Use this scope to define shared state (e.g., caches) that must persist across all component instances in the browser.
-*   **Phase 2 (`instanceContext`)**: Use this scope for logic specific to a single component instance.
+*   **Phase 1 (`pluginContext`)**: Use this scope to define shared state (e.g., caches) that must persist across all component instances in the browser. Mutations here are shared globally across the plugin system.
+*   **Phase 2 (`instanceContext`)**: Use this scope for logic specific to a single component instance. Use the `instanceContext` Proxy to lazily access other plugins' APIs.
 
 ## 7. Configuration (defineConfig)
 
