@@ -57,7 +57,7 @@ const collectPages = (app, config) => {
   // Filter
   if (typeof filter === 'function') {
     allPages = allPages.filter(item => {
-      const itemState = (item.result && item.result.state) ? item.result.state : item.state
+      const itemState = (item.result && item.result.state) ? item.result.state : (item.state || {})
       return filter(itemState, context)
     })
   }
@@ -65,8 +65,8 @@ const collectPages = (app, config) => {
   // Sort
   if (typeof sort === 'function') {
     allPages.sort((a, b) => {
-      const propsA = (a.result && a.result.state) ? a.result.state : a.state
-      const propsB = (b.result && b.result.state) ? b.result.state : b.state
+      const propsA = (a.result && a.result.state) ? a.result.state : (a.state || {})
+      const propsB = (b.result && b.result.state) ? b.result.state : (b.state || {})
       return sort(propsA, propsB)
     })
   }
@@ -158,94 +158,148 @@ export const aggregation = (configs = []) => {
           }
         }
       },
-      context: ({ app }) => (instanceContext) => {
-        return {
-          aggregate: async (nameOrOptions, contextOverride) => {
-            const context = contextOverride || instanceContext
-            let config
+      context: (pluginContext) => {
+        const { app } = pluginContext
+        pluginContext.configs = configMap
+        return (instanceContext) => {
+          return {
+            aggregate: async (nameOrOptions, contextOverride) => {
+              const context = contextOverride || instanceContext
+              let config
 
-            if (typeof nameOrOptions === 'object' && nameOrOptions !== null) {
-              config = nameOrOptions
-            } else {
-              config = configMap.get(nameOrOptions)
-              if (!config) {
-                throw new Error(`Aggregation config "${nameOrOptions}" not found`)
+              if (typeof nameOrOptions === 'object' && nameOrOptions !== null) {
+                config = nameOrOptions
+              } else {
+                config = configMap.get(nameOrOptions)
+                if (!config) {
+                  throw new Error(`Aggregation config "${nameOrOptions}" not found`)
+                }
               }
-            }
 
-            const {
-              component,
-              pagination,
-              limit,
-              offset = 0,
-              transformState
-            } = config
+              const {
+                component,
+                pagination,
+                limit,
+                offset = 0,
+                transformState
+              } = config
 
-            const { state = {}, page: currentPageContext, session: currentRenderContext } = context || {}
+              const { state = {}, page: currentPageContext, session: currentRenderContext } = context || {}
 
-            const allPages = collectPages(app, {
-              ...config,
-              context: {
-                ...context,
-                app,
-                buildId: currentRenderContext?.buildId
+              const allPages = collectPages(app, {
+                ...config,
+                context: {
+                  ...context,
+                  app,
+                  buildId: currentRenderContext?.buildId
+                }
+              })
+
+              // Pagination
+              let startIndex = offset
+              let endIndex = allPages.length
+
+              let currentPage = 1
+              let totalPages = 1
+
+              if (limit) {
+                if (pagination) {
+                  const segment = pagination.segment || 'page'
+                  const urlPathname = (currentPageContext && currentPageContext.url) ? currentPageContext.url.pathname : ''
+
+                  const escapedSegment = segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+                  const segmentRegex = new RegExp(`/${escapedSegment}/(\\d+)`)
+                  const match = urlPathname.match(segmentRegex)
+
+                  if (match) {
+                    currentPage = parseInt(match[1], 10)
+                  }
+
+                  startIndex = offset + ((currentPage - 1) * limit)
+                  endIndex = startIndex + limit
+                  totalPages = Math.ceil(allPages.length / limit)
+                } else {
+                  endIndex = Math.min(startIndex + limit, allPages.length)
+                }
               }
-            })
 
-            // Pagination
-            let startIndex = offset
-            let endIndex = allPages.length
+              const paginatedPages = allPages.slice(startIndex, endIndex)
+              const resultNodes = []
 
-            let currentPage = 1
-            let totalPages = 1
+              for (const item of paginatedPages) {
+                const itemState = (item.result && item.result.state) ? item.result.state : item.state
+                const itemProps = { ...itemState }
 
-            if (limit) {
-              if (pagination) {
-                const segment = pagination.segment || 'page'
-                const urlPathname = (currentPageContext && currentPageContext.url) ? currentPageContext.url.pathname : ''
-
-                const escapedSegment = segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-                const segmentRegex = new RegExp(`/${escapedSegment}/(\\d+)`)
-                const match = urlPathname.match(segmentRegex)
-
-                if (match) {
-                  currentPage = parseInt(match[1], 10)
+                // Apply properties transformations
+                if (transformState && typeof transformState === 'object') {
+                  for (const key in transformState) {
+                    if (Object.prototype.hasOwnProperty.call(transformState, key)) {
+                      const transform = transformState[key]
+                      if (typeof transform === 'string') {
+                        itemProps[key] = itemState[transform]
+                      } else if (typeof transform === 'function') {
+                        itemProps[key] = transform(itemState)
+                      }
+                    }
+                  }
                 }
 
-                startIndex = offset + ((currentPage - 1) * limit)
-                endIndex = startIndex + limit
-                totalPages = Math.ceil(allPages.length / limit)
-              } else {
-                endIndex = Math.min(startIndex + limit, allPages.length)
-              }
-            }
+                if (component) {
+                  const componentElement = await app.createComponentElement({
+                    id: component,
+                    state: itemProps,
+                    page: item.result?.page || item.state?.page,
+                    session: currentRenderContext,
+                    head: false
+                  })
 
-            const paginatedPages = allPages.slice(startIndex, endIndex)
-            const resultNodes = []
-
-            for (const item of paginatedPages) {
-              const itemState = (item.result && item.result.state) ? item.result.state : item.state
-              const itemProps = { ...itemState }
-
-              // Apply properties transformations
-              if (transformState && typeof transformState === 'object') {
-                for (const key in transformState) {
-                  if (Object.prototype.hasOwnProperty.call(transformState, key)) {
-                    const transform = transformState[key]
-                    if (typeof transform === 'string') {
-                      itemProps[key] = itemState[transform]
-                    } else if (typeof transform === 'function') {
-                      itemProps[key] = transform(itemState)
-                    }
+                  if (componentElement && 'children' in componentElement) {
+                    resultNodes.push(...componentElement.children)
                   }
                 }
               }
 
-              if (component) {
+              if (pagination) {
+                const paginationComponentId = pagination.component || 'coralite-pagination'
+                const urlPathname = (currentPageContext && currentPageContext.url) ? currentPageContext.url.pathname : ''
+
+                let baseUrl = urlPathname
+                let urlPrefix = ''
+
+                if (state && typeof state.paginationBaseUrl === 'string') {
+                  baseUrl = state.paginationBaseUrl
+                }
+
+                if (state && typeof state.paginationUrlPrefix === 'string') {
+                  urlPrefix = state.paginationUrlPrefix
+                } else {
+                  if (baseUrl.endsWith('/index.html') || baseUrl.endsWith('/')) {
+                    urlPrefix = path.dirname(baseUrl)
+                  } else {
+                    const basename = path.basename(baseUrl, '.html')
+                    urlPrefix = path.join(path.dirname(baseUrl), basename)
+                  }
+                }
+
+                if (!urlPrefix.endsWith('/')) {
+                  urlPrefix += '/'
+                }
+
+                const paginationProps = {
+                  'current-page': String(currentPage),
+                  'total-pages': String(totalPages),
+                  'base-url': baseUrl,
+                  'url-prefix': urlPrefix,
+                  segment: pagination.segment || 'page',
+                  'max-visible': String(pagination.maxVisible || 5),
+                  'aria-label': pagination.ariaLabel || 'Pagination',
+                  ellipsis: pagination.ellipsis || '...'
+                }
+
                 const componentElement = await app.createComponentElement({
-                  id: component,
-                  state: itemProps,
-                  page: item.result?.page || item.state?.page,
+                  id: paginationComponentId,
+                  state: paginationProps,
+                  page: currentPageContext,
                   session: currentRenderContext,
                   head: false
                 })
@@ -254,59 +308,9 @@ export const aggregation = (configs = []) => {
                   resultNodes.push(...componentElement.children)
                 }
               }
+
+              return app.transform(resultNodes)
             }
-
-            if (pagination) {
-              const paginationComponentId = pagination.component || 'coralite-pagination'
-              const urlPathname = (currentPageContext && currentPageContext.url) ? currentPageContext.url.pathname : ''
-
-              let baseUrl = urlPathname
-              let urlPrefix = ''
-
-              if (state && typeof state.paginationBaseUrl === 'string') {
-                baseUrl = state.paginationBaseUrl
-              }
-
-              if (state && typeof state.paginationUrlPrefix === 'string') {
-                urlPrefix = state.paginationUrlPrefix
-              } else {
-                if (baseUrl.endsWith('/index.html') || baseUrl.endsWith('/')) {
-                  urlPrefix = path.dirname(baseUrl)
-                } else {
-                  const basename = path.basename(baseUrl, '.html')
-                  urlPrefix = path.join(path.dirname(baseUrl), basename)
-                }
-              }
-
-              if (!urlPrefix.endsWith('/')) {
-                urlPrefix += '/'
-              }
-
-              const paginationProps = {
-                'current-page': String(currentPage),
-                'total-pages': String(totalPages),
-                'base-url': baseUrl,
-                'url-prefix': urlPrefix,
-                segment: pagination.segment || 'page',
-                'max-visible': String(pagination.maxVisible || 5),
-                'aria-label': pagination.ariaLabel || 'Pagination',
-                ellipsis: pagination.ellipsis || '...'
-              }
-
-              const componentElement = await app.createComponentElement({
-                id: paginationComponentId,
-                state: paginationProps,
-                page: currentPageContext,
-                session: currentRenderContext,
-                head: false
-              })
-
-              if (componentElement && 'children' in componentElement) {
-                resultNodes.push(...componentElement.children)
-              }
-            }
-
-            return app.transform(resultNodes)
           }
         }
       },

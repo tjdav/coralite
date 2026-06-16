@@ -18,7 +18,7 @@ async function processMetadataElement (element, context, index) {
 
   if (element.name === 'meta' && element.attribs?.name && element.attribs?.content) {
     page.meta[element.attribs.name] = element.attribs.content
-  } else if (element.slots) {
+  } else if (element.slots || app.components.getItem(element.name)) {
     const componentElement = await app.createComponentElement({
       id: element.name,
       state,
@@ -27,16 +27,31 @@ async function processMetadataElement (element, context, index) {
       root: elements.root,
       contextId: data.path.pathname + index + element.name,
       index,
-      head: false
+      head: true
     })
 
     if (componentElement) {
-      for (let j = 0; j < componentElement.children.length; j++) {
-        const child = componentElement.children[j]
+      const componentChildren = Array.isArray(componentElement) ? componentElement : (componentElement.children || [])
+      for (let j = 0; j < componentChildren.length; j++) {
+        const child = componentChildren[j]
         if (child.type === 'tag' && child.name === 'meta' && child.attribs?.name && child.attribs?.content) {
           page.meta[child.attribs.name] = child.attribs.content
-        } else if (child.type === 'tag' && child.name === 'title' && child.children?.length && child.children[0].type === 'text') {
-          page.meta.title = child.children[0].data
+        } else if (child.type === 'tag' && child.name === 'title') {
+          const titleText = child.children
+            .map(c => {
+              if (c.type === 'text') {
+                return c.data
+              }
+              if (c.name === 'c-token') {
+                return c.children[0].data
+              }
+              return ''
+            })
+            .join('')
+
+          if (titleText) {
+            page.meta.title = titleText
+          }
         }
       }
     }
