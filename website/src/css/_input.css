@@ -4,10 +4,10 @@
   font-size: var(--spacer-1);
   line-height: 1.5;
   color: var(--body-colour);
+  background-color: var(--body-bg);
   border: 3px solid var(--secondary);
   border-radius: var(--border-radius);
   transition: box-shadow 250ms;
-  background: var(--body-bg);
 
   &:focus {
     outline: 0;

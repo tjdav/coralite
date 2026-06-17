@@ -3,13 +3,13 @@
   --code-colour-alt-dark: #b6babf;
   --code-toolbar-dark: #343c45;
   --code-body-dark: #14171a;
-  --code-comment-dark: #5c6773;
+  --code-comment-dark: #8695a4;
   --code-blue-dark: #46afe3;
-  --code-blue-grey-dark: #5e88b0;
+  --code-blue-grey-dark: #749cc3;
   --code-pink-dark: #ff7de9;
   --code-purple-dark: #b98eff;
   --code-green-dark: #70bf53;
-  --code-orange-dark: #d96629;
+  --code-orange-dark: #e6834d;
   margin-bottom: var(--spacer-2);
 
   & code {
