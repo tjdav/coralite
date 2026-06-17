@@ -39,13 +39,13 @@
   --heading-line-height: 1.2;
 
   /* headings */
-  --h1-font-size: calc(var(--spacer-base) * 2.5);
-  --h2-font-size: calc(var(--spacer-base) * 2);
-  --h3-font-size: calc(var(--spacer-base) * 1.75);
-  --h4-font-size: calc(var(--spacer-base) * 1.5);
-  --h5-font-size: calc(var(--spacer-base) * 1.25);
-  --h6-font-size: var(--spacer-base);
-  --display-font-size: calc(var(--spacer-base) * 4);
+  --h1-font-size: clamp(2rem, 1.68rem + 1.98vw, calc(var(--spacer-base) * 2.5));
+  --h2-font-size: clamp(1.75rem, 1.59rem + .99vw, calc(var(--spacer-base) * 2));
+  --h3-font-size: clamp(1.5rem, 1.34rem + .99vw, calc(var(--spacer-base) * 1.75));
+  --h4-font-size: clamp(1.3rem, 1.17rem + .79vw, calc(var(--spacer-base) * 1.5));
+  --h5-font-size: clamp(1.15rem, 1.09rem + .39vw, calc(var(--spacer-base) * 1.25));
+  --h6-font-size: calc(var(--spacer-base) * 1.1);
+  --display-font-size: clamp(3rem, 2.37rem + 3.96vw, calc(var(--spacer-base) * 4));
 
   /* border */
   --border-radius: .5rem;
