@@ -1,22 +1,20 @@
 .playground {
   --playground-bg: var(--secondary-dark);
-  --playground-border: 1px solid rgba(255, 255, 255, 0.1);
-  --playground-shadow: 0 0 20px rgba(0, 0, 0, 0.5), 0 0 40px rgba(208, 255, 0, 0.1);
+  --playground-border: 1px solid rgba(255, 255, 255, .1);
+  --playground-shadow: 0 0 20px rgba(0, 0, 0, .5), 0 0 40px rgba(208, 255, 0, .1);
   --playground-accent: var(--green-light);
+  position: relative;
 
   display: grid;
-  grid-template-columns: repeat(5, minmax(200px, 1fr));
-  grid-template-rows: auto 1fr;
-  column-gap: 0;
+  grid-template-columns: 1fr;
+  min-height: 500px;
+  margin: var(--spacer-4) 0;
+  overflow: hidden;
   background: var(--playground-bg);
+  backdrop-filter: blur(10px);
   border: var(--playground-border);
   border-radius: var(--border-radius);
   box-shadow: var(--playground-shadow);
-  overflow: hidden;
-  margin: var(--spacer-4) 0;
-  backdrop-filter: blur(10px);
-  position: relative;
-  min-height: 500px;
 }
 
 .playground::-webkit-scrollbar {
@@ -24,24 +22,17 @@
 }
 
 .playground-tab {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-row: 1 / span 2;
-  grid-template-columns: subgrid;
-  grid-template-rows: subgrid;
+  display: block;
 }
 
 .playground-tab summary {
-  grid-column: var(--n) / span 1;
-  grid-row: 1;
-  display: grid;
-  padding: var(--padding-y) var(--padding-x);
-  cursor: pointer;
-  list-style: none;
-  white-space: nowrap;
-  transition: color 0.2s, background 0.2s;
-  border-right: var(--playground-border);
   z-index: 1;
+  display: block;
+  padding: var(--padding-y) var(--padding-x);
+  list-style: none;
+  cursor: pointer;
+  border-bottom: var(--playground-border);
+  transition: color .2s, background .2s;
 }
 
 .playground-tab summary::-webkit-details-marker {
@@ -49,14 +40,9 @@
 }
 
 .playground-tab[open] summary {
+  font-weight: 700;
   color: var(--playground-accent);
-  background: rgba(255, 255, 255, 0.05);
-  font-weight: bold;
-}
-
-.playground-tab::details-content {
-  grid-row: 2;
-  grid-column: 1 / -1;
+  background: rgba(255, 255, 255, .05);
 }
 
 .playground-tab:not([open])::details-content {
@@ -77,15 +63,15 @@
 
 /* File Tree */
 .file-tree {
-  background: rgba(0, 0, 0, 0.2);
-  padding: var(--spacer-2);
-  font-family: var(--font-monospace);
-  font-size: 0.85rem;
-  overflow-y: auto;
+  z-index: 1;
   flex-shrink: 0;
   width: 100%;
   max-height: 250px;
-  z-index: 1;
+  padding: var(--spacer-2);
+  overflow-y: auto;
+  font-family: var(--font-monospace);
+  font-size: .85rem;
+  background: rgba(0, 0, 0, .2);
   border-right: none;
   border-bottom: var(--playground-border);
 }
@@ -99,18 +85,18 @@
 }
 
 .file-tree summary {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  padding: 4px 8px;
+  white-space: nowrap;
   list-style: none;
   cursor: pointer;
-  padding: 4px 8px;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  white-space: nowrap;
   border-radius: 4px;
 }
 
 .file-tree summary:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, .05);
 }
 
 .file-tree summary::-webkit-details-marker {
@@ -123,34 +109,34 @@
 
 .file-tree .file-label {
   display: flex;
+  gap: .5rem;
   align-items: center;
-  gap: 0.5rem;
   padding: 4px 8px;
-  cursor: pointer;
+  color: rgba(255, 255, 255, .7);
   white-space: nowrap;
+  cursor: pointer;
   border-radius: 4px;
-  color: rgba(255, 255, 255, 0.7);
 }
 
 .file-tree .file-label:hover {
-    background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, .05);
 }
 
 .file-tree input[type="radio"] {
-    display: none;
+  display: none;
 }
 
 .file-tree input[type="radio"]:checked + .file-label {
-  background: rgba(208, 255, 0, 0.1);
   color: var(--playground-accent);
-  box-shadow: inset 0 0 10px rgba(208, 255, 0, 0.1);
+  background: rgba(208, 255, 0, .1);
+  box-shadow: inset 0 0 10px rgba(208, 255, 0, .1);
 }
 
 .file-tree .icon {
+  flex-shrink: 0;
   width: 14px;
   height: 14px;
-  flex-shrink: 0;
-  opacity: 0.7;
+  opacity: .7;
 }
 
 .file-tree .icon-dir {
@@ -163,13 +149,13 @@
 
 /* Code Viewer */
 .code-viewer {
-  background: rgba(0, 0, 0, 0.3);
-  padding: var(--spacer-3);
-  overflow: auto;
   position: relative;
   flex-grow: 1;
   height: 100%;
+  padding: var(--spacer-3);
   margin-bottom: 0;
+  overflow: auto;
+  background: rgba(0, 0, 0, .3);
 }
 
 .code-viewer .file-content {
@@ -188,34 +174,61 @@
 .playground:has(input[id="tab4-file3"]:checked) .file-content[id="tab4-content3"],
 .playground:has(input[id="tab5-file1"]:checked) .file-content[id="tab5-content1"],
 .playground:has(input[id="tab5-file2"]:checked) .file-content[id="tab5-content2"] {
-    display: block;
+  display: block;
 }
 
 .code-viewer pre {
+  padding: 0;
   margin: 0;
   background: transparent;
-  padding: 0;
 }
 
 .code-viewer code {
   font-family: var(--font-monospace);
+  font-size: .95rem;
   line-height: 1.5;
-  font-size: 0.95rem;
 }
 
 
 /* Responsive */
 @media (min-width: 825px) {
+  .playground {
+    grid-template-rows: auto 1fr;
+    grid-template-columns: repeat(5, minmax(200px, 1fr));
+    column-gap: 0;
+  }
+
+  .playground-tab {
+    display: grid;
+    grid-template-rows: subgrid;
+    grid-template-columns: subgrid;
+    grid-row: 1 / span 2;
+    grid-column: 1 / -1;
+  }
+
+  .playground-tab > summary {
+    display: grid;
+    grid-row: 1;
+    grid-column: var(--n) / span 1;
+    border-right: var(--playground-border);
+    border-bottom: none;
+  }
+
+  .playground-tab::details-content {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+
   .playground-content {
     flex-direction: row;
   }
 
   .file-tree {
-    border-bottom: 0;
-    border-right: var(--playground-border);
     width: 315px;
     height: 100%;
     max-height: 100%;
+    border-right: var(--playground-border);
+    border-bottom: 0;
   }
 
   .code-viewer {
