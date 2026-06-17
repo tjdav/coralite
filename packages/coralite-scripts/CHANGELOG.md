@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.38.0
+
+> Comparing `coralite-scripts-v0.37.2` to `HEAD`
+
+**Summary:** 2 commits
+
+### ✨ Features
+
+- site-wide bundling for development with incremental updates ([1cfa40c](https://codeberg.org/tjdavid/coralite/commit/1cfa40c881c5a334671c8d5a051de8c1defedeec))
+
+### ✅ Tests
+
+- add build-utils unit tests and fix test paths (coralite-scripts) ([71e015b](https://codeberg.org/tjdavid/coralite/commit/71e015b79153809f8cbaefebf305da6c00286fe0))
+
+
 ## v0.37.1
 
 > Comparing `coralite-scripts-v0.37.0` to `HEAD`
