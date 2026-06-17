@@ -67,7 +67,7 @@
   width: 100%;
   padding: var(--padding-y) var(--spacer-3);
   font-size: .9rem;
-  background: rgba(0, 0, 0, .4);
+  background: rgba(0, 0, 0, .6);
   border-bottom: var(--playground-border);
   z-index: 1;
 }
