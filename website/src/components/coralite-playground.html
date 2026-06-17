@@ -3,6 +3,10 @@
     <details class="playground-tab" name="playground-tabs" open style="--n: 1">
       <summary>The Basics</summary>
       <div class="playground-content">
+      <div class="playground-description">
+        <p>Discover how simple it is to register and use Coralite components. <a href="/docs/guide/getting-started.html">Getting Started Guide</a></p>
+      </div>
+      <div class="playground-editor">
         <div class="file-tree">
           <details open>
             <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
@@ -22,13 +26,19 @@
         <div class="code-viewer code">
           <div class="file-content" id="tab1-content1"><pre><code>{{ tab1_file1 }}</code></pre></div>
           <div class="file-content" id="tab1-content2"><pre><code>{{ tab1_file2 }}</code></pre></div>
+        
         </div>
+      </div>
       </div>
     </details>
 
     <details class="playground-tab" name="playground-tabs" style="--n: 2">
       <summary>State & Interactivity</summary>
       <div class="playground-content">
+      <div class="playground-description">
+        <p>Learn how to handle state and interactivity effortlessly with the framework. <a href="/docs/guide/dynamic-components.html">Interactive Components</a></p>
+      </div>
+      <div class="playground-editor">
         <div class="file-tree">
           <details open>
             <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
@@ -48,13 +58,19 @@
         <div class="code-viewer code">
           <div class="file-content" id="tab2-content1"><pre><code>{{ tab2_file1 }}</code></pre></div>
           <div class="file-content" id="tab2-content2"><pre><code>{{ tab2_file2 }}</code></pre></div>
+        
         </div>
+      </div>
       </div>
     </details>
 
     <details class="playground-tab" name="playground-tabs" style="--n: 3">
       <summary>Server Data Fetching</summary>
       <div class="playground-content">
+      <div class="playground-description">
+        <p>Perform fast server-side rendering and data fetching easily. <a href="/docs/guide/static-components.html">Server Rendering</a></p>
+      </div>
+      <div class="playground-editor">
         <div class="file-tree">
           <details open>
             <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
@@ -74,13 +90,19 @@
         <div class="code-viewer code">
           <div class="file-content" id="tab3-content1"><pre><code>{{ tab3_file1 }}</code></pre></div>
           <div class="file-content" id="tab3-content2"><pre><code>{{ tab3_file2 }}</code></pre></div>
+        
         </div>
+      </div>
       </div>
     </details>
 
     <details class="playground-tab" name="playground-tabs" style="--n: 4">
       <summary>Imperative Components</summary>
       <div class="playground-content">
+      <div class="playground-description">
+        <p>Dynamically create and manage components imperatively within the browser. <a href="/docs/guide/dynamic-components.html#imperative-usage">Imperative Components</a></p>
+      </div>
+      <div class="playground-editor">
         <div class="file-tree">
           <details open>
             <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
@@ -105,13 +127,19 @@
           <div class="file-content" id="tab4-content1"><pre><code>{{ tab4_file1 }}</code></pre></div>
           <div class="file-content" id="tab4-content2"><pre><code>{{ tab4_file2 }}</code></pre></div>
           <div class="file-content" id="tab4-content3"><pre><code>{{ tab4_file3 }}</code></pre></div>
+        
         </div>
+      </div>
       </div>
     </details>
 
     <details class="playground-tab" name="playground-tabs" style="--n: 5">
       <summary>Plugins</summary>
       <div class="playground-content">
+      <div class="playground-description">
+        <p>Extend capabilities across your app by authoring and consuming plugins. <a href="/docs/guide/authoring-plugins.html">Plugins Guide</a></p>
+      </div>
+      <div class="playground-editor">
         <div class="file-tree">
           <details open>
             <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> plugins</summary>
@@ -131,7 +159,9 @@
         <div class="code-viewer code">
           <div class="file-content" id="tab5-content1"><pre><code>{{ tab5_file1 }}</code></pre></div>
           <div class="file-content" id="tab5-content2"><pre><code>{{ tab5_file2 }}</code></pre></div>
+        
         </div>
+      </div>
       </div>
     </details>
   </div>
@@ -186,7 +216,10 @@
             export default defineComponent({
               // Coerces HTML attributes into typed JavaScript primitives
               attributes: {
-                name: String
+                name: {
+                  type: String,
+                  default: 'Developer'
+                }
               }
             });
           <\/script>
@@ -210,7 +243,10 @@
 
             export default defineComponent({
               attributes: {
-                step: Number
+                step: {
+                  type: Number,
+                  default: 1
+                }
               },
               // The client block is your browser-side controller
               client: ({ state, refs }) => {
@@ -244,7 +280,9 @@
 
             export default defineComponent({
               attributes: {
-                userId: Number
+                userId: {
+                  type: Number
+                }
               },
               // Runs purely on the server. Stripped from the client bundle.
               server: async ({ state }) => {
@@ -304,7 +342,10 @@
 
             export default defineComponent({
               attributes: {
-                message: String
+                message: {
+                  type: String,
+                  default: ''
+                }
               },
               client: ({ signal, refs }) => {
                 // The signal automatically cleans up listeners when the component unmounts
@@ -361,8 +402,12 @@
 
             export default defineComponent({
               attributes: {
-                itemId: String,
-                itemName: String
+                itemId: {
+                  type: String
+                },
+                itemName: {
+                  type: String
+                }
               },
               // The plugin is namespaced on the client context object 
               // using the plugin's 'name' property

@@ -61,6 +61,38 @@
   display: none;
 }
 
+
+/* Description Strip */
+.playground-description {
+  width: 100%;
+  padding: var(--padding-y) var(--spacer-3);
+  font-size: .9rem;
+  background: rgba(0, 0, 0, .4);
+  border-bottom: var(--playground-border);
+  z-index: 1;
+}
+
+.playground-description p {
+  margin: 0;
+}
+
+.playground-description a {
+  color: var(--playground-accent);
+  text-decoration: none;
+}
+
+.playground-description a:hover {
+  text-decoration: underline;
+}
+
+/* Editor Container */
+.playground-editor {
+  display: flex;
+  flex-grow: 1;
+  flex-direction: column;
+  min-height: 0; /* Important for flex child scrolling */
+}
+
 /* File Tree */
 .file-tree {
   z-index: 1;
@@ -218,8 +250,16 @@
     grid-column: 1 / -1;
   }
 
+
   .playground-content {
+    flex-direction: column;
+  }
+
+  .playground-editor {
+    display: flex;
+    flex-grow: 1;
     flex-direction: row;
+    min-height: 0;
   }
 
   .file-tree {
