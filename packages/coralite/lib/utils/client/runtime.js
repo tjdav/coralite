@@ -62,6 +62,18 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
     }
     return document.createElement(tag, options);
   };
+
+  window.processHTML = (html) => {
+    if (typeof html !== 'string') return html;
+    const matches = html.matchAll(/<([a-zA-Z0-9-]+)/g);
+    for (const match of matches) {
+      const tag = match[1].toLowerCase();
+      if (componentManifest[tag]) {
+        loadComponent(tag);
+      }
+    }
+    return html;
+  };
 })();
 `.trim()
 }

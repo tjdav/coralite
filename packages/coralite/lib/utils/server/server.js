@@ -33,10 +33,27 @@ function getAST (code, locations = false) {
 }
 
 /**
- * Extracts and normalizes the script content from a component definition.
+ * Extracts custom components from an HTML string.
  *
- * @param {string} code - The raw script content
- * @returns {ScriptContent | null}
+ * @param {string} html - The HTML string
+ * @param {Set<string>} components - The set to add identified components to
+ */
+function extractFromHTMLString (html, components) {
+  try {
+    const matches = html.matchAll(/<([a-zA-Z0-9-]+)/g)
+    for (const match of matches) {
+      const tag = match[1].toLowerCase()
+      if (tag.includes('-')) {
+        components.add(tag)
+      }
+    }
+  } catch {
+    // Ignore errors
+  }
+}
+
+/**
+ *
  */
 export function findAndExtractScript (code) {
   const ast = getAST(code, true)
@@ -45,7 +62,28 @@ export function findAndExtractScript (code) {
   let result = null
   const components = new Set()
 
+  const findHTMLComponents = (node) => {
+    if (node.type === 'Literal' && typeof node.value === 'string') {
+      extractFromHTMLString(node.value, components)
+    } else if (node.type === 'TemplateLiteral') {
+      for (const element of node.quasis) {
+        if (element.value && element.value.cooked) {
+          extractFromHTMLString(element.value.cooked, components)
+        }
+      }
+    }
+  }
+
   walkJS(ast, {
+    AssignmentExpression (node) {
+      if (
+        node.left.type === 'MemberExpression' &&
+        node.left.property.type === 'Identifier' &&
+        (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
+      ) {
+        findHTMLComponents(node.right)
+      }
+    },
     CallExpression (node) {
       if (
         node.callee &&
@@ -62,6 +100,19 @@ export function findAndExtractScript (code) {
           if (arg.type === 'Literal' && typeof arg.value === 'string') {
             components.add(arg.value)
           }
+        }
+      }
+
+      if (
+        node.callee &&
+        node.callee.type === 'MemberExpression' &&
+        node.callee.property &&
+        node.callee.property.type === 'Identifier' &&
+        node.callee.property.name === 'insertAdjacentHTML'
+      ) {
+        const arg = node.arguments[1]
+        if (arg) {
+          findHTMLComponents(arg)
         }
       }
 
@@ -91,6 +142,25 @@ export function findAndExtractScript (code) {
             // Collect all document.createElement calls within this client block for transformation
             const replacements = []
             walkJS(value, {
+              AssignmentExpression (node) {
+                if (
+                  node.left.type === 'MemberExpression' &&
+                  node.left.property.type === 'Identifier' &&
+                  (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
+                ) {
+                  findHTMLComponents(node.right)
+                  replacements.push({
+                    start: node.right.start - value.start,
+                    end: node.right.start - value.start,
+                    replacement: 'processHTML('
+                  })
+                  replacements.push({
+                    start: node.right.end - value.start,
+                    end: node.right.end - value.start,
+                    replacement: ')'
+                  })
+                }
+              },
               CallExpression (node) {
                 if (
                   node.callee &&
@@ -111,6 +181,29 @@ export function findAndExtractScript (code) {
                       start: node.callee.start - value.start,
                       end: node.callee.end - value.start,
                       replacement: 'createCoraliteElement'
+                    })
+                  }
+                }
+
+                if (
+                  node.callee &&
+                  node.callee.type === 'MemberExpression' &&
+                  node.callee.property &&
+                  node.callee.property.type === 'Identifier' &&
+                  node.callee.property.name === 'insertAdjacentHTML'
+                ) {
+                  const arg = node.arguments[1]
+                  if (arg) {
+                    findHTMLComponents(arg)
+                    replacements.push({
+                      start: arg.start - value.start,
+                      end: arg.start - value.start,
+                      replacement: 'processHTML('
+                    })
+                    replacements.push({
+                      start: arg.end - value.start,
+                      end: arg.end - value.start,
+                      replacement: ')'
                     })
                   }
                 }
@@ -157,7 +250,7 @@ export function findAndExtractScript (code) {
     }
   })
 
-  if (result && components.size > 0) {
+  if (result) {
     result.components = Array.from(components)
   }
 
@@ -245,7 +338,26 @@ export function findAndExtractImperativeComponents (code) {
 
     const components = new Set()
 
+    const findHTMLComponents = (node) => {
+      if (node.type === 'Literal' && typeof node.value === 'string') {
+        extractFromHTMLString(node.value, components)
+      } else if (node.type === 'TemplateLiteral') {
+        for (const element of node.quasis) {
+          extractFromHTMLString(element.value.cooked, components)
+        }
+      }
+    }
+
     walkJS(ast, {
+      AssignmentExpression (node) {
+        if (
+          node.left.type === 'MemberExpression' &&
+          node.left.property.type === 'Identifier' &&
+          (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
+        ) {
+          findHTMLComponents(node.right)
+        }
+      },
       CallExpression (node) {
         if (
           node.callee &&
@@ -262,6 +374,19 @@ export function findAndExtractImperativeComponents (code) {
           const arg = node.arguments[0]
           if (arg && arg.type === 'Literal' && typeof arg.value === 'string' && arg.value.includes('-')) {
             components.add(arg.value)
+          }
+        }
+
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.property &&
+          node.callee.property.type === 'Identifier' &&
+          node.callee.property.name === 'insertAdjacentHTML'
+        ) {
+          const arg = node.arguments[1]
+          if (arg) {
+            findHTMLComponents(arg)
           }
         }
       }

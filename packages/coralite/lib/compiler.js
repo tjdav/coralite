@@ -63,6 +63,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
 
       coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
       coraliteExports += 'export const createCoraliteElement = globalThis.__coralite_create_coralite_element__;\n'
+      coraliteExports += 'export const processHTML = globalThis.__coralite_process_html__;\n'
 
       return new SourceTextModule(coraliteExports, {
         context: referencingModule.context,
@@ -195,6 +196,12 @@ export async function evaluateDevelopment ({
         return globalThis.createCoraliteElement(tag, options)
       }
       return globalThis.document.createElement(tag, options)
+    },
+    __coralite_process_html__: (html) => {
+      if (typeof globalThis.processHTML === 'function') {
+        return globalThis.processHTML(html)
+      }
+      return html
     }
   }
 
@@ -342,14 +349,22 @@ export async function evaluateProduction ({
           }
           return globalThis.document.createElement(tag, options)
         }
+        const processHTML = (html) => {
+          if (typeof globalThis.processHTML === 'function') {
+            return globalThis.processHTML(html)
+          }
+          return html
+        }
         return {
           ...symmetricalContext,
           defineComponent: (options) => defineComponent(options, symmetricalContext),
           createCoraliteElement,
+          processHTML,
           default: {
             ...symmetricalContext,
             defineComponent: (options) => defineComponent(options, symmetricalContext),
-            createCoraliteElement
+            createCoraliteElement,
+            processHTML
           }
         }
       }

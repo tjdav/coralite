@@ -18,4 +18,20 @@ export function createCoraliteElement (tag, options) {
   return document.createElement(tag, options)
 }
 
+/**
+ * Processes an HTML string for custom elements.
+ * Proxy to window.processHTML if available.
+ *
+ * @param {string} html - The HTML string.
+ * @returns {string} The HTML string.
+ */
+export function processHTML (html) {
+  // @ts-ignore
+  if (typeof window !== 'undefined' && window.processHTML) {
+    // @ts-ignore
+    return window.processHTML(html)
+  }
+  return html
+}
+
 export { defineComponent, definePlugin }

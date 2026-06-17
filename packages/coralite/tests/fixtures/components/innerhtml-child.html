@@ -1,0 +1,16 @@
+<template id="innerhtml-child">
+  <div data-testid="title">{{ title }}</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      title: {
+        type: String,
+        default: ''
+      }
+    }
+  })
+</script>
