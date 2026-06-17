@@ -6,7 +6,7 @@
   position: relative;
 
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   min-height: 500px;
   margin: var(--spacer-4) 0;
   overflow: hidden;
@@ -70,6 +70,8 @@
   background: rgba(0, 0, 0, .6);
   border-bottom: var(--playground-border);
   z-index: 1;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .playground-description p {
@@ -121,7 +123,7 @@
   gap: .5rem;
   align-items: center;
   padding: 4px 8px;
-  white-space: nowrap;
+  white-space: normal;
   list-style: none;
   cursor: pointer;
   border-radius: 4px;
@@ -145,7 +147,7 @@
   align-items: center;
   padding: 4px 8px;
   color: rgba(255, 255, 255, .7);
-  white-space: nowrap;
+  white-space: normal;
   cursor: pointer;
   border-radius: 4px;
 }
@@ -216,14 +218,15 @@
 }
 
 .code-viewer code {
+  display: block;
   font-family: var(--font-monospace);
   font-size: .95rem;
   line-height: 1.5;
+  white-space: pre;
+  word-wrap: normal;
 }
 
-
-/* Responsive */
-@media (min-width: 825px) {
+@media (min-width: 992px) {
   .playground {
     grid-template-rows: auto 1fr;
     grid-template-columns: repeat(5, minmax(200px, 1fr));
