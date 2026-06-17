@@ -1,5 +1,50 @@
 # Changelog
 
+## v0.38.0
+
+> Comparing `coralite-v0.37.2` to `HEAD`
+
+**Summary:** 20 commits
+
+### ✨ Features
+
+- implement namespaced plugin access with lazy resolution and caching ([374735e](https://codeberg.org/tjdavid/coralite/commit/374735e31bfdc57fbfaec2318be0b8b2e3e103d0))
+- enforce two-phase plugin pattern and fix base evaluation path population ([55be180](https://codeberg.org/tjdavid/coralite/commit/55be18019f623ab9fa559ea973c8f0cbed198bac))
+- improve createTestProject and refactor unit tests ([fddf2ab](https://codeberg.org/tjdavid/coralite/commit/fddf2ab4ef7c4c2373136ab4a1b5e9b05283094d))
+- implement on-demand script loading for imperative components (core) ([fc6803e](https://codeberg.org/tjdavid/coralite/commit/fc6803e7333a301cdfe72f931239aaa57139ca1f))
+- site-wide bundling for development with incremental updates ([1cfa40c](https://codeberg.org/tjdavid/coralite/commit/1cfa40c881c5a334671c8d5a051de8c1defedeec))
+- site-wide stable chunk hashes and browser caching. ([c419e5d](https://codeberg.org/tjdavid/coralite/commit/c419e5d74f1fcbdcc2f526d203ecb7b095f9f098))
+- remove server.exports virtual modules in favor of server.context injection (plugins) ([2e23859](https://codeberg.org/tjdavid/coralite/commit/2e238592f0dd08e35d2a242d3bd0672a6643bd3f))
+- implement isomorphic contextual resolution for plugins (core) ([59c6fd1](https://codeberg.org/tjdavid/coralite/commit/59c6fd1b919e2e61f4009febe1fb18681b7dc45f))
+
+### 🐛 Bug Fixes
+
+- correct CLI import path and sync version (coralite) ([3674fec](https://codeberg.org/tjdavid/coralite/commit/3674fecb17d4ab24ff2fae9b1f36b20817d4dd65))
+- ensure metadata is correctly extracted from components in head (plugins) ([4c7fe7d](https://codeberg.org/tjdavid/coralite/commit/4c7fe7db47e90b76efa0742b2765739ccb53ae93))
+- use async locators to resolve race conditions in tests (e2e) ([cf7a1bf](https://codeberg.org/tjdavid/coralite/commit/cf7a1bf5bf5f9b820cf0fc90e2d5ab26c78f2dd0))
+- prevent overwriting existing data-testid attributes (testing) ([84b2176](https://codeberg.org/tjdavid/coralite/commit/84b21762c93453f2d5bdaabf5c95edc47a48054d))
+
+### ⚡ Performance Improvements
+
+- replace forEach loops with traditional for loops in renderer.js ([e1bc823](https://codeberg.org/tjdavid/coralite/commit/e1bc823663aae558f31e28fe17253f8663e0811f))
+
+### 📚 Documentation
+
+- clarify Two-Phase Resolver pattern in server context ([1cb03f7](https://codeberg.org/tjdavid/coralite/commit/1cb03f7d7e2c6a0e76cfa0b98708be5174763a69))
+- update defineComponent guide and error message ([7f5389c](https://codeberg.org/tjdavid/coralite/commit/7f5389c73e3664fadeef55f75ce2bf7d90104538))
+
+### ♻️ Code Refactoring
+
+- simplify complex conditional in script-manager.js ([fb24917](https://codeberg.org/tjdavid/coralite/commit/fb2491787d36e90439d402f81e0e8005b8ece1dd))
+- use options objects for internal renderer functions (coralite) ([df2b5c9](https://codeberg.org/tjdavid/coralite/commit/df2b5c924d9a4fad4e5ba724ee8c63dc11005b27))
+- remove plugin setup phase in favor of context phase 1 ([7287e73](https://codeberg.org/tjdavid/coralite/commit/7287e73c3e120bf88805b25d7d728efb4cfc480a))
+
+### ✅ Tests
+
+- add global context mutation and inter-plugin interop tests (server & client) ([4536814](https://codeberg.org/tjdavid/coralite/commit/4536814eabf795e2b8364d67f72a0d6ed5462b5d))
+- add build-utils unit tests and fix test paths (coralite-scripts) ([71e015b](https://codeberg.org/tjdavid/coralite/commit/71e015b79153809f8cbaefebf305da6c00286fe0))
+
+
 ## v0.37.2
 
 > Comparing `coralite-v0.37.1` to `HEAD`
