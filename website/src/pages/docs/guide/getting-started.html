@@ -6,7 +6,7 @@
 <body>
   <coralite-navbar></coralite-navbar>
   <main class="container content">
-    <h1 class="display">Getting Started: Your First Component</h1>
+    <h1 class="display">Getting Started</h1>
 
     <p>Welcome to Coralite! This tutorial will walk you through building your very first interactive web component using Coralite's unique HTML-first approach. We'll start with a simple static template and slowly make it dynamic.</p>
 
@@ -119,9 +119,9 @@
         export default defineComponent({
           attributes: {
             currentCount: {
-      type: Number,
-      default: 0
-    }
+              type: Number,
+              default: 0
+            }
           },
           // The client function runs in the browser!
           client: ({ state, signal, refs }) => {
