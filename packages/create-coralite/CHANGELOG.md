@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.38.0
+
+> Comparing `create-coralite-v0.37.2` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- remove server.exports virtual modules in favor of server.context injection (plugins) ([2e23859](https://codeberg.org/tjdavid/coralite/commit/2e238592f0dd08e35d2a242d3bd0672a6643bd3f))
+
+### ✅ Tests
+
+- add build-utils unit tests and fix test paths (coralite-scripts) ([71e015b](https://codeberg.org/tjdavid/coralite/commit/71e015b79153809f8cbaefebf305da6c00286fe0))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.38.0 ([1da3471](https://codeberg.org/tjdavid/coralite/commit/1da3471dbdb2df9e7cc505083dc8dc4db681b284))
+
+
 ## v0.37.2
 
 > Comparing `create-coralite-v0.37.1` to `HEAD`
