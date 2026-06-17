@@ -1,11 +1,12 @@
 #!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
-import { createCoralite } from '../lib/index.js'
+import { createCoralite } from '../dist/lib/index.js'
 import { Command } from 'commander'
 import kleur from 'kleur'
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
+import pkg from '../package.json' with { type: 'json' }
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -15,7 +16,7 @@ const program = new Command()
 program
   .name('Coralite')
   .description('HTML modules static site generator CLI tool')
-  .version('0.18.1')
+  .version(pkg.version)
   .requiredOption('-c, --components <path>', 'Path to components directory')
   .requiredOption('-p, --pages <path>', 'Path to pages directory')
   .requiredOption('-o, --output <path>', 'Output directory for the generated site')
