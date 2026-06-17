@@ -211,7 +211,6 @@
     grid-row: 1;
     grid-column: var(--n) / span 1;
     border-right: var(--playground-border);
-    border-bottom: none;
   }
 
   .playground-tab::details-content {
