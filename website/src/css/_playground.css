@@ -133,7 +133,8 @@
   display: none;
 }
 
-.file-tree .file-item {
+.file-tree details details,
+.file-tree details .file-item {
   margin-left: 1rem;
 }
 
@@ -195,15 +196,21 @@
 /* File Switching using :has() */
 .playground:has(input[id="tab1-file1"]:checked) .file-content[id="tab1-content1"],
 .playground:has(input[id="tab1-file2"]:checked) .file-content[id="tab1-content2"],
+.playground:has(input[id="tab1-file3"]:checked) .file-content[id="tab1-content3"],
+.playground:has(input[id="tab1-file4"]:checked) .file-content[id="tab1-content4"],
+.playground:has(input[id="tab1-file5"]:checked) .file-content[id="tab1-content5"],
+.playground:has(input[id="tab1-file6"]:checked) .file-content[id="tab1-content6"],
 .playground:has(input[id="tab2-file1"]:checked) .file-content[id="tab2-content1"],
 .playground:has(input[id="tab2-file2"]:checked) .file-content[id="tab2-content2"],
+.playground:has(input[id="tab2-file3"]:checked) .file-content[id="tab2-content3"],
 .playground:has(input[id="tab3-file1"]:checked) .file-content[id="tab3-content1"],
 .playground:has(input[id="tab3-file2"]:checked) .file-content[id="tab3-content2"],
+.playground:has(input[id="tab3-file3"]:checked) .file-content[id="tab3-content3"],
 .playground:has(input[id="tab4-file1"]:checked) .file-content[id="tab4-content1"],
 .playground:has(input[id="tab4-file2"]:checked) .file-content[id="tab4-content2"],
 .playground:has(input[id="tab4-file3"]:checked) .file-content[id="tab4-content3"],
-.playground:has(input[id="tab5-file1"]:checked) .file-content[id="tab5-content1"],
-.playground:has(input[id="tab5-file2"]:checked) .file-content[id="tab5-content2"] {
+.playground:has(input[id="tab4-file4"]:checked) .file-content[id="tab4-content4"],
+.playground:has(input[id="tab4-file5"]:checked) .file-content[id="tab4-content5"] {
   display: block;
 }
 
@@ -225,7 +232,7 @@
 @media (min-width: 992px) {
   .playground {
     grid-template-rows: auto 1fr;
-    grid-template-columns: repeat(5, minmax(200px, 1fr));
+    grid-template-columns: repeat(4, minmax(200px, 1fr));
     column-gap: 0;
   }
 

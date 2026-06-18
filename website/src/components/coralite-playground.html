@@ -1,167 +1,186 @@
 <template id="coralite-playground">
   <div class="playground">
     <details class="playground-tab" name="playground-tabs" open style="--n: 1">
-      <summary>The Basics</summary>
+      <summary>Components</summary>
       <div class="playground-content">
-      <div class="playground-description">
-        <p>Discover how to register and use Coralite components. <a href="/docs/guide/getting-started.html">Getting Started Guide</a></p>
-      </div>
-      <div class="playground-editor">
-        <div class="file-tree">
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
-            <div class="file-item">
-              <input type="radio" name="tab1-files" id="tab1-file1" checked>
-              <label for="tab1-file1" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> index.html</label>
-            </div>
-          </details>
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
-            <div class="file-item">
-              <input type="radio" name="tab1-files" id="tab1-file2">
-              <label for="tab1-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> hello-world.html</label>
-            </div>
-          </details>
+        <div class="playground-description">
+          <p>Discover how to register and use Coralite components, including state management and imperative APIs. <a href="/docs/guide/components.html">Components Guide</a></p>
         </div>
-        <div class="code-viewer code">
-          <div class="file-content" id="tab1-content1"><pre><code>{{ tab1_file1 }}</code></pre></div>
-          <div class="file-content" id="tab1-content2"><pre><code>{{ tab1_file2 }}</code></pre></div>
-        
+        <div class="playground-editor">
+          <div class="file-tree">
+            <details open>
+              <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> src</summary>
+              <details open>
+                <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
+                <div class="file-item">
+                  <input type="radio" name="tab1-files" id="tab1-file2" checked>
+                  <label for="tab1-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> index.html</label>
+                </div>
+              </details>
+              <details open>
+                <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
+                <div class="file-item">
+                  <input type="radio" name="tab1-files" id="tab1-file3">
+                  <label for="tab1-file3" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> hello-world.html</label>
+                </div>
+                <div class="file-item">
+                  <input type="radio" name="tab1-files" id="tab1-file4">
+                  <label for="tab1-file4" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> click-counter.html</label>
+                </div>
+                <div class="file-item">
+                  <input type="radio" name="tab1-files" id="tab1-file5">
+                  <label for="tab1-file5" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> toast-manager.html</label>
+                </div>
+                <div class="file-item">
+                  <input type="radio" name="tab1-files" id="tab1-file6">
+                  <label for="tab1-file6" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> toast-message.html</label>
+                </div>
+              </details>
+            </details>
+            <div class="file-item">
+              <input type="radio" name="tab1-files" id="tab1-file1">
+              <label for="tab1-file1" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> coralite.config.js</label>
+            </div>
+          </div>
+          <div class="code-viewer code">
+            <div class="file-content" id="tab1-content1"><pre><code>{{ tab1_file1 }}</code></pre></div>
+            <div class="file-content" id="tab1-content2"><pre><code>{{ tab1_file2 }}</code></pre></div>
+            <div class="file-content" id="tab1-content3"><pre><code>{{ tab1_file3 }}</code></pre></div>
+            <div class="file-content" id="tab1-content4"><pre><code>{{ tab1_file4 }}</code></pre></div>
+            <div class="file-content" id="tab1-content5"><pre><code>{{ tab1_file5 }}</code></pre></div>
+            <div class="file-content" id="tab1-content6"><pre><code>{{ tab1_file6 }}</code></pre></div>
+          </div>
         </div>
-      </div>
       </div>
     </details>
 
     <details class="playground-tab" name="playground-tabs" style="--n: 2">
-      <summary>State & Interactivity</summary>
+      <summary>SSR</summary>
       <div class="playground-content">
-      <div class="playground-description">
-        <p>Learn how to handle state and interactivity with the framework. <a href="/docs/guide/components.html#dynamic-components">Interactive Components</a></p>
-      </div>
-      <div class="playground-editor">
-        <div class="file-tree">
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
-            <div class="file-item">
-              <input type="radio" name="tab2-files" id="tab2-file1" checked>
-              <label for="tab2-file1" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> counter.html</label>
-            </div>
-          </details>
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
-            <div class="file-item">
-              <input type="radio" name="tab2-files" id="tab2-file2">
-              <label for="tab2-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> click-counter.html</label>
-            </div>
-          </details>
+        <div class="playground-description">
+          <p>Perform fast server-side rendering and data fetching easily. <a href="/docs/guide/ssr.html">Server Rendering</a></p>
         </div>
-        <div class="code-viewer code">
-          <div class="file-content" id="tab2-content1"><pre><code>{{ tab2_file1 }}</code></pre></div>
-          <div class="file-content" id="tab2-content2"><pre><code>{{ tab2_file2 }}</code></pre></div>
-        
+        <div class="playground-editor">
+          <div class="file-tree">
+            <details open>
+              <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> src</summary>
+              <details open>
+                <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
+                <div class="file-item">
+                  <input type="radio" name="tab2-files" id="tab2-file2" checked>
+                  <label for="tab2-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> blog.html</label>
+                </div>
+              </details>
+              <details open>
+                <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
+                <div class="file-item">
+                  <input type="radio" name="tab2-files" id="tab2-file3">
+                  <label for="tab2-file3" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> user-profile.html</label>
+                </div>
+              </details>
+            </details>
+            <div class="file-item">
+              <input type="radio" name="tab2-files" id="tab2-file1">
+              <label for="tab2-file1" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> coralite.config.js</label>
+            </div>
+          </div>
+          <div class="code-viewer code">
+            <div class="file-content" id="tab2-content1"><pre><code>{{ tab2_file1 }}</code></pre></div>
+            <div class="file-content" id="tab2-content2"><pre><code>{{ tab2_file2 }}</code></pre></div>
+            <div class="file-content" id="tab2-content3"><pre><code>{{ tab2_file3 }}</code></pre></div>
+          </div>
         </div>
-      </div>
       </div>
     </details>
 
     <details class="playground-tab" name="playground-tabs" style="--n: 3">
-      <summary>Server Data Fetching</summary>
+      <summary>Metadata & Page Variables</summary>
       <div class="playground-content">
-      <div class="playground-description">
-        <p>Perform fast server-side rendering and data fetching easily. <a href="/docs/guide/ssr.html">Server Rendering</a></p>
-      </div>
-      <div class="playground-editor">
-        <div class="file-tree">
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
-            <div class="file-item">
-              <input type="radio" name="tab3-files" id="tab3-file1" checked>
-              <label for="tab3-file1" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> blog.html</label>
-            </div>
-          </details>
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
-            <div class="file-item">
-              <input type="radio" name="tab3-files" id="tab3-file2">
-              <label for="tab3-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> user-profile.html</label>
-            </div>
-          </details>
+        <div class="playground-description">
+          <p>Learn how to use built-in page variables and metadata extraction. <a href="/docs/guide/page-variables.html">Page Variables Guide</a></p>
         </div>
-        <div class="code-viewer code">
-          <div class="file-content" id="tab3-content1"><pre><code>{{ tab3_file1 }}</code></pre></div>
-          <div class="file-content" id="tab3-content2"><pre><code>{{ tab3_file2 }}</code></pre></div>
-        
+        <div class="playground-editor">
+          <div class="file-tree">
+            <details open>
+              <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> src</summary>
+              <details open>
+                <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
+                <div class="file-item">
+                  <input type="radio" name="tab3-files" id="tab3-file2" checked>
+                  <label for="tab3-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> about.html</label>
+                </div>
+              </details>
+              <details open>
+                <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
+                <div class="file-item">
+                  <input type="radio" name="tab3-files" id="tab3-file3">
+                  <label for="tab3-file3" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> meta-info.html</label>
+                </div>
+              </details>
+            </details>
+            <div class="file-item">
+              <input type="radio" name="tab3-files" id="tab3-file1">
+              <label for="tab3-file1" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> coralite.config.js</label>
+            </div>
+          </div>
+          <div class="code-viewer code">
+            <div class="file-content" id="tab3-content1"><pre><code>{{ tab3_file1 }}</code></pre></div>
+            <div class="file-content" id="tab3-content2"><pre><code>{{ tab3_file2 }}</code></pre></div>
+            <div class="file-content" id="tab3-content3"><pre><code>{{ tab3_file3 }}</code></pre></div>
+          </div>
         </div>
-      </div>
       </div>
     </details>
 
     <details class="playground-tab" name="playground-tabs" style="--n: 4">
-      <summary>Imperative Components</summary>
-      <div class="playground-content">
-      <div class="playground-description">
-        <p>Dynamically create and manage components imperatively within the browser. <a href="/docs/guide/components.html#dynamic-components">Imperative Components</a></p>
-      </div>
-      <div class="playground-editor">
-        <div class="file-tree">
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
-            <div class="file-item">
-              <input type="radio" name="tab4-files" id="tab4-file1" checked>
-              <label for="tab4-file1" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> spa.html</label>
-            </div>
-          </details>
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
-            <div class="file-item">
-              <input type="radio" name="tab4-files" id="tab4-file2">
-              <label for="tab4-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> dashboard-view.html</label>
-            </div>
-            <div class="file-item">
-              <input type="radio" name="tab4-files" id="tab4-file3">
-              <label for="tab4-file3" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> toast-message.html</label>
-            </div>
-          </details>
-        </div>
-        <div class="code-viewer code">
-          <div class="file-content" id="tab4-content1"><pre><code>{{ tab4_file1 }}</code></pre></div>
-          <div class="file-content" id="tab4-content2"><pre><code>{{ tab4_file2 }}</code></pre></div>
-          <div class="file-content" id="tab4-content3"><pre><code>{{ tab4_file3 }}</code></pre></div>
-        
-        </div>
-      </div>
-      </div>
-    </details>
-
-    <details class="playground-tab" name="playground-tabs" style="--n: 5">
       <summary>Plugins</summary>
       <div class="playground-content">
-      <div class="playground-description">
-        <p>Extend capabilities across your app by authoring and consuming plugins. <a href="/docs/guide/authoring-plugins.html">Plugins Guide</a></p>
-      </div>
-      <div class="playground-editor">
-        <div class="file-tree">
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> plugins</summary>
-            <div class="file-item">
-              <input type="radio" name="tab5-files" id="tab5-file1" checked>
-              <label for="tab5-file1" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> store.js</label>
-            </div>
-          </details>
-          <details open>
-            <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
-            <div class="file-item">
-              <input type="radio" name="tab5-files" id="tab5-file2">
-              <label for="tab5-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> cart-button.html</label>
-            </div>
-          </details>
+        <div class="playground-description">
+          <p>Extend capabilities across your app by authoring and consuming plugins. <a href="/docs/guide/authoring-plugins.html">Plugins Guide</a></p>
         </div>
-        <div class="code-viewer code">
-          <div class="file-content" id="tab5-content1"><pre><code>{{ tab5_file1 }}</code></pre></div>
-          <div class="file-content" id="tab5-content2"><pre><code>{{ tab5_file2 }}</code></pre></div>
-        
+        <div class="playground-editor">
+          <div class="file-tree">
+            <details open>
+              <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> src</summary>
+              <details open>
+                <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> plugins</summary>
+                <div class="file-item">
+                  <input type="radio" name="tab4-files" id="tab4-file2">
+                  <label for="tab4-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> store.js</label>
+                </div>
+              </details>
+              <details open>
+                <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> pages</summary>
+                <div class="file-item">
+                  <input type="radio" name="tab4-files" id="tab4-file3" checked>
+                  <label for="tab4-file3" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> shop.html</label>
+                </div>
+              </details>
+              <details open>
+                <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
+                <div class="file-item">
+                  <input type="radio" name="tab4-files" id="tab4-file4">
+                  <label for="tab4-file4" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> cart-button.html</label>
+                </div>
+                <div class="file-item">
+                  <input type="radio" name="tab4-files" id="tab4-file5">
+                  <label for="tab4-file5" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> cart-total.html</label>
+                </div>
+              </details>
+            </details>
+            <div class="file-item">
+              <input type="radio" name="tab4-files" id="tab4-file1">
+              <label for="tab4-file1" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> coralite.config.js</label>
+            </div>
+          </div>
+          <div class="code-viewer code">
+            <div class="file-content" id="tab4-content1"><pre><code>{{ tab4_file1 }}</code></pre></div>
+            <div class="file-content" id="tab4-content2"><pre><code>{{ tab4_file2 }}</code></pre></div>
+            <div class="file-content" id="tab4-content3"><pre><code>{{ tab4_file3 }}</code></pre></div>
+            <div class="file-content" id="tab4-content4"><pre><code>{{ tab4_file4 }}</code></pre></div>
+            <div class="file-content" id="tab4-content5"><pre><code>{{ tab4_file5 }}</code></pre></div>
+          </div>
         </div>
-      </div>
       </div>
     </details>
   </div>
@@ -186,56 +205,49 @@
     server: async () => {
       return {
         tab1_file1: highlight(`
+          import { defineConfig } from 'coralite';
+
+          export default defineConfig({
+            // Components are automatically discovered in src/components
+            mode: 'development'
+          });
+        `, 'javascript'),
+        tab1_file2: highlight(`
           <!DOCTYPE html>
           <html>
           <head>
-            <title>Coralite Basics</title>
+            <title>Coralite App</title>
           </head>
           <body>
             <h1>Welcome to Coralite</h1>
             <hello-world name="Developer"></hello-world>
+            
+            <click-counter step="2"></click-counter>
+
+            <toast-manager></toast-manager>
           </body>
           </html>
         `, 'html'),
-        tab1_file2: highlight(`
+        tab1_file3: highlight(`
           <template id="hello-world">
             <div class="greeting">
               <h2>Hello, {{ name }}!</h2>
-              <p>Welcome to your first Coralite component.</p>
             </div>
           </template>
 
-          <style>
-            .greeting { border: 1px solid #eee; padding: 1rem; }
-          </style>
-
           <script type="module">
-            // No vanilla class extensions; use the framework's defineComponent helper
             import { defineComponent } from 'coralite';
 
             export default defineComponent({
-              // Coerces HTML attributes into typed JavaScript primitives
               attributes: {
-                name: {
-                  type: String,
-                  default: 'Developer'
-                }
+                name: { type: String, default: 'Developer' }
               }
             });
           <\/script>
         `, 'html'),
-        tab2_file1: highlight(`
-          <main>
-            <h2>Interactive Counter</h2>
-            <click-counter step="2"></click-counter>
-          </main>
-        `, 'html'),
-        tab2_file2: highlight(`
+        tab1_file4: highlight(`
           <template id="click-counter">
-            <div class="counter-box">
-              <p>Current Count: {{ count }}</p>
-              <button ref="incrementBtn">Increment by {{ step }}</button>
-            </div>
+            <button ref="btn">Count: {{ count }}</button>
           </template>
 
           <script type="module">
@@ -243,31 +255,78 @@
 
             export default defineComponent({
               attributes: {
-                step: {
-                  type: Number,
-                  default: 1
-                }
+                step: { type: Number, default: 1 }
               },
-              // The client block is your browser-side controller
               client: ({ state, refs }) => {
-                // Initialize state
                 state.count = 0;
-
-                // Access elements via the refs dictionary and attach listeners
-                refs('incrementBtn').addEventListener('click', () => {
-                  // Mutations automatically trigger precise DOM updates
+                refs('btn').addEventListener('click', () => {
                   state.count += state.step;
                 });
               }
             });
           <\/script>
         `, 'html'),
-        tab3_file1: highlight(`
+        tab1_file5: highlight(`
+          <template id="toast-manager">
+            <div class="toast-container">
+              <button ref="btn">Show Toast</button>
+              <div ref="list"></div>
+            </div>
+          </template>
+
+          <script type="module">
+            import { defineComponent } from 'coralite';
+
+            export default defineComponent({
+              client: ({ refs }) => {
+                refs('btn').addEventListener('click', () => {
+                  const toast = document.createElement('toast-message');
+                  toast.setAttribute('message', 'Hello from the Toast Manager!');
+                  refs('list').appendChild(toast);
+                });
+              }
+            });
+          <\/script>
+        `, 'html'),
+        tab1_file6: highlight(`
+          <template id="toast-message">
+            <div class="toast">
+              <span>{{ message }}</span>
+              <button ref="close">X</button>
+            </div>
+          </template>
+
+          <script type="module">
+            import { defineComponent } from 'coralite';
+
+            export default defineComponent({
+              attributes: {
+                message: { type: String }
+              },
+              client: ({ signal, refs }) => {
+                refs('close').addEventListener('click', (e) => {
+                  e.target.closest('toast-message').remove();
+                }, { signal });
+              }
+            });
+          <\/script>
+        `, 'html'),
+
+        tab2_file1: highlight(`
+          import { defineConfig } from 'coralite';
+
+          export default defineConfig({
+            // SSR works out of the box
+            mode: 'production'
+          });
+        `, 'javascript'),
+        tab2_file2: highlight(`
           <main>
+            <h1>Server Side Rendering</h1>
             <user-profile user-id="42"></user-profile>
           </main>
         `, 'html'),
-        tab3_file2: highlight(`
+        tab2_file3: highlight(`
           <template id="user-profile">
             <article>
               <h2>{{ username }}</h2>
@@ -280,16 +339,12 @@
 
             export default defineComponent({
               attributes: {
-                userId: {
-                  type: Number
-                }
+                userId: { type: Number }
               },
-              // Runs purely on the server. Stripped from the client bundle.
               server: async ({ state }) => {
-                const response = await fetch(\`https://api.example.com/users/\${state.userId}\`);
-                const data = await response.json();
+                // This runs on the server during build/request
+                const data = { name: 'Jane Doe', bio: 'Software Engineer' };
                 
-                // Returned object is serialized and merged into the client's unified state
                 return {
                   username: data.name,
                   bio: data.bio
@@ -298,103 +353,100 @@
             });
           <\/script>
         `, 'html'),
+
+        tab3_file1: highlight(`
+          import { defineConfig } from 'coralite';
+
+          export default defineConfig({
+            // Built-in metadata plugin is enabled by default
+            mode: 'development'
+          });
+        `, 'javascript'),
+        tab3_file2: highlight(`
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <title>About Coralite</title>
+            <meta name="description" content="A lightweight component framework.">
+            <meta name="author" content="Coralite Team">
+          </head>
+          <body>
+            <meta-info></meta-info>
+          </body>
+          </html>
+        `, 'html'),
+        tab3_file3: highlight(`
+          <template id="meta-info">
+            <div>
+              <h1>{{ title }}</h1>
+              <p>Author: {{ author }}</p>
+              <p>Page URL: {{ path }}</p>
+            </div>
+          </template>
+
+          <script type="module">
+            import { defineComponent } from 'coralite';
+
+            export default defineComponent({
+              data: ({ page }) => {
+                return {
+                  title: page.meta.title,
+                  author: page.meta.author,
+                  path: page.url.pathname
+                };
+              }
+            });
+          <\/script>
+        `, 'html'),
+
         tab4_file1: highlight(`
-          <main>
-            <h2>Application Dashboard</h2>
-            <dashboard-view></dashboard-view>
-          </main>
-        `, 'html'),
+          import { defineConfig } from 'coralite';
+          import store from './src/plugins/store.js';
+
+          export default defineConfig({
+            plugins: [store]
+          });
+        `, 'javascript'),
         tab4_file2: highlight(`
-          <template id="dashboard-view">
-            <div class="dashboard">
-              <p>Welcome to your SPA dashboard.</p>
-              <button ref="actionBtn">Trigger Action</button>
-            </div>
-          </template>
-
-          <script type="module">
-            import { defineComponent } from 'coralite';
-
-            export default defineComponent({
-              client: ({ refs }) => {
-                refs('actionBtn').addEventListener('click', () => {
-                  // Dynamically load components using standard native APIs
-                  // Warning: Never use element.innerHTML = '<toast-message>'
-                  const toast = document.createElement('toast-message');
-                  
-                  toast.setAttribute('message', 'Action completed successfully!');
-                  document.body.appendChild(toast);
-                });
-              }
-            });
-          <\/script>
-        `, 'html'),
-        tab4_file3: highlight(`
-          <template id="toast-message">
-            <div class="toast">
-              <span>{{ message }}</span>
-              <button ref="closeBtn">Dismiss</button>
-            </div>
-          </template>
-
-          <script type="module">
-            import { defineComponent } from 'coralite';
-
-            export default defineComponent({
-              attributes: {
-                message: {
-                  type: String,
-                  default: ''
-                }
-              },
-              client: ({ signal, refs }) => {
-                // The signal automatically cleans up listeners when the component unmounts
-                refs('closeBtn').addEventListener('click', function(e) {
-                  const hostElement = e.target.closest('toast-message');
-                  hostElement.remove();
-                }, { signal });
-              }
-            });
-          <\/script>
-        `, 'html'),
-        tab5_file1: highlight(`
           import { definePlugin } from 'coralite';
 
           export default definePlugin({
             name: 'store',
-            
             client: {
-              // The Two-Phase Resolver
-              context: (pluginContext) => {
-                // PHASE 1: Global Setup
-                // Runs exactly once when the plugin registers. 
-                // Use this for shared plugin state/singletons across the browser.
-                const globalCache = new Map();
-                let cartCount = 0;
-
-                return (instanceContext) => {
-                  // PHASE 2: Local Instance
-                  // Runs when a specific component mounts.
-                  // Returns the actual utility mapped to the plugin's namespace.
-                  return {
-                    getCartCount: () => cartCount,
-                    addToCart: (item) => {
-                      cartCount++;
-                      globalCache.set(item.id, item);
-                      console.log(\`Component [\${instanceContext.instanceId}] updated the global store.\`);
-                    }
-                  };
-                };
+              context: () => {
+                let cart = [];
+                return () => ({
+                  getCart: () => cart,
+                  addToCart: (item) => {
+                    cart.push(item);
+                    // In a real app, you might use an event bus to notify components
+                    window.dispatchEvent(new CustomEvent('cart-updated'));
+                  }
+                });
               }
             }
           });
         `, 'javascript'),
-        tab5_file2: highlight(`
+        tab4_file3: highlight(`
+          <main>
+            <h1>Coral Shop</h1>
+            <cart-total></cart-total>
+            
+            <section>
+              <div class="product">
+                <h3>Blue Coral</h3>
+                <cart-button item-name="Blue Coral"></cart-button>
+              </div>
+              <div class="product">
+                <h3>Red Coral</h3>
+                <cart-button item-name="Red Coral"></cart-button>
+              </div>
+            </section>
+          </main>
+        `, 'html'),
+        tab4_file4: highlight(`
           <template id="cart-button">
-            <div class="cart-controls">
-              <button ref="addBtn">Add to Cart</button>
-              <span ref="status"></span>
-            </div>
+            <button ref="btn">Buy {{ itemName }}</button>
           </template>
 
           <script type="module">
@@ -402,25 +454,34 @@
 
             export default defineComponent({
               attributes: {
-                itemId: {
-                  type: String
-                },
-                itemName: {
-                  type: String
-                }
+                itemName: { type: String }
               },
-              // The plugin is namespaced on the client context object 
-              // using the plugin's 'name' property
               client: ({ store, state, refs }) => {
-                refs('addBtn').addEventListener('click', () => {
-                  // Access Phase 2 methods interacting with Phase 1 shared state
-                  store.addToCart({ 
-                    id: state.itemId, 
-                    name: state.itemName 
-                  });
-                  
-                  refs('status').textContent = \`Total Items: \${store.getCartCount()}\`;
+                refs('btn').addEventListener('click', () => {
+                  store.addToCart(state.itemName);
                 });
+              }
+            });
+          <\/script>
+        `, 'html'),
+        tab4_file5: highlight(`
+          <template id="cart-total">
+            <div class="cart-total">
+              Items in cart: {{ count }}
+            </div>
+          </template>
+
+          <script type="module">
+            import { defineComponent } from 'coralite';
+
+            export default defineComponent({
+              client: ({ store, state, signal }) => {
+                const update = () => {
+                  state.count = store.getCart().length;
+                };
+
+                update();
+                window.addEventListener('cart-updated', update, { signal });
               }
             });
           <\/script>
