@@ -55,7 +55,7 @@
  * @property {CoraliteClientPluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Called before component is rendered
  * @property {CoraliteClientPluginAfterComponentRenderCallback} [onAfterComponentRender] - Called after component is rendered
  * @property {CoraliteClientPluginDisconnectedCallback} [onDisconnected] - Called when component is removed from the DOM
- * @property {(pluginContext: ScriptPluginHelperPhase1Context) => any} [context] - Symmetrical context function
+ * @property {(pluginContext: ScriptPluginHelperPhase1Context) => Promise<ScriptPluginPhase2Callback> | ScriptPluginPhase2Callback} [context] - Symmetrical context function
  * @property {string[]} [_extractedComponents] - Extracted imperative components
  */
 
@@ -67,6 +67,16 @@
  * @property {CoraliteSession} [session] - Build-time render context.
  * @property {CoralitePage} [page] - The global page object
  * @property {Object.<string, string>} [refs] - Instance refs
+ */
+
+/**
+ * @typedef {InstanceContext & Object.<string, any>} ScriptPluginPhase2Context
+ */
+
+/**
+ * @callback ScriptPluginPhase2Callback
+ * @param {ScriptPluginPhase2Context} instanceContext
+ * @returns {any}
  */
 
 export default {}

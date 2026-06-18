@@ -119,18 +119,25 @@
  * @property {Attribute[]} [excludeByAttribute] - List of attribute name-value pairs to ignore during processing by element type
  * @property {string} id - Unique identifier for the value context.
  * @property {boolean} [noHydration] - Indicates if the component should be stripped and not hydrated
+ * @property {CoraliteInstance} app - The global coralite app instance
  */
 
 /**
- * @typedef {CoralitePluginContext & Object.<string, any>} CoralitePluginContextWithMutation
+ * @typedef {CoralitePluginContext & Object.<string, any>} CoralitePluginServerPhase2Context
  */
 
 /**
- * @typedef {CoralitePluginGlobalContextWithMutation & { config: any }} CoralitePluginPhase1Context
+ * @callback CoralitePluginServerPhase2Callback
+ * @param {CoralitePluginServerPhase2Context} instanceContext
+ * @returns {any}
  */
 
 /**
- * @typedef {(pluginContext: CoralitePluginPhase1Context) => Promise<(instanceContext: CoralitePluginContextWithMutation) => any> | ((instanceContext: CoralitePluginContextWithMutation) => any)} CoralitePluginExportFunction
+ * @typedef {CoralitePluginGlobalContextWithMutation & { config?: any }} CoralitePluginPhase1Context
+ */
+
+/**
+ * @typedef {(pluginContext: CoralitePluginPhase1Context) => Promise<CoralitePluginServerPhase2Callback> | CoralitePluginServerPhase2Callback} CoralitePluginExportFunction
  */
 
 /**
@@ -282,7 +289,7 @@
  * @typedef {Object} CoralitePluginServer
  * @property {string} [name] - The name of the server plugin
  * @property {any} [config] - Plugin configuration object
- * @property {(pluginContext: CoralitePluginPhase1Context) => Promise<any> | any} [context] - Symmetrical context function
+ * @property {CoralitePluginExportFunction} [context] - Symmetrical context function
  * @property {(HTMLData | string)[]} [components] - Array of loaded component data
  * @property {CoralitePluginPageSetCallback} [onPageSet] - Async callback triggered when a page is created
  * @property {CoralitePluginPageUpdateCallback} [onPageUpdate] - Async callback triggered when a page is updated
