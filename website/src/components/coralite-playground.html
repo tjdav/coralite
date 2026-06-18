@@ -55,7 +55,7 @@
     </details>
 
     <details class="playground-tab" name="playground-tabs" style="--n: 2">
-      <summary>SSR</summary>
+      <summary>Server-Side Rendering</summary>
       <div class="playground-content">
         <div class="playground-description">
           <p>Perform fast server-side rendering and data fetching easily. <a href="/docs/guide/ssr.html">Server Rendering</a></p>
@@ -70,12 +70,20 @@
                   <input type="radio" name="tab2-files" id="tab2-file2" checked>
                   <label for="tab2-file2" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> blog.html</label>
                 </div>
+                <div class="file-item">
+                  <input type="radio" name="tab2-files" id="tab2-file5">
+                  <label for="tab2-file5" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> dashboard.html</label>
+                </div>
               </details>
               <details open>
                 <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
                 <div class="file-item">
                   <input type="radio" name="tab2-files" id="tab2-file3">
                   <label for="tab2-file3" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> user-profile.html</label>
+                </div>
+                <div class="file-item">
+                  <input type="radio" name="tab2-files" id="tab2-file4">
+                  <label for="tab2-file4" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> data-fetcher.html</label>
                 </div>
               </details>
             </details>
@@ -88,6 +96,8 @@
             <div class="file-content" id="tab2-content1"><pre><code>{{ tab2_file1 }}</code></pre></div>
             <div class="file-content" id="tab2-content2"><pre><code>{{ tab2_file2 }}</code></pre></div>
             <div class="file-content" id="tab2-content3"><pre><code>{{ tab2_file3 }}</code></pre></div>
+            <div class="file-content" id="tab2-content4"><pre><code>{{ tab2_file4 }}</code></pre></div>
+            <div class="file-content" id="tab2-content5"><pre><code>{{ tab2_file5 }}</code></pre></div>
           </div>
         </div>
       </div>
@@ -207,9 +217,15 @@
         tab1_file1: highlight(`
           import { defineConfig } from 'coralite';
 
+          /**
+           * Project configuration.
+           * Defines where your pages and components are located,
+           * and where the final build should be placed.
+           */
           export default defineConfig({
-            // Components are automatically discovered in src/components
-            mode: 'development'
+            output: 'dist',
+            components: 'src/components',
+            pages: 'src/pages'
           });
         `, 'javascript'),
         tab1_file2: highlight(`
@@ -219,11 +235,16 @@
             <title>Coralite App</title>
           </head>
           <body>
+            <!-- Main entry point for the application -->
             <h1>Welcome to Coralite</h1>
+
+            <!-- Using a custom component with an attribute -->
             <hello-world name="Developer"></hello-world>
             
+            <!-- Components can be interactive on the client -->
             <click-counter step="2"></click-counter>
 
+            <!-- Imperative component instantiation example -->
             <toast-manager></toast-manager>
           </body>
           </html>
@@ -238,6 +259,11 @@
           <script type="module">
             import { defineComponent } from 'coralite';
 
+            /**
+             * A simple static component.
+             * Attributes defined here are automatically available
+             * in the template via double curly braces.
+             */
             export default defineComponent({
               attributes: {
                 name: { type: String, default: 'Developer' }
@@ -253,13 +279,22 @@
           <script type="module">
             import { defineComponent } from 'coralite';
 
+            /**
+             * An interactive component.
+             * The 'client' block runs only in the browser.
+             * It has access to 'state' (reactive) and 'refs' (DOM elements).
+             */
             export default defineComponent({
               attributes: {
                 step: { type: Number, default: 1 }
               },
               client: ({ state, refs }) => {
+                // Initialize component state
                 state.count = 0;
+
+                // Use 'refs' to get elements marked with 'ref' attribute
                 refs('btn').addEventListener('click', () => {
+                  // Updating state triggers automatic re-renders
                   state.count += state.step;
                 });
               }
@@ -270,6 +305,7 @@
           <template id="toast-manager">
             <div class="toast-container">
               <button ref="btn">Show Toast</button>
+              <!-- Container for dynamically added toasts -->
               <div ref="list"></div>
             </div>
           </template>
@@ -277,9 +313,14 @@
           <script type="module">
             import { defineComponent } from 'coralite';
 
+            /**
+             * Demonstrates imperative component creation.
+             * Custom elements can be created using standard DOM APIs.
+             */
             export default defineComponent({
               client: ({ refs }) => {
                 refs('btn').addEventListener('click', () => {
+                  // Create a new component instance programmatically
                   const toast = document.createElement('toast-message');
                   toast.setAttribute('message', 'Hello from the Toast Manager!');
                   refs('list').appendChild(toast);
@@ -299,12 +340,18 @@
           <script type="module">
             import { defineComponent } from 'coralite';
 
+            /**
+             * A self-contained message component.
+             * Uses 'signal' to ensure event listeners are cleaned up
+             * if the component is destroyed.
+             */
             export default defineComponent({
               attributes: {
                 message: { type: String }
               },
               client: ({ signal, refs }) => {
                 refs('close').addEventListener('click', (e) => {
+                  // Remove the element from the DOM
                   e.target.closest('toast-message').remove();
                 }, { signal });
               }
@@ -315,15 +362,28 @@
         tab2_file1: highlight(`
           import { defineConfig } from 'coralite';
 
+          /**
+           * SSR is deeply integrated into Coralite.
+           * No special flags are needed to enable it.
+           */
           export default defineConfig({
-            // SSR works out of the box
-            mode: 'production'
+            output: 'dist',
+            components: 'src/components',
+            pages: 'src/pages'
           });
         `, 'javascript'),
         tab2_file2: highlight(`
           <main>
-            <h1>Server Side Rendering</h1>
+            <!-- Page content rendered on the server -->
+            <h1>Server-Side Rendering</h1>
+
+            <!-- Components can fetch data during server rendering -->
             <user-profile user-id="42"></user-profile>
+
+            <hr>
+
+            <!-- External data fetching component -->
+            <data-fetcher></data-fetcher>
           </main>
         `, 'html'),
         tab2_file3: highlight(`
@@ -337,12 +397,17 @@
           <script type="module">
             import { defineComponent } from 'coralite';
 
+            /**
+             * The 'server' block runs during the build or request.
+             * It's perfect for fetching data from a database or local file.
+             * The returned object is merged into the component state.
+             */
             export default defineComponent({
               attributes: {
                 userId: { type: Number }
               },
               server: async ({ state }) => {
-                // This runs on the server during build/request
+                // In a real app, fetch from a DB using the userId
                 const data = { name: 'Jane Doe', bio: 'Software Engineer' };
                 
                 return {
@@ -353,24 +418,69 @@
             });
           <\/script>
         `, 'html'),
+        tab2_file4: highlight(`
+          <template id="data-fetcher">
+            <section>
+              <h3>Remote Content</h3>
+              <p>{{ message }}</p>
+              <small>Fetched at: {{ timestamp }}</small>
+            </section>
+          </template>
+
+          <script type="module">
+            import { defineComponent } from 'coralite';
+            // Top-level imports in the script block are server-side ONLY.
+            // They are automatically stripped from the client bundle.
+            import { readFileSync } from 'node:fs';
+
+            export default defineComponent({
+              server: async () => {
+                // Example of server-only capability: reading from filesystem
+                // or performing heavy computations away from the client.
+                return {
+                  message: 'This data was loaded from the server environment.',
+                  timestamp: new Date().toLocaleTimeString()
+                };
+              }
+            });
+          <\/script>
+        `, 'html'),
+        tab2_file5: highlight(`
+          <main>
+            <h1>Dashboard</h1>
+            <p>Welcome to the server-rendered dashboard.</p>
+            
+            <section>
+              <!-- Page-level SSR can orchestrate multiple components -->
+              <user-profile user-id="1"></user-profile>
+              <data-fetcher></data-fetcher>
+            </section>
+          </main>
+        `, 'html'),
 
         tab3_file1: highlight(`
           import { defineConfig } from 'coralite';
 
+          /**
+           * Metadata and Page Variables are handled by built-in plugins.
+           */
           export default defineConfig({
-            // Built-in metadata plugin is enabled by default
-            mode: 'development'
+            output: 'dist',
+            components: 'src/components',
+            pages: 'src/pages'
           });
         `, 'javascript'),
         tab3_file2: highlight(`
           <!DOCTYPE html>
           <html lang="en">
           <head>
+            <!-- These standard tags are extracted by the metadata plugin -->
             <title>About Coralite</title>
             <meta name="description" content="A lightweight component framework.">
             <meta name="author" content="Coralite Team">
           </head>
           <body>
+            <!-- Components can access page-level metadata -->
             <meta-info></meta-info>
           </body>
           </html>
@@ -387,6 +497,10 @@
           <script type="module">
             import { defineComponent } from 'coralite';
 
+            /**
+             * The 'data' function provides access to the 'page' object,
+             * which contains metadata, URL information, and more.
+             */
             export default defineComponent({
               data: ({ page }) => {
                 return {
@@ -403,23 +517,36 @@
           import { defineConfig } from 'coralite';
           import store from './src/plugins/store.js';
 
+          /**
+           * Register plugins in the config to share logic or state
+           * across all components in your application.
+           */
           export default defineConfig({
+            output: 'dist',
+            components: 'src/components',
+            pages: 'src/pages',
             plugins: [store]
           });
         `, 'javascript'),
         tab4_file2: highlight(`
           import { definePlugin } from 'coralite';
 
+          /**
+           * Plugins follow a two-phase initialization.
+           * They can provide a 'context' that is injected into
+           * both 'server' and 'client' blocks of components.
+           */
           export default definePlugin({
             name: 'store',
             client: {
               context: () => {
                 let cart = [];
+                // Phase 2 factory returns the actual API
                 return () => ({
                   getCart: () => cart,
                   addToCart: (item) => {
                     cart.push(item);
-                    // In a real app, you might use an event bus to notify components
+                    // Notify other components about the change
                     window.dispatchEvent(new CustomEvent('cart-updated'));
                   }
                 });
@@ -430,11 +557,13 @@
         tab4_file3: highlight(`
           <main>
             <h1>Coral Shop</h1>
+            <!-- Shared state consumer -->
             <cart-total></cart-total>
             
             <section>
               <div class="product">
                 <h3>Blue Coral</h3>
+                <!-- Shared state producer -->
                 <cart-button item-name="Blue Coral"></cart-button>
               </div>
               <div class="product">
@@ -452,12 +581,17 @@
           <script type="module">
             import { defineComponent } from 'coralite';
 
+            /**
+             * This component interacts with the 'store' plugin.
+             * The plugin's API is available on the context object.
+             */
             export default defineComponent({
               attributes: {
                 itemName: { type: String }
               },
               client: ({ store, state, refs }) => {
                 refs('btn').addEventListener('click', () => {
+                  // Call the plugin's method
                   store.addToCart(state.itemName);
                 });
               }
@@ -474,6 +608,9 @@
           <script type="module">
             import { defineComponent } from 'coralite';
 
+            /**
+             * Listens for changes in the shared store.
+             */
             export default defineComponent({
               client: ({ store, state, signal }) => {
                 const update = () => {
@@ -481,6 +618,7 @@
                 };
 
                 update();
+                // Standard browser events can be used for communication
                 window.addEventListener('cart-updated', update, { signal });
               }
             });

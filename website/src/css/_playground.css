@@ -64,14 +64,14 @@
 
 /* Description Strip */
 .playground-description {
+  z-index: 1;
   width: 100%;
   padding: var(--padding-y) var(--spacer-3);
   font-size: .9rem;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   background: rgba(0, 0, 0, .6);
   border-bottom: var(--playground-border);
-  z-index: 1;
-  overflow-wrap: anywhere;
-  word-break: break-word;
 }
 
 .playground-description p {
@@ -110,7 +110,7 @@
   border-bottom: var(--playground-border);
 }
 
-.file-tree details[open] > summary .icon-dir {
+.file-tree [open] > summary .icon-dir {
   color: var(--playground-accent);
 }
 
@@ -153,11 +153,11 @@
   background: rgba(255, 255, 255, .05);
 }
 
-.file-tree input[type="radio"] {
+.file-tree [type="radio"] {
   display: none;
 }
 
-.file-tree input[type="radio"]:checked + .file-label {
+.file-tree [type="radio"]:checked + .file-label {
   color: var(--playground-accent);
   background: rgba(208, 255, 0, .1);
   box-shadow: inset 0 0 10px rgba(208, 255, 0, .1);
@@ -194,23 +194,25 @@
 }
 
 /* File Switching using :has() */
-.playground:has(input[id="tab1-file1"]:checked) .file-content[id="tab1-content1"],
-.playground:has(input[id="tab1-file2"]:checked) .file-content[id="tab1-content2"],
-.playground:has(input[id="tab1-file3"]:checked) .file-content[id="tab1-content3"],
-.playground:has(input[id="tab1-file4"]:checked) .file-content[id="tab1-content4"],
-.playground:has(input[id="tab1-file5"]:checked) .file-content[id="tab1-content5"],
-.playground:has(input[id="tab1-file6"]:checked) .file-content[id="tab1-content6"],
-.playground:has(input[id="tab2-file1"]:checked) .file-content[id="tab2-content1"],
-.playground:has(input[id="tab2-file2"]:checked) .file-content[id="tab2-content2"],
-.playground:has(input[id="tab2-file3"]:checked) .file-content[id="tab2-content3"],
-.playground:has(input[id="tab3-file1"]:checked) .file-content[id="tab3-content1"],
-.playground:has(input[id="tab3-file2"]:checked) .file-content[id="tab3-content2"],
-.playground:has(input[id="tab3-file3"]:checked) .file-content[id="tab3-content3"],
-.playground:has(input[id="tab4-file1"]:checked) .file-content[id="tab4-content1"],
-.playground:has(input[id="tab4-file2"]:checked) .file-content[id="tab4-content2"],
-.playground:has(input[id="tab4-file3"]:checked) .file-content[id="tab4-content3"],
-.playground:has(input[id="tab4-file4"]:checked) .file-content[id="tab4-content4"],
-.playground:has(input[id="tab4-file5"]:checked) .file-content[id="tab4-content5"] {
+.playground:has([id="tab1-file1"]:checked) .file-content[id="tab1-content1"],
+.playground:has([id="tab1-file2"]:checked) .file-content[id="tab1-content2"],
+.playground:has([id="tab1-file3"]:checked) .file-content[id="tab1-content3"],
+.playground:has([id="tab1-file4"]:checked) .file-content[id="tab1-content4"],
+.playground:has([id="tab1-file5"]:checked) .file-content[id="tab1-content5"],
+.playground:has([id="tab1-file6"]:checked) .file-content[id="tab1-content6"],
+.playground:has([id="tab2-file1"]:checked) .file-content[id="tab2-content1"],
+.playground:has([id="tab2-file2"]:checked) .file-content[id="tab2-content2"],
+.playground:has([id="tab2-file3"]:checked) .file-content[id="tab2-content3"],
+.playground:has([id="tab2-file4"]:checked) .file-content[id="tab2-content4"],
+.playground:has([id="tab2-file5"]:checked) .file-content[id="tab2-content5"],
+.playground:has([id="tab3-file1"]:checked) .file-content[id="tab3-content1"],
+.playground:has([id="tab3-file2"]:checked) .file-content[id="tab3-content2"],
+.playground:has([id="tab3-file3"]:checked) .file-content[id="tab3-content3"],
+.playground:has([id="tab4-file1"]:checked) .file-content[id="tab4-content1"],
+.playground:has([id="tab4-file2"]:checked) .file-content[id="tab4-content2"],
+.playground:has([id="tab4-file3"]:checked) .file-content[id="tab4-content3"],
+.playground:has([id="tab4-file4"]:checked) .file-content[id="tab4-content4"],
+.playground:has([id="tab4-file5"]:checked) .file-content[id="tab4-content5"] {
   display: block;
 }
 
@@ -225,8 +227,8 @@
   font-family: var(--font-monospace);
   font-size: .95rem;
   line-height: 1.5;
-  white-space: pre;
   word-wrap: normal;
+  white-space: pre;
 }
 
 @media (min-width: 992px) {
