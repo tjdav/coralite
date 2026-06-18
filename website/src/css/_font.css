@@ -6,10 +6,12 @@
 }
 
 @font-face {
-  font-family: "Young Serif";
-  font-weight: 400;
-  src: url("/fonts/YoungSerif-Regular.woff2") format("woff2");
+  font-family: "Rubik";
+  font-weight: 300 400;
+  src: url("/fonts/Rubik-VariableFont_wght.woff2") format("woff2");
   font-display: swap;
+  font-optical-sizing: auto;
+  font-style: normal;
 }
 
 @font-face {
