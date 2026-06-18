@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Coralite SSR: Architecture, Patterns & Best Practices"
+    description="Deep dive into Coralite's Server-Side Rendering (SSR) architecture. Learn about the server block, hydration, AST splicing, and performance optimization."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Server-Side Rendering (SSR)</h1>
+
+    <p>Coralite is built from the ground up as a <strong>Server-Side Rendering (SSR) first</strong> framework. Unlike traditional Single Page Applications (SPAs) that rely on heavy client-side JavaScript to render the initial UI, Coralite generates your HTML on the server during the build process.</p>
+
+    <coralite-heading level="2" text="Why Coralite chose SSR"></coralite-heading>
+    
+    <p>By prioritizing the server, Coralite provides a superior experience for both developers and users:</p>
+    <ul>
+      <li><strong>Security:</strong> Access databases, use private API keys, or perform sensitive calculations without exposing secrets to the client.</li>
+      <li><strong>Performance:</strong> Offload heavy data processing to the server. The client only receives the final, processed state and pre-rendered HTML, leading to near-instant "First Meaningful Paint".</li>
+      <li><strong>SEO:</strong> Content fetched on the server is present in the initial HTML, making it easily indexable by search engines and social media crawlers.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Architecture: The Life of a Page"></coralite-heading>
+
+    <p>Understanding how Coralite processes your code is key to building performant websites. The lifecycle follows three distinct phases:</p>
+
+    <ol>
+      <li><strong>Build Phase (SSR):</strong> Coralite's compiler parses your components. It executes all <code>server</code> blocks, resolves attributes, and generates a static HTML file. Any data returned from the <code>server</code> block is serialized into a JSON state object and embedded in the page.</li>
+      <li><strong>Paint Phase:</strong> The browser receives the pre-rendered HTML and instantly displays it to the user. At this point, the page is visible but not yet interactive.</li>
+      <li><strong>Hydration Phase:</strong> The Coralite runtime loads in the browser. It reads the serialized state, finds the dynamic components in the DOM, and "boots" them by running their <code>client</code> blocks. The component becomes interactive.</li>
+    </ol>
+
+    <coralite-heading level="2" text="The Server Block"></coralite-heading>
+
+    <p>The <code>server</code> block is the heart of Coralite's SSR capabilities. It is an <code>async</code> function that runs strictly on the server during the build phase.</p>
+
+    <coralite-alert type="info">
+      <strong>💡 Pro Tip: Server-Only Imports</strong>
+      <p>
+        <strong>Top-level imports</strong> in your component's script block are treated as server-side only unless they are specifically accessed by the <code>client</code> block. This allows you to import heavy server-side libraries (like database drivers) without them ever reaching the browser.
+      </p>
+    </coralite-alert>
+
+    <p>The following example shows the full loop: fetching data on the server, passing it to the state, and rendering it in the template.</p>
+
+    <coralite-code-html>
+<template id="user-profile">
+  <div class="user-card">
+    <h2>{{ user.name }}</h2>
+    <p>Rank: {{ user.rank }}</p>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  // Safely stays on the server
+  import { db } from '#lib/database'
+
+  export default defineComponent({
+    // The server block executes during the build phase
+    async server () {
+      // 1. Fetch data securely
+      const userData = await db.query('SELECT name, rank FROM users LIMIT 1')
+
+      // 2. Return data to automatically populate the state and template
+      return { user: userData }
+    }
+  })
+</script>
+    </coralite-code-html>
+
+    <coralite-heading level="2" text="AST Splicing & no-hydration"></coralite-heading>
+
+    <p>By default, Coralite preserves component host tags (e.g., <code>&lt;my-component&gt;</code>) so it can find and hydrate them later. However, for static layout components, this wrapper tag is unnecessary and adds DOM bloat.</p>
+
+    <p>Adding the <code>no-hydration</code> attribute tells Coralite to perform <strong>AST Splicing</strong>: the host tag is completely removed from the final HTML, leaving only the inner HTML. This component will <strong>never</strong> hydrate on the client.</p>
+
+    <coralite-heading level="3" text="Before & After Splicing"></coralite-heading>
+
+    <coralite-code-html>
+<!-- Source Code -->
+<my-static-header no-hydration>
+  <h1>Welcome</h1>
+</my-static-header>
+
+<!-- Final Rendered HTML -->
+<header class="header-styles">
+  <h1>Welcome</h1>
+</header>
+    </coralite-code-html>
+
+    <coralite-heading level="2" text="Patterns & Anti-Patterns"></coralite-heading>
+
+    <coralite-heading level="3" text="Recommended Patterns"></coralite-heading>
+    <ul>
+      <li><strong>Prerender Everything:</strong> If data doesn't change based on the user's session, fetch it in the <code>server</code> block.</li>
+      <li><strong>Strategic Splicing:</strong> Use <code>no-hydration</code> for 90% of your site (headers, footers, static content) to keep the client-side JS bundle tiny.</li>
+      <li><strong>Lean State:</strong> Only return data from the <code>server</code> block that is actually needed by the template or <code>client</code> block.</li>
+    </ul>
+
+    <coralite-heading level="3" text="Anti-Patterns"></coralite-heading>
+    <ul>
+      <li><strong>Browser APIs on Server:</strong> Do not use <code>window</code>, <code>document</code>, or <code>localStorage</code> inside the <code>server</code> block. It will cause the build to fail.</li>
+      <li><strong>Large State for Static Content:</strong> If you fetch a massive array of 1,000 items in a <code>no-hydration</code> component, but only display the first 5, do not return the full array from the <code>server</code> block. Only return the exact data needed by the template to avoid serializing unneeded data into the HTML payload.</li>
+      <li><strong>Heavy Hydration:</strong> Avoid putting complex logic in the <code>client</code> block that runs on every page load if it could have been solved with CSS or static HTML.</li>
+    </ul>
+
+    <hr>
+
+    <p>Next: Learn more about <a href="./components.html">Components</a> and how they integrate with SSR.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>
