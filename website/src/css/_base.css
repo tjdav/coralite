@@ -53,9 +53,9 @@ h5,
 h6,
 .h6 {
   margin-top: 0;
-  margin-bottom: var(--spacer-1);
+  margin-bottom: var(--spacer-3);
   font-family: var(--font-heading);
-  font-weight: 500;
+  font-weight: 400;
   line-height: var(--heading-line-height);
 }
 
@@ -94,6 +94,7 @@ h6,
   font-size: var(--display-font-size);
   font-weight: 300;
   line-height: var(--heading-line-height);
+  margin-bottom: var(--spacer-4);
 }
 
 pre {
