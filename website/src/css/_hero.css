@@ -41,7 +41,7 @@
   flex-direction: column;
   gap: var(--spacer-2);
   justify-content: center;
-  height: 40%;
+  height: 50%;
   padding-top: var(--spacer-2);
   padding-right: var(--spacer-2);
   padding-bottom: var(--spacer-2);
@@ -51,7 +51,6 @@
 }
 
 .hero-title {
-  display: flex;
   flex-grow: 1;
   align-items: center;
   margin-bottom: 0;
