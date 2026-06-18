@@ -41,7 +41,7 @@
   flex-direction: column;
   gap: var(--spacer-2);
   justify-content: center;
-  height: 50%;
+  height: 40%;
   padding-top: var(--spacer-2);
   padding-right: var(--spacer-2);
   padding-bottom: var(--spacer-2);
