@@ -105,13 +105,9 @@
   overflow-y: auto;
   font-family: var(--font-monospace);
   font-size: .85rem;
-  background: rgba(0, 0, 0, .2);
+  background-image: var(--gradient-glass);
   border-right: none;
   border-bottom: var(--playground-border);
-}
-
-.file-tree details {
-  margin-left: 1rem;
 }
 
 .file-tree details[open] > summary .icon-dir {

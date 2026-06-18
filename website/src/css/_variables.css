@@ -15,6 +15,7 @@
   --body-bg: var(--darker);
   --body-colour: var(--light);
   --gradient-dark: linear-gradient(var(--secondary-dark), var(--darker));
+  --gradient-glass: radial-gradient(circle at bottom, rgba(49, 26, 75, .3), rgba(14, 7, 19, .5));
   --code-colour: var(--pink-light);
 
   /* spacing */

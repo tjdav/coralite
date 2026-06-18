@@ -4,7 +4,7 @@ $card-border-color: #ffffff2e;
 
 .card {
   color: $light;
-  background-image: radial-gradient(circle at bottom, rgba(49, 26, 75, .3), rgba(14, 7, 19, .5));
+  background-image: var(--gradient-glass);
   backdrop-filter: blur(10px);
   border-color: $card-border-color;
   border-style: solid;
