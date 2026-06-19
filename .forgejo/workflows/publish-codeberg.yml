@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "*-v*"
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -60,7 +61,7 @@ jobs:
           else
             echo "🚀 Publishing $PACKAGE_NAME to Codeberg..."
             
-            # Navigate to the specific workspace directory and publish using npm
+            # Navigate to the specific workspace directory and publish using pnpm
             cd "${{ env.PACKAGE_PATH }}"
-            npm publish
+            pnpm publish --no-git-checks
           fi
