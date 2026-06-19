@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.38.1
+
+> Comparing `create-coralite-v0.38.0` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🎨 Styles
+
+- refactor background images to use a CSS variable ([3a2f820](https://codeberg.org/tjdavid/coralite/commit/3a2f820ce38e083c9f78b6efbad49063deb42613))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.38.1 ([f441868](https://codeberg.org/tjdavid/coralite/commit/f4418680969aab0b1af6f757bfcd8197e39579ff))
+
+
 ## v0.38.0
 
 > Comparing `create-coralite-v0.37.2` to `HEAD`
