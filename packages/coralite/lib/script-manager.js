@@ -246,7 +246,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   };\n`)
 
   // Global context initialization
-  entryCodeParts.push('const globalContext = { values: {} };\n')
+  entryCodeParts.push('const globalContext = {};\n')
 
   entryCodeParts.push(`const resolvedContextFactoriesPromise = (async () => {
     const factories = {};
@@ -586,18 +586,23 @@ export default {
               // Generate client context state
               contents += 'export const clientContextProps = {\n'
               if (module.context) {
-                const clientName = module.name
+                const clientName = module.client?.name || module.name
                 if (['id', 'state', 'page', 'root', 'signal'].includes(clientName)) {
                   throw new CoraliteError(`Reserved context key '${clientName}' cannot be used in plugin context.`)
                 }
 
                 const fn = normalizeFunction(module.context)
+                const clientConfig = module.client?.config || module.config || {}
+                const configStr = JSON.stringify(clientConfig)
+
                 contents += `  "${clientName}": async (globalContext) => {\n`
                 contents += `    const fn = ${fn};\n`
+                contents += `    const pluginConfig = ${configStr};\n`
                 contents += `    const pluginContext = new Proxy(globalContext, {
                           get (target, prop) {
                             if (prop === 'config') return pluginConfig;
-                            return target[prop];
+                            if (prop in target) return target[prop];
+                            return undefined;
                           },
                           set (target, prop, value) {
                             return Reflect.set(target, prop, value);
