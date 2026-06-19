@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.38.1
+
+> Comparing `coralite-v0.38.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- handle dynamically loading components via innerHTML ([ba6c3a1](https://codeberg.org/tjdavid/coralite/commit/ba6c3a1de92640b1d4678065280a073777812d13))
+
+### 🐛 Bug Fixes
+
+- provide client-side plugins with config and remove values (coralite) ([67c8246](https://codeberg.org/tjdavid/coralite/commit/67c8246ac26c434979b9fc1eee7abaa0cc555d67))
+- correctly type instanceContext in plugin context functions ([c3cdfaf](https://codeberg.org/tjdavid/coralite/commit/c3cdfafe3a148e72ee533e468b86f704efb502ec))
+
+
 ## v0.38.0
 
 > Comparing `coralite-v0.37.2` to `HEAD`
