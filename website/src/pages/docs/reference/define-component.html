@@ -70,10 +70,15 @@ attributes: {
 }
     </coralite-code-highlight>
 
-    <div class="alert alert-info">
-        <strong>Strict Primitive Rule:</strong> To prevent complex JSON-in-HTML parsing errors and ensure performance, attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code>. Use the <code>server</code> block or <code>slots</code> for complex data structures.
-    </div>
-
+    <coralite-alert type="info">
+      <strong>Strict Primitive Rule</strong>
+      <p>
+To prevent complex JSON-in-HTML parsing errors and ensure performance, attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code>. Use the <code>server</code> block or <code>slots</code> for complex data structures.      </p>
+      <p>
+        <strong>Note:</strong> If you use the <code>no-hydration</code> attribute, the host tag is completely removed (spliced) and replaced by its contents. Learn more in the <a href="./ssr.html#ast-splicing--no-hydration">SSR Guide</a>.
+      </p>
+    </coralite-alert>
+ 
     <coralite-heading level="2" text="2. server (Server-Side)"></coralite-heading>
     <p>The <code>server</code> block is used for heavy-lifting, such as database queries or API calls. This code runs <strong>only on the server</strong> during the build process and is completely removed from the JavaScript sent to the browser. Formerly known as <code>data</code>.</p>
 
