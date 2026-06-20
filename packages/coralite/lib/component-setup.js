@@ -95,10 +95,18 @@ export function createComponentDefinition ({ app }) {
         ...context,
         ...initialState
       })
+
       if (serverResult) {
+        if (typeof serverResult !== 'object' || Array.isArray(serverResult)) {
+          throw new CoraliteError(`Component "${module.id}" server() function must return an object. Received: ${Array.isArray(serverResult) ? 'Array' : typeof serverResult}`, {
+            componentId: module.id,
+            filePath: module.path?.pathname
+          })
+        }
+
         state.__script__.server = serverResult
         Object.assign(state, serverResult)
-        Object.assign(state.__script__.state, serverResult)
+        Object.assign(state.__script__.defaultValues, serverResult)
       }
     }
 
@@ -201,22 +209,15 @@ export function createComponentDefinition ({ app }) {
     const hasServer = typeof server === 'function'
 
     if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer) {
-      if (hasClient) {
-        const clientTextContent = client.toString().trim()
-        const args = {}
-        for (const key in state) {
-          if (!Object.hasOwn(state, key)) {
-            continue
-          }
-
-          if (clientTextContent.includes(key) || key.startsWith('ref_')) {
-            args[key] = state.__script__.defaultValues[key] !== undefined
-              ? state.__script__.defaultValues[key]
-              : state[key]
-          }
+      const args = {}
+      for (const key in state) {
+        if (!Object.hasOwn(state, key) || key === '__script__') {
+          continue
         }
-        Object.assign(state.__script__.state, args)
+
+        args[key] = state[key]
       }
+      Object.assign(state.__script__.state, args)
     } else {
       delete state.__script__
     }

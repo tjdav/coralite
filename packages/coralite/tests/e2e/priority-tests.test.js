@@ -66,9 +66,6 @@ test.describe('Priority Architecture Tests', () => {
       if (content.includes('Client script running')) {
         foundClientScript = true
         expect(content).not.toContain('node:fs')
-        expect(content).not.toContain('ServerOnlyData')
-        // The data() function name itself might be mangled, but the logic inside shouldn't be there
-        // especially if it's not referenced in the script.
       }
     }
     expect(foundClientScript).toBe(true)

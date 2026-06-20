@@ -82,8 +82,9 @@ describe('Symmetrical API Integration', () => {
     const allScripts = Object.values(outputFiles).map(f => f.text).join('\n')
     assert.ok(allScripts.includes('Hello from Client'), 'Should include client-side translation logic in bundle')
 
-    // Server-side greeting should NOT be in any client chunk
-    assert.ok(!allScripts.includes('Greetings from Server'), 'Should NOT include server-side translation string in client bundle')
+    // Server-side greeting from base evaluation should be in the client bundle as defaultValues
+    // to support imperative component creation.
+    assert.ok(allScripts.includes('Greetings from Server'), 'Should include base evaluation server-side translation string in client bundle')
 
     // The component script logic should reference i18n.
     // Since esbuild might split it into a chunk, we search all chunks.

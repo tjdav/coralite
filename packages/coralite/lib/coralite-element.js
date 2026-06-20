@@ -311,16 +311,14 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
-    // Trigger Before-Render hooks BEFORE state is proxied, allowing plugins to inject reactive data
-    for (const hook of this._hooks.onBeforeComponentRender) {
-      hook({
-        state: target,
-        instanceId: this._instanceId,
-        componentId: this.componentOptions.componentId,
-        refs,
-        element: this,
-        options: this.componentOptions
-      })
+    // Process initial attributes mapping
+    for (const attr of this.attributes) {
+      if (attr.name === 'data-cid') {
+        continue
+      }
+      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
+      target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
     }
 
     // Hydrate data() block results from the SSR JSON payload
@@ -336,15 +334,18 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
-    // Process initial attributes mapping
-    for (const attr of this.attributes) {
-      if (attr.name === 'data-cid') {
-        continue
-      }
-      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-      const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
-      target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
+    // Trigger Before-Render hooks BEFORE state is proxied, allowing plugins to inject reactive data
+    for (const hook of this._hooks.onBeforeComponentRender) {
+      hook({
+        state: target,
+        instanceId: this._instanceId,
+        componentId: this.componentOptions.componentId,
+        refs,
+        element: this,
+        options: this.componentOptions
+      })
     }
+
 
     // Define derived state getters with isolation controllers
     this._getterAbortControllers = {}
