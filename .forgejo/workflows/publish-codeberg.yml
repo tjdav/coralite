@@ -8,7 +8,7 @@ on:
 
 jobs:
   publish:
-    runs-on: codeberg-small-lazy
+    runs-on: codeberg-small
     container:
       image: "guergeiro/pnpm:lts-latest-slim"
     steps:
