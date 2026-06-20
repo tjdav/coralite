@@ -25,7 +25,6 @@ export default () => {
           return
         }
 
-
         let pathname
         if (data.virtual) {
           // For virtual pages, we remove the 'src/pages/' prefix if it exists
