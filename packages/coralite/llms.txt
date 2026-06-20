@@ -12,7 +12,7 @@ When generating code or answering questions about Coralite, you MUST adhere to t
 **CRITICAL RULE:** You cannot use top-level imports or variables (declared outside `defineComponent`) directly inside the `client` block. The `client` block is serialized and sent to the browser. To bridge server-side data to the client, you must use the `server` block.
 
 ## 2. File Structure: Pages vs. Components
-* **Pages**: Pages are standard `.html` files (e.g., `index.html`) that serve as route entry points. They act as the **consumers** of components by declaring custom element tags within their HTML body (e.g., `<my-navbar></my-navbar>`).
+* **Pages**: Pages are standard `.html` files (e.g., `index.html`) that serve as route entry points. They act as the **consumers** of components by declaring custom element tags within their HTML body (e.g., `<my-navbar></my-navbar>`). **Pages are strictly consumers; they should never contain logic to manipulate or query component internals.**
 * **Components**: A Coralite component is strictly an `.html` file. It is not a `.js` or `.jsx` file. A component file consists of up to three top-level root tags:
   1. `<template id="component-name">` (**Required**): Defines the declarative HTML structure.
   2. `<style>` (**Optional**): Defines component-specific styles.
@@ -36,6 +36,8 @@ Static components are purely HTML-based elements without scripting logic.
 Dynamic components are authored by appending a `<script type="module">` below the `<template>`, exporting the core `defineComponent` helper.
 
 ### 5.1 Anti-Patterns
+
+### 5.1.1 Vanilla Boilerplate
 When generating code for Coralite components, **DO NOT** use standard Web Component boilerplate.
 
 **❌ BAD (Vanilla Web Component):**
@@ -58,6 +60,18 @@ export default defineComponent({
   client: ({ state, signal, refs }) => { ... }
 })
 ```
+
+### 5.1.2 Breaking the Component Boundary
+**CRITICAL RULE:** Pages are consumers of components. Any interaction with components from the page (or from other components via the DOM) is an anti-pattern.
+
+*   **❌ BAD: Querying Component Internals:** Do not use `querySelector` or `getElementById` from a page script to find an element *inside* a component. Component selectors (like classes or internal IDs) are unreliable because Coralite uses `ref` to dynamically create unique, namespaced selectors.
+*   **❌ BAD: Page-Level Scripts for Components:** Avoid using `<script>` tags in standard `.html` pages to manipulate components.
+*   **❌ BAD: Direct Attribute Manipulation:** Do not attempt to manually update a component's attributes from a page script to trigger changes.
+
+**✅ GOOD: Reserved Component Logic:**
+*   **Internal Logic:** All logic related to a component's behavior must live inside its own `client` block.
+*   **Coordination:** If multiple components need to coordinate, move that logic into a "parent" component that encapsulates them.
+*   **Reliable Targeting:** Use the `refs` system inside the `client` block to target elements. This is the only reliable way to select elements within a component.
 
 ### 5.2 Component Structure: Isolated Blocks
 

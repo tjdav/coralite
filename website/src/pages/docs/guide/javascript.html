@@ -17,6 +17,13 @@
       and access DOM elements using the "Flat Options" API.
     </p>
 
+    <coralite-alert type="info">
+      <strong>Philosophy: Components as Logic Containers</strong>
+      <p>
+        In Coralite, standard <code>.html</code> pages should remain as declarative consumers. All imperative logic, DOM manipulation, and state management should be reserved for the <code>client</code> block within a component. Avoid using <code>&lt;script&gt;</code> tags in pages to interact with components.
+      </p>
+    </coralite-alert>
+
     <coralite-heading level="2" text="The defineComponent Helper"></coralite-heading>
 
     <p>

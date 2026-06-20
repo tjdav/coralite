@@ -70,6 +70,17 @@
       <li><strong>Communication:</strong> Components talk to each other using standard <code>CustomEvent</code>.</li>
       <li><strong>Lifecycle:</strong> Cleanup is handled via <code>AbortSignal</code>, the standard way to cancel ongoing operations in JavaScript.</li>
       <li><strong>Packaging:</strong> Components are authored as HTML Modules, leveraging the proposed standard for better encapsulation.</li>
+      <li><strong>Separation of Concerns:</strong> Pages are strictly <strong>consumers</strong> of components. All logic is reserved for components, ensuring that pages remain clean, declarative, and easy to maintain.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Pages as Consumers"></coralite-heading>
+
+    <p>A fundamental architectural principle in Coralite is that <strong>Pages are consumers, not controllers</strong>. This means:</p>
+
+    <ul>
+      <li><strong>No Page-Level Logic:</strong> Standard <code>.html</code> pages should not contain <code>&lt;script&gt;</code> tags that attempt to query or manipulate components.</li>
+      <li><strong>Encapsulated Interaction:</strong> Any interaction with the DOM must happen within a component's <code>client</code> block using the <code>ref</code> system. Attempting to select an element inside a component from a page script is an anti-pattern.</li>
+      <li><strong>Parent Coordination:</strong> If you find yourself needing to coordinate logic between two separate components on a page, those components should be wrapped in a "parent" component which encapsulates that coordination logic.</li>
     </ul>
 
   </main>

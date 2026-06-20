@@ -246,6 +246,17 @@ client: ({ state, signal, refs, root, instanceId }) => {
       <li><strong>Clean Up with AbortSignal:</strong> Always pass the <code>signal</code> to <code>addEventListener</code> or <code>fetch</code> inside your <code>client</code> to prevent memory leaks.</li>
     </ul>
 
+    <coralite-heading level="3" text="Anti-Patterns: Respect the Component Boundary"></coralite-heading>
+
+    <p>In Coralite, <strong>Pages are strictly consumers</strong>. To ensure your application remains maintainable and robust, you must respect the boundary between a page and its components.</p>
+
+    <ul>
+      <li><strong>Avoid Page-Level Scripts for Component Logic:</strong> Do not use <code>&lt;script&gt;</code> tags in standard <code>.html</code> pages to manipulate components. All logic related to a component's behavior should be encapsulated within the component itself.</li>
+      <li><strong>Never Use querySelector on Component Internals:</strong> Attempting to use <code>document.querySelector</code> from a page to find an element inside a component is an anti-pattern. Because Coralite uses the <code>ref</code> system to dynamically generate unique, namespaced selectors for every instance, relying on specific classes or IDs from a page is brittle and unreliable.</li>
+      <li><strong>Do Not Manually Sync Attributes:</strong> Avoid using page-level JavaScript to manually update component attributes (e.g., <code>setAttribute</code>) to trigger changes. Instead, manage state within the component's <code>client</code> block.</li>
+      <li><strong>Avoid Logic Coordination in Pages:</strong> If multiple components need to coordinate (e.g., a search bar filtering a list), do not write this logic in the page. Instead, move both components into a <strong>parent component</strong> that handles the coordination logic.</li>
+    </ul>
+
     <hr>
 
     <p>For detailed API signatures, see the <a href="/docs/reference/define-component.html">defineComponent API Reference</a>.</p>

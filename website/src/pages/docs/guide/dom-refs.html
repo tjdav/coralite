@@ -19,12 +19,13 @@
 
     <ul>
       <li><strong>Encapsulation:</strong> When you use <code>document.querySelector</code>, you risk selecting an element outside your component, or selecting an element from a <em>different instance</em> of the same component on the page.</li>
+      <li><strong>Unreliable Selectors:</strong> Because Coralite components can have many instances on a single page, the framework dynamically generates unique, namespaced selectors for each element marked with a <code>ref</code>. Relying on standard CSS classes or IDs from a global script is highly unreliable as these selectors are managed internally by the framework.</li>
       <li><strong>Performance:</strong> The refs plugin caches DOM lookups, so subsequent calls to retrieve the same element are instant.</li>
     </ul>
 
     <coralite-heading level="2" text="How to Use Refs"></coralite-heading>
 
-    <p>Using the refs plugin is a simple two-step process: defining the reference in your HTML template, and accessing it in your client-side client block.</p>
+    <p>Using the refs plugin is a simple two-step process: defining the reference in your HTML template, and accessing it in your client-side client block. <strong>Note:</strong> The <code>refs</code> function is only available within a component's <code>client</code> block; elements inside a component cannot be reliably targeted from outside the component.</p>
 
     <coralite-heading level="3" text="1. Template Setup"></coralite-heading>
 
