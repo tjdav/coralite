@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.38.2
+
+> Comparing `coralite-v0.38.1` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- ensure server() results propagate to client state and getters ([bca02d2](https://codeberg.org/tjdavid/coralite/commit/bca02d2b9f8605a00ef828e04f54b50dbd803bab))
+
+
 ## v0.38.1
 
 > Comparing `coralite-v0.38.0` to `HEAD`
