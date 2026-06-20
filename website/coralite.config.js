@@ -1,6 +1,7 @@
 import { defineConfig } from 'coralite-scripts'
 import aggregation from './src/plugins/aggregation.js'
 import searchPlugin from './src/plugins/search-plugin.js'
+import sitemapPlugin from './src/plugins/sitemap-plugin.js'
 import postcssImport from 'postcss-import'
 import autoprefixer from 'autoprefixer'
 
@@ -22,6 +23,7 @@ export default defineConfig({
   },
   mode: 'development',
   plugins: [
+    sitemapPlugin(),
     aggregation([
       {
         name: 'blog-posts',
