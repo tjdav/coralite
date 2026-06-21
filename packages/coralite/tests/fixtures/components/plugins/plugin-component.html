@@ -12,7 +12,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    async server(context) {
+    async server (context) {
       const test = context['test-context-plugin']
       return {
         title: 'Plugin Component',
@@ -20,7 +20,7 @@
         pluginMessage: test ? test.getPluginMessage('E2E Test') : 'no-plugin'
       }
     },
-    client({ refs, 'test-context-plugin': testPlugin, 'mock-plugin': mockPlugin }) {
+    client ({ refs, 'test-context-plugin': testPlugin, 'mock-plugin': mockPlugin }) {
       if (testPlugin) {
         testPlugin.testHelper(refs('pluginData'))
       }

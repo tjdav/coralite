@@ -8,7 +8,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client({ refs }) {
+    client ({ refs }) {
       refs('loadA').addEventListener('click', () => {
         const a = document.createElement('on-demand-a')
         refs('container').appendChild(a)

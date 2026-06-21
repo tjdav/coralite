@@ -12,10 +12,10 @@
         default: 'Click me'
       }
     },
-    client({ state, refs }) {
-        refs('btn').addEventListener('click', () => {
-            state.label = 'Clicked'
-        })
+    client ({ state, refs }) {
+      refs('btn').addEventListener('click', () => {
+        state.label = 'Clicked'
+      })
     }
   })
 </script>

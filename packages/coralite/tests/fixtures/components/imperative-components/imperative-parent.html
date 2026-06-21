@@ -6,7 +6,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client({ refs }) {
+    client ({ refs }) {
       const child = document.createElement('imperative-child')
       child.setAttribute('title', 'Imperative Mount')
       child.data = ['A', 'B', 'C']

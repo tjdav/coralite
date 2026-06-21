@@ -15,20 +15,28 @@
   export default defineComponent({
     slots: {
       header: (nodes) => {
-        if (!nodes || nodes.length === 0) return undefined
+        if (!nodes || nodes.length === 0) {
+          return undefined
+        }
         return nodes
       },
-      default: (nodes, state) => {
-        if (!nodes || nodes.length === 0) return 'Fallback Content'
+      default: (nodes) => {
+        if (!nodes || nodes.length === 0) {
+          return 'Fallback Content'
+        }
         // Join all text content of nodes to check for 'Transform Me'
         const textContent = nodes.map(n => {
-            if (n.type === 'text') return n.data
-            if (n.children) return n.children.map(c => c.data).join('')
-            return ''
+          if (n.type === 'text') {
+            return n.data
+          }
+          if (n.children) {
+            return n.children.map(c => c.data).join('')
+          }
+          return ''
         }).join('').trim()
-        
+  
         if (textContent.includes('Transform Me')) {
-            return 'Transformed: Transform Me'
+          return 'Transformed: Transform Me'
         }
         return undefined
       }

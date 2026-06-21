@@ -18,13 +18,13 @@
         default: 'Default Title'
       }
     },
-    async server() {
+    async server () {
       return {
         status: 'Offline',
         dynamicValue: 'Loading...'
       }
     },
-    async client({ state, refs, 'test-context-plugin': testPlugin }) {
+    async client ({ state, refs, 'test-context-plugin': testPlugin }) {
       const btn = refs('updateBtn')
       const container = refs('container')
 
@@ -36,7 +36,7 @@
       if (testPlugin) {
         container.setAttribute('data-confetti', 'loaded')
       }
-      
+  
       const mod = await import('../../dummy-client-lib.js')
       state.dynamicValue = mod.foo
     }

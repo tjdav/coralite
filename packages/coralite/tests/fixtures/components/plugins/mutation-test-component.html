@@ -11,19 +11,19 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    async server(context) {
+    async server (context) {
       const provider = context['provider-plugin']
       return {
         title: 'Mutation Test',
         serverResult: provider ? provider.db().getData() : 'no-provider'
       }
     },
-    client({ state, refs, 'consumer-client-plugin': consumer }) {
+    client ({ state, refs, 'consumer-client-plugin': consumer }) {
       state.clientResult = 'Initial Client State'
-      
+  
       refs('action-button').addEventListener('click', () => {
         if (consumer) {
-            state.clientResult = consumer.getClientUtility()
+          state.clientResult = consumer.getClientUtility()
         }
       })
     }

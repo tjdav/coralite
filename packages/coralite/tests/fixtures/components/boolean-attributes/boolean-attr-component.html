@@ -20,7 +20,7 @@
         default: false
       }
     },
-    client({ state, refs }) {
+    client ({ state, refs }) {
       refs('toggle-btn').addEventListener('click', () => {
         state.isChecked = !state.isChecked
       })
