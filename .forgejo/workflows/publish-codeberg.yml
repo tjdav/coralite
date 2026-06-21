@@ -63,5 +63,5 @@ jobs:
             
             # Navigate to the specific workspace directory and publish using pnpm
             cd "${{ env.PACKAGE_PATH }}"
-            pnpm publish --no-git-checks
+            npm publish
           fi
