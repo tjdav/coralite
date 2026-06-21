@@ -1,5 +1,37 @@
 # Changelog
 
+## v0.38.3
+
+> Comparing `coralite-v0.38.2` to `HEAD`
+
+**Summary:** 7 commits
+
+### ✨ Features
+
+- process HTML and reorder lifecycle hooks (coralite) ([90f8dbc](https://codeberg.org/tjdavid/coralite/commit/90f8dbcee9accb3d9ddfdbbd0120f12349960fed))
+
+### 🐛 Bug Fixes
+
+- ensure sitemap includes all pages during incremental builds (website) ([9504e0e](https://codeberg.org/tjdavid/coralite/commit/9504e0ed80a2b88b66de47177bb83f58da71cf8e))
+
+### 📚 Documentation
+
+- emphasize page-component boundary and discourage page-level scripts ([00bf65d](https://codeberg.org/tjdavid/coralite/commit/00bf65d4a35dfc7bd2f2e85776ac03e44f642573))
+
+### 🎨 Styles
+
+- format test fixtures for consistency ([99d0f16](https://codeberg.org/tjdavid/coralite/commit/99d0f161c35ce8e4a58067fd23c5be95919af1fe))
+
+### ♻️ Code Refactoring
+
+- e2e test audit and fixture restructuring ([57961e3](https://codeberg.org/tjdavid/coralite/commit/57961e32dc65d2d56014bd4b6e1f12d1cc5d3b98))
+- align E2E tests and fixtures with 'pages are consumers' architecture ([3ff589e](https://codeberg.org/tjdavid/coralite/commit/3ff589e516725dbffee3231706d089062efa51d8))
+
+### 🧹 Chores
+
+- remove unused tests ([947db01](https://codeberg.org/tjdavid/coralite/commit/947db016e8690e4e392840129a5d567f3bdd6201))
+
+
 ## v0.38.2
 
 > Comparing `coralite-v0.38.1` to `HEAD`
