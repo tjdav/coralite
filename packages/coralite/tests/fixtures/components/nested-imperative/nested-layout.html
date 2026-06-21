@@ -1,0 +1,16 @@
+<template id="nested-layout">
+  <div class="layout" style="display: block;">
+    <h1>Nested Layout</h1>
+    <nested-button label="Click Me"></nested-button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: () => {
+      console.log('Nested layout client initialized');
+    }
+  })
+</script>

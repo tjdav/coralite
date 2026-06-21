@@ -1,0 +1,19 @@
+<template id="nested-button">
+  <button ref="btn">{{ label }}</button>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      label: { type: String, default: 'Default Label' }
+    },
+    client: ({ refs }) => {
+      const btn = refs('btn');
+      btn.addEventListener('click', () => {
+        btn.textContent = 'Clicked';
+      });
+    }
+  })
+</script>

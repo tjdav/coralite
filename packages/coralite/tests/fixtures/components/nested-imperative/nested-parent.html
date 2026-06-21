@@ -1,0 +1,17 @@
+<template id="nested-parent">
+  <div ref="container"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client: ({ refs }) => {
+      const container = refs('container')
+  
+      // Imperatively create and append the nested layout
+      const layout = document.createElement('nested-layout')
+      container.appendChild(layout)
+    }
+  })
+</script>

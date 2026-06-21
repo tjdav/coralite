@@ -7,6 +7,7 @@
  */
 
 import { createReadOnlyProxy } from './utils/core.js'
+import { processHTML } from './utils/client/inject.js'
 
 const BOOLEAN_ATTRIBUTES = new Set([
   'allowfullscreen',
@@ -190,7 +191,7 @@ export class CoraliteElement extends HTMLElement {
     // Imperative Flow: Manually stamp the template and project the Light DOM.
     if (isImperative && this.componentOptions.templateHTML) {
       const originalLightDOM = Array.from(this.childNodes)
-      this.innerHTML = this.componentOptions.templateHTML
+      this.innerHTML = processHTML(this.componentOptions.templateHTML)
 
       if (originalLightDOM.length > 0) {
         const slots = this.querySelectorAll('slot')
@@ -311,14 +312,16 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
-    // Process initial attributes mapping
-    for (const attr of this.attributes) {
-      if (attr.name === 'data-cid') {
-        continue
-      }
-      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-      const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
-      target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
+    // Trigger Before-Render hooks BEFORE state is proxied, allowing plugins to inject reactive data
+    for (const hook of this._hooks.onBeforeComponentRender) {
+      hook({
+        state: target,
+        instanceId: this._instanceId,
+        componentId: this.componentOptions.componentId,
+        refs,
+        element: this,
+        options: this.componentOptions
+      })
     }
 
     // Hydrate data() block results from the SSR JSON payload
@@ -334,18 +337,15 @@ export class CoraliteElement extends HTMLElement {
       }
     }
 
-    // Trigger Before-Render hooks BEFORE state is proxied, allowing plugins to inject reactive data
-    for (const hook of this._hooks.onBeforeComponentRender) {
-      hook({
-        state: target,
-        instanceId: this._instanceId,
-        componentId: this.componentOptions.componentId,
-        refs,
-        element: this,
-        options: this.componentOptions
-      })
+    // Process initial attributes mapping
+    for (const attr of this.attributes) {
+      if (attr.name === 'data-cid') {
+        continue
+      }
+      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
+      target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
     }
-
 
     // Define derived state getters with isolation controllers
     this._getterAbortControllers = {}
