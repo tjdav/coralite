@@ -7,13 +7,16 @@
 
   export default defineComponent({
     attributes: {
-      label: { type: String, default: 'Default Label' }
+      label: {
+        type: String,
+        default: 'Default Label'
+      }
     },
     client: ({ refs }) => {
-      const btn = refs('btn');
+      const btn = refs('btn')
       btn.addEventListener('click', () => {
-        btn.textContent = 'Clicked';
-      });
+        btn.textContent = 'Clicked'
+      })
     }
   })
 </script>

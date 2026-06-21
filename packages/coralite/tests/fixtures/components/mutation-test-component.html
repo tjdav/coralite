@@ -1,9 +1,9 @@
 <template id="mutation-test-component">
-  <div id="server-result">{{ serverData }}</div>
-  <div id="observer-result">{{ observerData }}</div>
-  <div id="inter-plugin-result">{{ interPluginData }}</div>
-  <div id="client-result">Initial Client State</div>
-  <button id="client-action">Click Me</button>
+  <div ref="server-result">{{ serverData }}</div>
+  <div ref="observer-result">{{ observerData }}</div>
+  <div ref="inter-plugin-result">{{ interPluginData }}</div>
+  <div ref="client-result">Initial Client State</div>
+  <button ref="client-action">Click Me</button>
 </template>
 
 <script type="module">
@@ -21,9 +21,10 @@
       }
     },
     client: (context) => {
+      const { refs } = context
       const { getClientUtility } = context['consumer-client-plugin']
-      const btn = document.getElementById('client-action')
-      const resultDiv = document.getElementById('client-result')
+      const btn = refs('client-action')
+      const resultDiv = refs('client-result')
   
       btn.addEventListener('click', () => {
         // getClientUtility is Phase 3 (returned by Phase 2)

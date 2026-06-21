@@ -9,15 +9,6 @@
   <server-to-client-comp attr-val="initial"></server-to-client-comp>
 
   <h1>Imperative Instance</h1>
-  <div id="imperative-container"></div>
-
-  <script type="module">
-    Promise.resolve(window.__coralite_ready__)
-      .then(() => {
-        const container = document.getElementById('imperative-container')
-        const el = document.createElement('server-to-client-comp')
-        container.appendChild(el)
-      })
-  </script>
+  <server-to-client-parent></server-to-client-parent>
 </body>
 </html>

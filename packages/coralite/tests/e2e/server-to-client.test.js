@@ -8,14 +8,25 @@ test.describe('Server to Client State Propagation', () => {
   })
 
   test('SSR Instance: should have server values in state and getters', async ({ page }) => {
+    // We target the SSR instance specifically by looking for it OUTSIDE of the parent component
+    // In this test, it's the first 'server-to-client-comp' on the page.
     const ssrComp = page.locator('server-to-client-comp').first()
+    const instanceId = await ssrComp.getAttribute('data-cid')
 
-    await expect(ssrComp.locator('[data-testid="server-val"]')).toHaveText('from-server')
-    await expect(ssrComp.locator('[data-testid="getter-val"]')).toHaveText('getter-from-server')
-    await expect(ssrComp.locator('[data-testid="attr-val"]')).toHaveText('overwritten-by-server')
+    // We use the instanceId to build the testid and then scope the search to the component itself
+    // to avoid collisions with the template or other instances.
+    const serverVal = ssrComp.getByTestId(`${instanceId}__server-val`)
+    const getterVal = ssrComp.getByTestId(`${instanceId}__getter-val`)
+    const attrVal = ssrComp.getByTestId(`${instanceId}__attr-val`)
+    const checkBtn = ssrComp.getByTestId(`${instanceId}__check-state`)
+    const clientState = ssrComp.getByTestId(`${instanceId}__client-state`)
 
-    await ssrComp.locator('#check-state').click()
-    const stateText = await ssrComp.locator('[data-testid="client-state"]').textContent()
+    await expect(serverVal).toHaveText('from-server')
+    await expect(getterVal).toHaveText('getter-from-server')
+    await expect(attrVal).toHaveText('overwritten-by-server')
+
+    await checkBtn.click()
+    const stateText = await clientState.textContent()
     const state = JSON.parse(stateText)
 
     expect(state.serverVal).toBe('from-server')
@@ -25,17 +36,25 @@ test.describe('Server to Client State Propagation', () => {
   })
 
   test('Imperative Instance: should have server values from base evaluation', async ({ page }) => {
-    const imperativeComp = page.locator('server-to-client-comp').nth(1)
+    // The imperative instance is inside 'server-to-client-parent'
+    const parent = page.locator('server-to-client-parent')
+    const impComp = parent.locator('server-to-client-comp')
 
-    // Wait for it to be ready/hydrated
-    await expect(imperativeComp).toHaveAttribute('data-cid')
+    await expect(impComp).toHaveAttribute('data-cid')
+    const instanceId = await impComp.getAttribute('data-cid')
 
-    await expect(imperativeComp.locator('[data-testid="server-val"]')).toHaveText('from-server')
-    await expect(imperativeComp.locator('[data-testid="getter-val"]')).toHaveText('getter-from-server')
-    await expect(imperativeComp.locator('[data-testid="attr-val"]')).toHaveText('overwritten-by-server')
+    const serverVal = impComp.getByTestId(`${instanceId}__server-val`)
+    const getterVal = impComp.getByTestId(`${instanceId}__getter-val`)
+    const attrVal = impComp.getByTestId(`${instanceId}__attr-val`)
+    const checkBtn = impComp.getByTestId(`${instanceId}__check-state`)
+    const clientState = impComp.getByTestId(`${instanceId}__client-state`)
 
-    await imperativeComp.locator('#check-state').click()
-    const stateText = await imperativeComp.locator('[data-testid="client-state"]').textContent()
+    await expect(serverVal).toHaveText('from-server')
+    await expect(getterVal).toHaveText('getter-from-server')
+    await expect(attrVal).toHaveText('overwritten-by-server')
+
+    await checkBtn.click()
+    const stateText = await clientState.textContent()
     const state = JSON.parse(stateText)
 
     expect(state.serverVal).toBe('from-server')

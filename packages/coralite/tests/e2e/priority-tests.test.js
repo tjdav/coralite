@@ -21,7 +21,7 @@ test.describe('Priority Architecture Tests', () => {
     // Based on my dual-proxy.html, it returns 'MutationBlocked' if it catches an error.
     await expect(page.getByTestId('dual-proxy-0__doubled')).toHaveText('MutationBlocked')
 
-    const btn = page.locator('button').filter({ hasText: 'Increment' })
+    const btn = page.getByTestId('dual-proxy-0__increment')
     await btn.click()
 
     // After increment, count=6, doubled should still be MutationBlocked if it fails every time
@@ -29,7 +29,7 @@ test.describe('Priority Architecture Tests', () => {
   })
 
   test('Async Race: should handle rapid state changes in async getters', async ({ page }) => {
-    const trigger = page.locator('button').filter({ hasText: 'Trigger' })
+    const trigger = page.getByTestId('async-race-0__trigger')
     const result = page.getByTestId('async-race-0__result')
 
     await expect(result).toHaveText('Idle')

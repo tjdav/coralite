@@ -10,13 +10,17 @@ test.describe('Plugin Global Context Mutation', () => {
   })
 
   test('should verify server-side mutation resolution (SSR)', async ({ page }) => {
-    const serverResult = page.locator('#server-result')
+    const comp = page.locator('mutation-test-component')
+    const instanceId = await comp.getAttribute('data-cid')
+    const serverResult = page.getByTestId(`${instanceId}__server-result`)
     await expect(serverResult).toHaveText('Server Data from DB')
   })
 
   test('should verify client-side mutation resolution (Hydration & Interactivity)', async ({ page }) => {
-    const clientResult = page.locator('#client-result')
-    const actionButton = page.locator('#client-action')
+    const comp = page.locator('mutation-test-component')
+    const instanceId = await comp.getAttribute('data-cid')
+    const clientResult = page.getByTestId(`${instanceId}__client-result`)
+    const actionButton = page.getByTestId(`${instanceId}__client-action`)
 
     // Verify initial state
     await expect(clientResult).toHaveText('Initial Client State')

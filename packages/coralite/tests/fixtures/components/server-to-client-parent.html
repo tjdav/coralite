@@ -1,0 +1,15 @@
+<template id="server-to-client-parent">
+  <div ref="container"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ refs }) {
+      const container = refs('container')
+      const el = document.createElement('server-to-client-comp')
+      container.appendChild(el)
+    }
+  })
+</script>

@@ -1,9 +1,9 @@
 <template id="server-to-client-comp">
-  <div data-testid="server-val">{{ serverVal }}</div>
-  <div data-testid="getter-val">{{ getterVal }}</div>
-  <div data-testid="attr-val">{{ attrVal }}</div>
-  <button id="check-state">Check State</button>
-  <div data-testid="client-state"></div>
+  <div ref="server-val">{{ serverVal }}</div>
+  <div ref="getter-val">{{ getterVal }}</div>
+  <div ref="attr-val">{{ attrVal }}</div>
+  <button ref="check-state">Check State</button>
+  <div ref="client-state"></div>
 </template>
 
 <script type="module">
@@ -27,9 +27,9 @@
       getterVal: (state) => `getter-${state.serverVal}`
     },
     client (context) {
-      const { state, root } = context
-      const btn = root.querySelector('#check-state')
-      const display = root.querySelector('[data-testid="client-state"]')
+      const { state, refs } = context
+      const btn = refs('check-state')
+      const display = refs('client-state')
   
       btn.addEventListener('click', () => {
         display.textContent = JSON.stringify({
