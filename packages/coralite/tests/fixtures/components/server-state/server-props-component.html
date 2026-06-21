@@ -1,9 +1,9 @@
 <template id="server-props-component">
   <div>
-    <h2 data-testid="title">{{ title }}</h2>
-    <p data-testid="file-path">{{ filePath }}</p>
-    <p data-testid="server-data">{{ serverData }}</p>
-    <p data-testid="meta-lang">{{ metaLang }}</p>
+    <h2 ref="title">{{ title }}</h2>
+    <p ref="filePath">{{ filePath }}</p>
+    <p ref="serverData">{{ serverData }}</p>
+    <p ref="metaLang">{{ metaLang }}</p>
   </div>
 </template>
 
@@ -13,7 +13,6 @@
 
   export default defineComponent({
     async server (context) {
-      // test server-only import
       const stats = fs.statSync('package.json')
   
       return {

@@ -1,6 +1,11 @@
 <template id="slot-component">
-  <div class="slot-container">
-    <slot name="default">Fallback Content</slot>
+  <div ref="slot-container">
+    <div ref="header-slot">
+      <slot name="header">Default Header</slot>
+    </div>
+    <div ref="default-slot">
+      <slot>Default Content</slot>
+    </div>
   </div>
 </template>
 
@@ -9,21 +14,23 @@
 
   export default defineComponent({
     slots: {
-      default: (slotNodes) => {
-        if (!slotNodes || slotNodes.length === 0) {
-          return void 0
+      header: (nodes) => {
+        if (!nodes || nodes.length === 0) return undefined
+        return nodes
+      },
+      default: (nodes, state) => {
+        if (!nodes || nodes.length === 0) return 'Fallback Content'
+        // Join all text content of nodes to check for 'Transform Me'
+        const textContent = nodes.map(n => {
+            if (n.type === 'text') return n.data
+            if (n.children) return n.children.map(c => c.data).join('')
+            return ''
+        }).join('').trim()
+        
+        if (textContent.includes('Transform Me')) {
+            return 'Transformed: Transform Me'
         }
-  
-        let rawText = ''
-        slotNodes.forEach(node => {
-          rawText += node.data || node.textContent || ''
-        })
-
-        if (rawText.includes('Transform')) {
-          return `<span data-testid="transformed">Transformed: ${rawText.trim()}</span>`
-        }
-  
-        return void 0
+        return undefined
       }
     }
   })

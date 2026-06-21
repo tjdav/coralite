@@ -17,12 +17,12 @@ test.describe('Plugins Extensibility', () => {
   })
 
   test('should verify metadata plugin mapping', async ({ page }) => {
-    const metaInfo = page.getByTestId('meta-info')
+    const metaInfo = page.getByTestId('plugin-component-0__meta-info')
     await expect(metaInfo).toHaveText('Title: Plugins Test Page')
   })
 
   test('should verify server-side plugin export execution', async ({ page }) => {
-    const pluginMessage = page.getByTestId('plugin-message')
+    const pluginMessage = page.getByTestId('plugin-component-0__plugin-message')
     await expect(pluginMessage).toHaveText('Hello E2E Test from server-side plugin! Page: /plugins/index.html')
   })
 

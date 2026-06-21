@@ -1,8 +1,6 @@
 <template id="imperative-child">
-  <div>
-    <h2 ref="title">{{ title }}</h2>
-    <p ref="dataDisplay">{{ dataDisplay }}</p>
-  </div>
+  <h2 ref="title">{{ title }}</h2>
+  <p ref="dataDisplay">{{ dataDisplay }}</p>
 </template>
 
 <script type="module">
@@ -12,13 +10,11 @@
     attributes: {
       title: {
         type: String,
-        default: 'No Title'
-      },
-      id: { type: String },
-      complexData: { type: String }
+        default: 'Default'
+      }
     },
-    getters: {
-      dataDisplay: (state) => state.complexData || (state.id ? `Fetched data for ${state.id}` : 'No Data')
+    client({ state, root }) {
+        state.dataDisplay = root.data ? root.data.join(',') : ''
     }
   })
 </script>

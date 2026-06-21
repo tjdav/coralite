@@ -324,6 +324,16 @@ export class CoraliteElement extends HTMLElement {
       })
     }
 
+    // Process initial attributes mapping
+    for (const attr of this.attributes) {
+      if (attr.name === 'data-cid') {
+        continue
+      }
+      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
+      target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
+    }
+
     // Hydrate data() block results from the SSR JSON payload
     const hydrationTag = document.getElementById('__CORALITE_HYDRATION__')
     if (hydrationTag) {
@@ -335,16 +345,6 @@ export class CoraliteElement extends HTMLElement {
       } catch {
         console.error('Coralite Element hydration failed:', this._instanceId)
       }
-    }
-
-    // Process initial attributes mapping
-    for (const attr of this.attributes) {
-      if (attr.name === 'data-cid') {
-        continue
-      }
-      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-      const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
-      target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
     }
 
     // Define derived state getters with isolation controllers

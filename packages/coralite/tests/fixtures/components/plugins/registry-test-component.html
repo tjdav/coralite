@@ -1,0 +1,34 @@
+<template id="registry-test-component">
+  <div>
+    <h2 ref="title">{{ title }}</h2>
+    <p ref="secret">{{ secret }}</p>
+    <p ref="server-result">{{ serverResult }}</p>
+    <p ref="client-result">{{ clientResult }}</p>
+    <button ref="action-button">Action</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    async server(context) {
+      const myPlugin = context['my-plugin']
+      const provider = context['provider-plugin']
+      return {
+        title: 'Registry Test',
+        secret: myPlugin ? myPlugin.myFunc() : 'no-plugin',
+        serverResult: provider ? provider.db().getData() : 'no-provider'
+      }
+    },
+    client({ state, refs, 'consumer-client-plugin': consumer }) {
+      state.clientResult = 'Initial Client State'
+      
+      refs('action-button').addEventListener('click', () => {
+        if (consumer) {
+            state.clientResult = consumer.getClientUtility()
+        }
+      })
+    }
+  })
+</script>

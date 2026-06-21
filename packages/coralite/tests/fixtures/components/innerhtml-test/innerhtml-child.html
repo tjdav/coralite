@@ -1,5 +1,5 @@
 <template id="innerhtml-child">
-  <div ref="title">{{ title }}</div>
+  <h2 ref="title">{{ message }}</h2>
 </template>
 
 <script type="module">
@@ -7,9 +7,9 @@
 
   export default defineComponent({
     attributes: {
-      title: {
+      message: {
         type: String,
-        default: ''
+        default: 'Hello'
       }
     }
   })

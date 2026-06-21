@@ -1,7 +1,7 @@
 <template id="server-to-client-comp">
   <div ref="server-val">{{ serverVal }}</div>
   <div ref="getter-val">{{ getterVal }}</div>
-  <div ref="attr-val">{{ attrVal }}</div>
+  <div ref="attr-val-display">{{ attrVal }}</div>
   <button ref="check-state">Check State</button>
   <div ref="client-state"></div>
 </template>
@@ -39,6 +39,9 @@
           unusedVal: state.unusedVal
         })
       })
+
+      // Update the display for E2E
+      state.attrVal = state.attrVal
     }
   })
 </script>

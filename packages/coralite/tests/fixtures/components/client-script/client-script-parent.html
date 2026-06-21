@@ -1,16 +1,3 @@
 <template id="client-script-parent">
-  <div ref="container"></div>
+  <client-script-component title="Initial Parent"></client-script-component>
 </template>
-
-<script type="module">
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    client: ({ refs }) => {
-      const container = refs('container')
-      const child = document.createElement('client-script-component')
-      child.setAttribute('title', 'Initial Parent')
-      container.appendChild(child)
-    }
-  })
-</script>

@@ -1,0 +1,25 @@
+<template id="innerhtml-parent">
+  <div ref="container1"></div>
+  <div ref="container2">
+    <div ref="target2"></div>
+  </div>
+  <div ref="container3"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client({ refs }) {
+      // 1. innerHTML
+      refs('container1').innerHTML = '<innerhtml-child message="InnerHTML Mount"></innerhtml-child>'
+      
+      // 2. outerHTML
+      const target2 = refs('target2')
+      target2.outerHTML = '<innerhtml-child message="OuterHTML Mount"></innerhtml-child>'
+      
+      // 3. insertAdjacentHTML
+      refs('container3').insertAdjacentHTML('beforeend', '<innerhtml-child message="AdjacentHTML Mount"></innerhtml-child>')
+    }
+  })
+</script>

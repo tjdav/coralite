@@ -9,14 +9,13 @@
     attributes: {
       label: {
         type: String,
-        default: 'Default Label'
+        default: 'Click me'
       }
     },
-    client: ({ refs }) => {
-      const btn = refs('btn')
-      btn.addEventListener('click', () => {
-        btn.textContent = 'Clicked'
-      })
+    client({ state, refs }) {
+        refs('btn').addEventListener('click', () => {
+            state.label = 'Clicked'
+        })
     }
   })
 </script>

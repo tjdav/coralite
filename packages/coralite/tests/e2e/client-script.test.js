@@ -24,5 +24,8 @@ test.describe('Client Script', () => {
 
     const container = page.getByTestId(/client-script-component-0__container/)
     await expect(container).toHaveAttribute('data-confetti', 'loaded')
+
+    const dynamicDisplay = page.getByTestId(/client-script-component-0__dynamic-display/)
+    await expect(dynamicDisplay).toHaveText('foo', { timeout: 10000 })
   })
 })

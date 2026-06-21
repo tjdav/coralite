@@ -1,17 +1,18 @@
 <template id="nested-parent">
-  <div ref="container"></div>
+  <div ref="host"></div>
 </template>
 
 <script type="module">
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client: ({ refs }) => {
-      const container = refs('container')
-  
-      // Imperatively create and append the nested layout
+    client({ refs }) {
+      const host = refs('host')
       const layout = document.createElement('nested-layout')
-      container.appendChild(layout)
+      const button = document.createElement('nested-button')
+      button.setAttribute('label', 'Click Me')
+      layout.appendChild(button)
+      host.appendChild(layout)
     }
   })
 </script>

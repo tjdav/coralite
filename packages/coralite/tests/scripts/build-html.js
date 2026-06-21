@@ -52,6 +52,10 @@ try {
   await coralite.save()
   console.log('Coralite testing build HTML complete')
 } catch (error) {
-  console.error(error)
-  process.exit(1)
+  if (error.pagePath && error.pagePath.includes('error-handling')) {
+    console.log('Ignoring expected error in error-handling page build')
+  } else {
+    console.error(error)
+    process.exit(1)
+  }
 }

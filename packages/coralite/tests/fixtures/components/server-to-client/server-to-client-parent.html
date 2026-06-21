@@ -6,10 +6,11 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client ({ refs }) {
+    client({ refs }) {
       const container = refs('container')
-      const el = document.createElement('server-to-client-comp')
-      container.appendChild(el)
+      const child = document.createElement('server-to-client-comp')
+      child.setAttribute('attr-val', 'initial')
+      container.appendChild(child)
     }
   })
 </script>

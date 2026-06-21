@@ -1,8 +1,10 @@
 <template id="plugin-component">
-  <div data-testid="plugin-container">
-    <p ref="pluginData">Loading...</p>
-    <p data-testid="meta-info">Title: {{ pageTitle }}</p>
-    <p data-testid="plugin-message">{{ pluginMessage }}</p>
+  <div ref="content">
+    <h2 ref="title">{{ title }}</h2>
+    <div ref="injected"></div>
+    <div ref="pluginData"></div>
+    <div ref="meta-info">Title: {{ pageTitle }}</div>
+    <div ref="plugin-message">{{ pluginMessage }}</div>
   </div>
 </template>
 
@@ -10,19 +12,21 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    server (context) {
-      const { getPluginMessage } = context['test-context-plugin']
+    async server(context) {
+      const test = context['test-context-plugin']
       return {
-        // test metadata plugin
-        pageTitle: context.page.meta.title || 'No Title',
-        pluginMessage: getPluginMessage('E2E Test', context)
+        title: 'Plugin Component',
+        pageTitle: context.page.meta.title,
+        pluginMessage: test ? test.getPluginMessage('E2E Test') : 'no-plugin'
       }
     },
-    client: (context) => {
-      const { testHelper } = context['test-context-plugin']
-      const { refs } = context
-      // test two-phase currying system context injection
-      testHelper(refs('pluginData'))
+    client({ refs, 'test-context-plugin': testPlugin, 'mock-plugin': mockPlugin }) {
+      if (testPlugin) {
+        testPlugin.testHelper(refs('pluginData'))
+      }
+      if (mockPlugin) {
+        mockPlugin.renderPluginChild(refs('injected'))
+      }
     }
   })
 </script>

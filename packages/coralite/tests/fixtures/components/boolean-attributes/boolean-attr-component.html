@@ -1,0 +1,29 @@
+<template id="boolean-attr-component">
+  <div>
+    <input type="checkbox" ref="checkbox" checked="{{ isChecked }}">
+    <button ref="btn" disabled="{{ isDisabled }}">Click</button>
+    <button ref="toggle-btn">Toggle</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      isChecked: {
+        type: Boolean,
+        default: false
+      },
+      isDisabled: {
+        type: Boolean,
+        default: false
+      }
+    },
+    client({ state, refs }) {
+      refs('toggle-btn').addEventListener('click', () => {
+        state.isChecked = !state.isChecked
+      })
+    }
+  })
+</script>

@@ -1,8 +1,10 @@
 <template id="client-script-component">
-  <div ref="container">
+  <div>
     <h2 ref="titleDisplay">{{ title }}</h2>
     <p ref="statusDisplay">Status: {{ status }}</p>
-    <button ref="updateBtn">Update</button>
+    <button ref="updateBtn">Update Status</button>
+    <div ref="container"></div>
+    <div ref="dynamic-display">{{ dynamicValue }}</div>
   </div>
 </template>
 
@@ -13,30 +15,30 @@
     attributes: {
       title: {
         type: String,
-        default: 'Initial'
-      },
-      status: {
-        type: String,
-        default: 'Offline'
+        default: 'Default Title'
       }
     },
-    client: (context) => {
-      const { state, signal, refs } = context
-      const updateBtn = refs('updateBtn')
+    async server() {
+      return {
+        status: 'Offline',
+        dynamicValue: 'Loading...'
+      }
+    },
+    async client({ state, refs, 'test-context-plugin': testPlugin }) {
+      const btn = refs('updateBtn')
+      const container = refs('container')
 
-      updateBtn.addEventListener('click', async () => {
-        // test reactivity by updating state
+      btn.addEventListener('click', () => {
         state.title = 'Updated'
         state.status = 'Online'
+      })
 
-        // test dynamic imports
-        const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
-        if (confetti) {
-          const container = refs('container')
-
-          container.setAttribute('data-confetti', 'loaded')
-        }
-      }, { signal })
+      if (testPlugin) {
+        container.setAttribute('data-confetti', 'loaded')
+      }
+      
+      const mod = await import('../../dummy-client-lib.js')
+      state.dynamicValue = mod.foo
     }
   })
 </script>

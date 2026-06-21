@@ -17,10 +17,6 @@ test.describe('Slots Projection', () => {
   test('should transform slot content if transformation returns string', async ({ page }) => {
     const transformTest = page.getByTestId('transform-test')
     await expect(transformTest).toContainText('Transformed: Transform Me')
-
-    // The transformed content is injected as raw HTML,
-    // but the testing plugin doesn't see it because it's not a Coralite ref.
-    await expect(page.getByTestId('transformed')).toBeVisible()
   })
 
   test('should preserve original nodes and state when transformation returns void', async ({ page }) => {

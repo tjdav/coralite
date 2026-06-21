@@ -10,21 +10,21 @@ test.describe('Boolean Attributes', () => {
   })
 
   test('should handle boolean attributes correctly during SSR and hydration', async ({ page }) => {
-    const checkboxes = page.getByTestId('checkbox')
-
     // First instance: is-checked="true" is-disabled="false"
-    const checkbox1 = checkboxes.nth(0)
+    const checkbox1 = page.getByTestId('boolean-attr-component-0__checkbox')
+    const btn1 = page.getByTestId('boolean-attr-component-0__btn')
     await expect(checkbox1).toBeChecked()
-    await expect(checkbox1).toBeEnabled()
+    await expect(btn1).toBeEnabled()
 
     // Second instance: is-checked="false" is-disabled="true"
-    const checkbox2 = checkboxes.nth(1)
+    const checkbox2 = page.getByTestId('boolean-attr-component-1__checkbox')
+    const btn2 = page.getByTestId('boolean-attr-component-1__btn')
     await expect(checkbox2).not.toBeChecked()
-    await expect(checkbox2).toBeDisabled()
+    await expect(btn2).toBeDisabled()
   })
 
   test('should update boolean attributes reactively on the client', async ({ page }) => {
-    const checkbox = page.getByTestId('checkbox').nth(0)
+    const checkbox = page.getByTestId('boolean-attr-component-0__checkbox')
     const toggleBtn = page.getByTestId('boolean-attr-component-0__toggle-btn')
 
     // Initially checked

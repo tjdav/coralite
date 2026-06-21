@@ -6,15 +6,11 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client: async ({ refs }) => {
-      const container = refs('container')
-  
+    client({ refs }) {
       const child = document.createElement('imperative-child')
       child.setAttribute('title', 'Imperative Mount')
-      child.setAttribute('id', '123')
-      child.setAttribute('complex-data', 'A,B,C')
-  
-      container.appendChild(child)
+      child.data = ['A', 'B', 'C']
+      refs('container').appendChild(child)
     }
   })
 </script>

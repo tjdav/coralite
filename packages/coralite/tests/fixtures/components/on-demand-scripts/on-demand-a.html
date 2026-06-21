@@ -1,3 +1,13 @@
 <template id="on-demand-a">
-  <div data-testid="on-demand-a">On Demand A</div>
+  <div ref="msg" data-testid="on-demand-a-msg">Component A</div>
 </template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client() {
+      console.log('Component A script loaded')
+    }
+  })
+</script>
