@@ -4,65 +4,57 @@ import { writeFile, mkdir, stat } from 'node:fs/promises'
 
 
 /**
- *
+ * Sitemap plugin for Coralite.
+ * Generates a sitemap.xml file in the build output directory.
  */
 export default () => {
-  const pages = new Map()
-
   return definePlugin({
     name: 'sitemap-plugin',
     server: {
-      onBeforeBuild: () => {
-        pages.clear()
-      },
-      onPageSet: async ({ page, data, app }) => {
+      async onAfterBuild ({ app }) {
         if (app.options.mode === 'development') {
           return
         }
 
-        // Exclude virtual pages and ensure we only process HTML files
-        if (data.virtual || !data.path.pathname.endsWith('.html')) {
-          return
-        }
+        const pages = new Map()
+        const pagesDir = join(app.options.projectRoot || process.cwd(), app.options.pages)
 
-        let pathname
-        if (data.virtual) {
-          // For virtual pages, we remove the 'src/pages/' prefix if it exists
-          pathname = data.path.pathname.replace(/^src\/pages\//, '')
-          pathname = pathname.startsWith('/') ? pathname : `/${pathname}`
-        } else {
-          // For physical pages, calculate path relative to the pages source directory
-          const pagesDir = join(app.options.projectRoot || process.cwd(), app.options.pages)
-          pathname = '/' + relative(pagesDir, data.path.pathname).split('\\').join('/')
-        }
-
-        // Exclude 404 page
-        if (pathname === '/404.html') {
-          return
-        }
-
-        let lastmod = page.meta.published_time || page.meta.updated_time
-
-        if (!lastmod && !data.virtual) {
-          try {
-            const stats = await stat(data.path.pathname)
-            lastmod = stats.mtime.toISOString()
-          } catch {
-            // Fallback to current date if stat fails
-            lastmod = new Date().toISOString()
+        // Iterate over all discovered pages in the collection
+        for (const item of app.pages.list) {
+          // Exclude virtual pages and ensure we only process HTML files
+          if (item.virtual || !item.path.pathname.endsWith('.html')) {
+            continue
           }
-        } else if (!lastmod) {
-          lastmod = new Date().toISOString()
+
+          // Calculate path relative to the pages source directory
+          const pathname = '/' + relative(pagesDir, item.path.pathname).split('\\').join('/')
+
+          // Exclude 404 page
+          if (pathname === '/404.html') {
+            continue
+          }
+
+          const pageMeta = item.state?.page?.meta || {}
+          let lastmod = pageMeta.published_time || pageMeta.updated_time
+
+          if (!lastmod) {
+            try {
+              const stats = await stat(item.path.pathname)
+              lastmod = stats.mtime.toISOString()
+            } catch {
+              // Fallback to current date if stat fails
+              lastmod = new Date().toISOString()
+            }
+          }
+
+          pages.set(pathname, {
+            url: `https://coralite.dev${pathname}`,
+            lastmod,
+            changefreq: pageMeta.changefreq || 'weekly',
+            priority: pageMeta.priority || '0.5'
+          })
         }
 
-        pages.set(pathname, {
-          url: `https://coralite.dev${pathname}`,
-          lastmod,
-          changefreq: page.meta.changefreq || 'weekly',
-          priority: page.meta.priority || '0.5'
-        })
-      },
-      async onAfterBuild ({ app }) {
         try {
           await mkdir(app.options.output, { recursive: true })
 
@@ -71,7 +63,11 @@ export default () => {
           let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
           xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
 
-          for (const page of pages.values()) {
+          // Sort pages by pathname for consistent output
+          const sortedPathnames = Array.from(pages.keys()).sort()
+
+          for (const pathname of sortedPathnames) {
+            const page = pages.get(pathname)
             xml += '  <url>\n'
             xml += `    <loc>${page.url}</loc>\n`
             xml += `    <lastmod>${page.lastmod}</lastmod>\n`

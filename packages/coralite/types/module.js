@@ -1,7 +1,7 @@
 
 /**
  * @import { CoraliteElement, CoraliteAnyNode, CoraliteDirective } from './dom.js'
- * @import { CoraliteFilePath, CoraliteProperties } from './core.js'
+ * @import { CoraliteFilePath, CoraliteProperties, CoralitePage } from './core.js'
  * @import { CoraliteComponentValues, CoraliteRef } from './component.js'
  * @import { ScriptContent, CoraliteScriptContext } from './script.js'
  * @import { CoralitePluginContext } from './plugin.js'
@@ -27,12 +27,12 @@
 
 /**
  * Represents a single value that a module can store or process.
- * @typedef {string | number | boolean | string[] | (CoraliteDirective | CoraliteAnyNode)[] | Object.<string, string>} CoraliteModuleDefinition
+ * @typedef {string | number | boolean | string[] | (CoraliteDirective | CoraliteAnyNode)[] | Object.<string, any>} CoraliteModuleDefinition
  */
 
 /**
  * A collection of module values associated with a module.
- * @typedef {Object.<string, CoraliteModuleDefinition> & { __script__?: ScriptContent }} CoraliteModuleDefinitions
+ * @typedef {Object.<string, CoraliteModuleDefinition> & { __script__?: ScriptContent, page?: CoralitePage }} CoraliteModuleDefinitions
  */
 
 /**
