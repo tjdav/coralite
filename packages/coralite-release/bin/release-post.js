@@ -8,7 +8,7 @@ import path from 'path'
 import { globSync } from 'glob'
 
 const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases.
-Your task is to generate a structured GitHub Release Post based on provided git commit messages.
+Your task is to generate a structured GitHub Release Post based on provided git commit messages and technical summaries.
 
 ### Style Guidelines:
 - **Perspective**: Use "I" (first person singular), never "we." Coralite is a one-person project.
@@ -18,16 +18,17 @@ Your task is to generate a structured GitHub Release Post based on provided git 
 
 ### Content Structure:
 1. **Title**: Direct title including the version number.
-2. **Introduction**: A concise paragraph (2-3 sentences) summarizing the focus of the release.
-3. **Key Highlights**: Bullet points for the most important technical changes or features.
+2. **Introduction**: A concise paragraph (2-3 sentences) summarizing the focus of the release. If a specific focus is provided in the context, emphasize it here.
+3. **Key Highlights**: Detailed bullet points for the most important technical changes. **Include code examples (before/after or API usage)** whenever a technical summary for a highlight provides enough information to do so. This is crucial for making the release useful.
 4. **Bug Fixes & Improvements**: A section for fixes and minor refinements.
 5. **Internal Changes**: A section for refactors, utility migrations, and maintenance work (avoiding "Under the Hood").
 
 ### Rules:
-- Base content strictly on the provided commit logs; do not hallucinate features.
+- Base content strictly on the provided commit logs and technical summaries; do not hallucinate features.
 - Group related commits into logical technical categories.
 - Translate technical jargon into clear, concise explanations without losing precision.
-- Use the original context from commit descriptions to explain *why* a change was made if it improves clarity.`
+- Use the original context from commit descriptions and technical summaries to explain *why* a change was made if it improves clarity.
+- Ensure each release post feels unique by focusing on the specific "star" features of that version.`
 
 program
   .name('generate-release-post')
@@ -51,6 +52,15 @@ program
 
     try {
       const git = simpleGit()
+
+      // Load framework context if available
+      let frameworkContext = ''
+      try {
+        const llmsPath = path.join(process.cwd(), 'packages/coralite/llms.txt')
+        frameworkContext = readFileSync(llmsPath, 'utf8')
+      } catch {
+        // ignore if not found
+      }
 
       // Prompt for package if not provided
       if (!packageName) {
@@ -218,8 +228,97 @@ program
         process.exit(0)
       }
 
+      const selectedHighlights = await prompts.multiselect({
+        message: 'Select commits to highlight with extra detail/code examples (optional):',
+        options: log.all.map(commit => ({
+          value: commit.hash,
+          label: commit.message,
+          hint: commit.body ? commit.body.trim().split('\n')[0].slice(0, 60) : ''
+        })),
+        required: false
+      })
+
+      if (prompts.isCancel(selectedHighlights)) {
+        prompts.log.info('Operation cancelled')
+        process.exit(0)
+      }
+
+      const extraContext = await prompts.text({
+        message: 'Add any additional context or focus for this release (optional):',
+        placeholder: 'e.g. Focus on the new reactivity system and performance improvements'
+      })
+
+      if (prompts.isCancel(extraContext)) {
+        prompts.log.info('Operation cancelled')
+        process.exit(0)
+      }
+
       const s = prompts.spinner()
-      s.start('Generating release post via AI...')
+
+      // Fetch and summarize highlight diffs if any
+      let highlightSummaries = ''
+      if (selectedHighlights && selectedHighlights.length > 0) {
+        s.start('Fetching and summarizing highlight diffs...')
+
+        for (const hash of selectedHighlights) {
+          const commit = log.all.find(c => c.hash === hash)
+          const diff = await git.show([hash, '--', pkgPath || '.'])
+
+          // Filter diff to exclude noise (e.g. package-lock.json, assets)
+          const filteredDiff = diff
+            .split('diff --git')
+            .filter(part => {
+              if (!part.trim()) {
+                return false
+              }
+              const firstLine = part.split('\n')[0]
+              const isNoise = /package-lock\.json|pnpm-lock\.yaml|yarn\.lock|\.png|\.jpg|\.jpeg|\.gif|\.svg|\.pdf/.test(firstLine)
+              return !isNoise
+            })
+            .map(part => 'diff --git' + part)
+            .join('\n')
+            .slice(0, 5000)
+
+          // We'll summarize this later in the next step, for now just collect
+          // @ts-ignore
+          commit.diff = filteredDiff
+
+          try {
+            const summaryResponse = await fetch(`${options.apiEndpoint}/chat/completions`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${options.apiKey}`
+              },
+              body: JSON.stringify({
+                model: options.model,
+                messages: [
+                  {
+                    role: 'system',
+                    content: `You are a technical assistant helping to summarize git changes for the Coralite framework. Provide a concise technical summary of the changes and suggest a relevant code example (before/after or just new API usage) if applicable.
+
+${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''}`
+                  },
+                  {
+                    role: 'user',
+                    content: `Please summarize these changes for a release highlight. Commit: ${commit.message}\n\nDiff:\n${commit.diff}`
+                  }
+                ],
+                temperature: 0.3
+              })
+            })
+
+            if (summaryResponse.ok) {
+              const summaryData = await summaryResponse.json()
+              const summary = summaryData.choices[0].message.content
+              highlightSummaries += `\n### Highlight: ${commit.message}\n${summary}\n`
+            }
+          } catch (err) {
+            prompts.log.warn(`Could not generate AI summary for commit ${hash}: ${err.message}`)
+          }
+        }
+        s.stop('Highlights summarized.')
+      }
 
       // Format commits for the AI
       const commitsText = log.all.map(commit => {
@@ -237,11 +336,23 @@ program
         titleVersion = `v${toRef.replace(/^v/, '')}`
       }
 
-      const userMessage = `Please generate a release post for version ${titleVersion} comparing changes from ${fromTag} to ${toRef}.
+      let userMessage = `Please generate a release post for version ${titleVersion} comparing changes from ${fromTag} to ${toRef}.`
 
-Here are the commits:
+      if (extraContext) {
+        userMessage += `\n\nAdditional Context/Focus: ${extraContext}`
+      }
 
-${commitsText}`
+      if (highlightSummaries) {
+        userMessage += `\n\nTechnical Summaries for Key Highlights:\n${highlightSummaries}`
+      }
+
+      if (frameworkContext) {
+        userMessage += `\n\nCoralite Framework Reference:\n${frameworkContext}`
+      }
+
+      userMessage += `\n\nFull Commit List:\n${commitsText}`
+
+      s.start('Generating full release post via AI...')
 
       try {
         const response = await fetch(`${options.apiEndpoint}/chat/completions`, {
