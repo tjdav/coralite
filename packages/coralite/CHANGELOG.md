@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.38.4
+
+> Comparing `coralite-v0.38.3` to `HEAD`
+
+**Summary:** 4 commits
+
+### ✨ Features
+
+- extract components and add client-side hooks support (plugins) ([d970167](https://codeberg.org/tjdavid/coralite/commit/d9701678c538fc35b770274df2974bfae2c88d6a))
+- transition to external CSS and fix imperative component styles ([8120c37](https://codeberg.org/tjdavid/coralite/commit/8120c377d7ca7184335a789a2d52d2190ab769b0))
+
+### 🐛 Bug Fixes
+
+- relocate onBeforeComponentRender hook execution ([327a416](https://codeberg.org/tjdavid/coralite/commit/327a4160f180051944d29990f3d354fb42e68d70))
+- production CSS minification and robust component registration ([29b7d31](https://codeberg.org/tjdavid/coralite/commit/29b7d31ae609839f4c9e81771a040149210227f9))
+
+
 ## v0.38.3
 
 > Comparing `coralite-v0.38.2` to `HEAD`
