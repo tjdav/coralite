@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.38.4
+
+> Comparing `coralite-scripts-v0.38.3` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- production CSS minification and robust component registration ([29b7d31](https://codeberg.org/tjdavid/coralite/commit/29b7d31ae609839f4c9e81771a040149210227f9))
+
+### 📦 Build System
+
+- update executable permissions for release and script binaries ([91bd18f](https://codeberg.org/tjdavid/coralite/commit/91bd18fc8715aa7b06e798b7922c1441bade29fb))
+
+
 ## v0.38.0
 
 > Comparing `coralite-scripts-v0.37.2` to `HEAD`
