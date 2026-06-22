@@ -98,4 +98,70 @@ test.describe('Style Behavior', () => {
 
     expect(styleCount).toBe(0)
   })
+
+  test('should have minified CSS and no source maps in production', async ({ page }) => {
+    // Component CSS in production uses <link> tags with hashed filenames in assets/css/
+    // In development, component CSS uses <style> tags.
+    const isProduction = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .some(l => /style-child-.*\.css/.test(l.href))
+    })
+
+    if (!isProduction) {
+      return
+    }
+
+    const cssLinks = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+        .map(l => l.href)
+        .filter(href => href.includes('assets/css/'))
+    })
+
+    for (const href of cssLinks) {
+      const response = await page.request.get(href)
+      const content = await response.text()
+
+      // Better minification check: should not have more than 2 lines (some esbuild headers might add one)
+      const lineCount = content.split('\n').length
+      expect(lineCount).toBeLessThanOrEqual(2)
+
+      // Check for no source maps
+      expect(content).not.toContain('sourceMappingURL')
+
+      // Check that the source map file does not exist
+      const mapResponse = await page.request.get(href + '.map')
+      expect(mapResponse.status()).toBe(404)
+    }
+  })
+
+  test('should prevent FOUC by having styles in head', async ({ page }) => {
+    const componentId = 'style-child'
+    const isInHead = await page.evaluate((cid) => {
+      const link = document.head.querySelector(`link[href*="${cid}"]`)
+      const style = document.head.querySelector(`style`)
+      // Check if style contains the selector if it's a style tag
+      const hasStyle = style && style.textContent.includes(`data-style-selector="${cid}"`)
+      return !!(link || hasStyle)
+    }, componentId)
+
+    expect(isInHead).toBe(true)
+  })
+
+  test('should have correct style ordering (global before component)', async ({ page }) => {
+    const ordering = await page.evaluate(() => {
+      const elements = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+      const globalIdx = elements.findIndex(el => el.tagName === 'LINK' && el.getAttribute('href')?.includes('styles.css'))
+      const componentIdx = elements.findIndex(el => (el.tagName === 'LINK' && el.getAttribute('href')?.includes('style-child')) ||
+        (el.tagName === 'STYLE' && el.textContent.includes('data-style-selector="style-child"'))
+      )
+
+      // If global styles exist, they should come before component styles
+      if (globalIdx !== -1 && componentIdx !== -1) {
+        return globalIdx < componentIdx
+      }
+      return true
+    })
+
+    expect(ordering).toBe(true)
+  })
 })

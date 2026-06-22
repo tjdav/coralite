@@ -2,6 +2,7 @@ import * as sass from 'sass'
 import postcss from 'postcss'
 import fs from 'fs/promises'
 import path from 'path'
+import { transform } from 'esbuild'
 
 /**
  * @typedef {Object} BuildStylesResult
@@ -16,15 +17,19 @@ import path from 'path'
  * @param {string[]} options.input - Array of input file paths
  * @param {string} options.output - Output directory for compiled CSS files
  * @param {Object} [options.processors] - Processor configurations
+ * @param {boolean} [options.minify=false] - Whether to minify the output
+ * @param {boolean} [options.sourcemap=true] - Whether to generate source maps
  * @returns {Promise<BuildStylesResult[]>}
  */
 async function buildStyles ({
   input,
   output,
-  processors = {}
+  processors = {},
+  minify = false,
+  sourcemap = true
 }) {
   const scssOptions = {
-    sourceMap: true,
+    sourceMap: sourcemap,
     loadPaths: ['node_modules'],
     // @ts-ignore
     silenceDeprecations: [
@@ -62,11 +67,24 @@ async function buildStyles ({
       const postcssOptions = {
         from: filePath,
         to: outputFile,
-        map: map ? { prev: map } : true
+        map: (sourcemap && map) ? { prev: map } : sourcemap
       }
       const result = await postcss(postcssPlugins).process(css, postcssOptions)
       css = result.css
       map = result.map
+    }
+
+    if (minify) {
+      const result = await transform(css, {
+        loader: 'css',
+        minify: true,
+        sourcemap: sourcemap ? 'external' : false,
+        sourcefile: filePath
+      })
+      css = result.code
+      if (sourcemap && result.map) {
+        map = result.map
+      }
     }
 
     const duration = process.hrtime(fileStart)

@@ -444,7 +444,7 @@ export default {
     splitting: true,
     metafile: true,
     minify: mode === 'production',
-    sourcemap: mode === 'production' ? 'external' : 'inline',
+    sourcemap: mode === 'production' ? false : 'inline',
     outdir: 'assets/js',
     entryNames: '[name]-[hash]',
     chunkNames: '[name]-[hash]',

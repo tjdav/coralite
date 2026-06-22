@@ -174,7 +174,9 @@ if (mode === 'dev') {
       const results = await buildStyles({
         input: config.styles.input,
         output: join(config.output, 'assets', 'css'),
-        processors: config.styles.processors
+        processors: config.styles.processors,
+        minify: mode === 'build',
+        sourcemap: mode !== 'build'
       })
 
       for (let i = 0; i < results.length; i++) {

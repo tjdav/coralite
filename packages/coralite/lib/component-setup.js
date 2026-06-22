@@ -229,6 +229,95 @@ export function createComponentDefinition ({ app }) {
 }
 
 /**
+ * Helper to ensure a component is registered in the script manager with its styles and template.
+ * This is used as a fallback to ensure that even if script evaluation fails,
+ * the component's static assets (template and styles) are still available for bundling.
+ *
+ * @param {Object} component - The raw component document object from the parser.
+ * @param {any} scriptManager - The ScriptManager instance to register the component with.
+ * @param {Object|null} [scriptResultMeta=null] - Optional metadata resulting from component script evaluation (__script__).
+ * @returns {Promise<void>}
+ * @private
+ */
+async function _safeRegister (component, scriptManager, scriptResultMeta = null) {
+  const templateAST = component.template?.children || []
+  const templateValues = component.values || {}
+
+  if (component.styles?.length && !component._processedCss) {
+    const rawCss = component.styles.join('\n')
+    const { rootClasses, descendantClasses } = component
+    component._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, (err) => console.error(err))
+  }
+
+  const stylesHTML = component._processedCss || ''
+  const scriptMeta = scriptResultMeta || {
+    state: {},
+    slots: {},
+    defaultValues: {},
+    getters: {}
+  }
+
+  const scriptObj = {
+    ...scriptMeta,
+    content: 'function(){}',
+    state: scriptMeta.state || {},
+    slots: scriptMeta.slots || {}
+  }
+
+  let defaultValues = scriptMeta.defaultValues || {}
+  let extractedComponents = []
+
+  if (component.script) {
+    if (!component._extractedClient) {
+      component._extractedClient = findAndExtractScript(component.script)
+    }
+    const extractedClient = component._extractedClient
+
+    if (extractedClient) {
+      scriptObj.content = extractedClient.content
+      scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
+      extractedComponents = extractedClient.components || []
+    }
+
+    if (!component._extractedServer) {
+      component._extractedServer = findAndExtractProperties(component.script)
+    }
+    const extractedServer = component._extractedServer
+
+    if (extractedServer) {
+      scriptObj.stateContent = extractedServer.content
+      scriptObj.stateLineOffset = (component.lineOffset || 0) + extractedServer.lineOffset
+    }
+  }
+
+  const declarativeComponents = (component.customElements || []).map(el => el.name)
+  const nestedComponents = [...new Set([...declarativeComponents, ...extractedComponents])]
+  scriptObj.components = nestedComponents
+
+  templateValues?.refs?.forEach(ref => {
+    const refKey = `ref_${ref.name}`
+    defaultValues[refKey] = ''
+    if (!scriptObj.state[refKey]) {
+      scriptObj.state[refKey] = ''
+    }
+  })
+  scriptObj.defaultValues = defaultValues
+
+  scriptManager.registerComponent({
+    id: component.id,
+    getters: scriptMeta.getters,
+    script: scriptObj,
+    filePath: component.filePath || (component.path && component.path.pathname),
+    templateAST,
+    templateValues,
+    defaultValues,
+    styles: stylesHTML,
+    slots: scriptMeta.slots,
+    override: true
+  })
+}
+
+/**
  * Performs base evaluation and registers a component in the script manager.
  * Used during discovery and updates to lock in the pristine component definition.
  *
@@ -252,45 +341,12 @@ export async function registerBaseComponent ({
   }
 
   if (!component.script) {
-    const templateAST = component.template?.children || []
-    const templateValues = component.values || {}
-
-    if (component.styles?.length && !component._processedCss) {
-      const rawCss = component.styles.join('\n')
-      const { rootClasses, descendantClasses } = component
-      component._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, (err) => console.error(err))
-    }
-
-    const stylesHTML = component._processedCss || ''
-    const defaultValues = {}
-
-    templateValues?.refs?.forEach(ref => {
-      defaultValues[`ref_${ref.name}`] = ''
-    })
-
-    scriptManager.registerComponent({
-      id: component.id,
-      getters: {},
-      script: {
-        content: 'function(){}',
-        state: {},
-        slots: {},
-        components: (component.customElements || []).map(el => el.name),
-        defaultValues
-      },
-      filePath: component.filePath || (component.path && component.path.pathname),
-      templateAST,
-      templateValues,
-      defaultValues,
-      styles: stylesHTML,
-      slots: {},
-      override: true
-    })
-    return
+    return _safeRegister(component, scriptManager)
   }
 
+  const baseSession = createSession('base-evaluation')
+
   try {
-    const baseSession = createSession('base-evaluation')
     const scriptResult = await evaluate({
       module: component,
       state: {},
@@ -305,78 +361,10 @@ export async function registerBaseComponent ({
       mode
     })
 
-    const scriptMeta = (scriptResult && scriptResult.__script__) || {
-      state: {},
-      slots: {},
-      defaultValues: {},
-      getters: {}
-    }
-
-    const templateAST = component.template?.children || []
-    const templateValues = component.values || {}
-
-    if (component.styles?.length && !component._processedCss) {
-      const rawCss = component.styles.join('\n')
-      const { rootClasses, descendantClasses } = component
-      component._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, (err) => console.error(err))
-    }
-
-    const stylesHTML = component._processedCss || ''
-
-    const scriptObj = {
-      ...scriptMeta,
-      content: 'function(){}',
-      state: scriptMeta.state || {},
-      slots: scriptMeta.slots || {}
-    }
-    let defaultValues = scriptMeta.defaultValues || {}
-    let extractedComponents = []
-
-    if (!component._extractedClient) {
-      component._extractedClient = findAndExtractScript(component.script)
-    }
-    const extractedClient = component._extractedClient
-
-    if (extractedClient) {
-      scriptObj.content = extractedClient.content
-      scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
-      extractedComponents = extractedClient.components || []
-    }
-
-    if (!component._extractedServer) {
-      component._extractedServer = findAndExtractProperties(component.script)
-    }
-    const extractedServer = component._extractedServer
-
-    if (extractedServer) {
-      scriptObj.stateContent = extractedServer.content
-      scriptObj.stateLineOffset = (component.lineOffset || 0) + extractedServer.lineOffset
-    }
-
-    const declarativeComponents = (component.customElements || []).map(el => el.name)
-    const nestedComponents = [...new Set([...declarativeComponents, ...extractedComponents])]
-    scriptObj.components = nestedComponents
-
-    templateValues?.refs?.forEach(ref => {
-      const refKey = `ref_${ref.name}`
-      defaultValues[refKey] = ''
-      scriptObj.state[refKey] = ''
-    })
-    scriptObj.defaultValues = defaultValues
-
-    scriptManager.registerComponent({
-      id: component.id,
-      getters: scriptMeta.getters,
-      script: scriptObj,
-      filePath: component.filePath || (component.path && component.path.pathname),
-      templateAST,
-      templateValues,
-      defaultValues,
-      styles: stylesHTML,
-      slots: scriptMeta.slots,
-      override: true
-    })
-  } catch {
-    // Base evaluation is allowed to fail silently
+    await _safeRegister(component, scriptManager, scriptResult?.__script__)
+  } catch (_err) {
+    // Base evaluation is allowed to fail silently, but we should at least register the component
+    // without the script results if it fails, so styles and template are still available.
+    await _safeRegister(component, scriptManager)
   }
 }
