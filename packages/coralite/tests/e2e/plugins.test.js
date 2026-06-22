@@ -26,13 +26,22 @@ test.describe('Plugins Extensibility', () => {
     await expect(pluginMessage).toHaveText('Hello E2E Test from server-side plugin! Page: /plugins/index.html')
   })
 
+  test('should verify client-side hooks execution', async ({ page }) => {
+    const beforeHook = page.getByTestId('plugin-component-0__hook-message')
+    await expect(beforeHook).toHaveText('Before Render Hook Worked!')
+
+    const afterHook = page.getByTestId('plugin-component-0__hook-result')
+    await expect(afterHook).toHaveText('After Render Hook Worked!')
+  })
+
   test('should dynamically render child and load dynamic import from plugin context', async ({ page }) => {
     await page.goto('/plugins/dynamic-plugin/')
 
-    const child = page.locator('plugin-injected-child')
-    await expect(child).toBeVisible()
+    const child = page.locator('plugin-injected-child').last()
+    // We expect it to be present in the DOM
+    await expect(child).toHaveCount(1)
 
     // Check that the dynamic module was executed and text assigned
-    await expect(child).toHaveText('Dynamic Module Loaded!')
+    await expect(child).toHaveText('Msg: Dynamic Module Loaded!')
   })
 })

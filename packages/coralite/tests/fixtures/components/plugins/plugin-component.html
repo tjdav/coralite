@@ -1,10 +1,12 @@
 <template id="plugin-component">
   <div ref="content">
     <h2 ref="title">{{ title }}</h2>
-    <div ref="injected"></div>
+    <plugin-injected-child ref="injected"></plugin-injected-child>
     <div ref="pluginData"></div>
     <div ref="meta-info">Title: {{ pageTitle }}</div>
     <div ref="plugin-message">{{ pluginMessage }}</div>
+    <div ref="hook-message">{{ hookMessage }}</div>
+    <div ref="hook-result"></div>
   </div>
 </template>
 
@@ -17,7 +19,8 @@
       return {
         title: 'Plugin Component',
         pageTitle: context.page.meta.title,
-        pluginMessage: test ? test.getPluginMessage('E2E Test') : 'no-plugin'
+        pluginMessage: test ? test.getPluginMessage('E2E Test') : 'no-plugin',
+        hookMessage: 'default'
       }
     },
     client ({ refs, 'test-context-plugin': testPlugin, 'mock-plugin': mockPlugin }) {

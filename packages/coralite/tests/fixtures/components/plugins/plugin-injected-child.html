@@ -1,3 +1,13 @@
 <template id="plugin-injected-child">
-  <div ref="msg">Injected Child</div>
+  <div ref="msg" style="display: block;">Msg: {{ msg }}</div>
 </template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      msg: { type: 'String' }
+    }
+  })
+</script>

@@ -1076,6 +1076,19 @@ export function createRenderer ({
             addComponentAndDependencies(tag)
           }
 
+          // Include components extracted from plugin code
+          for (const module of scriptManager.scriptModules) {
+            if (module.client?._extractedComponents) {
+              for (const tag of module.client._extractedComponents) {
+                addComponentAndDependencies(tag)
+              }
+            } else if (module._extractedComponents) {
+              for (const tag of module._extractedComponents) {
+                addComponentAndDependencies(tag)
+              }
+            }
+          }
+
           for (const tag of componentsToInclude) {
             if (scriptResult.manifest[tag]) {
               chunkManifest[tag] = scriptResult.manifest[tag]

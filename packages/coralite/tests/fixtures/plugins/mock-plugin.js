@@ -10,16 +10,13 @@ export const mockPlugin = definePlugin({
         // Phase 2: Local Instance Context
         return {
           renderPluginChild: async (containerElement) => {
-            if (!containerElement || !containerElement.replaceWith) {
-              throw new Error('renderPluginChild requires a valid DOM element to replace.')
+            if (!containerElement) {
+              throw new Error('renderPluginChild requires a valid DOM element.')
             }
 
             const child = document.createElement('plugin-injected-child')
-
-            child.textContent = mod.default()
-
-            // Respect component encapsulation: Replace the specific target
-            containerElement.replaceWith(child)
+            child.setAttribute('msg', mod.default())
+            containerElement.appendChild(child)
           }
         }
       }
