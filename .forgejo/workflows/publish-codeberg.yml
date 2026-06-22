@@ -53,15 +53,39 @@ jobs:
 
       - name: Publish to Codeberg
         run: |
-          # Check if private
           IS_PRIVATE=$(node -p "require('${{ env.PACKAGE_PATH }}/package.json').private || false")
+          VERSION=$(node -p "require('${{ env.PACKAGE_PATH }}/package.json').version")
           
           if [ "$IS_PRIVATE" = "true" ]; then
             echo "::notice::Skipping publish for $PACKAGE_NAME (Private package)."
           else
-            echo "🚀 Publishing $PACKAGE_NAME to Codeberg..."
+            echo "🚀 Publishing $PACKAGE_NAME@$VERSION to Codeberg..."
             
-            # Navigate to the specific workspace directory and publish using pnpm
             cd "${{ env.PACKAGE_PATH }}"
-            npm publish
+            
+            if npm publish; then
+              echo "::notice::Successfully published $PACKAGE_NAME@$VERSION."
+            else
+              echo "⚠️ npm publish reported a failure (Likely a Codeberg E500 false-negative). Polling registry..."
+              
+              # Polling configuration
+              MAX_RETRIES=4
+              SLEEP_TIME=5
+              ATTEMPT=1
+              
+              while [ $ATTEMPT -le $MAX_RETRIES ]; do
+                echo "Attempt $ATTEMPT of $MAX_RETRIES: Waiting $SLEEP_TIME seconds for Codeberg to settle..."
+                sleep $SLEEP_TIME
+                
+                if npm view "$PACKAGE_NAME@$VERSION" version > /dev/null 2>&1; then
+                  echo "::notice::Verified! $PACKAGE_NAME@$VERSION is live on Codeberg despite the initial E500."
+                  exit 0
+                fi
+                
+                ATTEMPT=$((ATTEMPT + 1))
+              done
+              
+              echo "::error::Publish failed permanently. Version not found on registry after 20 seconds."
+              exit 1
+            fi
           fi
