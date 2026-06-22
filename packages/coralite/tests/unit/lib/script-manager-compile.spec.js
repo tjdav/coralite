@@ -151,8 +151,8 @@ describe('ScriptManager Compilation', () => {
       const result = await sm.compileAllInstances(instances, 'production')
 
       assert.ok(typeof result === 'object')
-      const chunkHashName = result.manifest['async']
-      assert.ok(result.outputFiles[chunkHashName].text.includes('async'))
+      const chunkHash = result.manifest['async'].js
+      assert.ok(result.outputFiles[chunkHash].text.includes('async'))
     })
 
     it('should handle complex instance contexts', async () => {

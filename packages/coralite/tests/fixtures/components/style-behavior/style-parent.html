@@ -1,0 +1,33 @@
+<template id="style-parent">
+  <div class="parent-box">
+    <h1>Parent Component</h1>
+    <style-child ref="declarative"></style-child>
+    <div ref="container"></div>
+    <button ref="addBtn">Add Imperative</button>
+    <button ref="addOnlyImperativeBtn">Add Only Imperative</button>
+  </div>
+</template>
+
+<style>
+  .parent-box {
+    border: 2px solid black;
+    padding: 10px;
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ refs }) {
+      refs('addBtn').addEventListener('click', () => {
+        const child = document.createElement('style-child')
+        refs('container').appendChild(child)
+      })
+      refs('addOnlyImperativeBtn').addEventListener('click', () => {
+        const child = document.createElement('style-imperative-only')
+        refs('container').appendChild(child)
+      })
+    }
+  })
+</script>

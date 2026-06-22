@@ -101,6 +101,58 @@ export function injectExternalStyles (root, head, styles) {
  * @param {CoraliteElement | null} head - The head element.
  * @param {Map<string, string>} styles - Map of style selectors and their CSS content.
  */
+/**
+ * Injects external style link tags into the document head (or root if head is missing).
+ *
+ * @param {CoraliteComponentRoot} root - The root of the AST.
+ * @param {CoraliteElement | null} head - The head element.
+ * @param {string[]} stylePaths - Array of style paths.
+ * @param {string} base - Base URL
+ */
+export function injectExternalStyleLinks (root, head, stylePaths, base) {
+  if (!stylePaths || stylePaths.length === 0) {
+    return
+  }
+
+  const existingLinks = new Set()
+  if (head) {
+    head.children.forEach(child => {
+      if (child.type === 'tag' && child.name === 'link' && child.attribs?.href) {
+        existingLinks.add(child.attribs.href)
+      }
+    })
+  }
+
+  for (let i = 0; i < stylePaths.length; i++) {
+    const stylePath = stylePaths[i]
+    const fullUrl = `${base}assets/css/${stylePath}`
+
+    if (existingLinks.has(fullUrl)) {
+      continue
+    }
+
+    const linkElement = createCoraliteElement({
+      type: 'tag',
+      name: 'link',
+      parent: head || root,
+      attribs: {
+        rel: 'stylesheet',
+        href: fullUrl
+      },
+      children: []
+    })
+
+    if (head) {
+      head.children.push(linkElement)
+    } else {
+      root.children.unshift(linkElement)
+    }
+  }
+}
+
+/**
+ *
+ */
 export function injectStyles (root, head, styles) {
   if (!styles || styles.size === 0) {
     return
@@ -115,7 +167,7 @@ export function injectStyles (root, head, styles) {
     type: 'tag',
     name: 'style',
     parent: head || root,
-    attribs: {},
+    attribs: { id: 'coralite-inline-styles' },
     children: []
   })
 

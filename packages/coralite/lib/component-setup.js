@@ -7,6 +7,7 @@ import {
   isCoraliteComment
 } from './utils/types.js'
 import { findAndExtractScript, findAndExtractProperties } from './utils/server/server.js'
+import { transformCss } from './utils/server/style.js'
 
 /**
  * @import {
@@ -207,8 +208,9 @@ export function createComponentDefinition ({ app }) {
     const hasGetters = getters && Object.keys(getters).length > 0
     const hasAttributes = attributes && Object.keys(attributes).length > 0
     const hasServer = typeof server === 'function'
+    const hasStyles = module.styles && module.styles.length > 0
 
-    if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer) {
+    if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles) {
       const args = {}
       for (const key in state) {
         if (!Object.hasOwn(state, key) || key === '__script__') {
@@ -252,6 +254,13 @@ export async function registerBaseComponent ({
   if (!component.script) {
     const templateAST = component.template?.children || []
     const templateValues = component.values || {}
+
+    if (component.styles?.length && !component._processedCss) {
+      const rawCss = component.styles.join('\n')
+      const { rootClasses, descendantClasses } = component
+      component._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, (err) => console.error(err))
+    }
+
     const stylesHTML = component._processedCss || ''
     const defaultValues = {}
 
@@ -296,66 +305,77 @@ export async function registerBaseComponent ({
       mode
     })
 
-    if (scriptResult && scriptResult.__script__) {
-      const scriptMeta = scriptResult.__script__
-      const templateAST = component.template?.children || []
-      const templateValues = component.values || {}
-      const stylesHTML = component._processedCss || ''
-
-      const scriptObj = {
-        ...scriptMeta,
-        content: 'function(){}',
-        state: scriptMeta.state || {},
-        slots: scriptMeta.slots || {}
-      }
-      let defaultValues = scriptMeta.defaultValues || {}
-      let extractedComponents = []
-
-      if (!component._extractedClient) {
-        component._extractedClient = findAndExtractScript(component.script)
-      }
-      const extractedClient = component._extractedClient
-
-      if (extractedClient) {
-        scriptObj.content = extractedClient.content
-        scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
-        extractedComponents = extractedClient.components || []
-      }
-
-      if (!component._extractedServer) {
-        component._extractedServer = findAndExtractProperties(component.script)
-      }
-      const extractedServer = component._extractedServer
-
-      if (extractedServer) {
-        scriptObj.stateContent = extractedServer.content
-        scriptObj.stateLineOffset = (component.lineOffset || 0) + extractedServer.lineOffset
-      }
-
-      const declarativeComponents = (component.customElements || []).map(el => el.name)
-      const nestedComponents = [...new Set([...declarativeComponents, ...extractedComponents])]
-      scriptObj.components = nestedComponents
-
-      templateValues?.refs?.forEach(ref => {
-        const refKey = `ref_${ref.name}`
-        defaultValues[refKey] = ''
-        scriptObj.state[refKey] = ''
-      })
-      scriptObj.defaultValues = defaultValues
-
-      scriptManager.registerComponent({
-        id: component.id,
-        getters: scriptMeta.getters,
-        script: scriptObj,
-        filePath: component.filePath || (component.path && component.path.pathname),
-        templateAST,
-        templateValues,
-        defaultValues,
-        styles: stylesHTML,
-        slots: scriptMeta.slots,
-        override: true
-      })
+    const scriptMeta = (scriptResult && scriptResult.__script__) || {
+      state: {},
+      slots: {},
+      defaultValues: {},
+      getters: {}
     }
+
+    const templateAST = component.template?.children || []
+    const templateValues = component.values || {}
+
+    if (component.styles?.length && !component._processedCss) {
+      const rawCss = component.styles.join('\n')
+      const { rootClasses, descendantClasses } = component
+      component._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, (err) => console.error(err))
+    }
+
+    const stylesHTML = component._processedCss || ''
+
+    const scriptObj = {
+      ...scriptMeta,
+      content: 'function(){}',
+      state: scriptMeta.state || {},
+      slots: scriptMeta.slots || {}
+    }
+    let defaultValues = scriptMeta.defaultValues || {}
+    let extractedComponents = []
+
+    if (!component._extractedClient) {
+      component._extractedClient = findAndExtractScript(component.script)
+    }
+    const extractedClient = component._extractedClient
+
+    if (extractedClient) {
+      scriptObj.content = extractedClient.content
+      scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
+      extractedComponents = extractedClient.components || []
+    }
+
+    if (!component._extractedServer) {
+      component._extractedServer = findAndExtractProperties(component.script)
+    }
+    const extractedServer = component._extractedServer
+
+    if (extractedServer) {
+      scriptObj.stateContent = extractedServer.content
+      scriptObj.stateLineOffset = (component.lineOffset || 0) + extractedServer.lineOffset
+    }
+
+    const declarativeComponents = (component.customElements || []).map(el => el.name)
+    const nestedComponents = [...new Set([...declarativeComponents, ...extractedComponents])]
+    scriptObj.components = nestedComponents
+
+    templateValues?.refs?.forEach(ref => {
+      const refKey = `ref_${ref.name}`
+      defaultValues[refKey] = ''
+      scriptObj.state[refKey] = ''
+    })
+    scriptObj.defaultValues = defaultValues
+
+    scriptManager.registerComponent({
+      id: component.id,
+      getters: scriptMeta.getters,
+      script: scriptObj,
+      filePath: component.filePath || (component.path && component.path.pathname),
+      templateAST,
+      templateValues,
+      defaultValues,
+      styles: stylesHTML,
+      slots: scriptMeta.slots,
+      override: true
+    })
   } catch {
     // Base evaluation is allowed to fail silently
   }

@@ -20,6 +20,7 @@ import { parseHTML } from './utils/server/parse.js'
 import {
   findHeadAndBody,
   injectExternalStyles,
+  injectExternalStyleLinks,
   injectStyles,
   injectReadinessScript,
   injectImportMap,
@@ -961,7 +962,30 @@ export function createRenderer ({
         }
 
         if (mappedSessionObject.styles.size > 0) {
-          injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles)
+          if (isProduction && globalScriptResult && globalScriptResult.manifest) {
+            const cssPaths = []
+            const remainingStyles = new Map()
+
+            for (const [selector, css] of mappedSessionObject.styles) {
+              const entry = globalScriptResult.manifest[selector]
+              if (entry && entry.css) {
+                cssPaths.push(entry.css)
+              } else {
+                remainingStyles.set(selector, css)
+              }
+            }
+
+            if (cssPaths.length > 0) {
+              const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
+              injectExternalStyleLinks(mappedComponent.root, headElement, cssPaths, base)
+            }
+
+            if (remainingStyles.size > 0) {
+              injectStyles(mappedComponent.root, headElement, remainingStyles)
+            }
+          } else {
+            injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles)
+          }
         }
 
         if (mappedSessionObject.componentTags.size > 0) {
@@ -1054,6 +1078,15 @@ export function createRenderer ({
 
           for (const tag of componentsToInclude) {
             if (scriptResult.manifest[tag]) {
+              chunkManifest[tag] = scriptResult.manifest[tag]
+            }
+          }
+
+          // Ensure all components registered in the build are available in the manifest
+          // even if they aren't explicitly used on this page, if they might be used imperatively.
+          // This fixes the issue where imperative components aren't loaded if they aren't in the page manifest.
+          for (const tag in scriptResult.manifest) {
+            if (tag !== 'coralite-runtime' && !chunkManifest[tag]) {
               chunkManifest[tag] = scriptResult.manifest[tag]
             }
           }

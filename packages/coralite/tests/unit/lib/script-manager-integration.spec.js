@@ -75,11 +75,11 @@ describe('ScriptManager Integration & Edge Cases', () => {
       const result = await sm.compileAllInstances(instances, 'development')
 
       assert.ok(typeof result === 'object')
-      const chunkHashName = result.manifest['calculator']
+      const chunkHash = result.manifest['calculator'].js || result.manifest['calculator']
 
       // "customProperty" is in the original template code string, but esbuild might transform the property access `context.values.customProperty`
       // For this test, verifying the chunk exists and successfully built is sufficient.
-      assert.ok(result.outputFiles[chunkHashName])
+      assert.ok(result.outputFiles[chunkHash])
     })
 
     it('should handle multiple plugins with overlapping context', async () => {
@@ -298,8 +298,8 @@ describe('ScriptManager Integration & Edge Cases', () => {
       const result = await sm.compileAllInstances(instances, 'production')
       assert.ok(result, 'Should have successfully compiled')
 
-      const chunkHashName = result.manifest['test-ast']
-      const output = result.outputFiles[chunkHashName].text
+      const chunkHash = result.manifest['test-ast'].js
+      const output = result.outputFiles[chunkHash].text
       assert.ok(output.includes('<span></span>'), 'Output should contain serialized span HTML')
       assert.ok(output.includes('<div><span></span></div>'), 'Output should contain serialized parent HTML')
     })

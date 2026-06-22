@@ -32,15 +32,52 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
   const loadCache = {};
 
   const loadComponent = (componentId) => {
-    if (!componentManifest[componentId]) return Promise.resolve();
-    if (customElements.get(componentId)) return Promise.resolve();
+    const entry = componentManifest[componentId];
+    if (!entry) return Promise.resolve();
     if (loadCache[componentId]) return loadCache[componentId];
 
     loadCache[componentId] = (async () => {
-      const module = await import('${base}assets/js/' + componentManifest[componentId]);
+      const isDev = typeof entry === 'string' && entry.includes('-runtime');
+      const jsPath = typeof entry === 'string' ? entry : entry.js;
+      const cssPath = typeof entry === 'object' ? entry.css : null;
+
+      if (cssPath) {
+        const fullCssPath = '${base}assets/css/' + cssPath;
+        if (!document.querySelector('link[href="' + fullCssPath + '"]')) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = fullCssPath;
+          document.head.appendChild(link);
+        }
+      }
+
+      const module = await import('${base}assets/js/' + jsPath);
       if (module.default && module.default.componentId) {
-        if (!customElements.get(module.default.componentId)) {
-          customElements.define(module.default.componentId, createCoraliteClass(module.default, getClientContext, globalClientHooks));
+        const id = module.default.componentId;
+        if (!customElements.get(id)) {
+          if (module.default.styles && !cssPath) {
+            const styleId = 'coralite-style-' + id;
+            const inlineStyles = document.getElementById('coralite-inline-styles');
+            const hasStyleInInline = inlineStyles && inlineStyles.textContent.includes('[data-style-selector="' + id + '"]');
+
+            if (!document.getElementById(styleId) && !hasStyleInInline) {
+              const style = document.createElement('style');
+              style.id = styleId;
+              style.textContent = '[data-style-selector="' + id + '"] {\\n' + module.default.styles + '\\n}';
+              document.head.appendChild(style);
+            }
+          }
+          customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks));
+        }
+
+        // Upgrade any existing elements that might have been created before the definition was loaded
+        const elements = document.querySelectorAll(id);
+        for (const el of elements) {
+          if (el.constructor === HTMLElement) {
+             // Re-trigger the lifecycle by replacing the element or manually calling upgrade if supported
+             // For most cases, customElements.define handles this automatically if the element is already in DOM,
+             // but if it's currently disconnected it might need help.
+          }
         }
       }
     })();
@@ -57,10 +94,33 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
   }
 
   window.createCoraliteElement = (tag, options) => {
+    const el = document.createElement(tag, options);
     if (componentManifest[tag]) {
-      loadComponent(tag);
+      loadComponent(tag).then(() => {
+        if (el.constructor === HTMLElement || el.constructor === HTMLUnknownElement) {
+          if (typeof customElements.upgrade === 'function') {
+            customElements.upgrade(el);
+          }
+        }
+      });
     }
-    return document.createElement(tag, options);
+    return el;
+  };
+
+  const originalCreateElement = document.createElement;
+  document.createElement = function (tag, options) {
+    const tagName = (typeof tag === 'string') ? tag.toLowerCase() : tag;
+    const element = originalCreateElement.call(document, tag, options);
+    if (componentManifest[tagName]) {
+      loadComponent(tagName).then(() => {
+        if (element.constructor === HTMLElement || element.constructor === HTMLUnknownElement) {
+          if (typeof customElements.upgrade === 'function') {
+            customElements.upgrade(element);
+          }
+        }
+      });
+    }
+    return element;
   };
 
   window.processHTML = (html) => {

@@ -263,14 +263,13 @@ export async function createCoralite ({
       })
 
       if (renderer.outputFiles) {
-        const assetsDir = join(outputDir, 'assets', 'js')
-
-        if (!createdDir[assetsDir]) {
-          await mkdir(assetsDir, { recursive: true }); createdDir[assetsDir] = true
-        }
+        const assetsJsDir = join(outputDir, 'assets', 'js')
+        const assetsCssDir = join(outputDir, 'assets', 'css')
 
         const assetWrites = Object.values(renderer.outputFiles).map(async (file) => {
-          const outFile = join(assetsDir, file.hashedPath)
+          const isCSS = file.path.endsWith('.css')
+          const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
+          const outFile = join(baseAssetsDir, file.hashedPath)
           const outDir = dirname(outFile)
 
           if (!createdDir[outDir]) {

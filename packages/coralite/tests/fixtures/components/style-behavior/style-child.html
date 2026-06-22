@@ -1,0 +1,18 @@
+<template id="style-child">
+  <div class="child-box">
+    <p>Child Component</p>
+    <style-nested></style-nested>
+  </div>
+</template>
+
+<style>
+  .child-box {
+    background-color: #f0f0f0;
+    margin: 5px;
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>

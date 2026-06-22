@@ -2,7 +2,7 @@ import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, addComponentAndDependencies, cleanAST, cleanValues, generateHydrationMap } from './utils/core.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap } from './utils/core.js'
 import { findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
 import { CoraliteError } from './utils/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
@@ -228,6 +228,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   const entryCodeParts = []
   const moduleNamespace = 'coralite-script-module:'
   const componentNamespace = 'coralite-component:'
+  const cssNamespace = 'coralite-css:'
   const virtualPrefix = 'coralite-virtual:'
 
   // Generate ESM imports for each script module
@@ -327,43 +328,9 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   /** @type {Record<string, boolean>} */
   const processedComponent = {}
 
-  if (Array.isArray(instances)) {
-    // Production: instances is an array of IDs
-    for (const id of instances) {
-      processedComponent[id] = true
-    }
-  } else {
-    // Development: instances is a map of instanceId -> instance data
-    const instanceValues = Object.entries(instances)
-    for (const instanceData of instanceValues) {
-      addComponentAndDependencies(instanceData[1].componentId, processedComponent, this.sharedFunctions)
-    }
-
-    // Add plugin dependencies explicitly if they are standalone
-    for (const plugin of this.plugins) {
-      if (plugin && plugin._extractedComponents && Array.isArray(plugin._extractedComponents)) {
-        for (const compPath of plugin._extractedComponents) {
-          for (const id of Object.keys(this.sharedFunctions)) {
-            if (compPath.endsWith(`/${id}.html`) || compPath.endsWith(`\\${id}.html`) || compPath === id || compPath.endsWith(`/${id}`)) {
-              addComponentAndDependencies(id, processedComponent, this.sharedFunctions)
-            }
-          }
-        }
-      }
-    }
-
-    // Force inclusion of all components that evaluate something inside
-    for (const [componentId, fnData] of Object.entries(this.sharedFunctions)) {
-      if (fnData.script && fnData.script.content) {
-        if (!isEmptyFunction(fnData.script.content)) {
-          processedComponent[componentId] = true
-        }
-      } else if (fnData.script && fnData.script.components && fnData.script.components.length > 0) {
-        processedComponent[componentId] = true
-      } else if (hasObjectKeys(fnData.defaultValues)) {
-        processedComponent[componentId] = true
-      }
-    }
+  // Include ALL registered components to ensure they can be loaded imperatively
+  for (const id of Object.keys(this.sharedFunctions)) {
+    processedComponent[id] = true
   }
 
   const processedComponentKeys = Object.keys(processedComponent).sort()
@@ -385,12 +352,28 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
         componentEntryCode += `import * as componentModule_${safeId} from "${virtualPrefix}${componentNamespace}${componentId}";\n`
       }
 
+      if (sharedFn.styles && mode === 'production') {
+        componentEntryCode += `import "${virtualPrefix}${cssNamespace}${componentId}";\n`
+      }
+
       // Use a WeakMap to map original nodes to a unique index
       const nodeMap = new WeakMap()
       const state = { counter: 0 }
 
-      cleanAST(sharedFn.templateAST, nodeMap, state)
-      const templateHTML = serialize(sharedFn.templateAST ? render(sharedFn.templateAST, { decodeEntities: false }) : '')
+      const cleanedAST = cleanAST(sharedFn.templateAST, nodeMap, state)
+
+      if (cleanedAST && sharedFn.styles) {
+        for (const child of cleanedAST) {
+          if (child.type === 'tag') {
+            if (!child.attribs) {
+              child.attribs = {}
+            }
+            child.attribs['data-style-selector'] = componentId
+          }
+        }
+      }
+
+      const templateHTML = serialize(cleanedAST ? render(cleanedAST, { decodeEntities: false }) : '')
       const templateValues = serialize(cleanValues(sharedFn.templateValues, nodeMap) || {
         attributes: [],
         textNodes: [],
@@ -624,6 +607,17 @@ export default {
               }
             }
 
+            if (path.startsWith(cssNamespace)) {
+              const componentId = path.replace(cssNamespace, '')
+              const sharedFn = this.sharedFunctions[componentId]
+              const contents = `[data-style-selector="${componentId}"] {\n${sharedFn.styles}\n}`
+              return {
+                contents,
+                loader: 'css',
+                resolveDir: process.cwd()
+              }
+            }
+
             if (path.startsWith(componentNamespace)) {
               const componentId = path.replace(componentNamespace, '')
               const sharedFn = this.sharedFunctions[componentId]
@@ -717,30 +711,51 @@ export default {
   }
 
   const manifest = {}
+  const assetsJsDir = resolve('assets/js')
   if (result.metafile && result.metafile.outputs) {
     for (const [outputPath, meta] of Object.entries(result.metafile.outputs)) {
       if (meta.entryPoint) {
+        const isCSS = outputPath.endsWith('.css')
+        if (isCSS) {
+          continue
+        }
+
         const entryPoint = meta.entryPoint
         const cleanEntry = entryPoint.includes(':') ? entryPoint.split(':').pop() : entryPoint
 
         // STRIP THE EXTENSION (Fixes E2E Bootstrapper Timeout)
         const tagName = parse(cleanEntry).name
 
-        // USE RELATIVE PATHS (Fixes the chunks/ 404 issue)
-        const relativePath = relative('assets/js', outputPath).replace(/\\/g, '/')
+        const relativePath = relative(assetsJsDir, resolve(outputPath)).replace(/\\/g, '/')
 
-        manifest[tagName] = relativePath
+        if (tagName === 'coralite-runtime') {
+          manifest[tagName] = relativePath
+        } else {
+          if (!manifest[tagName]) {
+            manifest[tagName] = {}
+          }
+          manifest[tagName].js = relativePath
+
+          if (meta.cssBundle) {
+            manifest[tagName].css = relative(assetsJsDir, resolve(meta.cssBundle)).replace(/\\/g, '/')
+          }
+        }
       }
     }
   }
 
-  const outdirAbs = resolve('assets/js')
+  const outdirAbs = assetsJsDir
   const outputFiles = {}
 
   if (result.outputFiles) {
     for (const file of result.outputFiles) {
+      const isCSS = file.path.endsWith('.css')
       // Keep the relative path for the output file creation on disk
-      const relativePath = relative(outdirAbs, file.path).replace(/\\/g, '/')
+      let relativePath = relative(outdirAbs, file.path).replace(/\\/g, '/')
+
+      if (isCSS) {
+        relativePath = `../css/${relativePath}`
+      }
 
       outputFiles[relativePath] = {
         ...file,
