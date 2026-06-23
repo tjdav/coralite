@@ -1,0 +1,68 @@
+when:
+  - event: tag
+    tag: "*-v*"
+  - event: manual
+
+steps:
+  publish:
+    image: guergeiro/pnpm:lts-latest-slim
+    secrets: [ codeberg_token ]
+    commands:
+      # Extract Package Name (Using Woodpecker's built-in env var)
+      - export PACKAGE_NAME=$(echo $CI_COMMIT_TAG | sed -E 's/-v[0-9]+\.[0-9]+\.[0-9]+.*//')
+      - echo "Extracted PACKAGE_NAME=$PACKAGE_NAME"
+
+      # Find the directory for this package name
+      - export PACKAGE_PATH=$(pnpm list --filter "$PACKAGE_NAME" --depth -1 --json | node -e "const input = JSON.parse(require('fs').readFileSync(0)); console.log(input[0]?.path || '');")
+      - echo "Extracted PACKAGE_PATH=$PACKAGE_PATH"
+
+      # Install Dependencies
+      - pnpm install --frozen-lockfile
+
+      # Build
+      - pnpm --filter "$PACKAGE_NAME..." run --if-present build
+
+      # Set npm config
+      - npm config set registry https://codeberg.org/api/packages/tjdavid/npm/
+      - npm config set -- '//codeberg.org/api/packages/tjdavid/npm/:_authToken' "$CODEBERG_TOKEN"
+      
+      # Prevent timeout retries which cause 409 Conflicts if the first publish attempt succeeds
+      - npm config set fetch-retries 0
+      - npm config set fetch-timeout 600000
+
+      # 6. Publish to Codeberg with Polling Fallback
+      - export IS_PRIVATE=$(node -p "require('$PACKAGE_PATH/package.json').private || false")
+      - export VERSION=$(node -p "require('$PACKAGE_PATH/package.json').version")
+      
+      - |
+        if [ "$IS_PRIVATE" = "true" ]; then
+          echo "Skipping publish for $PACKAGE_NAME (Private package)."
+        else
+          echo "🚀 Publishing $PACKAGE_NAME@$VERSION to Codeberg..."
+          cd "$PACKAGE_PATH"
+          
+          if npm publish; then
+            echo "Successfully published $PACKAGE_NAME@$VERSION."
+          else
+            echo "⚠️ npm publish reported a failure (Likely a Codeberg E500 false-negative). Polling registry..."
+            
+            MAX_RETRIES=4
+            SLEEP_TIME=5
+            ATTEMPT=1
+            
+            while [ $ATTEMPT -le $MAX_RETRIES ]; do
+              echo "Attempt $ATTEMPT of $MAX_RETRIES: Waiting $SLEEP_TIME seconds for Codeberg to settle..."
+              sleep $SLEEP_TIME
+              
+              if npm view "$PACKAGE_NAME@$VERSION" version > /dev/null 2>&1; then
+                echo "Verified! $PACKAGE_NAME@$VERSION is live on Codeberg despite the initial E500."
+                exit 0
+              fi
+              
+              ATTEMPT=$((ATTEMPT + 1))
+            done
+            
+            echo "Publish failed permanently. Version not found on registry after 20 seconds."
+            exit 1
+          fi
+        fi
