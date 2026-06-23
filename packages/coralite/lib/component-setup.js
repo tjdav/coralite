@@ -6,7 +6,7 @@ import {
   isCoraliteTextNode,
   isCoraliteComment
 } from './utils/types.js'
-import { findAndExtractScript, findAndExtractProperties } from './utils/server/server.js'
+import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
 import { transformCss } from './utils/server/style.js'
 
 /**
@@ -49,8 +49,9 @@ export function createComponentDefinition ({ app }) {
     const serializableAttributes = {}
     if (attributes) {
       for (const [key, schema] of Object.entries(attributes)) {
+        const type = schema.type || schema
         serializableAttributes[key] = {
-          type: schema.type.name || schema.type,
+          type: type.name || type,
           default: schema.default
         }
       }
@@ -75,7 +76,8 @@ export function createComponentDefinition ({ app }) {
 
     if (attributes) {
       for (const [key, schema] of Object.entries(attributes)) {
-        const typeName = schema.type.name || schema.type
+        const type = schema.type || schema
+        const typeName = type.name || type
         if (state[key] !== undefined) {
           const value = state[key]
           if (typeName === 'Number') {
@@ -280,13 +282,61 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null)
     }
 
     if (!component._extractedServer) {
-      component._extractedServer = findAndExtractProperties(component.script)
+      component._extractedServer = extractComponentProperty(component.script, 'server')
     }
     const extractedServer = component._extractedServer
 
     if (extractedServer) {
       scriptObj.stateContent = extractedServer.content
       scriptObj.stateLineOffset = (component.lineOffset || 0) + extractedServer.lineOffset
+    }
+
+    // Attempt to extract getters, attributes, and slots from the script if they weren't provided
+    // This provides a fallback if registerBaseComponent evaluation fails.
+    if (!scriptResultMeta) {
+      const extractedGetters = extractComponentProperty(component.script, 'getters')
+      if (extractedGetters) {
+        try {
+          // Note: we can't easily evaluate the getters content here without a VM context,
+          // but we can at least pass the content through if it's an object expression.
+          if (extractedGetters.content.trim().startsWith('{')) {
+            scriptObj.getters = new Function(`return ${extractedGetters.content}`)()
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const extractedAttributes = extractComponentProperty(component.script, 'attributes')
+      if (extractedAttributes) {
+        try {
+          if (extractedAttributes.content.trim().startsWith('{')) {
+            const attrs = new Function(`return ${extractedAttributes.content}`)()
+            const serializableAttributes = {}
+            for (const [key, schema] of Object.entries(attrs)) {
+              const type = schema.type || schema
+              serializableAttributes[key] = {
+                type: type.name || type,
+                default: schema.default
+              }
+            }
+            scriptObj.attributes = serializableAttributes
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const extractedSlots = extractComponentProperty(component.script, 'slots')
+      if (extractedSlots) {
+        try {
+          if (extractedSlots.content.trim().startsWith('{')) {
+            scriptObj.slots = new Function(`return ${extractedSlots.content}`)()
+          }
+        } catch {
+          /* ignore */
+        }
+      }
     }
   }
 

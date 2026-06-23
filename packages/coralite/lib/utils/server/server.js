@@ -263,10 +263,15 @@ export function findAndExtractScript (code) {
  * @param {string} code - The raw script content
  * @returns {ScriptContent | null}
  */
-export function findAndExtractProperties (code) {
+/**
+ * Extracts a specific property from a defineComponent call.
+ *
+ * @param {string} code - The raw script content
+ * @param {string} propertyName - The name of the property to extract
+ * @returns {ScriptContent | null}
+ */
+export function extractComponentProperty (code, propertyName) {
   const ast = getAST(code, true)
-
-  /** @type {ScriptContent | null} */
   let result = null
 
   walkJS(ast, {
@@ -279,14 +284,14 @@ export function findAndExtractProperties (code) {
         const firstArg = node.arguments[0]
 
         if (firstArg && firstArg.type === 'ObjectExpression') {
-          const stateProp = firstArg.properties.find(
-            prop => prop.type === 'Property' &&
-              prop.key && prop.key.type === 'Identifier' &&
-              prop.key.name === 'server'
+          const prop = firstArg.properties.find(
+            p => p.type === 'Property' &&
+              p.key && p.key.type === 'Identifier' &&
+              p.key.name === propertyName
           )
 
-          if (stateProp && stateProp.type === 'Property') {
-            const { value, method } = stateProp
+          if (prop && prop.type === 'Property') {
+            const { value, method } = prop
             let startLine = value.loc.start.line - 1
             let prefix = ''
             let content = ''
@@ -300,16 +305,22 @@ export function findAndExtractProperties (code) {
             } else if (value.type === 'FunctionExpression') {
               if (method) {
                 const isAsync = value.async
-                prefix += (isAsync ? 'async ' : '') + 'function server'
+                prefix += (isAsync ? 'async ' : '') + 'function ' + propertyName
                 content = prefix + source
-                startLine = stateProp.key.loc.start.line - 1
+                startLine = prop.key.loc.start.line - 1
               } else {
                 content = prefix + source
                 startLine = value.loc.start.line - 1
               }
             } else if (value.type === 'ObjectExpression') {
-              // Wrap object in a function returning that object
-              content = `() => (${source})`
+              if (propertyName === 'server') {
+                content = `() => (${source})`
+              } else {
+                content = source
+              }
+              startLine = value.loc.start.line - 1
+            } else if (value.type === 'Literal' || value.type === 'Identifier') {
+              content = source
               startLine = value.loc.start.line - 1
             }
 

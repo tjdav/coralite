@@ -388,7 +388,14 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       const defaults = serialize(normalizedDefaults)
       const attributes = serialize(sharedFn.script?.attributes || {})
       const hydrationMap = serialize(generateHydrationMap(sharedFn.templateAST, sharedFn.templateValues))
-      const getters = serialize(sharedFn.getters || sharedFn.script?.getters || {})
+
+      let normalizedGetters = sharedFn.getters || sharedFn.script?.getters || {}
+
+      if (normalizedGetters) {
+        normalizedGetters = normalizeObjectFunctions(normalizedGetters, astTransformer)
+      }
+
+      const getters = serialize(normalizedGetters)
       const dependencies = JSON.stringify(sharedFn.components || [])
 
       let normalizedSlots = sharedFn.slots || {}

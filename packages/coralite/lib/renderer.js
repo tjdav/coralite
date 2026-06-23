@@ -12,7 +12,7 @@ import {
 import {
   replaceToken,
   findAndExtractScript,
-  findAndExtractProperties,
+  extractComponentProperty,
   astTransformer
 } from './utils/server/server.js'
 import { getHtmlFile } from './utils/server/html.js'
@@ -314,7 +314,7 @@ export function createRenderer ({
         }
 
         if (!moduleComponent.result._extractedProperties) {
-          moduleComponent.result._extractedProperties = findAndExtractProperties(module.script)
+          moduleComponent.result._extractedProperties = extractComponentProperty(module.script, 'server')
         }
 
         const extractedProperties = moduleComponent.result._extractedProperties

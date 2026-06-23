@@ -1,0 +1,16 @@
+<template id="getter-child">
+  <p ref="status">{{ isSeen }}</p>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      seen: Boolean
+    },
+    getters: {
+      isSeen: (state) => (state.seen ? 'Seen' : 'Unseen')
+    }
+  })
+</script>
