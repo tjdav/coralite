@@ -559,7 +559,7 @@ export default {
 
               // Generate config object
               const configContent = module.config
-                ? `const pluginConfig = ${JSON.stringify(module.config)};`
+                ? `const pluginConfig = ${serialize(module.config)};`
                 : 'const pluginConfig = {};'
 
               contents += configContent + '\n'
