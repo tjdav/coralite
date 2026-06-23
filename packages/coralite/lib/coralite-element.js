@@ -170,6 +170,13 @@ export class CoraliteElement extends HTMLElement {
      * @type {CoraliteComponentOptions|null}
      */
     this.componentOptions = null
+
+    /**
+     * Hydrated data passed from the server.
+     * @type {Object|null}
+     * @protected
+     */
+    this._hydrationData = null
   }
 
   /**
@@ -322,17 +329,9 @@ export class CoraliteElement extends HTMLElement {
       target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
     }
 
-    // Hydrate data() block results from the SSR JSON payload
-    const hydrationTag = document.getElementById('__CORALITE_HYDRATION__')
-    if (hydrationTag) {
-      try {
-        const allData = JSON.parse(hydrationTag.textContent)
-        if (allData[this._instanceId]) {
-          Object.assign(target, allData[this._instanceId])
-        }
-      } catch {
-        console.error('Coralite Element hydration failed:', this._instanceId)
-      }
+    // Hydrate data() block results from the SSR payload
+    if (this._hydrationData && this._hydrationData[this._instanceId]) {
+      Object.assign(target, this._hydrationData[this._instanceId])
     }
 
     // Trigger Before-Render hooks BEFORE state is proxied, allowing plugins to inject reactive data
@@ -681,9 +680,10 @@ export class CoraliteElement extends HTMLElement {
  * @param {Array<CoraliteClientPluginBeforeComponentRenderCallback>} [hooks.onBeforeComponentRender] - Hooks to run before render.
  * @param {Array<CoraliteClientPluginAfterComponentRenderCallback>} [hooks.onAfterComponentRender] - Hooks to run after render.
  * @param {Array<CoraliteClientPluginDisconnectedCallback>} [hooks.onDisconnected] - Hooks to run after render.
+ * @param {Object|null} [hydrationData=null] - Hydrated data passed from the server.
  * @returns {typeof CoraliteElement} A new CoraliteElement subclass.
  */
-export function createCoraliteClass (options, contextGetter = null, hooks = {}) {
+export function createCoraliteClass (options, contextGetter = null, hooks = {}, hydrationData = null) {
   return class extends CoraliteElement {
     /**
      * The attributes to observe for changes.
@@ -704,6 +704,7 @@ export function createCoraliteClass (options, contextGetter = null, hooks = {}) 
       super()
       this.componentOptions = options
       this._clientContextGetter = contextGetter
+      this._hydrationData = hydrationData
       this._hooks = {
         onBeforeComponentRender: hooks.onBeforeComponentRender || [],
         onAfterComponentRender: hooks.onAfterComponentRender || [],

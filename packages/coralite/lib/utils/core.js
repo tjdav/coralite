@@ -651,3 +651,49 @@ export function createReadOnlyProxy (target, proxies = new WeakMap()) {
 export function defineComponent (options) {
   return options
 }
+
+/**
+ * Recursively validates that an object contains only serializable data.
+ * Throws a CoraliteError if a function is encountered.
+ *
+ * @param {any} value - The value to validate.
+ * @param {string} [path='root'] - The current path in the object (for error reporting).
+ * @param {WeakSet} [seen=new WeakSet()] - Set of seen objects to handle circular references.
+ * @throws {CoraliteError} If a function is found.
+ */
+export function validateSerializable (value, path = 'root', seen = new WeakSet()) {
+  if (value === null || typeof value !== 'object') {
+    if (typeof value === 'function') {
+      throw new CoraliteError(`Function detected at "${path}". The "server()" block must only return serializable data (JSON-compatible plus Date, RegExp, Map, Set). Functions are not allowed.`, {
+        path
+      })
+    }
+
+    return
+  }
+
+  if (seen.has(value)) {
+    return
+  }
+
+  seen.add(value)
+
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      validateSerializable(value[i], `${path}[${i}]`, seen)
+    }
+  } else if (value instanceof Map) {
+    for (const [key, val] of value.entries()) {
+      validateSerializable(val, `${path}.get(${JSON.stringify(key)})`, seen)
+    }
+  } else if (value instanceof Set) {
+    let i = 0
+    for (const val of value) {
+      validateSerializable(val, `${path}.set[${i++}]`, seen)
+    }
+  } else {
+    for (const key of Object.keys(value)) {
+      validateSerializable(value[key], `${path}.${key}`, seen)
+    }
+  }
+}

@@ -54,6 +54,7 @@
  * @property {string} [filePath] - The path to the file where the error occurred.
  * @property {string} [instanceId] - The unique ID of the component instance.
  * @property {string} [pagePath] - The path to the page being rendered.
+ * @property {string} [path] - The path to the data property where the error occurred.
  * @property {number} [line] - The line number where the error occurred.
  * @property {number} [column] - The column number where the error occurred.
  * @property {string} [stackFile] - The file name from the stack trace.

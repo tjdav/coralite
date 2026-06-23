@@ -14,6 +14,7 @@ export class CoraliteError extends Error {
    * @param {string} [options.filePath] - The path to the file where the error occurred.
    * @param {string} [options.instanceId] - The unique ID of the component instance.
    * @param {string} [options.pagePath] - The path to the page being rendered.
+   * @param {string} [options.path] - The path to the data property where the error occurred.
    * @param {number} [options.line] - The line number where the error occurred.
    * @param {number} [options.column] - The column number where the error occurred.
    * @param {string} [options.stackFile] - The file name from the stack trace.
@@ -27,6 +28,7 @@ export class CoraliteError extends Error {
     this.filePath = options.filePath
     this.instanceId = options.instanceId
     this.pagePath = options.pagePath
+    this.path = options.path
     this.line = options.line
     this.column = options.column
     this.stackFile = options.stackFile
@@ -73,6 +75,8 @@ export function handleError ({ onErrorCallback, data }) {
     data.instanceId = data.instanceId || coraliteError.instanceId
     // @ts-ignore
     data.pagePath = data.pagePath || coraliteError.pagePath
+    // @ts-ignore
+    data.path = data.path || coraliteError.path
     // @ts-ignore
     data.line = data.line || coraliteError.line
     // @ts-ignore

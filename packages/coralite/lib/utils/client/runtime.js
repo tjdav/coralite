@@ -10,18 +10,21 @@
  * @param {string} options.sharedChunkPath - The filename of the shared chunk.
  * @param {Object} options.chunkManifest - Manifest mapping component IDs to their chunk filenames.
  * @param {string[]} [options.declarativeTags=[]] - The declarative tags used.
+ * @param {string} [options.hydrationData='{}'] - Serialized hydration data.
  * @returns {string} The generated JavaScript runtime.
  */
 export function generateClientRuntime ({
   base,
   sharedChunkPath,
   chunkManifest,
-  declarativeTags = []
+  declarativeTags = [],
+  hydrationData = '{}'
 }) {
   return `
 import { getClientContext, createCoraliteClass, globalClientHooks } from '${base}assets/js/${sharedChunkPath}';
 
 (async () => {
+  const hydrationData = ${hydrationData};
   if (!window.__coralite_ready__) {
     window.__coralite_ready__ = new Promise(resolve => { window.__coralite_resolve_ready__ = resolve; });
   }
@@ -67,7 +70,7 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
               document.head.appendChild(style);
             }
           }
-          customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks));
+          customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks, hydrationData));
         }
 
         // Upgrade any existing elements that might have been created before the definition was loaded

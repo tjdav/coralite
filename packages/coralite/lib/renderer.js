@@ -3,11 +3,13 @@ import { dirname, join } from 'node:path'
 import { availableParallelism } from 'node:os'
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises'
 import pLimit from 'p-limit'
+import serialize from 'serialize-javascript'
 import {
   cleanKeys,
   cloneModuleInstance,
   cloneComponentInstance,
-  normalizeObjectFunctions
+  normalizeObjectFunctions,
+  validateSerializable
 } from './utils/core.js'
 import {
   replaceToken,
@@ -1108,38 +1110,22 @@ export function createRenderer ({
           injectReadinessScript(mappedComponent.root, headElement, true)
           injectImportMap(mappedComponent.root, headElement, scriptResult.importMap)
           const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
-          const scriptContent = generateClientRuntime({
-            base,
-            sharedChunkPath: scriptResult.manifest['coralite-runtime'],
-            chunkManifest,
-            declarativeTags: Array.from(declarativeTags)
-          })
           const hydrationData = {}
 
           for (const [id, instance] of Object.entries(instances)) {
             if (instance.state && Object.keys(instance.state).length > 0) {
+              validateSerializable(instance.state, `component "${instance.componentId}" state`)
               hydrationData[id] = normalizeObjectFunctions(instance.state, astTransformer)
             }
           }
 
-          const hydrationScriptElement = createCoraliteElement({
-            type: 'tag',
-            name: 'script',
-            parent: bodyElement,
-            attribs: {
-              id: '__CORALITE_HYDRATION__',
-              type: 'application/json'
-            },
-            children: []
+          const scriptContent = generateClientRuntime({
+            base,
+            sharedChunkPath: scriptResult.manifest['coralite-runtime'],
+            chunkManifest,
+            declarativeTags: Array.from(declarativeTags),
+            hydrationData: serialize(hydrationData)
           })
-
-          hydrationScriptElement.children.push(createCoraliteTextNode({
-            type: 'text',
-            data: JSON.stringify(hydrationData),
-            parent: hydrationScriptElement
-          }))
-
-          bodyElement.children.push(hydrationScriptElement)
           const scriptElement = createCoraliteElement({
             type: 'tag',
             name: 'script',
