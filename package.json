@@ -39,17 +39,17 @@
     "website-dev": "pnpm --filter='./website' run start"
   },
   "devDependencies": {
-    "@stylistic/eslint-plugin": "^5.4.0",
-    "@types/node": "^22.18.5",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^22.20.0",
     "coralite-release": "workspace:*",
-    "esbuild": "^0.25.9",
-    "eslint": "^9.38.0",
+    "esbuild": "^0.25.12",
+    "eslint": "^9.39.4",
     "eslint-plugin-html": "^8.1.4",
     "eslint-plugin-jsdoc": "^62.9.0",
-    "lint-staged": "^17.0.2",
+    "lint-staged": "^17.0.8",
     "premove": "^4.0.0",
     "simple-git-hooks": "^2.13.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   },
   "engines": {
     "node": ">=20.19.0"

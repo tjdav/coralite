@@ -24,7 +24,7 @@
     "cross-env": "^10.1.0",
     "highlight.js": "^11.11.1",
     "postcss-import": "^16.1.1",
-    "stylelint": "^16.24.0",
+    "stylelint": "^16.26.1",
     "stylelint-config-twbs-bootstrap": "^16.1.0"
   },
   "stylelint": {
@@ -32,6 +32,6 @@
   },
   "dependencies": {
     "coralite": "workspace:*",
-    "fuse.js": "^7.3.0"
+    "fuse.js": "^7.4.2"
   }
 }
