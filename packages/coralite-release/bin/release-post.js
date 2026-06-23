@@ -11,17 +11,24 @@ const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer wit
 Your task is to generate a structured GitHub Release Post based on provided git commit messages and technical summaries.
 
 ### Style Guidelines:
-- **Perspective**: Use "I" (first person singular), never "we." Coralite is a one-person project.
-- **Tone**: Direct, professional, and understated (European style).
-- **Language**: Avoid "hyper" or "marketing" language. Do not use words like "thrilled," "huge," "significant," "game-changer," or "pioneering." Stick to the technical facts.
-- **Formatting**: Use Markdown with clear headers and bullet points for scannability.
+- **Perspective**: Use a **Product-Centric** perspective (third-person/objective). Focus on what *the release* or *Coralite* does, rather than the person who wrote it (e.g., "This release introduces...", "Coralite now supports..."). Avoid using "I" or "we" to maintain an objective, mature, and professional tone.
+- **Tone**: Concise, direct, professional, and understated (European style). 
+- **Language**: Be ruthless with brevity. Write punchy, economical sentences. Avoid passive voice, filler words (e.g., "specifically," "concurrently," "furthermore"), and marketing fluff ("thrilled," "huge"). Never use verbose constructions like "This release focuses on enhancing..."—instead, say "This release improves...".
+- **Formatting**: Strictly enforce a specific heading hierarchy (\`##\`, \`###\`, \`####\`). Do not use bolded bullet points for primary list items (e.g., \`* **Feature:** Description\`); instead, elevate them to \`####\` sub-headers for maximum scannability. Use horizontal rules (\`---\`) to visually separate major \`###\` sections.
 
 ### Content Structure:
-1. **Title**: Direct title including the version number.
-2. **Introduction**: A concise paragraph (2-3 sentences) summarizing the focus of the release. If a specific focus is provided in the context, emphasize it here.
-3. **Key Highlights**: Detailed bullet points for the most important technical changes. **Include code examples (before/after or API usage)** whenever a technical summary for a highlight provides enough information to do so. This is crucial for making the release useful.
-4. **Bug Fixes & Improvements**: A section for fixes and minor refinements.
-5. **Internal Changes**: A section for refactors, utility migrations, and maintenance work (avoiding "Under the Hood").
+1. **Title**: Direct title including the version number (e.g., \`# Release vX.X.X\`).
+2. **## Release Overview**: A strict 1-2 sentence summary. Start directly with the impact or action. Do not use preamble like "The goal of this release is to..." or "This release focuses on...". Just state exactly what changed.
+3. **### Key Highlights**: Detailed breakdowns of the most important technical changes.
+    - Format each highlight with a \`#### [Highlight Title]\` header.
+    - Write the primary description as standard paragraph text under the header, using standard bullet points (\`*\`) only for secondary details.
+    - **Include code examples (before/after or API usage)** whenever a technical summary provides enough information to do so.
+4. **---** (Horizontal Rule)
+5. **### Bug Fixes & Improvements**: A section for fixes and minor refinements.
+    - Format each fix with a \`#### [Fix Title]\` header, followed by its description.
+6. **---** (Horizontal Rule)
+7. **### Internal Changes**: A section for refactors, utility migrations, and maintenance work (avoiding "Under the Hood").
+    - Format each change with a \`#### [Change Title]\` header, followed by its description.
 
 ### Rules:
 - Base content strictly on the provided commit logs and technical summaries; do not hallucinate features.
@@ -53,14 +60,9 @@ program
     try {
       const git = simpleGit()
 
-      // Load framework context if available
-      let frameworkContext = ''
-      try {
-        const llmsPath = path.join(process.cwd(), 'packages/coralite/llms.txt')
-        frameworkContext = readFileSync(llmsPath, 'utf8')
-      } catch {
-        // ignore if not found
-      }
+      // Load framework context
+      const llmsPath = path.join(process.cwd(), 'packages/coralite/llms.txt')
+      const frameworkContext = readFileSync(llmsPath, 'utf8')
 
       // Prompt for package if not provided
       if (!packageName) {
