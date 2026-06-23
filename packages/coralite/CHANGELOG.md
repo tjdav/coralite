@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.38.5
+
+> Comparing `coralite-v0.38.4` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- apply display: contents to imperative components ([f749dcd](https://codeberg.org/tjdavid/coralite/commit/f749dcde0696b5e2246272b1df6c8201210f612e))
+
+### 🧹 Chores
+
+- update dependencies across workspace packages ([dc88087](https://codeberg.org/tjdavid/coralite/commit/dc880879d697b09e5d0f60ab704da09873adda09))
+- update Playwright to version 1.61.0 ([1bd2a6e](https://codeberg.org/tjdavid/coralite/commit/1bd2a6eb60175257f3282639a8a14aae76ebda35))
+
+
 ## v0.38.4
 
 > Comparing `coralite-v0.38.3` to `HEAD`
