@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.38.6
+
+> Comparing `coralite-v0.38.5` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- ensure imperative getters work as template tokens ([80fa114](https://codeberg.org/tjdavid/coralite/commit/80fa114ef409fe7b6bbfc91c258ee8c3902e3d8b))
+
+
 ## v0.38.5
 
 > Comparing `coralite-v0.38.4` to `HEAD`
