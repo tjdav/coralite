@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.38.5
+
+> Comparing `coralite-scripts-v0.38.4` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🧹 Chores
+
+- update dependencies across workspace packages ([dc88087](https://codeberg.org/tjdavid/coralite/commit/dc880879d697b09e5d0f60ab704da09873adda09))
+
+
 ## v0.38.4
 
 > Comparing `coralite-scripts-v0.38.3` to `HEAD`
