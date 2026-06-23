@@ -1,0 +1,38 @@
+<template id="config-types-component">
+  <div id="config-results">
+    <div data-testid="regex">{{ regex }}</div>
+    <div data-testid="date">{{ date }}</div>
+    <div data-testid="func">{{ funcResult }}</div>
+    <div data-testid="map">{{ mapValue }}</div>
+    <div data-testid="set">{{ setHasValue }}</div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    server: async () => {
+      return {
+        regex: '',
+        date: '',
+        funcResult: '',
+        mapValue: '',
+        setHasValue: ''
+      }
+    },
+    client: async ({ configTypes, state }) => {
+      try {
+        const config = configTypes.getConfig()
+
+        state.regex = config.regex instanceof RegExp ? 'is-regex' : 'not-regex'
+        state.date = config.date instanceof Date ? 'is-date' : 'not-date'
+        state.funcResult = typeof config.func === 'function' ? config.func(1, 2) : 'not-func'
+        state.mapValue = config.map instanceof Map ? config.map.get('key') : 'not-map'
+        state.setHasValue = config.set instanceof Set ? config.set.has(2) : 'not-set'
+      } catch (e) {
+        console.error('CLIENT ERROR:', e)
+      }
+    }
+  })
+</script>

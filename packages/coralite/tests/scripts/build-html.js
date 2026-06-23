@@ -7,6 +7,7 @@ import { observerPlugin } from '../fixtures/plugins/observer-plugin.js'
 import { consumerServerPlugin } from '../fixtures/plugins/consumer-server-plugin.js'
 import { consumerClientPlugin } from '../fixtures/plugins/consumer-client-plugin.js'
 import { hookTestPlugin } from '../fixtures/plugins/hook-test-plugin.js'
+import { configTypesPlugin } from '../fixtures/plugins/config-types-plugin.js'
 
 const coralite = await createCoralite({
   components: 'tests/fixtures/components',
@@ -31,6 +32,7 @@ const coralite = await createCoralite({
     consumerServerPlugin,
     consumerClientPlugin,
     hookTestPlugin,
+    configTypesPlugin,
     {
       name: 'my-plugin',
       server: {

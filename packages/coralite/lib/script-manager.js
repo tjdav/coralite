@@ -583,7 +583,7 @@ export default {
 
                 const fn = normalizeFunction(module.context)
                 const clientConfig = module.client?.config || module.config || {}
-                const configStr = JSON.stringify(clientConfig)
+                const configStr = serialize(clientConfig)
 
                 contents += `  "${clientName}": async (globalContext) => {\n`
                 contents += `    const fn = ${fn};\n`
@@ -598,7 +598,14 @@ export default {
                             return Reflect.set(target, prop, value);
                           }
                         });
-                        const phase2 = await fn(pluginContext);
+                        let phase2;
+                        try {
+                           phase2 = await fn(pluginContext);
+                        } catch (e) {
+                           console.error('Coralite Plugin Error: Failed to initialize client context for plugin "${clientName}" phase 1:', e);
+                           throw e;
+                        }
+
                         if (typeof phase2 !== 'function') {
                           throw new Error('Coralite Plugin Error: The "context" function of client plugin "${clientName}" must return a function for the second phase (instance context). Received: ' + typeof phase2);
                         }
