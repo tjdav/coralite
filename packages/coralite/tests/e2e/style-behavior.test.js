@@ -164,4 +164,22 @@ test.describe('Style Behavior', () => {
 
     expect(ordering).toBe(true)
   })
+
+  test('should apply display: contents to imperative-only components', async ({ page }) => {
+    const componentId = 'style-imperative-only'
+
+    // Add imperative instance
+    await page.click('style-parent [ref$="__addOnlyImperativeBtn"]')
+
+    // Wait for the element to be added and upgraded
+    await expect(page.locator(componentId)).toHaveCount(1)
+
+    // Check if display: contents is applied
+    const displayValue = await page.evaluate((cid) => {
+      const el = document.querySelector(cid)
+      return window.getComputedStyle(el).display
+    }, componentId)
+
+    expect(displayValue).toBe('contents')
+  })
 })

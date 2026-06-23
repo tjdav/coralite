@@ -955,6 +955,53 @@ export function createRenderer ({
           pageContext
         })
 
+        // Filter manifest to only include components used on this page (declarative + cascading imperative)
+        const componentsToInclude = new Set()
+
+        const addComponentAndDependencies = (id) => {
+          if (componentsToInclude.has(id)) {
+            return
+          }
+          componentsToInclude.add(id)
+          const sharedFn = scriptManager.sharedFunctions[id]
+          if (sharedFn && sharedFn.components) {
+            const components = sharedFn.components
+            for (let i = 0; i < components.length; i++) {
+              addComponentAndDependencies(components[i])
+            }
+          }
+        }
+
+        // Include all components that were actually rendered on the page (declarative)
+        for (const tag of mappedSessionObject.componentTags) {
+          addComponentAndDependencies(tag)
+        }
+
+        // Include components from any imperative scripts on this page
+        if (mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
+          const scripts = mappedSessionObject.scripts.content[mappedComponent.path.pathname]
+          for (const instanceId in scripts) {
+            const script = scripts[instanceId]
+            addComponentAndDependencies(script.componentId)
+            if (script.components) {
+              const components = script.components
+              for (let i = 0; i < components.length; i++) {
+                addComponentAndDependencies(components[i])
+              }
+            }
+          }
+        }
+
+        // Include components extracted from plugin code
+        for (const module of scriptManager.scriptModules) {
+          const extractedComponents = module.client?._extractedComponents || module._extractedComponents
+          if (extractedComponents) {
+            for (const tag of extractedComponents) {
+              addComponentAndDependencies(tag)
+            }
+          }
+        }
+
         const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
 
         if (normalizedOptions.externalStyles && normalizedOptions.externalStyles.length > 0) {
@@ -988,7 +1035,7 @@ export function createRenderer ({
           }
         }
 
-        if (mappedSessionObject.componentTags.size > 0) {
+        if (componentsToInclude.size > 0) {
           const targetElement = headElement || bodyElement || mappedComponent.root
           const layoutStyleElement = createCoraliteElement({
             type: 'tag',
@@ -998,7 +1045,7 @@ export function createRenderer ({
             children: []
           })
 
-          const selectors = Array.from(mappedSessionObject.componentTags)
+          const selectors = Array.from(componentsToInclude)
 
           selectors.push('c-token')
 
@@ -1040,54 +1087,8 @@ export function createRenderer ({
             })
           }
 
-          // Filter manifest to only include components used on this page (declarative + cascading imperative)
+          // Filter manifest to only include components used on this page (already collected in componentsToInclude)
           const chunkManifest = {}
-          const componentsToInclude = new Set()
-
-          const addComponentAndDependencies = (id) => {
-            if (componentsToInclude.has(id)) {
-              return
-            }
-            componentsToInclude.add(id)
-            const sharedFn = scriptManager.sharedFunctions[id]
-            if (sharedFn && sharedFn.components) {
-              const components = sharedFn.components
-              for (let i = 0; i < components.length; i++) {
-                addComponentAndDependencies(components[i])
-              }
-            }
-          }
-
-          // In pages, we might have multiple instances of the same component,
-          // or different components. We need to collect all imperative dependencies
-          // from all instances present on the page.
-          for (const instanceId in scripts) {
-            const script = scripts[instanceId]
-            addComponentAndDependencies(script.componentId)
-            if (script.components) {
-              const components = script.components
-              for (let i = 0; i < components.length; i++) {
-                addComponentAndDependencies(components[i])
-              }
-            }
-          }
-
-          for (const tag of declarativeTags) {
-            addComponentAndDependencies(tag)
-          }
-
-          // Include components extracted from plugin code
-          for (const module of scriptManager.scriptModules) {
-            if (module.client?._extractedComponents) {
-              for (const tag of module.client._extractedComponents) {
-                addComponentAndDependencies(tag)
-              }
-            } else if (module._extractedComponents) {
-              for (const tag of module._extractedComponents) {
-                addComponentAndDependencies(tag)
-              }
-            }
-          }
 
           for (const tag of componentsToInclude) {
             if (scriptResult.manifest[tag]) {
