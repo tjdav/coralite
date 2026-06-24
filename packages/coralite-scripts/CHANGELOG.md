@@ -1,5 +1,25 @@
 # Changelog
 
+## v0.39.0
+
+> Comparing `coralite-scripts-v0.38.6` to `HEAD`
+
+**Summary:** 4 commits
+
+### ✨ Features
+
+- implement incremental production builds and update ISR tests (coralite) ([03fd5e7](https://codeberg.org/tjdavid/coralite/commit/03fd5e717f4eef8fa49b115f4e144c5c06b20eb1))
+- implement incremental builds in coralite-scripts ([addedab](https://codeberg.org/tjdavid/coralite/commit/addedabf86262905ee6534ed101c5d3a6f4e69c1))
+
+### ⚡ Performance Improvements
+
+- run integration tests in-process (coralite-scripts) ([c9b4675](https://codeberg.org/tjdavid/coralite/commit/c9b467579ba7273488b486bef7941105914d34b6))
+
+### ✅ Tests
+
+- add integration tests for incremental builds and --clean (scripts) ([c062e4e](https://codeberg.org/tjdavid/coralite/commit/c062e4ee0522beac434bb0bac43a492bb5c86b66))
+
+
 ## v0.38.5
 
 > Comparing `coralite-scripts-v0.38.4` to `HEAD`
