@@ -238,6 +238,7 @@ export async function createCoralite ({
       }
       const outputDir = app.options.output
       const results = []
+
       await app.build(savePath, saveOptions, async (result) => {
         // @ts-ignore
         const relativeDir = relative(app.options.path.pages, result.path.dirname)

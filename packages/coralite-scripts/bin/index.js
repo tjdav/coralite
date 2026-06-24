@@ -63,9 +63,6 @@ if (mode === 'dev') {
   }
 
   const validFiles = new Set()
-  const projectRoot = process.cwd()
-  const manifestFile = join(projectRoot, '.coralite', 'manifest.json')
-  validFiles.add(manifestFile)
 
   // start coralite
   const coralite = await createCoralite({

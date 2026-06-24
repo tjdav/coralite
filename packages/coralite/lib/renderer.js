@@ -1405,7 +1405,7 @@ export function createRenderer ({
     for (const pageItem of queue) {
       let shouldRebuild = false
 
-      if (normalizedOptions.output) {
+      if (normalizedOptions.output && normalizedOptions.mode === 'production') {
         const relativeDir = relative(normalizedOptions.path.pages, pageItem.path.dirname)
         const outFile = join(normalizedOptions.output, relativeDir, pageItem.path.filename)
         try {

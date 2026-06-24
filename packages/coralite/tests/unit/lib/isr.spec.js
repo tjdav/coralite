@@ -20,7 +20,8 @@ describe('Incremental Static Regeneration (ISR)', () => {
   it('should skip rendering unchanged files on subsequent builds', async () => {
     await project.writePage('index.html', '<h1>Home</h1>')
 
-    const coralite = await project.createCoralite()
+    // Create coralite without output dir to only test manifest logic
+    const coralite = await project.createCoralite({ output: undefined })
 
     const results1 = await coralite.build()
     assert.strictEqual(results1.length, 1)
@@ -84,7 +85,8 @@ describe('Incremental Static Regeneration (ISR)', () => {
     }
 
     const coralite = await project.createCoralite({
-      plugins: [plugin]
+      plugins: [plugin],
+      output: undefined
     })
 
     const results1 = await coralite.build()
