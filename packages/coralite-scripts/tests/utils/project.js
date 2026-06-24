@@ -1,12 +1,12 @@
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { spawn } from 'node:child_process'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { buildCommand } from '../../libs/commands/build.js'
+import loadConfig from '../../libs/load-config.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const binPath = path.resolve(__dirname, '../../bin/index.js')
 const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
 
 /**
@@ -65,41 +65,63 @@ export async function createCLIProject () {
       const filePath = path.join(testDir, 'coralite.config.js')
       return writeFile(filePath, content).then(() => filePath)
     },
-    runBuild: (args = []) => {
-      return new Promise((resolve) => {
-        const nodePath = [
-          path.resolve(__dirname, '../../node_modules'),
-          path.resolve(__dirname, '../../../../node_modules')
-        ].join(path.delimiter)
+    runBuild: async (args = []) => {
+      const options = {
+        verbose: args.includes('--verbose'),
+        clean: args.includes('--clean')
+      }
 
-        const child = spawn('node', ['--experimental-vm-modules', binPath, 'build', ...args], {
-          cwd: testDir,
-          env: {
-            ...process.env,
-            NODE_ENV: 'production',
-            NODE_PATH: nodePath
+      let stdout = ''
+      let stderr = ''
+
+      const logger = {
+        write: (msg) => {
+          stdout += msg
+        },
+        spinner: (text) => ({
+          start: () => ({
+            text,
+            succeed: () => {
+            },
+            fail: () => {
+            }
+          }),
+          succeed: () => {
+          },
+          fail: () => {
           }
-        })
+        }),
+        info: (msg) => {
+          stdout += msg + '\n'
+        },
+        warn: (msg) => {
+          stdout += msg + '\n'
+        },
+        error: (msg, err) => {
+          stderr += msg + (err ? ': ' + err.message : '') + '\n'
+        }
+      }
 
-        let stdout = ''
-        let stderr = ''
+      const originalCwd = process.cwd()
+      process.chdir(testDir)
 
-        child.stdout.on('data', (data) => {
-          stdout += data.toString()
-        })
-
-        child.stderr.on('data', (data) => {
-          stderr += data.toString()
-        })
-
-        child.on('close', (code) => {
-          resolve({
-            stdout,
-            stderr,
-            exitCode: code
-          })
-        })
-      })
+      try {
+        const config = await loadConfig(testDir)
+        await buildCommand(config, options, logger)
+        return {
+          stdout,
+          stderr,
+          exitCode: 0
+        }
+      } catch {
+        return {
+          stdout,
+          stderr,
+          exitCode: 1
+        }
+      } finally {
+        process.chdir(originalCwd)
+      }
     }
   }
 

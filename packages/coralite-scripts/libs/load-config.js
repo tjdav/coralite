@@ -19,9 +19,10 @@ import { defineConfig } from './config.js'
  *
  * const config = await loadConfig()
  * ```
+ * @param {string} [cwd=process.cwd()] - The current working directory.
  */
-async function loadConfig () {
-  const configPath = pathToFileURL(join(process.cwd(), 'coralite.config.js'))
+async function loadConfig (cwd = process.cwd()) {
+  const configPath = pathToFileURL(join(cwd, 'coralite.config.js'))
 
   try {
     await access(configPath)

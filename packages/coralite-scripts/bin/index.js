@@ -3,15 +3,10 @@
 import loadConfig from '../libs/load-config.js'
 import { Command, Argument } from 'commander'
 import server from '../libs/server.js'
-import colours from 'kleur'
 import pkg from '../package.json' with { type: 'json' }
-import buildStyles from '../libs/build-styles.js'
-import { join, relative, dirname } from 'node:path'
-import { existsSync, readdirSync, rmdirSync, statSync, unlinkSync } from 'node:fs'
-import { deleteDirectoryRecursive, copyDirectory, toMS, toTime, displayError, displayWarning, displayInfo } from '../libs/build-utils.js'
-import { createCoralite } from 'coralite'
-import { mkdir, writeFile } from 'node:fs/promises'
-import ora from 'ora'
+import { join } from 'node:path'
+import { mkdir } from 'node:fs/promises'
+import { buildCommand } from '../libs/commands/build.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -33,7 +28,7 @@ program.on('error', (err) => {
 
 const options = program.opts()
 const mode = program.args[0]
-const config = await loadConfig()
+const config = await loadConfig(process.cwd())
 
 if (!config) {
   process.exit(1)
@@ -45,228 +40,9 @@ if (mode === 'dev') {
 
   await server(config, options)
 } else if (mode === 'build') {
-  const PAD = '  '
-  const border = '─'.repeat(Math.min(process.stdout.columns, 36) / 2)
-  const dash = colours.gray(' ─ ')
-
-  if (options.verbose) {
-    // log the response time and status code
-    process.stdout.write('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
-    process.stdout.write(border + colours.inverse(` LOGS `) + border + '\n\n')
-  } else {
-    process.stdout.write('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
-  }
-
-  if (options.clean) {
-    // delete old output files
-    deleteDirectoryRecursive(config.output)
-  }
-
-  const validFiles = new Set()
-
-  // start coralite
-  const coralite = await createCoralite({
-    components: config.components,
-    pages: config.pages,
-    plugins: config.plugins,
-    assets: config.assets,
-    externalStyles: config.styles?.input?.map(input => {
-      const ext = input.split('.').pop()
-      return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
-    }),
-    baseURL: config.baseURL,
-    output: config.output,
-    mode: 'production',
-    onError: ({ level, message, error }) => {
-      if (level === 'ERR') {
-        displayError(message, error)
-      } else if (level === 'WARN') {
-        displayWarning(message)
-      } else {
-        displayInfo(message)
-      }
-    }
-  })
-
-  let spinner
-  let pageCount = 0
-  let skippedCount = 0
-
   try {
-    let componentCount = 0
-
-    if (!options.verbose) {
-      spinner = ora('Building pages...').start()
-    }
-
-    const updateSpinnerText = () => {
-      if (skippedCount > 0) {
-        spinner.text = `Building pages... (${pageCount} completed, ${skippedCount} skipped)`
-      } else {
-        spinner.text = `Building pages... (${pageCount} completed)`
-      }
-    }
-
-    // compile website
-    await coralite.build(async (result) => {
-      const relativeDir = relative(config.pages, result.path.dirname)
-      const outDir = join(config.output, relativeDir)
-      const outFile = join(outDir, result.path.filename)
-
-      validFiles.add(outFile)
-
-      if (result.status === 'skipped') {
-        skippedCount++
-        if (!options.verbose) {
-          updateSpinnerText()
-        }
-        return
-      }
-
-      await mkdir(outDir, { recursive: true })
-      await writeFile(outFile, result.content)
-
-      if (options.verbose) {
-        process.stdout.write(toTime() + toMS(result.duration) + dash + result.path.pathname + '\n')
-      } else {
-        pageCount++
-        updateSpinnerText()
-      }
-    })
-
-    // Write ESM script assets generated during the build phase
-    if (coralite.outputFiles) {
-      const assetsJsDir = join(config.output, 'assets', 'js')
-      const assetsCssDir = join(config.output, 'assets', 'css')
-
-      const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
-        const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
-        const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
-        const outFile = join(baseAssetsDir, file.hashedPath)
-
-        validFiles.add(outFile)
-
-        await mkdir(dirname(outFile), { recursive: true })
-        await writeFile(outFile, file.text)
-        if (options.verbose) {
-          const dash = colours.gray(' ─ ')
-          process.stdout.write(toTime() + toMS(0) + dash + outFile + '\n')
-        }
-      })
-
-      await Promise.all(assetWrites)
-    }
-
-    if (!options.verbose) {
-      if (skippedCount > 0) {
-        spinner.succeed(`Pages built (${pageCount} completed, ${skippedCount} skipped)`)
-      } else {
-        spinner.succeed(`Pages built (${pageCount} completed)`)
-      }
-      if (componentCount > 0) {
-        ora(`Components built (${componentCount} completed)`).succeed()
-      }
-    }
-
-    const publicDir = config.public
-
-    if (publicDir) {
-      if (!options.verbose) {
-        spinner = ora('Copying public directory...').start()
-      }
-      await copyDirectory(publicDir, config.output)
-
-      const trackPublicFiles = (dir, baseDir) => {
-        const files = readdirSync(dir)
-        for (const file of files) {
-          const fullPath = join(dir, file)
-          const stat = statSync(fullPath)
-
-          if (stat.isDirectory()) {
-            trackPublicFiles(fullPath, baseDir)
-          } else {
-            const relativePath = relative(baseDir, fullPath)
-
-            validFiles.add(join(config.output, relativePath))
-          }
-        }
-      }
-      trackPublicFiles(publicDir, publicDir)
-
-      if (!options.verbose) {
-        spinner.succeed('Public directory copied')
-      }
-    }
-
-    if (config.styles && config.styles.input) {
-      if (!options.verbose) {
-        spinner = ora('Building styles...').start()
-      }
-
-      const results = await buildStyles({
-        input: config.styles.input,
-        output: join(config.output, 'assets', 'css'),
-        processors: config.styles.processors,
-        minify: mode === 'build',
-        sourcemap: mode !== 'build'
-      })
-
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i]
-        validFiles.add(result.output)
-
-        if (options.verbose) {
-          process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
-        }
-      }
-
-      if (!options.verbose) {
-        spinner.succeed('Styles built')
-      }
-    }
-
-    // Cleanup stale files
-    if (!options.clean) {
-      if (!options.verbose) {
-        spinner = ora('Cleaning up stale files...').start()
-      }
-
-      const cleanupStaleFiles = (dir) => {
-        if (!existsSync(dir)) {
-          return
-        }
-
-        const files = readdirSync(dir)
-        for (const file of files) {
-          const fullPath = join(dir, file)
-          const stat = statSync(fullPath)
-
-          if (stat.isDirectory()) {
-            cleanupStaleFiles(fullPath)
-            // If directory is now empty, remove it
-            if (readdirSync(fullPath).length === 0) {
-              rmdirSync(fullPath)
-            }
-          } else if (!validFiles.has(fullPath)) {
-            unlinkSync(fullPath)
-
-            if (options.verbose) {
-              process.stdout.write(toTime() + colours.gray('Deleted stale file: ') + fullPath + '\n')
-            }
-          }
-        }
-      }
-      cleanupStaleFiles(config.output)
-
-      if (!options.verbose) {
-        spinner.succeed('Cleanup complete')
-      }
-    }
-  } catch (error) {
-    if (spinner) {
-      spinner.fail('Build failed')
-    }
-    displayError('Build failed', error)
+    await buildCommand(config, options)
+  } catch {
     process.exit(1)
   }
 }
