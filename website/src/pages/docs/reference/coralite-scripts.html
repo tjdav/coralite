@@ -229,14 +229,19 @@ coralite-scripts dev</coralite-code-highlight>
 # or
 coralite-scripts build</coralite-code-highlight>
 
+    <h4>Options</h4>
+    <ul>
+      <li><code>-c, --clean</code> - Clear the output directory before building</li>
+      <li><code>-v, --verbose</code> - Enable verbose logging output</li>
+    </ul>
+
     <h4>What It Does</h4>
     <ol>
-      <li>Cleans the output directory</li>
-      <li>Compiles all pages with Coralite</li>
-      <li>Saves rendered HTML to output directory</li>
-      <li>Copies static assets from public directory</li>
-      <li>Compiles Sass/SCSS to CSS with source maps</li>
-      <li>Optimizes output for production</li>
+      <li><strong>Change Detection</strong>: Checks <code>.coralite/manifest.json</code> to identify changed pages and components.</li>
+      <li><strong>Incremental Rendering</strong>: Re-renders only changed or missing pages. Unchanged pages are preserved in the output directory.</li>
+      <li><strong>Asset Processing</strong>: Bundles scripts and compiles styles.</li>
+      <li><strong>Public Directory Sync</strong>: Copies files from the <code>public</code> directory.</li>
+      <li><strong>Cleanup</strong>: Removes stale files from the output directory that are no longer part of the project.</li>
     </ol>
 
     <coralite-heading level="2" text="Development Server Features"></coralite-heading>
@@ -288,12 +293,12 @@ coralite-scripts build</coralite-code-highlight>
 
     <coralite-heading level="3" text="Build Steps"></coralite-heading>
     <ol>
-      <li><strong>Clean Output</strong> - Deletes existing output directory</li>
-      <li><strong>Compile HTML</strong> - Processes all pages with Coralite</li>
-      <li><strong>Save Documents</strong> - Writes rendered HTML to disk</li>
-      <li><strong>Copy Assets</strong> - Copies static files from public directory</li>
-      <li><strong>Compile Styles</strong> - Processes Sass/SCSS or CSS</li>
-      <li><strong>Generate Source Maps</strong> - Creates .map files for debugging</li>
+      <li><strong>Change Detection</strong> - Compares source file hashes and metadata with the previous build manifest.</li>
+      <li><strong>Missing File Check</strong> - Verifies that the expected output file exists on disk.</li>
+      <li><strong>Compile HTML</strong> - Processes changed or missing pages with Coralite.</li>
+      <li><strong>Save Documents</strong> - Writes rendered HTML and generated assets to disk.</li>
+      <li><strong>Copy Assets</strong> - Copies static files from public directory.</li>
+      <li><strong>Stale Cleanup</strong> - Deletes any files in the output directory that weren't generated or skipped in the current run.</li>
     </ol>
 
     <coralite-heading level="3" text="Sass Compilation"></coralite-heading>
@@ -708,11 +713,11 @@ Error: Failed to start server
 
     <coralite-heading level="3" text="Production Builds"></coralite-heading>
     <ol>
-      <li><strong>Clean builds</strong> - Always delete output directory before building</li>
-      <li><strong>Version control</strong> - Don't commit output directory</li>
-      <li><strong>Test locally</strong> - Run build and test output before deploying</li>
-      <li><strong>Optimize assets</strong> - Use PostCSS plugins for minification</li>
-      <li><strong>Check permissions</strong> - Ensure build output has correct permissions</li>
+      <li><strong>Incremental builds</strong> - Leverage default incremental builds for faster CI/CD pipelines.</li>
+      <li><strong>Clean builds</strong> - Use the <code>--clean</code> flag periodically or when encountering unexpected output issues.</li>
+      <li><strong>Version control</strong> - Don't commit output directory or the <code>.coralite</code> cache directory.</li>
+      <li><strong>Test locally</strong> - Run build and test output before deploying.</li>
+      <li><strong>Optimize assets</strong> - Use PostCSS plugins for minification.</li>
     </ol>
 
     <coralite-heading level="3" text="Configuration Management"></coralite-heading>

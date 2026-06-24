@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import { dirname, join } from 'node:path'
+import { dirname, join, relative } from 'node:path'
 import { availableParallelism } from 'node:os'
-import { readFile, writeFile, mkdir, rename } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, rename, access } from 'node:fs/promises'
 import pLimit from 'p-limit'
 import serialize from 'serialize-javascript'
 import {
@@ -1405,6 +1405,16 @@ export function createRenderer ({
     for (const pageItem of queue) {
       let shouldRebuild = false
 
+      if (normalizedOptions.output) {
+        const relativeDir = relative(normalizedOptions.path.pages, pageItem.path.dirname)
+        const outFile = join(normalizedOptions.output, relativeDir, pageItem.path.filename)
+        try {
+          await access(outFile)
+        } catch {
+          shouldRebuild = true
+        }
+      }
+
       // Check if any dependent component changed
       const componentIds = Object.keys(pageCustomElements).filter(id => {
         const pages = pageCustomElements[id]
@@ -1418,7 +1428,7 @@ export function createRenderer ({
       }
 
       if (pageItem.virtual) {
-        if (pageItem.volatile || !manifest.virtual || !manifest.virtual[pageItem.path.pathname] || String(manifest.virtual[pageItem.path.pathname].cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development') {
+        if (shouldRebuild || pageItem.volatile || !manifest.virtual || !manifest.virtual[pageItem.path.pathname] || String(manifest.virtual[pageItem.path.pathname].cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development') {
           shouldRebuild = true
         } else {
           shouldRebuild = false

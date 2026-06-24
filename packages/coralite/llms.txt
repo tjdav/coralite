@@ -21,6 +21,7 @@ When generating code or answering questions about Coralite, you MUST adhere to t
 
 ## 3. System Architecture
 * **Rendering**: Strictly Server-Side Rendered (SSR) with deterministic ID generation (`my-component-0`). No heavy client-side AST rendering.
+* **Incremental Builds**: The production build system (`coralite-scripts build`) is incremental by default. It tracks changes via `.coralite/manifest.json` and only re-renders pages that have changed or are missing from the output directory. It performs a stale file cleanup at the end of the build to ensure the output directory remains synchronized with the project source.
 * **Architecture**: Coralite utilizes a hybrid model where components are either fully declarative (SSR-only) or true imperative Web Components. Imperative components lazily loaded via JavaScript use native HTML template stamping (`this.innerHTML = templateHTML`) with Light DOM projection, entirely eliminating the need for client-side HTML parsers.
 * **API Paradigm**: Coralite uses a "Flat Options" API. All logic is defined within four strictly isolated blocks: `attributes`, `server`, `getters`, and `client`.
 * **State Equation**: `Attributes + ServerState + Getters = State`. The template only sees this unified reactive proxy.

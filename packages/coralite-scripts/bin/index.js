@@ -7,6 +7,7 @@ import colours from 'kleur'
 import pkg from '../package.json' with { type: 'json' }
 import buildStyles from '../libs/build-styles.js'
 import { join, relative, dirname } from 'node:path'
+import { existsSync, readdirSync, rmdirSync, statSync, unlinkSync } from 'node:fs'
 import { deleteDirectoryRecursive, copyDirectory, toMS, toTime, displayError, displayWarning, displayInfo } from '../libs/build-utils.js'
 import { createCoralite } from 'coralite'
 import { mkdir, writeFile } from 'node:fs/promises'
@@ -22,7 +23,8 @@ program
   .description(pkg.description)
   .version(pkg.version)
   .addArgument(new Argument('<mode>', 'Run mode: dev (development server) or build (production compilation)').choices(['dev', 'build']).default('dev'))
-  .option('-v --verbose', 'Enable verbose logging output')
+  .option('-v, --verbose', 'Enable verbose logging output')
+  .option('-c, --clean', 'Clear the output directory before building')
 
 program.parse(process.argv)
 program.on('error', (err) => {
@@ -55,8 +57,15 @@ if (mode === 'dev') {
     process.stdout.write('\n' + PAD + colours.yellow('Compiling Coralite... \n\n'))
   }
 
-  // delete old output files
-  deleteDirectoryRecursive(config.output)
+  if (options.clean) {
+    // delete old output files
+    deleteDirectoryRecursive(config.output)
+  }
+
+  const validFiles = new Set()
+  const projectRoot = process.cwd()
+  const manifestFile = join(projectRoot, '.coralite', 'manifest.json')
+  validFiles.add(manifestFile)
 
   // start coralite
   const coralite = await createCoralite({
@@ -103,6 +112,12 @@ if (mode === 'dev') {
 
     // compile website
     await coralite.build(async (result) => {
+      const relativeDir = relative(config.pages, result.path.dirname)
+      const outDir = join(config.output, relativeDir)
+      const outFile = join(outDir, result.path.filename)
+
+      validFiles.add(outFile)
+
       if (result.status === 'skipped') {
         skippedCount++
         if (!options.verbose) {
@@ -110,10 +125,6 @@ if (mode === 'dev') {
         }
         return
       }
-
-      const relativeDir = relative(config.pages, result.path.dirname)
-      const outDir = join(config.output, relativeDir)
-      const outFile = join(outDir, result.path.filename)
 
       await mkdir(outDir, { recursive: true })
       await writeFile(outFile, result.content)
@@ -128,10 +139,16 @@ if (mode === 'dev') {
 
     // Write ESM script assets generated during the build phase
     if (coralite.outputFiles) {
-      const assetsDir = join(config.output, 'assets', 'js')
+      const assetsJsDir = join(config.output, 'assets', 'js')
+      const assetsCssDir = join(config.output, 'assets', 'css')
 
       const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
-        const outFile = join(assetsDir, file.hashedPath)
+        const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
+        const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
+        const outFile = join(baseAssetsDir, file.hashedPath)
+
+        validFiles.add(outFile)
+
         await mkdir(dirname(outFile), { recursive: true })
         await writeFile(outFile, file.text)
         if (options.verbose) {
@@ -161,6 +178,24 @@ if (mode === 'dev') {
         spinner = ora('Copying public directory...').start()
       }
       await copyDirectory(publicDir, config.output)
+
+      const trackPublicFiles = (dir, baseDir) => {
+        const files = readdirSync(dir)
+        for (const file of files) {
+          const fullPath = join(dir, file)
+          const stat = statSync(fullPath)
+
+          if (stat.isDirectory()) {
+            trackPublicFiles(fullPath, baseDir)
+          } else {
+            const relativePath = relative(baseDir, fullPath)
+
+            validFiles.add(join(config.output, relativePath))
+          }
+        }
+      }
+      trackPublicFiles(publicDir, publicDir)
+
       if (!options.verbose) {
         spinner.succeed('Public directory copied')
       }
@@ -181,6 +216,7 @@ if (mode === 'dev') {
 
       for (let i = 0; i < results.length; i++) {
         const result = results[i]
+        validFiles.add(result.output)
 
         if (options.verbose) {
           process.stdout.write(toTime() + toMS(result.duration) + dash + result.output + '\n')
@@ -189,6 +225,44 @@ if (mode === 'dev') {
 
       if (!options.verbose) {
         spinner.succeed('Styles built')
+      }
+    }
+
+    // Cleanup stale files
+    if (!options.clean) {
+      if (!options.verbose) {
+        spinner = ora('Cleaning up stale files...').start()
+      }
+
+      const cleanupStaleFiles = (dir) => {
+        if (!existsSync(dir)) {
+          return
+        }
+
+        const files = readdirSync(dir)
+        for (const file of files) {
+          const fullPath = join(dir, file)
+          const stat = statSync(fullPath)
+
+          if (stat.isDirectory()) {
+            cleanupStaleFiles(fullPath)
+            // If directory is now empty, remove it
+            if (readdirSync(fullPath).length === 0) {
+              rmdirSync(fullPath)
+            }
+          } else if (!validFiles.has(fullPath)) {
+            unlinkSync(fullPath)
+
+            if (options.verbose) {
+              process.stdout.write(toTime() + colours.gray('Deleted stale file: ') + fullPath + '\n')
+            }
+          }
+        }
+      }
+      cleanupStaleFiles(config.output)
+
+      if (!options.verbose) {
+        spinner.succeed('Cleanup complete')
       }
     }
   } catch (error) {
