@@ -18,7 +18,7 @@
     <p>Each object in the `assets` array must define a <code>dest</code> (the destination path relative to your output directory). To determine the source file, you must provide either:</p>
     <ul>
       <li><code>pkg</code> (the NPM package name) and <code>path</code> (the relative path to the asset within the package).</li>
-      <li><strong>OR</strong> <code>src</code> (an absolute local path to the source file or directory, which completely bypasses package resolution).</li>
+      <li><strong>OR</strong> <code>src</code> (a relative or absolute local path to the source file or directory, which completely bypasses package resolution). Relative paths are resolved against the project root.</li>
     </ul>
 
     <coralite-heading level="2" text="Example: Matrix JS SDK"></coralite-heading>

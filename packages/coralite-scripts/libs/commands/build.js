@@ -148,6 +148,32 @@ export async function buildCommand (config, options, logger = null) {
       await Promise.all(assetWrites)
     }
 
+    // Track assets from config to prevent them from being deleted as stale files
+    if (config.assets) {
+      for (const asset of config.assets) {
+        const fullDestPath = join(config.output, asset.dest)
+        if (existsSync(fullDestPath)) {
+          const stat = statSync(fullDestPath)
+          if (stat.isDirectory()) {
+            const trackFiles = (dir) => {
+              const files = readdirSync(dir)
+              for (const file of files) {
+                const fullPath = join(dir, file)
+                if (statSync(fullPath).isDirectory()) {
+                  trackFiles(fullPath)
+                } else {
+                  validFiles.add(fullPath)
+                }
+              }
+            }
+            trackFiles(fullDestPath)
+          } else {
+            validFiles.add(fullDestPath)
+          }
+        }
+      }
+    }
+
     if (!options.verbose) {
       if (skippedCount > 0) {
         spinner.succeed(`Pages built (${pageCount} completed, ${skippedCount} skipped)`)

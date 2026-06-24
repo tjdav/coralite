@@ -43,15 +43,10 @@ async function loadConfig (cwd = process.cwd()) {
       return null
     }
 
-    try {
-      return defineConfig(config.default)
-    } catch (err) {
-      displayError('Invalid configuration', err.message)
-      return null
-    }
+    return defineConfig(config.default)
   } catch (error) {
-    displayError('Failed to load configuration file', error)
-    return null
+    displayError('Failed to load configuration file', error.message || error)
+    throw error
   }
 }
 

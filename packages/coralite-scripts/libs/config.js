@@ -154,6 +154,29 @@ export function defineConfig (options) {
     if (!Array.isArray(options.assets)) {
       throw new Error('Configuration "assets" must be an array')
     }
+
+    for (const asset of options.assets) {
+      if (typeof asset !== 'object' || asset === null) {
+        throw new Error('Configuration "assets" items must be objects')
+      }
+
+      if (!asset.dest || typeof asset.dest !== 'string') {
+        throw new Error('Configuration "assets" items must have a string "dest" property')
+      }
+
+      if (asset.src) {
+        if (typeof asset.src !== 'string') {
+          throw new Error('Configuration "assets" items "src" property must be a string')
+        }
+      } else {
+        if (!asset.pkg || typeof asset.pkg !== 'string') {
+          throw new Error('Configuration "assets" items must have a string "pkg" property when "src" is not provided')
+        }
+        if (!asset.path || typeof asset.path !== 'string') {
+          throw new Error('Configuration "assets" items must have a string "path" property when "src" is not provided')
+        }
+      }
+    }
   }
 
   return options

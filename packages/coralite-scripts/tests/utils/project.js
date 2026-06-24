@@ -4,6 +4,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { buildCommand } from '../../libs/commands/build.js'
 import loadConfig from '../../libs/load-config.js'
+import { parseAssetMapping, mergeAssets } from '../../libs/assets.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -71,6 +72,17 @@ export async function createCLIProject () {
         clean: args.includes('--clean')
       }
 
+      const assetsIndex = args.indexOf('--assets') !== -1 ? args.indexOf('--assets') : args.indexOf('-a')
+      let cliAssetsStrings = []
+      if (assetsIndex !== -1) {
+        for (let i = assetsIndex + 1; i < args.length; i++) {
+          if (args[i].startsWith('-')) {
+            break
+          }
+          cliAssetsStrings.push(args[i])
+        }
+      }
+
       let stdout = ''
       let stderr = ''
 
@@ -107,13 +119,28 @@ export async function createCLIProject () {
 
       try {
         const config = await loadConfig(testDir)
+
+        if (!config) {
+          return {
+            stdout,
+            stderr,
+            exitCode: 1
+          }
+        }
+
+        if (cliAssetsStrings.length > 0) {
+          const cliAssets = cliAssetsStrings.map(parseAssetMapping)
+          config.assets = mergeAssets(config.assets, cliAssets)
+        }
+
         await buildCommand(config, options, logger)
         return {
           stdout,
           stderr,
           exitCode: 0
         }
-      } catch {
+      } catch (err) {
+        stderr += (err ? err.message : '') + '\n'
         return {
           stdout,
           stderr,

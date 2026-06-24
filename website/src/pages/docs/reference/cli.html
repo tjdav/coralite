@@ -86,11 +86,18 @@
       <li>
         <p><strong><code>-a, --assets &lt;mapping...&gt;</code></strong> (optional)</p>
         <ul>
-          <li>Description: Static assets to copy during build from NPM packages to the output directory. Format is <code>pkg:path:dest</code> (or <code>pkg:path</code> where destination defaults to path). Multiple mappings can be provided separated by spaces.</li>
+          <li>Description: Static assets to copy during build. Supports both NPM packages and local paths. Multiple mappings can be provided separated by spaces. CLI assets override config assets if they target the same destination.</li>
+          <li>Formats:
+            <ul>
+              <li><strong>NPM Package (3 parts):</strong> <code>pkg:path:dest</code></li>
+              <li><strong>Local Path (2 parts):</strong> <code>src:dest</code> (source path must start with <code>.</code>, <code>..</code>, or <code>/</code>)</li>
+            </ul>
+          </li>
           <li>Examples:
             <ul>
-              <li>Copy specific file: <code>--assets my-package:dist/style.css:assets/style.css</code></li>
-              <li>Copy and keep same path: <code>--assets my-package:dist/logo.png</code></li>
+              <li>Copy from package: <code>--assets my-package:dist/style.css:assets/style.css</code></li>
+              <li>Copy local file: <code>--assets ./src/logo.png:assets/logo.png</code></li>
+              <li>Copy local directory: <code>--assets ./src/docs:docs</code></li>
             </ul>
           </li>
         </ul>

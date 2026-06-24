@@ -1,6 +1,6 @@
 import { definePlugin } from '../lib/plugin.js'
 import { createRequire } from 'node:module'
-import { dirname, join, parse } from 'node:path'
+import { dirname, join, parse, isAbsolute } from 'node:path'
 import { existsSync } from 'node:fs'
 import { cp, mkdir, stat } from 'node:fs/promises'
 
@@ -39,7 +39,8 @@ export const staticAssetPlugin = (assets = []) => {
     name: 'static-asset-plugin',
     server: {
       onBeforeBuild: async function (context) {
-        const outputDir = context.app.options.output || join(process.cwd(), 'dist')
+        const projectRoot = context.app.options.projectRoot || process.cwd()
+        const outputDir = context.app.options.output || join(projectRoot, 'dist')
         const copyTasks = []
 
         for (const asset of assets) {
@@ -47,15 +48,19 @@ export const staticAssetPlugin = (assets = []) => {
             throw new Error('staticAssetPlugin requires assets to have a dest property.')
           }
 
-          const dest = join(outputDir, asset.dest)
+          const dest = isAbsolute(asset.dest) ? asset.dest : join(outputDir, asset.dest)
           let src = asset.src
+
+          if (src && !isAbsolute(src)) {
+            src = join(projectRoot, src)
+          }
 
           if (!src) {
             if (!asset.pkg || !asset.path) {
               throw new Error('staticAssetPlugin requires assets to have pkg and path state when src is not provided.')
             }
 
-            const require = createRequire(join(process.cwd(), 'package.json'))
+            const require = createRequire(join(projectRoot, 'package.json'))
             let pkgPath
 
             try {
