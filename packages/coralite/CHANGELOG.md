@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.39.0
+
+> Comparing `coralite-v0.38.6` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- implement incremental production builds and update ISR tests (coralite) ([03fd5e7](https://codeberg.org/tjdavid/coralite/commit/03fd5e717f4eef8fa49b115f4e144c5c06b20eb1))
+- implement incremental builds in coralite-scripts ([addedab](https://codeberg.org/tjdavid/coralite/commit/addedabf86262905ee6534ed101c5d3a6f4e69c1))
+- use serialize-javascript for per-page hydration data ([2a04799](https://codeberg.org/tjdavid/coralite/commit/2a04799a23447dea02331e854ae633f7eca8827b))
+- use serialize-javascript for plugin config and add E2E tests ([742e602](https://codeberg.org/tjdavid/coralite/commit/742e602ab550608a2a692e3a23c2327968ce0c4a))
+- use serialize function for plugin configurations (coralite) ([a6254c2](https://codeberg.org/tjdavid/coralite/commit/a6254c2943b6c7241d5d7b5fab63959a923567e2))
+
+
 ## v0.38.6
 
 > Comparing `coralite-v0.38.5` to `HEAD`
