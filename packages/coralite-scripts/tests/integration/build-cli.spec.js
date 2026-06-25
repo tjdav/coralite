@@ -113,4 +113,57 @@ describe('Coralite CLI Build Integration', () => {
     const content = await readFile(path.join(project.outputDir, 'index.html'), 'utf8')
     assert.ok(content.includes('Updated'), 'Content should be updated')
   })
+
+  it('should preserve files written via app.writeFile from plugins (Cleanup Whitelist)', async () => {
+    await project.writePage('index.html', '<h1>Home</h1>')
+
+    // I will use the same trick as createCLIProject to point to the local lib
+    const { fileURLToPath, pathToFileURL } = await import('node:url')
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
+    const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
+    const libUrl = pathToFileURL(coraliteScriptsLib).href
+
+    // Write config ONCE before any runBuild to avoid ESM caching issues in the same process
+    await project.writeConfig(`
+      import { defineConfig } from '${libUrl}'
+      export default {
+        output: 'dist',
+        pages: 'src/pages',
+        components: 'src/components',
+        public: 'public',
+        plugins: [
+          {
+            name: 'test-write-plugin',
+            server: {
+              async onAfterBuild({ app }) {
+                await app.writeFile('plugin-file.txt', 'plugin data')
+              }
+            }
+          }
+        ]
+      }
+    `)
+
+    const pluginFilePath = path.join(project.outputDir, 'plugin-file.txt')
+
+    // Run first build
+    const buildResult1 = await project.runBuild(['--verbose'])
+    if (buildResult1.exitCode !== 0) {
+      console.error(buildResult1.stdout, buildResult1.stderr)
+      assert.fail('First build failed')
+    }
+
+    await access(pluginFilePath)
+
+    // Run incremental build
+    const buildResult2 = await project.runBuild(['--verbose'])
+    if (buildResult2.exitCode !== 0) {
+      console.error(buildResult2.stdout, buildResult2.stderr)
+      assert.fail('Incremental build failed')
+    }
+
+    // File should still exist after cleanup
+    await access(pluginFilePath)
+  })
 })
