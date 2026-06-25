@@ -41,13 +41,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build Coralite
-        run: pnpm run build
-
-      - name: Build HTML for Tests
-        run: pnpm --filter coralite run build:html
-
-      - name: Run Playwright tests
+      - name: Run E2E tests
         run: pnpm --filter coralite run test:e2e
 
       - uses: https://code.forgejo.org/actions/upload-artifact@v3

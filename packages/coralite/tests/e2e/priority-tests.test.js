@@ -41,11 +41,15 @@ test.describe('Priority Architecture Tests', () => {
     await expect(result).toHaveText('Result for q3', { timeout: 10000 })
   })
 
-  test('Stripping: verify data() and node imports are removed from client bundle', async () => {
-    const assetsDir = path.join(process.cwd(), '.coralite', 'assets', 'js')
+  test('Stripping: verify data() and node imports are removed from client bundle', async ({}, testInfo) => {
+    const outputDir = testInfo.project.name === 'chromium-prod' ? '.coralite-prod' : '.coralite-dev'
+    const assetsDir = path.join(process.cwd(), outputDir, 'assets', 'js')
 
     // Function to recursively read files in a directory
     function getFiles (dir, files = []) {
+      if (!fs.existsSync(dir)) {
+        return files
+      }
       const fileList = fs.readdirSync(dir)
       for (const file of fileList) {
         const name = path.join(dir, file)

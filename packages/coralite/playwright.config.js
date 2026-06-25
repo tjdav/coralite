@@ -26,9 +26,6 @@ export default defineConfig({
   reporter: 'line',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:3000',
-
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry'
   },
@@ -36,15 +33,32 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] }
+      name: 'chromium-dev',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:3000'
+      }
+    },
+    {
+      name: 'chromium-prod',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:3001'
+      }
     }
   ],
 
   /* Run your local dev server before starting the tests */
-  webServer: {
-    command: 'pnpm run server',
-    port: 3000,
-    reuseExistingServer: !process.env.CI
-  }
+  webServer: [
+    {
+      command: 'pnpm run server:dev',
+      port: 3000,
+      reuseExistingServer: !process.env.CI
+    },
+    {
+      command: 'pnpm run server:prod',
+      port: 3001,
+      reuseExistingServer: !process.env.CI
+    }
+  ]
 })

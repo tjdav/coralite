@@ -236,7 +236,9 @@ export default [
       '**/dist/',
       '**/.history/',
       '**/playwright-report/',
-      '**/.coralite/'
+      '**/.coralite/',
+      '**/.coralite-dev/',
+      '**/.coralite-prod/'
     ]
   }
 ]
