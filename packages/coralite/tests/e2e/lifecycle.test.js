@@ -1,20 +1,21 @@
+import { waitForHydration } from './helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Granular Lifecycle', () => {
   test('should provide awaitable defined, rendered, and hydrated phases', async ({ page }) => {
     await page.goto('/client-script/')
 
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
+    await page.waitForFunction(() => window.__coralite__.lifecycle !== undefined)
 
     const phases = await page.evaluate(async () => {
       const results = {}
-      await window.__coralite_ready__.defined.then(() => {
+      await window.__coralite__.lifecycle.defined.then(() => {
         results.defined = true
       })
-      await window.__coralite_ready__.rendered.then(() => {
+      await window.__coralite__.lifecycle.rendered.then(() => {
         results.rendered = true
       })
-      await window.__coralite_ready__.hydrated.then(() => {
+      await window.__coralite__.lifecycle.hydrated.then(() => {
         results.hydrated = true
       })
       return results
@@ -27,8 +28,7 @@ test.describe('Granular Lifecycle', () => {
 
   test('should support waitFor(element) for imperative components', async ({ page }) => {
     await page.goto('/style-behavior/')
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
 
     const result = await page.evaluate(async () => {
       const parent = document.querySelector('style-parent')
@@ -45,7 +45,7 @@ test.describe('Granular Lifecycle', () => {
         child = findChild()
       }
 
-      await window.__coralite_ready__.waitFor(child)
+      await window.__coralite__.lifecycle.waitFor(child)
       return true
     })
 
@@ -54,13 +54,12 @@ test.describe('Granular Lifecycle', () => {
 
   test('waitFor(element) should resolve immediately if component is already ready', async ({ page }) => {
     await page.goto('/client-script/')
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
 
     const result = await page.evaluate(async () => {
       const el = document.querySelector('client-script-component')
       const start = performance.now()
-      await window.__coralite_ready__.waitFor(el)
+      await window.__coralite__.lifecycle.waitFor(el)
       return performance.now() - start
     })
 

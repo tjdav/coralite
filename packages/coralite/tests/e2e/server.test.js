@@ -1,10 +1,10 @@
+import { waitForHydration } from './helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Server State and State Propagation', () => {
   test('SSR Instance: should render server state and handle attribute propagation', async ({ page }) => {
     await page.goto('/server-state/')
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
 
     const title = page.getByTestId('server-props-component-0__title')
     await expect(title).toHaveText('Server Properties Title')
@@ -21,8 +21,7 @@ test.describe('Server State and State Propagation', () => {
 
   test('Attribute Overwriting: should have server values in state and getters', async ({ page }) => {
     await page.goto('/server-to-client/')
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
 
     const ssrComp = page.locator('server-to-client-comp').first()
     const instanceId = await ssrComp.getAttribute('data-cid')
@@ -49,8 +48,7 @@ test.describe('Server State and State Propagation', () => {
 
   test('Imperative Instance: should have server values from base evaluation', async ({ page }) => {
     await page.goto('/server-to-client/')
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
 
     const parent = page.locator('server-to-client-parent')
     const impComp = parent.locator('server-to-client-comp')

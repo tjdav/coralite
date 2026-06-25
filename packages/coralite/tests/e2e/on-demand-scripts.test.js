@@ -1,10 +1,10 @@
+import { waitForHydration } from './helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('On-Demand Script Loading', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/on-demand-scripts/')
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
   })
 
   test('should load imperative components only when requested', async ({ page }) => {

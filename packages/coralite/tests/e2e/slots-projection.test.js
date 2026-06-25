@@ -1,12 +1,10 @@
+import { waitForHydration } from './helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Slots Projection', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/slots-projection/')
-    // @ts-ignore
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
   })
 
   test('should render fallback content when slot is empty', async ({ page }) => {

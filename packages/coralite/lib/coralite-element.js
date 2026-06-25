@@ -559,9 +559,9 @@ export class CoraliteElement extends HTMLElement {
       }
 
       // @ts-ignore
-      if (window.__coralite_ready__) {
+      if (window.__coralite__ && window.__coralite__.lifecycle) {
         // @ts-ignore
-        window.__coralite_ready__._markInstanceRendered(this)
+        window.__coralite__.lifecycle._markInstanceRendered(this)
       }
     }
 
@@ -676,9 +676,9 @@ export class CoraliteElement extends HTMLElement {
     }
 
     // @ts-ignore
-    if (window.__coralite_ready__) {
+    if (window.__coralite__ && window.__coralite__.lifecycle) {
       // @ts-ignore
-      window.__coralite_ready__._markInstanceReady(this)
+      window.__coralite__.lifecycle._markInstanceReady(this)
     }
   }
 }

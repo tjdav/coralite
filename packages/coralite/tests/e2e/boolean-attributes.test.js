@@ -1,12 +1,10 @@
+import { waitForHydration } from './helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Boolean Attributes', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/boolean-attributes/')
-    // @ts-ignore
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
   })
 
   test('should handle boolean attributes correctly during SSR and hydration', async ({ page }) => {

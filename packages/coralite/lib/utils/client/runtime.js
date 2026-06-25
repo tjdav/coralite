@@ -28,8 +28,8 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
   const declarativeTags = ${JSON.stringify(declarativeTags)};
   const initialElements = Array.from(document.querySelectorAll('[data-coralite-initial]'))
     .filter(el => declarativeTags.includes(el.tagName.toLowerCase()));
-  if (window.__coralite_ready__) {
-    window.__coralite_ready__._start(initialElements.length, declarativeTags.length);
+  if (window.__coralite__ && window.__coralite__.lifecycle) {
+    window.__coralite__.lifecycle._start(initialElements.length, declarativeTags.length);
   }
   globalThis.executableScripts = [];
   globalThis.globalAbortController = new AbortController();
@@ -74,7 +74,7 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
             }
           }
           customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks, hydrationData));
-          if (window.__coralite_ready__) window.__coralite_ready__._markDefined(id);
+          if (window.__coralite__ && window.__coralite__.lifecycle) window.__coralite__.lifecycle._markDefined(id);
         }
 
         // Upgrade any existing elements that might have been created before the definition was loaded

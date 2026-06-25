@@ -1,12 +1,10 @@
+import { waitForHydration } from './helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Static Components', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/static-components/')
-    // @ts-ignore
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
   })
 
   test('should correctly render and bind attributes to template', async ({ page }) => {

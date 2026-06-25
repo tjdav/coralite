@@ -32,9 +32,9 @@
 
     <p>This allows you to write highly specific E2E tests using the standard <code>data-testid</code> pattern without polluting your production builds.</p>
 
-    <coralite-heading level="2" text="The window.__coralite_ready__.hydrated Promise"></coralite-heading>
+    <coralite-heading level="2" text="The window.__coralite__.lifecycle.hydrated Promise"></coralite-heading>
 
-    <p>To solve this, Coralite injects a global promise named <code>window.__coralite_ready__.hydrated</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
+    <p>To solve this, Coralite injects a global promise named <code>window.__coralite__.lifecycle.hydrated</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
 
     <p>Your testing frameworks <strong>MUST</strong> wait for this promise to resolve immediately after performing a page navigation before interacting with any Coralite components.</p>
 
@@ -48,7 +48,7 @@
         await page.goto('/my-page');
 
         // Wait for Coralite hydration to complete
-        await page.waitForFunction(() => window.__coralite_ready__.hydrated);
+        await page.waitForFunction(() => window.__coralite__.lifecycle.hydrated);
 
         // Now it is safe to interact with the DOM using the namespaced pattern
         const button = page.getByTestId('my-counter__increment-btn-0');
@@ -68,7 +68,7 @@
 
           // Wait for Coralite hydration to complete
           cy.window().then((win) => {
-            return win.__coralite_ready__.hydrated;
+            return win.__coralite__.lifecycle.hydrated;
           });
 
           // Now it is safe to interact with the DOM using the namespaced pattern
@@ -80,7 +80,7 @@
 
     <coralite-heading level="2" text="What Does It Wait For?"></coralite-heading>
 
-    <p>The <code>window.__coralite_ready__.hydrated</code> promise ensures two critical hydration pipelines have completed:</p>
+    <p>The <code>window.__coralite__.lifecycle.hydrated</code> promise ensures two critical hydration pipelines have completed:</p>
 
     <ol>
       <li><strong>Component Definition:</strong> The framework has dynamically imported all required module chunks for custom elements and registered them via <code>customElements.define()</code>.</li>

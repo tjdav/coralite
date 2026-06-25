@@ -1,12 +1,10 @@
+import { waitForHydration } from './helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Plugins Extensibility', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/plugins/')
-    // @ts-ignore
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
   })
 
   test('should inject custom context and verify execution', async ({ page }) => {

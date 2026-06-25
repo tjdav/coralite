@@ -1,13 +1,11 @@
+import { waitForHydration } from './helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Nested Imperative Components', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/nested-imperative/')
 
-    // @ts-ignore
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
   })
 
   test('should load nested components in an imperatively created component', async ({ page }) => {

@@ -1,3 +1,4 @@
+import { waitForHydration } from './helpers.js'
 import { test, expect } from '@playwright/test'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -5,8 +6,7 @@ import path from 'node:path'
 test.describe('Priority Architecture Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/priority-tests/')
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__.hydrated)
+    await waitForHydration(page)
   })
 
   test('Primitive Coercion: should coerce attributes to correct types', async ({ page }) => {

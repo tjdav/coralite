@@ -4,9 +4,9 @@ test.describe('Deep Nested Imperative Components', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/deep-nested-imperative/')
     // @ts-ignore
-    await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
+    await page.waitForFunction(() => window.__coralite__.lifecycle !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite__.lifecycle)
   })
 
   test('should load recursively nested imperative components', async ({ page }) => {

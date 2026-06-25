@@ -92,7 +92,8 @@ describe('render.js Coverage Gaps', () => {
       const root = createCoraliteComponent({ children: [] })
       injectReadinessScript(root, null, true)
       assert.strictEqual(root.children[0].name, 'script')
-      assert.ok(root.children[0].children[0].data.includes('window.__coralite_ready__'))
+      assert.ok(root.children[0].children[0].data.includes('window.__coralite__'))
+      assert.ok(root.children[0].children[0].data.includes('lifecycle:'))
     })
   })
 
