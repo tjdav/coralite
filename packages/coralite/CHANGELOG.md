@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.40.0
+
+> Comparing `coralite-v0.39.0` to `HEAD`
+
+**Summary:** 8 commits
+
+### ✨ Features
+
+- upgrade window.__coralite_ready__ to Granular Lifecycle Manager ([ff179f3](https://codeberg.org/tjdavid/coralite/commit/ff179f3f1ab06b34d377b70c8e176a2fa947ee15))
+- support development and production test builds (e2e) ([08a0b00](https://codeberg.org/tjdavid/coralite/commit/08a0b00e036a14bf056b2817cca85c842f7e5560))
+- enhance assets support and add integration tests (scripts) ([cc814c3](https://codeberg.org/tjdavid/coralite/commit/cc814c3ec89f04f3b410994e08a356ed2b0a3c42))
+
+### 🐛 Bug Fixes
+
+- fix imperative component caching in development (coralite) ([a9a4a49](https://codeberg.org/tjdavid/coralite/commit/a9a4a49a2356f95377bc46c571d08acfa46310e1))
+
+### ♻️ Code Refactoring
+
+- global lifecycle tracker to window.__coralite__.lifecycle (coralite) ([973c326](https://codeberg.org/tjdavid/coralite/commit/973c3262cdc324faa037d929bdb435950eb1f10b))
+- change dash separator to colon in package.json scripts ([7dff314](https://codeberg.org/tjdavid/coralite/commit/7dff314ff036bc3cf590b4d2d8442c332b3a9f8f))
+
+### ✅ Tests
+
+- add robust coverage for imperative component caching (coralite) ([4207caa](https://codeberg.org/tjdavid/coralite/commit/4207caa3f3b9119ea76bd50847249ba72493c0bd))
+
+### 🧹 Chores
+
+- update build:html script path (coralite) ([a35df6d](https://codeberg.org/tjdavid/coralite/commit/a35df6d291436e58e44de3d93c25c320c30866ff))
+
+
 ## v0.39.0
 
 > Comparing `coralite-v0.38.6` to `HEAD`
