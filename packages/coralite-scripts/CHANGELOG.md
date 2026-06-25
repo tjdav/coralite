@@ -1,5 +1,29 @@
 # Changelog
 
+## v0.40.0
+
+> Comparing `coralite-scripts-v0.39.0` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- enhance assets support and add integration tests (scripts) ([cc814c3](https://codeberg.org/tjdavid/coralite/commit/cc814c3ec89f04f3b410994e08a356ed2b0a3c42))
+
+### ♻️ Code Refactoring
+
+- change dash separator to colon in package.json scripts ([7dff314](https://codeberg.org/tjdavid/coralite/commit/7dff314ff036bc3cf590b4d2d8442c332b3a9f8f))
+
+### ✅ Tests
+
+- add robust coverage for imperative component caching (coralite) ([4207caa](https://codeberg.org/tjdavid/coralite/commit/4207caa3f3b9119ea76bd50847249ba72493c0bd))
+
+### 📦 Build System
+
+- Make release and script binaries executable ([e3aaeb5](https://codeberg.org/tjdavid/coralite/commit/e3aaeb519c2a2001756521751152878eae80597a))
+- make index.js executable (coralite-scripts) ([533f391](https://codeberg.org/tjdavid/coralite/commit/533f391f9c01526d609b82f7e4afe9b4c4006454))
+
+
 ## v0.39.0
 
 > Comparing `coralite-scripts-v0.38.6` to `HEAD`
