@@ -6,7 +6,7 @@ import { defaultOnError } from '../../../lib/utils/errors.js'
 describe('parseHTML warnings', () => {
   it('should call onError when an invalid custom element name is used', (t) => {
     const onError = t.mock.fn()
-    const html = '<invalidname></invalidname>'
+    const html = '<invalid--name></invalid--name>'
 
     parseHTML(html, undefined, undefined, onError)
 
@@ -14,7 +14,7 @@ describe('parseHTML warnings', () => {
 
     const call = onError.mock.calls[0]
     assert.strictEqual(call.arguments[0].level, 'WARN')
-    assert.ok(call.arguments[0].message.includes('Invalid custom element tag name: "invalidname"'))
+    assert.ok(call.arguments[0].message.includes('Invalid custom element tag name: "invalid--name"'))
     assert.ok(call.arguments[0].message.includes('https://html.spec.whatwg.org/multipage/custom-elements.html#valid-custom-element-name'))
   })
 
@@ -39,7 +39,7 @@ describe('parseHTML warnings', () => {
 
   it('should default to console.warn when onError is not provided', (t) => {
     const warnMock = t.mock.method(console, 'warn')
-    const html = '<invalidname></invalidname>'
+    const html = '<invalid--name></invalid--name>'
 
     parseHTML(html)
 
