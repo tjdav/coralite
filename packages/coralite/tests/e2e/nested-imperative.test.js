@@ -7,7 +7,7 @@ test.describe('Nested Imperative Components', () => {
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should load nested components in an imperatively created component', async ({ page }) => {

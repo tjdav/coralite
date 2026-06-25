@@ -6,7 +6,7 @@ test.describe('Slots Projection', () => {
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should render fallback content when slot is empty', async ({ page }) => {

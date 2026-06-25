@@ -11,7 +11,7 @@ test.describe('Error Handling', () => {
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
 
 
     // the component doesn't actually throw because context.state.triggerError is not set

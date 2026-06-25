@@ -39,7 +39,7 @@
 test('should click the button', async ({ page }) => {
   await page.goto('/');
   // Await hydration
-  await page.evaluate(() => window.__coralite_ready__);
+  await page.evaluate(() => window.__coralite_ready__.hydrated);
 
   // Select using the namespaced test ID
   await page.getByTestId('my-button__btn-0').click();

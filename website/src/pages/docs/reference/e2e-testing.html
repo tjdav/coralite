@@ -3,7 +3,7 @@
 
 <head>
   <coralite-meta no-hydration title="Coralite Hydration Readiness & E2E Testing Reference"
-    description="Technical specifications and documentation for Coralite's hydration pipelines and window.__coralite_ready__ promise."></coralite-meta>
+    description="Technical specifications and documentation for Coralite's hydration pipelines and window.__coralite_ready__.hydrated promise."></coralite-meta>
 </head>
 
 <body>
@@ -21,13 +21,13 @@
 
     <p>This ensures that E2E testing frameworks can target highly specific element instances deterministically using the standard <code>data-testid</code> selector pattern without requiring developers to manually maintain duplicate attributes, and guaranteeing these testing hooks are entirely stripped from production builds.</p>
 
-    <coralite-heading level="2" text="The window.__coralite_ready__ Promise"></coralite-heading>
+    <coralite-heading level="2" text="The window.__coralite_ready__.hydrated Promise"></coralite-heading>
 
-    <p>Coralite injects a global promise named <code>window.__coralite_ready__</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
+    <p>Coralite injects a global promise named <code>window.__coralite_ready__.hydrated</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
 
     <coralite-heading level="3" text="Resolution Lifecycle Pipelines"></coralite-heading>
 
-    <p>The framework strict-awaits the hydration process, ensuring the <code>window.__coralite_ready__</code> promise only resolves after two critical asynchronous pipelines finish:</p>
+    <p>The framework strict-awaits the hydration process, ensuring the <code>window.__coralite_ready__.hydrated</code> promise only resolves after two critical asynchronous pipelines finish:</p>
 
     <coralite-table>
       <tr slot="head">

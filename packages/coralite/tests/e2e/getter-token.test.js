@@ -6,7 +6,7 @@ test.describe('Getter Token in Imperative Component', () => {
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should display getter value as token in imperative component', async ({ page }) => {

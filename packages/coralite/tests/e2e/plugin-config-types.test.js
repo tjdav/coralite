@@ -6,7 +6,7 @@ test.describe('Plugin Config Types', () => {
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should correctly serialize and deserialize non-JSON types in plugin config', async ({ page }) => {

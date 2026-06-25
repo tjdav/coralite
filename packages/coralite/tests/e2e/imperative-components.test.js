@@ -6,7 +6,7 @@ test.describe('Imperative Components', () => {
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should create component imperatively and assign non-serializable objects', async ({ page }) => {

@@ -6,7 +6,7 @@ test.describe('Boolean Attributes', () => {
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should handle boolean attributes correctly during SSR and hydration', async ({ page }) => {

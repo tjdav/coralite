@@ -242,6 +242,7 @@ export function createRenderer ({
                 }
 
                 node.attribs['data-cid'] = slotContextId
+                node.attribs['data-coralite-initial'] = ''
                 session.componentTags.add(node.name)
               }
             }
@@ -717,6 +718,7 @@ export function createRenderer ({
           }
 
           customElement.attribs['data-cid'] = childContextId
+          customElement.attribs['data-coralite-initial'] = ''
           session.componentTags.add(customElement.name)
         }
       }
@@ -850,6 +852,7 @@ export function createRenderer ({
           }
 
           customElement.attribs['data-cid'] = contextId
+          customElement.attribs['data-coralite-initial'] = ''
           mappedSessionObject.componentTags.add(customElement.name)
         }
       }

@@ -4,7 +4,7 @@ test.describe('InnerHTML Components', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/innerhtml-test/')
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should create components via innerHTML, outerHTML and insertAdjacentHTML', async ({ page }) => {

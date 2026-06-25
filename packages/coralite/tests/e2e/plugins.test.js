@@ -6,7 +6,7 @@ test.describe('Plugins Extensibility', () => {
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should inject custom context and verify execution', async ({ page }) => {

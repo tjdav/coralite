@@ -6,7 +6,7 @@ test.describe('Client Script', () => {
     // @ts-ignore
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
     // @ts-ignore
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should execute script, setup context, and test reactivity', async ({ page }) => {

@@ -4,7 +4,7 @@ test.describe('Advanced Plugin Features', () => {
   test('Plugin Service Registry: should verify server-side and client-side resolution', async ({ page }) => {
     await page.goto('/plugins/registry-test/')
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
 
     const comp = page.locator('registry-test-component')
     const instanceId = await comp.getAttribute('data-cid')
@@ -25,7 +25,7 @@ test.describe('Advanced Plugin Features', () => {
   test('Plugin State Mutation: should verify global context mutation propagation', async ({ page }) => {
     await page.goto('/plugins/mutation-test/')
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
 
     const comp = page.locator('mutation-test-component')
     const instanceId = await comp.getAttribute('data-cid')

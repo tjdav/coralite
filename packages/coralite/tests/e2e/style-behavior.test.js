@@ -4,7 +4,7 @@ test.describe('Style Behavior', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/style-behavior/')
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('should have styles for declarative components', async ({ page }) => {

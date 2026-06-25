@@ -25,8 +25,11 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
 
 (async () => {
   const hydrationData = ${hydrationData};
-  if (!window.__coralite_ready__) {
-    window.__coralite_ready__ = new Promise(resolve => { window.__coralite_resolve_ready__ = resolve; });
+  const declarativeTags = ${JSON.stringify(declarativeTags)};
+  const initialElements = Array.from(document.querySelectorAll('[data-coralite-initial]'))
+    .filter(el => declarativeTags.includes(el.tagName.toLowerCase()));
+  if (window.__coralite_ready__) {
+    window.__coralite_ready__._start(initialElements.length, declarativeTags.length);
   }
   globalThis.executableScripts = [];
   globalThis.globalAbortController = new AbortController();
@@ -71,6 +74,7 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
             }
           }
           customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks, hydrationData));
+          if (window.__coralite_ready__) window.__coralite_ready__._markDefined(id);
         }
 
         // Upgrade any existing elements that might have been created before the definition was loaded
@@ -87,14 +91,8 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
     return loadCache[componentId];
   };
 
-  const declarativeTags = ${JSON.stringify(declarativeTags)};
-
   const loadPromises = declarativeTags.map(tagName => loadComponent(tagName));
   await Promise.all(loadPromises);
-
-  if (typeof window.__coralite_resolve_ready__ === 'function') {
-    window.__coralite_resolve_ready__();
-  }
 
   window.createCoraliteElement = (tag, options) => {
     const el = document.createElement(tag, options);

@@ -6,7 +6,7 @@ test.describe('Priority Architecture Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/priority-tests/')
     await page.waitForFunction(() => window.__coralite_ready__ !== undefined)
-    await page.evaluate(() => window.__coralite_ready__)
+    await page.evaluate(() => window.__coralite_ready__.hydrated)
   })
 
   test('Primitive Coercion: should coerce attributes to correct types', async ({ page }) => {

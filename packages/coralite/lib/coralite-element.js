@@ -557,6 +557,12 @@ export class CoraliteElement extends HTMLElement {
           options: this.componentOptions
         })
       }
+
+      // @ts-ignore
+      if (window.__coralite_ready__) {
+        // @ts-ignore
+        window.__coralite_ready__._markInstanceRendered(this)
+      }
     }
 
     // Await Promises or Apply Synchronously
@@ -663,10 +669,16 @@ export class CoraliteElement extends HTMLElement {
 
     if (this.componentOptions.client) {
       try {
-        this.componentOptions.client(localContext)
+        await this.componentOptions.client(localContext)
       } catch (error) {
         console.error(`Coralite Error: Component "${this.componentOptions.componentId}" script failed:`, error)
       }
+    }
+
+    // @ts-ignore
+    if (window.__coralite_ready__) {
+      // @ts-ignore
+      window.__coralite_ready__._markInstanceReady(this)
     }
   }
 }

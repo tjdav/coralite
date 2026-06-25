@@ -95,7 +95,7 @@
 
     <coralite-code-highlight language="javascript">
     // Wait for Coralite to finish executing all component scripts
-    await page.waitForFunction(() => window.__coralite_ready__);
+    await page.waitForFunction(() => window.__coralite_ready__.hydrated);
 
     // Safely interact using the auto-generated test ID
     await page.getByTestId('my-form__submitBtn-0').click();
