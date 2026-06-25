@@ -21,7 +21,6 @@ export default defineConfig({
       }
     }
   },
-  mode: 'development',
   plugins: [
     sitemapPlugin(),
     aggregation([

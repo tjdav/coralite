@@ -185,6 +185,11 @@ export async function buildCommand (config, options, logger = null) {
       }
     }
 
+    const trackedFiles = coralite.getTrackedOutputFiles()
+    for (const file of trackedFiles) {
+      validFiles.add(file)
+    }
+
     const publicDir = config.public
 
     if (publicDir) {
@@ -229,10 +234,18 @@ export async function buildCommand (config, options, logger = null) {
 
       for (let i = 0; i < results.length; i++) {
         const result = results[i]
-        validFiles.add(result.output)
+
+        if (Array.isArray(result.output)) {
+          for (const output of result.output) {
+            validFiles.add(output)
+          }
+        } else {
+          validFiles.add(result.output)
+        }
 
         if (options.verbose) {
-          log(toTime() + toMS(result.duration) + dash + result.output + '\n')
+          const displayPath = Array.isArray(result.output) ? result.output[0] : result.output
+          log(toTime() + toMS(result.duration) + dash + displayPath + '\n')
         }
       }
 

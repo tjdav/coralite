@@ -1,6 +1,4 @@
 import { definePlugin } from 'coralite'
-import { join } from 'node:path'
-import { writeFile, mkdir } from 'node:fs/promises'
 
 let searchIndex = []
 
@@ -67,12 +65,9 @@ export default definePlugin({
     },
     async onAfterBuild ({ app }) {
       try {
-        await mkdir(app.options.output, { recursive: true })
-
-        const dest = join(app.options.output, 'search-index.json')
         const content = JSON.stringify(searchIndex)
 
-        await writeFile(dest, content)
+        await app.writeFile('search-index.json', content)
       } catch (err) {
         console.error('Failed to write search index', err)
       }

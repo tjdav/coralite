@@ -92,6 +92,8 @@ export async function createCoralite ({
     output: output ? normalize(output) : undefined
   }
 
+  const trackedOutputFiles = new Set()
+
   /** @type {CoraliteInstance} */
   // @ts-ignore
   const app = {
@@ -101,6 +103,24 @@ export async function createCoralite ({
     build: null,
     save: null,
     transform: transformNode,
+    trackOutputFile (path) {
+      trackedOutputFiles.add(normalize(path))
+    },
+    getTrackedOutputFiles () {
+      return Array.from(trackedOutputFiles)
+    },
+    async writeFile (dest, content, writeOptions = {}) {
+      if (!app.options.output) {
+        throw new Error('app.writeFile requires "output" to be configured')
+      }
+
+      const fullPath = join(app.options.output, dest)
+      await mkdir(dirname(fullPath), { recursive: true })
+      await writeFile(fullPath, content, writeOptions)
+      app.trackOutputFile(fullPath)
+
+      return fullPath
+    },
     addRenderQueue: null,
     getPagePathsUsingCustomElement: null,
     createComponentElement: null,
@@ -331,6 +351,15 @@ export async function createCoralite ({
     app.options.plugins.unshift(staticAssetPlugin(assets))
   }
 
+  if (externalStyles && output) {
+    for (let i = 0; i < externalStyles.length; i++) {
+      const style = externalStyles[i]
+      if (style.startsWith('/')) {
+        app.trackOutputFile(join(output, style))
+      }
+    }
+  }
+
   await Promise.all([
     initHasher(),
     setupPlugins({
@@ -388,7 +417,6 @@ export async function createCoralite ({
       type: 'page',
       discoverOnly: false
     })) {
-      // @ts-ignore
       await app.pages.setItem(file)
     }
   } else {

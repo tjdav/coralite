@@ -92,14 +92,17 @@ async function buildStyles ({
     await fs.mkdir(output, { recursive: true })
     await fs.writeFile(outputFile, css)
 
+    const outputs = [outputFile]
+
     if (map) {
       const mapPath = outputFile + '.map'
       await fs.writeFile(mapPath, typeof map === 'string' ? map : JSON.stringify(map))
+      outputs.push(mapPath)
     }
 
     return {
       input: filePath,
-      output: fileName,
+      output,
       duration
     }
   }))

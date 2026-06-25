@@ -1,6 +1,6 @@
 import { definePlugin } from 'coralite'
 import { join, relative } from 'node:path'
-import { writeFile, mkdir, stat } from 'node:fs/promises'
+import { stat } from 'node:fs/promises'
 
 
 /**
@@ -56,10 +56,6 @@ export default () => {
         }
 
         try {
-          await mkdir(app.options.output, { recursive: true })
-
-          const dest = join(app.options.output, 'sitemap.xml')
-
           let xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
           xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
 
@@ -78,7 +74,7 @@ export default () => {
 
           xml += '</urlset>'
 
-          await writeFile(dest, xml)
+          await app.writeFile('sitemap.xml', xml)
         } catch (err) {
           console.error('Failed to write sitemap.xml', err)
         }
