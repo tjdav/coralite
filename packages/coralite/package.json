@@ -39,7 +39,7 @@
     "build": "premove dist && pnpm build:lib && pnpm build:types",
     "build:lib": "esbuild ./lib/index.js ./lib/coralite-element.js ./lib/plugin.js ./lib/utils/core.js ./lib/utils/index.js ./lib/utils/client/inject.js --bundle --target=esnext --format=esm --outdir=dist/lib --platform=node --sourcemap --packages=external --alias:#lib=./lib/index.js --alias:#plugins=./plugins/index.js --outbase=./lib",
     "build:types": "tsc",
-    "build:html": "premove .coralite && node --experimental-vm-modules ./tests/scripts/build:html.js",
+    "build:html": "premove .coralite && node --experimental-vm-modules ./tests/scripts/build-html.js",
     "bench": "node --experimental-vm-modules ./tests/scripts/run-benchmarks.js"
   },
   "files": [
