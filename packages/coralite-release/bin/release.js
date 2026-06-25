@@ -49,13 +49,13 @@ program
         execSync('pnpm lint', { stdio: 'inherit' })
 
         prompts.log.step('Verifying Build...')
-        execSync('pnpm run build-scripts', { stdio: 'inherit' })
+        execSync('pnpm run build:scripts', { stdio: 'inherit' })
 
         prompts.log.step('Running Unit Tests...')
-        execSync('pnpm test-unit', { stdio: 'inherit' })
+        execSync('pnpm test:unit', { stdio: 'inherit' })
 
         prompts.log.step('Verifying E2E Tests...')
-        execSync('pnpm run test-e2e', { stdio: 'inherit' })
+        execSync('pnpm run test:e2e', { stdio: 'inherit' })
 
         prompts.log.success('✅ All checks passed!')
       } catch {

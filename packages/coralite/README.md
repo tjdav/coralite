@@ -279,10 +279,10 @@ Before submitting a Pull Request, navigate to the core package and ensure your c
 cd packages/coralite
 
 # Run the unit test suite
-pnpm run test-unit
+pnpm run test:unit
 
 # Run the end-to-end test suite
-pnpm run test-e2e
+pnpm run test:e2e
 
 # Run the performance benchmarks (highly recommended if modifying the AST or Plugin core)
 pnpm run bench

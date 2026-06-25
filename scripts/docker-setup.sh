@@ -2,7 +2,7 @@
 set -e
 
 # Capture the argument
-TARGET_SCRIPT=${1:-test-e2e}
+TARGET_SCRIPT=${1:-test:e2e}
 
 echo "🚀 Starting Container Setup..."
 
@@ -58,10 +58,10 @@ pnpm install --frozen-lockfile
 
 echo "🛠️  Building Project..."
 pnpm run build
-pnpm --filter coralite run build-html
+pnpm --filter coralite run build:html
 
 echo "🧪 Running: $TARGET_SCRIPT"
-if [ "$TARGET_SCRIPT" == "test-e2e-report" ]; then
+if [ "$TARGET_SCRIPT" == "test:e2e:report" ]; then
     exec pnpm --filter coralite exec playwright show-report --host 0.0.0.0
 else
     exec pnpm --filter coralite run "$TARGET_SCRIPT"
