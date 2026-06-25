@@ -316,6 +316,50 @@ describe('Coralite', () => {
       assert.ok(hookContext.error.message.includes('Test Error'), 'error message should match')
       assert.ok(typeof hookContext.duration === 'number', 'duration should be a number')
     })
+    describe('Asset Tracking', () => {
+      it('should track output files manually', async () => {
+        const coralite = await project.createCoralite({
+          output: project.outputDir
+        })
+
+        const testFile = path.join(project.outputDir, 'manual-track.txt')
+        coralite.trackOutputFile(testFile)
+
+        const tracked = coralite.getTrackedOutputFiles()
+        assert.ok(tracked.includes(path.normalize(testFile)), 'Should track manual output file')
+      })
+
+      it('should write and track files via app.writeFile', async () => {
+        const coralite = await project.createCoralite({
+          output: project.outputDir
+        })
+
+        const content = 'test content'
+        const relativePath = 'nested/dir/test.txt'
+        const absolutePath = await coralite.writeFile(relativePath, content)
+
+        assert.strictEqual(absolutePath, path.join(project.outputDir, relativePath))
+
+        const fs = await import('node:fs/promises')
+        const writtenContent = await fs.readFile(absolutePath, 'utf-8')
+        assert.strictEqual(writtenContent, content, 'File content should match')
+
+        const tracked = coralite.getTrackedOutputFiles()
+        assert.ok(tracked.includes(path.normalize(absolutePath)), 'Should automatically track files written via writeFile')
+      })
+
+      it('should automatically track local externalStyles', async () => {
+        const externalStyles = ['/assets/css/custom.css', 'https://example.com/remote.css']
+        const coralite = await project.createCoralite({
+          output: project.outputDir,
+          externalStyles
+        })
+
+        const tracked = coralite.getTrackedOutputFiles()
+        assert.ok(tracked.includes(path.normalize(path.join(project.outputDir, '/assets/css/custom.css'))), 'Should track local external style')
+        assert.ok(!tracked.some(t => t.includes('remote.css')), 'Should NOT track remote external style')
+      })
+    })
   })
 })
 
