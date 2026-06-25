@@ -40,6 +40,7 @@ export function ScriptManager (options = {}) {
   this.scriptModules = []
   this.options = options
   this.context = null
+  this.virtualModules = new Map()
 }
 
 /**
@@ -320,9 +321,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   entryCodeParts.push(`import { createCoraliteClass } from ${JSON.stringify(coraliteElementPath)};\n`)
   entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, globalClientHooks };\n')
 
-  const entryPoints = {
-    'coralite-runtime': entryCodeParts.join('').trimEnd()
-  }
+  this.virtualModules.clear()
+  this.virtualModules.set('coralite-runtime', entryCodeParts.join('').trimEnd())
 
   // Determine which components to bundle
   /** @type {Record<string, boolean>} */
@@ -334,6 +334,36 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }
 
   const processedComponentKeys = Object.keys(processedComponent).sort()
+
+  if (mode === 'development') {
+    // In development, we must re-create the context if the set of entry points changed
+    // because esbuild's context does not support adding/removing entry points.
+    const currentEntryPoints = new Set(processedComponentKeys)
+    currentEntryPoints.add('coralite-runtime')
+
+    if (this.context) {
+      let entryPointsChanged = false
+      if (this._lastEntryPoints) {
+        if (this._lastEntryPoints.size !== currentEntryPoints.size) {
+          entryPointsChanged = true
+        } else {
+          for (const ep of currentEntryPoints) {
+            if (!this._lastEntryPoints.has(ep)) {
+              entryPointsChanged = true
+              break
+            }
+          }
+        }
+      } else {
+        entryPointsChanged = true
+      }
+
+      if (entryPointsChanged) {
+        await this.disposeContext()
+      }
+    }
+    this._lastEntryPoints = currentEntryPoints
+  }
   const regex = /[-.:]/g
 
   // Create virtual entry points for each component
@@ -421,7 +451,7 @@ export default {
   server: ${hasState ? `componentModule_${safeId}.state` : 'null'}
 };
 `
-      entryPoints[componentId] = componentEntryCode
+      this.virtualModules.set(componentId, componentEntryCode)
     }
   }
 
@@ -434,7 +464,7 @@ export default {
   // we need to pass virtual paths.
   /** @type {Record<string, string>} */
   const virtualEntryPoints = {}
-  for (const key of Object.keys(entryPoints)) {
+  for (const key of this.virtualModules.keys()) {
     virtualEntryPoints[key] = `${virtualPrefix}${key}`
   }
 
@@ -493,7 +523,7 @@ export default {
             // Check for Coralite internal modules first
             if (args.path.startsWith(virtualPrefix) ||
               args.path === 'coralite-runtime' ||
-              Object.hasOwn(entryPoints, args.path)) {
+              this.virtualModules.has(args.path)) {
               return null
             }
 
@@ -544,9 +574,10 @@ export default {
           }, args => {
             const path = args.path.replace(virtualPrefix, '')
 
-            if (entryPoints[path]) {
+            const virtualContent = this.virtualModules.get(path)
+            if (virtualContent) {
               return {
-                contents: entryPoints[path],
+                contents: virtualContent,
                 loader: 'js',
                 resolveDir: process.cwd()
               }
