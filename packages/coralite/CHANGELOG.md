@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.40.1
+
+> Comparing `coralite-v0.40.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- implement robust asset tracking and improved build cleanup ([254a1f2](https://codeberg.org/tjdavid/coralite/commit/254a1f2a11b4e4b3e61b92f6945511b71d6d7ed4))
+
+### ✅ Tests
+
+- update invalid custom element name in warning tests ([32fd5b2](https://codeberg.org/tjdavid/coralite/commit/32fd5b2b49294499f29ca5e9e18d0e87a0a3fa37))
+- add asset tracking functionality to Coralite tests (coralite) ([8251e8e](https://codeberg.org/tjdavid/coralite/commit/8251e8e43a7dc71a465b3a259b2fc88f33a232d3))
+
+
 ## v0.40.0
 
 > Comparing `coralite-v0.39.0` to `HEAD`
