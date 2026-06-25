@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.40.1
+
+> Comparing `coralite-scripts-v0.40.0` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- implement robust asset tracking and improved build cleanup ([254a1f2](https://codeberg.org/tjdavid/coralite/commit/254a1f2a11b4e4b3e61b92f6945511b71d6d7ed4))
+
+### ✅ Tests
+
+- ensure plugin-written files are preserved during incremental builds (coralite-scripts) ([5c2e191](https://codeberg.org/tjdavid/coralite/commit/5c2e191192d50a6d3b55f3e168572accac00b824))
+
+
 ## v0.40.0
 
 > Comparing `coralite-scripts-v0.39.0` to `HEAD`
