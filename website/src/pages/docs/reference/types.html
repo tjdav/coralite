@@ -95,6 +95,8 @@
             <li><a href="#get-page-paths">Get Page Paths Using Custom Element</a></li>
             <li><a href="#add-render-queue">Add Render Queue</a></li>
             <li><a href="#create-component">Create Component</a></li>
+            <li><a href="#write-file">Write File</a></li>
+            <li><a href="#track-output-file">Track Output File</a></li>
             <li><a href="#evaluate">Evaluate Method</a></li>
             <li><a href="#module-linker">Module Linker</a></li>
             <li><a href="#trigger-plugin-hook">Trigger Plugin Hook</a></li>
@@ -1630,6 +1632,29 @@
            * @returns {Promise<any>}
            */
           Coralite.prototype.createComponentElement = async function (options, head = true) { }
+        </coralite-code-highlight>
+
+        <coralite-heading level="2" text="Write File" id="write-file"></coralite-heading>
+        <p>Writes a file to the output directory and registers it for protection during build cleanup.</p>
+
+        <coralite-code-highlight language="JavaScript">
+            /**
+            * @param {string} dest - Destination path relative to output dir
+            * @param {string | Buffer} content - File content
+            * @param {Object} [options] - Node.js writeFile options
+            * @returns {Promise<string>} Absolute path to the file
+            */
+            Coralite.prototype.writeFile = async function (dest, content, options) { }
+        </coralite-code-highlight>
+
+        <coralite-heading level="2" text="Track Output File" id="track-output-file"></coralite-heading>
+        <p>Manually adds an absolute file path to the build cleanup whitelist.</p>
+
+        <coralite-code-highlight language="JavaScript">
+            /**
+            * @param {string} path - Absolute file path
+            */
+            Coralite.prototype.trackOutputFile = function (path) { }
         </coralite-code-highlight>
 
         <coralite-heading level="2" text="Evaluate Method"></coralite-heading>
