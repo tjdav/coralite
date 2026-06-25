@@ -13,7 +13,7 @@ steps:
     commands:
       - pnpm install --frozen-lockfile
       - pnpm lint
-      - pnpm --filter coralite run test-unit
+      - pnpm --filter coralite run test:unit
 
   smoke:
     image: guergeiro/pnpm:lts-latest-slim
