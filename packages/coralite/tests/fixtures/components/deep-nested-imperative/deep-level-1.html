@@ -1,0 +1,31 @@
+<template id="deep-level-1">
+  <div ref="container">
+    <span ref="label">Level {{ depth }}</span>
+    <div ref="host"></div>
+  </div>
+</template>
+
+<style>
+  [data-style-selector="deep-level-1"] {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin: 5px;
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      depth: Number
+    },
+    client ({ state, refs }) {
+      if (state.depth < 3) {
+        const next = document.createElement('deep-level-1')
+        next.setAttribute('depth', String(state.depth + 1))
+        refs('host').appendChild(next)
+      }
+    }
+  })
+</script>

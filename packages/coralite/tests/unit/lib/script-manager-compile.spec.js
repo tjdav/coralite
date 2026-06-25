@@ -208,6 +208,80 @@ describe('ScriptManager Compilation', () => {
       // Should be compiled properly
       assert.ok(result.manifest['test'])
     })
+
+    it('should reset esbuild context in development if entry points change', async () => {
+      sm.registerComponent({
+        id: 'comp-1',
+        script: { content: '() => {}' }
+      })
+
+      // First compilation
+      await sm.compileAllInstances({}, 'development')
+      const firstContext = sm.context
+
+      // Register new component
+      sm.registerComponent({
+        id: 'comp-2',
+        script: { content: '() => {}' }
+      })
+
+      // Second compilation
+      const result = await sm.compileAllInstances({}, 'development')
+
+      assert.notStrictEqual(sm.context, firstContext, 'Esbuild context should have been reset')
+      assert.ok(result.manifest['comp-1'], 'Manifest should contain comp-1')
+      assert.ok(result.manifest['comp-2'], 'Manifest should contain comp-2')
+    })
+
+    it('should bundle all registered components for imperative loading', async () => {
+      sm.registerComponent({
+        id: 'declarative',
+        script: { content: '() => {}' }
+      })
+
+      sm.registerComponent({
+        id: 'imperative',
+        script: { content: '() => {}' }
+      })
+
+      // Only pass 'declarative' as if it was the only one on the page
+      const instances = {
+        'inst-1': {
+          componentId: 'declarative',
+          instanceId: 'inst-1'
+        }
+      }
+
+      const result = await sm.compileAllInstances(instances, 'production')
+
+      assert.ok(result.manifest['declarative'], 'Declarative component should be in manifest')
+      assert.ok(result.manifest['imperative'], 'Imperative component should be in manifest even if not in instances')
+    })
+
+    it('should handle nested imperative components by bundling all registered components', async () => {
+      sm.registerComponent({
+        id: 'parent',
+        script: { content: '() => {}' },
+        components: ['child']
+      })
+
+      sm.registerComponent({
+        id: 'child',
+        script: { content: '() => {}' },
+        components: ['grand-child']
+      })
+
+      sm.registerComponent({
+        id: 'grand-child',
+        script: { content: '() => {}' }
+      })
+
+      const result = await sm.compileAllInstances({}, 'production')
+
+      assert.ok(result.manifest['parent'], 'Parent should be in manifest')
+      assert.ok(result.manifest['child'], 'Child should be in manifest')
+      assert.ok(result.manifest['grand-child'], 'Grand-child should be in manifest')
+    })
   })
 
   describe('Async Helpers', () => {

@@ -1,0 +1,15 @@
+<template id="deep-parent">
+  <div ref="host"></div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client ({ refs }) {
+      const level1 = document.createElement('deep-level-1')
+      level1.setAttribute('depth', '1')
+      refs('host').appendChild(level1)
+    }
+  })
+</script>
