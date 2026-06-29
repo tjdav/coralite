@@ -181,7 +181,8 @@
  * @property {Record<string, { path: string, hashedPath: string, text: string }>} outputFiles - The record of generated output files.
  * @property {Object} _dependencyGraph - The internal dependency graph for the project.
  * @property {Record<string, Set<string>>} _dependencyGraph.pageCustomElements - The mapping of custom elements to the pages that use them.
- * @property {Record<string, string>} _dependencyGraph.childCustomElements - The mapping of child custom elements to their parent components.
+ * @property {Record<string, string[]>} _dependencyGraph.directPageComponents - The mapping of pages to their direct custom element dependencies.
+ * @property {() => void} _refreshDependencyGraph - Recomputes the recursive dependency graph.
  * @property {() => void} _clearDependencies - The internal function to clear the dependency graph.
  * @property {(name: string, initialData: any) => Promise<any>} _triggerPluginHook - The internal function to trigger a sequential plugin hook.
  * @property {(name: string, contextData: any) => Promise<any[]>} _triggerPluginAggregateHook - The internal function to trigger an aggregated plugin hook.

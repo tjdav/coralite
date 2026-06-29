@@ -126,11 +126,51 @@ export async function createCoralite ({
     createComponentElement: null,
     _dependencyGraph: {
       pageCustomElements: {},
-      childCustomElements: {}
+      directPageComponents: {}
+    },
+    _refreshDependencyGraph: () => {
+      const { pageCustomElements, directPageComponents } = app._dependencyGraph
+      // Clear existing graph
+      for (const tag in pageCustomElements) {
+        delete pageCustomElements[tag]
+      }
+
+      const resolveDependencies = (pagePath, directComponents) => {
+        const visited = new Set()
+        const allDependencies = new Set()
+
+        const walk = (tags) => {
+          for (const tag of tags) {
+            if (visited.has(tag)) {
+              continue
+            }
+            visited.add(tag)
+            allDependencies.add(tag)
+
+            const sharedFn = scriptManager.sharedFunctions[tag]
+            if (sharedFn && sharedFn.components?.length) {
+              walk(sharedFn.components)
+            }
+          }
+        }
+
+        walk(directComponents)
+
+        for (const tag of allDependencies) {
+          if (!pageCustomElements[tag]) {
+            pageCustomElements[tag] = new Set()
+          }
+          pageCustomElements[tag].add(pagePath)
+        }
+      }
+
+      for (const [pagePath, directComponents] of Object.entries(directPageComponents)) {
+        resolveDependencies(pagePath, directComponents)
+      }
     },
     _clearDependencies: () => {
       app._dependencyGraph.pageCustomElements = {}
-      app._dependencyGraph.childCustomElements = {}
+      app._dependencyGraph.directPageComponents = {}
     }
   }
 
@@ -330,8 +370,14 @@ export async function createCoralite ({
       const item = app.components.getItem(targetPath)
       const results = []
       if (item) {
-        const id = app._dependencyGraph.childCustomElements[item.result.id] || item.result.id
+        const id = item.result.id
         const pce = app._dependencyGraph.pageCustomElements[id]
+        if (pce) {
+          pce.forEach(p => results.push(p))
+        }
+      } else {
+        // Fallback to searching by tag name directly if targetPath is an ID
+        const pce = app._dependencyGraph.pageCustomElements[targetPath]
         if (pce) {
           pce.forEach(p => results.push(p))
         }

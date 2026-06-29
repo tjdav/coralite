@@ -1369,6 +1369,19 @@ export function createRenderer ({
     try {
       const content = await readFile(manifestPath, 'utf8')
       manifest = JSON.parse(content)
+
+      // Restore directPageComponents from manifest
+      for (const [path, metadata] of Object.entries(manifest.physical || {})) {
+        if (metadata.dependencies) {
+          app._dependencyGraph.directPageComponents[path] = metadata.dependencies
+        }
+      }
+      for (const [path, metadata] of Object.entries(manifest.virtual || {})) {
+        if (metadata.dependencies) {
+          app._dependencyGraph.directPageComponents[path] = metadata.dependencies
+        }
+      }
+      app._refreshDependencyGraph()
     } catch (e) {
       // Manifest missing (cold start) or corrupt, use default
       if (e.code !== 'ENOENT') {
@@ -1390,14 +1403,20 @@ export function createRenderer ({
     // Check components first for dependency cascading
     const componentChanges = new Map()
     const allComponents = app.components.list
+    let anyComponentChanged = false
     for (const component of allComponents) {
       const { changed, metadata } = await checkFileChange(component.path.pathname, manifest.physical[component.path.pathname])
       newManifest.physical[component.path.pathname] = metadata
-      if (changed) {
+      if (changed || !manifest.physical[component.path.pathname]) {
         componentChanges.set(component.result.id, true)
+        anyComponentChanged = true
         // Force re-parse
         await app.components.updateItem(component.path.pathname)
       }
+    }
+
+    if (anyComponentChanged) {
+      app._refreshDependencyGraph()
     }
 
     const pageCustomElements = {
@@ -1486,10 +1505,19 @@ export function createRenderer ({
     }
 
     // Update dependency graph in manifest
-    const { pageCustomElements: livePageCustomElements } = app._dependencyGraph
+    const { pageCustomElements: livePageCustomElements, directPageComponents: liveDirectPageComponents } = app._dependencyGraph
 
     for (const [id, pages] of Object.entries(livePageCustomElements)) {
       newManifest.dependencies[id] = Array.from(pages)
+    }
+
+    // Attach direct dependencies to page entries in newManifest
+    for (const [path, deps] of Object.entries(liveDirectPageComponents)) {
+      if (newManifest.physical[path]) {
+        newManifest.physical[path].dependencies = deps
+      } else if (newManifest.virtual[path]) {
+        newManifest.virtual[path].dependencies = deps
+      }
     }
 
     // Carry over old dependencies if not overwritten
@@ -1603,7 +1631,6 @@ export function createRenderer ({
       })
       renderQueues.delete(buildId)
       sealedQueues.delete(buildId)
-      app._clearDependencies()
       // Clean up local arrays to help GC
       pagesToRender.length = 0
       skippedPages.length = 0

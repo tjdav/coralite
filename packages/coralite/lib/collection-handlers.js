@@ -30,7 +30,7 @@ export function createPageHandlers ({
   scriptManager,
   createSession
 }) {
-  const { pageCustomElements, childCustomElements } = app._dependencyGraph
+  const { directPageComponents } = app._dependencyGraph
   const onFileSetLocal = async (data) => {
     // @ts-ignore
     const rootPath = data.type === 'component' ? app.options.path.components : app.options.path.pages
@@ -66,43 +66,10 @@ export function createPageHandlers ({
 
     const elements = parseHTML(data.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
 
-    if (true) {
-      const customElementsList = elements && elements.customElements ? elements.customElements : []
-      for (let i = 0; i < customElementsList.length; i++) {
-        const name = customElementsList[i].name
-        if (!pageCustomElements[name]) {
-          pageCustomElements[name] = new Set()
-          // Always track dependencies for ISR
-          // @ts-ignore
-          app._dependencyGraph.pageCustomElements[name] = pageCustomElements[name]
-          const component = app.components.getItem(name)
-
-          if (component && component.result && component.result.customElements && component.result.customElements.length) {
-            const stack = [component.result.customElements]
-
-            while (stack.length > 0) {
-              const current = stack.pop()
-
-              for (let i = 0; i < current.length; i++) {
-                const element = current[i]
-
-                if (!childCustomElements[element.name]) {
-                  childCustomElements[element.name] = name
-                  const comp = app.components.getItem(element.name)
-
-                  if (comp && comp.result && comp.result.customElements && comp.result.customElements.length) {
-                    stack.push(comp.result.customElements)
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        /** @type {Set<string>} */
-        const customElements = pageCustomElements[name]
-        customElements.add(data.path.pathname)
-      }
+    if (elements && elements.customElements) {
+      const directComponents = elements.customElements.map(el => el.name)
+      directPageComponents[data.path.pathname] = directComponents
+      app._refreshDependencyGraph()
     }
 
     const mappedContext = await triggerHook('onPageSet', {
@@ -135,18 +102,17 @@ export function createPageHandlers ({
 
   const onPageUpdateLocal = async (newValue, oldValue) => {
     if (app.options.mode === 'production') {
+      if (!newValue.result) {
+        await onFileSetLocal(newValue)
+      }
       return newValue.result
     }
 
-    let newCustomElements
-
     if (!newValue.result) {
-      const res = await onFileSetLocal(newValue); newValue.result = res.value; newCustomElements = res.value.customElements
-    } else {
-      newCustomElements = newValue.result.customElements
+      const res = await onFileSetLocal(newValue)
+      newValue.result = res.value
     }
 
-    const oldElements = (oldValue.result.customElements || []).slice()
     const mappedContext = await triggerHook('onPageUpdate', {
       elements: newValue.result,
       page: newValue.result.page,
@@ -155,62 +121,30 @@ export function createPageHandlers ({
       app
     })
 
-    newValue.result = mappedContext.elements; newValue = mappedContext.newValue
+    newValue.result = mappedContext.elements
+    newValue = mappedContext.newValue
 
-    for (let i = 0; i < newCustomElements.length; i++) {
-      const name = newCustomElements[i].name
-      let hasElement = false
-      for (let j = 0; j < oldElements.length; j++) {
-        if (name === oldElements[j].name) {
-          hasElement = true; oldElements.splice(j, 1); break
-        }
-      }
-
-      if (!hasElement) {
-        if (!pageCustomElements[name]) {
-          pageCustomElements[name] = new Set()
-          // Always track dependencies for ISR
-          // @ts-ignore
-          app._dependencyGraph.pageCustomElements[name] = pageCustomElements[name]
-        }
-        /** @type {Set<string>} */
-        const customElements = pageCustomElements[name]
-        customElements.add(newValue.path.pathname)
-      }
+    const elements = parseHTML(newValue.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
+    if (elements && elements.customElements) {
+      const directComponents = elements.customElements.map(el => el.name)
+      directPageComponents[newValue.path.pathname] = directComponents
+    } else {
+      delete directPageComponents[newValue.path.pathname]
     }
-    oldElements.forEach(oe => {
-      if (pageCustomElements[oe.name]) {
-        // Track deletions for ISR
-        /** @type {Set<string>} */
-        const customElements = pageCustomElements[oe.name]
-        customElements.delete(newValue.path.pathname)
-      }
-    })
+    app._refreshDependencyGraph()
+
     return newValue.result
   }
 
   const onPageDeleteLocal = async (value) => {
-    if (app.options.mode === 'production') {
-      return
-    }
-
     const res = await triggerHook('onPageDelete', {
       data: value,
       app
     })
 
     value = res.data
-    if (value?.result?.customElements) {
-      value.result.customElements.forEach(ce => {
-        const ceName = typeof ce === 'string' ? ce : ce.name
-        if (pageCustomElements[ceName]) {
-          // Track deletions for ISR
-          /** @type {Set<string>} */
-          const customElements = pageCustomElements[ceName]
-          customElements.delete(value.path.pathname)
-        }
-      })
-    }
+    delete directPageComponents[value.path.pathname]
+    app._refreshDependencyGraph()
   }
 
   const onComponentSetLocal = async (v) => {
