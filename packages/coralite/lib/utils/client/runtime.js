@@ -76,16 +76,6 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
           customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks, hydrationData));
           if (window.__coralite__ && window.__coralite__.lifecycle) window.__coralite__.lifecycle._markDefined(id);
         }
-
-        // Upgrade any existing elements that might have been created before the definition was loaded
-        const elements = document.querySelectorAll(id);
-        for (const el of elements) {
-          if (el.constructor === HTMLElement) {
-             // Re-trigger the lifecycle by replacing the element or manually calling upgrade if supported
-             // For most cases, customElements.define handles this automatically if the element is already in DOM,
-             // but if it's currently disconnected it might need help.
-          }
-        }
       }
     })();
     return loadCache[componentId];
