@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.40.2
+
+> Comparing `coralite-v0.40.1` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- address TypeError in onPageDelete handler and update obsolete unit tests ([4eec7d4](https://codeberg.org/tjdavid/coralite/commit/4eec7d4481d15896b1eff5ba46311ec6382d20b0))
+- implement recursive dependency tracking for incremental builds ([bea4e6c](https://codeberg.org/tjdavid/coralite/commit/bea4e6c9132654e6beadd335aed7044151d9fd46))
+
+### ♻️ Code Refactoring
+
+- Remove unnecessary post-definition element upgrade logic (coralite) ([f19b208](https://codeberg.org/tjdavid/coralite/commit/f19b20828ad44d36dd2a7c330a859f56658fc16b))
+
+
 ## v0.40.1
 
 > Comparing `coralite-v0.40.0` to `HEAD`
