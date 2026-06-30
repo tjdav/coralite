@@ -14,8 +14,10 @@ describe('collection-handlers.js Coverage Gaps', () => {
       mode: 'development'
     },
     _dependencyGraph: {
-      pageCustomElements: {},
-      childCustomElements: {}
+      directPageComponents: {},
+      pageCustomElements: {}
+    },
+    _refreshDependencyGraph: () => {
     },
     components: {
       getItem: () => null
@@ -69,14 +71,15 @@ describe('collection-handlers.js Coverage Gaps', () => {
     assert.strictEqual(result, 'new')
   })
 
-  it('onPageDelete should handle missing result/customElements', async () => {
+  it('onPageDelete should successfully remove the page from the side-car registry', async () => {
     const handlers = createPageHandlers({
       app: mockApp,
       triggerHook,
       handleError
     })
+    mockApp._dependencyGraph.directPageComponents['/p'] = ['comp-a']
     await handlers.onPageDelete({ path: { pathname: '/p' } })
-    // Should not throw
+    assert.strictEqual(mockApp._dependencyGraph.directPageComponents['/p'], undefined)
   })
 
   it('onComponentSet should return nothing if not a template', async () => {

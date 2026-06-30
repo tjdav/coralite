@@ -30,7 +30,6 @@ export function createPageHandlers ({
   scriptManager,
   createSession
 }) {
-  const { directPageComponents } = app._dependencyGraph
   const onFileSetLocal = async (data) => {
     // @ts-ignore
     const rootPath = data.type === 'component' ? app.options.path.components : app.options.path.pages
@@ -65,10 +64,13 @@ export function createPageHandlers ({
     }
 
     const elements = parseHTML(data.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
+    const directPageComponents = app._dependencyGraph.directPageComponents
 
-    if (elements && elements.customElements) {
+    if (elements && elements.customElements && directPageComponents) {
       const directComponents = elements.customElements.map(el => el.name)
+
       directPageComponents[data.path.pathname] = directComponents
+
       app._refreshDependencyGraph()
     }
 
@@ -125,12 +127,17 @@ export function createPageHandlers ({
     newValue = mappedContext.newValue
 
     const elements = parseHTML(newValue.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
-    if (elements && elements.customElements) {
-      const directComponents = elements.customElements.map(el => el.name)
-      directPageComponents[newValue.path.pathname] = directComponents
-    } else {
-      delete directPageComponents[newValue.path.pathname]
+    const directPageComponents = app._dependencyGraph.directPageComponents
+
+    if (directPageComponents) {
+      if (elements && elements.customElements) {
+        const directComponents = elements.customElements.map(el => el.name)
+        directPageComponents[newValue.path.pathname] = directComponents
+      } else {
+        delete directPageComponents[newValue.path.pathname]
+      }
     }
+
     app._refreshDependencyGraph()
 
     return newValue.result
@@ -142,8 +149,14 @@ export function createPageHandlers ({
       app
     })
 
-    value = res.data
-    delete directPageComponents[value.path.pathname]
+    const finalData = res?.data || value
+    const pathname = finalData?.path?.pathname
+    const directPageComponents = app._dependencyGraph.directPageComponents
+
+    if (pathname && directPageComponents) {
+      delete directPageComponents[pathname]
+    }
+
     app._refreshDependencyGraph()
   }
 
