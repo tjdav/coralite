@@ -13,13 +13,20 @@
 
     <p>This reference details the technical specifications of Coralite's client-side hydration phase and how it exposes its state for End-to-End (E2E) testing frameworks.</p>
 
-    <coralite-heading level="2" text="Testing Plugin (data-testid)"></coralite-heading>
+    <coralite-heading level="2" text="The Testing Mode"></coralite-heading>
 
-    <p>When Coralite is configured with <code>mode: 'development'</code>, it automatically activates a built-in testing plugin.</p>
+    <p>When Coralite is configured with <code>mode: 'testing'</code>, it provides a specialized environment for automated testing.</p>
 
-    <p>During the AST build phase, this plugin recursively traverses all component templates (both declarative and imperative). Because Coralite isolates references across component instances, the underlying <code>ref</code> strings have already been resolved by the core framework into a strict namespace pattern: <code>[componentId]__[refName]-[index]</code>. Whenever the testing plugin encounters one of these resolved <code>ref</code> attributes, it duplicates that exact namespaced value into a <code>data-testid</code> attribute.</p>
+    <p>In this mode, the built-in testing plugin performs several automated tasks:</p>
 
-    <p>This ensures that E2E testing frameworks can target highly specific element instances deterministically using the standard <code>data-testid</code> selector pattern without requiring developers to manually maintain duplicate attributes, and guaranteeing these testing hooks are entirely stripped from production builds.</p>
+    <ul>
+      <li><strong>Deterministic data-testid:</strong> Injects <code>data-testid</code> onto all interactive elements and custom elements using the pattern <code>[instanceId]__[tagName]-[index]</code>.</li>
+      <li><strong>Ref Mapping:</strong> Automatically duplicates any <code>ref</code> attribute to <code>data-testid</code>.</li>
+      <li><strong>Velocity Engine:</strong> Injects a global style block that disables all transitions and animations to eliminate timing flakiness.</li>
+      <li><strong>State Exposure:</strong> Populates <code>window.__coralite__.components</code> with instance state mappings for glass-box assertions.</li>
+      <li><strong>Event Spying:</strong> Logs all <code>CustomEvent</code> dispatches to <code>window.__coralite__.events</code>.</li>
+      <li><strong>Fail-Fast Hydration:</strong> Any hydration mismatch or client-side error triggers a fatal red overlay, ensuring test runners catch failures immediately.</li>
+    </ul>
 
     <coralite-heading level="2" text="The window.__coralite__.lifecycle.hydrated Promise"></coralite-heading>
 

@@ -103,9 +103,15 @@ export default defineConfig({
       </tr>
       <tr slot="body">
         <td><code>mode</code></td>
-        <td><code>'production' | 'development'</code></td>
+        <td><code>'production' | 'development' | 'testing'</code></td>
         <td><code>'production'</code></td>
-        <td>Build mode.</td>
+        <td>Build mode. Use <code>'testing'</code> for zero-config E2E environments.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>testing</code></td>
+        <td><code>CoraliteTestingConfig</code></td>
+        <td><code>{}</code></td>
+        <td>Optional configuration for testing mode, including server-side mocks.</td>
       </tr>
     </coralite-table>
 

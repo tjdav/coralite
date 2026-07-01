@@ -49,6 +49,8 @@
         <li><a href="#coralitemodule">CoraliteModule</a></li>
         <li><a href="#coralite-module-slot-element">CoraliteModuleSlotElement</a></li>
         <li><a href="#coraliteconfig">CoraliteConfig</a></li>
+        <li><a href="#coralitetestingconfig">CoraliteTestingConfig</a></li>
+        <li><a href="#coralitetestingmock">CoraliteTestingMock</a></li>
         <li><a href="#coralitescriptcontent">CoraliteScriptContext</a></li>
         <li><a href="#coralitemodulescript">CoraliteModuleScript</a></li>
         <li><a href="#clientplugin">ClientPlugin</a></li>
@@ -853,9 +855,61 @@
             <td>Optional array of plugin instances.</td>
           </tr>
           <tr>
+            <td><code>mode</code></td>
+            <td><code>'production' | 'development' | 'testing'</code></td>
+            <td>The framework execution mode. Use <code>'testing'</code> for zero-config test environments.</td>
+          </tr>
+          <tr>
+            <td><code>testing</code></td>
+            <td><a href="#coralitetestingconfig"><code>CoraliteTestingConfig</code></a> (optional)</td>
+            <td>Configuration for testing mode.</td>
+          </tr>
+          <tr>
             <td><code>skipRenderByAttribute</code></td>
             <td><code><a href="#ignorebyattribute">IgnoreByAttribute[]</a> | string[]</code> (optional)</td>
             <td>Attribute name-value pairs to skip rendering.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteTestingConfig" id="coralitetestingconfig"></coralite-heading>
+    <p>Configuration block for the first-class testing mode.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>mocks</code></td>
+            <td><code>Object&lt;string, <a href="#coralitetestingmock">CoraliteTestingMock</a>&gt;</code></td>
+            <td>Map of component IDs to their mock definitions.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteTestingMock" id="coralitetestingmock"></coralite-heading>
+    <p>Defines mock behaviors for a specific component in testing mode.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>server</code></td>
+            <td><code>Function</code></td>
+            <td>Mock implementation of the component's <code>server()</code> block.</td>
           </tr>
         </tbody>
       </table>

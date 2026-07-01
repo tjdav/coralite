@@ -15,22 +15,61 @@
 
     <p>End-to-end testing frameworks like Playwright or Cypress interact with the DOM incredibly fast. If you try to click a button or assert the state of a dynamic component immediately after navigating to a page, your tests will likely fail due to a race condition: the framework hasn't finished mounting or initializing the component's internal state.</p>
 
-    <coralite-heading level="2" text="Testing Selectors (data-testid)"></coralite-heading>
+    <coralite-heading level="2" text="The Testing Mode"></coralite-heading>
 
-    <p>When Coralite is run in <code>development</code> mode, it automatically activates a built-in testing plugin. This plugin parses your component templates and duplicates the resolved <code>ref</code> attributes into <code>data-testid</code> attributes for both declarative and imperative components.</p>
+    <p>Coralite provides a first-class <code>testing</code> mode designed to eliminate flakiness and provide deep framework visibility to test runners like Playwright or Cypress. You can enable it in your <code>coralite.config.js</code>:</p>
+
+    <coralite-code-highlight language="javascript">
+      export default defineConfig({
+        mode: 'testing',
+        // ...
+      });
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Deterministic Selectors"></coralite-heading>
+
+    <p>In <code>testing</code> mode, Coralite automatically injects <code>data-testid</code> attributes onto all <strong>interactive elements</strong> (<code>button</code>, <code>a</code>, <code>input</code>, <code>select</code>, <code>textarea</code>, elements with <code>tabindex</code> or ARIA roles) and all <strong>custom elements</strong>.</p>
     
-    <p>Because Coralite isolates component references, the generated <code>data-testid</code> follows a strict namespaced pattern: <code>[componentId]__[refName]-[index]</code>.</p>
+    <p>Generated test IDs follow a deterministic pattern: <code>[instanceId]__[tagName]-[index]</code>. Existing <code>ref</code> attributes are also automatically mapped to <code>data-testid</code>.</p>
 
-    <p>For example, a component with the ID <code>user-profile</code> defining a button with <code>ref="submit-btn"</code> will render the following HTML for its first instance:</p>
+    <p>For example, a <code>user-profile</code> component with two buttons will automatically render:</p>
 
     <coralite-code-highlight language="html">
-      <div class="profile-container" ref="user-profile__container-0" data-testid="user-profile__container-0">
-        <h2 ref="user-profile__title-0" data-testid="user-profile__title-0">User Profile</h2>
-        <button ref="user-profile__submit-btn-0" data-testid="user-profile__submit-btn-0">Save Changes</button>
+      <div data-cid="user-profile-0">
+        <button data-testid="user-profile-0__button-0">Cancel</button>
+        <button data-testid="user-profile-0__button-1">Save Changes</button>
       </div>
     </coralite-code-highlight>
 
-    <p>This allows you to write highly specific E2E tests using the standard <code>data-testid</code> pattern without polluting your production builds.</p>
+    <coralite-heading level="2" text="The Velocity Engine"></coralite-heading>
+
+    <p>CSS transitions and animations are the leading cause of flaky E2E tests. In <code>testing</code> mode, Coralite automatically injects a global style block that disables all animations, transitions, and smooth scrolling. This ensures that the DOM updates instantaneously and test runners can interact with elements immediately.</p>
+
+    <coralite-heading level="2" text="Glass Box Testing & Telemetry"></coralite-heading>
+
+    <p>Standard DOM assertions can sometimes be unreliable. Coralite's testing mode exposes the internal framework state directly to the global window:</p>
+
+    <ul>
+      <li><code>window.__coralite__.components['id'].state</code>: Access the reactive proxy of any hydrated component.</li>
+      <li><code>window.__coralite__.events</code>: A telemetry log of every <code>CustomEvent</code> dispatched by components.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Server Mocking"></coralite-heading>
+
+    <p>You can override the <code>server()</code> blocks of your components to avoid hitting real APIs or databases during tests:</p>
+
+    <coralite-code-highlight language="javascript">
+      export default defineConfig({
+        mode: 'testing',
+        testing: {
+          mocks: {
+            'user-profile': {
+              server: async () => ({ name: 'Mock User', role: 'admin' })
+            }
+          }
+        }
+      });
+    </coralite-code-highlight>
 
     <coralite-heading level="2" text="The window.__coralite__.lifecycle.hydrated Promise"></coralite-heading>
 
