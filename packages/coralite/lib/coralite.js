@@ -389,7 +389,7 @@ export async function createCoralite ({
   // --- Initialization ---
 
   // Pre-initialization: load core plugins
-  if (app.options.mode === 'development') {
+  if (app.options.mode === 'testing') {
     app.options.plugins.unshift(testingPlugin)
   }
   app.options.plugins.unshift(metadataPlugin)

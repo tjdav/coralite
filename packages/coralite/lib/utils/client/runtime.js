@@ -26,8 +26,32 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
 (async () => {
   const hydrationData = ${hydrationData};
   const declarativeTags = ${JSON.stringify(declarativeTags)};
-  const initialElements = Array.from(document.querySelectorAll('[data-coralite-initial]'))
-    .filter(el => declarativeTags.includes(el.tagName.toLowerCase()));
+
+  const initialElements = Array.from(document.querySelectorAll('[data-cid]'))
+    .filter(el => {
+      const tagName = el.tagName.toLowerCase();
+      const isDeclarative = declarativeTags.includes(tagName);
+      const isInitial = el.hasAttribute('data-coralite-initial');
+
+      if (window['__coralite__'] && window['__coralite__'].components && isInitial) {
+        const cid = el.getAttribute('data-cid');
+        if (cid && !hydrationData[cid]) {
+          const error = new Error('Coralite Hydration Mismatch: Component with data-cid "' + cid + '" (' + tagName + ') has no matching server hydration data.');
+          if (typeof window['showCoraliteError'] === 'function') {
+            window['showCoraliteError'](error);
+          } else {
+            console.error(error);
+            const overlay = document.createElement('div');
+            overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.9);color:white;padding:20px;z-index:10000;font-family:monospace;white-space:pre-wrap;overflow:auto;';
+            overlay.innerHTML = '<h1>Coralite Hydration Mismatch</h1><p>' + error.message + '</p>';
+            document.body.appendChild(overlay);
+          }
+          throw error;
+        }
+      }
+
+      return isDeclarative && isInitial;
+    });
   if (window.__coralite__ && window.__coralite__.lifecycle) {
     window.__coralite__.lifecycle._start(initialElements.length, declarativeTags.length);
   }

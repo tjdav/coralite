@@ -93,8 +93,16 @@ export function createComponentDefinition ({ app }) {
       }
     }
 
-    if (typeof server === 'function') {
-      const serverResult = await server({
+    let serverToExecute = server
+    if (app.options.mode === 'testing' && app.options.testing?.mocks) {
+      const mock = app.options.testing.mocks[module.id]
+      if (mock && typeof mock.server === 'function') {
+        serverToExecute = mock.server
+      }
+    }
+
+    if (typeof serverToExecute === 'function') {
+      const serverResult = await serverToExecute({
         ...context,
         ...initialState
       })

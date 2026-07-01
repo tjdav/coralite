@@ -421,6 +421,7 @@ export function createRenderer ({
       state: componentState,
       componentId: module.id,
       instanceId,
+      template: module.template,
       refs: module.values.refs,
       textNodes: module.values.textNodes,
       attributes: module.values.attributes,
@@ -1110,7 +1111,7 @@ export function createRenderer ({
             }
           }
 
-          injectReadinessScript(mappedComponent.root, headElement, true)
+          injectReadinessScript(mappedComponent.root, headElement, true, normalizedOptions.mode)
           injectImportMap(mappedComponent.root, headElement, scriptResult.importMap)
           const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
           const hydrationData = {}
@@ -1148,7 +1149,7 @@ export function createRenderer ({
         removeElements(mappedComponent.skipRenderElements, true)
 
         if (!mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
-          injectReadinessScript(mappedComponent.root, headElement, false)
+          injectReadinessScript(mappedComponent.root, headElement, false, normalizedOptions.mode)
         }
 
         const rawHTML = transformNode(mappedComponent.root)

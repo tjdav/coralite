@@ -64,6 +64,7 @@
  * @property {CoraliteTextNodeToken[]} textNodes - Scoped AST pointers for text nodes
  * @property {CoraliteAttributeToken[]} attributes - Scoped AST pointers for attributes
  * @property {CoralitePage} page - The current page context
+ * @property {CoraliteAnyNode} [template] - The component template AST
  * @property {CoraliteElement} [element] - The parent AST tag itself
  * @property {CoraliteSession} session - Global build state
  * @property {CoraliteInstance} app - The global Coralite app instance

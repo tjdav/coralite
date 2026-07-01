@@ -79,7 +79,8 @@
  * @property {Array<string | Attribute>} [skipRenderByAttribute] - An array of attribute names and values to skip rendering by element type.
  * @property {CoraliteOnError} [onError] - Optional callback function for handling errors and warnings.
  * @property {string[]} [externalStyles] - Global styles to inject into every page
- * @property {string} [mode='production'] - Build mode: "development" or "production"
+ * @property {'production' | 'development' | 'testing'} [mode='production'] - Build mode: "production", "development", or "testing"
+ * @property {CoraliteTestingConfig} [testing] - Configuration for testing mode.
  * @property {string} [projectRoot] - The root directory of the project.
  * @property {CoralitePath} [path] - Internal path mapping.
  */
@@ -145,7 +146,17 @@
  * @property {Object} source - Source context information.
  * @property {string} source.currentSourceContextId - Current source context ID.
  * @property {Object.<string, any>} source.contextInstances - Map of context instances.
- * @property {'production' | 'development'} [mode] - Current build mode.
+ * @property {'production' | 'development' | 'testing'} [mode] - Current build mode.
+ */
+
+/**
+ * @typedef {Object} CoraliteTestingConfig
+ * @property {Object.<string, CoraliteTestingMock>} [mocks] - Mock definitions for components.
+ */
+
+/**
+ * @typedef {Object} CoraliteTestingMock
+ * @property {Function} [server] - Mock implementation of the component's server() block.
  */
 
 /**

@@ -37,6 +37,36 @@ export function defineConfig (options) {
     }
   }
 
+  // Validate mode
+  if (options.mode !== undefined) {
+    const validModes = ['production', 'development', 'testing']
+    if (!validModes.includes(options.mode)) {
+      throw new CoraliteError(`Invalid mode: "${options.mode}". Valid modes are: ${validModes.join(', ')}`)
+    }
+  }
+
+  // Validate testing config
+  if (options.testing !== undefined) {
+    if (typeof options.testing !== 'object' || options.testing === null) {
+      throw new CoraliteError('Config property "testing" must be an object')
+    }
+
+    if (options.testing.mocks !== undefined) {
+      if (typeof options.testing.mocks !== 'object' || options.testing.mocks === null) {
+        throw new CoraliteError('Config property "testing.mocks" must be an object')
+      }
+
+      for (const [key, mock] of Object.entries(options.testing.mocks)) {
+        if (typeof mock !== 'object' || mock === null) {
+          throw new CoraliteError(`Mock for component "${key}" must be an object`)
+        }
+        if (mock.server !== undefined && typeof mock.server !== 'function') {
+          throw new CoraliteError(`Mock server for component "${key}" must be a function`)
+        }
+      }
+    }
+  }
+
   // Validate optional plugins property
   if ('plugins' in options && options.plugins !== undefined) {
     if (!Array.isArray(options.plugins)) {

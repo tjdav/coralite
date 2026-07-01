@@ -667,11 +667,33 @@ export class CoraliteElement extends HTMLElement {
       this._scheduleUpdate()
     }
 
+    if (window['__coralite__'] && window['__coralite__'].components) {
+      window['__coralite__'].components[this._instanceId] = {
+        state: this._state,
+        tagName: this.tagName.toLowerCase(),
+        componentId: this.componentOptions.componentId
+      }
+    }
+
     if (this.componentOptions.client) {
       try {
         await this.componentOptions.client(localContext)
       } catch (error) {
         console.error(`Coralite Error: Component "${this.componentOptions.componentId}" script failed:`, error)
+        if (window['__coralite__'] && window['__coralite__'].components) {
+          const fatalError = new Error(`Coralite Component Error: Component "${this.componentOptions.componentId}" (${this._instanceId}) client() block failed: ${error.message}`)
+          fatalError.stack = error.stack
+
+          if (typeof window['showCoraliteError'] === 'function') {
+            window['showCoraliteError'](fatalError)
+          } else {
+            const overlay = document.createElement('div')
+            overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.9);color:white;padding:20px;z-index:10000;font-family:monospace;white-space:pre-wrap;overflow:auto;'
+            overlay.innerHTML = `<h1>Coralite Component Error</h1><p>${fatalError.message}</p><pre>${fatalError.stack}</pre>`
+            document.body.appendChild(overlay)
+          }
+          throw fatalError
+        }
       }
     }
 
@@ -714,6 +736,22 @@ export function createCoraliteClass (options, contextGetter = null, hooks = {}, 
      */
     constructor () {
       super()
+
+      const self = this
+      // Override dispatchEvent to intercept all CustomEvents
+      const originalDispatchEvent = this.dispatchEvent
+      this.dispatchEvent = function (event) {
+        if (window['__coralite__'] && window['__coralite__'].events && event instanceof CustomEvent) {
+          window['__coralite__'].events.push({
+            name: event.type,
+            detail: event.detail,
+            sourceComponentId: self._instanceId,
+            sourceTagName: self.tagName.toLowerCase(),
+            timestamp: Date.now()
+          })
+        }
+        return originalDispatchEvent.call(this, event)
+      }
       this.componentOptions = options
       this._clientContextGetter = contextGetter
       this._hydrationData = hydrationData

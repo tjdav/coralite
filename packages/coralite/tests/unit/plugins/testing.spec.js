@@ -3,6 +3,8 @@ import assert from 'node:assert'
 import { testingPlugin } from '../../../plugins/testing.js'
 
 describe('testingPlugin', () => {
+  const app = { options: { mode: 'development' } }
+
   it('should copy ref attribute to data-testid on component set', () => {
     const component = {
       template: {
@@ -25,7 +27,10 @@ describe('testingPlugin', () => {
       }
     }
 
-    testingPlugin.server.onComponentSet({ component })
+    testingPlugin.server.onComponentSet({
+      component,
+      app
+    })
 
     assert.strictEqual(component.template.children[0].attribs['data-testid'], 'myRef')
     assert.strictEqual(component.template.children[1].attribs['data-testid'], undefined)
@@ -46,7 +51,10 @@ describe('testingPlugin', () => {
       }
     }
 
-    testingPlugin.server.onPageSet({ elements })
+    testingPlugin.server.onPageSet({
+      elements,
+      app
+    })
 
     assert.strictEqual(elements.root.children[0].attribs['data-testid'], 'pageRef')
   })
@@ -71,7 +79,10 @@ describe('testingPlugin', () => {
       }
     }
 
-    testingPlugin.server.onComponentSet({ component })
+    testingPlugin.server.onComponentSet({
+      component,
+      app
+    })
 
     assert.strictEqual(component.template.children[0].attribs['data-testid'], undefined)
     assert.strictEqual(component.template.children[0].children[0].attribs['data-testid'], 'nestedBtn')
@@ -79,7 +90,10 @@ describe('testingPlugin', () => {
 
   it('should handle missing template gracefully', () => {
     const component = {}
-    testingPlugin.server.onComponentSet({ component })
+    testingPlugin.server.onComponentSet({
+      component,
+      app
+    })
     // Should not throw
     assert.ok(true)
   })
@@ -100,7 +114,10 @@ describe('testingPlugin', () => {
       }
     }
 
-    testingPlugin.server.onComponentSet({ component })
+    testingPlugin.server.onComponentSet({
+      component,
+      app
+    })
 
     assert.strictEqual(component.template.children[0].attribs['data-testid'], 'customId')
   })
@@ -118,8 +135,79 @@ describe('testingPlugin', () => {
     }]
     testingPlugin.server.onBeforeComponentRender({
       instanceId: 'comp-0',
-      refs
+      refs,
+      app
     })
     assert.strictEqual(element.attribs['data-testid'], 'customId')
+  })
+
+  describe('testing mode', () => {
+    const appTesting = { options: { mode: 'testing' } }
+
+    it('should add deterministic testids to interactive elements', () => {
+      const template = {
+        children: [
+          {
+            type: 'tag',
+            name: 'button',
+            attribs: {}
+          },
+          {
+            type: 'tag',
+            name: 'a',
+            attribs: { href: '#' }
+          },
+          {
+            type: 'tag',
+            name: 'div',
+            attribs: { tabindex: '0' }
+          },
+          {
+            type: 'tag',
+            name: 'span',
+            attribs: { role: 'button' }
+          }
+        ]
+      }
+
+      testingPlugin.server.onBeforeComponentRender({
+        instanceId: 'comp-0',
+        refs: [],
+        template,
+        app: appTesting
+      })
+
+      assert.strictEqual(template.children[0].attribs['data-testid'], 'comp-0__button-0')
+      assert.strictEqual(template.children[1].attribs['data-testid'], 'comp-0__a-0')
+      assert.strictEqual(template.children[2].attribs['data-testid'], 'comp-0__div-0')
+      assert.strictEqual(template.children[3].attribs['data-testid'], 'comp-0__span-0')
+    })
+
+    it('should increment counters correctly', () => {
+      const template = {
+        children: [
+          {
+            type: 'tag',
+            name: 'button',
+            attribs: {}
+          },
+          {
+            type: 'tag',
+            name: 'button',
+            attribs: {}
+          }
+        ]
+      }
+
+      testingPlugin.server.onBeforeComponentRender({
+        instanceId: 'comp-0',
+        refs: [],
+        template,
+        app: appTesting
+      })
+
+      assert.strictEqual(template.children[0].attribs['data-testid'], 'comp-0__button-0')
+      assert.strictEqual(template.children[1].attribs['data-testid'], 'comp-0__button-1')
+    })
   })
 })
