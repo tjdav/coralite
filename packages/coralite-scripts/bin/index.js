@@ -18,7 +18,7 @@ program
   .name('Coralite scripts')
   .description(pkg.description)
   .version(pkg.version)
-  .addArgument(new Argument('<mode>', 'Run mode: dev (development server) or build (production compilation)').choices(['dev', 'build']).default('dev'))
+  .addArgument(new Argument('<mode>', 'Run mode: dev (development server), test (testing server) or build (production compilation)').choices(['dev', 'test', 'build']).default('dev'))
   .option('-v, --verbose', 'Enable verbose logging output')
   .option('-c, --clean', 'Clear the output directory before building')
   .option('-a, --assets <mapping...>', 'Static assets to copy during build. Format: pkg:path:dest or src:dest')
@@ -46,11 +46,11 @@ if (options.assets) {
   }
 }
 
-if (mode === 'dev') {
+if (mode === 'dev' || mode === 'test') {
   config.output = join(process.cwd(), '.coralite')
   await mkdir(config.output, { recursive: true })
 
-  await server(config, options)
+  await server(config, options, mode)
 } else if (mode === 'build') {
   try {
     await buildCommand(config, options)

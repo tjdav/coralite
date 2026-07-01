@@ -72,7 +72,8 @@ Update your `package.json` scripts to include:
 ```json
 {
   "scripts": {
-    "start": "coralite-scripts start",
+    "start": "coralite-scripts dev",
+    "test": "coralite-scripts test",
     "build": "coralite-scripts build"
   }
 }
@@ -85,6 +86,21 @@ npm run start
 ```
 
 > The server runs on `http://localhost:3000` by default.
+
+---
+
+## Test Mode
+
+Coralite Scripts includes a dedicated mode for automated testing (e.g., E2E testing with Playwright or Cypress).
+
+```bash
+npm run test
+```
+
+When running in `test` mode:
+- **`testing` mode enabled**: Sets Coralite's internal mode to `testing`, which enables deterministic IDs, telemetry, and disables CSS animations/transitions to speed up tests.
+- **No Hot Reloading**: Disables Server-Sent Events (SSE) and live reload script injection for a stable testing environment.
+- **No File Watching**: Disables the file watcher to reduce resource usage during CI/CD pipelines.
 
 ---
 

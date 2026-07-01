@@ -123,9 +123,10 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
  * Starts a development server with hot-reloading capabilities
  * @param {CoraliteScriptConfig} config - Coralite configuration
  * @param {CoraliteScriptOptions} options - Coralite configuration
+ * @param {string} runMode - The run mode (dev or test)
  * @returns {Promise<void>}
  */
-async function server (config, options) {
+async function server (config, options, runMode = 'dev') {
   try {
     const app = express()
     const startPort = config.server?.port && !isNaN(config.server.port) ? config.server.port : 3000
@@ -218,7 +219,7 @@ async function server (config, options) {
         baseURL: currentConfig.baseURL,
         ignoreByAttribute: currentConfig.ignoreByAttribute,
         skipRenderByAttribute: currentConfig.skipRenderByAttribute,
-        mode: 'development',
+        mode: runMode === 'test' ? 'testing' : 'development',
         output: currentConfig.output,
         onError: ({ level, message, error }) => {
           if (level === 'ERR') {
@@ -380,15 +381,19 @@ async function server (config, options) {
           const start = process.hrtime()
           let duration, dash = colours.gray(' ─ ')
 
-          let rebuildScript = '\n<script>\n'
-          rebuildScript += "    const eventSource = new EventSource('/_/rebuild');\n"
-          rebuildScript += '    eventSource.onmessage = function(event) {\n'
-          rebuildScript += "      if (event.data === 'connected') return;\n"
-          rebuildScript += '      // Reload page when file changes\n'
-          rebuildScript += '      location.reload()\n'
-          rebuildScript += '    }\n'
-          rebuildScript += '  </script>\n'
-          rebuildScript += '</body>\n'
+          let rebuildScript = '</body>\n'
+
+          if (runMode !== 'test') {
+            rebuildScript = '\n<script>\n'
+            rebuildScript += "    const eventSource = new EventSource('/_/rebuild');\n"
+            rebuildScript += '    eventSource.onmessage = function(event) {\n'
+            rebuildScript += "      if (event.data === 'connected') return;\n"
+            rebuildScript += '      // Reload page when file changes\n'
+            rebuildScript += '      location.reload()\n'
+            rebuildScript += '    }\n'
+            rebuildScript += '  </script>\n'
+            rebuildScript += '</body>\n'
+          }
 
           // Only set item if it's not already in the collection (virtual pages are pre-registered)
           const item = coralite.pages.getItem(pathname)
@@ -467,159 +472,161 @@ async function server (config, options) {
       }
       )
 
-    // watch for file changes
-    const watcher = chokidar.watch(watchPath, {
-      persistent: true,
-      // Add ignoreInitial to prevent initial scan events
-      ignoreInitial: true
-    })
+    if (runMode !== 'test') {
+      // watch for file changes
+      const watcher = chokidar.watch(watchPath, {
+        persistent: true,
+        // Add ignoreInitial to prevent initial scan events
+        ignoreInitial: true
+      })
 
-    const componentPath = normalize(config.components)
-    const pagesPath = normalize(config.pages)
+      const componentPath = normalize(config.components)
+      const pagesPath = normalize(config.pages)
 
-    // Debouncing and compilation state management
-    let compileTimeout = null
-    let isCompiling = false
-    const pendingChanges = new Set()
-    const structuralChanges = new Set()
-    const configPathStr = join(process.cwd(), 'coralite.config.js')
+      // Debouncing and compilation state management
+      let compileTimeout = null
+      let isCompiling = false
+      const pendingChanges = new Set()
+      const structuralChanges = new Set()
+      const configPathStr = join(process.cwd(), 'coralite.config.js')
 
 
-    // Helper function to debounce compilations
-    const debounceCompile = () => {
-      if (compileTimeout) {
-        // @ts-ignore
-        clearTimeout(compileTimeout)
-      }
-      compileTimeout = setTimeout(async () => {
-        if (isCompiling || pendingChanges.size === 0) {
-          return
+      // Helper function to debounce compilations
+      const debounceCompile = () => {
+        if (compileTimeout) {
+          // @ts-ignore
+          clearTimeout(compileTimeout)
         }
-
-        pageCache.clear()
-
-        isCompiling = true
-        let dash = colours.gray(' ─ ')
-
-        // Process all pending changes
-        const changes = Array.from(pendingChanges)
-        pendingChanges.clear()
-        const isStructural = structuralChanges.size > 0
-        structuralChanges.clear()
-
-        await coralite.clearCache(isStructural)
-
-        // Group changes by type
-        const pagesChanges = changes.filter(p => p.startsWith(pagesPath))
-        const componentChanges = changes.filter(p => p.startsWith(componentPath))
-        const stylesChanges = changes.filter(p => {
-          if (!currentConfig.styles?.input) {
-            return false
+        compileTimeout = setTimeout(async () => {
+          if (isCompiling || pendingChanges.size === 0) {
+            return
           }
-          return currentConfig.styles.input.some(input => p.startsWith(normalize(join(process.cwd(), dirname(input))))) || p.endsWith('.scss') || p.endsWith('.sass') || p.endsWith('.css')
-        })
-        const configChanges = changes.filter(p => p === configPathStr || Array.from(pluginPaths).some(pluginPath => p === pluginPath))
 
-        try {
-          // Handle config changes
-          if (configChanges.length > 0) {
-            displayInfo('Configuration changed, reloading Coralite...')
-            // Append cache busting param to reload properly
-            const { pathToFileURL } = await import('url')
-            const bust = '?t=' + Date.now()
+          pageCache.clear()
 
-            try {
-              const freshConfigModule = await import(pathToFileURL(configPathStr).toString() + bust)
-              const { defineConfig } = await import('./config.js')
+          isCompiling = true
+          let dash = colours.gray(' ─ ')
 
-              if (freshConfigModule.default) {
-                currentConfig = defineConfig(freshConfigModule.default)
-                currentConfig.output = config.output
-                currentConfig.server = config.server
+          // Process all pending changes
+          const changes = Array.from(pendingChanges)
+          pendingChanges.clear()
+          const isStructural = structuralChanges.size > 0
+          structuralChanges.clear()
 
-                // Re-initialize Coralite with new config
-                await initCoralite()
+          await coralite.clearCache(isStructural)
+
+          // Group changes by type
+          const pagesChanges = changes.filter(p => p.startsWith(pagesPath))
+          const componentChanges = changes.filter(p => p.startsWith(componentPath))
+          const stylesChanges = changes.filter(p => {
+            if (!currentConfig.styles?.input) {
+              return false
+            }
+            return currentConfig.styles.input.some(input => p.startsWith(normalize(join(process.cwd(), dirname(input))))) || p.endsWith('.scss') || p.endsWith('.sass') || p.endsWith('.css')
+          })
+          const configChanges = changes.filter(p => p === configPathStr || Array.from(pluginPaths).some(pluginPath => p === pluginPath))
+
+          try {
+            // Handle config changes
+            if (configChanges.length > 0) {
+              displayInfo('Configuration changed, reloading Coralite...')
+              // Append cache busting param to reload properly
+              const { pathToFileURL } = await import('url')
+              const bust = '?t=' + Date.now()
+
+              try {
+                const freshConfigModule = await import(pathToFileURL(configPathStr).toString() + bust)
+                const { defineConfig } = await import('./config.js')
+
+                if (freshConfigModule.default) {
+                  currentConfig = defineConfig(freshConfigModule.default)
+                  currentConfig.output = config.output
+                  currentConfig.server = config.server
+
+                  // Re-initialize Coralite with new config
+                  await initCoralite()
+                }
+              } catch (err) {
+                displayError('Failed to reload configuration', err)
               }
-            } catch (err) {
-              displayError('Failed to reload configuration', err)
             }
-          }
 
-          // Handle component changes
-          for (const path of componentChanges) {
-            await coralite.components.setItem(path)
-          }
-
-          // Handle STYLES changes - rebuild all STYLES files once
-          if (stylesChanges.length > 0 && currentConfig.styles?.input) {
-            const results = await buildStyles({
-              input: currentConfig.styles.input,
-              processors: currentConfig.styles.processors,
-              output: join(config.output, 'assets', 'css')
-            })
-
-            for (const result of results) {
-              process.stdout.write(toTime() + colours.bgGreen(' Compiled STYLES ') + dash + toMS(result.duration) + dash + result.input + '\n')
+            // Handle component changes
+            for (const path of componentChanges) {
+              await coralite.components.setItem(path)
             }
-          }
 
-          // Notify clients to reload
-          if (pagesChanges.length > 0
-            || componentChanges.length > 0
-            || stylesChanges.length > 0
-            || configChanges.length > 0) {
-            clients.forEach(client => {
-              client.write(`data: reload\n\n`)
-            })
+            // Handle STYLES changes - rebuild all STYLES files once
+            if (stylesChanges.length > 0 && currentConfig.styles?.input) {
+              const results = await buildStyles({
+                input: currentConfig.styles.input,
+                processors: currentConfig.styles.processors,
+                output: join(config.output, 'assets', 'css')
+              })
+
+              for (const result of results) {
+                process.stdout.write(toTime() + colours.bgGreen(' Compiled STYLES ') + dash + toMS(result.duration) + dash + result.input + '\n')
+              }
+            }
+
+            // Notify clients to reload
+            if (pagesChanges.length > 0
+              || componentChanges.length > 0
+              || stylesChanges.length > 0
+              || configChanges.length > 0) {
+              clients.forEach(client => {
+                client.write(`data: reload\n\n`)
+              })
+            }
+          } catch (error) {
+            displayError('Compilation failed', error)
+          } finally {
+            isCompiling = false
           }
-        } catch (error) {
-          displayError('Compilation failed', error)
-        } finally {
-          isCompiling = false
-        }
-      }, 100)
+        }, 100)
+      }
+
+      watcher
+        .on('unlink', async (path) => {
+          try {
+            if (path.startsWith(componentPath)) {
+              structuralChanges.add(path)
+              pendingChanges.add(path)
+              debounceCompile()
+              await coralite.components.deleteItem(path)
+            } else if (path.startsWith(pagesPath)) {
+              await coralite.pages.deleteItem(path)
+            }
+          } catch (error) {
+            displayError(`Failed to handle file deletion: ${path}`, error)
+          }
+        })
+        .on('change', async (path) => {
+          // We only want to trigger for things we care about or are in watchPath (but sometimes chokidar watches the whole dir)
+          pendingChanges.add(path)
+          debounceCompile()
+        })
+        .on('add', async (path) => {
+          try {
+            if (path.startsWith(componentPath)) {
+              // set component item
+              structuralChanges.add(path)
+              pendingChanges.add(path)
+              debounceCompile()
+              coralite.components.setItem(path)
+            } else if (path.endsWith('.scss') || path.endsWith('.sass') || path === configPathStr || Array.from(pluginPaths).some(pluginPath => path === pluginPath)) {
+              // Add to pending changes and trigger debounced compilation
+              pendingChanges.add(path)
+              debounceCompile()
+            }
+          } catch (error) {
+            displayError(`Failed to handle file addition: ${path}`, error)
+          }
+        })
+        .on('error', (error) => {
+          displayError('File watcher error', error)
+        })
     }
-
-    watcher
-      .on('unlink', async (path) => {
-        try {
-          if (path.startsWith(componentPath)) {
-            structuralChanges.add(path)
-            pendingChanges.add(path)
-            debounceCompile()
-            await coralite.components.deleteItem(path)
-          } else if (path.startsWith(pagesPath)) {
-            await coralite.pages.deleteItem(path)
-          }
-        } catch (error) {
-          displayError(`Failed to handle file deletion: ${path}`, error)
-        }
-      })
-      .on('change', async (path) => {
-        // We only want to trigger for things we care about or are in watchPath (but sometimes chokidar watches the whole dir)
-        pendingChanges.add(path)
-        debounceCompile()
-      })
-      .on('add', async (path) => {
-        try {
-          if (path.startsWith(componentPath)) {
-            // set component item
-            structuralChanges.add(path)
-            pendingChanges.add(path)
-            debounceCompile()
-            coralite.components.setItem(path)
-          } else if (path.endsWith('.scss') || path.endsWith('.sass') || path === configPathStr || Array.from(pluginPaths).some(pluginPath => path === pluginPath)) {
-            // Add to pending changes and trigger debounced compilation
-            pendingChanges.add(path)
-            debounceCompile()
-          }
-        } catch (error) {
-          displayError(`Failed to handle file addition: ${path}`, error)
-        }
-      })
-      .on('error', (error) => {
-        displayError('File watcher error', error)
-      })
 
     const port = await portfinder.getPortPromise({
       port: startPort,

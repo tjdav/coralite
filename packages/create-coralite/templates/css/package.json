@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --experimental-import-meta-resolve\" coralite-scripts dev",
+    "test": "cross-env NODE_OPTIONS=\"--experimental-vm-modules --experimental-import-meta-resolve\" coralite-scripts test",
     "build": "coralite-scripts build"
   },
   "devDependencies": {
