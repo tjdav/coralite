@@ -22,8 +22,18 @@ function traverseAndAddTestId (children, instanceId, { autoTestId = false, count
     if (node.type === 'tag') {
       if (node.attribs?.ref) {
         if (!node.attribs['data-testid']) {
+          const refValue = node.attribs.ref
           const prefix = instanceId ? `${instanceId}__` : ''
-          node.attribs['data-testid'] = `${prefix}${node.attribs.ref}`
+
+          // In server-side:
+          // onBeforeComponentRender: instanceId is present, ref is NOT yet prefixed.
+          // onPageSet: instanceId is 'page', ref IS prefixed (with component-0__ref).
+
+          if (instanceId === 'page' && refValue.includes('__')) {
+            node.attribs['data-testid'] = refValue
+          } else {
+            node.attribs['data-testid'] = `${prefix}${refValue}`
+          }
         }
       } else if (autoTestId && instanceId) {
         const tagName = node.name.toLowerCase()
@@ -64,82 +74,59 @@ export const testingPlugin = definePlugin({
   name: 'testing',
   server: {
     onBeforeBuild: ({ app }) => {
-      if (app.options.mode === 'testing') {
-        // Velocity Engine: Inject global style to disable animations
-        app.options.externalStyles = app.options.externalStyles || []
-        const velocityStyle = `
+      if (app.options.mode !== 'testing') {
+        return
+      }
+      // Velocity Engine: Inject global style to disable animations
+      app.options.externalStyles = app.options.externalStyles || []
+      const velocityStyle = `
 *, *::before, *::after {
   transition: none !important;
   animation: none !important;
   scroll-behavior: auto !important;
 }
 `.trim()
-        app.options.externalStyles.push(`data:text/css;base64,${Buffer.from(velocityStyle).toString('base64')}`)
-      }
+      app.options.externalStyles.push(`data:text/css;base64,${Buffer.from(velocityStyle).toString('base64')}`)
     },
-    onBeforeComponentRender: ({ instanceId, refs, template, app }) => {
-      if (app.options.mode === 'testing') {
-        const counters = {}
-        /** @type {any} */
-        const templateNode = template
-        if (templateNode && templateNode.children) {
-          traverseAndAddTestId(templateNode.children, instanceId, {
-            autoTestId: true,
-            counters
-          })
-        }
-      } else {
-        // Default behavior for development mode (current ref to data-testid mapping)
-        for (let i = 0; i < refs.length; i++) {
-          const ref = refs[i]
-          const uniqueRefValue = `${instanceId}__${ref.name}`
-
-          if (ref.element.attribs) {
-            const currentTestId = ref.element.attribs['data-testid']
-
-            if (!currentTestId || currentTestId === ref.name) {
-              ref.element.attribs['data-testid'] = uniqueRefValue
-            }
-          }
-        }
-      }
-    },
-    onComponentSet: ({ component, app }) => {
-      if (app.options.mode !== 'testing') {
-        const children = component?.template?.children
-        if (children) {
-          traverseAndAddTestId(children)
-        }
+    onBeforeComponentRender: ({ instanceId, template, app }) => {
+      const isTesting = app.options.mode === 'testing'
+      const counters = {}
+      /** @type {any} */
+      const templateNode = template
+      if (templateNode && templateNode.children) {
+        traverseAndAddTestId(templateNode.children, instanceId, {
+          autoTestId: isTesting,
+          counters
+        })
       }
     },
     onPageSet: ({ elements, app }) => {
-      if (app.options.mode === 'testing') {
-        const counters = {}
-        traverseAndAddTestId(elements?.root?.children, 'page', {
-          autoTestId: true,
-          counters
-        })
-      } else {
-        const children = elements?.root?.children
-        if (children) {
-          traverseAndAddTestId(children)
-        }
-      }
+      const isTesting = app.options.mode === 'testing'
+      const counters = {}
+      traverseAndAddTestId(elements?.root?.children, 'page', {
+        autoTestId: isTesting,
+        counters
+      })
     }
   },
   client: {
-    onBeforeComponentRender: ({ instanceId, refs, element: _element }) => {
+    onBeforeComponentRender: ({ instanceId, refs }) => {
       // In client side, refs are already uniquely named in state and attribute,
       // but we ensure data-testid matches for consistency if it was missed or changed
       for (let i = 0; i < refs.length; i++) {
         const ref = refs[i]
-        const uniqueRefValue = `${instanceId}__${ref.name}`
+        const prefix = `${instanceId}__`
+        const uniqueRefValue = ref.element && ref.element.getAttribute('ref')
 
         if (ref.element && ref.element.setAttribute) {
           const currentTestId = ref.element.getAttribute('data-testid')
 
           if (!currentTestId || currentTestId === ref.name) {
-            ref.element.setAttribute('data-testid', uniqueRefValue)
+            if (uniqueRefValue && uniqueRefValue.startsWith(prefix)) {
+              ref.element.setAttribute('data-testid', uniqueRefValue)
+            } else {
+              ref.element.setAttribute('data-testid', `${prefix}${ref.name}`)
+            }
           }
         }
       }
