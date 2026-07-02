@@ -237,6 +237,7 @@ export default [
       '**/.history/',
       '**/playwright-report/',
       '**/.coralite/',
+      '**/.coralite-testing/',
       '**/.coralite-dev/',
       '**/.coralite-prod/'
     ]
