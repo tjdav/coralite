@@ -17,6 +17,7 @@ jspm_packages
 # Coralite development artifacts
 .coralite-dev/
 .coralite-prod/
+.coralite-testing/
 website/.coralite/components
 website/.coralite/css
 
