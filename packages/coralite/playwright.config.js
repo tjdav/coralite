@@ -2,18 +2,9 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
-
-/**
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({
-  testDir: './tests/e2e',
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -33,17 +24,27 @@ export default defineConfig({
   /* Configure projects for major browsers */
   projects: [
     {
-      name: 'chromium-dev',
+      name: 'framework-core-dev',
+      testDir: './tests/e2e/core',
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3000'
       }
     },
     {
-      name: 'chromium-prod',
+      name: 'framework-core-prod',
+      testDir: './tests/e2e/core',
       use: {
         ...devices['Desktop Chrome'],
         baseURL: 'http://localhost:3001'
+      }
+    },
+    {
+      name: 'testing-mode-features',
+      testDir: './tests/e2e/testing-mode',
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:3002'
       }
     }
   ],
@@ -58,6 +59,11 @@ export default defineConfig({
     {
       command: 'pnpm run server:prod',
       port: 3001,
+      reuseExistingServer: !process.env.CI
+    },
+    {
+      command: 'pnpm run server:testing',
+      port: 3002,
       reuseExistingServer: !process.env.CI
     }
   ]
