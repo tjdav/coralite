@@ -160,7 +160,7 @@
 
     <coralite-heading level="4" text="1. Attributes (Inputs)"></coralite-heading>
     <p>Attributes are the "props" of your component. They are coerced from HTML attributes into JS primitives and are automatically injected into your reactive <code>state</code> object.</p>
-    <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data.</p>
+    <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data. For full details on the coercion rules (including how boolean attributes evaluate), see the <a href="../reference/define-component.html#1-attributes">defineComponent API Reference</a>.</p>
     <coralite-code-highlight language="javascript">
 attributes: {
   theme: { type: String, default: 'light' },

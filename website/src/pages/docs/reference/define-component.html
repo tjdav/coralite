@@ -70,6 +70,75 @@ attributes: {
 }
     </coralite-code-highlight>
 
+    <p>Coralite maps declared attribute names from camelCase (e.g., <code>isChecked</code>) to their kebab-case equivalent in HTML (e.g., <code>is-checked</code>) and coerces them into JavaScript primitives. Changes to HTML attributes via <code>setAttribute</code> automatically update their values in the component state.</p>
+
+    <coralite-heading level="3" text="Coercion Logic"></coralite-heading>
+    <p>The coercion rules for the supported primitive constructors are detailed below:</p>
+    
+    <ul>
+      <li>
+        <strong>Boolean</strong>:
+        <ul>
+          <li><strong>Client-Side:</strong> Coerced using <code>value === '' ? true : (value !== 'false' && value !== null)</code>. Empty attributes like <code>disabled</code> evaluate to <code>true</code>.</li>
+          <li><strong>Server-Side:</strong> Coerced using <code>value !== 'false' && value !== null && value !== ''</code>.</li>
+        </ul>
+      </li>
+      <li><strong>Number</strong>: Evaluated using <code>Number(value)</code>. Strings that are not valid numbers resolve to <code>NaN</code>.</li>
+      <li><strong>String</strong>: Evaluated using <code>String(value)</code>.</li>
+    </ul>
+
+    <coralite-heading level="3" text="Coercion Matrix Reference"></coralite-heading>
+    <coralite-table>
+      <tr slot="head">
+        <th>Input HTML Attribute Value</th>
+        <th>Boolean Coercion</th>
+        <th>Number Coercion</th>
+        <th>String Coercion</th>
+      </tr>
+      <tr slot="body">
+        <td><code>"true"</code></td>
+        <td><code>true</code></td>
+        <td><code>NaN</code></td>
+        <td><code>"true"</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>"false"</code></td>
+        <td><code>false</code></td>
+        <td><code>NaN</code></td>
+        <td><code>"false"</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>"42"</code></td>
+        <td><code>true</code></td>
+        <td><code>42</code></td>
+        <td><code>"42"</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>"0"</code></td>
+        <td><code>true</code></td>
+        <td><code>0</code></td>
+        <td><code>"0"</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>""</code> (empty attribute)</td>
+        <td><code>true</code> (client) / <code>false</code> (server)</td>
+        <td><code>0</code></td>
+        <td><code>""</code></td>
+      </tr>
+      <tr slot="body">
+        <td><code>null</code> (absent)</td>
+        <td><code>false</code> (or default)</td>
+        <td><code>null</code> (or default)</td>
+        <td><code>null</code> (or default)</td>
+      </tr>
+      <tr slot="body">
+        <td><code>"hello"</code></td>
+        <td><code>true</code></td>
+        <td><code>NaN</code></td>
+        <td><code>"hello"</code></td>
+      </tr>
+    </coralite-table>
+
     <coralite-alert type="info">
       <strong>Strict Primitive Rule</strong>
       <p>
