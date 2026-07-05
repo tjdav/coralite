@@ -94,6 +94,7 @@ export function createComponentDefinition ({ app }) {
     }
 
     let serverToExecute = server
+
     if (app.options.mode === 'testing' && app.options.testing?.mocks) {
       const mock = app.options.testing.mocks[module.id]
       if (mock && typeof mock.server === 'function') {

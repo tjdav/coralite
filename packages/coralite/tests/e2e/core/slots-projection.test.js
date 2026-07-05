@@ -1,4 +1,4 @@
-import { waitForHydration } from './helpers.js'
+import { waitForHydration } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Slots Projection', () => {

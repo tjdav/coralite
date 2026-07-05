@@ -27,8 +27,9 @@ describe('testingPlugin', () => {
       }
     }
 
-    testingPlugin.server.onComponentSet({
-      component,
+    testingPlugin.server.onBeforeComponentRender({
+      instanceId: '',
+      template: component.template,
       app
     })
 
@@ -56,7 +57,7 @@ describe('testingPlugin', () => {
       app
     })
 
-    assert.strictEqual(elements.root.children[0].attribs['data-testid'], 'pageRef')
+    assert.strictEqual(elements.root.children[0].attribs['data-testid'], 'page__pageRef')
   })
 
   it('should traverse recursively and copy refs to data-testid', () => {
@@ -79,8 +80,9 @@ describe('testingPlugin', () => {
       }
     }
 
-    testingPlugin.server.onComponentSet({
-      component,
+    testingPlugin.server.onBeforeComponentRender({
+      instanceId: '',
+      template: component.template,
       app
     })
 
@@ -90,8 +92,9 @@ describe('testingPlugin', () => {
 
   it('should handle missing template gracefully', () => {
     const component = {}
-    testingPlugin.server.onComponentSet({
-      component,
+    testingPlugin.server.onBeforeComponentRender({
+      instanceId: '',
+      template: component.template,
       app
     })
     // Should not throw
@@ -114,8 +117,9 @@ describe('testingPlugin', () => {
       }
     }
 
-    testingPlugin.server.onComponentSet({
-      component,
+    testingPlugin.server.onBeforeComponentRender({
+      instanceId: '',
+      template: component.template,
       app
     })
 

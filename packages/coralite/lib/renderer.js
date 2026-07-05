@@ -33,7 +33,7 @@ import { generateClientRuntime } from './utils/client/runtime.js'
 import { transformCss } from './utils/server/style.js'
 import { transformNode } from './parser.js'
 import { CoraliteError } from './utils/errors.js'
-import { checkFileChange } from './utils/server/manifest.js'
+import { checkFileChange, hash } from './utils/server/manifest.js'
 import {
   isCoraliteElement,
   isCoraliteCollectionItem
@@ -1282,7 +1282,7 @@ export function createRenderer ({
     }
 
     // Phase 1: Discovery & Pre-Render Staging
-    if (normalizedOptions.mode === 'production') {
+    if (normalizedOptions.mode === 'production' || normalizedOptions.mode === 'testing') {
       const allComponentIds = app.components.list.map(c => c.result.id)
       globalScriptResult = await scriptManager.compileAllInstances(allComponentIds, normalizedOptions.mode)
       Object.assign(outputFiles, globalScriptResult.outputFiles)
@@ -1393,12 +1393,17 @@ export function createRenderer ({
       }
     }
 
+    const mocksStr = app.options.testing?.mocks ? serialize(app.options.testing.mocks) : ''
+    const mocksHash = hash(mocksStr)
+    const mocksChanged = manifest.testingMocksHash !== mocksHash
+
     const pagesToRender = []
     const skippedPages = []
     const newManifest = {
       physical: {},
       virtual: {},
-      dependencies: {}
+      dependencies: {},
+      testingMocksHash: mocksHash
     }
 
     // Check components first for dependency cascading
@@ -1428,7 +1433,7 @@ export function createRenderer ({
     for (const pageItem of queue) {
       let shouldRebuild = false
 
-      if (normalizedOptions.output && normalizedOptions.mode === 'production') {
+      if (normalizedOptions.output && (normalizedOptions.mode === 'production' || normalizedOptions.mode === 'testing')) {
         const relativeDir = relative(normalizedOptions.path.pages, pageItem.path.dirname)
         const outFile = join(normalizedOptions.output, relativeDir, pageItem.path.filename)
         try {
@@ -1447,6 +1452,10 @@ export function createRenderer ({
         return Array.isArray(pages) && pages.includes(pageItem.path.pathname)
       })
       if (componentIds.some(id => componentChanges.get(id))) {
+        shouldRebuild = true
+      }
+
+      if (mocksChanged) {
         shouldRebuild = true
       }
 

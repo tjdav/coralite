@@ -218,4 +218,50 @@ describe('Incremental Static Regeneration (ISR)', () => {
       assert.ok(err.message.includes('API Failure'))
     }
   })
+
+  it('should rebuild when testing.mocks configuration changes', async () => {
+    await project.writePage('index.html', '<mocking-test></mocking-test>')
+    await project.writeComponent('mocking-test.html', '<template id="mocking-test"><div>{{ data }}</div></template><script type="module">import { defineComponent } from \'coralite\'; export default defineComponent({ async server() { return { data: "REAL" } } })</script>')
+
+    // 1. First build with mock-1
+    const coralite1 = await project.createCoralite({
+      output: undefined,
+      mode: 'testing',
+      testing: {
+        mocks: {
+          'mocking-test': {
+            server: async () => ({ data: 'MOCKED_1' })
+          }
+        }
+      }
+    })
+
+    const results1 = await coralite1.build()
+    assert.strictEqual(results1.length, 1)
+    assert.strictEqual(results1[0].status, undefined)
+    assert.ok(results1[0].content.includes('MOCKED_1'))
+
+    // 2. Second build with same mock configuration should be skipped
+    const results2 = await coralite1.build()
+    assert.strictEqual(results2.length, 1)
+    assert.strictEqual(results2[0].status, 'skipped')
+
+    // 3. Third build with changed mock configuration should rebuild
+    const coralite2 = await project.createCoralite({
+      output: undefined,
+      mode: 'testing',
+      testing: {
+        mocks: {
+          'mocking-test': {
+            server: async () => ({ data: 'MOCKED_2' })
+          }
+        }
+      }
+    })
+
+    const results3 = await coralite2.build()
+    assert.strictEqual(results3.length, 1)
+    assert.strictEqual(results3[0].status, undefined)
+    assert.ok(results3[0].content.includes('MOCKED_2'))
+  })
 })

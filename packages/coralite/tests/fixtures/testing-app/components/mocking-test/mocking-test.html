@@ -1,0 +1,13 @@
+<template id="mocking-test">
+  <div ref="data">{{ data }}</div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    async server () {
+      return { data: 'REAL DATA' }
+    }
+  })
+</script>

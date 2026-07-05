@@ -82,8 +82,8 @@ export function createPageHandlers ({
       app
     })
 
-    const isProduction = app.options.mode === 'production'
-    if (isProduction && !data.virtual) {
+    const isStatic = app.options.mode === 'production' || app.options.mode === 'testing'
+    if (isStatic && !data.virtual) {
       delete data.content
     }
 
@@ -93,17 +93,17 @@ export function createPageHandlers ({
         state: mappedContext.state,
         page: mappedContext.page,
         path: mappedContext.data.path,
-        root: isProduction ? null : mappedContext.elements.root,
-        customElements: isProduction ? null : mappedContext.elements.customElements,
-        tempElements: isProduction ? null : mappedContext.elements.tempElements,
-        skipRenderElements: isProduction ? null : mappedContext.elements.skipRenderElements
+        root: isStatic ? null : mappedContext.elements.root,
+        customElements: isStatic ? null : mappedContext.elements.customElements,
+        tempElements: isStatic ? null : mappedContext.elements.tempElements,
+        skipRenderElements: isStatic ? null : mappedContext.elements.skipRenderElements
       },
       state: mappedContext.state
     }
   }
 
   const onPageUpdateLocal = async (newValue, oldValue) => {
-    if (app.options.mode === 'production') {
+    if (app.options.mode === 'production' || app.options.mode === 'testing') {
       if (!newValue.result) {
         await onFileSetLocal(newValue)
       }

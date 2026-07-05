@@ -49,7 +49,8 @@ export async function createCoralite ({
   skipRenderByAttribute,
   onError,
   mode = 'production',
-  output
+  output,
+  testing
 }) {
   // Validate required parameters
   if (!components || typeof components !== 'string') {
@@ -89,7 +90,8 @@ export async function createCoralite ({
     skipRenderByAttribute,
     mode,
     path,
-    output: output ? normalize(output) : undefined
+    output: output ? normalize(output) : undefined,
+    testing
   }
 
   const trackedOutputFiles = new Set()
@@ -456,7 +458,7 @@ export async function createCoralite ({
     onDelete: handlers.onPageDelete
   })
 
-  if (app.options.mode === 'production') {
+  if (app.options.mode === 'production' || app.options.mode === 'testing') {
     for await (const file of discoverHtmlFiles({
       path: app.options.pages,
       recursive: true,
