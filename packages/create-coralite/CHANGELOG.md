@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.41.0
+
+> Comparing `create-coralite-v0.40.2` to `HEAD`
+
+**Summary:** 2 commits
+
+### ✨ Features
+
+- add test mode to coralite-scripts and update templates ([afcdcce](https://codeberg.org/tjdavid/coralite/commit/afcdcceaa72451da7f7ad97bf31ce7b7889886d8))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.41.0 ([ad4fae1](https://codeberg.org/tjdavid/coralite/commit/ad4fae18a4ed26d702f43141a5828530d77d0196))
+
+
 ## v0.40.2
 
 > Comparing `create-coralite-v0.40.1` to `HEAD`
