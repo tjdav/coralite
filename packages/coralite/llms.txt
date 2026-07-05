@@ -80,9 +80,54 @@ A component definition consists of four primary blocks:
 
 #### 1. `attributes` (Sync)
 
-* **Purpose**: Coerces HTML attributes into JavaScript primitives.
-* **Rule**: Strictly limited to primitives (`String`, `Number`, `Boolean`). `Object` and `Array` types are strictly blocked to avoid JSON-in-HTML parsing errors.
-* **Reactivity**: Changes to HTML attributes (via `setAttribute`) automatically trigger updates to the unified `state`.
+* **Purpose**: Declares and coerces HTML attributes into typed JavaScript primitives on the component's reactive `state`.
+* **Rules & Constraints**:
+  - **Allowed Types**: Strictly limited to `String`, `Number`, and `Boolean`.
+  - **Blocked Types**: `Object` and `Array` constructors are strictly blocked. Attempting to use them throws a `CoraliteError` to prevent unsafe or complex JSON-in-HTML parsing. Use `server()` or global contexts for complex data.
+  - **Declaration Syntax**:
+    - *Shorthand*: `attributeName: TypeConstructor` (e.g., `isChecked: Boolean`).
+    - *Verbose (with default)*: `attributeName: { type: TypeConstructor, default: DefaultValue }`.
+  - **Attribute Naming**: Attributes are declared in camelCase (e.g., `isChecked`). The framework automatically maps them to/from their kebab-case HTML equivalents (e.g., `is-checked`).
+
+* **Attribute Coercion Engine**:
+  Below are the exact coercion logic patterns utilized at compile-time (server-side) and run-time (client-side) to normalize raw HTML string attributes into JS values:
+
+  - **`Boolean` Coercion Pattern**:
+    - **Client-Side Coercion**:
+      ```javascript
+      if (value === '') return true;
+      return value !== 'false' && value !== null;
+      ```
+    - **Server-Side Coercion**:
+      ```javascript
+      state[key] = value !== 'false' && value !== null && value !== '';
+      ```
+    - **Critical Logic Summary**: An attribute evaluates to `true` unless it is explicitly equal to `"false"`, `null` (absent), or `""` (empty string) on the server. On the client, an empty string attribute (such as `<my-component is-checked></my-component>` which results in `""`) evaluates to `true`.
+  
+  - **`Number` Coercion Pattern**:
+    - **Logic**: Evaluates `Number(value)`.
+    - **Result**: Valid numeric strings become numbers. Non-numeric strings resolve to `NaN`.
+  
+  - **`String` Coercion Pattern**:
+    - **Logic**: Evaluates `String(value)`.
+    - **Result**: Converts any non-null input value to a string.
+
+  - **Coercion Matrix for LLMs**:
+    Refer to this matrix to determine the final coerced type and value:
+    | Input HTML Attribute Value | Declared `Boolean` | Declared `Number` | Declared `String` |
+    | :--- | :--- | :--- | :--- |
+    | **`"true"`** | `true` | `NaN` | `"true"` |
+    | **`"false"`** | `false` | `NaN` | `"false"` |
+    | **`"42"`** | `true` | `42` | `"42"` |
+    | **`"0"`** | `true` | `0` | `"0"` |
+    | **`""` (empty attribute)** | `true` (client) / `false` (server) | `0` | `""` |
+    | **`null` / Absent** | `false` (or `default` value) | `null` (or `default` value) | `null` (or `default` value) |
+    | **`"hello"`** | `true` | `NaN` | `"hello"` |
+
+* **Reactivity & Synchronization**:
+  - Changing an attribute in the DOM (e.g., `element.setAttribute('is-checked', 'true')`) automatically triggers the `attributeChangedCallback`, recoerces the value, and updates the unified `state.isChecked`.
+  - Mutating the property directly in `state` (inside the `client` block) updates the internal reactivity tree, but does *not* automatically reflect back to the physical DOM attribute unless manually synchronized (avoiding costly DOM reflection loops).
+
 
 #### 2. `server({ state, page, root, module, id, session, app, noHydration, ...plugins })` (Async/Server)
 
