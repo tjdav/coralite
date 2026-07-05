@@ -1,5 +1,40 @@
 # Changelog
 
+## v0.41.0
+
+> Comparing `coralite-v0.40.2` to `HEAD`
+
+**Summary:** 13 commits
+
+### ✨ Features
+
+- E2E testing strategy ([9cbe4a6](https://codeberg.org/tjdavid/coralite/commit/9cbe4a606351bfe892a867c48ba16527567e4015))
+- Add testing environment support for E2E tests (coralite) ([36a2998](https://codeberg.org/tjdavid/coralite/commit/36a2998c29ab8afa13c87611d15caade984b66fe))
+- Improve data-testid generation logic in testing plugin (testing) ([eca4847](https://codeberg.org/tjdavid/coralite/commit/eca4847a83c44dc9005057e5dda5fcfb1127be90))
+- Add script for building and testing Coralite application (coralite) ([821561e](https://codeberg.org/tjdavid/coralite/commit/821561e773369a7a68fa873fb6a9fcbd2e985dab))
+- update testing mode configuration and features (coralite) ([94e908f](https://codeberg.org/tjdavid/coralite/commit/94e908f35077f56eb2ef9cfb480aa54bda3ae9fd))
+- implement first-class testing mode ([e6a62ea](https://codeberg.org/tjdavid/coralite/commit/e6a62ea4e6716ee5bc707ac103467cdd49f9e2fb))
+
+### 🐛 Bug Fixes
+
+- allow shorthand attribute type definitions in CoraliteElement ([77dbacc](https://codeberg.org/tjdavid/coralite/commit/77dbaccc534f9ca9680184f2039f240f01b08a6e))
+
+### 📚 Documentation
+
+- document native HTML boolean attribute toggling logic ([57e8f43](https://codeberg.org/tjdavid/coralite/commit/57e8f43a06208f02b4c9f9cb5acf1e767839e28e))
+- improve component attribute coercion (coralite) ([04d89c8](https://codeberg.org/tjdavid/coralite/commit/04d89c82932b49430fcf17fa500c24f0be3bd610))
+- E2E testing documentation with detailed mode explanations ([52da43e](https://codeberg.org/tjdavid/coralite/commit/52da43eb7f0bab407a963e8047b593c41691367a))
+
+### ♻️ Code Refactoring
+
+- Optimize renderer by removing redundant ref processing ([0e30a99](https://codeberg.org/tjdavid/coralite/commit/0e30a99ac16ed162b88615bd33818b5896fa76a4))
+- Update Playwright configuration for better test separation (coralite) ([2ccccd8](https://codeberg.org/tjdavid/coralite/commit/2ccccd8b93d39755ad71f9655b081e22bd9e596c))
+
+### ✅ Tests
+
+- verify native boolean attribute toggling behavior in CoraliteElement ([cf4ae7f](https://codeberg.org/tjdavid/coralite/commit/cf4ae7f80badef2fbf1ccded6066698c3327535a))
+
+
 ## v0.40.2
 
 > Comparing `coralite-v0.40.1` to `HEAD`
