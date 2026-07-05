@@ -11,24 +11,26 @@
 
   <main class="container content">
     <h1 class="display">Testing Plugin</h1>
-    <p>The <code>testingPlugin</code> is a built-in Coralite utility activated when the <code>mode: 'development'</code> configuration option is set. It is designed to assist in End-to-End (E2E) testing by providing deterministic selectors for DOM elements.</p>
+    <p>The <code>testingPlugin</code> is a built-in Coralite utility activated when the <code>mode: 'testing'</code> configuration option is set. It is designed to assist in End-to-End (E2E) testing by providing deterministic selectors for DOM elements and disabling animations.</p>
 
     <coralite-heading level="2" text="Automatic data-testid Generation"></coralite-heading>
-    <p>In development mode, the testing plugin automatically duplicates all <code>ref="xyz"</code> attributes into <code>data-testid</code> attributes. Because Coralite isolates references across component instances, these <code>data-testid</code> attributes are resolved into a strict namespace pattern.</p>
+    <p>In testing mode, the testing plugin automatically duplicates all <code>ref="xyz"</code> attributes into <code>data-testid</code> attributes. Because Coralite isolates references across component instances, these <code>data-testid</code> attributes are resolved into a strict namespace pattern.</p>
+    <p>Additionally, the testing plugin auto-injects <code>data-testid</code> attributes onto interactive elements (such as <code>button</code>, <code>a</code>, <code>input</code>, <code>select</code>, <code>textarea</code>, elements with <code>tabindex</code>, or elements with interactive ARIA roles) and custom elements, using the pattern <code>[instanceId]__[tagName]-[index]</code>.</p>
 
     <coralite-heading level="3" text="Namespace Pattern"></coralite-heading>
     <p>The generated <code>data-testid</code> follows this format:</p>
     <coralite-code language="text">[componentId]__[refName]-[instanceIndex]</coralite-code>
 
     <p><strong>Example:</strong></p>
+    
     <coralite-code-html>
-<!-- Source Component Template (my-button.html) -->
-<template id="my-button">
-  <button ref="btn">Click me</button>
-</template>
+      <!-- Source Component Template (my-button.html) -->
+      <template id="my-button">
+        <button ref="btn">Click me</button>
+      </template>
 
-<!-- Rendered Output (Development Mode) -->
-<button ref="my-button__btn-0" data-testid="my-button__btn-0">Click me</button>
+      <!-- Rendered Output (Testing Mode) -->
+      <button ref="my-button__btn-0" data-testid="my-button__btn-0">Click me</button>
     </coralite-code-html>
 
     <coralite-heading level="2" text="E2E Testing Usage"></coralite-heading>
@@ -48,8 +50,8 @@ test('should click the button', async ({ page }) => {
 
     <coralite-heading level="2" text="Key Points"></coralite-heading>
     <ul>
-      <li><strong>Dev-Only</strong>: The plugin only runs when <code>mode</code> is <code>'development'</code>. It does not bloat your production HTML.</li>
-      <li><strong>Automatic</strong>: No manual configuration is required; it hooks into <code>onComponentSet</code> and <code>onPageSet</code>.</li>
+      <li><strong>Testing-Only</strong>: The plugin only runs when <code>mode</code> is <code>'testing'</code>. It does not run in development or production modes, ensuring your production builds remain clean.</li>
+      <li><strong>Automatic</strong>: No manual configuration is required; it hooks into <code>onBeforeComponentRender</code> and <code>onPageSet</code>.</li>
       <li><strong>Deterministic</strong>: Provides a reliable way to target specific component instances in complex layouts.</li>
     </ul>
 

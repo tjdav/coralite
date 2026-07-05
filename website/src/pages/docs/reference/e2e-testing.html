@@ -20,6 +20,8 @@
     <p>In this mode, the built-in testing plugin performs several automated tasks:</p>
 
     <ul>
+      <li><strong>Static Build Target:</strong> The compiler builds pages as a static target, stripping development-only properties and optimizing global runtime script output (identical to <code>production</code> mode).</li>
+      <li><strong>Incremental Build Cache Invalidation:</strong> Tracks a hash of the <code>testing.mocks</code> configuration (saved as <code>testingMocksHash</code> in the build manifest) and triggers complete template rebuilds when mocks are modified.</li>
       <li><strong>Deterministic data-testid:</strong> Injects <code>data-testid</code> onto all interactive elements and custom elements using the pattern <code>[instanceId]__[tagName]-[index]</code>.</li>
       <li><strong>Ref Mapping:</strong> Automatically duplicates any <code>ref</code> attribute to <code>data-testid</code>.</li>
       <li><strong>Velocity Engine:</strong> Injects a global style block that disables all transitions and animations to eliminate timing flakiness.</li>

@@ -337,8 +337,11 @@ export default defineConfig({
 
 ## 10. E2E Testing
 
-For a robust E2E environment, always use `mode: 'testing'`.
+For a robust E2E environment, users are encouraged to use `mode: 'testing'` exclusively.
 
+* **Static Build Target**: `testing` mode acts as a static build target, identical to `production` mode. It compiles optimized static assets and strips development-only metadata, but leaves test-related tooling intact.
+* **Incremental Build Cache Invalidation**: The build compiler computes a hash of the `testing.mocks` configuration. If your mock definitions change, it invalidates the incremental build cache (ISR) and triggers a rebuild for all affected pages.
+* **Targeting Selectors**: Target elements using the auto-injected `data-testid` attributes. To target specific components or elements without hardcoding the dynamic instance index, use CSS suffix selectors (e.g. `[data-testid$="__btn"]`).
 * **Readiness**: Await `window.__coralite__.lifecycle.hydrated` after navigation.
 * **Deterministic Selectors**: In `testing` mode, Coralite automatically injects `data-testid` onto all interactive elements (`button`, `a`, `input`, etc.) and custom elements using the pattern `[instanceId]__[tagName]-[index]`. Template `ref` attributes are also mapped to `data-testid`.
 * **Velocity Engine**: Animations, transitions, and smooth scrolling are globally disabled in `testing` mode to eliminate race conditions and speed up tests.

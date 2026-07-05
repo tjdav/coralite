@@ -71,6 +71,25 @@
       });
     </coralite-code-highlight>
 
+    <coralite-heading level="2" text="Incremental Builds & Mock Invalidation"></coralite-heading>
+
+    <p>Coralite's Incremental Static Regeneration (ISR) system automatically handles configuration updates for mock definitions. During the build, Coralite computes a hash of the <code>testing.mocks</code> configuration. If a mock implementation or configuration changes, the compiler invalidates the cache and forces a rebuild of all page templates that consume the mocked component, ensuring your E2E tests always run against the latest mock data.</p>
+
+    <p>Additionally, <code>testing</code> mode acts as a static target just like <code>production</code>. Development-only AST structures are cleaned up and pages are optimized, ensuring the E2E test environment mimics production behavior as closely as possible.</p>
+
+    <coralite-heading level="2" text="Targeting Elements in Testing Mode"></coralite-heading>
+
+    <p>When writing E2E tests for your application, always use <code>mode: 'testing'</code>. Since the testing plugin is active, elements marked with <code>ref="my-btn"</code> will automatically have a <code>data-testid</code> attribute injected in the format <code>[componentId]__[refName]-[instanceIndex]</code> (e.g. <code>my-component-0__my-btn-0</code>).</p>
+
+    <p>To avoid brittle tests that break when component IDs or instance indices change, it is recommended to target elements using CSS suffix selectors. For example:</p>
+
+    <coralite-code-highlight language="javascript">
+      // Target the ref "my-btn" inside my-component regardless of the specific instance index
+      const button = page.locator('[data-testid$="__my-btn"]');
+    </coralite-code-highlight>
+
+    <p>This keeps your test selectors clean and decoupled from exact layout instances.</p>
+
     <coralite-heading level="2" text="The window.__coralite__.lifecycle.hydrated Promise"></coralite-heading>
 
     <p>To solve this, Coralite injects a global promise named <code>window.__coralite__.lifecycle.hydrated</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
