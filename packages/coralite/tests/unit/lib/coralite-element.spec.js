@@ -198,4 +198,68 @@ describe('CoraliteElement', () => {
 
     document.body.removeChild(el)
   })
+
+  it('should toggle native boolean attributes by adding/removing them, and keep non-native attributes as strings', (t, done) => {
+    const toggleTagName = 'toggle-comp-' + Math.random().toString(36).substring(2, 9)
+    const ToggleElement = createCoraliteClass({
+      componentId: 'toggle-comp',
+      templateHTML: '<div><button id="btn" disabled="{{ isDisabled }}">Btn</button><span id="span" active="{{ isActive }}">Span</span></div>',
+      defaultValues: {
+        isDisabled: false,
+        isActive: false
+      },
+      hydrationMap: {
+        attributes: [
+          {
+            path: [0, 0],
+            name: 'disabled',
+            template: '{{ isDisabled }}'
+          },
+          {
+            path: [0, 1],
+            name: 'active',
+            template: '{{ isActive }}'
+          }
+        ]
+      }
+    })
+    customElements.define(toggleTagName, ToggleElement)
+
+    const el = document.createElement(toggleTagName)
+    document.body.appendChild(el)
+
+    const btn = el.querySelector('#btn')
+    const span = el.querySelector('#span')
+
+    // Initially falsy, so native 'disabled' should be removed, while non-native 'active' is set to falsy string
+    assert.strictEqual(btn.hasAttribute('disabled'), false)
+    assert.strictEqual(span.getAttribute('active'), 'false')
+
+    // Change to truthy
+    // @ts-ignore
+    el._state.isDisabled = true
+    // @ts-ignore
+    el._state.isActive = true
+
+    queueMicrotask(() => {
+      // Button disabled should be set to empty string, span active to true
+      assert.strictEqual(btn.getAttribute('disabled'), '')
+      assert.strictEqual(span.getAttribute('active'), 'true')
+
+      // Change back to falsy
+      // @ts-ignore
+      el._state.isDisabled = false
+      // @ts-ignore
+      el._state.isActive = false
+
+      queueMicrotask(() => {
+        // Button disabled should be completely removed, span active should be set to string 'false'
+        assert.strictEqual(btn.hasAttribute('disabled'), false)
+        assert.strictEqual(span.getAttribute('active'), 'false')
+
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
 })
