@@ -93,16 +93,19 @@ A component definition consists of four primary blocks:
   Below are the exact coercion logic patterns utilized at compile-time (server-side) and run-time (client-side) to normalize raw HTML string attributes into JS values:
 
   - **`Boolean` Coercion Pattern**:
-    - **Client-Side Coercion**:
-      ```javascript
-      if (value === '') return true;
-      return value !== 'false' && value !== null;
-      ```
-    - **Server-Side Coercion**:
-      ```javascript
-      state[key] = value !== 'false' && value !== null && value !== '';
-      ```
-    - **Critical Logic Summary**: An attribute evaluates to `true` unless it is explicitly equal to `"false"`, `null` (absent), or `""` (empty string) on the server. On the client, an empty string attribute (such as `<my-component is-checked></my-component>` which results in `""`) evaluates to `true`.
+    - **How it Works**:
+      - **Client-Side Coercion**:
+        ```javascript
+        if (value === '') return true;
+        return value !== 'false' && value !== null;
+        ```
+      - **Server-Side Coercion**:
+        ```javascript
+        state[key] = value !== 'false' && value !== null && value !== '';
+        ```
+    - **Limitations & Hydration Mismatch Warning**:
+      - *The Empty Attribute SSR Mismatch*: An empty HTML attribute (e.g. `<my-component is-checked></my-component>` or just `<my-component is-checked>`) is parsed as `""` (empty string) in HTML. On the client, this empty string evaluates to `true` (standard browser behavior for attributes like `disabled` or `checked`). However, on the server, it evaluates to `false` (due to the `value !== ''` check).
+      - *Solution*: To ensure consistent behavior between Server-Side Rendering (SSR) and Client-Side Hydration, developers should explicitly pass the string value `"true"` (e.g., `<my-component is-checked="true">`) instead of using shorthand empty attributes, or rely on a declared `default` value in the attribute schema.
   
   - **`Number` Coercion Pattern**:
     - **Logic**: Evaluates `Number(value)`.
@@ -127,6 +130,16 @@ A component definition consists of four primary blocks:
 * **Reactivity & Synchronization**:
   - Changing an attribute in the DOM (e.g., `element.setAttribute('is-checked', 'true')`) automatically triggers the `attributeChangedCallback`, recoerces the value, and updates the unified `state.isChecked`.
   - Mutating the property directly in `state` (inside the `client` block) updates the internal reactivity tree, but does *not* automatically reflect back to the physical DOM attribute unless manually synchronized (avoiding costly DOM reflection loops).
+
+* **Native HTML Boolean Attributes Toggling (`BOOLEAN_ATTRIBUTES`)**:
+  - **Overview**: When reactive tokens are bound to attributes inside component templates (e.g., `<button disabled="{{ isDisabled }}">`), Coralite applies specialized toggling logic if the target attribute name is in the reserved native HTML boolean attributes list.
+  - **The Reserved List**: Includes standard HTML boolean attributes: `allowfullscreen`, `async`, `autofocus`, `autoplay`, `checked`, `controls`, `default`, `defer`, `disabled`, `formnovalidate`, `hidden`, `inert`, `ismap`, `itemscope`, `loop`, `multiple`, `muted`, `nomodule`, `novalidate`, `open`, `playsinline`, `readonly`, `required`, `reversed`, `selected`, and `truespeed`.
+  - **How it Works**:
+    - If the bound value resolves to any falsy value (specifically `""`, `"false"`, `"null"`, `"0"`, or `"undefined"`), the attribute is **completely removed** from the target element (via `element.removeAttribute(name)`). This matches native HTML behavior, where the mere presence of a boolean attribute (even if written as `disabled="false"`) evaluates to true in the browser.
+    - If the bound value is truthy, the attribute is set as an empty string presence attribute (via `element.setAttribute(name, '')`).
+  - **Limitations**:
+    - This automatic add/remove toggling logic *only* applies to attributes on the reserved native HTML list.
+    - Custom boolean attributes (e.g., `<div is-active="{{ isActive }}">`) or other attributes not on the reserved list are not removed; instead, their values are written directly as string attributes (e.g., `is-active="false"`).
 
 
 #### 2. `server({ state, page, root, module, id, session, app, noHydration, ...plugins })` (Async/Server)
