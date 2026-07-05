@@ -139,6 +139,25 @@ attributes: {
       </tr>
     </coralite-table>
 
+    <coralite-heading level="3" text="Native HTML Boolean Attribute Toggling"></coralite-heading>
+    <p>When reactive state tokens are bound to element attributes within templates (for example, <code>&lt;button disabled="{{ isDisabled }}"&gt;</code>), Coralite handles native HTML boolean attributes with special presence logic:</p>
+    
+    <ul>
+      <li>
+        <strong>Toggled Removal</strong>: If the bound token resolves to a falsy value (specifically <code>""</code>, <code>"false"</code>, <code>"null"</code>, <code>"0"</code>, or <code>"undefined"</code>), Coralite completely removes the attribute from the DOM element (e.g., calling <code>element.removeAttribute('disabled')</code>). This matches browser expectations, where the mere presence of a boolean attribute makes it active.
+      </li>
+      <li>
+        <strong>Presence Insertion</strong>: If the value evaluates to truthy, the attribute is set as an empty string presence attribute (e.g. <code>element.setAttribute('disabled', '')</code>).
+      </li>
+      <li>
+        <strong>The Reserved List</strong>: This toggling behavior is restricted to standard HTML boolean attributes including:
+        <code>allowfullscreen</code>, <code>async</code>, <code>autofocus</code>, <code>autoplay</code>, <code>checked</code>, <code>controls</code>, <code>default</code>, <code>defer</code>, <code>disabled</code>, <code>formnovalidate</code>, <code>hidden</code>, <code>inert</code>, <code>ismap</code>, <code>itemscope</code>, <code>loop</code>, <code>multiple</code>, <code>muted</code>, <code>nomodule</code>, <code>novalidate</code>, <code>open</code>, <code>playsinline</code>, <code>readonly</code>, <code>required</code>, <code>reversed</code>, <code>selected</code>, and <code>truespeed</code>.
+      </li>
+      <li>
+        <strong>Limitation</strong>: Custom boolean attributes (like <code>is-active="{{ isActive }}"</code>) do not use this toggling logic; instead, their values are written directly as standard string attributes (e.g., <code>is-active="false"</code>).
+      </li>
+    </ul>
+
     <coralite-alert type="info">
       <strong>Strict Primitive Rule</strong>
       <p>
