@@ -280,7 +280,7 @@ export class CoraliteElement extends HTMLElement {
     }
     const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
     const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
-    const value = schema ? coerce(newVal, schema.type) : newVal
+    const value = schema ? coerce(newVal, schema.type || schema) : newVal
 
     this._state[camelName] = value
   }
@@ -326,7 +326,7 @@ export class CoraliteElement extends HTMLElement {
       }
       const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
       const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
-      target[camelName] = schema ? coerce(attr.value, schema.type) : attr.value
+      target[camelName] = schema ? coerce(attr.value, schema.type || schema) : attr.value
     }
 
     // Hydrate data() block results from the SSR payload

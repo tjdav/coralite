@@ -122,4 +122,80 @@ describe('CoraliteElement', () => {
 
     assert.strictEqual(called, true)
   })
+
+  it('should support shorthand and longhand attribute types and default values', () => {
+    const attrTagName = 'attr-comp-' + Math.random().toString(36).substring(2, 9)
+    const AttrElement = createCoraliteClass({
+      componentId: 'attr-comp',
+      defaultValues: {
+        active: true,
+        maxItems: 10,
+        theme: 'dark'
+      },
+      attributes: {
+        // Boolean
+        visible: Boolean,
+        active: {
+          type: Boolean,
+          default: true
+        },
+
+        // Number
+        count: Number,
+        maxItems: {
+          type: Number,
+          default: 10
+        },
+
+        // String
+        titleText: String,
+        theme: {
+          type: String,
+          default: 'dark'
+        }
+      }
+    })
+    customElements.define(attrTagName, AttrElement)
+
+    const el = document.createElement(attrTagName)
+    document.body.appendChild(el)
+
+    // Check initial values / defaults
+    // @ts-ignore
+    assert.strictEqual(el._state.visible, undefined)
+    // @ts-ignore
+    assert.strictEqual(el._state.active, true)
+    // @ts-ignore
+    assert.strictEqual(el._state.count, undefined)
+    // @ts-ignore
+    assert.strictEqual(el._state.maxItems, 10)
+    // @ts-ignore
+    assert.strictEqual(el._state.titleText, undefined)
+    // @ts-ignore
+    assert.strictEqual(el._state.theme, 'dark')
+
+    // Set attributes on the DOM
+    el.setAttribute('visible', '')
+    el.setAttribute('active', 'false')
+    el.setAttribute('count', '42')
+    el.setAttribute('max-items', '20')
+    el.setAttribute('title-text', 'hello')
+    el.setAttribute('theme', 'light')
+
+    // Check coerced values after DOM attributes updates
+    // @ts-ignore
+    assert.strictEqual(el._state.visible, true)
+    // @ts-ignore
+    assert.strictEqual(el._state.active, false)
+    // @ts-ignore
+    assert.strictEqual(el._state.count, 42)
+    // @ts-ignore
+    assert.strictEqual(el._state.maxItems, 20)
+    // @ts-ignore
+    assert.strictEqual(el._state.titleText, 'hello')
+    // @ts-ignore
+    assert.strictEqual(el._state.theme, 'light')
+
+    document.body.removeChild(el)
+  })
 })
