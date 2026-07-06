@@ -8,7 +8,8 @@ test.describe('Getter Token in Imperative Component', () => {
   })
 
   test('should display getter value as token in imperative component', async ({ page }) => {
-    const status = page.getByTestId(/getter-child-0__status/)
+    const comp = page.locator('getter-child').first()
+    const status = comp.locator('p')
     await expect(status).toHaveText('Seen')
   })
 })

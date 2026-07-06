@@ -144,16 +144,16 @@ export function findAndExtractScript (code) {
              * - client() { ... } (Method shorthand) => this.instanceId
              * Defaults to 'id' if no parameters are present and it's not a method.
              */
-            let instanceIdVar = 'id'
+            let instanceIdVar
             // @ts-ignore
             if (value.params && value.params[0]) {
               // @ts-ignore
               const param = value.params[0]
               if (param.type === 'Identifier') {
-                instanceIdVar = param.name + '.id'
+                instanceIdVar = param.name + '.instanceId'
               } else if (param.type === 'ObjectPattern') {
                 // @ts-ignore
-                const idProp = param.properties.find(p => p.key?.type === 'Identifier' && p.key?.name === 'id')
+                const idProp = param.properties.find(p => p.key?.type === 'Identifier' && p.key?.name === 'instanceId')
                 if (idProp) {
                   if (idProp.value.type === 'Identifier') {
                     instanceIdVar = idProp.value.name
@@ -161,7 +161,7 @@ export function findAndExtractScript (code) {
                 }
               }
             } else if (method) {
-              instanceIdVar = 'this.instanceId'
+              instanceIdVar = 'this._instanceId'
             }
 
             // Get source slice

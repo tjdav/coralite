@@ -10,27 +10,30 @@ test.describe('Priority Architecture Tests', () => {
   })
 
   test('Primitive Coercion: should coerce attributes to correct types', async ({ page }) => {
-    await expect(page.getByTestId('primitive-coercion-0__count')).toHaveText('42')
-    await expect(page.getByTestId('primitive-coercion-0__active')).toHaveText('true')
-    await expect(page.getByTestId('primitive-coercion-0__count-type')).toHaveText('number')
-    await expect(page.getByTestId('primitive-coercion-0__active-type')).toHaveText('boolean')
+    const comp = page.locator('primitive-coercion').first()
+    await expect(comp.locator('p').nth(0)).toHaveText('42')
+    await expect(comp.locator('p').nth(1)).toHaveText('true')
+    await expect(comp.locator('p').nth(2)).toHaveText('number')
+    await expect(comp.locator('p').nth(3)).toHaveText('boolean')
   })
 
   test('Dual-Proxy: should block mutations in getters and allow them in script', async ({ page }) => {
+    const comp = page.locator('dual-proxy').first()
     // Initial state: count=5, doubled=10 (or MutationBlocked if getter is strictly read-only and we catch error)
     // Based on my dual-proxy.html, it returns 'MutationBlocked' if it catches an error.
-    await expect(page.getByTestId('dual-proxy-0__doubled')).toHaveText('MutationBlocked')
+    await expect(comp.locator('p')).toHaveText('MutationBlocked')
 
-    const btn = page.getByTestId('dual-proxy-0__increment')
+    const btn = comp.locator('button')
     await btn.click()
 
     // After increment, count=6, doubled should still be MutationBlocked if it fails every time
-    await expect(page.getByTestId('dual-proxy-0__doubled')).toHaveText('MutationBlocked')
+    await expect(comp.locator('p')).toHaveText('MutationBlocked')
   })
 
   test('Async Race: should handle rapid state changes in async getters', async ({ page }) => {
-    const trigger = page.getByTestId('async-race-0__trigger')
-    const result = page.getByTestId('async-race-0__result')
+    const comp = page.locator('async-race').first()
+    const trigger = comp.locator('button')
+    const result = comp.locator('p')
 
     await expect(result).toHaveText('Idle')
 

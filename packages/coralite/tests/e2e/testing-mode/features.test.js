@@ -11,11 +11,11 @@ test.describe('Testing Mode Features', () => {
     await expect(data).toHaveText('MOCKED DATA')
   })
 
-  test('should auto-inject data-testid for interactive elements', async ({ page }) => {
+  test('should support data-testid for elements with test attribute', async ({ page }) => {
     await page.goto('/')
     await waitForHydration(page)
 
-    // button has ref="test-btn", so data-testid should be "page__test-btn" (since it's in the page)
+    // button has test="test-btn", so data-testid should be "page__test-btn" (since it's in the page)
     const btn = page.getByTestId('page__test-btn')
     await expect(btn).toBeVisible()
     await expect(btn).toHaveText('Click Me')

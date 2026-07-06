@@ -39,22 +39,7 @@ function traverseAndAddTestId (children, instanceId, { autoTestId = false, count
         }
       }
 
-      if (node.attribs?.ref) {
-        if (!node.attribs['data-testid']) {
-          const refValue = node.attribs.ref
-          const prefix = instanceId ? `${instanceId}__` : ''
-
-          // In server-side:
-          // onBeforeComponentRender: instanceId is present, ref is NOT yet prefixed.
-          // onPageSet: instanceId is 'page', ref IS prefixed (with component-0__ref).
-
-          if (instanceId === 'page' && refValue.includes('__')) {
-            node.attribs['data-testid'] = refValue
-          } else {
-            node.attribs['data-testid'] = `${prefix}${refValue}`
-          }
-        }
-      } else if (autoTestId && instanceId && mode === 'testing') {
+      if (autoTestId && instanceId && mode === 'testing') {
         const tagName = node.name.toLowerCase()
         const isInteractive = [
           'button', 'a', 'input', 'form', 'select', 'textarea'
@@ -202,29 +187,6 @@ export const testingPlugin = definePlugin({
         counters,
         mode
       })
-    }
-  },
-  client: {
-    onBeforeComponentRender: ({ instanceId, refs }) => {
-      // In client side, refs are already uniquely named in state and attribute,
-      // but we ensure data-testid matches for consistency if it was missed or changed
-      for (let i = 0; i < refs.length; i++) {
-        const ref = refs[i]
-        const prefix = `${instanceId}__`
-        const uniqueRefValue = ref.element && ref.element.getAttribute('ref')
-
-        if (ref.element && ref.element.setAttribute) {
-          const currentTestId = ref.element.getAttribute('data-testid')
-
-          if (!currentTestId || currentTestId === ref.name) {
-            if (uniqueRefValue && uniqueRefValue.startsWith(prefix)) {
-              ref.element.setAttribute('data-testid', uniqueRefValue)
-            } else {
-              ref.element.setAttribute('data-testid', `${prefix}${ref.name}`)
-            }
-          }
-        }
-      }
     }
   }
 })

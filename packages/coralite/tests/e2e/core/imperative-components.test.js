@@ -8,10 +8,11 @@ test.describe('Imperative Components', () => {
   })
 
   test('should create component imperatively and assign non-serializable objects', async ({ page }) => {
-    const title = page.getByTestId(/imperative-child-0__title/)
+    const comp = page.locator('imperative-child').first()
+    const title = comp.locator('h2')
     await expect(title).toHaveText('Imperative Mount')
 
-    const dataDisplay = page.getByTestId(/imperative-child-0__dataDisplay/)
+    const dataDisplay = comp.locator('p')
     await expect(dataDisplay).toHaveText('A,B,C')
   })
 })

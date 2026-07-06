@@ -5,17 +5,17 @@
   <title>Slots Projection Test</title>
 </head>
 <body>
-  <div data-testid="fallback-test">
+  <div id="fallback-test">
     <slot-component></slot-component>
   </div>
   
-  <div data-testid="transform-test">
+  <div id="transform-test">
     <slot-component>
       <div slot="default">Transform Me</div>
     </slot-component>
   </div>
   
-  <div data-testid="preserve-test">
+  <div id="preserve-test">
     <slot-component>
       <button id="preserve-btn" onclick="this.textContent = 'Clicked'">Unchanged</button>
     </slot-component>

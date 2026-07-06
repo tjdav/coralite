@@ -8,27 +8,31 @@ test.describe('Plugins Extensibility', () => {
   })
 
   test('should inject custom context and verify execution', async ({ page }) => {
-    const pluginData = page.getByTestId('plugin-component-0__pluginData')
+    const comp = page.locator('plugin-component').first()
+    const pluginData = comp.locator('div').nth(1)
     await expect(pluginData).toContainText('Global: global-state-123')
     await expect(pluginData).toContainText('InstanceId: plugin-component-0')
     await expect(pluginData).toContainText('Signal: true')
   })
 
   test('should verify metadata plugin mapping', async ({ page }) => {
-    const metaInfo = page.getByTestId('plugin-component-0__meta-info')
+    const comp = page.locator('plugin-component').first()
+    const metaInfo = comp.locator('div').nth(2)
     await expect(metaInfo).toHaveText('Title: Plugins Test Page')
   })
 
   test('should verify server-side plugin export execution', async ({ page }) => {
-    const pluginMessage = page.getByTestId('plugin-component-0__plugin-message')
+    const comp = page.locator('plugin-component').first()
+    const pluginMessage = comp.locator('div').nth(3)
     await expect(pluginMessage).toHaveText('Hello E2E Test from server-side plugin! Page: /plugins/index.html')
   })
 
   test('should verify client-side hooks execution', async ({ page }) => {
-    const beforeHook = page.getByTestId('plugin-component-0__hook-message')
+    const comp = page.locator('plugin-component').first()
+    const beforeHook = comp.locator('div').nth(4)
     await expect(beforeHook).toHaveText('Before Render Hook Worked!')
 
-    const afterHook = page.getByTestId('plugin-component-0__hook-result')
+    const afterHook = comp.locator('div').last()
     await expect(afterHook).toHaveText('After Render Hook Worked!')
   })
 

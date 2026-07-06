@@ -9,14 +9,15 @@ test.describe('Static Components', () => {
 
   test('should correctly render and bind attributes to template', async ({ page }) => {
     // Check if the component rendered
-    const container = page.getByTestId('static-component-a-0__static-container')
+    const comp = page.locator('static-component-a').first()
+    const container = comp.locator('div')
     await expect(container).toBeVisible()
 
     // Check data binding
-    const title = page.getByTestId('static-component-a-0__static-title')
+    const title = comp.locator('h2')
     await expect(title).toHaveText('Hello World')
 
-    const desc = page.getByTestId('static-component-a-0__static-description')
+    const desc = comp.locator('p')
     await expect(desc).toHaveText('This is static')
   })
 })

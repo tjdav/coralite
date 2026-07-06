@@ -1,9 +1,9 @@
 <template id="server-to-client-comp">
-  <div ref="server-val">{{ serverVal }}</div>
-  <div ref="getter-val">{{ getterVal }}</div>
-  <div ref="attr-val-display">{{ attrVal }}</div>
-  <button ref="check-state">Check State</button>
-  <div ref="client-state"></div>
+  <div ref="server-val" test="server-val">{{ serverVal }}</div>
+  <div ref="getter-val" test="getter-val">{{ getterVal }}</div>
+  <div ref="attr-val-display" test="attr-val-display">{{ attrVal }}</div>
+  <button ref="check-state" test="check-state">Check State</button>
+  <div ref="client-state" test="client-state"></div>
 </template>
 
 <script type="module">

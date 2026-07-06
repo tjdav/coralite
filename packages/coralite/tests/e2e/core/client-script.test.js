@@ -8,22 +8,23 @@ test.describe('Client Script', () => {
   })
 
   test('should execute script, setup context, and test reactivity', async ({ page }) => {
-    const title = page.getByTestId(/client-script-component-0__titleDisplay/)
+    const comp = page.locator('client-script-component').first()
+    const title = comp.locator('h2')
     await expect(title).toHaveText('Initial Parent')
 
-    const status = page.getByTestId(/client-script-component-0__statusDisplay/)
+    const status = comp.locator('p')
     await expect(status).toHaveText('Status: Offline')
 
-    const btn = page.getByTestId(/client-script-component-0__updateBtn/)
+    const btn = comp.locator('button')
     await btn.click()
 
     await expect(title).toHaveText('Updated')
     await expect(status).toHaveText('Status: Online')
 
-    const container = page.getByTestId(/client-script-component-0__container/)
+    const container = comp.locator('div').first()
     await expect(container).toHaveAttribute('data-confetti', 'loaded')
 
-    const dynamicDisplay = page.getByTestId(/client-script-component-0__dynamic-display/)
+    const dynamicDisplay = comp.locator('div').nth(1)
     await expect(dynamicDisplay).toHaveText('foo', { timeout: 10000 })
   })
 })

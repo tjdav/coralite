@@ -1,10 +1,10 @@
 <template id="config-types-component">
   <div id="config-results">
-    <div data-testid="regex">{{ regex }}</div>
-    <div data-testid="date">{{ date }}</div>
-    <div data-testid="func">{{ funcResult }}</div>
-    <div data-testid="map">{{ mapValue }}</div>
-    <div data-testid="set">{{ setHasValue }}</div>
+    <div ref="regex" test="regex">{{ regex }}</div>
+    <div ref="date" test="date">{{ date }}</div>
+    <div ref="func" test="func">{{ funcResult }}</div>
+    <div ref="map" test="map">{{ mapValue }}</div>
+    <div ref="set" test="set">{{ setHasValue }}</div>
   </div>
 </template>
 

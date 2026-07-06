@@ -6,16 +6,17 @@ test.describe('Server State and State Propagation', () => {
     await page.goto('/server-state/')
     await waitForHydration(page)
 
-    const title = page.getByTestId('server-props-component-0__title')
+    const comp = page.locator('server-props-component').first()
+    const title = comp.locator('h2')
     await expect(title).toHaveText('Server Properties Title')
 
-    const filePath = page.getByTestId('server-props-component-0__filePath')
+    const filePath = comp.locator('p').nth(0)
     await expect(filePath).toContainText('tests/fixtures/pages/server-state')
 
-    const serverData = page.getByTestId('server-props-component-0__serverData')
+    const serverData = comp.locator('p').nth(1)
     await expect(serverData).toHaveText('FileExists')
 
-    const metaLang = page.getByTestId('server-props-component-0__metaLang')
+    const metaLang = comp.locator('p').nth(2)
     await expect(metaLang).toHaveText('en')
   })
 
@@ -24,13 +25,12 @@ test.describe('Server State and State Propagation', () => {
     await waitForHydration(page)
 
     const ssrComp = page.locator('server-to-client-comp').first()
-    const instanceId = await ssrComp.getAttribute('data-cid')
 
-    const serverVal = ssrComp.getByTestId(`${instanceId}__server-val`)
-    const getterVal = ssrComp.getByTestId(`${instanceId}__getter-val`)
-    const attrValDisplay = ssrComp.getByTestId(`${instanceId}__attr-val-display`)
-    const checkBtn = ssrComp.getByTestId(`${instanceId}__check-state`)
-    const clientState = ssrComp.getByTestId(`${instanceId}__client-state`)
+    const serverVal = ssrComp.locator('div').nth(0)
+    const getterVal = ssrComp.locator('div').nth(1)
+    const attrValDisplay = ssrComp.locator('div').nth(2)
+    const checkBtn = ssrComp.locator('button')
+    const clientState = ssrComp.locator('div').nth(3)
 
     await expect(serverVal).toHaveText('from-server')
     await expect(getterVal).toHaveText('getter-from-server')
@@ -54,13 +54,12 @@ test.describe('Server State and State Propagation', () => {
     const impComp = parent.locator('server-to-client-comp')
 
     await expect(impComp).toHaveAttribute('data-cid')
-    const instanceId = await impComp.getAttribute('data-cid')
 
-    const serverVal = impComp.getByTestId(`${instanceId}__server-val`)
-    const getterVal = impComp.getByTestId(`${instanceId}__getter-val`)
-    const attrValDisplay = impComp.getByTestId(`${instanceId}__attr-val-display`)
-    const checkBtn = impComp.getByTestId(`${instanceId}__check-state`)
-    const clientState = impComp.getByTestId(`${instanceId}__client-state`)
+    const serverVal = impComp.locator('div').nth(0)
+    const getterVal = impComp.locator('div').nth(1)
+    const attrValDisplay = impComp.locator('div').nth(2)
+    const checkBtn = impComp.locator('button')
+    const clientState = impComp.locator('div').nth(3)
 
     await expect(serverVal).toHaveText('from-server')
     await expect(getterVal).toHaveText('getter-from-server')

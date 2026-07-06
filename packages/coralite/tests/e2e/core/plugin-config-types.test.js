@@ -8,10 +8,11 @@ test.describe('Plugin Config Types', () => {
   })
 
   test('should correctly serialize and deserialize non-JSON types in plugin config', async ({ page }) => {
-    await expect(page.getByTestId('regex')).toHaveText('is-regex')
-    await expect(page.getByTestId('date')).toHaveText('is-date')
-    await expect(page.getByTestId('func')).toHaveText('3')
-    await expect(page.getByTestId('map')).toHaveText('value')
-    await expect(page.getByTestId('set')).toHaveText('true')
+    const comp = page.locator('config-types-component').first()
+    await expect(comp.locator('div > div').nth(0)).toHaveText('is-regex')
+    await expect(comp.locator('div > div').nth(1)).toHaveText('is-date')
+    await expect(comp.locator('div > div').nth(2)).toHaveText('3')
+    await expect(comp.locator('div > div').nth(3)).toHaveText('value')
+    await expect(comp.locator('div > div').nth(4)).toHaveText('true')
   })
 })

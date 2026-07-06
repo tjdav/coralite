@@ -21,10 +21,12 @@ test.describe('On-Demand Script Loading', () => {
     expect(initialScripts.length).toBe(0)
 
     // Click Load A
-    await page.getByTestId('on-demand-parent-0__loadA').click()
+    const parent = page.locator('on-demand-parent').first()
+    await parent.locator('button').first().click()
 
     // Wait for on-demand-a to appear in DOM
-    await expect(page.getByTestId('on-demand-a-msg')).toBeVisible()
+    const compA = page.locator('on-demand-a').first()
+    await expect(compA.locator('div')).toBeVisible()
 
     // Check that on-demand-a script was loaded
     const scriptsAfterA = scriptRequests.filter(url => url.includes('on-demand-a'))
@@ -35,10 +37,11 @@ test.describe('On-Demand Script Loading', () => {
     expect(scriptsBAfterA.length).toBe(0)
 
     // Click Load B
-    await page.getByTestId('on-demand-parent-0__loadB').click()
+    await parent.locator('button').nth(1).click()
 
     // Wait for on-demand-b to appear in DOM
-    await expect(page.getByTestId('on-demand-b-msg')).toBeVisible()
+    const compB = page.locator('on-demand-b').first()
+    await expect(compB.locator('div')).toBeVisible()
 
     // Check that on-demand-b script was loaded
     const scriptsAfterB = scriptRequests.filter(url => url.includes('on-demand-b'))
