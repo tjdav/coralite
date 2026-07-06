@@ -13,7 +13,7 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.match(result.content, /el\.innerHTML = processHTML\('<toast-message>Hello<\/toast-message>'\)/)
+    assert.match(result.content, /el\.innerHTML = processHTML\('<toast-message>Hello<\/toast-message>', context\.id\)/)
     assert.deepStrictEqual(result.components, ['toast-message'])
   })
 
@@ -26,7 +26,7 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.match(result.content, /el\.outerHTML = processHTML\('<custom-element><\/custom-element>'\)/)
+    assert.match(result.content, /el\.outerHTML = processHTML\('<custom-element><\/custom-element>', context\.id\)/)
     assert.deepStrictEqual(result.components, ['custom-element'])
   })
 
@@ -39,7 +39,7 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.match(result.content, /el\.insertAdjacentHTML\('beforeend', processHTML\('<my-comp><\/my-comp>'\)\)/)
+    assert.match(result.content, /el\.insertAdjacentHTML\('beforeend', processHTML\('<my-comp><\/my-comp>', context\.id\)\)/)
     assert.deepStrictEqual(result.components, ['my-comp'])
   })
 
@@ -52,7 +52,7 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.match(result.content, /document\.body\.innerHTML = processHTML\(`\s*<greet-ing name="\${name}"><\/greet-ing>\s*`\)/)
+    assert.match(result.content, /document\.body\.innerHTML = processHTML\(`\s*<greet-ing name="\${name}"><\/greet-ing>\s*`, context\.id\)/)
     assert.deepStrictEqual(result.components, ['greet-ing'])
   })
 
@@ -65,7 +65,7 @@ defineComponent({
   }
 })`
     const result = findAndExtractScript(code)
-    assert.match(result.content, /document\.body\.innerHTML = processHTML\(myHtml\)/)
+    assert.match(result.content, /document\.body\.innerHTML = processHTML\(myHtml, context\.id\)/)
     // components list should be empty because 'myHtml' is a variable,
     // unless the variable assignment is also tracked, but we currently only track literals in findHTMLComponents
   })

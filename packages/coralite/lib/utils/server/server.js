@@ -136,6 +136,34 @@ export function findAndExtractScript (code) {
             let prefix = ''
             let content = ''
 
+            /**
+             * Deterministically resolve the instance ID variable name for processHTML calls.
+             * Supports:
+             * - client({ id }) => id
+             * - client(context) => context.id
+             * - client() { ... } (Method shorthand) => this.instanceId
+             * Defaults to 'id' if no parameters are present and it's not a method.
+             */
+            let instanceIdVar = 'id'
+            // @ts-ignore
+            if (value.params && value.params[0]) {
+              // @ts-ignore
+              const param = value.params[0]
+              if (param.type === 'Identifier') {
+                instanceIdVar = param.name + '.id'
+              } else if (param.type === 'ObjectPattern') {
+                // @ts-ignore
+                const idProp = param.properties.find(p => p.key?.type === 'Identifier' && p.key?.name === 'id')
+                if (idProp) {
+                  if (idProp.value.type === 'Identifier') {
+                    instanceIdVar = idProp.value.name
+                  }
+                }
+              }
+            } else if (method) {
+              instanceIdVar = 'this.instanceId'
+            }
+
             // Get source slice
             let source = code.slice(value.start, value.end)
 
@@ -157,7 +185,7 @@ export function findAndExtractScript (code) {
                   replacements.push({
                     start: node.right.end - value.start,
                     end: node.right.end - value.start,
-                    replacement: ')'
+                    replacement: `, ${instanceIdVar})`
                   })
                 }
               },
@@ -203,7 +231,7 @@ export function findAndExtractScript (code) {
                     replacements.push({
                       start: arg.end - value.start,
                       end: arg.end - value.start,
-                      replacement: ')'
+                      replacement: `, ${instanceIdVar})`
                     })
                   }
                 }

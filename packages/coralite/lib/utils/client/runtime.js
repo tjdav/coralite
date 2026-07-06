@@ -1,5 +1,5 @@
 /**
- * @import { InstanceContext } from '../types/index.js'
+ * @import { InstanceContext, CoraliteConfig } from '../../../types/index.js'
  */
 
 /**
@@ -11,6 +11,7 @@
  * @param {Object} options.chunkManifest - Manifest mapping component IDs to their chunk filenames.
  * @param {string[]} [options.declarativeTags=[]] - The declarative tags used.
  * @param {string} [options.hydrationData='{}'] - Serialized hydration data.
+ * @param {string} [options.mode='production'] - Build mode.
  * @returns {string} The generated JavaScript runtime.
  */
 export function generateClientRuntime ({
@@ -18,7 +19,8 @@ export function generateClientRuntime ({
   sharedChunkPath,
   chunkManifest,
   declarativeTags = [],
-  hydrationData = '{}'
+  hydrationData = '{}',
+  mode = 'production'
 }) {
   return `
 import { getClientContext, createCoraliteClass, globalClientHooks } from '${base}assets/js/${sharedChunkPath}';
@@ -26,6 +28,7 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
 (async () => {
   const hydrationData = ${hydrationData};
   const declarativeTags = ${JSON.stringify(declarativeTags)};
+  window.__coralite_mode__ = '${mode}';
 
   const initialElements = Array.from(document.querySelectorAll('[data-cid]'))
     .filter(el => {
@@ -138,8 +141,29 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
     return element;
   };
 
-  window.processHTML = (html) => {
+  window.processHTML = (html, instanceId) => {
     if (typeof html !== 'string') return html;
+
+    const mode = window.__coralite_mode__;
+    if (mode === 'testing' || mode === 'production' || mode === 'development') {
+      const isTesting = mode === 'testing';
+      html = html.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
+        let newAttrs = attrs;
+        // Match 'test' attribute with either single or double quotes
+        const testAttrRegex = /\\s+test\\s*=\\s*(['"])(.*?)\\1/g;
+        if (testAttrRegex.test(attrs)) {
+          newAttrs = attrs.replace(testAttrRegex, (attrMatch, quote, testValue) => {
+            if (isTesting) {
+              const prefix = instanceId ? instanceId + '__' : '';
+              return ' data-testid="' + prefix + testValue + '"';
+            }
+            return '';
+          });
+        }
+        return '<' + tagName + newAttrs + '>';
+      });
+    }
+
     const matches = html.matchAll(/<([a-zA-Z0-9-]+)/g);
     for (const match of matches) {
       const tag = match[1].toLowerCase();

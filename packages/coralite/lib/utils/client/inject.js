@@ -23,13 +23,14 @@ export function createCoraliteElement (tag, options) {
  * Proxy to window.processHTML if available.
  *
  * @param {string} html - The HTML string.
+ * @param {string} [instanceId] - The component instance ID.
  * @returns {string} The HTML string.
  */
-export function processHTML (html) {
+export function processHTML (html, instanceId) {
   // @ts-ignore
   if (typeof window !== 'undefined' && window.processHTML) {
     // @ts-ignore
-    return window.processHTML(html)
+    return window.processHTML(html, instanceId)
   }
   return html
 }
