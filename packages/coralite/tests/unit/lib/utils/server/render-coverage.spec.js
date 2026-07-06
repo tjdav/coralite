@@ -95,6 +95,12 @@ describe('render.js Coverage Gaps', () => {
       assert.ok(root.children[0].children[0].data.includes('window.__coralite__'))
       assert.ok(root.children[0].children[0].data.includes('lifecycle:'))
     })
+
+    it('should inject mode into window.__coralite__.mode', () => {
+      const root = createCoraliteComponent({ children: [] })
+      injectReadinessScript(root, null, true, 'production')
+      assert.ok(root.children[0].children[0].data.includes("window.__coralite__.mode = 'production';"))
+    })
   })
 
   describe('injectImportMap', () => {
