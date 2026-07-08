@@ -15,10 +15,10 @@ test.describe('Static Components', () => {
 
     if (isProduction) {
       await expect(page.locator('[data-testid]')).toHaveCount(0)
-      const container = comp.locator('div').first()
+      const container = comp.locator('.static-container')
       await expect(container).toBeVisible()
-      await expect(comp.locator('h2')).toHaveText('Hello World')
-      await expect(comp.locator('p')).toHaveText('This is static')
+      await expect(comp.locator('.static-title')).toHaveText('Hello World')
+      await expect(comp.locator('.static-description')).toHaveText('This is static')
     } else {
       const container = page.getByTestId(/static-component-a-\d+__static-container/)
       await expect(container).toBeVisible()

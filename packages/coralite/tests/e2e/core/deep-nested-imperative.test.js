@@ -15,16 +15,15 @@ test.describe('Deep Nested Imperative Components', () => {
 
     const level1 = parent.locator('deep-level-1[depth="1"]')
     await expect(level1).toBeVisible()
-    // Use data-testid consistently
-    await expect(level1.locator('> [data-testid$="__container"] > [data-testid$="__label"]')).toHaveText('Level 1')
+    await expect(level1.locator('> .container > .label')).toHaveText('Level 1')
 
     const level2 = level1.locator('deep-level-1[depth="2"]')
     await expect(level2).toBeVisible()
-    await expect(level2.locator('> [data-testid$="__container"] > [data-testid$="__label"]')).toHaveText('Level 2')
+    await expect(level2.locator('> .container > .label')).toHaveText('Level 2')
 
     const level3 = level2.locator('deep-level-1[depth="3"]')
     await expect(level3).toBeVisible()
-    await expect(level3.locator('> [data-testid$="__container"] > [data-testid$="__label"]')).toHaveText('Level 3')
+    await expect(level3.locator('> .container > .label')).toHaveText('Level 3')
 
     // Level 4 should NOT exist
     const level4 = level3.locator('deep-level-1[depth="4"]')

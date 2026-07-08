@@ -45,7 +45,7 @@ test.describe('Priority Architecture Tests', () => {
   })
 
   test('Stripping: verify data() and node imports are removed from client bundle', async ({}, testInfo) => {
-    const outputDir = testInfo.project.name === 'chromium-prod' ? '.coralite-prod' : '.coralite-dev'
+    const outputDir = testInfo.project.name === 'framework-core-prod' ? '.coralite-prod' : '.coralite-dev'
     const assetsDir = path.join(process.cwd(), outputDir, 'assets', 'js')
 
     // Function to recursively read files in a directory
