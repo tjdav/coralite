@@ -67,7 +67,6 @@ export function coerce (value, type) {
 /**
  * @typedef {Object} CoraliteComponentOptions
  * @property {string} componentId - The unique identifier for the component.
- * @property {string} [mode] - The current build mode.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
  * @property {Object} [defaultValues] - The initial state values extracted from the server data block.
  * @property {Object} [attributes] - Schema for coercing HTML attributes into typed primitives.
@@ -648,7 +647,6 @@ export class CoraliteElement extends HTMLElement {
       instanceId: this._instanceId,
       state: this._state,
       root: this,
-      mode: this.componentOptions?.mode || '',
       signal: this._abortController.signal,
       refs (id) {
         const refId = self._state[`ref_${id}`]

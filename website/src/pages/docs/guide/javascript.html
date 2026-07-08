@@ -53,7 +53,7 @@
         },
 
         // Client-Side: Controller (Read/Write)
-        client({ state, signal, refs, mode, ...pluginContext }) {
+        client({ state, signal, refs, ...pluginContext }) {
             console.log('Component mounted for user:', state.userName)
 
             const btn = refs('btn')
@@ -76,7 +76,6 @@
         <li><code>signal</code>: An <code>AbortSignal</code> tied to the component's lifecycle. Always use this to clean up event listeners or abort pending fetch requests when the component unmounts.</li>
         <li><code>root</code>: The root HTML element instance of the Web Component.</li>
         <li><code>instanceId</code>: A unique identifier string for this specific component instance.</li>
-        <li><code>mode</code>: The current build mode (e.g., <code>'production'</code>, <code>'development'</code>, or <code>'testing'</code>).</li>
     </ul>
 
     <coralite-heading level="2" text="Native Reactivity & Performance"></coralite-heading>
@@ -97,7 +96,7 @@
 
     <coralite-code-highlight language="javascript">
       export default defineComponent({
-        async client({ state, signal, refs, mode, ...pluginContext }) {
+        async client({ state, signal, refs, ...pluginContext }) {
             const { default: confetti } = await import('https://esm.sh/canvas-confetti@1.6.0')
 
             const btn = refs('celebrateBtn')
@@ -116,7 +115,7 @@
 
     <coralite-code-highlight language="javascript">
         // Inside a child component's client block
-        client({ state, signal, refs, mode, ...pluginContext }) {
+        client({ state, signal, refs, ...pluginContext }) {
             const el = refs('main');
             el.dispatchEvent(new CustomEvent('user-updated', {
                 bubbles: true,

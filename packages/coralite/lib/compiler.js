@@ -130,7 +130,6 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
  * @param {Function} options.defineComponent - Function to define component
  * @param {Function} options.createExecutionError - Function to create execution error
  * @param {Function} options.getComponent - Function to get component
- * @param {string} options.mode - The build mode
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -147,8 +146,7 @@ export async function evaluateDevelopment ({
   bindPlugins,
   defineComponent,
   createExecutionError,
-  getComponent,
-  mode
+  getComponent
 }) {
   if (!SourceTextModuleCache) {
     SourceTextModuleCache = (await import('node:vm')).SourceTextModule
@@ -167,8 +165,7 @@ export async function evaluateDevelopment ({
     id: contextId,
     session,
     app,
-    noHydration,
-    mode
+    noHydration
   }
 
   const cachedBoundPlugins = await bindPlugins(source.plugins, context)
@@ -284,7 +281,6 @@ export async function evaluateDevelopment ({
  * @param {Function} options.defineComponent - Function to define component
  * @param {Function} options.createExecutionError - Function to create execution error
  * @param {Function} options.getComponent - Function to get component
- * @param {string} options.mode - The build mode
  *
  * @returns {Promise<CoraliteModuleDefinitions>}
  */
@@ -301,8 +297,7 @@ export async function evaluateProduction ({
   bindPlugins,
   defineComponent,
   createExecutionError,
-  getComponent,
-  mode
+  getComponent
 }) {
   const context = {
     state: state || {},
@@ -312,8 +307,7 @@ export async function evaluateProduction ({
     id: contextId,
     session,
     app,
-    noHydration,
-    mode
+    noHydration
   }
 
   session.source.currentSourceContextId = contextId
