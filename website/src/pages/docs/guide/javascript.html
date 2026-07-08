@@ -74,7 +74,8 @@
         <li><code>state</code>: A <strong>Read/Write Reactive Proxy</strong>. This unified state contains state from <code>attributes</code>, <code>server</code> state, and <code>getters</code>. Any mutation here triggers a re-render and re-evaluates getters.</li>
         <li><code>refs</code>: A helper function to query DOM elements within the component's root that have a <code>ref</code> attribute.</li>
         <li><code>signal</code>: An <code>AbortSignal</code> tied to the component's lifecycle. Always use this to clean up event listeners or abort pending fetch requests when the component unmounts.</li>
-        <li><code>page</code>: Static environment data including the current URL and file metadata.</li>
+        <li><code>root</code>: The root HTML element instance of the Web Component.</li>
+        <li><code>instanceId</code>: A unique identifier string for this specific component instance.</li>
     </ul>
 
     <coralite-heading level="2" text="Native Reactivity & Performance"></coralite-heading>

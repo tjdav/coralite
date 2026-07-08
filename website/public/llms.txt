@@ -164,13 +164,15 @@ A component definition consists of four primary blocks:
 * **Rule**: These receive a **Read-Only Proxy** of the state. They must never mutate state and cannot be `async`.
 * **Reactivity**: Automatically re-evaluated when any underlying state dependency changes.
 
-#### 4. `client({ state, signal, refs, ...plugins })` (Client)
+#### 4. `client({ state, signal, refs, root, instanceId, ...plugins })` (Client)
 
 * **Purpose**: The client-side controller for the component. Formerly known as `script`.
 * **Arguments** (Injected via Client Context):
   * `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
   * `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
   * `refs`: A dictionary of dynamically generated, globally unique IDs (e.g., `my-comp-0__btn`) for elements marked with the `ref` attribute (integrated into the Core framework).
+  * `root`: The root HTML element instance of the Web Component (inherits from `HTMLElement`).
+  * `instanceId`: A unique identifier string for this specific component instance.
   * `[pluginName | client.name]`: **Namespaced Plugin Context.** Injected context helpers from plugins are isolated under their namespace key (either the plugin `name` or `client.name`). For example, if a plugin has `client.name: 'event'` and defines `context: { bus: ... }`, the component's client block will receive it as `event.bus` (e.g., `client: ({ event }) => { event.bus.emit(...) }`).
 
 
