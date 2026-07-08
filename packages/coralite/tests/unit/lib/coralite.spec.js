@@ -462,4 +462,30 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     assert.ok(results[0].content.includes('id="extra"'))
     assert.ok(results[0].content.includes('extra-node'))
   })
+
+  it('exposes mode to the component server context', async () => {
+    await project.writePage('test-mode.html', '<mode-comp></mode-comp>')
+    await project.writeComponent('mode-comp.html', `
+      <template id="mode-comp">
+        <div>Mode: {{ mode }}</div>
+      </template>
+      <script type="module">
+        import { defineComponent } from 'coralite';
+        export default defineComponent({
+          async server(context) {
+            return { mode: context.mode };
+          }
+        });
+      </script>
+    `)
+
+    const coralite = await project.createCoralite({
+      output: path.join(project.testDir, 'mode-out'),
+      mode: 'production'
+    })
+
+    const results = await coralite.build('test-mode.html')
+    assert.ok(results[0].content.includes('production'), `Expected output to include "production", got: ${results[0].content}`)
+  })
 })
+

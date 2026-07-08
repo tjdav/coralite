@@ -285,4 +285,27 @@ describe('CoraliteElement', () => {
       done()
     })
   })
+
+  it('should pass context containing mode to the client function', (t, done) => {
+    let clientContext = null
+    const clientTagName = 'mode-comp-' + Math.random().toString(36).substring(2, 9)
+    const ClientElement = createCoraliteClass({
+      componentId: 'mode-comp',
+      mode: 'testing',
+      client: (ctx) => {
+        clientContext = ctx
+      }
+    })
+    customElements.define(clientTagName, ClientElement)
+
+    const el = document.createElement(clientTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      assert.ok(clientContext, 'client function should have been called with context')
+      assert.strictEqual(clientContext.mode, 'testing', 'context.mode should match the componentOptions mode')
+      document.body.removeChild(el)
+      done()
+    })
+  })
 })

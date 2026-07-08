@@ -437,6 +437,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       componentEntryCode += `
 export default {
   componentId: "${componentId}",
+  mode: "${mode}",
   templateHTML: ${templateHTML},
   templateValues: ${templateValues},
   styles: ${styles},

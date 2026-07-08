@@ -233,6 +233,11 @@ client: ({ state, signal, refs }) => {
         <td>A unique identifier for this specific instance.</td>
       </tr>
       <tr slot="body">
+        <td><code>mode</code></td>
+        <td><code>string</code></td>
+        <td>The current build mode (e.g., <code>'production'</code>, <code>'development'</code>, or <code>'testing'</code>).</td>
+      </tr>
+      <tr slot="body">
         <td><code>refs</code></td>
         <td><code>(id: string) => HTMLElement | null</code></td>
         <td>A utility to query unique elements by their <code>ref</code> name.</td>
