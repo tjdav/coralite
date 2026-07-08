@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.42.0
+
+> Comparing `coralite-scripts-v0.41.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- implement component build reporting in CLI ([2d792de](https://codeberg.org/tjdavid/coralite/commit/2d792de4c2f9f04d476c2ca2148b4b1991b146b2))
+
+### 🐛 Bug Fixes
+
+- implement external component manifest to decouple HTML from component hashes ([bf72727](https://codeberg.org/tjdavid/coralite/commit/bf72727db95a822c88bd6b5a552d43b1b16293d8))
+
+### 🧹 Chores
+
+- Make coralite scripts executable (deps) ([a3c5881](https://codeberg.org/tjdavid/coralite/commit/a3c5881f1da8f5668953bf4b9349496024421cb3))
+
+
 ## v0.41.0
 
 > Comparing `coralite-scripts-v0.40.2` to `HEAD`
