@@ -462,5 +462,58 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     assert.ok(results[0].content.includes('id="extra"'))
     assert.ok(results[0].content.includes('extra-node'))
   })
+
+  describe('Testing Mock System', () => {
+    it('executes the mock server method instead of the original component server block and supplies the correct context', async () => {
+      await project.writePage('test-mock.html', '<mocking-component user-id="123"></mocking-component>')
+      await project.writeComponent('mocking-component.html', `
+        <template id="mocking-component">
+          <div>User: {{ name }} (Id: {{ userId }})</div>
+        </template>
+        <script type="module">
+          import { defineComponent } from 'coralite';
+          export default defineComponent({
+            attributes: {
+              userId: String
+            },
+            async server() {
+              return { name: 'REAL_USER' }
+            }
+          })
+        </script>
+      `)
+
+      let receivedContext = null
+
+      const coralite = await project.createCoralite({
+        mode: 'testing',
+        testing: {
+          mocks: {
+            'mocking-component': {
+              server: async (context) => {
+                receivedContext = context
+                return { name: 'MOCKED_USER' }
+              }
+            }
+          }
+        },
+        output: path.join(project.testDir, 'mock-out')
+      })
+
+      const results = await coralite.build('test-mock.html')
+
+      assert.strictEqual(results.length, 1)
+      // Check that it rendered the mocked value and preserved the coerced attribute (wrapped in c-token tags in testing mode)
+      assert.ok(results[0].content.includes('<c-token>MOCKED_USER</c-token>'))
+      assert.ok(results[0].content.includes('<c-token>123</c-token>'))
+
+      // Check that the mock server received the expected context
+      assert.ok(receivedContext !== null, 'Mock server should receive context')
+      assert.strictEqual(receivedContext.state.userId, '123', 'Context state should contain coerced attribute value')
+      assert.ok(receivedContext.page, 'Context should contain page metadata')
+      assert.ok(receivedContext.app, 'Context should contain app instance')
+      assert.strictEqual(receivedContext.id, 'mocking-component-0', 'Context should contain unique instance ID')
+    })
+  })
 })
 

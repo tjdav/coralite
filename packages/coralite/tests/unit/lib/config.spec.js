@@ -189,5 +189,73 @@ describe('config.js', () => {
       const result = defineConfig(fullConfig)
       assert.deepStrictEqual(result, fullConfig)
     })
+
+    describe('testing and mocks validation', () => {
+      it('should allow valid testing mode and mocks configuration', () => {
+        const config = {
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          mode: 'testing',
+          testing: {
+            mocks: {
+              'my-component': {
+                server: async () => ({ mocked: true })
+              }
+            }
+          }
+        }
+        const result = defineConfig(config)
+        assert.deepStrictEqual(result, config)
+      })
+
+      it('should throw error when testing is not an object', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: 'not-an-object'
+        }), /Config property "testing" must be an object/)
+      })
+
+      it('should throw error when testing.mocks is not an object', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: {
+            mocks: 'not-an-object'
+          }
+        }), /Config property "testing.mocks" must be an object/)
+      })
+
+      it('should throw error when a mock definition is not an object', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: {
+            mocks: {
+              'my-component': 'not-an-object'
+            }
+          }
+        }), /Mock for component "my-component" must be an object/)
+      })
+
+      it('should throw error when mock.server is defined but is not a function', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: {
+            mocks: {
+              'my-component': {
+                server: 'not-a-function'
+              }
+            }
+          }
+        }), /Mock server for component "my-component" must be a function/)
+      })
+    })
   })
 })
