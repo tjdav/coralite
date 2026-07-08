@@ -1,5 +1,35 @@
 # Changelog
 
+## v0.42.0
+
+> Comparing `coralite-v0.41.0` to `HEAD`
+
+**Summary:** 11 commits
+
+### ✨ Features
+
+- implement component build reporting in CLI ([2d792de](https://codeberg.org/tjdavid/coralite/commit/2d792de4c2f9f04d476c2ca2148b4b1991b146b2))
+- expose build mode in server and client contexts ([19892ed](https://codeberg.org/tjdavid/coralite/commit/19892ed64e4e36f6cce4a87900fdb726997df1a5))
+- implement mode-aware data-testid transformation and align E2E suites ([1dd6e85](https://codeberg.org/tjdavid/coralite/commit/1dd6e85cf1e248ff6621a9ab4b5ad588351f88d3))
+- migrate E2E tests to use dedicated 'test' attribute ([391d79f](https://codeberg.org/tjdavid/coralite/commit/391d79f1e32c877a74e60b1dc6ca823b48fe5bd6))
+- introduce declarative 'test' attribute (testing) ([7309b12](https://codeberg.org/tjdavid/coralite/commit/7309b127c0ea0f80672d96f06dc4dcf0069d93d0))
+- expose environment mode to window.__coralite__.mode ([3c5a3d9](https://codeberg.org/tjdavid/coralite/commit/3c5a3d99fe0459eae2ae53efb2dfda8cec2da6b5))
+
+### 🐛 Bug Fixes
+
+- implement external component manifest to decouple HTML from component hashes ([bf72727](https://codeberg.org/tjdavid/coralite/commit/bf72727db95a822c88bd6b5a552d43b1b16293d8))
+- stabilise tests by using class selectors instead of data-testid (e2e) ([2e0958b](https://codeberg.org/tjdavid/coralite/commit/2e0958b72f4b3ede1485f640cab8563bdfad2311))
+
+### ♻️ Code Refactoring
+
+- remove mode parameter from coralite context and logic (revert) ([5f22f3d](https://codeberg.org/tjdavid/coralite/commit/5f22f3decaf3659f9a9054ae2768a17afc692e37))
+- Move llms configuration file to public assets ([447848e](https://codeberg.org/tjdavid/coralite/commit/447848e38ed13c271469890d0e9dfae1fb64b1f4))
+
+### ✅ Tests
+
+- client function receives correct context in CoraliteElement ([49de922](https://codeberg.org/tjdavid/coralite/commit/49de9222607a749072947f81ab6cc634aa490134))
+
+
 ## v0.41.0
 
 > Comparing `coralite-v0.40.2` to `HEAD`
