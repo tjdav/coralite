@@ -22,7 +22,6 @@ import { parseHTML } from './utils/server/parse.js'
 import {
   findHeadAndBody,
   injectExternalStyles,
-  injectExternalStyleLinks,
   injectStyles,
   injectReadinessScript,
   injectImportMap,
@@ -1015,30 +1014,7 @@ export function createRenderer ({
         }
 
         if (mappedSessionObject.styles.size > 0) {
-          if (isProduction && globalScriptResult && globalScriptResult.manifest) {
-            const cssPaths = []
-            const remainingStyles = new Map()
-
-            for (const [selector, css] of mappedSessionObject.styles) {
-              const entry = globalScriptResult.manifest[selector]
-              if (entry && entry.css) {
-                cssPaths.push(entry.css)
-              } else {
-                remainingStyles.set(selector, css)
-              }
-            }
-
-            if (cssPaths.length > 0) {
-              const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
-              injectExternalStyleLinks(mappedComponent.root, headElement, cssPaths, base)
-            }
-
-            if (remainingStyles.size > 0) {
-              injectStyles(mappedComponent.root, headElement, remainingStyles)
-            }
-          } else {
-            injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles)
-          }
+          injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles)
         }
 
         if (componentsToInclude.size > 0) {
@@ -1093,27 +1069,9 @@ export function createRenderer ({
             })
           }
 
-          // Filter manifest to only include components used on this page (already collected in componentsToInclude)
-          const chunkManifest = {}
-
-          for (const tag of componentsToInclude) {
-            if (scriptResult.manifest[tag]) {
-              chunkManifest[tag] = scriptResult.manifest[tag]
-            }
-          }
-
-          // Ensure all components registered in the build are available in the manifest
-          // even if they aren't explicitly used on this page, if they might be used imperatively.
-          // This fixes the issue where imperative components aren't loaded if they aren't in the page manifest.
-          for (const tag in scriptResult.manifest) {
-            if (tag !== 'coralite-runtime' && !chunkManifest[tag]) {
-              chunkManifest[tag] = scriptResult.manifest[tag]
-            }
-          }
-
           injectReadinessScript(mappedComponent.root, headElement, true, normalizedOptions.mode)
-          injectImportMap(mappedComponent.root, headElement, scriptResult.importMap)
           const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
+          injectImportMap(mappedComponent.root, headElement, scriptResult.importMap, base)
           const hydrationData = {}
 
           for (const [id, instance] of Object.entries(instances)) {
@@ -1126,7 +1084,6 @@ export function createRenderer ({
           const scriptContent = generateClientRuntime({
             base,
             sharedChunkPath: scriptResult.manifest['coralite-runtime'],
-            chunkManifest,
             declarativeTags: Array.from(declarativeTags),
             hydrationData: serialize(hydrationData),
             mode: normalizedOptions.mode
@@ -1287,6 +1244,15 @@ export function createRenderer ({
       const allComponentIds = app.components.list.map(c => c.result.id)
       globalScriptResult = await scriptManager.compileAllInstances(allComponentIds, normalizedOptions.mode)
       Object.assign(outputFiles, globalScriptResult.outputFiles)
+
+      if (globalScriptResult.manifest) {
+        const manifestJS = `export default ${JSON.stringify(globalScriptResult.manifest)};`
+        outputFiles['manifest.js'] = {
+          path: 'assets/js/manifest.js',
+          hashedPath: 'manifest.js',
+          text: manifestJS
+        }
+      }
     } else if (normalizedOptions.mode === 'development') {
       // Atomic site-wide rebuild for development
       if (!siteWideBundlePromise) {
@@ -1302,6 +1268,15 @@ export function createRenderer ({
               delete outputFiles[key]
             }
             Object.assign(outputFiles, result.outputFiles)
+
+            if (result.manifest) {
+              const manifestJS = `export default ${JSON.stringify(result.manifest)};`
+              outputFiles['manifest.js'] = {
+                path: 'assets/js/manifest.js',
+                hashedPath: 'manifest.js',
+                text: manifestJS
+              }
+            }
           }
           return result
         })()

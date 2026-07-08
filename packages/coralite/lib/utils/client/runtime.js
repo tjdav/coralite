@@ -8,7 +8,6 @@
  * @param {Object} options - The options used to configure the client-side runtime.
  * @param {string} options.base - The base URL for assets.
  * @param {string} options.sharedChunkPath - The filename of the shared chunk.
- * @param {Object} options.chunkManifest - Manifest mapping component IDs to their chunk filenames.
  * @param {string[]} [options.declarativeTags=[]] - The declarative tags used.
  * @param {string} [options.hydrationData='{}'] - Serialized hydration data.
  * @param {string} [options.mode='production'] - Build mode.
@@ -17,13 +16,13 @@
 export function generateClientRuntime ({
   base,
   sharedChunkPath,
-  chunkManifest,
   declarativeTags = [],
   hydrationData = '{}',
   mode = 'production'
 }) {
   return `
 import { getClientContext, createCoraliteClass, globalClientHooks } from '${base}assets/js/${sharedChunkPath}';
+import componentManifest from '${base}assets/js/manifest.js';
 
 (async () => {
   const hydrationData = ${hydrationData};
@@ -61,7 +60,6 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
   globalThis.executableScripts = [];
   globalThis.globalAbortController = new AbortController();
 
-  const componentManifest = ${JSON.stringify(chunkManifest)};
   const loadCache = {};
 
   const loadComponent = (componentId) => {

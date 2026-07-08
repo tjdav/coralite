@@ -235,8 +235,13 @@ export function injectReadinessScript (root, head, hasScripts, mode) {
  * @param {CoraliteElement | null} head - The head element.
  * @param {Object} importMap - The import map object.
  */
-export function injectImportMap (root, head, importMap) {
-  if (!importMap || Object.keys(importMap).length === 0) {
+export function injectImportMap (root, head, importMap, base) {
+  const finalImportMap = { ...importMap }
+  if (base) {
+    finalImportMap['assets/js/manifest.js'] = `${base}assets/js/manifest.js`
+  }
+
+  if (Object.keys(finalImportMap).length === 0) {
     return
   }
 
@@ -252,7 +257,7 @@ export function injectImportMap (root, head, importMap) {
 
   importMapElement.children.push(createCoraliteTextNode({
     type: 'text',
-    data: JSON.stringify({ imports: importMap }),
+    data: JSON.stringify({ imports: finalImportMap }),
     parent: importMapElement
   }))
 
