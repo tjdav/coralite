@@ -90,19 +90,19 @@ export async function createCLIProject () {
         write: (msg) => {
           stdout += msg
         },
-        spinner: (text) => ({
-          start: () => ({
+        spinner: (text) => {
+          const s = {
             text,
-            succeed: () => {
+            start: () => s,
+            succeed: (msg) => {
+              stdout += `✔ ${msg || s.text}\n`
             },
-            fail: () => {
+            fail: (msg) => {
+              stderr += `✖ ${msg || s.text}\n`
             }
-          }),
-          succeed: () => {
-          },
-          fail: () => {
           }
-        }),
+          return s
+        },
         info: (msg) => {
           stdout += msg + '\n'
         },

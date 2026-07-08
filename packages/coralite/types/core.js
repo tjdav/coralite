@@ -68,6 +68,20 @@
  */
 
 /**
+ * @typedef {Object} CoraliteComponentBuildDetail
+ * @property {string} id - The ID of the component.
+ * @property {'built' | 'skipped'} status - The build status of the component.
+ * @property {string} [reason] - The reason for the build status.
+ */
+
+/**
+ * @typedef {Object} CoraliteComponentBuildInfo
+ * @property {number} completed - The number of components that were built.
+ * @property {number} skipped - The number of components that were skipped.
+ * @property {CoraliteComponentBuildDetail[]} details - Detailed build information for each component.
+ */
+
+/**
  * @typedef {Object} CoraliteConfig
  * @property {string} [output='.coralite'] - The path to the output directory where built files will be placed.
  * @property {string} components - The path to the directory containing Coralite components.
@@ -78,6 +92,7 @@
  * @property {Array<string | Attribute>} [ignoreByAttribute] - An array of attribute names and values to ignore by element type.
  * @property {Array<string | Attribute>} [skipRenderByAttribute] - An array of attribute names and values to skip rendering by element type.
  * @property {CoraliteOnError} [onError] - Optional callback function for handling errors and warnings.
+ * @property {(info: CoraliteComponentBuildInfo) => void | Promise<void>} [onComponentBuild] - Optional callback function for handling component build reporting.
  * @property {string[]} [externalStyles] - Global styles to inject into every page
  * @property {'production' | 'development' | 'testing'} [mode='production'] - Build mode: "production", "development", or "testing"
  * @property {CoraliteTestingConfig} [testing] - Configuration for testing mode.
@@ -90,6 +105,7 @@
  * @property {number} [maxConcurrent] - The maximum number of concurrent file write operations.
  * @property {AbortSignal} [signal] - An AbortSignal to cancel the build operation.
  * @property {Object.<string, any>} [variables] - Local variables for the page
+ * @property {(info: CoraliteComponentBuildInfo) => void | Promise<void>} [onComponentBuild] - Optional callback function for handling component build reporting.
  */
 
 /**

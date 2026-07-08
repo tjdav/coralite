@@ -57,6 +57,7 @@ export async function buildCommand (config, options, logger = null) {
   }
 
   const validFiles = new Set()
+  let componentSpinner
 
   const coralite = await createCoralite({
     components: config.components,
@@ -81,15 +82,38 @@ export async function buildCommand (config, options, logger = null) {
     }
   })
 
-  let spinner
+  /** @type {any} */
+  let spinner = null
   let pageCount = 0
   let skippedCount = 0
 
   try {
-    const componentCount = 0
-
     if (!options.verbose) {
-      spinner = createSpinner('Building pages...').start()
+      componentSpinner = createSpinner('Building components...').start()
+    }
+
+    const onComponentBuild = async (info) => {
+      if (options.verbose) {
+        for (const detail of info.details) {
+          const status = detail.status === 'built' ? colours.green('[+] built:  ') : colours.gray('[-] skipped: ')
+          const reason = detail.reason ? colours.gray(` (${detail.reason})`) : ''
+          log(toTime() + status + detail.id + reason + '\n')
+        }
+      } else if (componentSpinner) {
+        if (info.skipped > 0) {
+          componentSpinner.succeed(`Components built (${info.completed} completed, ${info.skipped} skipped)`)
+        } else {
+          componentSpinner.succeed(`Components built (${info.completed} completed)`)
+        }
+      }
+
+      if (!options.verbose) {
+        spinner = createSpinner('Building pages...').start()
+      }
+    }
+
+    const buildOptions = {
+      onComponentBuild
     }
 
     const updateSpinnerText = () => {
@@ -100,7 +124,7 @@ export async function buildCommand (config, options, logger = null) {
       }
     }
 
-    await coralite.build(async (result) => {
+    await coralite.build(null, buildOptions, async (result) => {
       const relativeDir = relative(config.pages, result.path.dirname)
       const outDir = join(config.output, relativeDir)
       const outFile = join(outDir, result.path.filename)
@@ -174,14 +198,11 @@ export async function buildCommand (config, options, logger = null) {
       }
     }
 
-    if (!options.verbose) {
+    if (!options.verbose && spinner) {
       if (skippedCount > 0) {
         spinner.succeed(`Pages built (${pageCount} completed, ${skippedCount} skipped)`)
       } else {
         spinner.succeed(`Pages built (${pageCount} completed)`)
-      }
-      if (componentCount > 0) {
-        createSpinner(`Components built (${componentCount} completed)`).succeed()
       }
     }
 

@@ -74,7 +74,10 @@ import componentManifest from '${base}assets/js/manifest.js';
 
       if (cssPath) {
         const fullCssPath = '${base}assets/css/' + cssPath;
-        if (!document.querySelector('link[href="' + fullCssPath + '"]')) {
+        const inlineStyles = document.getElementById('coralite-inline-styles');
+        const hasStyleInInline = inlineStyles && inlineStyles.textContent.includes('[data-style-selector="' + componentId + '"]');
+
+        if (!document.querySelector('link[href="' + fullCssPath + '"]') && !hasStyleInInline) {
           const link = document.createElement('link');
           link.rel = 'stylesheet';
           link.href = fullCssPath;

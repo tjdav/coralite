@@ -48,6 +48,7 @@ export async function createCoralite ({
   ignoreByAttribute,
   skipRenderByAttribute,
   onError,
+  onComponentBuild,
   mode = 'production',
   output,
   testing
@@ -91,6 +92,7 @@ export async function createCoralite ({
     mode,
     path,
     output: output ? normalize(output) : undefined,
+    onComponentBuild,
     testing
   }
 

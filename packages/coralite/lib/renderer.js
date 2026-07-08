@@ -1239,7 +1239,40 @@ export function createRenderer ({
       buildOptions = {}
     }
 
+    // Phase 0: Manifest Loading
+    const projectRoot = app.options.projectRoot || process.cwd()
+    const cacheDir = join(projectRoot, '.coralite')
+    const manifestPath = join(cacheDir, 'manifest.json')
+    let manifest = {
+      physical: {},
+      virtual: {},
+      dependencies: {},
+      components: {}
+    }
+
+    try {
+      const content = await readFile(manifestPath, 'utf8')
+      manifest = JSON.parse(content)
+      if (!manifest.components) {
+        manifest.components = {}
+      }
+    } catch (e) {
+      // Manifest missing (cold start) or corrupt, use default
+      if (e.code !== 'ENOENT') {
+        handleError({
+          level: 'WARN',
+          message: `Could not parse manifest at ${manifestPath}: ${e.message}. Starting with fresh manifest.`
+        })
+      }
+    }
+
     // Phase 1: Discovery & Pre-Render Staging
+    let componentBuildInfo = {
+      completed: 0,
+      skipped: 0,
+      details: []
+    }
+
     if (normalizedOptions.mode === 'production' || normalizedOptions.mode === 'testing') {
       const allComponentIds = app.components.list.map(c => c.result.id)
       globalScriptResult = await scriptManager.compileAllInstances(allComponentIds, normalizedOptions.mode)
@@ -1251,6 +1284,42 @@ export function createRenderer ({
           path: 'assets/js/manifest.js',
           hashedPath: 'manifest.js',
           text: manifestJS
+        }
+
+        const newComponentManifest = globalScriptResult.manifest
+        const oldComponentManifest = manifest.components
+
+        for (const [id, value] of Object.entries(newComponentManifest)) {
+          if (id === 'coralite-runtime') {
+            continue
+          }
+
+          const isNew = !oldComponentManifest[id]
+          const hasChanged = !isNew && (
+            value.js !== oldComponentManifest[id].js ||
+            value.css !== oldComponentManifest[id].css
+          )
+
+          if (isNew || hasChanged) {
+            componentBuildInfo.completed++
+            componentBuildInfo.details.push({
+              id,
+              status: 'built',
+              reason: isNew ? 'New component' : 'Source changed'
+            })
+          } else {
+            componentBuildInfo.skipped++
+            componentBuildInfo.details.push({
+              id,
+              status: 'skipped'
+            })
+          }
+        }
+
+        if (typeof buildOptions.onComponentBuild === 'function') {
+          await buildOptions.onComponentBuild(componentBuildInfo)
+        } else if (typeof normalizedOptions.onComponentBuild === 'function') {
+          await normalizedOptions.onComponentBuild(componentBuildInfo)
         }
       }
     } else if (normalizedOptions.mode === 'development') {
@@ -1334,40 +1403,18 @@ export function createRenderer ({
     sealedQueues.add(buildId)
 
     // Phase 2: ISR & Manifest Invalidation
-    const projectRoot = app.options.projectRoot || process.cwd()
-    const cacheDir = join(projectRoot, '.coralite')
-    const manifestPath = join(cacheDir, 'manifest.json')
-    let manifest = {
-      physical: {},
-      virtual: {},
-      dependencies: {}
-    }
-
-    try {
-      const content = await readFile(manifestPath, 'utf8')
-      manifest = JSON.parse(content)
-
-      // Restore directPageComponents from manifest
-      for (const [path, metadata] of Object.entries(manifest.physical || {})) {
-        if (metadata.dependencies) {
-          app._dependencyGraph.directPageComponents[path] = metadata.dependencies
-        }
-      }
-      for (const [path, metadata] of Object.entries(manifest.virtual || {})) {
-        if (metadata.dependencies) {
-          app._dependencyGraph.directPageComponents[path] = metadata.dependencies
-        }
-      }
-      app._refreshDependencyGraph()
-    } catch (e) {
-      // Manifest missing (cold start) or corrupt, use default
-      if (e.code !== 'ENOENT') {
-        handleError({
-          level: 'WARN',
-          message: `Could not parse manifest at ${manifestPath}: ${e.message}. Starting with fresh manifest.`
-        })
+    // Restore directPageComponents from manifest
+    for (const [path, metadata] of Object.entries(manifest.physical || {})) {
+      if (metadata.dependencies) {
+        app._dependencyGraph.directPageComponents[path] = metadata.dependencies
       }
     }
+    for (const [path, metadata] of Object.entries(manifest.virtual || {})) {
+      if (metadata.dependencies) {
+        app._dependencyGraph.directPageComponents[path] = metadata.dependencies
+      }
+    }
+    app._refreshDependencyGraph()
 
     const mocksStr = app.options.testing?.mocks ? serialize(app.options.testing.mocks) : ''
     const mocksHash = hash(mocksStr)
@@ -1379,6 +1426,7 @@ export function createRenderer ({
       physical: {},
       virtual: {},
       dependencies: {},
+      components: {},
       testingMocksHash: mocksHash
     }
 
@@ -1586,6 +1634,7 @@ export function createRenderer ({
       // Write updated manifest atomically
       try {
         await mkdir(cacheDir, { recursive: true })
+        newManifest.components = globalScriptResult?.manifest || {}
         const tempManifestPath = `${manifestPath}.tmp`
         await writeFile(tempManifestPath, JSON.stringify(newManifest, null, 2))
         await rename(tempManifestPath, manifestPath)
