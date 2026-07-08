@@ -262,4 +262,27 @@ describe('CoraliteElement', () => {
       })
     })
   })
+
+  it('should pass context containing root (the custom element itself) to the client function', (t, done) => {
+    let clientContext = null
+    const clientTagName = 'client-comp-' + Math.random().toString(36).substring(2, 9)
+    const ClientElement = createCoraliteClass({
+      componentId: 'client-comp',
+      client: (ctx) => {
+        clientContext = ctx
+      }
+    })
+    customElements.define(clientTagName, ClientElement)
+
+    const el = document.createElement(clientTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      assert.ok(clientContext, 'client function should have been called with context')
+      assert.strictEqual(clientContext.root, el, 'context.root should be the custom element instance itself')
+      assert.strictEqual(clientContext.instanceId, el._instanceId, 'context.instanceId should match element _instanceId')
+      document.body.removeChild(el)
+      done()
+    })
+  })
 })
