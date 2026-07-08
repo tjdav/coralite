@@ -409,6 +409,19 @@ For a robust E2E environment, users are encouraged to use `mode: 'testing'` excl
 * **Event Telemetry**: All `CustomEvent` dispatches are logged to `window.__coralite__.events`.
 * **Fail-Fast Hydration**: Any hydration mismatch or client-side error immediately triggers a fatal red overlay, failing the test instantly.
 * **Server Mocking**: Override component `server()` blocks via the `testing.mocks` configuration in `coralite.config.js`.
+  - **Mock Structure**: Maps component tag names (module IDs) to mock definitions containing a mock `server` function:
+    ```javascript
+    testing: {
+      mocks: {
+        'my-component': {
+          server: async (context) => ({ data: 'mocked data' })
+        }
+      }
+    }
+    ```
+  - **Isomorphic Context Arguments**: The mock `server()` function receives the exact same context arguments (`state`, `page`, `root`, `module`, `id`, `session`, `app`, `noHydration`, and plugin context namespaces) as the component's real `server()` block.
+  - **Dynamic Mocking via Attributes**: Since `state` contains coerced attributes passed in the HTML template (e.g., `<my-component user-id="123">`), mock implementations can return dynamic data conditionally based on these attributes (e.g. checking `state.userId`).
+  - **ISR Cache Invalidation**: The build compiler computes a hash of the `testing.mocks` configuration. Any modification to the mock definitions, implementations, or configuration invalidates the Incremental Static Regeneration (ISR) cache and triggers a rebuild of only the pages consuming the mocked components.
 
 ## 11. Form Integration and Interaction Patterns
 

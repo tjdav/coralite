@@ -30,6 +30,33 @@
       <li><strong>Fail-Fast Hydration:</strong> Any hydration mismatch or client-side error triggers a fatal red overlay, ensuring test runners catch failures immediately.</li>
     </ul>
 
+    <coralite-heading level="2" text="The Server Mocking System"></coralite-heading>
+
+    <p>In <code>testing</code> mode, you can override server-side data fetching blocks (<code>server()</code>) by defining mocks in the configuration object passed to Coralite.</p>
+
+    <coralite-heading level="3" text="Config Option: testing.mocks"></coralite-heading>
+
+    <p>Mocks are configured as a key-value object under <code>testing.mocks</code>. The key must match the component's custom tag name (module ID). The value is an object implementing the mock behavior:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Property</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>server</code></td>
+        <td><code>(context: CoraliteServerContext) => Promise&lt;Record&lt;string, any&gt;&gt; | Record&lt;string, any&gt;</code></td>
+        <td>An asynchronous or synchronous function replacing the component's original <code>server()</code> method.</td>
+      </tr>
+    </coralite-table>
+
+    <p>The mock's <code>server</code> function is invoked during the server-side render phase and receives the exact same context arguments as a regular component's <code>server()</code> method, including the component's attribute-coerced state, page variables, and plugin namespace contexts.</p>
+
+    <coralite-heading level="3" text="Compiler Cache & ISR Integration"></coralite-heading>
+
+    <p>To avoid running tests against stale data during incremental builds, the compiler generates a cryptographic hash of the entire <code>testing.mocks</code> configuration (saved in the build manifest as <code>testingMocksHash</code>). When the configuration is updated, the compiler detects the hash mismatch and automatically invalidates the cache of all page templates that depend on the mocked components, forcing them to rebuild.</p>
+
     <coralite-heading level="2" text="The window.__coralite__.lifecycle.hydrated Promise"></coralite-heading>
 
     <p>Coralite injects a global promise named <code>window.__coralite__.lifecycle.hydrated</code> into the built HTML document. This promise acts as a reliable hook to signal the absolute completion of the client-side hydration phase.</p>
