@@ -1,10 +1,10 @@
 <template id="client-script-component">
   <div>
-    <h2 ref="titleDisplay" test="titleDisplay">{{ title }}</h2>
-    <p ref="statusDisplay" test="statusDisplay">Status: {{ status }}</p>
-    <button ref="updateBtn" test="updateBtn">Update Status</button>
-    <div ref="container" test="container"></div>
-    <div ref="dynamic-display" test="dynamic-display">{{ dynamicValue }}</div>
+    <h2 data-testid="titleDisplay">{{ title }}</h2>
+    <p data-testid="statusDisplay">Status: {{ status }}</p>
+    <button data-testid="updateBtn">Update Status</button>
+    <div data-testid="container"></div>
+    <div data-testid="dynamic-display">{{ dynamicValue }}</div>
   </div>
 </template>
 

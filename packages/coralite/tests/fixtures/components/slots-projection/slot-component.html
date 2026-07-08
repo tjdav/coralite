@@ -1,9 +1,9 @@
 <template id="slot-component">
-  <div ref="slot-container">
-    <div ref="header-slot">
+  <div data-testid="slot-container">
+    <div data-testid="header-slot">
       <slot name="header">Default Header</slot>
     </div>
-    <div ref="default-slot">
+    <div data-testid="default-slot">
       <slot>Default Content</slot>
     </div>
   </div>

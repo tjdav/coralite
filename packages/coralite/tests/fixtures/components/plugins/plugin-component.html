@@ -1,12 +1,12 @@
 <template id="plugin-component">
-  <div ref="content" test="content">
-    <h2 ref="title" test="title">{{ title }}</h2>
-    <plugin-injected-child ref="injected" test="injected"></plugin-injected-child>
-    <div ref="pluginData" test="pluginData"></div>
-    <div ref="meta-info" test="meta-info">Title: {{ pageTitle }}</div>
-    <div ref="plugin-message" test="plugin-message">{{ pluginMessage }}</div>
-    <div ref="hook-message" test="hook-message">{{ hookMessage }}</div>
-    <div ref="hook-result" test="hook-result"></div>
+  <div data-testid="content">
+    <h2 data-testid="title">{{ title }}</h2>
+    <plugin-injected-child data-testid="injected"></plugin-injected-child>
+    <div data-testid="pluginData"></div>
+    <div data-testid="meta-info">Title: {{ pageTitle }}</div>
+    <div data-testid="plugin-message">{{ pluginMessage }}</div>
+    <div data-testid="hook-message">{{ hookMessage }}</div>
+    <div data-testid="hook-result"></div>
   </div>
 </template>
 

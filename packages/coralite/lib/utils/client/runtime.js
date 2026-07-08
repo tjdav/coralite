@@ -145,21 +145,30 @@ import { getClientContext, createCoraliteClass, globalClientHooks } from '${base
     if (typeof html !== 'string') return html;
 
     const mode = window.__coralite_mode__;
-    if (mode === 'testing' || mode === 'production' || mode === 'development') {
-      const isTesting = mode === 'testing';
+    const isDevOrTest = mode === 'development' || mode === 'testing';
+    const isProduction = mode === 'production';
+
+    if (isDevOrTest || isProduction) {
       html = html.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
         let newAttrs = attrs;
-        // Match 'test' attribute with either single or double quotes
-        const testAttrRegex = /\\s+test\\s*=\\s*(['"])(.*?)\\1/g;
-        if (testAttrRegex.test(attrs)) {
-          newAttrs = attrs.replace(testAttrRegex, (attrMatch, quote, testValue) => {
-            if (isTesting) {
-              const prefix = instanceId ? instanceId + '__' : '';
+
+        // Strip deprecated 'test' attribute
+        newAttrs = newAttrs.replace(/\\s+test\\s*=\\s*(['"]).*?\\1/g, '');
+
+        // Handle data-testid
+        const testIdRegex = /\\s+data-testid\\s*=\\s*(['"])(.*?)\\1/g;
+        if (isProduction) {
+          newAttrs = newAttrs.replace(testIdRegex, '');
+        } else if (isDevOrTest) {
+          const prefix = instanceId ? instanceId + '__' : '';
+          if (prefix) {
+            newAttrs = newAttrs.replace(testIdRegex, (attrMatch, quote, testValue) => {
+              if (testValue.startsWith(prefix)) return attrMatch;
               return ' data-testid="' + prefix + testValue + '"';
-            }
-            return '';
-          });
+            });
+          }
         }
+
         return '<' + tagName + newAttrs + '>';
       });
     }

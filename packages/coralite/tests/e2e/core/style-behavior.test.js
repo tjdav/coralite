@@ -41,7 +41,7 @@ test.describe('Style Behavior', () => {
     expect(initialCount).toBe(1)
 
     // Add imperative instance
-    await page.click('style-parent [ref$="__addBtn"]')
+    await page.click('style-parent [data-testid$="__addBtn"]')
 
     // Wait for the new element to be added
     await expect(page.locator('style-child')).toHaveCount(2)
@@ -53,7 +53,7 @@ test.describe('Style Behavior', () => {
     expect(afterOneCount).toBe(1)
 
     // Add another imperative instance
-    await page.click('style-parent [ref$="__addBtn"]')
+    await page.click('style-parent [data-testid$="__addBtn"]')
     await expect(page.locator('style-child')).toHaveCount(3)
     await expect(page.locator('style-child > .child-box').nth(2)).toBeVisible()
 
@@ -68,7 +68,7 @@ test.describe('Style Behavior', () => {
     await expect(page.locator(componentId)).toHaveCount(0)
 
     // Add only imperative instance
-    await page.click('style-parent [ref$="__addOnlyImperativeBtn"]')
+    await page.click('style-parent [data-testid$="__addOnlyImperativeBtn"]')
 
     // Wait for the element to be added and upgraded
     await expect(page.locator(componentId)).toHaveCount(1)
@@ -169,7 +169,7 @@ test.describe('Style Behavior', () => {
     const componentId = 'style-imperative-only'
 
     // Add imperative instance
-    await page.click('style-parent [ref$="__addOnlyImperativeBtn"]')
+    await page.click('style-parent [data-testid$="__addOnlyImperativeBtn"]')
 
     // Wait for the element to be added and upgraded
     await expect(page.locator(componentId)).toHaveCount(1)

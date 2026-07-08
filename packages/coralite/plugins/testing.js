@@ -17,29 +17,40 @@ function traverseAndAddTestId (children, instanceId, { autoTestId = false, count
     return
   }
 
+  const isProduction = mode === 'production'
+  const isDevOrTest = mode === 'development' || mode === 'testing'
+
+  let prefix = ''
+  if (instanceId === 'page') {
+    prefix = 'page__'
+  } else if (instanceId) {
+    prefix = `${instanceId}__`
+  }
+
   for (let i = 0; i < children.length; i++) {
     const node = children[i]
 
     if (node.type === 'tag') {
-      if (node.attribs?.test !== undefined) {
-        const testValue = node.attribs.test
-
-        // Skip processing if it contains tokens (handled in onBeforeComponentRender)
-        if (!testValue.includes('{{')) {
-          if (mode === 'testing') {
-            let prefix = ''
-            if (instanceId === 'page') {
-              prefix = 'page__'
-            } else if (instanceId) {
-              prefix = `${instanceId}__`
-            }
-            node.attribs['data-testid'] = `${prefix}${testValue}`
-          }
+      if (node.attribs) {
+        // Remove deprecated 'test' attribute
+        if (node.attribs.test !== undefined) {
           delete node.attribs.test
+        }
+
+        if (node.attribs['data-testid'] !== undefined) {
+          if (isProduction) {
+            delete node.attribs['data-testid']
+          } else if (isDevOrTest) {
+            const val = node.attribs['data-testid']
+            // Prefix authored IDs
+            if (prefix && !val.startsWith(prefix)) {
+              node.attribs['data-testid'] = `${prefix}${val}`
+            }
+          }
         }
       }
 
-      if (autoTestId && instanceId && mode === 'testing') {
+      if (autoTestId && isDevOrTest) {
         const tagName = node.name.toLowerCase()
         const isInteractive = [
           'button', 'a', 'input', 'form', 'select', 'textarea'
@@ -59,7 +70,7 @@ function traverseAndAddTestId (children, instanceId, { autoTestId = false, count
             node.attribs = {}
           }
           if (!node.attribs['data-testid']) {
-            node.attribs['data-testid'] = `${instanceId}__${tagName}-${index}`
+            node.attribs['data-testid'] = `${prefix}${tagName}-${index}`
           }
         }
       }
@@ -79,10 +90,10 @@ export const testingPlugin = definePlugin({
   name: 'testing',
   server: {
     onBeforeBuild: ({ app }) => {
+      // Velocity Engine remains strictly for 'testing' mode to ensure stability
       if (app.options.mode !== 'testing') {
         return
       }
-      // Velocity Engine: Inject global style to disable animations
       app.options.externalStyles = app.options.externalStyles || []
       const velocityStyle = `
 *, *::before, *::after {
@@ -93,79 +104,38 @@ export const testingPlugin = definePlugin({
 `.trim()
       app.options.externalStyles.push(`data:text/css;base64,${Buffer.from(velocityStyle).toString('base64')}`)
     },
-    onBeforeComponentRender: ({ instanceId, template, app, attributes }) => {
+    onBeforeComponentRender: ({ instanceId, template, app }) => {
       const mode = app.options.mode
-      const isTesting = mode === 'testing'
+      const isDevOrTest = mode === 'development' || mode === 'testing'
       const counters = {}
 
-      // Handle attributes with tokens
-      if (attributes) {
-        const prefix = instanceId ? `${instanceId}__` : ''
-        for (let i = 0; i < attributes.length; i++) {
-          const attr = attributes[i]
-          if (attr.name === 'test') {
-            if (isTesting) {
-              attr.name = 'data-testid'
-              // Prefix all tokens for this attribute
-              for (let j = 0; j < attr.tokens.length; j++) {
-                const token = attr.tokens[j]
-                const tokenValue = token.content.slice(2, -2).trim()
-                token.name = `${prefix}${tokenValue}`
-              }
-              // Update element's test attribute so replaceToken finds the right content to replace
-              if (attr.element && attr.element.attribs) {
-                const testValue = attr.element.attribs.test
-                const regex = /\{\{\s*([a-zA-Z0-9_-]+)\s*\}\}/g
-                attr.element.attribs['data-testid'] = `${prefix}${testValue.replace(regex, (match, p1) => `{{ ${prefix}${p1} }}`)}`
-              }
-            }
-          }
-        }
-      }
 
       /** @type {any} */
       const templateNode = template
       if (templateNode && templateNode.children) {
         traverseAndAddTestId(templateNode.children, instanceId, {
-          autoTestId: isTesting,
+          autoTestId: isDevOrTest,
           counters,
           mode
         })
       }
     },
-    onAfterComponentRender: ({ attributes, result, instanceId, app }) => {
+    onAfterComponentRender: ({ result, app }) => {
       const mode = app.options.mode
-      const isTesting = mode === 'testing'
-
-      // Stripping phase: remove any remaining 'test' attributes
-      if (attributes) {
-        for (let i = 0; i < attributes.length; i++) {
-          const attr = attributes[i]
-          if (attr.name === 'test' || attr.name === 'data-testid') {
-            if (attr.element && attr.element.attribs) {
-              delete attr.element.attribs.test
-            }
-          }
-        }
+      if (mode !== 'production') {
+        return
       }
 
-      // Handle cases where 'test' attribute was injected via HTML tokens
+      // Final safety pass for production to ensure all data-testid are stripped
       const traverse = (children) => {
         if (!Array.isArray(children)) {
           return
         }
         for (const node of children) {
-          // @ts-ignore
-          if (node.type === 'tag') {
-            if (node.attribs?.test !== undefined) {
-              if (isTesting) {
-                const prefix = instanceId ? `${instanceId}__` : ''
-                node.attribs['data-testid'] = `${prefix}${node.attribs.test}`
-              }
-              delete node.attribs.test
-            }
+          if (node.type === 'tag' && node.attribs) {
+            delete node.attribs['data-testid']
+            delete node.attribs.test
           }
-          // @ts-ignore
           if (node.children) {
             traverse(node.children)
           }
@@ -180,10 +150,10 @@ export const testingPlugin = definePlugin({
     },
     onPageSet: ({ elements, app }) => {
       const mode = app.options.mode
-      const isTesting = mode === 'testing'
+      const isDevOrTest = mode === 'development' || mode === 'testing'
       const counters = {}
       traverseAndAddTestId(elements?.root?.children, 'page', {
-        autoTestId: isTesting,
+        autoTestId: isDevOrTest,
         counters,
         mode
       })

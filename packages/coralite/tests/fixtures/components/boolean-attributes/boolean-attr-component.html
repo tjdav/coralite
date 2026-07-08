@@ -1,8 +1,8 @@
 <template id="boolean-attr-component">
   <div>
-    <input type="checkbox" ref="checkbox" test="checkbox" checked="{{ isChecked }}">
-    <button ref="btn" test="btn" disabled="{{ isDisabled }}">Click</button>
-    <button ref="toggle-btn" test="toggle-btn">Toggle</button>
+    <input type="checkbox" data-testid="checkbox" checked="{{ isChecked }}">
+    <button data-testid="btn" disabled="{{ isDisabled }}">Click</button>
+    <button data-testid="toggle-btn">Toggle</button>
   </div>
 </template>
 

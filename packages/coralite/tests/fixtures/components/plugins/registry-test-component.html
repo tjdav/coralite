@@ -1,10 +1,10 @@
 <template id="registry-test-component">
   <div>
-    <h2 ref="title" test="title">{{ title }}</h2>
-    <p ref="secret" test="secret">{{ secret }}</p>
-    <p ref="server-result" test="server-result">{{ serverResult }}</p>
-    <p ref="client-result" test="client-result">{{ clientResult }}</p>
-    <button ref="action-button" test="action-button">Action</button>
+    <h2 data-testid="title">{{ title }}</h2>
+    <p data-testid="secret">{{ secret }}</p>
+    <p data-testid="server-result">{{ serverResult }}</p>
+    <p data-testid="client-result">{{ clientResult }}</p>
+    <button data-testid="action-button">Action</button>
   </div>
 </template>
 

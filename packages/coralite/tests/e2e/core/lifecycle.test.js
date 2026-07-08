@@ -32,7 +32,7 @@ test.describe('Granular Lifecycle', () => {
 
     const result = await page.evaluate(async () => {
       const parent = document.querySelector('style-parent')
-      const btn = parent.querySelector('[ref$="addOnlyImperativeBtn"]')
+      const btn = parent.querySelector('[data-testid$="addOnlyImperativeBtn"]')
 
       btn.click()
 

@@ -7,17 +7,28 @@ test.describe('Static Components', () => {
     await waitForHydration(page)
   })
 
-  test('should correctly render and bind attributes to template', async ({ page }) => {
+  test('should correctly render and bind attributes to template', async ({ page }, testInfo) => {
     // Check if the component rendered
     const comp = page.locator('static-component-a').first()
-    const container = comp.locator('div')
-    await expect(container).toBeVisible()
 
-    // Check data binding
-    const title = comp.locator('h2')
-    await expect(title).toHaveText('Hello World')
+    const isProduction = testInfo.project.name.includes('-prod')
 
-    const desc = comp.locator('p')
-    await expect(desc).toHaveText('This is static')
+    if (isProduction) {
+      await expect(page.locator('[data-testid]')).toHaveCount(0)
+      const container = comp.locator('div').first()
+      await expect(container).toBeVisible()
+      await expect(comp.locator('h2')).toHaveText('Hello World')
+      await expect(comp.locator('p')).toHaveText('This is static')
+    } else {
+      const container = page.getByTestId(/static-component-a-\d+__static-container/)
+      await expect(container).toBeVisible()
+
+      // Check data binding
+      const title = page.getByTestId(/static-component-a-\d+__static-title/)
+      await expect(title).toHaveText('Hello World')
+
+      const desc = page.getByTestId(/static-component-a-\d+__static-description/)
+      await expect(desc).toHaveText('This is static')
+    }
   })
 })
