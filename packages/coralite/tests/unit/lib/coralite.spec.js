@@ -489,10 +489,12 @@ describe('Bug Fix: Preserving recursive tokens', () => {
         mode: 'testing',
         testing: {
           mocks: {
-            'mocking-component': {
-              server: async (context) => {
-                receivedContext = context
-                return { name: 'MOCKED_USER' }
+            components: {
+              'mocking-component': {
+                server: async (context) => {
+                  receivedContext = context
+                  return { name: 'MOCKED_USER' }
+                }
               }
             }
           }

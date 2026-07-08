@@ -56,12 +56,51 @@ export function defineConfig (options) {
         throw new CoraliteError('Config property "testing.mocks" must be an object')
       }
 
-      for (const [key, mock] of Object.entries(options.testing.mocks)) {
-        if (typeof mock !== 'object' || mock === null) {
-          throw new CoraliteError(`Mock for component "${key}" must be an object`)
+      const validMocksKeys = ['components', 'plugins']
+      for (const key of Object.keys(options.testing.mocks)) {
+        if (!validMocksKeys.includes(key)) {
+          throw new CoraliteError(`Invalid key "${key}" in testing.mocks. Valid keys are: ${validMocksKeys.join(', ')}`)
         }
-        if (mock.server !== undefined && typeof mock.server !== 'function') {
-          throw new CoraliteError(`Mock server for component "${key}" must be a function`)
+      }
+
+      if (options.testing.mocks.components !== undefined) {
+        if (typeof options.testing.mocks.components !== 'object' || options.testing.mocks.components === null) {
+          throw new CoraliteError('Config property "testing.mocks.components" must be an object')
+        }
+        for (const [key, mock] of Object.entries(options.testing.mocks.components)) {
+          if (typeof mock !== 'object' || mock === null) {
+            throw new CoraliteError(`Mock for component "${key}" must be an object`)
+          }
+          if (mock.server !== undefined && typeof mock.server !== 'function') {
+            throw new CoraliteError(`Mock server for component "${key}" must be a function`)
+          }
+        }
+      }
+
+      if (options.testing.mocks.plugins !== undefined) {
+        if (typeof options.testing.mocks.plugins !== 'object' || options.testing.mocks.plugins === null) {
+          throw new CoraliteError('Config property "testing.mocks.plugins" must be an object')
+        }
+        for (const [key, mock] of Object.entries(options.testing.mocks.plugins)) {
+          if (typeof mock !== 'object' || mock === null) {
+            throw new CoraliteError(`Mock for plugin "${key}" must be an object`)
+          }
+          if (mock.server !== undefined) {
+            if (typeof mock.server !== 'object' || mock.server === null) {
+              throw new CoraliteError(`Mock server for plugin "${key}" must be an object`)
+            }
+            if (mock.server.context !== undefined && (typeof mock.server.context !== 'object' || mock.server.context === null)) {
+              throw new CoraliteError(`Mock server context for plugin "${key}" must be an object`)
+            }
+          }
+          if (mock.client !== undefined) {
+            if (typeof mock.client !== 'object' || mock.client === null) {
+              throw new CoraliteError(`Mock client for plugin "${key}" must be an object`)
+            }
+            if (mock.client.context !== undefined && (typeof mock.client.context !== 'object' || mock.client.context === null)) {
+              throw new CoraliteError(`Mock client context for plugin "${key}" must be an object`)
+            }
+          }
         }
       }
     }

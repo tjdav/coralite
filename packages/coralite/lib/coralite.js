@@ -244,7 +244,8 @@ export async function createCoralite ({
 
   const _bindPluginsLocal = (pluginFactories, instanceContext) => bindPlugins({
     pluginFactories,
-    instanceContext
+    instanceContext,
+    app
   })
 
   const _defineComponent = createComponentDefinition({ app })

@@ -95,8 +95,8 @@ export function createComponentDefinition ({ app }) {
 
     let serverToExecute = server
 
-    if (app.options.mode === 'testing' && app.options.testing?.mocks) {
-      const mock = app.options.testing.mocks[module.id]
+    if (app.options.mode === 'testing' && app.options.testing?.mocks?.components) {
+      const mock = app.options.testing.mocks.components[module.id]
       if (mock && typeof mock.server === 'function') {
         serverToExecute = mock.server
       }
@@ -118,7 +118,9 @@ export function createComponentDefinition ({ app }) {
 
         state.__script__.server = serverResult
         Object.assign(state, serverResult)
-        Object.assign(state.__script__.defaultValues, serverResult)
+        if (state.__script__.defaultValues) {
+          Object.assign(state.__script__.defaultValues, serverResult)
+        }
       }
     }
 

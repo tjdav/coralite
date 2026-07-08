@@ -27,6 +27,17 @@ export async function setupPlugins ({
   const pluginsToInit = app.options.plugins
   const allExportNames = new Set()
 
+  if (app.options.mode === 'testing' && app.options.testing?.mocks?.plugins) {
+    const mockKeys = Object.keys(app.options.testing.mocks.plugins)
+    const registeredPluginNames = pluginsToInit.map(p => p.server?.name || p.name)
+
+    for (const mockKey of mockKeys) {
+      if (!registeredPluginNames.includes(mockKey)) {
+        console.warn(`[Coralite Warning]: Mock defined for plugin "${mockKey}", but no plugin with that name is registered.`)
+      }
+    }
+  }
+
   for (const plugin of pluginsToInit) {
     if (plugin.server) {
       const serverName = plugin.server.name || plugin.name

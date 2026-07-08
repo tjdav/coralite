@@ -166,8 +166,18 @@
  */
 
 /**
+ * @typedef {Object} CoraliteTestingPluginMock
+ * @property {Object} [server] - Mock implementation of the plugin's server side.
+ * @property {Object.<string, any>} [server.context] - Mock implementation of the plugin's server context.
+ * @property {Object} [client] - Mock implementation of the plugin's client side.
+ * @property {Object.<string, any>} [client.context] - Mock implementation of the plugin's client context.
+ */
+
+/**
  * @typedef {Object} CoraliteTestingConfig
- * @property {Object.<string, CoraliteTestingMock>} [mocks] - Mock definitions for components.
+ * @property {Object} [mocks] - Mock definitions.
+ * @property {Object.<string, CoraliteTestingMock>} [mocks.components] - Mock definitions for components.
+ * @property {Object.<string, CoraliteTestingPluginMock>} [mocks.plugins] - Mock definitions for plugins.
  */
 
 /**

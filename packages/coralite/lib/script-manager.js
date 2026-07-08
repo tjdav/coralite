@@ -264,9 +264,20 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     return factories;
   })();\n`)
 
+  const clientMocks = {}
+  if (mode === 'testing' && this.options.testing?.mocks?.plugins) {
+    for (const [key, mock] of Object.entries(this.options.testing.mocks.plugins)) {
+      if (mock.client) {
+        clientMocks[key] = { client: mock.client }
+      }
+    }
+  }
+  const clientMocksStr = serialize(clientMocks)
+
   entryCodeParts.push(`const getClientContext = async (instanceContext) => {
     const factories = await resolvedContextFactoriesPromise;
     const cache = new Map();
+    const clientMocks = ${clientMocksStr};
 
     return new Proxy(instanceContext, {
       get(target, prop, receiver) {
@@ -281,7 +292,16 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
            throw new Error('Coralite Plugin Error: The plugin "' + String(prop) + '" must be a function for the second phase (instance context). Received: ' + typeof factory);
         }
 
-        const resolved = factory(receiver);
+        let resolved = factory(receiver);
+
+        if (clientMocks[prop]?.client?.context) {
+          if (typeof resolved === 'object' && resolved !== null) {
+            resolved = Object.assign({}, resolved, clientMocks[prop].client.context);
+          } else {
+            resolved = clientMocks[prop].client.context;
+          }
+        }
+
         cache.set(prop, resolved);
         return resolved;
       },

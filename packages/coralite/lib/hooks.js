@@ -99,9 +99,10 @@ export async function triggerPluginHook ({ app, hooks, serverGlobalContext, name
  * @param {Object} options - The options used to bind plugins.
  * @param {Object} options.pluginFactories - The map of Phase 2 factory functions.
  * @param {Object} [options.instanceContext] - The specific instance context.
+ * @param {Object} [options.app] - The global Coralite app instance.
  * @returns {Object} A Proxy that resolves plugins lazily.
  */
-export function bindPlugins ({ pluginFactories, instanceContext = {} }) {
+export function bindPlugins ({ pluginFactories, instanceContext = {}, app }) {
   const cache = new Map()
 
   const proxy = new Proxy(instanceContext, {
@@ -127,7 +128,20 @@ export function bindPlugins ({ pluginFactories, instanceContext = {} }) {
         throw new CoraliteError(`Coralite Plugin Error: The plugin "${String(prop)}" must be a function for the second phase (instance context). Received: ${typeof factory}`)
       }
 
-      const resolved = factory(proxy)
+      let resolved = factory(proxy)
+
+      // Handle plugin mocks in testing mode
+      if (app?.options?.mode === 'testing' && app.options.testing?.mocks?.plugins) {
+        const pluginMock = app.options.testing.mocks.plugins[prop]
+        if (pluginMock?.server?.context) {
+          if (typeof resolved === 'object' && resolved !== null) {
+            resolved = Object.assign({}, resolved, pluginMock.server.context)
+          } else {
+            resolved = pluginMock.server.context
+          }
+        }
+      }
+
       cache.set(prop, resolved)
       return resolved
     },

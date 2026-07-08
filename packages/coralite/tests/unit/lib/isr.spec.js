@@ -229,8 +229,10 @@ describe('Incremental Static Regeneration (ISR)', () => {
       mode: 'testing',
       testing: {
         mocks: {
-          'mocking-test': {
-            server: async () => ({ data: 'MOCKED_1' })
+          components: {
+            'mocking-test': {
+              server: async () => ({ data: 'MOCKED_1' })
+            }
           }
         }
       }
@@ -252,8 +254,10 @@ describe('Incremental Static Regeneration (ISR)', () => {
       mode: 'testing',
       testing: {
         mocks: {
-          'mocking-test': {
-            server: async () => ({ data: 'MOCKED_2' })
+          components: {
+            'mocking-test': {
+              server: async () => ({ data: 'MOCKED_2' })
+            }
           }
         }
       }

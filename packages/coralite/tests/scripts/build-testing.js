@@ -7,10 +7,12 @@ const coralite = await createCoralite({
   mode: 'testing',
   testing: {
     mocks: {
-      'mocking-test': {
-        server: async () => ({
-          data: 'MOCKED DATA'
-        })
+      components: {
+        'mocking-test': {
+          server: async () => ({
+            data: 'MOCKED DATA'
+          })
+        }
       }
     }
   },

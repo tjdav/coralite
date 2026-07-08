@@ -199,8 +199,20 @@ describe('config.js', () => {
           mode: 'testing',
           testing: {
             mocks: {
-              'my-component': {
-                server: async () => ({ mocked: true })
+              components: {
+                'my-component': {
+                  server: async () => ({ mocked: true })
+                }
+              },
+              plugins: {
+                'my-plugin': {
+                  server: {
+                    context: { foo: 'bar' }
+                  },
+                  client: {
+                    context: { baz: 'qux' }
+                  }
+                }
               }
             }
           }
@@ -229,32 +241,126 @@ describe('config.js', () => {
         }), /Config property "testing.mocks" must be an object/)
       })
 
-      it('should throw error when a mock definition is not an object', () => {
+      it('should throw error for invalid key in testing.mocks', () => {
         assert.throws(() => defineConfig({
           output: './dist',
           components: './components',
           pages: './pages',
           testing: {
             mocks: {
-              'my-component': 'not-an-object'
+              'invalid-key': {}
+            }
+          }
+        }), /Invalid key "invalid-key" in testing.mocks/)
+      })
+
+      it('should throw error when testing.mocks.components is not an object', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: {
+            mocks: {
+              components: 'not-an-object'
+            }
+          }
+        }), /Config property "testing.mocks.components" must be an object/)
+      })
+
+      it('should throw error when a component mock definition is not an object', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: {
+            mocks: {
+              components: {
+                'my-component': 'not-an-object'
+              }
             }
           }
         }), /Mock for component "my-component" must be an object/)
       })
 
-      it('should throw error when mock.server is defined but is not a function', () => {
+      it('should throw error when component mock.server is defined but is not a function', () => {
         assert.throws(() => defineConfig({
           output: './dist',
           components: './components',
           pages: './pages',
           testing: {
             mocks: {
-              'my-component': {
-                server: 'not-a-function'
+              components: {
+                'my-component': {
+                  server: 'not-a-function'
+                }
               }
             }
           }
         }), /Mock server for component "my-component" must be a function/)
+      })
+
+      it('should throw error when testing.mocks.plugins is not an object', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: {
+            mocks: {
+              plugins: 'not-an-object'
+            }
+          }
+        }), /Config property "testing.mocks.plugins" must be an object/)
+      })
+
+      it('should throw error when a plugin mock definition is not an object', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: {
+            mocks: {
+              plugins: {
+                'my-plugin': 'not-an-object'
+              }
+            }
+          }
+        }), /Mock for plugin "my-plugin" must be an object/)
+      })
+
+      it('should throw error when plugin mock server is not an object', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: {
+            mocks: {
+              plugins: {
+                'my-plugin': {
+                  server: 'not-an-object'
+                }
+              }
+            }
+          }
+        }), /Mock server for plugin "my-plugin" must be an object/)
+      })
+
+      it('should throw error when plugin mock server context is not an object', () => {
+        assert.throws(() => defineConfig({
+          output: './dist',
+          components: './components',
+          pages: './pages',
+          testing: {
+            mocks: {
+              plugins: {
+                'my-plugin': {
+                  server: {
+                    context: 'not-an-object'
+                  }
+                }
+              }
+            }
+          }
+        }), /Mock server context for plugin "my-plugin" must be an object/)
       })
     })
   })
