@@ -26,8 +26,8 @@ describe('Manifest Decoupling Integration', () => {
         import { defineComponent } from 'coralite';
         export default defineComponent({
           client({ root }) {
-            const tagName = 'child-comp'; // Dynamic variable breaks tracking
-            const el = document.createElement(tagName);
+            const prefix = 'child-';
+            const el = document.createElement(prefix + 'comp'); // Complex concatenation breaks tracking
             root.querySelector('#container').appendChild(el);
           }
         });

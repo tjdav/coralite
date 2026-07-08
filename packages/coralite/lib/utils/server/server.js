@@ -1,5 +1,5 @@
 import { parse as parseJS } from 'acorn'
-import { simple as walkJS } from 'acorn-walk'
+import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import render from 'dom-serializer'
 import { sanitize } from 'isomorphic-dompurify'
 import { parseHTML } from './parse.js'
@@ -33,6 +33,67 @@ function getAST (code, locations = false) {
 }
 
 /**
+ * Resolves potential string values for a node, tracing variables if necessary.
+ *
+ * @param {any} node - The AST node to resolve
+ * @param {any[]} ancestors - The ancestors of the node
+ * @returns {string[]} - Array of potential string values
+ */
+function resolveStringValues (node, ancestors) {
+  if (!node) {
+    return []
+  }
+
+  if (node.type === 'Literal' && typeof node.value === 'string') {
+    return [node.value]
+  }
+
+  if (node.type === 'ConditionalExpression') {
+    return [
+      ...resolveStringValues(node.consequent, ancestors),
+      ...resolveStringValues(node.alternate, ancestors)
+    ]
+  }
+
+  if (node.type === 'Identifier' && ancestors && ancestors.length > 0) {
+    const name = node.name
+    // Trace back through ancestors to find the declaration
+    for (let i = ancestors.length - 1; i >= 0; i--) {
+      const ancestor = ancestors[i]
+
+      // Identify potential body of statements to search
+      let body = null
+      if (ancestor.type === 'BlockStatement' || ancestor.type === 'Program') {
+        body = ancestor.body
+      } else if (
+        ancestor.type === 'FunctionExpression' ||
+        ancestor.type === 'ArrowFunctionExpression' ||
+        ancestor.type === 'FunctionDeclaration'
+      ) {
+        if (ancestor.body && ancestor.body.type === 'BlockStatement') {
+          body = ancestor.body.body
+        }
+      }
+
+      if (body && Array.isArray(body)) {
+        for (const stmt of body) {
+          if (stmt.type === 'VariableDeclaration') {
+            for (const decl of stmt.declarations) {
+              if (decl.id.type === 'Identifier' && decl.id.name === name && decl.init) {
+                // Return potential values, but prevent further identifier resolution to avoid loops and keep it fast
+                return resolveStringValues(decl.init, [])
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return []
+}
+
+/**
  * Extracts custom components from an HTML string.
  *
  * @param {string} html - The HTML string
@@ -62,7 +123,7 @@ export function findAndExtractScript (code) {
   let result = null
   const components = new Set()
 
-  const findHTMLComponents = (node) => {
+  const findHTMLComponents = (node, ancestors = []) => {
     if (node.type === 'Literal' && typeof node.value === 'string') {
       extractFromHTMLString(node.value, components)
     } else if (node.type === 'TemplateLiteral') {
@@ -71,20 +132,25 @@ export function findAndExtractScript (code) {
           extractFromHTMLString(element.value.cooked, components)
         }
       }
+    } else {
+      const values = resolveStringValues(node, ancestors)
+      for (const val of values) {
+        extractFromHTMLString(val, components)
+      }
     }
   }
 
-  walkJS(ast, {
-    AssignmentExpression (node) {
+  walkAncestorJS(ast, {
+    AssignmentExpression (node, ancestors) {
       if (
         node.left.type === 'MemberExpression' &&
         node.left.property.type === 'Identifier' &&
         (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
       ) {
-        findHTMLComponents(node.right)
+        findHTMLComponents(node.right, ancestors)
       }
     },
-    CallExpression (node) {
+    CallExpression (node, ancestors) {
       if (
         node.callee &&
         node.callee.type === 'MemberExpression' &&
@@ -96,9 +162,12 @@ export function findAndExtractScript (code) {
         node.callee.property.name === 'createElement'
       ) {
         const arg = node.arguments[0]
-        if (arg && (arg.type !== 'Literal' || (typeof arg.value === 'string' && arg.value.includes('-')))) {
-          if (arg.type === 'Literal' && typeof arg.value === 'string') {
-            components.add(arg.value)
+        if (arg) {
+          const values = resolveStringValues(arg, ancestors)
+          for (const val of values) {
+            if (val.includes('-')) {
+              components.add(val)
+            }
           }
         }
       }
@@ -112,7 +181,7 @@ export function findAndExtractScript (code) {
       ) {
         const arg = node.arguments[1]
         if (arg) {
-          findHTMLComponents(arg)
+          findHTMLComponents(arg, ancestors)
         }
       }
 
@@ -124,6 +193,21 @@ export function findAndExtractScript (code) {
         const firstArg = node.arguments[0]
 
         if (firstArg && firstArg.type === 'ObjectExpression') {
+          // Track explicit dependencies array
+          const depsProp = firstArg.properties.find(
+            prop => prop.type === 'Property' &&
+              prop.key && prop.key.type === 'Identifier' &&
+              prop.key.name === 'dependencies'
+          )
+
+          if (depsProp && depsProp.type === 'Property' && depsProp.value.type === 'ArrayExpression') {
+            for (const el of depsProp.value.elements) {
+              if (el && el.type === 'Literal' && typeof el.value === 'string') {
+                components.add(el.value)
+              }
+            }
+          }
+
           const scriptProp = firstArg.properties.find(
             prop => prop.type === 'Property' &&
               prop.key && prop.key.type === 'Identifier' &&
@@ -169,14 +253,14 @@ export function findAndExtractScript (code) {
 
             // Collect all document.createElement calls within this client block for transformation
             const replacements = []
-            walkJS(value, {
-              AssignmentExpression (node) {
+            walkAncestorJS(value, {
+              AssignmentExpression (node, ancestorsInClient) {
                 if (
                   node.left.type === 'MemberExpression' &&
                   node.left.property.type === 'Identifier' &&
                   (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
                 ) {
-                  findHTMLComponents(node.right)
+                  findHTMLComponents(node.right, [...ancestors, ...ancestorsInClient])
                   replacements.push({
                     start: node.right.start - value.start,
                     end: node.right.start - value.start,
@@ -189,7 +273,8 @@ export function findAndExtractScript (code) {
                   })
                 }
               },
-              CallExpression (node) {
+              CallExpression (node, ancestorsInClient) {
+                const combinedAncestors = [...ancestors, ...ancestorsInClient]
                 if (
                   node.callee &&
                   node.callee.type === 'MemberExpression' &&
@@ -201,15 +286,23 @@ export function findAndExtractScript (code) {
                   node.callee.property.name === 'createElement'
                 ) {
                   const arg = node.arguments[0]
-                  if (arg && (arg.type !== 'Literal' || (typeof arg.value === 'string' && arg.value.includes('-')))) {
-                    if (arg.type === 'Literal' && typeof arg.value === 'string') {
-                      components.add(arg.value)
+                  if (arg) {
+                    const values = resolveStringValues(arg, combinedAncestors)
+                    let isCustom = false
+                    for (const val of values) {
+                      if (val.includes('-')) {
+                        components.add(val)
+                        isCustom = true
+                      }
                     }
-                    replacements.push({
-                      start: node.callee.start - value.start,
-                      end: node.callee.end - value.start,
-                      replacement: 'createCoraliteElement'
-                    })
+
+                    if (isCustom || (arg.type === 'Literal' && typeof arg.value === 'string' && arg.value.includes('-')) || arg.type !== 'Literal') {
+                      replacements.push({
+                        start: node.callee.start - value.start,
+                        end: node.callee.end - value.start,
+                        replacement: 'createCoraliteElement'
+                      })
+                    }
                   }
                 }
 
@@ -222,7 +315,7 @@ export function findAndExtractScript (code) {
                 ) {
                   const arg = node.arguments[1]
                   if (arg) {
-                    findHTMLComponents(arg)
+                    findHTMLComponents(arg, combinedAncestors)
                     replacements.push({
                       start: arg.start - value.start,
                       end: arg.start - value.start,
@@ -271,8 +364,13 @@ export function findAndExtractScript (code) {
         node.callee.name === 'createCoraliteElement'
       ) {
         const arg = node.arguments[0]
-        if (arg && arg.type === 'Literal' && typeof arg.value === 'string') {
-          components.add(arg.value)
+        if (arg) {
+          const values = resolveStringValues(arg, ancestors)
+          for (const val of values) {
+            if (val.includes('-')) {
+              components.add(val)
+            }
+          }
         }
       }
     }
@@ -377,27 +475,32 @@ export function findAndExtractImperativeComponents (code) {
 
     const components = new Set()
 
-    const findHTMLComponents = (node) => {
+    const findHTMLComponents = (node, ancestors = []) => {
       if (node.type === 'Literal' && typeof node.value === 'string') {
         extractFromHTMLString(node.value, components)
       } else if (node.type === 'TemplateLiteral') {
         for (const element of node.quasis) {
           extractFromHTMLString(element.value.cooked, components)
         }
+      } else {
+        const values = resolveStringValues(node, ancestors)
+        for (const val of values) {
+          extractFromHTMLString(val, components)
+        }
       }
     }
 
-    walkJS(ast, {
-      AssignmentExpression (node) {
+    walkAncestorJS(ast, {
+      AssignmentExpression (node, ancestors) {
         if (
           node.left.type === 'MemberExpression' &&
           node.left.property.type === 'Identifier' &&
           (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
         ) {
-          findHTMLComponents(node.right)
+          findHTMLComponents(node.right, ancestors)
         }
       },
-      CallExpression (node) {
+      CallExpression (node, ancestors) {
         if (
           node.callee &&
           ((node.callee.type === 'MemberExpression' &&
@@ -411,8 +514,13 @@ export function findAndExtractImperativeComponents (code) {
           node.callee.name === 'createCoraliteElement'))
         ) {
           const arg = node.arguments[0]
-          if (arg && arg.type === 'Literal' && typeof arg.value === 'string' && arg.value.includes('-')) {
-            components.add(arg.value)
+          if (arg) {
+            const values = resolveStringValues(arg, ancestors)
+            for (const val of values) {
+              if (val.includes('-')) {
+                components.add(val)
+              }
+            }
           }
         }
 
@@ -425,7 +533,7 @@ export function findAndExtractImperativeComponents (code) {
         ) {
           const arg = node.arguments[1]
           if (arg) {
-            findHTMLComponents(arg)
+            findHTMLComponents(arg, ancestors)
           }
         }
       }
