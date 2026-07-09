@@ -1,0 +1,74 @@
+<template id="observe-test-comp">
+  <div>
+    <button class="trigger-btn" ref="triggerBtn">Increment Score</button>
+    <button class="trigger-same-btn" ref="triggerSameBtn">Set Same Score</button>
+    <button class="trigger-loop-btn" ref="triggerLoopBtn">Trigger Loop</button>
+    <button class="trigger-dynamic-btn" ref="triggerDynamicBtn">Set Dynamic Prop</button>
+    
+    <div class="score-display">{{ score }}</div>
+    <div class="side-effect-display">Initialized</div>
+    <div class="callback-count-display">0</div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      score: {
+        type: Number,
+        default: 10
+      },
+      loopVal: {
+        type: Number,
+        default: 0
+      }
+    },
+    async server () {
+      return {}
+    },
+    client ({ state, refs, observe }) {
+      const triggerBtn = refs('triggerBtn')
+      const triggerSameBtn = refs('triggerSameBtn')
+      const triggerLoopBtn = refs('triggerLoopBtn')
+      const triggerDynamicBtn = refs('triggerDynamicBtn')
+
+      const sideEffectDisplay = triggerBtn.parentElement.querySelector('.side-effect-display')
+      const callbackCountDisplay = triggerBtn.parentElement.querySelector('.callback-count-display')
+
+      let callbackCalls = 0
+
+      observe('score', (newVal, oldVal) => {
+        callbackCalls++
+        sideEffectDisplay.textContent = `Observed Change: ${oldVal} -> ${newVal}`
+        callbackCountDisplay.textContent = String(callbackCalls)
+      })
+
+      observe('loopVal', (newVal) => {
+        // This will trigger infinite-loop warning in development mode when mutated inside observe
+        state.score = newVal + 1
+      })
+
+      observe('dynamicProp', (newVal) => {
+        sideEffectDisplay.textContent = `Dynamic Change: ${newVal}`
+      })
+
+      triggerBtn.addEventListener('click', () => {
+        state.score = state.score + 5
+      })
+
+      triggerSameBtn.addEventListener('click', () => {
+        state.score = state.score
+      })
+
+      triggerLoopBtn.addEventListener('click', () => {
+        state.loopVal = state.loopVal + 1
+      })
+
+      triggerDynamicBtn.addEventListener('click', () => {
+        state.dynamicProp = 'active'
+      })
+    }
+  })
+</script>

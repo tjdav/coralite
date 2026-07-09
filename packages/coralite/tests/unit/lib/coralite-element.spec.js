@@ -398,9 +398,10 @@ describe('CoraliteElement', () => {
       warningMsg = msg
     }
 
-    // Set window.__coralite_mode__ to development
-    const prevMode = window.__coralite_mode__
-    window.__coralite_mode__ = 'development'
+    // Set window.__coralite__.mode to development
+    window.__coralite__ = window.__coralite__ || {}
+    const prevMode = window.__coralite__.mode
+    window.__coralite__.mode = 'development'
 
     const loopTagName = 'loop-comp-' + Math.random().toString(36).substring(2, 9)
     const LoopElement = createCoraliteClass({
@@ -426,7 +427,7 @@ describe('CoraliteElement', () => {
 
       queueMicrotask(() => {
         console.warn = originalWarn
-        window.__coralite_mode__ = prevMode
+        window.__coralite__.mode = prevMode
 
         assert.ok(warningMsg, 'Should have emitted a warning msg')
         assert.ok(warningMsg.includes('[Coralite Warning]: State mutation detected inside an observe() callback.'))

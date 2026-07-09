@@ -27,7 +27,8 @@ import componentManifest from '${base}assets/js/manifest.js';
 (async () => {
   const hydrationData = ${hydrationData};
   const declarativeTags = ${JSON.stringify(declarativeTags)};
-  window.__coralite_mode__ = '${mode}';
+  window.__coralite__ = window.__coralite__ || {};
+  window.__coralite__.mode = '${mode}';
 
   const initialElements = Array.from(document.querySelectorAll('[data-cid]'))
     .filter(el => {
@@ -145,7 +146,7 @@ import componentManifest from '${base}assets/js/manifest.js';
   window.processHTML = (html, instanceId) => {
     if (typeof html !== 'string') return html;
 
-    const mode = window.__coralite_mode__;
+    const mode = (window.__coralite__ && window.__coralite__.mode) || 'production';
     const isDevOrTest = mode === 'development' || mode === 'testing';
     const isProduction = mode === 'production';
 

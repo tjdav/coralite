@@ -406,7 +406,7 @@ export class CoraliteElement extends HTMLElement {
 
         if (typeof p === 'string') {
           // Dev mode safeguard for infinite loop state mutations
-          const mode = (typeof window !== 'undefined' && window['__coralite__'].mode) || 'production'
+          const mode = (typeof window !== 'undefined' && window['__coralite__'] && window['__coralite__'].mode) || 'production'
 
           if (mode === 'development' && self._isExecutingObserver) {
             console.warn('[Coralite Warning]: State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.')
