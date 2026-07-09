@@ -84,6 +84,51 @@
         <li><code>instanceId</code>: A unique identifier string for this specific component instance.</li>
     </ul>
 
+    <coralite-heading level="2" text="State Observation & Side-Effects (The observe Pattern)"></coralite-heading>
+
+    <p>
+      While Coralite components update their templates automatically when state changes, you often need to perform imperative side-effects (such as updating external DOM libraries, sending analytics, or making network requests) in response to state updates. The <code>observe</code> function provides a clean, declarative pattern for handling these state changes.
+    </p>
+
+    <coralite-heading level="3" text="Registering Observers"></coralite-heading>
+
+    <p>
+      Inside the <code>client</code> function, you can call <code>observe(key, callback)</code>. The callback is invoked synchronously whenever the state property matching the <code>key</code> is modified and its new value differs from its old value.
+    </p>
+
+    <coralite-code-highlight language="javascript">
+      export default defineComponent({
+        client({ state, observe }) {
+          // Observe pre-defined properties (e.g. from attributes or server)
+          observe('score', (newVal, oldVal) => {
+            console.log(`Score changed from ${oldVal} to ${newVal}`)
+          })
+
+          // Observe dynamic properties set at runtime
+          observe('status', (newVal) => {
+            console.log(`Status is now: ${newVal}`)
+          })
+        }
+      })
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Best Practices & Safeguards"></coralite-heading>
+
+    <ul>
+      <li>
+        <strong>Avoid Mutating State Inside Observers:</strong> Modifying state properties inside an observer callback can trigger infinite reactivity loops. If you need to compute derived state, always use the <code>getters</code> block of <code>defineComponent</code> instead.
+        <p>
+          In development or testing environments, Coralite will log a warning if it detects a state mutation during observer execution:
+        </p>
+        <coralite-code-highlight language="text">
+          [Coralite Warning]: State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.
+        </coralite-code-highlight>
+      </li>
+      <li>
+        <strong>Automatic Lifecycle Cleanup:</strong> You do not need to manually unregister observers. Coralite automatically cleans up all registered observers when the component is disconnected from the DOM to prevent memory leaks.
+      </li>
+    </ul>
+
     <coralite-heading level="2" text="Native Reactivity & Performance"></coralite-heading>
 
     <p>
