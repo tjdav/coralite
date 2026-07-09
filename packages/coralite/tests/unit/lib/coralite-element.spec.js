@@ -285,4 +285,154 @@ describe('CoraliteElement', () => {
       done()
     })
   })
+
+  it('should inject observe function into client context and invoke callback on property changes', (t, done) => {
+    let calledWith = []
+    const observeTagName = 'observe-comp-' + Math.random().toString(36).substring(2, 9)
+    const ObserveElement = createCoraliteClass({
+      componentId: 'observe-comp',
+      defaultValues: {
+        score: 10
+      },
+      client: ({ observe }) => {
+        observe('score', (newVal, oldVal) => {
+          calledWith.push({
+            newVal,
+            oldVal
+          })
+        })
+      }
+    })
+    customElements.define(observeTagName, ObserveElement)
+
+    const el = document.createElement(observeTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      // Mutate state
+      // @ts-ignore
+      el._state.score = 25
+
+      queueMicrotask(() => {
+        assert.deepEqual(calledWith, [{
+          newVal: 25,
+          oldVal: 10
+        }])
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
+
+  it('should not invoke callback if mutated property value is identical', (t, done) => {
+    let callCount = 0
+    const identicalTagName = 'identical-comp-' + Math.random().toString(36).substring(2, 9)
+    const IdenticalElement = createCoraliteClass({
+      componentId: 'identical-comp',
+      defaultValues: {
+        score: 10
+      },
+      client: ({ observe }) => {
+        observe('score', () => {
+          callCount++
+        })
+      }
+    })
+    customElements.define(identicalTagName, IdenticalElement)
+
+    const el = document.createElement(identicalTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      // Mutate with same value
+      // @ts-ignore
+      el._state.score = 10
+
+      queueMicrotask(() => {
+        assert.strictEqual(callCount, 0)
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
+
+  it('should clean up observers strictly upon abort event (Zero Memory Leaks)', (t, done) => {
+    let callCount = 0
+    const cleanupTagName = 'cleanup-comp-' + Math.random().toString(36).substring(2, 9)
+    const CleanupElement = createCoraliteClass({
+      componentId: 'cleanup-comp',
+      defaultValues: {
+        score: 10
+      },
+      client: ({ observe }) => {
+        observe('score', () => {
+          callCount++
+        })
+      }
+    })
+    customElements.define(cleanupTagName, CleanupElement)
+
+    const el = document.createElement(cleanupTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      // Remove element from DOM to trigger abort signal
+      const stateRef = el._state
+      document.body.removeChild(el)
+
+      // Directly change state on the disconnected state object to see if observers are cleared/inactive
+      stateRef.score = 50
+
+      queueMicrotask(() => {
+        assert.strictEqual(callCount, 0)
+        assert.strictEqual(el._observers, null)
+        done()
+      })
+    })
+  })
+
+  it('should output warning when state is mutated from within an observe callback (Infinite Loop Protection)', (t, done) => {
+    let warningMsg = null
+    const originalWarn = console.warn
+    console.warn = (msg) => {
+      warningMsg = msg
+    }
+
+    // Set window.__coralite_mode__ to development
+    const prevMode = window.__coralite_mode__
+    window.__coralite_mode__ = 'development'
+
+    const loopTagName = 'loop-comp-' + Math.random().toString(36).substring(2, 9)
+    const LoopElement = createCoraliteClass({
+      componentId: 'loop-comp',
+      defaultValues: {
+        score: 10,
+        other: 0
+      },
+      client: ({ state, observe }) => {
+        observe('score', (newVal) => {
+          state.other = newVal + 1
+        })
+      }
+    })
+    customElements.define(loopTagName, LoopElement)
+
+    const el = document.createElement(loopTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      // @ts-ignore
+      el._state.score = 20
+
+      queueMicrotask(() => {
+        console.warn = originalWarn
+        window.__coralite_mode__ = prevMode
+
+        assert.ok(warningMsg, 'Should have emitted a warning msg')
+        assert.ok(warningMsg.includes('[Coralite Warning]: State mutation detected inside an observe() callback.'))
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
 })

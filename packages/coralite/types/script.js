@@ -37,6 +37,7 @@
  * @property {Object.<string, CoraliteModuleDefinition>} state - Instance state
  * @property {Function} refs - Instance refs
  * @property {AbortSignal} signal - Lifecycle abort signal for unmount events (null for declarative components).
+ * @property {(propertyName: string, callback: (newValue: any, oldValue: any) => void) => void} observe - Explicit state observation API.
  */
 
 /**

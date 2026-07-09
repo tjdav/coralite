@@ -96,6 +96,19 @@ export class CoraliteElement extends HTMLElement {
     this._abortController = null
 
     /**
+     * @type {Map<string, Set<Function>>|null}
+     * @protected
+     */
+    this._observers = new Map()
+
+    /**
+     * Flag to detect infinite loops in state observation callback.
+     * @type {boolean}
+     * @protected
+     */
+    this._isExecutingObserver = false
+
+    /**
      * A globally unique, deterministic identifier (e.g., `my-comp-0`).
      * @type {string|null}
      * @protected
@@ -186,6 +199,8 @@ export class CoraliteElement extends HTMLElement {
    */
   connectedCallback () {
     this._abortController = new AbortController()
+    this._observers = new Map()
+    this._isExecutingObserver = false
 
     if (!this.componentOptions) {
       return
@@ -249,6 +264,11 @@ export class CoraliteElement extends HTMLElement {
   disconnectedCallback () {
     if (this._abortController) {
       this._abortController.abort()
+    }
+
+    if (this._observers) {
+      this._observers.clear()
+      this._observers = null
     }
 
     if (!this.componentOptions) {
@@ -379,11 +399,34 @@ export class CoraliteElement extends HTMLElement {
     const self = this
     return new Proxy(target, {
       set (t, p, v) {
-        if (t[p] === v) {
+        const oldValue = t[p]
+        if (oldValue === v) {
           return true
         }
+
+        if (typeof p === 'string') {
+          // Dev mode safeguard for infinite loop state mutations
+          const mode = (typeof window !== 'undefined' && window['__coralite__'].mode) || 'production'
+
+          if (mode === 'development' && self._isExecutingObserver) {
+            console.warn('[Coralite Warning]: State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.')
+          }
+        }
+
         t[p] = v
         self._scheduleUpdate()
+
+        // Trigger any observers registered for this property
+        if (typeof p === 'string' && self._observers && self._observers.has(p)) {
+          const wasExecuting = self._isExecutingObserver
+          self._isExecutingObserver = true
+          try {
+            self._observers.get(p).forEach(cb => cb(v, oldValue))
+          } finally {
+            self._isExecutingObserver = wasExecuting
+          }
+        }
+
         return true
       }
     })
@@ -639,6 +682,33 @@ export class CoraliteElement extends HTMLElement {
    */
   async _init (isImperative = false) {
     const self = this
+
+    const signal = this._abortController.signal
+
+    // Hook up AbortSignal to nuke/cleanup observers to prevent memory leaks
+    signal.addEventListener('abort', () => {
+      if (self._observers) {
+        self._observers.clear()
+        self._observers = null
+      }
+    })
+
+    const observe = (key, callback) => {
+      if (!self._observers) {
+        return
+      }
+      if (!self._observers.has(key)) {
+        self._observers.set(key, new Set())
+      }
+      self._observers.get(key).add(callback)
+
+      signal.addEventListener('abort', () => {
+        if (self._observers && self._observers.has(key)) {
+          self._observers.get(key).delete(callback)
+        }
+      })
+    }
+
     /**
      * The context payload injected into the user's script block.
      * @type {Object}
@@ -654,7 +724,8 @@ export class CoraliteElement extends HTMLElement {
           return null
         }
         return self.querySelector(`[ref="${refId}"]`)
-      }
+      },
+      observe
     }
 
     if (typeof this._clientContextGetter === 'function') {
