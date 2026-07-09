@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.43.0
+
+> Comparing `coralite-scripts-v0.42.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- AST dependency scanner to track dynamic components (core) ([9c389df](https://codeberg.org/tjdavid/coralite/commit/9c389dfde3b0006bc9cfbb94e009df15336ea14f))
+
+
 ## v0.42.0
 
 > Comparing `coralite-scripts-v0.41.0` to `HEAD`
