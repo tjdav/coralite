@@ -957,6 +957,11 @@
             <td><code>(id: string) => HTMLElement | null</code></td>
             <td>A helper function to query elements in the component by their <code>ref</code> name.</td>
           </tr>
+          <tr>
+            <td><code>observe</code></td>
+            <td><code>(key: string, callback: (newVal: any, oldVal: any) => void) => void</code></td>
+            <td>Registers a callback to execute explicit side-effects on state changes. Automatically cleaned up when the component is disconnected.</td>
+          </tr>
         </tbody>
       </table>
     </div>

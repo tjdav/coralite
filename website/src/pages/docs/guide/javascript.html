@@ -53,8 +53,13 @@
         },
 
         // Client-Side: Controller (Read/Write)
-        client({ state, signal, refs, ...pluginContext }) {
+        client({ state, signal, refs, observe, ...pluginContext }) {
             console.log('Component mounted for user:', state.userName)
+
+            // Register an observer to react to counts changes
+            observe('initialCount', (newVal, oldVal) => {
+                console.log(`Count changed from ${oldVal} to ${newVal}`)
+            })
 
             const btn = refs('btn')
             btn.addEventListener('click', () => {
@@ -72,6 +77,7 @@
 
     <ul>
         <li><code>state</code>: A <strong>Read/Write Reactive Proxy</strong>. This unified state contains state from <code>attributes</code>, <code>server</code> state, and <code>getters</code>. Any mutation here triggers a re-render and re-evaluates getters.</li>
+        <li><code>observe</code>: A function <code>observe(key, callback)</code> to register explicit side-effects on state changes. The callback receives <code>(newValue, oldValue)</code>. Observers are automatically cleaned up on component unmount.</li>
         <li><code>refs</code>: A helper function to query DOM elements within the component's root that have a <code>ref</code> attribute.</li>
         <li><code>signal</code>: An <code>AbortSignal</code> tied to the component's lifecycle. Always use this to clean up event listeners or abort pending fetch requests when the component unmounts.</li>
         <li><code>root</code>: The root HTML element instance of the Web Component.</li>

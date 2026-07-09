@@ -358,7 +358,7 @@
       <coralite-heading level="3" text="The Two-Phase Resolver"></coralite-heading>
       <ol>
         <li><strong>Phase 1 (Global Context):</strong> The outermost function receives the <code>pluginContext</code> (containing global <code>config</code>). Use this phase to initialize shared state or load global modules.</li>
-        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ state, signal, root, instanceId }</code>).</li>
+        <li><strong>Phase 2 (Local Instance Context):</strong> It must return a second function that receives the local Web Component instance context (<code>{ state, signal, root, instanceId, refs, observe }</code>).</li>
         <li><strong>Phase 3 (Helpers Object):</strong> The second function returns an object containing the helper methods. These helpers are exposed on the component's client context under the plugin's namespace key.</li>
       </ol>
 

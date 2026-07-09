@@ -193,10 +193,15 @@ getters: {
     <p>The <code>client</code> block is the controller for your component in the browser. This is where you add event listeners and mutate state. Formerly known as <code>script</code>.</p>
 
     <coralite-code-highlight language="javascript">
-client: ({ state, signal, refs }) => {
+client: ({ state, signal, refs, observe }) => {
     // Access unique DOM elements via the 'refs' utility
     const btn = refs('loadMoreBtn');
     
+    // Register an observer to react to state changes
+    observe('maxItems', (newVal, oldVal) => {
+        console.log(`maxItems updated from ${oldVal} to ${newVal}`);
+    });
+
     btn.addEventListener('click', () => {
         // Imperative mutation triggers DOM updates
         state.maxItems += 10; 
@@ -236,6 +241,11 @@ client: ({ state, signal, refs }) => {
         <td><code>refs</code></td>
         <td><code>(id: string) => HTMLElement | null</code></td>
         <td>A utility to query unique elements by their <code>ref</code> name.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>observe</code></td>
+        <td><code>(key: string, callback: (newVal: any, oldVal: any) => void) => void</code></td>
+        <td>Registers a callback to execute explicit side-effects on state changes. Automatically cleaned up when the component is disconnected.</td>
       </tr>
     </coralite-table>
 
