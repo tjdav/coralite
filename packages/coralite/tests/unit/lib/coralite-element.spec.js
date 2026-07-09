@@ -436,4 +436,63 @@ describe('CoraliteElement', () => {
       })
     })
   })
+
+  it('should support the observe pattern via plugins (contextGetter)', (t, done) => {
+    let calledWith = null
+    const pluginTagName = 'plugin-observe-comp-' + Math.random().toString(36).substring(2, 9)
+
+    // Simulate a plugin context getter (Two-Phase Resolver resolver result)
+    const contextGetter = (localContext) => {
+      // Confirm that the observe function is in localContext
+      assert.strictEqual(typeof localContext.observe, 'function')
+
+      // Use observe inside the plugin context
+      localContext.observe('score', (newVal, oldVal) => {
+        calledWith = {
+          newVal,
+          oldVal
+        }
+      })
+
+      // Return modified localContext (adding plugin helper name)
+      return {
+        ...localContext,
+        myPlugin: {
+          test: true
+        }
+      }
+    }
+
+    const PluginObserveElement = createCoraliteClass({
+      componentId: 'plugin-observe-comp',
+      defaultValues: {
+        score: 10
+      },
+      client: ({ myPlugin }) => {
+        // Assert that client receives context injected by the plugin
+        assert.ok(myPlugin)
+        assert.strictEqual(myPlugin.test, true)
+      }
+    }, contextGetter)
+
+    customElements.define(pluginTagName, PluginObserveElement)
+
+    const el = document.createElement(pluginTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      // Mutate state to trigger the plugin-defined observer
+      // @ts-ignore
+      el._state.score = 30
+
+      queueMicrotask(() => {
+        assert.deepEqual(calledWith, {
+          newVal: 30,
+          oldVal: 10
+        })
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
 })
