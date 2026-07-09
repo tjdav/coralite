@@ -7,6 +7,9 @@
     <div class="plugin-message-display" data-testid="plugin-message">{{ pluginMessage }}</div>
     <div class="hook-message-display" data-testid="hook-message">{{ hookMessage }}</div>
     <div class="hook-result-display" ref="hook-result" data-testid="hook-result"></div>
+    
+    <button class="mutate-btn" ref="mutateBtn">Mutate State</button>
+    <div class="plugin-observe-display">No Mutation</div>
   </div>
 </template>
 
@@ -14,6 +17,12 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
+    attributes: {
+      score: {
+        type: Number,
+        default: 0
+      }
+    },
     async server (context) {
       const test = context['test-context-plugin']
       return {
@@ -23,13 +32,18 @@
         hookMessage: 'default'
       }
     },
-    client ({ refs, 'test-context-plugin': testPlugin, 'mock-plugin': mockPlugin }) {
+    client ({ state, refs, 'test-context-plugin': testPlugin, 'mock-plugin': mockPlugin }) {
       if (testPlugin) {
         testPlugin.testHelper(refs('pluginData'))
       }
       if (mockPlugin) {
         mockPlugin.renderPluginChild(refs('injected'))
       }
+
+      const mutateBtn = refs('mutateBtn')
+      mutateBtn.addEventListener('click', () => {
+        state.score = state.score + 10
+      })
     }
   })
 </script>

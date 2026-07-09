@@ -16,6 +16,15 @@ export const testContextPlugin = definePlugin({
       globalValue: 'global-state-123'
     },
     context: (pluginContext) => (localContext) => {
+      if (localContext.observe) {
+        localContext.observe('score', (newVal) => {
+          const sideEffectElement = localContext.root.querySelector('.plugin-observe-display')
+          if (sideEffectElement) {
+            sideEffectElement.textContent = `Plugin Observed: ${newVal}`
+          }
+        })
+      }
+
       return {
         testHelper: function (element) {
           if (typeof element === 'string') {

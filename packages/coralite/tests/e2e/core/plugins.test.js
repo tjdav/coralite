@@ -46,4 +46,16 @@ test.describe('Plugins Extensibility', () => {
     // Check that the dynamic module was executed and text assigned
     await expect(child).toHaveText('Msg: Dynamic Module Loaded!')
   })
+
+  test('should support the observe pattern via plugins', async ({ page }) => {
+    const comp = page.locator('plugin-component').first()
+    const observeDisplay = comp.locator('.plugin-observe-display')
+    const mutateBtn = comp.locator('.mutate-btn')
+
+    await expect(observeDisplay).toHaveText('No Mutation')
+
+    await mutateBtn.click()
+
+    await expect(observeDisplay).toHaveText('Plugin Observed: 10')
+  })
 })
