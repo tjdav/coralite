@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.43.0
+
+> Comparing `coralite-v0.42.0` to `HEAD`
+
+**Summary:** 8 commits
+
+### ✨ Features
+
+- Add observe pattern support to plugin testing (e2e) ([868e745](https://codeberg.org/tjdavid/coralite/commit/868e745de903ca5f092ebe6a0635c1ca96043c30))
+- add test for observe pattern support via plugins ([4ad502e](https://codeberg.org/tjdavid/coralite/commit/4ad502ee84ebcc072a31fe1a9e523729bf90fd93))
+- implement observe context method for explicit state side-effects ([affb182](https://codeberg.org/tjdavid/coralite/commit/affb1828056aebd4e8424aa33974e402fdcca391))
+- new structure for `testing.mocks` in `coralite.config.js` ([d82819a](https://codeberg.org/tjdavid/coralite/commit/d82819a6ef3ae95d8a43bb817f590df70565852f))
+- AST dependency scanner to track dynamic components (core) ([9c389df](https://codeberg.org/tjdavid/coralite/commit/9c389dfde3b0006bc9cfbb94e009df15336ea14f))
+
+### ♻️ Code Refactoring
+
+- improve error handling in utils/errors.js ([540107d](https://codeberg.org/tjdavid/coralite/commit/540107d7a48dc8566386dc396315b61d43e10bc6))
+
+### ✅ Tests
+
+- full coverage e2e tests for observe feature ([2876be7](https://codeberg.org/tjdavid/coralite/commit/2876be774168daeb5bb8f7af2c1573740f5fdc8b))
+
+### 🔨 Other Changes
+
+- ### Improvements Made ([bae7c9c](https://codeberg.org/tjdavid/coralite/commit/bae7c9c185b9851e45b1eba920c5f20c77eea554))
+
+
 ## v0.42.0
 
 > Comparing `coralite-v0.41.0` to `HEAD`
