@@ -64,25 +64,25 @@ export function defaultOnError ({ level, message, error }) {
  * @param {CoraliteErrorData} options.data - The error data to be handled.
  */
 export function handleError ({ onErrorCallback, data }) {
-  const error = data.error
-  if (error && 'isCoraliteError' in error && error.isCoraliteError) {
-    const coraliteError = error
+  const { error } = data
+
+  if (error && typeof error === 'object' && 'isCoraliteError' in error && error.isCoraliteError) {
     // @ts-ignore
-    data.componentId = data.componentId || coraliteError.componentId
+    data.componentId ??= error.componentId
     // @ts-ignore
-    data.filePath = data.filePath || coraliteError.filePath
+    data.filePath ??= error.filePath
     // @ts-ignore
-    data.instanceId = data.instanceId || coraliteError.instanceId
+    data.instanceId ??= error.instanceId
     // @ts-ignore
-    data.pagePath = data.pagePath || coraliteError.pagePath
+    data.pagePath ??= error.pagePath
     // @ts-ignore
-    data.path = data.path || coraliteError.path
+    data.path ??= error.path
     // @ts-ignore
-    data.line = data.line || coraliteError.line
+    data.line ??= error.line
     // @ts-ignore
-    data.column = data.column || coraliteError.column
+    data.column ??= error.column
     // @ts-ignore
-    data.stackFile = data.stackFile || coraliteError.stackFile
+    data.stackFile ??= error.stackFile
   }
 
   if (onErrorCallback) {
