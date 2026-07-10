@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.43.1
+
+> Comparing `coralite-v0.43.0` to `HEAD`
+
+**Summary:** 5 commits
+
+### 🐛 Bug Fixes
+
+- correct client parameter destructuring injection offset ([857aff4](https://codeberg.org/tjdavid/coralite/commit/857aff4fa1b0a3439a2930c168e2ce66396903a0))
+- instanceId is injected during partial destructuring (coralite) ([01086d7](https://codeberg.org/tjdavid/coralite/commit/01086d72080b634b86014a5786530e08987111e6))
+- data-testid is prefixed for imperatively created elements ([ecaeb5e](https://codeberg.org/tjdavid/coralite/commit/ecaeb5e2d516c45a789703536026481efd236b2a))
+
+### ✅ Tests
+
+- E2E tests for production vs development attribute handling ([3b23775](https://codeberg.org/tjdavid/coralite/commit/3b2377518ede5a57c45bc004ba2058da9cc30009))
+
+### 🧹 Chores
+
+- remove unused instanceId from component client hook ([393c05f](https://codeberg.org/tjdavid/coralite/commit/393c05ffc4add84f868a1991b29e526ccf78c83e))
+
+
 ## v0.43.0
 
 > Comparing `coralite-v0.42.0` to `HEAD`
