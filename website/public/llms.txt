@@ -434,15 +434,9 @@ For a robust E2E environment, users are encouraged to use `mode: 'testing'` excl
 
 * **Static Build Target**: `testing` mode acts as a static build target, identical to `production` mode. It compiles optimized static assets and strips development-only metadata, but leaves test-related tooling intact.
 * **Incremental Build Cache Invalidation**: The build compiler computes a hash of the `testing.mocks` configuration. If your mock definitions change, it invalidates the incremental build cache (ISR) and triggers a rebuild for all affected pages.
-* **E2E Targeting Selectors & data-testid Injection**: To support reliable, non-flaky E2E tests, Coralite auto-injects and prefixes test selectors in `testing` mode:
-    - **Explicit Test IDs & Prefixing**: Manual `data-testid` attributes are preserved but prefixed during build to avoid collisions. Page-level elements get prefixed with `page__` (e.g., `data-testid="page__my-btn"`). Component elements get prefixed with the dynamic instance ID (e.g., `data-testid="my-component-0__my-btn"`).
-    - **Auto-Generated Test IDs**: Interactive elements (like `button`, `a`, `input`, `form`, `select`, `textarea`, or elements with a `tabindex` or interactive `role` attribute) that do not have an explicit `data-testid` are automatically assigned one following the pattern `[prefix][tagName]-[zero-based-index]` (e.g., `data-testid="my-component-0__button-0"`).
-    - **Brittle vs. Robust Selectors**: Because component instance IDs (like `my-component-0`) are dynamic and change based on rendering order, do not hardcode full test IDs in tests. Instead, target elements using CSS attribute suffix matchers (`$=`) to ignore the dynamic prefix:
-      - Target a button with explicit ID: `page.locator('[data-testid$="__my-btn"]')`
-      - Target an auto-generated button: `page.locator('[data-testid$="__button-0"]')`
-      - Target a template ref: Elements utilizing the `ref` attribute (e.g. `ref="input"`) can also be targeted with `page.locator('[ref$="__input"]')`.
-* **Readiness**: Await `window.__coralite__.lifecycle.hydrated` after navigation.
-* **Velocity Engine**: Animations, transitions, and smooth scrolling are globally disabled in `testing` mode to eliminate race conditions and speed up tests.
+* **Targeting Strategies: Strict vs. Flexible Assertions**: Because Coralite uses deterministic AST rendering, component instance IDs (like `my-component-0`) are highly predictable. Choose your selector strategy based on the test's goal:
+  * **Default to Exact Match (Strict Structure):** For standard assertions, you MUST default to exact, fully-qualified test IDs using standard locators (e.g., `page.getByTestId('my-component-0__button-0')`). This implicitly acts as a strict structural assertion, catching regressions if component render order changes unexpectedly.
+  * **Fallback to Suffix Matching (Dynamic Contexts):** Only use CSS attribute suffix matchers (e.g., `page.locator('[data-testid$="__button-0"]')`) when targeting components rendered inside dynamic loops (e.g., lists), when the component's position in the document tree is intentionally variable, or if exact structural order is irrelevant to the specific test.* **Velocity Engine**: Animations, transitions, and smooth scrolling are globally disabled in `testing` mode to eliminate race conditions and speed up tests.
 * **Glass Box Assertions**: The reactive state of every hydrated component is exposed via `window.__coralite__.components['instance-id'].state`.
 * **Event Telemetry**: All `CustomEvent` dispatches are logged to `window.__coralite__.events`.
 * **Fail-Fast Hydration**: Any hydration mismatch or client-side error immediately triggers a fatal red overlay, failing the test instantly.
