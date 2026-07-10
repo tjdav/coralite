@@ -24,7 +24,7 @@
       <li><strong>Incremental Build Cache Invalidation:</strong> Tracks a hash of the <code>testing.mocks</code> configuration (saved as <code>testingMocksHash</code> in the build manifest) and triggers complete template rebuilds when mocked components or plugins are modified.</li>
       <li><strong>Deterministic data-testid:</strong> Injects <code>data-testid</code> onto all interactive elements and custom elements using the pattern <code>[instanceId]__[tagName]-[index]</code>.</li>
       <li><strong>Ref Mapping:</strong> Automatically duplicates any <code>ref</code> attribute to <code>data-testid</code>.</li>
-      <li><strong>Velocity Engine:</strong> Injects a global style block that disables all transitions and animations to eliminate timing flakiness.</li>
+      <li><strong>Velocity Engine:</strong> Animations, transitions, and smooth scrolling are globally disabled in <code>testing</code> mode to eliminate race conditions and speed up tests.</li>
       <li><strong>State Exposure:</strong> Populates <code>window.__coralite__.components</code> with instance state mappings for glass-box assertions.</li>
       <li><strong>Event Spying:</strong> Logs all <code>CustomEvent</code> dispatches to <code>window.__coralite__.events</code>.</li>
       <li><strong>Fail-Fast Hydration:</strong> Any hydration mismatch or client-side error triggers a fatal red overlay, ensuring test runners catch failures immediately.</li>

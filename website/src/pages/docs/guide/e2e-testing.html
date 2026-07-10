@@ -43,7 +43,7 @@
 
     <coralite-heading level="2" text="The Velocity Engine"></coralite-heading>
 
-    <p>CSS transitions and animations are the leading cause of flaky E2E tests. In <code>testing</code> mode, Coralite automatically injects a global style block that disables all animations, transitions, and smooth scrolling. This ensures that the DOM updates instantaneously and test runners can interact with elements immediately.</p>
+    <p>CSS transitions and animations are the leading cause of flaky E2E tests. Animations, transitions, and smooth scrolling are globally disabled in <code>testing</code> mode to eliminate race conditions and speed up tests. This ensures that the DOM updates instantaneously and test runners can interact with elements immediately.</p>
 
     <coralite-heading level="2" text="Glass Box Testing & Telemetry"></coralite-heading>
 
@@ -180,14 +180,18 @@
 
     <p>When writing E2E tests for your application, always use <code>mode: 'testing'</code>. Since the testing plugin is active, elements marked with <code>ref="my-btn"</code> will automatically have a <code>data-testid</code> attribute injected in the format <code>[componentId]__[refName]-[instanceIndex]</code> (e.g. <code>my-component-0__my-btn-0</code>).</p>
 
-    <p>To avoid brittle tests that break when component IDs or instance indices change, it is recommended to target elements using CSS suffix selectors. For example:</p>
+    <coralite-heading level="3" text="Targeting Strategies: Strict vs. Flexible Assertions"></coralite-heading>
 
-    <coralite-code-highlight language="javascript">
-      // Target the ref "my-btn" inside my-component regardless of the specific instance index
-      const button = page.locator('[data-testid$="__my-btn"]');
-    </coralite-code-highlight>
+    <p>Because Coralite uses deterministic AST rendering, component instance IDs (like <code>my-component-0</code>) are highly predictable. Choose your selector strategy based on the test's goal:</p>
 
-    <p>This keeps your test selectors clean and decoupled from exact layout instances.</p>
+    <ul>
+      <li>
+        <strong>Default to Exact Match (Strict Structure):</strong> For standard assertions, you <strong>MUST</strong> default to exact, fully-qualified test IDs using standard locators (e.g., <code>page.getByTestId('my-component-0__button-0')</code>). This implicitly acts as a strict structural assertion, catching regressions if component render order changes unexpectedly.
+      </li>
+      <li>
+        <strong>Fallback to Suffix Matching (Dynamic Contexts):</strong> Only use CSS attribute suffix matchers (e.g., <code>page.locator('[data-testid$="__button-0"]')</code>) when targeting components rendered inside dynamic loops (e.g., lists), when the component's position in the document tree is intentionally variable, or if exact structural order is irrelevant to the specific test.
+      </li>
+    </ul>
 
     <coralite-heading level="2" text="The window.__coralite__.lifecycle.hydrated Promise"></coralite-heading>
 

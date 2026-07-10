@@ -434,14 +434,22 @@ For a robust E2E environment, users are encouraged to use `mode: 'testing'` excl
 
 * **Static Build Target**: `testing` mode acts as a static build target, identical to `production` mode. It compiles optimized static assets and strips development-only metadata, but leaves test-related tooling intact.
 * **Incremental Build Cache Invalidation**: The build compiler computes a hash of the `testing.mocks` configuration. If your mock definitions change, it invalidates the incremental build cache (ISR) and triggers a rebuild for all affected pages.
-* **Targeting Strategies: Strict vs. Flexible Assertions**: Because Coralite uses deterministic AST rendering, component instance IDs (like `my-component-0`) are highly predictable. Choose your selector strategy based on the test's goal:
-  * **Default to Exact Match (Strict Structure):** For standard assertions, you MUST default to exact, fully-qualified test IDs using standard locators (e.g., `page.getByTestId('my-component-0__button-0')`). This implicitly acts as a strict structural assertion, catching regressions if component render order changes unexpectedly.
-  * **Fallback to Suffix Matching (Dynamic Contexts):** Only use CSS attribute suffix matchers (e.g., `page.locator('[data-testid$="__button-0"]')`) when targeting components rendered inside dynamic loops (e.g., lists), when the component's position in the document tree is intentionally variable, or if exact structural order is irrelevant to the specific test.* **Velocity Engine**: Animations, transitions, and smooth scrolling are globally disabled in `testing` mode to eliminate race conditions and speed up tests.
+* **E2E Targeting Selectors & data-testid Injection**: To support reliable, non-flaky E2E tests, Coralite auto-injects and prefixes test selectors in `testing` mode:
+  * **Explicit Test IDs & Auto-Prefixing**: When authoring HTML templates, you MUST write **static, plain-text** `data-testid` attributes (e.g., `✅ <input data-testid="username">`).
+    * **CRITICAL RULE:** Do NOT attempt to dynamically bind refs or instance IDs to test IDs using curly braces (e.g., `❌ <input data-testid="{{ ref_username }}">`).
+    * The Coralite build compiler automatically parses static `data-testid` strings and prepends the correct `page__` or `instance-id__` prefix during the build process to avoid collisions.
+  * **Auto-Generated Test IDs**: Interactive elements (like `button`, `a`, `input`, `form`, `select`, `textarea`, or elements with a `tabindex` or interactive `role` attribute) that do not have an explicit `data-testid` are automatically assigned one following the pattern `[prefix][tagName]-[zero-based-index]` (e.g., `data-testid="my-component-0__button-0"`).
+  * **Targeting Strategies (Strict vs. Flexible Assertions)**: Because Coralite uses deterministic AST rendering, component instance IDs (like `my-component-0`) are highly predictable. Choose your selector strategy based on the test's goal:
+    * **Default to Exact Match (Strict Structure):** For standard assertions, you MUST default to exact, fully-qualified test IDs using standard locators (e.g., `page.getByTestId('my-component-0__button-0')`). This implicitly acts as a strict structural assertion, catching regressions if component render order changes unexpectedly.
+    * **Fallback to Suffix Matching (Dynamic Contexts):** Only use CSS attribute suffix matchers (e.g., `page.locator('[data-testid$="__button-0"]')`) when targeting components rendered inside dynamic loops (e.g., lists), when the component's position in the document tree is intentionally variable, or if exact structural order is irrelevant to the specific test.
+* **Readiness**: Await `window.__coralite__.lifecycle.hydrated` after navigation.
+* **Velocity Engine**: Animations, transitions, and smooth scrolling are globally disabled in `testing` mode to eliminate race conditions and speed up tests.
 * **Glass Box Assertions**: The reactive state of every hydrated component is exposed via `window.__coralite__.components['instance-id'].state`.
 * **Event Telemetry**: All `CustomEvent` dispatches are logged to `window.__coralite__.events`.
 * **Fail-Fast Hydration**: Any hydration mismatch or client-side error immediately triggers a fatal red overlay, failing the test instantly.
-* **Component & Plugin Mocking**: Override component server blocks or plugin runtime contexts via the `testing.mocks` configuration in `coralite.config.js`.
-  - **Mock Structure**: The `testing.mocks` object accepts two keys: `components` and `plugins`.
+* **Component & Plugin Mocking**: Override component `server` blocks or plugin runtime contexts via the `testing.mocks` configuration in `coralite.config.js`.
+  * **Mock Structure**: The `testing.mocks` object accepts two keys: `components` and `plugins`.
+
     ```javascript
     testing: {
       mocks: {
@@ -463,15 +471,15 @@ For a robust E2E environment, users are encouraged to use `mode: 'testing'` excl
       }
     }
     ```
-  - **Component Mocking (`testing.mocks.components`)**:
-    - Maps component tag names (module IDs) to mock definitions containing a mock `server` function.
-    - **Isomorphic Context Arguments**: The mock `server()` function receives the exact same context arguments (`state`, `page`, `root`, `module`, `id`, `session`, `app`, `noHydration`, and plugin context namespaces) as the component's real `server()` block.
-    - **Dynamic Mocking via Attributes**: Since `state` contains coerced attributes passed in the HTML template (e.g., `<my-component user-id="123">`), mock implementations can return dynamic data conditionally based on these attributes (e.g., checking `state.userId`).
-  - **Plugin Mocking (`testing.mocks.plugins`)**:
-    - Maps plugin names to mock definitions containing `server` and/or `client` configurations.
-    - **`server.context`**: An object containing mock properties or methods to be merged into the plugin's server-side context (the return value of the plugin's Phase 2 resolver during the server build).
-    - **`client.context`**: An object containing mock properties or methods to be merged into the plugin's client-side context (the return value of the plugin's Phase 2 resolver in the browser).
-  - **ISR Cache Invalidation**: The build compiler computes a hash of the entire `testing.mocks` configuration. Any modification to the mock definitions, implementations, or configuration invalidates the Incremental Static Regeneration (ISR) cache and triggers a rebuild of only the pages consuming the mocked components or plugins.
+  * **Component Mocking (`testing.mocks.components`)**:
+    * Maps component tag names (module IDs) to mock definitions containing a mock `server` function.
+    * **Isomorphic Context Arguments**: The mock `server()` function receives the exact same context arguments (`state`, `page`, `root`, `module`, `id`, `session`, `app`, `noHydration`, and plugin context namespaces) as the component's real `server()` block.
+    * **Dynamic Mocking via Attributes**: Since `state` contains coerced attributes passed in the HTML template (e.g., `<my-component user-id="123">`), mock implementations can return dynamic data conditionally based on these attributes (e.g., checking `state.userId`).
+  * **Plugin Mocking (`testing.mocks.plugins`)**:
+    * Maps plugin names to mock definitions containing `server` and/or `client` configurations.
+    * **`server.context`**: An object containing mock properties or methods to be merged into the plugin's server-side context (the return value of the plugin's Phase 2 resolver during the server build).
+    * **`client.context`**: An object containing mock properties or methods to be merged into the plugin's client-side context (the return value of the plugin's Phase 2 resolver in the browser).
+  * **ISR Cache Invalidation**: The build compiler computes a hash of the entire `testing.mocks` configuration. Any modification to the mock definitions, implementations, or configuration invalidates the Incremental Static Regeneration (ISR) cache and triggers a rebuild of only the pages consuming the mocked components or plugins.
 
 ## 11. Form Integration and Interaction Patterns
 
