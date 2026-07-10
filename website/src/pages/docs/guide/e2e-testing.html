@@ -54,15 +54,15 @@
       <li><code>window.__coralite__.events</code>: A telemetry log of every <code>CustomEvent</code> dispatched by components.</li>
     </ul>
 
-    <coralite-heading level="2" text="Server Mocking"></coralite-heading>
+    <coralite-heading level="2" text="Component & Plugin Mocking"></coralite-heading>
 
-    <p>To write reliable end-to-end tests without hitting real database connections, web APIs, or downstream microservices, Coralite includes a built-in server-side mocking system. When running in <code>mode: 'testing'</code>, you can override the <code>server()</code> blocks of any dynamic components by registering mocks in your <code>coralite.config.js</code> file.</p>
+    <p>To write reliable end-to-end tests without hitting real database connections, web APIs, or downstream microservices, Coralite includes a built-in mocking system. When running in <code>mode: 'testing'</code>, you can override the <code>server()</code> blocks of any dynamic components or mock the runtime contexts of plugins by registering mocks in your <code>coralite.config.js</code> file.</p>
 
-    <p>The mocking system maps component custom tags (module IDs) to mock definitions. When a page compiles during the testing build, Coralite executes the mock's <code>server()</code> function instead of the component's original <code>server()</code> block.</p>
+    <p>The mocking system accepts two keys under the <code>testing.mocks</code> configuration object: <code>components</code> and <code>plugins</code>.</p>
 
     <coralite-heading level="3" text="Configuring Mocks"></coralite-heading>
 
-    <p>Define your mock implementations under the <code>testing.mocks</code> object within your configuration:</p>
+    <p>Define your mock implementations under the <code>testing.mocks.components</code> and <code>testing.mocks.plugins</code> objects within your configuration:</p>
 
     <coralite-code-highlight language="javascript">
       import { defineConfig } from 'coralite-scripts';
@@ -71,9 +71,22 @@
         mode: 'testing',
         testing: {
           mocks: {
-            // Key is the component tag name (module ID)
-            'user-profile': {
-              server: async () => ({ name: 'Mock User', role: 'admin' })
+            // Override component server-side data fetching
+            components: {
+              'user-profile': {
+                server: async () => ({ name: 'Mock User', role: 'admin' })
+              }
+            },
+            // Mock plugin runtime contexts on the server and client
+            plugins: {
+              'analytics-plugin': {
+                server: {
+                  context: { db: { query: () => [] } }
+                },
+                client: {
+                  context: { track: () => {} }
+                }
+              }
             }
           }
         }
@@ -117,7 +130,7 @@
       &lt;/script&gt;
     </coralite-code-highlight>
 
-    <p>Next, the mock configuration in <code>coralite.config.js</code> overriding this component's data based on the <code>userId</code> attribute:</p>
+    <p>Next, the mock configuration in <code>coralite.config.js</code> overriding this component's data based on the <code>userId</code> attribute under <code>components</code>:</p>
 
     <coralite-code-highlight language="javascript">
       import { defineConfig } from 'coralite-scripts';
@@ -126,16 +139,18 @@
         mode: 'testing',
         testing: {
           mocks: {
-            'user-profile': {
-              server: async ({ state }) => {
-                // Read the attribute from state and return dynamic mock data
-                if (state.userId === '1') {
-                  return { name: 'Alice Smith' };
+            components: {
+              'user-profile': {
+                server: async ({ state }) => {
+                  // Read the attribute from state and return dynamic mock data
+                  if (state.userId === '1') {
+                    return { name: 'Alice Smith' };
+                  }
+                  if (state.userId === '2') {
+                    return { name: 'Bob Jones' };
+                  }
+                  return { name: 'Unknown Test User' };
                 }
-                if (state.userId === '2') {
-                  return { name: 'Bob Jones' };
-                }
-                return { name: 'Unknown Test User' };
               }
             }
           }
@@ -143,10 +158,21 @@
       });
     </coralite-code-highlight>
 
+    <coralite-heading level="3" text="Plugin Mocking"></coralite-heading>
+
+    <p>Plugins injected into the application can also be mocked. This is useful when you have third-party or internal plugins (such as database connections or telemetry trackers) that expose API methods on either the server or client side.</p>
+
+    <p>Under the <code>testing.mocks.plugins</code> key, you can map the plugin's name to a definition containing <code>server</code> and/or <code>client</code> mock configurations:</p>
+    <ul>
+      <li><code>server.context</code>: An object containing mock properties or methods to be merged into the plugin's server-side context (the return value of the plugin's Phase 2 resolver during the server build).</li>
+      <li><code>client.context</code>: An object containing mock properties or methods to be merged into the plugin's client-side context (the return value of the plugin's Phase 2 resolver in the browser).</li>
+    </ul>
+
     <coralite-heading level="2" text="Incremental Builds & Mock Invalidation"></coralite-heading>
 
-    <p>Coralite's Incremental Static Regeneration (ISR) system seamlessly handles configuration updates for mock definitions. During a build, Coralite computes a hash of the entire <code>testing.mocks</code> configuration. If any mock implementation or mock function changes, the compiler detects the hash change, invalidates the build cache, and forces a rebuild of all page templates that consume the mocked components.</p>
+    <p>Coralite's Incremental Static Regeneration (ISR) system seamlessly handles configuration updates for mock definitions. During a build, Coralite computes a hash of the entire <code>testing.mocks</code> configuration. If any mock implementation or mock function changes, the compiler detects the hash change, invalidates the build cache, and forces a rebuild of all page templates that consume the mocked components or plugins.</p>
     <p>This guarantees that your E2E test runs always execute against the latest mock logic and data without requiring a manual clean or slow full rebuild of the entire site.</p>
+
 
     <p>Additionally, <code>testing</code> mode acts as a static target just like <code>production</code>. Development-only AST structures are cleaned up and pages are optimized, ensuring the E2E test environment mimics production behavior as closely as possible.</p>
 

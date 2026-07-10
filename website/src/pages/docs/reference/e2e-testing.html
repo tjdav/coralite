@@ -21,7 +21,7 @@
 
     <ul>
       <li><strong>Static Build Target:</strong> The compiler builds pages as a static target, stripping development-only properties and optimizing global runtime script output (identical to <code>production</code> mode).</li>
-      <li><strong>Incremental Build Cache Invalidation:</strong> Tracks a hash of the <code>testing.mocks</code> configuration (saved as <code>testingMocksHash</code> in the build manifest) and triggers complete template rebuilds when mocks are modified.</li>
+      <li><strong>Incremental Build Cache Invalidation:</strong> Tracks a hash of the <code>testing.mocks</code> configuration (saved as <code>testingMocksHash</code> in the build manifest) and triggers complete template rebuilds when mocked components or plugins are modified.</li>
       <li><strong>Deterministic data-testid:</strong> Injects <code>data-testid</code> onto all interactive elements and custom elements using the pattern <code>[instanceId]__[tagName]-[index]</code>.</li>
       <li><strong>Ref Mapping:</strong> Automatically duplicates any <code>ref</code> attribute to <code>data-testid</code>.</li>
       <li><strong>Velocity Engine:</strong> Injects a global style block that disables all transitions and animations to eliminate timing flakiness.</li>
@@ -30,13 +30,35 @@
       <li><strong>Fail-Fast Hydration:</strong> Any hydration mismatch or client-side error triggers a fatal red overlay, ensuring test runners catch failures immediately.</li>
     </ul>
 
-    <coralite-heading level="2" text="The Server Mocking System"></coralite-heading>
+    <coralite-heading level="2" text="The Component & Plugin Mocking System"></coralite-heading>
 
-    <p>In <code>testing</code> mode, you can override server-side data fetching blocks (<code>server()</code>) by defining mocks in the configuration object passed to Coralite.</p>
+    <p>In <code>testing</code> mode, you can override server-side component rendering (<code>server()</code>) or mock the client and server runtime contexts of plugins by defining mocks in the configuration object passed to Coralite.</p>
 
     <coralite-heading level="3" text="Config Option: testing.mocks"></coralite-heading>
 
-    <p>Mocks are configured as a key-value object under <code>testing.mocks</code>. The key must match the component's custom tag name (module ID). The value is an object implementing the mock behavior:</p>
+    <p>Mocks are configured under <code>testing.mocks</code>. The configuration accepts two primary properties:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Property</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>components</code></td>
+        <td><code>Record&lt;string, CoraliteComponentMock&gt;</code></td>
+        <td>An object mapping component tag names (module IDs) to component mock definitions.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>plugins</code></td>
+        <td><code>Record&lt;string, CoralitePluginMock&gt;</code></td>
+        <td>An object mapping plugin names to plugin mock definitions.</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="3" text="Component Mocks (testing.mocks.components)"></coralite-heading>
+
+    <p>Each component mock is keyed by the component tag name and contains the following options:</p>
 
     <coralite-table>
       <tr slot="head">
@@ -47,15 +69,35 @@
       <tr slot="body">
         <td><code>server</code></td>
         <td><code>(context: CoraliteServerContext) => Promise&lt;Record&lt;string, any&gt;&gt; | Record&lt;string, any&gt;</code></td>
-        <td>An asynchronous or synchronous function replacing the component's original <code>server()</code> method.</td>
+        <td>An asynchronous or synchronous function replacing the component's original <code>server()</code> method. Receives standard component isomorphic context arguments (e.g., <code>state</code>, <code>page</code>, <code>app</code>).</td>
       </tr>
     </coralite-table>
 
-    <p>The mock's <code>server</code> function is invoked during the server-side render phase and receives the exact same context arguments as a regular component's <code>server()</code> method, including the component's attribute-coerced state, page variables, and plugin namespace contexts.</p>
+    <coralite-heading level="3" text="Plugin Mocks (testing.mocks.plugins)"></coralite-heading>
+
+    <p>Each plugin mock is keyed by the plugin's name and contains configuration to override server-side and/or client-side contexts:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Property</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>server.context</code></td>
+        <td><code>Record&lt;string, any&gt;</code></td>
+        <td>Object containing properties or methods merged into the plugin's server-side context (the return value of the plugin's Phase 2 resolver during the server build).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>client.context</code></td>
+        <td><code>Record&lt;string, any&gt;</code></td>
+        <td>Object containing properties or methods merged into the plugin's client-side context (the return value of the plugin's Phase 2 resolver in the browser).</td>
+      </tr>
+    </coralite-table>
 
     <coralite-heading level="3" text="Compiler Cache & ISR Integration"></coralite-heading>
 
-    <p>To avoid running tests against stale data during incremental builds, the compiler generates a cryptographic hash of the entire <code>testing.mocks</code> configuration (saved in the build manifest as <code>testingMocksHash</code>). When the configuration is updated, the compiler detects the hash mismatch and automatically invalidates the cache of all page templates that depend on the mocked components, forcing them to rebuild.</p>
+    <p>To avoid running tests against stale data during incremental builds, the compiler generates a cryptographic hash of the entire <code>testing.mocks</code> configuration (saved in the build manifest as <code>testingMocksHash</code>). When the configuration is updated, the compiler detects the hash mismatch and automatically invalidates the cache of all page templates that depend on the mocked components or plugins, forcing them to rebuild.</p>
 
     <coralite-heading level="2" text="The window.__coralite__.lifecycle.hydrated Promise"></coralite-heading>
 
