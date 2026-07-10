@@ -15,4 +15,22 @@ test.describe('Imperative Components', () => {
     const dataDisplay = comp.locator('p')
     await expect(dataDisplay).toHaveText('A,B,C')
   })
+
+  test('should prefix data-testid inside imperatively created child element', async ({ page }, testInfo) => {
+    const isProduction = testInfo.project.name.includes('-prod')
+
+    if (isProduction) {
+      // In production, all data-testid attributes should be stripped
+      await expect(page.locator('[data-testid]')).toHaveCount(0)
+    } else {
+      // In non-production, the child component should have its data-testid attributes prefixed with its instance ID.
+      const childTitle = page.getByTestId(/imperative-child-\d+__title/)
+      await expect(childTitle).toBeVisible()
+      await expect(childTitle).toHaveText('Imperative Mount')
+
+      const childDisplay = page.getByTestId(/imperative-child-\d+__dataDisplay/)
+      await expect(childDisplay).toBeVisible()
+      await expect(childDisplay).toHaveText('A,B,C')
+    }
+  })
 })

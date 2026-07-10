@@ -39,4 +39,24 @@ test.describe('Boolean Attributes', () => {
     await toggleBtn.click()
     await expect(checkbox).toBeChecked()
   })
+
+  test('should handle ref and data-testid on the same element', async ({ page }, testInfo) => {
+    const isProduction = testInfo.project.name.includes('-prod')
+    const comp = page.locator('boolean-attr-component').first()
+
+    // We expect the button to have the correct ref attribute prefixed in all modes
+    const button = comp.locator('button').nth(1)
+
+    if (isProduction) {
+      // In production, data-testid must be stripped, but ref must exist and be prefixed
+      await expect(button).toHaveAttribute('ref', /boolean-attr-component-\d+__toggle-btn/)
+      await expect(button).not.toHaveAttribute('data-testid')
+    } else {
+      // In non-production, both ref and data-testid must exist and be prefixed
+      await expect(button).toHaveAttribute('ref', /boolean-attr-component-\d+__toggle-btn/)
+
+      const testIdButton = page.getByTestId(/boolean-attr-component-\d+__toggle-btn/).first()
+      await expect(testIdButton).toBeVisible()
+    }
+  })
 })
