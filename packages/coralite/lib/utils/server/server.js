@@ -228,6 +228,9 @@ export function findAndExtractScript (code) {
              * - client() { ... } (Method shorthand) => this.instanceId
              * Defaults to 'id' if no parameters are present and it's not a method.
              */
+            // Collect all document.createElement calls within this client block for transformation
+            const replacements = []
+
             let instanceIdVar
             // @ts-ignore
             if (value.params && value.params[0]) {
@@ -242,6 +245,13 @@ export function findAndExtractScript (code) {
                   if (idProp.value.type === 'Identifier') {
                     instanceIdVar = idProp.value.name
                   }
+                } else {
+                  instanceIdVar = '_coralite_instanceId'
+                  replacements.push({
+                    start: param.start - (value.start + 1),
+                    end: param.start - (value.start + 1),
+                    replacement: 'instanceId: _coralite_instanceId, '
+                  })
                 }
               }
             } else if (method) {
@@ -250,9 +260,6 @@ export function findAndExtractScript (code) {
 
             // Get source slice
             let source = code.slice(value.start, value.end)
-
-            // Collect all document.createElement calls within this client block for transformation
-            const replacements = []
             walkAncestorJS(value, {
               AssignmentExpression (node, ancestorsInClient) {
                 if (

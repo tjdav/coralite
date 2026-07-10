@@ -95,4 +95,18 @@ defineComponent({
     assert.match(result.content, /el\.innerHTML = processHTML\('<toast-message>Hello<\/toast-message>', this\._instanceId\)/)
     assert.deepStrictEqual(result.components, ['toast-message'])
   })
+
+  test('destructured without instanceId transformation', () => {
+    const code = `
+defineComponent({
+  client({ refs }) {
+    const el = document.createElement('div')
+    el.innerHTML = '<toast-message>Hello</toast-message>'
+  }
+})`
+    const result = findAndExtractScript(code)
+    assert.match(result.content, /client\(\{instanceId: _coralite_instanceId,\s*refs\s*\}\)/)
+    assert.match(result.content, /el\.innerHTML = processHTML\('<toast-message>Hello<\/toast-message>', _coralite_instanceId\)/)
+    assert.deepStrictEqual(result.components, ['toast-message'])
+  })
 })
