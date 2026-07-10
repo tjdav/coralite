@@ -10,7 +10,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    client ({ refs, instanceId }) {
+    client ({ refs }) {
       // 1. innerHTML
       refs('container1').innerHTML = '<innerhtml-child message="InnerHTML Mount"></innerhtml-child><div data-testid="plain-inner">Plain Inner</div>'
   
