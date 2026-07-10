@@ -21,19 +21,7 @@
                 <summary><svg class="icon icon-dir"><use href="/images/icons.svg#directory"></use></svg> components</summary>
                 <div class="file-item">
                   <input type="radio" name="tab1-files" id="tab1-file3">
-                  <label for="tab1-file3" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> hello-world.html</label>
-                </div>
-                <div class="file-item">
-                  <input type="radio" name="tab1-files" id="tab1-file4">
-                  <label for="tab1-file4" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> click-counter.html</label>
-                </div>
-                <div class="file-item">
-                  <input type="radio" name="tab1-files" id="tab1-file5">
-                  <label for="tab1-file5" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> toast-manager.html</label>
-                </div>
-                <div class="file-item">
-                  <input type="radio" name="tab1-files" id="tab1-file6">
-                  <label for="tab1-file6" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> toast-message.html</label>
+                  <label for="tab1-file3" class="file-label"><svg class="icon icon-file"><use href="/images/icons.svg#file"></use></svg> checkout-card.html</label>
                 </div>
               </details>
             </details>
@@ -46,9 +34,6 @@
             <div class="file-content" id="tab1-content1"><pre><code>{{ tab1_file1 }}</code></pre></div>
             <div class="file-content" id="tab1-content2"><pre><code>{{ tab1_file2 }}</code></pre></div>
             <div class="file-content" id="tab1-content3"><pre><code>{{ tab1_file3 }}</code></pre></div>
-            <div class="file-content" id="tab1-content4"><pre><code>{{ tab1_file4 }}</code></pre></div>
-            <div class="file-content" id="tab1-content5"><pre><code>{{ tab1_file5 }}</code></pre></div>
-            <div class="file-content" id="tab1-content6"><pre><code>{{ tab1_file6 }}</code></pre></div>
           </div>
         </div>
       </div>
@@ -236,127 +221,128 @@
           </head>
           <body>
             <!-- Main entry point for the application -->
-            <h1>Welcome to Coralite</h1>
+            <h1>My Store Checkout</h1>
 
-            <!-- Using a custom component with an attribute -->
-            <hello-world name="Developer"></hello-world>
-            
-            <!-- Components can be interactive on the client -->
-            <click-counter step="2"></click-counter>
-
-            <!-- Imperative component instantiation example -->
-            <toast-manager></toast-manager>
+            <!-- Using our custom smart checkout component -->
+            <checkout-card product-id="123" theme="dark"></checkout-card>
           </body>
           </html>
         `, 'html'),
         tab1_file3: highlight(`
-          <template id="hello-world">
-            <div class="greeting">
-              <h2>Hello, {{ name }}!</h2>
+          <template id="checkout-card">
+            <div class="checkout-card" data-theme="{{ theme }}">
+              <header>
+                <h2>Product: {{ productId }}</h2>
+                <span hidden="{{ hideValidationMessage }}">Validating promo...</span>
+              </header>
+
+              <div class="price-breakdown">
+                <p>Base Price: {{ basePrice }}</p>
+                <p class="discount" hidden="{{ hideDiscountRow }}">Discount: -{{ discountAmount }}</p>
+                <hr />
+                <h3>Total: {{ finalPrice }}</h3>
+              </div>
+
+              <div class="controls">
+                <input ref="promo-input" type="text" placeholder="Enter promo code" />
+                <button ref="apply-btn" disabled="{{ isApplyingDiscount }}">Apply</button>
+              </div>
+
+              <button ref="checkout-btn" class="pay-btn">Pay Now</button>
             </div>
           </template>
 
           <script type="module">
             import { defineComponent } from 'coralite';
 
-            /**
-             * A simple static component.
-             * Attributes defined here are automatically available
-             * in the template via double curly braces.
-             */
             export default defineComponent({
+              // ATTRIBUTES: Public API
               attributes: {
-                name: { type: String, default: 'Developer' }
-              }
-            });
-          <\/script>
-        `, 'html'),
-        tab1_file4: highlight(`
-          <template id="click-counter">
-            <button ref="btn">Count: {{ count }}</button>
-          </template>
-
-          <script type="module">
-            import { defineComponent } from 'coralite';
-
-            /**
-             * An interactive component.
-             * The 'client' block runs only in the browser.
-             * It has access to 'state' (reactive) and 'refs' (DOM elements).
-             */
-            export default defineComponent({
-              attributes: {
-                step: { type: Number, default: 1 }
+                productId: {
+                  type: String,
+                  default: ''
+                },
+                theme: {
+                  type: String,
+                  default: 'light'
+                }
               },
-              client: ({ state, refs }) => {
-                // Initialize component state
-                state.count = 0;
+              
+              // SERVER: Initial State (SSR Ready)
+              server: () => {
+                return {
+                  basePrice: 99.00,
+                  promoCode: '',
+                  discountAmount: 0,
+                  isApplyingDiscount: false
+                };
+              },
+              
+              // GETTERS: Pure Derived UI Data (Handling ALL logic and negation)
+              getters: {
+                // Math logic
+                finalPrice: (state) => {
+                  return Math.max(0, state.basePrice - state.discountAmount).toFixed(2);
+                },
+                // Negation logic for the native 'hidden' attribute
+                hideValidationMessage: (state) => {
+                  return state.isApplyingDiscount === false;
+                },
+                // Negation logic for the native 'hidden' attribute
+                hideDiscountRow: (state) => {
+                  return state.promoCode === '';
+                }
+              },
+              
+              // CLIENT: Browser Interactivity
+              client: ({ state, refs, observe }) => {
+                
+                observe('productId', async (newId) => {
+                  if (!newId) {
+                    return;
+                  }
+                  
+                  const data = await fetch(\`/api/products/\${newId}/price\`).then(r => r.json());
 
-                // Use 'refs' to get elements marked with 'ref' attribute
-                refs('btn').addEventListener('click', () => {
-                  // Updating state triggers automatic re-renders
-                  state.count += state.step;
+                  state.basePrice = data.price;
+                  state.promoCode = ''; 
+                  state.discountAmount = 0;
+                });
+
+                refs('apply-btn').addEventListener('click', async () => {
+                  const code = refs('promo-input').value.trim();
+                  
+                  if (!code) {
+                    return;
+                  }
+
+                  state.isApplyingDiscount = true;
+                  
+                  try {
+                    const data = await fetch(\`/api/promo/validate?code=\${code}\`).then(r => r.json());
+                    state.promoCode = code;
+                    state.discountAmount = data.discount;
+                  } catch (err) {
+                    alert('Invalid promo code');
+                  } finally {
+                    state.isApplyingDiscount = false;
+                  }
+                });
+
+                refs('checkout-btn').addEventListener('click', () => {
+                  alert(\`Charging \$\${state.finalPrice} to your card!\`);
                 });
               }
             });
           <\/script>
-        `, 'html'),
-        tab1_file5: highlight(`
-          <template id="toast-manager">
-            <div class="toast-container">
-              <button ref="btn">Show Toast</button>
-              <!-- Container for dynamically added toasts -->
-              <div ref="list"></div>
-            </div>
-          </template>
 
-          <script type="module">
-            import { defineComponent } from 'coralite';
-
-            /**
-             * Demonstrates imperative component creation.
-             * Custom elements can be created using standard DOM APIs.
-             */
-            export default defineComponent({
-              client: ({ refs }) => {
-                refs('btn').addEventListener('click', () => {
-                  // Create a new component instance programmatically
-                  const toast = document.createElement('toast-message');
-                  toast.setAttribute('message', 'Hello from the Toast Manager!');
-                  refs('list').appendChild(toast);
-                });
-              }
-            });
-          <\/script>
-        `, 'html'),
-        tab1_file6: highlight(`
-          <template id="toast-message">
-            <div class="toast">
-              <span>{{ message }}</span>
-              <button ref="close">X</button>
-            </div>
-          </template>
-
-          <script type="module">
-            import { defineComponent } from 'coralite';
-
-            /**
-             * A self-contained message component.
-             * Uses 'signal' to ensure event listeners are cleaned up
-             * if the component is destroyed.
-             */
-            export default defineComponent({
-              attributes: {
-                message: { type: String }
-              },
-              client: ({ signal, refs }) => {
-                refs('close').addEventListener('click', (e) => {
-                  // Remove the element from the DOM
-                  e.target.closest('toast-message').remove();
-                }, { signal });
-              }
-            });
-          <\/script>
+          <style>
+            .checkout-card { padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+            /* Relying on native data-attributes instead of dynamic classes */
+            .checkout-card[data-theme="dark"] { background: #1a1a1a; color: white; }
+            .discount { color: green; }
+            .pay-btn { width: 100%; margin-top: 20px; padding: 12px; background: blue; color: white; }
+          </style>
         `, 'html'),
 
         tab2_file1: highlight(`
