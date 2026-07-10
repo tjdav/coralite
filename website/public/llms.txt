@@ -144,7 +144,8 @@ A component definition consists of four primary blocks:
 
 #### 2. `server({ state, page, root, module, id, session, app, noHydration, ...plugins })` (Async/Server)
 
-* **Purpose**: Fetches initial state on the server during the build process. Formerly known as `data`.
+* **Purpose**: Defines the initial local state of the component and handles SSR data fetching. **The object returned by this function becomes the component's internal reactive state.**
+* **Isomorphic Hydration**: You can return synchronous default values (e.g., `{ count: 0 }`) or fetch asynchronous data (e.g., `{ profile: await api.get() }`). The returned object is serialized by the server and perfectly hydrated into the client-side unified proxy.
 * **Arguments** (The Context Object):
   * `state`: Contains the component's resolved attributes (e.g., `state.category`). **Always use this to read HTML attribute values passed to the component.**
   * `page`: Contains global metadata about the consuming page/route (e.g., URL, file info).
@@ -160,9 +161,10 @@ A component definition consists of four primary blocks:
 
 #### 3. `getters` (Sync)
 
-* **Purpose**: Pure functions for derived state (isomorphic).
-* **Rule**: These receive a **Read-Only Proxy** of the state. They must never mutate state and cannot be `async`.
-* **Reactivity**: Automatically re-evaluated when any underlying state dependency changes.
+* **Purpose**: Pure functions used to derive new UI data from the unified state.
+* **The Flat Argument**: Getters receive the **Unified State Proxy** as their only argument. This single proxy contains both the coerced `attributes` and the initialized `server` state.
+* **Rule**: Getters must be pure and synchronous. You must **never** perform side-effects, mutate state, or execute asynchronous code (`fetch`) inside a getter.
+* **Reactivity**: Automatically re-evaluated when any underlying attribute or state dependency changes.
 
 #### 4. `client({ state, signal, refs, root, instanceId, observe, ...plugins })` (Client)
 
@@ -176,14 +178,44 @@ A component definition consists of four primary blocks:
   * `observe`: A function `observe(key, callback)` to execute explicit side-effects on state changes. Receives `(newValue, oldValue)`. Automatically cleaned up when disconnected.
   * `[pluginName | client.name]`: **Namespaced Plugin Context.** Injected context helpers from plugins are isolated under their namespace key (either the plugin `name` or `client.name`). For example, if a plugin has `client.name: 'event'` and defines `context: { bus: ... }`, the component's client block will receive it as `event.bus` (e.g., `client: ({ event }) => { event.bus.emit(...) }`).
 
-
 * **Usage**: All DOM events, imperative mutations, third-party library initializations, and side-effects live here.
 
 **⚠️ WARNING:** When dynamically adding Coralite components/custom elements to the DOM, you MUST use `document.createElement('tag-name')`. Using `element.innerHTML = '<tag-name></tag-name>'` will prevent the framework from detecting, upgrading, and initializing the component.
 
+#### 5. The Isomorphic Lifecycle Flow
+
+Coralite components follow a strict, deterministic initialization flow to ensure perfectly hydrated SSR:
+
+1. **Attribute Extraction**: HTML attributes are read from the DOM, coerced into types, and placed into a base state object.
+2. **Server Execution (SSR/Build)**: The `server` block runs, receiving the attributes. Its returned object is merged into the state object.
+3. **Getter Binding**: `getters` are evaluated against the merged state, appending their computed properties.
+4. **The Unified Proxy**: The framework flattens Attributes + Server State + Getters into a single, unified State Proxy.
+5. **Template Render**: The template is rendered using purely flat keys from the Unified Proxy.
+6. **Client Hydration (Browser)**: The `client` block mounts, receiving the exact same Unified Proxy alongside `refs` and `observe` to handle interactivity and side-effects.
+
 ### 5.3 The "Smart State, Dumb Template" Paradigm
 
-HTML templates in Coralite are strictly declarative and "dumb". They do not support JavaScript logic or dot-notation. The template can *only* render flat keys from the unified `state`.
+HTML templates in Coralite are strictly declarative and "dumb". They map directly to flat keys on the unified `state` proxy.
+* **No Inline Logic**: Templates do not support dot-notation (e.g., `user.name`), logical negations (e.g., `!isLoading`), or evaluations (e.g., `count > 0`).
+* **Native Boolean Mapping**: Do not invent custom CSS classes to hide or disable elements (e.g., `class:hidden="{{ !isVisible }}"`). Instead, move the negation logic into a `getter` and bind it directly to native HTML boolean attributes.
+
+**❌ BAD (Logic in Template):**
+```html
+<button disabled="{{ isLoading || hasError }}">Submit</button>
+<div hidden="{{ !showBanner }}">...</div>
+```
+
+**✅ GOOD (Logic in Getters):**
+```html
+<button disabled="{{ disableSubmit }}">Submit</button>
+<div hidden="{{ hideBanner }}">...</div>
+```
+```js
+getters: {
+  disableSubmit: (state) => state.isLoading || state.hasError,
+  hideBanner: (state) => !state.showBanner
+}
+```
 
 ### 5.4 Native Web APIs
 
