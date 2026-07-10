@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.43.1
+
+> Comparing `coralite-scripts-v0.43.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- Prevent race conditions in concurrent page compilation (coralite-scripts) ([dce4bd0](https://codeberg.org/tjdavid/coralite/commit/dce4bd0d74c6db48a7c498225deed25b6334672e))
+
+
 ## v0.43.0
 
 > Comparing `coralite-scripts-v0.42.0` to `HEAD`
