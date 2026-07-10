@@ -22,7 +22,15 @@ export default defineConfig({
     }
   },
   plugins: [
-    sitemapPlugin(),
+    sitemapPlugin({
+      customFiles: [
+        {
+          file: 'llms.txt',
+          changefreq: 'weekly',
+          priority: '0.5'
+        }
+      ]
+    }),
     aggregation([
       {
         name: 'blog-posts',
