@@ -210,25 +210,6 @@ export class CoraliteElement extends HTMLElement {
     // Imperative components (created via document.createElement) do not.
     const isImperative = !this.hasAttribute('data-cid')
 
-    // Imperative Flow: Manually stamp the template and project the Light DOM.
-    if (isImperative && this.componentOptions.templateHTML) {
-      const originalLightDOM = Array.from(this.childNodes)
-      this.innerHTML = processHTML(this.componentOptions.templateHTML)
-
-      if (originalLightDOM.length > 0) {
-        const slots = this.querySelectorAll('slot')
-        slots.forEach(slot => {
-          const slotName = slot.getAttribute('name') || 'default'
-          const matchingNodes = originalLightDOM.filter(node => {
-            // @ts-ignore
-            const nodeSlot = (node.getAttribute && node.getAttribute('slot')) || 'default'
-            return nodeSlot === slotName
-          })
-          matchingNodes.forEach(n => slot.appendChild(n))
-        })
-      }
-    }
-
     // Establish the Deterministic Instance ID
     if (this.hasAttribute('data-cid')) {
       this._instanceId = this.getAttribute('data-cid')
@@ -244,6 +225,25 @@ export class CoraliteElement extends HTMLElement {
       }
       // @ts-ignore
       this._instanceId = `${prefix}-${window.__coralite_instanceCounters[prefix]++}`
+    }
+
+    // Manually stamp the template and project the Light DOM.
+    if (isImperative && this.componentOptions.templateHTML) {
+      const originalLightDOM = Array.from(this.childNodes)
+      this.innerHTML = processHTML(this.componentOptions.templateHTML, this._instanceId)
+
+      if (originalLightDOM.length > 0) {
+        const slots = this.querySelectorAll('slot')
+        slots.forEach(slot => {
+          const slotName = slot.getAttribute('name') || 'default'
+          const matchingNodes = originalLightDOM.filter(node => {
+            // @ts-ignore
+            const nodeSlot = (node.getAttribute && node.getAttribute('slot')) || 'default'
+            return nodeSlot === slotName
+          })
+          matchingNodes.forEach(n => slot.appendChild(n))
+        })
+      }
     }
 
     if (isImperative) {
