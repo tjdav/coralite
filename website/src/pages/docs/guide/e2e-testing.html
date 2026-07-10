@@ -26,13 +26,30 @@
       });
     </coralite-code-highlight>
 
-    <coralite-heading level="2" text="Deterministic Selectors"></coralite-heading>
+    <coralite-heading level="2" text="E2E Targeting Selectors &amp; data-testid Injection"></coralite-heading>
 
-    <p>In <code>testing</code> mode, Coralite automatically injects <code>data-testid</code> attributes onto all <strong>interactive elements</strong> (<code>button</code>, <code>a</code>, <code>input</code>, <code>select</code>, <code>textarea</code>, elements with <code>tabindex</code> or ARIA roles) and all <strong>custom elements</strong>.</p>
-    
-    <p>Generated test IDs follow a deterministic pattern: <code>[instanceId]__[tagName]-[index]</code>. Existing <code>ref</code> attributes are also automatically mapped to <code>data-testid</code>.</p>
+    <p>To support reliable, non-flaky E2E tests, Coralite auto-injects and prefixes test selectors in <code>testing</code> mode.</p>
 
-    <p>For example, a <code>user-profile</code> component with two buttons will automatically render:</p>
+    <coralite-heading level="3" text="Explicit Test IDs &amp; Auto-Prefixing"></coralite-heading>
+
+    <p>When authoring HTML templates, you <strong>MUST</strong> write <strong>static, plain-text</strong> <code>data-testid</code> attributes:</p>
+
+    <coralite-code-highlight language="html">
+      <!-- Correct: Static, plain-text data-testid -->
+      <input data-testid="username">
+    </coralite-code-highlight>
+
+    <blockquote class="warning">
+      <p><strong>CRITICAL RULE:</strong> Do <strong>NOT</strong> attempt to dynamically bind refs or instance IDs to test IDs using curly braces (e.g. <code>❌ &lt;input data-testid="{{ ref_username }}"&gt;</code>).</p>
+    </blockquote>
+
+    <p>The Coralite build compiler automatically parses static <code>data-testid</code> strings and prepends the correct <code>page__</code> or <code>instance-id__</code> prefix during the build process to avoid collisions.</p>
+
+    <coralite-heading level="3" text="Auto-Generated Test IDs"></coralite-heading>
+
+    <p>Interactive elements (like <code>button</code>, <code>a</code>, <code>input</code>, <code>form</code>, <code>select</code>, <code>textarea</code>, or elements with a <code>tabindex</code> or interactive <code>role</code> attribute) that do not have an explicit <code>data-testid</code> are automatically assigned one following the pattern <code>[prefix][tagName]-[zero-based-index]</code> (e.g. <code>data-testid="my-component-0__button-0"</code>).</p>
+
+    <p>For example, a component named <code>user-profile</code> with two buttons will automatically render:</p>
 
     <coralite-code-highlight language="html">
       <div data-cid="user-profile-0">
@@ -41,17 +58,30 @@
       </div>
     </coralite-code-highlight>
 
+    <coralite-heading level="3" text="Targeting Strategies (Strict vs. Flexible Assertions)"></coralite-heading>
+
+    <p>Because Coralite uses deterministic AST rendering, component instance IDs (like <code>my-component-0</code>) are highly predictable. Choose your selector strategy based on the test's goal:</p>
+
+    <ul>
+      <li>
+        <strong>Default to Exact Match (Strict Structure):</strong> For standard assertions, you <strong>MUST</strong> default to exact, fully-qualified test IDs using standard locators (e.g. <code>page.getByTestId('my-component-0__button-0')</code>). This implicitly acts as a strict structural assertion, catching regressions if component render order changes unexpectedly.
+      </li>
+      <li>
+        <strong>Fallback to Suffix Matching (Dynamic Contexts):</strong> Only use CSS attribute suffix matchers (e.g. <code>page.locator('[data-testid$="__button-0"]')</code>) when targeting components rendered inside dynamic loops (e.g. lists), when the component's position in the document tree is intentionally variable, or if exact structural order is irrelevant to the specific test.
+      </li>
+    </ul>
+
     <coralite-heading level="2" text="The Velocity Engine"></coralite-heading>
 
     <p>CSS transitions and animations are the leading cause of flaky E2E tests. Animations, transitions, and smooth scrolling are globally disabled in <code>testing</code> mode to eliminate race conditions and speed up tests. This ensures that the DOM updates instantaneously and test runners can interact with elements immediately.</p>
 
-    <coralite-heading level="2" text="Glass Box Testing & Telemetry"></coralite-heading>
+    <coralite-heading level="2" text="Glass Box Assertions &amp; Telemetry"></coralite-heading>
 
-    <p>Standard DOM assertions can sometimes be unreliable. Coralite's testing mode exposes the internal framework state directly to the global window:</p>
+    <p>Standard DOM assertions can sometimes be unreliable. Coralite's testing mode exposes the internal framework state directly to the global window for glass box assertions:</p>
 
     <ul>
-      <li><code>window.__coralite__.components['id'].state</code>: Access the reactive proxy of any hydrated component.</li>
-      <li><code>window.__coralite__.events</code>: A telemetry log of every <code>CustomEvent</code> dispatched by components.</li>
+      <li><code>window.__coralite__.components['instance-id'].state</code>: Access the reactive proxy of any hydrated component.</li>
+      <li><code>window.__coralite__.events</code>: A telemetry log of every <code>CustomEvent</code> dispatched by components (Event Telemetry).</li>
     </ul>
 
     <coralite-heading level="2" text="Component & Plugin Mocking"></coralite-heading>
@@ -93,17 +123,28 @@
       });
     </coralite-code-highlight>
 
-    <coralite-heading level="3" text="Accessing Attributes and Context (Dynamic Mocking)"></coralite-heading>
+    <coralite-heading level="3" text="Component Mocking (testing.mocks.components)"></coralite-heading>
 
-    <p>The mock's <code>server()</code> function is called with the exact same context parameter as the real component's <code>server()</code> method. This includes access to:</p>
+    <p>This maps component tag names (module IDs) to mock definitions containing a mock <code>server</code> function.</p>
+
+    <coralite-heading level="4" text="Isomorphic Context Arguments"></coralite-heading>
+
+    <p>The mock's <code>server()</code> function receives the exact same context arguments as the component's real <code>server()</code> block. This includes access to:</p>
     <ul>
       <li><code>state</code>: An object containing coerced attribute values passed to the component instance in the HTML template.</li>
       <li><code>page</code>: Metadata about the current page rendering (such as page route and file info).</li>
-      <li><code>app</code>: The Coralite application instance.</li>
+      <li><code>root</code>: The root element structure.</li>
+      <li><code>module</code>: The component module metadata.</li>
       <li><code>id</code>: The unique instance ID of the component.</li>
       <li><code>session</code>: The build rendering session.</li>
-      <li>Plugin context (e.g., custom plugin methods injected via <code>server.context</code>).</li>
+      <li><code>app</code>: The Coralite application instance.</li>
+      <li><code>noHydration</code>: Boolean flag indicating if hydration is bypassed.</li>
+      <li>Plugin context namespaces (e.g., custom plugin methods injected via <code>server.context</code>).</li>
     </ul>
+
+    <coralite-heading level="4" text="Dynamic Mocking via Attributes"></coralite-heading>
+
+    <p>Since <code>state</code> contains coerced attributes passed in the HTML template (e.g., <code>&lt;my-component user-id="123"&gt;</code>), mock implementations can return dynamic data conditionally based on these attributes (e.g., checking <code>state.userId</code>).</p>
 
     <p>This allows you to write dynamic mock logic that behaves differently depending on the component's attributes or the page it is rendered on. Below is a full example:</p>
 
@@ -158,40 +199,21 @@
       });
     </coralite-code-highlight>
 
-    <coralite-heading level="3" text="Plugin Mocking"></coralite-heading>
+    <coralite-heading level="3" text="Plugin Mocking (testing.mocks.plugins)"></coralite-heading>
 
-    <p>Plugins injected into the application can also be mocked. This is useful when you have third-party or internal plugins (such as database connections or telemetry trackers) that expose API methods on either the server or client side.</p>
-
-    <p>Under the <code>testing.mocks.plugins</code> key, you can map the plugin's name to a definition containing <code>server</code> and/or <code>client</code> mock configurations:</p>
+    <p>Plugins injected into the application can also be mocked. Under the <code>testing.mocks.plugins</code> key, you can map the plugin's name to a definition containing <code>server</code> and/or <code>client</code> mock configurations:</p>
     <ul>
-      <li><code>server.context</code>: An object containing mock properties or methods to be merged into the plugin's server-side context (the return value of the plugin's Phase 2 resolver during the server build).</li>
-      <li><code>client.context</code>: An object containing mock properties or methods to be merged into the plugin's client-side context (the return value of the plugin's Phase 2 resolver in the browser).</li>
+      <li><strong><code>server.context</code></strong>: An object containing mock properties or methods to be merged into the plugin's server-side context (the return value of the plugin's Phase 2 resolver during the server build).</li>
+      <li><strong><code>client.context</code></strong>: An object containing mock properties or methods to be merged into the plugin's client-side context (the return value of the plugin's Phase 2 resolver in the browser).</li>
     </ul>
 
-    <coralite-heading level="2" text="Incremental Builds & Mock Invalidation"></coralite-heading>
+    <coralite-heading level="2" text="Incremental Builds &amp; ISR Cache Invalidation"></coralite-heading>
 
-    <p>Coralite's Incremental Static Regeneration (ISR) system seamlessly handles configuration updates for mock definitions. During a build, Coralite computes a hash of the entire <code>testing.mocks</code> configuration. If any mock implementation or mock function changes, the compiler detects the hash change, invalidates the build cache, and forces a rebuild of all page templates that consume the mocked components or plugins.</p>
+    <p>Coralite's Incremental Static Regeneration (ISR) system seamlessly handles configuration updates for mock definitions. The build compiler computes a hash of the entire <code>testing.mocks</code> configuration. Any modification to the mock definitions, implementations, or configuration invalidates the Incremental Static Regeneration (ISR) cache and triggers a rebuild of only the pages consuming the mocked components or plugins.</p>
     <p>This guarantees that your E2E test runs always execute against the latest mock logic and data without requiring a manual clean or slow full rebuild of the entire site.</p>
 
 
     <p>Additionally, <code>testing</code> mode acts as a static target just like <code>production</code>. Development-only AST structures are cleaned up and pages are optimized, ensuring the E2E test environment mimics production behavior as closely as possible.</p>
-
-    <coralite-heading level="2" text="Targeting Elements in Testing Mode"></coralite-heading>
-
-    <p>When writing E2E tests for your application, always use <code>mode: 'testing'</code>. Since the testing plugin is active, elements marked with <code>ref="my-btn"</code> will automatically have a <code>data-testid</code> attribute injected in the format <code>[componentId]__[refName]-[instanceIndex]</code> (e.g. <code>my-component-0__my-btn-0</code>).</p>
-
-    <coralite-heading level="3" text="Targeting Strategies: Strict vs. Flexible Assertions"></coralite-heading>
-
-    <p>Because Coralite uses deterministic AST rendering, component instance IDs (like <code>my-component-0</code>) are highly predictable. Choose your selector strategy based on the test's goal:</p>
-
-    <ul>
-      <li>
-        <strong>Default to Exact Match (Strict Structure):</strong> For standard assertions, you <strong>MUST</strong> default to exact, fully-qualified test IDs using standard locators (e.g., <code>page.getByTestId('my-component-0__button-0')</code>). This implicitly acts as a strict structural assertion, catching regressions if component render order changes unexpectedly.
-      </li>
-      <li>
-        <strong>Fallback to Suffix Matching (Dynamic Contexts):</strong> Only use CSS attribute suffix matchers (e.g., <code>page.locator('[data-testid$="__button-0"]')</code>) when targeting components rendered inside dynamic loops (e.g., lists), when the component's position in the document tree is intentionally variable, or if exact structural order is irrelevant to the specific test.
-      </li>
-    </ul>
 
     <coralite-heading level="2" text="The window.__coralite__.lifecycle.hydrated Promise"></coralite-heading>
 
