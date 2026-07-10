@@ -110,24 +110,24 @@
     <p>First, the component file (<code>components/user-profile/user-profile.html</code>):</p>
 
     <coralite-code-highlight language="html">
-      &lt;template id="user-profile"&gt;
-        &lt;div&gt;User: {{ name }} (ID: {{ userId }})&lt;/div&gt;
-      &lt;/template&gt;
+      <template id="user-profile">
+        <div>User: {{ name }} (ID: {{ userId }})</div>
+      </template>
 
-      &lt;script type="module"&gt;
-        import { defineComponent } from 'coralite';
+      <script type="module">
+        import { defineComponent } from 'coralite'
 
         export default defineComponent({
           attributes: {
             userId: String
           },
-          async server({ state }) {
+          async server ({ state }) {
             // In production/development, this would perform a real database lookup:
-            const user = await db.fetchUser(state.userId);
-            return { name: user.name };
+            const user = await db.fetchUser(state.userId)
+            return { name: user.name }
           }
-        });
-      &lt;/script&gt;
+        })
+      </script>
     </coralite-code-highlight>
 
     <p>Next, the mock configuration in <code>coralite.config.js</code> overriding this component's data based on the <code>userId</code> attribute under <code>components</code>:</p>
