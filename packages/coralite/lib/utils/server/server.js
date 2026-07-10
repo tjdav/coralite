@@ -248,8 +248,8 @@ export function findAndExtractScript (code) {
                 } else {
                   instanceIdVar = '_coralite_instanceId'
                   replacements.push({
-                    start: param.start - (value.start + 1),
-                    end: param.start - (value.start + 1),
+                    start: (param.start + 1) - value.start,
+                    end: (param.start + 1) - value.start,
                     replacement: 'instanceId: _coralite_instanceId, '
                   })
                 }
