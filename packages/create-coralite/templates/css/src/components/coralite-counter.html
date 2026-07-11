@@ -40,7 +40,7 @@
       }
     },
 
-    script ({ state, signal, refs }) {
+    client ({ state, signal, refs }) {
       const button = refs('count-button')
 
       button.addEventListener('click', async () => {
