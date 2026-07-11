@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.43.2
+
+> Comparing `create-coralite-v0.43.1` to `HEAD`
+
+**Summary:** 1 commit
+
+### ♻️ Code Refactoring
+
+- update templates to use latest client block API (create-coralite) ([5230191](https://codeberg.org/tjdavid/coralite/commit/5230191bae11492437dc9ed4cbda5f878df40298))
+
+
 ## v0.43.1
 
 > Comparing `create-coralite-v0.43.0` to `HEAD`
