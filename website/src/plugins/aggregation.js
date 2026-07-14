@@ -287,12 +287,18 @@ export const aggregation = (configs = []) => {
 
                 const paginationProps = {
                   'current-page': String(currentPage),
+                  currentPage,
                   'total-pages': String(totalPages),
+                  totalPages,
                   'base-url': baseUrl,
+                  baseUrl,
                   'url-prefix': urlPrefix,
+                  urlPrefix,
                   segment: pagination.segment || 'page',
                   'max-visible': String(pagination.maxVisible || 5),
+                  maxVisible: pagination.maxVisible || 5,
                   'aria-label': pagination.ariaLabel || 'Pagination',
+                  ariaLabel: pagination.ariaLabel || 'Pagination',
                   ellipsis: pagination.ellipsis || '...'
                 }
 
