@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.28.5 Released: Optimized Script Bundling and Improved Asset Integration"
+    description="Coralite v0.28.5 re-enables tree shaking in script manager compilation for smaller bundle sizes, and improves documentation for local path support and WASM in the Static Assets Plugin."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-03-17T06:36:41+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.28.5 Released: Optimized Script Bundling and Improved Asset Integration</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.28.5 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-03-17T06:36:41+01:00"></coralite-author>
+
+    <p>Coralite v0.28.5 is now available, delivering script compilation improvements and documentation updates for local asset paths and WASM support.</p>
+
+    <coralite-heading level="2" text="Optimized Script Bundling"></coralite-heading>
+    <p>This release restores tree shaking during script manager compilation by reverting a previous feature that disabled it. This ensures that unused exports are pruned correctly, reducing production bundle sizes and improving loading times.</p>
+
+    <coralite-heading level="2" text="Enhanced Static Assets Plugin Documentation"></coralite-heading>
+    <p>The documentation for the Static Assets Plugin has been updated to clarify that copying dependencies is supported from both NPM packages and local directories. The configuration instructions have been restructured to clearly outline schema expectations, making a clean distinction between package sources (using <code>pkg</code> and <code>path</code>) and local file sources (using <code>src</code>).</p>
+
+    <coralite-code-highlight language="javascript">
+const config = {
+  plugins: [
+    staticAssets({
+      assets: [
+        // Copying from an NPM package dependency
+        { pkg: 'monaco-editor', path: 'min/vs', dest: 'public/vs' },
+        // Copying from a local file directory
+        { src: './src/assets/custom-theme.css', dest: 'public/theme.css' }
+      ]
+    })
+  ]
+};
+    </coralite-code-highlight>
+
+    <p>Additionally, note that the development server now automatically configures <code>application/wasm</code> MIME types for <code>.wasm</code> files, resolving common integration issues when running locally.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.28.5
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.28.5
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

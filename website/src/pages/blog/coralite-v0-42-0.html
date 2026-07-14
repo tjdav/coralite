@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.42.0 Released: Decoupled Component Manifests and Improved CLI Reporting"
+    description="Coralite v0.42.0 introduces decoupled component manifests for faster incremental builds, component build reporting in the CLI, mode-aware testing updates, and runtime environment exposure."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-07-08T19:06:17+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.42.0 Released: Decoupled Component Manifests and Improved CLI Reporting</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.42.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-07-08T19:06:17+02:00"></coralite-author>
+
+    <p>Coralite v0.42.0 is now available. This release delivers major performance optimizations to page builds via decoupled component manifests, introduces interactive component build reporting to the CLI, stabilizes end-to-end (E2E) testing setups, and exposes the execution environment mode to client and server contexts.</p>
+
+    <coralite-heading level="2" text="Decoupled Component Manifests"></coralite-heading>
+    <p>Previously, Coralite inlined the <code>componentManifest</code> into a script tag on every page. This meant updating a single component could change its hash and force the build system to rebuild all parent pages. Additionally, it could result in intermittent 404 errors in production where pages that were skipped during incremental builds pointed to outdated or deleted component chunks.</p>
+    <p>To address this, Coralite v0.42.0 externalizes the site-wide <code>componentManifest</code> to a dedicated file at <code>/assets/js/manifest.js</code>, which is included in the page's import map. Consequently, deep component updates (such as script changes) no longer require rebuilding parent pages. This optimization ensures more pages can be skipped during Incremental Static Regeneration (ISR), significantly boosting build speeds and preventing chunk-related 404s.</p>
+
+    <coralite-heading level="2" text="Component Build Reporting in CLI"></coralite-heading>
+    <p>CLI output has been upgraded to display a "Components built" status summary before showing the standard page-building overview. This status reporting tracks completed versus skipped components under the hood, writing the manifest to <code>.coralite/manifest.json</code> to ensure accurate tracking. Development and monorepo builds now benefit from corrected TypeScript definitions for callbacks, and verbose logging is available to inspect build details for individual components.</p>
+
+    <coralite-heading level="2" text="Exposing Build Mode in Client and Server Contexts"></coralite-heading>
+    <p>The compiler now exposes the build environment mode (<code>development</code>, <code>production</code>, or <code>testing</code>) directly to the server rendering context and the client-side options. On the client, this environment state is exposed globally as <code>window.__coralite__.mode</code>. This makes it straightforward for components and third-party plugins to execute conditional logic depending on where they are running.</p>
+    <coralite-code-highlight language="javascript">
+// Checking the build mode at runtime
+if (window.__coralite__.mode === 'development') {
+  setupDevelopmentHotReload();
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Declarative and Mode-Aware Testing Attributes"></coralite-heading>
+    <p>End-to-end test stability is a major focus of this release. We have introduced a declarative <code>test</code> attribute to target elements in E2E tests, moving away from polluting functional <code>ref</code> attributes. During AST compilation, the <code>testingPlugin</code> (now active across all modes) transforms <code>test="val"</code> into a scoped <code>data-testid="[id]__val"</code>. To keep production output clean, the testing plugin strips test attributes in production mode. Additionally, Playwright locators have been refactored, and E2E tests now use stable CSS class selectors instead of brittle data attributes where appropriate.</p>
+    <coralite-code-highlight language="html">
+<!-- Declarative testing target defined in code -->
+<button test="submit">Submit Form</button>
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Minor Enhancements and Refactoring"></coralite-heading>
+    <ul>
+      <li><strong>Duplicate Style Prevention:</strong> The client runtime now checks for and prevents duplicate style injection when styles have already been inlined by Server-Side Rendering (SSR).</li>
+      <li><strong>LLM Configuration:</strong> Moved the LLM configuration file to public assets for improved access and decoupling.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Removal of Mode Parameter from Core Context:</strong> The <code>mode</code> parameter has been reverted and removed from compiler and element definitions. Instead, please use the newly exposed contexts or the global <code>window.__coralite__.mode</code> property.</li>
+      <li><strong>Testing Attribute Migration:</strong> The testing plugin no longer auto-generates <code>data-testid</code> attributes from <code>ref</code> attributes, and deprecated test properties have been removed. Use the new declarative <code>test</code> attribute system instead.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.42.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.42.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

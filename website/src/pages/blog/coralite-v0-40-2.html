@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.40.2 Released: Recursive Dependency Tracking for Incremental Builds"
+    description="Coralite v0.40.2 introduces recursive dependency tracking to optimize incremental builds, fixes a TypeError in onPageDelete handlers, and refactors custom element upgrades."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-30T07:45:05+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.40.2 Released: Recursive Dependency Tracking for Incremental Builds</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.40.2 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-30T07:45:05+02:00"></coralite-author>
+
+    <p>Coralite version 0.40.2 is now available, delivering stability fixes and performance optimizations to the build process and client-side runtime. The main highlight of this release is a recursive dependency tracking mechanism that ensures incremental builds accurately reflect changes in nested components. This version also resolves runtime errors in collection handlers and refactors custom element registration to reduce startup latency.</p>
+
+    <coralite-heading level="2" text="Recursive Dependency Tracking for Incremental Builds"></coralite-heading>
+    <p>To support architectures utilizing nested Incremental Static Regeneration (ISR), Coralite must accurately map relationships between pages and components. This release implements a recursive walk to track deep component dependencies across both declarative markup and imperative component definitions.</p>
+    <p>A new <code>directPageComponents</code> side-car registry has been integrated into <code>app._dependencyGraph</code>. To optimize rebuild times, these dependencies are serialized and restored via <code>.coralite/manifest.json</code>. The dependency graph walker handles circular references and automatically refreshes during incremental build checks.</p>
+
+    <coralite-heading level="2" text="Defensive Collection Handlers"></coralite-heading>
+    <p>This release addresses a <code>TypeError</code> that occurred in the <code>onPageDelete</code> handler when cleanups were triggered on missing or partially initialized dependency graphs. The <code>packages/coralite/lib/collection-handlers.js</code> module now includes defensive validation checks for <code>app._dependencyGraph</code> and malformed return values from user hooks. Unit tests have been updated and refactored to verify that pages are safely removed from the side-car registry upon deletion.</p>
+
+    <coralite-heading level="2" text="Streamlined Custom Element Initialization"></coralite-heading>
+    <p>In the runtime environment, we have removed redundant post-definition upgrade logic. Previously, Coralite executed a manual query loop to upgrade existing custom elements after calling <code>customElements.define</code>. Because modern browsers natively upgrade existing elements when a matching definition is registered, this manual loop has been removed to reduce startup latency and simplify initialization.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.40.2
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.40.2
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

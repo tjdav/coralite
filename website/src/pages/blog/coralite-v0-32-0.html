@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.32.0 Released: Deterministic E2E Testing and Page Context Standardization"
+    description="Coralite v0.32.0 introduces deterministic client-side component initialization, a dedicated testing plugin for automated test ID generation, optimized Node VM sandboxing, and standardized page context variables."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-04-17T14:00:13+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.32.0 Released: Deterministic E2E Testing and Page Context Standardization</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.32.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-04-17T14:00:13+02:00"></coralite-author>
+
+    <p>Coralite v0.32.0 is now available, introducing key enhancements focused on test reliability, developer experience, and plugin development. This release improves the determinism of client-side hydration in development, introduces a dedicated testing plugin to streamline E2E workflows, optimizes context evaluation inside our development virtual machine (VM), and standardizes built-in page variables to use a consistent prefix.</p>
+
+    <coralite-heading level="2" text="Deterministic Initialization and Testing Tooling"></coralite-heading>
+    <p>In previous versions, client-side hydration for declarative components mapped over instances concurrently via <code>Promise.all()</code>. In development mode, network latency or execution races could cause component scripts to run out of order. This led to non-deterministic instantiation order, resulting in flaky test-id and index assignments during end-to-end (E2E) test runs.</p>
+    <p>To address this, Coralite v0.32.0 splits initialization into two phases: concurrently resolving and loading component dependencies, and then sequentially executing the component scripts in development mode inside a <code>for...await</code> loop. Production mode continues to execute everything concurrently to maximize rendering performance.</p>
+    <p>Additionally, this release introduces a testing plugin (activated when <code>options.mode === 'development'</code> or via a configuration flag) that replaces random UUIDs with deterministic, component-scoped integer counters. The plugin walks the component AST to duplicate references (<code>ref</code>) into namespaced <code>data-testid</code> attributes at build-time using the <code>[componentId]__[refName]-[index]</code> pattern.</p>
+
+    <coralite-code-highlight language="html">
+<!-- Source Component -->
+<button ref="submitButton">Submit</button>
+
+<!-- Generated Output (v0.32.0 Development Mode) -->
+<button ref="submitButton" data-testid="my-component__submitButton-0">Submit</button>
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Optimized VM Context Injection"></coralite-heading>
+    <p>When running components in development mode, Coralite evaluates server scripts inside a Node VM sandbox. To keep memory usage low and prevent cross-realm sandboxing issues, we now use AST parsing via <code>acorn</code> to inspect scripts and extract only the globals that are actually referenced. Fundamental built-in constructors (such as <code>Object</code> and <code>Array</code>) are excluded to avoid sandboxing conflicts. We have also added support for standard web globals, including <code>setTimeout</code> and <code>URL</code>, inside the VM sandbox context.</p>
+
+    <coralite-heading level="2" text="Platform Compatibility and Performance"></coralite-heading>
+    <p>This release resolves Windows-specific path resolution issues within <code>script-manager.js</code>. When importing <code>dom-serializer</code>, backslashes in Windows file paths were previously interpreted as escape sequences by the JavaScript parser, corrupting the path. We now pass the path through <code>JSON.stringify()</code> to safely escape backslashes.</p>
+    <p>Furthermore, search and lookups in the script manager have been optimized. Redundant <code>Object.keys().includes()</code> calls have been replaced with <code>Object.hasOwn()</code> for O(1) lookups, and utility logic has been streamlined to reduce redundant object traversals.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <p>Coralite v0.32.0 standardizes built-in page variables, renaming them to use a consistent <code>page_*</code> prefix. Ensure your templates and plugins are updated to reflect these updates:</p>
+    <ul>
+      <li><strong>Property Renames:</strong> The following page context variables have been renamed to standardize on the <code>page_*</code> pattern:
+        <ul>
+          <li><code>$urlPathname</code> &rarr; <code>page_url_pathname</code> (with <code>$urlPathname</code> temporarily retained as a deprecated fallback)</li>
+          <li><code>$urlDirname</code> &rarr; <code>page_url_dirname</code></li>
+          <li><code>$filePathname</code> &rarr; <code>page_pathname</code></li>
+          <li><code>$fileDirname</code> &rarr; <code>page_dirname</code></li>
+          <li><code>$filename</code> &rarr; <code>page_filename</code></li>
+          <li><code>$lang</code> &rarr; <code>page_lang</code></li>
+        </ul>
+      </li>
+      <li><strong>Plugin Hook Payload Changes:</strong> The structure passed to the <code>onPageUpdate</code> plugin hook has been updated to match the <code>onPageSet</code> hook. Instead of receiving only <code>CoraliteElement[]</code>, it now receives the full <code>ParseHTMLResult</code> (representing the entire parsed document tree), allowing plugins to safely traverse the entire page structure during updates.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.32.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.32.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

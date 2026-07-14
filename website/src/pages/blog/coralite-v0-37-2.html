@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.37.2 Released: Fix Browser Runtime Bundle Failures"
+    description="Coralite v0.37.2 addresses build-time resolution failures in consuming applications by ensuring essential plugin and utility files are properly bundled for the browser runtime."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-10T07:36:07+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.37.2 Released: Fix Browser Runtime Bundle Failures</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.37.2 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-10T07:36:07+02:00"></coralite-author>
+
+    <p>Coralite v0.37.2 is now available. This release contains a targeted bug fix that addresses build-time resolution failures for applications consuming compiled Coralite components in browser runtimes.</p>
+
+    <coralite-heading level="2" text="Fixing Browser Runtime Bundle Failures"></coralite-heading>
+    
+    <p>Previously, when consuming applications compiled components using the Coralite builder, dynamic <code>import.meta.resolve</code> calls pointed to internal utility and plugin files. Because these files were omitted from the compilation step and the published distribution directory, it led to "Could not resolve" failures during build compilation.</p>
+
+    <p>To resolve this issue, the compilation process now explicitly includes <code>./lib/plugin.js</code>, <code>./lib/utils/core.js</code>, and <code>./lib/utils/index.js</code> as esbuild entry points using the <code>--outbase=./lib</code> flag. These files are now fully included in the published package, ensuring clean dependency resolution for downstream projects.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.37.2
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.37.2
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

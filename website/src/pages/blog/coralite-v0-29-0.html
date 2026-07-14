@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.29.0 Released: A Unified Web Component Model and Two-Phase Helpers"
+    description="Coralite v0.29.0 introduces a unified hybrid web component model, recursive imperative dependency resolution, two-phase execution for client helpers, and a global terminology shift from Document to Component."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-03-23T19:09:33+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.29.0 Released: A Unified Web Component Model and Two-Phase Helpers</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.29.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-03-23T19:09:33+01:00"></coralite-author>
+
+    <p>Coralite v0.29.0 is now available. This release refines the core architecture by completely removing standalone components in favor of a unified, hybrid declarative/imperative web component model. In addition, this version introduces recursive imperative component dependency resolution, refactors the plugin client helpers to a more efficient two-phase execution cycle, refines the hydration mechanism around the <code>ref</code> attribute, and cleans up framework terminology by renaming all "Document" types to "Component".</p>
+
+    <coralite-heading level="2" text="Unified Hybrid Component Model"></coralite-heading>
+    <p>In previous versions, Coralite maintained a distinct configuration and output format for standalone components. To simplify the codebase and improve performance, standalone components have been entirely removed. In their place, Coralite now standardizes on a hybrid declarative and imperative web component model. The <code>standaloneOutput</code> configuration has been removed from the Core API, types, and CLI, and the compilation logic has been simplified accordingly.</p>
+    <p>As part of this model, the <code>client.script</code> context properties have been updated to replace the old <code>document</code> property with <code>root</code>. This property can dynamically point to either a <code>ShadowRoot</code> (for encapsulated shadow DOM elements) or a <code>Document</code> fragment, providing a cleaner abstraction for scripting component behavior.</p>
+    <coralite-code-highlight language="javascript">
+// Before:
+export default ({ document }) => {
+  const element = document.getElementById('my-el');
+};
+
+// After:
+export default ({ root }) => {
+  // 'root' is either a ShadowRoot or a Document fragment
+  const element = root.querySelector('[ref="my-el"]');
+};
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Recursive Imperative Component Dependencies"></coralite-heading>
+    <p>To support advanced imperative workflows, Coralite v0.29.0 implements recursive dependency resolution and bundling for imperative web components. Authors can define a new <code>client.components</code> array inside client scripts to specify string dependencies representing other imperative web components. These are recursively resolved via a shared functions registry to prevent infinite loops and ensure all nested components and their scoped styles are bundled correctly prior to registration.</p>
+    <coralite-code-highlight language="javascript">
+// Declaring dependencies in a component's client script
+export const components = ['coralite-button', 'coralite-icon'];
+
+export default ({ root, components }) => {
+  // Subcomponents are automatically loaded and bundled before this component registers
+};
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Two-Phase Plugin Client Helpers"></coralite-heading>
+    <p>Plugin helpers registered via <code>defineComponent</code> now run in a two-phase execution cycle: <code>globalContext => localContext</code>. Previously, helpers were executed in a single phase, which meant that heavy objects like <code>imports</code> and <code>config</code> were repeatedly injected and processed during every instance render. With two-phase execution, the initial global phase receives the global configuration and imports once, returning a closure that is executed per component instance with local context variables (such as <code>root</code> and <code>refs</code>).</p>
+    <coralite-code-highlight language="javascript">
+// Two-phase plugin client helper structure
+export default (globalContext) => {
+  // Phase 1: Global setup (e.g., config, imports) executed once
+  const { imports, config } = globalContext;
+
+  return (localContext) => {
+    // Phase 2: Local execution executed per component instance
+    const { root, refs } = localContext;
+  };
+};
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Preserving Unique Ref Attributes for Hydration"></coralite-heading>
+    <p>To prevent conflicts and simplify DOM queries, the hydration engine no longer deletes the <code>ref</code> attribute and sets the <code>id</code> attribute. Instead, the framework modifies the <code>ref</code> attribute directly with a unique value and preserves it. The <code>refs</code> plugin has been updated to query matching elements using <code>querySelector('[ref="..."]')</code> instead of <code>getElementById</code>, maintaining high performance through query caching logic.</p>
+
+    <coralite-heading level="2" text="Global Rename: Document to Component"></coralite-heading>
+    <p>To better align terminology with modern web standards, Coralite has renamed all instances of "Document" types to "Component" across the codebase. This represents a clean break from old naming conventions and makes the internal APIs more intuitive.</p>
+    <ul>
+      <li><code>CoraliteDocument</code> is now <code>CoraliteComponent</code></li>
+      <li><code>CoraliteDocumentRoot</code> is now <code>CoraliteComponentRoot</code></li>
+      <li><code>CoraliteDocumentResult</code> is now <code>CoraliteComponentResult</code></li>
+      <li><code>CoraliteDocumentValues</code> is now <code>CoraliteComponentValues</code></li>
+      <li><code>cloneDocumentInstance</code> is now <code>cloneComponentInstance</code></li>
+    </ul>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Method Rename:</strong> <code>Coralite.prototype.createComponent</code> has been renamed to <code>Coralite.prototype.createComponentElement</code>.</li>
+      <li><strong>Context Property Replacement:</strong> Inside <code>client.script</code>, the <code>document</code> property has been replaced by <code>root</code> (which yields either the <code>ShadowRoot</code> or <code>Document</code> context).</li>
+      <li><strong>Standalone Components Removal:</strong> The <code>standaloneOutput</code> configuration and <code>--standalone</code> CLI flags have been completely removed.</li>
+      <li><strong>Plugin Helper API:</strong> Client helpers now must adhere to the two-phase currying signature (<code>globalContext => localContext</code>).</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.29.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.29.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

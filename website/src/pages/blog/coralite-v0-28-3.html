@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.28.3 Released: Native Static Asset Copying"
+    description="Coralite v0.28.3 introduces native static asset copying, including support for package assets, a new command-line option, and enhanced build pipeline integration."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-03-16T17:30:37+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.28.3 Released: Native Static Asset Copying</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.28.3 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-03-16T17:30:37+01:00"></coralite-author>
+
+    <p>Coralite v0.28.3 has been released. This update introduces native support for copying static assets during the build process, featuring integration for the new static asset plugin, support for copying assets from external packages, and a command-line option to specify assets dynamically.</p>
+
+    <coralite-heading level="2" text="Native Support for Package Assets"></coralite-heading>
+
+    <p>This release integrates the new <code>staticAssetPlugin</code> directly into the core Coralite builder. This enables projects to automatically copy static assets from external NPM packages into the output directory during the build lifecycle.</p>
+
+    <p>A new <code>assets</code> configuration option accepts an array of <code>{pkg, path, dest}</code> objects. The builder ensures the static asset plugin is initialized first in the plugin chain to guarantee that all assets are copied and available for subsequent compilation steps.</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+export default {
+  assets: [
+    {
+      pkg: 'my-design-system',
+      path: 'dist/assets/fonts',
+      dest: 'public/fonts'
+    }
+  ]
+};
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Dynamic Asset Specification via CLI"></coralite-heading>
+
+    <p>In addition to config-based setup, a new <code>--assets</code> command-line option has been added to the build command. This option allows users to provide a JSON string array of static assets to copy during the build process, enabling direct asset inclusion without manual post-build tasks.</p>
+
+    <p>The parser includes validation for the input array, returning clear error feedback if the JSON is malformed or invalid.</p>
+
+    <coralite-code-highlight language="bash">
+npx coralite build --assets '[{"pkg": "my-design-system", "path": "dist/logo.svg", "dest": "public/logo.svg"}]'
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Improved Validation and API Documentation"></coralite-heading>
+
+    <p>Asset parsing has been refactored to support a more flexible <code>package:path:dest</code> string format. Full end-to-end (E2E) test coverage has been added for the <code>staticAssetPlugin</code>, alongside unit tests verifying the plugin initialization order. To support TypeScript and editor integrations, the <code>CoraliteStaticAsset</code> type has been added to <code>types/core.js</code> and JSDoc comments have been documented on the plugin function.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.28.3
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.28.3
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

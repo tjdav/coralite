@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.27.0 Released: Compile Standalone Web Components"
+    description="Coralite v0.27.0 introduces standalone Web Component generation, transitions terminology from templates to components, and refactors ref resolution to target element IDs directly."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-03-06T00:45:48+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.27.0 Released: Compile Standalone Web Components</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.27.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-03-06T00:45:48+01:00"></coralite-author>
+
+    <p>Coralite v0.27.0 is now available. This release introduces support for compiling Coralite components into standalone client-side Web Components, renames "templates" to "components" across the public API to match frontend terminology, and refactors ref resolution to assign values directly to standard element IDs.</p>
+
+    <coralite-heading level="2" text="Standalone Web Component Generation"></coralite-heading>
+    <p>This release adds support for generating standalone ES Modules from Coralite components, enabling client-side rendering without requiring a build step on the consumer side. When standalone mode is enabled, the compiler generates custom elements with native Shadow DOM, client-side import resolution, attribute parity emulation, and ref hydration.</p>
+
+    <p>To use this feature, specify the new <code>standaloneOutput</code> option in your configuration or use the <code>--standalone</code> command-line option:</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+module.exports = {
+  components: './src/components',
+  standaloneOutput: './dist/components'
+};
+    </coralite-code-highlight>
+
+    <p>The standalone compiler also extracts and resolves module imports from Vue-style component script setup blocks. External libraries and JSON configuration files (e.g., imported with <code>attributes: { type: 'json' }</code>) are now compiled and mapped to the component's <code>context.imports</code> object, ensuring they execute correctly in the browser shadow DOM.</p>
+
+    <coralite-heading level="2" text="Renaming Templates to Components"></coralite-heading>
+    <p>To avoid confusion with the native HTML <code>&lt;template&gt;</code> element, all public API references to "templates" have been renamed to "components". Coralite files act as Single File Components (SFCs) wrapping HTML markup, styles, and scripts. This semantic change establishes a clean distinction between the container files and the actual HTML tags used within them.</p>
+
+    <coralite-heading level="2" text="ID-Based Ref Resolution"></coralite-heading>
+    <p>The <code>refs</code> plugin has been updated to assign ref values directly to the standard HTML <code>id</code> attribute instead of the custom <code>data-coralite-ref</code> attribute. These generated IDs are exposed in the build context under <code>refs</code>, enabling developers to dynamically reference element IDs in scripts using standard tokens:</p>
+
+    <coralite-code-highlight language="html">
+<!-- my-button.html -->
+<button ref="actionBtn">Click Me</button>
+
+<script>
+  // Replaced with the generated ID during build
+  const buttonId = "{{ ref_actionBtn }}";
+  const button = document.getElementById(buttonId);
+</script>
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Flexible Attribute Options and Language Extraction"></coralite-heading>
+    <p>The configuration validation rules for <code>skipRenderByAttribute</code> and <code>ignoreByAttribute</code> have been expanded to accept arrays of strings (e.g., <code>["data-id"]</code>) in addition to structured attribute objects (e.g., <code>[{ name: "data-id", value: "123" }]</code>). Furthermore, the compiler now extracts the root <code>lang</code> attribute from the page <code>&lt;html&gt;</code> tag and sets the <code>$lang</code> metadata property automatically.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>CoraliteResult Schema:</strong> The <code>html</code> property has been renamed to <code>content</code>, and a new required <code>type</code> property (<code>'page' | 'component'</code>) has been added to support page and component outputs.</li>
+      <li><strong>Public API Renaming:</strong> The <code>templates</code> configuration property is renamed to <code>components</code>. Scaffolded project directories must be changed from <code>src/templates</code> to <code>src/components</code>, and hook registrations have been renamed from <code>onTemplate*</code> to <code>onComponent*</code>.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.27.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.27.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

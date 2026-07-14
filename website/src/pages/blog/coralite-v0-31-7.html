@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.31.7 Released: API Refinements and Improved Import Resolution"
+    description="Coralite v0.31.7 introduces the definePlugin API, cleans up legacy context properties deprecated by the transition away from Shadow DOM, and corrects relative import resolution."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-04-14T15:30:59+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.31.7 Released: API Refinements and Improved Import Resolution</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.31.7 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-04-14T15:30:59+02:00"></coralite-author>
+
+    <p>Coralite v0.31.7 is now available. This release focuses on API consistency, type safety enhancements, and fixing relative path resolution for component-level client imports. Key updates include the standardization of the plugin definition API, removal of legacy properties deprecated by the transition away from Shadow DOM, and robust relative resolution for component imports in the esbuild pipeline.</p>
+
+    <coralite-heading level="2" text="Standardizing Plugin Definitions with definePlugin"></coralite-heading>
+    <p>To align with the established <code>defineComponent</code> convention, the core plugin definition function has been renamed from <code>createPlugin</code> to <code>definePlugin</code>. All core exports, documentation, CLI scaffold templates, and built-in plugins (such as <code>static-assets</code>, <code>refs</code>, <code>metadata</code>, and <code>define-component</code>) have been updated to use the new convention. Redirects have also been set up on the documentation website to point legacy references to the new pages.</p>
+    
+    <p>Usage of the new API remains functionally identical, requiring only a change in the imported function name:</p>
+
+    <coralite-code-highlight language="javascript">
+import { definePlugin } from 'coralite';
+
+export default definePlugin({
+  name: 'custom-logger',
+  setup(context) {
+    console.log('Plugin initialized');
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Shadow DOM Deprecation Cleanup &amp; Improved Types"></coralite-heading>
+    <p>In line with the deprecation of Shadow DOM usage within the framework, the obsolete <code>root</code> property has been removed from <code>CoraliteScriptContent</code> and the main <code>coralite.js</code> context. The <code>refs</code> plugin has been updated to query the global <code>document</code> instead of the removed <code>root</code> context. Additionally, type definitions in <code>script.js</code> have been refined, and the <code>slots</code> property in <code>ScriptContent</code> is now correctly typed as <code>CoraliteModuleSlotFunction</code>, improving editor completion and compile-time checks.</p>
+
+    <coralite-heading level="2" text="Resolving Relative Imports in Components"></coralite-heading>
+    <p>Previously, relative paths defined in the <code>client.imports</code> array of a component were resolved against the active terminal current working directory (<code>process.cwd()</code>). In v0.31.7, the internal component bundler has been updated to resolve relative imports (e.g. <code>./my-lib.js</code>) against the directory containing the component file. This ensures predictable building behavior regardless of where the developer runs CLI commands.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Removal of createPlugin:</strong> The <code>createPlugin</code> export has been removed in favor of <code>definePlugin</code>. You must update your imports to use <code>definePlugin</code>.</li>
+      <li><strong>Removal of context.root:</strong> The deprecated <code>root</code> property has been removed from the script execution context. Direct DOM references should be resolved via standard document APIs or the <code>refs</code> plugin.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.31.7
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.31.7
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

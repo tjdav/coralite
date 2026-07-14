@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.31.2 Released: Protected Child Component Refs"
+    description="Coralite v0.31.2 is now available, featuring a crucial fix for nested web component ref scoping to prevent parent components from overriding child component internal references."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-04-08T20:40:44+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.31.2 Released: Protected Child Component Refs</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.31.2 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-04-08T20:40:44+02:00"></coralite-author>
+
+    <p>Coralite version 0.31.2 is now available. This patch release resolves issues with component reference mapping in nested environments, ensuring that custom web components preserve their internal element references correctly without parent components overriding them.</p>
+
+    <coralite-heading level="2" text="Nested Reference Scoping Fix"></coralite-heading>
+    <p>When rendering imperative web components, Coralite uses a reference mapping mechanism to locate elements marked with the <code>ref</code> attribute. Previously, using <code>querySelectorAll('[ref]')</code> matched all nested elements with a <code>ref</code> attribute, including those belonging to child custom components. This caused child custom components' internal references to be overridden, resulting in them evaluating to <code>null</code> when accessed via <code>helpers.refs()</code> within the child component.</p>
+
+    <p>To resolve this, version 0.31.2 introduces ancestor traversal for each matched <code>ref</code> element. The collector traverses ancestors up to the current component root. If any intermediate parent contains a hyphen (<code>-</code>) in its tag name—indicating a custom element boundary—the parent component safely skips processing that element to preserve the child's reference scope.</p>
+
+    <p>For example, in a nested template layout, inner references are now protected from being modified by the outer element:</p>
+
+    <coralite-code-highlight language="html">
+<!-- Parent Component Template -->
+<div ref="parentContainer">
+  <!-- Inner custom element whose internal refs are now safely isolated -->
+  <custom-child></custom-child>
+</div>
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Correcting Web Component Ref Attribute Values"></coralite-heading>
+    <p>This release also ensures that the correct web component <code>ref</code> attribute values are set during the compilation and rendering process, preventing mismatched or incorrect property bindings on elements.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.31.2
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.31.2
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

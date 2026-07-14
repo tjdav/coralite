@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.43.1 Released: Robust Parameter Injection and Imperative Element Prefixing"
+    description="Coralite v0.43.1 resolves server-side client parameter destructuring bugs, fixes prefixing for imperatively created components, and adds environment-specific attribute tests."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-07-10T16:21:03+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.43.1 Released: Robust Parameter Injection and Imperative Element Prefixing</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.43.1 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-07-10T16:21:03+02:00"></coralite-author>
+
+    <p>Coralite v0.43.1 is now available. This patch release resolves issues with server-side code generation and imperatively created DOM components. Specifically, it ensures correct runtime attribute prefixing during partial parameter destructuring, guarantees instance ID assignment for dynamically created elements, and introduces enhanced environment-specific verification tests.</p>
+
+    <coralite-heading level="2" text="Client Parameter Destructuring Injection Fix"></coralite-heading>
+    <p>When client methods use partial object destructuring, code generation on the server previously omitted the internal <code>instanceId</code>. This omission caused DOM attribute prefixing to fail at runtime. Coralite v0.43.1 solves this by updating the compilation process to explicitly inject <code>instanceId: _coralite_instanceId</code> into the parameter list if it is not present in the destructuring pattern.</p>
+
+    <coralite-code-highlight language="javascript">
+// Compiled client method signature now guarantees instanceId injection:
+function clientMethod({ someProp, otherProp, instanceId: _coralite_instanceId }) {
+  // Correct prefixing is preserved for runtime DOM modifications
+}
+</coralite-code-highlight>
+
+    <coralite-heading level="2" text="Instance ID Assignment for Imperative Elements"></coralite-heading>
+    <p>Components instantiated dynamically using native web APIs like <code>document.createElement</code> did not always receive a deterministic instance ID. This resulted in unprefixed <code>data-testid</code> attributes at runtime. This release assigns a deterministic <code>_instanceId</code> to <code>CoraliteElement</code> instances at runtime to ensure scoping and attribute prefix rules are respected for dynamically created elements.</p>
+
+    <coralite-code-highlight language="javascript">
+// Dynamically created elements now behave consistently:
+const btn = document.createElement('coralite-button');
+btn.setAttribute('data-testid', 'submit-action');
+// data-testid is now correctly prefixed in the DOM
+</coralite-code-highlight>
+
+    <coralite-heading level="2" text="Environment-Specific Attribute Testing"></coralite-heading>
+    <p>To avoid regressions in build output, the E2E test suite has been updated to explicitly test how <code>data-testid</code> attributes behave across different environments. This ensures that test IDs are correctly stripped from production builds for optimization, while remaining intact and properly prefixed in development environments. The validation spans boolean attributes, imperatively created elements, and innerHTML rendering pipelines.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.43.1
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.43.1
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

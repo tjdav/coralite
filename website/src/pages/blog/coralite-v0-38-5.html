@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.38.5 Released: Deterministic Styling for Imperative Components"
+    description="Coralite v0.38.5 resolves rendering and styling behaviors for imperative components, upgrades Playwright to 1.61.0, and updates key workspace dependencies."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-23T12:32:09+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.38.5 Released: Deterministic Styling for Imperative Components</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.38.5 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-23T12:32:09+02:00"></coralite-author>
+
+    <p>Coralite v0.38.5 is now available. This release resolves styling and runtime loading issues for imperative-only components, aligns Playwright testing environments, and updates core workspace dependencies.</p>
+
+    <coralite-heading level="2" text="Deterministic Styling for Imperative Components"></coralite-heading>
+    <p>Previously, components rendered imperatively—such as those created dynamically via client-side APIs instead of being declared in the HTML template—could fail to receive layout styles or be omitted from the client-side component bundle manifest. This occurred because declarative, imperative, and plugin-injected component collections were tracked separately.</p>
+    <p>To resolve this, we refactored component dependency collection in <code>renderer.js</code> to consolidate all page components into a single deterministic set. This unified set is now used to:</p>
+    <ul>
+      <li>Populate the <code>coralite-components</code> style tag, ensuring that <code>display: contents</code> is correctly applied to imperative-only components.</li>
+      <li>Filter the client manifest so that all required component bundles are properly included in the page runtime.</li>
+    </ul>
+    <p>A regression test has been added in <code>packages/coralite/tests/e2e/style-behavior.test.js</code> to verify that imperative-only components reliably receive their layout styles.</p>
+
+    <coralite-heading level="2" text="Workspace Dependency and Tooling Updates"></coralite-heading>
+    <p>This version updates several workspace-wide packages to their latest compatible versions to ensure stability, performance, and developer environment parity:</p>
+    <ul>
+      <li><strong>Playwright &amp; CI:</strong> Playwright has been updated to version 1.61.0 in <code>packages/coralite/package.json</code>, and the corresponding Docker image in the <code>test-e2e.yml</code> workflow has been upgraded to match, keeping testing behavior consistent between local environments and CI.</li>
+      <li><strong>Development Tooling:</strong> Upgraded core tools including <code>typescript</code>, <code>eslint</code>, <code>esbuild</code>, and <code>lint-staged</code>.</li>
+      <li><strong>Shared Utilities:</strong> Updated <code>simple-git</code>, <code>commander</code>, <code>postcss</code>, and <code>sass</code>.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.38.5
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.38.5
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

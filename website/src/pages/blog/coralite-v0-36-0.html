@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.36.0 Released: Native Hydration &amp; Isomorphic Plugins"
+    description="Coralite v0.36.0 introduces native Web Component hydration, a new isomorphic plugin API, a modular styles pipeline, and support for no-hydration component subtrees."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-05-27T08:59:09+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.36.0 Released: Native Hydration &amp; Isomorphic Plugins</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.36.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-05-27T08:59:09+02:00"></coralite-author>
+
+    <p>Coralite v0.36.0 is now available, delivering significant architectural updates to the framework. This release shifts the client-side hydration engine to native Web Components (Custom Elements), introduces a strictly separated isomorphic plugin API, and lands a unified styles build pipeline supporting modular CSS and Sass processors. In addition, developers benefit from deterministic component IDs, boolean attribute interception, and performance improvements to SSR rendering.</p>
+
+    <coralite-heading level="2" text="Native Web Component Hydration"></coralite-heading>
+    <p>In this release, Coralite transitions from custom client wrapper abstractions to native Custom Elements. Components now map directly to subclasses of <code>HTMLElement</code>, adopting standard lifecycle callbacks such as <code>connectedCallback</code> and <code>attributeChangedCallback</code>. This native transition facilitates streamlined, scoped reactivity and secure HTML rendering. Hydration mapping has also been redesigned using high-performance tree-path traversing, resulting in O(1) lookups during client startup. To enforce cleaner runtime scoping, the legacy <code>root</code> reference has been completely removed from component and plugin evaluation contexts, standardizing scripts on the <code>{ state, signal, refs }</code> context.</p>
+
+    <coralite-code-highlight language="javascript">
+defineComponent({
+  setup({ state, signal, refs }) {
+    // Access state variables, reactive signals, and resolved element refs
+    // 'root' is removed in favor of clean runtime encapsulation
+  }
+});
+</coralite-code-highlight>
+
+    <coralite-heading level="2" text="Isomorphic Plugin API"></coralite-heading>
+    <p>To improve codebase modularity and prevent server-side Node.js logic from leaking into client bundles, the plugin architecture has been split. Under the new <code>definePlugin</code> schema, server-side SSR hooks, components, and server exports are encapsulated within a dedicated <code>server</code> block, keeping browser-facing hydration scripts completely isolated.</p>
+
+    <coralite-code-highlight language="javascript">
+import { definePlugin } from 'coralite';
+
+export default definePlugin({
+  name: 'my-custom-plugin',
+  server: {
+    onBeforePageRender(session) {
+      // Executed strictly on the server during SSR
+    },
+    components: {
+      // SSR-only component declarations
+    }
+  },
+  client: {
+    onBeforeComponentRender(context) {
+      // Runs in the browser prior to component hydration
+    }
+  }
+});
+</coralite-code-highlight>
+
+    <coralite-heading level="2" text="Modular Styles &amp; Generic Build Pipeline"></coralite-heading>
+    <p>The styles configuration schema in <code>coralite-scripts</code> has been rewritten from the ground up to support multiple input paths and modular css processors like Sass and PostCSS. A unified styles pipeline now processes raw CSS and SCSS styles, watches partials for hot updates during development, validates configuration schemas, and flags filename collisions. The core engine also gains the ability to automatically inject these global stylesheets as <code>&lt;link&gt;</code> tags in page headers via the new <code>externalStyles</code> option.</p>
+
+    <coralite-heading level="2" text="No-Hydration Component Subtrees"></coralite-heading>
+    <p>A new <code>no-hydration</code> boolean attribute has been introduced to support completely static UI regions. When a component carries the <code>no-hydration</code> attribute, its host wrapper is stripped during SSR (unwrapping its children directly into the parent layout) and it is excluded from client-side hydration. This unwrapping behavior propagates recursively down through all nested elements and helper <code>&lt;c-token&gt;</code> wrappers, producing lightweight, zero-JS HTML.</p>
+
+    <coralite-code-highlight language="html">
+<!-- Renders static content and unwraps the host element -->
+<my-static-header no-hydration>
+  <nav>
+    <a href="/">Home</a>
+  </nav>
+</my-static-header>
+</coralite-code-highlight>
+
+    <coralite-heading level="2" text="Boolean Attribute Interception"></coralite-heading>
+    <p>Coralite now intercepts standard HTML5 boolean attributes (such as <code>disabled</code>, <code>checked</code>, <code>hidden</code>, <code>required</code>, and <code>autoplay</code>) during both server-side SSR and client-side rendering. If an attribute evaluates to a truthy value, it is rendered as an empty attribute; if it is falsy, it is completely removed from the DOM tag, aligning framework behavior with natural HTML specifications.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Plugin API Restructuring:</strong> Server-side lifecycle hooks, components, and exports in <code>definePlugin</code> must now be nested under the <code>server</code> configuration object.</li>
+      <li><strong>Removal of root Context:</strong> The <code>root</code> reference is no longer exposed in component or plugin contexts. Utilize the <code>refs</code> API or standard document selectors.</li>
+      <li><strong>Hook Payload Signature:</strong> The <code>onAfterPageRender</code> hook payload signature has been updated to <code>{ result, session }</code>.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.36.0
+</coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.36.0
+</coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

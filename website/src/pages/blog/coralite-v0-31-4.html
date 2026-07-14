@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.31.4 Released: Robust Dynamic References and Script Packaging"
+    description="Coralite v0.31.4 delivers critical bug fixes for dynamic imperative references, client-side script bundling, slot resolution, and custom element parser validation."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-04-09T23:53:54+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.31.4 Released: Robust Dynamic References and Script Packaging</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.31.4 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-04-09T23:53:54+02:00"></coralite-author>
+
+    <p>Coralite v0.31.4 is now available, introducing key fixes to dynamic imperative references, script packaging, slot computation, and code generation utilities. This release resolves several critical issues affecting dynamically instantiated components and ensures reliable client-side script bundling.</p>
+
+    <coralite-heading level="2" text="Robust Dynamic Imperative References"></coralite-heading>
+    <p>This release updates <code>ScriptManager.registerComponent</code> to properly merge configuration variables—such as <code>defaultValues</code>, <code>styles</code>, <code>slots</code>, <code>imports</code>, and nested <code>components</code>—into existing registered component instances rather than overwriting them. Additionally, we patched the client-side wrapper in <code>coralite.js</code> to map and fallback dynamic <code>ref_</code> tokens using a unique imperative UUID (<code>this._index</code>). This ensures references resolve correctly even when child components are dynamically instantiated in the DOM.</p>
+
+    <coralite-code-highlight language="javascript">
+// Dynamic references map to values via their unique imperative index
+const el = document.createElement('my-dynamic-component');
+// The component is initialized with correct config merging and dynamic ref fallback
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Script Registration and Packaging Fixes"></coralite-heading>
+    <p>Client-side script generation has been corrected to register scripts under <code>renderContext.pagePath</code> rather than the individual component's file path. This adjustment ensures that page generation functions reliably find and bundle all necessary assets. We also resolved a recursive parameter shadowing issue in <code>createComponentElement</code> and normalized shorthand ES6 methods into standard function strings during serialization to prevent invalid JS declarations in the final build output.</p>
+
+    <coralite-heading level="2" text="Slot Resolution and Validation Improvements"></coralite-heading>
+    <p>To improve layout rendering and parsing stability, we addressed light DOM slot nodes being incorrectly overwritten by appending them instead. We also introduced a parent wrapper component for <code>computed-slots-imperative</code> to statically declare dynamic injection contexts and prevent test timeouts. Lastly, the parser now uses original tag names for validation and error messages instead of sanitized names, providing clearer error feedback.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.31.4
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.31.4
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

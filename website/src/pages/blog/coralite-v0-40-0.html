@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.40.0 Released: Introducing Granular Lifecycle Management"
+    description="Coralite v0.40.0 introduces a centralized lifecycle manager for granular component state tracking, upgrades the asset pipeline with flexible CLI configurations, and expands E2E testing across development and production targets."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-25T16:48:01+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.40.0 Released: Introducing Granular Lifecycle Management</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.40.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-25T16:48:01+02:00"></coralite-author>
+
+    <p>Coralite v0.40.0 is now available, delivering improvements to component observability, development builds, and the asset pipeline. This release introduces a granular lifecycle manager for tracking element hydration, provides richer options for configuring static assets through the CLI, and implements dual-build E2E testing to guarantee consistency between development and production outputs.</p>
+
+    <coralite-heading level="2" text="Granular Lifecycle Management"></coralite-heading>
+    <p>We have transitioned the framework's initialization tracker from the legacy <code>window.__coralite_ready__</code> global flag to a centralized <code>window.__coralite__.lifecycle</code> namespace. Powered by the new <code>CoraliteLifecycleManager</code>, components now progress through explicit <code>defined</code>, <code>rendered</code>, and <code>hydrated</code> phases.</p>
+    <p>The manager is inlined directly in the document head for early availability. Developers can leverage the new <code>waitFor</code> API to track dynamic or asynchronously loaded elements programmatically:</p>
+
+    <coralite-code-highlight language="javascript">
+window.__coralite__.lifecycle.waitFor(element).then(() => {
+  console.log('Component is fully hydrated and interactive.');
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Enhanced Assets Support"></coralite-heading>
+    <p>The <code>coralite-scripts</code> command-line interface now supports an <code>-a</code> or <code>--assets</code> option. This allows defining asset mappings directly from the shell using either <code>src:dest</code> or <code>pkg:path:dest</code> syntax. These CLI flags are merged using a selective override strategy on top of configurations defined in <code>defineConfig</code>.</p>
+    <p>This update also whitelists assets during clean builds, preventing them from being swept away during incremental rebuilds.</p>
+
+    <coralite-code-highlight language="bash">
+# Map local source directory to destination, and package assets to a custom path
+coralite-scripts build -a src/assets:dist/assets -a my-package:src/icons:dist/icons
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Development Cache Fixes and Dual-Build E2E Testing"></coralite-heading>
+    <p>We resolved an issue with imperative component caching during development where updates failed to invalidate the builder context properly. Unit and integration tests have been added to cover esbuild context resets and incremental additions.</p>
+    <p>Additionally, the testing infrastructure has been expanded to validate projects in both development and production environments. The E2E test suite now builds isolated outputs into <code>.coralite-dev</code> and <code>.coralite-prod</code> directories, executing Playwright tests against both targets via a programmatic server.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Lifecycle Namespace Migration:</strong> The legacy global indicator <code>window.__coralite_ready__</code> has been removed in favor of <code>window.__coralite__.lifecycle</code>. Dynamic waiting must now use the new <code>lifecycle.waitFor(element)</code> API or the E2E helper <code>waitForHydration</code>.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.40.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.40.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

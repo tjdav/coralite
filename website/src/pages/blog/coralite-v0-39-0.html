@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.39.0 Released: Faster Builds and Rich Hydration Serialization"
+    description="Coralite v0.39.0 introduces incremental production builds for faster deploy cycles, and switches to serialize-javascript for hydration and plugin configurations to support complex data types."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-24T20:23:36+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.39.0 Released: Faster Builds and Rich Hydration Serialization</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.39.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-24T20:23:36+02:00"></coralite-author>
+
+    <p>Coralite version v0.39.0 has been released. This update focuses on enhancing developer experience and build performance by introducing incremental production builds and replacing standard JSON serialization with <code>serialize-javascript</code> for component hydration and plugin configurations.</p>
+
+    <coralite-heading level="2" text="Incremental Production Builds"></coralite-heading>
+    <p>To reduce build times on large-scale applications, Coralite now supports incremental production builds. Instead of rebuilding the entire site on every run, the build system analyzes changes, preserves unchanged files in the output directory, and executes stale file cleanup at the end of the build process. The build manifest is preserved throughout the cleanup phase.</p>
+    <p>If a previously built page's output is missing from the disk, the build runner forces a rebuild for that page regardless of whether its source file has changed. A new <code>--clean</code> flag has also been added to support full rebuilds when necessary.</p>
+
+    <coralite-code-highlight language="bash">
+coralite-scripts build --clean
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Rich Serialization with serialize-javascript"></coralite-heading>
+    <p>Previously, component hydration data and plugin configurations were serialized using standard <code>JSON.stringify</code>. In v0.39.0, both systems transition to <code>serialize-javascript</code>. This allows plugin configurations within the <code>ScriptManager</code> to support non-JSON types such as regular expressions, dates, custom functions, maps, and sets.</p>
+    <p>Hydration data is now passed directly to the client-side runtime using an inline module script, which the <code>CoraliteElement</code> runtime consumes. This change expands the expressiveness of plugin configurations and local hydration states:</p>
+
+    <coralite-code-highlight language="javascript">
+// Plugins can now configure complex non-JSON types
+export default {
+  plugins: [
+    {
+      name: 'analytics-plugin',
+      client: {
+        config: {
+          filterPattern: /^\/api\//,
+          timestamp: new Date(),
+          onInit: () => console.log('Analytics loaded')
+        }
+      }
+    }
+  ]
+};
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Strict server() Validation:</strong> To ensure serialization safety, functions are now strictly blocked in return values from <code>server()</code> methods. A path-based error reporting system has been introduced to help developers identify where validation failures occur in their hydration data.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.39.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.39.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

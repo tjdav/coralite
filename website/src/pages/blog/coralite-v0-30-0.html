@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.30.0 Released: Eager Loading and Structured Error Handling"
+    description="Coralite v0.30.0 introduces structured error and warning handling, replaces runtime MutationObservers with eager component resolution, extends shadow DOM support, and improves startup performance."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-04-08T11:46:11+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.30.0 Released: Eager Loading and Structured Error Handling</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.30.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-04-08T11:46:11+02:00"></coralite-author>
+
+    <p>Coralite v0.30.0 is now available. This release stabilizes the framework runtime by introducing a unified error-handling system, replacing the global, document-wide MutationObserver with efficient eager component mapping, and addressing nested declarative elements inside shadow DOM boundaries. It also improves application startup times and implements stricter API boundaries for web component state mutation.</p>
+
+    <coralite-heading level="2" text="Unified Structured Error and Warning Handling"></coralite-heading>
+    <p>This release introduces a framework-wide <code>onError</code> structured callback mechanism. It unifies diagnostic reporting across the HTML parser, style transformation pipelines, build error-handling flows, and developer CLI tools. An internal <code>handleError</code> method safely wraps the user-configured callback, ensuring that errors are safely caught, formatted, and exposed without revealing internal handler implementation details. By default, the logger automatically throws when encountering critical errors (level <code>'ERR'</code>), enabling reliable CI failure detection.</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+export default {
+  onError(error) {
+    if (error.level === 'ERR') {
+      console.error(`[Coralite Critical] Code ${error.code}: ${error.message}`);
+    } else {
+      console.warn(`[Coralite Warning] ${error.message}`);
+    }
+  }
+};
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Eager Component Loading and Shadow DOM Support"></coralite-heading>
+    <p>To improve browser rendering performance and eliminate event loop overhead, the global <code>MutationObserver</code> injected into generated pages has been removed. In its place, Coralite now eagerly pre-maps page dependencies. Component script modules serialize child declarative dependencies inside a <code>dependencies</code> manifest, and components query elements directly during execution. An internal <code>loadCache</code> guards against duplicate module network requests and race conditions.</p>
+    <p>Furthermore, this update adds recursive component instantiation inside imperative web components. A dedicated helper recursively loads components and registers shadow-root-level observers, ensuring declarative child components dynamically inserted into a shadow DOM are automatically processed and hydrated.</p>
+
+    <coralite-heading level="2" text="Startup and Parser Performance Optimizations"></coralite-heading>
+    <p>Framework boot and compile times have been optimized through several structural updates:</p>
+    <ul>
+      <li><strong>Lazy Component Loading:</strong> The <code>createPlugin</code> method now registers and loads component files lazily, preventing synchronous I/O bottlenecks.</li>
+      <li><strong>Parallel Recursive Scanner:</strong> The file scanner (<code>getHtmlFiles</code>) has been refactored to query directories recursively using parallel filesystem requests.</li>
+      <li><strong>Parallel Registration:</strong> Initialization processes inside <code>Coralite.prototype.initialise</code> now execute in parallel, maximizing node event loop utilization.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Private Web Component Values Property:</strong> The internal <code>this.values</code> property inside the generated <code>ComponentElement</code> base class has been renamed to <code>this._values</code>. Consumers must now pass state via standard HTML attributes (e.g., <code>element.setAttribute(...)</code>) instead of directly mutating internal properties, ensuring standard DOM compliance.</li>
+    </ul>
+
+    <coralite-code-highlight language="javascript">
+// Before v0.30.0 (direct property mutation)
+myElement.values.someState = 'new-value';
+
+// In v0.30.0 (standard DOM interaction)
+myElement.setAttribute('some-state', 'new-value');
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.30.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.30.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

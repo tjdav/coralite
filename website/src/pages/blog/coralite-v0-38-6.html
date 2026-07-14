@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.38.6 Released: Fix for Imperative Getter Tokens"
+    description="Coralite v0.38.6 addresses an issue where getters used as template tokens in imperatively created components would render as empty strings."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-23T16:31:32+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.38.6 Released: Fix for Imperative Getter Tokens</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.38.6 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-23T16:31:32+02:00"></coralite-author>
+
+    <p>Coralite v0.38.6 has been released. This update resolves a key issue with imperatively created components, ensuring that getters referenced as template tokens render correctly instead of rendering as empty strings. It also introduces several stability enhancements to component metadata extraction and attribute parsing.</p>
+
+    <coralite-heading level="2" text="Fixing Imperative Getters as Template Tokens"></coralite-heading>
+    <p>In previous versions, getters utilized as template tokens within imperatively initialized components could fail to resolve, resulting in empty strings. To fix this, we have enhanced the metadata extraction pipeline:</p>
+
+    <ul>
+      <li><strong>Static Fallback Extraction:</strong> We introduced a static extraction fallback in <code>_safeRegister</code> for <code>getters</code>, <code>attributes</code>, and <code>slots</code> from component scripts. This ensures component metadata is correctly captured even if runtime evaluation is bypassed or fails.</li>
+      <li><strong>Unified Property Extraction:</strong> Property extraction has been streamlined by removing the redundant <code>findAndExtractProperties</code> function and improving <code>extractComponentProperty</code> to reliably extract static properties from any <code>defineComponent</code> declaration.</li>
+      <li><strong>Serialization in ScriptManager:</strong> <code>ScriptManager</code> has been updated to normalize and serialize getters correctly for inclusion in client-side bundles.</li>
+    </ul>
+
+    <p>The following example displays a component definition using getters that now resolve correctly as template tokens:</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite';
+
+export default defineComponent({
+  properties: {
+    firstName: String,
+    lastName: String
+  },
+  getters: {
+    fullName() {
+      return `${this.firstName} ${this.lastName}`;
+    }
+  },
+  template: `<div>Welcome, {{ fullName }}!</div>`
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Attribute Parsing Improvements"></coralite-heading>
+    <p>We corrected attribute parsing in <code>createComponentDefinition</code> to properly support shorthand type definitions. This adjustment prevents unexpected crashes during base evaluation when processing component definitions with shorthand attributes.</p>
+    <p>The changes have been thoroughly validated with new end-to-end (E2E) test cases and verified via visual screenshot assertions.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.38.6
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.38.6
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.36.3 Released: Standardized Plugin Hooks and Refined JSDocs"
+    description="Coralite v0.36.3 standardizes plugin hook contexts, improves JSDoc type definitions with flat intersections, and resolves IDE path resolution issues."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-05-29T12:45:42+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.36.3 Released: Standardized Plugin Hooks and Refined JSDocs</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.36.3 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-05-29T12:45:42+02:00"></coralite-author>
+
+    <p>Coralite v0.36.3 is now available. This release centers on standardizing the plugin execution lifecycle with explicit context objects, improving developer ergonomics via cleaner JSDoc type definitions, resolving path alias issues for IDEs, and updating the installation documentation.</p>
+
+    <coralite-heading level="2" text="Standardized Plugin Hook Contexts"></coralite-heading>
+    <p>To improve predictability and maintainability across plugins, the framework has standardized server-side plugin hooks. Calls to <code>_triggerPluginHook</code> now wrap payloads for component and page deletion in consistent context objects (specifically, <code>{ component }</code> and <code>{ data }</code> structures) rather than emitting raw parameters. Additionally, <code>app</code> instance injection has been standardized inside <code>_triggerPluginAggregateHook</code>, making the active Coralite instance reliably accessible across all server-side hook invocations.</p>
+
+    <coralite-code-highlight language="javascript">
+import { definePlugin } from 'coralite';
+
+export default definePlugin({
+  name: 'example-plugin',
+  build(context) {
+    const { app, options } = context;
+    // 'app' instance is consistently available across server-side hooks
+    app.logger.info('Building application with configured options');
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Refined Type Definitions and IDE Resolution"></coralite-heading>
+    <p>Developer tooling has been enhanced in this release. JSDocs in <code>types/plugin.js</code> have been updated to use dedicated context objects for all server-side hooks. Type definitions now use flat intersection types (such as <code>CoraliteModule &amp; CoraliteApp</code>) to accurately mirror the runtime behavior where initial data is spread and the <code>app</code> instance is added. Furthermore, legacy imports using the <code>#lib</code> path alias have been replaced with relative paths inside type files, resolving outstanding IDE auto-import and type-checking issues.</p>
+
+    <coralite-heading level="2" text="Manual Installation Documentation"></coralite-heading>
+    <p>The manual installation instructions in the README have been updated to align with the latest modular structure. This ensures a clean and standardized workflow for developers configuring Coralite manually without automated generators.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Hook Payloads:</strong> Payloads for component and page deletion hooks are now wrapped inside structured context objects (<code>{ component }</code> and <code>{ data }</code>) instead of being passed as raw values.</li>
+      <li><strong>Legacy API Rename:</strong> The legacy <code>compile</code> hook has been renamed to <code>build</code>. The library references, types, and definitions have been fully synchronized with current signatures. Custom plugins using <code>compile</code> must transition to <code>build</code>.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.36.3
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.36.3
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

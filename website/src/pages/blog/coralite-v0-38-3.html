@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.38.3 Released: Enforcing Page-Component Boundaries"
+    description="Coralite v0.38.3 aligns tests and documentation with the 'Pages as Consumers' architecture, reorders lifecycle hooks for plugin reactivity, and fixes hydration and incremental sitemap builds."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-21T17:17:59+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.38.3 Released: Enforcing Page-Component Boundaries</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.38.3 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-21T17:17:59+02:00"></coralite-author>
+
+    <p>Coralite v0.38.3 focuses on reinforcing the framework's core architectural guidelines, specifically surrounding the boundary between pages and components. This release aligns the framework's end-to-end test suite and developer documentation with the "Pages as Consumers" philosophy. Additionally, this version introduces lifecycle hook execution improvements, nested imperative component mounting fixes, and sitemap generation corrections for incremental builds.</p>
+
+    <coralite-heading level="2" text="Enforcing the 'Pages as Consumers' Architecture"></coralite-heading>
+    <p>To discourage page-level scripting anti-patterns and ensure robust component boundary isolation, E2E tests and fixtures have undergone a comprehensive audit. Under the "Pages as Consumers" pattern, HTML pages act strictly as consumers of components, and components govern their internal DOM operations: </p>
+    <ul>
+      <li>Imperative scripts have been removed from HTML page fixtures, moving execution logic entirely into parent components.</li>
+      <li>Manual DOM queries (such as <code>querySelector</code> and <code>getElementById</code>) within components have been replaced by Coralite's built-in <code>refs</code> system.</li>
+      <li>Playwright E2E tests have been updated to use the namespaced <code>instanceId__refName</code> targeting pattern via <code>getByTestId</code> for robust, scoped queries of component internals.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Lifecycle Hook and Imperative Flow Adjustments"></coralite-heading>
+    <p>We have refined how lifecycle hooks and imperative HTML insertions are handled within the core rendering cycle:</p>
+    <ul>
+      <li>The <code>onBeforeComponentRender</code> hook execution has been moved before attribute mapping. This allows plugins to inject reactive data into the state target prior to mapping.</li>
+      <li>All <code>innerHTML</code> assignments are now wrapped with <code>processHTML</code> to maintain consistent processing in imperative rendering paths.</li>
+      <li>Added new E2E tests specifically covering nested imperative components to guarantee correct mounting and interactivity.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Incremental Build and Hydration Fixes"></coralite-heading>
+    <p>This release resolves several system issues and improves developer experience:</p>
+    <ul>
+      <li><strong>Sitemap Plugin:</strong> Modified the sitemap generator to collect pages from the complete <code>app.pages.list</code> collection during the <code>onAfterBuild</code> hook. This ensures pages skipped by the incremental build system are still fully represented in the final sitemap output.</li>
+      <li><strong>Hydration:</strong> Corrected the hydration sequence in <code>CoraliteElement</code> to correctly handle attributes overwritten by the server.</li>
+      <li><strong>Typings:</strong> Upgraded the <code>CoraliteModuleDefinitions</code> and <code>CoraliteModuleDefinition</code> type definitions to properly support the <code>page</code> object and other complex component state.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Documentation Updates"></coralite-heading>
+    <p>To support these architectural best practices, our reference documentation has been updated:</p>
+    <ul>
+      <li>Updated <code>llms.txt</code> with new anti-patterns concerning the page-component boundary.</li>
+      <li>Added a "Respect the Component Boundary" section to the components guide.</li>
+      <li>Introduced a "Pages as Consumers" section in core concepts.</li>
+      <li>Enhanced the DOM management guide to highlight why direct DOM querying is fragile.</li>
+      <li>Added a philosophy alert to the JavaScript guide advising against page-level scripts.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.38.3
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.38.3
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

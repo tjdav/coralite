@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.34.0 Released: The Flat Options API and Unified State"
+    description="Coralite v0.34.0 introduces the Flat Options API, unifying state and attributes under a single reactive object, alongside enhanced error reporting and runtime stability."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-05-16T19:02:34+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.34.0 Released: The Flat Options API and Unified State</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.34.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-05-16T19:02:34+02:00"></coralite-author>
+
+    <p>Coralite v0.34.0 introduces a major redesign of the core component definition and state management APIs. This release transitions the framework to the Flat Options API, replacing properties with a unified reactive state object. It also adds robust build-time error reporting and improves client runtime performance and safety.</p>
+
+    <coralite-heading level="2" text="The Flat Options API and Unified State"></coralite-heading>
+    <p>This release deprecates the properties-based state management model in favor of the new Flat Options API. Component configurations now follow a strict structure: <code>{ attributes, data, getters, slots, script }</code>. This unifies state, attributes, and getters under a single reactive <code>state</code> proxy.</p>
+    <p>Attributes support build-time validation and primitive coercion (Number, Boolean, and String). A dedicated <code>data()</code> block defines the boundary for server-to-client data serialization. During build, code stripping automatically removes the <code>data()</code> method and any Node.js imports from the client bundle to minimize payload sizes.</p>
+
+    <coralite-code-highlight language="javascript">
+defineComponent({
+  attributes: {
+    userId: String,
+    initialCount: {
+      type: Number,
+      default: 0
+    }
+  },
+  data() {
+    return {
+      clicks: 0
+    };
+  },
+  getters: {
+    totalClicks(state) {
+      return state.initialCount + state.clicks;
+    }
+  },
+  script({ state, refs }) {
+    // Client-side interactions
+    state.clicks++;
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Read-Only Getters and Dual-Proxy Reactivity"></coralite-heading>
+    <p>To enforce unidirectional data flow, getters now enforce strictly read-only access to state. The core engine implements this with a dual-proxy system: a reactive proxy on the client and a read-only proxy during server evaluation.</p>
+    <p>Additionally, async getters now receive an <code>AbortSignal</code>. This provides built-in async race protection, enabling the runtime to discard stale requests if a newer state transition begins before the previous promise resolves.</p>
+
+    <coralite-heading level="2" text="Improved Error Reporting with CoraliteError"></coralite-heading>
+    <p>To simplify debugging, the new <code>CoraliteError</code> class captures comprehensive component context during build failures. The class automatically wraps evaluation errors in <code>_evaluateProduction</code> and <code>_evaluateDevelopment</code>, providing detailed context including:</p>
+    <ul>
+      <li>Component ID</li>
+      <li>Instance ID</li>
+      <li>Source file path</li>
+      <li>Page path</li>
+    </ul>
+    <p>This information is processed and logged by <code>displayError</code> within <code>coralite-scripts</code> to help pinpoint build issues quickly.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Unified State Mechanism:</strong> The properties API has been removed. All components must be updated to use the Flat Options API format.</li>
+      <li><strong>Enforced Read-Only Getters:</strong> Getters now receive a read-only proxy. Attempting to mutate state properties inside a getter will throw a runtime error.</li>
+      <li><strong>Updated script Context Arguments:</strong> The client-side <code>script</code> function signature has changed. Context arguments (such as <code>refs</code> and plugin context) are now grouped into a single context object.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.34.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.34.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

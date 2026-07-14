@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.29.5 Released: Unified AbortSignal Context"
+    description="Coralite v0.29.5 introduces unified AbortSignal support within the component context to streamline resource cleanup and maintain consistent API signatures."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-04-05T20:45:41+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.29.5 Released: Unified AbortSignal Context</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.29.5 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-04-05T20:45:41+02:00"></coralite-author>
+
+    <p>Coralite v0.29.5 is now available. This release refines the component context API, introducing unified AbortSignal handling across component types to simplify resource cleanup and improve signature consistency.</p>
+
+    <coralite-heading level="2" text="Unified AbortSignal in Component Context"></coralite-heading>
+    <p>With this update, imperative Web Components receive a valid, automatically unmounting <code>AbortSignal</code> in their context object. This signal allows you to easily clean up event listeners, terminate fetch requests, and free resources when a component unmounts. To ensure a consistent API signature across all component types, declarative components now populate the <code>signal</code> context field with <code>null</code>.</p>
+
+    <coralite-code-highlight language="javascript">
+export class UserProfile extends HTMLElement {
+  connectedCallback() {
+    const { signal } = this.context;
+
+    fetch('/api/user', { signal })
+      .then(res => res.json())
+      .then(data => this.render(data))
+      .catch(err => {
+        if (err.name !== 'AbortError') {
+          console.error('Fetch failed:', err);
+        }
+      });
+  }
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.29.5
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.29.5
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.28.0 Released: Reactive Attribute Binding and Unconditional Component Builds"
+    description="Coralite v0.28.0 introduces dynamic attribute binding, template token updates in the shadow DOM, and unconditional standalone component builds."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-03-13T14:49:59+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.28.0 Released: Reactive Attribute Binding and Unconditional Component Builds</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.28.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-03-13T14:49:59+01:00"></coralite-author>
+
+    <p>Coralite v0.28.0 is now available. This release enhances generated web components with native, reactive attribute observation and template data-binding. It also simplifies the build pipeline by generating standalone components unconditionally, updates command-line flags, and refines test coverage for standalone components.</p>
+
+    <coralite-heading level="2" text="Reactive Web Components with Dynamic Attribute Binding"></coralite-heading>
+    <p>The code generation engine in <code>script-manager.js</code> has been enhanced to produce more reactive web components. Generated elements now include an <code>observedAttributes()</code> getter and an <code>attributeChangedCallback()</code> to synchronize outer HTML attribute modifications with internal component context in real-time.</p>
+    <p>Additionally, a lightweight text node walker has been implemented. This engine finds and replaces template tokens (e.g. <code>{{ attributeName }}</code>) inside text content and CSS bindings within the shadow DOM, bypassing the need for a full AST compiler for standalone components.</p>
+
+    <coralite-code-highlight language="javascript">
+// Example structure of generated reactive elements in v0.28.0
+class CoraliteComponent extends HTMLElement {
+  static get observedAttributes() {
+    return ['label', 'status'];
+  }
+
+  attributeChangedCallback(name, oldValue, newValue) {
+    if (oldValue !== newValue) {
+      this._context[name] = newValue;
+      this._updateTemplateTokens();
+    }
+  }
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Unconditional Standalone Component Builds"></coralite-heading>
+    <p>Standalone components are now generated unconditionally. Previously, standalone component compilation was tied to configuration options. Starting in v0.28.0, the compiler always yields components as standard <code>.js</code> files. If the <code>standaloneOutput</code> option is omitted, assets default to outputting relative to the main build directory inside a <code>components</code> folder.</p>
+
+    <coralite-heading level="2" text="CLI Simplifications and Component Option Rename"></coralite-heading>
+    <p>The CLI options and documentation have been streamlined. The option <code>-t</code> has been renamed to <code>-c</code> (or <code>--components</code>) to clearer align its name with its purpose of pointing to the components directory. In addition, setup documentation has been trimmed down to highlight npm installation commands directly.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>CLI Option Rename:</strong> The <code>-t</code> command-line argument is now <code>-c</code> (or <code>--components</code>).</li>
+      <li><strong>Build Behavior:</strong> Standalone components are always compiled and written. If <code>standaloneOutput</code> is not specified, they are written to a default <code>components</code> subdirectory in the output path.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.28.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.28.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.31.1 Released: Native Slot Projection in Light DOM"
+    description="Coralite v0.31.1 introduces emulation of native slot projection for light DOM web components, preserving node state and event listeners across parent re-renders."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-04-08T17:36:39+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.31.1 Released: Native Slot Projection in Light DOM</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.31.1 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-04-08T17:36:39+02:00"></coralite-author>
+
+    <p>Coralite v0.31.1 is now available. This release introduces support for native slot projection behaviors in light DOM web components, ensuring consistency and preserving event listener and state integrity during updates.</p>
+
+    <coralite-heading level="2" text="Emulating Native Slot Projection for Light DOM"></coralite-heading>
+    
+    <p>Web components in Coralite run in the light DOM rather than the Shadow DOM. To achieve the composition benefits of the Shadow DOM, this release adds support for native slot projection. Light DOM components can now define <code>&lt;slot&gt;</code> elements in their templates and project child elements into them.</p>
+
+    <p>Coralite achieves this by extracting the component's initial child nodes during <code>connectedCallback</code> and storing them in memory. During the <code>_render</code> cycle, Coralite replaces the <code>&lt;slot&gt;</code> tags with these original nodes. This mirrors Shadow DOM slot projection behavior, including support for default fallback content, while keeping the elements within the light DOM.</p>
+
+    <p>Because the original DOM nodes are moved into memory and re-inserted during rendering, their internal state, selection state, and active event listeners are preserved across parent component re-renders.</p>
+
+    <coralite-heading level="2" text="Example Implementation"></coralite-heading>
+
+    <p>Define a light DOM component with slot tags inside its render template:</p>
+
+    <coralite-code-highlight language="javascript">
+class InfoCard extends HTMLElement {
+  _render() {
+    this.innerHTML = `
+      <div class="card">
+        <header class="card-header">
+          <slot name="title">Default Title</slot>
+        </header>
+        <section class="card-body">
+          <slot></slot>
+        </section>
+      </div>
+    `;
+  }
+}
+    </coralite-code-highlight>
+
+    <p>You can use the component by passing elements decorated with the slot attribute alongside default children:</p>
+
+    <coralite-code-highlight language="html">
+<info-card>
+  <span slot="title">Project Update</span>
+  <p>This content is projected into the default slot.</p>
+</info-card>
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.31.1
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.31.1
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

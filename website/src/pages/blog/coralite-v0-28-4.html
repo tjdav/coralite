@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.28.4 Released: Robust Static Asset Resolution"
+    description="Coralite v0.28.4 improves static asset handling with support for explicit source paths and a fallback directory traversal resolution strategy."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-03-16T20:48:48+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.28.4 Released: Robust Static Asset Resolution</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.28.4 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-03-16T20:48:48+01:00"></coralite-author>
+
+    <p>Coralite v0.28.4 is now available. This release addresses static asset copying issues, adding flexible configuration options and fallback resolution paths to ensure seamless module integration.</p>
+
+    <coralite-heading level="2" text="Robust Static Asset Resolution"></coralite-heading>
+
+    <p>In modern Node.js environments, dependency packages may restrict access to internal file paths, causing module resolution to fail with errors such as <code>ERR_PACKAGE_PATH_NOT_EXPORTED</code> when resolving files like <code>package.json</code>. This release updates the <code>staticAssetPlugin</code> to support packages with non-exported paths through two key enhancements:</p>
+
+    <p>First, we have introduced an optional <code>src</code> property to the <code>CoraliteStaticAsset</code> definition. This allows developers to bypass module resolution entirely by specifying an explicit, absolute file path to the asset source.</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+export default {
+  staticAssets: [
+    {
+      name: "custom-package",
+      src: "/absolute/path/to/source/assets", // Bypasses module resolution entirely
+      dest: "public/assets"
+    }
+  ]
+};
+    </coralite-code-highlight>
+
+    <p>Second, if module resolution is utilized and fails during <code>require.resolve()</code>, the plugin now utilizes a directory traversal fallback strategy to find the asset folder and copy resources gracefully.</p>
+
+    <p>This update includes updated reference documentation and complete unit and end-to-end tests validating the fallback resolution behavior.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.28.4
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.28.4
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

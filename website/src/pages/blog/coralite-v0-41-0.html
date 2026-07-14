@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.41.0 Released: First-Class Testing Mode and Enhanced Attribute Coercion"
+    description="Coralite v0.41.0 introduces a dedicated testing mode for zero-config E2E testing, support for shorthand attribute schemas, and improved native HTML boolean attribute toggling."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-07-05T19:00:18+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.41.0 Released: First-Class Testing Mode and Enhanced Attribute Coercion</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.41.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-07-05T19:00:18+02:00"></coralite-author>
+
+    <p>Coralite v0.41.0 has been released. This update introduces a first-class, zero-config testing mode optimized for end-to-end and integration testing. In addition, this release refines component attribute handling with support for shorthand attribute type schemas, native HTML boolean attribute toggling, and comprehensive testing infrastructure updates.</p>
+
+    <coralite-heading level="2" text="First-Class Testing Mode"></coralite-heading>
+
+    <p>To simplify integration and end-to-end testing, Coralite v0.41.0 introduces a dedicated testing environment mode. When running under <code>mode: 'testing'</code>, Coralite acts as a static build target and injects a suite of diagnostic, mocking, and telemetry features without production overhead:</p>
+
+    <ul>
+      <li><strong>Deterministic Auto-Selectors:</strong> The rendering engine automatically generates and applies structured <code>data-testid</code> attributes on interactive elements, facilitating robust Playwright or Cypress selectors.</li>
+      <li><strong>Velocity Engine:</strong> Automatically disables all CSS transitions and animations to eliminate timing-related test flakiness.</li>
+      <li><strong>Server Block Mocking:</strong> Allows developers to override component-level <code>server()</code> data fetchers directly through the configuration.</li>
+      <li><strong>Glass Box &amp; Telemetry:</strong> Exposes reactive component states globally via <code>window.__coralite__.components</code> and logs custom events to <code>window.__coralite__.events</code>.</li>
+      <li><strong>Fail-Fast Guards:</strong> Triggers immediate fatal errors and visual overlays for hydration mismatches or unhandled client errors.</li>
+    </ul>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+import { defineConfig } from 'coralite';
+
+export default defineConfig({
+  mode: 'testing',
+  testing: {
+    mocks: {
+      // Mock server-side component data fetching
+      'user-profile': {
+        server: () => ({ name: 'Test User', role: 'Tester' })
+      }
+    }
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Shorthand Attribute Type Definitions"></coralite-heading>
+
+    <p>Defining component attributes is now cleaner. <code>CoraliteElement</code> has been updated to support shorthand constructors in attribute schemas. You can now specify constructors like <code>Number</code>, <code>Boolean</code>, or <code>String</code> directly instead of wrapping them in a <code>{ type: Type }</code> schema configuration object.</p>
+
+    <coralite-code-highlight language="javascript">
+import { CoraliteElement } from 'coralite';
+
+class UserProfile extends CoraliteElement {
+  static attributes = {
+    // New shorthand schema definition
+    active: Boolean,
+    userId: Number,
+    role: String,
+    
+    // Longhand configuration is still supported
+    theme: { type: String, default: 'light' }
+  };
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Native Boolean Attribute Toggling"></coralite-heading>
+
+    <p>Template interpolation now handles native HTML boolean attributes (such as <code>disabled</code>, <code>checked</code>, and <code>readonly</code>) intelligently. When binding state to these attributes, Coralite automatically adds or removes the attribute from the DOM element based on truthiness, matching native HTML behavior. Custom attributes continue to render their bound values as standard string representations.</p>
+
+    <coralite-heading level="2" text="Optimized E2E Testing Strategy"></coralite-heading>
+
+    <p>Under the hood, the test suites have been restructured into <code>tests/e2e/core</code> (for framework validation in dev/prod) and <code>tests/e2e/testing-mode</code> (for application features). Playwright configuration now includes separate projects for core development, production, and testing mode, providing cleaner execution and better test isolation.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.41.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.41.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

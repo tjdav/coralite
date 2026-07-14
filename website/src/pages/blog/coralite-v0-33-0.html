@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.33.0 Released: Overhauled Context Architecture and Reactive Properties"
+    description="Coralite v0.33.0 introduces a major context architecture overhaul, standardizes the V1 API, implements reactive properties with attribute synchronization, and transitions the codebase license to MPL 2.0."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-05-13T11:44:14+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.33.0 Released: Overhauled Context Architecture and Reactive Properties</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.33.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-05-13T11:44:14+02:00"></coralite-author>
+
+    <p>Coralite v0.33.0 has arrived, delivering a streamlined context architecture overhaul, V1 API standardization, and new features like reactive properties and performance benchmarking. This release also marks a transition of the framework's license to MPL-2.0.</p>
+
+    <coralite-heading level="2" text="Context Architecture Overhaul and V1 API"></coralite-heading>
+    <p>We have simplified the internal and external component APIs to improve developer experience and optimize execution. Localized component and plugin execution contexts are now pruned to essential properties: <code>properties</code>, <code>page</code>, <code>root</code>, <code>module</code>, <code>id</code>, and <code>renderContext</code>. Framework utilities have been removed from the global scope of component scripts. Instead, they are now exposed via synthetic ESM modules (<code>coralite</code>, <code>coralite/plugins</code>, and <code>coralite/utils</code>).</p>
+    <p>Additionally, we have standardized the <code>defineComponent</code> syntax. The term <code>values</code> (and legacy <code>tokens</code>) has been renamed to <code>properties</code>, ensuring a consistent model for passing and evaluating component attributes.</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite';
+
+export default defineComponent({
+  properties: {
+    greeting: 'Hello, World!'
+  },
+  script(context) {
+    const { properties } = context;
+    console.log(properties.greeting);
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Reactive Properties and Attribute Synchronization"></coralite-heading>
+    <p>This release introduces native support for reactive properties. Components can now dynamically evaluate properties and automatically synchronize their values back to the DOM attributes. This provides a clean, predictable bridge between server-rendered markups and client-side hydrations.</p>
+
+    <coralite-heading level="2" text="High-Performance Micro-Benchmarks and Refactored Plugins"></coralite-heading>
+    <p>To prevent performance regressions, Coralite v0.33.0 integrates a new micro-benchmarks suite using <code>mitata</code>. This suite tracks performance patterns in separate V8 isolates for processes like AST cloning, plugin state merging, and token interpolation.</p>
+    <p>The plugin hook architecture has also been refactored. Rather than mutating shared state in-place, hooks now return clean state patches that the engine safely merges. Additionally, a new <code>_triggerPluginAggregateHook</code> handles flattening array collections from plugins cleanly, improving overall reliability.</p>
+
+    <coralite-heading level="2" text="Licensing Transition to MPL-2.0"></coralite-heading>
+    <p>To better support community collaboration and enterprise adoption, Coralite and its associated packages are transitioning their license from AGPL-3.0 to the Mozilla Public License 2.0 (MPL-2.0).</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Rename of Values to Properties:</strong> Component definitions and contexts now use <code>properties</code> instead of legacy <code>values</code> or <code>tokens</code>.</li>
+      <li><strong>Context Pruning &amp; Globals Removal:</strong> Global utilities are no longer injected into component script environments. Explicitly import framework helpers from synthetic modules.</li>
+      <li><strong>Plugin Context Flattening:</strong> The <code>helpers</code> namespace has been removed from the plugin execution context; all utilities are now merged directly into the root execution <code>context</code> object.</li>
+      <li><strong>Component Engine Signatures:</strong> Internal functions like <code>createComponentElement</code> and <code>_processDependentComponents</code> no longer accept the bulky <code>component</code> parameter, accepting specific <code>page</code> and <code>root</code> structures instead.</li>
+      <li><strong>Node.js Requirement:</strong> The minimum supported Node.js version is now <code>>=20.19.0</code> across all packages.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.33.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.33.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.37.0 Released: Incremental Static Regeneration and Optimized Plugin Architecture"
+    description="Coralite v0.37.0 introduces a Three-Phase Sealed Queue architecture to power Incremental Static Regeneration, integrated client-side refs, a unified Plugin Service Registry, and substantial AST engine performance gains."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-08T22:31:24+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.37.0 Released: Incremental Static Regeneration and Optimized Plugin Architecture</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.37.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-08T22:31:24+02:00"></coralite-author>
+
+    <p>Coralite v0.37.0 has been released. This version focuses on structural maturity and core performance, introducing a strict three-phase build pipeline to support Incremental Static Regeneration (ISR), unified asynchronous plugin dependency resolution, native client-side element references, and major optimizations to AST cloning and server-side rendering.</p>
+
+    <coralite-heading level="2" text="Three-Phase Build Queue and Incremental Static Regeneration"></coralite-heading>
+    <p>To support reliable Incremental Static Regeneration (ISR), we have refactored the build pipeline into a strict three-phase system consisting of Staging, Invalidation, and Rendering. By sealing the build queue after Phase 1, we eliminate concurrency deadlocks while permitting virtual page generation via the onBeforeBuild hook. The new invalidation engine uses a two-tier check (file system metadata paired with xxHash64 hashing) to detect modifications and trigger atomic manifest writes, keeping builds safe and fast.</p>
+
+    <coralite-heading level="2" text="Native Client-Side Refs"></coralite-heading>
+    <p>The refs plugin has been integrated directly into the Coralite core. The custom ref attribute is now standardized as data-ref, and a native refs(id) helper is provided inside the component script context. This integration improves hydration performance and removes the need for external ref-tracking plugins.</p>
+    <coralite-code-highlight language="html">
+<button data-ref="submit-btn">Submit</button>
+
+<script>
+  const btn = refs('submit-btn');
+  btn.addEventListener('click', () => {
+    // Native ref handler logic
+  });
+</script>
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Plugin Service Registry &amp; Architecture Refactoring"></coralite-heading>
+    <p>This release introduces a new Registry class for asynchronous plugin dependency resolution. Plugins now follow a two-phase lifecycle: Phase 1 evaluates global setup and receives the registry, and Phase 2 handles component-level evaluation. To prevent pollution, plugin exports are no longer merged automatically into component contexts and must instead be imported explicitly. Furthermore, the Phase 1 signature has been simplified to accept a single pluginContext argument, using prototype delegation to safely expose configuration.</p>
+    <coralite-code-highlight language="javascript">
+export default {
+  server: {
+    exports: (pluginContext) => {
+      const { app, registry, config } = pluginContext;
+      // Parallelized initialization and secure dependency resolution
+      return {
+        myHelper() {
+          return config.mode;
+        }
+      };
+    }
+  }
+};
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Advanced Visual Error Reporting"></coralite-heading>
+    <p>Coralite v0.37.0 delivers redesigned error formatting in the terminal. When execution errors occur, the framework leverages Acorn to recover precise source locations (line and column numbers) from VM modules and print the relevant code snippet along with a caret indicator.</p>
+    <coralite-code-highlight language="text">
+> components/alert.html:5:10: error: Unexpected token
+  3 |   export default {
+  4 |     render() {
+  5 |       return <div>;
+    |              ^
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Rendering and AST Optimizations"></coralite-heading>
+    <p>We have implemented several performance improvements to increase local development and build speed. The renderer now parallelizes component rendering across pages and slots using Promise.all. Additionally, circular properties (such as parent, prev, next, and slots) in the AST are now stored as non-enumerable prototype getters and setters. This shift from per-instance property definitions yields a 17x speedup in AST node cloning benchmarks.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Async Factory Function:</strong> The Coralite class has been replaced with the <code>createCoralite()</code> async factory function.</li>
+      <li><strong>Plugin Context Signature:</strong> Plugin Phase 1 functions now receive a single <code>pluginContext</code> argument instead of two separate arguments.</li>
+      <li><strong>Refs Attribute:</strong> The <code>ref</code> attribute has been renamed to <code>data-ref</code>, and the external <code>refsPlugin</code> has been removed. Use the native <code>refs(id)</code> helper.</li>
+      <li><strong>Virtual Flag:</strong> The <code>physical</code> property on <code>HTMLData</code> objects has been replaced by the <code>virtual</code> property, inverting its logic.</li>
+      <li><strong>Component Context Isolation:</strong> Plugin exports are no longer automatically merged into component execution contexts, avoiding global state pollution.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.37.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.37.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

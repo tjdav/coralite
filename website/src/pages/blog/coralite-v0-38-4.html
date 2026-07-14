@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.38.4 Released: External CSS and Enhanced Plugin Hooks"
+    description="Coralite v0.38.4 introduces production external CSS generation, enhanced plugin rendering hooks, esbuild-based CSS minification, and robust client-side component hydration."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-22T21:54:24+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.38.4 Released: External CSS and Enhanced Plugin Hooks</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.38.4 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-22T21:54:24+02:00"></coralite-author>
+
+    <p>Coralite version 0.38.4 is now available. This release delivers significant performance and architecture updates, focusing on production CSS optimizations, improved plugin lifecycle hooks, and robust handling of imperative custom elements. Key improvements include a transition to external CSS files using esbuild, minification of production stylesheets, and repositioning of component lifecycle hooks to allow for more powerful plugin extensions.</p>
+
+    <coralite-heading level="2" text="Transition to External CSS and Patched Element Creation"></coralite-heading>
+    <p>In this release, production builds generate external CSS files rather than inline styles. This transition is powered by virtual modules and esbuild, with the ScriptManager updated to extract CSS bundle paths from the build metafile. The client runtime dynamically loads these stylesheets while preventing duplicate injections.</p>
+    <p>To support imperative elements, we have patched <code>document.createElement</code>. This ensures that imperatively created components upgrade automatically after their styles have loaded, with all components included in the bundle manifest.</p>
+
+    <coralite-heading level="2" text="Production CSS Minification and Registration Resiliency"></coralite-heading>
+    <p>We integrated esbuild to handle CSS minification for production builds, disabling source map generation for styles to minimize final bundle sizes. Component registration within the Coralite core has also been refactored. Scoped styles are now bundled successfully even in cases where script evaluation fails, preventing flash of unstyled content (FOUC) and improving rendering robustness.</p>
+
+    <coralite-heading level="2" text="Enhanced Plugin Lifecycle Hooks"></coralite-heading>
+    <p>The renderer now automatically extracts custom elements from plugin code and includes them in the page manifest. In addition, the execution of the <code>onBeforeComponentRender</code> hook has been moved after attribute and hydration processing. This ordering allows plugins to inspect and override the fully populated initial state of a component before the reactive proxy is created and the initial DOM stamp occurs.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.38.4
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.38.4
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

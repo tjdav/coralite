@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.38.0 Released: Isomorphic Contextual Plugins and On-Demand Scripts"
+    description="Coralite v0.38.0 introduces isomorphic contextual resolution for plugins, enforces the two-phase plugin pattern, optimizes imperative components with on-demand script loading, and implements site-wide bundling parity."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-17T08:58:11+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.38.0 Released: Isomorphic Contextual Plugins and On-Demand Scripts</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.38.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-17T08:58:11+02:00"></coralite-author>
+
+    <p>Coralite v0.38.0 is now available. This release delivers major enhancements to the plugin system, transitioning component data access to isomorphic contextual resolution, optimizing script delivery for imperatively created components, and aligning development and production bundling strategies. These updates improve performance and developer productivity while establishing cleaner state and hydration boundaries.</p>
+
+    <coralite-heading level="2" text="Isomorphic Contextual Resolution for Plugins"></coralite-heading>
+    <p>We are migrating away from static virtual module property injection (previously <code>server.exports</code>) in favor of contextual resolution via a unified <code>context</code> object. This object is supplied symmetrically to both the <code>server()</code> and <code>client()</code> blocks of a component. This transition guarantees location transparency across server-side rendering (SSR) and client-side hydration, enabling components to consume plugin APIs under a single contract.</p>
+
+    <coralite-code-highlight language="javascript">
+defineComponent({
+  server(context) {
+    // Access namespaced plugin APIs injected directly into the context
+    const translations = context.i18n.getTranslations();
+    return { translations };
+  },
+  client(context) {
+    // Symmetrical context access on the client
+    const translations = context.i18n.getTranslations();
+    console.log('Hydrated with:', translations, 'Instance ID:', context.instanceId);
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Enforced Two-Phase Resolver Pattern"></coralite-heading>
+    <p>To support contextual resolution, all Coralite plugins must now follow a strict two-phase resolver pattern. This separates global singleton behavior from individual component instance logic, ensuring safe inter-plugin communication and dependency resolution:</p>
+    <ul>
+      <li><strong>Phase 1 (Global Initialization):</strong> Handles setup tasks and global mutations. Inter-plugin calls are restricted during this phase to avoid dependency deadlocks.</li>
+      <li><strong>Phase 2 (Instance Resolver):</strong> Runs per component instance. Features namespaced plugin access with lazy-resolving proxies and caching to ensure instance factories are evaluated exactly once.</li>
+    </ul>
+
+    <coralite-heading level="2" text="On-Demand Script Loading for Imperative Components"></coralite-heading>
+    <p>Previously, imperatively created components (such as those generated via <code>document.createElement</code>) required their script bundles to be eagerly loaded in the browser. In v0.38.0, we have introduced an AST-driven compiler interceptor that replaces hyphenated <code>document.createElement</code> calls with a globally injected <code>createCoraliteElement</code> shim. At runtime, this proxy synchronously returns an un-upgraded element and asynchronously fetches the component's script on-demand, reducing initial bundle sizes and page load times.</p>
+
+    <coralite-heading level="2" text="Site-Wide Bundling and Environment Parity"></coralite-heading>
+    <p>To minimize differences between development and production environments, the development server now uses a site-wide bundling strategy. Leveraging esbuild's persistent context API, the renderer performs fast, atomic incremental rebuilds when file changes are detected. On the production side, we have consolidated virtual modules under the <code>coralite-virtual:</code> namespace and transitioned to single-pass bundling to produce stable chunk hashes for better browser caching.</p>
+
+    <coralite-heading level="2" text="Component State and API Refinements"></coralite-heading>
+    <p>The component model has been refined to transition from the "Four Pillars" to the "Five Pillars" of state by introducing the <code>slots</code> block in component definitions. Additionally, to avoid serialization mismatches, passing raw <code>Object</code> or <code>Array</code> types in the <code>attributes</code> block is now blocked. Developers should pass structured data via contextual resolvers or serialized JSON attributes instead.</p>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Removal of server.exports:</strong> Virtual module imports for plugins are no longer supported. Components must retrieve plugin APIs through the <code>context</code> object parameter in the <code>server()</code> and <code>client()</code> functions.</li>
+      <li><strong>Deprecation of the setup Function:</strong> The <code>setup</code> configuration property has been removed from server and client plugin definitions. This initialization phase is now handled during Phase 1 of the plugin's <code>context</code> resolver.</li>
+      <li><strong>Mandatory Two-Phase Plugins:</strong> Returning flat objects or single-phase resolvers from plugins is now disallowed. Plugins must strictly validate and return the Phase 1 and Phase 2 resolver structure.</li>
+      <li><strong>Blocked Complex Attribute Types:</strong> Specifying <code>Object</code> or <code>Array</code> types directly inside the <code>attributes</code> block now throws a validation error.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.38.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.38.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

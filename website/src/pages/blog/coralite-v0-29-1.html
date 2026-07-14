@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.29.1 Released: Reactive Token Replacement in Imperative Web Components"
+    description="Coralite v0.29.1 introduces dynamic token replacement in CoraliteElement for client-side components, enabling reactive template string hydration."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-03-24T08:48:03+01:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.29.1 Released: Reactive Token Replacement in Imperative Web Components</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.29.1 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-03-24T08:48:03+01:00"></coralite-author>
+
+    <p>Coralite v0.29.1 is now available. This release introduces dynamic token replacement in client-side web components, enabling automatic and reactive template hydration, alongside formatting and consistency improvements to the testing suite.</p>
+
+    <coralite-heading level="2" text="Reactive Token Replacement in Imperative Web Components"></coralite-heading>
+    <p>With this release, we have implemented reactive token replacement within <code>CoraliteElement</code> for imperative web components. This enables full client-side template string hydration. The component updates dynamically in response to changes in internal values or element attributes, managed via a debounced <code>MutationObserver</code>.</p>
+    <p>We have also added E2E tests to ensure that the initial token replacement runs correctly and that subsequent DOM updates trigger seamlessly upon state modifications.</p>
+
+    <coralite-heading level="2" text="Consistent Test Formatting"></coralite-heading>
+    <p>The whitespace formatting in the <code>reactive-token-parent</code> test fixture has been standardized to ensure consistent outputs across different environments.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.29.1
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.29.1
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

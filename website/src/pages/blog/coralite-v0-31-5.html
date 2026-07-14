@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.31.5 Released: Robust Serialization and Hydration Readiness Hooks"
+    description="Coralite v0.31.5 improves build stability with esbuild serialization fixes, deep cloning of default values, and introduces hydration hooks for robust end-to-end testing."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-04-10T10:24:12+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.31.5 Released: Robust Serialization and Hydration Readiness Hooks</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.31.5 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-04-10T10:24:12+02:00"></coralite-author>
+
+    <p>Coralite v0.31.5 has been released. This update addresses critical build-time serialization issues when handling shorthand ES6 methods and deeply nested default values, while improving the reliability of client-side integration tests with a new hydration readiness promise.</p>
+
+    <coralite-heading level="2" text="Deep Cloning & ES6 Shorthand Serialization"></coralite-heading>
+    <p>To prevent unwanted mutations and instances being dropped during builds, we now recursively clone arrays and objects in <code>normalizeObjectFunctions</code> using a <code>WeakMap</code>. Additionally, we refined <code>normalizeFunction</code>'s regex matching to strip function names (e.g., generating <code>function(</code> instead of <code>function name(</code>) to prevent keyword validation errors in esbuild. This ensures <code>serialize-javascript</code> successfully outputs literals for functions defined with spacing, such as <code>languageLinks ({</code>.</p>
+    
+    <p>In addition, the declarative component initialization pipeline in <code>_generatePages</code> has been updated to merge <code>module.default.defaultValues</code> with execution context values, ensuring component tokens and helper methods generated inside <code>setup()</code> correctly persist to the client.</p>
+
+    <coralite-heading level="2" text="E2E Hydration Hook Stability"></coralite-heading>
+    <p>To prevent race conditions during end-to-end tests, we have added and documented a new <code>window.__coralite_ready__</code> global promise. This mechanism signals when client-side hydration has completed and all component definitions and scripts are fully registered. Test frameworks can safely await this promise immediately following page navigation.</p>
+
+    <coralite-code-highlight language="javascript">
+// Example: Awaiting client hydration in Playwright or Puppeteer
+await page.goto('/docs');
+await page.evaluate(() => window.__coralite_ready__);
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Extending with createPlugin"></coralite-heading>
+    <p>We have updated the developer documentation (<code>llms.txt</code>) to include a comprehensive expansion of Section 4, detailing how to extend the framework's build and runtime lifecycles via the <code>createPlugin</code> API.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.31.5
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.31.5
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

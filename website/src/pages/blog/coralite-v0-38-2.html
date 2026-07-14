@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.38.2 Released: Reliable Server-to-Client State Propagation"
+    description="Coralite v0.38.2 improves state synchronization by ensuring server() hook results correctly propagate to client state, client getters, and imperative components."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-06-20T22:03:47+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.38.2 Released: Reliable Server-to-Client State Propagation</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.38.2 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-06-20T22:03:47+02:00"></coralite-author>
+
+    <p>Coralite v0.38.2 addresses key synchronization issues between server-side rendering (SSR) and the client bundle. This patch release ensures that data returned from the <code>server()</code> function reliably propagates to client state, client getters, and imperative APIs during hydration.</p>
+
+    <coralite-heading level="2" text="Reliable server() State and Getters Propagation"></coralite-heading>
+    <p>In previous versions, data returned by the server-side <code>server()</code> hook occasionally failed to reflect correctly in the initial client state or computed getters during hydration. This release fixes those synchronization gaps with several targeted enhancements:</p>
+    <ul>
+      <li><strong>Strict Validation:</strong> Implemented strict validation checks for <code>server()</code> return values, ensuring they resolve to a truthy object before proceeding with hydration.</li>
+      <li><strong>Hydration Payload Integration:</strong> All keys evaluated and returned by the server-side logic are now explicitly guaranteed to be included in the hydration payload and mapped to the initial client state.</li>
+      <li><strong>Default Value Overwrites:</strong> Values returned from the <code>server()</code> hook will now correctly overwrite any client-side default values defined in your component's state.</li>
+      <li><strong>Imperative Component Availability:</strong> Base evaluation results from the server are now accessible to imperative components via <code>defaultValues</code>.</li>
+      <li><strong>Removal of 'Smart' Filtering:</strong> Removed complex and unreliable filtering of state keys for the client bundle to achieve a more predictable and robust data flow.</li>
+    </ul>
+
+    <p>Here is an example demonstrating how server-evaluated results now correctly overwrite client state default values during initialization:</p>
+
+    <coralite-code-highlight language="javascript">
+// Server-side logic
+export async function server(context) {
+  return {
+    theme: 'dark',
+    authenticated: true
+  };
+}
+
+// Client-side component state definition
+export const state = {
+  theme: 'light',       // Overwritten by 'dark' during hydration
+  authenticated: false  // Overwritten by true during hydration
+};
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.38.2
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.38.2
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

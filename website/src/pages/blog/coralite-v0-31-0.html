@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.31.0 Released: Robust Scoped Styling for Light DOM"
+    description="Coralite v0.31.0 resolves key style scoping issues for Light DOM and dynamic web components, alongside fixing esbuild script fallback compilation errors."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-04-08T16:56:28+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.31.0 Released: Robust Scoped Styling for Light DOM</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.31.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-04-08T16:56:28+02:00"></coralite-author>
+
+    <p>Coralite v0.31.0 is now available. This release primarily focuses on styling robustness, addressing scoping vulnerabilities in Light DOM environments, fixing style encapsulation for dynamically generated component wrappers, and correcting syntax issues in our script fallback compilation pipeline.</p>
+
+    <coralite-heading level="2" text="Scoping CSS for Light DOM Web Components"></coralite-heading>
+    <p>When web components were moved to the Light DOM, their encapsulated CSS logic (defined in <code>this._styles</code>) became susceptible to leaking into the global document scope. To solve this, Coralite now processes raw CSS through <code>transformCss</code> to append the appropriate scoped selectors before generating the component client bundle. The client wrapper rendering logic has also been updated to output the correct <code>data-style-selector</code> attributes to the generated root HTML tags.</p>
+
+    <coralite-heading level="2" text="Scoped Style Wrappers for Dynamic Web Components"></coralite-heading>
+    <p>During imperative client-side web component wrapper generation, the injected component CSS was previously not scoped with the component's generated <code>data-style-selector</code> attribute. This caused styling to leak or mismatch in some configurations.</p>
+    <p>This update wraps the raw CSS provided by <code>module.default.styles</code> with <code>[data-style-selector="${this.componentId}"]</code> inside the dynamically inserted <code>&lt;style&gt;</code> tag, leveraging native CSS nesting for scoped application. This aligns its behavior with declarative server-side compilation. A new E2E test suite (<code>scoped-style.test.js</code>) has been added with corresponding fixtures to verify this behavior.</p>
+
+    <coralite-heading level="2" text="Preventing Double Export Defaults in Script Fallbacks"></coralite-heading>
+    <p>We fixed a bug where esbuild hooks in <code>script-manager.js</code> could produce invalid syntax (such as <code>export default export default function(){};</code>) when encountering fallback scripts. We changed the fallback string from <code>'export default function(){}'</code> to <code>'function(){}'</code> in both <code>coralite.js</code> and <code>utils.js</code>, and updated the string matching checks in <code>script-manager.js</code> to correctly identify the revised fallback format.</p>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite@0.31.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+      npm install coralite-scripts@0.31.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>

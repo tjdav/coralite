@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="Coralite v0.43.0 Released: State Observation and Structured Mocking"
+    description="Coralite v0.43.0 introduces explicit state observation via the new observe() API, a redesigned structured schema for testing mocks, and an AST-based dependency scanner to track dynamic components."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-07-09T19:34:43+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>Coralite v0.43.0 Released: State Observation and Structured Mocking</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">Coralite v0.43.0 Released</h1>
+
+    <coralite-author name="thomas" date-time="2026-07-09T19:34:43+02:00"></coralite-author>
+
+    <p>Coralite v0.43.0 is now available. This release introduces support for explicit state observation side-effects, a restyled testing mock configuration schema, and a new AST-based dependency scanner for dynamic component tracking. These updates enhance component reactivity, improve testing capabilities, and refine build-time dependency analysis.</p>
+
+    <coralite-heading level="2" text="State Observation with the observe() API"></coralite-heading>
+    <p>The client block context now provides a local <code>observe(propertyName, callback)</code> function to register explicit state side-effects. When properties on the reactive state Proxy change, observers trigger automatically following DOM updates.</p>
+    <p>This implementation includes automatic garbage collection and lifecycle cleanup for registered callbacks via AbortSignal. Additionally, dev-mode infinite loop protection warns developers if state mutations are attempted directly inside callbacks.</p>
+
+    <coralite-code-highlight language="javascript">
+export default defineComponent({
+  client({ state, observe }) {
+    observe('count', (newValue) => {
+      console.log(`Count updated to: ${newValue}`);
+    });
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Structured Testing Mocks Configuration"></coralite-heading>
+    <p>The <code>testing.mocks</code> schema in <code>coralite.config.js</code> has been redesigned to use discrete <code>components</code> and <code>plugins</code> namespaces. This allows shallow merging of plugin context mocks on both server and client, while ensuring component-level mocks retain absolute precedence.</p>
+    <p>The update prevents server-side mock leakage to the client by filtering serialized data and introduces warnings for non-registered plugin mocks. In addition, standard context variables such as <code>page</code>, <code>app</code>, and <code>id</code> are injected into mock servers alongside coerced attribute states.</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+export default defineConfig({
+  testing: {
+    mocks: {
+      components: {
+        'user-profile': {
+          server({ page, app, id, userId }) {
+            return { id: userId, name: 'Mock User' };
+          }
+        }
+      },
+      plugins: {
+        'auth-provider': {
+          context: {
+            user: { loggedIn: true }
+          }
+        }
+      }
+    }
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="AST Dependency Scanner for Dynamic Components"></coralite-heading>
+    <p>To improve dependency resolution, a new AST dependency scanner tracks dynamic component imports and creations. The scanner implements scope tracing for <code>document.createElement</code> and <code>createCoraliteElement</code>, resolving ternary operators and explicit string declarations defined under the <code>dependencies</code> option of components.</p>
+    <p>The scanner utilizes <code>walk.ancestor</code> to preserve scope context during analysis and safely bails out on complex concatenations or cross-file references to maintain performance.</p>
+
+    <coralite-code-highlight language="javascript">
+export default defineComponent({
+  dependencies: ['dynamic-card', 'custom-button'],
+  server() {
+    // Component server logic
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Breaking Changes"></coralite-heading>
+    <ul>
+      <li><strong>Structured Testing Mocks:</strong> The flat structure for <code>testing.mocks</code> is no longer supported. Mocks must now be nested under <code>components</code> or <code>plugins</code>.</li>
+    </ul>
+
+    <coralite-heading level="2" text="How to Upgrade"></coralite-heading>
+
+    <p>To upgrade to the latest version, update your project dependencies:</p>
+
+    <coralite-code-highlight language="bash">
+npm install coralite@0.43.0
+    </coralite-code-highlight>
+
+    <coralite-code-highlight language="bash">
+npm install coralite-scripts@0.43.0
+    </coralite-code-highlight>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
