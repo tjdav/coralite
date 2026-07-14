@@ -51,9 +51,25 @@ program
   .option('-y, --yes', 'Skip confirmation')
   .option('--stdout', 'Print to stdout only, ignore output file')
   .option('--no-git', 'Skip git commit and push')
+  .option('--json', 'Output the gathered data in JSON format instead of calling OpenAI API')
   .action(async (options) => {
     let packageName = options.package
     let pkgPath = options.path
+
+    let originalWrite
+    if (options.json) {
+      originalWrite = process.stdout.write
+      // @ts-ignore
+      process.stdout.write = function (chunk, encoding, callback) {
+        return process.stderr.write(chunk, encoding, callback)
+      }
+      if (process.stderr.isTTY) {
+        Object.defineProperty(process.stdout, 'isTTY', {
+          value: true,
+          configurable: true
+        })
+      }
+    }
 
     prompts.intro('🤖 Generating AI Release Post')
 
@@ -61,7 +77,7 @@ program
       const git = simpleGit()
 
       // Load framework context
-      const llmsPath = path.join(process.cwd(), 'packages/coralite/llms.txt')
+      const llmsPath = path.join(process.cwd(), 'website/public/llms.txt')
       const frameworkContext = readFileSync(llmsPath, 'utf8')
 
       // Prompt for package if not provided
@@ -230,29 +246,37 @@ program
         process.exit(0)
       }
 
-      const selectedHighlights = await prompts.multiselect({
-        message: 'Select commits to highlight with extra detail/code examples (optional):',
-        options: log.all.map(commit => ({
-          value: commit.hash,
-          label: commit.message,
-          hint: commit.body ? commit.body.trim().split('\n')[0].slice(0, 60) : ''
-        })),
-        required: false
-      })
+      let selectedHighlights = []
+      if (!process.env.TEST_NON_INTERACTIVE) {
+        // @ts-ignore
+        selectedHighlights = await prompts.multiselect({
+          message: 'Select commits to highlight with extra detail/code examples (optional):',
+          options: log.all.map(commit => ({
+            value: commit.hash,
+            label: commit.message,
+            hint: commit.body ? commit.body.trim().split('\n')[0].slice(0, 60) : ''
+          })),
+          required: false
+        })
 
-      if (prompts.isCancel(selectedHighlights)) {
-        prompts.log.info('Operation cancelled')
-        process.exit(0)
+        if (prompts.isCancel(selectedHighlights)) {
+          prompts.log.info('Operation cancelled')
+          process.exit(0)
+        }
       }
 
-      const extraContext = await prompts.text({
-        message: 'Add any additional context or focus for this release (optional):',
-        placeholder: 'e.g. Focus on the new reactivity system and performance improvements'
-      })
+      let extraContext = ''
+      if (!process.env.TEST_NON_INTERACTIVE) {
+        // @ts-ignore
+        extraContext = await prompts.text({
+          message: 'Add any additional context or focus for this release (optional):',
+          placeholder: 'e.g. Focus on the new reactivity system and performance improvements'
+        })
 
-      if (prompts.isCancel(extraContext)) {
-        prompts.log.info('Operation cancelled')
-        process.exit(0)
+        if (prompts.isCancel(extraContext)) {
+          prompts.log.info('Operation cancelled')
+          process.exit(0)
+        }
       }
 
       const s = prompts.spinner()
@@ -260,7 +284,11 @@ program
       // Fetch and summarize highlight diffs if any
       let highlightSummaries = ''
       if (selectedHighlights && selectedHighlights.length > 0) {
-        s.start('Fetching and summarizing highlight diffs...')
+        if (options.json) {
+          s.start('Fetching highlight diffs...')
+        } else {
+          s.start('Fetching and summarizing highlight diffs...')
+        }
 
         for (const hash of selectedHighlights) {
           const commit = log.all.find(c => c.hash === hash)
@@ -284,6 +312,10 @@ program
           // We'll summarize this later in the next step, for now just collect
           // @ts-ignore
           commit.diff = filteredDiff
+
+          if (options.json) {
+            continue
+          }
 
           try {
             const summaryResponse = await fetch(`${options.apiEndpoint}/chat/completions`, {
@@ -319,7 +351,11 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
             prompts.log.warn(`Could not generate AI summary for commit ${hash}: ${err.message}`)
           }
         }
-        s.stop('Highlights summarized.')
+        if (options.json) {
+          s.stop('Highlights fetched.')
+        } else {
+          s.stop('Highlights summarized.')
+        }
       }
 
       // Format commits for the AI
@@ -336,6 +372,50 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
         titleVersion = 'Unreleased'
       } else {
         titleVersion = `v${toRef.replace(/^v/, '')}`
+      }
+
+      if (options.json) {
+        const outputData = {
+          systemPrompt: SYSTEM_PROMPT,
+          frameworkContext,
+          titleVersion,
+          fromTag,
+          toRef,
+          extraContext,
+          commits: log.all.map(commit => ({
+            hash: commit.hash,
+            date: commit.date,
+            message: commit.message,
+            body: commit.body,
+            author_name: commit.author_name,
+            author_email: commit.author_email
+          })),
+          highlights: (selectedHighlights || []).map(hash => {
+            const commit = log.all.find(c => c.hash === hash)
+            return {
+              hash: commit.hash,
+              message: commit.message,
+              body: commit.body,
+              diff: commit.diff
+            }
+          })
+        }
+
+        const jsonString = JSON.stringify(outputData, null, 2)
+
+        if (options.output) {
+          writeFileSync(options.output, jsonString, 'utf8')
+          if (originalWrite) {
+            process.stdout.write = originalWrite
+          }
+          prompts.log.success(`Release data written to ${options.output}`)
+        } else {
+          if (originalWrite) {
+            process.stdout.write = originalWrite
+          }
+          console.log(jsonString)
+        }
+        process.exit(0)
       }
 
       let userMessage = `Please generate a release post for version ${titleVersion} comparing changes from ${fromTag} to ${toRef}.`
@@ -452,6 +532,9 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
       }
 
     } catch (error) {
+      if (originalWrite) {
+        process.stdout.write = originalWrite
+      }
       prompts.log.error(`Failed to generate release post: ${error.message}`)
       process.exit(1)
     }
