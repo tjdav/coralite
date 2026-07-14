@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration type="article" title="The AI Versioning Trap: Why We Might Be Stuck, and How the Native Web Can Help"
+    description="Learn why Large Language Models make traditional framework updates painful, and why building on native web APIs with Coralite is the future."></coralite-meta>
+  <meta property="article:published_time" name="published_time" content="2026-07-14T15:21:00+02:00">
+  <meta name="author_id" content="thomas" data-dev="true">
+  <title>The AI Versioning Trap: Why We Might Be Stuck, and How the Native Web Can Help</title>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content post">
+    <h1 class="display">The AI Versioning Trap: Why We Might Be Stuck, and How the Native Web Can Help</h1>
+
+    <coralite-author name="thomas" date-time="2026-07-14T15:21:00+02:00"></coralite-author>
+
+    <p>In my experience building frameworks and tools, I’ve noticed a recurring friction point that seems to be quietly slowing us down. As we shift toward AI-driven development, where LLMs generate large portions of our code, versioning has become a surprisingly difficult hurdle. When a framework introduces a necessary, fundamental architectural change, AI agents often struggle to keep up.</p>
+
+    <p>Take <a href="https://pocketbase.io/" target="_blank">Pocketbase</a>, an amazing open source backend. I've found while attempting to use an LLM for help, only for it to confidently generate code using syntax from a year ago, insisting it’s the latest version. Until a new update achieves massive, overwhelming adoption, the bulk of the AI's training data remains anchored to older patterns. This dynamic puts framework authors in a tough spot, making them understandably cautious about pushing breaking changes—even when those changes would solve deep-rooted flaws. We find ourselves a bit stuck, tied to the architectural decisions of the past simply because that is what the models know best.</p>
+
+    <coralite-heading level="2" text="The Modern Stack vs. The Native Web API"></coralite-heading>
+
+    <p>To navigate this, I think we might need to reconsider our reliance on heavy, proprietary abstractions. Currently, if you want a complete, production-ready application, you rarely just use React or Vue.js on their own. You typically have to stitch together a much larger stack, pairing your UI library with a meta-framework like Nuxt, Next.js, or Astro just to handle Server-Side Rendering (SSR) and Static Site Generation (SSG). Because features like SSR are often tacked on to the original framework's client-side architecture, we end up relying on a complex web of dependencies to make everything function together.</p>
+
+    <p>This is exactly why I built Coralite. I wanted to step away from proprietary dependencies and build directly on top of the native Web API because it is simply the most stable API we can depend on. Coralite is designed to handle SSR, SSG, and Single Page Application (SPA) needs all within a single, isomorphic framework. Because it relies on standard HTML, CSS, and JS packaged via static AST analysis, you don't need to offload your frontend to a sprawling meta-framework. Relying on the native Web API means the foundation is incredibly stable, reducing the risk of hallucination loops simply because LLMs already understand web standards perfectly.</p>
+
+    <coralite-heading level="2" text="A Deliberately Predictable API"></coralite-heading>
+
+    <p>One of the primary issues with stitching together a modern stack is the resulting complexity. Deeply nested configurations and proprietary hooks can confuse both developers and AI models alike. When designing Coralite, I intentionally leaned toward simplicity through a "Flat Options" API.</p>
+
+    <p>The naming conventions within this API are very deliberate. A component's logic is isolated into four distinct blocks: <code>attributes</code>, <code>server</code>, <code>getters</code>, and <code>client</code>. There is very little room for misinterpretation when the terminology maps so directly to its function.</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  // attributes: Declares and coerces the HTML inputs
+  attributes: {
+    theme: { type: String, default: 'light' }
+  },
+
+  // server: Handles initial local state and SSR data fetching
+  server: async ({ state }) => {
+    return { user: await fetchUser(state.theme) }
+  },
+
+  // getters: Pure, synchronous functions for derived UI data
+  getters: {
+    isDarkMode: (state) => state.theme === 'dark'
+  },
+
+  // client: The client-side controller for side-effects and native DOM events
+  client: ({ state, refs, observe }) => {
+    // Explicit side-effects via observe, automatically cleaned up when disconnected
+    observe('theme', (newValue, oldValue) => {
+      console.log(`Theme changed from ${oldValue} to ${newValue}`);
+      document.body.className = newValue;
+    });
+
+    refs('toggleBtn').addEventListener('click', () => {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+    });
+  }
+})
+    </coralite-code-highlight>
+
+    <p>By using universally understood concepts, the cognitive load drops significantly. The framework manages the reactivity under the hood through a straightforward equation where <code>Attributes + ServerState + Getters = State</code>. Furthermore, by exposing the <code>observe</code> pattern directly in the client block, you can execute explicit side-effects on state changes that are automatically cleaned up when the component disconnects.</p>
+
+    <p>In the end, it seems to me that a practical way to future-proof our tooling in the AI era isn't to build more complex meta-frameworks, but to strip away the proprietary layers. Moving closer to the native web reduces hallucinations and gives our applications a longer, more secure lifespan. It is the core reason Coralite exists, and I hope it serves as a helpful example of how this approach can simplify the way we build.</p>
+
+    <coralite-related-posts></coralite-related-posts>
+  </main>
+
+  <coralite-footer></coralite-footer>
+
+</body>
+
+</html>
