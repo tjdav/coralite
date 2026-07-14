@@ -60,14 +60,14 @@ definePlugin({
 </template>
 
 <script>
-  import { fetchJson } from 'virtual:custom-data-fetcher';
+  import { fetchJson } from 'virtual:custom-data-fetcher'
 
   export default {
-    async data() {
-      const response = await fetchJson('/api/resource');
-      return { data: response };
+    async data () {
+      const response = await fetchJson('/api/resource')
+      return { data: response }
     }
-  };
+  }
 </script>
     </coralite-code-highlight>
 
