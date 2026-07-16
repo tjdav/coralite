@@ -1,27 +1,31 @@
 # 🪸 Coralite
 
-[![npm version](https://img.shields.io/npm/v/coralite.svg)](https://www.npmjs.com/package/coralite)
-[![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](https://codeberg.org/tjdavid/coralite/src/branch/main/LICENSE)
-
-
 ## Build for the Web, With the Web
 
-Coralite is a **Native-First**, strictly Server-Side Rendered (SSR) framework for building fast, accessible, and future-proof websites.
+Coralite is a powerful **Isomorphic Web Component Framework** designed to build fast, interactive single-page applications (SPAs), dynamic websites, and static sites. It seamlessly blends the initial load speed of Server-Side Rendering (SSR) with robust, high-performance client-side hydration, giving you total flexibility over your rendering strategy using standard Web Components.
 
-- **True Native Web Components with a "Flat" API**
-  No vanilla boilerplate. Use a clean `defineComponent` flat-options API (`attributes`, `server`, `getters`, `client`) to build powerful Custom Elements without the `class extends HTMLElement` friction.
-- **The "Smart State, Dumb Template" Paradigm**
-  Templates are strictly declarative and "dumb"—no logic loops or dot-notation in HTML. All logic lives in pure JavaScript `getters` which receive a safe, Read-Only Proxy.
-- **Scoped CSS without Shadow DOM**
-  Enjoy perfect style encapsulation using standard CSS. The Coralite compiler automatically injects unique instance identifiers and nests rules, avoiding the accessibility and global styling headaches of Shadow DOM.
-- **Native Async Race-Condition Immunity**
-  Coralite's reactive engine handles asynchronous `server()` and `getters` with built-in version locks, ensuring your DOM never renders stale data from out-of-order Promise resolutions.
-- **Isomorphic, Two-Phase Curried Plugins**
-  Extend the engine with a strict, typed boundary. Plugins use a two-phase currying pattern to inject heavy context during initialization, leaving you with a clean, scoped API at runtime.
+### Why Coralite?
+
+Coralite stands out by actively fixing the most frustrating pain points of modern web development:
+
+* **True Native Web Components (Without the Boilerplate)**
+Abandon the verbose `class extends HTMLElement` syntax. Coralite uses a clean, ergonomic `defineComponent` flat-options API (`attributes`, `server`, `getters`, `client`) that outputs true native Custom Elements.
+* **Scoped CSS without Shadow DOM**
+Shadow DOM notoriously breaks global CSS systems and creates accessibility barriers. Coralite completely bypasses this by using compiler-generated instance identifiers to perfectly scope your CSS in the Light DOM.
+* **Isomorphism Built-In (The Vanishing `server` Block)**
+Fetch database or API records in the `server()` block during SSR. Coralite automatically serializes that data, hydrates it seamlessly into a unified reactive state on the client, and safely strips the `server()` code entirely from your browser bundle.
+* **Opt-Out Hydration**
+For purely static sections, simply append the `no-hydration` attribute to your HTML tag. Coralite will render it on the server but skip client-side hydration completely, keeping your JavaScript bundle incredibly lean.
+* **The "Smart State, Dumb Template" Paradigm**
+Say goodbye to spaghetti code. Templates are strictly declarative—no logic loops, inline expressions, or dot-notation allowed. All UI logic resides in pure, synchronous JavaScript `getters` which map cleanly to native HTML attributes.
+* **O(1) Microtask Reactivity (No Virtual DOM)**
+Mutate state in the `client()` controller block, and Coralite automatically schedules surgical DOM updates in the next microtask queue with O(1) precision via a compiler-generated hydration map.
+* **Async Race-Condition Immunity**
+Coralite’s reactive engine handles asynchronous data with built-in version locks, ensuring your DOM never renders stale data from out-of-order Promise resolutions.
 
 ---
 
-## Creating a new project
+## Quick Start
 
 The easiest way to start a new Coralite project is to use the scaffolding tool. This will set up your directory structure, install dependencies, and configure your npm scripts automatically.
 
@@ -29,15 +33,17 @@ The easiest way to start a new Coralite project is to use the scaffolding tool. 
 npm create coralite@latest my-coralite-app
 cd my-coralite-app
 npm run start
+
 ```
 
 #### Key Features
-- **Live Reload** - Automatic browser refresh on HTML, template, and asset changes.
-- **Hot CSS Updates** - Instant CSS injection without page refresh via Server-Sent Events.
-- **Sass/SCSS Support** - Compile Sass files with source maps and auto-prefixing.
-- **File Watching** - Monitors all source directories for changes.
-- **Production Optimization** - Clean builds with optimized output.
-- **Plugin Integration** - Full support for Coralite plugins.
+
+* **Live Reload** - Automatic browser refresh on HTML, template, and asset changes.
+* **Hot CSS Updates** - Instant CSS injection without page refresh via Server-Sent Events.
+* **Sass/SCSS Support** - Compile Sass files with source maps and auto-prefixing.
+* **File Watching** - Monitors all source directories for changes.
+* **Production Optimization** - Clean builds with optimized output.
+* **Plugin Integration** - Full support for Coralite plugins.
 
 > Learn more about the scaffolding process in the [Coralite scripts reference](https://coralite.dev/docs/reference/coralite-scripts.html).
 
@@ -49,34 +55,29 @@ If you are adding Coralite to an existing project or building from scratch manua
 
 ```bash
 npm install coralite
+
 ```
 
-Coralite ships with a built-in CLI to manage your development workflow. You can execute it directly:
+Coralite ships with a built-in CLI to manage your development workflow:
 
 ```bash
 npx coralite [options]
+
 ```
 
 ### Required CLI Options
 
-- **`-c` or `--components`**: The path to your components directory containing reusable UI elements (e.g., `-c src/components`).
-- **`-p` or `--pages`**: The path to your pages directory where static HTML files reside (e.g., `-p src/pages`).
-- **`--output` or `-o`**: The output directory for the generated site (e.g., `--output dist`).
+* **`-c` or `--components**`: The path to your components directory (e.g., `-c src/components`).
+* **`-p` or `--pages**`: The path to your pages directory (e.g., `-p src/pages`).
+* **`--output` or `-o**`: The output directory for the generated site (e.g., `--output dist`).
 
 ### Additional CLI Options
 
-- **`-m` or `--mode`**: Build mode: "development" or "production" (defaults to "production").
-- **`-i` or `--ignore-attribute`**: Ignore elements by attribute name value pair (format: `key=value`).
-- **`-s` or `--skip-render-attribute`**: Parse elements but exclude them from final render output.
-- **`-d` or `--dry-run`**: Run the CLI in dry-run mode to preview the actions that would be performed without actually generating the website.
-- **`-a` or `--assets`**: Static assets to copy. Format: `pkg:path:dest` (or `pkg:path`).
-
-Example:
-```bash
-npx coralite --components src/components --pages src/pages --output dist
-```
-
-> Explore all CLI capabilities in the [Coralite CLI reference](https://coralite.dev/docs/reference/cli.html).
+* **`-m` or `--mode**`: Build mode: `development`, `production`, or `testing` (defaults to `production`).
+* **`-i` or `--ignore-attribute**`: Ignore elements by attribute name value pair (format: `key=value`).
+* **`-s` or `--skip-render-attribute**`: Parse elements but exclude them from final render output.
+* **`-d` or `--dry-run**`: Preview the actions that would be performed without generating output.
+* **`-a` or `--assets**`: Static assets to copy. Format: `pkg:path:dest` (or `pkg:path`).
 
 ---
 
@@ -89,51 +90,48 @@ import { defineConfig } from 'coralite'
 import myCustomPlugin from './plugins/my-plugin.js'
 
 export default defineConfig({
-  // Directory configuration
   pages: './src/pages',
   components: './src/components',
   output: './dist',
-  
-  // Register plugins to hook into the build lifecycle
   plugins: [
     myCustomPlugin()
   ]
 })
-```
 
-> Read more about project configuration in the [Coralite configuration reference](https://coralite.dev/docs/reference/config.html).
+```
 
 ---
 
-## Building components (`defineComponent`)
+## Building Components (`defineComponent`)
 
 Coralite components are single-file HTML modules containing a `<template>`, an optional `<style>`, and a `<script type="module">`.
 
-Styles defined in the `<style>` block are automatically **scoped** to the component, meaning they won't leak out and affect the rest of your site. The `defineComponent` API allows you to safely inject state and logic into your HTML using computed tokens.
+> Notice how the HTML template remains strictly declarative, reading flat properties from the unified state proxy, while all complex logic is pushed into the `getters` block.
 
 **`src/components/user-card.html`**
 
 ```html
 <template id="user-card">
   <div class="card">
-    <!-- Templates only render flat keys. Logic belongs in getters! -->
     <h2 ref="title">{{ formatName }}</h2>
     <p>{{ userMeta }}</p>
     
     <slot></slot>
     
     <p class="stats">Logins: {{ loginCount }}</p>
+    <p class="warning" hidden="{{ hideWarning }}">High Activity User</p>
   </div>
 </template>
 
 <style>
-  /* These styles are automatically scoped to this component instance */
+  /* These styles are scoped to this component instance in the Light DOM */
   .card {
     border: 1px solid #eaeaea;
     padding: 1.5rem;
     border-radius: 8px;
   }
   h2 { color: coral; }
+  .warning { color: red; font-weight: bold; }
 </style>
 
 <script type="module">
@@ -141,13 +139,13 @@ Styles defined in the `<style>` block are automatically **scoped** to the compon
   import { userService } from './services.js'
 
   export default defineComponent({
-    // ATTRIBUTES: Coerced from HTML (String, Number, Boolean)
+    // ATTRIBUTES: Public API, coerced from HTML (String, Number, Boolean)
     attributes: {
       userId: { type: Number, default: 0 },
       role: { type: String, default: 'Guest' }
     },
 
-    // SERVER: Async server-side fetching (Stripped from client bundle)
+    // SERVER: Async server-side initialization (Stripped from client bundle!)
     async server({ state }) {
       const user = await userService.getById(state.userId)
       return {
@@ -157,33 +155,33 @@ Styles defined in the `<style>` block are automatically **scoped** to the compon
       }
     },
 
-    // GETTERS: Pure, sync derived state (Read-Only Proxy)
+    // GETTERS: Pure, sync derived state mapping to the Dumb Template
     getters: {
       formatName: (state) => `${state.firstName} ${state.lastName}`.trim(),
-      userMeta: (state) => `Role: ${state.role} | ID: ${state.userId}`
+      userMeta: (state) => `Role: ${state.role} | ID: ${state.userId}`,
+      hideWarning: (state) => state.loginCount < 50 // Logic stays out of HTML
     },
 
-    // CLIENT: Client-side controller (Read/Write Proxy)
+    // CLIENT: Client-side controller and side-effects
     client({ state, refs, signal }) {
-      // Use the 'refs' utility to get the unique DOM element
       const titleEl = refs('title')
 
+      // Bind events with the 'signal' for automatic garbage collection
       titleEl.addEventListener('click', () => {
-        // Mutations automatically trigger DOM updates & getter re-evaluations
+        // Direct mutations automatically trigger O(1) DOM updates
         state.loginCount++
-      }, { signal }) // Always use 'signal' for auto-cleanup!
+      }, { signal }) 
     }
   })
 </script>
-```
 
-> Learn advanced component techniques in the [getting started guide](https://coralite.dev/docs/guide/getting-started.html).
+```
 
 ---
 
 ## Extending the Engine (`definePlugin`)
 
-Coralite uses an isomorphic plugin architecture. A plugin is divided into `server` (Node.js) and `client` (Browser) blocks, using a **Two-Phase Curried** API to safely inject context.
+Coralite uses a strictly typed isomorphic plugin architecture. A plugin is divided into `server` (Node.js/Build) and `client` (Browser/Runtime) blocks, using a **Two-Phase Curried** API to safely inject context exactly where you need it.
 
 ```javascript
 import { definePlugin } from 'coralite'
@@ -194,11 +192,9 @@ export default function myPlugin(options = {}) {
 
     server: {
       // Symmetrical context: available in defineComponent server block
-      context: (pluginContext) => {
+      context: (pluginContext) => (instanceContext) => {
         return {
-          getData: (query) => {
-            return { custom: 'data' }
-          }
+          getData: () => ({ custom: 'data' })
         }
       },
       onBeforeComponentRender: ({ state }) => {
@@ -218,62 +214,40 @@ export default function myPlugin(options = {}) {
     }
   })
 }
+
 ```
-
-> Start writing your own custom plugins with the [Create Plugin Reference](https://coralite.dev/docs/reference/define-plugin.html).
-
----
-
-## Server-Side Lifecycle Hooks
-
-Coralite plugins tap into specific hooks that execute strictly during the SSG build phase. Framework utilities (like `parseHTML`) must be explicitly imported from `coralite/utils`, and engine state is accessed via `this`.
-
-### Granular Hooks
-- **`onPageSet` / `onPageUpdate` / `onPageDelete`**: Triggered when a page is added, modified, or removed from the collection.
-- **`onComponentSet` / `onComponentUpdate` / `onComponentDelete`**: Triggered when a component definition is added, modified, or removed.
-
-### Orchestration Hooks
-- **`onBeforeBuild`**: Executes once before the build process begins. Ideal for resetting global plugin state.
-- **`onAfterBuild`**: Executes after the build finishes. Provides results and performance metrics.
-
-### Rendering Hooks
-- **`onBeforePageRender`**: A state-reducing hook to patch the page context just before HTML serialization.
-- **`onAfterPageRender`**: An aggregator hook that runs after a page is rendered, allowing plugins to append additional pages (e.g., RSS feeds, sitemaps) to the build output.
-- **`no-hydration`**: An attribute that can be added to any component tag to completely exclude it from client-side hydration while still rendering its content on the server.
 
 ---
 
 ## Contributing
 
-We welcome community contributions! Coralite is managed as a monorepo, so setting up your local environment correctly is important.
+We welcome community contributions! Coralite is managed as a monorepo.
 
 ### 1. Prerequisites
 
-We rely on **pnpm workspaces** to manage dependencies across all internal packages.
-
-  * **Node.js** v20.19.0 or higher (Node.js v24 LTS recommended)
-  * **pnpm** v10+
+* **Node.js** v20.19.0 or higher (Node.js v24 LTS recommended)
+* **pnpm** v11+
 
 ### 2. Fork & Clone
-
-Fork the [Coralite repository](https://codeberg.org/tjdavid/coralite) and clone it locally:
 
 ```bash
 git clone https://codeberg.org/tjdavid/coralite.git
 cd coralite
+
 ```
 
 ### 3. Install Dependencies
 
-Run the installation from the root directory. pnpm will automatically link the local packages (like the core engine and CLI) together:
+Run the installation from the root directory. pnpm will automatically link the local packages together:
 
 ```bash
 pnpm install
+
 ```
 
 ### 4. Run Tests & Benchmarks
 
-Before submitting a Pull Request, navigate to the core package and ensure your changes haven't broken existing features or caused performance regressions:
+Before submitting a Pull Request, ensure your changes pass all tests and haven't caused performance regressions:
 
 ```bash
 cd packages/coralite
@@ -281,16 +255,17 @@ cd packages/coralite
 # Run the unit test suite
 pnpm run test:unit
 
-# Run the end-to-end test suite
+# Run the strict deterministic E2E test suite
 pnpm run test:e2e
 
-# Run the performance benchmarks (highly recommended if modifying the AST or Plugin core)
+# Run the performance benchmarks
 pnpm run bench
+
 ```
 
 ## Documentation
 
-For a deep dive into advanced features, imperative slot rendering, scoped styles, and full API references, check out the [official documentation](https://coralite.dev/docs/guide/getting-started.html).
+For a deep dive into advanced features, imperative slot rendering, end-to-end testing strategies, and full API references, check out the [official documentation](https://coralite.dev/docs/guide/getting-started.html).
 
 ## License
 

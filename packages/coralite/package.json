@@ -1,16 +1,19 @@
 {
   "name": "coralite",
   "version": "0.43.1",
-  "description": "HTML modules static site generator",
+  "description": "Isomorphic Web Component framework for interactive SPAs and dynamic sites",
   "type": "module",
   "keywords": [
-    "static-site-generator",
+    "web-components",
+    "isomorphic",
+    "hydration",
+    "spa",
+    "ssr",
+    "ssg",
     "components",
     "templates",
     "coralite",
-    "blog",
-    "site-engine",
-    "documentation-tool"
+    "site-engine"
   ],
   "homepage": "https://coralite.dev",
   "author": {
