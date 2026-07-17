@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.43.3
+
+> Comparing `create-coralite-v0.43.2` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- add pnpm-workspace.yaml with allowBuilds (coralite-scripts) ([a226338](https://codeberg.org/tjdavid/coralite/commit/a226338fa5cefbba9679d08ddc6c33456c9f8974))
+- update template component api (coralite-scripts) ([4d53443](https://codeberg.org/tjdavid/coralite/commit/4d534430e8e77004059e04473ff6921d63670cf1))
+
+
 ## v0.43.2
 
 > Comparing `create-coralite-v0.43.1` to `HEAD`
