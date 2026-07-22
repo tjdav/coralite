@@ -559,14 +559,14 @@ Every `CoraliteError` exposes detailed diagnostic metadata:
 *   `stackFile` (string): The file name extracted from the stack trace.
 *   Cause (Error): The original error instance (if wrapped).
 
-## 14. Component Usage Coverage & Analyser (`coralite check`)
+## 14. Component Validation & Analyser (`coralite validate-components`)
 
-Coralite includes a built-in static AST and template symbol analyser (`lib/analyser.js`) exposed via the CLI subcommand `coralite check`.
+Coralite includes a built-in static AST and template symbol analyser (`lib/analyser.js`) exposed via the CLI subcommand `coralite validate-components` (alias: `coralite validate:components`).
 
 ### 14.1 Key Capabilities
 *   **Unused Symbol Detection**: Cross-references component `<template>` mustache tokens (`{{ var }}`), `ref="..."` attributes, CSS attribute selectors (`[attr]`), and script AST nodes (`attributes`, `server()`, `getters`, `client()`) to flag unreferenced getters, server props, attributes, and refs.
 *   **Comment Directives / Pragmas**: Supports inline ignore pragmas (`<!-- coralite-ignore symbol1 symbol2 -->`, `/* coralite-ignore symbol1 */`, or `@coralite-ignore-unused`) for intentional test dead code or plugin-managed refs.
-*   **Coverage Reporting**: Generates usage coverage percentages and test execution metrics via `coralite check --coverage`.
+*   **Coverage Reporting**: Generates usage coverage percentages and test execution metrics via `coralite validate-components --coverage`.
 *   **CI Enforcement**: Supports `--strict` flag to fail builds if any unused code or unreferenced symbols exist.
 
 ### 14.2 Test Server Port Isolation

@@ -33,8 +33,9 @@ if (existsSync(configPath)) {
 }
 
 program
-  .command('check')
-  .description('Identify unused code and measure usage coverage in Coralite components')
+  .command('validate-components')
+  .alias('validate:components')
+  .description('Validate Coralite components to detect unused code, missing refs, and schema issues')
   .option('-c, --components <path>', 'Path to components directory')
   .option('--coverage', 'Include test execution coverage metrics', false)
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
