@@ -44,10 +44,13 @@
       const button = refs('count-button')
 
       button.addEventListener('click', async () => {
+        button.textContent = 'Count is loading....'
+
         const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
 
         // Coralite automatically patches the {{ count }} token in the template.
         state.count += state.step
+        button.textContent = `Count is ${state.count}`
 
         // Explode confetti :)
         confetti()
