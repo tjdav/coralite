@@ -121,6 +121,44 @@
     <p>When a <code>coralite.config.js</code> file exists in your project the CLI will automatically load it:</p>
     <coralite-code language="bash">coralite -c src/components -p src/pages -o dist</coralite-code>
 
+    <coralite-heading level="2" text="coralite check (Component Coverage & Usage Analyser)"></coralite-heading>
+    <p>
+      The <code>coralite check</code> command performs static AST and template analysis across components to identify unused getters, server state properties, attributes, and element <code>ref</code>s, ensuring clean and efficient code.
+    </p>
+
+    <coralite-code language="bash">coralite check [options]</coralite-code>
+
+    <ul>
+      <li>
+        <p><strong><code>-c, --components &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: The path to the components directory to analyse (defaults to <code>src/components</code> or project config).</li>
+          <li>Example: <code>coralite check -c src/components</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--coverage</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Include component getter evaluation and client controller test execution coverage metrics.</li>
+          <li>Example: <code>coralite check --coverage</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--format &lt;format&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Output report format. Options are <code>"console"</code> (colorised terminal output) or <code>"json"</code>. Default is <code>"console"</code>.</li>
+          <li>Example: <code>coralite check --format json</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--strict</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Exit with a non-zero status code if any unused code or unreferenced symbols are found (ideal for CI pipelines).</li>
+          <li>Example: <code>coralite check --coverage --strict</code></li>
+        </ul>
+      </li>
+    </ul>
+
   </main>
   <coralite-footer></coralite-footer>
 
