@@ -35,6 +35,7 @@
     "test:unit": "node --experimental-vm-modules --experimental-import-meta-resolve --test \"./tests/unit/**/*.spec.js\"",
     "test:unit:watch": "node --experimental-vm-modules --experimental-import-meta-resolve --test --watch \"./tests/unit/**/*.spec.js\"",
     "test:unit:coverage": "node --experimental-vm-modules --experimental-import-meta-resolve --experimental-test-coverage --test \"./tests/unit/**/*.spec.js\"",
+    "test:component:coverage": "node bin/coralite.js check --coverage -c tests/fixtures/components",
     "test:e2e": "pnpm build && pnpm clean:e2e && pnpm build:html:dev && pnpm build:html:prod && pnpm build:html:testing && playwright test",
     "test:e2e:report": "playwright show-report",
     "test:e2e:ui": "playwright test --ui",
