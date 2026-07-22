@@ -4,6 +4,13 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, extname, relative, resolve } from 'node:path'
 import kleur from 'kleur'
 
+/**
+ * @import {
+ *   CoraliteComponentAnalysisResult,
+ *   CoraliteComponentDirectoryAnalysisReport
+ * } from '../types/index.js'
+ */
+
 function camelToKebab (str) {
   return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
 }
@@ -13,7 +20,7 @@ function camelToKebab (str) {
  *
  * @param {string} sourceCode - Raw component file content
  * @param {string} [filePath=''] - Path to component file for context
- * @returns {Object} Analysis report with defined, unused, and coverage metrics
+ * @returns {CoraliteComponentAnalysisResult} Analysis report with defined, unused, and coverage metrics
  */
 export function analyseComponentSource (sourceCode, filePath = '') {
   let templateContent = ''
@@ -397,7 +404,7 @@ export function analyseComponentSource (sourceCode, filePath = '') {
  *
  * @param {string} componentsDir - Path to components directory
  * @param {Object} [options={}] - Options like coverage flag
- * @returns {Object} Aggregated directory analysis report
+ * @returns {CoraliteComponentDirectoryAnalysisReport} Aggregated directory analysis report
  */
 export function analyseComponentsDir (componentsDir, options = {}) {
   const absoluteDir = resolve(componentsDir)
