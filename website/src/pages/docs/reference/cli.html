@@ -159,6 +159,37 @@
       </li>
     </ul>
 
+    <coralite-heading level="2" text="coralite validate-plugins (Plugin Validator)"></coralite-heading>
+    <p>
+      The <code>coralite validate-plugins</code> command (alias: <code>coralite validate:plugins</code>) validates plugin contracts, lifecycle hook signatures, serializable client options, and isomorphic boundaries.
+    </p>
+
+    <coralite-code language="bash">coralite validate-plugins [options]</coralite-code>
+
+    <ul>
+      <li>
+        <p><strong><code>-p, --plugins &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: The path to a plugin file or plugins directory to validate (defaults to <code>src/plugins</code>).</li>
+          <li>Example: <code>coralite validate-plugins -p src/plugins</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--format &lt;format&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Output report format. Options are <code>"console"</code> or <code>"json"</code>. Default is <code>"console"</code>.</li>
+          <li>Example: <code>coralite validate-plugins --format json</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--strict</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Exit with a non-zero status code if any plugin validation errors are detected.</li>
+          <li>Example: <code>coralite validate-plugins --strict</code></li>
+        </ul>
+      </li>
+    </ul>
+
   </main>
   <coralite-footer></coralite-footer>
 

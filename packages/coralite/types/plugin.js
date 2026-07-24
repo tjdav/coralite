@@ -320,4 +320,42 @@
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
  */
 
+/**
+ * @typedef {Object} CoralitePluginValidationIssue
+ * @property {'error' | 'warning'} type - Issue severity
+ * @property {string} code - Issue code identifier
+ * @property {string} message - Human-readable issue description
+ * @property {number} [line] - Line number where issue was detected
+ */
+
+/**
+ * @typedef {Object} CoralitePluginValidationMetrics
+ * @property {number} errors - Count of error issues
+ * @property {number} warnings - Count of warning issues
+ */
+
+/**
+ * @typedef {Object} CoralitePluginValidationResult
+ * @property {string} filePath - Path to plugin file
+ * @property {string} pluginName - Extracted or configured plugin name
+ * @property {boolean} valid - True if plugin contains 0 errors
+ * @property {CoralitePluginValidationIssue[]} issues - List of validation issues
+ * @property {CoralitePluginValidationMetrics} metrics - Metrics count
+ */
+
+/**
+ * @typedef {Object} CoralitePluginDirectoryValidationMetrics
+ * @property {number} totalPlugins - Total plugins analyzed
+ * @property {number} validPlugins - Count of fully valid plugins
+ * @property {number} totalErrors - Total error count across all plugins
+ * @property {number} totalWarnings - Total warning count across all plugins
+ */
+
+/**
+ * @typedef {Object} CoralitePluginDirectoryValidationReport
+ * @property {CoralitePluginValidationResult[]} plugins - Array of validation results
+ * @property {CoralitePluginDirectoryValidationMetrics} metrics - Aggregate metrics
+ */
+
 export default {}
+

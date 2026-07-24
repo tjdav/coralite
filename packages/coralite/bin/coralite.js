@@ -75,6 +75,58 @@ program
   })
 
 program
+  .command('validate-plugins')
+  .alias('validate:plugins')
+  .description('Validate Coralite plugin contracts, lifecycle hooks, and isomorphic boundaries')
+  .option('-p, --plugins <path>', 'Path to plugin file or directory')
+  .option('--format <format>', 'Output format: "console" or "json"', 'console')
+  .option('--strict', 'Fail with non-zero exit code if validation errors are found', false)
+  .action(async (options) => {
+    const { validatePluginsDir, validatePluginFile, formatPluginValidationReport } = await import('../lib/plugin-validator.js')
+    const { statSync, existsSync } = await import('node:fs')
+    const { join } = await import('node:path')
+
+    let pluginTarget = options.plugins
+    if (!pluginTarget) {
+      if (existsSync(join(process.cwd(), 'src/plugins'))) {
+        pluginTarget = 'src/plugins'
+      } else if (existsSync(join(process.cwd(), 'tests/fixtures/plugins'))) {
+        pluginTarget = 'tests/fixtures/plugins'
+      } else {
+        pluginTarget = '.'
+      }
+    }
+
+    try {
+      let report
+      if (existsSync(pluginTarget) && statSync(pluginTarget).isFile()) {
+        const result = await validatePluginFile(pluginTarget)
+        report = {
+          plugins: [result],
+          metrics: {
+            totalPlugins: 1,
+            validPlugins: result.valid ? 1 : 0,
+            totalErrors: result.metrics.errors,
+            totalWarnings: result.metrics.warnings
+          }
+        }
+      } else {
+        report = await validatePluginsDir(pluginTarget)
+      }
+
+      const formatted = formatPluginValidationReport(report, { format: options.format })
+      process.stdout.write(formatted)
+
+      if (options.strict && report.metrics.totalErrors > 0) {
+        process.exit(1)
+      }
+    } catch (err) {
+      process.stderr.write(kleur.red().bold('ERROR: ') + err.message + '\n')
+      process.exit(1)
+    }
+  })
+
+program
   .command('build', { isDefault: true })
   .description('Build site from HTML modules and components')
   .requiredOption('-c, --components <path>', 'Path to components directory')

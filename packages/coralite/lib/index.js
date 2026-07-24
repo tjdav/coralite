@@ -4,6 +4,7 @@ export * from '../types/index.js'
 export * from './utils/index.js'
 export * from './utils/server/index.js'
 export * from './analyser.js'
+export * from './plugin-validator.js'
 export * from './plugin.js'
 export * from './config.js'
 

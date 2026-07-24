@@ -572,3 +572,13 @@ Coralite includes a built-in static AST and template symbol analyser (`lib/analy
 ### 14.2 Test Server Port Isolation
 *   Test mode development servers (`coralite-scripts` in `test` mode, Playwright test webServer) default to port **3862** (instead of 3000) to isolate test suites and prevent port collision with active development servers.
 
+## 15. Plugin Validation (`coralite validate-plugins`)
+
+Coralite provides `coralite validate-plugins` (alias: `coralite validate:plugins`) powered by `lib/plugin-validator.js` to audit plugin definitions statically and dynamically.
+
+### 15.1 Validation Checks
+*   **Contract & Name Validation**: Asserts non-empty `name` property and warns against reserved core plugin name collisions.
+*   **Lifecycle Hook Verification**: Asserts server (`onBeforeBuild`, `onAfterBuild`, `onPageSet`, etc.) and client (`onConnected`, `onDisconnected`) hooks are valid functions.
+*   **Isomorphic Boundary Protection**: Detects server-only module imports (`node:fs`, `express`) inside `client` plugin blocks and ensures `client.config` contains serializable plain objects.
+
+
