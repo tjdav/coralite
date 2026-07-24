@@ -577,9 +577,6 @@ Coralite includes a built-in static AST and template symbol validator (`lib/comp
 *   **Coverage Reporting**: Generates usage coverage percentages and test execution metrics via `coralite validate-components --coverage`.
 *   **CI Enforcement**: Supports `--strict` flag to fail builds if any unused code or unreferenced symbols exist.
 
-### 14.2 Test Server Port Isolation
-*   Test mode development servers (`coralite-scripts` in `test` mode, Playwright test webServer) default to port **3862** (instead of 3000) to isolate test suites and prevent port collision with active development servers.
-
 ## 15. Plugin Validation (`coralite validate-plugins`)
 
 Coralite provides `coralite validate-plugins` (alias: `coralite validate:plugins`) powered by `lib/plugin-validator.js` to audit plugin definitions statically and dynamically.

@@ -129,7 +129,7 @@ export async function resolveSource (reqPath, extension, config, coralite, memor
 async function server (config, options, runMode = 'dev') {
   try {
     const app = express()
-    let startPort = runMode === 'test' ? 3862 : 3000
+    let startPort = 3000
 
     if (config.server?.port && !isNaN(config.server.port)) {
       startPort = config.server.port
