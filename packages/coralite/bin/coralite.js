@@ -41,7 +41,7 @@ program
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('--strict', 'Fail with non-zero exit code if unused code is found', false)
   .action(async (options) => {
-    const { analyseComponentsDir, formatComponentAnalysis } = await import('../lib/analyser.js')
+    const { validateComponentsDir, formatComponentValidationReport } = await import('../lib/component-validator.js')
 
     let compDir = options.components
     if (!compDir && config && config.components) {
@@ -58,8 +58,8 @@ program
     }
 
     try {
-      const report = analyseComponentsDir(compDir, { coverage: options.coverage })
-      const formatted = formatComponentAnalysis(report, {
+      const report = validateComponentsDir(compDir, { coverage: options.coverage })
+      const formatted = formatComponentValidationReport(report, {
         format: options.format,
         coverage: options.coverage
       })

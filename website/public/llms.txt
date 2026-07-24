@@ -561,7 +561,7 @@ Every `CoraliteError` exposes detailed diagnostic metadata:
 
 ## 14. Component Validation & Analyser (`coralite validate-components`)
 
-Coralite includes a built-in static AST and template symbol analyser (`lib/analyser.js`) exposed via the CLI subcommand `coralite validate-components` (alias: `coralite validate:components`).
+Coralite includes a built-in static AST and template symbol validator (`lib/component-validator.js`) exposed via the CLI subcommand `coralite validate-components` (alias: `coralite validate:components`).
 
 ### 14.1 Key Capabilities
 *   **Unused Symbol Detection**: Cross-references component `<template>` mustache tokens (`{{ var }}`), `ref="..."` attributes, CSS attribute selectors (`[attr]`), and script AST nodes (`attributes`, `server()`, `getters`, `client()`) to flag unreferenced getters, server props, attributes, and refs.

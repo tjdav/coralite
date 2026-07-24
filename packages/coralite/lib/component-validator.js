@@ -6,8 +6,8 @@ import kleur from 'kleur'
 
 /**
  * @import {
- *   CoraliteComponentAnalysisResult,
- *   CoraliteComponentDirectoryAnalysisReport
+ *   CoraliteComponentValidationResult,
+ *   CoraliteComponentDirectoryValidationReport
  * } from '../types/index.js'
  */
 
@@ -16,13 +16,13 @@ function camelToKebab (str) {
 }
 
 /**
- * Analyses component source code for unused getters, server state, attributes, and refs.
+ * Validates component source code for unused getters, server state, attributes, refs, and top-level client imports.
  *
  * @param {string} sourceCode - Raw component file content
  * @param {string} [filePath=''] - Path to component file for context
- * @returns {CoraliteComponentAnalysisResult} Analysis report with defined, unused, and coverage metrics
+ * @returns {CoraliteComponentValidationResult} Validation result with defined, unused, and coverage metrics
  */
-export function analyseComponentSource (sourceCode, filePath = '') {
+export function validateComponentSource (sourceCode, filePath = '') {
   let templateContent = ''
   let scriptContent = ''
   let styleContent = ''
@@ -86,6 +86,8 @@ export function analyseComponentSource (sourceCode, filePath = '') {
   const definedAttributes = new Set()
   const definedServerProps = new Set()
   const definedGetters = new Set()
+  const topLevelImports = new Map()
+  const usedTopLevelImportsInClient = new Set()
 
   const stateReads = new Set()
   const refsCalls = new Set()
@@ -123,6 +125,19 @@ export function analyseComponentSource (sourceCode, filePath = '') {
         sourceType: 'module',
         locations: true
       })
+
+      if (ast && ast.body) {
+        for (const node of ast.body) {
+          if (node.type === 'ImportDeclaration') {
+            const source = node.source ? node.source.value : ''
+            for (const spec of node.specifiers || []) {
+              if (spec.local && spec.local.name) {
+                topLevelImports.set(spec.local.name, source)
+              }
+            }
+          }
+        }
+      }
 
       walkAncestorJS(ast, {
         CallExpression (node) {
@@ -214,6 +229,99 @@ export function analyseComponentSource (sourceCode, filePath = '') {
                 keyName === 'client' &&
                 (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression')
               ) {
+                if (topLevelImports.size > 0 && prop.value) {
+                  const clientLocalVars = new Set()
+
+                  const extractPatternNames = (pattern) => {
+                    if (!pattern) {
+                      return
+                    }
+                    if (pattern.type === 'Identifier') {
+                      clientLocalVars.add(pattern.name)
+                    } else if (pattern.type === 'ObjectPattern') {
+                      for (const p of pattern.properties || []) {
+                        if (p.type === 'Property') {
+                          extractPatternNames(p.value)
+                        } else if (p.type === 'RestElement') {
+                          extractPatternNames(p.argument)
+                        }
+                      }
+                    } else if (pattern.type === 'ArrayPattern') {
+                      for (const el of pattern.elements || []) {
+                        if (el) {
+                          extractPatternNames(el)
+                        }
+                      }
+                    } else if (pattern.type === 'AssignmentPattern') {
+                      extractPatternNames(pattern.left)
+                    } else if (pattern.type === 'RestElement') {
+                      extractPatternNames(pattern.argument)
+                    }
+                  }
+
+                  if (prop.value.params) {
+                    for (const param of prop.value.params) {
+                      extractPatternNames(param)
+                    }
+                  }
+
+                  if (prop.value.body) {
+                    walkJS(prop.value.body, {
+                      VariableDeclarator (dNode) {
+                        extractPatternNames(dNode.id)
+                      },
+                      FunctionDeclaration (fNode) {
+                        if (fNode.id && fNode.id.type === 'Identifier') {
+                          clientLocalVars.add(fNode.id.name)
+                        }
+                      },
+                      ClassDeclaration (cNode) {
+                        if (cNode.id && cNode.id.type === 'Identifier') {
+                          clientLocalVars.add(cNode.id.name)
+                        }
+                      },
+                      CatchClause (cClause) {
+                        if (cClause.param) {
+                          extractPatternNames(cClause.param)
+                        }
+                      }
+                    })
+
+                    walkAncestorJS(prop.value.body, {
+                      Identifier (idNode, ancestors) {
+                        const idName = idNode.name
+                        if (topLevelImports.has(idName) && !clientLocalVars.has(idName)) {
+                          const parent = ancestors.length > 1 ? ancestors[ancestors.length - 2] : null
+                          if (!parent) {
+                            return
+                          }
+
+                          if (parent.type === 'MemberExpression' && parent.property === idNode && !parent.computed) {
+                            return
+                          }
+
+                          if (parent.type === 'Property' && parent.key === idNode && !parent.computed && !parent.shorthand) {
+                            return
+                          }
+
+                          if (
+                            (parent.type === 'BreakStatement' || parent.type === 'ContinueStatement' || parent.type === 'LabeledStatement') &&
+                            parent.label === idNode
+                          ) {
+                            return
+                          }
+
+                          if (parent.type === 'MetaProperty') {
+                            return
+                          }
+
+                          usedTopLevelImportsInClient.add(idName)
+                        }
+                      }
+                    })
+                  }
+                }
+
                 const stateVarNames = new Set(['state'])
                 const refsVarNames = new Set(['refs'])
 
@@ -370,8 +478,15 @@ export function analyseComponentSource (sourceCode, filePath = '') {
     }
   }
 
+  const invalidClientImports = []
+  for (const imp of usedTopLevelImportsInClient) {
+    if (!isEntireComponentIgnored && !ignoredSymbols.has(imp)) {
+      invalidClientImports.push(imp)
+    }
+  }
+
   const totalDefined = definedGetters.size + definedServerProps.size + definedAttributes.size + templateRefs.size
-  const totalUnused = unusedGetters.length + unusedServerProps.length + unusedAttributes.length + unusedRefs.length
+  const totalUnused = unusedGetters.length + unusedServerProps.length + unusedAttributes.length + unusedRefs.length + invalidClientImports.length
   const usageCoveragePercentage = totalDefined > 0
     ? Math.round(((totalDefined - totalUnused) / totalDefined) * 100)
     : 100
@@ -382,14 +497,17 @@ export function analyseComponentSource (sourceCode, filePath = '') {
       getters: Array.from(definedGetters),
       serverProps: Array.from(definedServerProps),
       attributes: Array.from(definedAttributes),
-      refs: Array.from(templateRefs)
+      refs: Array.from(templateRefs),
+      imports: Array.from(topLevelImports.keys())
     },
     unused: {
       getters: unusedGetters,
       serverProps: unusedServerProps,
       attributes: unusedAttributes,
       refs: unusedRefs,
-      missingRefs
+      missingRefs,
+      invalidClientImports,
+      invalidImports: invalidClientImports
     },
     metrics: {
       totalDefined,
@@ -400,13 +518,13 @@ export function analyseComponentSource (sourceCode, filePath = '') {
 }
 
 /**
- * Scans a directory recursively for component files (.html / .js) and analyses usage.
+ * Scans a directory recursively for component files (.html / .js) and validates usage.
  *
  * @param {string} componentsDir - Path to components directory
  * @param {Object} [options={}] - Options like coverage flag
- * @returns {CoraliteComponentDirectoryAnalysisReport} Aggregated directory analysis report
+ * @returns {CoraliteComponentDirectoryValidationReport} Aggregated directory validation report
  */
-export function analyseComponentsDir (componentsDir, options = {}) {
+export function validateComponentsDir (componentsDir, options = {}) {
   const absoluteDir = resolve(componentsDir)
   const results = []
 
@@ -426,7 +544,7 @@ export function analyseComponentsDir (componentsDir, options = {}) {
         const content = readFileSync(fullPath, 'utf8')
         if (content.includes('defineComponent') || content.includes('<template')) {
           const relPath = relative(process.cwd(), fullPath)
-          const result = analyseComponentSource(content, relPath)
+          const result = validateComponentSource(content, relPath)
           results.push(result)
         }
       }
@@ -460,13 +578,13 @@ export function analyseComponentsDir (componentsDir, options = {}) {
 }
 
 /**
- * Formats component analysis results into human-readable terminal output or JSON string.
+ * Formats component validation results into human-readable terminal output or JSON string.
  *
- * @param {Object} report - Analysis report from analyseComponentsDir
+ * @param {Object} report - Validation report from validateComponentsDir
  * @param {Object} [options={}] - Formatting options (format: 'console'|'json')
  * @returns {string} Formatted output string
  */
-export function formatComponentAnalysis (report, options = {}) {
+export function formatComponentValidationReport (report, options = {}) {
   if (options.format === 'json') {
     return JSON.stringify(report, null, 2)
   }
@@ -507,6 +625,11 @@ export function formatComponentAnalysis (report, options = {}) {
       output += `  ${kleur.yellow('⚠')} Missing element refs in template: ${kleur.yellow(unused.missingRefs.join(', '))}\n`
       hasIssues = true
     }
+    const invalidImports = unused.invalidClientImports || unused.invalidImports || []
+    if (invalidImports.length > 0) {
+      output += `  ${kleur.red('✖')} Top-level imports used in client block (must use dynamic imports): ${kleur.red(invalidImports.join(', '))}\n`
+      hasIssues = true
+    }
 
     if (!hasIssues) {
       output += `  ${kleur.green('✔')} All getters, server props, attributes, and refs actively used.\n`
@@ -528,6 +651,9 @@ export function formatComponentAnalysis (report, options = {}) {
   return output
 }
 
-// Backwards compatibility aliases for both spelling variants
-export const analyzeComponentSource = analyseComponentSource
-export const analyzeComponentsDir = analyseComponentsDir
+// Backwards compatibility aliases for previous function names
+export const analyseComponentSource = validateComponentSource
+export const analyseComponentsDir = validateComponentsDir
+export const formatComponentAnalysis = formatComponentValidationReport
+export const analyzeComponentSource = validateComponentSource
+export const analyzeComponentsDir = validateComponentsDir

@@ -5,5 +5,5 @@ export * from './module.js'
 export * from './collection.js'
 export * from './plugin.js'
 export * from './script.js'
-export * from './analyser.js'
+export * from './component-validator.js'
 
