@@ -2,6 +2,12 @@ import { waitForHydration } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Granular Lifecycle', () => {
+  test.beforeEach(({}, testInfo) => {
+    if (testInfo.project.name === 'framework-core-prod') {
+      test.skip()
+    }
+  })
+
   test('should provide awaitable defined, rendered, and hydrated phases', async ({ page }) => {
     await page.goto('/client-script/')
 

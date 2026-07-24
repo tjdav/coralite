@@ -8,6 +8,7 @@
 
 import { createReadOnlyProxy } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
+import { recordDevToolsEvent } from './utils/client/devtools.js'
 
 const BOOLEAN_ATTRIBUTES = new Set([
   'allowfullscreen',
@@ -74,6 +75,7 @@ export function coerce (value, type) {
  * @property {Object.<string, Function>} [slots] - Transformation functions for projected Light DOM.
  * @property {Function} [client] - The client-side controller logic.
  * @property {Object} [hydrationMap] - AST mapping for reactive text nodes, attributes, and refs.
+ * @property {Object} [templateValues] - Token positions for AST updates.
  */
 
 /**
@@ -738,11 +740,83 @@ export class CoraliteElement extends HTMLElement {
       this._scheduleUpdate()
     }
 
-    if (window['__coralite__'] && window['__coralite__'].components) {
-      window['__coralite__'].components[this._instanceId] = {
+    // @ts-ignore
+    const isDevOrTest = typeof import.meta.env !== 'undefined'
+      // @ts-ignore
+      ? import.meta.env.MODE !== 'production'
+      : true
+
+    if (isDevOrTest) {
+      const key = Symbol.for('coralite.testing')
+      const options = this.componentOptions
+      this[key] = {
+        instanceId: this._instanceId,
+        componentId: options.componentId,
         state: this._state,
-        tagName: this.tagName.toLowerCase(),
-        componentId: this.componentOptions.componentId
+        getters: new Proxy({}, {
+          get (target, prop) {
+            if (typeof prop === 'string' && options.getters && prop in options.getters) {
+              return self._state[prop]
+            }
+            return undefined
+          },
+          ownKeys () {
+            return Object.keys(options.getters || {})
+          },
+          getOwnPropertyDescriptor (target, prop) {
+            if (typeof prop === 'string' && options.getters && prop in options.getters) {
+              return {
+                enumerable: true,
+                configurable: true
+              }
+            }
+            return undefined
+          }
+        }),
+        refs: new Proxy({}, {
+          get (target, prop) {
+            if (typeof prop !== 'string') {
+              return undefined
+            }
+            const refId = self._state[`ref_${prop}`]
+            if (!refId && typeof refId !== 'string') {
+              return null
+            }
+            return self.querySelector(`[ref="${refId}"]`)
+          },
+          ownKeys () {
+            const keys = new Set()
+            if (options.hydrationMap?.refs) {
+              for (const ref of options.hydrationMap.refs) {
+                keys.add(ref.name)
+              }
+            }
+            if (options.templateValues?.refs) {
+              for (const ref of options.templateValues.refs) {
+                keys.add(ref.name)
+              }
+            }
+            const elements = self.querySelectorAll('[ref]')
+            for (const el of elements) {
+              const refAttr = el.getAttribute('ref')
+              if (refAttr) {
+                const prefix = `${self._instanceId}__`
+                if (refAttr.startsWith(prefix)) {
+                  keys.add(refAttr.slice(prefix.length))
+                } else {
+                  keys.add(refAttr)
+                }
+              }
+            }
+            return Array.from(keys)
+          },
+          getOwnPropertyDescriptor () {
+            return {
+              enumerable: true,
+              configurable: true
+            }
+          }
+        })
       }
     }
 
@@ -751,7 +825,7 @@ export class CoraliteElement extends HTMLElement {
         await this.componentOptions.client(localContext)
       } catch (error) {
         console.error(`Coralite Error: Component "${this.componentOptions.componentId}" script failed:`, error)
-        if (window['__coralite__'] && window['__coralite__'].components) {
+        if (isDevOrTest) {
           const fatalError = new Error(`Coralite Component Error: Component "${this.componentOptions.componentId}" (${this._instanceId}) client() block failed: ${error.message}`)
           fatalError.stack = error.stack
 
@@ -812,8 +886,14 @@ export function createCoraliteClass (options, contextGetter = null, hooks = {}, 
       // Override dispatchEvent to intercept all CustomEvents
       const originalDispatchEvent = this.dispatchEvent
       this.dispatchEvent = function (event) {
-        if (window['__coralite__'] && window['__coralite__'].events && event instanceof CustomEvent) {
-          window['__coralite__'].events.push({
+        // @ts-ignore
+        const isDevOrTest = typeof import.meta.env !== 'undefined'
+          // @ts-ignore
+          ? import.meta.env.MODE !== 'production'
+          : true
+
+        if (isDevOrTest && event instanceof CustomEvent) {
+          recordDevToolsEvent({
             name: event.type,
             detail: event.detail,
             sourceComponentId: self._instanceId,

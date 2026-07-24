@@ -331,6 +331,7 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   }\n`)
 
   const coraliteElementPath = fileURLToPath(import.meta.resolve('./coralite-element.js'))
+  const devToolsPath = fileURLToPath(import.meta.resolve('./utils/client/devtools.js'))
 
   entryCodeParts.push(`const globalClientHooks = {
     onBeforeComponentRender: [${this.scriptModules.map((_, i) => `onBeforeComponentRender_${i}`).join(', ')}].filter(Boolean),
@@ -339,7 +340,8 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
   };\n`)
 
   entryCodeParts.push(`import { createCoraliteClass } from ${JSON.stringify(coraliteElementPath)};\n`)
-  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, globalClientHooks };\n')
+  entryCodeParts.push(`import { setupDevTools, registerDevToolsComponent } from ${JSON.stringify(devToolsPath)};\n`)
+  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent };\n')
 
   this.virtualModules.clear()
   this.virtualModules.set('coralite-runtime', entryCodeParts.join('').trimEnd())
@@ -510,7 +512,9 @@ export default {
     define: {
       global: 'window',
       __dirname: '""',
-      __filename: '""'
+      __filename: '""',
+      'import.meta.env.MODE': JSON.stringify(mode),
+      'import.meta.env': JSON.stringify({ MODE: mode })
     },
     plugins: [
       nodeModulesPolyfillPlugin(),

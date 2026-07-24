@@ -21,14 +21,19 @@ export function generateClientRuntime ({
   mode = 'production'
 }) {
   return `
-import { getClientContext, createCoraliteClass, globalClientHooks } from '${base}assets/js/${sharedChunkPath}';
+import { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent } from '${base}assets/js/${sharedChunkPath}';
 import componentManifest from '${base}assets/js/manifest.js';
 
 (async () => {
   const hydrationData = ${hydrationData};
   const declarativeTags = ${JSON.stringify(declarativeTags)};
-  window.__coralite__ = window.__coralite__ || {};
-  window.__coralite__.mode = '${mode}';
+
+  if (typeof setupDevTools === 'function') {
+    setupDevTools();
+  }
+  if (typeof registerDevToolsComponent === 'function') {
+    declarativeTags.forEach(tag => registerDevToolsComponent(tag));
+  }
 
   const initialElements = Array.from(document.querySelectorAll('[data-cid]'))
     .filter(el => {
@@ -36,7 +41,7 @@ import componentManifest from '${base}assets/js/manifest.js';
       const isDeclarative = declarativeTags.includes(tagName);
       const isInitial = el.hasAttribute('data-coralite-initial');
 
-      if (window['__coralite__'] && window['__coralite__'].components && isInitial) {
+      if ('${mode}' === 'testing' && isInitial) {
         const cid = el.getAttribute('data-cid');
         if (cid && !hydrationData[cid]) {
           const error = new Error('Coralite Hydration Mismatch: Component with data-cid "' + cid + '" (' + tagName + ') has no matching server hydration data.');
@@ -103,6 +108,9 @@ import componentManifest from '${base}assets/js/manifest.js';
             }
           }
           customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks, hydrationData));
+          if (typeof registerDevToolsComponent === 'function') {
+            registerDevToolsComponent(id);
+          }
           if (window.__coralite__ && window.__coralite__.lifecycle) window.__coralite__.lifecycle._markDefined(id);
         }
       }
@@ -146,7 +154,7 @@ import componentManifest from '${base}assets/js/manifest.js';
   window.processHTML = (html, instanceId) => {
     if (typeof html !== 'string') return html;
 
-    const mode = (window.__coralite__ && window.__coralite__.mode) || 'production';
+    const mode = '${mode}';
     const isDevOrTest = mode === 'development' || mode === 'testing';
     const isProduction = mode === 'production';
 

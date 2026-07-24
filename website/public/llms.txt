@@ -443,8 +443,16 @@ For a robust E2E environment, users are encouraged to use `mode: 'testing'` excl
     * **Fallback to Suffix Matching (Dynamic Contexts):** Only use CSS attribute suffix matchers (e.g., `page.locator('[data-testid$="__button-0"]')`) when targeting components rendered inside dynamic loops (e.g., lists), when the component's position in the document tree is intentionally variable, or if exact structural order is irrelevant to the specific test.
 * **Readiness**: Await `window.__coralite__.lifecycle.hydrated` after navigation.
 * **Velocity Engine**: Animations, transitions, and smooth scrolling are globally disabled in `testing` mode to eliminate race conditions and speed up tests.
-* **Glass Box Assertions**: The reactive state of every hydrated component is exposed via `window.__coralite__.components['instance-id'].state`.
-* **Event Telemetry**: All `CustomEvent` dispatches are logged to `window.__coralite__.events`.
+* **Glass Box Assertions & DevTools**: Decouples global discovery on `window.__coralite__` from component introspection on `element[Symbol.for('coralite.testing')]` (or `window.__coralite__.getComponent(element)`), providing safe, GC-friendly diagnostics:
+  * **Global Diagnostics (`window.__coralite__`)**: A read-only, non-enumerable frozen namespace exposing:
+    * `getRegisteredComponents()`: Returns an array of registered component tag name strings (e.g., `['user-card']`).
+    * `getHydratedCount()`: Exposes the total number of hydrated components currently attached to the DOM.
+    * `getInstances(tagName?)`: Returns an array of actual custom `HTMLElement` DOM nodes currently attached to the document tree.
+    * `getEvents()`: Returns a bounded ring buffer of the last 100 custom events dispatched.
+    * `getComponent(element)`: Safe lookup bridge to retrieve element-level introspection context without exposing symbols on the global window object.
+    * `lifecycle`: Exposes the `CoraliteLifecycleManager` instance as a read-only getter.
+  * **Component Introspection (`element[Symbol.for('coralite.testing')]`)**: Exposes the component's internal context: `{ instanceId, componentId, state, getters, refs }`.
+  * **Production Tree-Shaking**: Statically replaces `import.meta.env.MODE` and strips all DevTools registration logic entirely in production builds, leaving `window.__coralite__` completely `undefined`.
 * **Fail-Fast Hydration**: Any hydration mismatch or client-side error immediately triggers a fatal red overlay, failing the test instantly.
 * **Component & Plugin Mocking**: Override component `server` blocks or plugin runtime contexts via the `testing.mocks` configuration in `coralite.config.js`.
   * **Mock Structure**: The `testing.mocks` object accepts two keys: `components` and `plugins`.

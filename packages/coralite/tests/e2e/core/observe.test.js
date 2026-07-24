@@ -82,7 +82,7 @@ test.describe('Observe Context Method Explicit State Side-effects', () => {
   })
 
   test('should trigger infinite loop console warning exactly as expected in dev mode', async ({ page }) => {
-    const mode = await page.evaluate(() => window.__coralite__.mode)
+    const mode = await page.evaluate(() => window.__coralite__?.mode || 'production')
 
     const warnings = []
     page.on('console', msg => {

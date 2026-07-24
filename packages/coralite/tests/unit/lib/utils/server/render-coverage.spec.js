@@ -88,18 +88,21 @@ describe('render.js Coverage Gaps', () => {
   })
 
   describe('injectReadinessScript', () => {
-    it('should inject into root', () => {
+    it('should inject into root and contain DevTools in development mode', () => {
       const root = createCoraliteComponent({ children: [] })
-      injectReadinessScript(root, null, true)
+      injectReadinessScript(root, null, true, 'development')
       assert.strictEqual(root.children[0].name, 'script')
-      assert.ok(root.children[0].children[0].data.includes('window.__coralite__'))
-      assert.ok(root.children[0].children[0].data.includes('lifecycle:'))
+      assert.ok(root.children[0].children[0].data.includes('__coralite__'))
+      assert.ok(root.children[0].children[0].data.includes('lifecycle'))
+      assert.ok(root.children[0].children[0].data.includes("Symbol.for('coralite.testing')"))
     })
 
-    it('should inject mode into window.__coralite__.mode', () => {
+    it('should inject the bare-minimum micro-loader in production mode', () => {
       const root = createCoraliteComponent({ children: [] })
       injectReadinessScript(root, null, true, 'production')
-      assert.ok(root.children[0].children[0].data.includes("window.__coralite__.mode = 'production';"))
+      assert.strictEqual(root.children[0].name, 'script')
+      assert.ok(root.children[0].children[0].data.includes('data-coralite-ready'))
+      assert.ok(!root.children[0].children[0].data.includes('window.__coralite__'))
     })
   })
 
