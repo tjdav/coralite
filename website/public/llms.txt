@@ -452,7 +452,7 @@ For a robust E2E environment, users are encouraged to use `mode: 'testing'` excl
     * `getComponent(element)`: Safe lookup bridge to retrieve element-level introspection context without exposing symbols on the global window object.
     * `lifecycle`: Exposes the `CoraliteLifecycleManager` instance as a read-only getter.
   * **Component Introspection (`element[Symbol.for('coralite.testing')]`)**: Exposes the component's internal context: `{ instanceId, componentId, state, getters, refs }`.
-  * **Production Tree-Shaking**: Statically replaces `import.meta.env.MODE` and strips all DevTools registration logic entirely in production builds, leaving `window.__coralite__` completely `undefined`.
+  * **Production Tree-Shaking**: Statically replaces `import.meta.env.MODE` (compile-time injected union type: `'development' | 'production' | 'testing'`) with its string literal value and strips all DevTools registration logic entirely in production builds, leaving `window.__coralite__` completely `undefined`.
 * **Fail-Fast Hydration**: Any hydration mismatch or client-side error immediately triggers a fatal red overlay, failing the test instantly.
 * **Component & Plugin Mocking**: Override component `server` blocks or plugin runtime contexts via the `testing.mocks` configuration in `coralite.config.js`.
   * **Mock Structure**: The `testing.mocks` object accepts two keys: `components` and `plugins`.
