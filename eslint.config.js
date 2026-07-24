@@ -5,37 +5,50 @@ import html from 'eslint-plugin-html'
 const localCustomRules = {
   rules: {
     'no-restricted-comment-patterns': {
-      /**
-       *
-       * @param {*} context The ESLint rule context.
-       * @returns {Object} The rule listeners.
-       */
       create (context) {
         return {
           Program () {
             const sourceCode = context.sourceCode || context.getSourceCode()
             const comments = sourceCode.getAllComments()
-
-            // Matches anything starting with optional spaces, then '---', any text, and ending with '---'
             const separatorRegex = /^\s*---[\s\S]*---\s*$/
-
-            // Matches starting with optional spaces, a number, a period, and a space (e.g., " 1. ")
             const numberedRegex = /^\s*\d+\.\s/
 
-            comments.forEach(comment => {
-              // comment.value contains the text *inside* the // or /* */
-              if (separatorRegex.test(comment.value)) {
-                context.report({
-                  loc: comment.loc,
-                  message: 'Avoid using "---" separator comments.'
-                })
-              } else if (numberedRegex.test(comment.value)) {
-                context.report({
-                  loc: comment.loc,
-                  message: 'Avoid using numbered step comments.'
-                })
+            for (let i = 0; i < comments.length; i++) {
+              const comment = comments[i]
+
+              if (comment.type === 'Line') {
+                const text = comment.value
+
+                if (text.trim().startsWith('eslint-')) {
+                  continue
+                }
+
+                if (separatorRegex.test(text)) {
+                  context.report({
+                    loc: comment.loc,
+                    message: 'Avoid using "---" separator comments.'
+                  })
+                } else if (numberedRegex.test(text)) {
+                  context.report({
+                    loc: comment.loc,
+                    message: 'Avoid using numbered step comments.'
+                  })
+                }
+
+                if (i < comments.length - 1) {
+                  const nextComment = comments[i + 1]
+                  if (
+                    nextComment.type === 'Line' &&
+                    nextComment.loc.start.line === comment.loc.end.line + 1
+                  ) {
+                    context.report({
+                      loc: nextComment.loc,
+                      message: 'Do not stack single-line comments. Condense into a single line or use a block comment.'
+                    })
+                  }
+                }
               }
-            })
+            }
           }
         }
       }
@@ -239,7 +252,8 @@ export default [
       '**/.coralite/',
       '**/.coralite-testing/',
       '**/.coralite-dev/',
-      '**/.coralite-prod/'
+      '**/.coralite-prod/',
+      '**/tests/'
     ]
   }
 ]
