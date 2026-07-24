@@ -22,12 +22,14 @@
  * @typedef {Object} ComponentValidationMetrics
  * @property {number} totalDefined - Total defined symbols count
  * @property {number} totalUnused - Total unused symbols count
+ * @property {number} [totalErrors] - Total error count
  * @property {number} usageCoveragePercentage - Percentage of symbols actively used
  */
 
 /**
  * @typedef {Object} CoraliteComponentValidationResult
  * @property {string} filePath - Path to component file
+ * @property {boolean} [valid] - Whether component is valid without errors or unused symbols
  * @property {ComponentValidationDefinedSymbols} defined - Defined symbols in component
  * @property {ComponentValidationUnusedSymbols} unused - Unused/missing symbols in component
  * @property {ComponentValidationMetrics} metrics - Component coverage metrics
@@ -36,8 +38,10 @@
 /**
  * @typedef {Object} ComponentDirectoryValidationMetrics
  * @property {number} totalComponents - Total components validated
+ * @property {number} [validComponents] - Number of valid components
  * @property {number} totalDefined - Total defined symbols across all components
  * @property {number} totalUnused - Total unused symbols across all components
+ * @property {number} [totalErrors] - Total errors across all components
  * @property {number} overallCoveragePercentage - Overall usage coverage percentage
  * @property {boolean} coverageReportEnabled - Whether runtime coverage metrics were included
  */

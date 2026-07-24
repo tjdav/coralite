@@ -487,12 +487,15 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
   const totalDefined = definedGetters.size + definedServerProps.size + definedAttributes.size + templateRefs.size
   const totalUnused = unusedGetters.length + unusedServerProps.length + unusedAttributes.length + unusedRefs.length + invalidClientImports.length
+  const totalErrors = invalidClientImports.length + missingRefs.length
+  const valid = totalUnused === 0 && totalErrors === 0
   const usageCoveragePercentage = totalDefined > 0
     ? Math.round(((totalDefined - totalUnused) / totalDefined) * 100)
     : 100
 
   return {
     filePath,
+    valid,
     defined: {
       getters: Array.from(definedGetters),
       serverProps: Array.from(definedServerProps),
@@ -512,6 +515,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
     metrics: {
       totalDefined,
       totalUnused,
+      totalErrors,
       usageCoveragePercentage
     }
   }
@@ -555,10 +559,16 @@ export function validateComponentsDir (componentsDir, options = {}) {
 
   let totalDefined = 0
   let totalUnused = 0
+  let totalErrors = 0
+  let validComponents = 0
 
   for (const res of results) {
     totalDefined += res.metrics.totalDefined
     totalUnused += res.metrics.totalUnused
+    totalErrors += res.metrics.totalErrors || 0
+    if (res.valid) {
+      validComponents++
+    }
   }
 
   const overallCoveragePercentage = totalDefined > 0
@@ -569,8 +579,10 @@ export function validateComponentsDir (componentsDir, options = {}) {
     components: results,
     metrics: {
       totalComponents: results.length,
+      validComponents,
       totalDefined,
       totalUnused,
+      totalErrors,
       overallCoveragePercentage,
       coverageReportEnabled: !!options.coverage
     }
@@ -638,9 +650,14 @@ export function formatComponentValidationReport (report, options = {}) {
   }
 
   output += kleur.gray('─'.repeat(60)) + '\n'
-  output += `${kleur.bold('Summary:')} ${report.metrics.totalComponents} component(s) analysed | `
-  output += `Overall Usage Coverage: ${kleur.bold().green(report.metrics.overallCoveragePercentage + '%')} | `
-  output += `Unused Symbols: ${report.metrics.totalUnused === 0 ? kleur.green(0) : kleur.red(report.metrics.totalUnused)}\n`
+  const summaryColor = (report.metrics.totalUnused === 0 && (report.metrics.totalErrors || 0) === 0) ? kleur.green().bold : kleur.red().bold
+
+  output += summaryColor(
+    `Summary: ${report.metrics.totalComponents} component(s) validated | ` +
+    `Valid: ${report.metrics.validComponents}/${report.metrics.totalComponents} | ` +
+    `Overall Usage Coverage: ${report.metrics.overallCoveragePercentage}% | ` +
+    `Unused / Errors: ${report.metrics.totalUnused}`
+  ) + '\n'
 
   if (options.coverage) {
     output += `\n${kleur.bold().magenta('📊 Runtime Test Coverage & Execution Metrics:')}\n`

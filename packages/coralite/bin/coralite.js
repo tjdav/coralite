@@ -65,7 +65,8 @@ program
       })
       process.stdout.write(formatted)
 
-      if (options.strict && report.metrics.totalUnused > 0) {
+      const hasFailures = report.metrics.totalUnused > 0 || (report.metrics.totalErrors && report.metrics.totalErrors > 0)
+      if (hasFailures) {
         process.exit(1)
       }
     } catch (err) {
@@ -117,7 +118,8 @@ program
       const formatted = formatPluginValidationReport(report, { format: options.format })
       process.stdout.write(formatted)
 
-      if (options.strict && report.metrics.totalErrors > 0) {
+      const hasFailures = report.metrics.totalErrors > 0 || (options.strict && report.metrics.totalWarnings > 0)
+      if (hasFailures) {
         process.exit(1)
       }
     } catch (err) {

@@ -257,6 +257,28 @@ describe('Component Validator', () => {
     assert(formatted.includes('formatDate'))
   })
 
+  test('reports valid=false and totalErrors > 0 when component has validation errors for CI compatibility', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  import fs from 'node:fs'
+
+  export default defineComponent({
+    client() {
+      const data = fs.readFileSync('foo.txt')
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'ci-error-comp.html')
+    assert.strictEqual(result.valid, false)
+    assert.strictEqual(result.metrics.totalErrors, 1)
+  })
+
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)
