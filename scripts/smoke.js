@@ -33,13 +33,15 @@ function cleanup () {
       console.log('Cleaning up temp dir...')
       rmSync(TEMP_DIR, {
         recursive: true,
-        force: true
+        force: true,
+        maxRetries: 5,
+        retryDelay: 100
       })
     }
     // Remove generated tarballs in package root
     const tarballs = readdirSync(PACKAGE_ROOT).filter(f => f.endsWith('.tgz'))
     for (const file of tarballs) {
-      rmSync(join(PACKAGE_ROOT, file))
+      rmSync(join(PACKAGE_ROOT, file), { force: true })
     }
 
     // For coralite-scripts, we might have a coralite tarball in coralite package
@@ -48,7 +50,7 @@ function cleanup () {
       if (existsSync(coraliteRoot)) {
         const cTarballs = readdirSync(coraliteRoot).filter(f => f.endsWith('.tgz'))
         for (const file of cTarballs) {
-          rmSync(join(coraliteRoot, file))
+          rmSync(join(coraliteRoot, file), { force: true })
         }
       }
     }
@@ -83,7 +85,7 @@ try {
   console.log(`Packing ${targetPackageName}...`)
   // Use pnpm pack to handle workspace:* resolution
   const packOutput = execSync('pnpm pack', { cwd: PACKAGE_ROOT }).toString().trim()
-  const tarballName = packOutput.split('\n').pop()
+  const tarballName = packOutput.split(/\r?\n/).pop().trim()
   const tarballPath = resolve(PACKAGE_ROOT, tarballName)
 
   if (!tarballName || !tarballName.endsWith('.tgz')) {
@@ -104,7 +106,7 @@ try {
       stdio: 'inherit'
     })
     const cPackOutput = execSync('pnpm pack', { cwd: coraliteRoot }).toString().trim()
-    const cTarballName = cPackOutput.split('\n').pop()
+    const cTarballName = cPackOutput.split(/\r?\n/).pop().trim()
     const cTarballPath = resolve(coraliteRoot, cTarballName)
     extraTarballs.push(cTarballPath)
   }
@@ -126,11 +128,14 @@ try {
     stdio: 'inherit'
   })
 
+  // Determine binary name according to OS platform
+  const binName = process.platform === 'win32' ? `${targetPackageName}.cmd` : targetPackageName
+
   // Specific Verification Logic
   if (targetPackageName === 'coralite') {
     // Verify CLI
     console.log('Verifying CLI...')
-    const cliPath = join(TEMP_DIR, 'node_modules', '.bin', 'coralite')
+    const cliPath = join(TEMP_DIR, 'node_modules', '.bin', binName)
     const helpOutput = execSync(`"${cliPath}" --help`, { cwd: TEMP_DIR }).toString()
     if (!helpOutput.includes('Usage: Coralite') && !helpOutput.includes('Usage: coralite')) {
       throw new Error(`CLI help output verification failed. Output: ${helpOutput}`)
@@ -152,7 +157,7 @@ try {
     console.log('Library import verification passed.')
   } else if (targetPackageName === 'create-coralite') {
     console.log('Verifying CLI...')
-    const cliPath = join(TEMP_DIR, 'node_modules', '.bin', 'create-coralite')
+    const cliPath = join(TEMP_DIR, 'node_modules', '.bin', binName)
     const helpOutput = execSync(`"${cliPath}" --help`, { cwd: TEMP_DIR }).toString()
     if (!helpOutput.includes('Usage: create-coralite')) {
       throw new Error(`CLI help output verification failed. Output: ${helpOutput}`)
@@ -160,7 +165,7 @@ try {
     console.log('CLI verification passed.')
   } else if (targetPackageName === 'coralite-scripts') {
     console.log('Verifying CLI...')
-    const cliPath = join(TEMP_DIR, 'node_modules', '.bin', 'coralite-scripts')
+    const cliPath = join(TEMP_DIR, 'node_modules', '.bin', binName)
     const helpOutput = execSync(`"${cliPath}" --help`, { cwd: TEMP_DIR }).toString()
     if (!helpOutput.includes('Usage: Coralite scripts')) {
       throw new Error(`CLI help output verification failed. Output: ${helpOutput}`)
