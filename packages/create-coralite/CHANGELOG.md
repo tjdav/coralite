@@ -1,5 +1,28 @@
 # Changelog
 
+## v0.43.4
+
+> Comparing `create-coralite-v0.43.3` to `HEAD`
+
+**Summary:** 4 commits
+
+### ✨ Features
+
+- Show loading state and updated count after increment (coralite-counter) ([6b4b1ac](https://codeberg.org/tjdavid/coralite/commit/6b4b1ace4c40ed73d00cb363a23baa1531c95e36))
+
+### 🐛 Bug Fixes
+
+- Update TikTok Sans font import to prevent browser errors (create-coralite) ([e3d9bc8](https://codeberg.org/tjdavid/coralite/commit/e3d9bc84eea601ac782ddb2fef605cbbfedd20ac))
+
+### ✅ Tests
+
+- add end-to-end test suite for templates (create-coralite) ([36d0fd6](https://codeberg.org/tjdavid/coralite/commit/36d0fd691c50b424cccee4ba181457ba6d460e2b))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.43.2 ([bbe27d2](https://codeberg.org/tjdavid/coralite/commit/bbe27d246d59d5218410a3fd4c13f1fea3bdb4c0))
+
+
 ## v0.43.3
 
 > Comparing `create-coralite-v0.43.2` to `HEAD`
