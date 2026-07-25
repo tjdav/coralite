@@ -1,5 +1,38 @@
 # Changelog
 
+## v0.43.2
+
+> Comparing `coralite-v0.43.1` to `HEAD`
+
+**Summary:** 11 commits
+
+### ✨ Features
+
+- implement tree-shakable DevTools registry and update docs ([f5ff8a6](https://codeberg.org/tjdavid/coralite/commit/f5ff8a6c80c20bba848d6d269d1cfb356f8b5699))
+- Enhance component validation metrics and strict failure reporting ([a1cb414](https://codeberg.org/tjdavid/coralite/commit/a1cb414c9ca900725f2f667cd4dd3e219a58e5df))
+- Implement plugin validation CLI command and logic (plugins) ([960396b](https://codeberg.org/tjdavid/coralite/commit/960396bc865605ede1ef996d98a7ccd06a4b2774))
+- Rename 'check' command to 'validate-components' for better clarity (coralite) ([12489fb](https://codeberg.org/tjdavid/coralite/commit/12489fb43616f1e28ed15ba9f8a4d2936a66ec06))
+- Introduce detailed types for component analysis results (analyser) ([4be5837](https://codeberg.org/tjdavid/coralite/commit/4be58378faf563b5e7b31ae5ce2703d2e733c96e))
+- add component code coverage analyser and check command (cli) ([cacbd08](https://codeberg.org/tjdavid/coralite/commit/cacbd08f80d3102ffcef8c9b56df06a943db5f33))
+
+### 🐛 Bug Fixes
+
+- hydration signaling for production environments ([5cd42d0](https://codeberg.org/tjdavid/coralite/commit/5cd42d0d5b55c0589ae78ad332c93d7bc01cae06))
+
+### 📚 Documentation
+
+- update README with detailed feature descriptions and improved clarity ([31868fe](https://codeberg.org/tjdavid/coralite/commit/31868fe9744839f5211c55e1276c42971151c8bf))
+
+### ♻️ Code Refactoring
+
+- standardize default server port to 3000 (server) ([cb1832c](https://codeberg.org/tjdavid/coralite/commit/cb1832c584033b18c08be740c6519cdef5b7396f))
+- Switch component analysis to component validation ([1ade389](https://codeberg.org/tjdavid/coralite/commit/1ade3890ab2f2bdc12436d06b4191deff1012238))
+
+### ✅ Tests
+
+- update test server port to 3862 to prevent dev server conflict (scripts) ([c6f7d69](https://codeberg.org/tjdavid/coralite/commit/c6f7d69a006e46e603ba058b2818a484311d4b8c))
+
+
 ## v0.43.1
 
 > Comparing `coralite-v0.43.0` to `HEAD`
