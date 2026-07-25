@@ -40,5 +40,11 @@
     "@clack/prompts": "^0.11.0",
     "commander": "^13.1.0",
     "kleur": "^4.1.5"
+  },
+  "scripts": {
+    "test:e2e": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.0"
   }
 }

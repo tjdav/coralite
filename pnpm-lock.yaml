@@ -196,6 +196,10 @@ importers:
       kleur:
         specifier: ^4.1.5
         version: 4.1.5
+    devDependencies:
+      '@playwright/test':
+        specifier: ^1.61.0
+        version: 1.61.0
 
   packages/create-coralite-plugin:
     dependencies:
