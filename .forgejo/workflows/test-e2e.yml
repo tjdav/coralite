@@ -41,12 +41,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run E2E tests
+      - name: Run Coralite E2E tests
         run: pnpm --filter coralite run test:e2e
+
+      - name: Run create-coralite E2E tests
+        run: pnpm --filter create-coralite run test:e2e
 
       - uses: https://code.forgejo.org/actions/upload-artifact@v3
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
-          path: packages/coralite/playwright-report/
+          path: packages/*/playwright-report/
           retention-days: 7
