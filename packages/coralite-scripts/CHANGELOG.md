@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.43.2
+
+> Comparing `coralite-scripts-v0.43.1` to `HEAD`
+
+**Summary:** 2 commits
+
+### ♻️ Code Refactoring
+
+- standardize default server port to 3000 (server) ([cb1832c](https://codeberg.org/tjdavid/coralite/commit/cb1832c584033b18c08be740c6519cdef5b7396f))
+
+### ✅ Tests
+
+- update test server port to 3862 to prevent dev server conflict (scripts) ([c6f7d69](https://codeberg.org/tjdavid/coralite/commit/c6f7d69a006e46e603ba058b2818a484311d4b8c))
+
+
 ## v0.43.1
 
 > Comparing `coralite-scripts-v0.43.0` to `HEAD`
