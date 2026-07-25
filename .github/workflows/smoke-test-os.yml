@@ -33,5 +33,8 @@ jobs:
       - name: Build Monorepo Packages
         run: pnpm run build && pnpm run build:scripts
 
-      - name: Run Scaffolding Smoke Test
-        run: node scripts/create-coralite-e2e.js
+      - name: Smoke Test Packages
+        run: |
+          node scripts/smoke.js coralite
+          node scripts/smoke.js create-coralite
+          node scripts/smoke.js coralite-scripts
