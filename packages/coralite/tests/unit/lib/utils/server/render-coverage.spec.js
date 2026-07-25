@@ -97,12 +97,10 @@ describe('render.js Coverage Gaps', () => {
       assert.ok(root.children[0].children[0].data.includes("Symbol.for('coralite.testing')"))
     })
 
-    it('should inject the bare-minimum micro-loader in production mode', () => {
+    it('should not inject readiness script in production mode', () => {
       const root = createCoraliteComponent({ children: [] })
       injectReadinessScript(root, null, true, 'production')
-      assert.strictEqual(root.children[0].name, 'script')
-      assert.ok(root.children[0].children[0].data.includes('data-coralite-ready'))
-      assert.ok(!root.children[0].children[0].data.includes('window.__coralite__'))
+      assert.strictEqual(root.children.length, 0)
     })
   })
 

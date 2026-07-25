@@ -6,15 +6,13 @@
  */
 export async function waitForHydration (page) {
   await page.waitForFunction(() => {
-    if (document.documentElement.getAttribute('data-coralite-ready') === 'true') {
-      return true
-    }
-    return window.__coralite__ && window.__coralite__.lifecycle !== undefined
+    return (window.__coralite__ && window.__coralite__.lifecycle !== undefined) ||
+      document.documentElement.getAttribute('data-coralite-ready') === 'true'
   })
-  await page.evaluate(() => {
-    if (document.documentElement.getAttribute('data-coralite-ready') === 'true') {
-      return true
+  await page.evaluate(async () => {
+    if (window.__coralite__ && window.__coralite__.lifecycle !== undefined) {
+      return window.__coralite__.lifecycle.hydrated
     }
-    return window.__coralite__.lifecycle.hydrated
+    return true
   })
 }

@@ -120,6 +120,7 @@ import componentManifest from '${base}assets/js/manifest.js';
 
   const loadPromises = declarativeTags.map(tagName => loadComponent(tagName));
   await Promise.all(loadPromises);
+  document.documentElement.setAttribute('data-coralite-ready', 'true');
 
   window.createCoraliteElement = (tag, options) => {
     const el = document.createElement(tag, options);

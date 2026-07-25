@@ -193,6 +193,32 @@ export function injectStyles (root, head, styles) {
  * @param {'production' | 'development' | 'testing'} [mode] - Current build mode.
  */
 export function injectReadinessScript (root, head, hasScripts, mode = 'production') {
+  const isDevOrTest = mode !== 'production'
+  if (!isDevOrTest) {
+    if (!hasScripts) {
+      const readinessScriptElement = createCoraliteElement({
+        type: 'tag',
+        name: 'script',
+        parent: head || root,
+        attribs: { type: 'module' },
+        children: []
+      })
+      readinessScriptElement.children.push(createCoraliteTextNode({
+        type: 'text',
+        data: "(() => { document.documentElement.setAttribute('data-coralite-ready', 'true'); })();",
+        parent: readinessScriptElement
+      }))
+      if (head) {
+        head.children.unshift(readinessScriptElement)
+      } else {
+        root.children.unshift(readinessScriptElement)
+      }
+    }
+    return
+  }
+
+  const isHydrated = !hasScripts
+
   const readinessScriptElement = createCoraliteElement({
     type: 'tag',
     name: 'script',
@@ -201,12 +227,8 @@ export function injectReadinessScript (root, head, hasScripts, mode = 'productio
     children: []
   })
 
-  const isDevOrTest = mode !== 'production'
-  const isHydrated = !hasScripts
-
   let data = ''
-  if (isDevOrTest) {
-    data = `(() => {
+  data = `(() => {
       class CoraliteLifecycleManager {
         constructor() {
           this.defined = new Promise(r => this._dr = r);
@@ -290,9 +312,6 @@ export function injectReadinessScript (root, head, hasScripts, mode = 'productio
       rootTarget[key].mode = ${JSON.stringify(mode)};
       rootTarget[key].hydrated = ${Boolean(isHydrated)};
     })();`
-  } else {
-    data = `(() => { document.documentElement.setAttribute('data-coralite-ready', 'true'); })();`
-  }
 
   readinessScriptElement.children.push(createCoraliteTextNode({
     type: 'text',
