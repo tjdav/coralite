@@ -374,6 +374,64 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     await project.cleanup()
   })
 
+  it('correctly evaluates and updates slotted content with tokens from the parent component', async () => {
+    await project.writeComponent('parent-comp.html', `
+      <template id="parent-comp">
+        <div class="parent">
+          <slot></slot>
+        </div>
+      </template>
+    `)
+
+    await project.writeComponent('child-comp.html', `
+      <template id="child-comp">
+        <div class="child">Name: {{ name }}</div>
+      </template>
+      <script type="module">
+        import { defineComponent } from 'coralite'
+        export default defineComponent({
+          attributes: {
+            name: String
+          }
+        })
+      </script>
+    `)
+
+    await project.writeComponent('child-token.html', `
+      <template id="child-token">
+        <parent-comp>
+          <child-comp name="{{ computedGetter }}"></child-comp>
+        </parent-comp>
+      </template>
+      <script type="module">
+        import { defineComponent } from 'coralite'
+        export default defineComponent({
+          getters: {
+            computedGetter: (state) => state.isTrue ? 'value' : 'another value'
+          },
+          async server() {
+            return { isTrue: true }
+          }
+        })
+      </script>
+    `)
+
+    await project.writePage('slotted-tokens.html', '<child-token></child-token>')
+
+    const coralite = await project.createCoralite({
+      output: project.outputDir,
+      mode: 'production',
+      baseURL: '/'
+    })
+
+    const results = await coralite.build('slotted-tokens.html')
+    const htmlOutput = results[0].content
+
+    // Check that during SSR, computedGetter was evaluated and substituted inside the child component
+    assert.ok(htmlOutput.includes('Name: <c-token>value</c-token>') || htmlOutput.includes('Name: value'), `Expected SSR to evaluate computedGetter to "value", but output was:\n${htmlOutput}`)
+    assert.ok(!htmlOutput.includes('{{ computedGetter }}'), 'Should not contain raw computedGetter token in final HTML')
+  })
+
   it('preserves state context into child components nested dependencies', async () => {
     const parentPlugin = {
       name: 'parent-plugin',

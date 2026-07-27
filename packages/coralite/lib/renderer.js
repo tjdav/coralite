@@ -642,7 +642,7 @@ export function createRenderer ({
       const parent = customElement.parent
 
       if (parent && 'slots' in parent && Array.isArray(parent.slots)) {
-        return
+        continue
       }
 
       const childContextId = session.generateId(customElement.name)

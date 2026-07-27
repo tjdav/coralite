@@ -446,6 +446,39 @@ export class CoraliteElement extends HTMLElement {
       if (!node) {
         return null
       }
+      if (node !== this && node.tagName && node.tagName.includes('-')) {
+        const slots = []
+        const traverse = (current) => {
+          if (!current) {
+            return
+          }
+          if (current !== node && current.tagName && current.tagName.includes('-')) {
+            return
+          }
+          if (current.tagName === 'SLOT') {
+            slots.push(current)
+            return
+          }
+          const children = current.childNodes || []
+          for (let i = 0; i < children.length; i++) {
+            traverse(children[i])
+          }
+        }
+        traverse(node)
+
+        const lightChildren = []
+        for (let i = 0; i < slots.length; i++) {
+          const slot = slots[i]
+          for (let j = 0; j < slot.childNodes.length; j++) {
+            lightChildren.push(slot.childNodes[j])
+          }
+        }
+
+        if (lightChildren.length > 0) {
+          node = lightChildren[index]
+          continue
+        }
+      }
       // @ts-ignore
       node = node.childNodes[index]
     }

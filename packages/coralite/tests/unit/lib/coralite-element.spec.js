@@ -495,4 +495,74 @@ describe('CoraliteElement', () => {
       })
     })
   })
+
+  it('correctly updates slotted child component attributes on the client side when parent state changes (declarative/hydrated)', (t, done) => {
+    const parentTagName = 'parent-comp-' + Math.random().toString(36).substring(2, 9)
+    const childTagName = 'child-comp-' + Math.random().toString(36).substring(2, 9)
+    const tokenTagName = 'child-token-' + Math.random().toString(36).substring(2, 9)
+
+    const ParentElement = createCoraliteClass({
+      componentId: 'parent-comp',
+      templateHTML: '<div><slot></slot></div>'
+    })
+
+    const ChildElement = createCoraliteClass({
+      componentId: 'child-comp',
+      templateHTML: '<div>Child</div>',
+      attributes: {
+        name: { type: String }
+      }
+    })
+
+    const TokenElement = createCoraliteClass({
+      componentId: 'child-token',
+      templateHTML: `<${parentTagName}><${childTagName} name="{{ computedGetter }}"></${childTagName}></${parentTagName}>`,
+      defaultValues: {
+        isTrue: true
+      },
+      getters: {
+        computedGetter: (state) => state.isTrue ? 'value' : 'another value'
+      },
+      hydrationMap: {
+        attributes: [
+          {
+            path: [0, 0], // path to child-comp inside parent-comp in the pristine template
+            name: 'name',
+            template: '{{ computedGetter }}'
+          }
+        ]
+      }
+    }, null, {}, {
+      'child-token-0': { isTrue: true },
+      'child-comp-0': { name: 'value' }
+    })
+
+    // Set the SSR-rendered HTML first before defining elements, matching real-world deferred hydration
+    document.body.innerHTML = `<${tokenTagName} data-cid="child-token-0" data-coralite-initial><${parentTagName} data-cid="parent-comp-0" data-coralite-initial><div><slot><${childTagName} name="value" data-cid="child-comp-0" data-coralite-initial><div>Child</div></${childTagName}></slot></div></${parentTagName}></${tokenTagName}>`
+
+    // Upgrade/define custom elements now
+    customElements.define(parentTagName, ParentElement)
+    customElements.define(childTagName, ChildElement)
+    customElements.define(tokenTagName, TokenElement)
+
+    const el = document.body.firstElementChild
+
+    // Wait for the components to upgrade and perform initial render
+    queueMicrotask(() => {
+      const child = el.querySelector(childTagName)
+      assert.ok(child, 'Slotted child component should exist')
+      assert.strictEqual(child.getAttribute('name'), 'value')
+
+      // Now mutate the state of child-token
+      // @ts-ignore
+      el._state.isTrue = false
+
+      // Wait for dynamic update
+      queueMicrotask(() => {
+        assert.strictEqual(child.getAttribute('name'), 'another value')
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
 })
