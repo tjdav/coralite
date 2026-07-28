@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.43.3
+
+> Comparing `coralite-v0.43.2` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- support server-side rendering and client-side dynamic updates of slotted tokens ([191c736](https://codeberg.org/tjdavid/coralite/commit/191c73605362a6e22215ac41ffa984f6a1059be9))
+
+
 ## v0.43.2
 
 > Comparing `coralite-v0.43.1` to `HEAD`
