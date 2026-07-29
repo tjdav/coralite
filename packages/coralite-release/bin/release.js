@@ -2,7 +2,7 @@
 
 import { program } from 'commander'
 import * as prompts from '@clack/prompts'
-import { readFileSync, writeFileSync, existsSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, copyFileSync, unlinkSync } from 'fs'
 import { globSync } from 'glob'
 import { simpleGit } from 'simple-git'
 import { execSync } from 'child_process'
@@ -26,6 +26,7 @@ program
   .option('--no-git-commit', 'Skip git commit (only update package.json files)')
   .action(async (type, options) => {
     const git = simpleGit()
+    let copiedLlmsTarget = null
 
     try {
       // Validate release type
@@ -150,7 +151,17 @@ program
 
       // Dry run pack
       const pkgDir = path.dirname(selectedPkg.path)
-      prompts.log.info(`📦 Verifying package content for ${selectedPkg.name}...`)
+
+      if (selectedPackageName === 'coralite') {
+        const sourceLlms = path.resolve(process.cwd(), 'website/public/llms.txt')
+        copiedLlmsTarget = path.resolve(pkgDir, 'llms.txt')
+        if (existsSync(sourceLlms)) {
+          copyFileSync(sourceLlms, copiedLlmsTarget)
+          prompts.log.success('📄 Copied website/public/llms.txt to packages/coralite/llms.txt')
+        }
+      }
+
+      prompts.log.info(`📦 Verifying package content for ${selectedPackageName}...`)
       execSync('pnpm pack --dry-run', {
         cwd: pkgDir,
         stdio: 'inherit'
@@ -328,6 +339,15 @@ program
     } catch (error) {
       prompts.log.error(`Release failed: ${error.message}`)
       process.exit(1)
+    } finally {
+      if (copiedLlmsTarget && existsSync(copiedLlmsTarget)) {
+        try {
+          unlinkSync(copiedLlmsTarget)
+          prompts.log.info('🧹 Cleaned up temporary packages/coralite/llms.txt')
+        } catch {
+          /* Ignore cleanup errors */
+        }
+      }
     }
   })
 
