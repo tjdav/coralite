@@ -12,7 +12,7 @@ describe('coerce', () => {
   it('should coerce to Number', () => {
     assert.strictEqual(coerce('123', Number), 123)
     assert.strictEqual(coerce('123', 'Number'), 123)
-    assert.strictEqual(coerce('abc', Number), NaN)
+    assert.strictEqual(coerce('abc', Number), null)
   })
 
   it('should coerce to Boolean', () => {

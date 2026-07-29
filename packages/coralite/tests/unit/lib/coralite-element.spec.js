@@ -565,4 +565,76 @@ describe('CoraliteElement', () => {
       })
     })
   })
+
+  it('should re-evaluate computed slots on state and attribute mutations even without string interpolation bindings', (t, done) => {
+    const slotCompName = 'slot-reactive-' + Math.random().toString(36).substring(2, 9)
+
+    const SlotReactiveElement = createCoraliteClass({
+      componentId: 'slot-reactive',
+      templateHTML: '<div><slot name="badge"></slot><slot name="icon"></slot></div>',
+      attributes: {
+        badge: String,
+        iconName: String
+      },
+      slots: {
+        badge (originalNodes, state) {
+          if (!state.badge) {
+            return null
+          }
+          if (originalNodes && originalNodes.length > 0) {
+            return originalNodes
+          }
+          return `<span class="badge">${state.badge}</span>`
+        },
+        icon (originalNodes, state) {
+          if (!state.iconName) {
+            return null
+          }
+          if (originalNodes && originalNodes.length > 0) {
+            return originalNodes
+          }
+          return `<i class="icon">${state.iconName}</i>`
+        }
+      }
+    })
+
+    customElements.define(slotCompName, SlotReactiveElement)
+
+    const el = document.createElement(slotCompName)
+    document.body.appendChild(el)
+
+    const badgeSlot = el.querySelector('slot[name="badge"]')
+    const iconSlot = el.querySelector('slot[name="icon"]')
+
+    // Initially state.badge and state.iconName are undefined/empty -> slots should be cleared
+    assert.strictEqual(badgeSlot.innerHTML, '')
+    assert.strictEqual(iconSlot.innerHTML, '')
+
+    // Mutate attribute 'badge'
+    el.setAttribute('badge', '5')
+
+    queueMicrotask(() => {
+      assert.strictEqual(badgeSlot.innerHTML, '<span class="badge">5</span>')
+
+      // Mutate state 'iconName'
+      // @ts-ignore
+      el._state.iconName = 'star'
+
+      queueMicrotask(() => {
+        assert.strictEqual(iconSlot.innerHTML, '<i class="icon">star</i>')
+
+        // Remove attribute badge
+        el.removeAttribute('badge')
+        // @ts-ignore
+        el._state.badge = null
+
+        queueMicrotask(() => {
+          assert.strictEqual(badgeSlot.innerHTML, '')
+          document.body.removeChild(el)
+          done()
+        })
+      })
+    })
+  })
 })
+

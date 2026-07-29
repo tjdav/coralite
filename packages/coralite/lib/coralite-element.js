@@ -50,18 +50,27 @@ export function coerce (value, type) {
   if (value === null || value === undefined) {
     return value
   }
-  if (type === Number || type === 'Number') {
-    return Number(value)
+
+  if (typeof value === 'string' && value.includes('{{') && value.includes('}}')) {
+    return null
   }
+
+  if (type === Number || type === 'Number') {
+    const num = Number(value)
+    return Number.isNaN(num) ? null : num
+  }
+
   if (type === Boolean || type === 'Boolean') {
     if (value === '') {
       return true
     }
     return value !== 'false' && value !== null
   }
+
   if (type === String || type === 'String') {
     return String(value)
   }
+
   return value
 }
 
@@ -388,6 +397,7 @@ export class CoraliteElement extends HTMLElement {
     }
 
     this._state = this._createReactiveProxy(target)
+    this._registerSlotStateObserver()
   }
 
   /**
@@ -395,7 +405,7 @@ export class CoraliteElement extends HTMLElement {
    * Intercepts property setters to automatically batch and schedule DOM updates.
    * @param {Object} target - The state dictionary.
    * @returns {Proxy} The reactive state proxy.
-   * @private
+   * @internal
    */
   _createReactiveProxy (target) {
     const self = this
@@ -417,6 +427,12 @@ export class CoraliteElement extends HTMLElement {
 
         t[p] = v
         self._scheduleUpdate()
+
+        if (typeof p === 'string' && self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
+          if (!self._observers || !self._observers.has(p)) {
+            self._observeStateKey(p, () => self._processSlots())
+          }
+        }
 
         // Trigger any observers registered for this property
         if (typeof p === 'string' && self._observers && self._observers.has(p)) {
@@ -623,7 +639,9 @@ export class CoraliteElement extends HTMLElement {
         }
       }
 
-      this._processSlots()
+      if (this.componentOptions.slots && Object.keys(this.componentOptions.slots).length > 0) {
+        this._processSlots()
+      }
 
       // Trigger After-Render hooks ONLY after the physical DOM is stable
       for (const hook of this._hooks.onAfterComponentRender) {
@@ -661,6 +679,49 @@ export class CoraliteElement extends HTMLElement {
       })
     } else {
       applyBindings(evaluatedTokens)
+    }
+  }
+
+  /**
+   * Registers an observer for a specific state key with automatic lifecycle cleanup.
+   * @param {string} key - The state property key to observe.
+   * @param {Function} callback - The observer callback.
+   * @protected
+   */
+  _observeStateKey (key, callback) {
+    if (!this._observers) {
+      this._observers = new Map()
+    }
+    if (!this._observers.has(key)) {
+      this._observers.set(key, new Set())
+    }
+    this._observers.get(key).add(callback)
+
+    if (this._abortController && this._abortController.signal) {
+      this._abortController.signal.addEventListener('abort', () => {
+        if (this._observers && this._observers.has(key)) {
+          this._observers.get(key).delete(callback)
+        }
+      })
+    }
+  }
+
+  /**
+   * Subscribes _processSlots to all state property mutations if computed slots are defined.
+   * @protected
+   */
+  _registerSlotStateObserver () {
+    const slots = this.componentOptions?.slots
+    if (!slots || Object.keys(slots).length === 0) {
+      return
+    }
+
+    if (this._state && typeof this._state === 'object') {
+      Object.keys(this._state).forEach(key => {
+        this._observeStateKey(key, () => {
+          this._processSlots()
+        })
+      })
     }
   }
 
@@ -729,19 +790,7 @@ export class CoraliteElement extends HTMLElement {
     })
 
     const observe = (key, callback) => {
-      if (!self._observers) {
-        return
-      }
-      if (!self._observers.has(key)) {
-        self._observers.set(key, new Set())
-      }
-      self._observers.get(key).add(callback)
-
-      signal.addEventListener('abort', () => {
-        if (self._observers && self._observers.has(key)) {
-          self._observers.get(key).delete(callback)
-        }
-      })
+      self._observeStateKey(key, callback)
     }
 
     /**

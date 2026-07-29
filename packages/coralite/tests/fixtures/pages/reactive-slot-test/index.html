@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Reactive Slot Observer Test</title>
+</head>
+<body>
+  <div id="wrapper">
+    <reactive-slot-comp id="test-comp" badge-count="2" status-text="active"></reactive-slot-comp>
+  </div>
+
+  <button id="btn-increment-badge" onclick="document.querySelector('#test-comp').setAttribute('badge-count', '3')">
+    Increment
+  </button>
+  <button id="btn-remove-comp" onclick="document.querySelector('#test-comp').remove()">
+    Remove
+  </button>
+</body>
+</html>

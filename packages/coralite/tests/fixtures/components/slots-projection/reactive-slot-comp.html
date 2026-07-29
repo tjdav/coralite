@@ -1,0 +1,44 @@
+<template id="reactive-slot-comp">
+  <div data-testid="reactive-slot-container">
+    <div data-testid="badge-slot">
+      <slot name="badge"></slot>
+    </div>
+    <div data-testid="status-slot">
+      <slot name="status"></slot>
+    </div>
+    <div data-testid="dynamic-slot">
+      <slot name="custom"></slot>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      badgeCount: Number,
+      statusText: String
+    },
+    slots: {
+      badge (nodes, state) {
+        if (!state.badgeCount || state.badgeCount <= 0) {
+          return null
+        }
+        return `<span class="badge-item">${state.badgeCount}</span>`
+      },
+      status (nodes, state) {
+        if (!state.statusText) {
+          return null
+        }
+        return `<span class="status-indicator">${state.statusText}</span>`
+      },
+      custom (nodes, state) {
+        if (!state.customBadge) {
+          return null
+        }
+        return `<span class="custom-badge-item">${state.customBadge}</span>`
+      }
+    }
+  })
+</script>
