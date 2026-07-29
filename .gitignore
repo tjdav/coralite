@@ -20,6 +20,7 @@ jspm_packages
 .coralite-testing/
 website/.coralite/components
 website/.coralite/css
+packages/coralite/llms.txt
 
 # Generated dirs
 dist
