@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.43.4
+
+> Comparing `coralite-v0.43.3` to `HEAD`
+
+**Summary:** 1 commit
+
+### ✨ Features
+
+- Enable reactive slot state observers (coralite) ([7d74ce0](https://codeberg.org/tjdavid/coralite/commit/7d74ce0bee205070847b66ec9cdf4befee6f402e))
+
+
 ## v0.43.3
 
 > Comparing `coralite-v0.43.2` to `HEAD`
