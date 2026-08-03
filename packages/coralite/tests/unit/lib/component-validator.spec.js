@@ -297,6 +297,37 @@ describe('Component Validator', () => {
     assert.deepStrictEqual(lineResult.unused.attributes, [])
   })
 
+  test('extracts style/template/script sections safely on adversarial input', () => {
+    // Attribute referenced only through the <style> block should count as used,
+    // proving styleContent extraction (with attributes + case-insensitive tag) works.
+    const styledCode = `\n<template>\n  <div>{{ message }}</div>\n</template>\n\n<style type="text/css">\n  [box] {\n    color: red;\n  }\n</style>\n\n<script>\n  import { defineComponent } from 'coralite'\n\n  export default defineComponent({\n    attributes: {\n      message: { type: String, default: '' },\n      box: { type: Boolean }\n    }\n  })\n</script>\n`
+    const styledResult = validateComponentSource(styledCode, 'styled-comp.html')
+    assert.strictEqual(styledResult.valid, true)
+    assert.deepStrictEqual(styledResult.unused.attributes, [])
+
+    // ReDoS-shaped input with many nested <style> and no closing tag must complete quickly
+    const adversarial = '<style>' + '<style>a'.repeat(5000)
+    const advResult = validateComponentSource(adversarial, 'adversarial.html')
+    assert.strictEqual(advResult.valid, true)
+  })
+
+  test('linear token/ref/state extraction handles adversarial input without slowing', () => {
+    // Mustache token extraction must complete quickly on ReDoS-shaped input
+    const adversarialTemplate = '{{' + 'aaa.'.repeat(5000)
+    const advTemplateResult = validateComponentSource(
+      `<template><div>${adversarialTemplate}</div></template><script>import { defineComponent } from 'coralite'</script>`,
+      'adv-template.html'
+    )
+    assert.strictEqual(advTemplateResult.valid, true)
+
+    // refs() scanning on adversarial script with many opens and no close must complete
+    const advScriptResult = validateComponentSource(
+      `<template><div ref="box">{{ msg }}</div></template><script>import { defineComponent } from 'coralite'\nexport default defineComponent(${'refs("a'.repeat(2000)})</script>`,
+      'adv-script.html'
+    )
+    assert.deepStrictEqual(advScriptResult.defined.refs, ['box'])
+  })
+
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)

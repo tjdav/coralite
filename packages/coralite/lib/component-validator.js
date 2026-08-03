@@ -16,6 +16,222 @@ function camelToKebab (str) {
 }
 
 /**
+ * Extracts the body of a `<tag ...>...</tag>` section using linear (indexOf-based)
+ * string search instead of a regex. This avoids the polynomial backtracking / ReDoS
+ * risk of `/&lt;tag[^&gt;]*&gt;([\s\S]*?)&lt;\/tag&gt;/i` on adversarial input.
+ *
+ * Semantics mirror the previous regex: content is everything after the opening tag's
+ * first `>` up to (but not including) the first case-insensitive `</tag>`.
+ *
+ * @param {string} sourceCode - Raw component file content
+ * @param {string} tag - The section tag name, e.g. 'template', 'script', or 'style'
+ * @returns {string} The section body, or '' when the section is absent
+ */
+function extractSection (sourceCode, tag) {
+  const lower = sourceCode.toLowerCase()
+  const openIdx = lower.indexOf(`<${tag}`)
+  if (openIdx === -1) {
+    return ''
+  }
+  const contentStart = sourceCode.indexOf('>', openIdx) + 1
+  if (contentStart === 0) {
+    return ''
+  }
+  const closeIdx = lower.indexOf(`</${tag}>`, contentStart)
+  if (closeIdx === -1) {
+    return ''
+  }
+  return sourceCode.slice(contentStart, closeIdx)
+}
+
+const isWhitespace = (ch) => ch !== undefined && /\s/.test(ch)
+const isQuote = (ch) => ch === '"' || ch === "'"
+const isIdentChar = (ch) => ch !== undefined && /[a-zA-Z0-9_$]/.test(ch)
+const isRefNameChar = (ch) => ch !== undefined && /[a-zA-Z0-9_-]/.test(ch)
+
+/**
+ * Extracts mustache tokens `{{ name }}` / `{{ name.prop }}` via a linear scan.
+ * Replaces the previous `/\{\{\s*([a-zA-Z0-9_$]+)(\.[a-zA-Z0-9_$]+)*\s*\}\}/g`
+ * regex to avoid any polynomial-backtracking risk on template content.
+ *
+ * @param {string} templateContent - The <template> section body
+ * @returns {Set<string>} The first identifier of each valid mustache expression
+ */
+function extractMustacheTokens (templateContent) {
+  const tokens = new Set()
+  let idx = 0
+  while ((idx = templateContent.indexOf('{{', idx)) !== -1) {
+    const end = templateContent.indexOf('}}', idx + 2)
+    if (end !== -1) {
+      let pos = idx + 2
+      while (pos < end && isWhitespace(templateContent[pos])) {
+        pos++
+      }
+      const identStart = pos
+      while (pos < end && isIdentChar(templateContent[pos])) {
+        pos++
+      }
+      if (pos > identStart) {
+        // The remainder must be `(\.[a-zA-Z0-9_$]+)*` then optional whitespace only.
+        let chainOk = true
+        let p = pos
+        while (p < end && templateContent[p] === '.') {
+          p++
+          const segStart = p
+          while (p < end && isIdentChar(templateContent[p])) {
+            p++
+          }
+          if (p === segStart) {
+            chainOk = false
+            break
+          }
+        }
+        if (chainOk) {
+          while (p < end && isWhitespace(templateContent[p])) {
+            p++
+          }
+          if (p === end) {
+            tokens.add(templateContent.slice(identStart, pos))
+          }
+        }
+      }
+    }
+    idx += 2
+  }
+  return tokens
+}
+
+/**
+ * Extracts `ref="name"` / `ref='name'` attributes via a linear scan.
+ * Replaces the previous `/ref=["']([a-zA-Z0-9_-]+)["']/g` regex.
+ *
+ * @param {string} templateContent - The <template> section body
+ * @returns {Set<string>} The referenced element names
+ */
+function extractTemplateRefs (templateContent) {
+  const refs = new Set()
+  let idx = 0
+  while ((idx = templateContent.indexOf('ref=', idx)) !== -1) {
+    const quoteIdx = idx + 4
+    if (isQuote(templateContent[quoteIdx])) {
+      let end = quoteIdx + 1
+      while (end < templateContent.length && isRefNameChar(templateContent[end])) {
+        end++
+      }
+      if (end > quoteIdx + 1 && isQuote(templateContent[end])) {
+        refs.add(templateContent.slice(quoteIdx + 1, end))
+        idx = end + 1
+        continue
+      }
+    }
+    idx += 4
+  }
+  return refs
+}
+
+/**
+ * Extracts refs accessed via `refs('name')` / `refs["name"]` via a linear scan.
+ * Replaces the previous `refs\s*(?:\(\s*['"]...['"]\s*\)|\[\s*['"]...['"]\s*\])` regex.
+ *
+ * @param {string} scriptContent - The <script> section body
+ * @returns {Set<string>} The referenced element names
+ */
+function extractRefsCalls (scriptContent) {
+  const refs = new Set()
+  let idx = 0
+  while ((idx = scriptContent.indexOf('refs', idx)) !== -1) {
+    let p = idx + 4
+    while (p < scriptContent.length && isWhitespace(scriptContent[p])) {
+      p++
+    }
+    const opener = scriptContent[p]
+    let closer = null
+    if (opener === '(') {
+      closer = ')'
+    } else if (opener === '[') {
+      closer = ']'
+    }
+    if (closer !== null) {
+      p++
+      while (p < scriptContent.length && isWhitespace(scriptContent[p])) {
+        p++
+      }
+      if (isQuote(scriptContent[p])) {
+        p++
+        const identStart = p
+        while (p < scriptContent.length && isRefNameChar(scriptContent[p])) {
+          p++
+        }
+        const identEnd = p
+        if (p > identStart && isQuote(scriptContent[p])) {
+          p++
+          while (p < scriptContent.length && isWhitespace(scriptContent[p])) {
+            p++
+          }
+          if (scriptContent[p] === closer) {
+            refs.add(scriptContent.slice(identStart, identEnd))
+          }
+        }
+      }
+    }
+    idx += 4
+  }
+  return refs
+}
+
+/**
+ * Extracts `<state>.prop` reads via a linear scan.
+ * Replaces the previous `/state\.([a-zA-Z0-9_$]+)/g` regex.
+ *
+ * @param {string} scriptContent - The <script> section body
+ * @returns {Set<string>} The read state property names
+ */
+function extractStateReads (scriptContent) {
+  const reads = new Set()
+  let idx = 0
+  while ((idx = scriptContent.indexOf('state.', idx)) !== -1) {
+    let end = idx + 6
+    const identStart = end
+    while (end < scriptContent.length && isIdentChar(scriptContent[end])) {
+      end++
+    }
+    if (end > identStart) {
+      reads.add(scriptContent.slice(identStart, end))
+    }
+    idx += 6
+  }
+  return reads
+}
+
+/**
+ * Extracts quoted string literals via a linear scan.
+ * Replaces the previous `/['"]([a-zA-Z0-9_-]+)['"]/g` regex.
+ *
+ * @param {string} scriptContent - The <script> section body
+ * @returns {string[]} The string literal values
+ */
+function extractStringLiterals (scriptContent) {
+  const literals = []
+  let idx = 0
+  while (idx < scriptContent.length) {
+    if (isQuote(scriptContent[idx])) {
+      let end = idx + 1
+      const identStart = end
+      while (end < scriptContent.length && isRefNameChar(scriptContent[end])) {
+        end++
+      }
+      if (end > identStart && isQuote(scriptContent[end])) {
+        literals.push(scriptContent.slice(identStart, end))
+        idx = end + 1
+        continue
+      }
+    }
+    idx++
+  }
+  return literals
+}
+
+/**
  * Validates component source code for unused getters, server state, attributes, refs, and top-level client imports.
  *
  * @param {string} sourceCode - Raw component file content
@@ -28,18 +244,9 @@ export function validateComponentSource (sourceCode, filePath = '') {
   let styleContent = ''
 
   if (sourceCode.includes('<template') || sourceCode.includes('<script') || sourceCode.includes('<style')) {
-    const templateMatch = sourceCode.match(/<template[^>]*>([\s\S]*?)<\/template>/i)
-    if (templateMatch) {
-      templateContent = templateMatch[1]
-    }
-    const scriptMatch = sourceCode.match(/<script[^>]*>([\s\S]*?)<\/script>/i)
-    if (scriptMatch) {
-      scriptContent = scriptMatch[1]
-    }
-    const styleMatch = sourceCode.match(/<style[^>]*>([\s\S]*?)<\/style>/i)
-    if (styleMatch) {
-      styleContent = styleMatch[1]
-    }
+    templateContent = extractSection(sourceCode, 'template')
+    scriptContent = extractSection(sourceCode, 'script')
+    styleContent = extractSection(sourceCode, 'style')
   } else {
     scriptContent = sourceCode
   }
@@ -64,23 +271,8 @@ export function validateComponentSource (sourceCode, filePath = '') {
   }
 
   // 1. Template Analysis
-  const templateTokens = new Set()
-  const templateRefs = new Set()
-
-  if (templateContent) {
-    // Extract mustache {{ varName }} or {{ varName.prop }}
-    const mustacheRegex = /\{\{\s*([a-zA-Z0-9_$]+)(\.[a-zA-Z0-9_$]+)*\s*\}\}/g
-    let match
-    while ((match = mustacheRegex.exec(templateContent)) !== null) {
-      templateTokens.add(match[1])
-    }
-
-    // Extract ref="refName" or ref='refName'
-    const refRegex = /ref=["']([a-zA-Z0-9_-]+)["']/g
-    while ((match = refRegex.exec(templateContent)) !== null) {
-      templateRefs.add(match[1])
-    }
-  }
+  const templateTokens = extractMustacheTokens(templateContent)
+  const templateRefs = extractTemplateRefs(templateContent)
 
   // 2. Script AST & Regex Analysis
   const definedAttributes = new Set()
@@ -93,25 +285,18 @@ export function validateComponentSource (sourceCode, filePath = '') {
   const refsCalls = new Set()
   const getterStateDependencies = new Set()
 
-  // Regex scan for refs('name'), refs["name"], state.prop, and getAttribute('attr')
+  // Linear scans for refs('name'), refs["name"], state.prop, and string literals
   if (scriptContent) {
-    const refsRegex = /refs\s*(?:\(\s*['"]([a-zA-Z0-9_-]+)['"]\s*\)|\[\s*['"]([a-zA-Z0-9_-]+)['"]\s*\])/g
-    let rMatch
-    while ((rMatch = refsRegex.exec(scriptContent)) !== null) {
-      refsCalls.add(rMatch[1] || rMatch[2])
+    for (const refName of extractRefsCalls(scriptContent)) {
+      refsCalls.add(refName)
     }
 
-    const stateReadRegex = /state\.([a-zA-Z0-9_$]+)/g
-    let sMatch
-    while ((sMatch = stateReadRegex.exec(scriptContent)) !== null) {
-      stateReads.add(sMatch[1])
+    for (const stateProp of extractStateReads(scriptContent)) {
+      stateReads.add(stateProp)
     }
 
     // Extract string literals passed into arrays/objects inside client code for dynamic refs
-    const stringLiteralRegex = /['"]([a-zA-Z0-9_-]+)['"]/g
-    let strMatch
-    while ((strMatch = stringLiteralRegex.exec(scriptContent)) !== null) {
-      const strVal = strMatch[1]
+    for (const strVal of extractStringLiterals(scriptContent)) {
       if (templateRefs.has(strVal)) {
         refsCalls.add(strVal)
       }
