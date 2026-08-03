@@ -279,6 +279,24 @@ describe('Component Validator', () => {
     assert.strictEqual(result.metrics.totalErrors, 1)
   })
 
+  test('ignores symbols referenced via inline ignore pragmas (HTML, block, and line comments)', () => {
+    // HTML comment pragma ignores a ref and an attribute
+    const htmlCode = `\n<template>\n  <!-- coralite-ignore hook-result, unusedAttr -->\n  <div ref="hook-result">{{ myAttr }}</div>\n</template>\n\n<script>\n  import { defineComponent } from 'coralite'\n\n  export default defineComponent({\n    attributes: {\n      myAttr: { type: String, default: '' },\n      unusedAttr: { type: String, default: '' }\n    }\n  })\n</script>\n`
+    const htmlResult = validateComponentSource(htmlCode, 'ignore-html.html')
+    assert.deepStrictEqual(htmlResult.unused.refs, [])
+    assert.deepStrictEqual(htmlResult.unused.attributes, [])
+
+    // Block comment pragma ignores an unused getter
+    const blockCode = `\n<template>\n  <div>Test</div>\n</template>\n\n<script>\n  import { defineComponent } from 'coralite'\n\n  /* coralite-ignore unusedGetter */\n  export default defineComponent({\n    getters: {\n      unusedGetter: (state) => 'x'\n    }\n  })\n</script>\n`
+    const blockResult = validateComponentSource(blockCode, 'ignore-block.html')
+    assert.deepStrictEqual(blockResult.unused.getters, [])
+
+    // Line comment pragma ignores an unused attribute
+    const lineCode = `\n<template>\n  <div>Test</div>\n</template>\n\n<script>\n  import { defineComponent } from 'coralite'\n\n  // coralite-ignore unusedAttr\n  export default defineComponent({\n    attributes: {\n      unusedAttr: { type: String, default: '' }\n    }\n  })\n</script>\n`
+    const lineResult = validateComponentSource(lineCode, 'ignore-line.html')
+    assert.deepStrictEqual(lineResult.unused.attributes, [])
+  })
+
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)

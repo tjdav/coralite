@@ -53,7 +53,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
       isEntireComponentIgnored = true
     }
 
-    const ignoreCommentRegex = /(?:<!--|\/\*|\/\/)\s*coralite-ignore\s+([a-zA-Z0-9_$\s,-]+?)(?:-->|\*\/|\n|$)/gi
+    const ignoreCommentRegex = /(?:<!--|\/\*|\/\/)\s*coralite-ignore\s+([^\n]*?)(?:-->|\*\/|\n|$)/gi
     let iMatch
     while ((iMatch = ignoreCommentRegex.exec(sourceCode)) !== null) {
       const symbols = iMatch[1].split(/[\s,]+/).filter(Boolean)
