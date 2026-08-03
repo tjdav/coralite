@@ -15,7 +15,7 @@
   "author": "",
   "license": "MPL-2.0",
   "devDependencies": {
-    "coralite": "^0.43.4",
+    "coralite": "^0.43.5",
     "@coralite/plugin-scripts": "latest"
   }
 }

@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.43.5
+
+> Comparing `coralite-v0.43.4` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- ref resolution inside custom component slot projections (core) ([26896b1](https://codeberg.org/tjdavid/coralite/commit/26896b1ad59d70ca7c4828565106b150f197ba17))
+- Improve regex robustness for symbol ignoring (component-validator) ([4474991](https://codeberg.org/tjdavid/coralite/commit/447499176ac5a9f5737e5f6efdf2a03fffa61ec9))
+
+### ♻️ Code Refactoring
+
+- mitigate ReDoS vulnerability by switching parsing to linear scan ([daa2a70](https://codeberg.org/tjdavid/coralite/commit/daa2a70e0114a4f7b4ab0f166904e7d8cb5962f5))
+
+
 ## v0.43.4
 
 > Comparing `coralite-v0.43.3` to `HEAD`
