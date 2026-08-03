@@ -25,4 +25,27 @@ test.describe('Slots Projection', () => {
     await btn.click()
     await expect(btn).toHaveText('Clicked')
   })
+
+  test('should successfully resolve nested refs within slot projections of custom components', async ({ page }, testInfo) => {
+    page.on('console', msg => console.log('BROWSER LOG:', msg.text()))
+    page.on('pageerror', err => console.log('BROWSER EXCEPTION:', err.message))
+    // In production mode, data-testid is stripped, so we use standard tag/class/structure querying
+    const isProduction = testInfo.project.name.includes('-prod')
+
+    const container = page.locator('#slot-nested-test')
+    const input = isProduction ? container.locator('input') : page.getByTestId(/slot-test-container-\d+__search-bar/)
+    const button = isProduction ? container.locator('button') : page.getByTestId(/slot-test-container-\d+__cancel-button/)
+    const status = isProduction ? container.locator('.test-container > div').last() : page.getByTestId(/slot-test-container-\d+__status-output/)
+
+    // Confirm initial state is rendered and hydrated
+    await expect(status).toHaveText('Idle')
+
+    // Click cancel button to trigger event listener registered via refs('btnCancel')
+    await button.click()
+    await expect(status).toHaveText('Cancelled')
+
+    // Fill search bar to trigger event listener registered via refs('searchBar')
+    await input.fill('Atoll Search Query')
+    await expect(status).toHaveText('Searching: Atoll Search Query')
+  })
 })

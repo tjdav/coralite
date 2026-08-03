@@ -1,0 +1,25 @@
+<template id="slot-popup">
+  <div class="popup-container">
+    <div class="popup-header">
+      <slot name="header">Default Popup Header</slot>
+    </div>
+    <div class="popup-body">
+      <slot>Default Popup Content</slot>
+    </div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    slots: {
+      header: (nodes) => {
+        return undefined
+      },
+      default: (nodes) => {
+        return undefined
+      }
+    }
+  })
+</script>

@@ -141,7 +141,10 @@ export function createRenderer ({
         if (slot) {
           if (elementSlotContent.node.attribs) {
             delete elementSlotContent.node.attribs.slot
+          } else {
+            elementSlotContent.node.attribs = {}
           }
+          elementSlotContent.node.attribs['data-coralite-slot-index'] = String(i)
           slotChildren[slotName].push(elementSlotContent.node)
         }
       }
@@ -160,6 +163,10 @@ export function createRenderer ({
       const emptySlot = slotNodes.filter(node => node.type !== 'text' || (node.data && node.data.trim().length > 0))
       if (!emptySlot.length) {
         slotNodes = slot.element.children || []
+        if (!slot.element.attribs) {
+          slot.element.attribs = {}
+        }
+        slot.element.attribs['data-coralite-fallback'] = ''
         slot.element.children = slotNodes
         relinkChildren(slot.element)
       } else {
@@ -639,9 +646,18 @@ export function createRenderer ({
     const createComponentTasks = []
     for (let i = 0; i < customElements.length; i++) {
       const customElement = customElements[i]
-      const parent = customElement.parent
 
-      if (parent && 'slots' in parent && Array.isArray(parent.slots)) {
+      let parent = customElement.parent
+      let shouldSkip = false
+      while (parent) {
+        if ('slots' in parent && Array.isArray(parent.slots)) {
+          shouldSkip = true
+          break
+        }
+        // @ts-ignore
+        parent = parent.parent
+      }
+      if (shouldSkip) {
         continue
       }
 
@@ -780,6 +796,21 @@ export function createRenderer ({
 
     for (let i = 0; i < customElementsList.length; i++) {
       const customElement = customElementsList[i]
+
+      let parent = customElement.parent
+      let shouldSkip = false
+      while (parent) {
+        if ('slots' in parent && Array.isArray(parent.slots)) {
+          shouldSkip = true
+          break
+        }
+        // @ts-ignore
+        parent = parent.parent
+      }
+      if (shouldSkip) {
+        continue
+      }
+
       const contextId = mappedSessionObject.generateId(customElement.name)
       const currentProperties = mappedSessionObject.state[contextId] || {}
       mappedSessionObject.state[contextId] = typeof customElement.attribs === 'object'

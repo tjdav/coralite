@@ -244,6 +244,14 @@ export class CoraliteElement extends HTMLElement {
       this.innerHTML = processHTML(this.componentOptions.templateHTML, this._instanceId)
 
       if (originalLightDOM.length > 0) {
+        originalLightDOM.forEach((n, i) => {
+          // @ts-ignore
+          if (n && n.setAttribute) {
+            // @ts-ignore
+            n.setAttribute('data-coralite-slot-index', String(i))
+          }
+        })
+
         const slots = this.querySelectorAll('slot')
         slots.forEach(slot => {
           const slotName = slot.getAttribute('name') || 'default'
@@ -337,7 +345,13 @@ export class CoraliteElement extends HTMLElement {
           target[`ref_${ref.name}`] = uniqueRefValue
         }
 
-        const node = this.getNodeByPath(ref.path)
+        let node = this.querySelector(`[ref="${uniqueRefValue}"]`)
+        if (!node) {
+          node = this.querySelector(`[ref="${ref.name}"]`)
+        }
+        if (!node) {
+          node = this.getNodeByPath(ref.path)
+        }
         if (node) {
           if (node.setAttribute) {
             node.setAttribute('ref', uniqueRefValue)
@@ -463,6 +477,29 @@ export class CoraliteElement extends HTMLElement {
         return null
       }
       if (node !== this && node.tagName && node.tagName.includes('-')) {
+        // 1. Try to find the physical projected child by data-coralite-slot-index first
+        const candidates = node.querySelectorAll(`[data-coralite-slot-index="${index}"]`)
+        let foundNode = null
+        for (const cand of candidates) {
+          let parentComponent = cand.parentElement
+          while (parentComponent && parentComponent !== node) {
+            if (parentComponent.tagName && parentComponent.tagName.includes('-')) {
+              break
+            }
+            parentComponent = parentComponent.parentElement
+          }
+          if (parentComponent === node) {
+            foundNode = cand
+            break
+          }
+        }
+        if (foundNode) {
+          // @ts-ignore
+          node = foundNode
+          continue
+        }
+
+        // 2. Fallback to original slots traversal, with fallback-skipping added
         const slots = []
         const traverse = (current) => {
           if (!current) {
@@ -485,6 +522,27 @@ export class CoraliteElement extends HTMLElement {
         const lightChildren = []
         for (let i = 0; i < slots.length; i++) {
           const slot = slots[i]
+          let isFallback = slot.hasAttribute('data-coralite-fallback')
+          if (!isFallback && node.componentOptions?.slots && Object.keys(node.componentOptions.slots).length > 0) {
+            let hasElements = false
+            let hasSlotIndex = false
+            for (let j = 0; j < slot.childNodes.length; j++) {
+              const child = slot.childNodes[j]
+              if (child.nodeType === 1) {
+                hasElements = true
+                if (child.hasAttribute('data-coralite-slot-index') || child.querySelector('[data-coralite-slot-index]')) {
+                  hasSlotIndex = true
+                }
+              }
+            }
+            if (hasElements && !hasSlotIndex) {
+              isFallback = true
+            }
+          }
+          if (isFallback) {
+            continue
+          }
+
           for (let j = 0; j < slot.childNodes.length; j++) {
             lightChildren.push(slot.childNodes[j])
           }
