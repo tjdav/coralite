@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.43.8
+
+> Comparing `create-coralite-v0.43.7` to `HEAD`
+
+**Summary:** 3 commits
+
+### ⚡ Performance Improvements
+
+- optimize create-coralite template tests (e2e) ([f6723d1](https://codeberg.org/tjdavid/coralite/commit/f6723d1813a00fadb9eb1fe11804e63271b8c61c))
+
+### ♻️ Code Refactoring
+
+- Use npm for E2E dependency installation (tests) ([d7a747a](https://codeberg.org/tjdavid/coralite/commit/d7a747abb16bccd06decc2e72211c48e02e011fd))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 0.43.6 ([4bfc811](https://codeberg.org/tjdavid/coralite/commit/4bfc8110c866cf02d221f23b16807e61b7502162))
+
+
 ## v0.43.7
 
 > Comparing `create-coralite-v0.43.6` to `HEAD`
