@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { execSync, spawn } from 'node:child_process'
-import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, writeFile, copyFile, readdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path, { join } from 'node:path'
 import { existsSync } from 'node:fs'
@@ -12,10 +12,9 @@ for (const templateName of templates) {
     let tempDir
     let projectPath
     let serverProcess
-    const port = 3000
+    const port = templateName === 'css' ? 3003 : 3004
 
     test.beforeAll(async () => {
-      const repoRoot = path.resolve(process.cwd(), '../..')
       const cliPath = join(process.cwd(), 'bin/index.js')
 
       if (!existsSync(cliPath)) {
@@ -36,31 +35,31 @@ for (const templateName of templates) {
         throw new Error(`Scaffolded directory ${projectPath} does not exist`)
       }
 
-      // Build local workspace packages
-      execSync('pnpm run build && pnpm run build:scripts', {
-        cwd: repoRoot,
-        stdio: 'pipe'
-      })
+      // Resolve tarballs from the pre-built global setup location
+      const tarballsDir = path.resolve(process.cwd(), 'tests/e2e/.tarballs')
+      const filesInTarballs = await readdir(tarballsDir)
+      const coraliteTarName = filesInTarballs.find(f => f.startsWith('coralite-') && !f.startsWith('coralite-scripts-'))
+      const scriptsTarName = filesInTarballs.find(f => f.startsWith('coralite-scripts-'))
 
-      // Pack local workspace dependencies
-      const coralitePackOutput = execSync('pnpm pack --pack-destination ' + tempDir, {
-        cwd: join(repoRoot, 'packages/coralite')
-      }).toString().trim()
-      const coraliteTarName = coralitePackOutput.split('\n').pop()
-      const coraliteTarPath = path.isAbsolute(coraliteTarName) ? coraliteTarName : join(tempDir, coraliteTarName)
+      if (!coraliteTarName || !scriptsTarName) {
+        throw new Error(`Pre-built tarballs not found in ${tarballsDir}. Did globalSetup run?`)
+      }
 
-      const scriptsPackOutput = execSync('pnpm pack --pack-destination ' + tempDir, {
-        cwd: join(repoRoot, 'packages/coralite-scripts')
-      }).toString().trim()
-      const scriptsTarName = scriptsPackOutput.split('\n').pop()
-      const scriptsTarPath = path.isAbsolute(scriptsTarName) ? scriptsTarName : join(tempDir, scriptsTarName)
+      const coraliteTarPath = join(tarballsDir, coraliteTarName)
+      const scriptsTarPath = join(tarballsDir, scriptsTarName)
+
+      // Copy tarballs to local tempDir so they can be referenced easily
+      const localCoraliteTarPath = join(tempDir, coraliteTarName)
+      const localScriptsTarPath = join(tempDir, scriptsTarName)
+      await copyFile(coraliteTarPath, localCoraliteTarPath)
+      await copyFile(scriptsTarPath, localScriptsTarPath)
 
       // Update package.json in scaffolded project to use packed tarballs
       const pkgJsonPath = join(projectPath, 'package.json')
       const pkgJson = JSON.parse(await readFile(pkgJsonPath, 'utf8'))
 
-      const relativeCoralitePath = path.relative(projectPath, coraliteTarPath).split(path.sep).join('/')
-      const relativeScriptsPath = path.relative(projectPath, scriptsTarPath).split(path.sep).join('/')
+      const relativeCoralitePath = path.relative(projectPath, localCoraliteTarPath).split(path.sep).join('/')
+      const relativeScriptsPath = path.relative(projectPath, localScriptsTarPath).split(path.sep).join('/')
 
       pkgJson.devDependencies = pkgJson.devDependencies || {}
       pkgJson.devDependencies['coralite'] = 'file:' + relativeCoralitePath
@@ -68,8 +67,17 @@ for (const templateName of templates) {
 
       await writeFile(pkgJsonPath, JSON.stringify(pkgJson, null, 2))
 
-      // Install dependencies
-      execSync('npm install', {
+      // Update coralite.config.js to use custom port
+      const configPath = join(projectPath, 'coralite.config.js')
+      let configContent = await readFile(configPath, 'utf8')
+      configContent = configContent.replace(
+        "components: 'src/components',",
+        `components: 'src/components',\n  server: { port: ${port} },`
+      )
+      await writeFile(configPath, configContent)
+
+      // Install dependencies using fast pnpm-offline fallback/cache
+      execSync('pnpm install --prefer-offline', {
         cwd: projectPath,
         stdio: 'pipe'
       })
@@ -89,7 +97,7 @@ for (const templateName of templates) {
       serverProcess.stderr?.on('data', chunk => { serverLogs += chunk.toString() })
 
       // Wait for server to respond
-      const serverUrl = 'http://localhost:3000'
+      const serverUrl = `http://localhost:${port}`
       let ready = false
       for (let i = 0; i < 40; i++) {
         try {
@@ -120,7 +128,7 @@ for (const templateName of templates) {
     })
 
     test('should render all declarative components and load confetti library on counter click', async ({ page }) => {
-      const serverUrl = 'http://localhost:3000'
+      const serverUrl = `http://localhost:${port}`
       await page.goto(serverUrl)
 
       // Verify all declarative components exist and are rendered in the DOM
