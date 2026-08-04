@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.43.6
+
+> Comparing `coralite-v0.43.5` to `HEAD`
+
+**Summary:** 2 commits
+
+### ✨ Features
+
+- Implement Unified Recursive Dependency Tracking ([a467259](https://codeberg.org/tjdavid/coralite/commit/a467259c36cdc3edb7c90e343bfb4052b4326e0f))
+
+### ♻️ Code Refactoring
+
+- extract ObserverRecord class into a dedicated file with JSDoc ([d86cca5](https://codeberg.org/tjdavid/coralite/commit/d86cca5e42eeb8f06326695751cff235c72e9403))
+
+
 ## v0.43.5
 
 > Comparing `coralite-v0.43.4` to `HEAD`
