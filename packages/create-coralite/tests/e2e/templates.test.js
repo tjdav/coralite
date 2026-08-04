@@ -76,8 +76,8 @@ for (const templateName of templates) {
       )
       await writeFile(configPath, configContent)
 
-      // Install dependencies using fast pnpm-offline fallback/cache
-      execSync('pnpm install --prefer-offline', {
+      // Install dependencies using fast npm-offline fallback/cache
+      execSync('npm install --prefer-offline --no-audit --no-fund', {
         cwd: projectPath,
         stdio: 'pipe'
       })
