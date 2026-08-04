@@ -1,3 +1,7 @@
+import { createReadOnlyProxy } from './utils/core.js'
+import { processHTML } from './utils/client/inject.js'
+import { recordDevToolsEvent } from './utils/client/devtools.js'
+
 /**
  * @import {
  *  CoraliteClientPluginDisconnectedCallback,
@@ -6,9 +10,59 @@
  * } from '../types/plugin.js'
  */
 
-import { createReadOnlyProxy } from './utils/core.js'
-import { processHTML } from './utils/client/inject.js'
-import { recordDevToolsEvent } from './utils/client/devtools.js'
+
+class ObserverRecord {
+  constructor (key, callback, element) {
+    this.key = key
+    this.callback = callback
+    this.element = element
+    this.dependencies = new Set()
+    this.lastValue = undefined
+    this.initialized = false
+  }
+
+  updateDependenciesAndValue () {
+    const parentCollector = this.element._collectingDependencies
+    this.element._activeObserverRecord = this
+    const dependencies = new Set()
+    this.element._collectingDependencies = dependencies
+
+    let value
+    try {
+      value = this.element._state[this.key]
+    } finally {
+      this.element._activeObserverRecord = parentCollector ? null : this.element._activeObserverRecord
+      this.element._collectingDependencies = parentCollector
+    }
+
+    this.element._updateObserverSubscriptions(this, dependencies)
+    return value
+  }
+
+  init () {
+    this.lastValue = this.updateDependenciesAndValue()
+    this.initialized = true
+  }
+
+  run () {
+    const newVal = this.updateDependenciesAndValue()
+    const oldVal = this.lastValue
+    if (newVal !== oldVal) {
+      this.lastValue = newVal
+      const wasExecuting = this.element._isExecutingObserver
+      this.element._isExecutingObserver = true
+      try {
+        this.callback(newVal, oldVal)
+      } finally {
+        this.element._isExecutingObserver = wasExecuting
+      }
+    }
+  }
+
+  cleanup () {
+    this.element._updateObserverSubscriptions(this, new Set())
+  }
+}
 
 const BOOLEAN_ATTRIBUTES = new Set([
   'allowfullscreen',
@@ -212,6 +266,14 @@ export class CoraliteElement extends HTMLElement {
     this._abortController = new AbortController()
     this._observers = new Map()
     this._isExecutingObserver = false
+    this._resolutionStack = new Set()
+    this._collectingDependencies = null
+    this._activeObserverRecord = null
+    this._subscriberMap = new Map()
+    this._observerRecords = new Set()
+    this._dependencyGraph = new Map()
+    this._dirtyObservers = new Set()
+    this._isFlushingObservers = false
 
     if (!this.componentOptions) {
       return
@@ -288,6 +350,29 @@ export class CoraliteElement extends HTMLElement {
     if (this._observers) {
       this._observers.clear()
       this._observers = null
+    }
+
+    if (this._observerRecords) {
+      for (const record of this._observerRecords) {
+        record.cleanup()
+      }
+      this._observerRecords.clear()
+      this._observerRecords = null
+    }
+
+    if (this._subscriberMap) {
+      this._subscriberMap.clear()
+      this._subscriberMap = null
+    }
+
+    if (this._dependencyGraph) {
+      this._dependencyGraph.clear()
+      this._dependencyGraph = null
+    }
+
+    if (this._dirtyObservers) {
+      this._dirtyObservers.clear()
+      this._dirtyObservers = null
     }
 
     if (!this.componentOptions) {
@@ -402,7 +487,14 @@ export class CoraliteElement extends HTMLElement {
           this._getterAbortControllers[key] = new AbortController()
 
           // Enforce "Dual-Proxy" safety: Getters cannot mutate state
-          const roState = createReadOnlyProxy(this._state)
+          const tracker = {
+            activeCollector: (p) => {
+              if (this._collectingDependencies && typeof p === 'string') {
+                this._collectingDependencies.add(p)
+              }
+            }
+          }
+          const roState = createReadOnlyProxy(this._state, new WeakMap(), tracker)
           return getter(roState, { signal: this._getterAbortControllers[key].signal })
         },
         enumerable: true,
@@ -423,7 +515,102 @@ export class CoraliteElement extends HTMLElement {
    */
   _createReactiveProxy (target) {
     const self = this
+    const options = this.componentOptions
+    if (!options) {
+      return target
+    }
+
+    const getGetterFn = (key) => {
+      if (key.startsWith('slots_method_')) {
+        return null
+      }
+      if (options.getters && key in options.getters) {
+        return options.getters[key]
+      }
+      if (options.slots && key in options.slots) {
+        return null
+      }
+      if (key === 'constructor' || key === 'toString' || key === 'valueOf' || key === 'hasOwnProperty') {
+        return null
+      }
+      if (Object.prototype.hasOwnProperty.call(target, key) && typeof target[key] === 'function') {
+        return target[key]
+      }
+      return null
+    }
+
     return new Proxy(target, {
+      get (t, p, receiver) {
+        if (typeof p !== 'string') {
+          return Reflect.get(t, p, receiver)
+        }
+
+        const getterFn = getGetterFn(p)
+        if (getterFn) {
+          const getterKey = p
+
+          if (self._resolutionStack.has(getterKey)) {
+            throw new Error(`Circular dependency detected: ${[...self._resolutionStack].join(' → ')} → ${getterKey}`)
+          }
+
+          self._resolutionStack.add(getterKey)
+
+          let directDeps = new Set()
+          const parentCollecting = self._collectingDependencies
+          self._collectingDependencies = directDeps
+
+          let value
+          try {
+            if (options.getters && getterKey in options.getters) {
+              value = Reflect.get(t, p, receiver)
+            } else {
+              value = getterFn(self._state)
+            }
+          } finally {
+            self._collectingDependencies = parentCollecting
+            self._resolutionStack.delete(getterKey)
+          }
+
+          if (self._collectingDependencies) {
+            for (const dep of directDeps) {
+              self._collectingDependencies.add(dep)
+            }
+          }
+
+          // Async Getter Promise Handling
+          if (value instanceof Promise) {
+            value.then(() => {
+              if (self._activeObserverRecord) {
+                const record = self._activeObserverRecord
+                const asyncDeps = new Set()
+                const originalCollector = self._collectingDependencies
+                self._collectingDependencies = asyncDeps
+                try {
+                  if (options.getters && getterKey in options.getters) {
+                    Reflect.get(t, p, receiver)
+                  } else {
+                    getterFn(self._state)
+                  }
+                } finally {
+                  self._collectingDependencies = originalCollector
+                }
+                self._updateObserverSubscriptions(record, asyncDeps)
+              }
+            })
+          }
+
+          return value
+        }
+
+        const value = Reflect.get(t, p, receiver)
+
+        if (self._collectingDependencies) {
+          self._collectingDependencies.add(p)
+        }
+
+        return value
+      },
+
       set (t, p, v) {
         const oldValue = t[p]
         if (oldValue === v) {
@@ -431,7 +618,6 @@ export class CoraliteElement extends HTMLElement {
         }
 
         if (typeof p === 'string') {
-          // Dev mode safeguard for infinite loop state mutations
           const mode = (typeof window !== 'undefined' && window['__coralite__'] && window['__coralite__'].mode) || 'production'
 
           if (mode === 'development' && self._isExecutingObserver) {
@@ -443,20 +629,14 @@ export class CoraliteElement extends HTMLElement {
         self._scheduleUpdate()
 
         if (typeof p === 'string' && self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
-          if (!self._observers || !self._observers.has(p)) {
+          const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
+          if (!hasRecord) {
             self._observeStateKey(p, () => self._processSlots())
           }
         }
 
-        // Trigger any observers registered for this property
-        if (typeof p === 'string' && self._observers && self._observers.has(p)) {
-          const wasExecuting = self._isExecutingObserver
-          self._isExecutingObserver = true
-          try {
-            self._observers.get(p).forEach(cb => cb(v, oldValue))
-          } finally {
-            self._isExecutingObserver = wasExecuting
-          }
+        if (typeof p === 'string') {
+          self._markObserverDirty(p)
         }
 
         return true
@@ -747,21 +927,110 @@ export class CoraliteElement extends HTMLElement {
    * @protected
    */
   _observeStateKey (key, callback) {
-    if (!this._observers) {
-      this._observers = new Map()
+    if (!this._observerRecords) {
+      this._observerRecords = new Set()
     }
-    if (!this._observers.has(key)) {
-      this._observers.set(key, new Set())
-    }
-    this._observers.get(key).add(callback)
+
+    const record = new ObserverRecord(key, callback, this)
+    this._observerRecords.add(record)
+    record.init()
 
     if (this._abortController && this._abortController.signal) {
       this._abortController.signal.addEventListener('abort', () => {
-        if (this._observers && this._observers.has(key)) {
-          this._observers.get(key).delete(callback)
+        if (this._observerRecords && this._observerRecords.has(record)) {
+          record.cleanup()
+          this._observerRecords.delete(record)
         }
       })
     }
+  }
+
+  /**
+   *
+   */
+  _updateObserverSubscriptions (record, newDeps) {
+    if (!this._subscriberMap) {
+      this._subscriberMap = new Map()
+    }
+
+    for (const oldDep of record.dependencies) {
+      if (!newDeps.has(oldDep)) {
+        const subs = this._subscriberMap.get(oldDep)
+        if (subs) {
+          subs.delete(record)
+          if (subs.size === 0) {
+            this._subscriberMap.delete(oldDep)
+          }
+        }
+      }
+    }
+
+    for (const newDep of newDeps) {
+      if (!record.dependencies.has(newDep)) {
+        if (!this._subscriberMap.has(newDep)) {
+          this._subscriberMap.set(newDep, new Set())
+        }
+        this._subscriberMap.get(newDep).add(record)
+      }
+    }
+
+    record.dependencies = newDeps
+
+    if (!this._dependencyGraph) {
+      this._dependencyGraph = new Map()
+    }
+    this._dependencyGraph.set(record.key, newDeps)
+  }
+
+  /**
+   *
+   */
+  _markObserverDirty (stateKey) {
+    if (!this._subscriberMap) {
+      return
+    }
+
+    const records = this._subscriberMap.get(stateKey)
+    if (records) {
+      for (const record of records) {
+        if (!this._dirtyObservers) {
+          this._dirtyObservers = new Set()
+        }
+        this._dirtyObservers.add(record)
+      }
+      this._scheduleObserversFlush()
+    }
+  }
+
+  /**
+   *
+   */
+  _scheduleObserversFlush () {
+    if (this._isFlushingObservers) {
+      return
+    }
+    this._isFlushingObservers = true
+    queueMicrotask(() => {
+      this._flushDirtyObservers()
+    })
+  }
+
+  /**
+   *
+   */
+  _flushDirtyObservers () {
+    if (!this._dirtyObservers || this._dirtyObservers.size === 0) {
+      this._isFlushingObservers = false
+      return
+    }
+
+    const observers = Array.from(this._dirtyObservers)
+    this._dirtyObservers.clear()
+    this._isFlushingObservers = false
+
+    observers.forEach(obs => {
+      obs.run()
+    })
   }
 
   /**
@@ -844,6 +1113,25 @@ export class CoraliteElement extends HTMLElement {
       if (self._observers) {
         self._observers.clear()
         self._observers = null
+      }
+      if (self._observerRecords) {
+        for (const record of self._observerRecords) {
+          record.cleanup()
+        }
+        self._observerRecords.clear()
+        self._observerRecords = null
+      }
+      if (self._subscriberMap) {
+        self._subscriberMap.clear()
+        self._subscriberMap = null
+      }
+      if (self._dependencyGraph) {
+        self._dependencyGraph.clear()
+        self._dependencyGraph = null
+      }
+      if (self._dirtyObservers) {
+        self._dirtyObservers.clear()
+        self._dirtyObservers = null
       }
     })
 

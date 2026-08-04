@@ -1,0 +1,113 @@
+<template id="recursive-deps-test-comp">
+  <div>
+    <!-- Test Controls -->
+    <button class="select-participant-btn" ref="selectBtn">Select Participant (Bob)</button>
+    <button class="deselect-participant-btn" ref="deselectBtn">Deselect Participant</button>
+    <button class="trigger-increment-btn" ref="incrementBtn">Increment Counter</button>
+
+    <!-- State Displays -->
+    <div class="selected-count-display">Selected: {{ selectedCount }}</div>
+    <div class="can-create-display">Can Create: {{ canCreate }}</div>
+    <div class="disable-submit-display">Button Disabled: {{ disableSubmit }}</div>
+    <div class="final-status-display">Final Status: {{ finalStatus }}</div>
+
+    <!-- Actual Button Using Nested Getter -->
+    <button class="submit-btn" disabled="{{ disableSubmit }}">Submit Room</button>
+
+    <!-- Callback Count for Verification -->
+    <div class="callback-count-display">Observer Calls: 0</div>
+
+    <!-- Deep Chain Test -->
+    <div class="deep-chain-display">Deep Chain (5 levels): {{ level5 }}</div>
+    <button class="update-leaf-btn" ref="updateLeafBtn">Update Leaf (level0)</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      counter: {
+        type: Number,
+        default: 0
+      }
+    },
+    async server() {
+      return {}
+    },
+    client({ state, refs, observe }) {
+      const selectBtn = refs('selectBtn')
+      const deselectBtn = refs('deselectBtn')
+      const incrementBtn = refs('incrementBtn')
+      const updateLeafBtn = refs('updateLeafBtn')
+
+      let observerCalls = 0
+      let deepChainCalls = 0
+
+      // Initialize state
+      state.selectedParticipants = []
+      state.isCreating = false
+      state.level0 = 0
+
+      // === NESTED GETTER CHAIN TEST (The core issue) ===
+      // This simulates the create-room-modal scenario
+
+      // Level 1: Direct property access
+      state.selectedCount = () => (state.selectedParticipants || []).length
+
+      // Level 2: Depends on Level 1 getter
+      state.canCreate = () => state.selectedCount > 0
+
+      // Level 3: Depends on Level 2 getter (this was broken before)
+      state.disableSubmit = () => !state.canCreate || state.isCreating
+
+      // Level 4: Another layer to test depth
+      state.buttonState = () => state.disableSubmit ? 'disabled' : 'enabled'
+
+      // Level 5: Final derived status
+      state.finalStatus = () => `Button is ${state.buttonState}`
+
+      // === DEEP CHAIN TEST (5+ levels) ===
+      state.level1 = () => state.level0 + 1
+      state.level2 = () => state.level1 + 1
+      state.level3 = () => state.level2 + 1
+      state.level4 = () => state.level3 + 1
+      state.level5 = () => state.level4 + 1
+
+      // Observe the nested getter - should trigger when selectedParticipants changes
+      observe('disableSubmit', (newVal, oldVal) => {
+        observerCalls++
+        const display = selectBtn.parentElement.querySelector('.callback-count-display')
+        if (display) {
+          display.textContent = `Observer Calls: ${observerCalls}`
+        }
+        console.log(`[Test] disableSubmit changed: ${oldVal} -> ${newVal}`)
+      })
+
+      // Observe deep chain
+      observe('level5', (newVal) => {
+        deepChainCalls++
+        console.log(`[Test] level5 changed to: ${newVal} (call #${deepChainCalls})`)
+      })
+
+      // Event handlers
+      selectBtn.addEventListener('click', () => {
+        // Mutate the array - this should cascade through all getters
+        state.selectedParticipants = ['Bob']
+      })
+
+      deselectBtn.addEventListener('click', () => {
+        state.selectedParticipants = []
+      })
+
+      incrementBtn.addEventListener('click', () => {
+        state.counter = state.counter + 1
+      })
+
+      updateLeafBtn.addEventListener('click', () => {
+        state.level0 = state.level0 + 1
+      })
+    }
+  })
+</script>

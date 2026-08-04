@@ -1,0 +1,38 @@
+<template id="slot-ref-test-comp">
+  <div>
+    <slot name="action-slot"></slot>
+    <div class="ref-check-display">Button in DOM: </div>
+    <button class="check-ref-btn" ref="checkRefBtn">Check Ref Liveness</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    async server() {
+      return {}
+    },
+    client({ state, refs, observe }) {
+      const checkRefBtn = refs('checkRefBtn')
+      const display = checkRefBtn.parentElement.querySelector('.ref-check-display')
+
+      // Test that refs work with slot re-projection
+      const getActiveBtn = () => {
+        const root = checkRefBtn.getRootNode?.() || document
+        return root.querySelector('button[slot="action-slot"]') || refs('slottedBtn')
+      }
+
+      checkRefBtn.addEventListener('click', () => {
+        const activeBtn = getActiveBtn()
+        const isInDOM = activeBtn && document.contains(activeBtn)
+        display.textContent = `Button in DOM: ${isInDOM ? 'Yes (Live)' : 'No (Stale)'}`
+
+        // Try to modify the button to verify it's live
+        if (activeBtn && isInDOM) {
+          activeBtn.setAttribute('data-checked', 'true')
+        }
+      })
+    }
+  })
+</script>

@@ -164,7 +164,11 @@ A component definition consists of four primary blocks:
 * **Purpose**: Pure functions used to derive new UI data from the unified state.
 * **The Flat Argument**: Getters receive the **Unified State Proxy** as their only argument. This single proxy contains both the coerced `attributes` and the initialized `server` state.
 * **Rule**: Getters must be pure and synchronous. You must **never** perform side-effects, mutate state, or execute asynchronous code (`fetch`) inside a getter.
-* **Reactivity**: Automatically re-evaluated when any underlying attribute or state dependency changes.
+* **Unified Recursive Dependency Tracking**:
+  - Getters now support **automatic transitive dependency tracking** (no need to manually flatten nested getter chains). If getter `A` reads getter `B`, and getter `B` reads leaf property `C`, mutating `C` automatically cascades re-evaluation through `B` and `A`, and notifies any observers subscribed to `A`.
+  - **Circular Dependency Protection**: If a circular dependency chain is detected at runtime (e.g. `A` depends on `B` and `B` depends on `A`), the engine throws a descriptive error: `Circular dependency detected: A → B → A` to prevent infinite reactive evaluation loops.
+  - **Async Getter Lifecycle & Trackability**: For asynchronous getters returning a `Promise`, Coralite tracks any state properties read synchronously before the first `await`. Once the `Promise` resolves, Coralite performs an asynchronous dependency sweep to record any properties accessed during the post-resolution handler.
+  - **Batched Dirty Checking**: Observers and getter re-evaluations are batched via a microtask queue (`queueMicrotask`). When state properties change, all transitive observer and getter dependencies are marked as dirty, and then flushed and invoked exactly once at the end of the current microtask, eliminating redundant computations and DOM paints (e.g. in a diamond dependency pattern `A ← B, C → D`).
 
 #### 4. `client({ state, signal, refs, root, instanceId, observe, ...plugins })` (Client)
 

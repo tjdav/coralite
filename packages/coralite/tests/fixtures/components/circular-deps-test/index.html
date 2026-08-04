@@ -1,0 +1,42 @@
+<template id="circular-deps-test-comp">
+  <div>
+    <div class="value-a-display">Value A: {{ valueA }}</div>
+    <div class="value-b-display">Value B: {{ valueB }}</div>
+    <button class="setup-circular-btn" ref="setupCircularBtn">Setup Circular Dependency</button>
+    <div class="status-display">Status: Ready</div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    async server() {
+      return {}
+    },
+    client({ state, refs }) {
+      const setupCircularBtn = refs('setupCircularBtn')
+      const statusDisplay = setupCircularBtn.parentElement.querySelector('.status-display')
+
+      let circularSetup = false
+
+      setupCircularBtn.addEventListener('click', () => {
+        if (!circularSetup) {
+          // Setup circular dependency: A depends on B, B depends on A
+          state.valueA = () => state.valueB + 1
+          state.valueB = () => state.valueA * 2
+
+          // Try to access them - should detect circular dependency
+          try {
+            const _ = state.valueA
+            statusDisplay.textContent = 'Status: ERROR - No circular detection!'
+          } catch (e) {
+            statusDisplay.textContent = `Status: Caught - ${e.message}`
+          }
+
+          circularSetup = true
+        }
+      })
+    }
+  })
+</script>

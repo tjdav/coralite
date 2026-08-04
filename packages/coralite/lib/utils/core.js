@@ -612,9 +612,10 @@ export function createReactiveProxy (target, onChange, proxies = new WeakMap()) 
  * Creates a read-only proxy that throws on mutation attempts.
  * @param {Object} target - The object to proxy.
  * @param {WeakMap} [proxies=new WeakMap()] - Cache for existing proxies.
+ * @param {Object|null} [tracker=null] - Optional dependency tracker.
  * @returns {Proxy} The read-only proxy.
  */
-export function createReadOnlyProxy (target, proxies = new WeakMap()) {
+export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = null) {
   if (proxies.has(target)) {
     return proxies.get(target)
   }
@@ -622,8 +623,13 @@ export function createReadOnlyProxy (target, proxies = new WeakMap()) {
   const handler = {
     get (target, property, receiver) {
       const value = Reflect.get(target, property, receiver)
+
+      if (tracker && tracker.activeCollector && typeof property === 'string') {
+        tracker.activeCollector(property)
+      }
+
       if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
-        return createReadOnlyProxy(value, proxies)
+        return createReadOnlyProxy(value, proxies, tracker)
       }
       return value
     },

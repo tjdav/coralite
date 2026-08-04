@@ -1,0 +1,56 @@
+<template id="async-deps-test-comp">
+  <div>
+    <button class="load-data-btn" ref="loadDataBtn">Load Async Data</button>
+    <div class="async-status-display">Status: Idle</div>
+    <div class="async-result-display">Result: </div>
+    <div class="derived-from-async-display">Derived: </div>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    async server() {
+      return {}
+    },
+    client({ state, refs, observe }) {
+      const loadDataBtn = refs('loadDataBtn')
+      const statusDisplay = loadDataBtn.parentElement.querySelector('.async-status-display')
+      const resultDisplay = loadDataBtn.parentElement.querySelector('.async-result-display')
+      const derivedDisplay = loadDataBtn.parentElement.querySelector('.derived-from-async-display')
+
+      // Simulate async data loading
+      state.asyncData = null
+      state.isLoading = false
+
+      // Derived getter that depends on async data
+      state.derivedResult = () => {
+        if (!state.asyncData) return 'No data'
+        return `Processed: ${state.asyncData.value * 2}`
+      }
+
+      // Observe the derived result
+      observe('derivedResult', (newVal) => {
+        derivedDisplay.textContent = `Derived: ${newVal}`
+        console.log('[Test] derivedResult updated:', newVal)
+      })
+
+      // Set initial value
+      derivedDisplay.textContent = `Derived: ${state.derivedResult}`
+
+      loadDataBtn.addEventListener('click', async () => {
+        state.isLoading = true
+        statusDisplay.textContent = 'Status: Loading...'
+
+        // Simulate async operation
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        state.asyncData = { value: 42 }
+        state.isLoading = false
+        statusDisplay.textContent = 'Status: Loaded'
+        resultDisplay.textContent = `Result: ${state.asyncData.value}`
+      })
+    }
+  })
+</script>
