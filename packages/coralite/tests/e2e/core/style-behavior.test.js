@@ -5,6 +5,8 @@ test.describe('Style Behavior', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/style-behavior/')
     await waitForHydration(page)
+    // Wait for event listeners and microtasks to fully settle before clicking
+    await page.waitForTimeout(200)
   })
 
   test('should have styles for declarative components', async ({ page }) => {
