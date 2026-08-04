@@ -1,6 +1,7 @@
 import { createReadOnlyProxy } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
+import { ObserverRecord } from './utils/observer-record.js'
 
 /**
  * @import {
@@ -10,59 +11,6 @@ import { recordDevToolsEvent } from './utils/client/devtools.js'
  * } from '../types/plugin.js'
  */
 
-
-class ObserverRecord {
-  constructor (key, callback, element) {
-    this.key = key
-    this.callback = callback
-    this.element = element
-    this.dependencies = new Set()
-    this.lastValue = undefined
-    this.initialized = false
-  }
-
-  updateDependenciesAndValue () {
-    const parentCollector = this.element._collectingDependencies
-    this.element._activeObserverRecord = this
-    const dependencies = new Set()
-    this.element._collectingDependencies = dependencies
-
-    let value
-    try {
-      value = this.element._state[this.key]
-    } finally {
-      this.element._activeObserverRecord = parentCollector ? null : this.element._activeObserverRecord
-      this.element._collectingDependencies = parentCollector
-    }
-
-    this.element._updateObserverSubscriptions(this, dependencies)
-    return value
-  }
-
-  init () {
-    this.lastValue = this.updateDependenciesAndValue()
-    this.initialized = true
-  }
-
-  run () {
-    const newVal = this.updateDependenciesAndValue()
-    const oldVal = this.lastValue
-    if (newVal !== oldVal) {
-      this.lastValue = newVal
-      const wasExecuting = this.element._isExecutingObserver
-      this.element._isExecutingObserver = true
-      try {
-        this.callback(newVal, oldVal)
-      } finally {
-        this.element._isExecutingObserver = wasExecuting
-      }
-    }
-  }
-
-  cleanup () {
-    this.element._updateObserverSubscriptions(this, new Set())
-  }
-}
 
 const BOOLEAN_ATTRIBUTES = new Set([
   'allowfullscreen',
@@ -1175,9 +1123,8 @@ export class CoraliteElement extends HTMLElement {
       : true
 
     if (isDevOrTest) {
-      const key = Symbol.for('coralite.testing')
       const options = this.componentOptions
-      this[key] = {
+      this[Symbol.for('coralite.testing')] = {
         instanceId: this._instanceId,
         componentId: options.componentId,
         state: this._state,
