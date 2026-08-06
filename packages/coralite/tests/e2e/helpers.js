@@ -13,6 +13,9 @@ export async function waitForHydration (page) {
     if (window.__coralite__ && window.__coralite__.lifecycle !== undefined) {
       return window.__coralite__.lifecycle.hydrated
     }
+    const elements = Array.from(document.querySelectorAll('[data-cid]'))
+    await Promise.all(elements.map(el => customElements.whenDefined(el.tagName.toLowerCase())))
+    await new Promise(resolve => setTimeout(resolve, 50))
     return true
   })
 }
