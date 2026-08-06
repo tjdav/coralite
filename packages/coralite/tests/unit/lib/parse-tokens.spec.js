@@ -329,3 +329,26 @@ describe('Direct getTokensFromString tests', () => {
     assert.strictEqual(tokens[0].name, veryLongToken)
   })
 })
+
+describe('parseModule Slot Scoping', () => {
+  it('should isolate template slots and ignore slots inside child custom element subtrees', () => {
+    const template = `
+      <template id="parent-component">
+        <slot name="default"></slot>
+        <child-component>
+          <slot name="default"></slot>
+        </child-component>
+      </template>
+    `
+
+    const result = parseModule(template, { ignoreByAttribute: [] })
+    assert.strictEqual(result.isTemplate, true)
+
+    const slots = result.slotElements['parent-component']
+    assert.ok(slots)
+    assert.ok(slots.default)
+
+    // The slot element registered should be the parent's slot, not duplicated or throwing
+    assert.strictEqual(Object.keys(slots).length, 1)
+  })
+})

@@ -262,7 +262,7 @@ export class CoraliteElement extends HTMLElement {
           }
         })
 
-        const slots = this.querySelectorAll('slot')
+        const slots = this._getOwnSlots()
         slots.forEach(slot => {
           const slotName = slot.getAttribute('name') || 'default'
           const matchingNodes = originalLightDOM.filter(node => {
@@ -1001,6 +1001,26 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
+   * Retrieves `<slot>` elements that belong directly to this custom element instance,
+   * ignoring `<slot>` elements nested inside child custom elements.
+   * @returns {HTMLSlotElement[]}
+   * @private
+   */
+  _getOwnSlots () {
+    const allSlots = Array.from(this.querySelectorAll('slot'))
+    return allSlots.filter(slotEl => {
+      let host = slotEl.parentElement
+      while (host && host !== this) {
+        if (host.hasAttribute?.('data-cid') || host.hasAttribute?.('is') || (host.tagName && host.tagName.includes('-'))) {
+          return false
+        }
+        host = host.parentElement
+      }
+      return host === this
+    })
+  }
+
+  /**
    * Evaluates and projects Light DOM elements into their respective `<slot>` nodes.
    * Invokes component-specific slot transformation functions.
    * @private
@@ -1011,7 +1031,7 @@ export class CoraliteElement extends HTMLElement {
       return
     }
 
-    const slotElements = this.querySelectorAll('slot')
+    const slotElements = this._getOwnSlots()
     slotElements.forEach(slotEl => {
       const slotName = slotEl.getAttribute('name') || 'default'
       const slotFn = slots[slotName]

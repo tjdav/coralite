@@ -636,5 +636,53 @@ describe('CoraliteElement', () => {
       })
     })
   })
+
+  it('should isolate component slots so nested child custom elements do not intercept parent slots', (t, done) => {
+    const parentTag = 'test-slot-parent'
+    const childTag = 'test-slot-child'
+
+    const ChildElement = createCoraliteClass({
+      componentId: childTag,
+      slots: {
+        default (nodes) {
+          return '<span class="child-slot">Child Slot Content</span>'
+        }
+      }
+    })
+
+    const ParentElement = createCoraliteClass({
+      componentId: parentTag,
+      slots: {
+        default (nodes) {
+          return '<div class="parent-slot">Parent Slot Content</div>'
+        }
+      }
+    })
+
+    customElements.define(childTag, ChildElement)
+    customElements.define(parentTag, ParentElement)
+
+    const parentEl = document.createElement(parentTag)
+    parentEl.innerHTML = `
+      <slot name="default"></slot>
+      <${childTag}>
+        <slot name="default"></slot>
+      </${childTag}>
+    `
+
+    document.body.appendChild(parentEl)
+
+    queueMicrotask(() => {
+      const parentOwnSlot = parentEl.querySelector(':scope > slot[name="default"]')
+      const childEl = parentEl.querySelector(childTag)
+      const childSlot = childEl.querySelector('slot[name="default"]')
+
+      assert.strictEqual(parentOwnSlot.innerHTML, '<div class="parent-slot">Parent Slot Content</div>')
+      assert.strictEqual(childSlot.innerHTML, '<span class="child-slot">Child Slot Content</span>')
+
+      document.body.removeChild(parentEl)
+      done()
+    })
+  })
 })
 

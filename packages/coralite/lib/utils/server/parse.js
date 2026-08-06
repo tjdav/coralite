@@ -304,7 +304,13 @@ export function parseModule (string, { ignoreByAttribute, skipRenderByAttribute,
         isTemplate = true
         templateId = handleTemplateOpenTag(attributes)
       } else if (element.name === 'slot') {
-        handleSlotOpenTag(element, attributes, templateId, slotElements)
+        const isNestedInChildCustomElement = stack.slice(2, -1).some(ancestor => (
+          // @ts-ignore
+          Array.isArray(ancestor.slots) || ('name' in ancestor && ancestor.name && isValidCustomElementName(ancestor.name))
+        ))
+        if (!isNestedInChildCustomElement) {
+          handleSlotOpenTag(element, attributes, templateId, slotElements)
+        }
       } else if (isTemplate) {
         const attributeNames = Object.keys(attributes)
 

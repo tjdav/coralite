@@ -131,6 +131,7 @@ export default [
             'FormData',
             'HTMLCollection',
             'HTMLElement',
+            'HTMLSlotElement',
             'HTMLFormControlsCollection',
             'Node',
             'NodeJS',
