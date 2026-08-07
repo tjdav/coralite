@@ -29,30 +29,6 @@ defineComponent({
     assert.deepStrictEqual(result.components.sort(), ['blue-button', 'red-button'])
   })
 
-  test('tracks dependencies from explicit dependencies array', () => {
-    const code = `
-defineComponent({
-  dependencies: ['explicit-a', 'explicit-b'],
-  client() {
-    document.createElement('implicit-c');
-  }
-})`
-    const result = findAndExtractScript(code)
-    assert.deepStrictEqual(result.components.sort(), ['explicit-a', 'explicit-b', 'implicit-c'])
-  })
-
-  test('ignores non-string literals in dependencies array', () => {
-    const code = `
-defineComponent({
-  dependencies: ['valid-comp', someVar, 123],
-  client() {
-    document.createElement('other-comp');
-  }
-})`
-    const result = findAndExtractScript(code)
-    assert.deepStrictEqual(result.components.sort(), ['other-comp', 'valid-comp'])
-  })
-
   test('handles nested scopes for variable lookup', () => {
     const code = `
 defineComponent({

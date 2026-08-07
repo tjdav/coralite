@@ -193,21 +193,6 @@ export function findAndExtractScript (code) {
         const firstArg = node.arguments[0]
 
         if (firstArg && firstArg.type === 'ObjectExpression') {
-          // Track explicit dependencies array
-          const depsProp = firstArg.properties.find(
-            prop => prop.type === 'Property' &&
-              prop.key && prop.key.type === 'Identifier' &&
-              prop.key.name === 'dependencies'
-          )
-
-          if (depsProp && depsProp.type === 'Property' && depsProp.value.type === 'ArrayExpression') {
-            for (const el of depsProp.value.elements) {
-              if (el && el.type === 'Literal' && typeof el.value === 'string') {
-                components.add(el.value)
-              }
-            }
-          }
-
           const scriptProp = firstArg.properties.find(
             prop => prop.type === 'Property' &&
               prop.key && prop.key.type === 'Identifier' &&
