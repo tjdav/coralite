@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.44.0
+
+> Comparing `coralite-v0.43.6` to `HEAD`
+
+**Summary:** 5 commits
+
+### 🐛 Bug Fixes
+
+- filter custom element tags and add timeout fallback in waitForHydration (e2e) ([b7384e6](https://codeberg.org/tjdavid/coralite/commit/b7384e66a00358486ec4a29c77159ad34856bc6e))
+- Wait for all custom elements to be fully defined during hydration (e2e) ([4ec5b87](https://codeberg.org/tjdavid/coralite/commit/4ec5b8775e04816caf6f4761c0e18d86d11879e9))
+- scope component slots to host instance and isolate parser AST (coralite) ([dd5bb43](https://codeberg.org/tjdavid/coralite/commit/dd5bb4312c12c2987f16398713c0c7be7f0ef6d5))
+- Add timeout wait in style behavior E2E tests (tests) ([1e5d8e1](https://codeberg.org/tjdavid/coralite/commit/1e5d8e14e68b30befebf373b80fb86a151c29172))
+
+### ♻️ Code Refactoring
+
+- remove explicit dependencies array fallback from defineComponent (coralite) ([9f34e3b](https://codeberg.org/tjdavid/coralite/commit/9f34e3bcbb08437e637dd10cedb5a6facb657c29))
+
+
 ## v0.43.6
 
 > Comparing `coralite-v0.43.5` to `HEAD`
