@@ -6,6 +6,7 @@ import { program } from 'commander'
 import { writeFileSync, readFileSync } from 'fs'
 import path from 'path'
 import { globSync } from 'glob'
+import { execFileSync } from 'child_process'
 
 const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases.
 Your task is to generate a structured GitHub Release Post based on provided git commit messages and technical summaries.
@@ -37,6 +38,21 @@ Your task is to generate a structured GitHub Release Post based on provided git 
 - Use the original context from commit descriptions and technical summaries to explain *why* a change was made if it improves clarity.
 - Ensure each release post feels unique by focusing on the specific "star" features of that version.`
 
+function callAgy (promptText, model) {
+  const args = ['--print', promptText]
+  const agyModel = (model && model !== 'local-model') ? model : 'gemini-3.6-flash-high'
+  args.push('--model', agyModel)
+  try {
+    return execFileSync('agy', args, {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    }).trim()
+  } catch (err) {
+    const stderr = err.stderr ? err.stderr.toString() : err.message
+    throw new Error(`agy CLI error: ${stderr}`)
+  }
+}
+
 program
   .name('generate-release-post')
   .description('Generate an AI-powered release post based on commits between git tags')
@@ -48,6 +64,7 @@ program
   .option('--api-endpoint <url>', 'OpenAI API endpoint', 'http://localhost:1234/v1')
   .option('--api-key <key>', 'OpenAI API key', 'lm-studio')
   .option('--model <model>', 'OpenAI Model to use', 'local-model')
+  .option('--agy', 'Use the agy CLI tool to generate the release post')
   .option('-y, --yes', 'Skip confirmation')
   .option('--stdout', 'Print to stdout only, ignore output file')
   .option('--no-git', 'Skip git commit and push')
@@ -55,6 +72,7 @@ program
   .action(async (options) => {
     let packageName = options.package
     let pkgPath = options.path
+    let useAgy = Boolean(options.agy)
 
     let originalWrite
     if (options.json) {
@@ -279,6 +297,32 @@ program
         }
       }
 
+      if (!process.env.TEST_NON_INTERACTIVE && !options.json && !options.agy) {
+        // @ts-ignore
+        const selectedProvider = await prompts.select({
+          message: 'Select AI provider / generator:',
+          options: [
+            {
+              value: 'http',
+              label: 'HTTP API (LM Studio / OpenAI endpoint)'
+            },
+            {
+              value: 'agy',
+              label: 'agy CLI'
+            }
+          ]
+        })
+
+        if (prompts.isCancel(selectedProvider)) {
+          prompts.log.info('Operation cancelled')
+          process.exit(0)
+        }
+
+        if (selectedProvider === 'agy') {
+          useAgy = true
+        }
+      }
+
       const s = prompts.spinner()
 
       // Fetch and summarize highlight diffs if any
@@ -317,38 +361,53 @@ program
             continue
           }
 
-          try {
-            const summaryResponse = await fetch(`${options.apiEndpoint}/chat/completions`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${options.apiKey}`
-              },
-              body: JSON.stringify({
-                model: options.model,
-                messages: [
-                  {
-                    role: 'system',
-                    content: `You are a technical assistant helping to summarize git changes for the Coralite framework. Provide a concise technical summary of the changes and suggest a relevant code example (before/after or just new API usage) if applicable.
+          if (useAgy) {
+            try {
+              const systemMsg = `You are a technical assistant helping to summarize git changes for the Coralite framework. Provide a concise technical summary of the changes and suggest a relevant code example (before/after or just new API usage) if applicable.
 
 ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''}`
-                  },
-                  {
-                    role: 'user',
-                    content: `Please summarize these changes for a release highlight. Commit: ${commit.message}\n\nDiff:\n${commit.diff}`
-                  }
-                ],
-                temperature: 0.3
-              })
-            })
+              const userMsg = `Please summarize these changes for a release highlight. Commit: ${commit.message}\n\nDiff:\n${commit.diff}`
+              const promptText = `${systemMsg}\n\n${userMsg}`
 
-            if (summaryResponse.ok) {
-              const summaryData = await summaryResponse.json()
-              const summary = summaryData.choices[0].message.content
+              const summary = callAgy(promptText, options.model)
               highlightSummaries += `\n### Highlight: ${commit.message}\n${summary}\n`
+            } catch (err) {
+              prompts.log.warn(`Could not generate AI summary for commit ${hash}: ${err.message}`)
             }
-          } catch (err) {
-            prompts.log.warn(`Could not generate AI summary for commit ${hash}: ${err.message}`)
+          } else {
+            try {
+              const summaryResponse = await fetch(`${options.apiEndpoint}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${options.apiKey}`
+                },
+                body: JSON.stringify({
+                  model: options.model,
+                  messages: [
+                    {
+                      role: 'system',
+                      content: `You are a technical assistant helping to summarize git changes for the Coralite framework. Provide a concise technical summary of the changes and suggest a relevant code example (before/after or just new API usage) if applicable.
+
+${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''}`
+                    },
+                    {
+                      role: 'user',
+                      content: `Please summarize these changes for a release highlight. Commit: ${commit.message}\n\nDiff:\n${commit.diff}`
+                    }
+                  ],
+                  temperature: 0.3
+                })
+              })
+
+              if (summaryResponse.ok) {
+                const summaryData = await summaryResponse.json()
+                const summary = summaryData.choices[0].message.content
+                highlightSummaries += `\n### Highlight: ${commit.message}\n${summary}\n`
+              }
+            } catch (err) {
+              prompts.log.warn(`Could not generate AI summary for commit ${hash}: ${err.message}`)
+            }
           }
         }
         if (options.json) {
@@ -434,37 +493,43 @@ ${frameworkContext ? `### Coralite Framework Context:\n${frameworkContext}` : ''
 
       userMessage += `\n\nFull Commit List:\n${commitsText}`
 
-      s.start('Generating full release post via AI...')
+      s.start(`Generating full release post via AI (${useAgy ? 'agy CLI' : 'HTTP API'})...`)
 
       try {
-        const response = await fetch(`${options.apiEndpoint}/chat/completions`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${options.apiKey}`
-          },
-          body: JSON.stringify({
-            model: options.model,
-            messages: [
-              {
-                role: 'system',
-                content: SYSTEM_PROMPT
-              },
-              {
-                role: 'user',
-                content: userMessage
-              }
-            ],
-            temperature: 0.7
+        let markdown = ''
+        if (useAgy) {
+          const combinedPrompt = `${SYSTEM_PROMPT}\n\n${userMessage}`
+          markdown = callAgy(combinedPrompt, options.model)
+        } else {
+          const response = await fetch(`${options.apiEndpoint}/chat/completions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${options.apiKey}`
+            },
+            body: JSON.stringify({
+              model: options.model,
+              messages: [
+                {
+                  role: 'system',
+                  content: SYSTEM_PROMPT
+                },
+                {
+                  role: 'user',
+                  content: userMessage
+                }
+              ],
+              temperature: 0.7
+            })
           })
-        })
 
-        if (!response.ok) {
-          throw new Error(`API returned ${response.status}: ${await response.text()}`)
+          if (!response.ok) {
+            throw new Error(`API returned ${response.status}: ${await response.text()}`)
+          }
+
+          const data = await response.json()
+          markdown = data.choices[0].message.content
         }
-
-        const data = await response.json()
-        const markdown = data.choices[0].message.content
 
         s.stop('Release post generated!')
 
