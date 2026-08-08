@@ -684,5 +684,70 @@ describe('CoraliteElement', () => {
       done()
     })
   })
+
+  it('should support declarative (hydrated) nested slots via pre-tagged data-coralite-owner', (t, done) => {
+    const listItemTagName = 'hydrated-item-' + Math.random().toString(36).substring(2, 9)
+    const listTagName = 'hydrated-list-' + Math.random().toString(36).substring(2, 9)
+
+    const MyListItem = createCoraliteClass({
+      componentId: 'hydrated-item',
+      templateHTML: `
+        <div class="row">
+          <div class="left"><slot name="left"></slot></div>
+          <div class="content"><slot></slot></div>
+        </div>
+      `
+    })
+    customElements.define(listItemTagName, MyListItem)
+
+    const MyList = createCoraliteClass({
+      componentId: 'hydrated-list',
+      templateHTML: `
+        <${listItemTagName}>
+          <slot name="avatar" slot="left"></slot>
+        </${listItemTagName}>
+      `
+    })
+    customElements.define(listTagName, MyList)
+
+    // Inject SSR-like pre-rendered HTML with explicit owner tags
+    const container = document.createElement('div')
+    container.innerHTML = `
+      <${listTagName} data-cid="list-1">
+        <${listItemTagName} data-cid="item-1">
+          <div class="row">
+            <div class="left">
+              <slot name="left" data-coralite-owner="item-1">
+                <slot name="avatar" slot="left" data-coralite-owner="list-1">
+                  <span slot="avatar" class="avatar-el">Hydrated Avatar</span>
+                </slot>
+              </slot>
+            </div>
+          </div>
+        </${listItemTagName}>
+      </${listTagName}>
+    `
+    document.body.appendChild(container)
+
+    queueMicrotask(() => {
+      const listEl = container.firstElementChild
+      const listItemEl = listEl.querySelector(listItemTagName)
+
+      // Get own slots of listEl (owner = "list-1")
+      // @ts-ignore
+      const listSlots = listEl._getOwnSlots()
+      assert.strictEqual(listSlots.length, 1, 'listEl should own exactly 1 slot')
+      assert.strictEqual(listSlots[0].getAttribute('name'), 'avatar')
+
+      // Get own slots of listItemEl (owner = "item-1")
+      // @ts-ignore
+      const itemSlots = listItemEl._getOwnSlots()
+      assert.strictEqual(itemSlots.length, 1, 'listItemEl should own exactly 1 slot')
+      assert.strictEqual(itemSlots[0].getAttribute('name'), 'left')
+
+      document.body.removeChild(container)
+      done()
+    })
+  })
 })
 

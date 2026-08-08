@@ -251,14 +251,14 @@ export class CoraliteElement extends HTMLElement {
     // Manually stamp the template and project the Light DOM.
     if (isImperative && this.componentOptions.templateHTML) {
       const originalLightDOM = Array.from(this.childNodes)
-      this.innerHTML = processHTML(this.componentOptions.templateHTML, this._instanceId)
+      const stamped = processHTML(this.componentOptions.templateHTML, this._instanceId)
+
+      this.innerHTML = this._tagOwnSlots(stamped, this._instanceId)
 
       if (originalLightDOM.length > 0) {
-        originalLightDOM.forEach((n, i) => {
-          // @ts-ignore
-          if (n && n.setAttribute) {
-            // @ts-ignore
-            n.setAttribute('data-coralite-slot-index', String(i))
+        originalLightDOM.forEach((element, i) => {
+          if (element && 'setAttribute' in element && typeof element.setAttribute === 'function') {
+            element.setAttribute('data-coralite-slot-index', String(i))
           }
         })
 
@@ -1001,6 +1001,29 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
+   * Helper to tag `<slot>` tags with the instanceId of the component owner.
+   * @param {string} html - Stamped HTML string
+   * @param {string} instanceId - The owner component's unique ID
+   * @returns {string}
+   * @private
+   */
+  _tagOwnSlots (html, instanceId) {
+    if (typeof document === 'undefined') {
+      return html
+    }
+    const template = document.createElement('template')
+    template.innerHTML = html
+    const slots = template.content.querySelectorAll('slot')
+    for (let i = 0; i < slots.length; i++) {
+      const slot = slots[i]
+      if (!slot.hasAttribute('data-coralite-owner')) {
+        slot.setAttribute('data-coralite-owner', instanceId)
+      }
+    }
+    return template.innerHTML
+  }
+
+  /**
    * Retrieves `<slot>` elements that belong directly to this custom element instance,
    * ignoring `<slot>` elements nested inside child custom elements.
    * @returns {HTMLSlotElement[]}
@@ -1008,7 +1031,12 @@ export class CoraliteElement extends HTMLElement {
    */
   _getOwnSlots () {
     const allSlots = Array.from(this.querySelectorAll('slot'))
+    const ownId = this.getAttribute('data-cid') || this._instanceId
     return allSlots.filter(slotEl => {
+      if (slotEl.hasAttribute('data-coralite-owner')) {
+        return slotEl.getAttribute('data-coralite-owner') === ownId
+      }
+      // Legacy fallback for hydrated/untagged trees
       let host = slotEl.parentElement
       while (host && host !== this) {
         if (host.hasAttribute?.('data-cid') || host.hasAttribute?.('is') || (host.tagName && host.tagName.includes('-'))) {

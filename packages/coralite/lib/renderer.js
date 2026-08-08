@@ -121,7 +121,7 @@ export function createRenderer ({
     }
   })
 
-  const _replaceSlots = async ({ id, element, module, state, page, root, index, session, noHydration }) => {
+  const _replaceSlots = async ({ id, instanceId, element, module, state, page, root, index, session, noHydration }) => {
     const slots = module.slotElements ? module.slotElements[id] : null
     if (!slots) {
       return
@@ -156,6 +156,13 @@ export function createRenderer ({
       const slotName = slotNames[i]
       let slotNodes = slotChildren[slotName]
       const slot = slots[slotName]
+
+      if (slot.element) {
+        if (!slot.element.attribs) {
+          slot.element.attribs = {}
+        }
+        slot.element.attribs['data-coralite-owner'] = instanceId
+      }
 
       if (!slot.element || !slot.element.parent || !slot.element.parent.children) {
         continue
@@ -742,6 +749,7 @@ export function createRenderer ({
 
     await _replaceSlots({
       id,
+      instanceId,
       element,
       module,
       state: componentState,

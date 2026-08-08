@@ -575,5 +575,56 @@ describe('Bug Fix: Preserving recursive tokens', () => {
       assert.strictEqual(receivedContext.id, 'mocking-component-0', 'Context should contain unique instance ID')
     })
   })
+
+  it('correctly projects slots through nested components (Nested Slot Ownership)', async () => {
+    await project.writeComponent('my-list-item.html', `
+      <template id="my-list-item">
+        <div class="row">
+          <div class="left"><slot name="left"></slot></div>
+          <div class="content"><slot></slot></div>
+        </div>
+      </template>
+    `)
+
+    await project.writeComponent('my-list.html', `
+      <template id="my-list">
+        <my-list-item>
+          <slot name="avatar" slot="left"></slot>
+        </my-list-item>
+      </template>
+    `)
+
+    await project.writePage('test-nested-slots.html', `
+      <my-list>
+        <span slot="avatar" class="avatar-el">Avatar Content</span>
+      </my-list>
+    `)
+
+    const coralite = await project.createCoralite({
+      output: project.outputDir,
+      mode: 'production',
+      baseURL: '/'
+    })
+
+    const results = await coralite.build('test-nested-slots.html')
+    const htmlOutput = results[0].content
+
+    // We expect the avatar element to be nested inside the left div
+    assert.ok(htmlOutput.includes('<div class="left">'), 'row should have a left container')
+    assert.ok(htmlOutput.includes('class="avatar-el"'), 'avatar-el should be rendered')
+
+    // Let's verify that the avatar-el is actually inside the <div class="left"> container!
+    // A simple regex or index check: index of "avatar-el" should be between index of "left" and "row" / "content"
+    const leftIndex = htmlOutput.indexOf('class="left"')
+    const avatarIndex = htmlOutput.indexOf('class="avatar-el"')
+    const contentIndex = htmlOutput.indexOf('class="content"')
+
+    assert.ok(leftIndex !== -1, 'left container should be found')
+    assert.ok(avatarIndex !== -1, 'avatar element should be found')
+    assert.ok(contentIndex !== -1, 'content container should be found')
+
+    assert.ok(leftIndex < avatarIndex, 'avatar element should be after left container')
+    assert.ok(avatarIndex < contentIndex, 'avatar element should be before content container')
+  })
 })
 
