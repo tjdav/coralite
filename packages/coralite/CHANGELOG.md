@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.44.1
+
+> Comparing `coralite-v0.44.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- fix nested slot ownership and projection (core) ([2b77fd2](https://codeberg.org/tjdavid/coralite/commit/2b77fd2b717868bae9ec7d45017736a710684d05))
+
+
 ## v0.44.0
 
 > Comparing `coralite-v0.43.6` to `HEAD`
