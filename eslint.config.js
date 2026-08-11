@@ -248,6 +248,7 @@ export default [
   {
     ignores: [
       '**/dist/',
+      '**/bench/',
       '**/.history/',
       '**/playwright-report/',
       '**/.coralite/',
