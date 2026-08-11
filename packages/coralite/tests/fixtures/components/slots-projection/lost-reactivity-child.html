@@ -1,0 +1,25 @@
+<template id="lost-reactivity-child">
+  <div class="child-container">
+    <slot></slot>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    slots: {
+      default: (nodes) => {
+        if (!nodes || nodes.length === 0) {
+          return undefined
+        }
+        return nodes.map(n => {
+          if (typeof n.cloneNode === 'function') {
+            return n.cloneNode(true)
+          }
+          return n
+        })
+      }
+    }
+  })
+</script>

@@ -1,0 +1,28 @@
+<template id="lost-reactivity-parent">
+  <div class="parent-container">
+    <lost-reactivity-child>
+      <span ref="textSpan" class="target-span">{{ actionText }}</span>
+    </lost-reactivity-child>
+    <button ref="btnChange" class="change-btn">Change Text</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    server () {
+      return {
+        actionText: 'Edit'
+      }
+    },
+    client ({ state, refs }) {
+      const btn = refs('btnChange')
+      if (btn) {
+        btn.addEventListener('click', () => {
+          state.actionText = 'Save'
+        })
+      }
+    }
+  })
+</script>

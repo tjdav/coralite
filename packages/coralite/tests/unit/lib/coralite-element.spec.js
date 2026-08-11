@@ -809,5 +809,65 @@ describe('CoraliteElement', () => {
       done()
     })
   })
+
+  it('should maintain reactivity on template token interpolations within nested custom element slot projections', (t, done) => {
+    const parentTagName = 'parent-interp-comp-' + Math.random().toString(36).substring(2, 9)
+    const childTagName = 'child-interp-comp-' + Math.random().toString(36).substring(2, 9)
+
+    const ChildInterpElement = createCoraliteClass({
+      componentId: 'child-interp-comp',
+      templateHTML: '<div><slot></slot></div>',
+      slots: {
+        default (nodes) {
+          // Clone the nodes to simulate slot transformation that causes reference disconnection
+          return nodes.map(n => n.cloneNode(true))
+        }
+      }
+    })
+
+    const ParentInterpElement = createCoraliteClass({
+      componentId: 'parent-interp-comp',
+      templateHTML: `<div><${childTagName}><c-token>{{ text }}</c-token></${childTagName}></div>`,
+      defaultValues: { text: 'Edit' },
+      hydrationMap: {
+        texts: [
+          {
+            // div -> child-interp-comp -> c-token (text node)
+            path: [0, 0, 0],
+            template: '{{ text }}',
+            type: 'html'
+          }
+        ]
+      }
+    }, null, {}, {
+      'parent-interp-comp-0': { text: 'Edit' }
+    })
+
+    // Set pre-rendered HTML matching real-world deferred hydration (strictly whitespace-free between tags to match path indices)
+    document.body.innerHTML = `<${parentTagName} data-cid="parent-interp-comp-0" data-coralite-initial><div><${childTagName} data-cid="child-interp-comp-0" data-coralite-initial><div><slot data-coralite-owner="child-interp-comp-0"><c-token data-coralite-slot-index="0">Edit</c-token></slot></div></${childTagName}></div></${parentTagName}>`
+
+    // Define custom elements to trigger upgrade and connectedCallback
+    customElements.define(childTagName, ChildInterpElement)
+    customElements.define(parentTagName, ParentInterpElement)
+
+    const el = document.body.firstElementChild
+
+    queueMicrotask(() => {
+      const child = el.querySelector(childTagName)
+      assert.ok(child, 'Child should be rendered')
+      assert.strictEqual(child.textContent.trim(), 'Edit')
+
+      // Mutate parent state
+      el._state.text = 'Save'
+
+      queueMicrotask(() => {
+        // Assert that the text successfully updated inside the slot despite cloning and slot transformation
+        assert.strictEqual(child.textContent.trim(), 'Save')
+
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
 })
 

@@ -165,7 +165,7 @@ export class CoraliteElement extends HTMLElement {
 
     /**
      * The collection of DOM nodes mapped to template tokens and attributes.
-     * @type {Array<{type: string, node: Node, template?: string, name?: string}>}
+     * @type {Array<{type: string, node: Node, path?: number[], template?: string, name?: string}>}
      * @protected
      */
     this._bindings = []
@@ -720,6 +720,9 @@ export class CoraliteElement extends HTMLElement {
           node = lightChildren[index]
           continue
         }
+
+        // Encapsulation safety: return null if slot mapping lookup failed at custom element boundary
+        return null
       }
       // @ts-ignore
       node = node.childNodes[index]
@@ -746,6 +749,7 @@ export class CoraliteElement extends HTMLElement {
           this._bindings.push({
             type: item.type || 'text',
             node,
+            path: item.path,
             template: item.template
           })
         }
@@ -759,6 +763,7 @@ export class CoraliteElement extends HTMLElement {
           this._bindings.push({
             type: 'attribute',
             node,
+            path: item.path,
             name: item.name,
             template: item.template
           })
@@ -829,18 +834,28 @@ export class CoraliteElement extends HTMLElement {
       }
 
       for (const binding of this._bindings) {
+        let node = binding.node
+        const isConnected = node && typeof document !== 'undefined' && document.body && document.body.contains(node)
+        if (binding.path && (!node || !isConnected)) {
+          const resolved = this.getNodeByPath(binding.path)
+          if (resolved) {
+            binding.node = resolved
+            node = resolved
+          }
+        }
+
         const hydratedValue = binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
           return tokenValues[key] ?? ''
         })
 
         if (binding.type === 'text') {
-          if (binding.node.textContent !== hydratedValue) {
-            binding.node.textContent = hydratedValue
+          if (node.textContent !== hydratedValue) {
+            node.textContent = hydratedValue
           }
         } else if (binding.type === 'html') {
           /** @type {HTMLElement} */
           // @ts-ignore
-          const element = binding.node
+          const element = node
 
           if (element.innerHTML !== hydratedValue) {
             element.innerHTML = hydratedValue
@@ -848,7 +863,7 @@ export class CoraliteElement extends HTMLElement {
         } else if (binding.type === 'attribute') {
           /** @type {HTMLElement} */
           // @ts-ignore
-          const element = binding.node
+          const element = node
 
           if (BOOLEAN_ATTRIBUTES.has(binding.name)) {
             const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === '0' || hydratedValue === 'undefined'

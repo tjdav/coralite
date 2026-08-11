@@ -48,4 +48,23 @@ test.describe('Slots Projection', () => {
     await input.fill('Atoll Search Query')
     await expect(status).toHaveText('Searching: Atoll Search Query')
   })
+
+  test('should preserve reactivity and component boundaries on template token interpolations within nested slot projections', async ({ page }) => {
+    const container = page.locator('#lost-reactivity-test')
+    const textSpan = container.locator('.target-span')
+    const button = container.locator('.change-btn')
+
+    // 1. Initially should display 'Edit'
+    await expect(textSpan).toHaveText('Edit')
+
+    // 2. Click button to trigger parent state change
+    await button.click()
+
+    // 3. Reactively updates inside the slot to 'Save'
+    await expect(textSpan).toHaveText('Save')
+
+    // 4. Assert component boundary is fully intact (i.e. child container hasn't been destroyed or overwritten)
+    const childContainer = container.locator('.child-container')
+    await expect(childContainer).toBeVisible()
+  })
 })
