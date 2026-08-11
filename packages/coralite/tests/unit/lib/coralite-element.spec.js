@@ -749,5 +749,65 @@ describe('CoraliteElement', () => {
       done()
     })
   })
+
+  it('should auto-seed dynamic instance counter from precalculated window.__coralite_instanceCounters', () => {
+    const seedTagName = 'seed-comp-' + Math.random().toString(36).substring(2, 9)
+    const SeedElement = createCoraliteClass({
+      componentId: 'seed-comp'
+    })
+    customElements.define(seedTagName, SeedElement)
+
+    window.__coralite_instanceCounters = window.__coralite_instanceCounters || {}
+    window.__coralite_instanceCounters['seed-comp'] = 5
+
+    const el = document.createElement(seedTagName)
+    document.body.appendChild(el)
+
+    assert.strictEqual(el._instanceId, 'seed-comp-5')
+    assert.strictEqual(window.__coralite_instanceCounters['seed-comp'], 6)
+
+    document.body.removeChild(el)
+  })
+
+  it('should strictly scope ref lookups to component subtree, preventing parent/child crosstalk', (t, done) => {
+    const innerTagName = 'inner-ref-comp-' + Math.random().toString(36).substring(2, 9)
+    const outerTagName = 'outer-ref-comp-' + Math.random().toString(36).substring(2, 9)
+
+    const InnerElement = createCoraliteClass({
+      componentId: 'inner-ref-comp',
+      templateHTML: '<div><button ref="btnElement">Inner Button</button></div>',
+      hydrationMap: {
+        refs: [{ name: 'btnElement', path: [0, 0] }]
+      }
+    })
+
+    const OuterElement = createCoraliteClass({
+      componentId: 'outer-ref-comp',
+      templateHTML: `<div><button ref="btnElement">Outer Button</button><${innerTagName}></${innerTagName}></div>`,
+      hydrationMap: {
+        refs: [{ name: 'btnElement', path: [0, 0] }]
+      }
+    })
+
+    customElements.define(innerTagName, InnerElement)
+    customElements.define(outerTagName, OuterElement)
+
+    const el = document.createElement(outerTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      const innerEl = el.querySelector(innerTagName)
+      
+      // Verify both resolved their own refs correctly even though they share the same ref name
+      assert.ok(el[Symbol.for('coralite.testing')].refs.btnElement)
+      assert.strictEqual(el[Symbol.for('coralite.testing')].refs.btnElement.textContent, 'Outer Button')
+
+      assert.ok(innerEl[Symbol.for('coralite.testing')].refs.btnElement)
+      assert.strictEqual(innerEl[Symbol.for('coralite.testing')].refs.btnElement.textContent, 'Inner Button')
+
+      document.body.removeChild(el)
+      done()
+    })
+  })
 })
 

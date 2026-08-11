@@ -11,6 +11,7 @@
  * @param {string[]} [options.declarativeTags=[]] - The declarative tags used.
  * @param {string} [options.hydrationData='{}'] - Serialized hydration data.
  * @param {string} [options.mode='production'] - Build mode.
+ * @param {string} [options.instanceCounters='{}'] - Serialized instance counters map.
  * @returns {string} The generated JavaScript runtime.
  */
 export function generateClientRuntime ({
@@ -18,13 +19,15 @@ export function generateClientRuntime ({
   sharedChunkPath,
   declarativeTags = [],
   hydrationData = '{}',
-  mode = 'production'
+  mode = 'production',
+  instanceCounters = '{}'
 }) {
   return `
 import { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent } from '${base}assets/js/${sharedChunkPath}';
 import componentManifest from '${base}assets/js/manifest.js';
 
 (async () => {
+  window.__coralite_instanceCounters = window.__coralite_instanceCounters || ${instanceCounters};
   const hydrationData = ${hydrationData};
   const declarativeTags = ${JSON.stringify(declarativeTags)};
 

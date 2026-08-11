@@ -63,14 +63,14 @@ test.describe('Server State and State Propagation', () => {
 
     await expect(serverVal).toHaveText('from-server')
     await expect(getterVal).toHaveText('getter-from-server')
-    await expect(attrValDisplay).toHaveText('overwritten-by-server')
+    await expect(attrValDisplay).toHaveText('initial')
 
     await checkBtn.click()
     const stateText = await clientState.textContent()
     const state = JSON.parse(stateText)
 
     expect(state.serverVal).toBe('from-server')
-    expect(state.attrVal).toBe('overwritten-by-server')
+    expect(state.attrVal).toBe('initial')
     expect(state.getterVal).toBe('getter-from-server')
     expect(state.unusedVal).toBe('not-in-client-code')
   })

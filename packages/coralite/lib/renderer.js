@@ -1125,7 +1125,8 @@ export function createRenderer ({
             sharedChunkPath: scriptResult.manifest['coralite-runtime'],
             declarativeTags: Array.from(declarativeTags),
             hydrationData: serialize(hydrationData),
-            mode: normalizedOptions.mode
+            mode: normalizedOptions.mode,
+            instanceCounters: serialize(mappedSessionObject.instanceCounters || {})
           })
           const scriptElement = createCoraliteElement({
             type: 'tag',

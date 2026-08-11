@@ -77,6 +77,34 @@ export function coerce (value, type) {
 }
 
 /**
+ * Finds the closest enclosing component/custom element of a DOM node.
+ *
+ * @param {any} element - The DOM node.
+ * @returns {any} The enclosing custom element instance or null.
+ */
+export function getEnclosingComponent (element) {
+  if (!element) {
+    return null
+  }
+
+  let parent = element.parentElement
+
+  while (parent) {
+    if (parent._instanceId !== undefined) {
+      return parent
+    }
+
+    if (parent.hasAttribute && parent.hasAttribute('data-cid')) {
+      return parent
+    }
+
+    parent = parent.parentElement
+  }
+
+  return null
+}
+
+/**
  * @typedef {Object} CoraliteComponentOptions
  * @property {string} componentId - The unique identifier for the component.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
@@ -378,13 +406,25 @@ export class CoraliteElement extends HTMLElement {
           target[`ref_${ref.name}`] = uniqueRefValue
         }
 
-        let node = this.querySelector(`[ref="${uniqueRefValue}"]`)
+        let node = this.getAttribute('ref') === uniqueRefValue || this.getAttribute('ref') === ref.name ? this : null
+
         if (!node) {
-          node = this.querySelector(`[ref="${ref.name}"]`)
+          node = this.querySelector(`[ref="${uniqueRefValue}"]`)
         }
+
+        if (!node) {
+          node = Array.from(this.querySelectorAll(`[ref="${ref.name}"]`)).find(
+            candidate => {
+              const enc = getEnclosingComponent(candidate)
+              return enc === this || (enc && enc.getAttribute && enc.getAttribute('data-cid') === this._instanceId)
+            }
+          ) || null
+        }
+
         if (!node) {
           node = this.getNodeByPath(ref.path)
         }
+
         if (node) {
           if (node.setAttribute) {
             node.setAttribute('ref', uniqueRefValue)
@@ -1149,7 +1189,23 @@ export class CoraliteElement extends HTMLElement {
         if (!refId && typeof refId !== 'string') {
           return null
         }
-        return self.querySelector(`[ref="${refId}"]`)
+
+        if (self.getAttribute('ref') === refId || self.getAttribute('ref') === id) {
+          return self
+        }
+
+        let node = self.querySelector(`[ref="${refId}"]`)
+
+        if (!node) {
+          node = Array.from(self.querySelectorAll(`[ref="${id}"]`)).find(
+            candidate => {
+              const enc = getEnclosingComponent(candidate)
+              return enc === self || (enc && enc.getAttribute && enc.getAttribute('data-cid') === self._instanceId)
+            }
+          ) || null
+        }
+
+        return node
       },
       observe
     }
@@ -1205,7 +1261,19 @@ export class CoraliteElement extends HTMLElement {
             if (!refId && typeof refId !== 'string') {
               return null
             }
-            return self.querySelector(`[ref="${refId}"]`)
+            if (self.getAttribute('ref') === refId || self.getAttribute('ref') === prop) {
+              return self
+            }
+            let node = self.querySelector(`[ref="${refId}"]`)
+            if (!node) {
+              node = Array.from(self.querySelectorAll(`[ref="${prop}"]`)).find(
+                candidate => {
+                  const enc = getEnclosingComponent(candidate)
+                  return enc === self || (enc && enc.getAttribute && enc.getAttribute('data-cid') === self._instanceId)
+                }
+              ) || null
+            }
+            return node
           },
           ownKeys () {
             const keys = new Set()
