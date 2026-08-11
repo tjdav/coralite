@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.44.2
+
+> Comparing `coralite-v0.44.1` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- resolve component instance id collision and strictly scope refs ([9f5972b](https://codeberg.org/tjdavid/coralite/commit/9f5972bf81a0ddfb3e38c43a2a957ddf874f80c6))
+
+### ⚡ Performance Improvements
+
+- add slots performance benchmark and regression checks (benchmarks) ([2046863](https://codeberg.org/tjdavid/coralite/commit/2046863539595f13c7fd43bf4a4ad76f5204d0c2))
+
+
 ## v0.44.1
 
 > Comparing `coralite-v0.44.0` to `HEAD`
