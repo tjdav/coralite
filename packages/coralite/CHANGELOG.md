@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.45.0
+
+> Comparing `coralite-v0.44.2` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- Improve ref resolution in foreign custom elements and enhance encapsulation (coralite) ([4247371](https://codeberg.org/tjdavid/coralite/commit/424737128c566c7b9aba03c7e6b16b5caf11700f))
+- make incremental build change detection optional ([d89048f](https://codeberg.org/tjdavid/coralite/commit/d89048fe8bceca75647b31dd785181903b286a10))
+
+### 🐛 Bug Fixes
+
+- component status reporting double-count and remove nested ternary ([7d8f2c3](https://codeberg.org/tjdavid/coralite/commit/7d8f2c3a4cb87ceaab0f7439c47a62701be219c4))
+- ensure slot token reactivity with safe re-resolution (core) ([afbca30](https://codeberg.org/tjdavid/coralite/commit/afbca303d373ddbc1855f735473c2aee25eab7c5))
+
+### ✅ Tests
+
+- add nested refs E2E/unit tests ([ca060a0](https://codeberg.org/tjdavid/coralite/commit/ca060a03598808b936b9b6d27ec89a7665fba7ed))
+
+
 ## v0.44.2
 
 > Comparing `coralite-v0.44.1` to `HEAD`

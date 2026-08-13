@@ -1,6 +1,6 @@
 {
   "name": "coralite",
-  "version": "0.44.2",
+  "version": "0.45.0",
   "description": "Isomorphic Web Component framework for interactive SPAs and dynamic sites",
   "type": "module",
   "keywords": [
