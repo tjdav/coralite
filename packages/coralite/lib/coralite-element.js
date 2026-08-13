@@ -721,7 +721,14 @@ export class CoraliteElement extends HTMLElement {
           continue
         }
 
-        // Encapsulation safety: return null if slot mapping lookup failed at custom element boundary
+        // Fallback to light DOM child node traversal ONLY for non-Coralite / foreign custom element boundaries
+        const isForeignElement = node && !node.componentOptions && !node._instanceId
+        if (isForeignElement && node.childNodes && index < node.childNodes.length) {
+          // @ts-ignore
+          node = node.childNodes[index]
+          continue
+        }
+
         return null
       }
       // @ts-ignore
@@ -842,6 +849,10 @@ export class CoraliteElement extends HTMLElement {
             binding.node = resolved
             node = resolved
           }
+        }
+
+        if (!node) {
+          continue
         }
 
         const hydratedValue = binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {

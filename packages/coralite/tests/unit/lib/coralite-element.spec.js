@@ -869,5 +869,88 @@ describe('CoraliteElement', () => {
       })
     })
   })
+
+  it('should resolve element refs nested inside foreign (non-Coralite) custom elements where slot traversal is unavailable', (t, done) => {
+    class ForeignWrapper extends HTMLElement {}
+    customElements.define('foreign-wrapper-' + Math.random().toString(36).substring(2, 9), ForeignWrapper)
+
+    const parentTagName = 'foreign-ref-parent-' + Math.random().toString(36).substring(2, 9)
+    const foreignWrapperTag = 'foreign-wrapper-' + Math.random().toString(36).substring(2, 9)
+    class DynamicForeignWrapper extends HTMLElement {}
+    customElements.define(foreignWrapperTag, DynamicForeignWrapper)
+
+    const ParentElement = createCoraliteClass({
+      componentId: 'foreign-ref-parent',
+      templateHTML: `<div><${foreignWrapperTag}><button ref="foreignBtn">Click</button></${foreignWrapperTag}></div>`,
+      hydrationMap: {
+        refs: [
+          {
+            name: 'foreignBtn',
+            path: [0, 0, 0]
+          }
+        ]
+      }
+    })
+
+    customElements.define(parentTagName, ParentElement)
+    document.body.innerHTML = `<${parentTagName}><div><${foreignWrapperTag}><button ref="foreignBtn">Click</button></${foreignWrapperTag}></div></${parentTagName}>`
+
+    const el = document.body.firstElementChild
+
+    queueMicrotask(() => {
+      const refs = el[Symbol.for('coralite.testing')]?.refs
+      assert.ok(refs, 'Refs object should exist')
+      assert.ok(refs.foreignBtn, 'Foreign ref foreignBtn should be resolved')
+      assert.strictEqual(refs.foreignBtn.textContent, 'Click')
+
+      document.body.removeChild(el)
+      done()
+    })
+  })
+
+  it('should preserve component encapsulation and prevent parent state updates from targeting child private template nodes', (t, done) => {
+    const childTagName = 'encap-child-' + Math.random().toString(36).substring(2, 9)
+    const parentTagName = 'encap-parent-' + Math.random().toString(36).substring(2, 9)
+
+    const ChildComp = createCoraliteClass({
+      componentId: 'encap-child',
+      templateHTML: '<div class="private-child-node">Private Content</div>'
+    })
+
+    const ParentComp = createCoraliteClass({
+      componentId: 'encap-parent',
+      templateHTML: `<div><${childTagName}></${childTagName}></div>`,
+      defaultValues: { parentText: 'Parent' },
+      hydrationMap: {
+        texts: [
+          {
+            path: [0, 0, 0],
+            template: '{{ parentText }}',
+            type: 'text'
+          }
+        ]
+      }
+    })
+
+    customElements.define(childTagName, ChildComp)
+    customElements.define(parentTagName, ParentComp)
+
+    document.body.innerHTML = `<${parentTagName}><div><${childTagName} data-cid="encap-child-0" data-coralite-initial><div class="private-child-node">Private Content</div></${childTagName}></div></${parentTagName}>`
+
+    const el = document.body.firstElementChild
+
+    queueMicrotask(() => {
+      // Mutate parent state
+      el._state.parentText = 'Mutated'
+
+      queueMicrotask(() => {
+        const childPrivateNode = el.querySelector('.private-child-node')
+        assert.strictEqual(childPrivateNode.textContent, 'Private Content', 'Child private node must remain uncorrupted by parent binding')
+
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
 })
 
