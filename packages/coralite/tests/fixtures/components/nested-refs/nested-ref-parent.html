@@ -1,0 +1,62 @@
+<template id="nested-ref-parent">
+  <style>
+    nested-shell, nested-section, nested-list, nested-list-item {
+      display: block;
+    }
+    .theme-btn {
+      display: inline-block;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      padding: 4px 8px;
+      margin: 4px 0;
+    }
+  </style>
+  <div class="settings-root">
+    <nested-shell data-cid="nested-ref-parent-container-0">
+      <nested-section data-cid="nested-ref-parent-container-item-0">
+        <nested-list data-cid="nested-ref-parent-container-list-0">
+          <nested-list-item ref="btnChangeTheme" class="theme-btn">Change Theme</nested-list-item>
+        </nested-list>
+      </nested-section>
+    </nested-shell>
+    <div class="theme-status">{{ themeStatus }}</div>
+    <button ref="btnToggle" class="toggle-btn">Toggle Theme</button>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    server () {
+      return { themeStatus: 'Light' }
+    },
+    client ({ state, refs }) {
+      // Register the foreign host elements lazily on the client.
+      // Definition is not required for refs resolution (both rely on childNodes / data-cid),
+      // but lets customElements.whenDefined() resolve cleanly during hydration.
+      const hostTags = ['nested-shell', 'nested-section', 'nested-list', 'nested-list-item']
+      for (const tag of hostTags) {
+        if (!customElements.get(tag)) {
+          customElements.define(tag, class extends HTMLElement {})
+        }
+      }
+
+      // Top-level ref — attach first so it still works if the deep ref fails.
+      const btnToggle = refs('btnToggle')
+      btnToggle.addEventListener('click', () => {
+        if (state.themeStatus === 'Light') {
+          state.themeStatus = 'Dark'
+        } else {
+          state.themeStatus = 'Light'
+        }
+      })
+
+      // THE regression: pre-fix refs('btnChangeTheme') was null and this threw.
+      const btnChangeTheme = refs('btnChangeTheme')
+      btnChangeTheme.addEventListener('click', () => {
+        state.themeStatus = 'Dark'
+      })
+    }
+  })
+</script>

@@ -851,6 +851,7 @@ export class CoraliteElement extends HTMLElement {
           }
         }
 
+        // Defensive null guard inside _updateDOM
         if (!node) {
           continue
         }
