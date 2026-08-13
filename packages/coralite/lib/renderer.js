@@ -1352,7 +1352,6 @@ export function createRenderer ({
               reason = 'New component'
             }
 
-            componentBuildInfo.completed++
             componentBuildInfo.details.push({
               id,
               status: 'built',

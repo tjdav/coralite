@@ -67,10 +67,17 @@ export async function createCLIProject () {
       return writeFile(filePath, content).then(() => filePath)
     },
     runBuild: async (args = []) => {
+      let incremental = undefined
+      if (args.includes('--no-incremental')) {
+        incremental = false
+      } else if (args.includes('--incremental')) {
+        incremental = true
+      }
+
       const options = {
         verbose: args.includes('--verbose'),
         clean: args.includes('--clean'),
-        incremental: args.includes('--no-incremental') ? false : (args.includes('--incremental') ? true : undefined),
+        incremental,
         incrementalSource: (args.includes('--no-incremental') || args.includes('--incremental')) ? 'cli' : undefined
       }
 
