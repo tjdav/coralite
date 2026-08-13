@@ -60,6 +60,10 @@ export function defineConfig (options) {
     throw new Error('Configuration "server.port" must be a positive number')
   }
 
+  if (options.incremental !== undefined && typeof options.incremental !== 'boolean') {
+    throw new Error('Configuration "incremental" must be a boolean')
+  }
+
   // Validate styles configuration
   if (options.styles) {
     if (typeof options.styles !== 'object') {

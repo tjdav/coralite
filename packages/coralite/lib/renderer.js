@@ -1279,6 +1279,8 @@ export function createRenderer ({
       buildOptions = {}
     }
 
+    const isIncremental = buildOptions.incremental ?? normalizedOptions.incremental ?? true
+
     // Phase 0: Manifest Loading
     const projectRoot = app.options.projectRoot || process.cwd()
     const cacheDir = join(projectRoot, '.coralite')
@@ -1340,12 +1342,21 @@ export function createRenderer ({
             value.css !== oldComponentManifest[id].css
           )
 
-          if (isNew || hasChanged) {
+          if (!isIncremental || isNew || hasChanged) {
+            componentBuildInfo.completed++
+            let reason = 'Source changed'
+
+            if (!isIncremental) {
+              reason = 'Incremental disabled'
+            } else if (isNew) {
+              reason = 'New component'
+            }
+
             componentBuildInfo.completed++
             componentBuildInfo.details.push({
               id,
               status: 'built',
-              reason: isNew ? 'New component' : 'Source changed'
+              reason
             })
           } else {
             componentBuildInfo.skipped++
@@ -1519,12 +1530,12 @@ export function createRenderer ({
         shouldRebuild = true
       }
 
-      if (mocksChanged) {
+      if (mocksChanged || !isIncremental) {
         shouldRebuild = true
       }
 
       if (pageItem.virtual) {
-        if (shouldRebuild || pageItem.volatile || !manifest.virtual || !manifest.virtual[pageItem.path.pathname] || String(manifest.virtual[pageItem.path.pathname].cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development') {
+        if (!isIncremental || shouldRebuild || pageItem.volatile || !manifest.virtual || !manifest.virtual[pageItem.path.pathname] || String(manifest.virtual[pageItem.path.pathname].cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development') {
           shouldRebuild = true
         } else {
           shouldRebuild = false
@@ -1558,7 +1569,7 @@ export function createRenderer ({
       } else {
         const { changed, metadata } = await checkFileChange(pageItem.path.pathname, manifest.physical[pageItem.path.pathname])
         newManifest.physical[pageItem.path.pathname] = metadata
-        if (changed || shouldRebuild || normalizedOptions.mode === 'development') {
+        if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development') {
           pagesToRender.push(pageItem)
         } else {
           /** @type {CoraliteBuildResult} */

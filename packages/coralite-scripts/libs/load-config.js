@@ -36,7 +36,7 @@ async function loadConfig (cwd = process.cwd()) {
   }
 
   try {
-    const config = await import(configPath.toString())
+    const config = await import(`${configPath.toString()}?t=${Date.now()}`)
 
     if (!config.default) {
       displayError('Config file must export a default object')

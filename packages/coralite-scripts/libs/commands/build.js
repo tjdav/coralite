@@ -58,12 +58,20 @@ export async function buildCommand (config, options, logger = null) {
 
   const validFiles = new Set()
   let componentSpinner
+  let incremental = options.incremental ?? true
+
+  if (options.incrementalSource === 'cli') {
+    incremental = options.incremental
+  } else if (config.incremental !== undefined) {
+    incremental = config.incremental
+  }
 
   const coralite = await createCoralite({
     components: config.components,
     pages: config.pages,
     plugins: config.plugins,
     assets: config.assets,
+    incremental,
     externalStyles: config.styles?.input?.map(input => {
       const ext = input.split('.').pop()
       return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')

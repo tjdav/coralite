@@ -166,4 +166,42 @@ describe('Coralite CLI Build Integration', () => {
     // File should still exist after cleanup
     await access(pluginFilePath)
   })
+
+  it('should perform a full rebuild when --no-incremental flag is provided', async () => {
+    await project.writePage('index.html', '<h1>Home</h1>')
+
+    // First run
+    await project.runBuild(['--verbose'])
+
+    // Second run with --no-incremental should not skip index.html
+    const { stdout } = await project.runBuild(['--no-incremental', '--verbose'])
+
+    assert.ok(stdout.includes('index.html'), `Should not skip index.html when --no-incremental is passed, got: ${stdout}`)
+  })
+
+  it('should perform a full rebuild when incremental: false is set in config', async () => {
+    const { fileURLToPath, pathToFileURL } = await import('node:url')
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
+    const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
+    const libUrl = pathToFileURL(coraliteScriptsLib).href
+
+    await project.writePage('index.html', '<h1>Home</h1>')
+    await project.writeConfig(`
+      import { defineConfig } from '${libUrl}'
+      export default defineConfig({
+        output: 'dist',
+        pages: 'src/pages',
+        components: 'src/components',
+        public: 'public',
+        incremental: false
+      })
+    `)
+
+    await project.runBuild(['--verbose'])
+
+    // Second run should still rebuild index.html because incremental: false is in config
+    const { stdout } = await project.runBuild(['--verbose'])
+    assert.ok(stdout.includes('index.html'), `Should not skip index.html when incremental: false is configured, got: ${stdout}`)
+  })
 })

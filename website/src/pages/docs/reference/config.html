@@ -113,6 +113,12 @@ export default defineConfig({
         <td><code>{}</code></td>
         <td>Optional configuration for testing mode, including server-side mocks.</td>
       </tr>
+      <tr slot="body">
+        <td><code>incremental</code></td>
+        <td><code>boolean</code></td>
+        <td><code>true</code></td>
+        <td>Whether to skip rebuilding unchanged pages and components via change detection. Set to <code>false</code> to force a full rebuild on every run.</td>
+      </tr>
     </coralite-table>
 
     <coralite-heading level="2" text="Error & Warning Handling (onError)"></coralite-heading>

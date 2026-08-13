@@ -268,4 +268,30 @@ describe('Incremental Static Regeneration (ISR)', () => {
     assert.strictEqual(results3[0].status, undefined)
     assert.ok(results3[0].content.includes('MOCKED_2'))
   })
+
+  it('should rebuild all pages without skipping when incremental is set to false in config', async () => {
+    await project.writePage('index.html', '<h1>Home</h1>')
+
+    const coralite = await project.createCoralite({ output: undefined, incremental: false })
+
+    const results1 = await coralite.build()
+    assert.strictEqual(results1[0].status, undefined)
+
+    // Second build with incremental: false should NOT skip
+    const results2 = await coralite.build()
+    assert.strictEqual(results2[0].status, undefined)
+  })
+
+  it('should allow overriding incremental: false per build call', async () => {
+    await project.writePage('index.html', '<h1>Home</h1>')
+
+    const coralite = await project.createCoralite({ output: undefined, incremental: true })
+
+    const results1 = await coralite.build()
+    assert.strictEqual(results1[0].status, undefined)
+
+    // Second build passing { incremental: false } to build() should NOT skip
+    const results2 = await coralite.build(null, { incremental: false })
+    assert.strictEqual(results2[0].status, undefined)
+  })
 })

@@ -96,6 +96,7 @@
  * @property {string[]} [externalStyles] - Global styles to inject into every page
  * @property {'production' | 'development' | 'testing'} [mode='production'] - Build mode: "production", "development", or "testing"
  * @property {CoraliteTestingConfig} [testing] - Configuration for testing mode.
+ * @property {boolean} [incremental=true] - Whether to skip rebuilding unchanged pages and components.
  * @property {string} [projectRoot] - The root directory of the project.
  * @property {CoralitePath} [path] - Internal path mapping.
  */
@@ -105,6 +106,7 @@
  * @property {number} [maxConcurrent] - The maximum number of concurrent file write operations.
  * @property {AbortSignal} [signal] - An AbortSignal to cancel the build operation.
  * @property {Object.<string, any>} [variables] - Local variables for the page
+ * @property {boolean} [incremental] - Override configuration setting for skipping unchanged builds.
  * @property {(info: CoraliteComponentBuildInfo) => void | Promise<void>} [onComponentBuild] - Optional callback function for handling component build reporting.
  */
 

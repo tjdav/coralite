@@ -69,7 +69,9 @@ export async function createCLIProject () {
     runBuild: async (args = []) => {
       const options = {
         verbose: args.includes('--verbose'),
-        clean: args.includes('--clean')
+        clean: args.includes('--clean'),
+        incremental: args.includes('--no-incremental') ? false : (args.includes('--incremental') ? true : undefined),
+        incrementalSource: (args.includes('--no-incremental') || args.includes('--incremental')) ? 'cli' : undefined
       }
 
       const assetsIndex = args.indexOf('--assets') !== -1 ? args.indexOf('--assets') : args.indexOf('-a')

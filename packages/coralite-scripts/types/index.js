@@ -15,6 +15,7 @@
  * @property {Object} [styles.processors.postcss] - The configuration for PostCSS.
  * @property {import('postcss').AcceptedPlugin[]} [styles.processors.postcss.plugins] - Native PostCSS plugins
  * @property {'production' | 'development'} [mode='production'] - Set build mode for the coralite instance.
+ * @property {boolean} [incremental=true] - Whether to skip rebuilding unchanged pages and components.
  */
 
 /**
@@ -26,6 +27,7 @@
  * @property {boolean} [dev] - Start development server with hot-reloading
  * @property {boolean} [build] - Build coralite site for production deployment
  * @property {boolean} [verbose] - Enable verbose logging output
+ * @property {boolean} [incremental] - Enable or disable incremental build change detection
  */
 
 export default {}

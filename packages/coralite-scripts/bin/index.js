@@ -22,6 +22,7 @@ program
   .option('-v, --verbose', 'Enable verbose logging output')
   .option('-c, --clean', 'Clear the output directory before building')
   .option('-a, --assets <mapping...>', 'Static assets to copy during build. Format: pkg:path:dest or src:dest')
+  .option('--no-incremental', 'Disable change detection optimization and rebuild all pages and components')
 
 program.parse(process.argv)
 program.on('error', (err) => {
@@ -35,6 +36,8 @@ const config = await loadConfig(process.cwd())
 if (!config) {
   process.exit(1)
 }
+
+options.incrementalSource = program.getOptionValueSource('incremental')
 
 if (options.assets) {
   try {
