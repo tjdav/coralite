@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.45.1
+
+> Comparing `coralite-v0.45.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- resolve slotted refs authored in parent templates (coralite) ([f7bc9e7](https://codeberg.org/tjdavid/coralite/commit/f7bc9e7348b2d54e37b2505859cbbee4145c3ac3))
+
+
 ## v0.45.0
 
 > Comparing `coralite-v0.44.2` to `HEAD`
