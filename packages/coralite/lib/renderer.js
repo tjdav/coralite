@@ -439,6 +439,7 @@ export function createRenderer ({
 
         if (ref.element && ref.element.attribs) {
           ref.element.attribs.ref = uniqueRefValue
+          ref.element.attribs['data-coralite-owner'] = instanceId
         }
 
         componentState[`ref_${ref.name}`] = uniqueRefValue

@@ -17,6 +17,7 @@
       }
     },
     client ({ state, refs }) {
+      const textSpan = refs('textSpan')
       const btn = refs('btnChange')
       if (btn) {
         btn.addEventListener('click', () => {

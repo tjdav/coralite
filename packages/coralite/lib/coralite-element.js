@@ -105,6 +105,28 @@ export function getEnclosingComponent (element) {
 }
 
 /**
+ * Checks if a candidate node belongs to a specific Coralite component instance.
+ * Prioritizes the authoritative `data-coralite-owner` attribute over geometric DOM containment.
+ *
+ * @param {any} candidate - The candidate DOM node.
+ * @param {string|null} instanceId - The component instance ID.
+ * @param {any} hostElement - The host custom element instance.
+ * @returns {boolean}
+ */
+export function isOwnedByComponent (candidate, instanceId, hostElement) {
+  if (!candidate || !instanceId) {
+    return false
+  }
+
+  if (candidate.getAttribute && candidate.getAttribute('data-coralite-owner') === instanceId) {
+    return true
+  }
+
+  const enc = getEnclosingComponent(candidate)
+  return enc === hostElement || (enc && enc.getAttribute && enc.getAttribute('data-cid') === instanceId)
+}
+
+/**
  * @typedef {Object} CoraliteComponentOptions
  * @property {string} componentId - The unique identifier for the component.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
@@ -413,11 +435,8 @@ export class CoraliteElement extends HTMLElement {
         }
 
         if (!node) {
-          node = Array.from(this.querySelectorAll(`[ref="${ref.name}"]`)).find(
-            candidate => {
-              const enc = getEnclosingComponent(candidate)
-              return enc === this || (enc && enc.getAttribute && enc.getAttribute('data-cid') === this._instanceId)
-            }
+          node = Array.from(this.querySelectorAll(`[ref="${ref.name}"], [ref="${uniqueRefValue}"]`)).find(
+            candidate => isOwnedByComponent(candidate, this._instanceId, this)
           ) || null
         }
 
@@ -428,6 +447,9 @@ export class CoraliteElement extends HTMLElement {
         if (node) {
           if (node.setAttribute) {
             node.setAttribute('ref', uniqueRefValue)
+            if (!node.hasAttribute('data-coralite-owner')) {
+              node.setAttribute('data-coralite-owner', this._instanceId)
+            }
           }
           refs.push({
             name: ref.name,
@@ -1224,11 +1246,8 @@ export class CoraliteElement extends HTMLElement {
         let node = self.querySelector(`[ref="${refId}"]`)
 
         if (!node) {
-          node = Array.from(self.querySelectorAll(`[ref="${id}"]`)).find(
-            candidate => {
-              const enc = getEnclosingComponent(candidate)
-              return enc === self || (enc && enc.getAttribute && enc.getAttribute('data-cid') === self._instanceId)
-            }
+          node = Array.from(self.querySelectorAll(`[ref="${id}"], [ref="${refId}"]`)).find(
+            candidate => isOwnedByComponent(candidate, self._instanceId, self)
           ) || null
         }
 
@@ -1293,11 +1312,8 @@ export class CoraliteElement extends HTMLElement {
             }
             let node = self.querySelector(`[ref="${refId}"]`)
             if (!node) {
-              node = Array.from(self.querySelectorAll(`[ref="${prop}"]`)).find(
-                candidate => {
-                  const enc = getEnclosingComponent(candidate)
-                  return enc === self || (enc && enc.getAttribute && enc.getAttribute('data-cid') === self._instanceId)
-                }
+              node = Array.from(self.querySelectorAll(`[ref="${prop}"], [ref="${refId}"]`)).find(
+                candidate => isOwnedByComponent(candidate, self._instanceId, self)
               ) || null
             }
             return node
@@ -1321,7 +1337,7 @@ export class CoraliteElement extends HTMLElement {
                 const prefix = `${self._instanceId}__`
                 if (refAttr.startsWith(prefix)) {
                   keys.add(refAttr.slice(prefix.length))
-                } else {
+                } else if (el.getAttribute('data-coralite-owner') === self._instanceId) {
                   keys.add(refAttr)
                 }
               }

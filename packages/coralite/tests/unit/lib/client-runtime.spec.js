@@ -73,4 +73,25 @@ describe('client-side processHTML', () => {
       assert.strictEqual(output, '<div class="item">Hello</div>')
     }
   })
+
+  it('should prefix ref attributes and add data-coralite-owner in all modes', () => {
+    for (const mode of ['development', 'testing', 'production']) {
+      const processHTML = getProcessHTML(mode)
+
+      // Test with instance ID (imperative component scope)
+      const input1 = '<button ref="myBtn" class="btn">Click</button>'
+      const output1 = processHTML(input1, 'comp-0')
+      assert.strictEqual(output1, '<button ref="comp-0__myBtn" data-coralite-owner="comp-0" class="btn">Click</button>')
+
+      // Test with no instance ID
+      const input2 = '<button ref="myBtn">Click</button>'
+      const output2 = processHTML(input2, '')
+      assert.strictEqual(output2, '<button ref="myBtn">Click</button>')
+
+      // Test element with existing prefix
+      const input3 = '<button ref="comp-0__myBtn">Click</button>'
+      const output3 = processHTML(input3, 'comp-0')
+      assert.strictEqual(output3, '<button ref="comp-0__myBtn" data-coralite-owner="comp-0">Click</button>')
+    }
+  })
 })

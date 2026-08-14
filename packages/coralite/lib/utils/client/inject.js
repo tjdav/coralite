@@ -20,7 +20,8 @@ export function createCoraliteElement (tag, options) {
 
 /**
  * Processes an HTML string for custom elements.
- * Proxy to window.processHTML if available.
+ * Fallback implementation mirroring runtime.js:processHTML when window.processHTML is unavailable (e.g. unit test runner).
+ * Note: Tag matching uses /<([a-zA-Z0-9-]+)([^>]*)>/g assuming well-formed attributes without raw '>' in attribute values.
  *
  * @param {string} html - The HTML string.
  * @param {string} [instanceId] - The component instance ID.
@@ -32,6 +33,28 @@ export function processHTML (html, instanceId) {
     // @ts-ignore
     return window.processHTML(html, instanceId)
   }
+
+  if (typeof html !== 'string') {
+    return html
+  }
+
+  if (instanceId) {
+    const prefix = instanceId + '__'
+    return html.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
+      let newAttrs = attrs
+      const refRegex = /\s+ref\s*=\s*(['"])(.*?)\1/g
+      newAttrs = newAttrs.replace(refRegex, (attrMatch, quote, refValue) => {
+        const prefixedRef = refValue.startsWith(prefix) ? refValue : prefix + refValue
+        let ownerAttr = ''
+        if (!newAttrs.includes('data-coralite-owner=')) {
+          ownerAttr = ' data-coralite-owner="' + instanceId + '"'
+        }
+        return ' ref="' + prefixedRef + '"' + ownerAttr
+      })
+      return '<' + tagName + newAttrs + '>'
+    })
+  }
+
   return html
 }
 

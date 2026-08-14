@@ -155,6 +155,9 @@ import componentManifest from '${base}assets/js/manifest.js';
     return element;
   };
 
+  // Rewrites HTML strings for imperative custom element insertion and template stamping.
+  // Mirrored by fallback in inject.js:processHTML when window.processHTML is unavailable.
+  // Note: Tag matching uses /<([a-zA-Z0-9-]+)([^>]*)>/g assuming well-formed attributes without raw '>' in attribute values.
   window.processHTML = (html, instanceId) => {
     if (typeof html !== 'string') return html;
 
@@ -181,6 +184,20 @@ import componentManifest from '${base}assets/js/manifest.js';
               return ' data-testid="' + prefix + testValue + '"';
             });
           }
+        }
+
+        // Handle ref & data-coralite-owner
+        if (instanceId) {
+          const prefix = instanceId + '__';
+          const refRegex = /\\s+ref\\s*=\\s*(['"])(.*?)\\1/g;
+          newAttrs = newAttrs.replace(refRegex, (attrMatch, quote, refValue) => {
+            const prefixedRef = refValue.startsWith(prefix) ? refValue : prefix + refValue;
+            let ownerAttr = '';
+            if (!newAttrs.includes('data-coralite-owner=')) {
+              ownerAttr = ' data-coralite-owner="' + instanceId + '"';
+            }
+            return ' ref="' + prefixedRef + '"' + ownerAttr;
+          });
         }
 
         return '<' + tagName + newAttrs + '>';
