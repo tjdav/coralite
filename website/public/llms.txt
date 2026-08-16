@@ -397,9 +397,9 @@ export default defineConfig({
 });
 ```
 
-## 8. Asset Management
+## 8. Asset Management & Automated Injection (SRI)
 
-The `assets` array in the configuration allows you to copy files or directories to the build output. **Prefer this over manually copying vendor files into the `public` directory.**
+The `assets` array in the configuration allows you to copy files or directories to the build output and automatically inject corresponding HTML tags (`<script>`, `<link>`) into rendered pages with Subresource Integrity (SRI) hashes.
 
 ### 8.1 Local File Resolution
 If the asset object contains a `src` property, it copies from your local file system.
@@ -410,6 +410,32 @@ export default defineConfig({
   ]
 });
 ```
+
+### 8.3 Declarative Asset Injection & SRI
+Assets can declaratively inject tags into pages using `inject`. When `sri: true` is set, Coralite computes an unquoted base64 `integrity="sha384-..."` digest from the on-disk asset bytes and automatically defaults `crossorigin="anonymous"`.
+
+```javascript
+export default defineConfig({
+  assets: [
+    {
+      pkg: 'altcha',
+      path: 'dist/altcha.js',
+      dest: 'assets/js/altcha.js',
+      inject: {
+        type: 'script',
+        placement: 'body-end', // 'head-start' | 'head-end' | 'body-start' | 'body-end'
+        sri: true,             // Computes sha384 integrity and adds crossorigin="anonymous"
+        pages: ['*']           // Universal matching or picomatch glob patterns
+      }
+    }
+  ]
+});
+```
+
+### 8.4 Programmatic Asset & Tag Injection
+Plugins can copy/write assets and queue HTML tag injections during build lifecycle hooks:
+* `app.registerAsset({ dest, content, src, pkg, path, inject })`: Writes or copies an asset to the output directory and registers tracking.
+* `session.injectTag({ type, src, content, placement, sri, pages, attributes })`: Queues an HTML tag to be injected into matching page documents during rendering. Injected tags are deduplicated against existing AST elements and queued tags.
 
 ### 8.2 NPM Package Resolution
 If `src` is missing, use `pkg` and `path` to resolve assets from `node_modules`.

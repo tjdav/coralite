@@ -46,6 +46,7 @@ export function mergeAssets (baseAssets = [], cliAssets = []) {
   for (const cliAsset of cliAssets) {
     const index = merged.findIndex(a => a.dest === cliAsset.dest)
     if (index !== -1) {
+      console.warn(`[coralite-scripts] Destination collision for "${cliAsset.dest}": CLI-provided asset takes full precedence over config asset.`)
       merged[index] = cliAsset
     } else {
       merged.push(cliAsset)

@@ -5,6 +5,23 @@ import { CoraliteError } from '../errors.js'
 const ALLOWED_HASH_ALGORITHMS = new Set(['sha256', 'sha384', 'sha512'])
 
 /**
+ * Calculates base64-encoded SRI digest string (e.g. "sha384-...")
+ * @param {string|Buffer} content - Asset content
+ * @param {string} [algorithm='sha384'] - Hash algorithm ('sha256' | 'sha384' | 'sha512')
+ * @returns {string} - Formatted SRI digest e.g. "sha384-abc..."
+ */
+export function calculateSRIDigest (content, algorithm = 'sha384') {
+  if (typeof content !== 'string' && !Buffer.isBuffer(content)) {
+    return ''
+  }
+  if (!ALLOWED_HASH_ALGORITHMS.has(algorithm)) {
+    throw new CoraliteError(`Invalid SRI hash algorithm: "${algorithm}". Allowed: sha256, sha384, sha512.`)
+  }
+  const hash = createHash(algorithm).update(content).digest('base64')
+  return `${algorithm}-${hash}`
+}
+
+/**
  * Calculates base64-encoded CSP hash for a given content string
  * @param {string} content - Inline script or style content
  * @param {string} [algorithm='sha256'] - Hash algorithm ('sha256' | 'sha384' | 'sha512')

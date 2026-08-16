@@ -129,6 +129,51 @@ export async function createCoralite ({
 
       return fullPath
     },
+    async registerAsset (assetOptions) {
+      if (!assetOptions || typeof assetOptions !== 'object' || !assetOptions.dest) {
+        throw new Error('registerAsset requires an options object with a "dest" property.')
+      }
+
+      const userAssets = app.options.assets || []
+      const existingUserAsset = userAssets.find(a => a.dest === assetOptions.dest)
+      if (existingUserAsset) {
+        handleError({
+          onErrorCallback: onError,
+          data: {
+            level: 'WARN',
+            message: `[Coralite] Asset destination collision for "${assetOptions.dest}": user config asset takes precedence over plugin asset.`
+          }
+        })
+        return join(app.options.output || process.cwd(), assetOptions.dest)
+      }
+
+      if (assetOptions.content !== undefined) {
+        const fullPath = await app.writeFile(assetOptions.dest, assetOptions.content)
+        if (assetOptions.inject) {
+          app.options.assets = app.options.assets || []
+          app.options.assets.push(assetOptions)
+        }
+        return fullPath
+      }
+
+      const plugin = staticAssetPlugin([assetOptions])
+      await plugin.server.onBeforeBuild({
+        app,
+        options: app.options,
+        buildId: 'register-asset',
+        addRenderQueue: (item) => app.addRenderQueue(item, 'register-asset')
+      })
+
+      if (assetOptions.inject) {
+        app.options.assets = app.options.assets || []
+        app.options.assets.push(assetOptions)
+      }
+
+      const outputDir = app.options.output || join(app.options.projectRoot || process.cwd(), 'dist')
+      const fullPath = join(outputDir, assetOptions.dest)
+      app.trackOutputFile(fullPath)
+      return fullPath
+    },
     addRenderQueue: null,
     getPagePathsUsingCustomElement: null,
     createComponentElement: null,

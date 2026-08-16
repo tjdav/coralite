@@ -37,11 +37,46 @@
  */
 
 /**
+ * @typedef {'script' | 'link' | 'meta'} CoraliteAssetInjectType
+ */
+
+/**
+ * @typedef {'head-start' | 'head-end' | 'body-start' | 'body-end'} CoraliteAssetInjectPlacement
+ */
+
+/**
+ * @typedef {Object} CoraliteAssetInjectOptions
+ * @property {CoraliteAssetInjectType} [type] - Injected tag type ('script', 'link', 'meta').
+ * @property {CoraliteAssetInjectPlacement} [placement='head-end'] - Tag placement position in DOM.
+ * @property {boolean | 'sha256' | 'sha384' | 'sha512'} [sri=false] - SRI calculation flag or hash algorithm.
+ * @property {string | string[]} [pages=['*']] - Glob or path pattern(s) for pages to receive the injected asset.
+ * @property {Record<string, string>} [attributes] - Additional attributes to set on the HTML tag.
+ * @property {string} [rel] - Rel attribute for 'link' tags.
+ * @property {string} [name] - Name attribute for 'meta' tags.
+ * @property {string} [http-equiv] - Http-equiv attribute for 'meta' tags.
+ * @property {string} [content] - Content attribute for 'meta' tags or inline content.
+ */
+
+/**
  * @typedef {Object} CoraliteStaticAsset
  * @property {string} [pkg] - The package name to copy assets from.
  * @property {string} [path] - The path to the asset within the package.
  * @property {string} dest - The destination path for the asset in the output directory.
  * @property {string} [src] - The absolute path to the source file (bypasses package resolution).
+ * @property {string | Buffer} [content] - Direct content string or buffer for in-memory assets.
+ * @property {boolean | CoraliteAssetInjectOptions} [inject] - Declarative asset injection configuration.
+ */
+
+/**
+ * @typedef {Object} CoraliteInjectedTagOptions
+ * @property {'script' | 'link' | 'meta'} [type] - Injected tag type.
+ * @property {string} [src] - External script src or link href.
+ * @property {string} [content] - Inline script/style or meta content.
+ * @property {CoraliteAssetInjectPlacement} [placement='head-end'] - Tag placement position in DOM.
+ * @property {boolean | 'sha256' | 'sha384' | 'sha512'} [sri=false] - SRI hash algorithm or boolean flag.
+ * @property {string | string[]} [pages=['*']] - Glob or path pattern(s) for page matching.
+ * @property {Record<string, string>} [attributes] - HTML attributes.
+ * @property {string} [dest] - Destination path of asset for SRI reading.
  */
 
 /**
@@ -141,6 +176,7 @@
  * @property {number} [duration] - Time taken to render in milliseconds.
  * @property {CoraliteSession} [session] - The session associated with the render.
  * @property {CoraliteCSPResult} [csp] - CSP result object.
+ * @property {Array<{ dest: string, hash: string }>} [injectedAssets] - Injected assets content hashes.
  * @property {'skipped'} [status] - Optional status if the build was skipped via ISR.
  */
 
@@ -185,6 +221,8 @@
  * @property {Object} scripts - Script collection.
  * @property {Object.<string, Object.<string, any>>} scripts.content - Collected scripts content.
  * @property {(id: string, item: any) => void} scripts.add - Function to add a script to the collection.
+ * @property {CoraliteInjectedTagOptions[]} [_injectedTags] - Injected tag queue for current session.
+ * @property {(options: CoraliteInjectedTagOptions) => void} [injectTag] - Programmatic asset/tag injection method.
  * @property {Object} source - Source context information.
  * @property {string} source.currentSourceContextId - Current source context ID.
  * @property {Object.<string, any>} source.contextInstances - Map of context instances.
@@ -241,6 +279,7 @@
  * @property {(path: string) => void} trackOutputFile - Registers an output file path for the build cleanup whitelist.
  * @property {() => string[]} getTrackedOutputFiles - Retrieves all tracked output file paths.
  * @property {(dest: string, content: string | Buffer, options?: import('node:fs').WriteFileOptions) => Promise<string>} writeFile - Writes a file to the output directory and tracks it for build cleanup.
+ * @property {(options: CoraliteStaticAsset) => Promise<string>} [registerAsset] - Copies/writes a static asset and registers optional declarative injection.
  * @property {(structural?: boolean) => Promise<void>} clearCache - Clears the internal script cache and disposes esbuild context.
  * @property {Record<string, { path: string, hashedPath: string, text: string }>} outputFiles - The record of generated output files.
  * @property {Object} _dependencyGraph - The internal dependency graph for the project.

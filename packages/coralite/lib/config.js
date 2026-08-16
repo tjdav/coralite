@@ -148,6 +148,85 @@ export function defineConfig (options) {
     }
   }
 
+  // Validate assets config
+  if (options.assets !== undefined) {
+    if (!Array.isArray(options.assets)) {
+      throw new CoraliteError('Config property "assets" must be an array')
+    }
+
+    const seenDests = new Set()
+    options.assets.forEach((asset, index) => {
+      if (!asset || typeof asset !== 'object') {
+        throw new CoraliteError(`Asset at index ${index} must be an object`)
+      }
+      if (!asset.dest || typeof asset.dest !== 'string' || asset.dest.trim() === '') {
+        throw new CoraliteError(`Asset at index ${index} must have a non-empty string "dest" property`)
+      }
+
+      if (seenDests.has(asset.dest)) {
+        console.warn(`[Coralite Warning] Duplicate asset destination "${asset.dest}" detected in options.assets. Later entry overrides earlier entry.`)
+      }
+      seenDests.add(asset.dest)
+
+      if (!asset.src && !asset.content) {
+        if (!asset.pkg || typeof asset.pkg !== 'string' || !asset.path || typeof asset.path !== 'string') {
+          throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") must specify either "src", "content", or both "pkg" and "path"`)
+        }
+      }
+
+      if (asset.inject !== undefined) {
+        if (typeof asset.inject !== 'boolean' && (typeof asset.inject !== 'object' || asset.inject === null)) {
+          throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") "inject" property must be a boolean or object`)
+        }
+
+        const isKnownExtension = asset.dest.endsWith('.js') || asset.dest.endsWith('.mjs') || asset.dest.endsWith('.cjs') || asset.dest.endsWith('.css')
+        let injectType
+        if (typeof asset.inject === 'object' && asset.inject !== null) {
+          injectType = asset.inject.type
+        }
+        if (!injectType && !isKnownExtension) {
+          throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") has an un-inferable file extension. Explicit "inject.type" ('script', 'link', or 'meta') is required.`)
+        }
+
+        if (typeof asset.inject === 'object' && asset.inject !== null) {
+          const { type, placement, sri, pages, attributes, rel, name, content } = asset.inject
+          const httpEquiv = asset.inject['http-equiv']
+
+          if (type !== undefined && !['script', 'link', 'meta'].includes(type)) {
+            throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") "inject.type" must be 'script', 'link', or 'meta'`)
+          }
+          if (placement !== undefined && !['head-start', 'head-end', 'body-start', 'body-end'].includes(placement)) {
+            throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") "inject.placement" must be 'head-start', 'head-end', 'body-start', or 'body-end'`)
+          }
+          if (sri !== undefined && typeof sri !== 'boolean' && !['sha256', 'sha384', 'sha512'].includes(sri)) {
+            throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") "inject.sri" must be a boolean or one of 'sha256', 'sha384', 'sha512'`)
+          }
+          if (pages !== undefined && typeof pages !== 'string' && !Array.isArray(pages)) {
+            throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") "inject.pages" must be a string or array of strings`)
+          }
+          if (attributes !== undefined && (typeof attributes !== 'object' || attributes === null)) {
+            throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") "inject.attributes" must be an object`)
+          }
+
+          const effectiveType = type || (asset.dest.endsWith('.css') ? 'link' : 'script')
+          if (effectiveType === 'link') {
+            const hasRel = Boolean(rel || attributes?.rel || asset.dest.endsWith('.css'))
+            if (!hasRel) {
+              throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") of type 'link' requires "rel" property (or "attributes.rel")`)
+            }
+          }
+          if (effectiveType === 'meta') {
+            const hasIdentifier = Boolean(name || httpEquiv || attributes?.name || attributes?.['http-equiv'])
+            const hasContent = Boolean(content || attributes?.content)
+            if (!hasIdentifier || !hasContent) {
+              throw new CoraliteError(`Asset at index ${index} ("${asset.dest}") of type 'meta' requires "name" or "http-equiv", and "content"`)
+            }
+          }
+        }
+      }
+    })
+  }
+
   // Validate optional plugins property
   if ('plugins' in options && options.plugins !== undefined) {
     if (!Array.isArray(options.plugins)) {

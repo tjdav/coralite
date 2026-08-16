@@ -58,6 +58,27 @@
       });
     </coralite-code-highlight>
 
+    <coralite-heading level="2" text="Automated Asset Injection & SRI"></coralite-heading>
+    <p>Coralite also supports declarative asset injection and Subresource Integrity (SRI) digest computation. By passing an <code>inject</code> object on an asset entry, Coralite will copy the asset and automatically inject corresponding <code>&lt;script&gt;</code> or <code>&lt;link&gt;</code> HTML tags into rendered pages.</p>
+
+    <coralite-code-highlight language="JavaScript" title="coralite.config.js">
+      export default defineConfig({
+        assets: [
+          {
+            pkg: 'altcha',
+            path: 'dist/altcha.js',
+            dest: 'assets/js/altcha.js',
+            inject: {
+              type: 'script',
+              placement: 'body-end', // 'head-start' | 'head-end' | 'body-start' | 'body-end'
+              sri: true,             // Generates sha384 integrity & adds crossorigin="anonymous"
+              pages: ['*']           // Page glob or pathname patterns
+            }
+          }
+        ]
+      });
+    </coralite-code-highlight>
+
     <coralite-heading level="2" text="MIME Type Support"></coralite-heading>
     <p>To ensure `.wasm` files execute correctly for streaming compilation, the Coralite development server automatically configures the appropriate `application/wasm` MIME type headers for any files ending in `.wasm`.</p>
 

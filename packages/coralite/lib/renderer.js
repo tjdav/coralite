@@ -30,10 +30,13 @@ import {
 } from './utils/server/render.js'
 import {
   calculateHash,
+  calculateSRIDigest,
   resolveNonce,
   formatCSPDirectives,
   injectCSPMeta
 } from './utils/server/csp.js'
+import picomatch from 'picomatch'
+import { stat } from 'node:fs/promises'
 import { generateClientRuntime } from './utils/client/runtime.js'
 import { transformCss } from './utils/server/style.js'
 import { transformNode } from './parser.js'
@@ -92,6 +95,7 @@ export function createRenderer ({
   const renderQueues = new Map()
   const sealedQueues = new Set()
   const outputFiles = {}
+  const sriDigestCache = new Map()
   let globalScriptResult = null
   let siteWideBundlePromise = null
 
@@ -100,32 +104,41 @@ export function createRenderer ({
    * @param {string} [buildId] - Unique identifier for the build
    * @returns {CoraliteSession}
    */
-  const _createSession = (buildId) => ({
-    buildId,
-    state: {},
-    styles: new Map(),
-    componentTags: new Set(),
-    instanceCounters: {},
-    generateId (prefix) {
-      if (this.instanceCounters[prefix] === undefined) {
-        this.instanceCounters[prefix] = 0
-      }
-      return `${prefix}-${this.instanceCounters[prefix]++}`
-    },
-    scripts: {
-      content: {},
-      add (id, item) {
-        if (!this.content[id]) {
-          this.content[id] = {}
+  const _createSession = (buildId) => {
+    const sessionObj = {
+      buildId,
+      state: {},
+      styles: new Map(),
+      componentTags: new Set(),
+      instanceCounters: {},
+      generateId (prefix) {
+        if (this.instanceCounters[prefix] === undefined) {
+          this.instanceCounters[prefix] = 0
         }
-        this.content[id][item.id] = item
+        return `${prefix}-${this.instanceCounters[prefix]++}`
+      },
+      scripts: {
+        content: {},
+        add (id, item) {
+          if (!this.content[id]) {
+            this.content[id] = {}
+          }
+          this.content[id][item.id] = item
+        }
+      },
+      _injectedTags: [],
+      injectTag (options) {
+        if (options && typeof options === 'object') {
+          this._injectedTags.push(options)
+        }
+      },
+      source: {
+        currentSourceContextId: '',
+        contextInstances: {}
       }
-    },
-    source: {
-      currentSourceContextId: '',
-      contextInstances: {}
     }
-  })
+    return sessionObj
+  }
 
   const _replaceSlots = async ({ id, instanceId, element, module, state, page, root, index, session, noHydration }) => {
     const slots = module.slotElements ? module.slotElements[id] : null
@@ -1095,6 +1108,282 @@ export function createRenderer ({
         const scriptHashes = []
         const styleHashes = []
 
+        // --- Automated Asset Injection & Tag Flush Pass ---
+        const pagePathname = pageItem.path.pathname
+        const rawTagsToFlush = []
+
+        // 1. Collect declarative options.assets with inject
+        if (Array.isArray(normalizedOptions.assets)) {
+          for (const asset of normalizedOptions.assets) {
+            if (asset.inject) {
+              const injectConfig = typeof asset.inject === 'boolean' ? {} : asset.inject
+              let inferredType = injectConfig.type
+              if (!inferredType) {
+                if (asset.dest.endsWith('.js') || asset.dest.endsWith('.mjs') || asset.dest.endsWith('.cjs')) {
+                  inferredType = 'script'
+                } else if (asset.dest.endsWith('.css')) {
+                  inferredType = 'link'
+                }
+              }
+
+              rawTagsToFlush.push({
+                type: inferredType,
+                dest: asset.dest,
+                placement: injectConfig.placement || 'head-end',
+                sri: injectConfig.sri ?? false,
+                pages: injectConfig.pages ?? '*',
+                attributes: injectConfig.attributes || {},
+                rel: injectConfig.rel || (inferredType === 'link' ? 'stylesheet' : undefined),
+                name: injectConfig.name,
+                'http-equiv': injectConfig['http-equiv'],
+                content: injectConfig.content
+              })
+            }
+          }
+        }
+
+        // 2. Collect session._injectedTags
+        if (Array.isArray(mappedSessionObject._injectedTags)) {
+          for (const injectedTag of mappedSessionObject._injectedTags) {
+            rawTagsToFlush.push(injectedTag)
+          }
+        }
+
+        // Scan existing AST for deduplication
+        const existingExternalUrls = new Set()
+        const existingInlineHashes = new Set()
+
+        const scanASTForDuplicates = (container) => {
+          if (!container || !container.children) {
+            return
+          }
+          for (const child of container.children) {
+            if (child.type === 'tag') {
+              if ((child.name === 'script' && child.attribs?.src) || (child.name === 'link' && child.attribs?.href)) {
+                const url = child.attribs.src || child.attribs.href
+                existingExternalUrls.add(url)
+              } else if (child.name === 'script' || child.name === 'style') {
+                const textChild = child.children?.find(c => c.type === 'text')
+                if (textChild && textChild.data) {
+                  existingInlineHashes.add(hash(textChild.data))
+                }
+              }
+              scanASTForDuplicates(child)
+            }
+          }
+        }
+        scanASTForDuplicates(mappedComponent.root)
+
+        // Process and insert tags
+        const pageInjectedAssetHashes = []
+
+        for (const tagOptions of rawTagsToFlush) {
+          const patterns = Array.isArray(tagOptions.pages) ? tagOptions.pages : [tagOptions.pages ?? '*']
+          const universal = patterns.some(p => p === '*')
+          const relPagePath = relative(normalizedOptions.path.pages, pagePathname)
+          const matches = universal || patterns.some(p => picomatch(p)(pagePathname) || picomatch(p)(relPagePath))
+
+          if (!matches) {
+            continue
+          }
+
+          let type = tagOptions.type || 'script'
+          let placement = tagOptions.placement || 'head-end'
+          const attribs = { ...(tagOptions.attributes || {}) }
+
+          let isExternal = false
+          let targetUrl = ''
+
+          if (attribs.src) {
+            targetUrl = attribs.src
+            isExternal = true
+          } else if (attribs.href) {
+            targetUrl = attribs.href
+            isExternal = true
+          } else if (tagOptions.src) {
+            targetUrl = tagOptions.src.startsWith('http://') || tagOptions.src.startsWith('https://') || tagOptions.src.startsWith('/')
+              ? tagOptions.src
+              : `${base}${tagOptions.src}`
+            isExternal = true
+          } else if (tagOptions.dest) {
+            targetUrl = `${base}${tagOptions.dest}`
+            isExternal = true
+          }
+
+          if (isExternal) {
+            if (type === 'script' && !attribs.src) {
+              attribs.src = targetUrl
+            }
+            if (type === 'link' && !attribs.href) {
+              attribs.href = targetUrl
+            }
+          }
+
+          if (type === 'link' && !attribs.rel) {
+            attribs.rel = tagOptions.rel || 'stylesheet'
+          }
+          if (type === 'meta') {
+            if (tagOptions.name && !attribs.name) {
+              attribs.name = tagOptions.name
+            }
+            if (tagOptions['http-equiv'] && !attribs['http-equiv']) {
+              attribs['http-equiv'] = tagOptions['http-equiv']
+            }
+            if (tagOptions.content && !attribs.content) {
+              attribs.content = tagOptions.content
+            }
+          }
+
+          const inlineContent = tagOptions.content
+
+          // Deduplication check
+          if (isExternal) {
+            if (existingExternalUrls.has(targetUrl)) {
+              continue
+            }
+            existingExternalUrls.add(targetUrl)
+          } else if (inlineContent) {
+            const contentHash = hash(inlineContent)
+            if (existingInlineHashes.has(contentHash)) {
+              continue
+            }
+            existingInlineHashes.add(contentHash)
+          }
+
+          // SRI Resolution
+          const sriOption = tagOptions.sri ?? false
+          const explicitIntegrity = attribs.integrity
+
+          if (sriOption && explicitIntegrity) {
+            handleError({
+              level: 'WARN',
+              message: `[Coralite Asset Injection] Conflict on "${tagOptions.dest || targetUrl}": Explicit integrity attribute provided while sri option is enabled. Explicit attribute takes precedence; auto-crossorigin disabled.`
+            })
+          } else if (sriOption) {
+            const algo = typeof sriOption === 'string' ? sriOption : 'sha384'
+            let fileContent = null
+            let assetDestPath = tagOptions.dest
+
+            if (!assetDestPath && targetUrl.startsWith(base)) {
+              assetDestPath = targetUrl.substring(base.length)
+            }
+
+            if (assetDestPath) {
+              const outputDir = normalizedOptions.output || join(normalizedOptions.projectRoot || process.cwd(), 'dist')
+              const fullDiskPath = join(outputDir, assetDestPath)
+
+              try {
+                const fileStat = await stat(fullDiskPath)
+                const cacheKey = `${assetDestPath}:${fileStat.mtimeMs}:${fileStat.size}:${algo}`
+
+                let computedDigest = ''
+                let contentHash = ''
+
+                if (sriDigestCache.has(cacheKey)) {
+                  const cached = sriDigestCache.get(cacheKey)
+                  computedDigest = cached.digest
+                  contentHash = cached.contentHash
+                } else {
+                  fileContent = await readFile(fullDiskPath)
+                  computedDigest = calculateSRIDigest(fileContent, algo)
+                  contentHash = hash(fileContent)
+                  sriDigestCache.set(cacheKey, {
+                    digest: computedDigest,
+                    contentHash
+                  })
+                }
+
+                attribs.integrity = computedDigest
+                if (!attribs.crossorigin) {
+                  attribs.crossorigin = 'anonymous'
+                }
+
+                pageInjectedAssetHashes.push({
+                  dest: assetDestPath,
+                  hash: contentHash
+                })
+              } catch {
+                handleError({
+                  level: 'WARN',
+                  message: `[Coralite Asset Injection] Referenced asset file "${fullDiskPath}" not found on disk. Injection skipped.`
+                })
+                continue
+              }
+            }
+          }
+
+          // CSP Hash contribution / Nonce for inline script/style content
+          if (!isExternal && inlineContent) {
+            if (type === 'script') {
+              if (nonce) {
+                attribs.nonce = nonce
+              } else if (isCspActive) {
+                scriptHashes.push(calculateHash(inlineContent, hashAlgo))
+              }
+            } else if (type === 'style' || (type === 'link' && inlineContent)) {
+              if (nonce) {
+                attribs.nonce = nonce
+              } else if (isCspActive) {
+                styleHashes.push(calculateHash(inlineContent, hashAlgo))
+              }
+            }
+          }
+
+          // Container resolution and placement
+          let container = null
+          let fallbackToRoot = false
+
+          if (placement === 'head-start' || placement === 'head-end') {
+            if (headElement) {
+              container = headElement
+            } else {
+              container = mappedComponent.root
+              fallbackToRoot = true
+            }
+          } else if (placement === 'body-start' || placement === 'body-end') {
+            if (bodyElement && bodyElement !== mappedComponent.root) {
+              container = bodyElement
+            } else {
+              container = mappedComponent.root
+              fallbackToRoot = true
+            }
+          }
+
+          if (fallbackToRoot) {
+            handleError({
+              level: 'WARN',
+              message: `[Coralite Asset Injection] Missing target container for placement "${placement}". Falling back to root element.`
+            })
+          }
+
+          const tagElement = createCoraliteElement({
+            type: 'tag',
+            name: type,
+            parent: container,
+            attribs,
+            children: []
+          })
+
+          if (inlineContent && type !== 'meta') {
+            tagElement.children.push(createCoraliteTextNode({
+              type: 'text',
+              data: inlineContent,
+              parent: tagElement
+            }))
+          }
+
+          if (placement === 'head-start' || (fallbackToRoot && placement.endsWith('-start'))) {
+            container.children.unshift(tagElement)
+          } else if (placement === 'body-start') {
+            container.children.unshift(tagElement)
+          } else {
+            // head-end or body-end (strictly before framework client runtime bootstrap)
+            container.children.push(tagElement)
+          }
+        }
+
+        mappedSessionObject._pageInjectedAssetHashes = pageInjectedAssetHashes
+
         if (normalizedOptions.externalStyles && normalizedOptions.externalStyles.length > 0) {
           injectExternalStyles(mappedComponent.root, headElement, normalizedOptions.externalStyles, { nonce: isExternalStyles ? null : nonce })
         }
@@ -1355,6 +1644,10 @@ export function createRenderer ({
           content: rawHTML,
           duration: performance.now() - startTime,
           session
+        }
+
+        if (pageInjectedAssetHashes.length > 0) {
+          result.injectedAssets = pageInjectedAssetHashes
         }
 
         if (cspResult) {
@@ -1769,6 +2062,25 @@ export function createRenderer ({
       } else {
         const { changed, metadata } = await checkFileChange(pageItem.path.pathname, manifest.physical[pageItem.path.pathname])
         newManifest.physical[pageItem.path.pathname] = metadata
+
+        const existingPageMeta = manifest.physical[pageItem.path.pathname]
+        if (existingPageMeta?.injectedAssets) {
+          const outputDir = normalizedOptions.output || join(normalizedOptions.projectRoot || process.cwd(), 'dist')
+          for (const assetRef of existingPageMeta.injectedAssets) {
+            const fullDiskPath = join(outputDir, assetRef.dest)
+            try {
+              const fileContent = await readFile(fullDiskPath)
+              if (hash(fileContent) !== assetRef.hash) {
+                shouldRebuild = true
+                break
+              }
+            } catch {
+              shouldRebuild = true
+              break
+            }
+          }
+        }
+
         if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development') {
           pagesToRender.push(pageItem)
         } else {
@@ -1782,6 +2094,10 @@ export function createRenderer ({
               components: normalizedOptions.path.components
             },
             status: 'skipped'
+          }
+
+          if (existingPageMeta?.injectedAssets) {
+            newManifest.physical[pageItem.path.pathname].injectedAssets = existingPageMeta.injectedAssets
           }
 
           skippedPages.push(skippedResult)
@@ -1839,6 +2155,15 @@ export function createRenderer ({
             session: result.session,
             app
           })
+
+          if (result.injectedAssets) {
+            const pagePath = result.path.pathname
+            if (newManifest.physical[pagePath]) {
+              newManifest.physical[pagePath].injectedAssets = result.injectedAssets
+            } else if (newManifest.virtual[pagePath]) {
+              newManifest.virtual[pagePath].injectedAssets = result.injectedAssets
+            }
+          }
 
           const items = [result]
           const finalResults = []
