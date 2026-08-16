@@ -358,6 +358,16 @@ async function server (config, options, runMode = 'dev') {
           res.end()
         })
       })
+      .get('/_/rebuild.js', (req, res) => {
+        res.setHeader('Content-Type', 'application/javascript')
+        res.send(`
+          const eventSource = new EventSource('/_/rebuild');
+          eventSource.onmessage = function(event) {
+            if (event.data === 'connected') return;
+            location.reload();
+          };
+        `.trim())
+      })
       .get(/(.*)/, async (req, res) => {
         // extract the requested path and its extension.
         const reqPath = req.path
@@ -396,15 +406,9 @@ async function server (config, options, runMode = 'dev') {
               let rebuildScript = '</body>\n'
 
               if (runMode !== 'test') {
-                rebuildScript = '\n<script>\n'
-                rebuildScript += "    const eventSource = new EventSource('/_/rebuild');\n"
-                rebuildScript += '    eventSource.onmessage = function(event) {\n'
-                rebuildScript += "      if (event.data === 'connected') return;\n"
-                rebuildScript += '      // Reload page when file changes\n'
-                rebuildScript += '      location.reload()\n'
-                rebuildScript += '    }\n'
-                rebuildScript += '  </script>\n'
-                rebuildScript += '</body>\n'
+                const devNonce = typeof currentConfig.csp?.nonce === 'string' ? currentConfig.csp.nonce : null
+                const nonceAttr = devNonce ? ` nonce="${devNonce}"` : ''
+                rebuildScript = `\n<script src="/_/rebuild.js"${nonceAttr}></script>\n</body>\n`
               }
 
               // Only set item if it's not already in the collection (virtual pages are pre-registered)

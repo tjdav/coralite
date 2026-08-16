@@ -53,8 +53,26 @@ import componentManifest from '${base}assets/js/manifest.js';
           } else {
             console.error(error);
             const overlay = document.createElement('div');
-            overlay.style = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(255,0,0,0.9);color:white;padding:20px;z-index:10000;font-family:monospace;white-space:pre-wrap;overflow:auto;';
-            overlay.innerHTML = '<h1>Coralite Hydration Mismatch</h1><p>' + error.message + '</p>';
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(255,0,0,0.9)';
+            overlay.style.color = 'white';
+            overlay.style.padding = '20px';
+            overlay.style.zIndex = '10000';
+            overlay.style.fontFamily = 'monospace';
+            overlay.style.whiteSpace = 'pre-wrap';
+            overlay.style.overflow = 'auto';
+
+            const heading = document.createElement('h1');
+            heading.textContent = 'Coralite Hydration Mismatch';
+            const desc = document.createElement('p');
+            desc.textContent = error.message;
+
+            overlay.appendChild(heading);
+            overlay.appendChild(desc);
             document.body.appendChild(overlay);
           }
           throw error;

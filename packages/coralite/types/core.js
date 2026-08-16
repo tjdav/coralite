@@ -82,6 +82,28 @@
  */
 
 /**
+ * @typedef {Object} CoraliteCSPConfig
+ * @property {boolean} [enabled] - Whether CSP logic is active.
+ * @property {string | ((context: any) => string)} [nonce] - Nonce string or provider function.
+ * @property {'sha256' | 'sha384' | 'sha512'} [hashAlgorithm='sha256'] - CSP hash algorithm.
+ * @property {boolean} [injectMeta=false] - Whether to inject <meta http-equiv="Content-Security-Policy"> tag.
+ * @property {boolean} [reportOnly=false] - Whether to use Content-Security-Policy-Report-Only.
+ * @property {boolean} [externalScripts=false] - Whether to externalize inline scripts.
+ * @property {boolean} [externalStyles=false] - Whether to externalize inline styles.
+ * @property {Record<string, string | string[]>} [directives] - Custom CSP directives.
+ */
+
+/**
+ * @typedef {Object} CoraliteCSPResult
+ * @property {'nonce' | 'hash' | 'external'} mode - CSP execution mode.
+ * @property {string | null} nonce - Nonce value if active.
+ * @property {string[]} scriptHashes - Generated script hashes.
+ * @property {string[]} styleHashes - Generated style hashes.
+ * @property {string} header - Formatted CSP directive string.
+ * @property {Record<string, string | string[]>} directives - Merged directives map.
+ */
+
+/**
  * @typedef {Object} CoraliteConfig
  * @property {string} [output='.coralite'] - The path to the output directory where built files will be placed.
  * @property {string} components - The path to the directory containing Coralite components.
@@ -96,6 +118,7 @@
  * @property {string[]} [externalStyles] - Global styles to inject into every page
  * @property {'production' | 'development' | 'testing'} [mode='production'] - Build mode: "production", "development", or "testing"
  * @property {CoraliteTestingConfig} [testing] - Configuration for testing mode.
+ * @property {CoraliteCSPConfig} [csp] - Configuration for Content Security Policy.
  * @property {boolean} [incremental=true] - Whether to skip rebuilding unchanged pages and components.
  * @property {string} [projectRoot] - The root directory of the project.
  * @property {CoralitePath} [path] - Internal path mapping.
@@ -117,6 +140,7 @@
  * @property {string} [content] - The rendered HTML content.
  * @property {number} [duration] - Time taken to render in milliseconds.
  * @property {CoraliteSession} [session] - The session associated with the render.
+ * @property {CoraliteCSPResult} [csp] - CSP result object.
  * @property {'skipped'} [status] - Optional status if the build was skipped via ISR.
  */
 
@@ -165,6 +189,7 @@
  * @property {string} source.currentSourceContextId - Current source context ID.
  * @property {Object.<string, any>} source.contextInstances - Map of context instances.
  * @property {'production' | 'development' | 'testing'} [mode] - Current build mode.
+ * @property {CoraliteCSPResult} [csp] - CSP result object.
  */
 
 /**

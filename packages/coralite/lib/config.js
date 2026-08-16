@@ -45,6 +45,48 @@ export function defineConfig (options) {
     }
   }
 
+  // Validate csp config
+  if (options.csp !== undefined) {
+    if (typeof options.csp !== 'object' || options.csp === null) {
+      throw new CoraliteError('Config property "csp" must be an object')
+    }
+
+    if (options.csp.enabled !== undefined && typeof options.csp.enabled !== 'boolean') {
+      throw new CoraliteError('Config property "csp.enabled" must be a boolean')
+    }
+
+    if (options.csp.nonce !== undefined && typeof options.csp.nonce !== 'string' && typeof options.csp.nonce !== 'function') {
+      throw new CoraliteError('Config property "csp.nonce" must be a string or function')
+    }
+
+    if (options.csp.hashAlgorithm !== undefined) {
+      const validAlgorithms = ['sha256', 'sha384', 'sha512']
+      if (!validAlgorithms.includes(options.csp.hashAlgorithm)) {
+        throw new CoraliteError(`Invalid csp.hashAlgorithm: "${options.csp.hashAlgorithm}". Valid algorithms are: ${validAlgorithms.join(', ')}`)
+      }
+    }
+
+    if (options.csp.injectMeta !== undefined && typeof options.csp.injectMeta !== 'boolean') {
+      throw new CoraliteError('Config property "csp.injectMeta" must be a boolean')
+    }
+
+    if (options.csp.reportOnly !== undefined && typeof options.csp.reportOnly !== 'boolean') {
+      throw new CoraliteError('Config property "csp.reportOnly" must be a boolean')
+    }
+
+    if (options.csp.externalScripts !== undefined && typeof options.csp.externalScripts !== 'boolean') {
+      throw new CoraliteError('Config property "csp.externalScripts" must be a boolean')
+    }
+
+    if (options.csp.externalStyles !== undefined && typeof options.csp.externalStyles !== 'boolean') {
+      throw new CoraliteError('Config property "csp.externalStyles" must be a boolean')
+    }
+
+    if (options.csp.directives !== undefined && (typeof options.csp.directives !== 'object' || options.csp.directives === null)) {
+      throw new CoraliteError('Config property "csp.directives" must be an object')
+    }
+  }
+
   // Validate testing config
   if (options.testing !== undefined) {
     if (typeof options.testing !== 'object' || options.testing === null) {

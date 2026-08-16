@@ -52,7 +52,8 @@ export async function createCoralite ({
   mode = 'production',
   output,
   testing,
-  incremental = true
+  incremental = true,
+  csp
 }) {
   // Validate required parameters
   if (!components || typeof components !== 'string') {
@@ -95,7 +96,8 @@ export async function createCoralite ({
     output: output ? normalize(output) : undefined,
     onComponentBuild,
     testing,
-    incremental
+    incremental,
+    csp
   }
 
   const trackedOutputFiles = new Set()

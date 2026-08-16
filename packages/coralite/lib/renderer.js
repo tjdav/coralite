@@ -28,6 +28,12 @@ import {
   removeElements,
   resolvePageQueue
 } from './utils/server/render.js'
+import {
+  calculateHash,
+  resolveNonce,
+  formatCSPDirectives,
+  injectCSPMeta
+} from './utils/server/csp.js'
 import { generateClientRuntime } from './utils/client/runtime.js'
 import { transformCss } from './utils/server/style.js'
 import { transformNode } from './parser.js'
@@ -899,7 +905,7 @@ export function createRenderer ({
     }
   }
 
-  const _generatePages = async function* (activeQueue, buildId, state = {}) {
+  const _generatePages = async function* (activeQueue, buildId, state = {}, buildOptions = {}) {
     const isProduction = normalizedOptions.mode === 'production'
 
     try {
@@ -1048,39 +1054,123 @@ export function createRenderer ({
         }
 
         const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
+        const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
+
+        const cspConfig = normalizedOptions.csp || {}
+        const pageCspMeta = pageContext?.meta?.csp
+        const pageCspDirectives = pageContext?.meta?.['csp-directives']
+        const nonce = resolveNonce({
+          buildOptions,
+          pageContext,
+          session: mappedSessionObject,
+          config: normalizedOptions
+        })
+
+        const isCspActive = cspConfig.enabled === true || (
+          cspConfig.enabled !== false && (
+            nonce !== null ||
+            cspConfig.externalScripts === true ||
+            cspConfig.externalStyles === true ||
+            cspConfig.injectMeta === true ||
+            pageCspMeta === true ||
+            Boolean(cspConfig.directives) ||
+            Boolean(pageCspDirectives)
+          )
+        )
+
+        const hashAlgo = cspConfig.hashAlgorithm || 'sha256'
+        const isExternalScripts = cspConfig.externalScripts === true
+        const isExternalStyles = cspConfig.externalStyles === true
+        const scriptHashes = []
+        const styleHashes = []
 
         if (normalizedOptions.externalStyles && normalizedOptions.externalStyles.length > 0) {
-          injectExternalStyles(mappedComponent.root, headElement, normalizedOptions.externalStyles)
+          injectExternalStyles(mappedComponent.root, headElement, normalizedOptions.externalStyles, { nonce: isExternalStyles ? null : nonce })
         }
 
-        if (mappedSessionObject.styles.size > 0) {
-          injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles)
-        }
+        if (isExternalStyles) {
+          if (componentsToInclude.size > 0 || mappedSessionObject.styles.size > 0) {
+            let combinedCss = ''
+            if (componentsToInclude.size > 0) {
+              const selectors = Array.from(componentsToInclude)
+              selectors.push('c-token')
+              combinedCss += `${selectors.join(', ')} { display: contents; }\n`
+            }
+            if (mappedSessionObject.styles.size > 0) {
+              for (const [selector, css] of mappedSessionObject.styles) {
+                combinedCss += `[data-style-selector="${selector}"] {\n${css}\n}\n`
+              }
+            }
+            const cssFileHash = hash(combinedCss).slice(0, 8)
+            const relPath = `coralite-inline-${cssFileHash}.css`
+            const fullPath = `assets/css/${relPath}`
+            outputFiles[fullPath] = {
+              path: fullPath,
+              hashedPath: relPath,
+              text: combinedCss
+            }
+            if (app.trackOutputFile) {
+              app.trackOutputFile(join(normalizedOptions.output || '', fullPath))
+            }
 
-        if (componentsToInclude.size > 0) {
-          const targetElement = headElement || bodyElement || mappedComponent.root
-          const layoutStyleElement = createCoraliteElement({
-            type: 'tag',
-            name: 'style',
-            parent: targetElement,
-            attribs: { id: 'coralite-components' },
-            children: []
-          })
+            const linkElement = createCoraliteElement({
+              type: 'tag',
+              name: 'link',
+              parent: headElement || mappedComponent.root,
+              attribs: {
+                rel: 'stylesheet',
+                href: `${base}${fullPath}`
+              },
+              children: []
+            })
+            if (headElement) {
+              headElement.children.push(linkElement)
+            } else {
+              mappedComponent.root.children.unshift(linkElement)
+            }
+          }
+        } else {
+          if (mappedSessionObject.styles.size > 0) {
+            const { content: inlineCss } = injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles, { nonce })
+            if (isCspActive && !nonce && inlineCss) {
+              styleHashes.push(calculateHash(inlineCss, hashAlgo))
+            }
+          }
 
-          const selectors = Array.from(componentsToInclude)
+          if (componentsToInclude.size > 0) {
+            const targetElement = headElement || bodyElement || mappedComponent.root
+            const layoutAttribs = { id: 'coralite-components' }
+            if (nonce) {
+              layoutAttribs.nonce = nonce
+            }
 
-          selectors.push('c-token')
+            const layoutStyleElement = createCoraliteElement({
+              type: 'tag',
+              name: 'style',
+              parent: targetElement,
+              attribs: layoutAttribs,
+              children: []
+            })
 
-          layoutStyleElement.children.push(createCoraliteTextNode({
-            type: 'text',
-            data: `${selectors.join(', ')} { display: contents; }`,
-            parent: layoutStyleElement
-          }))
+            const selectors = Array.from(componentsToInclude)
+            selectors.push('c-token')
+            const layoutCss = `${selectors.join(', ')} { display: contents; }`
 
-          if (targetElement === headElement || targetElement === bodyElement) {
-            targetElement.children.push(layoutStyleElement)
-          } else {
-            targetElement.children.unshift(layoutStyleElement)
+            layoutStyleElement.children.push(createCoraliteTextNode({
+              type: 'text',
+              data: layoutCss,
+              parent: layoutStyleElement
+            }))
+
+            if (targetElement === headElement || targetElement === bodyElement) {
+              targetElement.children.push(layoutStyleElement)
+            } else {
+              targetElement.children.unshift(layoutStyleElement)
+            }
+
+            if (isCspActive && !nonce && layoutCss) {
+              styleHashes.push(calculateHash(layoutCss, hashAlgo))
+            }
           }
         }
 
@@ -1109,9 +1199,19 @@ export function createRenderer ({
             })
           }
 
-          injectReadinessScript(mappedComponent.root, headElement, true, normalizedOptions.mode)
-          const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
-          injectImportMap(mappedComponent.root, headElement, scriptResult.importMap, base)
+          const { content: readyContent } = injectReadinessScript(mappedComponent.root, headElement, true, normalizedOptions.mode, {
+            nonce,
+            external: isExternalScripts
+          })
+          if (isCspActive && !nonce && readyContent) {
+            scriptHashes.push(calculateHash(readyContent, hashAlgo))
+          }
+
+          const { content: mapContent } = injectImportMap(mappedComponent.root, headElement, scriptResult.importMap, base, { nonce })
+          if (isCspActive && !nonce && mapContent) {
+            scriptHashes.push(calculateHash(mapContent, hashAlgo))
+          }
+
           const hydrationData = {}
 
           for (const [id, instance] of Object.entries(instances)) {
@@ -1129,26 +1229,106 @@ export function createRenderer ({
             mode: normalizedOptions.mode,
             instanceCounters: serialize(mappedSessionObject.instanceCounters || {})
           })
-          const scriptElement = createCoraliteElement({
-            type: 'tag',
-            name: 'script',
-            parent: bodyElement,
-            attribs: { type: 'module' },
-            children: []
-          })
 
-          scriptElement.children.push(createCoraliteTextNode({
-            type: 'text',
-            data: scriptContent,
-            parent: scriptElement
-          }))
-          bodyElement.children.push(scriptElement)
+          if (isExternalScripts) {
+            const pageScriptHash = hash(scriptContent).slice(0, 8)
+            const relativePagePath = relative(normalizedOptions.path.pages, pageItem.path.pathname)
+            const pageStem = relativePagePath.replace(/\.html$/, '').replace(/[\/\\]/g, '-') || 'index'
+            const relPath = `pages/${pageStem}-${pageScriptHash}.js`
+            const fullPath = `assets/js/${relPath}`
+            outputFiles[fullPath] = {
+              path: fullPath,
+              hashedPath: relPath,
+              text: scriptContent
+            }
+            if (app.trackOutputFile) {
+              app.trackOutputFile(join(normalizedOptions.output || '', fullPath))
+            }
+
+            const scriptAttribs = {
+              type: 'module',
+              src: `${base}${fullPath}`
+            }
+            if (nonce) {
+              scriptAttribs.nonce = nonce
+            }
+
+            const scriptElement = createCoraliteElement({
+              type: 'tag',
+              name: 'script',
+              parent: bodyElement,
+              attribs: scriptAttribs,
+              children: []
+            })
+            bodyElement.children.push(scriptElement)
+          } else {
+            const scriptAttribs = { type: 'module' }
+            if (nonce) {
+              scriptAttribs.nonce = nonce
+            }
+
+            const scriptElement = createCoraliteElement({
+              type: 'tag',
+              name: 'script',
+              parent: bodyElement,
+              attribs: scriptAttribs,
+              children: []
+            })
+
+            scriptElement.children.push(createCoraliteTextNode({
+              type: 'text',
+              data: scriptContent,
+              parent: scriptElement
+            }))
+            bodyElement.children.push(scriptElement)
+
+            if (isCspActive && !nonce && scriptContent) {
+              scriptHashes.push(calculateHash(scriptContent, hashAlgo))
+            }
+          }
+        } else {
+          const { content: readyContent } = injectReadinessScript(mappedComponent.root, headElement, false, normalizedOptions.mode, {
+            nonce,
+            external: isExternalScripts
+          })
+          if (isCspActive && !nonce && readyContent) {
+            scriptHashes.push(calculateHash(readyContent, hashAlgo))
+          }
         }
 
         removeElements(mappedComponent.skipRenderElements, true)
 
-        if (!mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
-          injectReadinessScript(mappedComponent.root, headElement, false, normalizedOptions.mode)
+        let cspResult = null
+        if (isCspActive) {
+          const mergedDirectives = {
+            ...(cspConfig.directives || {}),
+            ...(pageCspDirectives || {})
+          }
+          const formattedHeader = formatCSPDirectives(mergedDirectives, {
+            scriptHashes,
+            styleHashes,
+            nonce
+          })
+          if (cspConfig.injectMeta || pageCspMeta) {
+            injectCSPMeta(mappedComponent.root, headElement, formattedHeader, cspConfig.reportOnly)
+          }
+
+          /** @type {'nonce' | 'external' | 'hash'} */
+          let cspMode = 'hash'
+          if (nonce) {
+            cspMode = 'nonce'
+          } else if (isExternalScripts) {
+            cspMode = 'external'
+          }
+
+          cspResult = {
+            mode: cspMode,
+            nonce: nonce || null,
+            scriptHashes: nonce ? [] : scriptHashes,
+            styleHashes: (nonce || isExternalStyles) ? [] : styleHashes,
+            header: formattedHeader,
+            directives: mergedDirectives
+          }
         }
 
         const rawHTML = transformNode(mappedComponent.root)
@@ -1160,6 +1340,11 @@ export function createRenderer ({
           content: rawHTML,
           duration: performance.now() - startTime,
           session
+        }
+
+        if (cspResult) {
+          result.csp = cspResult
+          session.csp = cspResult
         }
 
         yield result
@@ -1622,7 +1807,7 @@ export function createRenderer ({
 
     try {
       // Phase 3: The Render Engine
-      for await (const result of _generatePages(pagesToRender, buildId, variables)) {
+      for await (const result of _generatePages(pagesToRender, buildId, variables, buildOptions)) {
         if (signal?.aborted) {
           throw signal.reason
         }

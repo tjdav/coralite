@@ -54,7 +54,7 @@ export function findHeadAndBody (root) {
  * @param {CoraliteElement | null} head - The head element.
  * @param {string[]} styles - Array of style URLs.
  */
-export function injectExternalStyles (root, head, styles) {
+export function injectExternalStyles (root, head, styles, options = {}) {
   if (!styles || styles.length === 0) {
     return
   }
@@ -75,14 +75,19 @@ export function injectExternalStyles (root, head, styles) {
       continue
     }
 
+    const attribs = {
+      rel: 'stylesheet',
+      href: styleUrl
+    }
+    if (options?.nonce) {
+      attribs.nonce = options.nonce
+    }
+
     const linkElement = createCoraliteElement({
       type: 'tag',
       name: 'link',
       parent: head || root,
-      attribs: {
-        rel: 'stylesheet',
-        href: styleUrl
-      },
+      attribs,
       children: []
     })
 
@@ -95,21 +100,15 @@ export function injectExternalStyles (root, head, styles) {
 }
 
 /**
- * Injects style tags into the document head (or root if head is missing).
- *
- * @param {CoraliteComponentRoot} root - The root of the AST.
- * @param {CoraliteElement | null} head - The head element.
- * @param {Map<string, string>} styles - Map of style selectors and their CSS content.
- */
-/**
  * Injects external style link tags into the document head (or root if head is missing).
  *
  * @param {CoraliteComponentRoot} root - The root of the AST.
  * @param {CoraliteElement | null} head - The head element.
  * @param {string[]} stylePaths - Array of style paths.
  * @param {string} base - Base URL
+ * @param {Object} [options] - Optional settings (e.g. nonce).
  */
-export function injectExternalStyleLinks (root, head, stylePaths, base) {
+export function injectExternalStyleLinks (root, head, stylePaths, base, options = {}) {
   if (!stylePaths || stylePaths.length === 0) {
     return
   }
@@ -131,14 +130,19 @@ export function injectExternalStyleLinks (root, head, stylePaths, base) {
       continue
     }
 
+    const attribs = {
+      rel: 'stylesheet',
+      href: fullUrl
+    }
+    if (options?.nonce) {
+      attribs.nonce = options.nonce
+    }
+
     const linkElement = createCoraliteElement({
       type: 'tag',
       name: 'link',
       parent: head || root,
-      attribs: {
-        rel: 'stylesheet',
-        href: fullUrl
-      },
+      attribs,
       children: []
     })
 
@@ -151,11 +155,20 @@ export function injectExternalStyleLinks (root, head, stylePaths, base) {
 }
 
 /**
+ * Injects style tags into the document head (or root if head is missing).
  *
+ * @param {CoraliteComponentRoot} root - The root of the AST.
+ * @param {CoraliteElement | null} head - The head element.
+ * @param {Map<string, string>} styles - Map of style selectors and their CSS content.
+ * @param {Object} [options] - Optional settings (e.g. nonce).
+ * @returns {{ element: CoraliteElement | null, content: string }}
  */
-export function injectStyles (root, head, styles) {
+export function injectStyles (root, head, styles, options = {}) {
   if (!styles || styles.size === 0) {
-    return
+    return {
+      element: null,
+      content: ''
+    }
   }
 
   let cssContent = ''
@@ -163,11 +176,16 @@ export function injectStyles (root, head, styles) {
     cssContent += `[data-style-selector="${selector}"] {\n${css}\n}\n`
   }
 
+  const attribs = { id: 'coralite-inline-styles' }
+  if (options?.nonce) {
+    attribs.nonce = options.nonce
+  }
+
   const styleElement = createCoraliteElement({
     type: 'tag',
     name: 'style',
     parent: head || root,
-    attribs: { id: 'coralite-inline-styles' },
+    attribs,
     children: []
   })
 
@@ -182,6 +200,11 @@ export function injectStyles (root, head, styles) {
   } else {
     root.children.unshift(styleElement)
   }
+
+  return {
+    element: styleElement,
+    content: cssContent
+  }
 }
 
 /**
@@ -191,21 +214,51 @@ export function injectStyles (root, head, styles) {
  * @param {CoraliteElement | null} head - The head element.
  * @param {boolean} hasScripts - Whether the page has scripts to wait for.
  * @param {'production' | 'development' | 'testing'} [mode] - Current build mode.
+ * @param {Object} [options] - Optional settings (e.g. nonce, external).
+ * @returns {{ element: CoraliteElement | null, content: string }}
  */
-export function injectReadinessScript (root, head, hasScripts, mode = 'production') {
+export function injectReadinessScript (root, head, hasScripts, mode = 'production', options = {}) {
   const isDevOrTest = mode !== 'production'
   if (!isDevOrTest) {
     if (!hasScripts) {
+      if (options?.external) {
+        // Set attribute on root <html> tag in SSR external mode
+        /** @type {any} */
+        let target = root
+        if (root.children) {
+          for (const child of root.children) {
+            if (child.type === 'tag' && child.name === 'html') {
+              target = child
+              break
+            }
+          }
+        }
+        if (!target.attribs) {
+          target.attribs = {}
+        }
+        target.attribs['data-coralite-ready'] = 'true'
+        return {
+          element: null,
+          content: ''
+        }
+      }
+
+      const scriptContent = "(() => { document.documentElement.setAttribute('data-coralite-ready', 'true'); })();"
+      const attribs = { type: 'module' }
+      if (options?.nonce) {
+        attribs.nonce = options.nonce
+      }
+
       const readinessScriptElement = createCoraliteElement({
         type: 'tag',
         name: 'script',
         parent: head || root,
-        attribs: { type: 'module' },
+        attribs,
         children: []
       })
       readinessScriptElement.children.push(createCoraliteTextNode({
         type: 'text',
-        data: "(() => { document.documentElement.setAttribute('data-coralite-ready', 'true'); })();",
+        data: scriptContent,
         parent: readinessScriptElement
       }))
       if (head) {
@@ -213,17 +266,29 @@ export function injectReadinessScript (root, head, hasScripts, mode = 'productio
       } else {
         root.children.unshift(readinessScriptElement)
       }
+      return {
+        element: readinessScriptElement,
+        content: scriptContent
+      }
     }
-    return
+    return {
+      element: null,
+      content: ''
+    }
   }
 
   const isHydrated = !hasScripts
+
+  const readinessScriptAttribs = { type: 'module' }
+  if (options?.nonce) {
+    readinessScriptAttribs.nonce = options.nonce
+  }
 
   const readinessScriptElement = createCoraliteElement({
     type: 'tag',
     name: 'script',
     parent: head || root,
-    attribs: { type: 'module' },
+    attribs: readinessScriptAttribs,
     children: []
   })
 
@@ -324,6 +389,11 @@ export function injectReadinessScript (root, head, hasScripts, mode = 'productio
   } else {
     root.children.unshift(readinessScriptElement)
   }
+
+  return {
+    element: readinessScriptElement,
+    content: data
+  }
 }
 
 /**
@@ -332,30 +402,40 @@ export function injectReadinessScript (root, head, hasScripts, mode = 'productio
  * @param {CoraliteComponentRoot} root - The root of the AST.
  * @param {CoraliteElement | null} head - The head element.
  * @param {Object} importMap - The import map object.
+ * @param {string} base - Base URL
+ * @param {Object} [options] - Optional settings (e.g. nonce).
+ * @returns {{ element: CoraliteElement | null, content: string }}
  */
-export function injectImportMap (root, head, importMap, base) {
+export function injectImportMap (root, head, importMap, base, options = {}) {
   const finalImportMap = { ...importMap }
   if (base) {
     finalImportMap['assets/js/manifest.js'] = `${base}assets/js/manifest.js`
   }
 
   if (Object.keys(finalImportMap).length === 0) {
-    return
+    return {
+      element: null,
+      content: ''
+    }
+  }
+
+  const importMapAttribs = { type: 'importmap' }
+  if (options?.nonce) {
+    importMapAttribs.nonce = options.nonce
   }
 
   const importMapElement = createCoraliteElement({
     type: 'tag',
     name: 'script',
     parent: head || root,
-    attribs: {
-      type: 'importmap'
-    },
+    attribs: importMapAttribs,
     children: []
   })
 
+  const content = JSON.stringify({ imports: finalImportMap })
   importMapElement.children.push(createCoraliteTextNode({
     type: 'text',
-    data: JSON.stringify({ imports: finalImportMap }),
+    data: content,
     parent: importMapElement
   }))
 
@@ -363,6 +443,11 @@ export function injectImportMap (root, head, importMap, base) {
     head.children.push(importMapElement)
   } else {
     root.children.unshift(importMapElement)
+  }
+
+  return {
+    element: importMapElement,
+    content
   }
 }
 
