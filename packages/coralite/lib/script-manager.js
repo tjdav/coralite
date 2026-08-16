@@ -826,10 +826,26 @@ export default {
         relativePath = `../css/${relativePath}`
       }
 
+      let text = file.text
+      if (text.includes('//# sourceMappingURL=data:application/json;base64,')) {
+        const smMatch = text.match(/\/\/# sourceMappingURL=data:application\/json;base64,([A-Za-z0-9+/=]+)/)
+        if (smMatch) {
+          try {
+            const smJson = Buffer.from(smMatch[1], 'base64').toString('utf-8')
+            const parsedMap = JSON.parse(smJson)
+            if (!parsedMap.sources || parsedMap.sources.length === 0 || !parsedMap.mappings || parsedMap.mappings.trim() === '') {
+              text = text.replace(/\n?\/\/# sourceMappingURL=data:application\/json;base64,[A-Za-z0-9+/=]+/, '').trimEnd() + '\n'
+            }
+          } catch {
+            // ignore JSON parse errors if any
+          }
+        }
+      }
+
       outputFiles[relativePath] = {
         ...file,
         hashedPath: relativePath,
-        text: file.text
+        text
       }
     }
   }

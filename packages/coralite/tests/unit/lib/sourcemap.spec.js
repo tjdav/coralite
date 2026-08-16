@@ -134,4 +134,37 @@ export default defineComponent({
     const hasScriptContent = sourceMap.sourcesContent[sourceIndex].includes('componentId: "complex-component"') || sourceMap.sourcesContent[sourceIndex].includes('complex-component')
     assert.ok(hasScriptContent, 'Source map sourcesContent does not contain expected script')
   })
+
+  test('prunes empty or dummy inline sourcemaps from chunks', async () => {
+    // Pure template component without client script
+    const componentContent = `
+<template id="pure-template">
+  <p>Static markup</p>
+</template>
+`
+    await project.writeComponent('pure-template.html', componentContent)
+
+    const pageContent = `
+<pure-template></pure-template>
+`
+    await project.writePage('index.html', pageContent)
+
+    const coralite = await project.createCoralite({
+      mode: 'development'
+    })
+
+    await coralite.build()
+
+    const outputFiles = coralite.outputFiles
+    for (const [filePath, file] of Object.entries(outputFiles)) {
+      if (filePath.endsWith('.js')) {
+        const smMatch = file.text.match(/\/\/# sourceMappingURL=data:application\/json;base64,([A-Za-z0-9+/=]+)/)
+        if (smMatch) {
+          const parsedMap = JSON.parse(Buffer.from(smMatch[1], 'base64').toString('utf-8'))
+          assert.ok(parsedMap.sources && parsedMap.sources.length > 0, `File ${filePath} contains inline sourcemap with empty sources`)
+          assert.ok(parsedMap.mappings && parsedMap.mappings.trim() !== '', `File ${filePath} contains inline sourcemap with empty mappings`)
+        }
+      }
+    }
+  })
 })
