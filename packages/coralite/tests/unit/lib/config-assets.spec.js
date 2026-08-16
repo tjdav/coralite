@@ -3,7 +3,7 @@ import { test, describe } from 'node:test'
 import { defineConfig } from '../../../lib/config.js'
 import { createCoralite } from '../../../lib/coralite.js'
 import { CoraliteError } from '../../../lib/utils/errors.js'
-import { rm, readFile } from 'node:fs/promises'
+import { rm, readFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
 describe('Config Asset Validation & registerAsset', () => {
@@ -95,9 +95,13 @@ describe('Config Asset Validation & registerAsset', () => {
   })
 
   test('app.registerAsset writes content asset and registers injection', async () => {
+    const compDir = join(tmpDir, 'components')
+    const pageDir = join(tmpDir, 'pages')
+    await mkdir(compDir, { recursive: true })
+    await mkdir(pageDir, { recursive: true })
     const app = await createCoralite({
-      components: 'tests/fixtures/components',
-      pages: 'tests/fixtures/pages',
+      components: compDir,
+      pages: pageDir,
       output: tmpDir
     })
 
@@ -119,9 +123,13 @@ describe('Config Asset Validation & registerAsset', () => {
 
   test('app.registerAsset respects user config precedence on dest collision', async () => {
     let warningLogged = false
+    const compDir = join(tmpDir, 'components')
+    const pageDir = join(tmpDir, 'pages')
+    await mkdir(compDir, { recursive: true })
+    await mkdir(pageDir, { recursive: true })
     const app = await createCoralite({
-      components: 'tests/fixtures/components',
-      pages: 'tests/fixtures/pages',
+      components: compDir,
+      pages: pageDir,
       output: tmpDir,
       assets: [{
         dest: 'assets/collision.js',

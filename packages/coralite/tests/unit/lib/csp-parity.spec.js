@@ -189,4 +189,33 @@ describe('CSP Renderer Modes & Parity', () => {
       await cleanupTestProject()
     }
   })
+
+  it('Import map appears before any module script or readiness script in HTML', async () => {
+    await setupTestProject()
+    try {
+      const app = await createCoralite({
+        components: join(tmpDir, 'components'),
+        pages: join(tmpDir, 'pages'),
+        mode: 'testing',
+        incremental: false
+      })
+
+      const results = await app.build(null, { incremental: false })
+      const html = results[0].content
+
+      const importMapIndex = html.indexOf('<script type="importmap">')
+      const moduleScriptIndex = html.indexOf('<script type="module">')
+
+      assert.ok(importMapIndex !== -1, 'Import map tag should exist in HTML')
+      assert.ok(moduleScriptIndex !== -1, 'Module script tag should exist in HTML')
+      assert.ok(importMapIndex < moduleScriptIndex, 'Import map must appear before any module script')
+
+      // Readiness script should not be a module script
+      assert.ok(html.includes('CoraliteLifecycleManager'))
+      const readinessIndex = html.indexOf('CoraliteLifecycleManager')
+      assert.ok(importMapIndex < readinessIndex, 'Import map must appear before readiness script')
+    } finally {
+      await cleanupTestProject()
+    }
+  })
 })

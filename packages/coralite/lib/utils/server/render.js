@@ -244,7 +244,8 @@ export function injectReadinessScript (root, head, hasScripts, mode = 'productio
       }
 
       const scriptContent = "(() => { document.documentElement.setAttribute('data-coralite-ready', 'true'); })();"
-      const attribs = { type: 'module' }
+      /** @type {Record<string, string>} */
+      const attribs = {}
       if (options?.nonce) {
         attribs.nonce = options.nonce
       }
@@ -279,7 +280,8 @@ export function injectReadinessScript (root, head, hasScripts, mode = 'productio
 
   const isHydrated = !hasScripts
 
-  const readinessScriptAttribs = { type: 'module' }
+  /** @type {Record<string, string>} */
+  const readinessScriptAttribs = {}
   if (options?.nonce) {
     readinessScriptAttribs.nonce = options.nonce
   }
@@ -440,7 +442,7 @@ export function injectImportMap (root, head, importMap, base, options = {}) {
   }))
 
   if (head) {
-    head.children.push(importMapElement)
+    head.children.unshift(importMapElement)
   } else {
     root.children.unshift(importMapElement)
   }

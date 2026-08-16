@@ -88,10 +88,11 @@ describe('render.js Coverage Gaps', () => {
   })
 
   describe('injectReadinessScript', () => {
-    it('should inject into root and contain DevTools in development mode', () => {
+    it('should inject into root and contain DevTools in development mode without type="module"', () => {
       const root = createCoraliteComponent({ children: [] })
       injectReadinessScript(root, null, true, 'development')
       assert.strictEqual(root.children[0].name, 'script')
+      assert.strictEqual(root.children[0].attribs.type, undefined)
       assert.ok(root.children[0].children[0].data.includes('__coralite__'))
       assert.ok(root.children[0].children[0].data.includes('lifecycle'))
       assert.ok(root.children[0].children[0].data.includes("Symbol.for('coralite.testing')"))
