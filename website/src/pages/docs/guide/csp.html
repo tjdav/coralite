@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Coralite Content Security Policy (CSP) Guide"
+    description="Comprehensive guide to securing Coralite applications with Content Security Policy (CSP), including SSG hashing, SSR nonces, externalization modes, and route-level overrides."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+  <main class="container content">
+    <h1 class="display">Content Security Policy (CSP)</h1>
+
+    <p>Content Security Policy (CSP) is a critical defense-in-depth web security standard designed to prevent Cross-Site Scripting (XSS), data injection, and malicious asset loading. Modern strict CSP policies (CSP Level 3) eliminate dangerous directives like <code>'unsafe-inline'</code> and <code>'unsafe-eval'</code>, enforcing cryptographic validation via <strong>hashes</strong> or <strong>nonces</strong> for inline assets.</p>
+
+    <p>Coralite provides first-class, build-time and runtime CSP integration. The framework automatically tracks and secures all framework-injected elements—including hydration runtimes, component scripts, import maps, scoped component styles, and development live-reload connections—without requiring developer manual intervention.</p>
+
+    <coralite-heading level="2" text="Quick Setup"></coralite-heading>
+
+    <p>To enable Content Security Policy in your Coralite project, declare the <code>csp</code> configuration block in your <code>coralite.config.js</code> file using <code>defineConfig</code>:</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+import { defineConfig } from 'coralite-scripts';
+
+export default defineConfig({
+  output: './dist',
+  pages: './src/pages',
+  templates: './src/templates',
+  csp: {
+    enabled: true,
+    hashAlgorithm: 'sha256',
+    injectMeta: true,
+    directives: {
+      'default-src': ["'self'"],
+      'script-src': ["'self'"],
+      'style-src': ["'self'"]
+    }
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Configuration Options"></coralite-heading>
+
+    <p>The <code>csp</code> configuration object accepts the following options:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Option</th>
+        <th>Type</th>
+        <th>Default</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>enabled</code></td>
+        <td><code>boolean</code></td>
+        <td><code>true</code></td>
+        <td>Enables or disables CSP header and meta tag generation.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>nonce</code></td>
+        <td><code>string</code></td>
+        <td><code>undefined</code></td>
+        <td>Cryptographic random nonce for per-request SSR propagation. Activates <strong>SSR Nonce Mode</strong> when set.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>hashAlgorithm</code></td>
+        <td><code>'sha256' | 'sha384' | 'sha512'</code></td>
+        <td><code>'sha256'</code></td>
+        <td>Hashing algorithm for inline script and style nodes in <strong>SSG Hash Mode</strong>.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>injectMeta</code></td>
+        <td><code>boolean</code></td>
+        <td><code>true</code></td>
+        <td>Automatically injects <code>&lt;meta http-equiv="Content-Security-Policy" content="..."&gt;</code> into document <code>&lt;head&gt;</code> during build.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>reportOnly</code></td>
+        <td><code>boolean</code></td>
+        <td><code>false</code></td>
+        <td>Uses <code>Content-Security-Policy-Report-Only</code> header / meta name instead of enforcing policies.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>externalScripts</code></td>
+        <td><code>boolean</code></td>
+        <td><code>false</code></td>
+        <td>Bundles runtime scripts into external JavaScript files (<code>assets/js/pages/[page]-[hash].js</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>externalStyles</code></td>
+        <td><code>boolean</code></td>
+        <td><code>false</code></td>
+        <td>Bundles inline component styles into external CSS files (<code>assets/css/coralite-inline-[hash].css</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>directives</code></td>
+        <td><code>Record&lt;string, string | string[]&gt;</code></td>
+        <td>Default directives</td>
+        <td>Custom directive overrides merged into the baseline CSP directives.</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="2" text="Strategy 1: Static Site Generation (SSG) with Automated Hashing"></coralite-heading>
+
+    <p>For statically generated sites (SSG), Coralite inspects all serialized inline <code>&lt;script&gt;</code>, <code>&lt;script type="importmap"&gt;</code>, and <code>&lt;style&gt;</code> elements post-render. It automatically calculates base64 cryptographic hashes (e.g. <code>'sha256-...'</code>) and populates the <code>script-src</code> and <code>style-src</code> directives.</p>
+
+    <coralite-heading level="3" text="Meta Tag Injection"></coralite-heading>
+
+    <p>When <code>injectMeta: true</code> is enabled, Coralite automatically inserts the computed policy directly into the HTML document's <code>&lt;head&gt;</code>:</p>
+
+    <coralite-code-highlight language="html">
+&lt;meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-abc...' 'sha256-xyz...'; style-src 'self' 'sha256-123...';"&gt;
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Generating HTTP Response Headers for Hosting Platforms"></coralite-heading>
+
+    <p>For hosting environments that support HTTP response headers (such as Netlify, Cloudflare Pages, Vercel, or Nginx), Coralite exposes the computed header string on the build result (<code>result.csp.header</code>). You can generate static header rules directly from build callbacks.</p>
+
+    <h4>Netlify (_headers file) Example</h4>
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+import fs from 'node:fs/promises';
+import { defineConfig } from 'coralite-scripts';
+
+export default defineConfig({
+  output: './dist',
+  pages: './src/pages',
+  templates: './src/templates',
+  csp: { enabled: true, injectMeta: false },
+  plugins: [{
+    name: 'netlify-headers',
+    server: {
+      onAfterBuild: async ({ results, app }) => {
+        const headerRules = results.map(res => {
+          const route = res.path.pathname.replace(/^dist/, '').replace(/index\.html$/, '');
+          return `${route}\n  Content-Security-Policy: ${res.csp.header}`;
+        }).join('\n\n');
+        
+        await fs.writeFile('./dist/_headers', headerRules);
+      }
+    }
+  }]
+});
+    </coralite-code-highlight>
+
+    <h4>Nginx Configuration Example</h4>
+    <coralite-code-highlight language="text">
+# nginx.conf
+server {
+  listen 80;
+  server_name example.com;
+  root /var/www/html;
+
+  add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-...'; style-src 'self' 'sha256-...'";
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Strategy 2: Server-Side Rendering (SSR) with Nonces"></coralite-heading>
+
+    <p>For dynamic Server-Side Rendered (SSR) applications, generating a fresh cryptographic nonce per HTTP request provides optimal protection while enabling CSP Level 3 <code>'strict-dynamic'</code> trust propagation.</p>
+
+    <coralite-heading level="3" text="Express Middleware Example"></coralite-heading>
+
+    <coralite-code-highlight language="javascript">
+import express from 'express';
+import crypto from 'node:crypto';
+import { createCoralite } from 'coralite';
+
+const app = express();
+const coralite = await createCoralite({
+  pages: './src/pages',
+  components: './src/components',
+  csp: { enabled: true }
+});
+
+app.get('*', async (req, res) => {
+  // 1. Generate a cryptographic nonce per request
+  const nonce = crypto.randomBytes(16).toString('base64');
+
+  // 2. Build the page passing the request nonce
+  const results = await coralite.build(req.path, { nonce });
+  const result = results[0];
+
+  // 3. Set the response header and return HTML
+  res.setHeader('Content-Security-Policy', result.csp.header);
+  res.send(result.content);
+});
+
+app.listen(3000);
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Fastify Integration Example"></coralite-heading>
+
+    <coralite-code-highlight language="javascript">
+import Fastify from 'fastify';
+import crypto from 'node:crypto';
+import { createCoralite } from 'coralite';
+
+const fastify = Fastify();
+const coralite = await createCoralite({
+  pages: './src/pages',
+  components: './src/components',
+  csp: { enabled: true }
+});
+
+fastify.get('*', async (request, reply) => {
+  const nonce = crypto.randomBytes(16).toString('base64');
+  const results = await coralite.build(request.url, { nonce });
+  const result = results[0];
+
+  reply.header('Content-Security-Policy', result.csp.header);
+  reply.type('text/html').send(result.content);
+});
+
+await fastify.listen({ port: 3000 });
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Strategy 3: Zero-Inline External Mode"></coralite-heading>
+
+    <p>If your compliance standard strictly prohibits inline scripts or styles entirely—forbidding inline hashes or nonces—Coralite offers full externalization options via <code>externalScripts</code> and <code>externalStyles</code>.</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+import { defineConfig } from 'coralite-scripts';
+
+export default defineConfig({
+  output: './dist',
+  pages: './src/pages',
+  templates: './src/templates',
+  csp: {
+    enabled: true,
+    externalScripts: true,
+    externalStyles: true,
+    directives: {
+      'script-src': ["'self'", "'strict-dynamic'"],
+      'style-src': ["'self'"]
+    }
+  }
+});
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="How Zero-Inline Mode Operates"></coralite-heading>
+
+    <ul>
+      <li><strong>External Scripts (`externalScripts: true`)</strong>: Extracts page runtime scripts into external hashed JavaScript files (<code>assets/js/pages/[page]-[hash].js</code>) loaded via <code>&lt;script type="module" src="..."&gt;</code>. Import maps remain inline per HTML standard specifications and are secured via nonces or hashes.</li>
+      <li><strong>External Styles (`externalStyles: true`)</strong>: Bundles all component scoped CSS and inline styles into an external stylesheet (<code>assets/css/coralite-inline-[hash].css</code>) loaded via <code>&lt;link rel="stylesheet" href="..."&gt;</code>, allowing strict <code>style-src 'self'</code>.</li>
+    </ul>
+
+    <coralite-heading level="2" text="Route-Level Customization"></coralite-heading>
+
+    <p>Individual pages can override or disable global CSP configurations using HTML <code>&lt;meta&gt;</code> tags inside their document <code>&lt;head&gt;</code>.</p>
+
+    <coralite-heading level="3" text="Disabling CSP on a Specific Route"></coralite-heading>
+
+    <p>To disable CSP generation for an isolated route (e.g., a legacy landing page or embedded widget demo), add:</p>
+
+    <coralite-code-highlight language="html">
+&lt;head&gt;
+  &lt;meta name="csp" content="false"&gt;
+&lt;/head&gt;
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Overriding Directives per Route"></coralite-heading>
+
+    <p>To declare page-specific directive additions (e.g. allowing video streams or third-party analytics on a single page), pass a JSON object in <code>name="csp-directives"</code>:</p>
+
+    <coralite-code-highlight language="html">
+&lt;head&gt;
+  &lt;meta name="csp-directives" content='{"media-src": ["https://stream.example.com"], "connect-src": ["https://api.example.com"]}'&gt;
+&lt;/head&gt;
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Development Server &amp; Live-Reload"></coralite-heading>
+
+    <p>When developing locally using <code>coralite-scripts dev</code> (or when <code>mode === 'development'</code>), Coralite automatically appends <code>connect-src 'self'</code> (or <code>connect-src ws: http:</code>) to allow Server-Sent Events (SSE) live-reloading via the <code>/_/rebuild.js</code> route.</p>
+
+    <p>This guarantees that enabling strict CSP during local development will never break hot-reloading or terminal error overlays.</p>
+
+    <coralite-heading level="2" text="Trusted Types &amp; Client Runtime Safety"></coralite-heading>
+
+    <p>Coralite's client-side runtime (e.g., hydration helpers, error overlays, dynamic DOM mounting) is explicitly written to satisfy DOM Sink standards and Content Security Policy Trusted Types. It avoids unsafe sinks such as <code>innerHTML</code>, <code>outerHTML</code>, or string-based <code>style</code> assignments, utilizing safe <code>document.createElement</code>, <code>textContent</code>, and explicit DOM node manipulation routines.</p>
+
+  </main>
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

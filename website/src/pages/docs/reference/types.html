@@ -49,6 +49,9 @@
         <li><a href="#coralitemodule">CoraliteModule</a></li>
         <li><a href="#coralite-module-slot-element">CoraliteModuleSlotElement</a></li>
         <li><a href="#coraliteconfig">CoraliteConfig</a></li>
+        <li><a href="#coralitecspconfig">CoraliteCSPConfig</a></li>
+        <li><a href="#coralitecspdirectives">CoraliteCSPDirectives</a></li>
+        <li><a href="#coralitecspresult">CoraliteCSPResult</a></li>
         <li><a href="#coralitetestingconfig">CoraliteTestingConfig</a></li>
         <li><a href="#coralitetestingmock">CoraliteTestingMock</a></li>
         <li><a href="#coralitescriptcontent">CoraliteScriptContext</a></li>
@@ -591,6 +594,11 @@
             <td><code>number</code> (optional)</td>
             <td>Time taken to render the page in milliseconds.</td>
           </tr>
+          <tr>
+            <td><code>csp</code></td>
+            <td><a href="#coralitecspresult"><code>CoraliteCSPResult</code></a> (optional)</td>
+            <td>Content Security Policy results including computed header, hashes, and directives.</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -868,6 +876,132 @@
             <td><code>skipRenderByAttribute</code></td>
             <td><code><a href="#ignorebyattribute">IgnoreByAttribute[]</a> | string[]</code> (optional)</td>
             <td>Attribute name-value pairs to skip rendering.</td>
+          </tr>
+          <tr>
+            <td><code>csp</code></td>
+            <td><a href="#coralitecspconfig"><code>CoraliteCSPConfig</code></a> (optional)</td>
+            <td>Content Security Policy configuration options.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteCSPConfig" id="coralitecspconfig"></coralite-heading>
+    <p>Configuration options for Content Security Policy generation.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>enabled</code></td>
+            <td><code>boolean</code> (optional)</td>
+            <td>Enables or disables CSP header/meta generation. Defaults to <code>true</code> when <code>csp</code> config exists.</td>
+          </tr>
+          <tr>
+            <td><code>nonce</code></td>
+            <td><code>string</code> (optional)</td>
+            <td>Cryptographic random nonce string for request-level SSR propagation (SSR Nonce Mode).</td>
+          </tr>
+          <tr>
+            <td><code>hashAlgorithm</code></td>
+            <td><code>'sha256' | 'sha384' | 'sha512'</code> (optional)</td>
+            <td>Algorithm used to calculate inline script and style hashes (SSG Hash Mode). Defaults to <code>'sha256'</code>.</td>
+          </tr>
+          <tr>
+            <td><code>injectMeta</code></td>
+            <td><code>boolean</code> (optional)</td>
+            <td>Whether to inject a <code>&lt;meta http-equiv="Content-Security-Policy" content="..."&gt;</code> tag in SSG mode. Defaults to <code>true</code>.</td>
+          </tr>
+          <tr>
+            <td><code>reportOnly</code></td>
+            <td><code>boolean</code> (optional)</td>
+            <td>Enables report-only mode (uses <code>Content-Security-Policy-Report-Only</code>). Defaults to <code>false</code>.</td>
+          </tr>
+          <tr>
+            <td><code>externalScripts</code></td>
+            <td><code>boolean</code> (optional)</td>
+            <td>Bundles inline page runtime scripts into external JS files. Defaults to <code>false</code>.</td>
+          </tr>
+          <tr>
+            <td><code>externalStyles</code></td>
+            <td><code>boolean</code> (optional)</td>
+            <td>Bundles component scoped and inline styles into external CSS files. Defaults to <code>false</code>.</td>
+          </tr>
+          <tr>
+            <td><code>directives</code></td>
+            <td><a href="#coralitecspdirectives"><code>CoraliteCSPDirectives</code></a> (optional)</td>
+            <td>Custom directive source list overrides merged into base directives.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteCSPDirectives" id="coralitecspdirectives"></coralite-heading>
+    <p>Map of CSP directive names to source lists.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Record&lt;string, string | string[]&gt;</code></td>
+            <td>Object mapping directive names (e.g. <code>'script-src'</code>) to arrays or space-delimited strings of sources (e.g. <code>["'self'", "https://example.com"]</code>).</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <coralite-heading level="3" text="CoraliteCSPResult" id="coralitecspresult"></coralite-heading>
+    <p>Computed Content Security Policy result returned on build results.</p>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Property</th>
+            <th>Type</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>mode</code></td>
+            <td><code>'ssr-nonce' | 'ssg-hash' | 'external-scripts' | 'disabled'</code></td>
+            <td>Active CSP operating mode.</td>
+          </tr>
+          <tr>
+            <td><code>nonce</code></td>
+            <td><code>string | undefined</code></td>
+            <td>The request nonce string if running in SSR Nonce mode.</td>
+          </tr>
+          <tr>
+            <td><code>scriptHashes</code></td>
+            <td><code>string[]</code></td>
+            <td>Array of calculated SHA hashes for inline script nodes.</td>
+          </tr>
+          <tr>
+            <td><code>styleHashes</code></td>
+            <td><code>string[]</code></td>
+            <td>Array of calculated SHA hashes for inline style nodes.</td>
+          </tr>
+          <tr>
+            <td><code>header</code></td>
+            <td><code>string</code></td>
+            <td>Formatted HTTP response header string (e.g. <code>default-src 'self'; ...</code>).</td>
+          </tr>
+          <tr>
+            <td><code>directives</code></td>
+            <td><a href="#coralitecspdirectives"><code>CoraliteCSPDirectives</code></a></td>
+            <td>Final resolved directive dictionary.</td>
           </tr>
         </tbody>
       </table>

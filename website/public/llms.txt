@@ -590,4 +590,68 @@ Coralite provides `coralite validate-plugins` (alias: `coralite validate:plugins
 *   **Lifecycle Hook Verification**: Asserts server (`onBeforeBuild`, `onAfterBuild`, `onPageSet`, etc.) and client (`onConnected`, `onDisconnected`) hooks are valid functions.
 *   **Isomorphic Boundary Protection**: Detects server-only module imports (`node:fs`, `express`) inside `client` plugin blocks and ensures `client.config` contains serializable plain objects.
 
+## 16. Content Security Policy (CSP)
+
+Coralite provides first-class, build-time and runtime Content Security Policy (CSP Level 2/3) support.
+
+### 16.1 Architectural Overview
+Coralite automatically secures framework-injected elements without requiring manual script hashes or inline script exemptions:
+* **Client Runtime Bootstrap**: Injected hydration/runtime scripts.
+* **Component Styles**: Component-specific `<style>` elements and inline styles.
+* **Import Maps**: Browser ES module specifier resolution (`<script type="importmap">`).
+* **Dev Live-Reload**: SSE connection script in development mode.
+
+### 16.2 Three Mutually Exclusive Modes
+1. **SSR Nonce Mode**:
+   - Cryptographic random nonce generated per request and passed into `coralite.build(path, { nonce })`.
+   - Propagated to all `<script>`, `<script type="importmap">`, and `<style>` elements.
+   - Emits `'strict-dynamic' 'nonce-...'` directives.
+2. **SSG Hash Mode**:
+   - Automated deterministic SHA-256 (or SHA-384/512) calculation on post-serialization inline script and style text nodes.
+   - Emits script/style hashes into CSP directives.
+3. **External Scripts Mode (`csp.externalScripts: true`)**:
+   - Externalizes page runtime scripts into external JavaScript files (`assets/js/pages/[page]-[hash].js`).
+   - Keeps import maps inline per HTML spec (hashed in SSG mode or nonced in SSR mode).
+   - In production when no component scripts exist, sets `data-coralite-ready="true"` on `<html>`.
+
+### 16.3 External Styles Mode (`csp.externalStyles: true`)
+* Bundles `#coralite-components` and `#coralite-inline-styles` into external stylesheet bundles (`assets/css/coralite-inline-[hash].css`) loaded via `<link rel="stylesheet">`.
+* Enables strict zero-inline CSS compliance (`style-src 'self'`) without needing style nonces or hashes.
+
+### 16.4 Configuration Schema (`defineConfig({ csp: ... })`)
+```javascript
+export default defineConfig({
+  csp: {
+    enabled: true,              // Enable/disable CSP generation (default: true if csp object provided)
+    nonce: undefined,           // Per-request nonce string for SSR mode
+    hashAlgorithm: 'sha256',    // Hash algorithm for SSG mode ('sha256' | 'sha384' | 'sha512')
+    injectMeta: true,           // Auto-inject <meta http-equiv="Content-Security-Policy"> tag in SSG mode
+    reportOnly: false,          // Emit Content-Security-Policy-Report-Only instead
+    externalScripts: false,     // Bundle runtime scripts into external JS files
+    externalStyles: false,      // Bundle inline component styles into external CSS files
+    directives: {               // Custom directive overrides
+      'default-src': ["'self'"],
+      'script-src': ["'self'"],
+      'style-src': ["'self'"]
+    }
+  }
+});
+```
+
+### 16.5 Page-Level Overrides
+Pages can customize or disable CSP using meta tags:
+* **Disable CSP for Page**: `<meta name="csp" content="false">`
+* **Route-Level Directives**: `<meta name="csp-directives" content='{"script-src": ["https://example.com"]}'>`
+* **Page Nonce**: `page.meta.nonce` set via custom page pipeline metadata.
+
+### 16.6 Dev Server Live-Reload
+* In development mode (`mode === 'development'`), `coralite-scripts dev` automatically appends `connect-src 'self'` (or `connect-src ws: http:`) to allow SSE live-reloading via the `/_/rebuild.js` route.
+
+### 16.7 Build Metadata & Exports
+* **Build Results**: `result.csp` and `session.csp` expose `{ mode, nonce, scriptHashes, styleHashes, header, directives }`.
+* **Exported Utilities**:
+  - `calculateHash(content, algorithm)`: Computes base64 SHA hash for CSP.
+  - `formatCSPDirectives(directives, options)`: Formats directive object into HTTP header string.
+  - `injectCSPMeta(root, head, cspContent, reportOnly)`: Injects HTTP-equiv meta tag into document `<head>`.
+
 

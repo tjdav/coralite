@@ -17,6 +17,8 @@
       <li><a href="#create-coralite">createCoralite Factory</a></li>
       <li><a href="#build-method">Build Method</a></li>
       <li><a href="#save-method">Save Method</a></li>
+      <li><a href="#csp-utilities">Content Security Policy Utilities</a></li>
+      <li><a href="#csp-build-results">Content Security Policy Build Results</a></li>
       <li><a href="#get-page-paths-using-custom-element">Get Page Paths Using Custom Element</a></li>
       <li><a href="#add-render-queue">Add Render Queue</a></li>
       <li><a href="#create-component">Create Component</a></li>
@@ -87,6 +89,12 @@
             <td>Optional</td>
             <td>A callback function for handling errors and warnings.</td>
           </tr>
+          <tr>
+            <th scope="row">options.csp</th>
+            <td><code>CoraliteCSPConfig</code></td>
+            <td>Optional</td>
+            <td>Content Security Policy options for SSG hashing, SSR nonces, and script/style externalization.</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -125,6 +133,43 @@ await app.build(path, options, callback)</coralite-code-highlight>
  * @returns {Promise<CoraliteSaveResult[]>} Array of saved file results.
  */
 await app.save(path, options)</coralite-code-highlight>
+
+    <coralite-heading level="2" text="Content Security Policy Utilities" id="csp-utilities"></coralite-heading>
+
+    <p>Coralite exports low-level CSP helper functions for custom server integrations and middleware pipelines.</p>
+
+    <coralite-heading level="3" text="calculateHash(content, algorithm)"></coralite-heading>
+    <p>Calculates a cryptographic base64 hash string suitable for CSP header source lists.</p>
+
+    <coralite-code-highlight language="JavaScript">import { calculateHash } from 'coralite';
+
+// Returns: "'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='"
+const hash = calculateHash('console.log("hello");', 'sha256');</coralite-code-highlight>
+
+    <coralite-heading level="3" text="formatCSPDirectives(directives, options)"></coralite-heading>
+    <p>Converts a directive dictionary into a normalized Content-Security-Policy HTTP header string.</p>
+
+    <coralite-code-highlight language="JavaScript">import { formatCSPDirectives } from 'coralite';
+
+const headerString = formatCSPDirectives({
+  'default-src': ["'self'"],
+  'script-src': ["'self'", "'sha256-abc...'"]
+});</coralite-code-highlight>
+
+    <coralite-heading level="3" text="injectCSPMeta(root, head, cspContent, reportOnly)"></coralite-heading>
+    <p>Helper used during AST compilation to insert or update the <code>&lt;meta http-equiv="Content-Security-Policy"&gt;</code> element in the document <code>&lt;head&gt;</code>.</p>
+
+    <coralite-heading level="2" text="Content Security Policy Build Results" id="csp-build-results"></coralite-heading>
+
+    <p>When rendering or compiling pages via <code>app.build()</code> or <code>app.save()</code>, each returned page result object exposes a <code>csp</code> property (type <code>CoraliteCSPResult</code>):</p>
+
+    <coralite-code-highlight language="JavaScript">const results = await app.build('/index.html');
+const { csp } = results[0];
+
+console.log(csp.mode);         // 'ssg-hash' | 'ssr-nonce' | 'external-scripts'
+console.log(csp.header);       // "default-src 'self'; script-src 'self' 'sha256-...';"
+console.log(csp.scriptHashes); // ["sha256-..."]
+console.log(csp.directives);   // { 'default-src': ["'self'"], ... }</coralite-code-highlight>
 
     <coralite-heading level="2" text="Get Page Paths Using Custom Element"></coralite-heading>
     <p>Uses the internal dependency graph to find all pages that consume a specific component.</p>

@@ -184,6 +184,11 @@
             <td><code>CoralitePluginInstance[]</code></td>
             <td>Coralite plugin instances</td>
           </tr>
+          <tr>
+            <th scope="row"><code>csp</code></th>
+            <td><code>CoraliteCSPConfig</code></td>
+            <td>Content Security Policy configuration options passed through to Coralite engine</td>
+          </tr>
         </tbody>
       </table>
     </div>
@@ -282,12 +287,13 @@ coralite-scripts build</coralite-code-highlight>
       <li>Compilation time for dynamic pages</li>
     </ul>
 
-    <coralite-heading level="3" text="Server-Sent Events (SSE)"></coralite-heading>
+    <coralite-heading level="3" text="Server-Sent Events (SSE) &amp; CSP Considerations"></coralite-heading>
     <p>The development server provides a <code>/_/rebuild</code> endpoint that clients can connect to for real-time updates. The server sends two types of messages:</p>
     <ul>
       <li><code>data: connected</code> - Initial connection confirmation</li>
       <li><code>data: reload</code> - Trigger page reload</li>
     </ul>
+    <p>When running in development mode (<code>coralite-scripts dev</code>), Coralite automatically appends <code>connect-src 'self'</code> (or <code>connect-src ws: http:</code>) to any configured CSP directives. This ensures that the SSE live-reload script and <code>/_/rebuild.js</code> route establish real-time connections seamlessly without triggering CSP browser warnings or blocking reloads.</p>
 
     <coralite-heading level="2" text="Build Process"></coralite-heading>
     <p>The production build process is optimized for performance and clean output.</p>

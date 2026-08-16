@@ -119,6 +119,99 @@ export default defineConfig({
         <td><code>true</code></td>
         <td>Whether to skip rebuilding unchanged pages and components via change detection. Set to <code>false</code> to force a full rebuild on every run.</td>
       </tr>
+      <tr slot="body">
+        <td><code>csp</code></td>
+        <td><code><a href="/docs/reference/types.html#coralitecspconfig">CoraliteCSPConfig</a></code></td>
+        <td><code>undefined</code></td>
+        <td>Content Security Policy (CSP Level 2/3) configuration options.</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="2" text="Content Security Policy (csp)"></coralite-heading>
+
+    <p>Coralite provides build-time and runtime Content Security Policy support for SSG and SSR environments.</p>
+
+    <coralite-code-highlight language="javascript">
+// coralite.config.js
+import { defineConfig } from 'coralite-scripts';
+
+export default defineConfig({
+  output: 'dist',
+  pages: 'src/pages',
+  templates: 'src/templates',
+  csp: {
+    enabled: true,
+    hashAlgorithm: 'sha256',
+    injectMeta: true,
+    reportOnly: false,
+    externalScripts: false,
+    externalStyles: false,
+    directives: {
+      'default-src': ["'self'"],
+      'script-src': ["'self'"],
+      'style-src': ["'self'"]
+    }
+  }
+});
+    </coralite-code-highlight>
+
+    <p>The <code>csp</code> sub-options include:</p>
+
+    <coralite-table>
+      <tr slot="head">
+        <th>Sub-Property</th>
+        <th>Type</th>
+        <th>Default</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>enabled</code></td>
+        <td><code>boolean</code></td>
+        <td><code>true</code></td>
+        <td>Enables or disables CSP calculation and meta tag injection.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>nonce</code></td>
+        <td><code>string</code></td>
+        <td><code>undefined</code></td>
+        <td>Cryptographic random nonce for per-request SSR propagation (SSR Nonce Mode).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>hashAlgorithm</code></td>
+        <td><code>'sha256' | 'sha384' | 'sha512'</code></td>
+        <td><code>'sha256'</code></td>
+        <td>Hashing algorithm for inline text nodes (SSG Hash Mode).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>injectMeta</code></td>
+        <td><code>boolean</code></td>
+        <td><code>true</code></td>
+        <td>Automatically injects <code>&lt;meta http-equiv="Content-Security-Policy" content="..."&gt;</code> into <code>&lt;head&gt;</code>.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>reportOnly</code></td>
+        <td><code>boolean</code></td>
+        <td><code>false</code></td>
+        <td>Uses report-only meta/header naming instead of enforcing policies.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>externalScripts</code></td>
+        <td><code>boolean</code></td>
+        <td><code>false</code></td>
+        <td>Bundles page runtime scripts into external JS files (<code>assets/js/pages/[page]-[hash].js</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>externalStyles</code></td>
+        <td><code>boolean</code></td>
+        <td><code>false</code></td>
+        <td>Bundles component scoped and inline styles into external CSS files (<code>assets/css/coralite-inline-[hash].css</code>).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>directives</code></td>
+        <td><code><a href="/docs/reference/types.html#coralitecspdirectives">CoraliteCSPDirectives</a></code></td>
+        <td>Default directives</td>
+        <td>Custom directive overrides merged into standard CSP rules.</td>
+      </tr>
     </coralite-table>
 
     <coralite-heading level="2" text="Error & Warning Handling (onError)"></coralite-heading>
