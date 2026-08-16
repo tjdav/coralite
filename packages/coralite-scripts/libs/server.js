@@ -7,7 +7,6 @@ import { displayError, displayInfo, displayWarning, displaySuccess, toCode, toMS
 import { dirname, extname, join, normalize, relative, sep } from 'path'
 import { access, constants, mkdir, readFile, writeFile } from 'fs/promises'
 import { createCoralite } from 'coralite'
-import { existsSync } from 'fs'
 import portfinder from 'portfinder'
 
 /**
@@ -466,16 +465,17 @@ async function server (config, options, runMode = 'dev') {
               }
             })
 
-            // Write ESM script assets generated during the build phase
+            // Write ESM script and style assets generated during the build phase
             if (coralite.outputFiles) {
-              const assetsDir = join(config.output, 'assets', 'js')
-
-              if (!existsSync(assetsDir)) {
-                await mkdir(assetsDir, { recursive: true })
-              }
+              const assetsJsDir = join(config.output, 'assets', 'js')
+              const assetsCssDir = join(config.output, 'assets', 'css')
 
               const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
-                const outFile = join(assetsDir, file.hashedPath)
+                const isCSS = (file.path || file.hashedPath)?.endsWith('.css')
+                const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
+                const outFile = join(baseAssetsDir, file.hashedPath)
+
+                await mkdir(dirname(outFile), { recursive: true })
                 await writeFile(outFile, file.text)
               })
 
@@ -676,7 +676,7 @@ async function server (config, options, runMode = 'dev') {
       stopPort: startPort + 333
     })
 
-    app.listen(port, () => {
+    const listener = app.listen(port, () => {
       // @ts-ignore
       const access = localAccess({ port })
       const PAD = '  '
@@ -695,6 +695,8 @@ async function server (config, options, runMode = 'dev') {
 
     process.on('SIGINT', gracefulShutdown)
     process.on('SIGTERM', gracefulShutdown)
+
+    return listener
   } catch (error) {
     displayError('Failed to start server', error)
   }
