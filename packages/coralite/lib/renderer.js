@@ -1614,7 +1614,13 @@ export function createRenderer ({
             nonce
           })
           if (cspConfig.injectMeta || pageCspMeta) {
-            injectCSPMeta(mappedComponent.root, headElement, formattedHeader, cspConfig.reportOnly)
+            const metaCspContent = formatCSPDirectives(mergedDirectives, {
+              scriptHashes,
+              styleHashes,
+              nonce,
+              forMeta: true
+            })
+            injectCSPMeta(mappedComponent.root, headElement, metaCspContent, cspConfig.reportOnly)
           }
 
           /** @type {'nonce' | 'external' | 'hash'} */

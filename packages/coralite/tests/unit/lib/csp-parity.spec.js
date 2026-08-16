@@ -218,4 +218,45 @@ describe('CSP Renderer Modes & Parity', () => {
       await cleanupTestProject()
     }
   })
+
+  it('filters frame-ancestors and unsupported directives from meta tag while preserving them in result.csp.header', async () => {
+    await setupTestProject()
+    try {
+      const app = await createCoralite({
+        components: join(tmpDir, 'components'),
+        pages: join(tmpDir, 'pages'),
+        csp: {
+          enabled: true,
+          injectMeta: true,
+          directives: {
+            'default-src': ["'self'"],
+            'frame-ancestors': ["'none'"],
+            'report-uri': ['/csp-report'],
+            sandbox: ['allow-scripts']
+          }
+        },
+        mode: 'production',
+        incremental: false
+      })
+
+      const results = await app.build(null, { incremental: false })
+      const result = results[0]
+      const html = result.content
+
+      assert.ok(result.csp.header.includes("frame-ancestors 'none'"))
+      assert.ok(result.csp.header.includes('report-uri /csp-report'))
+      assert.ok(result.csp.header.includes('sandbox allow-scripts'))
+
+      const metaMatch = html.match(/<meta http-equiv="Content-Security-Policy" content="([^"]+)">/)
+      assert.ok(metaMatch, 'Meta CSP tag should exist')
+      const metaContent = metaMatch[1]
+
+      assert.ok(metaContent.includes("default-src 'self'"))
+      assert.ok(!metaContent.includes('frame-ancestors'))
+      assert.ok(!metaContent.includes('report-uri'))
+      assert.ok(!metaContent.includes('sandbox'))
+    } finally {
+      await cleanupTestProject()
+    }
+  })
 })

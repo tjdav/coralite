@@ -4,6 +4,13 @@ import { CoraliteError } from '../errors.js'
 
 const ALLOWED_HASH_ALGORITHMS = new Set(['sha256', 'sha384', 'sha512'])
 
+export const META_UNSUPPORTED_DIRECTIVES = new Set([
+  'frame-ancestors',
+  'report-uri',
+  'report-to',
+  'sandbox'
+])
+
 /**
  * Calculates base64-encoded SRI digest string (e.g. "sha384-...")
  * @param {string|Buffer} content - Asset content
@@ -74,11 +81,15 @@ export function resolveNonce (context = {}) {
  * @param {string[]} [options.scriptHashes=[]] - List of script hashes
  * @param {string[]} [options.styleHashes=[]] - List of style hashes
  * @param {string|null} [options.nonce=null] - Nonce value
+ * @param {boolean} [options.forMeta=false] - Whether to filter directives unsupported in HTML meta tags
  * @returns {string}
  */
-export function formatCSPDirectives (directives = {}, { scriptHashes = [], styleHashes = [], nonce = null } = {}) {
+export function formatCSPDirectives (directives = {}, { scriptHashes = [], styleHashes = [], nonce = null, forMeta = false } = {}) {
   const merged = {}
   for (const [k, v] of Object.entries(directives)) {
+    if (forMeta && META_UNSUPPORTED_DIRECTIVES.has(k)) {
+      continue
+    }
     merged[k] = Array.isArray(v) ? [...v] : [v]
   }
 
@@ -118,6 +129,7 @@ export function formatCSPDirectives (directives = {}, { scriptHashes = [], style
   }
 
   return Object.entries(merged)
+    .filter(([_, sources]) => sources.length > 0)
     .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
     .join('; ')
 }
@@ -130,6 +142,9 @@ export function formatCSPDirectives (directives = {}, { scriptHashes = [], style
  * @param {boolean} [reportOnly=false] - Whether to use Content-Security-Policy-Report-Only
  */
 export function injectCSPMeta (root, head, cspContent, reportOnly = false) {
+  if (!cspContent || typeof cspContent !== 'string' || cspContent.trim() === '') {
+    return
+  }
   const metaElement = createCoraliteElement({
     type: 'tag',
     name: 'meta',

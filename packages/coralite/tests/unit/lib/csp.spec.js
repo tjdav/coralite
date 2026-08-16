@@ -69,6 +69,29 @@ describe('CSP Utilities & Config Validation', () => {
       assert.ok(result.includes("script-src 'self' 'sha256-abc'"))
       assert.ok(result.includes("style-src 'self' 'sha256-xyz'"))
     })
+
+    it('should strip unsupported directives when forMeta is true', () => {
+      const directives = {
+        'default-src': ["'self'"],
+        'frame-ancestors': ["'none'"],
+        'report-uri': ['/csp-report'],
+        'report-to': ['csp-endpoint'],
+        sandbox: ['allow-scripts']
+      }
+
+      const headerResult = formatCSPDirectives(directives, { forMeta: false })
+      assert.ok(headerResult.includes("frame-ancestors 'none'"))
+      assert.ok(headerResult.includes('report-uri /csp-report'))
+      assert.ok(headerResult.includes('report-to csp-endpoint'))
+      assert.ok(headerResult.includes('sandbox allow-scripts'))
+
+      const metaResult = formatCSPDirectives(directives, { forMeta: true })
+      assert.ok(metaResult.includes("default-src 'self'"))
+      assert.ok(!metaResult.includes('frame-ancestors'))
+      assert.ok(!metaResult.includes('report-uri'))
+      assert.ok(!metaResult.includes('report-to'))
+      assert.ok(!metaResult.includes('sandbox'))
+    })
   })
 
   describe('injectCSPMeta', () => {
@@ -81,6 +104,18 @@ describe('CSP Utilities & Config Validation', () => {
       assert.equal(head.children[0].name, 'meta')
       assert.equal(head.children[0].attribs['http-equiv'], 'Content-Security-Policy')
       assert.equal(head.children[0].attribs.content, "script-src 'self'")
+    })
+
+    it('should skip injection when cspContent is empty or whitespace', () => {
+      const root = createCoraliteElement({ type: 'tag', name: 'html', attribs: {}, children: [] })
+      const head = createCoraliteElement({ type: 'tag', name: 'head', parent: root, attribs: {}, children: [] })
+      root.children.push(head)
+
+      injectCSPMeta(root, head, '', false)
+      assert.equal(head.children.length, 0)
+
+      injectCSPMeta(root, head, '   ', false)
+      assert.equal(head.children.length, 0)
     })
   })
 
