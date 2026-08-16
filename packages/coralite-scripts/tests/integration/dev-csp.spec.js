@@ -30,13 +30,13 @@ describe('Dev Server Live-Reload CSP', () => {
 
   it('formats rebuild script tag with external src and optional dev nonce', () => {
     const defaultTag = buildLiveReloadScript({})
-    assert.equal(defaultTag.trim(), '<script src="/_/rebuild.js"></script>\n</body>')
+    assert.equal(defaultTag.trim(), '<script src="/__coralite/rebuild.js"></script>\n</body>')
 
     const noncedTag = buildLiveReloadScript({ csp: { nonce: 'dev-nonce-123' } })
-    assert.equal(noncedTag.trim(), '<script src="/_/rebuild.js" nonce="dev-nonce-123"></script>\n</body>')
+    assert.equal(noncedTag.trim(), '<script src="/__coralite/rebuild.js" nonce="dev-nonce-123"></script>\n</body>')
   })
 
-  it('serves /_/rebuild.js route via attachDevRoutes', async () => {
+  it('serves /__coralite/rebuild.js route via attachDevRoutes', async () => {
     const app = express()
     attachDevRoutes(app)
 
@@ -47,11 +47,11 @@ describe('Dev Server Live-Reload CSP', () => {
     const port = address.port
 
     try {
-      const res = await fetch(`http://127.0.0.1:${port}/_/rebuild.js`)
+      const res = await fetch(`http://127.0.0.1:${port}/__coralite/rebuild.js`)
       assert.equal(res.status, 200)
       assert.ok(res.headers.get('content-type').startsWith('application/javascript'))
       const body = await res.text()
-      assert.ok(body.includes("new EventSource('/_/rebuild')"))
+      assert.ok(body.includes("new EventSource('/__coralite/rebuild')"))
     } finally {
       await new Promise((resolve) => devServer.close(resolve))
     }

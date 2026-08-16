@@ -671,7 +671,7 @@ Pages can customize or disable CSP using meta tags:
 * **Page Nonce**: `page.meta.nonce` set via custom page pipeline metadata.
 
 ### 16.6 Dev Server Live-Reload
-* In development mode (`mode === 'development'`), `coralite-scripts dev` automatically appends `connect-src 'self'` (or `connect-src ws: http:`) to allow SSE live-reloading via the `/_/rebuild.js` route.
+* In development mode (`mode === 'development'`), `coralite-scripts dev` automatically appends `connect-src 'self'` (or `connect-src ws: http:`) to allow SSE live-reloading via the `/__coralite/rebuild.js` route.
 
 ### 16.7 Build Metadata & Exports
 * **Build Results**: `result.csp` and `session.csp` expose `{ mode, nonce, scriptHashes, styleHashes, header, directives }`.

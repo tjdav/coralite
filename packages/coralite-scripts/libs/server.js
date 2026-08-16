@@ -22,7 +22,7 @@ import portfinder from 'portfinder'
 export function buildLiveReloadScript (config) {
   const devNonce = typeof config.csp?.nonce === 'string' ? config.csp.nonce : null
   const nonceAttr = devNonce ? ` nonce="${devNonce}"` : ''
-  return `\n<script src="/_/rebuild.js"${nonceAttr}></script>\n</body>\n`
+  return `\n<script src="/__coralite/rebuild.js"${nonceAttr}></script>\n</body>\n`
 }
 
 /**
@@ -32,7 +32,7 @@ export function buildLiveReloadScript (config) {
  */
 export function attachDevRoutes (expressApp) {
   expressApp
-    .get('/_/rebuild', (req, res) => {
+    .get('/__coralite/rebuild', (req, res) => {
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -52,10 +52,10 @@ export function attachDevRoutes (expressApp) {
         res.end()
       })
     })
-    .get('/_/rebuild.js', (req, res) => {
+    .get('/__coralite/rebuild.js', (req, res) => {
       res.setHeader('Content-Type', 'application/javascript')
       res.send(`
-        const eventSource = new EventSource('/_/rebuild');
+        const eventSource = new EventSource('/__coralite/rebuild');
         eventSource.onmessage = function(event) {
           if (event.data === 'connected') return;
           location.reload();
