@@ -23,10 +23,15 @@ export function generateClientRuntime ({
   instanceCounters = '{}'
 }) {
   return `
-import { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent } from '${base}assets/js/${sharedChunkPath}';
-import componentManifest from '${base}assets/js/manifest.js';
-
 (async () => {
+  const [
+    { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent },
+    { default: componentManifest }
+  ] = await Promise.all([
+    import('${base}assets/js/${sharedChunkPath}'),
+    import('${base}assets/js/manifest.js')
+  ]);
+
   window.__coralite_instanceCounters = window.__coralite_instanceCounters || ${instanceCounters};
   const hydrationData = ${hydrationData};
   const declarativeTags = ${JSON.stringify(declarativeTags)};

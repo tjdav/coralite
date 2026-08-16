@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   validatePluginSource,
   validatePluginObject,
@@ -8,6 +9,8 @@ import {
   validatePluginsDir,
   formatPluginValidationReport
 } from '../../../lib/plugin-validator.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 describe('plugin-validator.js', () => {
   describe('validatePluginSource', () => {
@@ -142,14 +145,14 @@ describe('plugin-validator.js', () => {
 
   describe('validatePluginFile & validatePluginsDir', () => {
     it('should validate plugin file on disk', async () => {
-      const fixturePath = join(process.cwd(), 'tests/fixtures/plugins/mock-plugin.js')
+      const fixturePath = join(__dirname, '../../fixtures/plugins/mock-plugin.js')
       const result = await validatePluginFile(fixturePath)
       assert.equal(result.valid, true)
       assert.equal(result.pluginName, 'mock-plugin')
     })
 
     it('should validate directory of plugins', async () => {
-      const fixturesDir = join(process.cwd(), 'tests/fixtures/plugins')
+      const fixturesDir = join(__dirname, '../../fixtures/plugins')
       const report = await validatePluginsDir(fixturesDir)
       assert.ok(report.metrics.totalPlugins > 0)
       assert.ok(report.plugins.some(p => p.pluginName === 'mock-plugin' && p.valid === true))

@@ -71,6 +71,7 @@ export async function buildCommand (config, options, logger = null) {
     pages: config.pages,
     plugins: config.plugins,
     assets: config.assets,
+    csp: config.csp,
     incremental,
     externalStyles: config.styles?.input?.map(input => {
       const ext = input.split('.').pop()

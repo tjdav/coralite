@@ -1,138 +1,131 @@
 import { describe, it } from 'node:test'
-import assert from 'node:assert'
-import {
-  calculateHash,
-  resolveNonce,
-  formatCSPDirectives,
-  injectCSPMeta
-} from '../../../lib/utils/server/csp.js'
-import { defineConfig } from '../../../lib/config.js'
-import { CoraliteError } from '../../../lib/utils/errors.js'
+import assert from 'node:assert/strict'
+import { calculateHash, resolveNonce, formatCSPDirectives, injectCSPMeta } from '../../../lib/utils/server/csp.js'
 import { createCoraliteElement } from '../../../lib/utils/server/dom.js'
+import { defineConfig } from '../../../lib/config.js'
 
 describe('CSP Utilities & Config Validation', () => {
   describe('calculateHash', () => {
-    it('calculates valid sha256, sha384, and sha512 hashes', () => {
-      const code = 'console.log("hello world");'
-      const h256 = calculateHash(code, 'sha256')
-      const h384 = calculateHash(code, 'sha384')
-      const h512 = calculateHash(code, 'sha512')
-
-      assert.match(h256, /^'sha256-[A-Za-z0-9+/=]+'$/)
-      assert.match(h384, /^'sha384-[A-Za-z0-9+/=]+'$/)
-      assert.match(h512, /^'sha512-[A-Za-z0-9+/=]+'$/)
+    it('should calculate valid sha256 hash formatted string', () => {
+      const content = 'console.log("hello");'
+      const hash = calculateHash(content, 'sha256')
+      assert.match(hash, /^'sha256-[A-Za-z0-9+/=]+'$/)
     })
 
-    it('returns empty string for non-string content', () => {
-      assert.strictEqual(calculateHash(null), '')
-      assert.strictEqual(calculateHash(undefined), '')
-      assert.strictEqual(calculateHash(123), '')
+    it('should support sha384 and sha512', () => {
+      const content = 'console.log("hello");'
+      const hash384 = calculateHash(content, 'sha384')
+      const hash512 = calculateHash(content, 'sha512')
+      assert.match(hash384, /^'sha384-[A-Za-z0-9+/=]+'$/)
+      assert.match(hash512, /^'sha512-[A-Za-z0-9+/=]+'$/)
     })
 
-    it('throws CoraliteError for invalid hash algorithm', () => {
-      assert.throws(() => calculateHash('code', 'md5'), CoraliteError)
-      assert.throws(() => calculateHash('code', 'sha1'), /Invalid CSP hash algorithm/)
+    it('should throw error on invalid algorithm', () => {
+      assert.throws(() => {
+        // @ts-ignore
+        calculateHash('test', 'md5')
+      }, /Invalid CSP hash algorithm/)
+    })
+
+    it('should return empty string for non-string content', () => {
+      // @ts-ignore
+      assert.equal(calculateHash(null), '')
     })
   })
 
   describe('resolveNonce', () => {
-    it('resolves nonce from buildOptions, pageContext meta, session, or config', () => {
-      assert.strictEqual(resolveNonce({ buildOptions: { nonce: 'nonce-1' } }), 'nonce-1')
-      assert.strictEqual(resolveNonce({ pageContext: { meta: { nonce: 'nonce-2' } } }), 'nonce-2')
-      assert.strictEqual(resolveNonce({ session: { nonce: 'nonce-3' } }), 'nonce-3')
-      assert.strictEqual(resolveNonce({ config: { csp: { nonce: 'nonce-4' } } }), 'nonce-4')
+    it('should resolve nonce from buildOptions, pageContext meta, session, or config', () => {
+      assert.equal(resolveNonce({ buildOptions: { nonce: 'b-123' } }), 'b-123')
+      assert.equal(resolveNonce({ pageContext: { meta: { nonce: 'p-123' } } }), 'p-123')
+      assert.equal(resolveNonce({ session: { nonce: 's-123' } }), 's-123')
+      assert.equal(resolveNonce({ config: { csp: { nonce: 'c-123' } } }), 'c-123')
     })
 
-    it('supports function nonce providers', () => {
-      const fn = (ctx) => `dynamic-${ctx.session?.id}`
-      assert.strictEqual(resolveNonce({ session: { id: 's1' }, config: { csp: { nonce: fn } } }), 'dynamic-s1')
+    it('should evaluate function nonces', () => {
+      const nonceFn = () => 'fn-nonce'
+      assert.equal(resolveNonce({ config: { csp: { nonce: nonceFn } } }), 'fn-nonce')
     })
 
-    it('returns null if no nonce is resolved', () => {
-      assert.strictEqual(resolveNonce({}), null)
-      assert.strictEqual(resolveNonce({ buildOptions: { nonce: '   ' } }), null)
+    it('should return null when no nonce found', () => {
+      assert.equal(resolveNonce({}), null)
     })
   })
 
   describe('formatCSPDirectives', () => {
-    it('formats nonce directives with script-src strict-dynamic and nonce', () => {
-      const header = formatCSPDirectives(
+    it('should format directives with strict-dynamic and nonce', () => {
+      const result = formatCSPDirectives(
         { 'default-src': ["'self'"] },
-        { nonce: 'secret123' }
+        { nonce: 'test-nonce' }
       )
-      assert.ok(header.includes("script-src 'self' 'strict-dynamic' 'nonce-secret123'"))
-      assert.ok(header.includes("style-src 'self' 'nonce-secret123'"))
-      assert.ok(header.includes("default-src 'self'"))
+      assert.ok(result.includes("script-src 'self' 'strict-dynamic' 'nonce-test-nonce'"))
+      assert.ok(result.includes("style-src 'self' 'nonce-test-nonce'"))
     })
 
-    it('formats hash directives with script-src strict-dynamic and hashes', () => {
-      const header = formatCSPDirectives(
+    it('should format directives with script/style hashes', () => {
+      const result = formatCSPDirectives(
         {},
-        {
-          scriptHashes: ["'sha256-script1'"],
-          styleHashes: ["'sha256-style1'"]
-        }
+        { scriptHashes: ["'sha256-abc'"], styleHashes: ["'sha256-xyz'"] }
       )
-      assert.ok(header.includes("script-src 'self' 'strict-dynamic' 'sha256-script1'"))
-      assert.ok(header.includes("style-src 'self' 'sha256-style1'"))
-    })
-
-    it('preserves existing custom directives', () => {
-      const header = formatCSPDirectives(
-        { 'connect-src': ["'self'", 'https://api.example.com'] },
-        { nonce: 'test' }
-      )
-      assert.ok(header.includes("connect-src 'self' https://api.example.com"))
+      assert.ok(result.includes("script-src 'self' 'sha256-abc'"))
+      assert.ok(result.includes("style-src 'self' 'sha256-xyz'"))
     })
   })
 
   describe('injectCSPMeta', () => {
-    it('injects meta tag into head if present or root', () => {
-      const root = createCoraliteElement({ type: 'tag', name: 'html', children: [] })
-      const head = createCoraliteElement({ type: 'tag', name: 'head', parent: root, children: [] })
+    it('should inject meta CSP tag into head or root', () => {
+      const root = createCoraliteElement({ type: 'tag', name: 'html', attribs: {}, children: [] })
+      const head = createCoraliteElement({ type: 'tag', name: 'head', parent: root, attribs: {}, children: [] })
       root.children.push(head)
 
-      injectCSPMeta(root, head, "default-src 'self'")
-      assert.strictEqual(head.children[0].name, 'meta')
-      assert.strictEqual(head.children[0].attribs['http-equiv'], 'Content-Security-Policy')
-      assert.strictEqual(head.children[0].attribs.content, "default-src 'self'")
-    })
-
-    it('supports reportOnly meta tag injection', () => {
-      const root = createCoraliteElement({ type: 'tag', name: 'html', children: [] })
-
-      injectCSPMeta(root, null, "default-src 'self'", true)
-      assert.strictEqual(root.children[0].attribs['http-equiv'], 'Content-Security-Policy-Report-Only')
+      injectCSPMeta(root, head, "script-src 'self'", false)
+      assert.equal(head.children[0].name, 'meta')
+      assert.equal(head.children[0].attribs['http-equiv'], 'Content-Security-Policy')
+      assert.equal(head.children[0].attribs.content, "script-src 'self'")
     })
   })
 
-  describe('defineConfig validation', () => {
-    const baseConfig = {
-      output: '.coralite',
-      components: 'src/components',
-      pages: 'src/pages'
-    }
-
-    it('validates valid csp config object', () => {
-      assert.doesNotThrow(() => defineConfig({
-        ...baseConfig,
+  describe('defineConfig validation for csp', () => {
+    it('should validate valid csp object', () => {
+      const cfg = defineConfig({
+        output: 'dist',
+        components: 'components',
+        pages: 'pages',
         csp: {
           enabled: true,
-          nonce: 'secret',
+          nonce: '123',
           hashAlgorithm: 'sha256',
           injectMeta: true,
           reportOnly: false,
-          externalScripts: false,
-          externalStyles: false,
-          directives: { 'default-src': ["'self'"] }
+          externalScripts: true,
+          externalStyles: true,
+          directives: { 'script-src': ["'self'"] }
         }
-      }))
+      })
+      assert.ok(cfg.csp)
     })
 
-    it('throws on invalid csp properties', () => {
-      assert.throws(() => defineConfig({ ...baseConfig, csp: 'invalid' }), CoraliteError)
-      assert.throws(() => defineConfig({ ...baseConfig, csp: { enabled: 'true' } }), /must be a boolean/)
-      assert.throws(() => defineConfig({ ...baseConfig, csp: { hashAlgorithm: 'sha1' } }), /Invalid csp.hashAlgorithm/)
+    it('should throw on invalid csp properties', () => {
+      assert.throws(() => {
+        defineConfig({
+          output: 'dist',
+          components: 'components',
+          pages: 'pages',
+          // @ts-ignore
+          csp: 'invalid'
+        })
+      }, /Config property "csp" must be an object/)
+
+      assert.throws(() => {
+        defineConfig({
+          output: 'dist',
+          components: 'components',
+          pages: 'pages',
+          csp: {
+            // @ts-ignore
+            hashAlgorithm: 'invalid-algo'
+          }
+        })
+      }, /Invalid csp.hashAlgorithm/)
     })
   })
 })

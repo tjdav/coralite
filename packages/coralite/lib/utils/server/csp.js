@@ -77,9 +77,6 @@ export function formatCSPDirectives (directives = {}, { scriptHashes = [], style
     }
   } else if (scriptHashes.length > 0) {
     merged['script-src'] = merged['script-src'] ? [...merged['script-src']] : ["'self'"]
-    if (!merged['script-src'].includes("'strict-dynamic'")) {
-      merged['script-src'].push("'strict-dynamic'")
-    }
     for (const h of scriptHashes) {
       if (!merged['script-src'].includes(h)) {
         merged['script-src'].push(h)

@@ -152,8 +152,8 @@ describe('CSP Renderer Modes & Parity', () => {
       const html = result.content
 
       assert.strictEqual(result.csp.mode, 'external')
-      // Import map remains inline per HTML spec, so scriptHashes contains importmap hash
-      assert.strictEqual(result.csp.scriptHashes.length, 1)
+      // Import map remains inline per HTML spec + root external page script hash in SSG mode
+      assert.strictEqual(result.csp.scriptHashes.length, 2)
 
       assert.ok(html.includes('<script type="importmap"'))
       assert.ok(html.includes('<script type="module" src="/assets/js/pages/index-'))

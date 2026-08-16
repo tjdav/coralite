@@ -15,6 +15,57 @@ import portfinder from 'portfinder'
  */
 
 /**
+ * Builds the HTML script tag for live reload.
+ *
+ * @param {CoraliteScriptConfig} config - Coralite configuration.
+ * @returns {string} The script tag HTML string.
+ */
+export function buildLiveReloadScript (config) {
+  const devNonce = typeof config.csp?.nonce === 'string' ? config.csp.nonce : null
+  const nonceAttr = devNonce ? ` nonce="${devNonce}"` : ''
+  return `\n<script src="/_/rebuild.js"${nonceAttr}></script>\n</body>\n`
+}
+
+/**
+ * Attaches development routes (live reload SSE and script endpoint) to Express.
+ *
+ * @param {any} expressApp - Express application instance.
+ */
+export function attachDevRoutes (expressApp) {
+  expressApp
+    .get('/_/rebuild', (req, res) => {
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive'
+      })
+
+      if (expressApp.locals.clients) {
+        expressApp.locals.clients.add(res)
+      }
+
+      res.write('data: connected\n\n')
+
+      req.on('close', () => {
+        if (expressApp.locals.clients) {
+          expressApp.locals.clients.delete(res)
+        }
+        res.end()
+      })
+    })
+    .get('/_/rebuild.js', (req, res) => {
+      res.setHeader('Content-Type', 'application/javascript')
+      res.send(`
+        const eventSource = new EventSource('/_/rebuild');
+        eventSource.onmessage = function(event) {
+          if (event.data === 'connected') return;
+          location.reload();
+        };
+      `.trim())
+    })
+}
+
+/**
  * Resolves the requested path to a file or a virtual page.
  *
  * @param {string} reqPath - The requested URL path.
@@ -217,6 +268,7 @@ async function server (config, options, runMode = 'dev') {
         pages: currentConfig.pages,
         plugins: currentConfig.plugins,
         assets: currentConfig.assets,
+        csp: currentConfig.csp,
         externalStyles: currentConfig.styles?.input?.map(input => {
           const ext = input.split('.').pop()
           return '/assets/css/' + input.split('/').pop().replace(`.${ext}`, '.css')
@@ -336,161 +388,132 @@ async function server (config, options, runMode = 'dev') {
       }
     }
 
-    app
-      .use(express.static(config.public, staticOptions))
-      .get('/_/rebuild', (req, res) => {
-        // set headers for SSE
-        res.writeHead(200, {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          Connection: 'keep-alive'
-        })
+    app.locals.clients = clients
+    app.use(express.static(config.public, staticOptions))
 
-        // add client to tracking set
-        clients.add(res)
+    attachDevRoutes(app)
 
-        // send initial connection message
-        res.write('data: connected\n\n')
+    app.get(/(.*)/, async (req, res) => {
+      // extract the requested path and its extension.
+      const reqPath = req.path
+      const extension = extname(reqPath)
 
-        // clean up on client disconnect
-        req.on('close', () => {
-          clients.delete(res)
-          res.end()
-        })
-      })
-      .get('/_/rebuild.js', (req, res) => {
-        res.setHeader('Content-Type', 'application/javascript')
-        res.send(`
-          const eventSource = new EventSource('/_/rebuild');
-          eventSource.onmessage = function(event) {
-            if (event.data === 'connected') return;
-            location.reload();
-          };
-        `.trim())
-      })
-      .get(/(.*)/, async (req, res) => {
-        // extract the requested path and its extension.
-        const reqPath = req.path
-        const extension = extname(reqPath)
+      // Only handle HTML requests or extension-less requests (assumed to be pages)
+      if (extension && extension !== '.html') {
+        return res.sendStatus(404)
+      }
 
-        // Only handle HTML requests or extension-less requests (assumed to be pages)
-        if (extension && extension !== '.html') {
-          return res.sendStatus(404)
-        }
+      const result = await resolveSource(reqPath, extension, config, coralite, memoryPageSource)
 
-        const result = await resolveSource(reqPath, extension, config, coralite, memoryPageSource)
+      if (!result) {
+        res.sendStatus(404)
+        return
+      }
 
-        if (!result) {
-          res.sendStatus(404)
-          return
-        }
+      const { pathname, key: cacheKey } = result
 
-        const { pathname, key: cacheKey } = result
+      if (pageCache.has(cacheKey)) {
+        res.send(pageCache.get(cacheKey))
+        return
+      }
 
-        if (pageCache.has(cacheKey)) {
-          res.send(pageCache.get(cacheKey))
-          return
-        }
-
-        await new Promise((resolve) => {
-          compilePromise = compilePromise.then(async () => {
-            try {
-              if (pageCache.has(cacheKey)) {
-                res.send(pageCache.get(cacheKey))
-                return
-              }
-
-              const start = process.hrtime()
-              let duration, dash = colours.gray(' ─ ')
-
-              let rebuildScript = '</body>\n'
-
-              if (runMode !== 'test') {
-                const devNonce = typeof currentConfig.csp?.nonce === 'string' ? currentConfig.csp.nonce : null
-                const nonceAttr = devNonce ? ` nonce="${devNonce}"` : ''
-                rebuildScript = `\n<script src="/_/rebuild.js"${nonceAttr}></script>\n</body>\n`
-              }
-
-              // Only set item if it's not already in the collection (virtual pages are pre-registered)
-              const item = coralite.pages.getItem(pathname)
-
-              if (!item || item.virtual !== true) {
-                await coralite.pages.setItem(pathname)
-              }
-
-              // build the HTML for this page using the built-in compiler.
-              const documents = await coralite.build(pathname, async (result) => {
-                // inject a script to enable live reload via Server-Sent Events
-                const injectedHtml = result.content.replace(/<\/body>/i, rebuildScript)
-
-                const relPath = relative(config.pages, result.path.pathname)
-                const normalizedKey = relPath.split(sep).join('/')
-
-                // map in memory page to source
-                if (normalizedKey !== pathname) {
-                  memoryPageSource.set(normalizedKey, pathname)
-                }
-
-                // only cache pages that were out of scope of the initial page request
-                if (normalizedKey !== cacheKey) {
-                  pageCache.set(normalizedKey, injectedHtml)
-                }
-
-                return {
-                  path: result.path,
-                  content: injectedHtml,
-                  duration: result.duration
-                }
-              })
-
-              // Write ESM script assets generated during the build phase
-              if (coralite.outputFiles) {
-                const assetsDir = join(config.output, 'assets', 'js')
-
-                if (!existsSync(assetsDir)) {
-                  await mkdir(assetsDir, { recursive: true })
-                }
-
-                const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
-                  const outFile = join(assetsDir, file.hashedPath)
-                  await writeFile(outFile, file.text)
-                })
-
-                await Promise.all(assetWrites)
-              }
-
-              // prints time and path to the file that has been changed or added.
-              duration = process.hrtime(start)
-              process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(duration) + dash + '/' + cacheKey + '\n')
-
-              // find the document that matches the request path
-              const doc = documents.find(doc => {
-                if (!doc) {
-                  return false
-                }
-                const relPath = relative(config.pages, doc.path.pathname)
-                const normalizedKey = relPath.split(sep).join('/')
-                return normalizedKey === cacheKey
-              })
-
-              if (doc) {
-                pageCache.set(cacheKey, doc.content)
-                res.send(doc.content)
-              } else {
-                res.sendStatus(404)
-              }
-            } catch (error) {
-              // If headers haven't been sent, send 500
-              if (!res.headersSent) {
-                res.status(500).send(error.message)
-              }
-              displayError('Request processing failed', error)
-            } finally {
-              resolve()
+      await new Promise((resolve) => {
+        compilePromise = compilePromise.then(async () => {
+          try {
+            if (pageCache.has(cacheKey)) {
+              res.send(pageCache.get(cacheKey))
+              return
             }
-          })
+
+            const start = process.hrtime()
+            let duration, dash = colours.gray(' ─ ')
+
+            let rebuildScript = '</body>\n'
+
+            if (runMode !== 'test') {
+              rebuildScript = buildLiveReloadScript(currentConfig)
+            }
+
+            // Only set item if it's not already in the collection (virtual pages are pre-registered)
+            const item = coralite.pages.getItem(pathname)
+
+            if (!item || item.virtual !== true) {
+              await coralite.pages.setItem(pathname)
+            }
+
+            // build the HTML for this page using the built-in compiler.
+            const documents = await coralite.build(pathname, async (result) => {
+              // inject a script to enable live reload via Server-Sent Events
+              const injectedHtml = result.content.replace(/<\/body>/i, rebuildScript)
+
+              const relPath = relative(config.pages, result.path.pathname)
+              const normalizedKey = relPath.split(sep).join('/')
+
+              // map in memory page to source
+              if (normalizedKey !== pathname) {
+                memoryPageSource.set(normalizedKey, pathname)
+              }
+
+              // only cache pages that were out of scope of the initial page request
+              if (normalizedKey !== cacheKey) {
+                pageCache.set(normalizedKey, injectedHtml)
+              }
+
+              return {
+                path: result.path,
+                content: injectedHtml,
+                duration: result.duration
+              }
+            })
+
+            // Write ESM script assets generated during the build phase
+            if (coralite.outputFiles) {
+              const assetsDir = join(config.output, 'assets', 'js')
+
+              if (!existsSync(assetsDir)) {
+                await mkdir(assetsDir, { recursive: true })
+              }
+
+              const assetWrites = Object.values(coralite.outputFiles).map(async (file) => {
+                const outFile = join(assetsDir, file.hashedPath)
+                await writeFile(outFile, file.text)
+              })
+
+              await Promise.all(assetWrites)
+            }
+
+            // prints time and path to the file that has been changed or added.
+            duration = process.hrtime(start)
+            process.stdout.write(toTime() + colours.bgGreen(' Compiled HTML ') + dash + toMS(duration) + dash + '/' + cacheKey + '\n')
+
+            // find the document that matches the request path
+            const doc = documents.find(doc => {
+              if (!doc) {
+                return false
+              }
+              const relPath = relative(config.pages, doc.path.pathname)
+              const normalizedKey = relPath.split(sep).join('/')
+              return normalizedKey === cacheKey
+            })
+
+            if (doc) {
+              pageCache.set(cacheKey, doc.content)
+              res.send(doc.content)
+            } else {
+              res.sendStatus(404)
+            }
+          } catch (error) {
+            // If headers haven't been sent, send 500
+            if (!res.headersSent) {
+              res.status(500).send(error.message)
+            }
+            displayError('Request processing failed', error)
+          } finally {
+            resolve()
+          }
         })
       })
+    })
 
     if (runMode !== 'test') {
       // watch for file changes

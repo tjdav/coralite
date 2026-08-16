@@ -1057,8 +1057,19 @@ export function createRenderer ({
         const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
 
         const cspConfig = normalizedOptions.csp || {}
-        const pageCspMeta = pageContext?.meta?.csp
-        const pageCspDirectives = pageContext?.meta?.['csp-directives']
+        const pageCspMeta = Boolean(pageContext?.meta?.csp === true || pageContext?.meta?.csp === 'true')
+        let pageCspDirectives = pageContext?.meta?.['csp-directives']
+        if (typeof pageCspDirectives === 'string') {
+          try {
+            pageCspDirectives = JSON.parse(pageCspDirectives)
+          } catch {
+            pageCspDirectives = {}
+          }
+        }
+        if (!pageCspDirectives || typeof pageCspDirectives !== 'object' || Array.isArray(pageCspDirectives)) {
+          pageCspDirectives = {}
+        }
+
         const nonce = resolveNonce({
           buildOptions,
           pageContext,
@@ -1073,14 +1084,14 @@ export function createRenderer ({
             cspConfig.externalStyles === true ||
             cspConfig.injectMeta === true ||
             pageCspMeta === true ||
-            Boolean(cspConfig.directives) ||
-            Boolean(pageCspDirectives)
+            (Boolean(cspConfig.directives) && Object.keys(cspConfig.directives).length > 0) ||
+            Object.keys(pageCspDirectives).length > 0
           )
         )
 
         const hashAlgo = cspConfig.hashAlgorithm || 'sha256'
-        const isExternalScripts = cspConfig.externalScripts === true
-        const isExternalStyles = cspConfig.externalStyles === true
+        const isExternalScripts = cspConfig.enabled !== false && cspConfig.externalScripts === true
+        const isExternalStyles = cspConfig.enabled !== false && cspConfig.externalStyles === true
         const scriptHashes = []
         const styleHashes = []
 
@@ -1261,6 +1272,10 @@ export function createRenderer ({
               children: []
             })
             bodyElement.children.push(scriptElement)
+
+            if (isCspActive && !nonce && scriptContent) {
+              scriptHashes.push(calculateHash(scriptContent, hashAlgo))
+            }
           } else {
             const scriptAttribs = { type: 'module' }
             if (nonce) {

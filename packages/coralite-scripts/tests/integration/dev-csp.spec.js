@@ -1,21 +1,36 @@
 import { describe, it } from 'node:test'
-import assert from 'node:assert'
+import assert from 'node:assert/strict'
+import { buildLiveReloadScript, attachDevRoutes } from '../../libs/server.js'
+import express from 'express'
+import http from 'node:http'
 
 describe('Dev Server Live-Reload CSP', () => {
   it('formats rebuild script tag with external src and optional dev nonce', () => {
-    const configWithNonce = { csp: { nonce: 'dev-nonce-456' } }
-    const configWithoutNonce = {}
+    const defaultTag = buildLiveReloadScript({})
+    assert.equal(defaultTag.trim(), '<script src="/_/rebuild.js"></script>\n</body>')
 
-    const devNonce = typeof configWithNonce.csp?.nonce === 'string' ? configWithNonce.csp.nonce : null
-    const nonceAttr = devNonce ? ` nonce="${devNonce}"` : ''
-    const scriptWithNonce = `\n<script src="/_/rebuild.js"${nonceAttr}></script>\n</body>\n`
+    const noncedTag = buildLiveReloadScript({ csp: { nonce: 'dev-nonce-123' } })
+    assert.equal(noncedTag.trim(), '<script src="/_/rebuild.js" nonce="dev-nonce-123"></script>\n</body>')
+  })
 
-    const devNonce2 = typeof configWithoutNonce.csp?.nonce === 'string' ? configWithoutNonce.csp.nonce : null
-    const nonceAttr2 = devNonce2 ? ` nonce="${devNonce2}"` : ''
-    const scriptWithoutNonce = `\n<script src="/_/rebuild.js"${nonceAttr2}></script>\n</body>\n`
+  it('serves /_/rebuild.js route via attachDevRoutes', async () => {
+    const app = express()
+    attachDevRoutes(app)
 
-    assert.ok(scriptWithNonce.includes('<script src="/_/rebuild.js" nonce="dev-nonce-456"></script>'))
-    assert.ok(scriptWithoutNonce.includes('<script src="/_/rebuild.js"></script>'))
-    assert.ok(!scriptWithoutNonce.includes('nonce='))
+    const server = http.createServer(app)
+    await new Promise((resolve) => server.listen(0, resolve))
+    const address = server.address()
+    // @ts-ignore
+    const port = address.port
+
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/_/rebuild.js`)
+      assert.equal(res.status, 200)
+      assert.ok(res.headers.get('content-type').startsWith('application/javascript'))
+      const body = await res.text()
+      assert.ok(body.includes("new EventSource('/_/rebuild')"))
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
   })
 })
