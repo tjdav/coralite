@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.46.0
+
+> Comparing `coralite-v0.45.1` to `HEAD`
+
+**Summary:** 6 commits
+
+### ✨ Features
+
+- implement automated asset injection & SRI management ([db39488](https://codeberg.org/tjdavid/coralite/commit/db39488f2a0491f4b9928ff4766650d951deac0f))
+- implement CSP Level 2/3 best practices for injected scripts and styles (csp) ([314d35c](https://codeberg.org/tjdavid/coralite/commit/314d35c41153f089b644bd9d25852d2f01d16434))
+- implement CSP Level 2/3 best practices for injected scripts and styles (csp) ([82fc397](https://codeberg.org/tjdavid/coralite/commit/82fc397b2aaf6ec2909a45bab38e9e13979a050b))
+
+### 🐛 Bug Fixes
+
+- prune empty inline sourcemaps from bundled chunks (coralite) ([5dedb16](https://codeberg.org/tjdavid/coralite/commit/5dedb16a208efd35e15c8de0916be981deae2647))
+- sanitize meta-incompatible CSP directives (csp) ([a02290b](https://codeberg.org/tjdavid/coralite/commit/a02290b45a2b67626c61d95ac9199e8bb0e3f0f9))
+- import map tag ordering and readiness script module attribute ([70e0c70](https://codeberg.org/tjdavid/coralite/commit/70e0c70a2d758cd3cbdab4cf40849f6ad5b2a80f))
+
+
 ## v0.45.1
 
 > Comparing `coralite-v0.45.0` to `HEAD`
