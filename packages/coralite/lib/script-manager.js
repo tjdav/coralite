@@ -6,7 +6,7 @@ import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUnique
 import { findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
 import { CoraliteError } from './utils/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
-import { resolve, parse, dirname, relative } from 'node:path'
+import { resolve, parse, dirname, basename } from 'node:path'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 import render from 'dom-serializer'
 
@@ -780,7 +780,6 @@ export default {
   }
 
   const manifest = {}
-  const assetsJsDir = resolve('assets/js')
   if (result.metafile && result.metafile.outputs) {
     for (const [outputPath, meta] of Object.entries(result.metafile.outputs)) {
       if (meta.entryPoint) {
@@ -795,7 +794,7 @@ export default {
         // STRIP THE EXTENSION (Fixes E2E Bootstrapper Timeout)
         const tagName = parse(cleanEntry).name
 
-        const relativePath = relative(assetsJsDir, resolve(outputPath)).replace(/\\/g, '/')
+        const relativePath = basename(outputPath)
 
         if (tagName === 'coralite-runtime') {
           manifest[tagName] = relativePath
@@ -806,25 +805,20 @@ export default {
           manifest[tagName].js = relativePath
 
           if (meta.cssBundle) {
-            manifest[tagName].css = relative(assetsJsDir, resolve(meta.cssBundle)).replace(/\\/g, '/')
+            manifest[tagName].css = basename(meta.cssBundle)
           }
         }
       }
     }
   }
 
-  const outdirAbs = assetsJsDir
   const outputFiles = {}
 
   if (result.outputFiles) {
     for (const file of result.outputFiles) {
       const isCSS = file.path.endsWith('.css')
-      // Keep the relative path for the output file creation on disk
-      let relativePath = relative(outdirAbs, file.path).replace(/\\/g, '/')
-
-      if (isCSS) {
-        relativePath = `../css/${relativePath}`
-      }
+      const filename = basename(file.path)
+      let relativePath = isCSS ? `../css/${filename}` : filename
 
       let text = file.text
       if (text.includes('//# sourceMappingURL=data:application/json;base64,')) {
@@ -844,6 +838,7 @@ export default {
 
       outputFiles[relativePath] = {
         ...file,
+        path: relativePath,
         hashedPath: relativePath,
         text
       }

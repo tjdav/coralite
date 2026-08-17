@@ -177,6 +177,12 @@
  * @property {CoraliteSession} [session] - The session associated with the render.
  * @property {CoraliteCSPResult} [csp] - CSP result object.
  * @property {Array<{ dest: string, hash: string }>} [injectedAssets] - Injected assets content hashes.
+ * @property {string | null} [runtimeChunk] - The runtime chunk filename associated with this page.
+ * @property {string} [pageScript] - The external page script path.
+ * @property {string} [pageScriptHash] - The page script content hash.
+ * @property {string} [pageStyle] - The external page style path.
+ * @property {string} [pageStyleHash] - The page style content hash.
+ * @property {Record<string, { js: string, css: string | null }>} [componentHashes] - Hashes for components included on this page.
  * @property {'skipped'} [status] - Optional status if the build was skipped via ISR.
  */
 

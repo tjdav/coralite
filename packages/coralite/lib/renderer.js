@@ -1384,6 +1384,23 @@ export function createRenderer ({
 
         mappedSessionObject._pageInjectedAssetHashes = pageInjectedAssetHashes
 
+        let pageStylePath = null
+        let pageStyleHash = null
+        let pageScriptPath = null
+        let pageScriptHash = null
+        let runtimeChunkPath = null
+
+        /** @type {Record<string, { js: string, css: string | null }>} */
+        const componentHashes = {}
+        if (globalScriptResult?.manifest) {
+          const sortedTags = Array.from(componentsToInclude).sort()
+          for (const tag of sortedTags) {
+            if (globalScriptResult.manifest[tag]) {
+              componentHashes[tag] = globalScriptResult.manifest[tag]
+            }
+          }
+        }
+
         if (normalizedOptions.externalStyles && normalizedOptions.externalStyles.length > 0) {
           injectExternalStyles(mappedComponent.root, headElement, normalizedOptions.externalStyles, { nonce: isExternalStyles ? null : nonce })
         }
@@ -1401,9 +1418,12 @@ export function createRenderer ({
                 combinedCss += `[data-style-selector="${selector}"] {\n${css}\n}\n`
               }
             }
-            const cssFileHash = hash(combinedCss).slice(0, 8)
+            const cssHashVal = hash(combinedCss)
+            const cssFileHash = cssHashVal.slice(0, 8)
             const relPath = `coralite-inline-${cssFileHash}.css`
             const fullPath = `assets/css/${relPath}`
+            pageStylePath = fullPath
+            pageStyleHash = cssHashVal
             outputFiles[fullPath] = {
               path: fullPath,
               hashedPath: relPath,
@@ -1497,6 +1517,8 @@ export function createRenderer ({
               message: 'MANIFEST MISSING coralite-runtime!',
               error: new Error(JSON.stringify(scriptResult.manifest))
             })
+          } else {
+            runtimeChunkPath = scriptResult.manifest['coralite-runtime']
           }
 
           const { content: readyContent } = injectReadinessScript(mappedComponent.root, headElement, true, normalizedOptions.mode, {
@@ -1531,11 +1553,14 @@ export function createRenderer ({
           })
 
           if (isExternalScripts) {
-            const pageScriptHash = hash(scriptContent).slice(0, 8)
+            const fullScriptHash = hash(scriptContent)
+            const shortScriptHash = fullScriptHash.slice(0, 8)
             const relativePagePath = relative(normalizedOptions.path.pages, pageItem.path.pathname)
             const pageStem = relativePagePath.replace(/\.html$/, '').replace(/[\/\\]/g, '-') || 'index'
-            const relPath = `pages/${pageStem}-${pageScriptHash}.js`
+            const relPath = `pages/${pageStem}-${shortScriptHash}.js`
             const fullPath = `assets/js/${relPath}`
+            pageScriptPath = fullPath
+            pageScriptHash = fullScriptHash
             outputFiles[fullPath] = {
               path: fullPath,
               hashedPath: relPath,
@@ -1650,6 +1675,26 @@ export function createRenderer ({
           content: rawHTML,
           duration: performance.now() - startTime,
           session
+        }
+
+        if (runtimeChunkPath !== null) {
+          result.runtimeChunk = runtimeChunkPath
+        } else {
+          result.runtimeChunk = null
+        }
+
+        if (pageScriptPath) {
+          result.pageScript = pageScriptPath
+          result.pageScriptHash = pageScriptHash
+        }
+
+        if (pageStylePath) {
+          result.pageStyle = pageStylePath
+          result.pageStyleHash = pageStyleHash
+        }
+
+        if (Object.keys(componentHashes).length > 0) {
+          result.componentHashes = componentHashes
         }
 
         if (pageInjectedAssetHashes.length > 0) {
@@ -2004,6 +2049,92 @@ export function createRenderer ({
       ...app._dependencyGraph.pageCustomElements
     }
 
+    const outputDir = normalizedOptions.output || join(normalizedOptions.projectRoot || process.cwd(), 'dist')
+
+    const checkPageAssetsAndManifest = async (existingPageMeta) => {
+      if (!existingPageMeta) {
+        return false
+      }
+
+      // Migration check: runtimeChunk missing on older manifests
+      if (existingPageMeta.runtimeChunk === undefined) {
+        return true
+      }
+
+      // Runtime chunk comparison & disk check for pages with client scripts
+      if (existingPageMeta.runtimeChunk !== null) {
+        const currentRuntimeChunk = globalScriptResult?.manifest?.['coralite-runtime'] || null
+        if (existingPageMeta.runtimeChunk !== currentRuntimeChunk) {
+          return true
+        }
+        if (normalizedOptions.output && existingPageMeta.runtimeChunk) {
+          const runtimeDiskPath = join(outputDir, 'assets/js', existingPageMeta.runtimeChunk)
+          try {
+            await access(runtimeDiskPath)
+          } catch {
+            return true
+          }
+        }
+      }
+
+      // Component hashes check
+      if (existingPageMeta.componentHashes) {
+        const currentManifest = globalScriptResult?.manifest || {}
+        for (const [tag, storedHashes] of Object.entries(existingPageMeta.componentHashes)) {
+          const currentHashes = currentManifest[tag]
+          if (!currentHashes) {
+            return true
+          }
+          if (currentHashes.js !== storedHashes.js || currentHashes.css !== storedHashes.css) {
+            return true
+          }
+        }
+      }
+
+      // Page script check
+      if (existingPageMeta.pageScript && normalizedOptions.output) {
+        const diskPath = join(outputDir, existingPageMeta.pageScript)
+        try {
+          const fileContent = await readFile(diskPath)
+          if (existingPageMeta.pageScriptHash && hash(fileContent) !== existingPageMeta.pageScriptHash) {
+            return true
+          }
+        } catch {
+          return true
+        }
+      }
+
+      // Page style check
+      if (existingPageMeta.pageStyle && normalizedOptions.output) {
+        const diskPath = join(outputDir, existingPageMeta.pageStyle)
+        try {
+          const fileContent = await readFile(diskPath)
+          if (existingPageMeta.pageStyleHash && hash(fileContent) !== existingPageMeta.pageStyleHash) {
+            return true
+          }
+        } catch {
+          return true
+        }
+      }
+
+      // Injected assets check
+      if (existingPageMeta.injectedAssets && normalizedOptions.output) {
+        for (const assetRef of existingPageMeta.injectedAssets) {
+          const fullDiskPath = join(outputDir, assetRef.dest)
+          try {
+            const fileContent = await readFile(fullDiskPath)
+            if (hash(fileContent) !== assetRef.hash) {
+              return true
+            }
+          } catch {
+            return true
+          }
+        }
+      }
+
+      return false
+    }
+
     for (const pageItem of queue) {
       let shouldRebuild = false
 
@@ -2034,12 +2165,19 @@ export function createRenderer ({
       }
 
       if (pageItem.virtual) {
-        if (!isIncremental || shouldRebuild || pageItem.volatile || !manifest.virtual || !manifest.virtual[pageItem.path.pathname] || String(manifest.virtual[pageItem.path.pathname].cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development') {
-          shouldRebuild = true
-        } else {
-          shouldRebuild = false
-        }
+        const existingVirtualMeta = manifest.virtual ? manifest.virtual[pageItem.path.pathname] : null
         if (!shouldRebuild) {
+          shouldRebuild = await checkPageAssetsAndManifest(existingVirtualMeta)
+        }
+
+        const shouldRebuildVirtual = !isIncremental || shouldRebuild || pageItem.volatile || !existingVirtualMeta || String(existingVirtualMeta.cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development'
+
+        if (!newManifest.virtual) {
+          newManifest.virtual = {}
+        }
+        newManifest.virtual[pageItem.path.pathname] = { cacheKey: pageItem.cacheKey }
+
+        if (!shouldRebuildVirtual) {
           /** @type {CoraliteBuildResult} */
           const skippedResult = {
             type: 'page',
@@ -2053,38 +2191,55 @@ export function createRenderer ({
           }
 
           skippedPages.push(skippedResult)
-          if (!newManifest.virtual) {
-            newManifest.virtual = {}
-          }
 
-          newManifest.virtual[pageItem.path.pathname] = { cacheKey: pageItem.cacheKey }
+          if (existingVirtualMeta) {
+            if (existingVirtualMeta.runtimeChunk !== undefined) {
+              newManifest.virtual[pageItem.path.pathname].runtimeChunk = existingVirtualMeta.runtimeChunk
+            }
+            if (existingVirtualMeta.pageScript) {
+              newManifest.virtual[pageItem.path.pathname].pageScript = existingVirtualMeta.pageScript
+            }
+            if (existingVirtualMeta.pageScriptHash) {
+              newManifest.virtual[pageItem.path.pathname].pageScriptHash = existingVirtualMeta.pageScriptHash
+            }
+            if (existingVirtualMeta.pageStyle) {
+              newManifest.virtual[pageItem.path.pathname].pageStyle = existingVirtualMeta.pageStyle
+            }
+            if (existingVirtualMeta.pageStyleHash) {
+              newManifest.virtual[pageItem.path.pathname].pageStyleHash = existingVirtualMeta.pageStyleHash
+            }
+            if (existingVirtualMeta.componentHashes) {
+              newManifest.virtual[pageItem.path.pathname].componentHashes = existingVirtualMeta.componentHashes
+            }
+            if (existingVirtualMeta.injectedAssets) {
+              newManifest.virtual[pageItem.path.pathname].injectedAssets = existingVirtualMeta.injectedAssets
+            }
+            if (existingVirtualMeta.dependencies) {
+              newManifest.virtual[pageItem.path.pathname].dependencies = existingVirtualMeta.dependencies
+            }
+
+            if (existingVirtualMeta.pageScript && app.trackOutputFile) {
+              app.trackOutputFile(join(outputDir, existingVirtualMeta.pageScript))
+            }
+            if (existingVirtualMeta.pageStyle && app.trackOutputFile) {
+              app.trackOutputFile(join(outputDir, existingVirtualMeta.pageStyle))
+            }
+            if (existingVirtualMeta.injectedAssets && app.trackOutputFile) {
+              for (const assetRef of existingVirtualMeta.injectedAssets) {
+                app.trackOutputFile(join(outputDir, assetRef.dest))
+              }
+            }
+          }
         } else {
           pagesToRender.push(pageItem)
-          if (!newManifest.virtual) {
-            newManifest.virtual = {}
-          }
-          newManifest.virtual[pageItem.path.pathname] = { cacheKey: pageItem.cacheKey }
         }
       } else {
         const { changed, metadata } = await checkFileChange(pageItem.path.pathname, manifest.physical[pageItem.path.pathname])
         newManifest.physical[pageItem.path.pathname] = metadata
 
         const existingPageMeta = manifest.physical[pageItem.path.pathname]
-        if (existingPageMeta?.injectedAssets) {
-          const outputDir = normalizedOptions.output || join(normalizedOptions.projectRoot || process.cwd(), 'dist')
-          for (const assetRef of existingPageMeta.injectedAssets) {
-            const fullDiskPath = join(outputDir, assetRef.dest)
-            try {
-              const fileContent = await readFile(fullDiskPath)
-              if (hash(fileContent) !== assetRef.hash) {
-                shouldRebuild = true
-                break
-              }
-            } catch {
-              shouldRebuild = true
-              break
-            }
-          }
+        if (!shouldRebuild) {
+          shouldRebuild = await checkPageAssetsAndManifest(existingPageMeta)
         }
 
         if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development') {
@@ -2102,8 +2257,43 @@ export function createRenderer ({
             status: 'skipped'
           }
 
-          if (existingPageMeta?.injectedAssets) {
-            newManifest.physical[pageItem.path.pathname].injectedAssets = existingPageMeta.injectedAssets
+          if (existingPageMeta) {
+            if (existingPageMeta.runtimeChunk !== undefined) {
+              newManifest.physical[pageItem.path.pathname].runtimeChunk = existingPageMeta.runtimeChunk
+            }
+            if (existingPageMeta.pageScript) {
+              newManifest.physical[pageItem.path.pathname].pageScript = existingPageMeta.pageScript
+            }
+            if (existingPageMeta.pageScriptHash) {
+              newManifest.physical[pageItem.path.pathname].pageScriptHash = existingPageMeta.pageScriptHash
+            }
+            if (existingPageMeta.pageStyle) {
+              newManifest.physical[pageItem.path.pathname].pageStyle = existingPageMeta.pageStyle
+            }
+            if (existingPageMeta.pageStyleHash) {
+              newManifest.physical[pageItem.path.pathname].pageStyleHash = existingPageMeta.pageStyleHash
+            }
+            if (existingPageMeta.componentHashes) {
+              newManifest.physical[pageItem.path.pathname].componentHashes = existingPageMeta.componentHashes
+            }
+            if (existingPageMeta.injectedAssets) {
+              newManifest.physical[pageItem.path.pathname].injectedAssets = existingPageMeta.injectedAssets
+            }
+            if (existingPageMeta.dependencies) {
+              newManifest.physical[pageItem.path.pathname].dependencies = existingPageMeta.dependencies
+            }
+
+            if (existingPageMeta.pageScript && app.trackOutputFile) {
+              app.trackOutputFile(join(outputDir, existingPageMeta.pageScript))
+            }
+            if (existingPageMeta.pageStyle && app.trackOutputFile) {
+              app.trackOutputFile(join(outputDir, existingPageMeta.pageStyle))
+            }
+            if (existingPageMeta.injectedAssets && app.trackOutputFile) {
+              for (const assetRef of existingPageMeta.injectedAssets) {
+                app.trackOutputFile(join(outputDir, assetRef.dest))
+              }
+            }
           }
 
           skippedPages.push(skippedResult)
@@ -2162,12 +2352,29 @@ export function createRenderer ({
             app
           })
 
-          if (result.injectedAssets) {
-            const pagePath = result.path.pathname
-            if (newManifest.physical[pagePath]) {
-              newManifest.physical[pagePath].injectedAssets = result.injectedAssets
-            } else if (newManifest.virtual[pagePath]) {
-              newManifest.virtual[pagePath].injectedAssets = result.injectedAssets
+          const pagePath = result.path.pathname
+          const targetMeta = newManifest.physical[pagePath] || newManifest.virtual[pagePath]
+          if (targetMeta) {
+            if (result.injectedAssets) {
+              targetMeta.injectedAssets = result.injectedAssets
+            }
+            if (result.runtimeChunk !== undefined) {
+              targetMeta.runtimeChunk = result.runtimeChunk
+            }
+            if (result.pageScript) {
+              targetMeta.pageScript = result.pageScript
+            }
+            if (result.pageScriptHash) {
+              targetMeta.pageScriptHash = result.pageScriptHash
+            }
+            if (result.pageStyle) {
+              targetMeta.pageStyle = result.pageStyle
+            }
+            if (result.pageStyleHash) {
+              targetMeta.pageStyleHash = result.pageStyleHash
+            }
+            if (result.componentHashes) {
+              targetMeta.componentHashes = result.componentHashes
             }
           }
 
