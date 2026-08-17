@@ -13,6 +13,123 @@ import kleur from 'kleur'
  * } from '../types/index.js'
  */
 
+export const STANDARD_GLOBALS = new Set([
+  // ECMAScript Built-ins
+  'Object',
+  'Array',
+  'String',
+  'Number',
+  'Boolean',
+  'Symbol',
+  'BigInt',
+  'Function',
+  'Math',
+  'JSON',
+  'Date',
+  'RegExp',
+  'Promise',
+  'Proxy',
+  'Reflect',
+  'Error',
+  'TypeError',
+  'RangeError',
+  'SyntaxError',
+  'ReferenceError',
+  'URIError',
+  'EvalError',
+  'AggregateError',
+  'Map',
+  'Set',
+  'WeakMap',
+  'WeakSet',
+  'ArrayBuffer',
+  'SharedArrayBuffer',
+  'DataView',
+  'Int8Array',
+  'Uint8Array',
+  'Uint8ClampedArray',
+  'Int16Array',
+  'Uint16Array',
+  'Int32Array',
+  'Uint32Array',
+  'Float32Array',
+  'Float64Array',
+  'BigInt64Array',
+  'BigUint64Array',
+  'globalThis',
+  'eval',
+  'isFinite',
+  'isNaN',
+  'parseFloat',
+  'parseInt',
+  'decodeURI',
+  'decodeURIComponent',
+  'encodeURI',
+  'encodeURIComponent',
+  'undefined',
+  'NaN',
+  'Infinity',
+  'null',
+  'arguments',
+  'this',
+  'console',
+  'Atomics',
+  'StructuredClone',
+  'structuredClone',
+
+  // Web / Browser Globals
+  'window',
+  'document',
+  'customElements',
+  'HTMLElement',
+  'Element',
+  'Node',
+  'Event',
+  'CustomEvent',
+  'MutationObserver',
+  'IntersectionObserver',
+  'ResizeObserver',
+  'AbortController',
+  'AbortSignal',
+  'fetch',
+  'location',
+  'navigator',
+  'localStorage',
+  'sessionStorage',
+  'setTimeout',
+  'clearTimeout',
+  'setInterval',
+  'clearInterval',
+  'requestAnimationFrame',
+  'cancelAnimationFrame',
+  'queueMicrotask',
+  'URL',
+  'URLSearchParams',
+  'Headers',
+  'Request',
+  'Response',
+  'FormData',
+  'Blob',
+  'File',
+  'FileReader',
+  'Image',
+  'Audio',
+  'Option',
+  'performance',
+  'crypto',
+  'WebSocket',
+  'Worker',
+  'MessageChannel',
+  'MessagePort',
+  'BroadcastChannel',
+  'indexedDB',
+  'history',
+
+  // Coralite Globals
+  '__coralite__',
+  'createCoraliteElement'
+])
+
 const RESERVED_PLUGIN_NAMES = new Set(['testing', 'metadata', 'static-assets'])
 const SERVER_HOOK_NAMES = new Set([
   'onBeforeBuild',
@@ -24,7 +141,12 @@ const SERVER_HOOK_NAMES = new Set([
   'onComponentUpdate',
   'onComponentDelete'
 ])
-const CLIENT_HOOK_NAMES = new Set(['onConnected', 'onDisconnected'])
+const CLIENT_HOOK_NAMES = new Set([
+  'onConnected',
+  'onDisconnected',
+  'onBeforeComponentRender',
+  'onAfterComponentRender'
+])
 const SERVER_ONLY_MODULES = new Set([
   'fs',
   'node:fs',
@@ -42,6 +164,227 @@ const SERVER_ONLY_MODULES = new Set([
   'os',
   'node:os'
 ])
+
+/**
+ * Extracts free outer-scope identifier references from a function AST or function reference.
+ *
+ * @param {Function|string|Object} fnNodeOrCode - Function, function source string, or AST node
+ * @param {Object} [options={}] - Options
+ * @param {string} [options.sourceCode=''] - Raw source code context for pragma extraction
+ * @param {string} [options.pluginName=''] - Plugin name for context
+ * @returns {Array<{ name: string, line?: number, column?: number }>} List of outer scope references
+ */
+export function findOuterScopeReferences (fnNodeOrCode, options = {}) {
+  let sourceStr = options.sourceCode || ''
+  let astNode = null
+
+  if (typeof fnNodeOrCode === 'function') {
+    sourceStr = fnNodeOrCode.toString()
+  } else if (typeof fnNodeOrCode === 'string') {
+    sourceStr = fnNodeOrCode
+  } else if (fnNodeOrCode && typeof fnNodeOrCode === 'object' && fnNodeOrCode.type) {
+    astNode = fnNodeOrCode
+  }
+
+  if (sourceStr && /@coralite-ignore-serialization|coralite-ignore-serialization/i.test(sourceStr)) {
+    return []
+  }
+
+  const ignoredSymbols = new Set()
+  if (sourceStr) {
+    const pragmaRegex = /(?:<!--|\/\*|\/\/)\s*@?coralite-ignore\s+([^\n*]*?)(?:-->|\*\/|\n|$)/gi
+    let pMatch
+    while ((pMatch = pragmaRegex.exec(sourceStr)) !== null) {
+      const symbols = pMatch[1].split(/[\s,]+/).filter(Boolean)
+      for (const sym of symbols) {
+        if (sym !== 'serialization' && sym !== '@coralite-ignore-serialization') {
+          ignoredSymbols.add(sym)
+        }
+      }
+    }
+  }
+
+  if (!astNode) {
+    if (!sourceStr || sourceStr.trim().length === 0) {
+      return []
+    }
+    try {
+      astNode = parseJS(sourceStr, {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        locations: true
+      })
+    } catch {
+      try {
+        astNode = parseJS(`(${sourceStr})`, {
+          ecmaVersion: 'latest',
+          sourceType: 'module',
+          locations: true
+        })
+      } catch {
+        try {
+          astNode = parseJS(`({ ${sourceStr} })`, {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            locations: true
+          })
+        } catch {
+          try {
+            astNode = parseJS(`function _wrapper() { return (${sourceStr}); }`, {
+              ecmaVersion: 'latest',
+              sourceType: 'module',
+              locations: true
+            })
+          } catch {
+            return []
+          }
+        }
+      }
+    }
+  }
+
+  let targetNode = astNode
+  if (targetNode.type === 'Program') {
+    if (targetNode.body.length === 1) {
+      const stmt = targetNode.body[0]
+      if (stmt.type === 'ExpressionStatement') {
+        targetNode = stmt.expression
+      } else if (stmt.type === 'FunctionDeclaration') {
+        targetNode = stmt
+      }
+    }
+  }
+
+  if (targetNode.type === 'ObjectExpression' && targetNode.properties && targetNode.properties.length === 1 && targetNode.properties[0].type === 'Property') {
+    targetNode = targetNode.properties[0].value
+  }
+
+  const localBindings = new Set()
+
+  const extractPatternBindings = (pattern) => {
+    if (!pattern) {
+      return
+    }
+    if (pattern.type === 'Identifier') {
+      localBindings.add(pattern.name)
+    } else if (pattern.type === 'ObjectPattern') {
+      for (const prop of pattern.properties || []) {
+        if (prop.type === 'Property') {
+          extractPatternBindings(prop.value)
+        } else if (prop.type === 'RestElement') {
+          extractPatternBindings(prop.argument)
+        }
+      }
+    } else if (pattern.type === 'ArrayPattern') {
+      for (const el of pattern.elements || []) {
+        if (el) {
+          extractPatternBindings(el)
+        }
+      }
+    } else if (pattern.type === 'AssignmentPattern') {
+      extractPatternBindings(pattern.left)
+    } else if (pattern.type === 'RestElement') {
+      extractPatternBindings(pattern.argument)
+    }
+  }
+
+  walkJS(targetNode, {
+    FunctionDeclaration (node) {
+      if (node.id && node.id.type === 'Identifier') {
+        localBindings.add(node.id.name)
+      }
+      for (const param of node.params || []) {
+        extractPatternBindings(param)
+      }
+    },
+    FunctionExpression (node) {
+      if (node.id && node.id.type === 'Identifier') {
+        localBindings.add(node.id.name)
+      }
+      for (const param of node.params || []) {
+        extractPatternBindings(param)
+      }
+    },
+    ArrowFunctionExpression (node) {
+      for (const param of node.params || []) {
+        extractPatternBindings(param)
+      }
+    },
+    VariableDeclarator (node) {
+      extractPatternBindings(node.id)
+    },
+    ClassDeclaration (node) {
+      if (node.id && node.id.type === 'Identifier') {
+        localBindings.add(node.id.name)
+      }
+    },
+    CatchClause (node) {
+      if (node.param) {
+        extractPatternBindings(node.param)
+      }
+    }
+  })
+
+  if (targetNode.type === 'FunctionDeclaration' || targetNode.type === 'FunctionExpression' || targetNode.type === 'ArrowFunctionExpression') {
+    for (const param of targetNode.params || []) {
+      extractPatternBindings(param)
+    }
+  }
+
+  /** @type {Map<string, { name: string, line?: number, column?: number }>} */
+  const outerRefsMap = new Map()
+
+  walkAncestorJS(targetNode, {
+    Identifier (n, a) {
+      /** @type {any} */
+      const node = n
+      /** @type {any[]} */
+      const ancestors = a
+      const name = node.name
+
+      if (STANDARD_GLOBALS.has(name) || localBindings.has(name) || ignoredSymbols.has(name)) {
+        return
+      }
+
+      const parent = ancestors.length > 1 ? ancestors[ancestors.length - 2] : null
+      if (!parent) {
+        return
+      }
+
+      if (parent.type === 'MetaProperty') {
+        return
+      }
+      if (parent.type === 'MemberExpression' && parent.property === node && !parent.computed) {
+        return
+      }
+      if (parent.type === 'Property' && parent.key === node && !parent.computed && !parent.shorthand) {
+        return
+      }
+      if (parent.type === 'MethodDefinition' && parent.key === node && !parent.computed) {
+        return
+      }
+      if (parent.type === 'PropertyDefinition' && parent.key === node && !parent.computed) {
+        return
+      }
+      if ((parent.type === 'BreakStatement' || parent.type === 'ContinueStatement' || parent.type === 'LabeledStatement') && parent.label === node) {
+        return
+      }
+      if (parent.type === 'ImportSpecifier' || parent.type === 'ImportDefaultSpecifier' || parent.type === 'ImportNamespaceSpecifier') {
+        return
+      }
+
+      if (!outerRefsMap.has(name)) {
+        outerRefsMap.set(name, {
+          name,
+          line: node.loc ? node.loc.start.line : undefined,
+          column: node.loc ? node.loc.start.column : undefined
+        })
+      }
+    }
+  })
+
+  return Array.from(outerRefsMap.values())
+}
 
 /**
  * Checks if a value is a plain serializable object (primitives, plain objects, arrays).
@@ -227,6 +570,23 @@ export function validatePluginSource (sourceCode, filePath = '') {
                   message: `Client hook "client.${keyName}" must be a function`,
                   line: cp.loc ? cp.loc.start.line : undefined
                 })
+              }
+            }
+
+            if (keyName === 'context' || CLIENT_HOOK_NAMES.has(keyName)) {
+              if (cp.value && (cp.value.type === 'FunctionExpression' || cp.value.type === 'ArrowFunctionExpression')) {
+                const outerRefs = findOuterScopeReferences(cp.value, {
+                  sourceCode,
+                  pluginName
+                })
+                for (const ref of outerRefs) {
+                  issues.push({
+                    type: 'error',
+                    code: 'SERIALIZATION_BOUNDARY_LEAK',
+                    message: `[Coralite Serialization Error] Plugin "${pluginName}": client.${keyName} references outer-scope symbol "${ref.name}" which will not be available after serialization. Move this function inside client.${keyName} or pass it via client.config.`,
+                    line: ref.line || (cp.loc ? cp.loc.start.line : undefined)
+                  })
+                }
               }
             }
 
@@ -429,13 +789,35 @@ export function validatePluginObject (plugin, filePath = '') {
         }
       }
 
-      for (const hookName of CLIENT_HOOK_NAMES) {
-        if (plugin.client[hookName] !== undefined && typeof plugin.client[hookName] !== 'function') {
+      if (typeof plugin.client.context === 'function') {
+        const outerRefs = findOuterScopeReferences(plugin.client.context, { pluginName })
+        for (const ref of outerRefs) {
           issues.push({
             type: 'error',
-            code: 'INVALID_HOOK_TYPE',
-            message: `Client hook "client.${hookName}" must be a function`
+            code: 'SERIALIZATION_BOUNDARY_LEAK',
+            message: `[Coralite Serialization Error] Plugin "${pluginName}": client.context references outer-scope symbol "${ref.name}" which will not be available after serialization. Move this function inside client.context or pass it via client.config.`
           })
+        }
+      }
+
+      for (const hookName of CLIENT_HOOK_NAMES) {
+        if (plugin.client[hookName] !== undefined) {
+          if (typeof plugin.client[hookName] !== 'function') {
+            issues.push({
+              type: 'error',
+              code: 'INVALID_HOOK_TYPE',
+              message: `Client hook "client.${hookName}" must be a function`
+            })
+          } else {
+            const outerRefs = findOuterScopeReferences(plugin.client[hookName], { pluginName })
+            for (const ref of outerRefs) {
+              issues.push({
+                type: 'error',
+                code: 'SERIALIZATION_BOUNDARY_LEAK',
+                message: `[Coralite Serialization Error] Plugin "${pluginName}": client.${hookName} references outer-scope symbol "${ref.name}" which will not be available after serialization. Move this function inside client.${hookName} or pass it via client.config.`
+              })
+            }
+          }
         }
       }
     }

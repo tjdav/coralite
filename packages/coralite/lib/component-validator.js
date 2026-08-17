@@ -320,6 +320,20 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 topLevelImports.set(spec.local.name, source)
               }
             }
+          } else if (node.type === 'VariableDeclaration') {
+            for (const decl of node.declarations || []) {
+              if (decl.id && decl.id.type === 'Identifier') {
+                topLevelImports.set(decl.id.name, 'local')
+              }
+            }
+          } else if (node.type === 'FunctionDeclaration') {
+            if (node.id && node.id.type === 'Identifier') {
+              topLevelImports.set(node.id.name, 'local')
+            }
+          } else if (node.type === 'ClassDeclaration') {
+            if (node.id && node.id.type === 'Identifier') {
+              topLevelImports.set(node.id.name, 'local')
+            }
           }
         }
       }

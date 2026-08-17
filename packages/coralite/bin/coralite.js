@@ -41,7 +41,7 @@ program
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('--strict', 'Fail with non-zero exit code if unused code is found', false)
   .action(async (options) => {
-    const { validateComponentsDir, formatComponentValidationReport } = await import('../lib/component-validator.js')
+    const { validateComponentsDir, formatComponentValidationReport } = await import('../dist/lib/component-validator.js')
 
     let compDir = options.components
     if (!compDir && config && config.components) {
@@ -83,7 +83,7 @@ program
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('--strict', 'Fail with non-zero exit code if validation errors are found', false)
   .action(async (options) => {
-    const { validatePluginsDir, validatePluginFile, formatPluginValidationReport } = await import('../lib/plugin-validator.js')
+    const { validatePluginsDir, validatePluginFile, formatPluginValidationReport } = await import('../dist/lib/plugin-validator.js')
     const { statSync, existsSync } = await import('node:fs')
     const { join } = await import('node:path')
 

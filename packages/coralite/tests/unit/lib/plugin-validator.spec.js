@@ -7,12 +7,62 @@ import {
   validatePluginObject,
   validatePluginFile,
   validatePluginsDir,
-  formatPluginValidationReport
+  formatPluginValidationReport,
+  findOuterScopeReferences
 } from '../../../lib/plugin-validator.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 describe('plugin-validator.js', () => {
+  describe('findOuterScopeReferences', () => {
+    it('should detect free outer-scope references in functions', () => {
+      const outerHelper = () => {}
+      function sampleFn (ctx) {
+        const local = 123
+        console.log(local)
+        // @ts-ignore
+        return outerHelper(local)
+      }
+
+      const refs = findOuterScopeReferences(sampleFn)
+      assert.equal(refs.length, 1)
+      assert.equal(refs[0].name, 'outerHelper')
+    })
+
+    it('should ignore Web, ECMAScript, and Coralite built-ins', () => {
+      function sampleFn () {
+        const url = new URL('https://coralite.dev')
+        const el = createCoraliteElement('div')
+        console.log(url, el, window, document, fetch)
+      }
+
+      const refs = findOuterScopeReferences(sampleFn)
+      assert.equal(refs.length, 0)
+    })
+
+    it('should honor @coralite-ignore pragma for specific symbols', () => {
+      const source = `
+        /* @coralite-ignore myCustomGlobal */
+        function testFn() {
+          return myCustomGlobal + 1;
+        }
+      `
+      const refs = findOuterScopeReferences(source)
+      assert.equal(refs.length, 0)
+    })
+
+    it('should honor @coralite-ignore-serialization wildcard pragma', () => {
+      const source = `
+        // @coralite-ignore-serialization
+        function testFn() {
+          return freeVar1 + freeVar2;
+        }
+      `
+      const refs = findOuterScopeReferences(source)
+      assert.equal(refs.length, 0)
+    })
+  })
+
   describe('validatePluginSource', () => {
     it('should validate a clean, correct plugin source code', () => {
       const source = `
@@ -55,6 +105,27 @@ describe('plugin-validator.js', () => {
       const result = validatePluginSource(source, 'test.js')
       assert.equal(result.valid, true)
       assert.ok(result.issues.some(i => i.code === 'RESERVED_PLUGIN_NAME'))
+    })
+
+    it('should detect serialization boundary leaks in client.context', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        const helperFn = (x) => x * 2;
+
+        export default definePlugin({
+          name: 'leaky-context-plugin',
+          client: {
+            context () {
+              const val = helperFn(10)
+              return () => ({ val })
+            }
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.issues.some(i => i.code === 'SERIALIZATION_BOUNDARY_LEAK'))
+      assert.ok(result.issues.some(i => i.message.includes('helperFn')))
     })
 
     it('should flag isomorphic scope leaks (importing fs inside client block)', () => {
@@ -111,6 +182,22 @@ describe('plugin-validator.js', () => {
       const result = validatePluginObject(plugin, 'my-plugin.js')
       assert.equal(result.valid, true)
       assert.equal(result.metrics.errors, 0)
+    })
+
+    it('should detect serialization boundary leaks in runtime plugin object', () => {
+      const outerVar = 'secret'
+      const plugin = {
+        name: 'runtime-leaky-plugin',
+        client: {
+          context () {
+            // @ts-ignore
+            return () => ({ outerVar })
+          }
+        }
+      }
+      const result = validatePluginObject(plugin, 'runtime-leaky.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.issues.some(i => i.code === 'SERIALIZATION_BOUNDARY_LEAK'))
     })
 
     it('should detect non-serializable client config', () => {

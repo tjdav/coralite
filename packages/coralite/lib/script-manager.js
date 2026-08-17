@@ -5,6 +5,7 @@ import { simple as walkJS } from 'acorn-walk'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap } from './utils/core.js'
 import { findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
 import { CoraliteError } from './utils/errors.js'
+import { findOuterScopeReferences } from './plugin-validator.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname, basename } from 'node:path'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
@@ -56,6 +57,25 @@ ScriptManager.prototype.use = async function (plugin) {
   ) {
     // @ts-ignore
     const client = plugin.client || plugin
+    const pluginName = client.name || plugin.name || 'unknown'
+
+    const checkHook = (fn, hookName) => {
+      if (typeof fn === 'function') {
+        const refs = findOuterScopeReferences(fn, { pluginName })
+        if (refs.length > 0) {
+          throw new CoraliteError(
+            `[Coralite Serialization Error] Plugin "${pluginName}": client.${hookName} references outer-scope symbol "${refs[0].name}" which will not be available after serialization. Move this function inside client.${hookName} or pass it via client.config.`
+          )
+        }
+      }
+    }
+
+    checkHook(client.context, 'context')
+    checkHook(client.onBeforeComponentRender, 'onBeforeComponentRender')
+    checkHook(client.onAfterComponentRender, 'onAfterComponentRender')
+    checkHook(client.onConnected, 'onConnected')
+    checkHook(client.onDisconnected, 'onDisconnected')
+
     if (client.context
       || typeof client.onBeforeComponentRender === 'function'
       || typeof client.onAfterComponentRender === 'function'
