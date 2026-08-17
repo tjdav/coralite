@@ -186,8 +186,8 @@
             </div>
             <div class="tab-content">
               <div ref="content1">Content 1</div>
-              <div ref="content2" style="display:none">Content 2</div>
-              <div ref="content3" style="display:none">Content 3</div>
+              <div ref="content2" hidden>Content 2</div>
+              <div ref="content3" hidden>Content 3</div>
             </div>
           </div>
         </template>
@@ -204,11 +204,11 @@
                 btn.addEventListener('click', () => {
                   // Hide all contents
                   contents.forEach(content => {
-                    content.style.display = 'none'
+                    content.hidden = true
                   })
           
                   // Show selected content
-                  contents[index].style.display = 'block'
+                  contents[index].hidden = false
           
                   // Update button states
                   buttons.forEach(b => b.classList.remove('active'))
