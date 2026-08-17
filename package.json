@@ -43,7 +43,7 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.20.0",
     "coralite-release": "workspace:*",
-    "esbuild": "^0.25.12",
+    "esbuild": "^0.28.2",
     "eslint": "^9.39.4",
     "eslint-plugin-html": "^8.1.4",
     "eslint-plugin-jsdoc": "^62.9.0",
