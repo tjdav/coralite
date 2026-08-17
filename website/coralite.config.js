@@ -10,6 +10,19 @@ export default defineConfig({
   output: 'dist',
   pages: 'src/pages',
   components: 'src/components',
+  csp: {
+    enabled: true,
+    injectMeta: true,
+    hashAlgorithm: 'sha256',
+    directives: {
+      'default-src': ["'self'"],
+      'script-src': ["'self'", 'https://esm.sh'],
+      'style-src': ["'self'"],
+      'img-src': ["'self'", 'data:', 'https:'],
+      'font-src': ["'self'"],
+      'connect-src': ["'self'"]
+    }
+  },
   styles: {
     input: ['src/css/styles.css'],
     processors: {
