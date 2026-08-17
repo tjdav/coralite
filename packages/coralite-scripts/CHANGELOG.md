@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.46.0
+
+> Comparing `coralite-scripts-v0.45.1` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- namespace dev server live-reload routes to /__coralite/ ([d32e11b](https://codeberg.org/tjdavid/coralite/commit/d32e11b466c27d57ca6796e8f834e446d8851fa6))
+- implement automated asset injection & SRI management ([db39488](https://codeberg.org/tjdavid/coralite/commit/db39488f2a0491f4b9928ff4766650d951deac0f))
+- implement CSP Level 2/3 best practices for injected scripts and styles (csp) ([314d35c](https://codeberg.org/tjdavid/coralite/commit/314d35c41153f089b644bd9d25852d2f01d16434))
+- implement CSP Level 2/3 best practices for injected scripts and styles (csp) ([82fc397](https://codeberg.org/tjdavid/coralite/commit/82fc397b2aaf6ec2909a45bab38e9e13979a050b))
+
+### 🐛 Bug Fixes
+
+- fix ENOENT on nested asset files in dev server (coralite-scripts) ([987ec2b](https://codeberg.org/tjdavid/coralite/commit/987ec2bd82cd8f40a92c1bf1ada652bbc3e9589a))
+
+
 ## v0.45.0
 
 > Comparing `coralite-scripts-v0.44.2` to `HEAD`
