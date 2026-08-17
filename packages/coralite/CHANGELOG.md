@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.46.1
+
+> Comparing `coralite-v0.46.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- invalidate incremental page builds on runtime and component chunk updates ([7316511](https://codeberg.org/tjdavid/coralite/commit/7316511083f2fb0eddad7f0e2a9ca5372174bab7))
+
+
 ## v0.46.0
 
 > Comparing `coralite-v0.45.1` to `HEAD`
