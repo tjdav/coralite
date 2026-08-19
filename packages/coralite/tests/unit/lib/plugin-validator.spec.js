@@ -15,7 +15,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 describe('plugin-validator.js', () => {
   describe('findOuterScopeReferences', () => {
-    it('should detect free outer-scope references in functions', () => {
+    it('should detect free outer-scope references in functions when moduleBindings is provided', () => {
       const outerHelper = () => {}
       function sampleFn (ctx) {
         const local = 123
@@ -24,30 +24,49 @@ describe('plugin-validator.js', () => {
         return outerHelper(local)
       }
 
-      const refs = findOuterScopeReferences(sampleFn)
+      const refs = findOuterScopeReferences(sampleFn, { moduleBindings: ['outerHelper'] })
       assert.equal(refs.length, 1)
       assert.equal(refs[0].name, 'outerHelper')
     })
 
-    it('should ignore Web, ECMAScript, and Coralite built-ins', () => {
+    it('should return empty array if moduleBindings is omitted or empty', () => {
       function sampleFn () {
-        const url = new URL('https://coralite.dev')
-        const el = createCoraliteElement('div')
-        console.log(url, el, window, document, fetch)
+        // @ts-ignore
+        return outerHelper(123)
       }
 
       const refs = findOuterScopeReferences(sampleFn)
       assert.equal(refs.length, 0)
     })
 
+    it('should ignore ambient Web / DOM / browser APIs when moduleBindings is provided', () => {
+      function sampleFn () {
+        const target = new EventTarget()
+        const evt = new CustomEvent('test', { detail: 123 })
+        alert('hello')
+        prompt('enter')
+        const notif = new Notification('hi')
+        const enc = new VideoEncoder({ output: () => {}, error: () => {} })
+        const dec = new TextDecoder()
+        const err = new DOMException('msg')
+        const encoded = btoa('text')
+        // @ts-ignore
+        window.customMethod()
+        console.log(target, evt, notif, enc, dec, err, encoded)
+      }
+
+      const refs = findOuterScopeReferences(sampleFn, { moduleBindings: ['myModuleVar'] })
+      assert.equal(refs.length, 0)
+    })
+
     it('should honor @coralite-ignore pragma for specific symbols', () => {
       const source = `
-        /* @coralite-ignore myCustomGlobal */
+        /* @coralite-ignore outerHelper */
         function testFn() {
-          return myCustomGlobal + 1;
+          return outerHelper() + 1;
         }
       `
-      const refs = findOuterScopeReferences(source)
+      const refs = findOuterScopeReferences(source, { moduleBindings: ['outerHelper'] })
       assert.equal(refs.length, 0)
     })
 
@@ -58,7 +77,7 @@ describe('plugin-validator.js', () => {
           return freeVar1 + freeVar2;
         }
       `
-      const refs = findOuterScopeReferences(source)
+      const refs = findOuterScopeReferences(source, { moduleBindings: ['freeVar1', 'freeVar2'] })
       assert.equal(refs.length, 0)
     })
   })
@@ -107,7 +126,39 @@ describe('plugin-validator.js', () => {
       assert.ok(result.issues.some(i => i.code === 'RESERVED_PLUGIN_NAME'))
     })
 
-    it('should detect serialization boundary leaks in client.context', () => {
+    it('should allow ambient browser APIs and eventBus in client.context and hooks without false positives', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+
+        export default definePlugin({
+          name: 'eventBus',
+          client: {
+            context (pluginContext) {
+              const hub = new EventTarget()
+              return () => ({
+                on: (event, handler) => hub.addEventListener(event, handler),
+                emit: (event, detail) => hub.dispatchEvent(new CustomEvent(event, { detail }))
+              })
+            },
+            onConnected () {
+              alert('connected')
+              prompt('input')
+              new Notification('test')
+              new VideoEncoder({ output: () => {}, error: () => {} })
+              new TextDecoder()
+              new DOMException('err')
+              btoa('abc')
+              window.customMethod()
+            }
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'event-bus.js')
+      assert.equal(result.valid, true)
+      assert.equal(result.metrics.errors, 0)
+    })
+
+    it('should detect serialization boundary leaks in client.context for top-level declarations', () => {
       const source = `
         import { definePlugin } from 'coralite'
         const helperFn = (x) => x * 2;
@@ -126,6 +177,29 @@ describe('plugin-validator.js', () => {
       assert.equal(result.valid, false)
       assert.ok(result.issues.some(i => i.code === 'SERIALIZATION_BOUNDARY_LEAK'))
       assert.ok(result.issues.some(i => i.message.includes('helperFn')))
+    })
+
+    it('should flag factory parameter closure leaks inside factory functions', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+
+        export default function myPlugin (options) {
+          const secret = options.apiKey
+          return definePlugin({
+            name: 'factory-leak-plugin',
+            client: {
+              context () {
+                console.log(options.apiKey, secret)
+                return () => ({})
+              }
+            }
+          })
+        }
+      `
+      const result = validatePluginSource(source, 'factory-leak.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.issues.some(i => i.code === 'SERIALIZATION_BOUNDARY_LEAK' && i.message.includes('options')))
+      assert.ok(result.issues.some(i => i.code === 'SERIALIZATION_BOUNDARY_LEAK' && i.message.includes('secret')))
     })
 
     it('should flag isomorphic scope leaks (importing fs inside client block)', () => {
@@ -184,10 +258,10 @@ describe('plugin-validator.js', () => {
       assert.equal(result.metrics.errors, 0)
     })
 
-    it('should detect serialization boundary leaks in runtime plugin object', () => {
+    it('should skip closure leak checks in validatePluginObject when module AST is absent', () => {
       const outerVar = 'secret'
       const plugin = {
-        name: 'runtime-leaky-plugin',
+        name: 'runtime-plugin',
         client: {
           context () {
             // @ts-ignore
@@ -195,9 +269,9 @@ describe('plugin-validator.js', () => {
           }
         }
       }
-      const result = validatePluginObject(plugin, 'runtime-leaky.js')
-      assert.equal(result.valid, false)
-      assert.ok(result.issues.some(i => i.code === 'SERIALIZATION_BOUNDARY_LEAK'))
+      const result = validatePluginObject(plugin, 'runtime-plugin.js')
+      assert.equal(result.valid, true)
+      assert.equal(result.metrics.errors, 0)
     })
 
     it('should detect non-serializable client config', () => {

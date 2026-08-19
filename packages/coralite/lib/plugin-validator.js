@@ -13,123 +13,6 @@ import kleur from 'kleur'
  * } from '../types/index.js'
  */
 
-export const STANDARD_GLOBALS = new Set([
-  // ECMAScript Built-ins
-  'Object',
-  'Array',
-  'String',
-  'Number',
-  'Boolean',
-  'Symbol',
-  'BigInt',
-  'Function',
-  'Math',
-  'JSON',
-  'Date',
-  'RegExp',
-  'Promise',
-  'Proxy',
-  'Reflect',
-  'Error',
-  'TypeError',
-  'RangeError',
-  'SyntaxError',
-  'ReferenceError',
-  'URIError',
-  'EvalError',
-  'AggregateError',
-  'Map',
-  'Set',
-  'WeakMap',
-  'WeakSet',
-  'ArrayBuffer',
-  'SharedArrayBuffer',
-  'DataView',
-  'Int8Array',
-  'Uint8Array',
-  'Uint8ClampedArray',
-  'Int16Array',
-  'Uint16Array',
-  'Int32Array',
-  'Uint32Array',
-  'Float32Array',
-  'Float64Array',
-  'BigInt64Array',
-  'BigUint64Array',
-  'globalThis',
-  'eval',
-  'isFinite',
-  'isNaN',
-  'parseFloat',
-  'parseInt',
-  'decodeURI',
-  'decodeURIComponent',
-  'encodeURI',
-  'encodeURIComponent',
-  'undefined',
-  'NaN',
-  'Infinity',
-  'null',
-  'arguments',
-  'this',
-  'console',
-  'Atomics',
-  'StructuredClone',
-  'structuredClone',
-
-  // Web / Browser Globals
-  'window',
-  'document',
-  'customElements',
-  'HTMLElement',
-  'Element',
-  'Node',
-  'Event',
-  'CustomEvent',
-  'MutationObserver',
-  'IntersectionObserver',
-  'ResizeObserver',
-  'AbortController',
-  'AbortSignal',
-  'fetch',
-  'location',
-  'navigator',
-  'localStorage',
-  'sessionStorage',
-  'setTimeout',
-  'clearTimeout',
-  'setInterval',
-  'clearInterval',
-  'requestAnimationFrame',
-  'cancelAnimationFrame',
-  'queueMicrotask',
-  'URL',
-  'URLSearchParams',
-  'Headers',
-  'Request',
-  'Response',
-  'FormData',
-  'Blob',
-  'File',
-  'FileReader',
-  'Image',
-  'Audio',
-  'Option',
-  'performance',
-  'crypto',
-  'WebSocket',
-  'Worker',
-  'MessageChannel',
-  'MessagePort',
-  'BroadcastChannel',
-  'indexedDB',
-  'history',
-
-  // Coralite Globals
-  '__coralite__',
-  'createCoraliteElement'
-])
-
 const RESERVED_PLUGIN_NAMES = new Set(['testing', 'metadata', 'static-assets'])
 const SERVER_HOOK_NAMES = new Set([
   'onBeforeBuild',
@@ -166,15 +49,156 @@ const SERVER_ONLY_MODULES = new Set([
 ])
 
 /**
+ * Recursively extracts pattern bindings (identifiers) into a target set.
+ *
+ * @param {Object} pattern - AST pattern node
+ * @param {Set<string>} bindingSet - Target set to collect identifier names
+ */
+function extractPatternBindings (pattern, bindingSet) {
+  if (!pattern) {
+    return
+  }
+  if (pattern.type === 'Identifier') {
+    bindingSet.add(pattern.name)
+  } else if (pattern.type === 'ObjectPattern') {
+    for (const prop of pattern.properties || []) {
+      if (prop.type === 'Property') {
+        extractPatternBindings(prop.value, bindingSet)
+      } else if (prop.type === 'RestElement') {
+        extractPatternBindings(prop.argument, bindingSet)
+      }
+    }
+  } else if (pattern.type === 'ArrayPattern') {
+    for (const el of pattern.elements || []) {
+      if (el) {
+        extractPatternBindings(el, bindingSet)
+      }
+    }
+  } else if (pattern.type === 'AssignmentPattern') {
+    extractPatternBindings(pattern.left, bindingSet)
+  } else if (pattern.type === 'RestElement') {
+    extractPatternBindings(pattern.argument, bindingSet)
+  }
+}
+
+/**
+ * Extracts top-level module scope bindings and enclosing factory function bindings from a module AST.
+ *
+ * @param {Object} ast - Module AST node
+ * @returns {Set<string>} Set of bound identifier names at module/factory scope
+ */
+export function extractModuleScopeBindings (ast) {
+  const bindings = new Set()
+
+  if (!ast || typeof ast !== 'object') {
+    return bindings
+  }
+
+  const processDeclarationNode = (node) => {
+    if (!node) {
+      return
+    }
+
+    if (node.type === 'ImportDeclaration') {
+      for (const spec of node.specifiers || []) {
+        if (spec.local && spec.local.name) {
+          bindings.add(spec.local.name)
+        }
+      }
+    } else if (node.type === 'VariableDeclaration') {
+      for (const decl of node.declarations || []) {
+        extractPatternBindings(decl.id, bindings)
+      }
+    } else if (node.type === 'FunctionDeclaration' || node.type === 'ClassDeclaration') {
+      if (node.id && node.id.name) {
+        bindings.add(node.id.name)
+      }
+    } else if (node.type === 'ExportNamedDeclaration') {
+      if (node.declaration) {
+        processDeclarationNode(node.declaration)
+      }
+    } else if (node.type === 'ExportDefaultDeclaration') {
+      if (node.declaration) {
+        if (node.declaration.type === 'FunctionDeclaration' || node.declaration.type === 'ClassDeclaration') {
+          if (node.declaration.id && node.declaration.id.name) {
+            bindings.add(node.declaration.id.name)
+          }
+        } else if (node.declaration.type === 'VariableDeclaration') {
+          processDeclarationNode(node.declaration)
+        }
+      }
+    }
+  }
+
+  if (ast.type === 'Program' && Array.isArray(ast.body)) {
+    for (const stmt of ast.body) {
+      processDeclarationNode(stmt)
+    }
+  }
+
+  walkAncestorJS(ast, {
+    CallExpression (node, ancestors) {
+      if (node.callee && node.callee.type === 'Identifier' && node.callee.name === 'definePlugin') {
+        for (let i = ancestors.length - 2; i >= 0; i--) {
+          const ancestor = ancestors[i]
+          if (
+            ancestor.type === 'FunctionDeclaration' ||
+            ancestor.type === 'FunctionExpression' ||
+            ancestor.type === 'ArrowFunctionExpression'
+          ) {
+            for (const param of ancestor.params || []) {
+              extractPatternBindings(param, bindings)
+            }
+            if (ancestor.body) {
+              walkJS(ancestor.body, {
+                VariableDeclarator (vNode) {
+                  extractPatternBindings(vNode.id, bindings)
+                },
+                FunctionDeclaration (fNode) {
+                  if (fNode.id && fNode.id.name) {
+                    bindings.add(fNode.id.name)
+                  }
+                },
+                ClassDeclaration (cNode) {
+                  if (cNode.id && cNode.id.name) {
+                    bindings.add(cNode.id.name)
+                  }
+                }
+              })
+            }
+          }
+        }
+      }
+    }
+  })
+
+  return bindings
+}
+
+/**
  * Extracts free outer-scope identifier references from a function AST or function reference.
  *
  * @param {Function|string|Object} fnNodeOrCode - Function, function source string, or AST node
  * @param {Object} [options={}] - Options
  * @param {string} [options.sourceCode=''] - Raw source code context for pragma extraction
  * @param {string} [options.pluginName=''] - Plugin name for context
+ * @param {Set<string>|Array<string>} [options.moduleBindings] - Module-scope declared bindings
  * @returns {Array<{ name: string, line?: number, column?: number }>} List of outer scope references
  */
 export function findOuterScopeReferences (fnNodeOrCode, options = {}) {
+  let moduleBindings = null
+  if (options.moduleBindings) {
+    if (options.moduleBindings instanceof Set) {
+      moduleBindings = options.moduleBindings
+    } else {
+      moduleBindings = new Set(options.moduleBindings)
+    }
+  }
+
+  if (!moduleBindings || moduleBindings.size === 0) {
+    return []
+  }
+
   let sourceStr = options.sourceCode || ''
   let astNode = null
 
@@ -261,40 +285,13 @@ export function findOuterScopeReferences (fnNodeOrCode, options = {}) {
 
   const localBindings = new Set()
 
-  const extractPatternBindings = (pattern) => {
-    if (!pattern) {
-      return
-    }
-    if (pattern.type === 'Identifier') {
-      localBindings.add(pattern.name)
-    } else if (pattern.type === 'ObjectPattern') {
-      for (const prop of pattern.properties || []) {
-        if (prop.type === 'Property') {
-          extractPatternBindings(prop.value)
-        } else if (prop.type === 'RestElement') {
-          extractPatternBindings(prop.argument)
-        }
-      }
-    } else if (pattern.type === 'ArrayPattern') {
-      for (const el of pattern.elements || []) {
-        if (el) {
-          extractPatternBindings(el)
-        }
-      }
-    } else if (pattern.type === 'AssignmentPattern') {
-      extractPatternBindings(pattern.left)
-    } else if (pattern.type === 'RestElement') {
-      extractPatternBindings(pattern.argument)
-    }
-  }
-
   walkJS(targetNode, {
     FunctionDeclaration (node) {
       if (node.id && node.id.type === 'Identifier') {
         localBindings.add(node.id.name)
       }
       for (const param of node.params || []) {
-        extractPatternBindings(param)
+        extractPatternBindings(param, localBindings)
       }
     },
     FunctionExpression (node) {
@@ -302,16 +299,16 @@ export function findOuterScopeReferences (fnNodeOrCode, options = {}) {
         localBindings.add(node.id.name)
       }
       for (const param of node.params || []) {
-        extractPatternBindings(param)
+        extractPatternBindings(param, localBindings)
       }
     },
     ArrowFunctionExpression (node) {
       for (const param of node.params || []) {
-        extractPatternBindings(param)
+        extractPatternBindings(param, localBindings)
       }
     },
     VariableDeclarator (node) {
-      extractPatternBindings(node.id)
+      extractPatternBindings(node.id, localBindings)
     },
     ClassDeclaration (node) {
       if (node.id && node.id.type === 'Identifier') {
@@ -320,14 +317,14 @@ export function findOuterScopeReferences (fnNodeOrCode, options = {}) {
     },
     CatchClause (node) {
       if (node.param) {
-        extractPatternBindings(node.param)
+        extractPatternBindings(node.param, localBindings)
       }
     }
   })
 
   if (targetNode.type === 'FunctionDeclaration' || targetNode.type === 'FunctionExpression' || targetNode.type === 'ArrowFunctionExpression') {
     for (const param of targetNode.params || []) {
-      extractPatternBindings(param)
+      extractPatternBindings(param, localBindings)
     }
   }
 
@@ -342,7 +339,7 @@ export function findOuterScopeReferences (fnNodeOrCode, options = {}) {
       const ancestors = a
       const name = node.name
 
-      if (STANDARD_GLOBALS.has(name) || localBindings.has(name) || ignoredSymbols.has(name)) {
+      if (localBindings.has(name) || ignoredSymbols.has(name) || !moduleBindings.has(name)) {
         return
       }
 
@@ -467,6 +464,8 @@ export function validatePluginSource (sourceCode, filePath = '') {
     }
   }
 
+  const moduleBindings = extractModuleScopeBindings(ast)
+
   let foundDefinePlugin = false
   let pluginName = 'unknown'
 
@@ -577,7 +576,8 @@ export function validatePluginSource (sourceCode, filePath = '') {
               if (cp.value && (cp.value.type === 'FunctionExpression' || cp.value.type === 'ArrowFunctionExpression')) {
                 const outerRefs = findOuterScopeReferences(cp.value, {
                   sourceCode,
-                  pluginName
+                  pluginName,
+                  moduleBindings
                 })
                 for (const ref of outerRefs) {
                   issues.push({

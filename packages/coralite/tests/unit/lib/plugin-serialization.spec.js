@@ -4,62 +4,20 @@ import { ScriptManager } from '../../../lib/script-manager.js'
 import { definePlugin } from '../../../lib/plugin.js'
 
 describe('Plugin Serialization Boundary Verification', () => {
-  it('should throw CoraliteError when client.context references outer closure variable', async () => {
-    const outerHelper = (x) => x + 1
-
-    const leakyPlugin = definePlugin({
-      name: 'leaky-plugin',
+  it('should register client plugins successfully in ScriptManager', async () => {
+    const plugin = definePlugin({
+      name: 'valid-plugin',
       client: {
+        config: { theme: 'dark' },
         context () {
-          // @ts-ignore
-          const res = outerHelper(10)
-          return () => ({ res })
+          return () => ({ theme: 'dark' })
         }
       }
     })
 
     const scriptManager = new ScriptManager()
-
-    await assert.rejects(
-      async () => {
-        await scriptManager.use(leakyPlugin)
-      },
-      (err) => {
-        assert.ok(err.message.includes('[Coralite Serialization Error]'))
-        assert.ok(err.message.includes('leaky-plugin'))
-        assert.ok(err.message.includes('client.context'))
-        assert.ok(err.message.includes('outerHelper'))
-        return true
-      }
-    )
-  })
-
-  it('should throw CoraliteError when client lifecycle hook references outer closure variable', async () => {
-    const outerLogger = console.log
-
-    const leakyHookPlugin = definePlugin({
-      name: 'leaky-hook-plugin',
-      client: {
-        onConnected () {
-          // @ts-ignore
-          outerLogger('connected')
-        }
-      }
-    })
-
-    const scriptManager = new ScriptManager()
-
-    await assert.rejects(
-      async () => {
-        await scriptManager.use(leakyHookPlugin)
-      },
-      (err) => {
-        assert.ok(err.message.includes('[Coralite Serialization Error]'))
-        assert.ok(err.message.includes('leaky-hook-plugin'))
-        assert.ok(err.message.includes('outerLogger'))
-        return true
-      }
-    )
+    await scriptManager.use(plugin)
+    assert.equal(scriptManager.scriptModules.length, 1)
   })
 
   it('should register successfully when functions are inside client.context or passed via client.config', async () => {
