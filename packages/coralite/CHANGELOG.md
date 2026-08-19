@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.46.2
+
+> Comparing `coralite-v0.46.1` to `HEAD`
+
+**Summary:** 2 commits
+
+### 🐛 Bug Fixes
+
+- replace whitelist with lexical module-scope AST analysis (plugin-validator) ([9e30fe9](https://codeberg.org/tjdavid/coralite/commit/9e30fe9ce83b381f3e55deb3a64eb4b9e8ac0e68))
+- detect serialization leaks and fix validate-plugins CLI import path (plugin-validator) ([501409e](https://codeberg.org/tjdavid/coralite/commit/501409e81b495d22686788777b222912eee574c4))
+
+
 ## v0.46.1
 
 > Comparing `coralite-v0.46.0` to `HEAD`
