@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import {
+  cleanKeys,
   mergePluginState,
   createReactiveProxy,
   createReadOnlyProxy,
@@ -13,6 +14,72 @@ import {
 import { CoraliteError } from '../../../lib/utils/errors.js'
 
 describe('core.js Coverage Gaps', () => {
+  describe('cleanKeys', () => {
+    it('should return empty object when given an empty object', () => {
+      const input = {}
+      const result = cleanKeys(input)
+      assert.deepStrictEqual(result, {})
+      assert.notStrictEqual(result, input)
+    })
+
+    it('should preserve plain and camelCase keys without duplicate alias properties', () => {
+      const input = { foo: 'bar', bazQux: 123 }
+      const result = cleanKeys(input)
+      assert.deepStrictEqual(result, { foo: 'bar', bazQux: 123 })
+      assert.strictEqual(Object.keys(result).length, 2)
+    })
+
+    it('should convert single kebab-case key to camelCase while retaining original key', () => {
+      const input = { 'foo-bar': 'value' }
+      const result = cleanKeys(input)
+      assert.deepStrictEqual(result, {
+        'foo-bar': 'value',
+        fooBar: 'value'
+      })
+    })
+
+    it('should convert multi-dash kebab-case keys to camelCase', () => {
+      const input = { 'data-user-id': 42 }
+      const result = cleanKeys(input)
+      assert.deepStrictEqual(result, {
+        'data-user-id': 42,
+        dataUserId: 42
+      })
+    })
+
+    it('should convert colon-separated keys to camelCase', () => {
+      const input = { 'xml:lang': 'en' }
+      const result = cleanKeys(input)
+      assert.deepStrictEqual(result, {
+        'xml:lang': 'en',
+        xmlLang: 'en'
+      })
+    })
+
+    it('should handle mixed objects with kebab-case, colons, camelCase, and plain keys', () => {
+      const objVal = { nested: true }
+      const input = {
+        'attr-one': 'a',
+        'xml:base': 'b',
+        alreadyCamel: 'c',
+        plain: 'd',
+        'complex-obj': objVal
+      }
+      const result = cleanKeys(input)
+      assert.deepStrictEqual(result, {
+        'attr-one': 'a',
+        attrOne: 'a',
+        'xml:base': 'b',
+        xmlBase: 'b',
+        alreadyCamel: 'c',
+        plain: 'd',
+        'complex-obj': objVal,
+        complexObj: objVal
+      })
+      assert.strictEqual(result.complexObj, objVal)
+    })
+  })
+
   describe('mergePluginState', () => {
     it('should handle non-object patch', () => {
       assert.deepStrictEqual(mergePluginState({ a: 1 }, null), { a: 1 })
