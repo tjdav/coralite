@@ -1,8 +1,10 @@
+import { Parser } from 'htmlparser2'
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, extname, relative, resolve } from 'node:path'
 import kleur from 'kleur'
+import { camelToKebab, kebabToCamel } from './utils/core.js'
 
 /**
  * @import {
@@ -11,224 +13,66 @@ import kleur from 'kleur'
  * } from '../types/index.js'
  */
 
-function camelToKebab (str) {
-  return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+function getPropKeyName (propNode) {
+  if (!propNode) {
+    return null
+  }
+
+  if (propNode.type === 'Property' || propNode.type === 'MethodDefinition') {
+    if (!propNode.computed) {
+      if (propNode.key.type === 'Identifier') {
+        return propNode.key.name
+      }
+      if (propNode.key.type === 'Literal') {
+        return String(propNode.key.value)
+      }
+    } else if (propNode.key.type === 'Literal') {
+      return String(propNode.key.value)
+    }
+  }
+
+  return null
 }
 
-/**
- * Extracts the body of a `<tag ...>...</tag>` section using linear (indexOf-based)
- * string search instead of a regex. This avoids the polynomial backtracking / ReDoS
- * risk of `/&lt;tag[^&gt;]*&gt;([\s\S]*?)&lt;\/tag&gt;/i` on adversarial input.
- *
- * Semantics mirror the previous regex: content is everything after the opening tag's
- * first `>` up to (but not including) the first case-insensitive `</tag>`.
- *
- * @param {string} sourceCode - Raw component file content
- * @param {string} tag - The section tag name, e.g. 'template', 'script', or 'style'
- * @returns {string} The section body, or '' when the section is absent
- */
-function extractSection (sourceCode, tag) {
-  const lower = sourceCode.toLowerCase()
-  const openIdx = lower.indexOf(`<${tag}`)
-  if (openIdx === -1) {
-    return ''
+function getNodePropName (propNode, isComputed = false) {
+  if (!propNode) {
+    return null
   }
-  const contentStart = sourceCode.indexOf('>', openIdx) + 1
-  if (contentStart === 0) {
-    return ''
+  if (!isComputed) {
+    if (propNode.type === 'Identifier') {
+      return propNode.name
+    }
+    if (propNode.type === 'Literal') {
+      return String(propNode.value)
+    }
+  } else if (propNode.type === 'Literal' && typeof propNode.value === 'string') {
+    return propNode.value
   }
-  const closeIdx = lower.indexOf(`</${tag}>`, contentStart)
-  if (closeIdx === -1) {
-    return ''
-  }
-  return sourceCode.slice(contentStart, closeIdx)
+  return null
 }
 
-const isWhitespace = (ch) => ch !== undefined && /\s/.test(ch)
-const isQuote = (ch) => ch === '"' || ch === "'"
-const isIdentChar = (ch) => ch !== undefined && /[a-zA-Z0-9_$]/.test(ch)
-const isRefNameChar = (ch) => ch !== undefined && /[a-zA-Z0-9_-]/.test(ch)
+function extractDestructuredKeys (patternNode, targetSet, localBindingNames) {
+  if (!patternNode || patternNode.type !== 'ObjectPattern') {
+    return
+  }
 
-/**
- * Extracts mustache tokens `{{ name }}` / `{{ name.prop }}` via a linear scan.
- * Replaces the previous `/\{\{\s*([a-zA-Z0-9_$]+)(\.[a-zA-Z0-9_$]+)*\s*\}\}/g`
- * regex to avoid any polynomial-backtracking risk on template content.
- *
- * @param {string} templateContent - The <template> section body
- * @returns {Set<string>} The first identifier of each valid mustache expression
- */
-function extractMustacheTokens (templateContent) {
-  const tokens = new Set()
-  let idx = 0
-  while ((idx = templateContent.indexOf('{{', idx)) !== -1) {
-    const end = templateContent.indexOf('}}', idx + 2)
-    if (end !== -1) {
-      let pos = idx + 2
-      while (pos < end && isWhitespace(templateContent[pos])) {
-        pos++
+  for (const prop of patternNode.properties || []) {
+    if (prop.type === 'Property') {
+      const keyName = getPropKeyName(prop)
+      if (keyName) {
+        targetSet.add(keyName)
       }
-      const identStart = pos
-      while (pos < end && isIdentChar(templateContent[pos])) {
-        pos++
-      }
-      if (pos > identStart) {
-        // The remainder must be `(\.[a-zA-Z0-9_$]+)*` then optional whitespace only.
-        let chainOk = true
-        let p = pos
-        while (p < end && templateContent[p] === '.') {
-          p++
-          const segStart = p
-          while (p < end && isIdentChar(templateContent[p])) {
-            p++
-          }
-          if (p === segStart) {
-            chainOk = false
-            break
-          }
+      if (localBindingNames) {
+        let valNode = prop.value
+        if (valNode.type === 'AssignmentPattern') {
+          valNode = valNode.left
         }
-        if (chainOk) {
-          while (p < end && isWhitespace(templateContent[p])) {
-            p++
-          }
-          if (p === end) {
-            tokens.add(templateContent.slice(identStart, pos))
-          }
+        if (valNode.type === 'Identifier') {
+          localBindingNames.add(valNode.name)
         }
       }
     }
-    idx += 2
   }
-  return tokens
-}
-
-/**
- * Extracts `ref="name"` / `ref='name'` attributes via a linear scan.
- * Replaces the previous `/ref=["']([a-zA-Z0-9_-]+)["']/g` regex.
- *
- * @param {string} templateContent - The <template> section body
- * @returns {Set<string>} The referenced element names
- */
-function extractTemplateRefs (templateContent) {
-  const refs = new Set()
-  let idx = 0
-  while ((idx = templateContent.indexOf('ref=', idx)) !== -1) {
-    const quoteIdx = idx + 4
-    if (isQuote(templateContent[quoteIdx])) {
-      let end = quoteIdx + 1
-      while (end < templateContent.length && isRefNameChar(templateContent[end])) {
-        end++
-      }
-      if (end > quoteIdx + 1 && isQuote(templateContent[end])) {
-        refs.add(templateContent.slice(quoteIdx + 1, end))
-        idx = end + 1
-        continue
-      }
-    }
-    idx += 4
-  }
-  return refs
-}
-
-/**
- * Extracts refs accessed via `refs('name')` / `refs["name"]` via a linear scan.
- * Replaces the previous `refs\s*(?:\(\s*['"]...['"]\s*\)|\[\s*['"]...['"]\s*\])` regex.
- *
- * @param {string} scriptContent - The <script> section body
- * @returns {Set<string>} The referenced element names
- */
-function extractRefsCalls (scriptContent) {
-  const refs = new Set()
-  let idx = 0
-  while ((idx = scriptContent.indexOf('refs', idx)) !== -1) {
-    let p = idx + 4
-    while (p < scriptContent.length && isWhitespace(scriptContent[p])) {
-      p++
-    }
-    const opener = scriptContent[p]
-    let closer = null
-    if (opener === '(') {
-      closer = ')'
-    } else if (opener === '[') {
-      closer = ']'
-    }
-    if (closer !== null) {
-      p++
-      while (p < scriptContent.length && isWhitespace(scriptContent[p])) {
-        p++
-      }
-      if (isQuote(scriptContent[p])) {
-        p++
-        const identStart = p
-        while (p < scriptContent.length && isRefNameChar(scriptContent[p])) {
-          p++
-        }
-        const identEnd = p
-        if (p > identStart && isQuote(scriptContent[p])) {
-          p++
-          while (p < scriptContent.length && isWhitespace(scriptContent[p])) {
-            p++
-          }
-          if (scriptContent[p] === closer) {
-            refs.add(scriptContent.slice(identStart, identEnd))
-          }
-        }
-      }
-    }
-    idx += 4
-  }
-  return refs
-}
-
-/**
- * Extracts `<state>.prop` reads via a linear scan.
- * Replaces the previous `/state\.([a-zA-Z0-9_$]+)/g` regex.
- *
- * @param {string} scriptContent - The <script> section body
- * @returns {Set<string>} The read state property names
- */
-function extractStateReads (scriptContent) {
-  const reads = new Set()
-  let idx = 0
-  while ((idx = scriptContent.indexOf('state.', idx)) !== -1) {
-    let end = idx + 6
-    const identStart = end
-    while (end < scriptContent.length && isIdentChar(scriptContent[end])) {
-      end++
-    }
-    if (end > identStart) {
-      reads.add(scriptContent.slice(identStart, end))
-    }
-    idx += 6
-  }
-  return reads
-}
-
-/**
- * Extracts quoted string literals via a linear scan.
- * Replaces the previous `/['"]([a-zA-Z0-9_-]+)['"]/g` regex.
- *
- * @param {string} scriptContent - The <script> section body
- * @returns {string[]} The string literal values
- */
-function extractStringLiterals (scriptContent) {
-  const literals = []
-  let idx = 0
-  while (idx < scriptContent.length) {
-    if (isQuote(scriptContent[idx])) {
-      let end = idx + 1
-      const identStart = end
-      while (end < scriptContent.length && isRefNameChar(scriptContent[end])) {
-        end++
-      }
-      if (end > identStart && isQuote(scriptContent[end])) {
-        literals.push(scriptContent.slice(identStart, end))
-        idx = end + 1
-        continue
-      }
-    }
-    idx++
-  }
-  return literals
 }
 
 /**
@@ -239,14 +83,94 @@ function extractStringLiterals (scriptContent) {
  * @returns {CoraliteComponentValidationResult} Validation result with defined, unused, and coverage metrics
  */
 export function validateComponentSource (sourceCode, filePath = '') {
-  let templateContent = ''
   let scriptContent = ''
   let styleContent = ''
 
+  const templateTokens = new Set()
+  const templateRefs = new Set()
+
   if (sourceCode.includes('<template') || sourceCode.includes('<script') || sourceCode.includes('<style')) {
-    templateContent = extractSection(sourceCode, 'template')
-    scriptContent = extractSection(sourceCode, 'script')
-    styleContent = extractSection(sourceCode, 'style')
+    let currentSection = null
+    let templateDepth = 0
+
+    const extractMustacheFromText = (text) => {
+      const mustacheRegex = /\{\{\s*([a-zA-Z0-9_$-]+)\s*\}\}/g
+      let match
+      while ((match = mustacheRegex.exec(text)) !== null) {
+        if (match[1]) {
+          templateTokens.add(match[1])
+        }
+      }
+    }
+
+    const checkAttribs = (attribs) => {
+      if (!attribs) {
+        return
+      }
+      for (const [attrName, attrVal] of Object.entries(attribs)) {
+        if (attrName.toLowerCase() === 'ref' && attrVal) {
+          templateRefs.add(attrVal)
+        }
+        if (attrVal) {
+          extractMustacheFromText(attrVal)
+        }
+      }
+    }
+
+    const parser = new Parser(
+      {
+        onopentag (name, attribs) {
+          const lowerName = name.toLowerCase()
+          if (currentSection === null) {
+            if (lowerName === 'template') {
+              currentSection = 'template'
+              templateDepth = 1
+              checkAttribs(attribs)
+            } else if (lowerName === 'script') {
+              currentSection = 'script'
+            } else if (lowerName === 'style') {
+              currentSection = 'style'
+            }
+          } else if (currentSection === 'template') {
+            if (lowerName === 'template') {
+              templateDepth++
+            }
+            checkAttribs(attribs)
+          }
+        },
+        ontext (text) {
+          if (currentSection === 'template') {
+            extractMustacheFromText(text)
+          } else if (currentSection === 'script') {
+            scriptContent += text
+          } else if (currentSection === 'style') {
+            styleContent += text
+          }
+        },
+        onclosetag (name) {
+          const lowerName = name.toLowerCase()
+          if (currentSection === 'template') {
+            if (lowerName === 'template') {
+              templateDepth--
+              if (templateDepth === 0) {
+                currentSection = null
+              }
+            }
+          } else if (currentSection === 'script' && lowerName === 'script') {
+            currentSection = null
+          } else if (currentSection === 'style' && lowerName === 'style') {
+            currentSection = null
+          }
+        }
+      },
+      {
+        lowerCaseTags: true,
+        lowerCaseAttributeNames: true
+      }
+    )
+
+    parser.write(sourceCode)
+    parser.end()
   } else {
     scriptContent = sourceCode
   }
@@ -270,11 +194,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
     }
   }
 
-  // 1. Template Analysis
-  const templateTokens = extractMustacheTokens(templateContent)
-  const templateRefs = extractTemplateRefs(templateContent)
-
-  // 2. Script AST & Regex Analysis
+  // Script AST Analysis
   const definedAttributes = new Set()
   const definedServerProps = new Set()
   const definedGetters = new Set()
@@ -284,24 +204,6 @@ export function validateComponentSource (sourceCode, filePath = '') {
   const stateReads = new Set()
   const refsCalls = new Set()
   const getterStateDependencies = new Set()
-
-  // Linear scans for refs('name'), refs["name"], state.prop, and string literals
-  if (scriptContent) {
-    for (const refName of extractRefsCalls(scriptContent)) {
-      refsCalls.add(refName)
-    }
-
-    for (const stateProp of extractStateReads(scriptContent)) {
-      stateReads.add(stateProp)
-    }
-
-    // Extract string literals passed into arrays/objects inside client code for dynamic refs
-    for (const strVal of extractStringLiterals(scriptContent)) {
-      if (templateRefs.has(strVal)) {
-        refsCalls.add(strVal)
-      }
-    }
-  }
 
   if (scriptContent) {
     try {
@@ -338,6 +240,194 @@ export function validateComponentSource (sourceCode, filePath = '') {
         }
       }
 
+      const analyzeFunctionBlock = (fnNode, targetStateSet, targetRefsSet, isGetterFn = false, isClientFn = false, paramIdx = 0) => {
+        if (!fnNode || !fnNode.body) {
+          return
+        }
+
+        const stateVars = new Set(['state'])
+        const refsVars = new Set(['refs'])
+        const contextVars = new Set(['context'])
+
+        if (fnNode.params && fnNode.params.length > paramIdx) {
+          const targetParam = fnNode.params[paramIdx]
+          if (targetParam.type === 'Identifier') {
+            if (isGetterFn || paramIdx > 0) {
+              stateVars.add(targetParam.name)
+            } else {
+              contextVars.add(targetParam.name)
+              if (targetParam.name === 'state') {
+                stateVars.add('state')
+              }
+              if (targetParam.name === 'refs') {
+                refsVars.add('refs')
+              }
+            }
+          } else if (targetParam.type === 'ObjectPattern') {
+            if (isGetterFn || paramIdx > 0) {
+              extractDestructuredKeys(targetParam, targetStateSet)
+            } else {
+              for (const p of targetParam.properties || []) {
+                if (p.type === 'Property') {
+                  const keyName = getPropKeyName(p)
+                  if (keyName === 'state') {
+                    if (p.value.type === 'Identifier') {
+                      stateVars.add(p.value.name)
+                    } else if (p.value.type === 'ObjectPattern') {
+                      extractDestructuredKeys(p.value, targetStateSet, stateVars)
+                    } else if (p.value.type === 'AssignmentPattern') {
+                      if (p.value.left.type === 'Identifier') {
+                        stateVars.add(p.value.left.name)
+                      } else if (p.value.left.type === 'ObjectPattern') {
+                        extractDestructuredKeys(p.value.left, targetStateSet, stateVars)
+                      }
+                    }
+                  } else if (keyName === 'refs') {
+                    if (p.value.type === 'Identifier') {
+                      refsVars.add(p.value.name)
+                    } else if (p.value.type === 'ObjectPattern') {
+                      extractDestructuredKeys(p.value, targetRefsSet, refsVars)
+                    } else if (p.value.type === 'AssignmentPattern') {
+                      if (p.value.left.type === 'Identifier') {
+                        refsVars.add(p.value.left.name)
+                      } else if (p.value.left.type === 'ObjectPattern') {
+                        extractDestructuredKeys(p.value.left, targetRefsSet, refsVars)
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        walkJS(fnNode.body, {
+          VariableDeclarator (dNode) {
+            if (!dNode.init) {
+              return
+            }
+
+            let initSource = null
+            if (dNode.init.type === 'Identifier') {
+              if (stateVars.has(dNode.init.name)) {
+                initSource = 'state'
+              } else if (refsVars.has(dNode.init.name)) {
+                initSource = 'refs'
+              } else if (contextVars.has(dNode.init.name)) {
+                initSource = 'context'
+              }
+            } else if (dNode.init.type === 'MemberExpression') {
+              if (dNode.init.object.type === 'Identifier' && contextVars.has(dNode.init.object.name)) {
+                const propName = getNodePropName(dNode.init.property, dNode.init.computed)
+                if (propName === 'state') {
+                  initSource = 'state'
+                } else if (propName === 'refs') {
+                  initSource = 'refs'
+                }
+              }
+            }
+
+            if (initSource === 'state') {
+              if (dNode.id.type === 'ObjectPattern') {
+                extractDestructuredKeys(dNode.id, targetStateSet, stateVars)
+              } else if (dNode.id.type === 'Identifier') {
+                stateVars.add(dNode.id.name)
+              }
+            } else if (initSource === 'refs') {
+              if (dNode.id.type === 'ObjectPattern') {
+                extractDestructuredKeys(dNode.id, targetRefsSet, refsVars)
+              } else if (dNode.id.type === 'Identifier') {
+                refsVars.add(dNode.id.name)
+              }
+            } else if (initSource === 'context') {
+              if (dNode.id.type === 'ObjectPattern') {
+                for (const p of dNode.id.properties || []) {
+                  if (p.type === 'Property') {
+                    const keyName = getPropKeyName(p)
+                    if (keyName === 'state') {
+                      if (p.value.type === 'Identifier') {
+                        stateVars.add(p.value.name)
+                      } else if (p.value.type === 'ObjectPattern') {
+                        extractDestructuredKeys(p.value, targetStateSet, stateVars)
+                      }
+                    } else if (keyName === 'refs') {
+                      if (p.value.type === 'Identifier') {
+                        refsVars.add(p.value.name)
+                      } else if (p.value.type === 'ObjectPattern') {
+                        extractDestructuredKeys(p.value, targetRefsSet, refsVars)
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+
+          MemberExpression (memNode) {
+            let matchedTarget = null
+            let propNode = memNode.property
+
+            if (memNode.object.type === 'Identifier') {
+              if (stateVars.has(memNode.object.name)) {
+                matchedTarget = 'state'
+              } else if (refsVars.has(memNode.object.name)) {
+                matchedTarget = 'refs'
+              }
+            } else if (
+              memNode.object.type === 'MemberExpression' &&
+              memNode.object.object.type === 'Identifier' &&
+              contextVars.has(memNode.object.object.name)
+            ) {
+              const ctxProp = getNodePropName(memNode.object.property, memNode.object.computed)
+              if (ctxProp === 'state') {
+                matchedTarget = 'state'
+              } else if (ctxProp === 'refs') {
+                matchedTarget = 'refs'
+              }
+            }
+
+            if (matchedTarget === 'state') {
+              const keyName = getNodePropName(propNode, memNode.computed)
+              if (keyName) {
+                targetStateSet.add(keyName)
+              }
+            } else if (matchedTarget === 'refs') {
+              const keyName = getNodePropName(propNode, memNode.computed)
+              if (keyName) {
+                targetRefsSet.add(keyName)
+              }
+            }
+          },
+
+          CallExpression (callNode) {
+            let isRefCall = false
+            if (callNode.callee.type === 'Identifier' && refsVars.has(callNode.callee.name)) {
+              isRefCall = true
+            } else if (callNode.callee.type === 'MemberExpression') {
+              const calleeProp = getNodePropName(callNode.callee.property, callNode.callee.computed)
+              if (calleeProp === 'refs') {
+                isRefCall = true
+              }
+            }
+
+            if (isRefCall && callNode.arguments.length > 0) {
+              const arg0 = callNode.arguments[0]
+              if (arg0.type === 'Literal' && typeof arg0.value === 'string') {
+                targetRefsSet.add(arg0.value)
+              }
+            }
+          },
+
+          Literal (litNode) {
+            if (isClientFn && typeof litNode.value === 'string') {
+              if (templateRefs.has(litNode.value)) {
+                targetRefsSet.add(litNode.value)
+              }
+            }
+          }
+        })
+      }
+
       walkAncestorJS(ast, {
         CallExpression (node) {
           if (
@@ -349,44 +439,42 @@ export function validateComponentSource (sourceCode, filePath = '') {
             const configObj = node.arguments[0]
 
             for (const prop of configObj.properties) {
-              if (prop.type !== 'Property' || prop.key.type !== 'Identifier') {
+              if (prop.type !== 'Property') {
                 continue
               }
-
-              const keyName = prop.key.name
+              const keyName = getPropKeyName(prop)
+              if (!keyName) {
+                continue
+              }
 
               // Attributes schema
               if (keyName === 'attributes' && prop.value.type === 'ObjectExpression') {
                 for (const attrProp of prop.value.properties) {
-                  if (attrProp.type === 'Property' && attrProp.key.type === 'Identifier') {
-                    definedAttributes.add(attrProp.key.name)
+                  if (attrProp.type === 'Property') {
+                    const attrName = getPropKeyName(attrProp)
+                    if (attrName) {
+                      definedAttributes.add(attrName)
+                    }
                   }
                 }
               }
 
-              // Server block return values
+              // Server block return values & body state/refs accesses
               if (
                 keyName === 'server' &&
                 (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression')
               ) {
-                const serverParam = prop.value.params[0]
-                if (serverParam && serverParam.type === 'Identifier') {
-                  const sCtx = serverParam.name
-                  walkJS(prop.value.body, {
-                    MemberExpression (mNode) {
-                      if (mNode.object.type === 'Identifier' && mNode.object.name === sCtx && mNode.property.type === 'Identifier') {
-                        stateReads.add(mNode.property.name)
-                      }
-                    }
-                  })
-                }
+                analyzeFunctionBlock(prop.value, stateReads, refsCalls, false, false, 0)
 
                 walkJS(prop.value.body, {
                   ReturnStatement (retNode) {
                     if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
                       for (const retProp of retNode.argument.properties) {
-                        if (retProp.type === 'Property' && retProp.key.type === 'Identifier') {
-                          definedServerProps.add(retProp.key.name)
+                        if (retProp.type === 'Property') {
+                          const propName = getPropKeyName(retProp)
+                          if (propName) {
+                            definedServerProps.add(propName)
+                          }
                         }
                       }
                     }
@@ -397,28 +485,30 @@ export function validateComponentSource (sourceCode, filePath = '') {
               // Getters block
               if (keyName === 'getters' && prop.value.type === 'ObjectExpression') {
                 for (const getterProp of prop.value.properties) {
-                  if (getterProp.type === 'Property' && getterProp.key.type === 'Identifier') {
-                    const gName = getterProp.key.name
-                    definedGetters.add(gName)
+                  if (getterProp.type === 'Property') {
+                    const gName = getPropKeyName(getterProp)
+                    if (gName) {
+                      definedGetters.add(gName)
 
-                    if (
-                      getterProp.value.type === 'ArrowFunctionExpression' ||
-                      getterProp.value.type === 'FunctionExpression'
-                    ) {
-                      const firstParam = getterProp.value.params[0]
-                      if (firstParam && firstParam.type === 'Identifier') {
-                        const paramName = firstParam.name
-                        walkJS(getterProp.value.body, {
-                          MemberExpression (memNode) {
-                            if (memNode.object.type === 'Identifier' && memNode.object.name === paramName) {
-                              if (memNode.property.type === 'Identifier') {
-                                getterStateDependencies.add(memNode.property.name)
-                              }
-                            }
-                          }
-                        })
+                      if (
+                        getterProp.value.type === 'ArrowFunctionExpression' ||
+                        getterProp.value.type === 'FunctionExpression'
+                      ) {
+                        analyzeFunctionBlock(getterProp.value, getterStateDependencies, refsCalls, true, false, 0)
                       }
                     }
+                  }
+                }
+              }
+
+              // Slots block
+              if (keyName === 'slots' && prop.value.type === 'ObjectExpression') {
+                for (const slotProp of prop.value.properties) {
+                  if (
+                    slotProp.type === 'Property' &&
+                    (slotProp.value.type === 'FunctionExpression' || slotProp.value.type === 'ArrowFunctionExpression')
+                  ) {
+                    analyzeFunctionBlock(slotProp.value, stateReads, refsCalls, false, false, 1)
                   }
                 }
               }
@@ -521,87 +611,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                   }
                 }
 
-                const stateVarNames = new Set(['state'])
-                const refsVarNames = new Set(['refs'])
-
-                for (const param of prop.value.params) {
-                  if (param.type === 'ObjectPattern') {
-                    for (const p of param.properties) {
-                      if (p.type === 'Property' && p.key.type === 'Identifier' && p.value.type === 'Identifier') {
-                        if (p.key.name === 'state') {
-                          stateVarNames.add(p.value.name)
-                        }
-                        if (p.key.name === 'refs') {
-                          refsVarNames.add(p.value.name)
-                        }
-                      }
-                    }
-                  } else if (param.type === 'Identifier') {
-                    const contextName = param.name
-                    walkJS(prop.value.body, {
-                      MemberExpression (mNode) {
-                        if (mNode.object.type === 'Identifier' && mNode.object.name === contextName) {
-                          if (mNode.property.type === 'Identifier') {
-                            if (mNode.property.name === 'state') {
-                              stateVarNames.add(contextName)
-                            }
-                            if (mNode.property.name === 'refs') {
-                              refsVarNames.add(contextName)
-                            }
-                          }
-                        }
-                      },
-                      VariableDeclarator (declNode) {
-                        if (
-                          declNode.id.type === 'ObjectPattern' &&
-                          declNode.init &&
-                          declNode.init.type === 'Identifier' &&
-                          declNode.init.name === contextName
-                        ) {
-                          for (const p of declNode.id.properties) {
-                            if (p.type === 'Property' && p.key.type === 'Identifier' && p.value.type === 'Identifier') {
-                              if (p.key.name === 'state') {
-                                stateVarNames.add(p.value.name)
-                              }
-                              if (p.key.name === 'refs') {
-                                refsVarNames.add(p.value.name)
-                              }
-                            }
-                          }
-                        }
-                      }
-                    })
-                  }
-                }
-
-                walkJS(prop.value.body, {
-                  MemberExpression (memNode) {
-                    if (
-                      memNode.object.type === 'Identifier' &&
-                      stateVarNames.has(memNode.object.name)
-                    ) {
-                      if (memNode.property.type === 'Identifier') {
-                        stateReads.add(memNode.property.name)
-                      }
-                    }
-                  },
-                  CallExpression (callNode) {
-                    let isRefCall = false
-                    if (callNode.callee.type === 'Identifier' && refsVarNames.has(callNode.callee.name)) {
-                      isRefCall = true
-                    } else if (
-                      callNode.callee.type === 'MemberExpression' &&
-                      callNode.callee.property.type === 'Identifier' &&
-                      callNode.callee.property.name === 'refs'
-                    ) {
-                      isRefCall = true
-                    }
-
-                    if (isRefCall && callNode.arguments.length > 0 && callNode.arguments[0].type === 'Literal') {
-                      refsCalls.add(String(callNode.arguments[0].value))
-                    }
-                  }
-                })
+                analyzeFunctionBlock(prop.value, stateReads, refsCalls, false, true, 0)
               }
             }
           }
@@ -665,15 +675,117 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
   const unusedRefs = []
   for (const ref of templateRefs) {
-    if (!isEntireComponentIgnored && !ignoredSymbols.has(ref) && !refsCalls.has(ref)) {
+    const refToken = 'ref_' + ref
+    const refCamelToken = 'ref_' + kebabToCamel(ref)
+    const refKebabToken = 'ref_' + camelToKebab(ref)
+
+    const isUsed =
+      refsCalls.has(ref) ||
+      refsCalls.has(refToken) ||
+      refsCalls.has(refCamelToken) ||
+      refsCalls.has(refKebabToken) ||
+      templateTokens.has(refToken) ||
+      templateTokens.has(refCamelToken) ||
+      templateTokens.has(refKebabToken) ||
+      stateReads.has(refToken) ||
+      stateReads.has(refCamelToken) ||
+      stateReads.has(refKebabToken) ||
+      getterStateDependencies.has(refToken) ||
+      getterStateDependencies.has(refCamelToken) ||
+      getterStateDependencies.has(refKebabToken)
+
+    const isIgnored =
+      isEntireComponentIgnored ||
+      ignoredSymbols.has(ref) ||
+      ignoredSymbols.has(refToken) ||
+      ignoredSymbols.has(refCamelToken) ||
+      ignoredSymbols.has(refKebabToken)
+
+    if (!isUsed && !isIgnored) {
       unusedRefs.push(ref)
     }
   }
 
+  // Collect candidate ref references from refsCalls, templateTokens, stateReads, getterStateDependencies
+  const candidateRefRefs = new Map()
+
+  const addCandidateRef = (rawName, sourceToken) => {
+    let stripped = rawName
+    if (stripped.startsWith('ref_')) {
+      stripped = stripped.slice(4)
+    }
+    if (!candidateRefRefs.has(stripped)) {
+      candidateRefRefs.set(stripped, new Set())
+    }
+    candidateRefRefs.get(stripped).add(sourceToken || rawName)
+  }
+
+  for (const call of refsCalls) {
+    addCandidateRef(call, call)
+  }
+  for (const token of templateTokens) {
+    if (token.startsWith('ref_')) {
+      addCandidateRef(token, token)
+    }
+  }
+  for (const read of stateReads) {
+    if (read.startsWith('ref_')) {
+      addCandidateRef(read, read)
+    }
+  }
+  for (const dep of getterStateDependencies) {
+    if (dep.startsWith('ref_')) {
+      addCandidateRef(dep, dep)
+    }
+  }
+
   const missingRefs = []
-  for (const ref of refsCalls) {
-    if (!isEntireComponentIgnored && !ignoredSymbols.has(ref) && !templateRefs.has(ref)) {
-      missingRefs.push(ref)
+  for (const [strippedRef, sourceTokens] of candidateRefRefs.entries()) {
+    const refToken = 'ref_' + strippedRef
+    const refCamel = kebabToCamel(strippedRef)
+    const refKebab = camelToKebab(strippedRef)
+
+    let existsInTemplate = templateRefs.has(strippedRef) || templateRefs.has(refKebab) || templateRefs.has(refCamel)
+    if (!existsInTemplate) {
+      for (const tRef of templateRefs) {
+        if (kebabToCamel(tRef) === refCamel || camelToKebab(tRef) === refKebab) {
+          existsInTemplate = true
+          break
+        }
+      }
+    }
+
+    if (existsInTemplate) {
+      continue
+    }
+
+    const isDefinedElsewhere =
+      definedAttributes.has(strippedRef) ||
+      definedAttributes.has(refToken) ||
+      definedAttributes.has(refCamel) ||
+      definedServerProps.has(strippedRef) ||
+      definedServerProps.has(refToken) ||
+      definedServerProps.has(refCamel) ||
+      definedGetters.has(strippedRef) ||
+      definedGetters.has(refToken) ||
+      definedGetters.has(refCamel)
+
+    if (isDefinedElsewhere) {
+      continue
+    }
+
+    let isIgnored = isEntireComponentIgnored || ignoredSymbols.has(strippedRef) || ignoredSymbols.has(refToken) || ignoredSymbols.has(refCamel)
+    if (!isIgnored) {
+      for (const token of sourceTokens) {
+        if (ignoredSymbols.has(token)) {
+          isIgnored = true
+          break
+        }
+      }
+    }
+
+    if (!isIgnored) {
+      missingRefs.push(strippedRef)
     }
   }
 

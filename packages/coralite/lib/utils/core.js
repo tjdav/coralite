@@ -23,6 +23,15 @@ export function kebabToCamel (str) {
 }
 
 /**
+ * Converts a camelCase string to kebab-case
+ * @param {string} str - The camelCase string to convert
+ * @returns {string} - The kebab-case version of the string
+ */
+export function camelToKebab (str) {
+  return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+}
+
+/**
  * Converts all keys in an object from kebab-case to camelCase
  * @template T
  * @param {Record<string, T>} object - The object with kebab-case keys

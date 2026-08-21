@@ -328,6 +328,270 @@ describe('Component Validator', () => {
     assert.deepStrictEqual(advScriptResult.defined.refs, ['box'])
   })
 
+  test('handles destructured state and refs in client arguments and variable declarations', () => {
+    const code = `
+<template>
+  <button ref="my-button" class="{{ activeClass }}">Click</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      activeClass: { type: String, default: 'active' },
+      unusedAttr: { type: String, default: 'unused' }
+    },
+    client({ state: { activeClass }, refs: { 'my-button': btn } }) {
+      console.log(activeClass, btn)
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'destructure-comp.html')
+    assert.deepStrictEqual(result.unused.attributes, ['unusedAttr'])
+    assert.deepStrictEqual(result.unused.refs, [])
+  })
+
+  test('handles state destructuring in variable declarations and getters/server params', () => {
+    const code = `
+<template>
+  <div>{{ getterVal }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      attrOne: { type: String, default: 'one' },
+      attrTwo: { type: String, default: 'two' }
+    },
+    async server({ state: { attrOne } }) {
+      return {
+        getterVal: attrOne
+      }
+    },
+    getters: {
+      getterVal: ({ attrTwo }) => attrTwo
+    },
+    client({ state }) {
+      const { attrOne } = state
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'destructure-var-comp.html')
+    assert.deepStrictEqual(result.unused.attributes, [])
+    assert.deepStrictEqual(result.unused.getters, [])
+  })
+
+  test('comments in script do not count as state or refs usage', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      unusedAttr: { type: String, default: '' }
+    },
+    client() {
+      // state.unusedAttr
+      /* refs('unusedRef') */
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'comment-comp.html')
+    assert.deepStrictEqual(result.unused.attributes, ['unusedAttr'])
+  })
+
+  test('extracts mustache tokens from element attributes', () => {
+    const code = `
+<template>
+  <button id="{{ btnId }}" class="{{ activeClass }}">Btn</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      btnId: { type: String },
+      activeClass: { type: String }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'attr-mustache-comp.html')
+    assert.deepStrictEqual(result.unused.attributes, [])
+  })
+
+  test('identifies ref as used when referenced via dynamic token id="{{ ref_bubble }}" in template', () => {
+    const code = `
+<template>
+  <div ref="bubble" id="{{ ref_bubble }}">Bubble</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({})
+</script>
+`
+    const result = validateComponentSource(code, 'dynamic-token-ref.html')
+    assert.deepStrictEqual(result.unused.refs, [])
+    assert.deepStrictEqual(result.unused.missingRefs, [])
+  })
+
+  test('identifies ref as used when referenced via popovertarget="{{ ref_popover }}" or <label for="{{ ref_input }}">', () => {
+    const code = `
+<template>
+  <button popovertarget="{{ ref_popover }}">Toggle</button>
+  <div ref="popover" popover>Content</div>
+  <label for="{{ ref_input }}">Name</label>
+  <input ref="input" id="{{ ref_input }}" />
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({})
+</script>
+`
+    const result = validateComponentSource(code, 'popover-label-ref.html')
+    assert.deepStrictEqual(result.unused.refs, [])
+    assert.deepStrictEqual(result.unused.missingRefs, [])
+  })
+
+  test('identifies ref as used when referenced in getters or client state via state.ref_xxx', () => {
+    const code = `
+<template>
+  <div ref="box">Box</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    getters: {
+      boxElement: (state) => state.ref_box
+    },
+    client({ state }) {
+      console.log(state.ref_box)
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'state-ref-access.html')
+    assert.deepStrictEqual(result.unused.refs, [])
+    assert.deepStrictEqual(result.unused.missingRefs, [])
+  })
+
+  test('identifies ref as used when accessed via refs.bubble property syntax or refs("ref_bubble") normalized syntax', () => {
+    const code = `
+<template>
+  <div ref="bubble">Bubble</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client({ refs }) {
+      const a = refs.bubble
+      const b = refs('ref_bubble')
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'refs-property-access.html')
+    assert.deepStrictEqual(result.unused.refs, [])
+    assert.deepStrictEqual(result.unused.missingRefs, [])
+  })
+
+  test('flags missingRefs when {{ ref_missing }} or state.ref_missing is used without ref="missing"', () => {
+    const code = `
+<template>
+  <div id="{{ ref_missing }}">{{ ref_ghost }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client({ state, refs }) {
+      const a = state.ref_dead
+      const b = refs('ref_phantom')
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'missing-ref.html')
+    assert.deepStrictEqual(result.unused.missingRefs.sort(), ['dead', 'ghost', 'missing', 'phantom'])
+  })
+
+  test('exempts ref_ properties from missingRefs if explicitly declared in attributes, server(), or getters', () => {
+    const code = `
+<template>
+  <div>{{ ref_custom }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      ref_custom: { type: String }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'declared-ref-prop.html')
+    assert.deepStrictEqual(result.unused.missingRefs, [])
+  })
+
+  test('verifies truly unreferenced refs are still flagged as unused', () => {
+    const code = `
+<template>
+  <div ref="real-unused">Unused</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({})
+</script>
+`
+    const result = validateComponentSource(code, 'truly-unused-ref.html')
+    assert.deepStrictEqual(result.unused.refs, ['real-unused'])
+  })
+
+  test('handles hyphenated refs with camelCase script state access (ref="my-button" with state.ref_myButton)', () => {
+    const code = `
+<template>
+  <button ref="my-button">Click</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client({ state }) {
+      console.log(state.ref_myButton)
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'hyphenated-camel-ref.html')
+    assert.deepStrictEqual(result.unused.refs, [])
+    assert.deepStrictEqual(result.unused.missingRefs, [])
+  })
+
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)
