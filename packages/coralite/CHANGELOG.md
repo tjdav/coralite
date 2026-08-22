@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.47.0
+
+> Comparing `coralite-v0.46.3` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- implement native reactive slot context (slots) ([3211022](https://codeberg.org/tjdavid/coralite/commit/3211022f196ceaebac5dbb20223d6c79aa0dad20))
+
+### ⚡ Performance Improvements
+
+- cache ownKeys in testing.refs proxy (coralite) ([313ee50](https://codeberg.org/tjdavid/coralite/commit/313ee5008a1e1798e3e517df02485940fc75c7b2))
+- eliminate Array.from and closure allocations in _getOwnSlots ([4f68ffa](https://codeberg.org/tjdavid/coralite/commit/4f68ffad511f62b95f61072e4d5c898730baf9fa))
+
+
 ## v0.46.3
 
 > Comparing `coralite-v0.46.2` to `HEAD`
