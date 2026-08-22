@@ -4,7 +4,7 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { getHtmlFiles, getHtmlFile } from '../../../lib/utils/server/html.js'
+import { getHtmlFiles, getHtmlFile, getHtmlFileSync } from '../../../lib/utils/server/html.js'
 import path from 'node:path'
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -97,19 +97,17 @@ describe('html.js', () => {
       assert.strictEqual(result, '<h1>Test</h1>')
     })
 
-    it('should throw error for non-existent file', async () => {
+    it('should throw error for non-existent file in getHtmlFile and getHtmlFileSync', async () => {
       const nonExistentPath = path.join(testDir, 'nonexistent.html')
 
-      try {
-        await getHtmlFile(nonExistentPath)
-      } catch (error) {
-        assert.throws(
-          () => {
-            throw error
-          },
-          { code: 'ENOENT' }
-        )
-      }
+      await assert.rejects(
+        () => getHtmlFile(nonExistentPath),
+        { code: 'ENOENT' }
+      )
+      assert.throws(
+        () => getHtmlFileSync(nonExistentPath),
+        { code: 'ENOENT' }
+      )
     })
 
     it('should throw error for directory path', async () => {
