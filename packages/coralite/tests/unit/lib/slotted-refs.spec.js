@@ -68,6 +68,33 @@ describe('Slotted Refs Resolution', () => {
       assert.ok(testingRefs, 'Testing refs proxy should exist')
       assert.strictEqual(testingRefs.confirmBtn, parentRefResult)
 
+      // Test ownKeys enumeration, for...in, dynamic attribute changes, and removal
+      const initialKeys = Object.keys(testingRefs)
+      assert.ok(initialKeys.includes('confirmBtn'), 'initial Object.keys(testingRefs) includes confirmBtn')
+      assert.ok(initialKeys.includes('modal'), 'initial Object.keys(testingRefs) includes modal')
+
+      // for...in loop verification
+      const keysViaForIn = []
+      for (const key in testingRefs) {
+        keysViaForIn.push(key)
+      }
+      assert.ok(keysViaForIn.includes('confirmBtn'), 'for...in includes confirmBtn')
+      assert.ok(keysViaForIn.includes('modal'), 'for...in includes modal')
+
+      // Same-tick dynamic ref addition via DOM mutation
+      const dynamicBtn = document.createElement('button')
+      dynamicBtn.setAttribute('ref', 'dynamicAction')
+      dynamicBtn.setAttribute('data-coralite-owner', el._instanceId)
+      el.appendChild(dynamicBtn)
+
+      const keysAfterAdd = Object.keys(testingRefs)
+      assert.ok(keysAfterAdd.includes('dynamicAction'), 'Object.keys(testingRefs) picks up same-tick dynamic ref')
+
+      // Same-tick removal of ref attribute
+      dynamicBtn.removeAttribute('ref')
+      const keysAfterRemove = Object.keys(testingRefs)
+      assert.strictEqual(keysAfterRemove.includes('dynamicAction'), false, 'Object.keys(testingRefs) reflects ref removal')
+
       document.body.removeChild(el)
       done()
     })

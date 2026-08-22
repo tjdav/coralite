@@ -309,6 +309,27 @@ export class CoraliteElement extends HTMLElement {
      * @protected
      */
     this._slotHasInternalObservers = null
+
+    /**
+     * Per-instance MutationObserver for testing.refs ownKeys cache invalidation.
+     * @type {MutationObserver|null}
+     * @protected
+     */
+    this._refsKeysObserver = null
+
+    /**
+     * Flag indicating if testing.refs ownKeys cache is dirty.
+     * @type {boolean}
+     * @protected
+     */
+    this._refsKeysDirty = true
+
+    /**
+     * Cached list of ref keys for testing.refs proxy ownKeys.
+     * @type {string[]|null}
+     * @protected
+     */
+    this._refsKeysCache = null
   }
 
   /**
@@ -403,6 +424,12 @@ export class CoraliteElement extends HTMLElement {
     if (this._slotObserver) {
       this._slotObserver.disconnect()
       this._slotObserver = null
+    }
+
+    if (this._refsKeysObserver) {
+      this._refsKeysObserver.disconnect()
+      this._refsKeysObserver = null
+      this._refsKeysDirty = true
     }
 
     if (this._abortController) {
@@ -1349,51 +1376,32 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
-   * Checks whether an untagged slot element belongs directly to host via DOM parent chain walk.
-   * @param {Element} slotEl - The candidate slot element.
-   * @param {Element} hostElement - The host custom element.
-   * @returns {boolean} True if the slot belongs directly to hostElement.
-   * @private
-   */
-  _isSlotOwnedByTraversal (slotEl, hostElement) {
-    let host = slotEl.parentElement
-
-    while (host && host !== hostElement) {
-      if (host.hasAttribute?.('data-cid') || host.hasAttribute?.('is') || (host.tagName && host.tagName.includes('-'))) {
-        return false
-      }
-      host = host.parentElement
-    }
-
-    return host === hostElement
-  }
-
-  /**
    * Retrieves `<slot>` elements that belong directly to this custom element instance,
    * ignoring `<slot>` elements nested inside child custom elements.
    * @returns {HTMLSlotElement[]}
    * @private
    */
   _getOwnSlots () {
-    const allSlots = this.querySelectorAll('slot')
+    const allSlots = Array.from(this.querySelectorAll('slot'))
     const ownId = this.getAttribute('data-cid') || this._instanceId
-    /** @type {HTMLSlotElement[]} */
-    const ownSlots = []
 
-    for (let i = 0; i < allSlots.length; i++) {
-      const slot = allSlots[i]
-      if (slot.hasAttribute('data-coralite-owner')) {
-        if (slot.getAttribute('data-coralite-owner') === ownId) {
-          // @ts-ignore
-          ownSlots.push(slot)
-        }
-      } else if (this._isSlotOwnedByTraversal(slot, this)) {
-        // @ts-ignore
-        ownSlots.push(slot)
+    return allSlots.filter(slotEl => {
+      if (slotEl.hasAttribute('data-coralite-owner')) {
+        return slotEl.getAttribute('data-coralite-owner') === ownId
       }
-    }
 
-    return ownSlots
+      // Legacy fallback for hydrated/untagged trees
+      let host = slotEl.parentElement
+
+      while (host && host !== this) {
+        if (host.hasAttribute?.('data-cid') || host.hasAttribute?.('is') || (host.tagName && host.tagName.includes('-'))) {
+          return false
+        }
+        host = host.parentElement
+      }
+
+      return host === this
+    })
   }
 
   /**
@@ -1681,6 +1689,22 @@ export class CoraliteElement extends HTMLElement {
 
     if (isDevOrTest) {
       const options = this.componentOptions
+      const declaredRefKeys = new Set()
+
+      if (options.hydrationMap?.refs) {
+        for (const ref of options.hydrationMap.refs) {
+          declaredRefKeys.add(ref.name)
+        }
+      }
+
+      if (options.templateValues?.refs) {
+        for (const ref of options.templateValues.refs) {
+          declaredRefKeys.add(ref.name)
+        }
+      }
+
+      this._refsKeysDirty = true
+
       this[Symbol.for('coralite.testing')] = {
         instanceId: this._instanceId,
         componentId: options.componentId,
@@ -1726,30 +1750,44 @@ export class CoraliteElement extends HTMLElement {
             return node
           },
           ownKeys () {
-            const keys = new Set()
-            if (options.hydrationMap?.refs) {
-              for (const ref of options.hydrationMap.refs) {
-                keys.add(ref.name)
-              }
+            if (!self._refsKeysObserver && typeof MutationObserver !== 'undefined') {
+              self._refsKeysObserver = new MutationObserver(() => {
+                self._refsKeysDirty = true
+              })
+              self._refsKeysObserver.observe(self, {
+                childList: true,
+                attributes: true,
+                attributeFilter: ['ref', 'data-coralite-owner'],
+                subtree: true
+              })
             }
-            if (options.templateValues?.refs) {
-              for (const ref of options.templateValues.refs) {
-                keys.add(ref.name)
-              }
+
+            if (self._refsKeysObserver && self._refsKeysObserver.takeRecords().length > 0) {
+              self._refsKeysDirty = true
             }
-            const elements = self.querySelectorAll('[ref]')
-            for (const el of elements) {
-              const refAttr = el.getAttribute('ref')
-              if (refAttr) {
-                const prefix = `${self._instanceId}__`
-                if (refAttr.startsWith(prefix)) {
-                  keys.add(refAttr.slice(prefix.length))
-                } else if (el.getAttribute('data-coralite-owner') === self._instanceId) {
-                  keys.add(refAttr)
+
+            if (self._refsKeysDirty || !self._refsKeysCache) {
+              const keys = new Set(declaredRefKeys)
+              const elements = self.querySelectorAll('[ref]')
+              const prefix = `${self._instanceId}__`
+
+              for (let i = 0; i < elements.length; i++) {
+                const el = elements[i]
+                const refAttr = el.getAttribute('ref')
+                if (refAttr) {
+                  if (refAttr.startsWith(prefix)) {
+                    keys.add(refAttr.slice(prefix.length))
+                  } else if (el.getAttribute('data-coralite-owner') === self._instanceId) {
+                    keys.add(refAttr)
+                  }
                 }
               }
+
+              self._refsKeysCache = Array.from(keys)
+              self._refsKeysDirty = false
             }
-            return Array.from(keys)
+
+            return Array.from(self._refsKeysCache)
           },
           getOwnPropertyDescriptor () {
             return {
