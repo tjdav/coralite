@@ -80,4 +80,40 @@ test.describe('Slots Projection', () => {
     const dynamicChild = page.locator('#dynamic-slot-comp .dynamic-child')
     await expect(dynamicChild).toHaveText('Dynamic Appended Content')
   })
+
+  test('should project direct forwarded slots (<slot slot="...">) declaratively and imperatively in browser runtime', async ({ page }) => {
+    // 1. Declarative SSR slot forwarding
+    const declContainer = page.locator('#forwarded-slot-declarative-test')
+    const headerTitle = declContainer.locator('.fwd-card-header .fwd-title')
+    const bodyContent = declContainer.locator('.fwd-card-body .fwd-body')
+
+    await expect(headerTitle).toHaveText('Declarative Header Content')
+    await expect(bodyContent).toHaveText('Declarative Body Content')
+
+    // 2. Dynamic imperative slot forwarding
+    await page.evaluate(() => {
+      const target = document.querySelector('#forwarded-slot-imperative-test')
+      const userCard = document.createElement('fwd-user-card')
+
+      const h2 = document.createElement('h2')
+      h2.setAttribute('slot', 'userHeader')
+      h2.className = 'imp-title'
+      h2.textContent = 'Imperative Header Content'
+
+      const p = document.createElement('p')
+      p.className = 'imp-body'
+      p.textContent = 'Imperative Body Content'
+
+      userCard.appendChild(h2)
+      userCard.appendChild(p)
+      target.appendChild(userCard)
+    })
+
+    const impContainer = page.locator('#forwarded-slot-imperative-test')
+    const impHeaderTitle = impContainer.locator('.fwd-card-header .imp-title')
+    const impBodyContent = impContainer.locator('.fwd-card-body .imp-body')
+
+    await expect(impHeaderTitle).toHaveText('Imperative Header Content')
+    await expect(impBodyContent).toHaveText('Imperative Body Content')
+  })
 })

@@ -32,5 +32,14 @@
   <div id="dynamic-reconciliation-test">
     <slot-component id="dynamic-slot-comp"></slot-component>
   </div>
+
+  <div id="forwarded-slot-declarative-test">
+    <fwd-user-card>
+      <h2 slot="userHeader" class="fwd-title">Declarative Header Content</h2>
+      <p class="fwd-body">Declarative Body Content</p>
+    </fwd-user-card>
+  </div>
+
+  <div id="forwarded-slot-imperative-test"></div>
 </body>
 </html>

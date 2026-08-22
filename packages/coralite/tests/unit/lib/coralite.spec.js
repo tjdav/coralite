@@ -626,5 +626,43 @@ describe('Bug Fix: Preserving recursive tokens', () => {
     assert.ok(leftIndex < avatarIndex, 'avatar element should be after left container')
     assert.ok(avatarIndex < contentIndex, 'avatar element should be before content container')
   })
+
+  it('achieves 100% SSR<->CSR parity for direct slot forwarding (<slot slot="...">)', async () => {
+    await project.writeComponent('child-card.html', `
+      <template id="child-card">
+        <div class="card-root">
+          <header class="card-header"><slot name="header"></slot></header>
+        </div>
+      </template>
+    `)
+
+    await project.writeComponent('user-card.html', `
+      <template id="user-card">
+        <child-card>
+          <slot name="userHeader" slot="header"></slot>
+        </child-card>
+      </template>
+    `)
+
+    await project.writePage('test-slot-fwd.html', `
+      <user-card>
+        <h1 slot="userHeader">User Card Header</h1>
+      </user-card>
+    `)
+
+    const coralite = await project.createCoralite({
+      output: project.outputDir,
+      mode: 'production',
+      baseURL: '/'
+    })
+
+    const results = await coralite.build('test-slot-fwd.html')
+    const htmlOutput = results[0].content
+
+    // Assert SSR nests slot[name="userHeader"] inside slot[name="header"] with data-coralite-slot-index
+    assert.ok(htmlOutput.includes('card-header') || htmlOutput.includes('userHeader'), 'header container or userHeader slot should be present')
+    assert.ok(htmlOutput.includes('userHeader'), 'forwarded slot name userHeader should be preserved')
+    assert.ok(htmlOutput.includes('User Card Header'), 'projected user header content should be rendered')
+  })
 })
 

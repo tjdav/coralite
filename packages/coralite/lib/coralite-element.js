@@ -1287,6 +1287,7 @@ export class CoraliteElement extends HTMLElement {
       }
 
       const ownSlots = this._getOwnSlots()
+      const ownSlotSet = new Set(ownSlots)
       let needsComputedRecompute = false
 
       for (const node of candidates) {
@@ -1299,7 +1300,7 @@ export class CoraliteElement extends HTMLElement {
 
         /** @type {any} */
         const elementNode = node
-        if (isElement && elementNode.nodeName === 'SLOT') {
+        if (isElement && elementNode.nodeName === 'SLOT' && ownSlotSet.has(elementNode)) {
           continue
         }
         const slotName = isElement ? (elementNode.getAttribute('slot') || 'default') : 'default'

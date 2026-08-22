@@ -1476,5 +1476,232 @@ describe('CoraliteElement', () => {
       assert.strictEqual(comp._slotObserver, null)
     })
   })
+
+  describe('Direct Slot Forwarding (<slot slot="...">)', () => {
+    it('should project direct named forwarded slot into child target slot with timing chain and retain slot attribute', (t, done) => {
+      const childTag = 'fwd-child-' + Math.random().toString(36).substring(2, 9)
+      const parentTag = 'fwd-parent-' + Math.random().toString(36).substring(2, 9)
+
+      const ChildComp = createCoraliteClass({
+        componentId: 'fwd-child',
+        templateHTML: '<div class="card-root"><header class="card-header"><slot name="header"></slot></header></div>'
+      })
+      const ParentComp = createCoraliteClass({
+        componentId: 'fwd-parent',
+        templateHTML: `<${childTag}><slot name="userHeader" slot="header"></slot></${childTag}>`
+      })
+
+      customElements.define(childTag, ChildComp)
+      customElements.define(parentTag, ParentComp)
+
+      const parentEl = document.createElement(parentTag)
+      document.body.appendChild(parentEl)
+
+      const heading = document.createElement('h1')
+      heading.setAttribute('slot', 'userHeader')
+      heading.textContent = 'User Title'
+      parentEl.appendChild(heading)
+
+      queueMicrotask(() => {
+        const childEl = parentEl.querySelector(childTag)
+        const headerSlot = childEl.querySelector('slot[name="header"]')
+        const forwardedSlot = headerSlot.querySelector('slot[name="userHeader"]')
+
+        assert.ok(forwardedSlot, 'Forwarded slot <slot name="userHeader"> should be projected inside child <slot name="header">')
+        assert.strictEqual(forwardedSlot.getAttribute('slot'), 'header', 'Forwarded slot should retain slot="header" attribute')
+        assert.ok(forwardedSlot.hasAttribute('data-coralite-slot-index'), 'Forwarded slot should receive data-coralite-slot-index')
+
+        assert.strictEqual(forwardedSlot.children.length, 1)
+        assert.strictEqual(forwardedSlot.children[0], heading)
+        assert.strictEqual(heading.textContent, 'User Title')
+
+        document.body.removeChild(parentEl)
+        done()
+      })
+    })
+
+    it('should project direct default forwarded slot into child default slot', (t, done) => {
+      const innerTag = 'fwd-inner-' + Math.random().toString(36).substring(2, 9)
+      const outerTag = 'fwd-outer-' + Math.random().toString(36).substring(2, 9)
+
+      const InnerComp = createCoraliteClass({
+        componentId: 'fwd-inner',
+        templateHTML: '<div class="card-body"><slot></slot></div>'
+      })
+      const OuterComp = createCoraliteClass({
+        componentId: 'fwd-outer',
+        templateHTML: `<${innerTag}><slot></slot></${innerTag}>`
+      })
+
+      customElements.define(innerTag, InnerComp)
+      customElements.define(outerTag, OuterComp)
+
+      const outerEl = document.createElement(outerTag)
+      document.body.appendChild(outerEl)
+
+      const paragraph = document.createElement('p')
+      paragraph.textContent = 'Default Body Text'
+      outerEl.appendChild(paragraph)
+
+      queueMicrotask(() => {
+        const innerEl = outerEl.querySelector(innerTag)
+        const innerSlot = innerEl.querySelector('slot:not([name])')
+        const fwdSlot = innerSlot.querySelector('slot:not([name])')
+
+        assert.ok(fwdSlot, 'Forwarded default slot should be inside inner default slot')
+        assert.strictEqual(fwdSlot.children[0], paragraph)
+        assert.strictEqual(paragraph.textContent, 'Default Body Text')
+
+        document.body.removeChild(outerEl)
+        done()
+      })
+    })
+
+    it('should project through 3-tier slot forwarding (Grandparent -> Parent -> Child)', (t, done) => {
+      const level3Tag = 'tier3-comp-' + Math.random().toString(36).substring(2, 9)
+      const level2Tag = 'tier2-comp-' + Math.random().toString(36).substring(2, 9)
+      const level1Tag = 'tier1-comp-' + Math.random().toString(36).substring(2, 9)
+
+      const Level3Comp = createCoraliteClass({
+        componentId: 'tier3-comp',
+        templateHTML: '<div class="innermost"><slot name="main"></slot></div>'
+      })
+      const Level2Comp = createCoraliteClass({
+        componentId: 'tier2-comp',
+        templateHTML: `<${level3Tag}><slot name="middle" slot="main"></slot></${level3Tag}>`
+      })
+      const Level1Comp = createCoraliteClass({
+        componentId: 'tier1-comp',
+        templateHTML: `<${level2Tag}><slot name="top" slot="middle"></slot></${level2Tag}>`
+      })
+
+      customElements.define(level3Tag, Level3Comp)
+      customElements.define(level2Tag, Level2Comp)
+      customElements.define(level1Tag, Level1Comp)
+
+      const level1El = document.createElement(level1Tag)
+      document.body.appendChild(level1El)
+
+      const leafEl = document.createElement('span')
+      leafEl.setAttribute('slot', 'top')
+      leafEl.textContent = 'Deep Content'
+      level1El.appendChild(leafEl)
+
+      queueMicrotask(() => {
+        const innermost = level1El.querySelector('.innermost')
+        assert.ok(innermost, 'Innermost element should exist')
+        assert.ok(innermost.textContent.includes('Deep Content'), 'Content should project into innermost container')
+
+        document.body.removeChild(level1El)
+        done()
+      })
+    })
+
+    it('should clear child fallback content when parent forwards a slot into child slot', (t, done) => {
+      const childTag = 'fwd-fb-child-' + Math.random().toString(36).substring(2, 9)
+      const parentTag = 'fwd-fb-parent-' + Math.random().toString(36).substring(2, 9)
+
+      const ChildComp = createCoraliteClass({
+        componentId: 'fwd-fb-child',
+        templateHTML: '<div class="wrapper"><slot data-coralite-fallback><span class="fb">Child Fallback</span></slot></div>'
+      })
+      const ParentComp = createCoraliteClass({
+        componentId: 'fwd-fb-parent',
+        templateHTML: `<${childTag}><slot></slot></${childTag}>`
+      })
+
+      customElements.define(childTag, ChildComp)
+      customElements.define(parentTag, ParentComp)
+
+      const parentEl = document.createElement(parentTag)
+      document.body.appendChild(parentEl)
+
+      queueMicrotask(() => {
+        const childSlot = parentEl.querySelector('slot[data-coralite-fallback], slot:not([name])')
+        assert.strictEqual(childSlot.hasAttribute('data-coralite-fallback'), false, 'data-coralite-fallback attribute should be cleared when parent forwards slot')
+        assert.strictEqual(childSlot.querySelector('.fb'), null, 'Child fallback content should be removed')
+
+        document.body.removeChild(parentEl)
+        done()
+      })
+    })
+
+    it('should pass forwarded slot to computed slot transformer functions (isComputed)', (t, done) => {
+      const childTag = 'fwd-comp-child-' + Math.random().toString(36).substring(2, 9)
+      const parentTag = 'fwd-comp-parent-' + Math.random().toString(36).substring(2, 9)
+
+      let transformerNodes = null
+
+      const ChildComp = createCoraliteClass({
+        componentId: 'fwd-comp-child',
+        templateHTML: '<div><slot name="header"></slot></div>',
+        slots: {
+          header (nodes) {
+            transformerNodes = nodes
+            return nodes.map(n => {
+              const wrapper = document.createElement('div')
+              wrapper.className = 'header-wrap'
+              wrapper.appendChild(n.cloneNode(true))
+              return wrapper
+            })
+          }
+        }
+      })
+      const ParentComp = createCoraliteClass({
+        componentId: 'fwd-comp-parent',
+        templateHTML: `<${childTag}><slot name="userHeader" slot="header"></slot></${childTag}>`
+      })
+
+      customElements.define(childTag, ChildComp)
+      customElements.define(parentTag, ParentComp)
+
+      const parentEl = document.createElement(parentTag)
+      document.body.appendChild(parentEl)
+
+      queueMicrotask(() => {
+        assert.ok(transformerNodes, 'Transformer should receive nodes')
+        assert.strictEqual(transformerNodes.length, 1)
+        assert.strictEqual(transformerNodes[0].nodeName, 'SLOT')
+        assert.strictEqual(transformerNodes[0].getAttribute('name'), 'userHeader')
+
+        const childSlot = parentEl.querySelector(childTag).querySelector('slot[name="header"]')
+        assert.ok(childSlot.querySelector('.header-wrap'))
+
+        document.body.removeChild(parentEl)
+        done()
+      })
+    })
+
+    it('should isolate untagged legacy direct-child slots, keeping them in host ownSlots and skipping them without HierarchyRequestError', (t, done) => {
+      const legacyTag = 'fwd-legacy-' + Math.random().toString(36).substring(2, 9)
+
+      const LegacyComp = createCoraliteClass({
+        componentId: 'fwd-legacy',
+        templateHTML: '<div class="root"><slot></slot></div>'
+      })
+      customElements.define(legacyTag, LegacyComp)
+
+      const el = document.createElement(legacyTag)
+      // Append an untagged direct child slot manually
+      const directSlot = document.createElement('slot')
+      el.appendChild(directSlot)
+
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        // Assert el._getOwnSlots() includes directSlot
+        // @ts-ignore
+        const own = el._getOwnSlots()
+        assert.ok(own.includes(directSlot))
+
+        // Assert directSlot remains stranded/skipped, and host's inner slot was not attempted to append to itself
+        const targetSlot = el.querySelector('.root > slot')
+        assert.notStrictEqual(targetSlot, directSlot)
+
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
 })
 

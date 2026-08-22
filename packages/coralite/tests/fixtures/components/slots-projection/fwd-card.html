@@ -1,0 +1,18 @@
+<template id="fwd-card">
+  <div class="fwd-card-root">
+    <header class="fwd-card-header">
+      <slot name="header"></slot>
+    </header>
+    <section class="fwd-card-body">
+      <slot></slot>
+    </section>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client () {}
+  })
+</script>

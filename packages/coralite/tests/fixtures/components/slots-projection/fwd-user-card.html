@@ -1,0 +1,14 @@
+<template id="fwd-user-card">
+  <fwd-card>
+    <slot name="userHeader" slot="header"></slot>
+    <slot></slot>
+  </fwd-card>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    client () {}
+  })
+</script>

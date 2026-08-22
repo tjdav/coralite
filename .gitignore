@@ -85,6 +85,7 @@ playwright/.cache/
 
 # Test files
 .html
+packages/coralite/benchmarks/temp-benchmark
 
 examples/
 .coralite
