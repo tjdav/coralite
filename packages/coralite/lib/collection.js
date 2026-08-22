@@ -166,13 +166,11 @@ CoraliteCollection.prototype.deleteItem = async function (value) {
   let originalValue
 
   if (typeof value !== 'string' && value.path) {
-    // if the input is an HTMLData object, extract its pathname and directory name
     pathname = value.path.pathname
     dirname = value.path.dirname
     valuesByPath = this.listByPath[dirname]
     originalValue = value
   } else if (typeof value === 'string') {
-    // if the input is a string, use it as the pathname and determine the directory name
     pathname = value
     dirname = path.dirname(pathname)
     valuesByPath = this.listByPath[dirname]
