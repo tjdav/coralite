@@ -23,7 +23,7 @@ When generating code or answering questions about Coralite, you MUST adhere to t
 * **Rendering**: Strictly Server-Side Rendered (SSR) with deterministic ID generation (`my-component-0`). No heavy client-side AST rendering.
 * **Incremental Builds**: The production build system (`coralite-scripts build`) is incremental by default (`incremental: true`). It tracks changes via `.coralite/manifest.json` and only re-renders pages and components that have changed or are missing from the output directory. Incremental change detection can be disabled globally via `incremental: false` in `coralite.config.js` or per-run using the `coralite-scripts build --no-incremental` CLI flag. It performs a stale file cleanup at the end of the build to ensure the output directory remains synchronized with the project source.
 * **Architecture**: Coralite utilizes a hybrid model where components are either fully declarative (SSR-only) or true imperative Web Components. Imperative components lazily loaded via JavaScript use native HTML template stamping (`this.innerHTML = templateHTML`) with Light DOM projection, entirely eliminating the need for client-side HTML parsers.
-* **API Paradigm**: Coralite uses a "Flat Options" API. All logic is defined within four strictly isolated blocks: `attributes`, `server`, `getters`, and `client`.
+* **API Paradigm**: Coralite uses a "Flat Options" API. All logic is defined within isolated blocks: `attributes`, `server`, `getters`, `client`, and `slots`.
 * **State Equation**: `Attributes + ServerState + Getters = State`. The template only sees this unified reactive proxy.
 * **Scope Isolation**: Component state (like variables defined in the client script or internal `ref` IDs) is strictly isolated. It does **not** cascade down to child components. Only explicitly passed HTML attributes and globally injected plugin states cascade.
 
@@ -76,7 +76,7 @@ export default defineComponent({
 
 ### 5.2 Component Structure: Isolated Blocks
 
-A component definition consists of four primary blocks:
+A component definition consists of primary blocks (`attributes`, `server`, `getters`, `client`, and `slots`):
 
 #### 1. `attributes` (Sync)
 
@@ -176,9 +176,10 @@ A component definition consists of four primary blocks:
 * **Arguments** (Injected via Client Context):
   * `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
   * `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
-  * `refs`: A function used to reliably select elements within the component's local template. It accepts the string value of a `ref` attribute and returns the corresponding `HTMLElement` (e.g., `const btn = refs('my-button')`).  * `root`: The root HTML element instance of the Web Component (inherits from `HTMLElement`).
+  * `refs`: A function used to reliably select elements within the component's local template. It accepts the string value of a `ref` attribute and returns the corresponding `HTMLElement` (e.g., `const btn = refs('my-button')`).
+  * `root`: The root HTML element instance of the Web Component (inherits from `HTMLElement`).
   * `instanceId`: A unique identifier string for this specific component instance.
-  * `observe`: A function `observe(key, callback)` to execute explicit side-effects on state changes. Receives `(newValue, oldValue)`. Automatically cleaned up when disconnected.
+  * `observe`: A function `observe(key, callback)` to execute explicit side-effects on state changes. Receives `(newValue, oldValue)`. Returns a disposer function (`() => void`) to stop observing. Automatically cleaned up when disconnected.
   * `[pluginName | client.name]`: **Namespaced Plugin Context.** Injected context helpers from plugins are isolated under their namespace key (either the plugin `name` or `client.name`). For example, if a plugin has `client.name: 'event'` and defines `context: { bus: ... }`, the component's client block will receive it as `event.bus` (e.g., `client: ({ event }) => { event.bus.emit(...) }`).
 
 * **Usage**: All DOM events, imperative mutations, third-party library initializations, and side-effects live here.
@@ -225,16 +226,76 @@ getters: {
 * **Communication**: Use standard `CustomEvent` for component-to-component communication.
 * **Cleanup**: Always use the provided `AbortSignal` (`signal`) to clean up event listeners and abort pending network requests when the component unmounts.
 
-### 5.5 Slots Projection & Transformation (`slots`)
+### 5.5 Reactive Slots Projection & Element Builders (`slots`)
 
-You define transformations in the `slots` object. Each key is a slot name (use `'default'` for unnamed slots).
+Coralite's native `slots` system allows components to intercept, transform, and reactively build content projected into component `<slot>` elements. Slots act as self-contained, reactive element builders receiving the full component context.
 
-* **Signature**: `(slotNodes, state) => HTMLString | NodeArray | undefined | null`
-* **Void = Bypass Paradigm**:
-  * **`undefined`**: Signals the framework to **bypass** processing. It preserves the existing content (AST on server, DOM on client). This is crucial for performance and prevents flushing content during hydration if it's already rendered.
-  * **`null` | `""` | `[]`**: Signals the framework to **clear** the slot content explicitly.
-* **Scope**: Slotted content is evaluated within the parent component's local scope.
-* **Preservation**: Coralite maps original Light DOM elements automatically, projecting them synchronously upon connected callbacks for dynamic imperative components.
+Each key in the `slots` object corresponds to a slot name (use `'default'` for unnamed slots).
+
+* **Signature & Types**:
+  ```typescript
+  type CoraliteSlotContext<State = any> = {
+    state: State;                                  // Reactive proxy (client) / plain merged state (SSR)
+    observe: (prop: string, cb: (newVal: any, oldVal?: any) => any) => () => void; // Observer returning disposer
+    signal: AbortSignal;                           // Aborted on disconnectedCallback (client) / non-aborted (SSR)
+    root: HTMLElement | null;                      // Host element on client, null during SSR build
+    refs: (name: string) => HTMLElement | null;    // Scoped ref lookup (returns null on SSR)
+    instanceId: string;                            // Unique component instance identifier
+  } & Record<string, any>
+
+  type SlotFunction<State = any> = (
+    slotNodes: Node[],
+    context: CoraliteSlotContext<State>
+  ) => Node[] | Node | string | null | undefined | Promise<Node[] | Node | string | null | undefined>
+  ```
+
+* **The Isomorphic Context Proxy & State Fallback**:
+  - The second parameter `context` is an isomorphic Proxy wrapping `{ state, observe, signal, root, refs, instanceId, ...plugins }`.
+  - **Direct State Property Access**: Destructuring or reading non-reserved properties from `context` (e.g., `{ title, observe }`) automatically falls back to reading `context.state[prop]`.
+  - **Reserved Context Keys**: `'state'`, `'observe'`, `'signal'`, `'root'`, `'refs'`, and `'instanceId'`.
+  - **Backward Compatibility**: The legacy signature `(nodes, state)` remains supported via the proxy fallback.
+
+* **Return Types & Projection (`_applySlotResult`)**:
+  - **Single `Node`**: Returns a single DOM or AST node (e.g., `document.createElement('div')`) projected directly via `replaceChildren(node)`.
+  - **`Node[]` Array**: Projects an array of DOM or AST nodes via `replaceChildren(...nodes)`.
+  - **HTML `string`**: Renders raw HTML into the slot element via `innerHTML`.
+  - **`null` | `""` | `[]` (Clear)**: Explicitly clears all content from the slot (`replaceChildren()`).
+  - **`undefined` (Bypass)**: The **Void = Bypass Paradigm** — signals the framework to skip processing and preserve existing content (original AST on server, existing DOM on client). Essential for avoiding flushing SSR-rendered content during client-side hydration.
+  - **`Promise`**: Supports asynchronous slot resolution. Coralite uses render versioning tokens to automatically discard stale promise resolutions during rapid state mutations.
+
+* **Slot Authoring Patterns**:
+  1. **Pure Transformer Pattern**: Synchronously or asynchronously transforms existing slotted AST or DOM nodes:
+     ```javascript
+     slots: {
+       default: (nodes, { state }) => {
+         return nodes.map(node => transform(node, state))
+       }
+     }
+     ```
+  2. **Reactive Builder Pattern**: Sets up fine-grained state observation using `observe()`:
+     ```javascript
+     slots: {
+       default: (nodes, { state, observe, root }) => {
+         // Bypass hydration if preserving static SSR content
+         if (typeof window !== 'undefined' && !root) return undefined
+
+         // Set up fine-grained reactive updates
+         if (typeof window !== 'undefined' && observe) {
+           observe('count', (newCount) => {
+             return `<span class="badge">${newCount}</span>`
+           })
+           return `<span class="badge">${state.count}</span>`
+         }
+
+         return nodes
+       }
+     }
+     ```
+     When `observe()` is registered inside a slot function, the outer function body executes once on mount. Subsequent state mutations trigger only the registered observer callback, projecting the returned result directly into the slot without re-executing the outer function.
+  3. **Disposer Function**: `observe()` returns a disposer function `() => void` that can be invoked at any time to unregister the slot observer before component unmount.
+
+* **SSR Graceful Fallback**: During SSR build, `root` is `null`, `refs()` returns `null`, `observe()` returns a no-op disposer, and `signal` is non-aborted. If a slot function accesses browser-only APIs without guard checks, Coralite catches the exception and gracefully falls back to the original slot content.
+* **Scope & Preservation**: Slotted content is evaluated within the parent component's local scope. Coralite maps original Light DOM elements automatically, projecting them synchronously upon connected callbacks for dynamic imperative components.
 
 ### 5.6 CSS Scoping (PostCSS)
 
@@ -602,7 +663,9 @@ Every `CoraliteError` exposes detailed diagnostic metadata:
 Coralite includes a built-in static AST and template symbol validator (`lib/component-validator.js`) exposed via the CLI subcommand `coralite validate-components` (alias: `coralite validate:components`).
 
 ### 14.1 Key Capabilities
-*   **Unused Symbol Detection**: Cross-references component `<template>` mustache tokens (`{{ var }}`), `ref="..."` attributes, CSS attribute selectors (`[attr]`), and script AST nodes (`attributes`, `server()`, `getters`, `client()`) to flag unreferenced getters, server props, attributes, and refs.
+*   **Unused Symbol Detection**: Cross-references component `<template>` mustache tokens (`{{ var }}`), `ref="..."` attributes, CSS attribute selectors (`[attr]`), and script AST nodes (`attributes`, `server()`, `getters`, `client()`, `slots`) to flag unreferenced getters, server props, attributes, and refs.
+*   **Slot Context & Destructuring Analysis**: Analyzes slot parameter signatures (`(nodes, context)` or `(nodes, { state, observe, ... })`), tracking destructured state property usage and recognizing reserved slot context identifiers.
+*   **Reserved Key Collision Warnings**: Emits compiler warnings when a component's declared `attributes` or `server` properties collide with reserved slot context keys (`state`, `observe`, `signal`, `root`, `refs`, `instanceId`).
 *   **Comment Directives / Pragmas**: Supports inline ignore pragmas (`<!-- coralite-ignore symbol1 symbol2 -->`, `/* coralite-ignore symbol1 */`, or `@coralite-ignore-unused`) for intentional test dead code or plugin-managed refs.
 *   **Coverage Reporting**: Generates usage coverage percentages and test execution metrics via `coralite validate-components --coverage`.
 *   **CI Enforcement**: Supports `--strict` flag to fail builds if any unused code or unreferenced symbols exist.
