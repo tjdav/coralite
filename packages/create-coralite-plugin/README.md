@@ -1,3 +1,5 @@
+> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite).
+
 # Create Coralite Plugin Scaffolding
 
 The `create-coralite-plugin` package is a CLI tool designed to scaffold new plugins for the Coralite ecosystem.
