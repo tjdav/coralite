@@ -67,4 +67,17 @@ test.describe('Slots Projection', () => {
     const childContainer = container.locator('.child-container')
     await expect(childContainer).toBeVisible()
   })
+
+  test('should dynamically reconcile light DOM elements appended after component connection', async ({ page }) => {
+    await page.evaluate(async () => {
+      const comp = document.querySelector('#dynamic-slot-comp')
+      const dynamicEl = document.createElement('div')
+      dynamicEl.className = 'dynamic-child'
+      dynamicEl.textContent = 'Dynamic Appended Content'
+      comp.appendChild(dynamicEl)
+    })
+
+    const dynamicChild = page.locator('#dynamic-slot-comp .dynamic-child')
+    await expect(dynamicChild).toHaveText('Dynamic Appended Content')
+  })
 })

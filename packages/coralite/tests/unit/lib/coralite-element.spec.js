@@ -946,5 +946,279 @@ describe('CoraliteElement', () => {
       })
     })
   })
+
+  describe('Light DOM Slot Reconciliation', () => {
+    it('should reconcile dynamically appended elements and non-empty text nodes into default and named slots', (t, done) => {
+      const cardTag = 'card-recon-' + Math.random().toString(36).substring(2, 9)
+      const CardComp = createCoraliteClass({
+        componentId: 'card-recon',
+        templateHTML: '<div class="card"><header><slot name="title"></slot></header><section><slot></slot></section></div>'
+      })
+      customElements.define(cardTag, CardComp)
+
+      const card = document.createElement(cardTag)
+      document.body.appendChild(card)
+
+      const badge = document.createElement('span')
+      badge.setAttribute('slot', 'title')
+      badge.textContent = 'Badge'
+
+      card.appendChild(badge)
+      card.append('  Hello World  ')
+
+      queueMicrotask(() => {
+        const titleSlot = card.querySelector('slot[name="title"]')
+        const defaultSlot = card.querySelector('slot:not([name])')
+
+        assert.strictEqual(titleSlot.children.length, 1)
+        assert.strictEqual(titleSlot.children[0], badge)
+        assert.strictEqual(badge.getAttribute('data-coralite-slot-index'), '0')
+
+        assert.ok(defaultSlot.textContent.includes('Hello World'))
+
+        document.body.removeChild(card)
+        done()
+      })
+    })
+
+    it('should clear fallback content when the first real light child is projected into a slot', (t, done) => {
+      const fallbackTag = 'fallback-recon-' + Math.random().toString(36).substring(2, 9)
+      const FallbackComp = createCoraliteClass({
+        componentId: 'fallback-recon',
+        templateHTML: '<div class="box"><slot data-coralite-fallback><span class="fallback">Default Fallback Text</span></slot></div>'
+      })
+      customElements.define(fallbackTag, FallbackComp)
+
+      const box = document.createElement(fallbackTag)
+      document.body.appendChild(box)
+
+      const slot = box.querySelector('slot')
+      assert.strictEqual(slot.querySelector('.fallback').textContent, 'Default Fallback Text')
+      assert.strictEqual(slot.hasAttribute('data-coralite-fallback'), true)
+
+      const child = document.createElement('p')
+      child.textContent = 'Custom Content'
+      box.appendChild(child)
+
+      queueMicrotask(() => {
+        assert.strictEqual(slot.hasAttribute('data-coralite-fallback'), false)
+        assert.strictEqual(slot.querySelector('.fallback'), null)
+        assert.strictEqual(slot.children.length, 1)
+        assert.strictEqual(slot.children[0], child)
+
+        document.body.removeChild(box)
+        done()
+      })
+    })
+
+    it('should batch computed slot updates, maintain _originalNodes with un-transformed clones, and run slot transform once', (t, done) => {
+      let transformCallCount = 0
+      const computedTag = 'computed-recon-' + Math.random().toString(36).substring(2, 9)
+
+      const ComputedComp = createCoraliteClass({
+        componentId: 'computed-recon',
+        templateHTML: '<div><slot name="items"></slot></div>',
+        slots: {
+          items (originalNodes) {
+            transformCallCount++
+            return originalNodes.map(node => {
+              const wrapper = document.createElement('li')
+              wrapper.className = 'item-wrapper'
+              wrapper.appendChild(node.cloneNode(true))
+              return wrapper
+            })
+          }
+        }
+      })
+      customElements.define(computedTag, ComputedComp)
+
+      const comp = document.createElement(computedTag)
+      document.body.appendChild(comp)
+
+      const item1 = document.createElement('span')
+      item1.setAttribute('slot', 'items')
+      item1.textContent = 'Item 1'
+
+      const item2 = document.createElement('span')
+      item2.setAttribute('slot', 'items')
+      item2.textContent = 'Item 2'
+
+      comp.append(item1, item2)
+
+      queueMicrotask(() => {
+        const slot = comp.querySelector('slot[name="items"]')
+        assert.strictEqual(slot.children.length, 2)
+        assert.strictEqual(slot.children[0].className, 'item-wrapper')
+        assert.strictEqual(slot.children[1].className, 'item-wrapper')
+        assert.strictEqual(slot.children[0].textContent, 'Item 1')
+        assert.strictEqual(slot.children[1].textContent, 'Item 2')
+
+        // Assert transform ran and _originalNodes preserved original untransformed nodes
+        assert.ok(transformCallCount >= 1)
+        assert.strictEqual(slot._originalNodes.length, 2)
+        assert.strictEqual(slot._originalNodes[0].tagName, 'SPAN')
+        assert.strictEqual(slot._originalNodes[0].textContent, 'Item 1')
+
+        // Sequential append test across multiple ticks
+        const item3 = document.createElement('span')
+        item3.setAttribute('slot', 'items')
+        item3.textContent = 'Item 3'
+        comp.appendChild(item3)
+
+        queueMicrotask(() => {
+          assert.strictEqual(slot.children.length, 3)
+          assert.strictEqual(slot._originalNodes.length, 3)
+          assert.strictEqual(slot._originalNodes[2].textContent, 'Item 3')
+
+          document.body.removeChild(comp)
+          done()
+        })
+      })
+    })
+
+    it('should preserve original light node when computed slot transform returns undefined', (t, done) => {
+      const undefinedCompTag = 'undef-comp-' + Math.random().toString(36).substring(2, 9)
+      const UndefinedComp = createCoraliteClass({
+        componentId: 'undef-comp',
+        templateHTML: '<div><slot name="action"></slot></div>',
+        slots: {
+          action () {
+            return undefined
+          }
+        }
+      })
+      customElements.define(undefinedCompTag, UndefinedComp)
+
+      const comp = document.createElement(undefinedCompTag)
+      document.body.appendChild(comp)
+
+      const btn = document.createElement('button')
+      btn.setAttribute('slot', 'action')
+      btn.textContent = 'Interactive Button'
+      let clicked = false
+      btn.addEventListener('click', () => { clicked = true })
+
+      comp.appendChild(btn)
+
+      queueMicrotask(() => {
+        const slot = comp.querySelector('slot[name="action"]')
+        assert.strictEqual(slot.children.length, 1)
+        assert.strictEqual(slot.children[0], btn)
+        assert.strictEqual(btn.parentElement, slot)
+
+        btn.click()
+        assert.strictEqual(clicked, true)
+
+        document.body.removeChild(comp)
+        done()
+      })
+    })
+
+    it('should be idempotent and not churn or double-fold on subsequent reconcile passes', (t, done) => {
+      const idempotenceTag = 'idempotence-comp-' + Math.random().toString(36).substring(2, 9)
+      const IdempotenceComp = createCoraliteClass({
+        componentId: 'idempotence-comp',
+        templateHTML: '<div><slot></slot></div>'
+      })
+      customElements.define(idempotenceTag, IdempotenceComp)
+
+      const comp = document.createElement(idempotenceTag)
+      document.body.appendChild(comp)
+
+      const child = document.createElement('div')
+      child.textContent = 'Unique Child'
+      comp.appendChild(child)
+
+      queueMicrotask(() => {
+        const slot = comp.querySelector('slot')
+        assert.strictEqual(slot.children.length, 1)
+
+        // Trigger manual reconciliation pass
+        // @ts-ignore
+        comp._reconcileLightDOM()
+
+        assert.strictEqual(slot.children.length, 1)
+        assert.strictEqual(slot.children[0], child)
+
+        document.body.removeChild(comp)
+        done()
+      })
+    })
+
+    it('should reconcile children appended while detached upon reconnection', (t, done) => {
+      const reconnectTag = 'reconnect-recon-' + Math.random().toString(36).substring(2, 9)
+      const ReconnectComp = createCoraliteClass({
+        componentId: 'reconnect-recon',
+        templateHTML: '<div><slot></slot></div>'
+      })
+      customElements.define(reconnectTag, ReconnectComp)
+
+      const comp = document.createElement(reconnectTag)
+      document.body.appendChild(comp)
+
+      // Detach from DOM
+      document.body.removeChild(comp)
+
+      const child = document.createElement('div')
+      child.textContent = 'Detached Child'
+      comp.appendChild(child)
+
+      // Reconnect to DOM
+      document.body.appendChild(comp)
+
+      queueMicrotask(() => {
+        const slot = comp.querySelector('slot')
+        assert.strictEqual(slot.children.length, 1)
+        assert.strictEqual(slot.children[0], child)
+
+        document.body.removeChild(comp)
+        done()
+      })
+    })
+
+    it('should leave elements targeting non-existent named slots unprojected as direct children of host', (t, done) => {
+      const unmatchedTag = 'unmatched-recon-' + Math.random().toString(36).substring(2, 9)
+      const UnmatchedComp = createCoraliteClass({
+        componentId: 'unmatched-recon',
+        templateHTML: '<div><slot></slot></div>'
+      })
+      customElements.define(unmatchedTag, UnmatchedComp)
+
+      const comp = document.createElement(unmatchedTag)
+      document.body.appendChild(comp)
+
+      const stray = document.createElement('div')
+      stray.setAttribute('slot', 'nonexistent')
+      stray.textContent = 'Stray Element'
+      comp.appendChild(stray)
+
+      queueMicrotask(() => {
+        const slot = comp.querySelector('slot')
+        assert.strictEqual(slot.children.length, 0)
+        assert.strictEqual(stray.parentElement, comp)
+
+        document.body.removeChild(comp)
+        done()
+      })
+    })
+
+    it('should disconnect _slotObserver when disconnectedCallback is invoked', () => {
+      const observerTag = 'observer-recon-' + Math.random().toString(36).substring(2, 9)
+      const ObserverComp = createCoraliteClass({
+        componentId: 'observer-recon',
+        templateHTML: '<div><slot></slot></div>'
+      })
+      customElements.define(observerTag, ObserverComp)
+
+      const comp = document.createElement(observerTag)
+      document.body.appendChild(comp)
+
+      assert.ok(comp._slotObserver)
+
+      document.body.removeChild(comp)
+
+      assert.strictEqual(comp._slotObserver, null)
+    })
+  })
 })
 

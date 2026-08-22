@@ -253,6 +253,34 @@ export class CoraliteElement extends HTMLElement {
      * @protected
      */
     this._hydrationData = null
+
+    /**
+     * Set of internal root elements from template stamping.
+     * @type {Set<Node>|null}
+     * @protected
+     */
+    this._templateRoots = null
+
+    /**
+     * Monotonic index counter for Light DOM slot indexing.
+     * @type {number}
+     * @protected
+     */
+    this._nextSlotIndex = 0
+
+    /**
+     * Per-instance MutationObserver for dynamic Light DOM slot reconciliation.
+     * @type {MutationObserver|null}
+     * @protected
+     */
+    this._slotObserver = null
+
+    /**
+     * Guard flag to prevent infinite loops during slot reconciliation.
+     * @type {boolean}
+     * @protected
+     */
+    this._isReconcilingSlots = false
   }
 
   /**
@@ -281,6 +309,10 @@ export class CoraliteElement extends HTMLElement {
     // Imperative components (created via document.createElement) do not.
     const isImperative = !this.hasAttribute('data-cid')
 
+    if (!isImperative && !this._templateRoots) {
+      this._templateRoots = new Set(this.childNodes)
+    }
+
     // Establish the Deterministic Instance ID
     if (this.hasAttribute('data-cid')) {
       this._instanceId = this.getAttribute('data-cid')
@@ -304,34 +336,29 @@ export class CoraliteElement extends HTMLElement {
       const stamped = processHTML(this.componentOptions.templateHTML, this._instanceId)
 
       this.innerHTML = this._tagOwnSlots(stamped, this._instanceId)
+      this._templateRoots = new Set(this.childNodes)
 
       if (originalLightDOM.length > 0) {
-        originalLightDOM.forEach((element, i) => {
-          if (element && 'setAttribute' in element && typeof element.setAttribute === 'function') {
-            element.setAttribute('data-coralite-slot-index', String(i))
-          }
-        })
-
-        const slots = this._getOwnSlots()
-        slots.forEach(slot => {
-          const slotName = slot.getAttribute('name') || 'default'
-          const matchingNodes = originalLightDOM.filter(node => {
-            // @ts-ignore
-            const nodeSlot = (node.getAttribute && node.getAttribute('slot')) || 'default'
-            return nodeSlot === slotName
-          })
-          matchingNodes.forEach(n => slot.appendChild(n))
-        })
+        originalLightDOM.forEach(node => this.appendChild(node))
       }
+    } else if (isImperative && !this._templateRoots) {
+      this._templateRoots = new Set(this.childNodes)
     }
 
     if (isImperative) {
       this.setAttribute('data-cid', this._instanceId)
     }
 
+    this._nextSlotIndex = this._getMaxSlotIndex() + 1
+
     this._setupState()
     this._setupBindings()
     this._init(isImperative)
+
+    if (this._getOwnSlots().length > 0) {
+      this._setupSlotObserver()
+      this._reconcileLightDOM()
+    }
   }
 
   /**
@@ -341,6 +368,11 @@ export class CoraliteElement extends HTMLElement {
    * @this {any}
    */
   disconnectedCallback () {
+    if (this._slotObserver) {
+      this._slotObserver.disconnect()
+      this._slotObserver = null
+    }
+
     if (this._abortController) {
       this._abortController.abort()
     }
@@ -1110,6 +1142,157 @@ export class CoraliteElement extends HTMLElement {
       }
     }
     return template.innerHTML
+  }
+
+  /**
+   * Calculates the maximum assigned data-coralite-slot-index among direct light DOM children.
+   * @returns {number}
+   * @private
+   */
+  _getMaxSlotIndex () {
+    let max = -1
+    const ownSlots = this._getOwnSlots()
+    for (const slot of ownSlots) {
+      if (!slot || typeof slot.querySelectorAll !== 'function') {
+        continue
+      }
+      const candidateElements = slot.querySelectorAll('[data-coralite-slot-index]')
+      for (const el of candidateElements) {
+        const val = parseInt(el.getAttribute('data-coralite-slot-index'), 10)
+        if (!isNaN(val) && val > max) {
+          max = val
+        }
+      }
+    }
+    return max
+  }
+
+  /**
+   * Sets up a per-instance MutationObserver on host to detect dynamic Light DOM additions.
+   * @private
+   */
+  _setupSlotObserver () {
+    if (typeof MutationObserver === 'undefined') {
+      return
+    }
+    if (this._slotObserver) {
+      this._slotObserver.disconnect()
+    }
+    this._slotObserver = new MutationObserver(() => {
+      this._reconcileLightDOM()
+    })
+    this._slotObserver.observe(this, {
+      childList: true,
+      subtree: false
+    })
+  }
+
+  /**
+   * Reconciles direct Light DOM children by projecting them into matching <slot> elements.
+   * @private
+   */
+  _reconcileLightDOM () {
+    if (this._isReconcilingSlots) {
+      return
+    }
+    this._isReconcilingSlots = true
+
+    try {
+      const candidates = Array.from(this.childNodes).filter(node => {
+        return (!this._templateRoots || !this._templateRoots.has(node)) && node.parentElement === this
+      })
+
+      if (candidates.length === 0) {
+        return
+      }
+
+      const ownSlots = this._getOwnSlots()
+      let needsComputedRecompute = false
+
+      for (const node of candidates) {
+        const isElement = node.nodeType === 1
+        const isNonEmptyText = node.nodeType === 3 && Boolean(node.textContent && node.textContent.trim().length > 0)
+
+        if (!isElement && !isNonEmptyText) {
+          continue
+        }
+
+        /** @type {any} */
+        const elementNode = node
+        if (isElement && elementNode.nodeName === 'SLOT') {
+          continue
+        }
+        const slotName = isElement ? (elementNode.getAttribute('slot') || 'default') : 'default'
+        /** @type {any} */
+        const targetSlot = ownSlots.find(slot => (slot.getAttribute('name') || 'default') === slotName)
+
+        if (!targetSlot) {
+          continue
+        }
+
+        if (isElement) {
+          if (!elementNode.hasAttribute('data-coralite-slot-index')) {
+            elementNode.setAttribute('data-coralite-slot-index', String(this._nextSlotIndex++))
+          }
+        }
+
+        const isComputed = Boolean(this.componentOptions?.slots?.[slotName])
+
+        if (isComputed) {
+          if (!targetSlot._originalNodes) {
+            targetSlot._originalNodes = []
+          }
+          if (!targetSlot._hasProjectedLightNodes) {
+            targetSlot._originalNodes = []
+            targetSlot._hasProjectedLightNodes = true
+          }
+          targetSlot._originalNodes.push(node.cloneNode(true))
+
+          const hasFallbackAttr = targetSlot.hasAttribute('data-coralite-fallback')
+          const hasProjectedChildren = Array.from(targetSlot.childNodes).some(child => {
+            /** @type {any} */
+            const c = child
+            return (c.nodeType === 1 && c.hasAttribute('data-coralite-slot-index')) || c._isProjectedLightNode
+          })
+
+          if (hasFallbackAttr || (!hasProjectedChildren && targetSlot.childNodes.length > 0)) {
+            targetSlot.removeAttribute('data-coralite-fallback')
+            targetSlot.replaceChildren()
+          }
+
+          if (node.nodeType === 3) {
+            elementNode._isProjectedLightNode = true
+          }
+
+          targetSlot.appendChild(node)
+          needsComputedRecompute = true
+        } else {
+          const hasFallbackAttr = targetSlot.hasAttribute('data-coralite-fallback')
+          const hasProjectedChildren = Array.from(targetSlot.childNodes).some(child => {
+            /** @type {any} */
+            const c = child
+            return (c.nodeType === 1 && c.hasAttribute('data-coralite-slot-index')) || c._isProjectedLightNode
+          })
+
+          if (hasFallbackAttr || (!hasProjectedChildren && targetSlot.childNodes.length > 0)) {
+            targetSlot.removeAttribute('data-coralite-fallback')
+            targetSlot.replaceChildren()
+          }
+
+          if (node.nodeType === 3) {
+            elementNode._isProjectedLightNode = true
+          }
+
+          targetSlot.appendChild(node)
+        }
+      }
+
+      if (needsComputedRecompute) {
+        this._processSlots()
+      }
+    } finally {
+      this._isReconcilingSlots = false
+    }
   }
 
   /**
