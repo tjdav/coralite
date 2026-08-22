@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.46.3
+
+> Comparing `coralite-v0.46.2` to `HEAD`
+
+**Summary:** 5 commits
+
+### ✨ Features
+
+- implement live Light DOM slot reconciliation in CoraliteElement ([29b9928](https://codeberg.org/tjdavid/coralite/commit/29b9928783b951a4aa3890bf29f09157ec1aa3a3))
+
+### ♻️ Code Refactoring
+
+- remove redundant comments in collection deleteItem (coralite) ([4b3cbe6](https://codeberg.org/tjdavid/coralite/commit/4b3cbe683596cfb860981d59aa0675a2e3cea2bd))
+- use htmlparser2 and acorn in component-validator (validator) ([a112405](https://codeberg.org/tjdavid/coralite/commit/a112405e4b7b861f9cb30f76a512f23c53facc85))
+
+### ✅ Tests
+
+- add file read failure test for getHtmlFile and getHtmlFileSync ([a018b46](https://codeberg.org/tjdavid/coralite/commit/a018b46157121842f39b391835d364a4c9432b1a))
+- add unit tests for cleanKeys helper (coralite) ([681e699](https://codeberg.org/tjdavid/coralite/commit/681e699bbc9e160dc85f05729a067f41bc080086))
+
+
 ## v0.46.2
 
 > Comparing `coralite-v0.46.1` to `HEAD`
