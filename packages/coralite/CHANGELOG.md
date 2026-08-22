@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.47.1
+
+> Comparing `coralite-v0.47.0` to `HEAD`
+
+**Summary:** 1 commit
+
+### 🐛 Bug Fixes
+
+- direct slot forwarding (<slot slot="...">) in Light DOM reconciliation ([95fb60a](https://codeberg.org/tjdavid/coralite/commit/95fb60a48268a8d74a9595f1fe24410b8e144a10))
+
+
 ## v0.47.0
 
 > Comparing `coralite-v0.46.3` to `HEAD`
