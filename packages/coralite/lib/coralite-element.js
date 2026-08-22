@@ -281,6 +281,34 @@ export class CoraliteElement extends HTMLElement {
      * @protected
      */
     this._isReconcilingSlots = false
+
+    /**
+     * Cached resolved client context after plugin resolution.
+     * @type {Object|null}
+     * @protected
+     */
+    this._resolvedClientContext = null
+
+    /**
+     * Flag indicating client context and plugins are fully resolved for slot execution.
+     * @type {boolean}
+     * @protected
+     */
+    this._slotRuntimeReady = false
+
+    /**
+     * Flag indicating _processSlots should execute once runtime becomes ready.
+     * @type {boolean}
+     * @protected
+     */
+    this._processSlotsOnReady = false
+
+    /**
+     * Map tracking slots that have registered internal state observers.
+     * @type {Map<string, boolean>|null}
+     * @protected
+     */
+    this._slotHasInternalObservers = null
   }
 
   /**
@@ -350,6 +378,10 @@ export class CoraliteElement extends HTMLElement {
     }
 
     this._nextSlotIndex = this._getMaxSlotIndex() + 1
+    this._resolvedClientContext = null
+    this._slotRuntimeReady = false
+    this._processSlotsOnReady = false
+    this._slotHasInternalObservers = new Map()
 
     this._setupState()
     this._setupBindings()
@@ -404,6 +436,20 @@ export class CoraliteElement extends HTMLElement {
       this._dirtyObservers.clear()
       this._dirtyObservers = null
     }
+
+    if (this._slotHasInternalObservers) {
+      this._slotHasInternalObservers.clear()
+      this._slotHasInternalObservers = null
+    }
+
+    this._slotRuntimeReady = false
+    this._processSlotsOnReady = false
+
+    const ownSlots = this._getOwnSlots()
+    ownSlots.forEach(slotEl => {
+      // @ts-ignore
+      slotEl._slotEvaluated = false
+    })
 
     if (!this.componentOptions) {
       return
@@ -1012,6 +1058,13 @@ export class CoraliteElement extends HTMLElement {
         }
       })
     }
+
+    return () => {
+      record.cleanup()
+      if (this._observerRecords) {
+        this._observerRecords.delete(record)
+      }
+    }
   }
 
   /**
@@ -1325,9 +1378,151 @@ export class CoraliteElement extends HTMLElement {
    * Invokes component-specific slot transformation functions.
    * @private
    */
+  /**
+   * Applies the returned result of a slot function or observer callback to the slot element.
+   * Handles single Nodes, Node arrays, strings, null/empty clears, undefined no-ops, and Promises.
+   * @param {Element} slotEl - The slot DOM element.
+   * @param {any} result - The transformation result.
+   * @param {symbol|null} [renderVersion=null] - Optional render cycle lock token.
+   * @protected
+   */
+  _applySlotResult (slotEl, result, renderVersion = null) {
+    if (renderVersion && this._currentRenderVersion !== renderVersion) {
+      return
+    }
+    if (this._abortController?.signal?.aborted) {
+      return
+    }
+
+    if (result === undefined) {
+      return
+    }
+
+    if (result && typeof result.then === 'function') {
+      const capturedVersion = renderVersion || this._currentRenderVersion
+      result.then(resolved => {
+        this._applySlotResult(slotEl, resolved, capturedVersion)
+      }).catch(err => {
+        if (err?.name !== 'AbortError') {
+          console.error('Coralite Slot Async Error:', err)
+        }
+      })
+      return
+    }
+
+    if (result === null || result === '' || (Array.isArray(result) && result.length === 0)) {
+      slotEl.replaceChildren()
+      return
+    }
+
+    if (typeof result === 'string') {
+      slotEl.innerHTML = result
+    } else if (Array.isArray(result)) {
+      slotEl.replaceChildren(...result)
+    } else if (result instanceof Node || (result && typeof result === 'object' && typeof result.nodeType === 'number')) {
+      slotEl.replaceChildren(result)
+    }
+  }
+
+  /**
+   * Creates a context proxy for slot transformer evaluation.
+   * @param {string} slotName - The slot name.
+   * @param {Element} slotEl - The target slot element.
+   * @returns {Proxy} The context proxy.
+   * @private
+   */
+  _createSlotContext (slotName, slotEl) {
+    const baseCtx = this._resolvedClientContext || {
+      instanceId: this._instanceId,
+      state: this._state,
+      root: this,
+      signal: this._abortController?.signal,
+      refs: (id) => {
+        const refId = this._state[`ref_${id}`]
+        if (!refId && typeof refId !== 'string') {
+          return null
+        }
+        if (this.getAttribute('ref') === refId || this.getAttribute('ref') === id) {
+          return this
+        }
+        let node = this.querySelector(`[ref="${refId}"]`)
+        if (!node) {
+          node = Array.from(this.querySelectorAll(`[ref="${id}"], [ref="${refId}"]`)).find(
+            candidate => isOwnedByComponent(candidate, this._instanceId, this)
+          ) || null
+        }
+        return node
+      }
+    }
+
+    const slotContextObj = {
+      ...baseCtx,
+      observe: (key, cb) => {
+        if (!this._slotHasInternalObservers) {
+          this._slotHasInternalObservers = new Map()
+        }
+        this._slotHasInternalObservers.set(slotName, true)
+
+        const wrappedCb = (newVal, oldVal) => {
+          const res = cb(newVal, oldVal)
+          this._applySlotResult(slotEl, res)
+        }
+
+        return this._observeStateKey(key, wrappedCb)
+      }
+    }
+
+    const stateProxy = this._state
+    return new Proxy(slotContextObj, {
+      get (target, prop, receiver) {
+        if (typeof prop === 'symbol') {
+          return Reflect.get(target, prop, receiver)
+        }
+        if (Reflect.has(target, prop)) {
+          return Reflect.get(target, prop, receiver)
+        }
+        if (stateProxy && prop in stateProxy) {
+          return stateProxy[prop]
+        }
+        return Reflect.get(target, prop, receiver)
+      },
+      has (target, prop) {
+        return Reflect.has(target, prop) || Boolean(stateProxy && prop in stateProxy)
+      },
+      ownKeys (target) {
+        const contextKeys = Reflect.ownKeys(target)
+        const stateKeys = stateProxy ? Object.keys(stateProxy) : []
+        return Array.from(new Set([...contextKeys, ...stateKeys]))
+      },
+      getOwnPropertyDescriptor (target, prop) {
+        if (Reflect.has(target, prop)) {
+          return Reflect.getOwnPropertyDescriptor(target, prop)
+        }
+        if (stateProxy && prop in stateProxy) {
+          return {
+            enumerable: true,
+            configurable: true,
+            value: stateProxy[prop]
+          }
+        }
+        return undefined
+      }
+    })
+  }
+
+  /**
+   * Evaluates and projects Light DOM elements into their respective `<slot>` nodes.
+   * Invokes component-specific slot transformation functions.
+   * @private
+   */
   _processSlots () {
-    const slots = this.componentOptions.slots
+    const slots = this.componentOptions?.slots
     if (!slots || Object.keys(slots).length === 0) {
+      return
+    }
+
+    if (!this._slotRuntimeReady) {
+      this._processSlotsOnReady = true
       return
     }
 
@@ -1344,22 +1539,20 @@ export class CoraliteElement extends HTMLElement {
         }
 
         // @ts-ignore
-        const result = slotFn(slotEl._originalNodes, this._state)
-
-        if (result === undefined) {
+        if (slotEl._slotEvaluated && this._slotHasInternalObservers?.get(slotName)) {
           return
         }
 
-        if (result === null || result === '' || (Array.isArray(result) && result.length === 0)) {
-          slotEl.innerHTML = ''
-          return
-        }
+        const slotContext = this._createSlotContext(slotName, slotEl)
+        const renderVersion = Symbol()
+        this._currentRenderVersion = renderVersion
 
-        if (typeof result === 'string') {
-          slotEl.innerHTML = result
-        } else if (Array.isArray(result)) {
-          slotEl.replaceChildren(...result)
-        }
+        // @ts-ignore
+        const result = slotFn(slotEl._originalNodes, slotContext)
+        // @ts-ignore
+        slotEl._slotEvaluated = true
+
+        this._applySlotResult(slotEl, result, renderVersion)
       }
     })
   }
@@ -1443,10 +1636,18 @@ export class CoraliteElement extends HTMLElement {
       localContext = await this._clientContextGetter(localContext)
     }
 
+    this._resolvedClientContext = localContext
+    this._slotRuntimeReady = true
+
     if (isImperative) {
       this._updateDOM()
     } else {
       this._scheduleUpdate()
+    }
+
+    if (this._processSlotsOnReady || (this.componentOptions.slots && Object.keys(this.componentOptions.slots).length > 0)) {
+      this._processSlotsOnReady = false
+      this._processSlots()
     }
 
     // @ts-ignore

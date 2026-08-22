@@ -205,6 +205,9 @@ export function validateComponentSource (sourceCode, filePath = '') {
   const refsCalls = new Set()
   const getterStateDependencies = new Set()
 
+  const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'instanceId'])
+  let hasSlotsDefined = false
+
   if (scriptContent) {
     try {
       const ast = parseJS(scriptContent, {
@@ -240,7 +243,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
         }
       }
 
-      const analyzeFunctionBlock = (fnNode, targetStateSet, targetRefsSet, isGetterFn = false, isClientFn = false, paramIdx = 0) => {
+      const analyzeFunctionBlock = (fnNode, targetStateSet, targetRefsSet, isGetterFn = false, isClientFn = false, paramIdx = 0, isSlotFn = false) => {
         if (!fnNode || !fnNode.body) {
           return
         }
@@ -252,7 +255,10 @@ export function validateComponentSource (sourceCode, filePath = '') {
         if (fnNode.params && fnNode.params.length > paramIdx) {
           const targetParam = fnNode.params[paramIdx]
           if (targetParam.type === 'Identifier') {
-            if (isGetterFn || paramIdx > 0) {
+            if (isGetterFn) {
+              stateVars.add(targetParam.name)
+            } else if (isSlotFn) {
+              contextVars.add(targetParam.name)
               stateVars.add(targetParam.name)
             } else {
               contextVars.add(targetParam.name)
@@ -264,7 +270,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
               }
             }
           } else if (targetParam.type === 'ObjectPattern') {
-            if (isGetterFn || paramIdx > 0) {
+            if (isGetterFn) {
               extractDestructuredKeys(targetParam, targetStateSet)
             } else {
               for (const p of targetParam.properties || []) {
@@ -293,6 +299,10 @@ export function validateComponentSource (sourceCode, filePath = '') {
                       } else if (p.value.left.type === 'ObjectPattern') {
                         extractDestructuredKeys(p.value.left, targetRefsSet, refsVars)
                       }
+                    }
+                  } else if (isSlotFn) {
+                    if (!RESERVED_CONTEXT_KEYS.has(keyName)) {
+                      targetStateSet.add(keyName)
                     }
                   }
                 }
@@ -503,12 +513,15 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
               // Slots block
               if (keyName === 'slots' && prop.value.type === 'ObjectExpression') {
+                if (prop.value.properties.length > 0) {
+                  hasSlotsDefined = true
+                }
                 for (const slotProp of prop.value.properties) {
                   if (
                     slotProp.type === 'Property' &&
                     (slotProp.value.type === 'FunctionExpression' || slotProp.value.type === 'ArrowFunctionExpression')
                   ) {
-                    analyzeFunctionBlock(slotProp.value, stateReads, refsCalls, false, false, 1)
+                    analyzeFunctionBlock(slotProp.value, stateReads, refsCalls, false, false, 1, true)
                   }
                 }
               }
@@ -793,6 +806,20 @@ export function validateComponentSource (sourceCode, filePath = '') {
   for (const imp of usedTopLevelImportsInClient) {
     if (!isEntireComponentIgnored && !ignoredSymbols.has(imp)) {
       invalidClientImports.push(imp)
+    }
+  }
+
+  // Reserved context key collision warning
+  if (hasSlotsDefined) {
+    for (const attr of definedAttributes) {
+      if (RESERVED_CONTEXT_KEYS.has(attr)) {
+        console.warn(`[Coralite Warning]: Component attribute "${attr}" in "${filePath}" collides with a reserved slot context property (${attr}).`)
+      }
+    }
+    for (const serverProp of definedServerProps) {
+      if (RESERVED_CONTEXT_KEYS.has(serverProp)) {
+        console.warn(`[Coralite Warning]: Component server property "${serverProp}" in "${filePath}" collides with a reserved slot context property (${serverProp}).`)
+      }
     }
   }
 

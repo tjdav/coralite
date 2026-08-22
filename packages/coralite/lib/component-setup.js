@@ -156,7 +156,62 @@ export function createComponentDefinition ({ app }) {
             }
           }
 
-          let result = computedSlot(slotContent, state)
+          const slotSignal = new AbortController().signal
+          const slotContext = new Proxy({
+            state,
+            root: null,
+            refs: () => null,
+            observe: () => () => {
+            },
+            signal: slotSignal,
+            // @ts-ignore
+            instanceId: context.instanceId || module.id,
+            ...context
+          }, {
+            get (target, prop, receiver) {
+              if (typeof prop === 'symbol') {
+                return Reflect.get(target, prop, receiver)
+              }
+              if (Reflect.has(target, prop)) {
+                return Reflect.get(target, prop, receiver)
+              }
+              if (state && prop in state) {
+                return state[prop]
+              }
+              return Reflect.get(target, prop, receiver)
+            },
+            has (target, prop) {
+              return Reflect.has(target, prop) || Boolean(state && prop in state)
+            },
+            ownKeys (target) {
+              const contextKeys = Reflect.ownKeys(target)
+              const stateKeys = state ? Object.keys(state) : []
+              return Array.from(new Set([...contextKeys, ...stateKeys]))
+            },
+            getOwnPropertyDescriptor (target, prop) {
+              if (Reflect.has(target, prop)) {
+                return Reflect.getOwnPropertyDescriptor(target, prop)
+              }
+              if (typeof prop === 'string' && state && prop in state) {
+                return {
+                  enumerable: true,
+                  configurable: true,
+                  value: state[prop]
+                }
+              }
+              return undefined
+            }
+          })
+
+          let result
+          try {
+            result = computedSlot(slotContent, slotContext)
+            result = result && typeof result.then === 'function' ? await result : result
+          } catch {
+            // Gracefully catch browser-only API access or SSR errors, falling back to original slot content
+            result = slotContent
+          }
+
           if (result === undefined) {
             result = slotContent
           }

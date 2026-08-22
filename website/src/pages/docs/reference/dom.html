@@ -301,9 +301,20 @@
 
         export default defineComponent({
           slots: {
-            default: (slotNodes, state) => {
-              // Bypass client-side hydration to preserve SSR-rendered content
-              if (typeof window !== 'undefined') return undefined;
+            default: (slotNodes, { state, observe, signal, root, refs }) => {
+              // Bypass client-side hydration if preserving static SSR-rendered content
+              if (typeof window !== 'undefined' && !root) return undefined;
+
+              // Reactive builder pattern: set up fine-grained reactivity using observe()
+              if (typeof window !== 'undefined' && observe) {
+                observe('mode', (newMode) => {
+                  if (newMode === 'active') {
+                    return slotNodes;
+                  }
+                  return null;
+                });
+                return slotNodes;
+              }
 
               // Example: Wrap content in a div (Server-side only)
               const wrapper = createElement({

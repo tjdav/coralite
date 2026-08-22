@@ -163,6 +163,7 @@ program
       }
     }
 
+    /** @type {import('../dist/types/index.js').CoraliteConfig} */
     const coraliteOptions = {
       components: options.components,
       pages,

@@ -72,11 +72,24 @@
  */
 
 /**
- * @callback CoraliteModuleSlotFunction
- * @param {CoraliteAnyNode[]} slotNodes - The parsed HTML nodes for the slot content
- * @param {CoraliteModuleDefinitions} state - The current component values
- * @returns {CoraliteAnyNode[] | string | void} - The processed nodes, an HTML string, or void to use original content
+ * @typedef {Object} CoraliteSlotContextBase
+ * @property {Readonly<Object>} state - Reactive proxy (client) or merged state (SSR).
+ * @property {(prop: string, callback: (newVal: any, oldVal?: any) => any) => (() => void)} observe - State observer registering fine-grained reactivity and returning a disposer.
+ * @property {AbortSignal} signal - Lifecycle abort signal aborted on disconnectedCallback.
+ * @property {HTMLElement|null} root - Host element on client, null during SSR build.
+ * @property {(name: string) => HTMLElement|null} refs - Refs lookup function (returns null on SSR).
+ * @property {string} instanceId - Unique instance identifier.
  */
 
+/** @typedef {CoraliteSlotContextBase & Object.<string, any>} CoraliteSlotContext */
 
-export default {}
+/**
+ * @callback CoraliteModuleSlotFunction
+ * @param {CoraliteAnyNode[] | any[]} slotNodes - The original slot content nodes.
+ * @param {CoraliteSlotContext} context - Component slot context.
+ * @param {Object} [legacyState] - @deprecated Accessing state directly via the second argument `(nodes, state)` is deprecated. Destructure `{ state }` from context or use `context.state`.
+ * @returns {CoraliteAnyNode[] | CoraliteAnyNode | any[] | any | string | null | void | Promise<any>}
+ */
+
+const _moduleExports = {}
+export default _moduleExports

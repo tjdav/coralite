@@ -947,6 +947,262 @@ describe('CoraliteElement', () => {
     })
   })
 
+  describe('Native Reactive Slot Context & Builder Pattern', () => {
+    it('should provide full slot context ({ state, root, refs, observe, signal, instanceId }) to slot functions', (t, done) => {
+      let receivedContext = null
+      const slotCtxTag = 'slot-ctx-' + Math.random().toString(36).substring(2, 9)
+
+      const SlotCtxElement = createCoraliteClass({
+        componentId: 'slot-ctx',
+        templateHTML: '<div><slot name="content"><p>Initial</p></slot><button ref="btn">Btn</button></div>',
+        defaultValues: {
+          title: 'Hello Slot'
+        },
+        hydrationMap: {
+          refs: [{ name: 'btn', path: [0, 1] }]
+        },
+        slots: {
+          content (nodes, context) {
+            receivedContext = context
+            return `<div class="slot-title">${context.state.title}</div>`
+          }
+        }
+      })
+      customElements.define(slotCtxTag, SlotCtxElement)
+
+      const el = document.createElement(slotCtxTag)
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        assert.ok(receivedContext, 'Slot function should receive context')
+        assert.strictEqual(receivedContext.state.title, 'Hello Slot')
+        assert.strictEqual(receivedContext.root, el)
+        assert.strictEqual(receivedContext.instanceId, el._instanceId)
+        assert.strictEqual(typeof receivedContext.observe, 'function')
+        assert.strictEqual(typeof receivedContext.refs, 'function')
+        assert.strictEqual(receivedContext.refs('btn').textContent, 'Btn')
+        assert.ok(receivedContext.signal instanceof AbortSignal)
+
+        const titleDiv = el.querySelector('.slot-title')
+        assert.ok(titleDiv)
+        assert.strictEqual(titleDiv.textContent, 'Hello Slot')
+
+        document.body.removeChild(el)
+        done()
+      })
+    })
+
+    it('should support legacy (nodes, state) slot signature via proxy fallback', (t, done) => {
+      let readTitle = null
+      const legacySlotTag = 'slot-legacy-' + Math.random().toString(36).substring(2, 9)
+
+      const LegacySlotElement = createCoraliteClass({
+        componentId: 'slot-legacy',
+        templateHTML: '<div><slot></slot></div>',
+        defaultValues: {
+          title: 'Legacy Title'
+        },
+        slots: {
+          default (nodes, state) {
+            readTitle = state.title
+            return `<span>${state.title}</span>`
+          }
+        }
+      })
+      customElements.define(legacySlotTag, LegacySlotElement)
+
+      const el = document.createElement(legacySlotTag)
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        assert.strictEqual(readTitle, 'Legacy Title')
+        assert.strictEqual(el.querySelector('slot').innerHTML, '<span>Legacy Title</span>')
+        document.body.removeChild(el)
+        done()
+      })
+    })
+
+    it('should execute reactive builder slot outer function body exactly once and drive updates via internal observers', (t, done) => {
+      let outerFnCallCount = 0
+      let observerCallCount = 0
+      const reactiveBuilderTag = 'reactive-builder-' + Math.random().toString(36).substring(2, 9)
+
+      const ReactiveBuilderElement = createCoraliteClass({
+        componentId: 'reactive-builder',
+        templateHTML: '<div><slot></slot></div>',
+        defaultValues: {
+          count: 0
+        },
+        slots: {
+          default (nodes, { state, observe }) {
+            outerFnCallCount++
+            observe('count', (newVal) => {
+              observerCallCount++
+              return `<span class="count">${newVal}</span>`
+            })
+            return `<span class="count">${state.count}</span>`
+          }
+        }
+      })
+      customElements.define(reactiveBuilderTag, ReactiveBuilderElement)
+
+      const el = document.createElement(reactiveBuilderTag)
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        assert.strictEqual(outerFnCallCount, 1)
+        assert.strictEqual(observerCallCount, 0)
+        assert.strictEqual(el.querySelector('.count').textContent, '0')
+
+        // Mutate state
+        // @ts-ignore
+        el._state.count = 1
+
+        queueMicrotask(() => {
+          assert.strictEqual(outerFnCallCount, 1, 'Outer slot function body should not run again for reactive builder')
+          assert.strictEqual(observerCallCount, 1)
+          assert.strictEqual(el.querySelector('.count').textContent, '1')
+
+          // Mutate state again
+          // @ts-ignore
+          el._state.count = 2
+
+          queueMicrotask(() => {
+            assert.strictEqual(outerFnCallCount, 1)
+            assert.strictEqual(observerCallCount, 2)
+            assert.strictEqual(el.querySelector('.count').textContent, '2')
+
+            document.body.removeChild(el)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should project single DOM Node returned by slot function without dropping it (R-04)', (t, done) => {
+      const singleNodeTag = 'single-node-slot-' + Math.random().toString(36).substring(2, 9)
+
+      const SingleNodeElement = createCoraliteClass({
+        componentId: 'single-node-slot',
+        templateHTML: '<div><slot></slot></div>',
+        slots: {
+          default () {
+            const btn = document.createElement('button')
+            btn.className = 'single-btn'
+            btn.textContent = 'Single Element'
+            return btn
+          }
+        }
+      })
+      customElements.define(singleNodeTag, SingleNodeElement)
+
+      const el = document.createElement(singleNodeTag)
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        const btn = el.querySelector('.single-btn')
+        assert.ok(btn, 'Single DOM Node should be projected into the slot')
+        assert.strictEqual(btn.textContent, 'Single Element')
+
+        document.body.removeChild(el)
+        done()
+      })
+    })
+
+    it('should disconnect slot observer when disposer returned by observe() is invoked', (t, done) => {
+      let disposerFn = null
+      let observeCount = 0
+      const disposerTag = 'disposer-slot-' + Math.random().toString(36).substring(2, 9)
+
+      const DisposerElement = createCoraliteClass({
+        componentId: 'disposer-slot',
+        templateHTML: '<div><slot></slot></div>',
+        defaultValues: {
+          num: 1
+        },
+        slots: {
+          default (nodes, { observe }) {
+            disposerFn = observe('num', (val) => {
+              observeCount++
+              return `<span>${val}</span>`
+            })
+            return '<span>0</span>'
+          }
+        }
+      })
+      customElements.define(disposerTag, DisposerElement)
+
+      const el = document.createElement(disposerTag)
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        assert.strictEqual(typeof disposerFn, 'function')
+
+        // Mutate state to trigger observer
+        // @ts-ignore
+        el._state.num = 2
+
+        queueMicrotask(() => {
+          assert.strictEqual(observeCount, 1)
+
+          // Call disposer
+          disposerFn()
+
+          // Mutate state again
+          // @ts-ignore
+          el._state.num = 3
+
+          queueMicrotask(() => {
+            assert.strictEqual(observeCount, 1, 'Observer should not run after disposer is called')
+
+            document.body.removeChild(el)
+            done()
+          })
+        })
+      })
+    })
+
+    it('should handle async slot functions and discard stale promise resolutions during rapid mutations', (t, done) => {
+      const asyncSlotTag = 'async-slot-' + Math.random().toString(36).substring(2, 9)
+
+      const AsyncSlotElement = createCoraliteClass({
+        componentId: 'async-slot',
+        templateHTML: '<div><slot></slot></div>',
+        defaultValues: {
+          step: 1
+        },
+        slots: {
+          default (nodes, { state }) {
+            const delay = state.step === 1 ? 50 : 5
+            const currentStep = state.step
+            return new Promise(resolve => {
+              setTimeout(() => {
+                resolve(`<span class="step">Step ${currentStep}</span>`)
+              }, delay)
+            })
+          }
+        }
+      })
+      customElements.define(asyncSlotTag, AsyncSlotElement)
+
+      const el = document.createElement(asyncSlotTag)
+      document.body.appendChild(el)
+
+      // Immediately trigger step 2 before step 1 promise finishes
+      // @ts-ignore
+      el._state.step = 2
+
+      setTimeout(() => {
+        const stepEl = el.querySelector('.step')
+        assert.ok(stepEl)
+        assert.strictEqual(stepEl.textContent, 'Step 2')
+
+        document.body.removeChild(el)
+        done()
+      }, 100)
+    })
+  })
+
   describe('Light DOM Slot Reconciliation', () => {
     it('should reconcile dynamically appended elements and non-empty text nodes into default and named slots', (t, done) => {
       const cardTag = 'card-recon-' + Math.random().toString(36).substring(2, 9)

@@ -592,6 +592,39 @@ describe('Component Validator', () => {
     assert.deepStrictEqual(result.unused.missingRefs, [])
   })
 
+  test('emits warning when attribute or server property collides with reserved slot context property', () => {
+    let warnMsg = ''
+    const origWarn = console.warn
+    console.warn = (msg) => { warnMsg = msg }
+
+    const code = `
+<template>
+  <div><slot></slot></div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      signal: { type: String }
+    },
+    slots: {
+      default(nodes, { signal }) {
+        return nodes
+      }
+    }
+  })
+</script>
+`
+    validateComponentSource(code, 'collision-comp.html')
+    console.warn = origWarn
+
+    assert.ok(warnMsg.includes('[Coralite Warning]'))
+    assert.ok(warnMsg.includes('signal'))
+    assert.ok(warnMsg.includes('collides with a reserved slot context property'))
+  })
+
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)

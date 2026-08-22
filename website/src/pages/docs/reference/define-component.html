@@ -253,7 +253,19 @@ client: ({ state, signal, refs, observe }) => {
     <p>Allows you to intercept and transform content passed into your component's slots.</p>
 
     <coralite-code-highlight language="typescript">
-type CoraliteModuleSlotFunction = (slotNodes: Node[], state: any) => Node[] | string | undefined | null
+type CoraliteSlotContext<State = any> = {
+  state: State;                                  // reactive proxy (client) / plain merged state (SSR)
+  observe: (prop: string, cb: (newVal: any, oldVal?: any) => any) => () => void; // ALWAYS returns a disposer
+  signal: AbortSignal;
+  root: HTMLElement | null;                      // element on client, null during SSR build
+  refs: (name: string) => HTMLElement | null;    // no-op returning null on SSR
+  instanceId: string;
+} & Record<string, any>
+
+type SlotTransformer<State = any> = (
+  nodes: Node[],
+  context: CoraliteSlotContext<State>
+) => Node[] | Node | string | null | Promise<Node[] | Node | string | null>
     </coralite-code-highlight>
 
     <coralite-heading level="3" text="The Void = Bypass Paradigm"></coralite-heading>
