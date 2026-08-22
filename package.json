@@ -63,7 +63,7 @@
       "eslint --cache --fix"
     ]
   },
-  "packageManager": "pnpm@11.3.0+sha512.2c403d6594527287672b1f7056343a1f7c3634036a67ffabfcc2b3d7595d843768f8787148d1b57cf7956c90606bbd192857c363af19e96d2d0ec9ec5741d215",
+  "packageManager": "pnpm@11.22.0+sha512.1ff870c4c6133dfd88fb2afc46dd13d47f09c9794b438c6fdb47ca98caf3bc16381ee0be93a091b8e3824cf01f889f46d7d9e20910fb0be1ab0fb5baa80dd621",
   "dependencies": {
     "dom-serializer": "^2.0.0"
   }
