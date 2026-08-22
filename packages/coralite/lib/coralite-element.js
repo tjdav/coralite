@@ -1349,28 +1349,51 @@ export class CoraliteElement extends HTMLElement {
   }
 
   /**
+   * Checks whether an untagged slot element belongs directly to host via DOM parent chain walk.
+   * @param {Element} slotEl - The candidate slot element.
+   * @param {Element} hostElement - The host custom element.
+   * @returns {boolean} True if the slot belongs directly to hostElement.
+   * @private
+   */
+  _isSlotOwnedByTraversal (slotEl, hostElement) {
+    let host = slotEl.parentElement
+
+    while (host && host !== hostElement) {
+      if (host.hasAttribute?.('data-cid') || host.hasAttribute?.('is') || (host.tagName && host.tagName.includes('-'))) {
+        return false
+      }
+      host = host.parentElement
+    }
+
+    return host === hostElement
+  }
+
+  /**
    * Retrieves `<slot>` elements that belong directly to this custom element instance,
    * ignoring `<slot>` elements nested inside child custom elements.
    * @returns {HTMLSlotElement[]}
    * @private
    */
   _getOwnSlots () {
-    const allSlots = Array.from(this.querySelectorAll('slot'))
+    const allSlots = this.querySelectorAll('slot')
     const ownId = this.getAttribute('data-cid') || this._instanceId
-    return allSlots.filter(slotEl => {
-      if (slotEl.hasAttribute('data-coralite-owner')) {
-        return slotEl.getAttribute('data-coralite-owner') === ownId
-      }
-      // Legacy fallback for hydrated/untagged trees
-      let host = slotEl.parentElement
-      while (host && host !== this) {
-        if (host.hasAttribute?.('data-cid') || host.hasAttribute?.('is') || (host.tagName && host.tagName.includes('-'))) {
-          return false
+    /** @type {HTMLSlotElement[]} */
+    const ownSlots = []
+
+    for (let i = 0; i < allSlots.length; i++) {
+      const slot = allSlots[i]
+      if (slot.hasAttribute('data-coralite-owner')) {
+        if (slot.getAttribute('data-coralite-owner') === ownId) {
+          // @ts-ignore
+          ownSlots.push(slot)
         }
-        host = host.parentElement
+      } else if (this._isSlotOwnedByTraversal(slot, this)) {
+        // @ts-ignore
+        ownSlots.push(slot)
       }
-      return host === this
-    })
+    }
+
+    return ownSlots
   }
 
   /**
