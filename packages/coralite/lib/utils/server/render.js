@@ -173,7 +173,7 @@ export function injectStyles (root, head, styles, options = {}) {
 
   let cssContent = ''
   for (const [selector, css] of styles) {
-    cssContent += `[data-style-selector="${selector}"] {\n${css}\n}\n`
+    cssContent += `${selector} {\n${css}\n}\n`
   }
 
   const attribs = { id: 'coralite-inline-styles' }

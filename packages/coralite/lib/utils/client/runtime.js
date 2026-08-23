@@ -107,7 +107,10 @@ export function generateClientRuntime ({
       if (cssPath) {
         const fullCssPath = '${base}assets/css/' + cssPath;
         const inlineStyles = document.getElementById('coralite-inline-styles');
-        const hasStyleInInline = inlineStyles && inlineStyles.textContent.includes('[data-style-selector="' + componentId + '"]');
+        const hasStyleInInline = inlineStyles && (
+          inlineStyles.textContent.includes(componentId + ' {') ||
+          inlineStyles.textContent.includes(componentId + '{')
+        );
 
         if (!document.querySelector('link[href="' + fullCssPath + '"]') && !hasStyleInInline) {
           const link = document.createElement('link');
@@ -124,12 +127,15 @@ export function generateClientRuntime ({
           if (module.default.styles && !cssPath) {
             const styleId = 'coralite-style-' + id;
             const inlineStyles = document.getElementById('coralite-inline-styles');
-            const hasStyleInInline = inlineStyles && inlineStyles.textContent.includes('[data-style-selector="' + id + '"]');
+            const hasStyleInInline = inlineStyles && (
+              inlineStyles.textContent.includes(id + ' {') ||
+              inlineStyles.textContent.includes(id + '{')
+            );
 
             if (!document.getElementById(styleId) && !hasStyleInInline) {
               const style = document.createElement('style');
               style.id = styleId;
-              style.textContent = '[data-style-selector="' + id + '"] {\\n' + module.default.styles + '\\n}';
+              style.textContent = id + ' {\\n' + module.default.styles + '\\n}';
               document.head.appendChild(style);
             }
           }

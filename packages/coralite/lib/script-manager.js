@@ -423,16 +423,6 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
 
       const cleanedAST = cleanAST(sharedFn.templateAST, nodeMap, state)
 
-      if (cleanedAST && sharedFn.styles) {
-        for (const child of cleanedAST) {
-          if (child.type === 'tag') {
-            if (!child.attribs) {
-              child.attribs = {}
-            }
-            child.attribs['data-style-selector'] = componentId
-          }
-        }
-      }
 
       const templateHTML = serialize(cleanedAST ? render(cleanedAST, { decodeEntities: false }) : '')
       const templateValues = serialize(cleanValues(sharedFn.templateValues, nodeMap) || {
@@ -700,7 +690,7 @@ export default {
             if (path.startsWith(cssNamespace)) {
               const componentId = path.replace(cssNamespace, '')
               const sharedFn = this.sharedFunctions[componentId]
-              const contents = `[data-style-selector="${componentId}"] {\n${sharedFn.styles}\n}`
+              const contents = `${componentId} {\n${sharedFn.styles}\n}`
               return {
                 contents,
                 loader: 'css',

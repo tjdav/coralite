@@ -52,7 +52,6 @@ export const RESERVED_DOM_ATTRIBUTES = new Set([
   'data-coralite-initial',
   'data-coralite-slot-index',
   'data-coralite-page',
-  'data-style-selector',
   'slot',
   'ref',
   'data-testid',

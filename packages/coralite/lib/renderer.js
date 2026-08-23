@@ -520,15 +520,6 @@ export function createRenderer ({
       if (!session.styles.has(selector)) {
         session.styles.set(selector, moduleComponent.result._processedCss)
       }
-      for (let i = 0; i < result.children.length; i++) {
-        const child = result.children[i]
-        if (child.type === 'tag') {
-          if (!child.attribs) {
-            child.attribs = {}
-          }
-          child.attribs['data-style-selector'] = selector
-        }
-      }
     }
 
     let evaluatedStyle = null
@@ -1547,7 +1538,7 @@ export function createRenderer ({
             }
             if (mappedSessionObject.styles.size > 0) {
               for (const [selector, css] of mappedSessionObject.styles) {
-                combinedCss += `[data-style-selector="${selector}"] {\n${css}\n}\n`
+                combinedCss += `${selector} {\n${css}\n}\n`
               }
             }
             const cssHashVal = hash(combinedCss)
