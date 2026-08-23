@@ -79,7 +79,8 @@ describe('Component Attribute values & Validation', () => {
       assert.deepEqual(normalized.size, {
         type: 'String',
         default: undefined,
-        values: ['sm', 'md', 'lg']
+        values: ['sm', 'md', 'lg'],
+        required: false
       })
     })
 

@@ -622,7 +622,7 @@ describe('Component Validator', () => {
 
     assert.ok(warnMsg.includes('[Coralite Warning]'))
     assert.ok(warnMsg.includes('signal'))
-    assert.ok(warnMsg.includes('collides with a reserved slot context property'))
+    assert.ok(warnMsg.includes('collides with a reserved context property'))
   })
 
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {

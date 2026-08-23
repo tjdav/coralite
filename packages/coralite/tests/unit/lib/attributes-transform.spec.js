@@ -262,7 +262,7 @@ describe('Component Attribute transform Pipeline', () => {
         el.removeAttribute('req-attr')
       }, (err) => {
         assert.ok(err instanceof CoraliteError)
-        assert.strictEqual(err.message, 'Component "trans-remove" requires attribute "reqAttr", but it was not provided.')
+        assert.strictEqual(err.message, 'Component "trans-remove" attribute "req-attr" is required and cannot be removed.')
         return true
       })
 

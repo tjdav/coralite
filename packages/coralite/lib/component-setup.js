@@ -104,17 +104,17 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
 
     const normalizedSchema = {
       type: typeName,
-      default: schemaObj.default
+      default: schemaObj.default,
+      required: Boolean(schemaObj.required)
     }
 
     if (schemaObj.required) {
       if (schemaObj.default !== undefined) {
-        throw new CoraliteError(`Component "${componentId}" attribute "${key}" cannot have both required: true and a default value.`, {
+        throw new CoraliteError(`Component "${componentId}" attribute "${key}" cannot be marked as required and define a default value.`, {
           componentId,
           filePath
         })
       }
-      normalizedSchema.required = true
     }
     if (uniqueValues) {
       normalizedSchema.values = uniqueValues

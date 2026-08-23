@@ -165,7 +165,7 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
 
   // Step 1: required check
   if (schemaObj.required && (value === undefined || value === null)) {
-    throw new CoraliteError(`Component "${componentId}" attribute "${name}" is required.`, {
+    throw new CoraliteError(`Component "${componentId}" requires attribute "${name}", but it was not provided.`, {
       componentId,
       ...errorOptions
     })
@@ -195,14 +195,14 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
       if (err instanceof CoraliteError) {
         throw err
       }
-      throw new CoraliteError(`Component "${componentId}" attribute "${name}" transform failed: ${err.message}`, {
+      throw new CoraliteError(`Component "${componentId}" failed executing transform on attribute "${name}": ${err.message}`, {
         componentId,
         cause: err,
         ...errorOptions
       })
     }
     if (transformed && typeof transformed.then === 'function') {
-      throw new CoraliteError(`Component "${componentId}" attribute "${name}" transform function must be synchronous.`, {
+      throw new CoraliteError(`Component "${componentId}" attribute "${name}" transform function must be synchronous. Use getters or server() for asynchronous data.`, {
         componentId,
         ...errorOptions
       })
@@ -741,6 +741,13 @@ export class CoraliteElement extends BaseElement {
     const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
     const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
 
+    if (newVal === null && schema?.required === true) {
+      throw new CoraliteError(`Component "${this.componentOptions.componentId}" attribute "${name}" is required and cannot be removed.`, {
+        componentId: this.componentOptions.componentId,
+        instanceId: this._instanceId
+      })
+    }
+
     let value
     if (newVal === null) {
       if (schema) {
@@ -999,6 +1006,12 @@ export class CoraliteElement extends BaseElement {
           const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
           const schema = options.attributes[camelName] || options.attributes[p]
           if (schema) {
+            if (schema.required === true && (v === undefined || v === null)) {
+              throw new CoraliteError(`Component "${options.componentId}" attribute "${p}" is required and cannot be set to ${v}.`, {
+                componentId: options.componentId,
+                instanceId: self._instanceId
+              })
+            }
             v = validateAttributeValue(v, schema, p, options.componentId, { instanceId: self._instanceId })
           }
         }
@@ -1031,6 +1044,25 @@ export class CoraliteElement extends BaseElement {
         }
 
         return true
+      },
+
+      deleteProperty (t, p) {
+        if (typeof p !== 'string') {
+          return Reflect.deleteProperty(t, p)
+        }
+        const oldValue = t[p]
+        const deleted = Reflect.deleteProperty(t, p)
+        if (deleted && oldValue !== undefined) {
+          self._scheduleUpdate()
+          if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
+            const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
+            if (!hasRecord) {
+              self._observeStateKey(p, () => self._processSlots())
+            }
+          }
+          self._markObserverDirty(p)
+        }
+        return deleted
       }
     })
   }
