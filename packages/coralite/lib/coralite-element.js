@@ -1,4 +1,4 @@
-import { createReadOnlyProxy } from './utils/core.js'
+import { createReadOnlyProxy, normalizeStyleKey } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
@@ -360,6 +360,7 @@ export function isOwnedByComponent (candidate, instanceId, hostElement) {
  * @property {Object} [attributes] - Schema for coercing HTML attributes into typed primitives.
  * @property {Object.<string, Function>} [getters] - Pure functions for derived state, supporting Promises.
  * @property {Object.<string, Function>} [slots] - Transformation functions for projected Light DOM.
+ * @property {Object.<string, ((state: any) => string | number | null | undefined | false) | string | number>} [style] - Reactive style definitions and CSS custom properties.
  * @property {Function} [client] - The client-side controller logic.
  * @property {Object} [hydrationMap] - AST mapping for reactive text nodes, attributes, and refs.
  * @property {Object} [templateValues] - Token positions for AST updates.
@@ -1199,6 +1200,61 @@ export class CoraliteElement extends BaseElement {
   }
 
   /**
+   * Evaluates reactive style definitions and sets/removes CSS property declarations on the host element.
+   * @private
+   */
+  _applyStyles () {
+    const styleObj = this.componentOptions?.style
+    if (!styleObj || typeof styleObj !== 'object') {
+      return
+    }
+
+    const roState = createReadOnlyProxy(this._state)
+    for (const [key, valOrFn] of Object.entries(styleObj)) {
+      const normKey = normalizeStyleKey(key)
+      if (!normKey) {
+        continue
+      }
+
+      let val
+      if (typeof valOrFn === 'function') {
+        try {
+          val = valOrFn(roState)
+        } catch (err) {
+          if (err instanceof CoraliteError) {
+            throw err
+          }
+          throw new CoraliteError(
+            `Component "${this.componentOptions?.componentId || 'unknown'}" style getter for "${key}" failed: ${err.message}`,
+            {
+              componentId: this.componentOptions?.componentId,
+              instanceId: this._instanceId,
+              cause: err
+            }
+          )
+        }
+      } else {
+        val = valOrFn
+      }
+
+      /** @type {any} */
+      const asyncCheckVal = val
+      if (asyncCheckVal && typeof asyncCheckVal.then === 'function') {
+        throw new CoraliteError(`Component "${this.componentOptions?.componentId || 'unknown'}" style property "${key}" getter must be synchronous. Use getters or server() for asynchronous operations.`, {
+          componentId: this.componentOptions?.componentId,
+          instanceId: this._instanceId
+        })
+      }
+
+      if (val !== null && val !== undefined && val !== false && val !== '') {
+        this.style.setProperty(normKey, String(val))
+      } else {
+        this.style.removeProperty(normKey)
+      }
+    }
+  }
+
+  /**
    * Performs the physical DOM update and resolves template tokens.
    * **Async Safety:** Implements a Symbol-based locking mechanism (`renderVersion`)
    * to guarantee that if state mutates while an async getter is pending, the stale
@@ -1294,6 +1350,8 @@ export class CoraliteElement extends BaseElement {
           }
         }
       }
+
+      this._applyStyles()
 
       if (this.componentOptions.slots && Object.keys(this.componentOptions.slots).length > 0) {
         this._processSlots()
@@ -1971,6 +2029,8 @@ export class CoraliteElement extends BaseElement {
 
     this._resolvedClientContext = localContext
     this._slotRuntimeReady = true
+
+    this._applyStyles()
 
     if (isImperative) {
       this._updateDOM()

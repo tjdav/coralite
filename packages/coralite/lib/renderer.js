@@ -9,7 +9,11 @@ import {
   cloneModuleInstance,
   cloneComponentInstance,
   normalizeObjectFunctions,
-  validateSerializable
+  validateSerializable,
+  normalizeStyleKey,
+  parseInlineStyle,
+  formatInlineStyle,
+  createReadOnlyProxy
 } from './utils/core.js'
 import {
   replaceToken,
@@ -527,6 +531,7 @@ export function createRenderer ({
       }
     }
 
+    let evaluatedStyle = null
     if (module.script) {
       let scriptResult = {}
       try {
@@ -560,6 +565,9 @@ export function createRenderer ({
       }
 
       if (scriptResult && scriptResult.__script__ != null) {
+        /** @type {any} */
+        const scriptMetaAny = scriptResult.__script__
+        evaluatedStyle = scriptMetaAny.style
         if (!moduleComponent.result._extractedScript) {
           moduleComponent.result._extractedScript = findAndExtractScript(module.script)
         }
@@ -824,6 +832,79 @@ export function createRenderer ({
       session,
       noHydration
     })
+
+    // Evaluate host component reactive styles
+    const scriptMeta = moduleComponent.result?.script || {}
+    /** @type {any} */
+    const moduleScriptObj = module.script
+    const componentStyleObj = evaluatedStyle || scriptMeta.style || moduleScriptObj?.style || {}
+    if (componentStyleObj && typeof componentStyleObj === 'object' && Object.keys(componentStyleObj).length > 0) {
+      const computedStylesMap = new Map()
+      /** @type {any} */
+      const elementNode = element
+
+      // 1. Pre-existing static inline style attribute on host element tag
+      if (elementNode && elementNode.attribs && elementNode.attribs.style) {
+        const parsed = parseInlineStyle(elementNode.attribs.style)
+        for (const [k, v] of parsed.entries()) {
+          computedStylesMap.set(k, v)
+        }
+      }
+
+      // 2. Component style properties (overriding tag style on collision)
+      const roState = createReadOnlyProxy(componentState)
+      for (const [key, valOrFn] of Object.entries(componentStyleObj)) {
+        const normKey = normalizeStyleKey(key)
+        if (!normKey) {
+          continue
+        }
+
+        let val
+        if (typeof valOrFn === 'function') {
+          try {
+            val = valOrFn(roState)
+          } catch (err) {
+            if (err instanceof CoraliteError) {
+              throw err
+            }
+            throw new CoraliteError(
+              `Component "${module.id}" style getter for "${key}" failed: ${err.message}`,
+              {
+                componentId: module.id,
+                filePath: module.path?.pathname,
+                cause: err
+              }
+            )
+          }
+        } else {
+          val = valOrFn
+        }
+
+        if (val && typeof val.then === 'function') {
+          throw new CoraliteError(`Component "${module.id}" style property "${key}" getter must be synchronous. Use getters or server() for asynchronous operations.`, {
+            componentId: module.id
+          })
+        }
+
+        if (val !== null && val !== undefined && val !== false && val !== '') {
+          computedStylesMap.set(normKey, String(val))
+        } else {
+          computedStylesMap.delete(normKey)
+        }
+      }
+
+      if (elementNode) {
+        const formatted = formatInlineStyle(computedStylesMap)
+        if (formatted) {
+          if (!elementNode.attribs) {
+            elementNode.attribs = {}
+          }
+          elementNode.attribs.style = formatted
+        } else if (elementNode.attribs && elementNode.attribs.style !== undefined) {
+          delete elementNode.attribs.style
+        }
+      }
+    }
 
     if (noHydration) {
       const stack = [...result.children]

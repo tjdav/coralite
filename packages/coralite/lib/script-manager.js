@@ -113,7 +113,7 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
 
 /**
  * Register shared functions for a component
- * @param {Object} options - The options used to register the component.
+ * @param {Object} options - Registration options.
  * @param {string} options.id - The component identifier.
  * @param {ScriptContent} [options.script={}] - The script content or function associated with the component.
  * @param {string} [options.filePath] - The source file path used to map back to the original source.
@@ -123,6 +123,7 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
  * @param {Object} [options.getters={}] - The component getters.
  * @param {string} [options.styles=''] - The raw CSS string for the component.
  * @param {Object.<string, Function>} [options.slots={}] - The transformation functions for computed slots.
+ * @param {Object} [options.style={}] - Reactive style definitions.
  * @param {boolean} [options.override=false] - Whether to override existing component definition.
  */
 ScriptManager.prototype.registerComponent = function ({
@@ -135,6 +136,7 @@ ScriptManager.prototype.registerComponent = function ({
   getters = {},
   styles = '',
   slots = {},
+  style = {},
   override = false
 }) {
   // Initialize base object if it's the first time we are seeing this ID
@@ -195,6 +197,12 @@ ScriptManager.prototype.registerComponent = function ({
   if (hasObjectKeys(slots)) {
     if (isNew || override) {
       target.slots = slots
+    }
+  }
+
+  if (hasObjectKeys(style)) {
+    if (isNew || override) {
+      target.style = style
     }
   }
 
@@ -462,6 +470,12 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       }
       const slots = serialize(normalizedSlots)
 
+      let normalizedStyle = sharedFn.style || sharedFn.script?.style || {}
+      if (normalizedStyle) {
+        normalizedStyle = normalizeObjectFunctions(normalizedStyle, astTransformer)
+      }
+      const style = serialize(normalizedStyle)
+
       componentEntryCode += `
 export default {
   componentId: "${componentId}",
@@ -473,6 +487,7 @@ export default {
   getters: ${getters},
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
   slots: (() => { const slots = ${slots}; return slots; })(),
+  style: (() => { const style = ${style}; return style; })(),
   dependencies: ${dependencies},
   imports: {},
   client: ${hasScript ? `componentModule_${safeId}.script` : 'null'},

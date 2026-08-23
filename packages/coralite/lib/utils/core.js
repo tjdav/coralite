@@ -32,6 +32,72 @@ export function camelToKebab (str) {
 }
 
 /**
+ * Normalizes CSS property keys for element style bindings.
+ * Custom CSS properties starting with '--' are preserved as-is.
+ * Standard properties are converted from camelCase to kebab-case.
+ *
+ * @param {string} key - The CSS property key name
+ * @returns {string} Normalized kebab-case or preserved custom property key
+ */
+export function normalizeStyleKey (key) {
+  if (typeof key !== 'string') {
+    return ''
+  }
+  if (key.startsWith('--')) {
+    return key
+  }
+  return camelToKebab(key)
+}
+
+/**
+ * Parses an inline style string (e.g. "color: red; margin: 10px;") into a Map of property-value pairs.
+ *
+ * @param {string} styleAttr - Raw inline style attribute value
+ * @returns {Map<string, string>} Parsed style map
+ */
+export function parseInlineStyle (styleAttr) {
+  const map = new Map()
+  if (!styleAttr || typeof styleAttr !== 'string') {
+    return map
+  }
+  const declarations = styleAttr.split(';')
+  for (const decl of declarations) {
+    const trimmed = decl.trim()
+    if (!trimmed) {
+      continue
+    }
+    const colonIdx = trimmed.indexOf(':')
+    if (colonIdx > 0) {
+      const propName = trimmed.slice(0, colonIdx).trim()
+      const propVal = trimmed.slice(colonIdx + 1).trim()
+      if (propName && propVal) {
+        map.set(normalizeStyleKey(propName), propVal)
+      }
+    }
+  }
+  return map
+}
+
+/**
+ * Formats a style Map into an inline style CSS string.
+ *
+ * @param {Map<string, string>} styleMap - Map of CSS property names to values
+ * @returns {string} Inline style CSS string
+ */
+export function formatInlineStyle (styleMap) {
+  if (!styleMap || styleMap.size === 0) {
+    return ''
+  }
+  const parts = []
+  for (const [key, val] of styleMap.entries()) {
+    if (val !== null && val !== undefined && val !== '') {
+      parts.push(`${key}: ${val};`)
+    }
+  }
+  return parts.join(' ')
+}
+
+/**
  * Converts all keys in an object from kebab-case to camelCase
  * @template T
  * @param {Record<string, T>} object - The object with kebab-case keys

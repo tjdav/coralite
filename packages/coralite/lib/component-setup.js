@@ -167,7 +167,7 @@ export function createComponentDefinition ({ app }) {
    * @returns {Promise<Object>}
    */
   return async (options, context) => {
-    const { attributes, server, getters, slots, client } = options
+    const { attributes, server, getters, slots, client, style } = options
     const { state: initialState, module, root } = context
 
     const normalizedAttributes = normalizeAndValidateAttributes(attributes, module.id, module.path?.pathname)
@@ -182,12 +182,31 @@ export function createComponentDefinition ({ app }) {
       }
     }
 
+    if (style !== undefined && style !== null) {
+      if (typeof style !== 'object' || Array.isArray(style)) {
+        throw new CoraliteError(`Component "${module.id}" style property must be an object. Received: ${Array.isArray(style) ? 'Array' : typeof style}`, {
+          componentId: module.id,
+          filePath: module.path?.pathname
+        })
+      }
+      for (const [sKey, sVal] of Object.entries(style)) {
+        const valType = typeof sVal
+        if (valType !== 'function' && valType !== 'string' && valType !== 'number') {
+          throw new CoraliteError(`Component "${module.id}" style property "${sKey}" must be a function, string, or number. Received: ${valType}`, {
+            componentId: module.id,
+            filePath: module.path?.pathname
+          })
+        }
+      }
+    }
+
     state.__script__ = {
       attributes: serializableAttributes,
       getters: getters || {},
       state: {},
       defaultValues: scriptDefaultValues,
-      slots: slots || {}
+      slots: slots || {},
+      style: style || {}
     }
 
     for (const [key, schema] of Object.entries(normalizedAttributes)) {
@@ -384,8 +403,9 @@ export function createComponentDefinition ({ app }) {
     const hasAttributes = attributes && Object.keys(attributes).length > 0
     const hasServer = typeof server === 'function'
     const hasStyles = module.styles && module.styles.length > 0
+    const hasComponentStyle = style && Object.keys(style).length > 0
 
-    if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles) {
+    if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle) {
       const args = {}
       for (const key in state) {
         if (!Object.hasOwn(state, key) || key === '__script__') {
@@ -429,14 +449,16 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null)
     state: {},
     slots: {},
     defaultValues: {},
-    getters: {}
+    getters: {},
+    style: {}
   }
 
   const scriptObj = {
     ...scriptMeta,
     content: 'function(){}',
     state: scriptMeta.state || {},
-    slots: scriptMeta.slots || {}
+    slots: scriptMeta.slots || {},
+    style: scriptMeta.style || {}
   }
 
   let defaultValues = scriptMeta.defaultValues || {}
@@ -474,6 +496,17 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null)
           // but we can at least pass the content through if it's an object expression.
           if (extractedGetters.content.trim().startsWith('{')) {
             scriptObj.getters = new Function(`return ${extractedGetters.content}`)()
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const extractedStyle = extractComponentProperty(component.script, 'style')
+      if (extractedStyle) {
+        try {
+          if (extractedStyle.content.trim().startsWith('{')) {
+            scriptObj.style = new Function(`return ${extractedStyle.content}`)()
           }
         } catch {
           /* ignore */
@@ -528,6 +561,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null)
     defaultValues,
     styles: stylesHTML,
     slots: scriptMeta.slots,
+    style: scriptMeta.style,
     override: true
   })
 }

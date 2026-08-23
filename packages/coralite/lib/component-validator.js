@@ -522,6 +522,18 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 }
               }
 
+              // Style block
+              if (keyName === 'style' && prop.value.type === 'ObjectExpression') {
+                for (const styleProp of prop.value.properties) {
+                  if (
+                    styleProp.type === 'Property' &&
+                    (styleProp.value.type === 'FunctionExpression' || styleProp.value.type === 'ArrowFunctionExpression')
+                  ) {
+                    analyzeFunctionBlock(styleProp.value, stateReads, refsCalls, true, false, 0)
+                  }
+                }
+              }
+
               // Client block AST
               if (
                 keyName === 'client' &&

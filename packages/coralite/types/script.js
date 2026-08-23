@@ -17,6 +17,7 @@
  * @property {Object.<string, CoraliteModuleSlotFunction>} [slots] - Computed slots.
  * @property {CoraliteAttributesDefinition} [attributes] - Attribute schema.
  * @property {Object} [getters] - Isomorphic getters.
+ * @property {Object.<string, ((state: any) => string | number | null | undefined | false) | string | number>} [style] - Reactive style definitions and CSS custom properties.
  * @property {Object} [server] - Hydrated server data.
  */
 
