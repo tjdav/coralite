@@ -690,7 +690,7 @@ export default {
             if (path.startsWith(cssNamespace)) {
               const componentId = path.replace(cssNamespace, '')
               const sharedFn = this.sharedFunctions[componentId]
-              const contents = `@layer components {\n  :where(${componentId}) {\n${sharedFn.styles}\n  }\n}`
+              const contents = `@layer components {\n${sharedFn.styles}\n}`
               return {
                 contents,
                 loader: 'css',

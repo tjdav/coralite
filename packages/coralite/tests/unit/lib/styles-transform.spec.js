@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { transformCss } from '../../../lib/utils/server/style.js'
+import { transformCss, formatComponentCss } from '../../../lib/utils/server/style.js'
 import { parseModule } from '../../../lib/utils/server/parse.js'
 import { injectStyles } from '../../../lib/utils/server/render.js'
 import { createCoraliteElement, createCoraliteComponent } from '../../../lib/utils/server/dom.js'
@@ -31,7 +31,7 @@ test('Style Transformation Logic', async (t) => {
     assert.ok(!descendantClasses.has('root-class'))
   })
 
-  await t.test('transformCss unwraps top-level pure :host rules and preserves descendant element classes', async () => {
+  await t.test('transformCss unwraps top-level pure :host rules and preserves descendant element classes in nesting mode', async () => {
     const css = `
       :host { display: flex; justify-content: center; }
       .root-class { color: red; }
@@ -39,7 +39,7 @@ test('Style Transformation Logic', async (t) => {
       .card-body { padding: 1rem; }
     `
 
-    const result = await transformCss(css)
+    const result = await transformCss(css, null, { mode: 'nesting' })
 
     // Expected transformations:
     // Top-level :host is unwrapped directly into declarations
@@ -54,6 +54,24 @@ test('Style Transformation Logic', async (t) => {
     assert.match(result, /\.card-body\s*\{\s*padding:\s*1rem;?\s*\}/)
     assert.doesNotMatch(result, /&.root-class/)
     assert.doesNotMatch(result, /&.card-body/)
+  })
+
+  await t.test('transformCss converts :host to :scope in scope mode', async () => {
+    const css = `
+      :host { display: flex; justify-content: center; }
+      :host(.active) { color: blue; }
+      :host([disabled]) { opacity: 0.5; }
+      :host:hover { opacity: 0.8; }
+      .card-body { padding: 1rem; }
+    `
+
+    const result = await transformCss(css, null, { mode: 'scope' })
+
+    assert.match(result, /:scope\s*\{\s*display:\s*flex;\s*justify-content:\s*center;?\s*\}/)
+    assert.match(result, /:scope\.active\s*\{\s*color:\s*blue;?\s*\}/)
+    assert.match(result, /:scope\[disabled\]\s*\{\s*opacity:\s*0\.5;?\s*\}/)
+    assert.match(result, /:scope:hover\s*\{\s*opacity:\s*0\.8;?\s*\}/)
+    assert.match(result, /\.card-body\s*\{\s*padding:\s*1rem;?\s*\}/)
   })
 
   await t.test('transformCss transforms :host and :host-context pseudo-class selectors correctly', async () => {
@@ -99,12 +117,16 @@ test('Style Transformation Logic', async (t) => {
       .container ::slotted(span) { font-weight: bold; }
     `
 
-    const result = await transformCss(css)
+    const nestingResult = await transformCss(css, null, { mode: 'nesting' })
+    assert.match(nestingResult, /&\s*>\s*slot\s*>\s*img,\s*&\s*>\s*img\[slot\]\s*\{\s*border-radius:\s*4px;?\s*\}/)
+    assert.match(nestingResult, /&\s*>\s*slot\s*>\s*img\.avatar,\s*&\s*>\s*img\.avatar\[slot\]\s*\{\s*border:\s*2px solid blue;?\s*\}/)
+    assert.match(nestingResult, /&\.active\s*>\s*slot\s*>\s*a,\s*&\.active\s*>\s*a\[slot\]\s*\{\s*color:\s*red;?\s*\}/)
+    assert.match(nestingResult, /\.container\s*>\s*slot\s*>\s*span,\s*\.container\s*>\s*span\[slot\]\s*\{\s*font-weight:\s*bold;?\s*\}/)
 
-    assert.match(result, /&\s*>\s*slot\s*>\s*img,\s*&\s*>\s*img\[slot\]\s*\{\s*border-radius:\s*4px;?\s*\}/)
-    assert.match(result, /&\s*>\s*slot\s*>\s*img\.avatar,\s*&\s*>\s*img\.avatar\[slot\]\s*\{\s*border:\s*2px solid blue;?\s*\}/)
-    assert.match(result, /&\.active\s*>\s*slot\s*>\s*a,\s*&\.active\s*>\s*a\[slot\]\s*\{\s*color:\s*red;?\s*\}/)
-    assert.match(result, /\.container\s*>\s*slot\s*>\s*span,\s*\.container\s*>\s*span\[slot\]\s*\{\s*font-weight:\s*bold;?\s*\}/)
+    const scopeResult = await transformCss(css, null, { mode: 'scope' })
+    assert.match(scopeResult, /:scope\s*>\s*slot\s*>\s*img,\s*:scope\s*>\s*img\[slot\]\s*\{\s*border-radius:\s*4px;?\s*\}/)
+    assert.match(scopeResult, /:scope\s*>\s*slot\s*>\s*img\.avatar,\s*:scope\s*>\s*img\.avatar\[slot\]\s*\{\s*border:\s*2px solid blue;?\s*\}/)
+    assert.match(scopeResult, /:scope\.active\s*>\s*slot\s*>\s*a,\s*:scope\.active\s*>\s*a\[slot\]\s*\{\s*color:\s*red;?\s*\}/)
   })
 
   await t.test('transformCss unwraps and hoists :global(selector) rules', async () => {
@@ -160,11 +182,37 @@ test('Style Transformation Logic', async (t) => {
     assert.match(result, /@-webkit-keyframes\s+slide\s*\{\s*from\s*\{\s*transform:\s*translateX\(0\);?\s*\}\s*to\s*\{\s*transform:\s*translateX\(100%\);?\s*\}\s*\}/)
   })
 
-  await t.test('injectStyles wraps component CSS in @layer components and :where(), preserving c-token', async () => {
+  await t.test('formatComponentCss generates @supports (@scope) donut boundary and @supports not (@scope) fallback', async () => {
+    const componentId = 'my-card'
+    const css = `
+      :host { display: block; border: 1px solid #ccc; }
+      .title { color: primary; }
+      ::slotted(p) { font-size: 1rem; }
+    `
+
+    const result = await formatComponentCss(componentId, css)
+
+    // Verify @supports (@scope) structure with donut boundary
+    assert.match(result, /@supports\s+\(@scope\)\s*\{/)
+    assert.match(result, /@scope\s*\(:where\(my-card\)\)\s*to\s*\(slot,\s*\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)\s*\{/)
+    assert.match(result, /:scope\s*\{\s*display:\s*block;\s*border:\s*1px solid #ccc;?\s*\}/)
+    assert.match(result, /\.title\s*\{\s*color:\s*primary;?\s*\}/)
+    assert.match(result, /:scope\s*>\s*slot\s*>\s*p,\s*:scope\s*>\s*p\[slot\]\s*\{\s*font-size:\s*1rem;?\s*\}/)
+
+    // Verify @supports not (@scope) fallback structure
+    assert.match(result, /@supports not\s+\(@scope\)\s*\{/)
+    assert.match(result, /:where\(my-card\)\s*\{/)
+    assert.match(result, /display:\s*block;\s*border:\s*1px solid #ccc;?/)
+    assert.match(result, /&\s*>\s*slot\s*>\s*p,\s*&\s*>\s*p\[slot\]\s*\{\s*font-size:\s*1rem;?\s*\}/)
+  })
+
+  await t.test('injectStyles wraps component CSS in @layer components, preserving c-token', async () => {
     const head = createCoraliteElement({ name: 'head', children: [] })
     const root = createCoraliteComponent({ children: [head] })
+
+    const formattedCss = await formatComponentCss('my-comp', '.btn { color: red; }')
     const stylesMap = new Map([
-      ['my-comp', '.btn { color: red; }']
+      ['my-comp', formattedCss]
     ])
 
     const { content } = injectStyles(root, head, stylesMap)
@@ -172,11 +220,9 @@ test('Style Transformation Logic', async (t) => {
     // Verify c-token is preserved at top
     assert.ok(content.startsWith('c-token { display: contents; }\n'))
 
-    // Verify @layer components and :where(my-comp) wrapping
-    assert.match(content, /@layer components \{\s*:where\(my-comp\)\s*\{\s*\.btn\s*\{\s*color:\s*red;?\s*\}\s*\}\s*\}/)
-
-    // Verify specificity structure: :where(my-comp) adds 0 specificity to my-comp, so .btn retains its standalone specificity of (0, 1, 0)
-    assert.match(content, /:where\(my-comp\)/)
-    assert.match(content, /\.btn/)
+    // Verify @layer components wrapping
+    assert.match(content, /@layer components \{\s*@supports\s+\(@scope\)\s*\{/)
+    assert.match(content, /@scope\s*\(:where\(my-comp\)\)\s*to\s*\(slot,\s*\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)/)
+    assert.match(content, /@supports not\s+\(@scope\)\s*\{\s*:where\(my-comp\)/)
   })
 })

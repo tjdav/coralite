@@ -172,8 +172,8 @@ export function injectStyles (root, head, styles, options = {}) {
   }
 
   let cssContent = 'c-token { display: contents; }\n'
-  for (const [selector, css] of styles) {
-    cssContent += `@layer components {\n  :where(${selector}) {\n${css}\n  }\n}\n`
+  for (const [, css] of styles) {
+    cssContent += `@layer components {\n${css}\n}\n`
   }
 
   const attribs = { id: 'coralite-inline-styles' }

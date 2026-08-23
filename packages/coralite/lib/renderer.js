@@ -42,7 +42,7 @@ import {
 import picomatch from 'picomatch'
 import { stat } from 'node:fs/promises'
 import { generateClientRuntime } from './utils/client/runtime.js'
-import { transformCss } from './utils/server/style.js'
+import { formatComponentCss } from './utils/server/style.js'
 import { transformNode } from './parser.js'
 import { CoraliteError } from './utils/errors.js'
 import { RESERVED_DOM_ATTRIBUTES } from './coralite-element.js'
@@ -366,7 +366,7 @@ export function createRenderer ({
 
       if (module.styles?.length && !moduleComponent.result._processedCss) {
         const rawCss = module.styles.join('\n')
-        moduleComponent.result._processedCss = await transformCss(rawCss, handleError)
+        moduleComponent.result._processedCss = await formatComponentCss(module.id, rawCss, handleError)
       }
       const stylesHTML = moduleComponent.result._processedCss || ''
 
@@ -513,7 +513,7 @@ export function createRenderer ({
       const selector = module.id
       if (!moduleComponent.result._processedCss) {
         const rawCss = module.styles.join('\n')
-        moduleComponent.result._processedCss = await transformCss(rawCss, handleError)
+        moduleComponent.result._processedCss = await formatComponentCss(module.id, rawCss, handleError)
       }
       if (!session.styles.has(selector)) {
         session.styles.set(selector, moduleComponent.result._processedCss)
@@ -1530,8 +1530,8 @@ export function createRenderer ({
           if (componentsToInclude.size > 0 || mappedSessionObject.styles.size > 0) {
             let combinedCss = 'c-token { display: contents; }\n'
             if (mappedSessionObject.styles.size > 0) {
-              for (const [selector, css] of mappedSessionObject.styles) {
-                combinedCss += `@layer components {\n  :where(${selector}) {\n${css}\n  }\n}\n`
+              for (const [, css] of mappedSessionObject.styles) {
+                combinedCss += `@layer components {\n${css}\n}\n`
               }
             }
             const cssHashVal = hash(combinedCss)

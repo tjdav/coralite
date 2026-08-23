@@ -7,7 +7,7 @@ import {
   isCoraliteComment
 } from './utils/types.js'
 import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
-import { transformCss } from './utils/server/style.js'
+import { formatComponentCss } from './utils/server/style.js'
 import { inferTypeFromValues, validateAttributeValue } from './coralite-element.js'
 
 /**
@@ -440,7 +440,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null)
 
   if (component.styles?.length && !component._processedCss) {
     const rawCss = component.styles.join('\n')
-    component._processedCss = await transformCss(rawCss, (err) => console.error(err))
+    component._processedCss = await formatComponentCss(component.id, rawCss, (err) => console.error(err))
   }
 
   const stylesHTML = component._processedCss || ''

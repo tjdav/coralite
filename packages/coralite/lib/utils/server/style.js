@@ -6,21 +6,28 @@ import selectorParser from 'postcss-selector-parser'
  */
 
 /**
+ * Options for CSS transformation
+ * @typedef {Object} TransformCssOptions
+ * @property {'nesting' | 'scope'} [mode='nesting'] - Transformation mode
+ */
+
+/**
  * Transforms component CSS:
- * - Unwraps top-level pure :host rules so declarations apply directly to the custom element root container.
- * - Converts parameterized :host(...) and pseudo-states to CSS nesting (&.class, &:hover, etc.).
- * - Converts :host-context(...) to ancestor context selectors (<context> &).
- * - Converts ::slotted(selector) to slot projections (& > slot > selector, & > selector[slot]).
+ * - In 'nesting' mode: Unwraps top-level pure :host rules into declarations; converts parameterized :host(...) to &.class; converts ::slotted(selector) to (& > slot > selector, & > selector[slot]).
+ * - In 'scope' mode: Converts top-level pure :host rules to :scope; converts parameterized :host(...) to :scope.class; converts ::slotted(selector) to (:scope > slot > selector, :scope > selector[slot]).
+ * - Converts :host-context(...) to ancestor context selectors (<context> & or <context> :scope).
  * - Converts :global(selector) by unwrapping inner selectors and hoisting nested rules out of scoped selectors.
  * - Preserves @container queries, scoping their child selectors appropriately.
  * - Preserves @keyframes definitions intact without selector prefixing or mangling.
- * - Leaves standard element and class selectors intact so they scope as descendants inside the custom element.
+ * - Leaves standard element and class selectors intact.
  *
  * @param {string} css - The raw CSS content from the component <style> block
  * @param {CoraliteOnError} [onError] - Error handler callback
+ * @param {TransformCssOptions} [options={}] - Options object
  * @returns {Promise<string>} Transformed CSS
  */
-export async function transformCss (css, onError) {
+export async function transformCss (css, onError, options = {}) {
+  const mode = options.mode || 'nesting'
   const processor = postcss([
     {
       postcssPlugin: 'coralite-style-transform',
@@ -35,10 +42,14 @@ export async function transformCss (css, onError) {
           return
         }
 
-        // Unwrap top-level pure :host rules so declarations sit directly on the component root rule
+        // Unwrap or convert top-level pure :host rules
         if (rule.parent.type === 'root' && rule.selector.trim() === ':host') {
-          rule.replaceWith(...rule.nodes)
-          return
+          if (mode === 'scope') {
+            rule.selector = ':scope'
+          } else {
+            rule.replaceWith(...rule.nodes)
+            return
+          }
         }
 
         const transformSelector = selectorParser((root) => {
@@ -66,7 +77,9 @@ export async function transformCss (css, onError) {
             const hostNode = selector.nodes.find(n => n.type === 'pseudo' && n.value === ':host')
 
             if (hostContextNode || hostNode) {
-              const nesting = selectorParser.nesting()
+              const hostReplacement = mode === 'scope'
+                ? selectorParser.pseudo({ value: ':scope' })
+                : selectorParser.nesting()
 
               if (hostContextNode) {
                 const space = selectorParser.combinator({ value: ' ' })
@@ -83,9 +96,9 @@ export async function transformCss (css, onError) {
                 }
 
                 if (hostNode) {
-                  hostNode.replaceWith(nesting)
+                  hostNode.replaceWith(hostReplacement)
                   if (hostNode.nodes && hostNode.nodes.length > 0) {
-                    let lastInserted = nesting
+                    let lastInserted = hostReplacement
                     for (const innerSel of hostNode.nodes) {
                       for (const child of innerSel.nodes) {
                         selector.insertAfter(lastInserted, child.clone())
@@ -95,12 +108,12 @@ export async function transformCss (css, onError) {
                   }
                   hostContextNode.remove()
                 } else {
-                  hostContextNode.replaceWith(nesting)
+                  hostContextNode.replaceWith(hostReplacement)
                 }
               } else if (hostNode) {
-                hostNode.replaceWith(nesting)
+                hostNode.replaceWith(hostReplacement)
                 if (hostNode.nodes && hostNode.nodes.length > 0) {
-                  let lastInserted = nesting
+                  let lastInserted = hostReplacement
                   for (const innerSel of hostNode.nodes) {
                     for (const child of innerSel.nodes) {
                       selector.insertAfter(lastInserted, child.clone())
@@ -122,7 +135,10 @@ export async function transformCss (css, onError) {
               }
 
               if (prefixNodes.length === 0) {
-                prefixNodes = [selectorParser.nesting()]
+                const defaultReplacement = mode === 'scope'
+                  ? selectorParser.pseudo({ value: ':scope' })
+                  : selectorParser.nesting()
+                prefixNodes = [defaultReplacement]
               }
 
               const innerSel = slottedPseudo.nodes ? slottedPseudo.nodes[0] : null
@@ -222,4 +238,35 @@ export async function transformCss (css, onError) {
 
   const result = await processor.process(css, { from: undefined })
   return result.css
+}
+
+/**
+ * Formats raw component CSS into @supports (@scope) and @supports not (@scope) blocks.
+ *
+ * @param {string} componentId - The custom element tag name / component ID
+ * @param {string} rawCss - Raw component CSS content
+ * @param {CoraliteOnError} [onError] - Error handler callback
+ * @returns {Promise<string>} Formatted CSS blocks
+ */
+export async function formatComponentCss (componentId, rawCss, onError) {
+  if (!rawCss || !rawCss.trim()) {
+    return ''
+  }
+
+  const scopeCss = await transformCss(rawCss, onError, { mode: 'scope' })
+  const fallbackCss = await transformCss(rawCss, onError, { mode: 'nesting' })
+
+  const indent = (str) => str.split('\n').map(line => (line ? `      ${line}` : '')).join('\n')
+
+  return `  @supports (@scope) {
+    @scope (:where(${componentId})) to (slot, [data-cid], :is([is], c-token)) {
+${indent(scopeCss)}
+    }
+  }
+
+  @supports not (@scope) {
+    :where(${componentId}) {
+${indent(fallbackCss)}
+    }
+  }`
 }
