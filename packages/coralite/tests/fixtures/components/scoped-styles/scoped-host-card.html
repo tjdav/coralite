@@ -1,0 +1,44 @@
+<template id="scoped-host-card">
+  <div class="card-inner">
+    <h2 class="card-title">Host Card Title</h2>
+    <span class="card-badge">Badge</span>
+  </div>
+</template>
+
+<style>
+  :host {
+    display: block;
+    border: 2px solid rgb(200, 200, 200);
+    padding: 16px;
+    background-color: rgb(250, 250, 250);
+  }
+
+  :host(.active) {
+    border-color: rgb(0, 100, 255);
+    background-color: rgb(240, 248, 255);
+  }
+
+  :host([disabled]) {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  :host > .card-inner {
+    border-radius: 4px;
+  }
+
+  .card-title {
+    color: rgb(30, 30, 30);
+    font-size: 18px;
+  }
+
+  .card-badge {
+    color: rgb(0, 150, 0);
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({})
+</script>

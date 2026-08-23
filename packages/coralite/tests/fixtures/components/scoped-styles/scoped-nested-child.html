@@ -1,0 +1,23 @@
+<template id="scoped-nested-child">
+  <div class="child-box">
+    <h4 class="item-title">Child Item</h4>
+  </div>
+</template>
+
+<style>
+  :host {
+    display: block;
+    padding: 5px;
+  }
+
+  .item-title {
+    color: rgb(0, 0, 255);
+    font-weight: 400;
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({})
+</script>

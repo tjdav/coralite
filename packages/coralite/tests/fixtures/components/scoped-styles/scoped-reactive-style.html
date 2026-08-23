@@ -1,0 +1,34 @@
+<template id="scoped-reactive-style">
+  <div class="reactive-box">
+    <button class="toggle-btn" ref="toggleBtn">Toggle Theme</button>
+    <span class="reactive-text">Dynamic Styling</span>
+  </div>
+</template>
+
+<style>
+  :host {
+    display: block;
+    background-color: var(--dynamic-bg, rgb(240, 240, 240));
+    color: var(--dynamic-color, rgb(50, 50, 50));
+    padding: 10px;
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    state: {
+      isHighlighted: false
+    },
+    style: {
+      '--dynamic-bg': (state) => state.isHighlighted ? 'rgb(255, 230, 150)' : 'rgb(240, 240, 240)',
+      '--dynamic-color': (state) => state.isHighlighted ? 'rgb(180, 50, 0)' : 'rgb(50, 50, 50)'
+    },
+    client ({ state, refs }) {
+      refs('toggleBtn').addEventListener('click', () => {
+        state.isHighlighted = !state.isHighlighted
+      })
+    }
+  })
+</script>

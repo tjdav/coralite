@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scoped Styles E2E Test Harness</title>
+</head>
+<body>
+  <h1 class="global-heading">Scoped Styles Test Page</h1>
+
+  <!-- Global control element to verify zero class leakage -->
+  <h2 class="card-title global-card-title">Global Card Title</h2>
+
+  <section id="host-styling-section">
+    <scoped-host-card id="host-default"></scoped-host-card>
+    <scoped-host-card id="host-active" class="active"></scoped-host-card>
+    <scoped-host-card id="host-disabled" disabled></scoped-host-card>
+  </section>
+
+  <section id="context-styling-section">
+    <div id="light-container">
+      <scoped-theme-context id="context-default"></scoped-theme-context>
+    </div>
+
+    <div class="dark-theme" id="dark-container">
+      <scoped-theme-context id="context-dark"></scoped-theme-context>
+      <scoped-theme-context id="context-dark-active" class="active"></scoped-theme-context>
+    </div>
+
+    <div dir="rtl" id="rtl-container">
+      <scoped-theme-context id="context-rtl"></scoped-theme-context>
+    </div>
+  </section>
+
+  <section id="isolation-section">
+    <scoped-nested-parent id="nested-parent"></scoped-nested-parent>
+  </section>
+
+  <section id="reactivity-section">
+    <scoped-reactive-style id="reactive-comp"></scoped-reactive-style>
+  </section>
+
+  <section id="imperative-section">
+    <div id="imperative-mount"></div>
+    <button id="mount-imperative-btn">Mount Imperative Component</button>
+  </section>
+
+  <script type="module">
+    document.getElementById('mount-imperative-btn').addEventListener('click', () => {
+      const card = document.createElement('scoped-host-card')
+      card.id = 'imperative-card'
+      card.classList.add('active')
+      document.getElementById('imperative-mount').appendChild(card)
+    })
+  </script>
+</body>
+</html>

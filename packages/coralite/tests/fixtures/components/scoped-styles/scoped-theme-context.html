@@ -1,0 +1,33 @@
+<template id="scoped-theme-context">
+  <div class="theme-content">
+    <p class="theme-text">Contextual Text</p>
+  </div>
+</template>
+
+<style>
+  :host {
+    display: block;
+    color: rgb(0, 0, 0);
+    background-color: rgb(255, 255, 255);
+    text-align: left;
+  }
+
+  :host-context(.dark-theme) {
+    color: rgb(255, 255, 255);
+    background-color: rgb(20, 20, 20);
+  }
+
+  :host-context([dir="rtl"]) {
+    text-align: right;
+  }
+
+  :host-context(.dark-theme):host(.active) {
+    border: 2px solid rgb(255, 215, 0);
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({})
+</script>
