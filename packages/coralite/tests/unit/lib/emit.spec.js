@@ -298,8 +298,8 @@ describe('emit Helper in Client Context', () => {
       validateComponentSource(sourceCode, 'test-component.html')
 
       assert.strictEqual(warnings.length, 2)
-      assert.ok(warnings[0].includes('Component attribute "emit" in "test-component.html" collides with a reserved slot context property (emit).'))
-      assert.ok(warnings[1].includes('Component server property "emit" in "test-component.html" collides with a reserved slot context property (emit).'))
+      assert.ok(warnings[0].includes('Component attribute "emit" in "test-component.html" collides with a reserved context property (emit).'))
+      assert.ok(warnings[1].includes('Component server property "emit" in "test-component.html" collides with a reserved context property (emit).'))
     } finally {
       console.warn = originalWarn
     }

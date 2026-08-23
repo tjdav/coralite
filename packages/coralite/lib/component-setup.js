@@ -108,6 +108,12 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
     }
 
     if (schemaObj.required) {
+      if (schemaObj.default !== undefined) {
+        throw new CoraliteError(`Component "${componentId}" attribute "${key}" cannot have both required: true and a default value.`, {
+          componentId,
+          filePath
+        })
+      }
       normalizedSchema.required = true
     }
     if (uniqueValues) {
@@ -185,10 +191,11 @@ export function createComponentDefinition ({ app }) {
     }
 
     for (const [key, schema] of Object.entries(normalizedAttributes)) {
-      if (state[key] !== undefined) {
-        state[key] = validateAttributeValue(state[key], schema, key, module.id, { filePath: module.path?.pathname })
-      } else if (schema.default !== undefined) {
-        state[key] = schema.default
+      const val = validateAttributeValue(state[key], schema, key, module.id, { filePath: module.path?.pathname })
+      if (val !== undefined) {
+        state[key] = val
+      } else {
+        delete state[key]
       }
     }
 
@@ -571,8 +578,7 @@ export async function registerBaseComponent ({
 
     await _safeRegister(component, scriptManager, scriptResult?.__script__)
   } catch (_err) {
-    // Base evaluation is allowed to fail silently, but we should at least register the component
-    // without the script results if it fails, so styles and template are still available.
+    console.warn(`[Coralite Warning]: Base evaluation for component "${component.id}" failed: ${_err.message}. Registering static fallback definition.`)
     await _safeRegister(component, scriptManager)
   }
 }

@@ -41,6 +41,7 @@ import { generateClientRuntime } from './utils/client/runtime.js'
 import { transformCss } from './utils/server/style.js'
 import { transformNode } from './parser.js'
 import { CoraliteError } from './utils/errors.js'
+import { RESERVED_DOM_ATTRIBUTES } from './coralite-element.js'
 import { checkFileChange, hash } from './utils/server/manifest.js'
 import {
   isCoraliteElement,
@@ -81,6 +82,43 @@ import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from '.
  * @param {any} dependencies.options - The normalized configuration options for the framework.
  * @param {Function} dependencies.createExecutionError - The factory function for creating detailed execution errors.
  * @returns {Object}
+ */
+/**
+ * Filters out reserved DOM attributes unless explicitly declared in the component's attributes schema.
+ *
+ * @param {Object} attribs - Raw element attributes object.
+ * @param {Object} [declaredAttributes={}] - Component attributes schema object.
+ * @returns {Object} Filtered attributes object.
+ */
+function filterReservedAttributes (attribs, declaredAttributes = {}) {
+  if (!attribs || typeof attribs !== 'object') {
+    return {}
+  }
+  const result = {}
+  for (const [key, value] of Object.entries(attribs)) {
+    const lowerKey = key.toLowerCase()
+    const camelKey = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+    const isDeclared = Boolean(declaredAttributes && (declaredAttributes[camelKey] || declaredAttributes[key] || declaredAttributes[lowerKey]))
+    if (!RESERVED_DOM_ATTRIBUTES.has(lowerKey) || isDeclared) {
+      result[key] = value
+    }
+  }
+  return result
+}
+
+/**
+ * Factory for creating the renderer pipeline instance.
+ *
+ * @param {Object} dependencies - The renderer factory dependencies.
+ * @param {CoraliteInstance} dependencies.app - Global app instance.
+ * @param {ScriptManager} dependencies.scriptManager - Script manager instance.
+ * @param {Object} dependencies.source - Source utilities.
+ * @param {Function} dependencies.evaluate - Evaluation function.
+ * @param {CoraliteOnError} dependencies.handleError - Error handler callback.
+ * @param {Object} dependencies.hooks - Bound plugin hooks.
+ * @param {any} dependencies.options - Normalized options.
+ * @param {Function} dependencies.createExecutionError - Execution error factory.
+ * @returns {Object} Renderer pipeline instance.
  */
 export function createRenderer ({
   app,
@@ -205,7 +243,8 @@ export function createRenderer ({
             if (slotComponentItem) {
               const slotContextId = session.generateId(node.name)
               const currentProperties = session.state[slotContextId] || {}
-              const attribValues = cleanKeys(node.attribs)
+              const declaredAttrs = slotComponentItem.result?.script?.attributes || slotComponentItem.result?.attributes || {}
+              const attribValues = filterReservedAttributes(cleanKeys(node.attribs), declaredAttrs)
               session.state[slotContextId] = typeof node.attribs === 'object'
                 ? {
                   ...currentProperties,
@@ -428,8 +467,9 @@ export function createRenderer ({
     if (head) {
       // @ts-ignore
       if (element && element.attribs) {
+        const declaredAttrs = moduleComponent.result?.script?.attributes || moduleComponent.result?.attributes || {}
         // @ts-ignore
-        componentState = Object.assign(componentState, element.attribs)
+        componentState = Object.assign(componentState, filterReservedAttributes(element.attribs, declaredAttrs))
       }
       componentState = cleanKeys(componentState)
     }
@@ -693,7 +733,12 @@ export function createRenderer ({
 
       let childState = { ...state }
       if (typeof customElement.attribs === 'object') {
-        const attribValues = cleanKeys(customElement.attribs)
+        const childModuleComponent = app.components.getItem(customElement.name)
+        let declaredAttrs = {}
+        if (childModuleComponent && childModuleComponent.result) {
+          declaredAttrs = childModuleComponent.result.script?.attributes || childModuleComponent.result.attributes || {}
+        }
+        const attribValues = filterReservedAttributes(cleanKeys(customElement.attribs), declaredAttrs)
         childState = {
           ...childState,
           ...currentProperties,
@@ -841,12 +886,18 @@ export function createRenderer ({
 
       const contextId = mappedSessionObject.generateId(customElement.name)
       const currentProperties = mappedSessionObject.state[contextId] || {}
+      const childModuleComponent = app.components.getItem(customElement.name)
+      let declaredAttrs = {}
+      if (childModuleComponent && childModuleComponent.result) {
+        declaredAttrs = childModuleComponent.result.script?.attributes || childModuleComponent.result.attributes || {}
+      }
+      const attribValues = typeof customElement.attribs === 'object' ? filterReservedAttributes(customElement.attribs, declaredAttrs) : {}
       mappedSessionObject.state[contextId] = typeof customElement.attribs === 'object'
         ? {
           ...currentProperties,
           ...state,
           ...mappedComponent.state,
-          ...customElement.attribs
+          ...attribValues
         }
         : {
           ...currentProperties,

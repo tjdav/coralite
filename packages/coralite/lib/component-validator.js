@@ -206,7 +206,6 @@ export function validateComponentSource (sourceCode, filePath = '') {
   const getterStateDependencies = new Set()
 
   const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'instanceId', 'emit'])
-  let hasSlotsDefined = false
 
   if (scriptContent) {
     try {
@@ -513,9 +512,6 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
               // Slots block
               if (keyName === 'slots' && prop.value.type === 'ObjectExpression') {
-                if (prop.value.properties.length > 0) {
-                  hasSlotsDefined = true
-                }
                 for (const slotProp of prop.value.properties) {
                   if (
                     slotProp.type === 'Property' &&
@@ -809,17 +805,15 @@ export function validateComponentSource (sourceCode, filePath = '') {
     }
   }
 
-  // Reserved context key collision warning
-  if (hasSlotsDefined) {
-    for (const attr of definedAttributes) {
-      if (RESERVED_CONTEXT_KEYS.has(attr)) {
-        console.warn(`[Coralite Warning]: Component attribute "${attr}" in "${filePath}" collides with a reserved slot context property (${attr}).`)
-      }
+  // Reserved context key collision warning (un-gated across all components)
+  for (const attr of definedAttributes) {
+    if (RESERVED_CONTEXT_KEYS.has(attr)) {
+      console.warn(`[Coralite Warning]: Component attribute "${attr}" in "${filePath}" collides with a reserved context property (${attr}).`)
     }
-    for (const serverProp of definedServerProps) {
-      if (RESERVED_CONTEXT_KEYS.has(serverProp)) {
-        console.warn(`[Coralite Warning]: Component server property "${serverProp}" in "${filePath}" collides with a reserved slot context property (${serverProp}).`)
-      }
+  }
+  for (const serverProp of definedServerProps) {
+    if (RESERVED_CONTEXT_KEYS.has(serverProp)) {
+      console.warn(`[Coralite Warning]: Component server property "${serverProp}" in "${filePath}" collides with a reserved context property (${serverProp}).`)
     }
   }
 

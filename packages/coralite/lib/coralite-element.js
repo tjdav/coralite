@@ -43,6 +43,23 @@ const BOOLEAN_ATTRIBUTES = new Set([
 ])
 
 /**
+ * Reserved DOM attributes used internally by Coralite or standard HTML semantics.
+ * Filtered out during state initialization unless explicitly declared in component attributes.
+ */
+export const RESERVED_DOM_ATTRIBUTES = new Set([
+  'data-cid',
+  'data-coralite-owner',
+  'data-coralite-initial',
+  'data-coralite-slot-index',
+  'data-coralite-page',
+  'data-style-selector',
+  'slot',
+  'ref',
+  'data-testid',
+  'no-hydration'
+])
+
+/**
  * Infers the primitive constructor or type name from an array of allowed values.
  * @param {Array<any>} valuesArray - Array of allowed primitive values.
  * @returns {Function} String, Number, or Boolean constructor.
@@ -165,8 +182,8 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     }
   }
 
-  // Step 2: coerce
-  if (schemaObj.type && (!schemaObj.values || schemaObj.values.length === 0)) {
+  // Step 2: coerce (always runs before transform)
+  if (schemaObj.type) {
     val = coerce(val, schemaObj.type)
   }
 
@@ -250,14 +267,14 @@ export function coerce (value, type) {
     return value
   }
 
-  if (typeof value === 'string' && value.includes('{{') && value.includes('}}')) {
-    return null
-  }
-
   let targetType = type
   if (Array.isArray(type) || (type && typeof type === 'object' && Array.isArray(type.values))) {
     const valuesArray = Array.isArray(type) ? type : type.values
     targetType = type.type || inferTypeFromValues(valuesArray)
+  }
+
+  if (targetType !== String && targetType !== 'String' && typeof value === 'string' && value.includes('{{') && value.includes('}}')) {
+    return null
   }
 
   if (targetType === Number || targetType === 'Number') {
@@ -726,12 +743,20 @@ export class CoraliteElement extends BaseElement {
 
     let value
     if (newVal === null) {
-      value = schema?.default !== undefined ? schema.default : undefined
+      if (schema) {
+        value = validateAttributeValue(undefined, schema, camelName, this.componentOptions?.componentId, { instanceId: this._instanceId })
+      } else {
+        value = undefined
+      }
     } else {
       value = schema ? validateAttributeValue(newVal, schema, camelName, this.componentOptions?.componentId, { instanceId: this._instanceId }) : newVal
     }
 
-    this._state[camelName] = value
+    if (value === undefined) {
+      delete this._state[camelName]
+    } else {
+      this._state[camelName] = value
+    }
   }
 
   /**
@@ -788,14 +813,19 @@ export class CoraliteElement extends BaseElement {
 
     // Process initial attributes mapping
     for (const attr of this.attributes) {
-      if (attr.name === 'data-cid') {
+      const lowerName = attr.name.toLowerCase()
+      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const schema = options.attributes?.[camelName] || options.attributes?.[attr.name] || options.attributes?.[lowerName]
+
+      if (RESERVED_DOM_ATTRIBUTES.has(lowerName) && !schema) {
         continue
       }
-      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-      const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
 
       if (schema) {
-        target[camelName] = validateAttributeValue(attr.value, schema, camelName, options.componentId, { instanceId: this._instanceId })
+        const val = validateAttributeValue(attr.value, schema, camelName, options.componentId, { instanceId: this._instanceId })
+        if (val !== undefined) {
+          target[camelName] = val
+        }
       } else {
         target[camelName] = attr.value
       }
@@ -803,9 +833,11 @@ export class CoraliteElement extends BaseElement {
 
     if (options.attributes) {
       for (const [key, schema] of Object.entries(options.attributes)) {
-        const defaultValue = Array.isArray(schema) ? undefined : schema?.default
-        if (target[key] === undefined && defaultValue !== undefined) {
-          target[key] = defaultValue
+        if (target[key] === undefined) {
+          const val = validateAttributeValue(undefined, schema, key, options.componentId, { instanceId: this._instanceId })
+          if (val !== undefined) {
+            target[key] = val
+          }
         }
       }
     }
