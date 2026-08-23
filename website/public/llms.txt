@@ -327,6 +327,60 @@ Each key in the `slots` object corresponds to a slot name (use `'default'` for u
 
 Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler scopes component CSS rules under the custom element's tag name (e.g., `my-button { ... }`) leveraging native CSS nesting without synthetic DOM attributes like `data-style-selector`.
 
+#### 5.6.1 Root Custom Element Styling (`:host` & `:host-context()`)
+* **Preferred Method for Root Element**: `:host` and `:host-context()` are the **preferred, canonical method** for modifying and styling the root custom element container itself (e.g., `<my-button>`).
+* **`:host` Transformations**:
+  - `:host` transforms to `&` (e.g., `:host { display: block; margin: 1rem; }` $\to$ `& { display: block; margin: 1rem; }` $\to$ `my-button { display: block; margin: 1rem; }`).
+  - `:host(.active)` and `:host([disabled])` transform to compound selectors `&.active` and `&[disabled]`.
+  - `:host:hover` / `:host:focus-visible` transform to pseudo-states `&:hover` / `&:focus-visible`.
+  - `:host > .inner` transforms to child combinators `& > .inner`.
+* **`:host-context(<context>)` Transformations**:
+  - `:host-context(<context>)` transforms to `<context> &` (e.g., `:host-context(.dark) { color: white; }` $\to$ `.dark & { color: white; }` $\to$ `.dark my-button { color: white; }`).
+  - Compound chained rules like `:host-context(.dark):host(.active)` transform to `.dark &.active`.
+
+#### 5.6.2 Internal Scoped Classes Within Component (`:host` is NOT Required)
+* **CRITICAL RULE**: To modify or style a scoped class or element **within the component template** (e.g., `.card`, `.title`, `button`, `.content`), **`:host` is not required**.
+* Standard selectors like `.card { ... }` or `button { ... }` are automatically nested under the component tag name by the compiler (`my-button { .card { ... } }`). You do not need to write `:host .card` or `:host > .card`.
+
+#### 5.6.3 Scoped CSS Example
+```html
+<template id="user-card">
+  <div class="header">
+    <h2 class="title">{{ name }}</h2>
+  </div>
+  <div class="content"><slot></slot></div>
+</template>
+
+<style>
+  /* 1. Styling the root custom element container (PREFERRED: :host) */
+  :host {
+    display: block;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+  }
+
+  :host(.featured) {
+    border-color: #3b82f6;
+  }
+
+  :host-context(.dark) {
+    background-color: #1e293b;
+    color: #f8fafc;
+  }
+
+  /* 2. Styling scoped elements inside the template (:host is NOT required) */
+  .header {
+    padding: 1rem;
+    background: #f1f5f9;
+  }
+
+  .title {
+    font-size: 1.25rem;
+    font-weight: 600;
+  }
+</style>
+```
+
 ---
 
 ## 6. Framework Extensibility (definePlugin)

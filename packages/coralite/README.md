@@ -112,24 +112,25 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 
 ```html
 <template id="user-card">
-  <div class="card">
-    <h2 ref="title">{{ formatName }}</h2>
-    <p>{{ userMeta }}</p>
-    
-    <slot></slot>
-    
-    <p class="stats">Logins: {{ loginCount }}</p>
-    <p class="warning" hidden="{{ hideWarning }}">High Activity User</p>
-  </div>
+  <h2 ref="title">{{ formatName }}</h2>
+  <p>{{ userMeta }}</p>
+  
+  <slot></slot>
+  
+  <p class="stats">Logins: {{ loginCount }}</p>
+  <p class="warning" hidden="{{ hideWarning }}">High Activity User</p>
 </template>
 
 <style>
-  /* These styles are scoped to this component instance in the Light DOM */
-  .card {
+  /* Preferred: Style the root custom element container */
+  :host {
+    display: block;
     border: 1px solid #eaeaea;
     padding: 1.5rem;
     border-radius: 8px;
   }
+
+  /* Internal elements are automatically scoped (:host not required) */
   h2 { color: coral; }
   .warning { color: red; font-weight: bold; }
 </style>

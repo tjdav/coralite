@@ -46,6 +46,78 @@
       The above component will be transformed during the build process into <code>my-button { button { background: blue; color: white; } }</code>, ensuring styles strictly apply inside instances of <code>&lt;my-button&gt;</code> without adding synthetic DOM attributes.
     </p>
 
+    <coralite-heading level="2" text="Styling the Root Custom Element (:host & :host-context)"></coralite-heading>
+
+    <p>
+      The <strong>preferred and canonical method</strong> for styling and modifying the root custom element container itself (e.g. <code>&lt;my-button&gt;</code> or <code>&lt;user-card&gt;</code>) is using standard CSS <code>:host</code> and <code>:host-context()</code> pseudo-class selectors.
+    </p>
+
+    <p>
+      Using <code>:host</code> eliminates the need for redundant inner wrapper <code>&lt;div&gt;</code> elements just to control display modes, borders, margins, or padding.
+    </p>
+
+    <coralite-code-html>
+      <template id="user-profile">
+        <div class="header">
+          <h2 class="name">{{ name }}</h2>
+        </div>
+        <div class="bio"><slot></slot></div>
+      </template>
+
+      <style>
+        /* 1. Preferred: Style the root custom element container itself */
+        :host {
+          display: block;
+          border: 1px solid #e2e8f0;
+          border-radius: 0.5rem;
+          margin-bottom: 1rem;
+        }
+
+        /* Parameterized variants based on host classes or attributes */
+        :host(.featured) {
+          border-color: #3b82f6;
+          box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+        }
+
+        :host([disabled]) {
+          opacity: 0.6;
+          pointer-events: none;
+        }
+
+        /* Hover & focus states on the root element */
+        :host:hover {
+          border-color: #cbd5e1;
+        }
+
+        /* Contextual styling based on ancestor theme */
+        :host-context(.dark) {
+          background-color: #1e293b;
+          color: #f8fafc;
+        }
+
+        /* 2. Styling internal elements: :host is NOT required */
+        .header {
+          padding: 1rem;
+          background: #f1f5f9;
+        }
+
+        .name {
+          font-size: 1.25rem;
+          font-weight: bold;
+        }
+      </style>
+    </coralite-code-html>
+
+    <coralite-heading level="3" text="When :host is NOT Required"></coralite-heading>
+
+    <p>
+      <strong>Important:</strong> To style scoped classes, elements, or children <em>within</em> the component template (such as <code>.header</code> or <code>.name</code> in the example above), <strong><code>:host</code> is not required</strong>.
+    </p>
+
+    <p>
+      Coralite's compiler automatically scopes all standard descendant selectors (like <code>.header { ... }</code> or <code>button { ... }</code>) under the custom element's tag name during build time. You do not need to prefix internal classes with <code>:host</code>.
+    </p>
+
     <coralite-heading level="2" text="CSS Nesting"></coralite-heading>
 
     <p>
