@@ -48,6 +48,11 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
         <td>Pure functions for derived state. Receives a read-only state proxy.</td>
       </tr>
       <tr slot="body">
+        <td><code>style</code></td>
+        <td><code>Record&lt;string, ((state: ReadonlyState) => string | number | null | undefined | false) | string | number&gt;</code></td>
+        <td>Declarative, reactive CSS properties and CSS Custom Properties (<code>--*</code>).</td>
+      </tr>
+      <tr slot="body">
         <td><code>client</code></td>
         <td><code>(context: CoraliteScriptContext) => void</code></td>
         <td>The client-side controller. Receives a read/write state proxy. Formerly known as <code>script</code>.</td>
@@ -60,15 +65,77 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
     </coralite-table>
 
     <coralite-heading level="2" text="1. attributes"></coralite-heading>
-    <p>The <code>attributes</code> block defines the inputs your component accepts from HTML. Coralite automatically coerces these values into the specified types.</p>
+    <p>The <code>attributes</code> block defines the inputs your component accepts from HTML. Coralite automatically coerces, transforms, and validates these values through a robust attribute schema engine.</p>
     
     <coralite-code-highlight language="javascript">
 attributes: { 
-    theme: { type: String, default: 'light' },
-    maxItems: { type: Number, default: 10 },
-    expanded: { type: Boolean, default: false }
+    // Type shorthand syntax
+    expanded: Boolean,
+
+    // Array shorthand syntax (implicit String type & values check)
+    variant: ['primary', 'secondary', 'danger'],
+
+    // Verbose schema definition with transform and validate pipeline
+    theme: { type: String, default: 'light', values: ['light', 'dark', 'system'] },
+    maxItems: { type: Number, default: 10, validate: (val) => val > 0 || 'maxItems must be positive' },
+    apiKey: { type: String, required: true },
+    slug: {
+        type: String,
+        transform: (val) => val.toLowerCase().trim(),
+        validate: (val) => val.length >= 3 || 'Slug must be at least 3 characters'
+    }
 }
     </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Attribute Schema Configuration"></coralite-heading>
+    <coralite-table>
+      <tr slot="head">
+        <th>Property</th>
+        <th>Type</th>
+        <th>Description</th>
+      </tr>
+      <tr slot="body">
+        <td><code>type</code></td>
+        <td><code>Boolean | Number | String</code></td>
+        <td>Primitive constructor used for coercion. Required in verbose schema.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>default</code></td>
+        <td><code>any</code></td>
+        <td>Default value if attribute is absent. Cannot be combined with <code>required: true</code> (Definition Mutex).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>values</code></td>
+        <td><code>Array&lt;any&gt;</code></td>
+        <td>Allowed primitive value set. In array shorthand (e.g., <code>status: ['a', 'b']</code>), `type` defaults to `String`.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>required</code></td>
+        <td><code>boolean</code></td>
+        <td>When <code>true</code>, throws a <code>CoraliteError</code> if attribute is missing. Cannot be combined with <code>default</code>.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>transform</code></td>
+        <td><code>(val: any) => any</code></td>
+        <td>Synchronous transformation function run after coercion. Must not return a <code>Promise</code>.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>validate</code></td>
+        <td><code>(val: any) => boolean | string | void</code></td>
+        <td>Synchronous predicate. Returns <code>true</code>/<code>void</code> on success, <code>false</code> for default error, or string for custom error message.</td>
+      </tr>
+    </coralite-table>
+
+    <coralite-heading level="3" text="The 6-Step Attribute Execution Lifecycle Pipeline"></coralite-heading>
+    <p>Attributes execute sequentially through a strict 6-step lifecycle pipeline during component initialization and state changes:</p>
+    <ol>
+      <li><strong>1. <code>required</code> Check:</strong> Asserts attribute presence if <code>required: true</code> is configured. Throws <code>CoraliteError</code> if missing.</li>
+      <li><strong>2. Type <code>coerce</code>:</strong> Coerces raw attribute string into specified primitive constructor (<code>Boolean</code>, <code>Number</code>, or <code>String</code>).</li>
+      <li><strong>3. <code>transform</code>:</strong> Runs custom synchronous <code>transform(val)</code> function to format or sanitize value.</li>
+      <li><strong>4. <code>values</code> Check:</strong> Validates that value exists in allowed <code>values: [...]</code> enumeration array.</li>
+      <li><strong>5. <code>validate</code>:</strong> Invokes custom synchronous <code>validate(val)</code> predicate/function. Returning <code>false</code> triggers validation error; returning a non-empty string emits a custom error message.</li>
+      <li><strong>6. State Application:</strong> Applies the final validated value to the component's unified <code>state</code> proxy.</li>
+    </ol>
 
     <p>Coralite maps declared attribute names from camelCase (e.g., <code>isChecked</code>) to their kebab-case equivalent in HTML (e.g., <code>is-checked</code>) and coerces them into JavaScript primitives. Changes to HTML attributes via <code>setAttribute</code> automatically update their values in the component state.</p>
 
@@ -189,11 +256,36 @@ getters: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="2" text="4. client (Client-Side)"></coralite-heading>
-    <p>The <code>client</code> block is the controller for your component in the browser. This is where you add event listeners and mutate state. Formerly known as <code>script</code>.</p>
+    <coralite-heading level="2" text="4. style (Declarative Reactive CSS)"></coralite-heading>
+    <p>The <code>style</code> block defines declarative, reactive inline CSS properties and CSS Custom Properties (<code>--*</code>) on the custom element host tag.</p>
 
     <coralite-code-highlight language="javascript">
-client: ({ state, signal, refs, observe }) => {
+style: {
+    // CSS Custom Property (preserved with -- prefix)
+    '--accent-color': (state) => state.theme === 'dark' ? '#38bdf8' : '#0284c7',
+    
+    // Standard CSS property (automatically camelCase -> kebab-case)
+    backgroundColor: (state) => state.isActive ? '#e0f2fe' : null,
+    fontSize: (state) => `${state.size}px`,
+    
+    // Static values
+    cursor: 'pointer'
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Style Property Normalization & Removal Semantics"></coralite-heading>
+    <ul>
+      <li><strong>Property Name Normalization:</strong> Standard camelCase properties (e.g., <code>backgroundColor</code>) are automatically converted to kebab-case (e.g., <code>background-color</code>). Custom property names starting with <code>--</code> are preserved as-is.</li>
+      <li><strong>Removal Triggers:</strong> Returning <code>null</code>, <code>undefined</code>, <code>false</code>, or <code>''</code> (empty string) removes the property from the host element's inline style (`this.style.removeProperty()` on client, omitted in SSR).</li>
+      <li><strong>Zero Value Preservation:</strong> Returning the numeric value <code>0</code> (zero) is strictly preserved as valid CSS (e.g., <code>opacity: 0</code>).</li>
+      <li><strong>Synchronous Function Enforcement:</strong> Style getter functions must be strictly synchronous. Returning a <code>Promise</code> throws a <code>CoraliteError</code>.</li>
+    </ul>
+
+    <coralite-heading level="2" text="5. client (Client-Side)"></coralite-heading>
+    <p>The <code>client</code> block is the controller for your component in the browser. This is where you add event listeners, mutate state, and dispatch custom events. Formerly known as <code>script</code>.</p>
+
+    <coralite-code-highlight language="javascript">
+client: ({ state, signal, refs, observe, emit }) => {
     // Access unique DOM elements via the 'refs' utility
     const btn = refs('loadMoreBtn');
     
@@ -205,6 +297,9 @@ client: ({ state, signal, refs, observe }) => {
     btn.addEventListener('click', () => {
         // Imperative mutation triggers DOM updates
         state.maxItems += 10; 
+
+        // Dispatch custom DOM event to parent components
+        emit('items-expanded', { count: state.maxItems });
     }, { signal }); // Use the provided 'signal' for auto-cleanup
 }
     </coralite-code-highlight>
@@ -247,9 +342,14 @@ client: ({ state, signal, refs, observe }) => {
         <td><code>(key: string, callback: (newVal: any, oldVal: any) => void) => void</code></td>
         <td>Registers a callback to execute explicit side-effects on state changes. Automatically cleaned up when the component is disconnected.</td>
       </tr>
+      <tr slot="body">
+        <td><code>emit</code></td>
+        <td><code>(name: string, detail?: any, options?: CustomEventInit) => boolean</code></td>
+        <td>Helper function to dispatch custom DOM events from the host element. Defaults to <code>{ bubbles: true, composed: true, cancelable: false }</code>. Returns <code>true</code> if event was not cancelled via <code>preventDefault()</code>.</td>
+      </tr>
     </coralite-table>
 
-    <coralite-heading level="2" text="5. slots"></coralite-heading>
+    <coralite-heading level="2" text="6. slots"></coralite-heading>
     <p>Allows you to intercept and transform content passed into your component's slots.</p>
 
     <coralite-code-highlight language="typescript">

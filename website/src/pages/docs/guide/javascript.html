@@ -53,10 +53,10 @@
         },
 
         // Client-Side: Controller (Read/Write)
-        client({ state, signal, refs, observe, ...pluginContext }) {
+        client({ state, signal, refs, observe, emit, ...pluginContext }) {
             console.log('Component mounted for user:', state.userName)
 
-            // Register an observer to react to counts changes
+            // Register an observer to react to count changes
             observe('initialCount', (newVal, oldVal) => {
                 console.log(`Count changed from ${oldVal} to ${newVal}`)
             })
@@ -64,6 +64,7 @@
             const btn = refs('btn')
             btn.addEventListener('click', () => {
                 state.initialCount++; // Reactive mutation
+                emit('count-updated', { count: state.initialCount }); // Dispatch custom event
             }, { signal });
         }
       })
@@ -78,6 +79,7 @@
     <ul>
         <li><code>state</code>: A <strong>Read/Write Reactive Proxy</strong>. This unified state contains state from <code>attributes</code>, <code>server</code> state, and <code>getters</code>. Any mutation here triggers a re-render and re-evaluates getters.</li>
         <li><code>observe</code>: A function <code>observe(key, callback)</code> to register explicit side-effects on state changes. The callback receives <code>(newValue, oldValue)</code>. Observers are automatically cleaned up on component unmount.</li>
+        <li><code>emit</code>: A helper function <code>emit(name, detail?, options?)</code> to dispatch custom DOM events from the host custom element. Configured with <code>bubbles: true</code> and <code>composed: true</code> by default.</li>
         <li><code>refs</code>: A helper function to query DOM elements within the component's root that have a <code>ref</code> attribute.</li>
         <li><code>signal</code>: An <code>AbortSignal</code> tied to the component's lifecycle. Always use this to clean up event listeners or abort pending fetch requests when the component unmounts.</li>
         <li><code>root</code>: The root HTML element instance of the Web Component.</li>
@@ -158,20 +160,36 @@
       })
     </coralite-code-highlight>
 
-    <coralite-heading level="2" text="Component Communication"></coralite-heading>
+    <coralite-heading level="2" text="Component Communication & Event Dispatching"></coralite-heading>
 
     <p>
-      Coralite encourages using standard Web APIs for component communication. Use <code>CustomEvent</code> to emit signals from a child to a parent. You can dispatch events from any element retrieved via <code>refs</code>.
+      Coralite provides a built-in <code>emit(name, detail?, options?)</code> helper on <code>CoraliteScriptContext</code> to send custom events from child components to parent components or external DOM listeners.
+    </p>
+
+    <p>
+      When calling <code>emit('user-updated', { name: 'Alice' })</code>, Coralite automatically constructs a native <code>CustomEvent</code> and dispatches it from the component's host element with <code>bubbles: true</code> and <code>composed: true</code> enabled by default. This ensures the event bubbles seamlessly out of Shadow/Light DOM boundaries to parent containers.
     </p>
 
     <coralite-code-highlight language="javascript">
         // Inside a child component's client block
-        client({ state, signal, refs, ...pluginContext }) {
-            const el = refs('main');
-            el.dispatchEvent(new CustomEvent('user-updated', {
-                bubbles: true,
-                detail: { name: 'Alice' }
-            }));
+        client({ state, emit }) {
+            // Emits a 'user-updated' CustomEvent from host element with bubbles: true & composed: true
+            emit('user-updated', { id: state.userId, name: state.userName });
+        }
+    </coralite-code-highlight>
+
+    <p>
+      Parent components can listen for child events by targeting child element references using <code>refs</code> inside their own <code>client</code> block:
+    </p>
+
+    <coralite-code-highlight language="javascript">
+        // Inside a parent component's client block
+        client({ signal, refs }) {
+            const childComponent = refs('childUserCard');
+            
+            childComponent.addEventListener('user-updated', (event) => {
+                console.log('User updated in child component:', event.detail.name);
+            }, { signal });
         }
     </coralite-code-highlight>
 

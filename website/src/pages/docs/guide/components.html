@@ -144,6 +144,9 @@
           getters: {
             //...
           },
+          style: {
+            // ...
+          },
           slots: {
             //...
           },
@@ -154,17 +157,28 @@
       </script>
     </coralite-code-html>
 
-    <coralite-heading level="3" text="The Five Pillars of State"></coralite-heading>
+    <coralite-heading level="3" text="The Pillars of Component State"></coralite-heading>
 
-    <p>Coralite unifies five different sources of data and logic into a single reactive <code>state</code> object available to your template and client blocks.</p>
+    <p>Coralite unifies input attributes, server data, derived getters, reactive styles, and slot projections into a single reactive <code>state</code> object available to your templates and controllers.</p>
 
     <coralite-heading level="4" text="1. Attributes (Inputs)"></coralite-heading>
-    <p>Attributes are the "props" of your component. They are coerced from HTML attributes into JS primitives and are automatically injected into your reactive <code>state</code> object.</p>
-    <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data. For full details on the coercion rules (including how boolean attributes evaluate), see the <a href="../reference/define-component.html#1-attributes">defineComponent API Reference</a>.</p>
+    <p>Attributes are the "props" of your component. Coralite supports type coercion, enum validation (<code>values</code> / array shorthand), mandatory requirements (<code>required: true</code>), synchronous transformations (<code>transform</code>), and custom validation predicates (<code>validate</code>).</p>
+    <p><strong>Note:</strong> Attributes only support <code>String</code>, <code>Number</code>, and <code>Boolean</code> types. <code>Object</code> and <code>Array</code> types are blocked; use the <code>server</code> block for complex data. For full details on the 6-step attribute execution pipeline, see the <a href="../reference/define-component.html#1-attributes">defineComponent API Reference</a>.</p>
     <coralite-code-highlight language="javascript">
 attributes: {
-  theme: { type: String, default: 'light' },
-  count: { type: Number, default: 0 }
+  // Type shorthand & array shorthand (allowed enum values)
+  expanded: Boolean,
+  variant: ['primary', 'secondary', 'danger'],
+
+  // Verbose schema definition with transform and validate pipeline
+  theme: { type: String, default: 'light', values: ['light', 'dark'] },
+  apiKey: { type: String, required: true },
+  count: {
+    type: Number,
+    default: 0,
+    transform: (val) => Math.max(0, val),
+    validate: (val) => Number.isInteger(val) || 'Count must be an integer'
+  }
 }
     </coralite-code-highlight>
 
@@ -185,7 +199,16 @@ getters: {
 }
     </coralite-code-highlight>
 
-    <coralite-heading level="4" text="4. Slots (Light DOM Transformation)"></coralite-heading>
+    <coralite-heading level="4" text="4. Style (Reactive CSS Properties)"></coralite-heading>
+    <p>The <code>style</code> block allows you to declaratively bind reactive CSS variables (CSS Custom Properties) and standard inline CSS properties directly to the component's host custom element tag.</p>
+    <coralite-code-highlight language="javascript">
+style: {
+  '--accent-color': (state) => state.theme === 'dark' ? '#38bdf8' : '#0284c7',
+  opacity: (state) => state.isVisible ? 1 : 0
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="4" text="5. Slots (Light DOM Transformation)"></coralite-heading>
     <p>The <code>slots</code> block allows you to intercept and transform the Light DOM nodes passed to your component before they are rendered.</p>
     <coralite-code-highlight language="javascript">
 slots: {
@@ -209,22 +232,23 @@ slots: {
       </template>
     </coralite-code-html>
 
-    <coralite-heading level="4" text="5. Client (Client Controller)"></coralite-heading>
-    <p>The <code>client</code> block is where interactivity lives. It runs in the browser and has full read/write access to the state, as well as access to the element instance and unique IDs. You can easily select elements from your template using the <code>refs</code> function.</p>
+    <coralite-heading level="4" text="6. Client (Client Controller)"></coralite-heading>
+    <p>The <code>client</code> block is where interactivity lives. It runs in the browser and has full read/write access to state, as well as access to element references (`refs`), state observation (`observe`), and custom event dispatching (`emit`).</p>
     <coralite-code-highlight language="javascript">
-client: ({ state, signal, refs, root, instanceId }) => {
+client: ({ state, signal, refs, observe, emit }) => {
   // 'my-btn' matches the ref="my-btn" in the template above
   const btn = refs('my-btn');
   
   btn.addEventListener('click', () => {
     state.count++; // Mutating state triggers a re-render!
+    emit('count-changed', { count: state.count }); // Dispatch custom event to parent
   }, { signal });
 }
     </coralite-code-highlight>
 
     <coralite-heading level="3" text="The Flow of State"></coralite-heading>
 
-    <p>It helps to visualize the Five Pillars as different input streams feeding into a single, unified <strong>State Proxy</strong>. Whether data comes from the server, an HTML attribute, or a client-side mutation, it all ends up in the same place.</p>
+    <p>It helps to visualize the component pillars as different input streams feeding into a single, unified <strong>State Proxy</strong>. Whether data comes from the server, an HTML attribute, or a client-side mutation, it all ends up in the same place.</p>
 
     <ol>
       <li><strong>Initialization:</strong> When the page builds, Coralite gathers <strong>Attributes</strong> and executes the <strong>Server</strong> block.</li>

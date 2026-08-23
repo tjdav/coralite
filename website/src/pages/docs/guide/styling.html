@@ -100,6 +100,72 @@
       This nesting capability makes it easy to encapsulate all styles related to a component within a readable structure.
     </p>
 
+    <coralite-heading level="2" text="Reactive Styling with the style Block"></coralite-heading>
+
+    <p>
+      In addition to static <code>&lt;style&gt;</code> tags, Coralite components can drive dynamic CSS variables and inline host styles reactively via the top-level <code>style</code> block in <code>defineComponent</code>.
+    </p>
+
+    <p>
+      The <code>style</code> block allows you to define getters that return CSS custom properties (prefixed with <code>--</code>) or standard CSS properties based on component state. These CSS variables naturally cascade down through your component's template.
+    </p>
+
+    <coralite-code-html>
+      <template id="theme-button">
+        <button class="btn">Click me</button>
+      </template>
+
+      <style>
+        .btn {
+          background-color: var(--btn-bg, #0284c7);
+          color: var(--btn-color, #ffffff);
+          padding: 0.5rem 1rem;
+          border-radius: 0.375rem;
+        }
+      </style>
+
+      <script type="module">
+        import { defineComponent } from 'coralite'
+
+        export default defineComponent({
+          attributes: {
+            variant: {
+              type: String,
+              default: 'primary',
+              values: ['primary', 'dark', 'outline']
+            }
+          },
+          style: {
+            // Dynamically drive CSS variables on the custom element host
+            '--btn-bg': (state) => {
+              if (state.variant === 'dark') {
+                return '#0f172a'
+              }
+              if (state.variant === 'outline') {
+                return 'transparent'
+              }
+              return '#0284c7'
+            },
+            '--btn-color': (state) => {
+              if (state.variant === 'outline') {
+                return '#0284c7'
+              }
+              return '#ffffff'
+            }
+          }
+        })
+      </script>
+    </coralite-code-html>
+
+    <coralite-heading level="3" text="Style Removal & Normalization Rules"></coralite-heading>
+
+    <ul>
+      <li><strong>CSS Custom Properties:</strong> Property names starting with <code>--</code> (e.g. <code>'--btn-bg'</code>) are preserved exactly as-is.</li>
+      <li><strong>Standard CSS Properties:</strong> Standard camelCase properties (e.g. <code>backgroundColor</code>) are automatically normalized to kebab-case (e.g. <code>background-color</code>).</li>
+      <li><strong>Property Removal:</strong> Returning <code>null</code>, <code>undefined</code>, <code>false</code>, or an empty string <code>''</code> dynamically removes the inline property from the host tag.</li>
+      <li><strong>Numeric Zero:</strong> The numeric value <code>0</code> is strictly preserved as valid CSS (e.g. <code>opacity: 0</code>).</li>
+    </ul>
+
     <coralite-heading level="2" text="Global vs. Component Styles"></coralite-heading>
 
     <p>

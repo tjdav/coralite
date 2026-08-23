@@ -23,7 +23,7 @@ When generating code or answering questions about Coralite, you MUST adhere to t
 * **Rendering**: Strictly Server-Side Rendered (SSR) with deterministic ID generation (`my-component-0`). No heavy client-side AST rendering.
 * **Incremental Builds**: The production build system (`coralite-scripts build`) is incremental by default (`incremental: true`). It tracks changes via `.coralite/manifest.json` and only re-renders pages and components that have changed or are missing from the output directory. Incremental change detection can be disabled globally via `incremental: false` in `coralite.config.js` or per-run using the `coralite-scripts build --no-incremental` CLI flag. It performs a stale file cleanup at the end of the build to ensure the output directory remains synchronized with the project source.
 * **Architecture**: Coralite utilizes a hybrid model where components are either fully declarative (SSR-only) or true imperative Web Components. Imperative components lazily loaded via JavaScript use native HTML template stamping (`this.innerHTML = templateHTML`) with Light DOM projection, entirely eliminating the need for client-side HTML parsers.
-* **API Paradigm**: Coralite uses a "Flat Options" API. All logic is defined within isolated blocks: `attributes`, `server`, `getters`, `client`, and `slots`.
+* **API Paradigm**: Coralite uses a "Flat Options" API. All logic is defined within isolated blocks: `attributes`, `server`, `getters`, `style`, `client`, and `slots`.
 * **State Equation**: `Attributes + ServerState + Getters = State`. The template only sees this unified reactive proxy.
 * **Scope Isolation**: Component state (like variables defined in the client script or internal `ref` IDs) is strictly isolated. It does **not** cascade down to child components. Only explicitly passed HTML attributes and globally injected plugin states cascade.
 
@@ -76,18 +76,31 @@ export default defineComponent({
 
 ### 5.2 Component Structure: Isolated Blocks
 
-A component definition consists of primary blocks (`attributes`, `server`, `getters`, `client`, and `slots`):
+A component definition consists of primary blocks (`attributes`, `server`, `getters`, `style`, `client`, and `slots`):
 
 #### 1. `attributes` (Sync)
 
-* **Purpose**: Declares and coerces HTML attributes into typed JavaScript primitives on the component's reactive `state`.
+* **Purpose**: Declares, coerces, transforms, and validates HTML attributes into typed JavaScript primitives on the component's reactive `state`.
 * **Rules & Constraints**:
   - **Allowed Types**: Strictly limited to `String`, `Number`, and `Boolean`.
   - **Blocked Types**: `Object` and `Array` constructors are strictly blocked. Attempting to use them throws a `CoraliteError` to prevent unsafe or complex JSON-in-HTML parsing. Use `server()` or global contexts for complex data.
   - **Declaration Syntax**:
-    - *Shorthand*: `attributeName: TypeConstructor` (e.g., `isChecked: Boolean`).
-    - *Verbose (with default)*: `attributeName: { type: TypeConstructor, default: DefaultValue }`.
+    - *Type Shorthand*: `attributeName: TypeConstructor` (e.g., `isChecked: Boolean`).
+    - *Array Shorthand (Allowed Values)*: `status: ['active', 'inactive', 'pending']` (short for `values: [...]` with implicit `type: String`).
+    - *Verbose Schema*: `attributeName: { type: TypeConstructor, default: DefaultValue, values: [...], required: true, transform: (val) => val, validate: (val) => true }`.
+  - **Definition Mutex**: `required: true` cannot be combined with `default` in attribute definitions (throws a `CoraliteError`).
+  - **Synchronous Enforcement**: Custom `transform` and `validate` handlers must be strictly synchronous functions. Returning a `Promise` from `transform` or `validate` throws a `CoraliteError`.
+  - **Validation Return Handling**: `validate(value)` must return `true` or `void` on success. Returning `false` triggers default validation error, returning a non-empty `string` emits that string as a custom error message, and throwing an error propagates the exception.
   - **Attribute Naming**: Attributes are declared in camelCase (e.g., `isChecked`). The framework automatically maps them to/from their kebab-case HTML equivalents (e.g., `is-checked`).
+
+* **The 6-Step Attribute Execution Lifecycle Pipeline**:
+  Attributes execute through a strict 6-step sequential pipeline during SSR initialization, client state updates, and physical DOM attribute changes (`attributeChangedCallback`):
+  1. **`required` Check**: Verifies attribute presence if `required: true` is configured. Missing required attributes throw a `CoraliteError`.
+  2. **Type `coerce`**: Coerces raw string input value using the declared `type` constructor (`Boolean`, `Number`, or `String`).
+  3. **`transform`**: Executes custom synchronous `transform(value)` function to modify or format the coerced value.
+  4. **`values` Check**: Validates that the transformed value belongs to the allowed `values: [...]` enumeration set.
+  5. **`validate`**: Runs custom synchronous `validate(value)` predicate/function.
+  6. **State Application**: Applies the sanitized final value to the component's unified reactive `state`.
 
 * **Attribute Coercion Engine**:
   Below are the exact coercion logic patterns utilized at compile-time (server-side) and run-time (client-side) to normalize raw HTML string attributes into JS values:
@@ -170,7 +183,19 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   - **Async Getter Lifecycle & Trackability**: For asynchronous getters returning a `Promise`, Coralite tracks any state properties read synchronously before the first `await`. Once the `Promise` resolves, Coralite performs an asynchronous dependency sweep to record any properties accessed during the post-resolution handler.
   - **Batched Dirty Checking**: Observers and getter re-evaluations are batched via a microtask queue (`queueMicrotask`). When state properties change, all transitive observer and getter dependencies are marked as dirty, and then flushed and invoked exactly once at the end of the current microtask, eliminating redundant computations and DOM paints (e.g. in a diamond dependency pattern `A ← B, C → D`).
 
-#### 4. `client({ state, signal, refs, root, instanceId, observe, ...plugins })` (Client)
+#### 4. `style` (Declarative Reactive CSS)
+
+* **Purpose**: Defines declarative, reactive inline CSS properties and CSS Custom Properties (`--*`) on the custom element host.
+* **Signature**: An object mapping CSS property names (or `--*` variable names) to static values or synchronous getter functions `(state) => string | number | null | undefined | false`.
+* **Rules & Normalization**:
+  - **Standard Properties**: Auto-converted from camelCase to kebab-case (e.g., `backgroundColor: (state) => state.bg` → `background-color`).
+  - **CSS Custom Properties**: Names beginning with `--` are preserved exactly as-is (e.g., `'--accent-color': (state) => state.themeColor`).
+  - **Removal Semantics**: Returning `null`, `undefined`, `false`, or `''` removes the CSS property (`this.style.removeProperty()` on client, omitted in SSR).
+  - **Numeric Zero Preservation**: Returning the number `0` (zero) is strictly preserved as valid CSS (`0` / `'0'`).
+  - **Synchronous Getter Rule**: Style getter functions must be strictly synchronous. Returning a `Promise` throws a `CoraliteError`.
+* **SSR & Hydration**: Generates inline `style="..."` attributes on the host element during SSR compilation, and reactively patches host element `style` properties on the client upon state changes.
+
+#### 5. `client({ state, signal, refs, root, instanceId, observe, emit, ...plugins })` (Client)
 
 * **Purpose**: The client-side controller for the component. Formerly known as `script`.
 * **Arguments** (Injected via Client Context):
@@ -180,6 +205,7 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   * `root`: The root HTML element instance of the Web Component (inherits from `HTMLElement`).
   * `instanceId`: A unique identifier string for this specific component instance.
   * `observe`: A function `observe(key, callback)` to execute explicit side-effects on state changes. Receives `(newValue, oldValue)`. Returns a disposer function (`() => void`) to stop observing. Automatically cleaned up when disconnected.
+  * `emit`: Helper function `emit(name, detail?, options?)` to dispatch custom DOM events from the host element (`root`). Defaults to `{ bubbles: true, composed: true, cancelable: false }`. Returns boolean indicating whether `preventDefault()` was called.
   * `[pluginName | client.name]`: **Namespaced Plugin Context.** Injected context helpers from plugins are isolated under their namespace key (either the plugin `name` or `client.name`). For example, if a plugin has `client.name: 'event'` and defines `context: { bus: ... }`, the component's client block will receive it as `event.bus` (e.g., `client: ({ event }) => { event.bus.emit(...) }`).
 
 * **Usage**: All DOM events, imperative mutations, third-party library initializations, and side-effects live here.
@@ -221,9 +247,9 @@ getters: {
 }
 ```
 
-### 5.4 Native Web APIs
+### 5.4 Native Web APIs & Event Dispatching
 
-* **Communication**: Use standard `CustomEvent` for component-to-component communication.
+* **Communication**: Use the `emit(name, detail?, options?)` helper on `CoraliteScriptContext` (or standard `CustomEvent`) for component-to-component communication. `emit` dispatches a custom event from the host custom element with `bubbles: true` and `composed: true` by default, allowing parent elements to easily listen for events on child components.
 * **Cleanup**: Always use the provided `AbortSignal` (`signal`) to clean up event listeners and abort pending network requests when the component unmounts.
 
 ### 5.5 Reactive Slots Projection & Element Builders (`slots`)
@@ -299,7 +325,7 @@ Each key in the `slots` object corresponds to a slot name (use `'default'` for u
 
 ### 5.6 CSS Scoping (PostCSS)
 
-Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler injects a unique instance identifier and PostCSS nests all CSS rules securely beneath that attribute selector.
+Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler scopes component CSS rules under the custom element's tag name (e.g., `my-button { ... }`) leveraging native CSS nesting without synthetic DOM attributes like `data-style-selector`.
 
 ---
 
