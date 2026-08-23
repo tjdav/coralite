@@ -439,7 +439,12 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
         normalizedDefaults = normalizeObjectFunctions(sharedFn.defaultValues, astTransformer)
       }
       const defaults = serialize(normalizedDefaults)
-      const attributes = serialize(sharedFn.script?.attributes || {})
+
+      let normalizedAttributes = sharedFn.script?.attributes || {}
+      if (normalizedAttributes) {
+        normalizedAttributes = normalizeObjectFunctions(normalizedAttributes, astTransformer)
+      }
+      const attributes = serialize(normalizedAttributes)
       const hydrationMap = serialize(generateHydrationMap(sharedFn.templateAST, sharedFn.templateValues))
 
       let normalizedGetters = sharedFn.getters || sharedFn.script?.getters || {}

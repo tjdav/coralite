@@ -80,30 +80,72 @@ export function inferTypeFromValues (valuesArray) {
  * @returns {any} The validated and potentially coerced primitive value.
  */
 export function validateAttributeValue (value, schema, name, componentId = 'component', errorOptions = {}) {
+  const isRequired = Boolean(schema && !Array.isArray(schema) && schema.required)
+  const defaultValue = schema && !Array.isArray(schema) ? schema.default : undefined
+  const transformFn = schema && !Array.isArray(schema) && typeof schema.transform === 'function' ? schema.transform : null
+
+  // Step 1: required check
+  if (value === undefined || value === null) {
+    if (isRequired && defaultValue === undefined) {
+      throw new CoraliteError(`Component "${componentId}" requires attribute "${name}", but it was not provided.`, {
+        componentId,
+        ...errorOptions
+      })
+    }
+
+    if (defaultValue !== undefined) {
+      value = defaultValue
+    } else {
+      return undefined
+    }
+  }
+
+  // Step 2: Type Coercion
+  const targetType = schema ? (schema.type || schema) : null
+  let coerced = coerce(value, targetType)
+
+  // Step 3: transform(coerced)
+  if (transformFn) {
+    let transformed
+    try {
+      transformed = transformFn(coerced)
+    } catch (err) {
+      throw new CoraliteError(
+        `Component "${componentId}" failed executing transform on attribute "${name}": ${err.message}`,
+        {
+          cause: err,
+          componentId,
+          ...errorOptions
+        }
+      )
+    }
+
+    if (transformed && typeof transformed.then === 'function') {
+      throw new CoraliteError(
+        `Component "${componentId}" attribute "${name}" transform function must be synchronous. Use getters or server() for asynchronous data.`,
+        {
+          componentId,
+          ...errorOptions
+        }
+      )
+    }
+    coerced = transformed
+  }
+
+  // Step 4: values constraint check
   const values = Array.isArray(schema) ? schema : schema?.values
   if (!Array.isArray(values) || values.length === 0) {
-    if (schema && (schema.type || typeof schema === 'function')) {
-      return coerce(value, schema.type || schema)
-    }
-    return value
+    return coerced
   }
 
-  if (value === undefined || value === null) {
-    const defaultValue = Array.isArray(schema) ? undefined : schema?.default
-    if (defaultValue !== undefined) {
-      return defaultValue
-    }
-    return undefined
+  if (values.includes(coerced)) {
+    return coerced
   }
 
-  if (values.includes(value)) {
-    return value
-  }
-
-  if (typeof value === 'string') {
+  if (typeof coerced === 'string') {
     const hasNumbers = values.some(v => typeof v === 'number')
-    if (hasNumbers && value.trim() !== '') {
-      const num = Number(value)
+    if (hasNumbers && coerced.trim() !== '') {
+      const num = Number(coerced)
       if (!Number.isNaN(num) && values.includes(num)) {
         return num
       }
@@ -111,16 +153,16 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
 
     const hasBooleans = values.some(v => typeof v === 'boolean')
     if (hasBooleans) {
-      if ((value === '' || value === 'true') && values.includes(true)) {
+      if ((coerced === '' || coerced === 'true') && values.includes(true)) {
         return true
       }
-      if (value === 'false' && values.includes(false)) {
+      if (coerced === 'false' && values.includes(false)) {
         return false
       }
     }
   }
 
-  const formattedValue = JSON.stringify(value)
+  const formattedValue = JSON.stringify(coerced)
   const formattedExpected = values.map(v => JSON.stringify(v)).join(', ')
   const errorMsg = `Invalid value ${formattedValue} for attribute "${name}" in component "${componentId}". Expected one of: ${formattedExpected}.`
 
@@ -147,7 +189,9 @@ export function coerce (value, type) {
   }
 
   let targetType = type
+  let hasValuesConstraint = false
   if (Array.isArray(type) || (type && typeof type === 'object' && Array.isArray(type.values))) {
+    hasValuesConstraint = true
     const valuesArray = Array.isArray(type) ? type : type.values
     targetType = type.type || inferTypeFromValues(valuesArray)
   }
@@ -164,10 +208,16 @@ export function coerce (value, type) {
     if (typeof value === 'boolean') {
       return value
     }
-    if (value === '') {
+    if (value === '' || value === 'true') {
       return true
     }
-    return value !== 'false' && value !== null
+    if (value === 'false') {
+      return false
+    }
+    if (hasValuesConstraint) {
+      return value
+    }
+    return Boolean(value)
   }
 
   if (targetType === String || targetType === 'String') {
@@ -616,19 +666,7 @@ export class CoraliteElement extends BaseElement {
     const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
     const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
 
-    if (newVal === null && schema?.required === true) {
-      throw new CoraliteError(`Component "${this.componentOptions.componentId}" attribute "${name}" is required and cannot be removed.`, {
-        componentId: this.componentOptions.componentId,
-        instanceId: this._instanceId
-      })
-    }
-
-    let value
-    if (newVal === null) {
-      value = schema?.default !== undefined ? schema.default : undefined
-    } else {
-      value = schema ? validateAttributeValue(newVal, schema, camelName, this.componentOptions?.componentId, { instanceId: this._instanceId }) : newVal
-    }
+    const value = schema ? validateAttributeValue(newVal, schema, camelName, this.componentOptions?.componentId, { instanceId: this._instanceId }) : newVal
 
     this._state[camelName] = value
   }
@@ -693,29 +731,29 @@ export class CoraliteElement extends BaseElement {
       const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
       const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
 
-      if (schema) {
-        target[camelName] = validateAttributeValue(attr.value, schema, camelName, options.componentId, { instanceId: this._instanceId })
-      } else {
+      if (!schema) {
         target[camelName] = attr.value
       }
     }
 
     if (options.attributes) {
       for (const [key, schema] of Object.entries(options.attributes)) {
-        const defaultValue = Array.isArray(schema) ? undefined : schema?.default
-        if (target[key] === undefined && defaultValue !== undefined) {
-          target[key] = defaultValue
+        const kebabName = key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
+        let domAttr = null
+        if (this.hasAttribute(kebabName)) {
+          domAttr = this.getAttribute(kebabName)
+        } else if (this.hasAttribute(key)) {
+          domAttr = this.getAttribute(key)
         }
-      }
 
-      for (const [name, schema] of Object.entries(options.attributes)) {
-        const isRequired = typeof schema === 'object' && schema !== null && schema.required === true
-        if (isRequired && target[name] === undefined) {
-          throw new CoraliteError(`Component "${options.componentId}" requires attribute "${name}", but it was not provided.`, {
-            componentId: options.componentId,
-            instanceId: this._instanceId
-          })
+        let initialVal
+        if (target[key] !== undefined) {
+          initialVal = target[key]
+        } else if (domAttr !== null) {
+          initialVal = domAttr
         }
+
+        target[key] = validateAttributeValue(initialVal, schema, key, options.componentId, { instanceId: this._instanceId })
       }
     }
 
@@ -876,12 +914,6 @@ export class CoraliteElement extends BaseElement {
           const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
           const schema = options.attributes[camelName] || options.attributes[p]
           if (schema) {
-            if (schema.required === true && (v === undefined || v === null)) {
-              throw new CoraliteError(`Component "${options.componentId}" attribute "${p}" is required and cannot be set to ${v}.`, {
-                componentId: options.componentId,
-                instanceId: self._instanceId
-              })
-            }
             v = validateAttributeValue(v, schema, p, options.componentId, { instanceId: self._instanceId })
           }
         }

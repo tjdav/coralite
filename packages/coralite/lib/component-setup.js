@@ -28,6 +28,13 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
     let schemaObj
     let values
 
+    if (rawSchema && typeof rawSchema === 'object' && 'transform' in rawSchema && typeof rawSchema.transform !== 'function') {
+      throw new CoraliteError(`Component "${componentId}" attribute "${key}" transform property must be a function.`, {
+        componentId,
+        filePath
+      })
+    }
+
     if (Array.isArray(rawSchema)) {
       values = rawSchema
       schemaObj = { values: rawSchema }
@@ -41,21 +48,13 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
         filePath
       })
     } else {
-      schemaObj = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema : { type: rawSchema }
-      const type = schemaObj.type || rawSchema
+      const type = rawSchema.type || rawSchema
       const typeName = typeof type === 'function' ? type.name : String(type)
-
-      if (schemaObj.required === true && schemaObj.default !== undefined) {
-        throw new CoraliteError(`Component "${componentId}" attribute "${key}" cannot be marked as required and define a default value.`, {
-          componentId,
-          filePath
-        })
-      }
-
       normalized[key] = {
         type: typeName,
-        default: schemaObj.default,
-        required: Boolean(schemaObj.required)
+        default: rawSchema?.default,
+        ...(rawSchema?.required !== undefined && { required: rawSchema.required }),
+        ...(rawSchema?.transform !== undefined && { transform: rawSchema.transform })
       }
       continue
     }
@@ -97,13 +96,6 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
     const typeConstructor = explicitType || inferTypeFromValues(uniqueValues)
     const typeName = typeof typeConstructor === 'function' ? typeConstructor.name : String(typeConstructor)
 
-    if (schemaObj.required === true && schemaObj.default !== undefined) {
-      throw new CoraliteError(`Component "${componentId}" attribute "${key}" cannot be marked as required and define a default value.`, {
-        componentId,
-        filePath
-      })
-    }
-
     if (schemaObj.default !== undefined) {
       if (!uniqueValues.includes(schemaObj.default)) {
         const formattedDefault = JSON.stringify(schemaObj.default)
@@ -118,8 +110,9 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
     normalized[key] = {
       type: typeName,
       default: schemaObj.default,
-      values: uniqueValues,
-      required: Boolean(schemaObj.required)
+      ...(schemaObj.required !== undefined && { required: schemaObj.required }),
+      ...(schemaObj.transform !== undefined && { transform: schemaObj.transform }),
+      values: uniqueValues
     }
   }
 
@@ -156,9 +149,17 @@ export function createComponentDefinition ({ app }) {
     const state = Object.assign({}, initialState)
     const serializableAttributes = normalizedAttributes
 
+    for (const [key, schema] of Object.entries(normalizedAttributes)) {
+      if (state[key] !== undefined || schema.default !== undefined || schema.required) {
+        state[key] = validateAttributeValue(state[key], schema, key, module.id, { filePath: module.path?.pathname })
+      }
+    }
+
     const scriptDefaultValues = {}
     for (const [key, schema] of Object.entries(normalizedAttributes)) {
-      if (schema.default !== undefined) {
+      if (state[key] !== undefined) {
+        scriptDefaultValues[key] = state[key]
+      } else if (schema.default !== undefined) {
         scriptDefaultValues[key] = schema.default
       }
     }
@@ -169,19 +170,6 @@ export function createComponentDefinition ({ app }) {
       state: {},
       defaultValues: scriptDefaultValues,
       slots: slots || {}
-    }
-
-    for (const [key, schema] of Object.entries(normalizedAttributes)) {
-      if (state[key] !== undefined) {
-        state[key] = validateAttributeValue(state[key], schema, key, module.id, { filePath: module.path?.pathname })
-      } else if (schema.default !== undefined) {
-        state[key] = schema.default
-      } else if (schema.required) {
-        throw new CoraliteError(`Component "${module.id}" requires attribute "${key}", but it was not provided.`, {
-          componentId: module.id,
-          filePath: module.path?.pathname
-        })
-      }
     }
 
     let serverToExecute = server
