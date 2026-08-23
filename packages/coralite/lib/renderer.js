@@ -1531,7 +1531,7 @@ export function createRenderer ({
             let combinedCss = 'c-token { display: contents; }\n'
             if (mappedSessionObject.styles.size > 0) {
               for (const [selector, css] of mappedSessionObject.styles) {
-                combinedCss += `${selector} {\n${css}\n}\n`
+                combinedCss += `@layer components {\n  :where(${selector}) {\n${css}\n  }\n}\n`
               }
             }
             const cssHashVal = hash(combinedCss)
@@ -1566,12 +1566,13 @@ export function createRenderer ({
             }
           }
         } else {
-          if (componentsToInclude.size > 0 || mappedSessionObject.styles.size > 0) {
+          if (mappedSessionObject.styles.size > 0) {
             const { content: inlineCss } = injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles, { nonce })
             if (isCspActive && !nonce && inlineCss) {
               styleHashes.push(calculateHash(inlineCss, hashAlgo))
             }
           }
+
         }
 
         if (mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {

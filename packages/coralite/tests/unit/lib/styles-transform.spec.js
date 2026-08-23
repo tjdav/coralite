@@ -3,6 +3,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { transformCss } from '../../../lib/utils/server/style.js'
 import { parseModule } from '../../../lib/utils/server/parse.js'
+import { injectStyles } from '../../../lib/utils/server/render.js'
+import { createCoraliteElement, createCoraliteComponent } from '../../../lib/utils/server/dom.js'
 
 test('Style Transformation Logic', async (t) => {
   await t.test('parseModule correctly identifies root and descendant classes', () => {
@@ -88,5 +90,25 @@ test('Style Transformation Logic', async (t) => {
     assert.match(result, /\.dark\s+&\.active\s*\{\s*color:\s*red;?\s*\}/)
     assert.match(result, /&\.primary,\s*&\.secondary\s*\{\s*margin:\s*5px;?\s*\}/)
     assert.match(result, /@media\s+\(min-width:\s*768px\)\s*\{\s*&\s*\{\s*display:\s*flex;?\s*\}\s*\}/)
+  })
+
+  await t.test('injectStyles wraps component CSS in @layer components and :where(), preserving c-token', async () => {
+    const head = createCoraliteElement({ name: 'head', children: [] })
+    const root = createCoraliteComponent({ children: [head] })
+    const stylesMap = new Map([
+      ['my-comp', '.btn { color: red; }']
+    ])
+
+    const { content } = injectStyles(root, head, stylesMap)
+
+    // Verify c-token is preserved at top
+    assert.ok(content.startsWith('c-token { display: contents; }\n'))
+
+    // Verify @layer components and :where(my-comp) wrapping
+    assert.match(content, /@layer components \{\s*:where\(my-comp\)\s*\{\s*\.btn\s*\{\s*color:\s*red;?\s*\}\s*\}\s*\}/)
+
+    // Verify specificity structure: :where(my-comp) adds 0 specificity to my-comp, so .btn retains its standalone specificity of (0, 1, 0)
+    assert.match(content, /:where\(my-comp\)/)
+    assert.match(content, /\.btn/)
   })
 })
