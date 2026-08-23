@@ -76,4 +76,40 @@ test('Style Transformation Logic', async (t) => {
     // .root-class:hover -> &.root-class:hover
     assert.match(result, /&.root-class:hover\s*\{/)
   })
+
+  await t.test('transformCss transforms :host and :host-context pseudo-class selectors', async () => {
+    const emptySet = new Set()
+
+    const css = `
+      :host { display: block; }
+      :host(.active) { color: blue; }
+      :host([disabled]) { opacity: 0.5; }
+      :host:hover { opacity: 0.8; }
+      :host > .inner { padding: 10px; }
+      :host-context(.dark) { color: white; }
+      :host-context([dir="rtl"]) .title { font-size: 14px; }
+      :host-context(body.dark):hover { color: yellow; }
+      :host-context(.dark):host(.active) { color: green; }
+      :host(.active):host-context(.dark) { color: red; }
+      :host(.primary), :host(.secondary) { margin: 5px; }
+      @media (min-width: 768px) {
+        :host { display: flex; }
+      }
+    `
+
+    const result = await transformCss(css, emptySet, emptySet)
+
+    assert.match(result, /&\s*\{\s*display:\s*block;?\s*\}/)
+    assert.match(result, /&\.active\s*\{\s*color:\s*blue;?\s*\}/)
+    assert.match(result, /&\[disabled\]\s*\{\s*opacity:\s*0\.5;?\s*\}/)
+    assert.match(result, /&:hover\s*\{\s*opacity:\s*0\.8;?\s*\}/)
+    assert.match(result, /&\s*>\s*\.inner\s*\{\s*padding:\s*10px;?\s*\}/)
+    assert.match(result, /\.dark\s+&\s*\{\s*color:\s*white;?\s*\}/)
+    assert.match(result, /\[dir="rtl"\]\s+&\s+\.title\s*\{\s*font-size:\s*14px;?\s*\}/)
+    assert.match(result, /body\.dark\s+&:hover\s*\{\s*color:\s*yellow;?\s*\}/)
+    assert.match(result, /\.dark\s+&\.active\s*\{\s*color:\s*green;?\s*\}/)
+    assert.match(result, /\.dark\s+&\.active\s*\{\s*color:\s*red;?\s*\}/)
+    assert.match(result, /&\.primary,\s*&\.secondary\s*\{\s*margin:\s*5px;?\s*\}/)
+    assert.match(result, /@media\s+\(min-width:\s*768px\)\s*\{\s*&\s*\{\s*display:\s*flex;?\s*\}\s*\}/)
+  })
 })

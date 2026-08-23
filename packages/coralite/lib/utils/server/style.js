@@ -47,6 +47,59 @@ export async function transformCss (css, rootClasses, descendantClasses, onError
               return
             }
 
+            const hostContextNode = selector.nodes.find(n => n.type === 'pseudo' && n.value === ':host-context')
+            const hostNode = selector.nodes.find(n => n.type === 'pseudo' && n.value === ':host')
+
+            if (hostContextNode || hostNode) {
+              const nesting = selectorParser.nesting()
+
+              if (hostContextNode) {
+                const space = selectorParser.combinator({ value: ' ' })
+                const targetFirst = selector.first
+
+                if (hostContextNode.nodes && hostContextNode.nodes.length > 0) {
+                  let insertBeforeTarget = targetFirst
+                  for (const innerSel of hostContextNode.nodes) {
+                    for (const child of innerSel.nodes) {
+                      selector.insertBefore(insertBeforeTarget, child.clone())
+                    }
+                  }
+                  selector.insertBefore(targetFirst, space)
+                }
+
+                if (hostNode) {
+                  hostNode.replaceWith(nesting)
+                  if (hostNode.nodes && hostNode.nodes.length > 0) {
+                    let lastInserted = nesting
+                    for (const innerSel of hostNode.nodes) {
+                      for (const child of innerSel.nodes) {
+                        selector.insertAfter(lastInserted, child.clone())
+                        lastInserted = child
+                      }
+                    }
+                  }
+                  hostContextNode.remove()
+                } else {
+                  hostContextNode.replaceWith(nesting)
+                }
+                return
+              }
+
+              if (hostNode) {
+                hostNode.replaceWith(nesting)
+                if (hostNode.nodes && hostNode.nodes.length > 0) {
+                  let lastInserted = nesting
+                  for (const innerSel of hostNode.nodes) {
+                    for (const child of innerSel.nodes) {
+                      selector.insertAfter(lastInserted, child.clone())
+                      lastInserted = child
+                    }
+                  }
+                }
+                return
+              }
+            }
+
             // Check if first node is a class
             if (firstNode.type === 'class') {
               const className = firstNode.value
