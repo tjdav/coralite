@@ -1,4 +1,4 @@
-import { waitForHydration } from '../helpers.js'
+import { waitForHydration, isProduction } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Boolean Attributes', () => {
@@ -41,13 +41,12 @@ test.describe('Boolean Attributes', () => {
   })
 
   test('should handle ref and data-testid on the same element', async ({ page }, testInfo) => {
-    const isProduction = testInfo.project.name.includes('-prod')
     const comp = page.locator('boolean-attr-component').first()
 
     // We expect the button to have the correct ref attribute prefixed in all modes
     const button = comp.locator('button').nth(1)
 
-    if (isProduction) {
+    if (isProduction(testInfo)) {
       // In production, data-testid must be stripped, but ref must exist and be prefixed
       await expect(button).toHaveAttribute('ref', /boolean-attr-component-\d+__toggle-btn/)
       await expect(button).not.toHaveAttribute('data-testid')

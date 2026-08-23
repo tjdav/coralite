@@ -1,4 +1,4 @@
-import { waitForHydration } from '../helpers.js'
+import { waitForHydration, isProduction } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Static Components', () => {
@@ -11,9 +11,7 @@ test.describe('Static Components', () => {
     // Check if the component rendered
     const comp = page.locator('static-component-a').first()
 
-    const isProduction = testInfo.project.name.includes('-prod')
-
-    if (isProduction) {
+    if (isProduction(testInfo)) {
       await expect(page.locator('[data-testid]')).toHaveCount(0)
       const container = comp.locator('.static-container')
       await expect(container).toBeVisible()

@@ -1,11 +1,9 @@
-import { waitForHydration } from '../helpers.js'
+import { waitForHydration, skipInProduction, skipInDevelopment } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('DevTools & Testing API (Development / Testing Modes)', () => {
   test.beforeEach(async ({ page }, testInfo) => {
-    if (testInfo.project.name === 'framework-core-prod') {
-      test.skip()
-    }
+    skipInProduction(testInfo)
     // Navigate to a page in the framework-core-dev server (port 3000, development mode)
     await page.goto('/client-script/')
     await waitForHydration(page)
@@ -121,9 +119,7 @@ test.describe('DevTools & Testing API (Development / Testing Modes)', () => {
 
 test.describe('DevTools & Testing API (Production Mode)', () => {
   test.beforeEach(async ({ page }, testInfo) => {
-    if (testInfo.project.name === 'framework-core-dev') {
-      test.skip()
-    }
+    skipInDevelopment(testInfo)
     // Navigate to a page in the framework-core-prod server (port 3001, production mode)
     await page.goto('http://localhost:3001/client-script/')
     // Wait for the ready attribute which indicates hydration readiness in production mode

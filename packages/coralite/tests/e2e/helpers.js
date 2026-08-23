@@ -1,3 +1,5 @@
+export * from './utils/mode-utils.js'
+
 /**
  * Waits for the Coralite hydration process to complete.
  * Supports both development/testing modes (using window.__coralite__) and production mode (using data-coralite-ready).

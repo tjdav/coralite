@@ -1,7 +1,7 @@
 import { waitForHydration } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
-test.describe('Plugins Extensibility', () => {
+test.describe('Plugins - Basic Extensibility', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/plugins/')
     await waitForHydration(page)
@@ -57,5 +57,59 @@ test.describe('Plugins Extensibility', () => {
     await mutateBtn.click()
 
     await expect(observeDisplay).toHaveText('Plugin Observed: 10')
+  })
+})
+
+test.describe('Plugins - Advanced Features', () => {
+  test('Plugin Service Registry: should verify server-side and client-side resolution', async ({ page }) => {
+    await page.goto('/plugins/registry-test/')
+    await waitForHydration(page)
+
+    const comp = page.locator('registry-test-component').first()
+
+    // SSR
+    const serverResult = comp.locator('p').nth(1)
+    await expect(serverResult).toHaveText('Server Data from DB')
+
+    // Interactivity
+    const clientResult = comp.locator('p').nth(2)
+    const actionButton = comp.locator('button')
+
+    await expect(clientResult).toHaveText('Initial Client State')
+    await actionButton.click()
+    await expect(clientResult).toHaveText('Client Action Performed')
+  })
+
+  test('Plugin State Mutation: should verify global context mutation propagation', async ({ page }) => {
+    await page.goto('/plugins/mutation-test/')
+    await waitForHydration(page)
+
+    const comp = page.locator('mutation-test-component').first()
+
+    const serverResult = comp.locator('p').first()
+    await expect(serverResult).toHaveText('Server Data from DB')
+
+    const clientResult = comp.locator('p').last()
+    const actionButton = comp.locator('button')
+
+    await expect(clientResult).toHaveText('Initial Client State')
+    await actionButton.click()
+    await expect(clientResult).toHaveText('Client Action Performed')
+  })
+})
+
+test.describe('Plugins - Config Types', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto('/plugins/config-types/')
+    await waitForHydration(page)
+  })
+
+  test('should correctly serialize and deserialize non-JSON types in plugin config', async ({ page }) => {
+    const comp = page.locator('config-types-component').first()
+    await expect(comp.locator('div > div').nth(0)).toHaveText('is-regex')
+    await expect(comp.locator('div > div').nth(1)).toHaveText('is-date')
+    await expect(comp.locator('div > div').nth(2)).toHaveText('3')
+    await expect(comp.locator('div > div').nth(3)).toHaveText('value')
+    await expect(comp.locator('div > div').nth(4)).toHaveText('true')
   })
 })

@@ -1,7 +1,7 @@
 import { waitForHydration } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
-test.describe('Server State and State Propagation', () => {
+test.describe('Server State & Propagation', () => {
   test('SSR Instance: should render server state and handle attribute propagation', async ({ page }) => {
     await page.goto('/server-state/')
     await waitForHydration(page)

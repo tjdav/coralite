@@ -1,4 +1,4 @@
-import { waitForHydration } from '../helpers.js'
+import { waitForHydration, isProduction } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('InnerHTML Components', () => {
@@ -23,8 +23,7 @@ test.describe('InnerHTML Components', () => {
     await expect(child3).toHaveAttribute('data-cid')
     await expect(child3.locator('h2')).toHaveText('AdjacentHTML Mount')
 
-    const isProduction = testInfo.project.name.includes('-prod')
-    if (isProduction) {
+    if (isProduction(testInfo)) {
       // In production, data-testid should be stripped completely
       await expect(page.locator('[data-testid="plain-inner"]')).toHaveCount(0)
       await expect(page.locator('[data-testid$="plain-inner"]')).toHaveCount(0)
