@@ -440,8 +440,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null)
 
   if (component.styles?.length && !component._processedCss) {
     const rawCss = component.styles.join('\n')
-    const { rootClasses, descendantClasses } = component
-    component._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, (err) => console.error(err))
+    component._processedCss = await transformCss(rawCss, (err) => console.error(err))
   }
 
   const stylesHTML = component._processedCss || ''

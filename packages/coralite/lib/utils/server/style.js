@@ -6,21 +6,29 @@ import selectorParser from 'postcss-selector-parser'
  */
 
 /**
- * Transforms CSS to automatically apply `&.` prefix to classes present on the root element.
- * @param {string} css - The CSS content
- * @param {Set<string>} rootClasses - Set of classes found on the root element
- * @param {Set<string>} descendantClasses - Set of classes found on descendant elements
- * @param {CoraliteOnError} [onError] - Error handler
+ * Transforms component CSS:
+ * - Unwraps top-level pure :host rules so declarations apply directly to the custom element root container.
+ * - Converts parameterized :host(...) and pseudo-states to CSS nesting (&.class, &:hover, etc.).
+ * - Converts :host-context(...) to ancestor context selectors (<context> &).
+ * - Leaves standard element and class selectors intact so they scope as descendants inside the custom element.
+ *
+ * @param {string} css - The raw CSS content from the component <style> block
+ * @param {CoraliteOnError} [onError] - Error handler callback
  * @returns {Promise<string>} Transformed CSS
  */
-export async function transformCss (css, rootClasses, descendantClasses, onError) {
+export async function transformCss (css, onError) {
   const processor = postcss([
     {
       postcssPlugin: 'coralite-style-transform',
       Rule (rule) {
-        // Only process top-level rules or rules directly inside @media/@supports etc.
         // Ignore rules nested inside other rules (standard CSS nesting behavior)
         if (rule.parent.type === 'rule') {
+          return
+        }
+
+        // Unwrap top-level pure :host rules so declarations sit directly on the component root rule
+        if (rule.parent.type === 'root' && rule.selector.trim() === ':host') {
+          rule.replaceWith(...rule.nodes)
           return
         }
 
@@ -95,33 +103,6 @@ export async function transformCss (css, rootClasses, descendantClasses, onError
                       lastInserted = child
                     }
                   }
-                }
-                return
-              }
-            }
-
-            // Check if first node is a class
-            if (firstNode.type === 'class') {
-              const className = firstNode.value
-              const isRoot = rootClasses.has(className)
-              const isDescendant = descendantClasses.has(className)
-
-              if (isRoot) {
-                if (isDescendant) {
-                  // Transform to: &.classname, .classname
-                  // Clone first (creates the descendant version)
-                  const descendantSelector = selector.clone()
-
-                  // Modify the original to be root version (&.classname)
-                  const nesting = selectorParser.nesting()
-                  selector.insertBefore(firstNode, nesting)
-
-                  // Append the descendant selector to the parent Container
-                  root.insertAfter(selector, descendantSelector)
-                } else {
-                  // Transform to: &.classname
-                  const nesting = selectorParser.nesting()
-                  selector.insertBefore(firstNode, nesting)
                 }
               }
             }

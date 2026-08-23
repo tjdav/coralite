@@ -366,8 +366,7 @@ export function createRenderer ({
 
       if (module.styles?.length && !moduleComponent.result._processedCss) {
         const rawCss = module.styles.join('\n')
-        const { rootClasses, descendantClasses } = moduleComponent.result
-        moduleComponent.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, handleError)
+        moduleComponent.result._processedCss = await transformCss(rawCss, handleError)
       }
       const stylesHTML = moduleComponent.result._processedCss || ''
 
@@ -514,8 +513,7 @@ export function createRenderer ({
       const selector = module.id
       if (!moduleComponent.result._processedCss) {
         const rawCss = module.styles.join('\n')
-        const { rootClasses, descendantClasses } = moduleComponent.result
-        moduleComponent.result._processedCss = await transformCss(rawCss, rootClasses, descendantClasses, handleError)
+        moduleComponent.result._processedCss = await transformCss(rawCss, handleError)
       }
       if (!session.styles.has(selector)) {
         session.styles.set(selector, moduleComponent.result._processedCss)

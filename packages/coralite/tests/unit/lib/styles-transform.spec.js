@@ -30,56 +30,32 @@ test('Style Transformation Logic', async (t) => {
     assert.ok(!descendantClasses.has('root-class'))
   })
 
-  await t.test('transformCss applies &. prefix correctly', async () => {
-    const rootClasses = new Set(['root-class', 'shared-class'])
-    const descendantClasses = new Set(['descendant-class', 'shared-class'])
-
+  await t.test('transformCss unwraps top-level pure :host rules and preserves descendant element classes', async () => {
     const css = `
+      :host { display: flex; justify-content: center; }
       .root-class { color: red; }
       .descendant-class { color: blue; }
-      .shared-class { color: green; }
-      .other-class { color: black; }
+      .card-body { padding: 1rem; }
     `
 
-    const result = await transformCss(css, rootClasses, descendantClasses)
+    const result = await transformCss(css)
 
     // Expected transformations:
-    // .root-class -> &.root-class (only on root)
-    // .descendant-class -> .descendant-class (only on descendant)
-    // .shared-class -> &.shared-class, .shared-class (on both)
-    // .other-class -> .other-class (neither, standard selector)
+    // Top-level :host is unwrapped directly into declarations
+    assert.match(result, /display:\s*flex;/)
+    assert.match(result, /justify-content:\s*center;/)
+    assert.doesNotMatch(result, /:host/)
+    assert.doesNotMatch(result, /&\s*\{/)
 
-    assert.match(result, /&.root-class\s*\{/)
-    assert.match(result, /\.descendant-class\s*\{/)
-    assert.doesNotMatch(result, /&.descendant-class/)
-
-    assert.match(result, /&.shared-class/)
-    assert.match(result, /\.shared-class\s*\{/)
-
-    assert.match(result, /\.other-class\s*\{/)
+    // Internal classes remain standard descendant selectors without &. prefix
+    assert.match(result, /\.root-class\s*\{\s*color:\s*red;?\s*\}/)
+    assert.match(result, /\.descendant-class\s*\{\s*color:\s*blue;?\s*\}/)
+    assert.match(result, /\.card-body\s*\{\s*padding:\s*1rem;?\s*\}/)
+    assert.doesNotMatch(result, /&.root-class/)
+    assert.doesNotMatch(result, /&.card-body/)
   })
 
-  await t.test('transformCss handles existing nesting correctly', async () => {
-    const rootClasses = new Set(['root-class'])
-    const descendantClasses = new Set([])
-
-    const css = `
-      &.root-class { color: red; }
-      .root-class:hover { color: blue; }
-    `
-
-    const result = await transformCss(css, rootClasses, descendantClasses)
-
-    // &.root-class should remain touched (maybe reformatted)
-    assert.match(result, /&.root-class\s*\{/)
-
-    // .root-class:hover -> &.root-class:hover
-    assert.match(result, /&.root-class:hover\s*\{/)
-  })
-
-  await t.test('transformCss transforms :host and :host-context pseudo-class selectors', async () => {
-    const emptySet = new Set()
-
+  await t.test('transformCss transforms :host and :host-context pseudo-class selectors correctly', async () => {
     const css = `
       :host { display: block; }
       :host(.active) { color: blue; }
@@ -97,9 +73,10 @@ test('Style Transformation Logic', async (t) => {
       }
     `
 
-    const result = await transformCss(css, emptySet, emptySet)
+    const result = await transformCss(css)
 
-    assert.match(result, /&\s*\{\s*display:\s*block;?\s*\}/)
+    // Pure top-level :host is unwrapped directly into top-level declarations
+    assert.match(result, /display:\s*block;?/)
     assert.match(result, /&\.active\s*\{\s*color:\s*blue;?\s*\}/)
     assert.match(result, /&\[disabled\]\s*\{\s*opacity:\s*0\.5;?\s*\}/)
     assert.match(result, /&:hover\s*\{\s*opacity:\s*0\.8;?\s*\}/)
