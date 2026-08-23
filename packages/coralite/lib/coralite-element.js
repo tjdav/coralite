@@ -68,108 +68,174 @@ export function inferTypeFromValues (valuesArray) {
 }
 
 /**
- * Validates an attribute value against a component attribute schema containing allowed `values`.
- * Coerces HTML attribute string inputs to matched typed primitives when applicable.
- * Throws a descriptive CoraliteError when an unexpected value is encountered.
+ * Executes custom synchronous validation function on an attribute value.
  *
- * @param {any} value - The input value.
- * @param {Object} schema - Attribute schema object (e.g. { type, default, values }).
+ * @param {any} value - The input value (after coercion/transformation).
+ * @param {Object} schema - Attribute schema object containing optional validate function.
  * @param {string} name - Attribute name.
  * @param {string} [componentId] - Component ID for error messaging.
  * @param {Object} [errorOptions] - Additional options for CoraliteError.
- * @returns {any} The validated and potentially coerced primitive value.
+ * @returns {any} The validated value.
+ */
+export function executeAttributeValidator (value, schema, name, componentId = 'component', errorOptions = {}) {
+  if (!schema || typeof schema.validate !== 'function') {
+    return value
+  }
+
+  let result
+  try {
+    result = schema.validate(value)
+  } catch (err) {
+    if (err instanceof CoraliteError) {
+      throw err
+    }
+    throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed: ${err.message}`, {
+      componentId,
+      cause: err,
+      ...errorOptions
+    })
+  }
+
+  if (result && typeof result.then === 'function') {
+    throw new CoraliteError(`Component "${componentId}" attribute "${name}" validate function must be synchronous. Use getters or server() for asynchronous validation.`, {
+      componentId,
+      ...errorOptions
+    })
+  }
+
+  if (result === false) {
+    throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed for value ${JSON.stringify(value)}.`, {
+      componentId,
+      ...errorOptions
+    })
+  }
+
+  if (typeof result === 'string' && result.trim() !== '') {
+    const customMessage = result.endsWith('.') ? result : `${result}.`
+    throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed: ${customMessage}`, {
+      componentId,
+      ...errorOptions
+    })
+  }
+
+  return value
+}
+
+/**
+ * Validates an attribute value against a component attribute schema following the full 6-step pipeline:
+ * 1. Required check
+ * 2. Type coercion
+ * 3. Custom transformation
+ * 4. Allowed values check
+ * 5. Custom validation
+ * 6. State application
+ *
+ * @param {any} value - The input value.
+ * @param {Object|Array} schema - Attribute schema object or allowed values array.
+ * @param {string} name - Attribute name.
+ * @param {string} [componentId] - Component ID for error messaging.
+ * @param {Object} [errorOptions] - Additional options for CoraliteError.
+ * @returns {any} The validated and coerced primitive value.
  */
 export function validateAttributeValue (value, schema, name, componentId = 'component', errorOptions = {}) {
-  const isRequired = Boolean(schema && !Array.isArray(schema) && schema.required)
-  const defaultValue = schema && !Array.isArray(schema) ? schema.default : undefined
-  const transformFn = schema && !Array.isArray(schema) && typeof schema.transform === 'function' ? schema.transform : null
+  let schemaObj
+  if (typeof schema === 'function') {
+    schemaObj = { type: schema }
+  } else if (Array.isArray(schema)) {
+    schemaObj = { values: schema }
+  } else {
+    schemaObj = schema || {}
+  }
 
   // Step 1: required check
-  if (value === undefined || value === null) {
-    if (isRequired && defaultValue === undefined) {
-      throw new CoraliteError(`Component "${componentId}" requires attribute "${name}", but it was not provided.`, {
-        componentId,
-        ...errorOptions
-      })
-    }
+  if (schemaObj.required && (value === undefined || value === null)) {
+    throw new CoraliteError(`Component "${componentId}" attribute "${name}" is required.`, {
+      componentId,
+      ...errorOptions
+    })
+  }
 
-    if (defaultValue !== undefined) {
-      value = defaultValue
+  // Handle omitted value (optional attribute with or without default)
+  let val = value
+  if (val === undefined || val === null) {
+    if (schemaObj.default !== undefined) {
+      val = schemaObj.default
     } else {
       return undefined
     }
   }
 
-  // Step 2: Type Coercion
-  const targetType = schema ? (schema.type || schema) : null
-  let coerced = coerce(value, targetType)
+  // Step 2: coerce
+  if (schemaObj.type && (!schemaObj.values || schemaObj.values.length === 0)) {
+    val = coerce(val, schemaObj.type)
+  }
 
-  // Step 3: transform(coerced)
-  if (transformFn) {
+  // Step 3: transform
+  if (typeof schemaObj.transform === 'function') {
     let transformed
     try {
-      transformed = transformFn(coerced)
+      transformed = schemaObj.transform(val)
     } catch (err) {
-      throw new CoraliteError(
-        `Component "${componentId}" failed executing transform on attribute "${name}": ${err.message}`,
-        {
-          cause: err,
-          componentId,
-          ...errorOptions
-        }
-      )
+      if (err instanceof CoraliteError) {
+        throw err
+      }
+      throw new CoraliteError(`Component "${componentId}" attribute "${name}" transform failed: ${err.message}`, {
+        componentId,
+        cause: err,
+        ...errorOptions
+      })
     }
-
     if (transformed && typeof transformed.then === 'function') {
-      throw new CoraliteError(
-        `Component "${componentId}" attribute "${name}" transform function must be synchronous. Use getters or server() for asynchronous data.`,
-        {
-          componentId,
-          ...errorOptions
-        }
-      )
+      throw new CoraliteError(`Component "${componentId}" attribute "${name}" transform function must be synchronous.`, {
+        componentId,
+        ...errorOptions
+      })
     }
-    coerced = transformed
+    val = transformed
   }
 
   // Step 4: values constraint check
-  const values = Array.isArray(schema) ? schema : schema?.values
-  if (!Array.isArray(values) || values.length === 0) {
-    return coerced
-  }
-
-  if (values.includes(coerced)) {
-    return coerced
-  }
-
-  if (typeof coerced === 'string') {
-    const hasNumbers = values.some(v => typeof v === 'number')
-    if (hasNumbers && coerced.trim() !== '') {
-      const num = Number(coerced)
-      if (!Number.isNaN(num) && values.includes(num)) {
-        return num
+  const values = schemaObj.values
+  if (Array.isArray(values) && values.length > 0) {
+    let matched = values.includes(val)
+    if (!matched && typeof val === 'string') {
+      const hasNumbers = values.some(v => typeof v === 'number')
+      if (hasNumbers && val.trim() !== '') {
+        const num = Number(val)
+        if (!Number.isNaN(num) && values.includes(num)) {
+          val = num
+          matched = true
+        }
+      }
+      const hasBooleans = values.some(v => typeof v === 'boolean')
+      if (hasBooleans) {
+        if ((val === '' || val === 'true') && values.includes(true)) {
+          val = true
+          matched = true
+        } else if (val === 'false' && values.includes(false)) {
+          val = false
+          matched = true
+        }
       }
     }
 
-    const hasBooleans = values.some(v => typeof v === 'boolean')
-    if (hasBooleans) {
-      if ((coerced === '' || coerced === 'true') && values.includes(true)) {
-        return true
-      }
-      if (coerced === 'false' && values.includes(false)) {
-        return false
-      }
+    if (!matched) {
+      const formattedValue = JSON.stringify(val)
+      const formattedExpected = values.map(v => JSON.stringify(v)).join(', ')
+      throw new CoraliteError(`Invalid value ${formattedValue} for attribute "${name}" in component "${componentId}". Expected one of: ${formattedExpected}.`, {
+        componentId,
+        ...errorOptions
+      })
     }
   }
 
-  const formattedValue = JSON.stringify(coerced)
-  const formattedExpected = values.map(v => JSON.stringify(v)).join(', ')
-  const errorMsg = `Invalid value ${formattedValue} for attribute "${name}" in component "${componentId}". Expected one of: ${formattedExpected}.`
+  // Step 5: validate
+  if (typeof schemaObj.validate === 'function') {
+    val = executeAttributeValidator(val, schemaObj, name, componentId, errorOptions)
+  }
 
-  throw new CoraliteError(errorMsg, {
-    componentId,
-    ...errorOptions
-  })
+  // Step 6: State application
+  return val
 }
 
 /**
@@ -189,9 +255,7 @@ export function coerce (value, type) {
   }
 
   let targetType = type
-  let hasValuesConstraint = false
   if (Array.isArray(type) || (type && typeof type === 'object' && Array.isArray(type.values))) {
-    hasValuesConstraint = true
     const valuesArray = Array.isArray(type) ? type : type.values
     targetType = type.type || inferTypeFromValues(valuesArray)
   }
@@ -208,16 +272,10 @@ export function coerce (value, type) {
     if (typeof value === 'boolean') {
       return value
     }
-    if (value === '' || value === 'true') {
+    if (value === '') {
       return true
     }
-    if (value === 'false') {
-      return false
-    }
-    if (hasValuesConstraint) {
-      return value
-    }
-    return Boolean(value)
+    return value !== 'false' && value !== null
   }
 
   if (targetType === String || targetType === 'String') {
@@ -666,7 +724,12 @@ export class CoraliteElement extends BaseElement {
     const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
     const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
 
-    const value = schema ? validateAttributeValue(newVal, schema, camelName, this.componentOptions?.componentId, { instanceId: this._instanceId }) : newVal
+    let value
+    if (newVal === null) {
+      value = schema?.default !== undefined ? schema.default : undefined
+    } else {
+      value = schema ? validateAttributeValue(newVal, schema, camelName, this.componentOptions?.componentId, { instanceId: this._instanceId }) : newVal
+    }
 
     this._state[camelName] = value
   }
@@ -731,29 +794,19 @@ export class CoraliteElement extends BaseElement {
       const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
       const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
 
-      if (!schema) {
+      if (schema) {
+        target[camelName] = validateAttributeValue(attr.value, schema, camelName, options.componentId, { instanceId: this._instanceId })
+      } else {
         target[camelName] = attr.value
       }
     }
 
     if (options.attributes) {
       for (const [key, schema] of Object.entries(options.attributes)) {
-        const kebabName = key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
-        let domAttr = null
-        if (this.hasAttribute(kebabName)) {
-          domAttr = this.getAttribute(kebabName)
-        } else if (this.hasAttribute(key)) {
-          domAttr = this.getAttribute(key)
+        const defaultValue = Array.isArray(schema) ? undefined : schema?.default
+        if (target[key] === undefined && defaultValue !== undefined) {
+          target[key] = defaultValue
         }
-
-        let initialVal
-        if (target[key] !== undefined) {
-          initialVal = target[key]
-        } else if (domAttr !== null) {
-          initialVal = domAttr
-        }
-
-        target[key] = validateAttributeValue(initialVal, schema, key, options.componentId, { instanceId: this._instanceId })
       }
     }
 
