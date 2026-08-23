@@ -8,6 +8,105 @@ import {
 } from './utils/types.js'
 import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
 import { transformCss } from './utils/server/style.js'
+import { inferTypeFromValues, validateAttributeValue } from './coralite-element.js'
+
+/**
+ * Normalizes and validates component attribute definitions at definition time.
+ * @param {Object} attributes - Raw component attributes option.
+ * @param {string} componentId - Component ID for error messages.
+ * @param {string} [filePath] - Optional file path for error options.
+ * @returns {Object} Normalized attributes dictionary.
+ */
+export function normalizeAndValidateAttributes (attributes, componentId, filePath) {
+  if (!attributes) {
+    return {}
+  }
+
+  const normalized = {}
+
+  for (const [key, rawSchema] of Object.entries(attributes)) {
+    let schemaObj
+    let values
+
+    if (Array.isArray(rawSchema)) {
+      values = rawSchema
+      schemaObj = { values: rawSchema }
+    } else if (rawSchema && typeof rawSchema === 'object' && 'values' in rawSchema) {
+      values = rawSchema.values
+      schemaObj = rawSchema
+    } else if (rawSchema === Object || rawSchema === Array || (rawSchema && (rawSchema.type === Object || rawSchema.type === Array))) {
+      const typeName = rawSchema.name || rawSchema.type?.name || 'Object/Array'
+      throw new CoraliteError(`Component "${componentId}" defines attribute "${key}" as ${typeName}. Object and Array types are blocked in attributes. Use server() for complex data.`, {
+        componentId,
+        filePath
+      })
+    } else {
+      const type = rawSchema.type || rawSchema
+      const typeName = typeof type === 'function' ? type.name : String(type)
+      normalized[key] = {
+        type: typeName,
+        default: rawSchema.default
+      }
+      continue
+    }
+
+    if (!Array.isArray(values)) {
+      throw new CoraliteError(`Component "${componentId}" attribute "${key}" values must be an Array.`, {
+        componentId,
+        filePath
+      })
+    }
+
+    if (values.length === 0) {
+      throw new CoraliteError(`Component "${componentId}" attribute "${key}" values array cannot be empty.`, {
+        componentId,
+        filePath
+      })
+    }
+
+    for (const item of values) {
+      const itemType = typeof item
+      if (item === null || (itemType !== 'string' && itemType !== 'number' && itemType !== 'boolean')) {
+        throw new CoraliteError(`Component "${componentId}" attribute "${key}" values array contains non-primitive item: ${JSON.stringify(item)}. Only string, number, and boolean allowed.`, {
+          componentId,
+          filePath
+        })
+      }
+    }
+
+    const uniqueValues = Array.from(new Set(values))
+
+    const explicitType = schemaObj.type
+    if (explicitType === Object || explicitType === Array) {
+      throw new CoraliteError(`Component "${componentId}" defines attribute "${key}" as ${explicitType.name}. Object and Array types are blocked in attributes. Use server() for complex data.`, {
+        componentId,
+        filePath
+      })
+    }
+
+    const typeConstructor = explicitType || inferTypeFromValues(uniqueValues)
+    const typeName = typeof typeConstructor === 'function' ? typeConstructor.name : String(typeConstructor)
+
+    if (schemaObj.default !== undefined) {
+      if (!uniqueValues.includes(schemaObj.default)) {
+        const formattedDefault = JSON.stringify(schemaObj.default)
+        const formattedExpected = uniqueValues.map(v => JSON.stringify(v)).join(', ')
+        throw new CoraliteError(`Component "${componentId}" attribute "${key}" default value ${formattedDefault} is not in allowed values. Expected one of: ${formattedExpected}.`, {
+          componentId,
+          filePath
+        })
+      }
+    }
+
+    normalized[key] = {
+      type: typeName,
+      default: schemaObj.default,
+      values: uniqueValues
+    }
+  }
+
+  return normalized
+}
 
 /**
  * @import {
@@ -34,35 +133,15 @@ export function createComponentDefinition ({ app }) {
     const { attributes, server, getters, slots, client } = options
     const { state: initialState, module, root } = context
 
-    if (attributes) {
-      for (const [key, value] of Object.entries(attributes)) {
-        if (value.type === Object || value.type === Array) {
-          throw new CoraliteError(`Component "${module.id}" defines attribute "${key}" as ${value.type.name}. Object and Array types are blocked in attributes. Use server() for complex data.`, {
-            componentId: module.id,
-            filePath: module.path?.pathname
-          })
-        }
-      }
-    }
+    const normalizedAttributes = normalizeAndValidateAttributes(attributes, module.id, module.path?.pathname)
 
     const state = Object.assign({}, initialState)
-    const serializableAttributes = {}
-    if (attributes) {
-      for (const [key, schema] of Object.entries(attributes)) {
-        const type = schema.type || schema
-        serializableAttributes[key] = {
-          type: type.name || type,
-          default: schema.default
-        }
-      }
-    }
+    const serializableAttributes = normalizedAttributes
 
     const scriptDefaultValues = {}
-    if (attributes) {
-      for (const [key, schema] of Object.entries(attributes)) {
-        if (schema.default !== undefined) {
-          scriptDefaultValues[key] = schema.default
-        }
+    for (const [key, schema] of Object.entries(normalizedAttributes)) {
+      if (schema.default !== undefined) {
+        scriptDefaultValues[key] = schema.default
       }
     }
 
@@ -74,22 +153,11 @@ export function createComponentDefinition ({ app }) {
       slots: slots || {}
     }
 
-    if (attributes) {
-      for (const [key, schema] of Object.entries(attributes)) {
-        const type = schema.type || schema
-        const typeName = type.name || type
-        if (state[key] !== undefined) {
-          const value = state[key]
-          if (typeName === 'Number') {
-            state[key] = Number(value)
-          } else if (typeName === 'Boolean') {
-            state[key] = value !== 'false' && value !== null && value !== ''
-          } else if (typeName === 'String') {
-            state[key] = String(value)
-          }
-        } else if (schema.default !== undefined) {
-          state[key] = schema.default
-        }
+    for (const [key, schema] of Object.entries(normalizedAttributes)) {
+      if (state[key] !== undefined) {
+        state[key] = validateAttributeValue(state[key], schema, key, module.id, { filePath: module.path?.pathname })
+      } else if (schema.default !== undefined) {
+        state[key] = schema.default
       }
     }
 
@@ -378,15 +446,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null)
         try {
           if (extractedAttributes.content.trim().startsWith('{')) {
             const attrs = new Function(`return ${extractedAttributes.content}`)()
-            const serializableAttributes = {}
-            for (const [key, schema] of Object.entries(attrs)) {
-              const type = schema.type || schema
-              serializableAttributes[key] = {
-                type: type.name || type,
-                default: schema.default
-              }
-            }
-            scriptObj.attributes = serializableAttributes
+            scriptObj.attributes = normalizeAndValidateAttributes(attrs, component.id, component.filePath || (component.path && component.path.pathname))
           }
         } catch {
           /* ignore */

@@ -2,6 +2,7 @@ import { createReadOnlyProxy } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
+import { CoraliteError } from './utils/errors.js'
 
 /**
  * @import {
@@ -42,10 +43,98 @@ const BOOLEAN_ATTRIBUTES = new Set([
 ])
 
 /**
+ * Infers the primitive constructor or type name from an array of allowed values.
+ * @param {Array<any>} valuesArray - Array of allowed primitive values.
+ * @returns {Function} String, Number, or Boolean constructor.
+ */
+export function inferTypeFromValues (valuesArray) {
+  if (!Array.isArray(valuesArray) || valuesArray.length === 0) {
+    return String
+  }
+  const types = new Set(valuesArray.map(v => typeof v))
+  if (types.size === 1) {
+    const singleType = Array.from(types)[0]
+    if (singleType === 'number') {
+      return Number
+    }
+    if (singleType === 'boolean') {
+      return Boolean
+    }
+    if (singleType === 'string') {
+      return String
+    }
+  }
+  return String
+}
+
+/**
+ * Validates an attribute value against a component attribute schema containing allowed `values`.
+ * Coerces HTML attribute string inputs to matched typed primitives when applicable.
+ * Throws a descriptive CoraliteError when an unexpected value is encountered.
+ *
+ * @param {any} value - The input value.
+ * @param {Object} schema - Attribute schema object (e.g. { type, default, values }).
+ * @param {string} name - Attribute name.
+ * @param {string} [componentId] - Component ID for error messaging.
+ * @param {Object} [errorOptions] - Additional options for CoraliteError.
+ * @returns {any} The validated and potentially coerced primitive value.
+ */
+export function validateAttributeValue (value, schema, name, componentId = 'component', errorOptions = {}) {
+  const values = Array.isArray(schema) ? schema : schema?.values
+  if (!Array.isArray(values) || values.length === 0) {
+    if (schema && (schema.type || typeof schema === 'function')) {
+      return coerce(value, schema.type || schema)
+    }
+    return value
+  }
+
+  if (value === undefined || value === null) {
+    const defaultValue = Array.isArray(schema) ? undefined : schema?.default
+    if (defaultValue !== undefined) {
+      return defaultValue
+    }
+    return undefined
+  }
+
+  if (values.includes(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const hasNumbers = values.some(v => typeof v === 'number')
+    if (hasNumbers && value.trim() !== '') {
+      const num = Number(value)
+      if (!Number.isNaN(num) && values.includes(num)) {
+        return num
+      }
+    }
+
+    const hasBooleans = values.some(v => typeof v === 'boolean')
+    if (hasBooleans) {
+      if ((value === '' || value === 'true') && values.includes(true)) {
+        return true
+      }
+      if (value === 'false' && values.includes(false)) {
+        return false
+      }
+    }
+  }
+
+  const formattedValue = JSON.stringify(value)
+  const formattedExpected = values.map(v => JSON.stringify(v)).join(', ')
+  const errorMsg = `Invalid value ${formattedValue} for attribute "${name}" in component "${componentId}". Expected one of: ${formattedExpected}.`
+
+  throw new CoraliteError(errorMsg, {
+    componentId,
+    ...errorOptions
+  })
+}
+
+/**
  * Coerces a value to a specified type.
  * Supports Number, Boolean, and String.
  * @param {any} value - The value to coerce.
- * @param {Function|string} type - The target type (Constructor or string name).
+ * @param {Function|string|Object|Array} type - The target type (Constructor, string name, or schema object/array).
  * @returns {any} The coerced value.
  */
 export function coerce (value, type) {
@@ -57,19 +146,31 @@ export function coerce (value, type) {
     return null
   }
 
-  if (type === Number || type === 'Number') {
+  let targetType = type
+  if (Array.isArray(type) || (type && typeof type === 'object' && Array.isArray(type.values))) {
+    const valuesArray = Array.isArray(type) ? type : type.values
+    targetType = type.type || inferTypeFromValues(valuesArray)
+  }
+
+  if (targetType === Number || targetType === 'Number') {
+    if (typeof value === 'number') {
+      return Number.isNaN(value) ? null : value
+    }
     const num = Number(value)
     return Number.isNaN(num) ? null : num
   }
 
-  if (type === Boolean || type === 'Boolean') {
+  if (targetType === Boolean || targetType === 'Boolean') {
+    if (typeof value === 'boolean') {
+      return value
+    }
     if (value === '') {
       return true
     }
     return value !== 'false' && value !== null
   }
 
-  if (type === String || type === 'String') {
+  if (targetType === String || targetType === 'String') {
     return String(value)
   }
 
@@ -139,12 +240,19 @@ export function isOwnedByComponent (candidate, instanceId, hostElement) {
  * @property {Object} [templateValues] - Token positions for AST updates.
  */
 
+/** @type {any} */
+const FallbackElement = class {
+}
+
+/** @type {typeof HTMLElement} */
+const BaseElement = typeof HTMLElement !== 'undefined' ? HTMLElement : FallbackElement
+
 /**
  * Base class for all Coralite custom elements.
  *
- * @augments HTMLElement
+ * @augments BaseElement
  */
-export class CoraliteElement extends HTMLElement {
+export class CoraliteElement extends BaseElement {
   /**
    * Initializes a new instance of the CoraliteElement.
    * Sets up internal state trackers, binding collections, and hook registries.
@@ -507,7 +615,13 @@ export class CoraliteElement extends HTMLElement {
     }
     const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
     const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
-    const value = schema ? coerce(newVal, schema.type || schema) : newVal
+
+    let value
+    if (newVal === null) {
+      value = schema?.default !== undefined ? schema.default : undefined
+    } else {
+      value = schema ? validateAttributeValue(newVal, schema, camelName, this.componentOptions?.componentId, { instanceId: this._instanceId }) : newVal
+    }
 
     this._state[camelName] = value
   }
@@ -571,7 +685,21 @@ export class CoraliteElement extends HTMLElement {
       }
       const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
       const schema = options.attributes?.[camelName] || options.attributes?.[attr.name]
-      target[camelName] = schema ? coerce(attr.value, schema.type || schema) : attr.value
+
+      if (schema) {
+        target[camelName] = validateAttributeValue(attr.value, schema, camelName, options.componentId, { instanceId: this._instanceId })
+      } else {
+        target[camelName] = attr.value
+      }
+    }
+
+    if (options.attributes) {
+      for (const [key, schema] of Object.entries(options.attributes)) {
+        const defaultValue = Array.isArray(schema) ? undefined : schema?.default
+        if (target[key] === undefined && defaultValue !== undefined) {
+          target[key] = defaultValue
+        }
+      }
     }
 
     // Hydrate data() block results from the SSR payload
@@ -727,6 +855,14 @@ export class CoraliteElement extends HTMLElement {
       },
 
       set (t, p, v) {
+        if (typeof p === 'string' && options.attributes) {
+          const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+          const schema = options.attributes[camelName] || options.attributes[p]
+          if (schema) {
+            v = validateAttributeValue(v, schema, p, options.componentId, { instanceId: self._instanceId })
+          }
+        }
+
         const oldValue = t[p]
         if (oldValue === v) {
           return true

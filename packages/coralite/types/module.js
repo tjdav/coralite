@@ -26,6 +26,24 @@
  */
 
 /**
+ * Schema for defining a component attribute with allowed values and defaults.
+ * @typedef {Object} CoraliteAttributeSchema
+ * @property {Function|string} [type] - Constructor function (e.g. String, Number, Boolean) or string name.
+ * @property {any} [default] - Default value for the attribute if omitted.
+ * @property {Array<string | number | boolean>} [values] - Array of allowed primitive values.
+ */
+
+/**
+ * An attribute definition: either a schema object or array shorthand of allowed values.
+ * @typedef {CoraliteAttributeSchema | Array<string | number | boolean>} CoraliteAttributeDefinition
+ */
+
+/**
+ * Collection of component attribute definitions.
+ * @typedef {Object.<string, CoraliteAttributeDefinition>} CoraliteAttributesDefinition
+ */
+
+/**
  * Represents a single value that a module can store or process.
  * @typedef {string | number | boolean | string[] | (CoraliteDirective | CoraliteAnyNode)[] | Object.<string, any>} CoraliteModuleDefinition
  */

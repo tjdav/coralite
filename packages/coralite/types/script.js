@@ -1,6 +1,6 @@
 
 /**
- * @import { CoraliteModuleDefinition, CoraliteModuleSlotFunction } from './module.js'
+ * @import { CoraliteModuleDefinition, CoraliteModuleSlotFunction, CoraliteAttributesDefinition } from './module.js'
  * @import { CoralitePage, CoraliteSession } from './core.js'
  * @import { CoraliteClientPluginBeforeComponentRenderCallback, CoraliteClientPluginAfterComponentRenderCallback, CoraliteClientPluginDisconnectedCallback } from './plugin.js'
  */
@@ -15,7 +15,7 @@
  * @property {string[]} [components] - Imperative components array.
  * @property {Object} [defaultValues] - Initial state from setup.
  * @property {Object.<string, CoraliteModuleSlotFunction>} [slots] - Computed slots.
- * @property {Object} [attributes] - Attribute schema.
+ * @property {CoraliteAttributesDefinition} [attributes] - Attribute schema.
  * @property {Object} [getters] - Isomorphic getters.
  * @property {Object} [server] - Hydrated server data.
  */
