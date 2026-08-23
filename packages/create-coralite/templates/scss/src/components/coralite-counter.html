@@ -5,6 +5,10 @@
 </template>
 
 <style>
+  :host {
+    display: inline-block;
+  }
+
   .btn {
     background-color: var(--primary);
     color: var(--body-bg);
@@ -30,7 +34,8 @@
     attributes: {
       step: {
         type: Number,
-        default: 1
+        default: 1,
+        validate: (val) => val > 0 || 'Step must be greater than 0'
       }
     },
 
@@ -40,19 +45,18 @@
       }
     },
 
-    client ({ state, signal, refs }) {
+    client ({ state, signal, refs, emit }) {
       const button = refs('count-button')
 
       button.addEventListener('click', async () => {
-        button.textContent = 'Count is loading....'
-
-        const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
-
-        // Coralite automatically patches the {{ count }} token in the template.
+        // Direct reactive mutation triggers Coralite's O(1) microtask DOM updates
         state.count += state.step
-        button.textContent = `Count is ${state.count}`
+
+        // Dispatch custom event to parent listeners
+        emit('count-change', { count: state.count })
 
         // Explode confetti :)
+        const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
         confetti()
       }, { signal })
     }

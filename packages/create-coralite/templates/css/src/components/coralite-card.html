@@ -1,7 +1,29 @@
 <template id="coralite-card">
-  <div class="card gap d-flex justify-content-center">
-    <div class="card-body">
-      <slot></slot>
-    </div>
+  <div class="card-body">
+    <slot></slot>
   </div>
 </template>
+
+<style>
+  :host {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacer-1);
+    color: var(--light);
+    backdrop-filter: blur(10px);
+    border-color: #ffffff2e;
+    border-style: solid;
+    border-width: 0 1px;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+  }
+
+  .card-body {
+    padding: var(--spacer-1);
+    margin: 0;
+    display: flex;
+    gap: var(--spacer-1);
+    align-items: center;
+    justify-content: center;
+  }
+</style>

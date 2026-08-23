@@ -1,8 +1,16 @@
 <template id="coralite-footer">
   <footer class="text-center">
-    Made with <a href="https://coralite.dev/" target="_blank">{{ capitaliseName }}</a>
+    Made with <a href="https://coralite.dev/" target="_blank">{{ capitaliseName }}</a> © {{ year }}
   </footer>
 </template>
+
+<style>
+  :host {
+    display: block;
+    margin-top: auto;
+    padding: var(--padding-y) 0;
+  }
+</style>
 
 <script type="module">
   import { defineComponent } from 'coralite'
@@ -11,18 +19,19 @@
     attributes: {
       name: {
         type: String,
-        default: ''
+        default: 'Coralite',
+        transform: (val) => val.trim()
       }
     },
 
     getters: {
       capitaliseName: (state) => {
-        if (state.name) {
-          return state.name[0].toUpperCase() + state.name.slice(1)
+        if (!state.name) {
+          return 'Coralite'
         }
-  
-        return 'Coralite'
-      }
+        return state.name.charAt(0).toUpperCase() + state.name.slice(1)
+      },
+      year: () => new Date().getFullYear()
     }
   })
 </script>
