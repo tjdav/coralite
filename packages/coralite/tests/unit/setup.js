@@ -14,6 +14,8 @@ global.Document = window.Document
 global.DocumentFragment = window.DocumentFragment
 global.MutationObserver = window.MutationObserver
 global.HTMLSlotElement = window.HTMLSlotElement
+global.Event = window.Event
+global.CustomEvent = window.CustomEvent
 
 // Ensure queueMicrotask is available (it is in Node.js >= 11, but just in case)
 if (typeof global.queueMicrotask !== 'function') {

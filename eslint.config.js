@@ -123,6 +123,8 @@ export default [
         {
           definedTypes: [
             'AbortController',
+            'CustomEvent',
+            'CustomEventInit',
             'MutationObserver',
             'Buffer',
             'DOMHighResTimeStamp',

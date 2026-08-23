@@ -231,6 +231,7 @@ export function createComponentDefinition ({ app }) {
             refs: () => null,
             observe: () => () => {
             },
+            emit: () => false,
             signal: slotSignal,
             // @ts-ignore
             instanceId: context.instanceId || module.id,

@@ -38,6 +38,7 @@
  * @property {Function} refs - Instance refs
  * @property {AbortSignal} signal - Lifecycle abort signal for unmount events (null for declarative components).
  * @property {(propertyName: string, callback: (newValue: any, oldValue: any) => void) => (() => void)} observe - Explicit state observation API returning a disposer.
+ * @property {(eventName: string, detail?: any, options?: CustomEventInit) => boolean} emit - Dispatches a bubbling, composed CustomEvent from the component's root element.
  */
 
 /**

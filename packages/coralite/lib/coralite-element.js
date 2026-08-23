@@ -1768,6 +1768,30 @@ export class CoraliteElement extends BaseElement {
       self._observeStateKey(key, callback)
     }
 
+    const emit = (name, detail, options = {}) => {
+      if (typeof name !== 'string' || name.trim() === '') {
+        throw new CoraliteError(
+          `Component "${self.componentOptions?.componentId || 'unknown'}" event name must be a non-empty string.`,
+          {
+            componentId: self.componentOptions?.componentId,
+            instanceId: self._instanceId
+          }
+        )
+      }
+
+      const eventDetail = detail !== undefined ? detail : options?.detail
+      const CustomEventCtor = typeof window !== 'undefined' && window.CustomEvent ? window.CustomEvent : CustomEvent
+      const event = new CustomEventCtor(name, {
+        bubbles: true,
+        composed: true,
+        cancelable: false,
+        ...options,
+        detail: eventDetail
+      })
+
+      return self.dispatchEvent(event)
+    }
+
     /**
      * The context payload injected into the user's script block.
      * @type {Object}
@@ -1797,7 +1821,8 @@ export class CoraliteElement extends BaseElement {
 
         return node
       },
-      observe
+      observe,
+      emit
     }
 
     if (typeof this._clientContextGetter === 'function') {

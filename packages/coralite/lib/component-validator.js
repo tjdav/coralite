@@ -205,7 +205,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
   const refsCalls = new Set()
   const getterStateDependencies = new Set()
 
-  const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'instanceId'])
+  const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'instanceId', 'emit'])
   let hasSlotsDefined = false
 
   if (scriptContent) {
