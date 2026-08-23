@@ -31,6 +31,7 @@
  * @property {Function|string} [type] - Constructor function (e.g. String, Number, Boolean) or string name.
  * @property {any} [default] - Default value for the attribute if omitted.
  * @property {Array<string | number | boolean>} [values] - Array of allowed primitive values.
+ * @property {boolean} [required] - Whether the attribute is required by the component.
  */
 
 /**

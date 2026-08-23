@@ -41,11 +41,21 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
         filePath
       })
     } else {
-      const type = rawSchema.type || rawSchema
+      schemaObj = typeof rawSchema === 'object' && rawSchema !== null ? rawSchema : { type: rawSchema }
+      const type = schemaObj.type || rawSchema
       const typeName = typeof type === 'function' ? type.name : String(type)
+
+      if (schemaObj.required === true && schemaObj.default !== undefined) {
+        throw new CoraliteError(`Component "${componentId}" attribute "${key}" cannot be marked as required and define a default value.`, {
+          componentId,
+          filePath
+        })
+      }
+
       normalized[key] = {
         type: typeName,
-        default: rawSchema.default
+        default: schemaObj.default,
+        required: Boolean(schemaObj.required)
       }
       continue
     }
@@ -87,6 +97,13 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
     const typeConstructor = explicitType || inferTypeFromValues(uniqueValues)
     const typeName = typeof typeConstructor === 'function' ? typeConstructor.name : String(typeConstructor)
 
+    if (schemaObj.required === true && schemaObj.default !== undefined) {
+      throw new CoraliteError(`Component "${componentId}" attribute "${key}" cannot be marked as required and define a default value.`, {
+        componentId,
+        filePath
+      })
+    }
+
     if (schemaObj.default !== undefined) {
       if (!uniqueValues.includes(schemaObj.default)) {
         const formattedDefault = JSON.stringify(schemaObj.default)
@@ -101,7 +118,8 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
     normalized[key] = {
       type: typeName,
       default: schemaObj.default,
-      values: uniqueValues
+      values: uniqueValues,
+      required: Boolean(schemaObj.required)
     }
   }
 
@@ -158,6 +176,11 @@ export function createComponentDefinition ({ app }) {
         state[key] = validateAttributeValue(state[key], schema, key, module.id, { filePath: module.path?.pathname })
       } else if (schema.default !== undefined) {
         state[key] = schema.default
+      } else if (schema.required) {
+        throw new CoraliteError(`Component "${module.id}" requires attribute "${key}", but it was not provided.`, {
+          componentId: module.id,
+          filePath: module.path?.pathname
+        })
       }
     }
 

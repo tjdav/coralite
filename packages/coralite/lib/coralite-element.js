@@ -616,6 +616,13 @@ export class CoraliteElement extends BaseElement {
     const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
     const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
 
+    if (newVal === null && schema?.required === true) {
+      throw new CoraliteError(`Component "${this.componentOptions.componentId}" attribute "${name}" is required and cannot be removed.`, {
+        componentId: this.componentOptions.componentId,
+        instanceId: this._instanceId
+      })
+    }
+
     let value
     if (newVal === null) {
       value = schema?.default !== undefined ? schema.default : undefined
@@ -698,6 +705,16 @@ export class CoraliteElement extends BaseElement {
         const defaultValue = Array.isArray(schema) ? undefined : schema?.default
         if (target[key] === undefined && defaultValue !== undefined) {
           target[key] = defaultValue
+        }
+      }
+
+      for (const [name, schema] of Object.entries(options.attributes)) {
+        const isRequired = typeof schema === 'object' && schema !== null && schema.required === true
+        if (isRequired && target[name] === undefined) {
+          throw new CoraliteError(`Component "${options.componentId}" requires attribute "${name}", but it was not provided.`, {
+            componentId: options.componentId,
+            instanceId: this._instanceId
+          })
         }
       }
     }
@@ -859,6 +876,12 @@ export class CoraliteElement extends BaseElement {
           const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
           const schema = options.attributes[camelName] || options.attributes[p]
           if (schema) {
+            if (schema.required === true && (v === undefined || v === null)) {
+              throw new CoraliteError(`Component "${options.componentId}" attribute "${p}" is required and cannot be set to ${v}.`, {
+                componentId: options.componentId,
+                instanceId: self._instanceId
+              })
+            }
             v = validateAttributeValue(v, schema, p, options.componentId, { instanceId: self._instanceId })
           }
         }
