@@ -164,16 +164,11 @@ export function injectExternalStyleLinks (root, head, stylePaths, base, options 
  * @returns {{ element: CoraliteElement | null, content: string }}
  */
 export function injectStyles (root, head, styles, options = {}) {
-  if (!styles || styles.size === 0) {
-    return {
-      element: null,
-      content: ''
+  let cssContent = 'c-token { display: contents; }\n'
+  if (styles && styles.size > 0) {
+    for (const [selector, css] of styles) {
+      cssContent += `${selector} {\n${css}\n}\n`
     }
-  }
-
-  let cssContent = ''
-  for (const [selector, css] of styles) {
-    cssContent += `${selector} {\n${css}\n}\n`
   }
 
   const attribs = { id: 'coralite-inline-styles' }

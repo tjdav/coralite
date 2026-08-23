@@ -1528,12 +1528,7 @@ export function createRenderer ({
 
         if (isExternalStyles) {
           if (componentsToInclude.size > 0 || mappedSessionObject.styles.size > 0) {
-            let combinedCss = ''
-            if (componentsToInclude.size > 0) {
-              const selectors = Array.from(componentsToInclude)
-              selectors.push('c-token')
-              combinedCss += `${selectors.join(', ')} { display: contents; }\n`
-            }
+            let combinedCss = 'c-token { display: contents; }\n'
             if (mappedSessionObject.styles.size > 0) {
               for (const [selector, css] of mappedSessionObject.styles) {
                 combinedCss += `${selector} {\n${css}\n}\n`
@@ -1571,46 +1566,10 @@ export function createRenderer ({
             }
           }
         } else {
-          if (mappedSessionObject.styles.size > 0) {
+          if (componentsToInclude.size > 0 || mappedSessionObject.styles.size > 0) {
             const { content: inlineCss } = injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles, { nonce })
             if (isCspActive && !nonce && inlineCss) {
               styleHashes.push(calculateHash(inlineCss, hashAlgo))
-            }
-          }
-
-          if (componentsToInclude.size > 0) {
-            const targetElement = headElement || bodyElement || mappedComponent.root
-            const layoutAttribs = { id: 'coralite-components' }
-            if (nonce) {
-              layoutAttribs.nonce = nonce
-            }
-
-            const layoutStyleElement = createCoraliteElement({
-              type: 'tag',
-              name: 'style',
-              parent: targetElement,
-              attribs: layoutAttribs,
-              children: []
-            })
-
-            const selectors = Array.from(componentsToInclude)
-            selectors.push('c-token')
-            const layoutCss = `${selectors.join(', ')} { display: contents; }`
-
-            layoutStyleElement.children.push(createCoraliteTextNode({
-              type: 'text',
-              data: layoutCss,
-              parent: layoutStyleElement
-            }))
-
-            if (targetElement === headElement || targetElement === bodyElement) {
-              targetElement.children.push(layoutStyleElement)
-            } else {
-              targetElement.children.unshift(layoutStyleElement)
-            }
-
-            if (isCspActive && !nonce && layoutCss) {
-              styleHashes.push(calculateHash(layoutCss, hashAlgo))
             }
           }
         }
