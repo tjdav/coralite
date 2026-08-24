@@ -1,6 +1,6 @@
 # Coralite Performance Benchmarks
 
-Last updated: 2026-08-24T15:16:34.429Z
+Last updated: 2026-08-24T16:01:31.441Z
 
 **Environment:** Node v24.16.0 (linux x64)
 
@@ -8,43 +8,43 @@ Last updated: 2026-08-24T15:16:34.429Z
 
 | Framework | create1k | replace1k | update10th | swapRows | clear | heapMB |
 | --- | --- | --- | --- | --- | --- | --- |
-| coralite | 15.8 | 15.9 | 15.6 | 15.2 | 15.9 | 9.54 |
-| react | 72.8 | 66.1 | 27.3 | 57.8 | 13.9 | 9.54 |
-| vue | 63.1 | 63.5 | 27.8 | 16.2 | 9.2 | 9.54 |
-| vanilla | 58.9 | 47.2 | 25.4 | 16.9 | 9.9 | 9.54 |
+| coralite | 15.9 | 15.6 | 16.1 | 15.6 | 15.8 | 1.33 |
+| react | 54.9 | 56.9 | 25.8 | 53.7 | 11.6 | 3.59 |
+| vue | 57.7 | 69.8 | 24.9 | 15.4 | 9.2 | 3.11 |
+| vanilla | 60.3 | 50 | 23.7 | 17.5 | 10.4 | 1.37 |
 
 
 ### bundle-hydration
 
 | Framework | Raw JS (KB) | Gzip JS (KB) | Hydration (ms) | TTI (ms) |
 | --- | --- | --- | --- | --- |
-| coraliteDynamic | 34.1 | 9.5 | 1.9 | 76.66 |
+| coraliteDynamic | 34.1 | 9.5 | 1.9 | 75.65 |
 | coraliteStatic | 0 | 0 | 0 | 0 |
-| react | 190.3 | 59.4 | 0.9 | 93.23 |
-| vue | 76.7 | 30.7 | 3.9 | 74.01 |
+| react | 190.3 | 59.4 | 1 | 91.72 |
+| vue | 76.7 | 30.7 | 3.9 | 71.7 |
 
 
 ### ssrThroughput
 
 | Workload | Total Pages | Duration (ms) | Throughput (pages/sec) | Avg Latency (ms) | Peak Heap (MB) |
 | --- | --- | --- | --- | --- | --- |
-| 100_pages | 100 | 131.2 | 762.2 | 1.31 | 3.8 |
-| 1000_pages | 1000 | 1068.6 | 935.8 | 1.07 | 19.7 |
-| 10000_pages | 10000 | 8165.3 | 1224.7 | 0.82 | 179.7 |
+| 100_pages | 100 | 199.4 | 501.5 | 1.99 | 6 |
+| 1000_pages | 1000 | 893.4 | 1119.3 | 0.89 | 17.5 |
+| 10000_pages | 10000 | 7840.3 | 1275.5 | 0.78 | 185.6 |
 
 
 ### internal
 
 | Benchmark | Ops/Sec | Avg Latency (ns) | Speedup |
 | --- | --- | --- | --- |
-| Coralite Token Replace (textNode) | 6834237 | 146.3 | 1 |
-| Native String.prototype.replace (regex) | 11505931 | 86.9 | 1.68 |
-| Coralite Token Replace (attribute) | 18076218 | 55.3 | 2.64 |
-| Coralite Read-Only Proxy (Deep Read) | 3220383 | 310.5 | 0.47 |
-| Standard Flat Object Read (Deep Read) | 14081037983 | 0.1 | 2060.37 |
-| Eager Recursive Proxy (Deep Read) | 5533261 | 180.7 | 0.81 |
-| Optimized Object.setPrototypeOf AST Element Creation | 1005463 | 994.6 | 0.15 |
-| Legacy Object.defineProperties AST Element Creation | 953648 | 1048.6 | 0.14 |
+| Coralite Token Replace (textNode) | 6155877 | 162.4 | 1 |
+| Native String.prototype.replace (regex) | 12069953 | 82.9 | 1.96 |
+| Coralite Token Replace (attribute) | 16149660 | 61.9 | 2.62 |
+| Coralite Read-Only Proxy (Deep Read) | 3132366 | 319.2 | 1 |
+| Standard Flat Object Read (Deep Read) | 2220533766 | 0.5 | 708.9 |
+| Eager Recursive Proxy (Deep Read) | 5490467 | 182.1 | 1.75 |
+| Optimized Object.setPrototypeOf AST Element Creation | 939340 | 1064.6 | 1 |
+| Legacy Object.defineProperties AST Element Creation | 883852 | 1131.4 | 0.94 |
 
 
 ## Reproduction Instructions

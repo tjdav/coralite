@@ -1,4 +1,4 @@
-import { bench } from 'mitata'
+import { bench, do_not_optimize } from 'mitata'
 import { replaceToken } from '../../../lib/utils/server/server.js'
 
 /**
@@ -11,14 +11,6 @@ export function setupTokenInterpolationBench () {
     parent: { children: [] }
   }
 
-  const dummyAttrNode = {
-    type: 'tag',
-    name: 'div',
-    attribs: {
-      title: 'Greeting {{ name }}'
-    }
-  }
-
   bench('Coralite Token Replace (textNode)', () => {
     const node = { ...dummyTextNode }
     replaceToken({
@@ -27,11 +19,13 @@ export function setupTokenInterpolationBench () {
       content: '{{ name }}',
       value: 'World'
     })
+    return do_not_optimize(node.data)
   })
 
   bench('Native String.prototype.replace (regex)', () => {
     let str = 'Hello {{ name }}, welcome to {{ site }}!'
     str = str.replace(/\{\{\s*name\s*\}\}/g, 'World')
+    return do_not_optimize(str)
   })
 
   bench('Coralite Token Replace (attribute)', () => {
@@ -47,5 +41,6 @@ export function setupTokenInterpolationBench () {
       content: '{{ name }}',
       value: 'World'
     })
+    return do_not_optimize(node.attribs.title)
   })
 }

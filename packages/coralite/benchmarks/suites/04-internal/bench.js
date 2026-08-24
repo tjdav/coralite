@@ -18,9 +18,15 @@ export async function runInternalSuite (options = {}) {
 
   const mitataResult = await run()
 
+  const groupBaselines = new Set([
+    'Coralite Token Replace (textNode)',
+    'Coralite Read-Only Proxy (Deep Read)',
+    'Optimized Object.setPrototypeOf AST Element Creation'
+  ])
+
   const results = []
   if (mitataResult && Array.isArray(mitataResult.benchmarks)) {
-    let groupBaselineAvgMs = null
+    let groupBaselineAvgNs = null
 
     for (const b of mitataResult.benchmarks) {
       const name = b.alias || b.name || (b.runs && b.runs[0] && b.runs[0].name) || 'unnamed'
@@ -33,12 +39,12 @@ export async function runInternalSuite (options = {}) {
       const avgLatencyNs = +avgNs.toFixed(1)
       const opsPerSec = avgNs > 0 ? +(1e9 / avgNs).toFixed(0) : 0
 
-      if (groupBaselineAvgMs === null) {
-        groupBaselineAvgMs = avgNs
+      if (groupBaselines.has(name) || groupBaselineAvgNs === null) {
+        groupBaselineAvgNs = avgNs
       }
 
-      const speedup = (groupBaselineAvgMs && avgNs > 0)
-        ? +(groupBaselineAvgMs / avgNs).toFixed(2)
+      const speedup = (groupBaselineAvgNs && avgNs > 0)
+        ? +(groupBaselineAvgNs / avgNs).toFixed(2)
         : 1.0
 
       results.push({

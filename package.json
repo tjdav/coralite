@@ -35,6 +35,7 @@
     "release": "coralite-release",
     "release:post": "coralite-release-post",
     "release:changelog": "coralite-release-changelog",
+    "bench": "pnpm --filter coralite run bench",
     "changelog": "coralite-changelog",
     "website:build": "pnpm --filter='./website' run build",
     "website:dev": "pnpm --filter='./website' run start"

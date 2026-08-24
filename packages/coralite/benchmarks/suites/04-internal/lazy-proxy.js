@@ -1,4 +1,4 @@
-import { bench } from 'mitata'
+import { bench, do_not_optimize } from 'mitata'
 import { createReadOnlyProxy } from '../../../lib/utils/core.js'
 
 /**
@@ -40,15 +40,18 @@ export function setupLazyProxyBench () {
   bench('Coralite Read-Only Proxy (Deep Read)', () => {
     const val1 = readOnlyProxy.user.profile.name
     const val2 = readOnlyProxy.user.profile.settings.theme
+    return do_not_optimize(val1 + val2)
   })
 
   bench('Standard Flat Object Read (Deep Read)', () => {
     const val1 = sourceObject.user.profile.name
     const val2 = sourceObject.user.profile.settings.theme
+    return do_not_optimize(val1 + val2)
   })
 
   bench('Eager Recursive Proxy (Deep Read)', () => {
     const val1 = eagerProxy.user.profile.name
     const val2 = eagerProxy.user.profile.settings.theme
+    return do_not_optimize(val1 + val2)
   })
 }

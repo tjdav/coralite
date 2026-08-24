@@ -26,7 +26,15 @@ function calculateMedian (numbers) {
 async function createStaticServer (rootDir) {
   const server = http.createServer(async (req, res) => {
     try {
-      let filePath = path.join(rootDir, req.url || '/')
+      const parsedUrl = new URL(req.url || '/', 'http://127.0.0.1')
+      const normalizedPath = path.normalize(parsedUrl.pathname)
+      let filePath = path.join(rootDir, normalizedPath)
+
+      if (!filePath.startsWith(rootDir)) {
+        res.writeHead(403)
+        return res.end('Forbidden')
+      }
+
       const stat = await fs.stat(filePath).catch(() => null)
       if (stat && stat.isDirectory()) {
         filePath = path.join(filePath, 'index.html')

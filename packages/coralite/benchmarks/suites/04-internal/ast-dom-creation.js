@@ -1,4 +1,4 @@
-import { bench } from 'mitata'
+import { bench, do_not_optimize } from 'mitata'
 import { createCoraliteElement, createCoraliteTextNode } from '../../../lib/utils/server/dom.js'
 
 /**
@@ -48,6 +48,7 @@ export function setupASTDOMCreationBench () {
       data: 'Hello World'
     })
     el.children.push(text)
+    return do_not_optimize(el)
   })
 
   bench('Legacy Object.defineProperties AST Element Creation', () => {
@@ -60,5 +61,6 @@ export function setupASTDOMCreationBench () {
       data: 'Hello World'
     }
     el.children.push(text)
+    return do_not_optimize(el)
   })
 }

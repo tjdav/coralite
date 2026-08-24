@@ -25,7 +25,15 @@ function calculateMedian (numbers) {
 async function createStaticServer (rootDir) {
   const server = http.createServer(async (req, res) => {
     try {
-      let filePath = path.join(rootDir, req.url || '/')
+      const parsedUrl = new URL(req.url || '/', 'http://127.0.0.1')
+      const normalizedPath = path.normalize(parsedUrl.pathname)
+      let filePath = path.join(rootDir, normalizedPath)
+
+      if (!filePath.startsWith(rootDir)) {
+        res.writeHead(403)
+        return res.end('Forbidden')
+      }
+
       const stat = await fs.stat(filePath).catch(() => null)
       if (stat && stat.isDirectory()) {
         filePath = path.join(filePath, 'index.html')
@@ -186,19 +194,19 @@ export async function runDomReactivitySuite (options = {}) {
       await measureClickToPaint(runBtnId)
 
       const cdp = await page.context().newCDPSession(page)
-      await cdp.send('HeapProfiler.collectGarbage')
+      await cdp.send('HeapProfiler.collectGarbage').catch(() => {})
 
-      let heapBytes = await page.evaluate(() => window.performance?.memory?.usedJSHeapSize || 0)
-      if (!heapBytes) {
-        const metrics = await cdp.send('Performance.getMetrics')
-        const jsHeapMetric = metrics.metrics?.find(m => m.name === 'JSHeapUsedSize')
-        if (jsHeapMetric) {
-          heapBytes = jsHeapMetric.value
-        }
+      let heapBytes = 0
+      try {
+        const heapUsage = await cdp.send('Runtime.getHeapUsage')
+        heapBytes = heapUsage.usedSize || 0
+      } catch {
+        const metrics = await cdp.send('Performance.getMetrics').catch(() => null)
+        const jsHeapMetric = metrics?.metrics?.find(m => m.name === 'JSHeapUsedSize')
+        heapBytes = jsHeapMetric ? jsHeapMetric.value : await page.evaluate(() => window.performance?.memory?.usedJSHeapSize || 0)
       }
 
-      await cdp.detach().catch(() => {
-      })
+      await cdp.detach().catch(() => {})
       const heapMB = +(heapBytes / (1024 * 1024)).toFixed(2)
 
       results[fw] = {

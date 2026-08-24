@@ -77,6 +77,13 @@ async function main () {
   }
 
   const selectedSuite = flags.suite.toLowerCase()
+  const VALID_SUITES = ['all', 'dom-reactivity', 'dom', 'bundle-hydration', 'bundle', 'hydration', 'ssr-throughput', 'ssr', 'internal']
+
+  if (!VALID_SUITES.includes(selectedSuite)) {
+    console.error(`\n❌ Error: Unknown suite "${flags.suite}".`)
+    console.error(`   Allowed suites: ${VALID_SUITES.join(', ')}\n`)
+    process.exit(1)
+  }
 
   if (selectedSuite === 'all' || selectedSuite === 'dom-reactivity' || selectedSuite === 'dom') {
     const domResults = await runDomReactivitySuite({

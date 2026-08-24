@@ -30,6 +30,9 @@ pnpm bench
 pnpm --filter coralite run bench
 ```
 
+> **Note on Baseline Comparison Methodology**:
+> Vanilla JS represents handwritten, highly optimized surgical DOM manipulation without abstraction overhead, establishing the theoretical upper performance bound (optimal baseline). Component frameworks (Coralite, React 19, Vue 3) manage rendering declaratively through reactive state bindings and component lifecycles.
+
 ### Running Specific Suites
 
 You can run individual suites using the `--suite` flag:
