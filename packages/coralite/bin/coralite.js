@@ -1,11 +1,12 @@
 #!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
+// @ts-ignore
 import { createCoralite } from '../dist/lib/index.js'
 import { Command } from 'commander'
 import kleur from 'kleur'
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import pkg from '../package.json' with { type: 'json' }
 
 // remove all Node warnings before doing anything else
@@ -35,13 +36,18 @@ if (existsSync(configPath)) {
 program
   .command('validate-components')
   .alias('validate:components')
-  .description('Validate Coralite components to detect unused code, missing refs, and schema issues')
+  .description('Validate and automatically fix Coralite components')
   .option('-c, --components <path>', 'Path to components directory')
   .option('--coverage', 'Include test execution coverage metrics', false)
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
-  .option('--strict', 'Fail with non-zero exit code if unused code is found', false)
+  .option('--strict', 'Fail with non-zero exit code if unused code or warnings exist', false)
+  .option('--fix', 'Automatically fix safe component issues', false)
+  .option('--dry-run', 'Preview changes that would be made by --fix without writing to disk', false)
   .action(async (options) => {
+    // @ts-ignore
     const { validateComponentsDir, formatComponentValidationReport } = await import('../dist/lib/component-validator.js')
+    // @ts-ignore
+    const { applyComponentFixes } = await import('../dist/lib/component-fixer.js')
 
     let compDir = options.components
     if (!compDir && config && config.components) {
@@ -58,14 +64,58 @@ program
     }
 
     try {
-      const report = validateComponentsDir(compDir, { coverage: options.coverage })
-      const formatted = formatComponentValidationReport(report, {
+      let initialReport = validateComponentsDir(compDir, { coverage: options.coverage })
+
+      if (options.fix || options.dryRun) {
+        let totalFixesCount = 0
+        const modifiedFiles = []
+
+        for (const compRes of initialReport.components) {
+          if (!compRes.filePath) {
+            continue
+          }
+          const rawCode = readFileSync(compRes.filePath, 'utf8')
+          const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
+            filePath: compRes.filePath,
+            dryRun: options.dryRun
+          })
+
+          if (fixResult.modified) {
+            totalFixesCount += fixResult.fixesApplied.length
+            modifiedFiles.push(compRes.filePath)
+
+            if (options.dryRun) {
+              process.stdout.write(fixResult.diff + '\n')
+            } else {
+              writeFileSync(compRes.filePath, fixResult.outputCode, 'utf8')
+            }
+          }
+        }
+
+        if (options.dryRun) {
+          process.stdout.write(
+            kleur.bold().cyan(
+              `Dry-run complete: ${totalFixesCount} fix(es) would be applied across ${modifiedFiles.length} file(s). No files modified on disk.\n\n`
+            )
+          )
+        } else if (modifiedFiles.length > 0) {
+          process.stdout.write(
+            kleur.bold().green(
+              `✔ Auto-fixed ${totalFixesCount} issue(s) across ${modifiedFiles.length} file(s).\n\n`
+            )
+          )
+          // Re-run validation so final report reflects post-fix state
+          initialReport = validateComponentsDir(compDir, { coverage: options.coverage })
+        }
+      }
+
+      const formatted = formatComponentValidationReport(initialReport, {
         format: options.format,
         coverage: options.coverage
       })
       process.stdout.write(formatted)
 
-      const hasFailures = report.metrics.totalUnused > 0 || (report.metrics.totalErrors && report.metrics.totalErrors > 0)
+      const hasFailures = (initialReport.metrics.totalErrors && initialReport.metrics.totalErrors > 0) || (options.strict && initialReport.metrics.totalUnused > 0)
       if (hasFailures) {
         process.exit(1)
       }
@@ -83,6 +133,7 @@ program
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('--strict', 'Fail with non-zero exit code if validation errors are found', false)
   .action(async (options) => {
+    // @ts-ignore
     const { validatePluginsDir, validatePluginFile, formatPluginValidationReport } = await import('../dist/lib/plugin-validator.js')
     const { statSync, existsSync } = await import('node:fs')
     const { join } = await import('node:path')
@@ -163,7 +214,7 @@ program
       }
     }
 
-    /** @type {import('../dist/types/index.js').CoraliteConfig} */
+    /** @type {import('../types/index.js').CoraliteConfig} */
     const coraliteOptions = {
       components: options.components,
       pages,
@@ -192,6 +243,7 @@ program
       coraliteOptions.plugins = coraliteOptions.plugins.concat(config.plugins)
     }
 
+    // @ts-ignore
     const coralite = await createCoralite({
       ...coraliteOptions,
       onError: ({ level, message, error }) => {

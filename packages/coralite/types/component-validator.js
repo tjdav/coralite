@@ -70,11 +70,11 @@
 /**
  * @typedef {Object} CoraliteComponentValidationResult
  * @property {string} filePath - Path to component file
- * @property {boolean} [valid] - Whether component is valid without errors or warnings
- * @property {CoraliteDiagnostic[]} [diagnostics] - Structured diagnostic errors, warnings, and fixes
- * @property {ComponentValidationDefinedSymbols} [defined] - Defined symbols in component
- * @property {ComponentValidationUnusedSymbols} [unused] - Unused/missing symbols in component
- * @property {ComponentValidationMetrics} [metrics] - Component coverage metrics
+ * @property {boolean} valid - Whether component is valid without errors or warnings
+ * @property {CoraliteDiagnostic[]} diagnostics - Structured diagnostic errors, warnings, and fixes
+ * @property {ComponentValidationDefinedSymbols} defined - Defined symbols in component
+ * @property {ComponentValidationUnusedSymbols} unused - Unused/missing symbols in component
+ * @property {ComponentValidationMetrics} metrics - Component coverage metrics
  */
 
 /**
