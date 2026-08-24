@@ -47,7 +47,8 @@ export async function transformCss (css, onError, options = {}) {
           if (mode === 'scope') {
             rule.selector = ':scope'
           } else {
-            rule.replaceWith(...rule.nodes)
+            rule.root().prepend(...rule.nodes)
+            rule.remove()
             return
           }
         }
@@ -269,4 +270,22 @@ ${indent(scopeCss)}
 ${indent(fallbackCss)}
     }
   }`
+}
+
+/**
+ * Builds component layer stylesheet containing c-token and component CSS rules.
+ *
+ * @param {Map<string, string>} styles - Map of component style selectors and CSS rules
+ * @returns {string} Compiled stylesheet content
+ */
+export function buildComponentStylesheet (styles) {
+  if (!styles || styles.size === 0) {
+    return ''
+  }
+
+  let cssContent = 'c-token { display: contents; }\n'
+  for (const [, css] of styles) {
+    cssContent += `@layer components {\n${css}\n}\n`
+  }
+  return cssContent
 }

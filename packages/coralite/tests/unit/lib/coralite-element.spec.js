@@ -43,6 +43,8 @@ describe('CoraliteElement', () => {
 
     assert.strictEqual(el.querySelector('#text').textContent, 'hello')
     assert.strictEqual(el.querySelector('#input').value, 'hello')
+    assert.ok(el.hasAttribute('data-cid'), 'imperative element should stamp data-cid attribute')
+    assert.strictEqual(el.getAttribute('data-cid'), el._instanceId)
 
     document.body.removeChild(el)
   })

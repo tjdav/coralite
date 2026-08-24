@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { transformCss, formatComponentCss } from '../../../lib/utils/server/style.js'
+import { transformCss, formatComponentCss, buildComponentStylesheet } from '../../../lib/utils/server/style.js'
 import { parseModule } from '../../../lib/utils/server/parse.js'
 import { injectStyles } from '../../../lib/utils/server/render.js'
 import { createCoraliteElement, createCoraliteComponent } from '../../../lib/utils/server/dom.js'
@@ -54,6 +54,35 @@ test('Style Transformation Logic', async (t) => {
     assert.match(result, /\.card-body\s*\{\s*padding:\s*1rem;?\s*\}/)
     assert.doesNotMatch(result, /&.root-class/)
     assert.doesNotMatch(result, /&.card-body/)
+  })
+
+  await t.test('transformCss prepends unwrapped :host declaration nodes to root even if :host appears late in CSS', async () => {
+    const css = `
+      .card-title { color: red; }
+      :host { display: flex; font-size: 16px; }
+      .card-body { padding: 1rem; }
+    `
+
+    const result = await transformCss(css, null, { mode: 'nesting' })
+
+    const flexIdx = result.indexOf('display: flex')
+    const titleIdx = result.indexOf('.card-title')
+    const bodyIdx = result.indexOf('.card-body')
+
+    assert.ok(flexIdx !== -1 && titleIdx !== -1 && bodyIdx !== -1)
+    assert.ok(flexIdx < titleIdx, ':host declarations should appear before .card-title')
+  })
+
+  await t.test('buildComponentStylesheet compiles styles map into layered stylesheet', () => {
+    assert.equal(buildComponentStylesheet(null), '')
+    assert.equal(buildComponentStylesheet(new Map()), '')
+
+    const stylesMap = new Map([
+      ['my-comp', '.btn { color: red; }']
+    ])
+
+    const cssContent = buildComponentStylesheet(stylesMap)
+    assert.equal(cssContent, 'c-token { display: contents; }\n@layer components {\n.btn { color: red; }\n}\n')
   })
 
   await t.test('transformCss converts :host to :scope in scope mode', async () => {

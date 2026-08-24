@@ -42,7 +42,7 @@ import {
 import picomatch from 'picomatch'
 import { stat } from 'node:fs/promises'
 import { generateClientRuntime } from './utils/client/runtime.js'
-import { formatComponentCss } from './utils/server/style.js'
+import { formatComponentCss, buildComponentStylesheet } from './utils/server/style.js'
 import { transformNode } from './parser.js'
 import { CoraliteError } from './utils/errors.js'
 import { RESERVED_DOM_ATTRIBUTES } from './coralite-element.js'
@@ -1528,12 +1528,14 @@ export function createRenderer ({
 
         if (isExternalStyles) {
           if (componentsToInclude.size > 0 || mappedSessionObject.styles.size > 0) {
-            let combinedCss = 'c-token { display: contents; }\n'
+            let combinedCss = ''
+
             if (mappedSessionObject.styles.size > 0) {
-              for (const [, css] of mappedSessionObject.styles) {
-                combinedCss += `@layer components {\n${css}\n}\n`
-              }
+              combinedCss = buildComponentStylesheet(mappedSessionObject.styles)
+            } else if (componentsToInclude.size > 0) {
+              combinedCss = 'c-token { display: contents; }\n'
             }
+
             const cssHashVal = hash(combinedCss)
             const cssFileHash = cssHashVal.slice(0, 8)
             const relPath = `coralite-inline-${cssFileHash}.css`

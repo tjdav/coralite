@@ -1,4 +1,5 @@
 import { createCoraliteElement, createCoraliteTextNode } from './dom.js'
+import { buildComponentStylesheet } from './style.js'
 
 /**
  * @import {
@@ -171,10 +172,7 @@ export function injectStyles (root, head, styles, options = {}) {
     }
   }
 
-  let cssContent = 'c-token { display: contents; }\n'
-  for (const [, css] of styles) {
-    cssContent += `@layer components {\n${css}\n}\n`
-  }
+  const cssContent = buildComponentStylesheet(styles)
 
   const attribs = { id: 'coralite-inline-styles' }
   if (options?.nonce) {

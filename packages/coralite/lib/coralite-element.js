@@ -866,6 +866,10 @@ export class CoraliteElement extends BaseElement {
    * @private
    */
   _setupState () {
+    if (!this.hasAttribute('data-cid') && this._instanceId) {
+      this.setAttribute('data-cid', this._instanceId)
+    }
+
     const options = this.componentOptions
     const target = { ...options.defaultValues }
     target.errors = target.errors || {}
