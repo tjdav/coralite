@@ -56,33 +56,34 @@ test('Style Transformation Logic', async (t) => {
     assert.doesNotMatch(result, /&.card-body/)
   })
 
-  await t.test('transformCss prepends unwrapped :host declaration nodes to root even if :host appears late in CSS', async () => {
+  await t.test('transformCss places unwrapped :host declarations before descendant rules regardless of source ordering in nesting mode', async () => {
     const css = `
-      .card-title { color: red; }
-      :host { display: flex; font-size: 16px; }
-      .card-body { padding: 1rem; }
+      .card-title { color: blue; }
+      :host { display: block; margin: 10px; }
     `
 
     const result = await transformCss(css, null, { mode: 'nesting' })
 
-    const flexIdx = result.indexOf('display: flex')
+    const blockIdx = result.indexOf('display: block')
+    const marginIdx = result.indexOf('margin: 10px')
     const titleIdx = result.indexOf('.card-title')
-    const bodyIdx = result.indexOf('.card-body')
 
-    assert.ok(flexIdx !== -1 && titleIdx !== -1 && bodyIdx !== -1)
-    assert.ok(flexIdx < titleIdx, ':host declarations should appear before .card-title')
+    assert.ok(blockIdx !== -1 && marginIdx !== -1 && titleIdx !== -1)
+    assert.ok(blockIdx < titleIdx, ':host display declaration should appear before .card-title')
+    assert.ok(marginIdx < titleIdx, ':host margin declaration should appear before .card-title')
   })
 
-  await t.test('buildComponentStylesheet compiles styles map into layered stylesheet', () => {
+  await t.test('buildComponentStylesheet formats c-token and @layer components wrapper', () => {
     assert.equal(buildComponentStylesheet(null), '')
     assert.equal(buildComponentStylesheet(new Map()), '')
 
     const stylesMap = new Map([
-      ['my-comp', '.btn { color: red; }']
+      ['my-card', '.card { padding: 1rem; }']
     ])
 
     const cssContent = buildComponentStylesheet(stylesMap)
-    assert.equal(cssContent, 'c-token { display: contents; }\n@layer components {\n.btn { color: red; }\n}\n')
+    assert.ok(cssContent.startsWith('c-token { display: contents; }\n'))
+    assert.equal(cssContent, 'c-token { display: contents; }\n@layer components {\n.card { padding: 1rem; }\n}\n')
   })
 
   await t.test('transformCss converts :host to :scope in scope mode', async () => {

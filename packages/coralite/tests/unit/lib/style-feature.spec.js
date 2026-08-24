@@ -335,4 +335,24 @@ describe('Component Reactive style Feature', () => {
       assert.equal(result.unused.attributes.length, 0)
     })
   })
+
+  describe('Imperative Boundary Stamping', () => {
+    test('Imperative CoraliteElement stamps data-cid during mount to enforce @scope boundary', () => {
+      const tagName = 'style-imperative-test'
+      if (!window.customElements.get(tagName)) {
+        const ElementClass = createCoraliteClass({
+          componentId: 'style-imperative-comp',
+          defaultValues: {}
+        })
+        window.customElements.define(tagName, ElementClass)
+      }
+
+      const el = document.createElement(tagName)
+      document.body.appendChild(el)
+
+      assert.strictEqual(el.getAttribute('data-cid'), el._instanceId)
+
+      document.body.removeChild(el)
+    })
+  })
 })
