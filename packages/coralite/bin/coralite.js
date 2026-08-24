@@ -56,7 +56,7 @@ function resolvePath (explicitPath, configProp, defaultCandidates) {
       return cand
     }
   }
-  return '.'
+  return null
 }
 
 program
@@ -69,9 +69,13 @@ program
   .option('--strict', 'Fail with non-zero exit code if warnings or unused code exist', false)
   .option('--coverage', 'Include component test execution coverage metrics', false)
   .action(async (options) => {
-    const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
+    let compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
     const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
     const pageDir = resolvePath(options.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'])
+
+    if (!compDir && !pluginTarget && !pageDir && !options.components && !options.plugins && !options.pages) {
+      compDir = '.'
+    }
 
     try {
       let compReport = null
@@ -133,7 +137,7 @@ program
                            (pageReport ? pageReport.summary.warningCount : 0)
 
       const fixableCount = (compReport ? compReport.summary.fixableCount : 0) +
-                           (pluginReport ? (pluginReport.plugins || []).reduce((acc, p) => acc + (p.diagnostics || []).filter(d => Boolean(d.fix)).length, 0) : 0) +
+                           (pluginReport ? (pluginReport.plugins || []).reduce((acc, p) => acc + (p.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length, 0) : 0) +
                            (pageReport ? pageReport.summary.fixableCount : 0)
 
       const totalUnused = compReport ? compReport.metrics.totalUnused : 0
