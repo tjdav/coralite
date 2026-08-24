@@ -629,4 +629,32 @@ describe('Component Validator', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)
   })
+
+  test('recognizes state.errors.myAttr and context.errors.myAttr as attribute usage without warnings', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      myAttr: { type: String },
+      otherAttr: { type: String }
+    },
+    client(context) {
+      const err1 = context.state.errors.myAttr
+      const { errors } = context
+      const err2 = errors.otherAttr
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'errors-usage-comp.html')
+    assert.strictEqual(result.valid, true)
+    assert.deepStrictEqual(result.unused.attributes, [])
+    assert.strictEqual(result.metrics.usageCoveragePercentage, 100)
+  })
 })

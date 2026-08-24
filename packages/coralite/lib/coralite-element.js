@@ -1035,6 +1035,67 @@ export class CoraliteElement extends BaseElement {
       return target
     }
 
+    const errorsTarget = target.errors || {}
+    const errorsProxy = new Proxy(errorsTarget, {
+      get (t, p, receiver) {
+        if (typeof p !== 'string') {
+          return Reflect.get(t, p, receiver)
+        }
+        if (self._collectingDependencies) {
+          self._collectingDependencies.add('errors')
+          const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+          const kebabName = camelToKebab(camelName)
+          self._collectingDependencies.add('error_' + camelName)
+          self._collectingDependencies.add('error_' + kebabName)
+        }
+        return Reflect.get(t, p, receiver)
+      },
+
+      set (t, p, v) {
+        if (typeof p !== 'string') {
+          return Reflect.set(t, p, v)
+        }
+        const oldValue = t[p]
+        if (oldValue === v) {
+          return true
+        }
+        const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+        const kebabName = camelToKebab(camelName)
+
+        t[p] = v
+        target['error_' + camelName] = v
+        target['error_' + kebabName] = v
+
+        self._scheduleUpdate()
+        self._markObserverDirty('errors')
+        self._markObserverDirty('error_' + camelName)
+        self._markObserverDirty('error_' + kebabName)
+        return true
+      },
+
+      deleteProperty (t, p) {
+        if (typeof p !== 'string') {
+          return Reflect.deleteProperty(t, p)
+        }
+        const oldValue = t[p]
+        const deleted = Reflect.deleteProperty(t, p)
+        if (deleted && oldValue !== undefined) {
+          const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+          const kebabName = camelToKebab(camelName)
+
+          target['error_' + camelName] = ''
+          target['error_' + kebabName] = ''
+
+          self._scheduleUpdate()
+          self._markObserverDirty('errors')
+          self._markObserverDirty('error_' + camelName)
+          self._markObserverDirty('error_' + kebabName)
+        }
+        return deleted
+      }
+    })
+    target.errors = errorsProxy
+
     const getGetterFn = (key) => {
       if (key.startsWith('slots_method_')) {
         return null
@@ -1058,6 +1119,13 @@ export class CoraliteElement extends BaseElement {
       get (t, p, receiver) {
         if (typeof p !== 'string') {
           return Reflect.get(t, p, receiver)
+        }
+
+        if (p === 'errors') {
+          if (self._collectingDependencies) {
+            self._collectingDependencies.add('errors')
+          }
+          return errorsProxy
         }
 
         const getterFn = getGetterFn(p)

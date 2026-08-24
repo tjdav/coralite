@@ -250,6 +250,57 @@ export function validateComponentSource (sourceCode, filePath = '') {
         const stateVars = new Set(['state'])
         const refsVars = new Set(['refs'])
         const contextVars = new Set(['context'])
+        const errorsVars = new Set()
+
+        const addErrorProp = (propName) => {
+          if (propName && typeof propName === 'string') {
+            targetStateSet.add(kebabToCamel(propName))
+            targetStateSet.add(camelToKebab(propName))
+          }
+        }
+
+        const extractErrorDestructuredKeys = (patternNode) => {
+          if (!patternNode || patternNode.type !== 'ObjectPattern') {
+            return
+          }
+          for (const prop of patternNode.properties || []) {
+            if (prop.type === 'Property') {
+              const keyName = getPropKeyName(prop)
+              if (keyName) {
+                addErrorProp(keyName)
+              }
+            }
+          }
+        }
+
+        const processErrorsProperty = (propNode) => {
+          let valNode = propNode.value
+          if (valNode.type === 'AssignmentPattern') {
+            valNode = valNode.left
+          }
+          if (valNode.type === 'Identifier') {
+            errorsVars.add(valNode.name)
+          } else if (valNode.type === 'ObjectPattern') {
+            extractErrorDestructuredKeys(valNode)
+          }
+        }
+
+        const processStateProperty = (propNode) => {
+          let valNode = propNode.value
+          if (valNode.type === 'AssignmentPattern') {
+            valNode = valNode.left
+          }
+          if (valNode.type === 'Identifier') {
+            stateVars.add(valNode.name)
+          } else if (valNode.type === 'ObjectPattern') {
+            extractDestructuredKeys(valNode, targetStateSet, stateVars)
+            for (const p of valNode.properties || []) {
+              if (p.type === 'Property' && getPropKeyName(p) === 'errors') {
+                processErrorsProperty(p)
+              }
+            }
+          }
+        }
 
         if (fnNode.params && fnNode.params.length > paramIdx) {
           const targetParam = fnNode.params[paramIdx]
@@ -267,6 +318,9 @@ export function validateComponentSource (sourceCode, filePath = '') {
               if (targetParam.name === 'refs') {
                 refsVars.add('refs')
               }
+              if (targetParam.name === 'errors') {
+                errorsVars.add('errors')
+              }
             }
           } else if (targetParam.type === 'ObjectPattern') {
             if (isGetterFn) {
@@ -276,17 +330,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 if (p.type === 'Property') {
                   const keyName = getPropKeyName(p)
                   if (keyName === 'state') {
-                    if (p.value.type === 'Identifier') {
-                      stateVars.add(p.value.name)
-                    } else if (p.value.type === 'ObjectPattern') {
-                      extractDestructuredKeys(p.value, targetStateSet, stateVars)
-                    } else if (p.value.type === 'AssignmentPattern') {
-                      if (p.value.left.type === 'Identifier') {
-                        stateVars.add(p.value.left.name)
-                      } else if (p.value.left.type === 'ObjectPattern') {
-                        extractDestructuredKeys(p.value.left, targetStateSet, stateVars)
-                      }
-                    }
+                    processStateProperty(p)
                   } else if (keyName === 'refs') {
                     if (p.value.type === 'Identifier') {
                       refsVars.add(p.value.name)
@@ -299,6 +343,8 @@ export function validateComponentSource (sourceCode, filePath = '') {
                         extractDestructuredKeys(p.value.left, targetRefsSet, refsVars)
                       }
                     }
+                  } else if (keyName === 'errors') {
+                    processErrorsProperty(p)
                   } else if (isSlotFn) {
                     if (!RESERVED_CONTEXT_KEYS.has(keyName)) {
                       targetStateSet.add(keyName)
@@ -336,9 +382,55 @@ export function validateComponentSource (sourceCode, filePath = '') {
               }
             }
 
+            if (dNode.init.type === 'Identifier') {
+              if (stateVars.has(dNode.init.name)) {
+                initSource = 'state'
+              } else if (refsVars.has(dNode.init.name)) {
+                initSource = 'refs'
+              } else if (contextVars.has(dNode.init.name)) {
+                initSource = 'context'
+              } else if (errorsVars.has(dNode.init.name)) {
+                initSource = 'errors'
+              }
+            } else if (dNode.init.type === 'MemberExpression') {
+              let objName = null
+              if (dNode.init.object.type === 'Identifier') {
+                objName = dNode.init.object.name
+              }
+              const propName = getNodePropName(dNode.init.property, dNode.init.computed)
+
+              if (objName && contextVars.has(objName)) {
+                if (propName === 'state') {
+                  initSource = 'state'
+                } else if (propName === 'refs') {
+                  initSource = 'refs'
+                } else if (propName === 'errors') {
+                  initSource = 'errors'
+                }
+              } else if (objName && stateVars.has(objName)) {
+                if (propName === 'errors') {
+                  initSource = 'errors'
+                }
+              } else if (
+                dNode.init.object.type === 'MemberExpression' &&
+                dNode.init.object.object.type === 'Identifier' &&
+                contextVars.has(dNode.init.object.object.name)
+              ) {
+                const ctxProp = getNodePropName(dNode.init.object.property, dNode.init.object.computed)
+                if (ctxProp === 'state' && propName === 'errors') {
+                  initSource = 'errors'
+                }
+              }
+            }
+
             if (initSource === 'state') {
               if (dNode.id.type === 'ObjectPattern') {
                 extractDestructuredKeys(dNode.id, targetStateSet, stateVars)
+                for (const p of dNode.id.properties || []) {
+                  if (p.type === 'Property' && getPropKeyName(p) === 'errors') {
+                    processErrorsProperty(p)
+                  }
+                }
               } else if (dNode.id.type === 'Identifier') {
                 stateVars.add(dNode.id.name)
               }
@@ -354,20 +446,24 @@ export function validateComponentSource (sourceCode, filePath = '') {
                   if (p.type === 'Property') {
                     const keyName = getPropKeyName(p)
                     if (keyName === 'state') {
-                      if (p.value.type === 'Identifier') {
-                        stateVars.add(p.value.name)
-                      } else if (p.value.type === 'ObjectPattern') {
-                        extractDestructuredKeys(p.value, targetStateSet, stateVars)
-                      }
+                      processStateProperty(p)
                     } else if (keyName === 'refs') {
                       if (p.value.type === 'Identifier') {
                         refsVars.add(p.value.name)
                       } else if (p.value.type === 'ObjectPattern') {
                         extractDestructuredKeys(p.value, targetRefsSet, refsVars)
                       }
+                    } else if (keyName === 'errors') {
+                      processErrorsProperty(p)
                     }
                   }
                 }
+              }
+            } else if (initSource === 'errors') {
+              if (dNode.id.type === 'ObjectPattern') {
+                extractErrorDestructuredKeys(dNode.id)
+              } else if (dNode.id.type === 'Identifier') {
+                errorsVars.add(dNode.id.name)
               }
             }
           },
@@ -377,21 +473,36 @@ export function validateComponentSource (sourceCode, filePath = '') {
             let propNode = memNode.property
 
             if (memNode.object.type === 'Identifier') {
-              if (stateVars.has(memNode.object.name)) {
+              if (errorsVars.has(memNode.object.name)) {
+                matchedTarget = 'errors'
+              } else if (stateVars.has(memNode.object.name)) {
                 matchedTarget = 'state'
               } else if (refsVars.has(memNode.object.name)) {
                 matchedTarget = 'refs'
               }
-            } else if (
-              memNode.object.type === 'MemberExpression' &&
-              memNode.object.object.type === 'Identifier' &&
-              contextVars.has(memNode.object.object.name)
-            ) {
-              const ctxProp = getNodePropName(memNode.object.property, memNode.object.computed)
-              if (ctxProp === 'state') {
-                matchedTarget = 'state'
-              } else if (ctxProp === 'refs') {
-                matchedTarget = 'refs'
+            } else if (memNode.object.type === 'MemberExpression') {
+              const innerObj = memNode.object.object
+              const innerProp = getNodePropName(memNode.object.property, memNode.object.computed)
+
+              if (innerObj.type === 'Identifier' && stateVars.has(innerObj.name) && innerProp === 'errors') {
+                matchedTarget = 'errors'
+              } else if (innerObj.type === 'Identifier' && contextVars.has(innerObj.name)) {
+                if (innerProp === 'state') {
+                  matchedTarget = 'state'
+                } else if (innerProp === 'refs') {
+                  matchedTarget = 'refs'
+                } else if (innerProp === 'errors') {
+                  matchedTarget = 'errors'
+                }
+              } else if (
+                innerObj.type === 'MemberExpression' &&
+                innerObj.object.type === 'Identifier' &&
+                contextVars.has(innerObj.object.name)
+              ) {
+                const ctxProp = getNodePropName(innerObj.property, innerObj.computed)
+                if (ctxProp === 'state' && innerProp === 'errors') {
+                  matchedTarget = 'errors'
+                }
               }
             }
 
@@ -404,6 +515,11 @@ export function validateComponentSource (sourceCode, filePath = '') {
               const keyName = getNodePropName(propNode, memNode.computed)
               if (keyName) {
                 targetRefsSet.add(keyName)
+              }
+            } else if (matchedTarget === 'errors') {
+              const keyName = getNodePropName(propNode, memNode.computed)
+              if (keyName) {
+                addErrorProp(keyName)
               }
             }
           },

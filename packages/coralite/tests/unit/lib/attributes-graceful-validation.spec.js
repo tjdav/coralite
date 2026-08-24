@@ -306,5 +306,46 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       document.body.removeChild(el1)
       document.body.removeChild(el2)
     })
+
+    it('triggers update scheduling and syncs error_* tokens on direct mutations or deletions on state.errors', async () => {
+      let updateScheduledCount = 0
+
+      const compOptions = {
+        componentId: 'direct-errors-mutation-comp',
+        attributes: {
+          userScore: {
+            type: Number
+          }
+        }
+      }
+
+      const CompClass = createCoraliteClass(compOptions)
+      customElements.define('direct-errors-mutation-comp', CompClass)
+
+      const el = document.createElement('direct-errors-mutation-comp')
+      document.body.appendChild(el)
+
+      const origScheduleUpdate = el._scheduleUpdate
+      el._scheduleUpdate = function () {
+        updateScheduledCount++
+        return origScheduleUpdate.apply(this, arguments)
+      }
+
+      // Direct mutation on state.errors
+      el._state.errors.userScore = 'Custom error message'
+      assert.strictEqual(el._state.errors.userScore, 'Custom error message')
+      assert.strictEqual(el._state.error_userScore, 'Custom error message')
+      assert.strictEqual(el._state['error_user-score'], 'Custom error message')
+      assert.strictEqual(updateScheduledCount, 1)
+
+      // Direct deletion on state.errors
+      delete el._state.errors.userScore
+      assert.strictEqual(el._state.errors.userScore, undefined)
+      assert.strictEqual(el._state.error_userScore, '')
+      assert.strictEqual(el._state['error_user-score'], '')
+      assert.strictEqual(updateScheduledCount, 2)
+
+      document.body.removeChild(el)
+    })
   })
 })
