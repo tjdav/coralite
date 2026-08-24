@@ -27,12 +27,54 @@
  */
 
 /**
+ * @typedef {'error' | 'warning' | 'info'} CoraliteDiagnosticSeverity
+ */
+
+/**
+ * @typedef {Object} CoraliteDiagnosticGetter
+ * @property {string} name - Name of the derived getter
+ * @property {string} code - Getter implementation function code
+ */
+
+/**
+ * @typedef {Object} CoraliteDiagnosticFix
+ * @property {string} description - Human-readable fix explanation
+ * @property {'lift_to_getter' | 'dynamic_import' | 'inject_ref' | 'remove_attribute' | 'strip_default'} action - Fix action type
+ * @property {string} [replacement] - Replacement string snippet
+ * @property {CoraliteDiagnosticGetter} [getter] - Getter definition if lifting to getter
+ */
+
+/**
+ * @typedef {Object} CoraliteDiagnostic
+ * @property {string} code - Diagnostic rule code (e.g. CORALITE-E201)
+ * @property {CoraliteDiagnosticSeverity} severity - Diagnostic severity
+ * @property {string} message - Diagnostic summary message
+ * @property {string} [filePath] - File path where diagnostic occurred
+ * @property {number} [line] - 1-based line number
+ * @property {number} [column] - 1-based column number
+ * @property {string} [codeframe] - Formatted codeframe snippet
+ * @property {string} [cause] - Root-cause explanation
+ * @property {CoraliteDiagnosticFix} [fix] - 1-shot actionable fix metadata
+ */
+
+/**
+ * @typedef {Object} CoraliteValidationSummary
+ * @property {number} totalComponents - Total components validated
+ * @property {number} validComponents - Number of valid components (0 errors, 0 warnings)
+ * @property {number} errorCount - Total errors found across all components
+ * @property {number} warningCount - Total warnings found across all components
+ * @property {number} fixableCount - Total fixable diagnostics across all components
+ * @property {number} usageCoveragePercentage - Overall usage coverage percentage
+ */
+
+/**
  * @typedef {Object} CoraliteComponentValidationResult
  * @property {string} filePath - Path to component file
- * @property {boolean} [valid] - Whether component is valid without errors or unused symbols
- * @property {ComponentValidationDefinedSymbols} defined - Defined symbols in component
- * @property {ComponentValidationUnusedSymbols} unused - Unused/missing symbols in component
- * @property {ComponentValidationMetrics} metrics - Component coverage metrics
+ * @property {boolean} [valid] - Whether component is valid without errors or warnings
+ * @property {CoraliteDiagnostic[]} [diagnostics] - Structured diagnostic errors, warnings, and fixes
+ * @property {ComponentValidationDefinedSymbols} [defined] - Defined symbols in component
+ * @property {ComponentValidationUnusedSymbols} [unused] - Unused/missing symbols in component
+ * @property {ComponentValidationMetrics} [metrics] - Component coverage metrics
  */
 
 /**
@@ -49,7 +91,8 @@
 /**
  * @typedef {Object} CoraliteComponentDirectoryValidationReport
  * @property {CoraliteComponentValidationResult[]} components - Array of component validation results
- * @property {ComponentDirectoryValidationMetrics} metrics - Aggregate metrics
+ * @property {CoraliteValidationSummary} [summary] - High-level diagnostic summary statistics
+ * @property {ComponentDirectoryValidationMetrics} [metrics] - Aggregate metrics
  */
 
 // Legacy typedef aliases
