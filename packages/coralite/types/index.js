@@ -6,4 +6,5 @@ export * from './collection.js'
 export * from './plugin.js'
 export * from './script.js'
 export * from './component-validator.js'
+export * from './page-validator.js'
 

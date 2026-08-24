@@ -135,6 +135,7 @@ export default [
             'HTMLElement',
             'HTMLSlotElement',
             'HTMLFormControlsCollection',
+            'IterableIterator',
             'Node',
             'NodeJS',
             'TestContext',

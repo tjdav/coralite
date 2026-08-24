@@ -22,6 +22,40 @@ const TAG_SYNONYMS = {
 }
 
 /**
+ * Creates a normalized CoraliteDiagnostic object with an optional codeframe snippet.
+ *
+ * @param {Object} params
+ * @param {string} params.code
+ * @param {import('../../types/component-validator.js').CoraliteDiagnosticSeverity} [params.severity='error']
+ * @param {string} params.message
+ * @param {string} [params.filePath]
+ * @param {number} [params.line]
+ * @param {number} [params.column]
+ * @param {string} [params.sourceCode]
+ * @param {string} [params.cause]
+ * @param {import('../../types/component-validator.js').CoraliteDiagnosticFix} [params.fix]
+ * @returns {import('../../types/component-validator.js').CoraliteDiagnostic}
+ */
+export function createDiagnostic ({ code, severity = 'error', message, filePath, line, column, sourceCode, cause, fix }) {
+  const diagnostic = {
+    code,
+    severity,
+    message,
+    filePath,
+    line,
+    column,
+    cause,
+    fix
+  }
+
+  if (typeof line === 'number' && line > 0 && sourceCode) {
+    diagnostic.codeframe = buildCodeframe(sourceCode, line, column)
+  }
+
+  return diagnostic
+}
+
+/**
  * Strips ANSI escape sequences from a string.
  *
  * @param {string} str - Input string
