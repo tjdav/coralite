@@ -1,15 +1,17 @@
 /**
  * @import {CoraliteConfig} from '../types/index.js'
  */
-import { CoraliteError } from './utils/errors.js'
+import { CoraliteError, handleError } from './utils/errors.js'
 
 /**
  * Validates and defines a Coralite configuration object
  * @param {CoraliteConfig} options - The configuration options to validate and define
+ * @param {Object} [context={}] - Optional context containing onError callback
+ * @param {Function} [context.onError] - Optional error handler callback
  * @returns {CoraliteConfig} The validated configuration object
  * @throws {Error} If the configuration is invalid
  */
-export function defineConfig (options) {
+export function defineConfig (options, { onError } = {}) {
   // Validate that options is an object
   if (!options || typeof options !== 'object') {
     throw new CoraliteError('Config must be an object')
@@ -164,7 +166,14 @@ export function defineConfig (options) {
       }
 
       if (seenDests.has(asset.dest)) {
-        console.warn(`[Coralite Warning] Duplicate asset destination "${asset.dest}" detected in options.assets. Later entry overrides earlier entry.`)
+        handleError({
+          onErrorCallback: onError,
+          data: {
+            level: 'WARN',
+            type: 'config_duplicate_asset',
+            message: `[Coralite Warning] Duplicate asset destination "${asset.dest}" detected in options.assets. Later entry overrides earlier entry.`
+          }
+        })
       }
       seenDests.add(asset.dest)
 

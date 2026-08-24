@@ -266,42 +266,33 @@ describe('emit Helper in Client Context', () => {
   })
 
   it('should trigger warning in component-validator if attribute or server property collides with emit when slots are defined', () => {
-    const originalWarn = console.warn
-    const warnings = []
-    console.warn = (msg) => {
-      warnings.push(msg)
-    }
+    const sourceCode = `
+      <template>
+        <div><slot></slot></div>
+      </template>
 
-    try {
-      const sourceCode = `
-        <template>
-          <div><slot></slot></div>
-        </template>
-
-        <script>
-          export default defineComponent({
-            attributes: {
-              emit: String
-            },
-            server() {
-              return {
-                emit: 'server-val'
-              }
-            },
-            slots: {
-              default(nodes) { return nodes }
+      <script>
+        export default defineComponent({
+          attributes: {
+            emit: String
+          },
+          server() {
+            return {
+              emit: 'server-val'
             }
-          })
-        </script>
-      `
+          },
+          slots: {
+            default(nodes) { return nodes }
+          }
+        })
+      </script>
+    `
 
-      validateComponentSource(sourceCode, 'test-component.html')
+    const res = validateComponentSource(sourceCode, 'test-component.html')
+    const collisions = res.diagnostics.filter(d => d.code === 'CORALITE-E104')
 
-      assert.strictEqual(warnings.length, 2)
-      assert.ok(warnings[0].includes('Component attribute "emit" in "test-component.html" collides with a reserved context property (emit).'))
-      assert.ok(warnings[1].includes('Component server property "emit" in "test-component.html" collides with a reserved context property (emit).'))
-    } finally {
-      console.warn = originalWarn
-    }
+    assert.strictEqual(collisions.length, 2)
+    assert.ok(collisions[0].message.includes("Attribute 'emit' collides with reserved slot context key"))
+    assert.ok(collisions[1].message.includes("Server property 'emit' collides with reserved slot context key"))
   })
 })

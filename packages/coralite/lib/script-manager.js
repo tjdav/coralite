@@ -266,7 +266,11 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
       try {
         factories[key] = await coraliteComponentClientContextProps[key](globalContext);
       } catch (e) {
-        console.error('Coralite Plugin Error: Failed to initialize client context for plugin "' + key + '":', e);
+        if (typeof window !== 'undefined' && window.__coralite__?.onError) {
+          window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin "' + key + '": ' + e?.message, error: e });
+        } else {
+          console.error('Coralite Plugin Error: Failed to initialize client context for plugin "' + key + '":', e);
+        }
         throw e;
       }
     }
@@ -668,7 +672,11 @@ export default {
                         try {
                            phase2 = await fn(pluginContext);
                         } catch (e) {
-                           console.error('Coralite Plugin Error: Failed to initialize client context for plugin "${clientName}" phase 1:', e);
+                           if (typeof window !== 'undefined' && window.__coralite__?.onError) {
+                             window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin "${clientName}" phase 1: ' + e?.message, error: e });
+                           } else {
+                             console.error('Coralite Plugin Error: Failed to initialize client context for plugin "${clientName}" phase 1:', e);
+                           }
                            throw e;
                         }
 

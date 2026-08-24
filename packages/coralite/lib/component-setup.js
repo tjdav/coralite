@@ -1,6 +1,6 @@
 import { createReadOnlyProxy } from './utils/core.js'
 import { processTokenValue } from './parser.js'
-import { CoraliteError } from './utils/errors.js'
+import { CoraliteError, handleError } from './utils/errors.js'
 import {
   isCoraliteElement,
   isCoraliteTextNode,
@@ -232,6 +232,8 @@ export function createComponentDefinition ({ app }) {
         state['error_' + camelName] = res.error
         state['error_' + kebabName] = res.error
         const warnMessage = `[Coralite Warning]: Component "${module.id}" attribute "${camelName}" validation failed: ${res.error}`
+        const isSuppressed = app?.options?.suppressValidationWarnings === true || app?.options?.mode === 'production'
+
         if (app && typeof app.onError === 'function') {
           app.onError({
             level: 'WARN',
@@ -239,11 +241,16 @@ export function createComponentDefinition ({ app }) {
             message: warnMessage,
             componentId: module.id
           })
-        } else {
-          const isSuppressed = app?.options?.suppressValidationWarnings === true || app?.options?.mode === 'production'
-          if (!isSuppressed) {
-            console.warn(warnMessage)
-          }
+        } else if (!isSuppressed) {
+          handleError({
+            onErrorCallback: undefined,
+            data: {
+              level: 'WARN',
+              type: 'attribute_validation',
+              message: warnMessage,
+              componentId: module.id
+            }
+          })
         }
       }
       if (res.value !== undefined) {
@@ -471,13 +478,23 @@ export function createComponentDefinition ({ app }) {
  * @returns {Promise<void>}
  * @private
  */
-async function _safeRegister (component, scriptManager, scriptResultMeta = null) {
+async function _safeRegister (component, scriptManager, scriptResultMeta = null, onError = null) {
   const templateAST = component.template?.children || []
   const templateValues = component.values || {}
 
   if (component.styles?.length && !component._processedCss) {
     const rawCss = component.styles.join('\n')
-    component._processedCss = await formatComponentCss(component.id, rawCss, (err) => console.error(err))
+    component._processedCss = await formatComponentCss(component.id, rawCss, (err) => {
+      handleError({
+        onErrorCallback: onError,
+        data: {
+          level: 'ERR',
+          message: err?.message || String(err),
+          error: err instanceof Error ? err : new Error(String(err)),
+          componentId: component.id
+        }
+      })
+    })
   }
 
   const stylesHTML = component._processedCss || ''
@@ -612,6 +629,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null)
  * @param {any} options.scriptManager - The script manager instance.
  * @param {Function} options.createSession - The session creation function.
  * @param {string} options.mode - The current build mode.
+ * @param {import('../types/index.js').CoraliteOnError} [options.onError] - Error handler callback.
  * @returns {Promise<void>}
  */
 export async function registerBaseComponent ({
@@ -619,14 +637,15 @@ export async function registerBaseComponent ({
   evaluate,
   scriptManager,
   createSession,
-  mode
+  mode,
+  onError
 }) {
   if (!component) {
     return
   }
 
   if (!component.script) {
-    return _safeRegister(component, scriptManager)
+    return _safeRegister(component, scriptManager, null, onError)
   }
 
   const baseSession = createSession('base-evaluation')
@@ -646,9 +665,19 @@ export async function registerBaseComponent ({
       mode
     })
 
-    await _safeRegister(component, scriptManager, scriptResult?.__script__)
+    await _safeRegister(component, scriptManager, scriptResult?.__script__, onError)
   } catch (_err) {
-    console.warn(`[Coralite Warning]: Base evaluation for component "${component.id}" failed: ${_err.message}. Registering static fallback definition.`)
-    await _safeRegister(component, scriptManager)
+    const warnMessage = `[Coralite Warning]: Base evaluation for component "${component.id}" failed: ${_err.message}. Registering static fallback definition.`
+    handleError({
+      onErrorCallback: onError,
+      data: {
+        level: 'WARN',
+        type: 'base_evaluation',
+        message: warnMessage,
+        componentId: component.id,
+        error: _err
+      }
+    })
+    await _safeRegister(component, scriptManager, null, onError)
   }
 }

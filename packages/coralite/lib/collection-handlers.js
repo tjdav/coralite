@@ -212,7 +212,8 @@ export function createPageHandlers ({
       evaluate,
       scriptManager,
       createSession,
-      mode: app.options.mode
+      mode: app.options.mode,
+      onError: handleError
     })
 
     return res.component

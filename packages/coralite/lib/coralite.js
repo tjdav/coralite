@@ -497,7 +497,8 @@ export async function createCoralite ({
       evaluate: _evaluateLocal,
       scriptManager,
       createSession: renderer.createSession,
-      mode: app.options.mode
+      mode: app.options.mode,
+      onError: _handleErrorLocal
     })
   }
 

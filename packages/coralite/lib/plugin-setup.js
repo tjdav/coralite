@@ -1,5 +1,5 @@
 import { addPluginHook } from './hooks.js'
-import { CoraliteError } from './utils/errors.js'
+import { CoraliteError, handleError } from './utils/errors.js'
 
 /**
  * @import { CoraliteInstance, CoralitePluginContext } from '../types/index.js'
@@ -33,7 +33,14 @@ export async function setupPlugins ({
 
     for (const mockKey of mockKeys) {
       if (!registeredPluginNames.includes(mockKey)) {
-        console.warn(`[Coralite Warning]: Mock defined for plugin "${mockKey}", but no plugin with that name is registered.`)
+        handleError({
+          onErrorCallback: app?.onError,
+          data: {
+            level: 'WARN',
+            type: 'unmatched_plugin_mock',
+            message: `[Coralite Warning]: Mock defined for plugin "${mockKey}", but no plugin with that name is registered.`
+          }
+        })
       }
     }
   }
