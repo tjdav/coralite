@@ -6,6 +6,7 @@ export * from './utils/server/index.js'
 export * from './component-validator.js'
 export * from './component-fixer.js'
 export * from './plugin-validator.js'
+export * from './plugin-fixer.js'
 export * from './plugin.js'
 export * from './config.js'
 

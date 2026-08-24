@@ -7,6 +7,7 @@
  * @import { CoraliteCollectionItem } from './collection.js'
  * @import { ScriptPlugin } from './script.js'
  * @import { CoraliteElement } from '../lib/coralite-element.js'
+ * @import { CoraliteDiagnostic } from './component-validator.js'
  */
 
 /**
@@ -340,6 +341,7 @@
  * @property {string} pluginName - Extracted or configured plugin name
  * @property {boolean} valid - True if plugin contains 0 errors
  * @property {CoralitePluginValidationIssue[]} issues - List of validation issues
+ * @property {CoraliteDiagnostic[]} [diagnostics] - Structured diagnostic errors, warnings, and fixes
  * @property {CoralitePluginValidationMetrics} metrics - Metrics count
  */
 

@@ -4,12 +4,14 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, resolve, extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import kleur from 'kleur'
+import { buildCodeframe } from './utils/diagnostics.js'
 
 /**
  * @import {
  *   CoralitePluginValidationIssue,
  *   CoralitePluginValidationResult,
- *   CoralitePluginDirectoryValidationReport
+ *   CoralitePluginDirectoryValidationReport,
+ *   CoraliteDiagnostic
  * } from '../types/index.js'
  */
 
@@ -47,6 +49,39 @@ const SERVER_ONLY_MODULES = new Set([
   'os',
   'node:os'
 ])
+
+/**
+ * @param {Object} params
+ * @param {string} params.code
+ * @param {import('../types/index.js').CoraliteDiagnosticSeverity} [params.severity='error']
+ * @param {string} params.message
+ * @param {string} [params.filePath]
+ * @param {number} [params.line]
+ * @param {number} [params.column]
+ * @param {string} [params.sourceCode]
+ * @param {string} [params.cause]
+ * @param {import('../types/index.js').CoraliteDiagnosticFix} [params.fix]
+ * @returns {CoraliteDiagnostic}
+ */
+function createDiagnostic ({ code, severity = 'error', message, filePath, line, column, sourceCode, cause, fix }) {
+  /** @type {CoraliteDiagnostic} */
+  const diagnostic = {
+    code,
+    severity,
+    message,
+    filePath,
+    line,
+    column,
+    cause,
+    fix
+  }
+
+  if (typeof line === 'number' && line > 0 && sourceCode) {
+    diagnostic.codeframe = buildCodeframe(sourceCode, line, column)
+  }
+
+  return diagnostic
+}
 
 /**
  * Recursively extracts pattern bindings (identifiers) into a target set.
@@ -374,7 +409,7 @@ export function findOuterScopeReferences (fnNodeOrCode, options = {}) {
         outerRefsMap.set(name, {
           name,
           line: node.loc ? node.loc.start.line : undefined,
-          column: node.loc ? node.loc.start.column : undefined
+          column: node.loc ? node.loc.start.column + 1 : undefined
         })
       }
     }
@@ -427,6 +462,38 @@ function isSerializable (val, seen = new Set()) {
 }
 
 /**
+ * Helper to test if a context function node is Two-Phase curried (returns a inner function).
+ *
+ * @param {Object} fnNode - AST node of context function
+ * @returns {boolean} True if function returns another function
+ */
+function isTwoPhaseCurried (fnNode) {
+  if (!fnNode || (fnNode.type !== 'FunctionExpression' && fnNode.type !== 'ArrowFunctionExpression')) {
+    return false
+  }
+
+  // Expression body: context: (ctx) => (inst) => { ... }
+  if (fnNode.body.type === 'FunctionExpression' || fnNode.body.type === 'ArrowFunctionExpression') {
+    return true
+  }
+
+  // Block body: context: (ctx) => { return (inst) => { ... } }
+  if (fnNode.body.type === 'BlockStatement') {
+    let returnsFunction = false
+    walkJS(fnNode.body, {
+      ReturnStatement (retNode) {
+        if (retNode.argument && (retNode.argument.type === 'FunctionExpression' || retNode.argument.type === 'ArrowFunctionExpression')) {
+          returnsFunction = true
+        }
+      }
+    })
+    return returnsFunction
+  }
+
+  return false
+}
+
+/**
  * Validates raw plugin source code statically via Acorn AST parsing.
  *
  * @param {string} sourceCode - Raw plugin source code
@@ -436,6 +503,40 @@ function isSerializable (val, seen = new Set()) {
 export function validatePluginSource (sourceCode, filePath = '') {
   /** @type {CoralitePluginValidationIssue[]} */
   const issues = []
+  /** @type {CoraliteDiagnostic[]} */
+  const diagnostics = []
+
+  /**
+   * @param {Object} params
+   * @param {string} params.code
+   * @param {string} [params.legacyCode]
+   * @param {import('../types/index.js').CoraliteDiagnosticSeverity} [params.severity='error']
+   * @param {string} params.message
+   * @param {number} [params.line]
+   * @param {number} [params.column]
+   * @param {string} [params.cause]
+   * @param {import('../types/index.js').CoraliteDiagnosticFix} [params.fix]
+   */
+  const addIssueAndDiagnostic = ({ code, legacyCode, severity = 'error', message, line, column, cause, fix }) => {
+    issues.push({
+      type: severity === 'error' ? 'error' : 'warning',
+      code: legacyCode || code,
+      message,
+      line
+    })
+
+    diagnostics.push(createDiagnostic({
+      code,
+      severity,
+      message,
+      filePath,
+      line,
+      column,
+      sourceCode,
+      cause,
+      fix
+    }))
+  }
 
   let ast
   try {
@@ -445,11 +546,16 @@ export function validatePluginSource (sourceCode, filePath = '') {
       locations: true
     })
   } catch (err) {
-    issues.push({
-      type: 'error',
+    const errLine = err.loc ? err.loc.line : 1
+    const errCol = err.loc ? err.loc.column + 1 : 1
+    addIssueAndDiagnostic({
       code: 'SYNTAX_ERROR',
+      legacyCode: 'SYNTAX_ERROR',
+      severity: 'error',
       message: `Failed to parse JavaScript AST: ${err.message}`,
-      line: err.loc ? err.loc.line : undefined
+      line: errLine,
+      column: errCol,
+      cause: 'Invalid JavaScript syntax in plugin source file.'
     })
 
     return {
@@ -457,6 +563,7 @@ export function validatePluginSource (sourceCode, filePath = '') {
       pluginName: 'unknown',
       valid: false,
       issues,
+      diagnostics,
       metrics: {
         errors: 1,
         warnings: 0
@@ -469,153 +576,256 @@ export function validatePluginSource (sourceCode, filePath = '') {
   let foundDefinePlugin = false
   let pluginName = 'unknown'
 
+  const validatePluginConfigObject = (configObjNode, callLocationNode) => {
+    if (!configObjNode || configObjNode.type !== 'ObjectExpression') {
+      const line = callLocationNode.loc ? callLocationNode.loc.start.line : undefined
+      const column = callLocationNode.loc ? callLocationNode.loc.start.column + 1 : undefined
+      addIssueAndDiagnostic({
+        code: 'CORALITE-P401',
+        legacyCode: 'INVALID_DEFINE_PLUGIN_ARG',
+        severity: 'error',
+        message: 'definePlugin must be called with an object argument',
+        line,
+        column,
+        cause: 'definePlugin requires a plugin configuration object literal.'
+      })
+      return
+    }
+
+    const properties = configObjNode.properties || []
+
+    /** @type {(p: any) => boolean} */
+    const isNameProp = (p) => p.key && (p.key.name === 'name' || p.key.value === 'name')
+    const nameProp = properties.find(isNameProp)
+    if (!nameProp) {
+      const line = callLocationNode.loc ? callLocationNode.loc.start.line : undefined
+      const column = callLocationNode.loc ? callLocationNode.loc.start.column + 1 : undefined
+      addIssueAndDiagnostic({
+        code: 'CORALITE-P101',
+        legacyCode: 'MISSING_PLUGIN_NAME',
+        severity: 'error',
+        message: 'Plugin definition is missing required "name" property',
+        line,
+        column,
+        cause: 'All plugins must specify a unique, non-empty "name" string property.'
+      })
+    } else if (nameProp.value && nameProp.value.type === 'Literal') {
+      pluginName = String(nameProp.value.value)
+      const line = nameProp.loc ? nameProp.loc.start.line : undefined
+      const column = nameProp.loc ? nameProp.loc.start.column + 1 : undefined
+      if (!pluginName || pluginName.trim().length === 0) {
+        addIssueAndDiagnostic({
+          code: 'CORALITE-P101',
+          legacyCode: 'EMPTY_PLUGIN_NAME',
+          severity: 'error',
+          message: 'Plugin "name" property must be a non-empty string',
+          line,
+          column,
+          cause: 'Plugin "name" property is empty or whitespace-only.'
+        })
+      } else if (RESERVED_PLUGIN_NAMES.has(pluginName)) {
+        addIssueAndDiagnostic({
+          code: 'CORALITE-P102',
+          legacyCode: 'RESERVED_PLUGIN_NAME',
+          severity: 'warning',
+          message: `Plugin name "${pluginName}" is a reserved core plugin name`,
+          line,
+          column,
+          cause: `Plugin name "${pluginName}" collides with built-in Coralite core plugin names (${Array.from(RESERVED_PLUGIN_NAMES).join(', ')}).`
+        })
+      }
+    }
+
+    /** @type {(p: any) => boolean} */
+    const isServerProp = (p) => p.key && (p.key.name === 'server' || p.key.value === 'server')
+    const serverProp = properties.find(isServerProp)
+    if (serverProp && serverProp.value && serverProp.value.type === 'ObjectExpression') {
+      const serverProps = serverProp.value.properties || []
+
+      for (const sItem of serverProps) {
+        /** @type {any} */
+        const sp = sItem
+        const keyName = sp.key ? (sp.key.name || sp.key.value) : null
+        const line = sp.loc ? sp.loc.start.line : undefined
+        const column = sp.loc ? sp.loc.start.column + 1 : undefined
+
+        if (keyName && SERVER_HOOK_NAMES.has(keyName)) {
+          if (sp.value && sp.value.type !== 'FunctionExpression' && sp.value.type !== 'ArrowFunctionExpression') {
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P202',
+              legacyCode: 'INVALID_HOOK_TYPE',
+              severity: 'error',
+              message: `Server hook "server.${keyName}" must be a function`,
+              line,
+              column,
+              cause: `Server lifecycle hook "server.${keyName}" must be a function.`
+            })
+          }
+        }
+
+        if (keyName === 'context') {
+          if (sp.value && sp.value.type !== 'FunctionExpression' && sp.value.type !== 'ArrowFunctionExpression') {
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P201',
+              legacyCode: 'INVALID_CONTEXT_TYPE',
+              severity: 'error',
+              message: '"server.context" must be a function',
+              line,
+              column,
+              cause: '"server.context" must be a Two-Phase curried function (pluginContext) => (instanceContext) => { ... }.',
+              fix: {
+                action: 'wrap_two_phase_context',
+                description: 'Wrap context into Two-Phase curried function'
+              }
+            })
+          } else if (sp.value && !isTwoPhaseCurried(sp.value)) {
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P201',
+              legacyCode: 'INVALID_CONTEXT_TYPE',
+              severity: 'error',
+              message: '"server.context" must be a Two-Phase curried function (pluginContext) => (instanceContext) => { ... }',
+              line,
+              column,
+              cause: '"server.context" returns an object directly instead of a secondary instance context function.',
+              fix: {
+                action: 'wrap_two_phase_context',
+                description: 'Wrap context into Two-Phase curried function'
+              }
+            })
+          }
+        }
+      }
+    }
+
+    /** @type {(p: any) => boolean} */
+    const isClientProp = (p) => p.key && (p.key.name === 'client' || p.key.value === 'client')
+    const clientProp = properties.find(isClientProp)
+    if (clientProp && clientProp.value && clientProp.value.type === 'ObjectExpression') {
+      const clientProps = clientProp.value.properties || []
+
+      for (const cItem of clientProps) {
+        /** @type {any} */
+        const cp = cItem
+        const keyName = cp.key ? (cp.key.name || cp.key.value) : null
+        const line = cp.loc ? cp.loc.start.line : undefined
+        const column = cp.loc ? cp.loc.start.column + 1 : undefined
+
+        if (keyName && CLIENT_HOOK_NAMES.has(keyName)) {
+          if (cp.value && cp.value.type !== 'FunctionExpression' && cp.value.type !== 'ArrowFunctionExpression') {
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P303',
+              legacyCode: 'INVALID_HOOK_TYPE',
+              severity: 'error',
+              message: `Client hook "client.${keyName}" must be a function`,
+              line,
+              column,
+              cause: `Client lifecycle hook "client.${keyName}" must be a function.`
+            })
+          }
+        }
+
+        if (keyName === 'context' || CLIENT_HOOK_NAMES.has(keyName)) {
+          if (cp.value && (cp.value.type === 'FunctionExpression' || cp.value.type === 'ArrowFunctionExpression')) {
+            const outerRefs = findOuterScopeReferences(cp.value, {
+              sourceCode,
+              pluginName,
+              moduleBindings
+            })
+            for (const ref of outerRefs) {
+              addIssueAndDiagnostic({
+                code: 'CORALITE-P301',
+                legacyCode: 'SERIALIZATION_BOUNDARY_LEAK',
+                severity: 'error',
+                message: `[Coralite Serialization Error] Plugin "${pluginName}": client.${keyName} references outer-scope symbol "${ref.name}" which will not be available after serialization. Move this function inside client.${keyName} or pass it via client.config.`,
+                line: ref.line || line,
+                column: ref.column || column,
+                cause: `Outer-scope identifier "${ref.name}" is referenced inside client.${keyName} and cannot be serialized across browser boundaries.`
+              })
+            }
+          }
+        }
+
+        if (keyName === 'context') {
+          if (cp.value && cp.value.type !== 'FunctionExpression' && cp.value.type !== 'ArrowFunctionExpression') {
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P201',
+              legacyCode: 'INVALID_CONTEXT_TYPE',
+              severity: 'error',
+              message: '"client.context" must be a function',
+              line,
+              column,
+              cause: '"client.context" must be a Two-Phase curried function (pluginContext) => (instanceContext) => { ... }.',
+              fix: {
+                action: 'wrap_two_phase_context',
+                description: 'Wrap context into Two-Phase curried function'
+              }
+            })
+          } else if (cp.value && !isTwoPhaseCurried(cp.value)) {
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P201',
+              legacyCode: 'INVALID_CONTEXT_TYPE',
+              severity: 'error',
+              message: '"client.context" must be a Two-Phase curried function (pluginContext) => (instanceContext) => { ... }',
+              line,
+              column,
+              cause: '"client.context" returns an object directly instead of a secondary instance context function.',
+              fix: {
+                action: 'wrap_two_phase_context',
+                description: 'Wrap context into Two-Phase curried function'
+              }
+            })
+          }
+        }
+
+        if (keyName === 'config') {
+          if (cp.value && (cp.value.type === 'FunctionExpression' || cp.value.type === 'ArrowFunctionExpression')) {
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P302',
+              legacyCode: 'INVALID_CLIENT_CONFIG',
+              severity: 'error',
+              message: '"client.config" must be a serializable object, received function',
+              line,
+              column,
+              cause: '"client.config" must be a plain serializable object (primitives, plain objects, arrays).'
+            })
+          }
+        }
+      }
+    }
+  }
+
   walkJS(ast, {
     CallExpression (n) {
       /** @type {any} */
       const node = n
       if (node.callee && node.callee.name === 'definePlugin') {
         foundDefinePlugin = true
-        const arg = node.arguments[0]
-        if (!arg || arg.type !== 'ObjectExpression') {
-          issues.push({
-            type: 'error',
-            code: 'INVALID_DEFINE_PLUGIN_ARG',
-            message: 'definePlugin must be called with an object argument',
-            line: node.loc ? node.loc.start.line : undefined
-          })
-          return
-        }
+        validatePluginConfigObject(node.arguments[0], node)
+      }
+    }
+  })
 
-        const properties = arg.properties || []
-
-        /** @type {(p: any) => boolean} */
-        const isNameProp = (p) => p.key && (p.key.name === 'name' || p.key.value === 'name')
-        const nameProp = properties.find(isNameProp)
-        if (!nameProp) {
-          issues.push({
-            type: 'error',
-            code: 'MISSING_PLUGIN_NAME',
-            message: 'Plugin definition is missing required "name" property',
-            line: node.loc ? node.loc.start.line : undefined
-          })
-        } else if (nameProp.value && nameProp.value.type === 'Literal') {
-          pluginName = String(nameProp.value.value)
-          if (!pluginName || pluginName.trim().length === 0) {
-            issues.push({
-              type: 'error',
-              code: 'EMPTY_PLUGIN_NAME',
-              message: 'Plugin "name" property must be a non-empty string',
-              line: nameProp.loc ? nameProp.loc.start.line : undefined
-            })
-          } else if (RESERVED_PLUGIN_NAMES.has(pluginName)) {
-            issues.push({
-              type: 'warning',
-              code: 'RESERVED_PLUGIN_NAME',
-              message: `Plugin name "${pluginName}" is a reserved core plugin name`,
-              line: nameProp.loc ? nameProp.loc.start.line : undefined
-            })
-          }
-        }
-
-        /** @type {(p: any) => boolean} */
-        const isServerProp = (p) => p.key && (p.key.name === 'server' || p.key.value === 'server')
-        const serverProp = properties.find(isServerProp)
-        if (serverProp && serverProp.value && serverProp.value.type === 'ObjectExpression') {
-          const serverProps = serverProp.value.properties || []
-
-          for (const sItem of serverProps) {
-            /** @type {any} */
-            const sp = sItem
-            const keyName = sp.key ? (sp.key.name || sp.key.value) : null
-            if (keyName && SERVER_HOOK_NAMES.has(keyName)) {
-              if (sp.value && sp.value.type !== 'FunctionExpression' && sp.value.type !== 'ArrowFunctionExpression') {
-                issues.push({
-                  type: 'error',
-                  code: 'INVALID_HOOK_TYPE',
-                  message: `Server hook "server.${keyName}" must be a function`,
-                  line: sp.loc ? sp.loc.start.line : undefined
-                })
-              }
-            }
-
-            if (keyName === 'context') {
-              if (sp.value && sp.value.type !== 'FunctionExpression' && sp.value.type !== 'ArrowFunctionExpression') {
-                issues.push({
-                  type: 'error',
-                  code: 'INVALID_CONTEXT_TYPE',
-                  message: '"server.context" must be a function',
-                  line: sp.loc ? sp.loc.start.line : undefined
-                })
-              }
-            }
-          }
-        }
-
-        /** @type {(p: any) => boolean} */
-        const isClientProp = (p) => p.key && (p.key.name === 'client' || p.key.value === 'client')
-        const clientProp = properties.find(isClientProp)
-        if (clientProp && clientProp.value && clientProp.value.type === 'ObjectExpression') {
-          const clientProps = clientProp.value.properties || []
-
-          for (const cItem of clientProps) {
-            /** @type {any} */
-            const cp = cItem
-            const keyName = cp.key ? (cp.key.name || cp.key.value) : null
-            if (keyName && CLIENT_HOOK_NAMES.has(keyName)) {
-              if (cp.value && cp.value.type !== 'FunctionExpression' && cp.value.type !== 'ArrowFunctionExpression') {
-                issues.push({
-                  type: 'error',
-                  code: 'INVALID_HOOK_TYPE',
-                  message: `Client hook "client.${keyName}" must be a function`,
-                  line: cp.loc ? cp.loc.start.line : undefined
-                })
-              }
-            }
-
-            if (keyName === 'context' || CLIENT_HOOK_NAMES.has(keyName)) {
-              if (cp.value && (cp.value.type === 'FunctionExpression' || cp.value.type === 'ArrowFunctionExpression')) {
-                const outerRefs = findOuterScopeReferences(cp.value, {
-                  sourceCode,
-                  pluginName,
-                  moduleBindings
-                })
-                for (const ref of outerRefs) {
-                  issues.push({
-                    type: 'error',
-                    code: 'SERIALIZATION_BOUNDARY_LEAK',
-                    message: `[Coralite Serialization Error] Plugin "${pluginName}": client.${keyName} references outer-scope symbol "${ref.name}" which will not be available after serialization. Move this function inside client.${keyName} or pass it via client.config.`,
-                    line: ref.line || (cp.loc ? cp.loc.start.line : undefined)
-                  })
+  if (!foundDefinePlugin) {
+    // If definePlugin wasn't called, attempt fallback inspection of default export object
+    for (const stmt of ast.body || []) {
+      if (stmt.type === 'ExportDefaultDeclaration') {
+        const decl = stmt.declaration
+        if (decl.type === 'ObjectExpression') {
+          validatePluginConfigObject(decl, stmt)
+        } else if (decl.type === 'FunctionDeclaration' || decl.type === 'FunctionExpression' || decl.type === 'ArrowFunctionExpression') {
+          if (decl.body) {
+            walkAncestorJS(decl.body, {
+              ReturnStatement (retNode) {
+                if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
+                  validatePluginConfigObject(retNode.argument, retNode)
                 }
               }
-            }
-
-            if (keyName === 'context') {
-              if (cp.value && cp.value.type !== 'FunctionExpression' && cp.value.type !== 'ArrowFunctionExpression') {
-                issues.push({
-                  type: 'error',
-                  code: 'INVALID_CONTEXT_TYPE',
-                  message: '"client.context" must be a function',
-                  line: cp.loc ? cp.loc.start.line : undefined
-                })
-              }
-            }
-
-            if (keyName === 'config') {
-              if (cp.value && cp.value.type === 'FunctionExpression') {
-                issues.push({
-                  type: 'error',
-                  code: 'INVALID_CLIENT_CONFIG',
-                  message: '"client.config" must be a serializable object, received function',
-                  line: cp.loc ? cp.loc.start.line : undefined
-                })
-              }
-            }
+            })
           }
         }
       }
     }
-  })
+  }
 
   const serverImports = new Set()
   walkJS(ast, {
@@ -648,11 +858,16 @@ export function validatePluginSource (sourceCode, filePath = '') {
 
           if (inClient && !flaggedLeaks.has(node.name)) {
             flaggedLeaks.add(node.name)
-            issues.push({
-              type: 'error',
-              code: 'ISOMORPHIC_SCOPE_LEAK',
+            const line = node.loc ? node.loc.start.line : undefined
+            const column = node.loc ? node.loc.start.column + 1 : undefined
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P203',
+              legacyCode: 'ISOMORPHIC_SCOPE_LEAK',
+              severity: 'error',
               message: `Server-only import "${node.name}" referenced inside client plugin block`,
-              line: node.loc ? node.loc.start.line : undefined
+              line,
+              column,
+              cause: `Server-only module "${node.name}" referenced inside client plugin block will fail in browser environments.`
             })
           }
         }
@@ -661,10 +876,18 @@ export function validatePluginSource (sourceCode, filePath = '') {
   }
 
   if (!foundDefinePlugin) {
-    issues.push({
-      type: 'warning',
-      code: 'NO_DEFINE_PLUGIN_CALL',
-      message: 'No definePlugin() call detected in plugin source file'
+    addIssueAndDiagnostic({
+      code: 'CORALITE-P401',
+      legacyCode: 'NO_DEFINE_PLUGIN_CALL',
+      severity: 'warning',
+      message: 'No definePlugin() call detected in plugin source file',
+      line: 1,
+      column: 1,
+      cause: 'Plugins should be wrapped in definePlugin({ ... }) for type checking and validation.',
+      fix: {
+        action: 'wrap_define_plugin',
+        description: 'Wrap returned object in definePlugin()'
+      }
     })
   }
 
@@ -676,6 +899,7 @@ export function validatePluginSource (sourceCode, filePath = '') {
     pluginName,
     valid: errorsCount === 0,
     issues,
+    diagnostics,
     metrics: {
       errors: errorsCount,
       warnings: warningsCount
@@ -693,17 +917,50 @@ export function validatePluginSource (sourceCode, filePath = '') {
 export function validatePluginObject (plugin, filePath = '') {
   /** @type {CoralitePluginValidationIssue[]} */
   const issues = []
+  /** @type {CoraliteDiagnostic[]} */
+  const diagnostics = []
+
+  /**
+   * @param {Object} params
+   * @param {string} params.code
+   * @param {string} [params.legacyCode]
+   * @param {import('../types/index.js').CoraliteDiagnosticSeverity} [params.severity='error']
+   * @param {string} params.message
+   * @param {string} [params.cause]
+   * @param {import('../types/index.js').CoraliteDiagnosticFix} [params.fix]
+   */
+  const addIssueAndDiagnostic = ({ code, legacyCode, severity = 'error', message, cause, fix }) => {
+    issues.push({
+      type: severity === 'error' ? 'error' : 'warning',
+      code: legacyCode || code,
+      message
+    })
+
+    diagnostics.push(createDiagnostic({
+      code,
+      severity,
+      message,
+      filePath,
+      cause,
+      fix
+    }))
+  }
 
   if (!plugin || typeof plugin !== 'object') {
+    addIssueAndDiagnostic({
+      code: 'CORALITE-P101',
+      legacyCode: 'INVALID_PLUGIN_OBJECT',
+      severity: 'error',
+      message: `Plugin export must be an object, received ${typeof plugin}`,
+      cause: 'Plugin export is null or not an object.'
+    })
+
     return {
       filePath,
       pluginName: 'unknown',
       valid: false,
-      issues: [{
-        type: 'error',
-        code: 'INVALID_PLUGIN_OBJECT',
-        message: `Plugin export must be an object, received ${typeof plugin}`
-      }],
+      issues,
+      diagnostics,
       metrics: {
         errors: 1,
         warnings: 0
@@ -714,49 +971,65 @@ export function validatePluginObject (plugin, filePath = '') {
   const pluginName = plugin.name || 'unknown'
 
   if (typeof plugin.name !== 'string' || plugin.name.trim().length === 0) {
-    issues.push({
-      type: 'error',
-      code: 'MISSING_PLUGIN_NAME',
-      message: 'Plugin instance is missing a valid "name" string property'
+    addIssueAndDiagnostic({
+      code: 'CORALITE-P101',
+      legacyCode: 'MISSING_PLUGIN_NAME',
+      severity: 'error',
+      message: 'Plugin instance is missing a valid "name" string property',
+      cause: 'Plugin instance missing required "name" property.'
     })
   } else if (RESERVED_PLUGIN_NAMES.has(plugin.name)) {
-    issues.push({
-      type: 'warning',
-      code: 'RESERVED_PLUGIN_NAME',
-      message: `Plugin name "${plugin.name}" is a reserved core plugin name`
+    addIssueAndDiagnostic({
+      code: 'CORALITE-P102',
+      legacyCode: 'RESERVED_PLUGIN_NAME',
+      severity: 'warning',
+      message: `Plugin name "${plugin.name}" is a reserved core plugin name`,
+      cause: `Plugin name "${plugin.name}" is a reserved core plugin name.`
     })
   }
 
   if (plugin.server !== undefined && plugin.server !== null) {
     if (typeof plugin.server !== 'object') {
-      issues.push({
-        type: 'error',
-        code: 'INVALID_SERVER_BLOCK',
-        message: `"server" property must be an object, received ${typeof plugin.server}`
+      addIssueAndDiagnostic({
+        code: 'CORALITE-P202',
+        legacyCode: 'INVALID_SERVER_BLOCK',
+        severity: 'error',
+        message: `"server" property must be an object, received ${typeof plugin.server}`,
+        cause: '"server" property must be an object.'
       })
     } else {
       if (plugin.server.context !== undefined && typeof plugin.server.context !== 'function') {
-        issues.push({
-          type: 'error',
-          code: 'INVALID_CONTEXT_TYPE',
-          message: '"server.context" must be a function'
+        addIssueAndDiagnostic({
+          code: 'CORALITE-P201',
+          legacyCode: 'INVALID_CONTEXT_TYPE',
+          severity: 'error',
+          message: '"server.context" must be a function',
+          cause: '"server.context" must be a function.',
+          fix: {
+            action: 'wrap_two_phase_context',
+            description: 'Wrap context into Two-Phase curried function'
+          }
         })
       }
 
       if (plugin.server.components !== undefined && !Array.isArray(plugin.server.components)) {
-        issues.push({
-          type: 'error',
-          code: 'INVALID_SERVER_COMPONENTS',
-          message: '"server.components" must be an array of component file paths'
+        addIssueAndDiagnostic({
+          code: 'CORALITE-P202',
+          legacyCode: 'INVALID_SERVER_COMPONENTS',
+          severity: 'error',
+          message: '"server.components" must be an array of component file paths',
+          cause: '"server.components" must be an array.'
         })
       }
 
       for (const hookName of SERVER_HOOK_NAMES) {
         if (plugin.server[hookName] !== undefined && typeof plugin.server[hookName] !== 'function') {
-          issues.push({
-            type: 'error',
-            code: 'INVALID_HOOK_TYPE',
-            message: `Server hook "server.${hookName}" must be a function`
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P202',
+            legacyCode: 'INVALID_HOOK_TYPE',
+            severity: 'error',
+            message: `Server hook "server.${hookName}" must be a function`,
+            cause: `Server hook "server.${hookName}" must be a function.`
           })
         }
       }
@@ -765,26 +1038,36 @@ export function validatePluginObject (plugin, filePath = '') {
 
   if (plugin.client !== undefined && plugin.client !== null) {
     if (typeof plugin.client !== 'object') {
-      issues.push({
-        type: 'error',
-        code: 'INVALID_CLIENT_BLOCK',
-        message: `"client" property must be an object, received ${typeof plugin.client}`
+      addIssueAndDiagnostic({
+        code: 'CORALITE-P303',
+        legacyCode: 'INVALID_CLIENT_BLOCK',
+        severity: 'error',
+        message: `"client" property must be an object, received ${typeof plugin.client}`,
+        cause: '"client" property must be an object.'
       })
     } else {
       if (plugin.client.context !== undefined && typeof plugin.client.context !== 'function') {
-        issues.push({
-          type: 'error',
-          code: 'INVALID_CONTEXT_TYPE',
-          message: '"client.context" must be a function'
+        addIssueAndDiagnostic({
+          code: 'CORALITE-P201',
+          legacyCode: 'INVALID_CONTEXT_TYPE',
+          severity: 'error',
+          message: '"client.context" must be a function',
+          cause: '"client.context" must be a function.',
+          fix: {
+            action: 'wrap_two_phase_context',
+            description: 'Wrap context into Two-Phase curried function'
+          }
         })
       }
 
       if (plugin.client.config !== undefined) {
         if (!isSerializable(plugin.client.config)) {
-          issues.push({
-            type: 'error',
-            code: 'NON_SERIALIZABLE_CLIENT_CONFIG',
-            message: '"client.config" must be a plain serializable object (no functions or circular references)'
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P302',
+            legacyCode: 'NON_SERIALIZABLE_CLIENT_CONFIG',
+            severity: 'error',
+            message: '"client.config" must be a plain serializable object (no functions or circular references)',
+            cause: '"client.config" must be a plain serializable object.'
           })
         }
       }
@@ -792,10 +1075,12 @@ export function validatePluginObject (plugin, filePath = '') {
       if (typeof plugin.client.context === 'function') {
         const outerRefs = findOuterScopeReferences(plugin.client.context, { pluginName })
         for (const ref of outerRefs) {
-          issues.push({
-            type: 'error',
-            code: 'SERIALIZATION_BOUNDARY_LEAK',
-            message: `[Coralite Serialization Error] Plugin "${pluginName}": client.context references outer-scope symbol "${ref.name}" which will not be available after serialization. Move this function inside client.context or pass it via client.config.`
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P301',
+            legacyCode: 'SERIALIZATION_BOUNDARY_LEAK',
+            severity: 'error',
+            message: `[Coralite Serialization Error] Plugin "${pluginName}": client.context references outer-scope symbol "${ref.name}" which will not be available after serialization. Move this function inside client.context or pass it via client.config.`,
+            cause: `outer-scope symbol "${ref.name}" referenced inside client.context.`
           })
         }
       }
@@ -803,18 +1088,22 @@ export function validatePluginObject (plugin, filePath = '') {
       for (const hookName of CLIENT_HOOK_NAMES) {
         if (plugin.client[hookName] !== undefined) {
           if (typeof plugin.client[hookName] !== 'function') {
-            issues.push({
-              type: 'error',
-              code: 'INVALID_HOOK_TYPE',
-              message: `Client hook "client.${hookName}" must be a function`
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P303',
+              legacyCode: 'INVALID_HOOK_TYPE',
+              severity: 'error',
+              message: `Client hook "client.${hookName}" must be a function`,
+              cause: `Client hook "client.${hookName}" must be a function.`
             })
           } else {
             const outerRefs = findOuterScopeReferences(plugin.client[hookName], { pluginName })
             for (const ref of outerRefs) {
-              issues.push({
-                type: 'error',
-                code: 'SERIALIZATION_BOUNDARY_LEAK',
-                message: `[Coralite Serialization Error] Plugin "${pluginName}": client.${hookName} references outer-scope symbol "${ref.name}" which will not be available after serialization. Move this function inside client.${hookName} or pass it via client.config.`
+              addIssueAndDiagnostic({
+                code: 'CORALITE-P301',
+                legacyCode: 'SERIALIZATION_BOUNDARY_LEAK',
+                severity: 'error',
+                message: `[Coralite Serialization Error] Plugin "${pluginName}": client.${hookName} references outer-scope symbol "${ref.name}" which will not be available after serialization. Move this function inside client.${hookName} or pass it via client.config.`,
+                cause: `outer-scope symbol "${ref.name}" referenced inside client.${hookName}.`
               })
             }
           }
@@ -831,6 +1120,7 @@ export function validatePluginObject (plugin, filePath = '') {
     pluginName,
     valid: errorsCount === 0,
     issues,
+    diagnostics,
     metrics: {
       errors: errorsCount,
       warnings: warningsCount
@@ -878,6 +1168,13 @@ export async function validatePluginFile (filePath) {
           staticResult.issues.push(issue)
         }
       }
+      const diagSet = new Set(staticResult.diagnostics.map(d => d.message))
+      for (const diag of dynamicResult.diagnostics) {
+        if (!diagSet.has(diag.message)) {
+          staticResult.diagnostics.push(diag)
+        }
+      }
+
       staticResult.pluginName = pluginObj.name || staticResult.pluginName
       staticResult.metrics.errors = staticResult.issues.filter(i => i.type === 'error').length
       staticResult.metrics.warnings = staticResult.issues.filter(i => i.type === 'warning').length
@@ -889,6 +1186,13 @@ export async function validatePluginFile (filePath) {
       code: 'IMPORT_WARNING',
       message: `Plugin file could not be imported dynamically: ${err.message}`
     })
+    staticResult.diagnostics.push(createDiagnostic({
+      code: 'IMPORT_WARNING',
+      severity: 'warning',
+      message: `Plugin file could not be imported dynamically: ${err.message}`,
+      filePath,
+      cause: 'Dynamic ESM import failed during plugin validation.'
+    }))
   }
 
   return staticResult
@@ -933,6 +1237,13 @@ export async function validatePluginsDir (pluginsDir) {
                 code: 'FILE_READ_ERROR',
                 message: err.message
               }],
+              diagnostics: [createDiagnostic({
+                code: 'FILE_READ_ERROR',
+                severity: 'error',
+                message: err.message,
+                filePath: fullPath,
+                cause: 'Failed to read plugin file from disk.'
+              })],
               metrics: {
                 errors: 1,
                 warnings: 0

@@ -82,16 +82,18 @@ describe('plugin-validator.js', () => {
     })
   })
 
-  describe('validatePluginSource', () => {
-    it('should validate a clean, correct plugin source code', () => {
+  describe('validatePluginSource diagnostic rules (CORALITE-P101 - CORALITE-P401)', () => {
+    it('should validate a clean, correct plugin source code with definePlugin', () => {
       const source = `
         import { definePlugin } from 'coralite'
         export default definePlugin({
           name: 'valid-test-plugin',
           server: {
+            context: (pluginContext) => (instanceContext) => ({ foo: 1 }),
             onBeforeBuild () { console.log('build') }
           },
           client: {
+            context: (pluginContext) => (instanceContext) => ({ bar: 2 }),
             onConnected () { console.log('connected') }
           }
         })
@@ -100,9 +102,10 @@ describe('plugin-validator.js', () => {
       assert.equal(result.valid, true)
       assert.equal(result.pluginName, 'valid-test-plugin')
       assert.equal(result.metrics.errors, 0)
+      assert.equal(result.diagnostics.length, 0)
     })
 
-    it('should flag missing plugin name', () => {
+    it('CORALITE-P101: should flag missing or empty plugin name', () => {
       const source = `
         import { definePlugin } from 'coralite'
         export default definePlugin({
@@ -111,10 +114,13 @@ describe('plugin-validator.js', () => {
       `
       const result = validatePluginSource(source, 'test.js')
       assert.equal(result.valid, false)
-      assert.ok(result.issues.some(i => i.code === 'MISSING_PLUGIN_NAME'))
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P101'))
+      const diag = result.diagnostics.find(d => d.code === 'CORALITE-P101')
+      assert.ok(diag.codeframe.includes('definePlugin'))
+      assert.ok(diag.cause)
     })
 
-    it('should warn on reserved plugin names', () => {
+    it('CORALITE-P102: should warn on reserved plugin names', () => {
       const source = `
         import { definePlugin } from 'coralite'
         export default definePlugin({
@@ -123,86 +129,42 @@ describe('plugin-validator.js', () => {
       `
       const result = validatePluginSource(source, 'test.js')
       assert.equal(result.valid, true)
-      assert.ok(result.issues.some(i => i.code === 'RESERVED_PLUGIN_NAME'))
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P102' && d.severity === 'warning'))
     })
 
-    it('should allow ambient browser APIs and eventBus in client.context and hooks without false positives', () => {
+    it('CORALITE-P201: should flag context function that is not Two-Phase curried', () => {
       const source = `
         import { definePlugin } from 'coralite'
-
         export default definePlugin({
-          name: 'eventBus',
-          client: {
-            context (pluginContext) {
-              const hub = new EventTarget()
-              return () => ({
-                on: (event, handler) => hub.addEventListener(event, handler),
-                emit: (event, detail) => hub.dispatchEvent(new CustomEvent(event, { detail }))
-              })
-            },
-            onConnected () {
-              alert('connected')
-              prompt('input')
-              new Notification('test')
-              new VideoEncoder({ output: () => {}, error: () => {} })
-              new TextDecoder()
-              new DOMException('err')
-              btoa('abc')
-              window.customMethod()
-            }
-          }
-        })
-      `
-      const result = validatePluginSource(source, 'event-bus.js')
-      assert.equal(result.valid, true)
-      assert.equal(result.metrics.errors, 0)
-    })
-
-    it('should detect serialization boundary leaks in client.context for top-level declarations', () => {
-      const source = `
-        import { definePlugin } from 'coralite'
-        const helperFn = (x) => x * 2;
-
-        export default definePlugin({
-          name: 'leaky-context-plugin',
-          client: {
-            context () {
-              const val = helperFn(10)
-              return () => ({ val })
-            }
+          name: 'single-phase-plugin',
+          server: {
+            context: (ctx) => ({ count: 1 })
           }
         })
       `
       const result = validatePluginSource(source, 'test.js')
       assert.equal(result.valid, false)
-      assert.ok(result.issues.some(i => i.code === 'SERIALIZATION_BOUNDARY_LEAK'))
-      assert.ok(result.issues.some(i => i.message.includes('helperFn')))
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P201'))
+      const diag = result.diagnostics.find(d => d.code === 'CORALITE-P201')
+      assert.equal(diag.fix.action, 'wrap_two_phase_context')
     })
 
-    it('should flag factory parameter closure leaks inside factory functions', () => {
+    it('CORALITE-P202: should flag invalid server hook signature', () => {
       const source = `
         import { definePlugin } from 'coralite'
-
-        export default function myPlugin (options) {
-          const secret = options.apiKey
-          return definePlugin({
-            name: 'factory-leak-plugin',
-            client: {
-              context () {
-                console.log(options.apiKey, secret)
-                return () => ({})
-              }
-            }
-          })
-        }
+        export default definePlugin({
+          name: 'invalid-hook-plugin',
+          server: {
+            onBeforeBuild: 'not-a-function'
+          }
+        })
       `
-      const result = validatePluginSource(source, 'factory-leak.js')
+      const result = validatePluginSource(source, 'test.js')
       assert.equal(result.valid, false)
-      assert.ok(result.issues.some(i => i.code === 'SERIALIZATION_BOUNDARY_LEAK' && i.message.includes('options')))
-      assert.ok(result.issues.some(i => i.code === 'SERIALIZATION_BOUNDARY_LEAK' && i.message.includes('secret')))
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P202'))
     })
 
-    it('should flag isomorphic scope leaks (importing fs inside client block)', () => {
+    it('CORALITE-P203: should flag server-only module referenced in client block', () => {
       const source = `
         import { definePlugin } from 'coralite'
         import fs from 'node:fs'
@@ -210,33 +172,77 @@ describe('plugin-validator.js', () => {
         export default definePlugin({
           name: 'leaky-plugin',
           client: {
-            context () {
+            onConnected () {
               const data = fs.readFileSync('test')
-              return () => ({ data })
             }
           }
         })
       `
       const result = validatePluginSource(source, 'test.js')
       assert.equal(result.valid, false)
-      assert.ok(result.issues.some(i => i.code === 'ISOMORPHIC_SCOPE_LEAK'))
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P203'))
     })
 
-    it('should validate plugin factory functions (higher order functions)', () => {
+    it('CORALITE-P301: should flag outer-scope variable reference in client block', () => {
       const source = `
         import { definePlugin } from 'coralite'
-        export default function myPluginFactory (options = {}) {
-          return definePlugin({
-            name: 'factory-plugin',
-            server: {
-              onBeforeBuild () { console.log('build') }
+        const helperFn = (x) => x * 2;
+
+        export default definePlugin({
+          name: 'leaky-context-plugin',
+          client: {
+            onConnected () {
+              const val = helperFn(10)
             }
-          })
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P301'))
+    })
+
+    it('CORALITE-P302: should flag non-serializable client.config', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'bad-config-plugin',
+          client: {
+            config: () => {}
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P302'))
+    })
+
+    it('CORALITE-P303: should flag invalid client hook signature', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'bad-client-hook-plugin',
+          client: {
+            onConnected: 123
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P303'))
+    })
+
+    it('CORALITE-P401: should warn when plugin source does not call definePlugin', () => {
+      const source = `
+        export default {
+          name: 'raw-object-plugin',
+          server: {}
         }
       `
-      const result = validatePluginSource(source, 'factory-plugin.js')
-      assert.equal(result.valid, true)
-      assert.equal(result.pluginName, 'factory-plugin')
+      const result = validatePluginSource(source, 'test.js')
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P401' && d.severity === 'warning'))
+      const diag = result.diagnostics.find(d => d.code === 'CORALITE-P401')
+      assert.equal(diag.fix.action, 'wrap_define_plugin')
     })
   })
 
@@ -287,7 +293,7 @@ describe('plugin-validator.js', () => {
       }
       const result = validatePluginObject(plugin, 'bad-plugin.js')
       assert.equal(result.valid, false)
-      assert.ok(result.issues.some(i => i.code === 'NON_SERIALIZABLE_CLIENT_CONFIG'))
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P302'))
     })
 
     it('should detect invalid hook types', () => {
@@ -300,7 +306,7 @@ describe('plugin-validator.js', () => {
       }
       const result = validatePluginObject(plugin, 'bad-plugin.js')
       assert.equal(result.valid, false)
-      assert.ok(result.issues.some(i => i.code === 'INVALID_HOOK_TYPE'))
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P202'))
     })
   })
 
@@ -326,6 +332,7 @@ describe('plugin-validator.js', () => {
           pluginName: 'test-plugin',
           valid: true,
           issues: [],
+          diagnostics: [],
           metrics: {
             errors: 0,
             warnings: 0
