@@ -208,10 +208,7 @@ export function createComponentDefinition ({ app }) {
       const kebabName = camelToKebab(camelName)
       state['error_' + camelName] = ''
       state['error_' + kebabName] = ''
-      scriptDefaultValues['error_' + camelName] = ''
-      scriptDefaultValues['error_' + kebabName] = ''
     }
-    scriptDefaultValues.errors = state.errors
 
     state.__script__ = {
       attributes: serializableAttributes,

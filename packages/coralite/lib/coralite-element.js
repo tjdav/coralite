@@ -872,7 +872,7 @@ export class CoraliteElement extends BaseElement {
 
     const options = this.componentOptions
     const target = { ...options.defaultValues }
-    target.errors = target.errors || {}
+    target.errors = {}
 
     if (options.attributes) {
       for (const key of Object.keys(options.attributes)) {
@@ -944,6 +944,10 @@ export class CoraliteElement extends BaseElement {
           target.errors[camelName] = res.error
           target['error_' + camelName] = res.error
           target['error_' + kebabName] = res.error
+        } else {
+          delete target.errors[camelName]
+          target['error_' + camelName] = ''
+          target['error_' + kebabName] = ''
         }
         if (res.value !== undefined) {
           target[camelName] = res.value
@@ -968,6 +972,10 @@ export class CoraliteElement extends BaseElement {
             target.errors[camelName] = res.error
             target['error_' + camelName] = res.error
             target['error_' + kebabName] = res.error
+          } else {
+            delete target.errors[camelName]
+            target['error_' + camelName] = ''
+            target['error_' + kebabName] = ''
           }
           if (res.value !== undefined) {
             target[camelName] = res.value

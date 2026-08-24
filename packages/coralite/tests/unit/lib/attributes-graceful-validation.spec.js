@@ -252,5 +252,59 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
 
       document.body.removeChild(el)
     })
+
+    it('does not leak SSR validation errors across consecutive instances sharing component options and defaultValues', async () => {
+      const define = createComponentDefinition({ app: dummyApp })
+      const module = { id: 'leak-comp', path: { pathname: '/leak-comp.html' } }
+
+      const options = {
+        attributes: {
+          userAge: {
+            type: Number,
+            required: true,
+            validate: (v) => v >= 18 || 'Underage user.'
+          }
+        }
+      }
+
+      // Instance 1: rendered with invalid attribute value
+      const context1 = { state: { userAge: 12 }, module }
+      const result1 = await define(options, context1)
+      assert.strictEqual(result1.errors.userAge, 'Underage user.')
+
+      // Confirm defaultValues on result1.__script__ does NOT contain errors or error_*
+      assert.strictEqual(result1.__script__.defaultValues.errors, undefined)
+      assert.strictEqual(result1.__script__.defaultValues.error_userAge, undefined)
+      assert.strictEqual(result1.__script__.defaultValues['error_user-age'], undefined)
+
+      // Instance 2: Client runtime instance initialized using defaultValues from component setup
+      const compOptions = {
+        componentId: 'leak-comp',
+        defaultValues: result1.__script__.defaultValues,
+        attributes: options.attributes
+      }
+
+      const CompClass = createCoraliteClass(compOptions)
+      customElements.define('leak-comp', CompClass)
+
+      const el1 = document.createElement('leak-comp')
+      el1.setAttribute('user-age', '12')
+      document.body.appendChild(el1)
+
+      const el2 = document.createElement('leak-comp')
+      el2.setAttribute('user-age', '25')
+      document.body.appendChild(el2)
+
+      assert.strictEqual(el1._state.errors.userAge, 'Underage user.')
+      assert.strictEqual(el1._state.error_userAge, 'Underage user.')
+      assert.strictEqual(el1._state['error_user-age'], 'Underage user.')
+
+      assert.strictEqual(Object.keys(el2._state.errors).length, 0)
+      assert.strictEqual(el2._state.error_userAge, '')
+      assert.strictEqual(el2._state['error_user-age'], '')
+
+      document.body.removeChild(el1)
+      document.body.removeChild(el2)
+    })
   })
 })
