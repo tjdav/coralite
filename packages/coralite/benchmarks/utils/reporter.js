@@ -20,7 +20,17 @@ const HEADER_LABELS = {
   benchmark: 'Benchmark',
   opsPerSec: 'Ops/Sec',
   avgLatencyNs: 'Avg Latency (ns)',
-  speedup: 'Speedup'
+  speedup: 'Speedup',
+  totalUpdates: 'Total Updates',
+  avgBatchLatencyMS: 'Avg Batch Latency (ms)',
+  droppedFrames: 'Dropped Frames',
+  peakCpuTimeMS: 'Peak CPU Time (ms)',
+  cycles: 'Cycles',
+  componentsPerCycle: 'Components / Cycle',
+  initialHeapMB: 'Initial Heap (MB)',
+  finalHeapMB: 'Final Heap (MB)',
+  netRetentionMB: 'Net Retention (MB)',
+  status: 'Status'
 }
 
 /**
@@ -47,6 +57,43 @@ export function writeJSONResults (data, outputPath = DEFAULT_RESULTS_PATH) {
 export function generateMarkdownTable (suiteName, suiteResults) {
   if (!suiteResults || (typeof suiteResults === 'object' && Object.keys(suiteResults).length === 0)) {
     return ''
+  }
+
+  if (suiteName === 'stress-lifecycle' || suiteName === 'stress') {
+    let md = ''
+
+    if (suiteResults.islandScaling) {
+      md += generateMarkdownTable('Stress & Lifecycle: Selective Hydration & Island Scaling', suiteResults.islandScaling) + '\n\n'
+    }
+
+    if (suiteResults.streaming) {
+      const streamingRow = [{
+        totalUpdates: suiteResults.streaming.totalUpdates,
+        avgBatchLatencyMS: suiteResults.streaming.avgBatchLatencyMS,
+        droppedFrames: suiteResults.streaming.droppedFrames,
+        peakCpuTimeMS: suiteResults.streaming.peakCpuTimeMS
+      }]
+      md += generateMarkdownTable('Stress & Lifecycle: High-Frequency State Streaming (100 updates/sec)', streamingRow) + '\n\n'
+    }
+
+    if (suiteResults.lifecycle) {
+      const isPassed = suiteResults.lifecycle.passed !== undefined
+        ? suiteResults.lifecycle.passed
+        : suiteResults.lifecycle.netRetentionMB < 0.5
+      const statusText = isPassed ? '✅ Passed (<0.5 MB)' : '❌ Failed (>=0.5 MB)'
+
+      const lifecycleRow = [{
+        cycles: suiteResults.lifecycle.cycles,
+        componentsPerCycle: suiteResults.lifecycle.componentsPerCycle,
+        initialHeapMB: suiteResults.lifecycle.initialHeapMB,
+        finalHeapMB: suiteResults.lifecycle.finalHeapMB,
+        netRetentionMB: suiteResults.lifecycle.netRetentionMB,
+        status: statusText
+      }]
+      md += generateMarkdownTable('Stress & Lifecycle: Mount/Unmount Memory Retention', lifecycleRow)
+    }
+
+    return md.trim()
   }
 
   let md = `### ${suiteName}\n\n`
@@ -138,6 +185,54 @@ export function printTerminalResults (data) {
     return
   }
   for (const [suiteName, suiteResults] of Object.entries(data.suites)) {
+    if (suiteName === 'stress-lifecycle' || suiteName === 'stress') {
+      if (suiteResults.islandScaling) {
+        console.log(`Suite: ${suiteName} (Selective Hydration & Island Scaling)`)
+        const formattedIsland = {}
+        for (const [fw, metricsObj] of Object.entries(suiteResults.islandScaling)) {
+          const formattedMetrics = {}
+          for (const [mKey, val] of Object.entries(metricsObj)) {
+            formattedMetrics[HEADER_LABELS[mKey] || mKey] = val
+          }
+          formattedIsland[fw] = formattedMetrics
+        }
+        console.table(formattedIsland)
+        console.log('')
+      }
+
+      if (suiteResults.streaming) {
+        console.log(`Suite: ${suiteName} (High-Frequency State Streaming)`)
+        const formattedStreaming = [{
+          [HEADER_LABELS.totalUpdates]: suiteResults.streaming.totalUpdates,
+          [HEADER_LABELS.avgBatchLatencyMS]: suiteResults.streaming.avgBatchLatencyMS,
+          [HEADER_LABELS.droppedFrames]: suiteResults.streaming.droppedFrames,
+          [HEADER_LABELS.peakCpuTimeMS]: suiteResults.streaming.peakCpuTimeMS
+        }]
+        console.table(formattedStreaming)
+        console.log('')
+      }
+
+      if (suiteResults.lifecycle) {
+        console.log(`Suite: ${suiteName} (Mount/Unmount Memory Retention)`)
+        const isPassed = suiteResults.lifecycle.passed !== undefined
+          ? suiteResults.lifecycle.passed
+          : suiteResults.lifecycle.netRetentionMB < 0.5
+        const statusText = isPassed ? '✅ Passed (<0.5 MB)' : '❌ Failed (>=0.5 MB)'
+
+        const formattedLifecycle = [{
+          [HEADER_LABELS.cycles]: suiteResults.lifecycle.cycles,
+          [HEADER_LABELS.componentsPerCycle]: suiteResults.lifecycle.componentsPerCycle,
+          [HEADER_LABELS.initialHeapMB]: suiteResults.lifecycle.initialHeapMB,
+          [HEADER_LABELS.finalHeapMB]: suiteResults.lifecycle.finalHeapMB,
+          [HEADER_LABELS.netRetentionMB]: suiteResults.lifecycle.netRetentionMB,
+          [HEADER_LABELS.status]: statusText
+        }]
+        console.table(formattedLifecycle)
+        console.log('')
+      }
+      continue
+    }
+
     console.log(`Suite: ${suiteName}`)
 
     if (Array.isArray(suiteResults)) {

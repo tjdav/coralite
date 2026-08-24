@@ -11,6 +11,7 @@ export const DEFAULT_BASELINE_PATH = path.resolve(__dirname, '../baselines/basel
  * Thresholds:
  * - DOM Reactivity & Microbench Latency: Warning at >10%, Failure at >15%
  * - Client Bundle Size (gzipped): Failure at >5%
+ * - Memory Retention (stress-lifecycle): Failure at >= 0.5 MB
  *
  * @param {Object} currentData - Current benchmark run data object
  * @param {string} [baselinePath] - Path to baseline.json file
@@ -35,6 +36,25 @@ export function compareAgainstBaseline (currentData, baselinePath = DEFAULT_BASE
 
   const currentSuites = currentData.suites || {}
   const baselineSuites = baselineData.suites || {}
+
+  // Check net memory retention for stress-lifecycle
+  const stressLifecycle = currentSuites['stress-lifecycle'] || currentSuites.stress
+  if (stressLifecycle && stressLifecycle.lifecycle) {
+    const netRet = stressLifecycle.lifecycle.netRetentionMB
+    if (typeof netRet === 'number' && netRet >= 0.5) {
+      passed = false
+      regressions.push({
+        suite: 'stress-lifecycle',
+        item: 'lifecycle',
+        metric: 'netRetentionMB',
+        baseline: 0.5,
+        current: netRet,
+        diffPercent: 0,
+        isError: true,
+        message: `Net memory retention (${netRet} MB) exceeded threshold (0.5 MB)`
+      })
+    }
+  }
 
   function checkMetric (suite, fwOrWorkload, metricKey, currentVal, baselineVal) {
     if (typeof currentVal !== 'number' || typeof baselineVal !== 'number' || baselineVal === 0) {
@@ -62,7 +82,6 @@ export function compareAgainstBaseline (currentData, baselinePath = DEFAULT_BASE
     }
 
     // Latency checks (latency, ops, duration)
-    // For timing/latency (higher is worse):
     const isLatencyMetric = [
       'create1k', 'replace1k', 'create10k', 'replace10k',
       'update10th', 'swapRows', 'clear', 'hydrationMS', 'ttiMS',
@@ -128,7 +147,15 @@ export function compareAgainstBaseline (currentData, baselinePath = DEFAULT_BASE
       } else if (typeof val === 'object' && val !== null && typeof baseVal === 'object' && baseVal !== null) {
         for (const [mKey, mVal] of Object.entries(val)) {
           if (mKey in baseVal) {
-            checkMetric(suiteName, key, mKey, mVal, baseVal[mKey])
+            if (typeof mVal === 'number' && typeof baseVal[mKey] === 'number') {
+              checkMetric(suiteName, key, mKey, mVal, baseVal[mKey])
+            } else if (typeof mVal === 'object' && mVal !== null && typeof baseVal[mKey] === 'object' && baseVal[mKey] !== null) {
+              for (const [subKey, subVal] of Object.entries(mVal)) {
+                if (subKey in baseVal[mKey]) {
+                  checkMetric(suiteName, `${key}.${mKey}`, subKey, subVal, baseVal[mKey][subKey])
+                }
+              }
+            }
           }
         }
       }

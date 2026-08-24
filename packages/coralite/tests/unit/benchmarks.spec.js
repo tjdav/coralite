@@ -2,7 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import { buildData, updateData, swapRows } from '../../benchmarks/utils/data-generator.js'
 import { getMemoryUsage, triggerGC } from '../../benchmarks/utils/memory.js'
-import { generateMarkdownTable, writeJSONResults } from '../../benchmarks/utils/reporter.js'
+import { generateMarkdownTable, writeJSONResults, printTerminalResults } from '../../benchmarks/utils/reporter.js'
 import { compareAgainstBaseline } from '../../benchmarks/utils/regression.js'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
@@ -75,6 +75,72 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
       assert.ok(objectMd.includes('### DOM Reactivity'))
       assert.ok(objectMd.includes('Framework'))
       assert.ok(objectMd.includes('coralite'))
+    })
+
+    it('generateMarkdownTable correctly renders all three Suite 5 sub-tables', () => {
+      const suite5Data = {
+        islandScaling: {
+          'coralite-selective': { rawKB: 33.4, gzipKB: 9.2, hydrationMS: 0.2 },
+          'coralite-dynamic': { rawKB: 33.4, gzipKB: 9.2, hydrationMS: 0.1 },
+          react: { rawKB: 189.5, gzipKB: 59.1, hydrationMS: 1.9 },
+          vue: { rawKB: 76.0, gzipKB: 30.4, hydrationMS: 16.0 },
+          svelte: { rawKB: 49.6, gzipKB: 18.7, hydrationMS: 7.6 }
+        },
+        streaming: {
+          totalUpdates: 300,
+          avgBatchLatencyMS: 0.097,
+          droppedFrames: 121,
+          peakCpuTimeMS: 3134.9
+        },
+        lifecycle: {
+          cycles: 50,
+          componentsPerCycle: 1000,
+          initialHeapMB: 1.07,
+          finalHeapMB: 1.29,
+          netRetentionMB: 0.22,
+          passed: true
+        }
+      }
+
+      const md = generateMarkdownTable('stress-lifecycle', suite5Data)
+      assert.ok(md.includes('### Stress & Lifecycle: Selective Hydration & Island Scaling'))
+      assert.ok(md.includes('coralite-selective'))
+      assert.ok(md.includes('### Stress & Lifecycle: High-Frequency State Streaming (100 updates/sec)'))
+      assert.ok(md.includes('Total Updates'))
+      assert.ok(md.includes('300'))
+      assert.ok(md.includes('### Stress & Lifecycle: Mount/Unmount Memory Retention'))
+      assert.ok(md.includes('✅ Passed (<0.5 MB)'))
+      assert.ok(!md.includes('[object Object]'))
+    })
+
+    it('printTerminalResults renders all three Suite 5 sub-tables without throwing', () => {
+      const data = {
+        suites: {
+          'stress-lifecycle': {
+            islandScaling: {
+              'coralite-selective': { rawKB: 33.4, gzipKB: 9.2, hydrationMS: 0.2 }
+            },
+            streaming: {
+              totalUpdates: 300,
+              avgBatchLatencyMS: 0.097,
+              droppedFrames: 121,
+              peakCpuTimeMS: 3134.9
+            },
+            lifecycle: {
+              cycles: 50,
+              componentsPerCycle: 1000,
+              initialHeapMB: 1.07,
+              finalHeapMB: 1.29,
+              netRetentionMB: 0.22,
+              passed: true
+            }
+          }
+        }
+      }
+
+      assert.doesNotThrow(() => {
+        printTerminalResults(data)
+      })
     })
 
     it('writeJSONResults writes structured JSON file', () => {
@@ -152,6 +218,45 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
       }
       const res4 = compareAgainstBaseline(cur4, baselineFile)
       assert.strictEqual(res4.passed, false)
+
+      fs.rmSync(tmpDir, { recursive: true, force: true })
+    })
+
+    it('detects net memory retention regression >= 0.5 MB in Suite 5', () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'reg-test-'))
+      const baselineFile = path.join(tmpDir, 'baseline.json')
+
+      const baselineData = {
+        suites: {
+          'stress-lifecycle': {
+            lifecycle: { netRetentionMB: 0.2 }
+          }
+        }
+      }
+      fs.writeFileSync(baselineFile, JSON.stringify(baselineData), 'utf-8')
+
+      // Passed case (< 0.5 MB)
+      const cur1 = {
+        suites: {
+          'stress-lifecycle': {
+            lifecycle: { netRetentionMB: 0.25 }
+          }
+        }
+      }
+      const res1 = compareAgainstBaseline(cur1, baselineFile)
+      assert.strictEqual(res1.passed, true)
+
+      // Failed case (>= 0.5 MB)
+      const cur2 = {
+        suites: {
+          'stress-lifecycle': {
+            lifecycle: { netRetentionMB: 0.55 }
+          }
+        }
+      }
+      const res2 = compareAgainstBaseline(cur2, baselineFile)
+      assert.strictEqual(res2.passed, false)
+      assert.ok(res2.regressions.some(r => r.metric === 'netRetentionMB' && r.isError))
 
       fs.rmSync(tmpDir, { recursive: true, force: true })
     })

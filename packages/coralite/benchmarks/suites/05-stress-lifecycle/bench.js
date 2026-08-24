@@ -96,11 +96,21 @@ async function runIslandScaling (buildDir) {
       const coraliteElemPath = path.resolve(__dirname, '../../../lib/coralite-element.js')
       entryCode = `
 import { createCoraliteClass } from ${JSON.stringify(coraliteElemPath)}
-createCoraliteClass({
-  tag: 'island-widget',
-  template: '<div class="widget"><button class="count-btn" id="widget-btn" state:click="count++">Count: {{ count }}</button></div>',
-  state: () => ({ count: 0 })
+const IslandWidget = createCoraliteClass({
+  componentId: 'island-widget',
+  defaultValues: { count: 0 },
+  client ({ state, root, observe }) {
+    const btn = root.querySelector('#widget-btn')
+    const countDisplay = root.querySelector('#count-val')
+    observe('count', (val) => {
+      if (countDisplay) countDisplay.textContent = String(val)
+    })
+    if (btn) btn.addEventListener('click', () => { state.count++ })
+  }
 })
+if (!customElements.get('island-widget')) {
+  customElements.define('island-widget', IslandWidget)
+}
 performance.mark('hydration:start')
 performance.mark('hydration:end')
 performance.measure('hydration', 'hydration:start', 'hydration:end')
@@ -283,44 +293,120 @@ if (container) {
 }
 
 /**
- * Workload 2: High-Frequency State Streaming (100 updates/sec for 3s)
+ * Workload 2: High-Frequency State Streaming (100 updates/sec for 3s in Playwright Chromium)
  */
-async function runHighFrequencyStreaming () {
-  const happyDom = await import('happy-dom')
-  const window = new happyDom.Window()
-  const doc = window.document
-  const el = doc.createElement('div')
-  doc.body.appendChild(el)
+async function runHighFrequencyStreaming (buildDir) {
+  const streamingOutDir = path.join(buildDir, 'streaming')
+  await fs.mkdir(streamingOutDir, { recursive: true })
 
-  const state = { val: 0 }
-  const batchLatencies = []
-  let droppedFrames = 0
-  const totalUpdates = 300
+  const coraliteElemPath = path.resolve(__dirname, '../../../lib/coralite-element.js')
+  const entryCode = `
+import { createCoraliteClass } from ${JSON.stringify(coraliteElemPath)}
 
-  const startCpu = performance.now()
-
-  for (let i = 0; i < totalUpdates; i++) {
-    const t0 = performance.now()
-    state.val = i + 1
-    await new Promise(resolve => queueMicrotask(resolve))
-    const latency = performance.now() - t0
-    batchLatencies.push(latency)
-
-    if (latency > 16.6) {
-      droppedFrames++
-    }
+const StreamingWidget = createCoraliteClass({
+  componentId: 'streaming-widget',
+  defaultValues: { count: 0 },
+  client ({ state, root, observe }) {
+    window.__widgetState = state
+    const display = root.querySelector('#count-val')
+    observe('count', (val) => {
+      if (display) display.textContent = String(val)
+    })
   }
+})
 
-  const peakCpuTimeMS = +(performance.now() - startCpu).toFixed(2)
-  const avgBatchLatencyMS = +((batchLatencies.reduce((a, b) => a + b, 0) / totalUpdates)).toFixed(3)
+if (!customElements.get('streaming-widget')) {
+  customElements.define('streaming-widget', StreamingWidget)
+}
+`
+  const entryPath = path.join(streamingOutDir, 'entry.js')
+  const outJsPath = path.join(streamingOutDir, 'app.js')
+  await fs.writeFile(entryPath, entryCode, 'utf-8')
+  await fs.writeFile(path.join(streamingOutDir, 'index.html'), '<!DOCTYPE html><html><head></head><body><streaming-widget id="widget"><div id="count-val">0</div></streaming-widget><script type="module" src="app.js"></script></body></html>', 'utf-8')
 
-  return {
-    streaming: {
-      totalUpdates,
-      avgBatchLatencyMS,
-      droppedFrames,
-      peakCpuTimeMS
+  await esbuild.build({
+    entryPoints: [entryPath],
+    bundle: true,
+    minify: true,
+    format: 'esm',
+    target: 'esnext',
+    platform: 'browser',
+    plugins: [nodeModulesPolyfillPlugin()],
+    outfile: outJsPath,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+      'import.meta.env.MODE': '"production"'
     }
+  })
+
+  const { server, url: serverUrl } = await createStaticServer(streamingOutDir)
+  const browser = await launchBenchmarkBrowser()
+
+  try {
+    const page = await browser.newPage()
+    await page.goto(`${serverUrl}/index.html`)
+
+    const metrics = await page.evaluate(async () => {
+      await new Promise(resolve => {
+        if (window.__widgetState) resolve()
+        else {
+          const interval = setInterval(() => {
+            if (window.__widgetState) {
+              clearInterval(interval)
+              resolve()
+            }
+          }, 10)
+        }
+      })
+
+      let droppedFrames = 0
+      let running = true
+      let lastFrameTime = performance.now()
+
+      function checkFrame () {
+        const now = performance.now()
+        const delta = now - lastFrameTime
+        if (delta > 16.6) {
+          droppedFrames++
+        }
+        lastFrameTime = now
+        if (running) {
+          requestAnimationFrame(checkFrame)
+        }
+      }
+      requestAnimationFrame(checkFrame)
+
+      const batchLatencies = []
+      const totalUpdates = 300
+      const intervalMs = 10
+
+      const cpuStart = performance.now()
+
+      for (let i = 0; i < totalUpdates; i++) {
+        const t0 = performance.now()
+        window.__widgetState.count = i + 1
+        await new Promise(r => queueMicrotask(r))
+        const latency = performance.now() - t0
+        batchLatencies.push(latency)
+        await new Promise(r => setTimeout(r, intervalMs))
+      }
+
+      running = false
+      const peakCpuTimeMS = +(performance.now() - cpuStart).toFixed(2)
+      const avgBatchLatencyMS = +((batchLatencies.reduce((a, b) => a + b, 0) / totalUpdates)).toFixed(3)
+
+      return {
+        totalUpdates,
+        avgBatchLatencyMS,
+        droppedFrames,
+        peakCpuTimeMS
+      }
+    })
+
+    return metrics
+  } finally {
+    await browser.close()
+    server.close()
   }
 }
 
@@ -357,11 +443,14 @@ async function runMemoryLifecycle () {
   <div id="host"></div>
   <script type="module">
     import { createCoraliteClass } from './elem.js'
-    createCoraliteClass({
-      tag: 'lifecycle-item',
-      template: '<div class="item"><span>Item {{ id }}</span></div>',
-      attributes: { id: { type: String } }
+    const LifecycleItem = createCoraliteClass({
+      componentId: 'lifecycle-item',
+      attributes: { id: { type: String } },
+      defaultValues: { id: '0' }
     })
+    if (!customElements.get('lifecycle-item')) {
+      customElements.define('lifecycle-item', LifecycleItem)
+    }
 
     window.mount1k = () => {
       const host = document.getElementById('host')
@@ -417,13 +506,12 @@ async function runMemoryLifecycle () {
   const netRetentionMB = +Math.max(0, finalHeapMB - initialHeapMB).toFixed(2)
 
   return {
-    lifecycle: {
-      cycles: 50,
-      componentsPerCycle: 1000,
-      initialHeapMB,
-      finalHeapMB,
-      netRetentionMB
-    }
+    cycles: 50,
+    componentsPerCycle: 1000,
+    initialHeapMB,
+    finalHeapMB,
+    netRetentionMB,
+    passed: netRetentionMB < 0.5
   }
 }
 
@@ -443,14 +531,21 @@ export async function runStressLifecycleSuite (options = {}) {
   }
 
   console.log('Running Suite 5 Workload 2: High-Frequency State Streaming...')
-  const streamingResults = await runHighFrequencyStreaming()
+  const streamingBuildDir = path.join(__dirname, '.bench-streaming-build')
+  await fs.mkdir(streamingBuildDir, { recursive: true })
+  let streamingResults = {}
+  try {
+    streamingResults = await runHighFrequencyStreaming(streamingBuildDir)
+  } finally {
+    await fs.rm(streamingBuildDir, { recursive: true, force: true }).catch(() => {})
+  }
 
   console.log('Running Suite 5 Workload 3: Mount/Unmount Memory Lifecycle...')
   const lifecycleResults = await runMemoryLifecycle()
 
   return {
     islandScaling: islandScalingResults,
-    streaming: streamingResults.streaming,
-    lifecycle: lifecycleResults.lifecycle
+    streaming: streamingResults,
+    lifecycle: lifecycleResults
   }
 }
