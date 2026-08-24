@@ -36,6 +36,7 @@
  * @property {string} instanceId - Unique instance identifier
  * @property {HTMLElement} root - The custom element instance (available in browser runtime)
  * @property {Object.<string, CoraliteModuleDefinition>} state - Instance state
+ * @property {Record<string, string>} errors - Validation errors dictionary (alias for state.errors)
  * @property {Function} refs - Instance refs
  * @property {AbortSignal} signal - Lifecycle abort signal for unmount events (null for declarative components).
  * @property {(propertyName: string, callback: (newValue: any, oldValue: any) => void) => (() => void)} observe - Explicit state observation API returning a disposer.

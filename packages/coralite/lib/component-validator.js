@@ -682,13 +682,18 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
   const unusedAttributes = []
   for (const attr of definedAttributes) {
+    const errorCamelToken = 'error_' + kebabToCamel(attr)
+    const errorKebabToken = 'error_' + camelToKebab(attr)
+    const isErrorTokenUsed = templateTokens.has(errorCamelToken) || templateTokens.has(errorKebabToken) || stateReads.has(errorCamelToken) || stateReads.has(errorKebabToken)
+
     if (
       !isEntireComponentIgnored &&
       !ignoredSymbols.has(attr) &&
       !templateTokens.has(attr) &&
       !stateReads.has(attr) &&
       !getterStateDependencies.has(attr) &&
-      !definedServerProps.has(attr)
+      !definedServerProps.has(attr) &&
+      !isErrorTokenUsed
     ) {
       unusedAttributes.push(attr)
     }

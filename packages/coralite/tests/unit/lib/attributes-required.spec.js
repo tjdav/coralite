@@ -65,22 +65,21 @@ describe('Required Component Attributes', () => {
       assert.strictEqual(result.username, 'jules')
     })
 
-    it('throws CoraliteError when required attribute is omitted in SSR', async () => {
+    it('records state.errors and error_* tokens when required attribute is omitted in SSR', async () => {
       const context = {
         state: {},
         module: { id: 'user-badge', path: { pathname: '/user-badge.coral' } },
         root: null
       }
 
-      await assert.rejects(async () => {
-        await defineComponent({
-          attributes: {
-            username: { type: String, required: true }
-          }
-        }, context)
-      }, (err) => {
-        return err instanceof CoraliteError && err.message === 'Component "user-badge" requires attribute "username", but it was not provided.'
-      })
+      const result = await defineComponent({
+        attributes: {
+          username: { type: String, required: true }
+        }
+      }, context)
+
+      assert.strictEqual(result.errors.username, 'Attribute "username" is required.')
+      assert.strictEqual(result.error_username, 'Attribute "username" is required.')
     })
 
     it('treats empty string attribute as provided and satisfying required check in SSR', async () => {
@@ -136,48 +135,38 @@ describe('Required Component Attributes', () => {
       assert.strictEqual(element._state.badge, 'new')
     })
 
-    it('throws CoraliteError on mount if a required attribute is missing', () => {
+    it('populates state.errors on mount if a required attribute is missing', () => {
       element = document.createElement('my-card')
       element.setAttribute('title', 'Header Title')
       // badge missing
 
-      assert.throws(() => {
-        document.body.appendChild(element)
-      }, (err) => {
-        return err instanceof CoraliteError && err.message === 'Component "my-card" requires attribute "badge", but it was not provided.'
-      })
+      document.body.appendChild(element)
+      assert.strictEqual(element._state.errors.badge, 'Attribute "badge" is required.')
+      assert.strictEqual(element._state.error_badge, 'Attribute "badge" is required.')
     })
 
-    it('throws CoraliteError when removeAttribute() is called on a required attribute', () => {
+    it('populates state.errors when removeAttribute() is called on a required attribute', () => {
       element = document.createElement('my-card')
       element.setAttribute('title', 'Header Title')
       element.setAttribute('badge', 'new')
       document.body.appendChild(element)
 
-      assert.throws(() => {
-        element.removeAttribute('title')
-      }, (err) => {
-        return err instanceof CoraliteError && err.message === 'Component "my-card" attribute "title" is required and cannot be removed.'
-      })
+      element.removeAttribute('title')
+      assert.strictEqual(element._state.errors.title, 'Attribute "title" is required.')
+      assert.strictEqual(element._state.error_title, 'Attribute "title" is required.')
     })
 
-    it('throws CoraliteError when state property for required attribute is mutated to undefined or null', () => {
+    it('populates state.errors when state property for required attribute is mutated to undefined or null', () => {
       element = document.createElement('my-card')
       element.setAttribute('title', 'Header Title')
       element.setAttribute('badge', 'new')
       document.body.appendChild(element)
 
-      assert.throws(() => {
-        element._state.title = undefined
-      }, (err) => {
-        return err instanceof CoraliteError && err.message === 'Component "my-card" attribute "title" is required and cannot be set to undefined.'
-      })
+      element._state.title = undefined
+      assert.strictEqual(element._state.errors.title, 'Attribute "title" is required.')
 
-      assert.throws(() => {
-        element._state.title = null
-      }, (err) => {
-        return err instanceof CoraliteError && err.message === 'Component "my-card" attribute "title" is required and cannot be set to null.'
-      })
+      element._state.title = null
+      assert.strictEqual(element._state.errors.title, 'Attribute "title" is required.')
     })
   })
 })

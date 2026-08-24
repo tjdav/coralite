@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, normalizeStyleKey } from './utils/core.js'
+import { createReadOnlyProxy, normalizeStyleKey, camelToKebab } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
@@ -163,8 +163,17 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     schemaObj = schema || {}
   }
 
+  const graceful = Boolean(errorOptions?.graceful)
+
   // Step 1: required check
   if (schemaObj.required && (value === undefined || value === null)) {
+    const errorMsg = `Attribute "${name}" is required.`
+    if (graceful) {
+      return {
+        value: undefined,
+        error: errorMsg
+      }
+    }
     throw new CoraliteError(`Component "${componentId}" requires attribute "${name}", but it was not provided.`, {
       componentId,
       ...errorOptions
@@ -177,7 +186,10 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     if (schemaObj.default !== undefined) {
       val = schemaObj.default
     } else {
-      return undefined
+      return graceful ? {
+        value: undefined,
+        error: null
+      } : undefined
     }
   }
 
@@ -192,6 +204,15 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     try {
       transformed = schemaObj.transform(val)
     } catch (err) {
+      if (err instanceof CoraliteError && err.message.includes('transform function must be synchronous')) {
+        throw err
+      }
+      if (graceful) {
+        return {
+          value: val,
+          error: err.message
+        }
+      }
       if (err instanceof CoraliteError) {
         throw err
       }
@@ -236,9 +257,17 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     }
 
     if (!matched) {
+      const formattedExpected = values.map(v => (typeof v === 'string' ? `'${v}'` : JSON.stringify(v))).join(', ')
+      const errorMsg = `Invalid value for attribute "${name}". Expected one of: ${formattedExpected}.`
+      if (graceful) {
+        return {
+          value: val,
+          error: errorMsg
+        }
+      }
       const formattedValue = JSON.stringify(val)
-      const formattedExpected = values.map(v => JSON.stringify(v)).join(', ')
-      throw new CoraliteError(`Invalid value ${formattedValue} for attribute "${name}" in component "${componentId}". Expected one of: ${formattedExpected}.`, {
+      const formattedExpectedLegacy = values.map(v => JSON.stringify(v)).join(', ')
+      throw new CoraliteError(`Invalid value ${formattedValue} for attribute "${name}" in component "${componentId}". Expected one of: ${formattedExpectedLegacy}.`, {
         componentId,
         ...errorOptions
       })
@@ -247,11 +276,70 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
 
   // Step 5: validate
   if (typeof schemaObj.validate === 'function') {
-    val = executeAttributeValidator(val, schemaObj, name, componentId, errorOptions)
+    let result
+    try {
+      result = schemaObj.validate(val)
+    } catch (err) {
+      if (err instanceof CoraliteError && err.message.includes('validate function must be synchronous')) {
+        throw err
+      }
+      if (graceful) {
+        return {
+          value: val,
+          error: err.message
+        }
+      }
+      if (err instanceof CoraliteError) {
+        throw err
+      }
+      throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed: ${err.message}`, {
+        componentId,
+        cause: err,
+        ...errorOptions
+      })
+    }
+
+    if (result && typeof result.then === 'function') {
+      throw new CoraliteError(`Component "${componentId}" attribute "${name}" validate function must be synchronous. Use getters or server() for asynchronous validation.`, {
+        componentId,
+        ...errorOptions
+      })
+    }
+
+    if (result === false) {
+      const errorMsg = `Validation failed for attribute "${name}".`
+      if (graceful) {
+        return {
+          value: val,
+          error: errorMsg
+        }
+      }
+      throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed for value ${JSON.stringify(val)}.`, {
+        componentId,
+        ...errorOptions
+      })
+    }
+
+    if (typeof result === 'string' && result.trim() !== '') {
+      const customMessage = result.endsWith('.') ? result : `${result}.`
+      if (graceful) {
+        return {
+          value: val,
+          error: customMessage
+        }
+      }
+      throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed: ${customMessage}`, {
+        componentId,
+        ...errorOptions
+      })
+    }
   }
 
   // Step 6: State application
-  return val
+  return graceful ? {
+    value: val,
+    error: null
+  } : val
 }
 
 /**
@@ -739,30 +827,34 @@ export class CoraliteElement extends BaseElement {
       return
     }
     const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+    const kebabName = camelToKebab(camelName)
     const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
 
-    if (newVal === null && schema?.required === true) {
-      throw new CoraliteError(`Component "${this.componentOptions.componentId}" attribute "${name}" is required and cannot be removed.`, {
-        componentId: this.componentOptions.componentId,
-        instanceId: this._instanceId
+    if (schema) {
+      const res = validateAttributeValue(newVal === null ? undefined : newVal, schema, camelName, this.componentOptions?.componentId, {
+        instanceId: this._instanceId,
+        graceful: true
       })
-    }
-
-    let value
-    if (newVal === null) {
-      if (schema) {
-        value = validateAttributeValue(undefined, schema, camelName, this.componentOptions?.componentId, { instanceId: this._instanceId })
+      if (res.error) {
+        this._state.errors[camelName] = res.error
+        this._state['error_' + camelName] = res.error
+        this._state['error_' + kebabName] = res.error
       } else {
-        value = undefined
+        delete this._state.errors[camelName]
+        this._state['error_' + camelName] = ''
+        this._state['error_' + kebabName] = ''
+      }
+      if (res.value === undefined && newVal === null) {
+        delete this._state[camelName]
+      } else {
+        this._state[camelName] = res.value !== undefined ? res.value : newVal
       }
     } else {
-      value = schema ? validateAttributeValue(newVal, schema, camelName, this.componentOptions?.componentId, { instanceId: this._instanceId }) : newVal
-    }
-
-    if (value === undefined) {
-      delete this._state[camelName]
-    } else {
-      this._state[camelName] = value
+      if (newVal === null) {
+        delete this._state[camelName]
+      } else {
+        this._state[camelName] = newVal
+      }
     }
   }
 
@@ -776,6 +868,16 @@ export class CoraliteElement extends BaseElement {
   _setupState () {
     const options = this.componentOptions
     const target = { ...options.defaultValues }
+    target.errors = target.errors || {}
+
+    if (options.attributes) {
+      for (const key of Object.keys(options.attributes)) {
+        const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+        const kebabName = camelToKebab(camelName)
+        target['error_' + camelName] = ''
+        target['error_' + kebabName] = ''
+      }
+    }
 
     /** @type {Array<{name: string, element: HTMLElement}>} */
     const refs = []
@@ -822,6 +924,7 @@ export class CoraliteElement extends BaseElement {
     for (const attr of this.attributes) {
       const lowerName = attr.name.toLowerCase()
       const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const kebabName = camelToKebab(camelName)
       const schema = options.attributes?.[camelName] || options.attributes?.[attr.name] || options.attributes?.[lowerName]
 
       if (RESERVED_DOM_ATTRIBUTES.has(lowerName) && !schema) {
@@ -829,9 +932,19 @@ export class CoraliteElement extends BaseElement {
       }
 
       if (schema) {
-        const val = validateAttributeValue(attr.value, schema, camelName, options.componentId, { instanceId: this._instanceId })
-        if (val !== undefined) {
-          target[camelName] = val
+        const res = validateAttributeValue(attr.value, schema, camelName, options.componentId, {
+          instanceId: this._instanceId,
+          graceful: true
+        })
+        if (res.error) {
+          target.errors[camelName] = res.error
+          target['error_' + camelName] = res.error
+          target['error_' + kebabName] = res.error
+        }
+        if (res.value !== undefined) {
+          target[camelName] = res.value
+        } else {
+          target[camelName] = attr.value
         }
       } else {
         target[camelName] = attr.value
@@ -840,10 +953,20 @@ export class CoraliteElement extends BaseElement {
 
     if (options.attributes) {
       for (const [key, schema] of Object.entries(options.attributes)) {
-        if (target[key] === undefined) {
-          const val = validateAttributeValue(undefined, schema, key, options.componentId, { instanceId: this._instanceId })
-          if (val !== undefined) {
-            target[key] = val
+        const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+        const kebabName = camelToKebab(camelName)
+        if (target[camelName] === undefined) {
+          const res = validateAttributeValue(undefined, schema, camelName, options.componentId, {
+            instanceId: this._instanceId,
+            graceful: true
+          })
+          if (res.error) {
+            target.errors[camelName] = res.error
+            target['error_' + camelName] = res.error
+            target['error_' + kebabName] = res.error
+          }
+          if (res.value !== undefined) {
+            target[camelName] = res.value
           }
         }
       }
@@ -1004,15 +1127,23 @@ export class CoraliteElement extends BaseElement {
       set (t, p, v) {
         if (typeof p === 'string' && options.attributes) {
           const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+          const kebabName = camelToKebab(camelName)
           const schema = options.attributes[camelName] || options.attributes[p]
           if (schema) {
-            if (schema.required === true && (v === undefined || v === null)) {
-              throw new CoraliteError(`Component "${options.componentId}" attribute "${p}" is required and cannot be set to ${v}.`, {
-                componentId: options.componentId,
-                instanceId: self._instanceId
-              })
+            const res = validateAttributeValue(v, schema, camelName, options.componentId, {
+              instanceId: self._instanceId,
+              graceful: true
+            })
+            if (res.error) {
+              t.errors[camelName] = res.error
+              t['error_' + camelName] = res.error
+              t['error_' + kebabName] = res.error
+            } else {
+              delete t.errors[camelName]
+              t['error_' + camelName] = ''
+              t['error_' + kebabName] = ''
             }
-            v = validateAttributeValue(v, schema, p, options.componentId, { instanceId: self._instanceId })
+            v = res.value !== undefined ? res.value : v
           }
         }
 
@@ -2028,6 +2159,7 @@ export class CoraliteElement extends BaseElement {
     let localContext = {
       instanceId: this._instanceId,
       state: this._state,
+      errors: this._state.errors,
       root: this,
       signal: this._abortController.signal,
       refs (id) {

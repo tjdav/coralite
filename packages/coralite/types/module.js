@@ -53,7 +53,7 @@
 
 /**
  * A collection of module values associated with a module.
- * @typedef {Object.<string, CoraliteModuleDefinition> & { __script__?: ScriptContent, page?: CoralitePage }} CoraliteModuleDefinitions
+ * @typedef {Object.<string, CoraliteModuleDefinition> & { errors?: Record<string, string>, __script__?: ScriptContent, page?: CoralitePage } & Object.<`error_${string}`, string>} CoraliteModuleDefinitions
  */
 
 /**

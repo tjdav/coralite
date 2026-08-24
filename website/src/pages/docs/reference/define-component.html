@@ -126,16 +126,25 @@ attributes: {
       </tr>
     </coralite-table>
 
-    <coralite-heading level="3" text="The 6-Step Attribute Execution Lifecycle Pipeline"></coralite-heading>
-    <p>Attributes execute sequentially through a strict 6-step lifecycle pipeline during component initialization and state changes:</p>
+    <coralite-heading level="3" text="The 6-Step Attribute Execution Lifecycle Pipeline & Graceful Error Handling"></coralite-heading>
+    <p>Attributes execute sequentially through a strict 6-step lifecycle pipeline during component initialization and state changes. When validation fails (e.g., missing <code>required</code> attribute, <code>values</code> enum mismatch, or <code>validate</code> predicate failure), Coralite records the error message gracefully in <code>state.errors</code> and flat <code>error_*</code> tokens without halting SSR or crashing client scripts:</p>
     <ol>
-      <li><strong>1. <code>required</code> Check:</strong> Asserts attribute presence if <code>required: true</code> is configured. Throws <code>CoraliteError</code> if missing.</li>
+      <li><strong>1. <code>required</code> Check:</strong> Asserts attribute presence if <code>required: true</code> is configured. Records <code>"Attribute \"<name>\" is required."</code> on omission.</li>
       <li><strong>2. Type <code>coerce</code>:</strong> Coerces raw attribute string into specified primitive constructor (<code>Boolean</code>, <code>Number</code>, or <code>String</code>).</li>
-      <li><strong>3. <code>transform</code>:</strong> Runs custom synchronous <code>transform(val)</code> function to format or sanitize value.</li>
-      <li><strong>4. <code>values</code> Check:</strong> Validates that value exists in allowed <code>values: [...]</code> enumeration array.</li>
-      <li><strong>5. <code>validate</code>:</strong> Invokes custom synchronous <code>validate(val)</code> predicate/function. Returning <code>false</code> triggers validation error; returning a non-empty string emits a custom error message.</li>
-      <li><strong>6. State Application:</strong> Applies the final validated value to the component's unified <code>state</code> proxy.</li>
+      <li><strong>3. <code>transform</code>:</strong> Runs custom synchronous <code>transform(val)</code> function to format or sanitize value. Thrown errors are recorded in <code>state.errors</code> while retaining the attempted value.</li>
+      <li><strong>4. <code>values</code> Check:</strong> Validates that value exists in allowed <code>values: [...]</code> enumeration array. Records formatted expected values error on mismatch.</li>
+      <li><strong>5. <code>validate</code>:</strong> Invokes custom synchronous <code>validate(val)</code> predicate/function. Returning <code>false</code> sets default error message; returning a string records custom message; throwing records error message.</li>
+      <li><strong>6. State Application:</strong> Applies the validated value or retains attempted input in <code>state[key]</code> and updates reactive <code>state.errors</code> and flat <code>error_*</code> template tokens.</li>
     </ol>
+
+    <coralite-heading level="3" text="Graceful Attribute Validation (state.errors & error_* Tokens)"></coralite-heading>
+    <p>Coralite provides two zero-overhead mechanisms to display and handle attribute validation feedback:</p>
+
+    <ul>
+      <li><strong>JS Access (<code>state.errors</code>)</strong>: A reactive dictionary mapping camelCase attribute names to error string messages (e.g. <code>state.errors.age</code>). When all attributes are valid, <code>Object.keys(state.errors).length === 0</code>.</li>
+      <li><strong>Flat Template Tokens (<code>{{ error_fieldName }}</code>)</strong>: Automatic flat template tokens populated on state in both camelCase and kebab-case aliases (e.g. <code>{{ error_userAge }}</code> and <code>{{ error_user-age }}</code>). Default to <code>""</code> (empty string) when valid.</li>
+      <li><strong>Client Context (<code>errors</code>)</strong>: Provided directly in client controller signatures: <code>client: ({ state, errors, ... }) => ...</code>.</li>
+    </ul>
 
     <p>Coralite maps declared attribute names from camelCase (e.g., <code>isChecked</code>) to their kebab-case equivalent in HTML (e.g., <code>is-checked</code>) and coerces them into JavaScript primitives. Changes to HTML attributes via <code>setAttribute</code> automatically update their values in the component state.</p>
 

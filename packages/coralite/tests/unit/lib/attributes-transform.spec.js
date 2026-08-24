@@ -77,7 +77,7 @@ describe('Component Attribute transform Pipeline', () => {
       assert.strictEqual(result.slug, 'hello-world')
     })
 
-    it('throws CoraliteError in Step 1 if required attribute is omitted', async () => {
+    it('records state.errors and error_* tokens in Step 1 if required attribute is omitted', async () => {
       const mockApp = { createComponentElement: () => null, options: {} }
       const defineComponent = createComponentDefinition({ app: mockApp })
 
@@ -87,21 +87,18 @@ describe('Component Attribute transform Pipeline', () => {
         root: null
       }
 
-      await assert.rejects(async () => {
-        await defineComponent({
-          attributes: {
-            apiKey: {
-              type: String,
-              required: true,
-              transform: (val) => val.trim()
-            }
+      const result = await defineComponent({
+        attributes: {
+          apiKey: {
+            type: String,
+            required: true,
+            transform: (val) => val.trim()
           }
-        }, context)
-      }, (err) => {
-        assert.ok(err instanceof CoraliteError)
-        assert.strictEqual(err.message, 'Component "req-comp" requires attribute "apiKey", but it was not provided.')
-        return true
-      })
+        }
+      }, context)
+
+      assert.strictEqual(result.errors.apiKey, 'Attribute "apiKey" is required.')
+      assert.strictEqual(result.error_apiKey, 'Attribute "apiKey" is required.')
     })
 
     it('executes pipeline in order: required -> coerce -> transform -> values check', async () => {
@@ -152,7 +149,7 @@ describe('Component Attribute transform Pipeline', () => {
       })
     })
 
-    it('wraps runtime exception thrown inside transform in CoraliteError', () => {
+    it('records runtime exception thrown inside transform in state.errors and error_* tokens', () => {
       const tagName = 'trans-err-' + Math.random().toString(36).substring(2, 9)
       const ErrComp = createCoraliteClass({
         componentId: 'trans-err',
@@ -168,14 +165,13 @@ describe('Component Attribute transform Pipeline', () => {
 
       const el = document.createElement(tagName)
       el.setAttribute('count', '10')
+      document.body.appendChild(el)
 
-      assert.throws(() => {
-        document.body.appendChild(el)
-      }, (err) => {
-        assert.ok(err instanceof CoraliteError)
-        assert.ok(err.message.includes('Component "trans-err" failed executing transform on attribute "count": Custom transformation error'))
-        return true
-      })
+      assert.strictEqual(el._state.errors.count, 'Custom transformation error')
+      assert.strictEqual(el._state.error_count, 'Custom transformation error')
+      assert.strictEqual(el._state.count, '10')
+
+      document.body.removeChild(el)
     })
   })
 
@@ -257,14 +253,10 @@ describe('Component Attribute transform Pipeline', () => {
       el.removeAttribute('title')
       assert.strictEqual(el._state.title, 'Default Title')
 
-      // Removing a required attribute throws error
-      assert.throws(() => {
-        el.removeAttribute('req-attr')
-      }, (err) => {
-        assert.ok(err instanceof CoraliteError)
-        assert.strictEqual(err.message, 'Component "trans-remove" attribute "req-attr" is required and cannot be removed.')
-        return true
-      })
+      // Removing a required attribute records error in state.errors
+      el.removeAttribute('req-attr')
+      assert.strictEqual(el._state.errors.reqAttr, 'Attribute "reqAttr" is required.')
+      assert.strictEqual(el._state.error_reqAttr, 'Attribute "reqAttr" is required.')
 
       document.body.removeChild(el)
     })

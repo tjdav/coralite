@@ -144,7 +144,7 @@ describe('Component Attribute values & Validation', () => {
   })
 
   describe('Server-Side Rendering (SSR)', () => {
-    it('validates incoming attributes during createComponentDefinition and throws on unexpected value', async () => {
+    it('validates incoming attributes during createComponentDefinition and captures errors gracefully', async () => {
       const mockApp = { createComponentElement: () => null, options: {} }
       const defineComponent = createComponentDefinition({ app: mockApp })
 
@@ -168,17 +168,15 @@ describe('Component Attribute values & Validation', () => {
         root: null
       }
 
-      await assert.rejects(async () => {
-        await defineComponent({
-          attributes: {
-            variant: ['primary', 'secondary']
-          }
-        }, invalidContext)
-      }, (err) => {
-        assert.ok(err instanceof CoraliteError)
-        assert.ok(err.message.includes('Invalid value "invalid" for attribute "variant"'))
-        return true
-      })
+      const invalidResult = await defineComponent({
+        attributes: {
+          variant: ['primary', 'secondary']
+        }
+      }, invalidContext)
+
+      assert.strictEqual(invalidResult.errors.variant, "Invalid value for attribute \"variant\". Expected one of: 'primary', 'secondary'.")
+      assert.strictEqual(invalidResult.error_variant, "Invalid value for attribute \"variant\". Expected one of: 'primary', 'secondary'.")
+      assert.strictEqual(invalidResult.variant, 'invalid')
     })
   })
 
@@ -201,13 +199,13 @@ describe('Component Attribute values & Validation', () => {
 
       const invalidEl = document.createElement(tagName)
       invalidEl.setAttribute('variant', 'invalid')
-      assert.throws(() => {
-        document.body.appendChild(invalidEl)
-      }, (err) => {
-        assert.ok(err instanceof CoraliteError)
-        assert.ok(err.message.includes('Invalid value "invalid" for attribute "variant"'))
-        return true
-      })
+      document.body.appendChild(invalidEl)
+
+      assert.strictEqual(invalidEl._state.errors.variant, "Invalid value for attribute \"variant\". Expected one of: 'primary', 'secondary'.")
+      assert.strictEqual(invalidEl._state.error_variant, "Invalid value for attribute \"variant\". Expected one of: 'primary', 'secondary'.")
+      assert.strictEqual(invalidEl._state.variant, 'invalid')
+
+      document.body.removeChild(invalidEl)
     })
 
     it('validates attribute changes via setAttribute and resets state on removeAttribute', () => {
@@ -227,16 +225,13 @@ describe('Component Attribute values & Validation', () => {
       el.setAttribute('variant', 'secondary')
       assert.strictEqual(el._state.variant, 'secondary')
 
-      assert.throws(() => {
-        el.setAttribute('variant', 'invalid')
-      }, (err) => {
-        assert.ok(err instanceof CoraliteError)
-        assert.ok(err.message.includes('Invalid value "invalid" for attribute "variant"'))
-        return true
-      })
+      el.setAttribute('variant', 'invalid')
+      assert.strictEqual(el._state.errors.variant, "Invalid value for attribute \"variant\". Expected one of: 'primary', 'secondary'.")
+      assert.strictEqual(el._state.variant, 'invalid')
 
-      // removeAttribute resets state to default
+      // removeAttribute resets state to default and clears error
       el.removeAttribute('variant')
+      assert.strictEqual(el._state.errors.variant, undefined)
       assert.strictEqual(el._state.variant, 'primary')
 
       document.body.removeChild(el)
@@ -258,13 +253,9 @@ describe('Component Attribute values & Validation', () => {
       el._state.level = 2
       assert.strictEqual(el._state.level, 2)
 
-      assert.throws(() => {
-        el._state.level = 100
-      }, (err) => {
-        assert.ok(err instanceof CoraliteError)
-        assert.ok(err.message.includes('Invalid value 100 for attribute "level"'))
-        return true
-      })
+      el._state.level = 100
+      assert.strictEqual(el._state.errors.level, 'Invalid value for attribute "level". Expected one of: 1, 2, 3.')
+      assert.strictEqual(el._state.level, 100)
 
       document.body.removeChild(el)
     })
@@ -288,13 +279,9 @@ describe('Component Attribute values & Validation', () => {
       el.setAttribute('width', '100')
       assert.strictEqual(el._state.width, 100)
 
-      assert.throws(() => {
-        el.setAttribute('width', '300')
-      }, (err) => {
-        assert.ok(err instanceof CoraliteError)
-        assert.ok(err.message.includes('Invalid value "300" for attribute "width"'))
-        return true
-      })
+      el.setAttribute('width', '300')
+      assert.strictEqual(el._state.errors.width, 'Invalid value for attribute "width". Expected one of: \'auto\', 100, 200.')
+      assert.strictEqual(el._state.width, '300')
 
       document.body.removeChild(el)
     })

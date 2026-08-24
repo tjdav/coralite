@@ -8,6 +8,7 @@ import {
 } from './utils/types.js'
 import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
 import { formatComponentCss } from './utils/server/style.js'
+import { camelToKebab } from './utils/core.js'
 import { inferTypeFromValues, validateAttributeValue } from './coralite-element.js'
 
 /**
@@ -200,6 +201,18 @@ export function createComponentDefinition ({ app }) {
       }
     }
 
+    state.errors = state.errors || {}
+
+    for (const key of Object.keys(normalizedAttributes)) {
+      const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const kebabName = camelToKebab(camelName)
+      state['error_' + camelName] = ''
+      state['error_' + kebabName] = ''
+      scriptDefaultValues['error_' + camelName] = ''
+      scriptDefaultValues['error_' + kebabName] = ''
+    }
+    scriptDefaultValues.errors = state.errors
+
     state.__script__ = {
       attributes: serializableAttributes,
       getters: getters || {},
@@ -210,11 +223,34 @@ export function createComponentDefinition ({ app }) {
     }
 
     for (const [key, schema] of Object.entries(normalizedAttributes)) {
-      const val = validateAttributeValue(state[key], schema, key, module.id, { filePath: module.path?.pathname })
-      if (val !== undefined) {
-        state[key] = val
+      const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const kebabName = camelToKebab(camelName)
+      const inputVal = state[camelName] !== undefined ? state[camelName] : state[kebabName]
+      const res = validateAttributeValue(inputVal, schema, camelName, module.id, {
+        filePath: module.path?.pathname,
+        graceful: true
+      })
+      if (res.error) {
+        state.errors[camelName] = res.error
+        state['error_' + camelName] = res.error
+        state['error_' + kebabName] = res.error
+        const warnMessage = `[Coralite Warning]: Component "${module.id}" attribute "${camelName}" validation failed: ${res.error}`
+        if (app && typeof app.onError === 'function') {
+          app.onError({
+            level: 'WARN',
+            message: warnMessage,
+            componentId: module.id
+          })
+        } else {
+          console.warn(warnMessage)
+        }
+      }
+      if (res.value !== undefined) {
+        state[camelName] = res.value
+      } else if (res.error) {
+        state[camelName] = inputVal
       } else {
-        delete state[key]
+        delete state[camelName]
       }
     }
 

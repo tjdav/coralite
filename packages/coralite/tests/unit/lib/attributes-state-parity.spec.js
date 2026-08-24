@@ -21,7 +21,7 @@ describe('State Key Parity & Reserved DOM Attribute Filtering (F1 & F2)', () => 
       root: null
     })
 
-    const userKeys = Object.keys(ssrResult).filter(k => k !== '__script__')
+    const userKeys = Object.keys(ssrResult).filter(k => k !== '__script__' && k !== 'errors' && !k.startsWith('error_'))
     assert.deepEqual(userKeys, ['present'])
     assert.strictEqual(ssrResult.omittedNoDefault, undefined)
 
@@ -39,7 +39,8 @@ describe('State Key Parity & Reserved DOM Attribute Filtering (F1 & F2)', () => 
     const el = document.createElement(tagName)
     document.body.appendChild(el)
 
-    assert.deepEqual(Object.keys(el._state), ['present'])
+    const clientUserKeys = Object.keys(el._state).filter(k => k !== 'errors' && !k.startsWith('error_'))
+    assert.deepEqual(clientUserKeys, ['present'])
     assert.strictEqual(el._state.omittedNoDefault, undefined)
 
     document.body.removeChild(el)

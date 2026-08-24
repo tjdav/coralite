@@ -285,6 +285,7 @@
  * @property {(path: string) => void} trackOutputFile - Registers an output file path for the build cleanup whitelist.
  * @property {() => string[]} getTrackedOutputFiles - Retrieves all tracked output file paths.
  * @property {(dest: string, content: string | Buffer, options?: import('node:fs').WriteFileOptions) => Promise<string>} writeFile - Writes a file to the output directory and tracks it for build cleanup.
+ * @property {CoraliteOnError} [onError] - Internal or configured error/warning handler.
  * @property {(options: CoraliteStaticAsset) => Promise<string>} [registerAsset] - Copies/writes a static asset and registers optional declarative injection.
  * @property {(structural?: boolean) => Promise<void>} clearCache - Clears the internal script cache and disposes esbuild context.
  * @property {Record<string, { path: string, hashedPath: string, text: string }>} outputFiles - The record of generated output files.
