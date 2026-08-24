@@ -7,6 +7,13 @@ const __dirname = path.dirname(__filename)
 const DEFAULT_RESULTS_PATH = path.resolve(__dirname, '../results/latest.json')
 const DEFAULT_BENCHMARKS_MD_PATH = path.resolve(__dirname, '../BENCHMARKS.md')
 
+const HEADER_LABELS = {
+  rawKB: 'Raw JS (KB)',
+  gzipKB: 'Gzip JS (KB)',
+  hydrationMS: 'Hydration (ms)',
+  ttiMS: 'TTI (ms)'
+}
+
 /**
  *
  */
@@ -27,9 +34,10 @@ export function generateMarkdownTable (suiteName, suiteResults) {
   }
   const frameworks = Object.keys(suiteResults)
   const metrics = Object.keys(suiteResults[frameworks[0]])
+  const displayHeaders = metrics.map(m => HEADER_LABELS[m] || m)
 
   let md = `### ${suiteName}\n\n`
-  md += `| Framework | ${metrics.join(' | ')} |\n`
+  md += `| Framework | ${displayHeaders.join(' | ')} |\n`
   md += `| ${'--- | '.repeat(metrics.length + 1).slice(0, -1)}\n`
 
   for (const fw of frameworks) {
@@ -69,7 +77,19 @@ export function printTerminalResults (data) {
   }
   for (const [suiteName, suiteResults] of Object.entries(data.suites)) {
     console.log(`Suite: ${suiteName}`)
-    console.table(suiteResults)
+
+    // Map keys for terminal table display
+    const formattedTable = {}
+    for (const [fw, metricsObj] of Object.entries(suiteResults)) {
+      const formattedMetrics = {}
+      for (const [metricKey, val] of Object.entries(metricsObj)) {
+        const label = HEADER_LABELS[metricKey] || metricKey
+        formattedMetrics[label] = val
+      }
+      formattedTable[fw] = formattedMetrics
+    }
+
+    console.table(formattedTable)
     console.log('')
   }
 }

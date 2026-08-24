@@ -2,6 +2,7 @@ import process from 'node:process'
 import { printTerminalResults, writeJSONResults, writeMarkdownResults } from './utils/reporter.js'
 import { getMemoryUsage, triggerGC } from './utils/memory.js'
 import { runDomReactivitySuite } from './suites/01-dom-reactivity/bench.js'
+import { runBundleHydrationSuite } from './suites/02-bundle-hydration/bench.js'
 
 function parseArgs () {
   const args = process.argv.slice(2)
@@ -81,6 +82,13 @@ async function main () {
       rows: flags.rows
     })
     resultsData.suites['dom-reactivity'] = domResults
+  }
+
+  if (selectedSuite === 'all' || selectedSuite === 'bundle-hydration' || selectedSuite === 'bundle' || selectedSuite === 'hydration') {
+    const bundleResults = await runBundleHydrationSuite({
+      iterations: flags.iterations
+    })
+    resultsData.suites['bundle-hydration'] = bundleResults
   }
 
   if (selectedSuite === 'all' || selectedSuite === 'internal') {

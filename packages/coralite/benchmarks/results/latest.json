@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-24T14:00:07.102Z",
+  "timestamp": "2026-08-24T14:37:55.986Z",
   "environment": {
     "node": "v22.22.1",
     "platform": "linux",
@@ -8,36 +8,67 @@
   "suites": {
     "dom-reactivity": {
       "coralite": {
-        "create1k": 14.4,
-        "replace1k": 14.2,
-        "update10th": 14.1,
+        "create1k": 14.2,
+        "replace1k": 14.1,
+        "update10th": 14.4,
         "swapRows": 14.3,
-        "clear": 14.2,
+        "clear": 14.3,
         "heapMB": 9.54
       },
       "react": {
-        "create1k": 91.4,
-        "replace1k": 107,
-        "update10th": 42.6,
-        "swapRows": 88.9,
-        "clear": 14.2,
+        "create1k": 83.5,
+        "replace1k": 97.4,
+        "update10th": 36.5,
+        "swapRows": 85.8,
+        "clear": 15.5,
         "heapMB": 9.54
       },
       "vue": {
-        "create1k": 98.3,
-        "replace1k": 100.4,
-        "update10th": 47.2,
-        "swapRows": 19.8,
-        "clear": 9.1,
+        "create1k": 93.2,
+        "replace1k": 91.4,
+        "update10th": 38,
+        "swapRows": 18.4,
+        "clear": 8.3,
         "heapMB": 9.54
       },
       "vanilla": {
-        "create1k": 97.1,
-        "replace1k": 83.1,
-        "update10th": 33.2,
-        "swapRows": 11.8,
-        "clear": 7.2,
+        "create1k": 97.5,
+        "replace1k": 82.9,
+        "update10th": 39.5,
+        "swapRows": 11.9,
+        "clear": 7.3,
         "heapMB": 9.54
+      }
+    },
+    "bundle-hydration": {
+      "coraliteDynamic": {
+        "rawKB": 34.1,
+        "gzipKB": 9.5,
+        "hydrationMS": 3.1,
+        "ttiMS": 152.25
+      },
+      "coraliteStatic": {
+        "rawKB": 0,
+        "gzipKB": 0,
+        "hydrationMS": 0,
+        "ttiMS": 0
+      },
+      "react": {
+        "rawKB": 190.3,
+        "gzipKB": 59.4,
+        "hydrationMS": 1.6,
+        "ttiMS": 172.61
+      },
+      "vue": {
+        "rawKB": 76.7,
+        "gzipKB": 30.7,
+        "hydrationMS": 7.2,
+        "ttiMS": 139.91
+      }
+    },
+    "internal": {
+      "coralite": {
+        "initialMemoryMB": 59.84
       }
     }
   }
