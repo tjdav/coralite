@@ -50,7 +50,9 @@
     "build:html:dev": "node --experimental-vm-modules ./tests/scripts/build-html.js --mode development --outDir .coralite-dev",
     "build:html:prod": "node --experimental-vm-modules ./tests/scripts/build-html.js --mode production --outDir .coralite-prod",
     "build:html:testing": "node --experimental-vm-modules ./tests/scripts/build-testing.js",
-    "bench": "node --expose-gc --experimental-vm-modules ./benchmarks/runner.js"
+    "bench": "node --expose-gc --experimental-vm-modules ./benchmarks/runner.js",
+    "bench:ci": "node --expose-gc --experimental-vm-modules ./benchmarks/ci.js",
+    "bench:save-baseline": "node --expose-gc --experimental-vm-modules ./benchmarks/runner.js --save-baseline"
   },
   "files": [
     "dist",
@@ -111,12 +113,14 @@
     "@playwright/test": "^1.61.0",
     "@types/node": "^22.20.0",
     "@types/serialize-javascript": "^5.0.4",
+    "esbuild-svelte": "^0.9.5",
     "happy-dom": "^20.10.6",
     "mitata": "^1.0.34",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sirv": "^3.0.2",
     "sirv-cli": "^3.0.1",
+    "svelte": "^5.56.10",
     "vue": "^3.5.41"
   },
   "engines": {

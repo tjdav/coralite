@@ -1,10 +1,12 @@
 import process from 'node:process'
 import { printTerminalResults, writeJSONResults, writeMarkdownResults } from './utils/reporter.js'
 import { triggerGC } from './utils/memory.js'
+import { compareAgainstBaseline, DEFAULT_BASELINE_PATH } from './utils/regression.js'
 import { runDomReactivitySuite } from './suites/01-dom-reactivity/bench.js'
 import { runBundleHydrationSuite } from './suites/02-bundle-hydration/bench.js'
 import { runSSRThroughputSuite } from './suites/03-ssr-throughput/bench.js'
 import { runInternalSuite } from './suites/04-internal/bench.js'
+import { runStressLifecycleSuite } from './suites/05-stress-lifecycle/bench.js'
 
 function parseArgs () {
   const args = process.argv.slice(2)
@@ -13,7 +15,10 @@ function parseArgs () {
     suite: 'all',
     json: false,
     iterations: 5,
-    rows: 1000
+    rows: 1000,
+    checkRegression: false,
+    warnOnly: false,
+    saveBaseline: false
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -26,6 +31,12 @@ function parseArgs () {
       flags.suite = args[++i]
     } else if (arg === '--json') {
       flags.json = true
+    } else if (arg === '--check-regression') {
+      flags.checkRegression = true
+    } else if (arg === '--warn-only') {
+      flags.warnOnly = true
+    } else if (arg === '--save-baseline') {
+      flags.saveBaseline = true
     } else if (arg.startsWith('--iterations=')) {
       flags.iterations = parseInt(arg.split('=')[1], 10) || 5
     } else if (arg === '-i' && i + 1 < args.length) {
@@ -49,8 +60,11 @@ Usage:
 
 Options:
   --help, -h          Display formatted CLI usage and exit
-  --suite=<name>, -s  Run a specific benchmark suite (dom-reactivity, bundle-hydration, ssr-throughput, internal, or all [default: all])
+  --suite=<name>, -s  Run a specific benchmark suite (dom-reactivity, bundle-hydration, ssr-throughput, internal, stress, or all [default: all])
   --json              Write benchmark results to packages/coralite/benchmarks/results/latest.json
+  --check-regression  Compare run against baseline.json and exit with code 1 on regression
+  --warn-only         Print regression warnings without exiting with code 1
+  --save-baseline     Save current run results to baselines/baseline.json
   --iterations=<n>, -i Set iteration count per test (default: 5)
   --rows=<n>, -r      Set row count for DOM reactivity suite (default: 1000)
 `)
@@ -77,7 +91,7 @@ async function main () {
   }
 
   const selectedSuite = flags.suite.toLowerCase()
-  const VALID_SUITES = ['all', 'dom-reactivity', 'dom', 'bundle-hydration', 'bundle', 'hydration', 'ssr-throughput', 'ssr', 'internal']
+  const VALID_SUITES = ['all', 'dom-reactivity', 'dom', 'bundle-hydration', 'bundle', 'hydration', 'ssr-throughput', 'ssr', 'internal', 'stress', 'lifecycle']
 
   if (!VALID_SUITES.includes(selectedSuite)) {
     console.error(`\n❌ Error: Unknown suite "${flags.suite}".`)
@@ -114,13 +128,53 @@ async function main () {
     triggerGC()
   }
 
+  if (selectedSuite === 'all' || selectedSuite === 'stress' || selectedSuite === 'lifecycle') {
+    const stressResults = await runStressLifecycleSuite({
+      iterations: flags.iterations
+    })
+    resultsData.suites['stress-lifecycle'] = stressResults
+    triggerGC()
+  }
+
   printTerminalResults(resultsData)
   writeMarkdownResults(resultsData)
 
-  // Write JSON report automatically on master/all run or when --json flag is passed
-  if (flags.json || selectedSuite === 'all') {
+  if (flags.saveBaseline) {
+    writeJSONResults(resultsData, DEFAULT_BASELINE_PATH)
+    console.log(`Baseline successfully saved to ${DEFAULT_BASELINE_PATH}`)
+  } else if (flags.json || selectedSuite === 'all') {
     writeJSONResults(resultsData)
     console.log('Results successfully written to packages/coralite/benchmarks/results/latest.json')
+  }
+
+  if (flags.checkRegression) {
+    console.log('\n--- Checking Performance Regressions against Baseline ---')
+    const checkResult = compareAgainstBaseline(resultsData)
+    if (checkResult.error) {
+      console.log(`⚠️  ${checkResult.error}`)
+    } else if (checkResult.regressions.length === 0) {
+      console.log('✅ Zero performance regressions detected.')
+    } else {
+      console.log('\n⚠️ Performance Comparisons:')
+      console.table(checkResult.regressions.map(r => ({
+        Suite: r.suite,
+        Item: r.item,
+        Metric: r.metric,
+        Baseline: r.baseline,
+        Current: r.current,
+        'Diff %': `${r.diffPercent}%`,
+        Status: r.isError ? '❌ FAIL' : '⚠️ WARN'
+      })))
+
+      if (!checkResult.passed) {
+        if (flags.warnOnly) {
+          console.log('\n⚠️ Performance regressions detected but --warn-only flag is set. Exiting cleanly with code 0.')
+        } else {
+          console.error('\n❌ Performance regression check failed!')
+          process.exit(1)
+        }
+      }
+    }
   }
 }
 

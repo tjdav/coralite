@@ -3,6 +3,7 @@ import assert from 'node:assert'
 import { buildData, updateData, swapRows } from '../../benchmarks/utils/data-generator.js'
 import { getMemoryUsage, triggerGC } from '../../benchmarks/utils/memory.js'
 import { generateMarkdownTable, writeJSONResults } from '../../benchmarks/utils/reporter.js'
+import { compareAgainstBaseline } from '../../benchmarks/utils/regression.js'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import fs from 'node:fs'
@@ -92,14 +93,79 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
     })
   })
 
+  describe('regression.js', () => {
+    it('detects latency and bundle size regressions based on thresholds', () => {
+      const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'reg-test-'))
+      const baselineFile = path.join(tmpDir, 'baseline.json')
+
+      const baselineData = {
+        suites: {
+          'bundle-hydration': {
+            coraliteDynamic: { gzipKB: 10.0, hydrationMS: 5.0 }
+          }
+        }
+      }
+      fs.writeFileSync(baselineFile, JSON.stringify(baselineData), 'utf-8')
+
+      // Case 1: Minor change (passed)
+      const cur1 = {
+        suites: {
+          'bundle-hydration': {
+            coraliteDynamic: { gzipKB: 10.2, hydrationMS: 5.2 }
+          }
+        }
+      }
+      const res1 = compareAgainstBaseline(cur1, baselineFile)
+      assert.strictEqual(res1.passed, true)
+      assert.strictEqual(res1.regressions.length, 0)
+
+      // Case 2: Latency warning (> 10%)
+      const cur2 = {
+        suites: {
+          'bundle-hydration': {
+            coraliteDynamic: { gzipKB: 10.2, hydrationMS: 5.6 }
+          }
+        }
+      }
+      const res2 = compareAgainstBaseline(cur2, baselineFile)
+      assert.strictEqual(res2.passed, true)
+      assert.strictEqual(res2.hasWarnings, true)
+
+      // Case 3: Latency breach (> 15%)
+      const cur3 = {
+        suites: {
+          'bundle-hydration': {
+            coraliteDynamic: { gzipKB: 10.2, hydrationMS: 6.0 }
+          }
+        }
+      }
+      const res3 = compareAgainstBaseline(cur3, baselineFile)
+      assert.strictEqual(res3.passed, false)
+
+      // Case 4: Bundle size breach (> 5%)
+      const cur4 = {
+        suites: {
+          'bundle-hydration': {
+            coraliteDynamic: { gzipKB: 11.0, hydrationMS: 5.0 }
+          }
+        }
+      }
+      const res4 = compareAgainstBaseline(cur4, baselineFile)
+      assert.strictEqual(res4.passed, false)
+
+      fs.rmSync(tmpDir, { recursive: true, force: true })
+    })
+  })
+
   describe('runner.js CLI suite validation', () => {
     it('exits with status 1 and prints error when invalid suite is provided', async () => {
       const runnerPath = path.resolve(import.meta.dirname, '../../benchmarks/runner.js')
       await assert.rejects(
         execFileAsync(process.execPath, ['--experimental-vm-modules', runnerPath, '--suite=invalid-suite-name']),
         (err) => {
+          const combinedOutput = (err.stdout || '') + (err.stderr || '')
           assert.strictEqual(err.code, 1)
-          assert.ok(err.stderr.includes('Unknown suite "invalid-suite-name"'))
+          assert.ok(combinedOutput.includes('Unknown suite "invalid-suite-name"'))
           return true
         }
       )
