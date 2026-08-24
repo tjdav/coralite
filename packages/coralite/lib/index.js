@@ -15,4 +15,3 @@ export * from './config.js'
 
 export { createCoralite }
 export default createCoralite
-

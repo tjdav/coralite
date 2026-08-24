@@ -1,13 +1,24 @@
 #!/usr/bin/env -S node --experimental-vm-modules --experimental-import-meta-resolve
 
-// @ts-ignore
-import { createCoralite } from '../dist/lib/index.js'
 import { Command } from 'commander'
 import kleur from 'kleur'
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, readdirSync } from 'node:fs'
 import pkg from '../package.json' with { type: 'json' }
+
+// @ts-ignore
+import { createCoralite } from '../dist/lib/index.js'
+// @ts-ignore
+import { validateComponentsDir, formatComponentValidationReport } from '../dist/lib/component-validator.js'
+// @ts-ignore
+import { applyComponentFixes } from '../dist/lib/component-fixer.js'
+// @ts-ignore
+import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '../dist/lib/plugin-validator.js'
+// @ts-ignore
+import { applyPluginFixes } from '../dist/lib/plugin-fixer.js'
+// @ts-ignore
+import { validatePagesDir, formatPageValidationReport } from '../dist/lib/page-validator.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -33,6 +44,339 @@ if (existsSync(configPath)) {
   }
 }
 
+function resolvePath (explicitPath, configProp, defaultCandidates) {
+  if (explicitPath) {
+    return explicitPath
+  }
+  if (config && config[configProp]) {
+    return config[configProp]
+  }
+  for (const cand of defaultCandidates) {
+    if (existsSync(join(process.cwd(), cand))) {
+      return cand
+    }
+  }
+  return '.'
+}
+
+program
+  .command('check')
+  .description('Run unified validation pass across Components, Plugins, and Pages')
+  .option('-c, --components <path>', 'Path to components directory')
+  .option('-p, --plugins <path>', 'Path to plugin file or directory')
+  .option('--pages <path>', 'Path to pages directory')
+  .option('--format <format>', 'Output format: "console" or "json"', 'console')
+  .option('--strict', 'Fail with non-zero exit code if warnings or unused code exist', false)
+  .option('--coverage', 'Include component test execution coverage metrics', false)
+  .action(async (options) => {
+    const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
+    const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
+    const pageDir = resolvePath(options.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'])
+
+    try {
+      let compReport = null
+      if (compDir && existsSync(compDir)) {
+        compReport = validateComponentsDir(compDir, { coverage: options.coverage })
+      }
+
+      let pluginReport = null
+      if (pluginTarget && existsSync(pluginTarget)) {
+        if (statSync(pluginTarget).isFile()) {
+          const result = await validatePluginFile(pluginTarget)
+          pluginReport = {
+            plugins: [result],
+            metrics: {
+              totalPlugins: 1,
+              validPlugins: result.valid ? 1 : 0,
+              totalErrors: result.metrics.errors,
+              totalWarnings: result.metrics.warnings
+            }
+          }
+        } else {
+          pluginReport = await validatePluginsDir(pluginTarget)
+        }
+      }
+
+      let pageReport = null
+      if (pageDir && existsSync(pageDir)) {
+        let knownComponents = new Map()
+        if (compReport && compReport.components) {
+          for (const c of compReport.components) {
+            if (c.filePath) {
+              const name = c.filePath.split('/').pop().replace(/\.(html|js)$/, '')
+              knownComponents.set(name, {
+                attributes: c.defined ? c.defined.attributes.reduce((acc, curr) => ({
+                  ...acc,
+                  [curr]: {}
+                }), {}) : {}
+              })
+            }
+          }
+        }
+        pageReport = validatePagesDir(pageDir, { knownComponents })
+      }
+
+      const totalFiles = (compReport ? compReport.summary.totalComponents : 0) +
+                         (pluginReport ? pluginReport.metrics.totalPlugins : 0) +
+                         (pageReport ? pageReport.summary.totalPages : 0)
+
+      const validFiles = (compReport ? compReport.summary.validComponents : 0) +
+                         (pluginReport ? pluginReport.metrics.validPlugins : 0) +
+                         (pageReport ? pageReport.summary.validPages : 0)
+
+      const errorCount = (compReport ? compReport.summary.errorCount : 0) +
+                         (pluginReport ? pluginReport.metrics.totalErrors : 0) +
+                         (pageReport ? pageReport.summary.errorCount : 0)
+
+      const warningCount = (compReport ? compReport.summary.warningCount : 0) +
+                           (pluginReport ? pluginReport.metrics.totalWarnings : 0) +
+                           (pageReport ? pageReport.summary.warningCount : 0)
+
+      const fixableCount = (compReport ? compReport.summary.fixableCount : 0) +
+                           (pluginReport ? (pluginReport.plugins || []).reduce((acc, p) => acc + (p.diagnostics || []).filter(d => Boolean(d.fix)).length, 0) : 0) +
+                           (pageReport ? pageReport.summary.fixableCount : 0)
+
+      const totalUnused = compReport ? compReport.metrics.totalUnused : 0
+      const usageCoveragePercentage = compReport ? compReport.summary.usageCoveragePercentage : 100
+
+      if (options.format === 'json') {
+        const jsonOutput = {
+          components: compReport,
+          plugins: pluginReport,
+          pages: pageReport,
+          summary: {
+            totalFiles,
+            validFiles,
+            errorCount,
+            warningCount,
+            fixableCount,
+            usageCoveragePercentage
+          }
+        }
+        process.stdout.write(JSON.stringify(jsonOutput, null, 2) + '\n')
+      } else {
+        process.stdout.write('\n' + kleur.bold().cyan('🪸 Coralite Workspace Check Report') + '\n')
+        process.stdout.write(kleur.gray('─'.repeat(60)) + '\n\n')
+
+        if (compReport) {
+          process.stdout.write(kleur.bold().blue('🪸 Components') + '\n')
+          process.stdout.write(formatComponentValidationReport(compReport, {
+            format: 'console',
+            coverage: options.coverage
+          }))
+        }
+
+        if (pluginReport) {
+          process.stdout.write(kleur.bold().magenta('🔌 Plugins') + '\n')
+          process.stdout.write(formatPluginValidationReport(pluginReport, { format: 'console' }))
+        }
+
+        if (pageReport) {
+          process.stdout.write(kleur.bold().yellow('📄 Pages') + '\n')
+          process.stdout.write(formatPageValidationReport(pageReport, { format: 'console' }))
+        }
+
+        process.stdout.write(kleur.gray('─'.repeat(60)) + '\n')
+        const summaryColor = errorCount === 0 ? kleur.green().bold : kleur.red().bold
+
+        let summaryLine = `Summary: ${totalFiles} file(s) validated across 3 domains | ${validFiles} valid | ${errorCount} error(s) | ${warningCount} warning(s)`
+        if (fixableCount > 0) {
+          summaryLine += ` | ${fixableCount} fixable with --fix`
+        }
+        process.stdout.write(summaryColor(summaryLine) + '\n\n')
+      }
+
+      const hasFailures = errorCount > 0 || (options.strict && (warningCount > 0 || totalUnused > 0))
+      if (hasFailures) {
+        process.exit(1)
+      }
+    } catch (err) {
+      process.stderr.write(kleur.red().bold('ERROR: ') + err.message + '\n')
+      process.exit(1)
+    }
+  })
+
+program
+  .command('fix')
+  .description('Run workspace auto-fixers across Components and Plugins')
+  .option('-c, --components <path>', 'Path to components directory')
+  .option('-p, --plugins <path>', 'Path to plugin file or directory')
+  .option('--pages <path>', 'Path to pages directory')
+  .option('--dry-run', 'Preview changes that would be made without writing to disk', false)
+  .action(async (options) => {
+    const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
+    const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
+
+    try {
+      let totalFixesCount = 0
+      const modifiedFiles = []
+
+      // Fix Components
+      if (compDir && existsSync(compDir)) {
+        const compReport = validateComponentsDir(compDir)
+        for (const compRes of compReport.components) {
+          if (!compRes.filePath) {
+            continue
+          }
+          const rawCode = readFileSync(compRes.filePath, 'utf8')
+          const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
+            filePath: compRes.filePath,
+            dryRun: options.dryRun
+          })
+
+          if (fixResult.modified) {
+            totalFixesCount += fixResult.fixesApplied.length
+            modifiedFiles.push(compRes.filePath)
+            if (options.dryRun) {
+              process.stdout.write(fixResult.diff + '\n')
+            } else {
+              writeFileSync(compRes.filePath, fixResult.outputCode, 'utf8')
+            }
+          }
+        }
+      }
+
+      // Fix Plugins
+      if (pluginTarget && existsSync(pluginTarget)) {
+        let pluginFiles = []
+        if (statSync(pluginTarget).isFile()) {
+          pluginFiles.push(pluginTarget)
+        } else {
+          const scan = (d) => {
+            for (const entry of readdirSync(d)) {
+              const full = join(d, entry)
+              if (statSync(full).isDirectory()) {
+                scan(full)
+              } else if (entry.endsWith('.js') || entry.endsWith('.mjs')) {
+                pluginFiles.push(full)
+              }
+            }
+          }
+          scan(pluginTarget)
+        }
+
+        for (const pFile of pluginFiles) {
+          const rawCode = readFileSync(pFile, 'utf8')
+          const pResult = validatePluginSource(rawCode, pFile)
+          const fixResult = applyPluginFixes(rawCode, pResult.diagnostics || [], {
+            filePath: pFile,
+            dryRun: options.dryRun
+          })
+
+          if (fixResult.modified) {
+            totalFixesCount += fixResult.fixesApplied.length
+            modifiedFiles.push(pFile)
+            if (options.dryRun) {
+              process.stdout.write(fixResult.diff + '\n')
+            } else {
+              writeFileSync(pFile, fixResult.outputCode, 'utf8')
+            }
+          }
+        }
+      }
+
+      if (options.dryRun) {
+        process.stdout.write(
+          kleur.bold().cyan(
+            `Dry-run complete: ${totalFixesCount} fix(es) would be applied across ${modifiedFiles.length} file(s). No files modified on disk.\n\n`
+          )
+        )
+      } else {
+        if (modifiedFiles.length > 0) {
+          process.stdout.write(
+            kleur.bold().green(
+              `✔ Auto-fixed ${totalFixesCount} issue(s) across ${modifiedFiles.length} file(s).\n\n`
+            )
+          )
+        } else {
+          process.stdout.write(kleur.bold().cyan('No fixable issues found.\n\n'))
+        }
+
+        // Re-run check to output post-fix status
+        const checkArgs = []
+        if (options.components) {
+          checkArgs.push('-c', options.components)
+        }
+        if (options.plugins) {
+          checkArgs.push('-p', options.plugins)
+        }
+        if (options.pages) {
+          checkArgs.push('--pages', options.pages)
+        }
+        await program.parseAsync(['node', 'coralite', 'check', ...checkArgs])
+      }
+    } catch (err) {
+      process.stderr.write(kleur.red().bold('ERROR: ') + err.message + '\n')
+      process.exit(1)
+    }
+  })
+
+program
+  .command('init-agent')
+  .description('Scaffold zero-token AGENTS.md and AI IDE config aliases for Coralite projects')
+  .option('--cursor', 'Generate complementary .cursorrules / .cursor/rules/coralite.mdc file', false)
+  .option('--claude', 'Generate complementary CLAUDE.md file', false)
+  .action(async (options) => {
+    const agentsContent = `# Coralite Architecture & Development Rules (AGENTS.md)
+
+## Core Architectural Invariants
+1. **Dumb Template Invariant**:
+   - Component templates (\`<template>\`) contain flat \`{{ token }}\` placeholders ONLY.
+   - NO JavaScript expressions (e.g., \`{{ count + 1 }}\`), NO dot notation, NO inline event listeners (\`onclick=""\`).
+   - All derived UI logic MUST reside in synchronous derived getters inside \`getters: { ... }\`.
+
+2. **Serialization Boundary**:
+   - The \`client()\` block is serialized into browser runtime code.
+   - Top-level static ES imports or outer module variables CANNOT be closed over inside \`client()\`.
+   - Use dynamic \`await import(...)\` inside \`async client()\` or pass values via \`client.config\`.
+
+3. **Attribute Primitives**:
+   - Component attributes strictly support \`String\`, \`Number\`, and \`Boolean\` primitives.
+   - \`Array\` and \`Object\` attribute types are BLOCKED to prevent state pollution.
+   - Initialize complex objects in \`server()\` or manage them in \`state\`.
+
+4. **Two-Phase Plugin Context**:
+   - Plugin context functions MUST be Two-Phase curried:
+     \`context: (pluginContext) => (instanceContext) => ({ ... })\`
+
+5. **Component Structure**:
+   - Coralite components live in \`.html\` files containing \`<template>\`, \`<style>\`, and \`<script type="module">\` exporting \`defineComponent({ ... })\`.
+
+6. **Encapsulation & Scope**:
+   - Target elements locally using \`refs('name')\` inside \`client()\`.
+   - Pages are strictly consumers of custom element components and must not manipulate component internals directly.
+`
+
+    try {
+      const agentsPath = join(process.cwd(), 'AGENTS.md')
+      writeFileSync(agentsPath, agentsContent, 'utf8')
+      process.stdout.write(kleur.bold().green('✔ Scaffolding complete: AGENTS.md created in project root.\n'))
+
+      if (options.cursor) {
+        const cursorRulesPath = join(process.cwd(), '.cursorrules')
+        const cursorContent = `# Cursor Rules for Coralite Project\n# Refer to AGENTS.md for complete invariants.\n\n${agentsContent}`
+        writeFileSync(cursorRulesPath, cursorContent, 'utf8')
+
+        const cursorMdcDir = join(process.cwd(), '.cursor/rules')
+        if (!existsSync(cursorMdcDir)) {
+          mkdirSync(cursorMdcDir, { recursive: true })
+        }
+        writeFileSync(join(cursorMdcDir, 'coralite.mdc'), cursorContent, 'utf8')
+        process.stdout.write(kleur.bold().green('✔ Created .cursorrules and .cursor/rules/coralite.mdc\n'))
+      }
+
+      if (options.claude) {
+        const claudePath = join(process.cwd(), 'CLAUDE.md')
+        const claudeContent = `# Claude Code Project Guidance\n# Refer to AGENTS.md for full architecture details.\n\n${agentsContent}`
+        writeFileSync(claudePath, claudeContent, 'utf8')
+        process.stdout.write(kleur.bold().green('✔ Created CLAUDE.md\n'))
+      }
+    } catch (err) {
+      process.stderr.write(kleur.red().bold('ERROR: ') + err.message + '\n')
+      process.exit(1)
+    }
+  })
+
 program
   .command('validate-components')
   .alias('validate:components')
@@ -44,24 +388,7 @@ program
   .option('--fix', 'Automatically fix safe component issues', false)
   .option('--dry-run', 'Preview changes that would be made by --fix without writing to disk', false)
   .action(async (options) => {
-    // @ts-ignore
-    const { validateComponentsDir, formatComponentValidationReport } = await import('../dist/lib/component-validator.js')
-    // @ts-ignore
-    const { applyComponentFixes } = await import('../dist/lib/component-fixer.js')
-
-    let compDir = options.components
-    if (!compDir && config && config.components) {
-      compDir = config.components
-    }
-    if (!compDir) {
-      if (existsSync(join(process.cwd(), 'src/components'))) {
-        compDir = 'src/components'
-      } else if (existsSync(join(process.cwd(), 'tests/fixtures/components'))) {
-        compDir = 'tests/fixtures/components'
-      } else {
-        compDir = '.'
-      }
-    }
+    const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components']) || '.'
 
     try {
       let initialReport = validateComponentsDir(compDir, { coverage: options.coverage })
@@ -132,22 +459,10 @@ program
   .option('-p, --plugins <path>', 'Path to plugin file or directory')
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('--strict', 'Fail with non-zero exit code if validation errors are found', false)
+  .option('--fix', 'Automatically fix safe plugin contract issues', false)
+  .option('--dry-run', 'Preview changes that would be made by --fix without writing to disk', false)
   .action(async (options) => {
-    // @ts-ignore
-    const { validatePluginsDir, validatePluginFile, formatPluginValidationReport } = await import('../dist/lib/plugin-validator.js')
-    const { statSync, existsSync } = await import('node:fs')
-    const { join } = await import('node:path')
-
-    let pluginTarget = options.plugins
-    if (!pluginTarget) {
-      if (existsSync(join(process.cwd(), 'src/plugins'))) {
-        pluginTarget = 'src/plugins'
-      } else if (existsSync(join(process.cwd(), 'tests/fixtures/plugins'))) {
-        pluginTarget = 'tests/fixtures/plugins'
-      } else {
-        pluginTarget = '.'
-      }
-    }
+    const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins']) || '.'
 
     try {
       let report
@@ -164,6 +479,62 @@ program
         }
       } else {
         report = await validatePluginsDir(pluginTarget)
+      }
+
+      if (options.fix || options.dryRun) {
+        let totalFixesCount = 0
+        const modifiedFiles = []
+
+        for (const pRes of report.plugins) {
+          if (!pRes.filePath) {
+            continue
+          }
+          const rawCode = readFileSync(pRes.filePath, 'utf8')
+          const fixResult = applyPluginFixes(rawCode, pRes.diagnostics || [], {
+            filePath: pRes.filePath,
+            dryRun: options.dryRun
+          })
+
+          if (fixResult.modified) {
+            totalFixesCount += fixResult.fixesApplied.length
+            modifiedFiles.push(pRes.filePath)
+
+            if (options.dryRun) {
+              process.stdout.write(fixResult.diff + '\n')
+            } else {
+              writeFileSync(pRes.filePath, fixResult.outputCode, 'utf8')
+            }
+          }
+        }
+
+        if (options.dryRun) {
+          process.stdout.write(
+            kleur.bold().cyan(
+              `Dry-run complete: ${totalFixesCount} fix(es) would be applied across ${modifiedFiles.length} file(s). No files modified on disk.\n\n`
+            )
+          )
+        } else if (modifiedFiles.length > 0) {
+          process.stdout.write(
+            kleur.bold().green(
+              `✔ Auto-fixed ${totalFixesCount} issue(s) across ${modifiedFiles.length} file(s).\n\n`
+            )
+          )
+          // Re-run validation so final report reflects post-fix state
+          if (existsSync(pluginTarget) && statSync(pluginTarget).isFile()) {
+            const result = await validatePluginFile(pluginTarget)
+            report = {
+              plugins: [result],
+              metrics: {
+                totalPlugins: 1,
+                validPlugins: result.valid ? 1 : 0,
+                totalErrors: result.metrics.errors,
+                totalWarnings: result.metrics.warnings
+              }
+            }
+          } else {
+            report = await validatePluginsDir(pluginTarget)
+          }
+        }
       }
 
       const formatted = formatPluginValidationReport(report, { format: options.format })
@@ -285,4 +656,3 @@ program
   })
 
 program.parse(process.argv)
-
