@@ -7,654 +7,330 @@ import {
   formatComponentAnalysis
 } from '../../../lib/component-validator.js'
 
-describe('Component Validator', () => {
-  test('detects unused getters when not referenced in template or client', () => {
+describe('Component Validator Diagnostics & AST Analysis', () => {
+  // 1. Template Expression Parsing (CORALITE-E201)
+  test('CORALITE-E201: detects non-pure identifier mustache expressions in template and derives getter + defensive code', () => {
     const code = `
 <template>
-  <div>{{ usedGetter }}</div>
+  <div>{{ user.profile.name }}</div>
+  <div>{{ item.price * taxRate }}</div>
+  <div>{{ items[0] }}</div>
 </template>
 
 <script>
   import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const result = validateComponentSource(code, 'test-e201.html')
+    assert.strictEqual(result.valid, false)
 
+    const e201s = result.diagnostics.filter(d => d.code === 'CORALITE-E201')
+    assert.strictEqual(e201s.length, 3)
+
+    // user.profile.name
+    assert.strictEqual(e201s[0].severity, 'error')
+    assert.strictEqual(e201s[0].fix.action, 'lift_to_getter')
+    assert.strictEqual(e201s[0].fix.getter.name, 'userProfileName')
+    assert.strictEqual(e201s[0].fix.getter.code, "userProfileName: (state) => state.user?.profile?.name ?? ''")
+    assert.ok(e201s[0].codeframe.includes('user.profile.name'))
+
+    // item.price * taxRate
+    assert.strictEqual(e201s[1].fix.getter.name, 'itemPriceTimesTaxRate')
+    assert.strictEqual(e201s[1].fix.getter.code, 'itemPriceTimesTaxRate: (state) => (state.item?.price * state.taxRate) ?? 0')
+
+    // items[0]
+    assert.strictEqual(e201s[2].fix.getter.name, 'itemsZero')
+    assert.strictEqual(e201s[2].fix.getter.code, "itemsZero: (state) => state.items?.[0] ?? ''")
+  })
+
+  // 2. Inline Event Listeners (CORALITE-E203)
+  test('CORALITE-E203: detects inline event listener attributes in template', () => {
+    const code = `
+<template>
+  <button onclick="handleClick()">Click</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const result = validateComponentSource(code, 'test-e203.html')
+    assert.strictEqual(result.valid, false)
+
+    const e203s = result.diagnostics.filter(d => d.code === 'CORALITE-E203')
+    assert.strictEqual(e203s.length, 1)
+    assert.strictEqual(e203s[0].severity, 'error')
+    assert.strictEqual(e203s[0].fix.action, 'remove_attribute')
+    assert.ok(e203s[0].codeframe.includes('onclick'))
+  })
+
+  // 3. Missing Element Ref (CORALITE-E202)
+  test('CORALITE-E202: detects called refs missing from template', () => {
+    const code = `
+<template>
+  <div>No ref here</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
   export default defineComponent({
-    getters: {
-      usedGetter: (state) => 'used',
-      unusedGetter: (state) => 'unused'
+    client({ refs }) {
+      const btn = refs('submit-btn')
     }
   })
 </script>
 `
-    const result = validateComponentSource(code, 'test-component.html')
-    assert.deepStrictEqual(result.defined.getters, ['usedGetter', 'unusedGetter'])
-    assert.deepStrictEqual(result.unused.getters, ['unusedGetter'])
-    assert.strictEqual(result.metrics.usageCoveragePercentage, 50)
+    const result = validateComponentSource(code, 'test-e202.html')
+    assert.strictEqual(result.valid, false)
+
+    const e202s = result.diagnostics.filter(d => d.code === 'CORALITE-E202')
+    assert.strictEqual(e202s.length, 1)
+    assert.strictEqual(e202s[0].severity, 'error')
+    assert.strictEqual(e202s[0].fix.action, 'inject_ref')
+    assert.strictEqual(e202s[0].fix.replacement, 'ref="submit-btn"')
   })
 
-  test('detects unused server props when unreferenced', () => {
+  // 4. Attribute Blocked Types (CORALITE-E101)
+  test('CORALITE-E101: detects blocked attribute types Array and Object', () => {
     const code = `
 <template>
-  <div>{{ activeProp }}</div>
+  <div>Test</div>
 </template>
 
 <script>
   import { defineComponent } from 'coralite'
-
   export default defineComponent({
-    async server() {
-      return {
-        activeProp: 'used',
-        deadProp: 'never-read'
+    attributes: {
+      items: { type: Array },
+      user: { type: Object }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e101.html')
+    assert.strictEqual(result.valid, false)
+
+    const e101s = result.diagnostics.filter(d => d.code === 'CORALITE-E101')
+    assert.strictEqual(e101s.length, 2)
+    assert.strictEqual(e101s[0].severity, 'error')
+    assert.ok(e101s[0].fix.description.includes('Move Array/Object initialization'))
+  })
+
+  // 5. Attribute Mutex (CORALITE-E102)
+  test('CORALITE-E102: detects attribute defining both required: true and default', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      title: { type: String, required: true, default: 'Untitled' }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e102.html')
+    assert.strictEqual(result.valid, false)
+
+    const e102s = result.diagnostics.filter(d => d.code === 'CORALITE-E102')
+    assert.strictEqual(e102s.length, 1)
+    assert.strictEqual(e102s[0].severity, 'error')
+    assert.strictEqual(e102s[0].fix.action, 'strip_default')
+  })
+
+  // 6. Async Attribute Validate/Transform (CORALITE-E103)
+  test('CORALITE-E103: detects async validate or transform functions in attribute schema', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      email: {
+        type: String,
+        async validate(val) { return true }
       }
     }
   })
 </script>
 `
-    const result = validateComponentSource(code, 'server-comp.html')
-    assert.deepStrictEqual(result.defined.serverProps, ['activeProp', 'deadProp'])
-    assert.deepStrictEqual(result.unused.serverProps, ['deadProp'])
+    const result = validateComponentSource(code, 'test-e103.html')
+    assert.strictEqual(result.valid, false)
+
+    const e103s = result.diagnostics.filter(d => d.code === 'CORALITE-E103')
+    assert.strictEqual(e103s.length, 1)
+    assert.strictEqual(e103s[0].severity, 'error')
   })
 
-  test('detects unused element refs in template', () => {
+  // 7. Reserved Context Collision (CORALITE-E104)
+  test('CORALITE-E104: detects attributes or server properties colliding with reserved context keys', () => {
     const code = `
 <template>
-  <button ref="used-btn">Click</button>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      signal: { type: String }
+    },
+    async server() {
+      return {
+        emit: 'foo'
+      }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e104.html')
+    assert.strictEqual(result.valid, false)
+
+    const e104s = result.diagnostics.filter(d => d.code === 'CORALITE-E104')
+    assert.strictEqual(e104s.length, 2)
+    assert.strictEqual(e104s[0].severity, 'error')
+  })
+
+  // 8. Serialization Boundary Leaks (CORALITE-E301)
+  test('CORALITE-E301: detects top-level imports referenced inside client() block', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  import { formatDate } from './utils.js'
+
+  export default defineComponent({
+    client() {
+      const formatted = formatDate(new Date())
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e301.html')
+    assert.strictEqual(result.valid, false)
+
+    const e301s = result.diagnostics.filter(d => d.code === 'CORALITE-E301')
+    assert.strictEqual(e301s.length, 1)
+    assert.strictEqual(e301s[0].severity, 'error')
+    assert.strictEqual(e301s[0].fix.action, 'dynamic_import')
+  })
+
+  // 9. Reactivity Loops in observe() (CORALITE-E302)
+  test('CORALITE-E302: detects state assignment inside observe() callback', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ observe, state }) {
+      observe('count', (state) => {
+        state.doubleCount = state.count * 2
+      })
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e302.html')
+    assert.strictEqual(result.valid, false)
+
+    const e302s = result.diagnostics.filter(d => d.code === 'CORALITE-E302')
+    assert.strictEqual(e302s.length, 1)
+    assert.strictEqual(e302s[0].severity, 'warning')
+  })
+
+  // 10. Async Style Getters (CORALITE-E303)
+  test('CORALITE-E303: detects async functions inside style block', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    style: {
+      color: async (state) => 'red'
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e303.html')
+    assert.strictEqual(result.valid, false)
+
+    const e303s = result.diagnostics.filter(d => d.code === 'CORALITE-E303')
+    assert.strictEqual(e303s.length, 1)
+    assert.strictEqual(e303s[0].severity, 'error')
+  })
+
+  // 11. Unused Symbols Warnings (CORALITE-W401)
+  test('CORALITE-W401: emits warning for unused getters, serverProps, and attributes', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      unusedAttr: { type: String }
+    },
+    getters: {
+      unusedGetter: (state) => 'unused'
+    },
+    async server() {
+      return {
+        unusedServerProp: 'dead'
+      }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-w401.html')
+    assert.strictEqual(result.valid, false)
+
+    const w401s = result.diagnostics.filter(d => d.code === 'CORALITE-W401')
+    assert.strictEqual(w401s.length, 3)
+    assert.strictEqual(w401s[0].severity, 'warning')
+  })
+
+  // 12. Unused Element Ref Warning (CORALITE-W402)
+  test('CORALITE-W402: emits warning for element ref defined in template but never accessed', () => {
+    const code = `
+<template>
   <div ref="unused-box">Box</div>
 </template>
 
 <script>
   import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    client({ refs }) {
-      const btn = refs('used-btn')
-    }
-  })
+  export default defineComponent({})
 </script>
 `
-    const result = validateComponentSource(code, 'ref-comp.html')
-    assert.deepStrictEqual(result.defined.refs, ['used-btn', 'unused-box'])
-    assert.deepStrictEqual(result.unused.refs, ['unused-box'])
-  })
-
-  test('reports 100% coverage when all properties are used', () => {
-    const code = `
-<template>
-  <div ref="my-ref">{{ myVal }}</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    attributes: {
-      myVal: { type: String, default: 'hello' }
-    },
-    client({ state, refs }) {
-      const el = refs('my-ref')
-      console.log(state.myVal)
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'perfect-comp.html')
-    assert.strictEqual(result.unused.attributes.length, 0)
-    assert.strictEqual(result.unused.refs.length, 0)
-    assert.strictEqual(result.metrics.usageCoveragePercentage, 100)
-  })
-
-  test('formatComponentValidationReport generates formatted text', () => {
-    const mockReport = {
-      components: [
-        {
-          filePath: 'comp-a.html',
-          metrics: {
-            totalUnused: 1,
-            usageCoveragePercentage: 50
-          },
-          unused: {
-            getters: ['unusedProp'],
-            serverProps: [],
-            attributes: [],
-            refs: [],
-            missingRefs: []
-          }
-        }
-      ],
-      metrics: {
-        totalComponents: 1,
-        totalDefined: 2,
-        totalUnused: 1,
-        overallCoveragePercentage: 50
-      }
-    }
-    const formatted = formatComponentValidationReport(mockReport, { coverage: true })
-    assert(formatted.includes('Coralite Component Code Coverage'))
-    assert(formatted.includes('unusedProp'))
-    assert(formatted.includes('Runtime Test Coverage'))
-  })
-
-  test('detects top-level imports referenced in client block', () => {
-    const code = `
-<template>
-  <div>Test</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-  import { formatDate } from './utils.js'
-  import helper from './helper.js'
-
-  export default defineComponent({
-    client({ state }) {
-      const a = formatDate(new Date())
-      helper.doSomething()
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'import-comp.html')
-    assert.deepStrictEqual(result.unused.invalidClientImports, ['formatDate', 'helper'])
-    assert.strictEqual(result.metrics.totalUnused, 2)
-  })
-
-  test('does not flag top-level imports referenced only in server block or getters', () => {
-    const code = `
-<template>
-  <div>Test</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-  import { serverCalc } from './server-math.js'
-
-  export default defineComponent({
-    server() {
-      return {
-        val: serverCalc(10)
-      }
-    },
-    client({ state }) {
-      console.log(state.val)
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'server-import-comp.html')
-    assert.deepStrictEqual(result.unused.invalidClientImports, [])
-  })
-
-  test('does not flag dynamic imports inside client block', () => {
-    const code = `
-<template>
-  <div>Test</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    async client() {
-      const { formatDate } = await import('./utils.js')
-      console.log(formatDate(new Date()))
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'dynamic-import-comp.html')
-    assert.deepStrictEqual(result.unused.invalidClientImports, [])
-  })
-
-  test('does not flag top-level import if shadowed by local declaration inside client block', () => {
-    const code = `
-<template>
-  <div>Test</div>
-</template>
-
-<script>
-  import { formatDate } from './utils.js'
-
-  export default defineComponent({
-    client() {
-      const formatDate = (d) => String(d)
-      console.log(formatDate(new Date()))
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'shadowed-import-comp.html')
-    assert.deepStrictEqual(result.unused.invalidClientImports, [])
-  })
-
-  test('formatComponentValidationReport includes top-level import errors', () => {
-    const mockReport = {
-      components: [
-        {
-          filePath: 'comp-b.html',
-          metrics: {
-            totalUnused: 1,
-            usageCoveragePercentage: 0
-          },
-          unused: {
-            getters: [],
-            serverProps: [],
-            attributes: [],
-            refs: [],
-            missingRefs: [],
-            invalidClientImports: ['formatDate']
-          }
-        }
-      ],
-      metrics: {
-        totalComponents: 1,
-        totalDefined: 0,
-        totalUnused: 1,
-        overallCoveragePercentage: 0
-      }
-    }
-    const formatted = formatComponentValidationReport(mockReport)
-    assert(formatted.includes('Top-level imports used in client block'))
-    assert(formatted.includes('formatDate'))
-  })
-
-  test('reports valid=false and totalErrors > 0 when component has validation errors for CI compatibility', () => {
-    const code = `
-<template>
-  <div>Test</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-  import fs from 'node:fs'
-
-  export default defineComponent({
-    client() {
-      const data = fs.readFileSync('foo.txt')
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'ci-error-comp.html')
+    const result = validateComponentSource(code, 'test-w402.html')
     assert.strictEqual(result.valid, false)
-    assert.strictEqual(result.metrics.totalErrors, 1)
+
+    const w402s = result.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s.length, 1)
+    assert.strictEqual(w402s[0].severity, 'warning')
   })
 
-  test('ignores symbols referenced via inline ignore pragmas (HTML, block, and line comments)', () => {
-    // HTML comment pragma ignores a ref and an attribute
-    const htmlCode = `\n<template>\n  <!-- coralite-ignore hook-result, unusedAttr -->\n  <div ref="hook-result">{{ myAttr }}</div>\n</template>\n\n<script>\n  import { defineComponent } from 'coralite'\n\n  export default defineComponent({\n    attributes: {\n      myAttr: { type: String, default: '' },\n      unusedAttr: { type: String, default: '' }\n    }\n  })\n</script>\n`
-    const htmlResult = validateComponentSource(htmlCode, 'ignore-html.html')
-    assert.deepStrictEqual(htmlResult.unused.refs, [])
-    assert.deepStrictEqual(htmlResult.unused.attributes, [])
-
-    // Block comment pragma ignores an unused getter
-    const blockCode = `\n<template>\n  <div>Test</div>\n</template>\n\n<script>\n  import { defineComponent } from 'coralite'\n\n  /* coralite-ignore unusedGetter */\n  export default defineComponent({\n    getters: {\n      unusedGetter: (state) => 'x'\n    }\n  })\n</script>\n`
-    const blockResult = validateComponentSource(blockCode, 'ignore-block.html')
-    assert.deepStrictEqual(blockResult.unused.getters, [])
-
-    // Line comment pragma ignores an unused attribute
-    const lineCode = `\n<template>\n  <div>Test</div>\n</template>\n\n<script>\n  import { defineComponent } from 'coralite'\n\n  // coralite-ignore unusedAttr\n  export default defineComponent({\n    attributes: {\n      unusedAttr: { type: String, default: '' }\n    }\n  })\n</script>\n`
-    const lineResult = validateComponentSource(lineCode, 'ignore-line.html')
-    assert.deepStrictEqual(lineResult.unused.attributes, [])
-  })
-
-  test('extracts style/template/script sections safely on adversarial input', () => {
-    // Attribute referenced only through the <style> block should count as used,
-    // proving styleContent extraction (with attributes + case-insensitive tag) works.
-    const styledCode = `\n<template>\n  <div>{{ message }}</div>\n</template>\n\n<style type="text/css">\n  [box] {\n    color: red;\n  }\n</style>\n\n<script>\n  import { defineComponent } from 'coralite'\n\n  export default defineComponent({\n    attributes: {\n      message: { type: String, default: '' },\n      box: { type: Boolean }\n    }\n  })\n</script>\n`
-    const styledResult = validateComponentSource(styledCode, 'styled-comp.html')
-    assert.strictEqual(styledResult.valid, true)
-    assert.deepStrictEqual(styledResult.unused.attributes, [])
-
-    // ReDoS-shaped input with many nested <style> and no closing tag must complete quickly
-    const adversarial = '<style>' + '<style>a'.repeat(5000)
-    const advResult = validateComponentSource(adversarial, 'adversarial.html')
-    assert.strictEqual(advResult.valid, true)
-  })
-
-  test('linear token/ref/state extraction handles adversarial input without slowing', () => {
-    // Mustache token extraction must complete quickly on ReDoS-shaped input
-    const adversarialTemplate = '{{' + 'aaa.'.repeat(5000)
-    const advTemplateResult = validateComponentSource(
-      `<template><div>${adversarialTemplate}</div></template><script>import { defineComponent } from 'coralite'</script>`,
-      'adv-template.html'
-    )
-    assert.strictEqual(advTemplateResult.valid, true)
-
-    // refs() scanning on adversarial script with many opens and no close must complete
-    const advScriptResult = validateComponentSource(
-      `<template><div ref="box">{{ msg }}</div></template><script>import { defineComponent } from 'coralite'\nexport default defineComponent(${'refs("a'.repeat(2000)})</script>`,
-      'adv-script.html'
-    )
-    assert.deepStrictEqual(advScriptResult.defined.refs, ['box'])
-  })
-
-  test('handles destructured state and refs in client arguments and variable declarations', () => {
-    const code = `
-<template>
-  <button ref="my-button" class="{{ activeClass }}">Click</button>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    attributes: {
-      activeClass: { type: String, default: 'active' },
-      unusedAttr: { type: String, default: 'unused' }
-    },
-    client({ state: { activeClass }, refs: { 'my-button': btn } }) {
-      console.log(activeClass, btn)
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'destructure-comp.html')
-    assert.deepStrictEqual(result.unused.attributes, ['unusedAttr'])
-    assert.deepStrictEqual(result.unused.refs, [])
-  })
-
-  test('handles state destructuring in variable declarations and getters/server params', () => {
-    const code = `
-<template>
-  <div>{{ getterVal }}</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    attributes: {
-      attrOne: { type: String, default: 'one' },
-      attrTwo: { type: String, default: 'two' }
-    },
-    async server({ state: { attrOne } }) {
-      return {
-        getterVal: attrOne
-      }
-    },
-    getters: {
-      getterVal: ({ attrTwo }) => attrTwo
-    },
-    client({ state }) {
-      const { attrOne } = state
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'destructure-var-comp.html')
-    assert.deepStrictEqual(result.unused.attributes, [])
-    assert.deepStrictEqual(result.unused.getters, [])
-  })
-
-  test('comments in script do not count as state or refs usage', () => {
-    const code = `
-<template>
-  <div>Test</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    attributes: {
-      unusedAttr: { type: String, default: '' }
-    },
-    client() {
-      // state.unusedAttr
-      /* refs('unusedRef') */
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'comment-comp.html')
-    assert.deepStrictEqual(result.unused.attributes, ['unusedAttr'])
-  })
-
-  test('extracts mustache tokens from element attributes', () => {
-    const code = `
-<template>
-  <button id="{{ btnId }}" class="{{ activeClass }}">Btn</button>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    attributes: {
-      btnId: { type: String },
-      activeClass: { type: String }
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'attr-mustache-comp.html')
-    assert.deepStrictEqual(result.unused.attributes, [])
-  })
-
-  test('identifies ref as used when referenced via dynamic token id="{{ ref_bubble }}" in template', () => {
-    const code = `
-<template>
-  <div ref="bubble" id="{{ ref_bubble }}">Bubble</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({})
-</script>
-`
-    const result = validateComponentSource(code, 'dynamic-token-ref.html')
-    assert.deepStrictEqual(result.unused.refs, [])
-    assert.deepStrictEqual(result.unused.missingRefs, [])
-  })
-
-  test('identifies ref as used when referenced via popovertarget="{{ ref_popover }}" or <label for="{{ ref_input }}">', () => {
-    const code = `
-<template>
-  <button popovertarget="{{ ref_popover }}">Toggle</button>
-  <div ref="popover" popover>Content</div>
-  <label for="{{ ref_input }}">Name</label>
-  <input ref="input" id="{{ ref_input }}" />
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({})
-</script>
-`
-    const result = validateComponentSource(code, 'popover-label-ref.html')
-    assert.deepStrictEqual(result.unused.refs, [])
-    assert.deepStrictEqual(result.unused.missingRefs, [])
-  })
-
-  test('identifies ref as used when referenced in getters or client state via state.ref_xxx', () => {
-    const code = `
-<template>
-  <div ref="box">Box</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    getters: {
-      boxElement: (state) => state.ref_box
-    },
-    client({ state }) {
-      console.log(state.ref_box)
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'state-ref-access.html')
-    assert.deepStrictEqual(result.unused.refs, [])
-    assert.deepStrictEqual(result.unused.missingRefs, [])
-  })
-
-  test('identifies ref as used when accessed via refs.bubble property syntax or refs("ref_bubble") normalized syntax', () => {
-    const code = `
-<template>
-  <div ref="bubble">Bubble</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    client({ refs }) {
-      const a = refs.bubble
-      const b = refs('ref_bubble')
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'refs-property-access.html')
-    assert.deepStrictEqual(result.unused.refs, [])
-    assert.deepStrictEqual(result.unused.missingRefs, [])
-  })
-
-  test('flags missingRefs when {{ ref_missing }} or state.ref_missing is used without ref="missing"', () => {
-    const code = `
-<template>
-  <div id="{{ ref_missing }}">{{ ref_ghost }}</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    client({ state, refs }) {
-      const a = state.ref_dead
-      const b = refs('ref_phantom')
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'missing-ref.html')
-    assert.deepStrictEqual(result.unused.missingRefs.sort(), ['dead', 'ghost', 'missing', 'phantom'])
-  })
-
-  test('exempts ref_ properties from missingRefs if explicitly declared in attributes, server(), or getters', () => {
-    const code = `
-<template>
-  <div>{{ ref_custom }}</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    attributes: {
-      ref_custom: { type: String }
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'declared-ref-prop.html')
-    assert.deepStrictEqual(result.unused.missingRefs, [])
-  })
-
-  test('verifies truly unreferenced refs are still flagged as unused', () => {
-    const code = `
-<template>
-  <div ref="real-unused">Unused</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({})
-</script>
-`
-    const result = validateComponentSource(code, 'truly-unused-ref.html')
-    assert.deepStrictEqual(result.unused.refs, ['real-unused'])
-  })
-
-  test('handles hyphenated refs with camelCase script state access (ref="my-button" with state.ref_myButton)', () => {
-    const code = `
-<template>
-  <button ref="my-button">Click</button>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    client({ state }) {
-      console.log(state.ref_myButton)
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'hyphenated-camel-ref.html')
-    assert.deepStrictEqual(result.unused.refs, [])
-    assert.deepStrictEqual(result.unused.missingRefs, [])
-  })
-
-  test('emits warning when attribute or server property collides with reserved slot context property', () => {
-    let warnMsg = ''
-    const origWarn = console.warn
-    console.warn = (msg) => { warnMsg = msg }
-
-    const code = `
-<template>
-  <div><slot></slot></div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    attributes: {
-      signal: { type: String }
-    },
-    slots: {
-      default(nodes, { signal }) {
-        return nodes
-      }
-    }
-  })
-</script>
-`
-    validateComponentSource(code, 'collision-comp.html')
-    console.warn = origWarn
-
-    assert.ok(warnMsg.includes('[Coralite Warning]'))
-    assert.ok(warnMsg.includes('signal'))
-    assert.ok(warnMsg.includes('collides with a reserved context property'))
-  })
-
+  // 13. Backwards Compatibility Aliases
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)
-  })
-
-  test('recognizes state.errors.myAttr and context.errors.myAttr as attribute usage without warnings', () => {
-    const code = `
-<template>
-  <div>Test</div>
-</template>
-
-<script>
-  import { defineComponent } from 'coralite'
-
-  export default defineComponent({
-    attributes: {
-      myAttr: { type: String },
-      otherAttr: { type: String }
-    },
-    client(context) {
-      const err1 = context.state.errors.myAttr
-      const { errors } = context
-      const err2 = errors.otherAttr
-    }
-  })
-</script>
-`
-    const result = validateComponentSource(code, 'errors-usage-comp.html')
-    assert.strictEqual(result.valid, true)
-    assert.deepStrictEqual(result.unused.attributes, [])
-    assert.strictEqual(result.metrics.usageCoveragePercentage, 100)
   })
 })

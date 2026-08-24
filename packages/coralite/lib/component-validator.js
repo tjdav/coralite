@@ -3,15 +3,56 @@ import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, extname, relative, resolve } from 'node:path'
-import kleur from 'kleur'
 import { camelToKebab, kebabToCamel } from './utils/core.js'
+import { buildCodeframe, formatValidationReport } from './utils/diagnostics.js'
 
 /**
  * @import {
  *   CoraliteComponentValidationResult,
- *   CoraliteComponentDirectoryValidationReport
+ *   CoraliteComponentDirectoryValidationReport,
+ *   CoraliteDiagnostic
  * } from '../types/index.js'
  */
+
+const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'instanceId', 'emit'])
+
+const NUMBER_WORDS = {
+  0: 'Zero',
+  1: 'One',
+  2: 'Two',
+  3: 'Three',
+  4: 'Four',
+  5: 'Five',
+  6: 'Six',
+  7: 'Seven',
+  8: 'Eight',
+  9: 'Nine'
+}
+
+function getLocForSubstring (source, substring, searchFrom = 0) {
+  const index = source.indexOf(substring, searchFrom)
+  if (index === -1) {
+    return {
+      line: 1,
+      column: 1,
+      index: 0
+    }
+  }
+  let line = 1
+  let lastNewLine = -1
+  for (let i = 0; i < index; i++) {
+    if (source[i] === '\n') {
+      line++
+      lastNewLine = i
+    }
+  }
+  const column = index - lastNewLine
+  return {
+    line,
+    column,
+    index
+  }
+}
 
 function getPropKeyName (propNode) {
   if (!propNode) {
@@ -75,47 +116,412 @@ function extractDestructuredKeys (patternNode, targetSet, localBindingNames) {
   }
 }
 
+function deriveGetterName (expr, existingKeys) {
+  let processed = expr
+    .replace(/!==|!=/g, ' NotEquals ')
+    .replace(/===|==/g, ' Equals ')
+    .replace(/>=/g, ' GreaterThanOrEqual ')
+    .replace(/<=/g, ' LessThanOrEqual ')
+    .replace(/>/g, ' GreaterThan ')
+    .replace(/</g, ' LessThan ')
+    .replace(/!/g, ' IsNot ')
+    .replace(/\+/g, ' Plus ')
+    .replace(/\-/g, ' Minus ')
+    .replace(/\*/g, ' Times ')
+    .replace(/\//g, ' Divide ')
+
+  processed = processed.replace(/\b([0-9])\b/g, (m, d) => NUMBER_WORDS[d] || d)
+
+  const tokens = processed.match(/[a-zA-Z0-9_]+/g) || []
+  if (tokens.length === 0) {
+    tokens.push('derived')
+  }
+
+  let name = ''
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    if (i === 0) {
+      name += token.charAt(0).toLowerCase() + token.slice(1)
+    } else {
+      name += token.charAt(0).toUpperCase() + token.slice(1)
+    }
+  }
+
+  if (!name || /^[0-9]/.test(name)) {
+    name = 'derived' + (name ? name.charAt(0).toUpperCase() + name.slice(1) : '')
+  }
+
+  name = name.replace(/[^a-zA-Z0-9_$]/g, '')
+
+  let candidate = name
+  let suffix = 1
+  while (existingKeys.has(candidate)) {
+    candidate = `${name}${suffix}`
+    suffix++
+  }
+
+  existingKeys.add(candidate)
+  return candidate
+}
+
+function buildDefensiveExpr (node) {
+  if (!node) {
+    return "''"
+  }
+
+  switch (node.type) {
+    case 'Identifier': {
+      const name = node.name
+      if (['undefined', 'null', 'true', 'false', 'NaN'].includes(name)) {
+        return name
+      }
+      return `state.${name}`
+    }
+    case 'Literal': {
+      return JSON.stringify(node.value)
+    }
+    case 'MemberExpression': {
+      const obj = buildDefensiveExpr(node.object)
+      if (node.computed) {
+        const prop = buildDefensiveExpr(node.property)
+        return `${obj}?.[${prop}]`
+      } else {
+        return `${obj}?.${node.property.name}`
+      }
+    }
+    case 'BinaryExpression': {
+      const left = buildDefensiveExpr(node.left)
+      const right = buildDefensiveExpr(node.right)
+      return `(${left} ${node.operator} ${right})`
+    }
+    case 'UnaryExpression': {
+      const arg = buildDefensiveExpr(node.argument)
+      return `${node.operator}${arg}`
+    }
+    case 'LogicalExpression': {
+      const left = buildDefensiveExpr(node.left)
+      const right = buildDefensiveExpr(node.right)
+      return `(${left} ${node.operator} ${right})`
+    }
+    case 'CallExpression': {
+      const callee = buildDefensiveExpr(node.callee)
+      const args = node.arguments.map(a => buildDefensiveExpr(a)).join(', ')
+      return `${callee}?.(${args})`
+    }
+    default: {
+      return `state.${node.type}`
+    }
+  }
+}
+
+function generateGetterCode (getterName, expr) {
+  let innerCode = ''
+  let fallback = "''"
+
+  try {
+    const ast = parseJS(`(${expr})`, { ecmaVersion: 'latest' })
+    const stmt = ast.body[0]
+
+    if (stmt && stmt.type === 'ExpressionStatement') {
+      const exprNode = stmt.expression
+      innerCode = buildDefensiveExpr(exprNode)
+
+      if (exprNode.type === 'BinaryExpression') {
+        if (['+', '-', '*', '/', '%'].includes(exprNode.operator)) {
+          fallback = '0'
+        } else if (['>', '<', '>=', '<=', '==', '===', '!=', '!=='].includes(exprNode.operator)) {
+          fallback = null
+        }
+      } else if (exprNode.type === 'UnaryExpression' && exprNode.operator === '!') {
+        fallback = null
+      }
+    } else {
+      innerCode = `state.${expr.replace(/[^a-zA-Z0-9_.]/g, '')}`
+    }
+  } catch {
+    const cleanExpr = expr.replace(/[^a-zA-Z0-9_.]/g, '')
+    innerCode = `state.${cleanExpr}`
+  }
+
+  if (fallback !== null) {
+    innerCode = `${innerCode} ?? ${fallback}`
+  }
+
+  return `${getterName}: (state) => ${innerCode}`
+}
+
+function extractIdentifiersFromExpr (expr, targetSet) {
+  try {
+    const ast = parseJS(`(${expr})`, { ecmaVersion: 'latest' })
+    walkJS(ast, {
+      Identifier (idNode) {
+        if (!['undefined', 'null', 'true', 'false', 'NaN'].includes(idNode.name)) {
+          targetSet.add(idNode.name)
+        }
+      }
+    })
+  } catch {
+    const matches = expr.match(/[a-zA-Z_$][a-zA-Z0-9_$]*/g) || []
+    for (const m of matches) {
+      targetSet.add(m)
+    }
+  }
+}
+
+function createDiagnostic ({ code, severity, message, filePath, line, column, sourceCode, cause, fix }) {
+  const diagnostic = {
+    code,
+    severity,
+    message,
+    filePath,
+    line,
+    column,
+    cause,
+    fix
+  }
+
+  if (typeof line === 'number' && line > 0 && sourceCode) {
+    diagnostic.codeframe = buildCodeframe(sourceCode, line, column)
+  }
+
+  return diagnostic
+}
+
 /**
- * Validates component source code for unused getters, server state, attributes, refs, and top-level client imports.
+ * Validates component source code for unused getters, server state, attributes, refs, top-level client imports,
+ * template expressions, serialization boundaries, reactive loops, and attribute mutexes.
  *
  * @param {string} sourceCode - Raw component file content
  * @param {string} [filePath=''] - Path to component file for context
- * @returns {CoraliteComponentValidationResult} Validation result with defined, unused, and coverage metrics
+ * @returns {CoraliteComponentValidationResult} Validation result with diagnostics, defined, unused, and coverage metrics
  */
 export function validateComponentSource (sourceCode, filePath = '') {
   let scriptContent = ''
   let styleContent = ''
 
   const templateTokens = new Set()
-  const templateRefs = new Set()
+  // ref -> { line, column }
+  const templateRefs = new Map()
+  const diagnostics = []
 
+  const definedAttributes = new Set()
+  const definedServerProps = new Set()
+  const definedGetters = new Set()
+  // localName -> importSource
+  const topLevelImports = new Map()
+  // localName -> { line, column }
+  const importLocations = new Map()
+  // attr -> { line, column }
+  const attributeLocations = new Map()
+  const usedTopLevelImportsInClient = new Set()
+
+  const stateReads = new Set()
+  // ref -> { line, column }
+  const refsCalls = new Map()
+  const getterStateDependencies = new Set()
+
+  // Pre-extract script section for initial symbol discovery
+  if (sourceCode.includes('<script')) {
+    const scriptMatch = sourceCode.match(/<script[\s\S]*?>([\s\S]*?)<\/script>/i)
+    if (scriptMatch) {
+      scriptContent = scriptMatch[1]
+    }
+  } else if (!sourceCode.includes('<template')) {
+    scriptContent = sourceCode
+  }
+
+  // Parse Script AST first to populate definedAttributes, definedGetters, definedServerProps before template evaluation
+  if (scriptContent) {
+    try {
+      const ast = parseJS(scriptContent, {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        locations: true
+      })
+
+      if (ast && ast.body) {
+        for (const node of ast.body) {
+          if (node.type === 'ImportDeclaration') {
+            const source = node.source ? node.source.value : ''
+            for (const spec of node.specifiers || []) {
+              if (spec.local && spec.local.name) {
+                topLevelImports.set(spec.local.name, source)
+                importLocations.set(spec.local.name, {
+                  line: spec.loc.start.line,
+                  column: spec.loc.start.column + 1
+                })
+              }
+            }
+          } else if (node.type === 'VariableDeclaration') {
+            for (const decl of node.declarations || []) {
+              if (decl.id && decl.id.type === 'Identifier') {
+                topLevelImports.set(decl.id.name, 'local')
+              }
+            }
+          } else if (node.type === 'FunctionDeclaration') {
+            if (node.id && node.id.type === 'Identifier') {
+              topLevelImports.set(node.id.name, 'local')
+            }
+          } else if (node.type === 'ClassDeclaration') {
+            if (node.id && node.id.type === 'Identifier') {
+              topLevelImports.set(node.id.name, 'local')
+            }
+          }
+        }
+      }
+
+      walkAncestorJS(ast, {
+        CallExpression (node) {
+          if (
+            node.callee.type === 'Identifier' &&
+            node.callee.name === 'defineComponent' &&
+            node.arguments.length > 0 &&
+            node.arguments[0].type === 'ObjectExpression'
+          ) {
+            const configObj = node.arguments[0]
+
+            for (const prop of configObj.properties) {
+              if (prop.type !== 'Property') {
+                continue
+              }
+              const keyName = getPropKeyName(prop)
+              if (!keyName) {
+                continue
+              }
+
+              if (keyName === 'attributes' && prop.value.type === 'ObjectExpression') {
+                for (const attrProp of prop.value.properties) {
+                  if (attrProp.type === 'Property') {
+                    const attrName = getPropKeyName(attrProp)
+                    if (attrName) {
+                      definedAttributes.add(attrName)
+                    }
+                  }
+                }
+              }
+
+              if (
+                keyName === 'server' &&
+                (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression')
+              ) {
+                walkJS(prop.value.body, {
+                  ReturnStatement (retNode) {
+                    if (retNode.argument && retNode.argument.type === 'ObjectExpression') {
+                      for (const retProp of retNode.argument.properties) {
+                        if (retProp.type === 'Property') {
+                          const propName = getPropKeyName(retProp)
+                          if (propName) {
+                            definedServerProps.add(propName)
+                          }
+                        }
+                      }
+                    }
+                  }
+                })
+              }
+
+              if (keyName === 'getters' && prop.value.type === 'ObjectExpression') {
+                for (const getterProp of prop.value.properties) {
+                  if (getterProp.type === 'Property') {
+                    const gName = getPropKeyName(getterProp)
+                    if (gName) {
+                      definedGetters.add(gName)
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      })
+    } catch {
+      // Pre-pass fallback
+    }
+  }
+
+  // 1. Template Parsing (htmlparser2)
   if (sourceCode.includes('<template') || sourceCode.includes('<script') || sourceCode.includes('<style')) {
     let currentSection = null
     let templateDepth = 0
+    let templateSearchOffset = 0
+    const existingKeys = new Set([...definedGetters, ...definedAttributes, ...definedServerProps])
 
-    const extractMustacheFromText = (text) => {
-      const mustacheRegex = /\{\{\s*([a-zA-Z0-9_$-]+)\s*\}\}/g
+    const extractMustacheFromText = (text, searchFromIndex) => {
+      const mustacheRegex = /\{\{\s*(.+?)\s*\}\}/g
       let match
       while ((match = mustacheRegex.exec(text)) !== null) {
-        if (match[1]) {
-          templateTokens.add(match[1])
+        const fullMatch = match[0]
+        const expr = match[1].trim()
+        const loc = getLocForSubstring(sourceCode, fullMatch, searchFromIndex)
+
+        if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(expr)) {
+          templateTokens.add(expr)
+        } else {
+          // Non-pure identifier expression -> CORALITE-E201
+          extractIdentifiersFromExpr(expr, templateTokens)
+
+          const getterName = deriveGetterName(expr, existingKeys)
+          const getterCode = generateGetterCode(getterName, expr)
+
+          diagnostics.push(createDiagnostic({
+            code: 'CORALITE-E201',
+            severity: 'error',
+            message: `Inline expression '{{ ${expr} }}' in template must be lifted to a derived getter.`,
+            filePath,
+            line: loc.line,
+            column: loc.column,
+            sourceCode,
+            cause: 'Inline complex template expressions bypass static reactivity analysis. Lift expressions into derived getters.',
+            fix: {
+              action: 'lift_to_getter',
+              description: `Lift expression to getter '${getterName}'`,
+              replacement: `{{ ${getterName} }}`,
+              getter: {
+                name: getterName,
+                code: getterCode
+              }
+            }
+          }))
         }
       }
     }
 
-    const checkAttribs = (attribs) => {
+    const checkAttribs = (attribs, tagSearchOffset) => {
       if (!attribs) {
         return
       }
       for (const [attrName, attrVal] of Object.entries(attribs)) {
+        // CORALITE-E203: Inline event listener check
+        if (/^on[a-z]+/i.test(attrName)) {
+          const loc = getLocForSubstring(sourceCode, attrName, tagSearchOffset)
+          diagnostics.push(createDiagnostic({
+            code: 'CORALITE-E203',
+            severity: 'error',
+            message: `Inline event listener attribute '${attrName}' detected on element in <template>.`,
+            filePath,
+            line: loc.line,
+            column: loc.column,
+            sourceCode,
+            cause: 'Inline event listeners violate Content Security Policy (CSP) and serialization boundaries.',
+            fix: {
+              action: 'remove_attribute',
+              description: `Remove inline ${attrName} attribute and wire with refs() in client()`
+            }
+          }))
+        }
+
         if (attrName.toLowerCase() === 'ref' && attrVal) {
-          templateRefs.add(attrVal)
+          const loc = getLocForSubstring(sourceCode, attrVal, tagSearchOffset)
+          templateRefs.set(attrVal, loc)
         }
         if (attrVal) {
-          extractMustacheFromText(attrVal)
+          extractMustacheFromText(attrVal, tagSearchOffset)
         }
       }
     }
+
+    scriptContent = ''
+    styleContent = ''
 
     const parser = new Parser(
       {
@@ -125,7 +531,8 @@ export function validateComponentSource (sourceCode, filePath = '') {
             if (lowerName === 'template') {
               currentSection = 'template'
               templateDepth = 1
-              checkAttribs(attribs)
+              templateSearchOffset = sourceCode.indexOf('<template')
+              checkAttribs(attribs, templateSearchOffset)
             } else if (lowerName === 'script') {
               currentSection = 'script'
             } else if (lowerName === 'style') {
@@ -135,12 +542,12 @@ export function validateComponentSource (sourceCode, filePath = '') {
             if (lowerName === 'template') {
               templateDepth++
             }
-            checkAttribs(attribs)
+            checkAttribs(attribs, templateSearchOffset)
           }
         },
         ontext (text) {
           if (currentSection === 'template') {
-            extractMustacheFromText(text)
+            extractMustacheFromText(text, templateSearchOffset)
           } else if (currentSection === 'script') {
             scriptContent += text
           } else if (currentSection === 'style') {
@@ -175,7 +582,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
     scriptContent = sourceCode
   }
 
-  // Check for inline ignore directives: <!-- coralite-ignore symbol1 symbol2 --> or /* coralite-ignore symbol1 */
+  // Inline ignore directives: <!-- coralite-ignore symbol1 symbol2 --> or /* coralite-ignore symbol1 */
   const ignoredSymbols = new Set()
   let isEntireComponentIgnored = false
 
@@ -194,19 +601,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
     }
   }
 
-  // Script AST Analysis
-  const definedAttributes = new Set()
-  const definedServerProps = new Set()
-  const definedGetters = new Set()
-  const topLevelImports = new Map()
-  const usedTopLevelImportsInClient = new Set()
-
-  const stateReads = new Set()
-  const refsCalls = new Set()
-  const getterStateDependencies = new Set()
-
-  const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'instanceId', 'emit'])
-
+  // 2. Full Script AST Analysis (acorn + acorn-walk)
   if (scriptContent) {
     try {
       const ast = parseJS(scriptContent, {
@@ -222,6 +617,10 @@ export function validateComponentSource (sourceCode, filePath = '') {
             for (const spec of node.specifiers || []) {
               if (spec.local && spec.local.name) {
                 topLevelImports.set(spec.local.name, source)
+                importLocations.set(spec.local.name, {
+                  line: spec.loc.start.line,
+                  column: spec.loc.start.column + 1
+                })
               }
             }
           } else if (node.type === 'VariableDeclaration') {
@@ -242,7 +641,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
         }
       }
 
-      const analyzeFunctionBlock = (fnNode, targetStateSet, targetRefsSet, isGetterFn = false, isClientFn = false, paramIdx = 0, isSlotFn = false) => {
+      const analyzeFunctionBlock = (fnNode, targetStateSet, targetRefsMap, isGetterFn = false, isClientFn = false, paramIdx = 0, isSlotFn = false) => {
         if (!fnNode || !fnNode.body) {
           return
         }
@@ -335,12 +734,21 @@ export function validateComponentSource (sourceCode, filePath = '') {
                     if (p.value.type === 'Identifier') {
                       refsVars.add(p.value.name)
                     } else if (p.value.type === 'ObjectPattern') {
-                      extractDestructuredKeys(p.value, targetRefsSet, refsVars)
+                      extractDestructuredKeys(p.value, null, refsVars)
+                      for (const refProp of p.value.properties || []) {
+                        const rName = getPropKeyName(refProp)
+                        if (rName) {
+                          targetRefsMap.set(rName, {
+                            line: refProp.loc.start.line,
+                            column: refProp.loc.start.column + 1
+                          })
+                        }
+                      }
                     } else if (p.value.type === 'AssignmentPattern') {
                       if (p.value.left.type === 'Identifier') {
                         refsVars.add(p.value.left.name)
                       } else if (p.value.left.type === 'ObjectPattern') {
-                        extractDestructuredKeys(p.value.left, targetRefsSet, refsVars)
+                        extractDestructuredKeys(p.value.left, null, refsVars)
                       }
                     }
                   } else if (keyName === 'errors') {
@@ -436,7 +844,15 @@ export function validateComponentSource (sourceCode, filePath = '') {
               }
             } else if (initSource === 'refs') {
               if (dNode.id.type === 'ObjectPattern') {
-                extractDestructuredKeys(dNode.id, targetRefsSet, refsVars)
+                for (const refProp of dNode.id.properties || []) {
+                  const rName = getPropKeyName(refProp)
+                  if (rName) {
+                    targetRefsMap.set(rName, {
+                      line: refProp.loc.start.line,
+                      column: refProp.loc.start.column + 1
+                    })
+                  }
+                }
               } else if (dNode.id.type === 'Identifier') {
                 refsVars.add(dNode.id.name)
               }
@@ -451,7 +867,15 @@ export function validateComponentSource (sourceCode, filePath = '') {
                       if (p.value.type === 'Identifier') {
                         refsVars.add(p.value.name)
                       } else if (p.value.type === 'ObjectPattern') {
-                        extractDestructuredKeys(p.value, targetRefsSet, refsVars)
+                        for (const refProp of p.value.properties || []) {
+                          const rName = getPropKeyName(refProp)
+                          if (rName) {
+                            targetRefsMap.set(rName, {
+                              line: refProp.loc.start.line,
+                              column: refProp.loc.start.column + 1
+                            })
+                          }
+                        }
                       }
                     } else if (keyName === 'errors') {
                       processErrorsProperty(p)
@@ -514,7 +938,10 @@ export function validateComponentSource (sourceCode, filePath = '') {
             } else if (matchedTarget === 'refs') {
               const keyName = getNodePropName(propNode, memNode.computed)
               if (keyName) {
-                targetRefsSet.add(keyName)
+                targetRefsMap.set(keyName, {
+                  line: memNode.loc.start.line,
+                  column: memNode.loc.start.column + 1
+                })
               }
             } else if (matchedTarget === 'errors') {
               const keyName = getNodePropName(propNode, memNode.computed)
@@ -538,7 +965,54 @@ export function validateComponentSource (sourceCode, filePath = '') {
             if (isRefCall && callNode.arguments.length > 0) {
               const arg0 = callNode.arguments[0]
               if (arg0.type === 'Literal' && typeof arg0.value === 'string') {
-                targetRefsSet.add(arg0.value)
+                targetRefsMap.set(arg0.value, {
+                  line: callNode.loc.start.line,
+                  column: callNode.loc.start.column + 1
+                })
+              }
+            }
+
+            // CORALITE-E302: Check for observe() state mutations
+            const isObserveCall =
+              (callNode.callee.type === 'Identifier' && callNode.callee.name === 'observe') ||
+              (callNode.callee.type === 'MemberExpression' && getNodePropName(callNode.callee.property, callNode.callee.computed) === 'observe')
+
+            if (isObserveCall && callNode.arguments.length > 0) {
+              const callbackFn = callNode.arguments.length > 1 ? callNode.arguments[1] : callNode.arguments[0]
+              if (callbackFn && (callbackFn.type === 'FunctionExpression' || callbackFn.type === 'ArrowFunctionExpression')) {
+                const callbackStateVars = new Set(['state'])
+                if (callbackFn.params && callbackFn.params.length > 0) {
+                  const p0 = callbackFn.params[0]
+                  if (p0.type === 'Identifier') {
+                    callbackStateVars.add(p0.name)
+                  }
+                }
+
+                walkJS(callbackFn.body, {
+                  AssignmentExpression (assignNode) {
+                    if (assignNode.left.type === 'MemberExpression') {
+                      let rootObj = assignNode.left.object
+                      while (rootObj.type === 'MemberExpression') {
+                        rootObj = rootObj.object
+                      }
+                      if (rootObj.type === 'Identifier' && callbackStateVars.has(rootObj.name)) {
+                        diagnostics.push(createDiagnostic({
+                          code: 'CORALITE-E302',
+                          severity: 'warning',
+                          message: 'State mutation detected inside observe() callback.',
+                          filePath,
+                          line: assignNode.loc.start.line,
+                          column: assignNode.loc.start.column + 1,
+                          sourceCode,
+                          cause: 'Mutating state inside observe() callback creates reactive loops.',
+                          fix: {
+                            description: 'Move state mutation from observe() into a pure derived getter'
+                          }
+                        }))
+                      }
+                    }
+                  }
+                })
               }
             }
           },
@@ -546,7 +1020,10 @@ export function validateComponentSource (sourceCode, filePath = '') {
           Literal (litNode) {
             if (isClientFn && typeof litNode.value === 'string') {
               if (templateRefs.has(litNode.value)) {
-                targetRefsSet.add(litNode.value)
+                targetRefsMap.set(litNode.value, {
+                  line: litNode.loc.start.line,
+                  column: litNode.loc.start.column + 1
+                })
               }
             }
           }
@@ -572,13 +1049,127 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 continue
               }
 
-              // Attributes schema
+              // Attributes schema validation
               if (keyName === 'attributes' && prop.value.type === 'ObjectExpression') {
                 for (const attrProp of prop.value.properties) {
                   if (attrProp.type === 'Property') {
                     const attrName = getPropKeyName(attrProp)
                     if (attrName) {
-                      definedAttributes.add(attrName)
+                      attributeLocations.set(attrName, {
+                        line: attrProp.loc.start.line,
+                        column: attrProp.loc.start.column + 1
+                      })
+
+                      // CORALITE-E104: Reserved context key collision
+                      if (RESERVED_CONTEXT_KEYS.has(attrName)) {
+                        diagnostics.push(createDiagnostic({
+                          code: 'CORALITE-E104',
+                          severity: 'error',
+                          message: `Attribute '${attrName}' collides with reserved slot context key.`,
+                          filePath,
+                          line: attrProp.loc.start.line,
+                          column: attrProp.loc.start.column + 1,
+                          sourceCode,
+                          cause: 'Property collides with reserved slot context keys.',
+                          fix: {
+                            description: 'Rename property to avoid collision with reserved slot context'
+                          }
+                        }))
+                      }
+
+                      if (attrProp.value.type === 'ObjectExpression') {
+                        let hasRequiredTrue = false
+                        let hasDefaultProp = false
+                        let defaultPropNode = null
+
+                        for (const cfgProp of attrProp.value.properties) {
+                          if (cfgProp.type !== 'Property') {
+                            continue
+                          }
+                          const cfgKey = getPropKeyName(cfgProp)
+
+                          // CORALITE-E101: Blocked types (Array / Object)
+                          if (cfgKey === 'type') {
+                            let typeName = null
+                            if (cfgProp.value.type === 'Identifier') {
+                              typeName = cfgProp.value.name
+                            } else if (cfgProp.value.type === 'Literal') {
+                              typeName = String(cfgProp.value.value)
+                            }
+                            if (typeName === 'Array' || typeName === 'Object') {
+                              diagnostics.push(createDiagnostic({
+                                code: 'CORALITE-E101',
+                                severity: 'error',
+                                message: `Attribute '${attrName}' defines blocked type '${typeName}'.`,
+                                filePath,
+                                line: cfgProp.loc.start.line,
+                                column: cfgProp.loc.start.column + 1,
+                                sourceCode,
+                                cause: 'Array and Object types in attributes cause state pollution and serialization boundary leaks.',
+                                fix: {
+                                  description: 'Move Array/Object initialization to async server() block'
+                                }
+                              }))
+                            }
+                          }
+
+                          // CORALITE-E102: Attribute Mutex (required: true & default)
+                          if (cfgKey === 'required') {
+                            if (
+                              (cfgProp.value.type === 'Literal' && (cfgProp.value.value === true || cfgProp.value.value === 'true')) ||
+                              (cfgProp.value.type === 'Identifier' && cfgProp.value.name === 'true')
+                            ) {
+                              hasRequiredTrue = true
+                            }
+                          }
+                          if (cfgKey === 'default') {
+                            hasDefaultProp = true
+                            defaultPropNode = cfgProp
+                          }
+
+                          // CORALITE-E103: Async validate or transform
+                          if (cfgKey === 'validate' || cfgKey === 'transform') {
+                            const valNode = cfgProp.value
+                            if (
+                              valNode &&
+                              (valNode.type === 'FunctionExpression' || valNode.type === 'ArrowFunctionExpression') &&
+                              valNode.async
+                            ) {
+                              diagnostics.push(createDiagnostic({
+                                code: 'CORALITE-E103',
+                                severity: 'error',
+                                message: `Attribute '${attrName}' specifies an async ${cfgKey} function.`,
+                                filePath,
+                                line: cfgProp.loc.start.line,
+                                column: cfgProp.loc.start.column + 1,
+                                sourceCode,
+                                cause: 'Attribute transform and validate functions must be strictly synchronous.',
+                                fix: {
+                                  description: 'Make attribute validate/transform function synchronous'
+                                }
+                              }))
+                            }
+                          }
+                        }
+
+                        if (hasRequiredTrue && hasDefaultProp) {
+                          const targetLoc = defaultPropNode ? defaultPropNode.loc : attrProp.loc
+                          diagnostics.push(createDiagnostic({
+                            code: 'CORALITE-E102',
+                            severity: 'error',
+                            message: `Attribute '${attrName}' specifies both required: true and a default value.`,
+                            filePath,
+                            line: targetLoc.start.line,
+                            column: targetLoc.start.column + 1,
+                            sourceCode,
+                            cause: 'Attributes cannot specify both required: true and a default value.',
+                            fix: {
+                              action: 'strip_default',
+                              description: 'Remove default value when required: true is set'
+                            }
+                          }))
+                        }
+                      }
                     }
                   }
                 }
@@ -598,7 +1189,22 @@ export function validateComponentSource (sourceCode, filePath = '') {
                         if (retProp.type === 'Property') {
                           const propName = getPropKeyName(retProp)
                           if (propName) {
-                            definedServerProps.add(propName)
+                            // CORALITE-E104: Reserved context collision
+                            if (RESERVED_CONTEXT_KEYS.has(propName)) {
+                              diagnostics.push(createDiagnostic({
+                                code: 'CORALITE-E104',
+                                severity: 'error',
+                                message: `Server property '${propName}' collides with reserved slot context key.`,
+                                filePath,
+                                line: retProp.loc.start.line,
+                                column: retProp.loc.start.column + 1,
+                                sourceCode,
+                                cause: 'Property collides with reserved slot context keys.',
+                                fix: {
+                                  description: 'Rename property to avoid collision with reserved slot context'
+                                }
+                              }))
+                            }
                           }
                         }
                       }
@@ -613,8 +1219,6 @@ export function validateComponentSource (sourceCode, filePath = '') {
                   if (getterProp.type === 'Property') {
                     const gName = getPropKeyName(getterProp)
                     if (gName) {
-                      definedGetters.add(gName)
-
                       if (
                         getterProp.value.type === 'ArrowFunctionExpression' ||
                         getterProp.value.type === 'FunctionExpression'
@@ -641,11 +1245,37 @@ export function validateComponentSource (sourceCode, filePath = '') {
               // Style block
               if (keyName === 'style' && prop.value.type === 'ObjectExpression') {
                 for (const styleProp of prop.value.properties) {
-                  if (
-                    styleProp.type === 'Property' &&
-                    (styleProp.value.type === 'FunctionExpression' || styleProp.value.type === 'ArrowFunctionExpression')
-                  ) {
-                    analyzeFunctionBlock(styleProp.value, stateReads, refsCalls, true, false, 0)
+                  if (styleProp.type === 'Property') {
+                    const sName = getPropKeyName(styleProp)
+                    const fnVal = styleProp.value
+
+                    // CORALITE-E303: Async style getter
+                    if (
+                      fnVal &&
+                      (fnVal.type === 'FunctionExpression' || fnVal.type === 'ArrowFunctionExpression') &&
+                      fnVal.async
+                    ) {
+                      diagnostics.push(createDiagnostic({
+                        code: 'CORALITE-E303',
+                        severity: 'error',
+                        message: `Style getter function '${sName}' is async or returns a Promise.`,
+                        filePath,
+                        line: styleProp.loc.start.line,
+                        column: styleProp.loc.start.column + 1,
+                        sourceCode,
+                        cause: 'Style getter functions must be strictly synchronous.',
+                        fix: {
+                          description: 'Make style property function synchronous'
+                        }
+                      }))
+                    }
+
+                    if (
+                      fnVal &&
+                      (fnVal.type === 'FunctionExpression' || fnVal.type === 'ArrowFunctionExpression')
+                    ) {
+                      analyzeFunctionBlock(fnVal, stateReads, refsCalls, true, false, 0)
+                    }
                   }
                 }
               }
@@ -742,6 +1372,24 @@ export function validateComponentSource (sourceCode, filePath = '') {
                           }
 
                           usedTopLevelImportsInClient.add(idName)
+
+                          // CORALITE-E301: Serialization boundary leak
+                          const importSource = topLevelImports.get(idName) || 'module'
+                          diagnostics.push(createDiagnostic({
+                            code: 'CORALITE-E301',
+                            severity: 'error',
+                            message: `Top-level import '${idName}' referenced inside client() block.`,
+                            filePath,
+                            line: idNode.loc.start.line,
+                            column: idNode.loc.start.column + 1,
+                            sourceCode,
+                            cause: 'Top-level imports cannot be referenced inside client() block as client code is executed in browser context.',
+                            fix: {
+                              action: 'dynamic_import',
+                              description: `Convert top-level import to dynamic import in client()`,
+                              replacement: `const { ${idName} } = await import('${importSource}')`
+                            }
+                          }))
                         }
                       }
                     })
@@ -755,7 +1403,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
         }
       })
     } catch {
-      // AST parse warning fallback
+      // AST parse error fallback
     }
   }
 
@@ -775,11 +1423,24 @@ export function validateComponentSource (sourceCode, filePath = '') {
     }
   }
 
-  // Cross-reference unused items
+  // Cross-reference unused items & emit CORALITE-W401
   const unusedGetters = []
   for (const getter of definedGetters) {
     if (!isEntireComponentIgnored && !ignoredSymbols.has(getter) && !templateTokens.has(getter) && !stateReads.has(getter)) {
       unusedGetters.push(getter)
+      diagnostics.push(createDiagnostic({
+        code: 'CORALITE-W401',
+        severity: 'warning',
+        message: `Unused getter '${getter}'.`,
+        filePath,
+        line: 1,
+        column: 1,
+        sourceCode,
+        cause: `Unreferenced getter '${getter}'.`,
+        fix: {
+          description: 'Remove unused getter/serverProp/attribute'
+        }
+      }))
     }
   }
 
@@ -793,6 +1454,19 @@ export function validateComponentSource (sourceCode, filePath = '') {
       !getterStateDependencies.has(prop)
     ) {
       unusedServerProps.push(prop)
+      diagnostics.push(createDiagnostic({
+        code: 'CORALITE-W401',
+        severity: 'warning',
+        message: `Unused server property '${prop}'.`,
+        filePath,
+        line: 1,
+        column: 1,
+        sourceCode,
+        cause: `Unreferenced server property '${prop}'.`,
+        fix: {
+          description: 'Remove unused getter/serverProp/attribute'
+        }
+      }))
     }
   }
 
@@ -812,11 +1486,29 @@ export function validateComponentSource (sourceCode, filePath = '') {
       !isErrorTokenUsed
     ) {
       unusedAttributes.push(attr)
+      const loc = attributeLocations.get(attr) || {
+        line: 1,
+        column: 1
+      }
+      diagnostics.push(createDiagnostic({
+        code: 'CORALITE-W401',
+        severity: 'warning',
+        message: `Unused attribute '${attr}'.`,
+        filePath,
+        line: loc.line,
+        column: loc.column,
+        sourceCode,
+        cause: `Unreferenced attribute '${attr}'.`,
+        fix: {
+          description: 'Remove unused getter/serverProp/attribute'
+        }
+      }))
     }
   }
 
+  // Element refs cross-referencing (CORALITE-W402 & CORALITE-E202)
   const unusedRefs = []
-  for (const ref of templateRefs) {
+  for (const [ref, loc] of templateRefs.entries()) {
     const refToken = 'ref_' + ref
     const refCamelToken = 'ref_' + kebabToCamel(ref)
     const refKebabToken = 'ref_' + camelToKebab(ref)
@@ -845,6 +1537,19 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
     if (!isUsed && !isIgnored) {
       unusedRefs.push(ref)
+      diagnostics.push(createDiagnostic({
+        code: 'CORALITE-W402',
+        severity: 'warning',
+        message: `Element ref '${ref}' defined in template but never accessed.`,
+        filePath,
+        line: loc.line,
+        column: loc.column,
+        sourceCode,
+        cause: `Unused ref="${ref}" attribute in template.`,
+        fix: {
+          description: 'Remove unused ref attribute'
+        }
+      }))
     }
   }
 
@@ -862,7 +1567,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
     candidateRefRefs.get(stripped).add(sourceToken || rawName)
   }
 
-  for (const call of refsCalls) {
+  for (const call of refsCalls.keys()) {
     addCandidateRef(call, call)
   }
   for (const token of templateTokens) {
@@ -889,7 +1594,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
     let existsInTemplate = templateRefs.has(strippedRef) || templateRefs.has(refKebab) || templateRefs.has(refCamel)
     if (!existsInTemplate) {
-      for (const tRef of templateRefs) {
+      for (const tRef of templateRefs.keys()) {
         if (kebabToCamel(tRef) === refCamel || camelToKebab(tRef) === refKebab) {
           existsInTemplate = true
           break
@@ -928,32 +1633,34 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
     if (!isIgnored) {
       missingRefs.push(strippedRef)
+      const callLoc = refsCalls.get(strippedRef) || refsCalls.get('ref_' + strippedRef) || {
+        line: 1,
+        column: 1
+      }
+      diagnostics.push(createDiagnostic({
+        code: 'CORALITE-E202',
+        severity: 'error',
+        message: `Element ref '${strippedRef}' referenced in script but missing ref="${strippedRef}" in template.`,
+        filePath,
+        line: callLoc.line,
+        column: callLoc.column,
+        sourceCode,
+        cause: `Missing ref="${strippedRef}" attribute in template.`,
+        fix: {
+          action: 'inject_ref',
+          description: `Add ref='${strippedRef}' to template element`,
+          replacement: `ref="${strippedRef}"`
+        }
+      }))
     }
   }
 
-  const invalidClientImports = []
-  for (const imp of usedTopLevelImportsInClient) {
-    if (!isEntireComponentIgnored && !ignoredSymbols.has(imp)) {
-      invalidClientImports.push(imp)
-    }
-  }
-
-  // Reserved context key collision warning (un-gated across all components)
-  for (const attr of definedAttributes) {
-    if (RESERVED_CONTEXT_KEYS.has(attr)) {
-      console.warn(`[Coralite Warning]: Component attribute "${attr}" in "${filePath}" collides with a reserved context property (${attr}).`)
-    }
-  }
-  for (const serverProp of definedServerProps) {
-    if (RESERVED_CONTEXT_KEYS.has(serverProp)) {
-      console.warn(`[Coralite Warning]: Component server property "${serverProp}" in "${filePath}" collides with a reserved context property (${serverProp}).`)
-    }
-  }
+  const invalidClientImports = Array.from(usedTopLevelImportsInClient)
 
   const totalDefined = definedGetters.size + definedServerProps.size + definedAttributes.size + templateRefs.size
   const totalUnused = unusedGetters.length + unusedServerProps.length + unusedAttributes.length + unusedRefs.length + invalidClientImports.length
-  const totalErrors = invalidClientImports.length + missingRefs.length
-  const valid = totalUnused === 0 && totalErrors === 0
+  const totalErrors = diagnostics.filter(d => d.severity === 'error').length
+  const valid = diagnostics.length === 0
   const usageCoveragePercentage = totalDefined > 0
     ? Math.round(((totalDefined - totalUnused) / totalDefined) * 100)
     : 100
@@ -961,11 +1668,12 @@ export function validateComponentSource (sourceCode, filePath = '') {
   return {
     filePath,
     valid,
+    diagnostics,
     defined: {
       getters: Array.from(definedGetters),
       serverProps: Array.from(definedServerProps),
       attributes: Array.from(definedAttributes),
-      refs: Array.from(templateRefs),
+      refs: Array.from(templateRefs.keys()),
       imports: Array.from(topLevelImports.keys())
     },
     unused: {
@@ -1024,13 +1732,22 @@ export function validateComponentsDir (componentsDir, options = {}) {
 
   let totalDefined = 0
   let totalUnused = 0
-  let totalErrors = 0
+  let errorCount = 0
+  let warningCount = 0
+  let fixableCount = 0
   let validComponents = 0
 
   for (const res of results) {
-    totalDefined += res.metrics.totalDefined
-    totalUnused += res.metrics.totalUnused
-    totalErrors += res.metrics.totalErrors || 0
+    totalDefined += res.metrics?.totalDefined || 0
+    totalUnused += res.metrics?.totalUnused || 0
+    const errs = (res.diagnostics || []).filter(d => d.severity === 'error').length
+    const warns = (res.diagnostics || []).filter(d => d.severity === 'warning').length
+    const fixables = (res.diagnostics || []).filter(d => Boolean(d.fix)).length
+
+    errorCount += errs
+    warningCount += warns
+    fixableCount += fixables
+
     if (res.valid) {
       validComponents++
     }
@@ -1042,12 +1759,20 @@ export function validateComponentsDir (componentsDir, options = {}) {
 
   return {
     components: results,
+    summary: {
+      totalComponents: results.length,
+      validComponents,
+      errorCount,
+      warningCount,
+      fixableCount,
+      usageCoveragePercentage: overallCoveragePercentage
+    },
     metrics: {
       totalComponents: results.length,
       validComponents,
       totalDefined,
       totalUnused,
-      totalErrors,
+      totalErrors: errorCount,
       overallCoveragePercentage,
       coverageReportEnabled: !!options.coverage
     }
@@ -1062,78 +1787,10 @@ export function validateComponentsDir (componentsDir, options = {}) {
  * @returns {string} Formatted output string
  */
 export function formatComponentValidationReport (report, options = {}) {
-  if (options.format === 'json') {
-    return JSON.stringify(report, null, 2)
-  }
-
-  let output = '\n' + kleur.bold().cyan('🪸 Coralite Component Code Coverage & Usage Report') + '\n'
-  output += kleur.gray('─'.repeat(60)) + '\n\n'
-
-  if (report.components.length === 0) {
-    output += kleur.yellow('No Coralite components found to analyse.\n')
-    return output
-  }
-
-  for (const comp of report.components) {
-    const statusColor = comp.metrics.totalUnused === 0 ? kleur.green : kleur.yellow
-    output += `${kleur.bold(comp.filePath)} `
-    output += `(${statusColor(`${comp.metrics.usageCoveragePercentage}% usage coverage`)})\n`
-
-    const { unused } = comp
-    let hasIssues = false
-
-    if (unused.getters.length > 0) {
-      output += `  ${kleur.red('✖')} Unused getters: ${kleur.red(unused.getters.join(', '))}\n`
-      hasIssues = true
-    }
-    if (unused.serverProps.length > 0) {
-      output += `  ${kleur.red('✖')} Unused server props: ${kleur.red(unused.serverProps.join(', '))}\n`
-      hasIssues = true
-    }
-    if (unused.attributes.length > 0) {
-      output += `  ${kleur.red('✖')} Unused attributes: ${kleur.red(unused.attributes.join(', '))}\n`
-      hasIssues = true
-    }
-    if (unused.refs.length > 0) {
-      output += `  ${kleur.red('✖')} Unused element refs: ${kleur.red(unused.refs.join(', '))}\n`
-      hasIssues = true
-    }
-    if (unused.missingRefs.length > 0) {
-      output += `  ${kleur.yellow('⚠')} Missing element refs in template: ${kleur.yellow(unused.missingRefs.join(', '))}\n`
-      hasIssues = true
-    }
-    const invalidImports = unused.invalidClientImports || unused.invalidImports || []
-    if (invalidImports.length > 0) {
-      output += `  ${kleur.red('✖')} Top-level imports used in client block (must use dynamic imports): ${kleur.red(invalidImports.join(', '))}\n`
-      hasIssues = true
-    }
-
-    if (!hasIssues) {
-      output += `  ${kleur.green('✔')} All getters, server props, attributes, and refs actively used.\n`
-    }
-    output += '\n'
-  }
-
-  output += kleur.gray('─'.repeat(60)) + '\n'
-  const summaryColor = (report.metrics.totalUnused === 0 && (report.metrics.totalErrors || 0) === 0) ? kleur.green().bold : kleur.red().bold
-
-  output += summaryColor(
-    `Summary: ${report.metrics.totalComponents} component(s) validated | ` +
-    `Valid: ${report.metrics.validComponents}/${report.metrics.totalComponents} | ` +
-    `Overall Usage Coverage: ${report.metrics.overallCoveragePercentage}% | ` +
-    `Unused / Errors: ${report.metrics.totalUnused}`
-  ) + '\n'
-
-  if (options.coverage) {
-    output += `\n${kleur.bold().magenta('📊 Runtime Test Coverage & Execution Metrics:')}\n`
-    output += `  - Component Getters Execution Coverage: ${kleur.green('100%')}\n`
-    output += `  - Client Controller Function Coverage: ${kleur.green('100%')}\n`
-  }
-
-  return output
+  return formatValidationReport(report, options)
 }
 
-// Backwards compatibility aliases for previous function names
+// Backwards compatibility aliases
 export const analyseComponentSource = validateComponentSource
 export const analyseComponentsDir = validateComponentsDir
 export const formatComponentAnalysis = formatComponentValidationReport
