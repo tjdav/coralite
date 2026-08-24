@@ -47,11 +47,11 @@
         default: 'en'
       }
     },
-    async server (context) {
-      const pageLang = context.page.meta.lang || context.attributes.lang || 'en'
-      const pathname = context.page.url.pathname
-      const languages = context.attributes.languages || ''
-      const sourceLang = context.attributes.sourceLang || 'en'
+    async server ({ state, page }) {
+      const pageLang = page.meta.lang || state.lang || 'en'
+      const pathname = page.url.pathname
+      const languages = state.languages || ''
+      const sourceLang = state.sourceLang || 'en'
 
       const currentLang = `<span class="d-none">
         ${getNativeLanguageName(pageLang)}

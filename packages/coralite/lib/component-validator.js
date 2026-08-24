@@ -752,7 +752,9 @@ export function validateComponentSource (sourceCode, filePath = '') {
       }
 
 
-      const analyzeFunctionBlock = (fnNode, targetStateSet, targetRefsMap, isGetterFn = false, isClientFn = false, paramIdx = 0, isSlotFn = false) => {
+      const scriptStartLine = scriptContent && sourceCode.includes('<script') ? getLocForSubstring(sourceCode, scriptContent).line - 1 : 0
+
+      const analyzeFunctionBlock = (fnNode, targetStateSet, targetRefsMap, isGetterFn = false, isClientFn = false, paramIdx = 0, isSlotFn = false, isServerFn = false) => {
         if (!fnNode || !fnNode.body) {
           return
         }
@@ -839,6 +841,22 @@ export function validateComponentSource (sourceCode, filePath = '') {
               for (const p of targetParam.properties || []) {
                 if (p.type === 'Property') {
                   const keyName = getPropKeyName(p)
+                  if ((isServerFn || isClientFn) && keyName === 'attributes') {
+                    diagnostics.push(createDiagnostic({
+                      code: 'CORALITE-E105',
+                      severity: 'error',
+                      message: "Invalid access to 'context.attributes'. Component attributes are exposed directly on 'context.state'.",
+                      filePath,
+                      line: p.loc.start.line + scriptStartLine,
+                      column: p.loc.start.column + 1,
+                      sourceCode,
+                      cause: 'Attributes are parsed and applied directly to context.state (or destructured { state }) in Coralite.',
+                      fix: {
+                        action: 'rewrite_context_attributes',
+                        description: "Replace 'context.attributes' with 'context.state'"
+                      }
+                    }))
+                  }
                   if (keyName === 'state') {
                     processStateProperty(p)
                   } else if (keyName === 'refs') {
@@ -972,6 +990,22 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 for (const p of dNode.id.properties || []) {
                   if (p.type === 'Property') {
                     const keyName = getPropKeyName(p)
+                    if ((isServerFn || isClientFn) && keyName === 'attributes') {
+                      diagnostics.push(createDiagnostic({
+                        code: 'CORALITE-E105',
+                        severity: 'error',
+                        message: "Invalid access to 'context.attributes'. Component attributes are exposed directly on 'context.state'.",
+                        filePath,
+                        line: p.loc.start.line + scriptStartLine,
+                        column: p.loc.start.column + 1,
+                        sourceCode,
+                        cause: 'Attributes are parsed and applied directly to context.state (or destructured { state }) in Coralite.',
+                        fix: {
+                          action: 'rewrite_context_attributes',
+                          description: "Replace 'context.attributes' with 'context.state'"
+                        }
+                      }))
+                    }
                     if (keyName === 'state') {
                       processStateProperty(p)
                     } else if (keyName === 'refs') {
@@ -1014,6 +1048,24 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 matchedTarget = 'state'
               } else if (refsVars.has(memNode.object.name)) {
                 matchedTarget = 'refs'
+              } else if (contextVars.has(memNode.object.name)) {
+                const ctxPropName = getNodePropName(propNode, memNode.computed)
+                if ((isServerFn || isClientFn) && ctxPropName === 'attributes') {
+                  diagnostics.push(createDiagnostic({
+                    code: 'CORALITE-E105',
+                    severity: 'error',
+                    message: "Invalid access to 'context.attributes'. Component attributes are exposed directly on 'context.state'.",
+                    filePath,
+                    line: memNode.loc.start.line + scriptStartLine,
+                    column: memNode.loc.start.column + 1,
+                    sourceCode,
+                    cause: 'Attributes are parsed and applied directly to context.state (or destructured { state }) in Coralite.',
+                    fix: {
+                      action: 'rewrite_context_attributes',
+                      description: "Replace 'context.attributes' with 'context.state'"
+                    }
+                  }))
+                }
               }
             } else if (memNode.object.type === 'MemberExpression') {
               const innerObj = memNode.object.object
@@ -1299,7 +1351,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 keyName === 'server' &&
                 (prop.value.type === 'FunctionExpression' || prop.value.type === 'ArrowFunctionExpression')
               ) {
-                analyzeFunctionBlock(prop.value, stateReads, refsCalls, false, false, 0)
+                analyzeFunctionBlock(prop.value, stateReads, refsCalls, false, false, 0, false, true)
 
                 walkJS(prop.value.body, {
                   ReturnStatement (retNode) {

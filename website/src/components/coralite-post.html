@@ -12,14 +12,15 @@
   export default defineComponent({
     async server (context) {
       // If this is used inside an aggregation, context.page is the aggregated page
-      const page = context.state.page
+      const page = context.state.page || context.page
+      const meta = page?.meta || {}
 
       return {
         pageUrlPathname: page.url.pathname,
-        pageTitle: page.meta.pageTitle || 'Untitled Post',
-        metaAuthorId: page.meta.author_id || 'Unknown Author',
-        metaPublishedTime: page.meta.published_time || new Date().toISOString(),
-        metaPageDescription: page.meta.description || 'No description provided.'
+        pageTitle: meta.pageTitle || 'Untitled Post',
+        metaAuthorId: meta.author_id || 'Unknown Author',
+        metaPublishedTime: meta.published_time || new Date().toISOString(),
+        metaPageDescription: meta.description || 'No description provided.'
       }
     }
   })

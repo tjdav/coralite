@@ -590,7 +590,66 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(w204s.length, 0)
   })
 
-  // 15. Backwards Compatibility Aliases
+  // 15. CORALITE-E105 Diagnostic Rule Test
+  test('CORALITE-E105: emits diagnostic when context.attributes is accessed in server() or client()', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      lang: { type: String, default: 'en' }
+    },
+    async server(context) {
+      const l = context.attributes.lang
+      return { l }
+    },
+    async client({ attributes }) {
+      console.log(attributes)
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e105.html')
+    assert.strictEqual(result.valid, false)
+
+    const e105s = result.diagnostics.filter(d => d.code === 'CORALITE-E105')
+    assert.strictEqual(e105s.length, 2)
+    assert.strictEqual(e105s[0].severity, 'error')
+    assert.strictEqual(e105s[0].fix.action, 'rewrite_context_attributes')
+    assert.strictEqual(e105s[1].severity, 'error')
+    assert.strictEqual(e105s[1].fix.action, 'rewrite_context_attributes')
+  })
+
+  // 16. state.errors.<prop> Attribute Usage Tracking Test
+  test('state.errors.<prop>: components consuming attributes solely via state.errors.myProp achieve 100% usage coverage', () => {
+    const code = `
+<template>
+  <div>{{ isAgeValid }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      userAge: { type: Number }
+    },
+    getters: {
+      isAgeValid: (state) => !state.errors.userAge
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-errors-usage.html')
+    assert.strictEqual(result.unused.attributes.length, 0)
+    assert.strictEqual(result.metrics.usageCoveragePercentage, 100)
+    assert.strictEqual(result.valid, true)
+  })
+
+  // 17. Backwards Compatibility Aliases
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)

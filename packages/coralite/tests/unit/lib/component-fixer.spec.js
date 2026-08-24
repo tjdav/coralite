@@ -279,6 +279,34 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
     assert.strictEqual(postW204s.length, 0)
   })
 
+  test('CORALITE-E105: rewrites context.attributes to context.state and destructured { attributes } to { state }', () => {
+    const input = `<template>
+  <div>Lang</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    async server(context) {
+      const l = context.attributes.lang
+      return { l }
+    },
+    async client({ attributes }) {
+      console.log(attributes)
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'test-e105-fix.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('context.state.lang'))
+    assert.ok(result.outputCode.includes('client({ state })'))
+
+    const postValidation = validateComponentSource(result.outputCode, 'test-e105-fix.html')
+    const postE105s = postValidation.diagnostics.filter(d => d.code === 'CORALITE-E105')
+    assert.strictEqual(postE105s.length, 0)
+  })
+
   test('dryRun support: generates colorized diff without throwing', () => {
     const oldCode = '<div>Old</div>'
     const newCode = '<div>New</div>'

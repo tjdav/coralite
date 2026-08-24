@@ -431,6 +431,87 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
         ranges: true
       })
 
+      // 2.0 CORALITE-E105 (Rewrite context.attributes to context.state)
+      const e105Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E105' && d.fix?.action === 'rewrite_context_attributes')
+      if (e105Diagnostics.length > 0) {
+        const e105Replacements = []
+
+        walkAncestorJS(ast, {
+          MemberExpression (memNode, ancestors) {
+            if (
+              memNode.object.type === 'Identifier' &&
+              memNode.property.type === 'Identifier' &&
+              memNode.property.name === 'attributes' &&
+              !memNode.computed
+            ) {
+              const isInsideServerOrClient = ancestors.some(anc => {
+                if (anc.type === 'Property' && anc.key && (anc.key.name === 'server' || anc.key.name === 'client')) {
+                  return true
+                }
+                return false
+              })
+
+              if (isInsideServerOrClient) {
+                const start = memNode.property.range[0]
+                const end = memNode.property.range[1]
+                e105Replacements.push({
+                  start,
+                  end,
+                  replacement: 'state',
+                  description: "Replace 'context.attributes' with 'context.state'"
+                })
+              }
+            }
+          },
+          ObjectPattern (patNode, ancestors) {
+            const isInsideServerOrClient = ancestors.some(anc => {
+              if (anc.type === 'Property' && anc.key && (anc.key.name === 'server' || anc.key.name === 'client')) {
+                return true
+              }
+              return false
+            })
+
+            if (isInsideServerOrClient) {
+              for (const prop of patNode.properties || []) {
+                if (
+                  prop.type === 'Property' &&
+                  prop.key.type === 'Identifier' &&
+                  prop.key.name === 'attributes' &&
+                  !prop.computed
+                ) {
+                  const start = prop.key.range[0]
+                  const end = prop.key.range[1]
+                  e105Replacements.push({
+                    start,
+                    end,
+                    replacement: 'state',
+                    description: "Replace '{ attributes }' with '{ state }'"
+                  })
+                }
+              }
+            }
+          }
+        })
+
+        if (e105Replacements.length > 0) {
+          e105Replacements.sort((a, b) => b.start - a.start)
+          for (const rep of e105Replacements) {
+            scriptContent = scriptContent.slice(0, rep.start) + rep.replacement + scriptContent.slice(rep.end)
+            fixesApplied.push({
+              code: 'CORALITE-E105',
+              description: rep.description
+            })
+          }
+
+          ast = parseJS(scriptContent, {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            locations: true,
+            ranges: true
+          })
+        }
+      }
+
       // 2.0 CORALITE-W204 (Unwrap Redundant Ref Guards)
       const w204Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-W204' && d.fix?.action === 'unwrap_ref_guard')
       if (w204Diagnostics.length > 0) {
