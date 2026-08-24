@@ -146,6 +146,18 @@ describe('diagnostics utilities', () => {
                 fix: { description: 'Fix auto', action: 'lift_to_getter' }
               },
               {
+                code: 'CORALITE-P201',
+                severity: 'error',
+                message: 'Plugin context error',
+                fix: { description: 'Wrap context', action: 'wrap_two_phase_context' }
+              },
+              {
+                code: 'CORALITE-E102',
+                severity: 'warning',
+                message: 'Attribute error',
+                fix: { description: 'Add required attribute', action: 'add_required_attribute' }
+              },
+              {
                 code: 'CORALITE-W401',
                 severity: 'warning',
                 message: 'Unused symbol',
@@ -159,7 +171,7 @@ describe('diagnostics utilities', () => {
       const formatted = formatValidationReport(report, { format: 'console' })
       const clean = stripAnsi(formatted)
 
-      assert.ok(clean.includes('Summary: 1 component(s) validated | 0 valid | 1 error(s) | 1 warning(s) | 1 fixable with --fix'))
+      assert.ok(clean.includes('Summary: 1 component(s) validated | 0 valid | 2 error(s) | 2 warning(s) | 3 fixable with --fix'))
     })
   })
 })

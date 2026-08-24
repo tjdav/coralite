@@ -39,15 +39,15 @@
 /**
  * @typedef {Object} CoraliteDiagnosticFix
  * @property {string} description - Human-readable fix explanation
- * @property {'lift_to_getter' | 'dynamic_import' | 'inject_ref' | 'remove_attribute' | 'strip_default'} [action] - Programmatic fix action type (omitted for guidance-only fixes)
+ * @property {'lift_to_getter' | 'dynamic_import' | 'inject_ref' | 'remove_attribute' | 'strip_default' | 'wrap_two_phase_context' | 'wrap_define_plugin' | 'add_required_attribute'} [action] - Programmatic fix action type
  * @property {string} [replacement] - Replacement string snippet
  * @property {CoraliteDiagnosticGetter} [getter] - Getter definition if lifting to getter
- * @property {boolean} [isSharedWithOtherBlocks] - True if symbol is referenced outside client()
+ * @property {boolean} [isSharedWithOtherBlocks] - Whether import is also used outside client()
  */
 
 /**
  * @typedef {Object} CoraliteDiagnostic
- * @property {string} code - Diagnostic rule code (e.g. CORALITE-E201)
+ * @property {string} code - Diagnostic rule code (e.g. CORALITE-E201, CORALITE-P201, CORALITE-PAGE-101)
  * @property {CoraliteDiagnosticSeverity} severity - Diagnostic severity
  * @property {string} message - Diagnostic summary message
  * @property {string} [filePath] - File path where diagnostic occurred
@@ -60,11 +60,11 @@
 
 /**
  * @typedef {Object} CoraliteValidationSummary
- * @property {number} totalComponents - Total components validated
- * @property {number} validComponents - Number of valid components (0 errors, 0 warnings)
- * @property {number} errorCount - Total errors found across all components
- * @property {number} warningCount - Total warnings found across all components
- * @property {number} fixableCount - Total diagnostics with fix.action
+ * @property {number} totalComponents - Total files validated
+ * @property {number} validComponents - Number of valid files (0 errors, 0 warnings)
+ * @property {number} errorCount - Total errors found
+ * @property {number} warningCount - Total warnings found
+ * @property {number} fixableCount - Total diagnostics with defined fix.action
  * @property {number} usageCoveragePercentage - Overall usage coverage percentage
  */
 
