@@ -1,6 +1,7 @@
 import process from 'node:process'
-import { printTerminalResults, writeJSONResults } from './utils/reporter.js'
+import { printTerminalResults, writeJSONResults, writeMarkdownResults } from './utils/reporter.js'
 import { getMemoryUsage, triggerGC } from './utils/memory.js'
+import { runDomReactivitySuite } from './suites/01-dom-reactivity/bench.js'
 
 function parseArgs () {
   const args = process.argv.slice(2)
@@ -8,7 +9,8 @@ function parseArgs () {
     help: false,
     suite: 'all',
     json: false,
-    iterations: 5
+    iterations: 5,
+    rows: 1000
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -25,6 +27,10 @@ function parseArgs () {
       flags.iterations = parseInt(arg.split('=')[1], 10) || 5
     } else if (arg === '-i' && i + 1 < args.length) {
       flags.iterations = parseInt(args[++i], 10) || 5
+    } else if (arg.startsWith('--rows=')) {
+      flags.rows = parseInt(arg.split('=')[1], 10) || 1000
+    } else if (arg === '-r' && i + 1 < args.length) {
+      flags.rows = parseInt(args[++i], 10) || 1000
     }
   }
 
@@ -43,6 +49,7 @@ Options:
   --suite=<name>, -s  Run a specific benchmark suite (dom-reactivity, bundle-hydration, ssr-throughput, internal, or all [default: all])
   --json              Write benchmark results to packages/coralite/benchmarks/results/latest.json
   --iterations=<n>, -i Set iteration count per test (default: 5)
+  --rows=<n>, -r      Set row count for DOM reactivity suite (default: 1000)
 `)
 }
 
@@ -68,6 +75,14 @@ async function main () {
 
   const selectedSuite = flags.suite.toLowerCase()
 
+  if (selectedSuite === 'all' || selectedSuite === 'dom-reactivity' || selectedSuite === 'dom') {
+    const domResults = await runDomReactivitySuite({
+      iterations: flags.iterations,
+      rows: flags.rows
+    })
+    resultsData.suites['dom-reactivity'] = domResults
+  }
+
   if (selectedSuite === 'all' || selectedSuite === 'internal') {
     resultsData.suites.internal = {
       coralite: {
@@ -77,6 +92,7 @@ async function main () {
   }
 
   printTerminalResults(resultsData)
+  writeMarkdownResults(resultsData)
 
   if (flags.json) {
     writeJSONResults(resultsData)

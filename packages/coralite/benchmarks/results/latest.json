@@ -1,14 +1,43 @@
 {
-  "timestamp": "2026-08-24T13:23:40.711Z",
+  "timestamp": "2026-08-24T14:00:07.102Z",
   "environment": {
     "node": "v22.22.1",
     "platform": "linux",
     "arch": "x64"
   },
   "suites": {
-    "internal": {
+    "dom-reactivity": {
       "coralite": {
-        "initialMemoryMB": 4.07
+        "create1k": 14.4,
+        "replace1k": 14.2,
+        "update10th": 14.1,
+        "swapRows": 14.3,
+        "clear": 14.2,
+        "heapMB": 9.54
+      },
+      "react": {
+        "create1k": 91.4,
+        "replace1k": 107,
+        "update10th": 42.6,
+        "swapRows": 88.9,
+        "clear": 14.2,
+        "heapMB": 9.54
+      },
+      "vue": {
+        "create1k": 98.3,
+        "replace1k": 100.4,
+        "update10th": 47.2,
+        "swapRows": 19.8,
+        "clear": 9.1,
+        "heapMB": 9.54
+      },
+      "vanilla": {
+        "create1k": 97.1,
+        "replace1k": 83.1,
+        "update10th": 33.2,
+        "swapRows": 11.8,
+        "clear": 7.2,
+        "heapMB": 9.54
       }
     }
   }

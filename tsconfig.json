@@ -26,6 +26,7 @@
     "website/.coralite",
     "packages/*/dist",
     "packages/*/tests",
-    "packages/*/templates"
+    "packages/*/templates",
+    "**/benchmarks"
   ]
 }
