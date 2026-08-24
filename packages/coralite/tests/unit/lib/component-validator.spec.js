@@ -67,10 +67,12 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   })
 
   // 3. Missing Element Ref (CORALITE-E202)
-  test('CORALITE-E202: detects called refs missing from template', () => {
-    const code = `
+  test('CORALITE-E202: detects called refs missing from template and checks candidate matching', () => {
+    // Case 1: Exactly 1 matching candidate tag
+    const code1 = `
 <template>
-  <div>No ref here</div>
+  <button id="submit">Submit</button>
+  <div>Text</div>
 </template>
 
 <script>
@@ -82,14 +84,66 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   })
 </script>
 `
-    const result = validateComponentSource(code, 'test-e202.html')
-    assert.strictEqual(result.valid, false)
+    const res1 = validateComponentSource(code1, 'test-e202-single.html')
+    const e202Single = res1.diagnostics.find(d => d.code === 'CORALITE-E202')
+    assert.ok(e202Single)
+    assert.strictEqual(e202Single.message, 'Missing ref "submit-btn" in template')
+    assert.strictEqual(e202Single.cause, 'Found 1 matching candidate element (<button>) in template for ref "submit-btn".')
+    assert.strictEqual(e202Single.fix.action, 'inject_ref')
+    assert.strictEqual(e202Single.fix.description, 'Add ref="submit-btn" to matching <button> element')
 
-    const e202s = result.diagnostics.filter(d => d.code === 'CORALITE-E202')
-    assert.strictEqual(e202s.length, 1)
-    assert.strictEqual(e202s[0].severity, 'error')
-    assert.strictEqual(e202s[0].fix.action, 'inject_ref')
-    assert.strictEqual(e202s[0].fix.replacement, 'ref="submit-btn"')
+    // Case 2: Ambiguous multiple candidate tags
+    const code2 = `
+<template>
+  <button>One</button>
+  <button>Two</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs }) {
+      const btn = refs('submit-btn')
+    }
+  })
+</script>
+`
+    const res2 = validateComponentSource(code2, 'test-e202-multi.html')
+    const e202Multi = res2.diagnostics.find(d => d.code === 'CORALITE-E202')
+    assert.ok(e202Multi)
+    assert.strictEqual(e202Multi.cause, 'Found 2 candidate elements in template for ref "submit-btn". Auto-injection skipped due to ambiguity.')
+    assert.strictEqual(e202Multi.fix.action, undefined)
+    assert.strictEqual(e202Multi.fix.description, 'Manually add ref="submit-btn" to target element in template')
+  })
+
+  test('CORALITE-E201: handles complex template expressions (ternary, template literal, comparison)', () => {
+    const code = `
+<template>
+  <div>{{ isActive ? 'Online' : 'Offline' }}</div>
+  <div>{{ \`ID: \${id}\` }}</div>
+  <div>{{ count > 0 }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const result = validateComponentSource(code, 'test-e201-complex.html')
+    const e201s = result.diagnostics.filter(d => d.code === 'CORALITE-E201')
+    assert.strictEqual(e201s.length, 3)
+
+    // Ternary
+    assert.strictEqual(e201s[0].fix.getter.name, 'isActiveOnlineOffline')
+    assert.strictEqual(e201s[0].fix.getter.code, "isActiveOnlineOffline: (state) => state.isActive ? 'Online' : 'Offline'")
+
+    // Template Literal
+    assert.strictEqual(e201s[1].fix.getter.name, 'iDId')
+    assert.strictEqual(e201s[1].fix.getter.code, "iDId: (state) => `ID: ${state.id ?? ''}`")
+
+    // Comparison
+    assert.strictEqual(e201s[2].fix.getter.name, 'countGreaterThanZero')
+    assert.strictEqual(e201s[2].fix.getter.code, 'countGreaterThanZero: (state) => (state.count > 0)')
   })
 
   // 4. Attribute Blocked Types (CORALITE-E101)
@@ -200,7 +254,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   })
 
   // 8. Serialization Boundary Leaks (CORALITE-E301)
-  test('CORALITE-E301: detects top-level imports referenced inside client() block', () => {
+  test('CORALITE-E301: detects top-level imports and local variables referenced inside client() block with deduplication', () => {
     const code = `
 <template>
   <div>Test</div>
@@ -210,9 +264,13 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   import { defineComponent } from 'coralite'
   import { formatDate } from './utils.js'
 
+  const LOCAL_CONFIG = { theme: 'dark' }
+
   export default defineComponent({
     client() {
-      const formatted = formatDate(new Date())
+      const d1 = formatDate(new Date())
+      const d2 = formatDate(new Date())
+      const theme = LOCAL_CONFIG.theme
     }
   })
 </script>
@@ -221,13 +279,22 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(result.valid, false)
 
     const e301s = result.diagnostics.filter(d => d.code === 'CORALITE-E301')
-    assert.strictEqual(e301s.length, 1)
+    assert.strictEqual(e301s.length, 2)
+
+    // Deduplicated import reference
     assert.strictEqual(e301s[0].severity, 'error')
+    assert.strictEqual(e301s[0].message, "Top-level import 'formatDate' referenced inside client() block.")
     assert.strictEqual(e301s[0].fix.action, 'dynamic_import')
+
+    // Top-level local variable reference
+    assert.strictEqual(e301s[1].severity, 'error')
+    assert.strictEqual(e301s[1].message, "Top-level variable 'LOCAL_CONFIG' referenced inside client() block.")
+    assert.strictEqual(e301s[1].cause, 'Variables declared in the top-level script scope cannot be serialized to the browser client() block.')
+    assert.strictEqual(e301s[1].fix.description, 'Move variable inside client() or initialize via server()')
   })
 
   // 9. Reactivity Loops in observe() (CORALITE-E302)
-  test('CORALITE-E302: detects state assignment inside observe() callback', () => {
+  test('CORALITE-E302: detects state assignment and update expressions inside observe() callback', () => {
     const code = `
 <template>
   <div>Test</div>
@@ -239,17 +306,21 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     client({ observe, state }) {
       observe('count', (state) => {
         state.doubleCount = state.count * 2
+        state.count++
+        state.count += 1
       })
     }
   })
 </script>
 `
     const result = validateComponentSource(code, 'test-e302.html')
-    assert.strictEqual(result.valid, false)
+    assert.strictEqual(result.valid, true)
 
     const e302s = result.diagnostics.filter(d => d.code === 'CORALITE-E302')
-    assert.strictEqual(e302s.length, 1)
+    assert.strictEqual(e302s.length, 3)
     assert.strictEqual(e302s[0].severity, 'warning')
+    assert.strictEqual(e302s[1].severity, 'warning')
+    assert.strictEqual(e302s[2].severity, 'warning')
   })
 
   // 10. Async Style Getters (CORALITE-E303)
@@ -328,7 +399,60 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(w402s[0].severity, 'warning')
   })
 
-  // 13. Backwards Compatibility Aliases
+  // 13. Component Validity Policy (result.valid)
+  test('evaluates result.valid based on errorCount === 0 && totalUnused === 0', () => {
+    // Valid component: 0 errors, 0 unused
+    const validCode = `
+<template>
+  <div>{{ title }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      title: { type: String }
+    }
+  })
+</script>
+`
+    const resValid = validateComponentSource(validCode, 'valid.html')
+    assert.strictEqual(resValid.valid, true)
+
+    // Invalid component due to unused attribute
+    const unusedCode = `
+<template>
+  <div>Hello</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      unusedAttr: { type: String }
+    }
+  })
+</script>
+`
+    const resUnused = validateComponentSource(unusedCode, 'unused.html')
+    assert.strictEqual(resUnused.valid, false)
+
+    // Invalid component due to error diagnostic
+    const errorCode = `
+<template>
+  <button onclick="doAction()">Click</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const resError = validateComponentSource(errorCode, 'error.html')
+    assert.strictEqual(resError.valid, false)
+  })
+
+  // 14. Backwards Compatibility Aliases
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)

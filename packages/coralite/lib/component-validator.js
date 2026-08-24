@@ -178,12 +178,17 @@ function buildDefensiveExpr (node) {
       return `state.${name}`
     }
     case 'Literal': {
-      return JSON.stringify(node.value)
+      return typeof node.value === 'string' ? `'${node.value}'` : JSON.stringify(node.value)
     }
     case 'MemberExpression': {
       const obj = buildDefensiveExpr(node.object)
       if (node.computed) {
-        const prop = buildDefensiveExpr(node.property)
+        let prop = ''
+        if (node.property.type === 'Literal') {
+          prop = JSON.stringify(node.property.value)
+        } else {
+          prop = buildDefensiveExpr(node.property)
+        }
         return `${obj}?.[${prop}]`
       } else {
         return `${obj}?.${node.property.name}`
@@ -202,6 +207,24 @@ function buildDefensiveExpr (node) {
       const left = buildDefensiveExpr(node.left)
       const right = buildDefensiveExpr(node.right)
       return `(${left} ${node.operator} ${right})`
+    }
+    case 'ConditionalExpression': {
+      const test = buildDefensiveExpr(node.test)
+      const cons = buildDefensiveExpr(node.consequent)
+      const alt = buildDefensiveExpr(node.alternate)
+      return `${test} ? ${cons} : ${alt}`
+    }
+    case 'TemplateLiteral': {
+      let res = '`'
+      for (let i = 0; i < node.quasis.length; i++) {
+        res += node.quasis[i].value.raw
+        if (i < node.expressions.length) {
+          const expDef = buildDefensiveExpr(node.expressions[i])
+          res += `\${${expDef} ?? ''}`
+        }
+      }
+      res += '`'
+      return res
     }
     case 'CallExpression': {
       const callee = buildDefensiveExpr(node.callee)
@@ -233,6 +256,8 @@ function generateGetterCode (getterName, expr) {
           fallback = null
         }
       } else if (exprNode.type === 'UnaryExpression' && exprNode.operator === '!') {
+        fallback = null
+      } else if (exprNode.type === 'ConditionalExpression' || exprNode.type === 'TemplateLiteral') {
         fallback = null
       }
     } else {
@@ -339,6 +364,39 @@ export function validateComponentSource (sourceCode, filePath = '') {
         locations: true
       })
 
+      const extractPatternBindings = (patternNode, targetMap, isImport = false, importSource = '') => {
+        if (!patternNode) {
+          return
+        }
+        if (patternNode.type === 'Identifier') {
+          targetMap.set(patternNode.name, isImport ? importSource : 'local')
+          if (!importLocations.has(patternNode.name)) {
+            importLocations.set(patternNode.name, {
+              line: patternNode.loc.start.line,
+              column: patternNode.loc.start.column + 1
+            })
+          }
+        } else if (patternNode.type === 'ObjectPattern') {
+          for (const prop of patternNode.properties || []) {
+            if (prop.type === 'Property') {
+              extractPatternBindings(prop.value, targetMap, isImport, importSource)
+            } else if (prop.type === 'RestElement') {
+              extractPatternBindings(prop.argument, targetMap, isImport, importSource)
+            }
+          }
+        } else if (patternNode.type === 'ArrayPattern') {
+          for (const el of patternNode.elements || []) {
+            if (el) {
+              extractPatternBindings(el, targetMap, isImport, importSource)
+            }
+          }
+        } else if (patternNode.type === 'AssignmentPattern') {
+          extractPatternBindings(patternNode.left, targetMap, isImport, importSource)
+        } else if (patternNode.type === 'RestElement') {
+          extractPatternBindings(patternNode.argument, targetMap, isImport, importSource)
+        }
+      }
+
       if (ast && ast.body) {
         for (const node of ast.body) {
           if (node.type === 'ImportDeclaration') {
@@ -354,17 +412,15 @@ export function validateComponentSource (sourceCode, filePath = '') {
             }
           } else if (node.type === 'VariableDeclaration') {
             for (const decl of node.declarations || []) {
-              if (decl.id && decl.id.type === 'Identifier') {
-                topLevelImports.set(decl.id.name, 'local')
-              }
+              extractPatternBindings(decl.id, topLevelImports, false, 'local')
             }
           } else if (node.type === 'FunctionDeclaration') {
             if (node.id && node.id.type === 'Identifier') {
-              topLevelImports.set(node.id.name, 'local')
+              extractPatternBindings(node.id, topLevelImports, false, 'local')
             }
           } else if (node.type === 'ClassDeclaration') {
             if (node.id && node.id.type === 'Identifier') {
-              topLevelImports.set(node.id.name, 'local')
+              extractPatternBindings(node.id, topLevelImports, false, 'local')
             }
           }
         }
@@ -440,6 +496,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
   }
 
   // 1. Template Parsing (htmlparser2)
+  const templateElements = []
   if (sourceCode.includes('<template') || sourceCode.includes('<script') || sourceCode.includes('<style')) {
     let currentSection = null
     let templateDepth = 0
@@ -541,6 +598,13 @@ export function validateComponentSource (sourceCode, filePath = '') {
           } else if (currentSection === 'template') {
             if (lowerName === 'template') {
               templateDepth++
+            } else {
+              templateElements.push({
+                tagName: lowerName,
+                id: attribs?.id ? String(attribs.id).trim() : null,
+                className: attribs?.class ? String(attribs.class).trim() : null,
+                hasRef: Boolean(attribs?.ref)
+              })
             }
             checkAttribs(attribs, templateSearchOffset)
           }
@@ -988,29 +1052,36 @@ export function validateComponentSource (sourceCode, filePath = '') {
                   }
                 }
 
+                const checkStateMutationTarget = (targetNode, locNode) => {
+                  if (targetNode && targetNode.type === 'MemberExpression') {
+                    let rootObj = targetNode.object
+                    while (rootObj && rootObj.type === 'MemberExpression') {
+                      rootObj = rootObj.object
+                    }
+                    if (rootObj && rootObj.type === 'Identifier' && callbackStateVars.has(rootObj.name)) {
+                      diagnostics.push(createDiagnostic({
+                        code: 'CORALITE-E302',
+                        severity: 'warning',
+                        message: 'State mutation detected inside observe() callback.',
+                        filePath,
+                        line: locNode.loc.start.line,
+                        column: locNode.loc.start.column + 1,
+                        sourceCode,
+                        cause: 'Mutating state inside observe() callback creates reactive loops.',
+                        fix: {
+                          description: 'Move state mutation from observe() into a pure derived getter'
+                        }
+                      }))
+                    }
+                  }
+                }
+
                 walkJS(callbackFn.body, {
                   AssignmentExpression (assignNode) {
-                    if (assignNode.left.type === 'MemberExpression') {
-                      let rootObj = assignNode.left.object
-                      while (rootObj.type === 'MemberExpression') {
-                        rootObj = rootObj.object
-                      }
-                      if (rootObj.type === 'Identifier' && callbackStateVars.has(rootObj.name)) {
-                        diagnostics.push(createDiagnostic({
-                          code: 'CORALITE-E302',
-                          severity: 'warning',
-                          message: 'State mutation detected inside observe() callback.',
-                          filePath,
-                          line: assignNode.loc.start.line,
-                          column: assignNode.loc.start.column + 1,
-                          sourceCode,
-                          cause: 'Mutating state inside observe() callback creates reactive loops.',
-                          fix: {
-                            description: 'Move state mutation from observe() into a pure derived getter'
-                          }
-                        }))
-                      }
-                    }
+                    checkStateMutationTarget(assignNode.left, assignNode)
+                  },
+                  UpdateExpression (updateNode) {
+                    checkStateMutationTarget(updateNode.argument, updateNode)
                   }
                 })
               }
@@ -1371,25 +1442,39 @@ export function validateComponentSource (sourceCode, filePath = '') {
                             return
                           }
 
-                          usedTopLevelImportsInClient.add(idName)
+                          if (!usedTopLevelImportsInClient.has(idName)) {
+                            usedTopLevelImportsInClient.add(idName)
 
-                          // CORALITE-E301: Serialization boundary leak
-                          const importSource = topLevelImports.get(idName) || 'module'
-                          diagnostics.push(createDiagnostic({
-                            code: 'CORALITE-E301',
-                            severity: 'error',
-                            message: `Top-level import '${idName}' referenced inside client() block.`,
-                            filePath,
-                            line: idNode.loc.start.line,
-                            column: idNode.loc.start.column + 1,
-                            sourceCode,
-                            cause: 'Top-level imports cannot be referenced inside client() block as client code is executed in browser context.',
-                            fix: {
-                              action: 'dynamic_import',
-                              description: `Convert top-level import to dynamic import in client()`,
-                              replacement: `const { ${idName} } = await import('${importSource}')`
-                            }
-                          }))
+                            // CORALITE-E301: Serialization boundary leak
+                            const importSource = topLevelImports.get(idName) || 'module'
+                            const isLocalDecl = importSource === 'local'
+
+                            const fixPayload = isLocalDecl
+                              ? {
+                                description: 'Move variable inside client() or initialize via server()'
+                              }
+                              : {
+                                action: 'dynamic_import',
+                                description: 'Convert top-level import to dynamic import in client()',
+                                replacement: `const { ${idName} } = await import('${importSource}')`
+                              }
+
+                            diagnostics.push(createDiagnostic({
+                              code: 'CORALITE-E301',
+                              severity: 'error',
+                              message: isLocalDecl
+                                ? `Top-level variable '${idName}' referenced inside client() block.`
+                                : `Top-level import '${idName}' referenced inside client() block.`,
+                              filePath,
+                              line: idNode.loc.start.line,
+                              column: idNode.loc.start.column + 1,
+                              sourceCode,
+                              cause: isLocalDecl
+                                ? 'Variables declared in the top-level script scope cannot be serialized to the browser client() block.'
+                                : 'Top-level imports cannot be referenced inside client() block as client code is executed in browser context.',
+                              fix: fixPayload
+                            }))
+                          }
                         }
                       }
                     })
@@ -1637,20 +1722,75 @@ export function validateComponentSource (sourceCode, filePath = '') {
         line: 1,
         column: 1
       }
+
+      // Candidate matching logic
+      const isSemanticMatch = (el) => {
+        const rLower = strippedRef.toLowerCase()
+        const rCamel = kebabToCamel(strippedRef)
+        const rKebab = camelToKebab(strippedRef)
+
+        if (el.id && (el.id === strippedRef || el.id.toLowerCase() === rLower || kebabToCamel(el.id) === rCamel)) {
+          return true
+        }
+
+        if (el.className) {
+          const classes = el.className.split(/\s+/)
+          if (classes.some(c => c === strippedRef || c.toLowerCase() === rLower || kebabToCamel(c) === rCamel)) {
+            return true
+          }
+        }
+
+        const tag = el.tagName.toLowerCase()
+        if (tag === rLower || tag === rKebab) {
+          return true
+        }
+        if (tag === 'button' && (rLower === 'btn' || rLower === 'button' || rLower.endsWith('-btn') || rLower.endsWith('_btn') || rLower.endsWith('button') || rLower.includes('btn'))) {
+          return true
+        }
+        if (tag === 'input' && (rLower.endsWith('-input') || rLower.endsWith('_input') || rLower.includes('input'))) {
+          return true
+        }
+
+        return false
+      }
+
+      let candidates = templateElements.filter(isSemanticMatch)
+      if (candidates.length === 0) {
+        const interactiveCandidates = templateElements.filter(el => ['button', 'input', 'form', 'a', 'select', 'textarea'].includes(el.tagName))
+        if (interactiveCandidates.length > 0) {
+          candidates = interactiveCandidates
+        } else {
+          candidates = templateElements
+        }
+      }
+
+      const candidateCount = candidates.length
+      const candidateTag = candidateCount === 1 ? candidates[0].tagName : null
+
+      const causeMessage = candidateCount === 1
+        ? `Found 1 matching candidate element (<${candidateTag}>) in template for ref "${strippedRef}".`
+        : `Found ${candidateCount} candidate elements in template for ref "${strippedRef}". Auto-injection skipped due to ambiguity.`
+
+      const fixPayload = candidateCount === 1
+        ? {
+          action: 'inject_ref',
+          description: `Add ref="${strippedRef}" to matching <${candidateTag}> element`,
+          replacement: `ref="${strippedRef}"`
+        }
+        : {
+          description: `Manually add ref="${strippedRef}" to target element in template`
+        }
+
       diagnostics.push(createDiagnostic({
         code: 'CORALITE-E202',
         severity: 'error',
-        message: `Element ref '${strippedRef}' referenced in script but missing ref="${strippedRef}" in template.`,
+        message: `Missing ref "${strippedRef}" in template`,
         filePath,
         line: callLoc.line,
         column: callLoc.column,
         sourceCode,
-        cause: `Missing ref="${strippedRef}" attribute in template.`,
-        fix: {
-          action: 'inject_ref',
-          description: `Add ref='${strippedRef}' to template element`,
-          replacement: `ref="${strippedRef}"`
-        }
+        cause: causeMessage,
+        fix: fixPayload
       }))
     }
   }
@@ -1660,7 +1800,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
   const totalDefined = definedGetters.size + definedServerProps.size + definedAttributes.size + templateRefs.size
   const totalUnused = unusedGetters.length + unusedServerProps.length + unusedAttributes.length + unusedRefs.length + invalidClientImports.length
   const totalErrors = diagnostics.filter(d => d.severity === 'error').length
-  const valid = diagnostics.length === 0
+  const valid = totalErrors === 0 && totalUnused === 0
   const usageCoveragePercentage = totalDefined > 0
     ? Math.round(((totalDefined - totalUnused) / totalDefined) * 100)
     : 100
