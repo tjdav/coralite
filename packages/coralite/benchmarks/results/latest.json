@@ -1,42 +1,42 @@
 {
-  "timestamp": "2026-08-24T14:37:55.986Z",
+  "timestamp": "2026-08-24T15:16:34.429Z",
   "environment": {
-    "node": "v22.22.1",
+    "node": "v24.16.0",
     "platform": "linux",
     "arch": "x64"
   },
   "suites": {
     "dom-reactivity": {
       "coralite": {
-        "create1k": 14.2,
-        "replace1k": 14.1,
-        "update10th": 14.4,
-        "swapRows": 14.3,
-        "clear": 14.3,
+        "create1k": 15.8,
+        "replace1k": 15.9,
+        "update10th": 15.6,
+        "swapRows": 15.2,
+        "clear": 15.9,
         "heapMB": 9.54
       },
       "react": {
-        "create1k": 83.5,
-        "replace1k": 97.4,
-        "update10th": 36.5,
-        "swapRows": 85.8,
-        "clear": 15.5,
+        "create1k": 72.8,
+        "replace1k": 66.1,
+        "update10th": 27.3,
+        "swapRows": 57.8,
+        "clear": 13.9,
         "heapMB": 9.54
       },
       "vue": {
-        "create1k": 93.2,
-        "replace1k": 91.4,
-        "update10th": 38,
-        "swapRows": 18.4,
-        "clear": 8.3,
+        "create1k": 63.1,
+        "replace1k": 63.5,
+        "update10th": 27.8,
+        "swapRows": 16.2,
+        "clear": 9.2,
         "heapMB": 9.54
       },
       "vanilla": {
-        "create1k": 97.5,
-        "replace1k": 82.9,
-        "update10th": 39.5,
-        "swapRows": 11.9,
-        "clear": 7.3,
+        "create1k": 58.9,
+        "replace1k": 47.2,
+        "update10th": 25.4,
+        "swapRows": 16.9,
+        "clear": 9.9,
         "heapMB": 9.54
       }
     },
@@ -44,8 +44,8 @@
       "coraliteDynamic": {
         "rawKB": 34.1,
         "gzipKB": 9.5,
-        "hydrationMS": 3.1,
-        "ttiMS": 152.25
+        "hydrationMS": 1.9,
+        "ttiMS": 76.66
       },
       "coraliteStatic": {
         "rawKB": 0,
@@ -56,20 +56,88 @@
       "react": {
         "rawKB": 190.3,
         "gzipKB": 59.4,
-        "hydrationMS": 1.6,
-        "ttiMS": 172.61
+        "hydrationMS": 0.9,
+        "ttiMS": 93.23
       },
       "vue": {
         "rawKB": 76.7,
         "gzipKB": 30.7,
-        "hydrationMS": 7.2,
-        "ttiMS": 139.91
+        "hydrationMS": 3.9,
+        "ttiMS": 74.01
       }
     },
-    "internal": {
-      "coralite": {
-        "initialMemoryMB": 59.84
+    "ssrThroughput": {
+      "100_pages": {
+        "totalPages": 100,
+        "totalDurationMS": 131.2,
+        "pagesPerSec": 762.2,
+        "avgLatencyMS": 1.31,
+        "heapUsedMB": 3.8
+      },
+      "1000_pages": {
+        "totalPages": 1000,
+        "totalDurationMS": 1068.6,
+        "pagesPerSec": 935.8,
+        "avgLatencyMS": 1.07,
+        "heapUsedMB": 19.7
+      },
+      "10000_pages": {
+        "totalPages": 10000,
+        "totalDurationMS": 8165.3,
+        "pagesPerSec": 1224.7,
+        "avgLatencyMS": 0.82,
+        "heapUsedMB": 179.7
       }
-    }
+    },
+    "internal": [
+      {
+        "benchmark": "Coralite Token Replace (textNode)",
+        "opsPerSec": 6834237,
+        "avgLatencyNs": 146.3,
+        "speedup": 1
+      },
+      {
+        "benchmark": "Native String.prototype.replace (regex)",
+        "opsPerSec": 11505931,
+        "avgLatencyNs": 86.9,
+        "speedup": 1.68
+      },
+      {
+        "benchmark": "Coralite Token Replace (attribute)",
+        "opsPerSec": 18076218,
+        "avgLatencyNs": 55.3,
+        "speedup": 2.64
+      },
+      {
+        "benchmark": "Coralite Read-Only Proxy (Deep Read)",
+        "opsPerSec": 3220383,
+        "avgLatencyNs": 310.5,
+        "speedup": 0.47
+      },
+      {
+        "benchmark": "Standard Flat Object Read (Deep Read)",
+        "opsPerSec": 14081037983,
+        "avgLatencyNs": 0.1,
+        "speedup": 2060.37
+      },
+      {
+        "benchmark": "Eager Recursive Proxy (Deep Read)",
+        "opsPerSec": 5533261,
+        "avgLatencyNs": 180.7,
+        "speedup": 0.81
+      },
+      {
+        "benchmark": "Optimized Object.setPrototypeOf AST Element Creation",
+        "opsPerSec": 1005463,
+        "avgLatencyNs": 994.6,
+        "speedup": 0.15
+      },
+      {
+        "benchmark": "Legacy Object.defineProperties AST Element Creation",
+        "opsPerSec": 953648,
+        "avgLatencyNs": 1048.6,
+        "speedup": 0.14
+      }
+    ]
   }
 }

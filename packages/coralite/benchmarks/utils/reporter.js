@@ -11,11 +11,23 @@ const HEADER_LABELS = {
   rawKB: 'Raw JS (KB)',
   gzipKB: 'Gzip JS (KB)',
   hydrationMS: 'Hydration (ms)',
-  ttiMS: 'TTI (ms)'
+  ttiMS: 'TTI (ms)',
+  totalPages: 'Total Pages',
+  totalDurationMS: 'Duration (ms)',
+  pagesPerSec: 'Throughput (pages/sec)',
+  avgLatencyMS: 'Avg Latency (ms)',
+  heapUsedMB: 'Peak Heap (MB)',
+  benchmark: 'Benchmark',
+  opsPerSec: 'Ops/Sec',
+  avgLatencyNs: 'Avg Latency (ns)',
+  speedup: 'Speedup'
 }
 
 /**
+ * Writes benchmark results to a JSON file.
  *
+ * @param {Object} data - Benchmark results data
+ * @param {string} [outputPath] - Destination path
  */
 export function writeJSONResults (data, outputPath = DEFAULT_RESULTS_PATH) {
   const dir = path.dirname(outputPath)
@@ -26,29 +38,64 @@ export function writeJSONResults (data, outputPath = DEFAULT_RESULTS_PATH) {
 }
 
 /**
+ * Generates a formatted Markdown table for a suite's results.
  *
+ * @param {string} suiteName - Name of the suite
+ * @param {Object|Array} suiteResults - Suite result object or array
+ * @returns {string} Markdown table string
  */
 export function generateMarkdownTable (suiteName, suiteResults) {
-  if (!suiteResults || Object.keys(suiteResults).length === 0) {
+  if (!suiteResults || (typeof suiteResults === 'object' && Object.keys(suiteResults).length === 0)) {
     return ''
   }
-  const frameworks = Object.keys(suiteResults)
-  const metrics = Object.keys(suiteResults[frameworks[0]])
-  const displayHeaders = metrics.map(m => HEADER_LABELS[m] || m)
 
   let md = `### ${suiteName}\n\n`
-  md += `| Framework | ${displayHeaders.join(' | ')} |\n`
+
+  if (Array.isArray(suiteResults)) {
+    if (suiteResults.length === 0) {
+      return ''
+    }
+    const sample = suiteResults[0]
+    const keys = Object.keys(sample)
+    const headers = keys.map(k => HEADER_LABELS[k] || k)
+
+    md += `| ${headers.join(' | ')} |\n`
+    md += `| ${'--- | '.repeat(keys.length).slice(0, -1)}\n`
+
+    for (const item of suiteResults) {
+      const row = keys.map(k => item[k])
+      md += `| ${row.join(' | ')} |\n`
+    }
+    return md
+  }
+
+  const keysOrFrameworks = Object.keys(suiteResults)
+  const firstVal = suiteResults[keysOrFrameworks[0]]
+
+  if (typeof firstVal !== 'object' || firstVal === null) {
+    return ''
+  }
+
+  const metrics = Object.keys(firstVal)
+  const displayHeaders = metrics.map(m => HEADER_LABELS[m] || m)
+
+  const firstColHeader = suiteName === 'ssrThroughput' || suiteName === 'ssr-throughput' ? 'Workload' : 'Framework'
+
+  md += `| ${firstColHeader} | ${displayHeaders.join(' | ')} |\n`
   md += `| ${'--- | '.repeat(metrics.length + 1).slice(0, -1)}\n`
 
-  for (const fw of frameworks) {
-    const row = metrics.map(m => suiteResults[fw][m])
-    md += `| ${fw} | ${row.join(' | ')} |\n`
+  for (const key of keysOrFrameworks) {
+    const row = metrics.map(m => suiteResults[key][m])
+    md += `| ${key} | ${row.join(' | ')} |\n`
   }
   return md
 }
 
 /**
+ * Writes markdown formatted results to BENCHMARKS.md.
  *
+ * @param {Object} data - Benchmark results object
+ * @param {string} [outputPath] - Destination file path
  */
 export function writeMarkdownResults (data, outputPath = DEFAULT_BENCHMARKS_MD_PATH) {
   let content = '# Coralite Performance Benchmarks\n\n'
@@ -59,6 +106,19 @@ export function writeMarkdownResults (data, outputPath = DEFAULT_BENCHMARKS_MD_P
     content += generateMarkdownTable(suiteName, suiteResults) + '\n\n'
   }
 
+  content += `## Reproduction Instructions
+
+To reproduce these benchmarks on your machine:
+
+\`\`\`bash
+# 1. Install dependencies
+pnpm install
+
+# 2. Run all benchmark suites
+pnpm bench
+\`\`\`
+`
+
   const dir = path.dirname(outputPath)
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true })
@@ -67,7 +127,9 @@ export function writeMarkdownResults (data, outputPath = DEFAULT_BENCHMARKS_MD_P
 }
 
 /**
+ * Prints benchmark results to the console table.
  *
+ * @param {Object} data - Benchmark results object
  */
 export function printTerminalResults (data) {
   console.log('\n=== Benchmark Results ===\n')
@@ -78,7 +140,19 @@ export function printTerminalResults (data) {
   for (const [suiteName, suiteResults] of Object.entries(data.suites)) {
     console.log(`Suite: ${suiteName}`)
 
-    // Map keys for terminal table display
+    if (Array.isArray(suiteResults)) {
+      const formattedList = suiteResults.map(item => {
+        const formatted = {}
+        for (const [k, v] of Object.entries(item)) {
+          formatted[HEADER_LABELS[k] || k] = v
+        }
+        return formatted
+      })
+      console.table(formattedList)
+      console.log('')
+      continue
+    }
+
     const formattedTable = {}
     for (const [fw, metricsObj] of Object.entries(suiteResults)) {
       const formattedMetrics = {}

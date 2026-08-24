@@ -251,6 +251,7 @@ export default [
     ignores: [
       '**/dist/',
       '**/bench/',
+      '**/benchmarks/',
       '**/.history/',
       '**/playwright-report/',
       '**/.coralite/',

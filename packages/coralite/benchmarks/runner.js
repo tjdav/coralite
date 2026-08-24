@@ -1,8 +1,10 @@
 import process from 'node:process'
 import { printTerminalResults, writeJSONResults, writeMarkdownResults } from './utils/reporter.js'
-import { getMemoryUsage, triggerGC } from './utils/memory.js'
+import { triggerGC } from './utils/memory.js'
 import { runDomReactivitySuite } from './suites/01-dom-reactivity/bench.js'
 import { runBundleHydrationSuite } from './suites/02-bundle-hydration/bench.js'
+import { runSSRThroughputSuite } from './suites/03-ssr-throughput/bench.js'
+import { runInternalSuite } from './suites/04-internal/bench.js'
 
 function parseArgs () {
   const args = process.argv.slice(2)
@@ -82,6 +84,7 @@ async function main () {
       rows: flags.rows
     })
     resultsData.suites['dom-reactivity'] = domResults
+    triggerGC()
   }
 
   if (selectedSuite === 'all' || selectedSuite === 'bundle-hydration' || selectedSuite === 'bundle' || selectedSuite === 'hydration') {
@@ -89,20 +92,26 @@ async function main () {
       iterations: flags.iterations
     })
     resultsData.suites['bundle-hydration'] = bundleResults
+    triggerGC()
+  }
+
+  if (selectedSuite === 'all' || selectedSuite === 'ssr-throughput' || selectedSuite === 'ssr') {
+    const ssrResults = await runSSRThroughputSuite()
+    resultsData.suites.ssrThroughput = ssrResults
+    triggerGC()
   }
 
   if (selectedSuite === 'all' || selectedSuite === 'internal') {
-    resultsData.suites.internal = {
-      coralite: {
-        initialMemoryMB: getMemoryUsage().heapUsedMB
-      }
-    }
+    const internalResults = await runInternalSuite()
+    resultsData.suites.internal = internalResults
+    triggerGC()
   }
 
   printTerminalResults(resultsData)
   writeMarkdownResults(resultsData)
 
-  if (flags.json) {
+  // Write JSON report automatically on master/all run or when --json flag is passed
+  if (flags.json || selectedSuite === 'all') {
     writeJSONResults(resultsData)
     console.log('Results successfully written to packages/coralite/benchmarks/results/latest.json')
   }
