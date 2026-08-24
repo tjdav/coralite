@@ -1,0 +1,15 @@
+{
+  "timestamp": "2026-08-24T13:23:40.711Z",
+  "environment": {
+    "node": "v22.22.1",
+    "platform": "linux",
+    "arch": "x64"
+  },
+  "suites": {
+    "internal": {
+      "coralite": {
+        "initialMemoryMB": 4.07
+      }
+    }
+  }
+}
