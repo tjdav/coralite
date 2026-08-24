@@ -169,7 +169,8 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     const e101s = result.diagnostics.filter(d => d.code === 'CORALITE-E101')
     assert.strictEqual(e101s.length, 2)
     assert.strictEqual(e101s[0].severity, 'error')
-    assert.ok(e101s[0].fix.description.includes('Move Array/Object initialization'))
+    assert.strictEqual(e101s[0].fix.action, undefined)
+    assert.ok(e101s[0].fix.description.includes('cannot be Array or Object'))
   })
 
   // 5. Attribute Mutex (CORALITE-E102)
@@ -285,12 +286,70 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(e301s[0].severity, 'error')
     assert.strictEqual(e301s[0].message, "Top-level import 'formatDate' referenced inside client() block.")
     assert.strictEqual(e301s[0].fix.action, 'dynamic_import')
+    assert.strictEqual(e301s[0].fix.isSharedWithOtherBlocks, false)
 
     // Top-level local variable reference
     assert.strictEqual(e301s[1].severity, 'error')
     assert.strictEqual(e301s[1].message, "Top-level variable 'LOCAL_CONFIG' referenced inside client() block.")
     assert.strictEqual(e301s[1].cause, 'Variables declared in the top-level script scope cannot be serialized to the browser client() block.')
-    assert.strictEqual(e301s[1].fix.description, 'Move variable inside client() or initialize via server()')
+    assert.strictEqual(e301s[1].fix.action, undefined)
+    assert.strictEqual(
+      e301s[1].fix.description,
+      "Variable 'LOCAL_CONFIG' declared in top-level script scope cannot be serialized to client(). Move inside client() or initialize via server()."
+    )
+  })
+
+  test('CORALITE-E301: tracks isSharedWithOtherBlocks when import is used in server()/getters/slots/style', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  import { formatDate } from './utils.js'
+
+  export default defineComponent({
+    async server() {
+      const formatted = formatDate(new Date())
+      return { formatted }
+    },
+    client() {
+      const clientFormatted = formatDate(new Date())
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e301-shared.html')
+    const e301s = result.diagnostics.filter(d => d.code === 'CORALITE-E301')
+    assert.strictEqual(e301s.length, 1)
+    assert.strictEqual(e301s[0].fix.action, 'dynamic_import')
+    assert.strictEqual(e301s[0].fix.isSharedWithOtherBlocks, true)
+  })
+
+  test('Template Scoping: ignores mustache expressions and event handlers outside <template>', () => {
+    const code = `
+<!-- {{ item.price * taxRate }} -->
+<!-- <button onclick="handleClick()">Outside</button> -->
+<template>
+  <div>{{ title }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      title: { type: String }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-template-scoping.html')
+    const e201s = result.diagnostics.filter(d => d.code === 'CORALITE-E201')
+    const e203s = result.diagnostics.filter(d => d.code === 'CORALITE-E203')
+
+    assert.strictEqual(e201s.length, 0)
+    assert.strictEqual(e203s.length, 0)
   })
 
   // 9. Reactivity Loops in observe() (CORALITE-E302)

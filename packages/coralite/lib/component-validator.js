@@ -339,6 +339,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
   // attr -> { line, column }
   const attributeLocations = new Map()
   const usedTopLevelImportsInClient = new Set()
+  const usedTopLevelImportsOutsideClient = new Set()
 
   const stateReads = new Set()
   // ref -> { line, column }
@@ -363,6 +364,40 @@ export function validateComponentSource (sourceCode, filePath = '') {
         sourceType: 'module',
         locations: true
       })
+
+      const collectTopLevelImportsOutsideClient = (blockNode) => {
+        if (!blockNode) {
+          return
+        }
+        walkAncestorJS(blockNode, {
+          Identifier (idNode, ancestors) {
+            const idName = idNode.name
+            if (topLevelImports.has(idName) && topLevelImports.get(idName) !== 'local') {
+              const parent = ancestors.length > 1 ? ancestors[ancestors.length - 2] : null
+              if (!parent) {
+                return
+              }
+              if (parent.type === 'MemberExpression' && parent.property === idNode && !parent.computed) {
+                return
+              }
+              if (parent.type === 'Property' && parent.key === idNode && !parent.computed && !parent.shorthand) {
+                return
+              }
+              if ((parent.type === 'BreakStatement' || parent.type === 'ContinueStatement' || parent.type === 'LabeledStatement') && parent.label === idNode) {
+                return
+              }
+              if (parent.type === 'MetaProperty') {
+                return
+              }
+              if (parent.type === 'ImportSpecifier' || parent.type === 'ImportDefaultSpecifier' || parent.type === 'ImportNamespaceSpecifier') {
+                return
+              }
+
+              usedTopLevelImportsOutsideClient.add(idName)
+            }
+          }
+        })
+      }
 
       const extractPatternBindings = (patternNode, targetMap, isImport = false, importSource = '') => {
         if (!patternNode) {
@@ -435,6 +470,17 @@ export function validateComponentSource (sourceCode, filePath = '') {
             node.arguments[0].type === 'ObjectExpression'
           ) {
             const configObj = node.arguments[0]
+
+            // Pre-pass: collect top-level imports used outside client() regardless of property order
+            for (const prop of configObj.properties) {
+              if (prop.type !== 'Property') {
+                continue
+              }
+              const keyName = getPropKeyName(prop)
+              if (keyName && ['server', 'getters', 'slots', 'style'].includes(keyName)) {
+                collectTopLevelImportsOutsideClient(prop.value)
+              }
+            }
 
             for (const prop of configObj.properties) {
               if (prop.type !== 'Property') {
@@ -704,6 +750,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
           }
         }
       }
+
 
       const analyzeFunctionBlock = (fnNode, targetStateSet, targetRefsMap, isGetterFn = false, isClientFn = false, paramIdx = 0, isSlotFn = false) => {
         if (!fnNode || !fnNode.body) {
@@ -1178,7 +1225,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                                 sourceCode,
                                 cause: 'Array and Object types in attributes cause state pollution and serialization boundary leaks.',
                                 fix: {
-                                  description: 'Move Array/Object initialization to async server() block'
+                                  description: `Component attribute '${attrName}' cannot be Array or Object. Move initialization to async server() block.`
                                 }
                               }))
                             }
@@ -1236,7 +1283,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                             cause: 'Attributes cannot specify both required: true and a default value.',
                             fix: {
                               action: 'strip_default',
-                              description: 'Remove default value when required: true is set'
+                              description: `Remove default value from attribute '${attrName}' when required: true is set`
                             }
                           }))
                         }
@@ -1451,12 +1498,13 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
                             const fixPayload = isLocalDecl
                               ? {
-                                description: 'Move variable inside client() or initialize via server()'
+                                description: `Variable '${idName}' declared in top-level script scope cannot be serialized to client(). Move inside client() or initialize via server().`
                               }
                               : {
                                 action: 'dynamic_import',
-                                description: 'Convert top-level import to dynamic import in client()',
-                                replacement: `const { ${idName} } = await import('${importSource}')`
+                                description: `Convert top-level import '${idName}' to dynamic import inside client()`,
+                                replacement: `const { ${idName} } = await import('${importSource}')`,
+                                isSharedWithOtherBlocks: usedTopLevelImportsOutsideClient.has(idName)
                               }
 
                             diagnostics.push(createDiagnostic({
