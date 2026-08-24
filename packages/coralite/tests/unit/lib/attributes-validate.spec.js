@@ -220,6 +220,89 @@ describe('Component Attribute validate Feature', () => {
       assert.strictEqual(invalidResult.age, 15)
     })
 
+    it('SSR createComponentDefinition dispatches app.onError with type "attribute_validation" when validation fails', async () => {
+      const errorsReported = []
+      const mockApp = {
+        createComponentElement: () => null,
+        options: { mode: 'development' },
+        onError: (errData) => {
+          errorsReported.push(errData)
+        }
+      }
+      const defineComponent = createComponentDefinition({ app: mockApp })
+
+      const invalidContext = {
+        state: { age: '15' },
+        module: { id: 'user-card', path: { pathname: '/user.coral' } },
+        root: null
+      }
+
+      await defineComponent({
+        attributes: {
+          age: {
+            type: Number,
+            validate: (v) => v >= 18 || 'Must be an adult'
+          }
+        }
+      }, invalidContext)
+
+      assert.strictEqual(errorsReported.length, 1)
+      assert.strictEqual(errorsReported[0].level, 'WARN')
+      assert.strictEqual(errorsReported[0].type, 'attribute_validation')
+      assert.strictEqual(errorsReported[0].componentId, 'user-card')
+      assert.ok(errorsReported[0].message.includes('Component "user-card" attribute "age" validation failed: Must be an adult.'))
+    })
+
+    it('SSR createComponentDefinition suppresses validation warning when suppressValidationWarnings is true or mode is production', async () => {
+      const errorsReported = []
+      const mockApp = {
+        createComponentElement: () => null,
+        options: { suppressValidationWarnings: true, mode: 'development' },
+        onError: (errData) => {
+          errorsReported.push(errData)
+        }
+      }
+      const defineComponent = createComponentDefinition({ app: mockApp })
+
+      const invalidContext = {
+        state: { age: '15' },
+        module: { id: 'user-card', path: { pathname: '/user.coral' } },
+        root: null
+      }
+
+      await defineComponent({
+        attributes: {
+          age: {
+            type: Number,
+            validate: (v) => v >= 18 || 'Must be an adult'
+          }
+        }
+      }, invalidContext)
+
+      assert.strictEqual(errorsReported.length, 0)
+
+      // Test mode: 'production'
+      const prodApp = {
+        createComponentElement: () => null,
+        options: { mode: 'production' },
+        onError: (errData) => {
+          errorsReported.push(errData)
+        }
+      }
+      const defineProdComponent = createComponentDefinition({ app: prodApp })
+
+      await defineProdComponent({
+        attributes: {
+          age: {
+            type: Number,
+            validate: (v) => v >= 18 || 'Must be an adult'
+          }
+        }
+      }, invalidContext)
+
+      assert.strictEqual(errorsReported.length, 0)
+    })
+
     it('Client runtime CoraliteElement updates state.errors and error_* tokens on invalid setAttribute and proxy mutations', () => {
       const tagName = 'val-comp-' + Math.random().toString(36).substring(2, 9)
       const ValElement = createCoraliteClass({

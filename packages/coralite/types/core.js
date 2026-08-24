@@ -83,6 +83,7 @@
  * Error or warning data passed to the onError callback.
  * @typedef {Object} CoraliteErrorData
  * @property {'WARN'|'ERR'|'LOG'} level - The severity level.
+ * @property {string} [type] - Optional warning/error type identifier.
  * @property {string} message - The message describing the error or warning.
  * @property {Error} [error] - Optional error object for tracing.
  * @property {string} [componentId] - The ID of the component where the error occurred.
@@ -154,6 +155,7 @@
  * @property {'production' | 'development' | 'testing'} [mode='production'] - Build mode: "production", "development", or "testing"
  * @property {CoraliteTestingConfig} [testing] - Configuration for testing mode.
  * @property {CoraliteCSPConfig} [csp] - Configuration for Content Security Policy.
+ * @property {boolean} [suppressValidationWarnings] - Whether to suppress attribute validation warning messages.
  * @property {boolean} [incremental=true] - Whether to skip rebuilding unchanged pages and components.
  * @property {string} [projectRoot] - The root directory of the project.
  * @property {CoralitePath} [path] - Internal path mapping.
