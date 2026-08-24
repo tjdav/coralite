@@ -201,7 +201,7 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
 * **Arguments** (Injected via Client Context):
   * `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
   * `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
-  * `refs`: A function used to reliably select elements within the component's local template. It accepts the string value of a `ref` attribute and returns the corresponding `HTMLElement` (e.g., `const btn = refs('my-button')`).
+  * `refs`: A function used to reliably select elements within the component's local template. It accepts the string value of a `ref` attribute and returns the corresponding `HTMLElement` (e.g., `const btn = refs('btn')`).
   * `root`: The root HTML element instance of the Web Component (inherits from `HTMLElement`).
   * `instanceId`: A unique identifier string for this specific component instance.
   * `observe`: A function `observe(key, callback)` to execute explicit side-effects on state changes. Receives `(newValue, oldValue)`. Returns a disposer function (`() => void`) to stop observing. Automatically cleaned up when disconnected.
@@ -500,42 +500,57 @@ Client injections mapped in `client.context` use a Two-Phase Resolver setup:
 *   **Phase 1 (`pluginContext`)**: Use this scope to define shared state (e.g., caches) that must persist across all component instances in the browser. Mutations here are shared globally across the plugin system.
 *   **Phase 2 (`instanceContext`)**: Use this scope for logic specific to a single component instance. Use the `instanceContext` Proxy to lazily access other plugins' APIs.
 
-## 7. Configuration (defineConfig)
+## 7. Configuration (coralite.config.js / defineConfig)
 
-Coralite projects are configured using `defineConfig` exported from `coralite`. This helper validates the configuration object structure and options at startup.
+Projects are configured via `coralite.config.js`. Import `defineConfig` from `'coralite-scripts'` (the official dev/build tool) to validate the schema. The core `'coralite'` package also exports `defineConfig` for programmatic `createCoralite()` instances.
 
 ### 7.1 Required Properties
-*   `output` (string): The path to the output directory where built files will be placed.
-*   `components` (string): The path to the directory containing Coralite components.
-*   `pages` (string): The path to the directory containing pages that will be rendered.
+- `output` (string): Path to the output directory for built files.
+- `components` (string): Path to the directory containing Coralite components.
+- `pages` (string): Path to the directory containing page files to render.
+- `public` (string): Path to the directory containing static assets copied verbatim to the output.
 
-These strings must be non-empty.
+All required strings must be non-empty.
 
 ### 7.2 Optional Properties
-*   `plugins` (array): Array of plugin instances. Each plugin must be an object with a valid non-empty `name` string.
-*   `baseURL` (string): Base URL for asset paths (defaults to `/`).
-*   `assets` (array): Static assets to copy during the build.
-*   `externalStyles` (array of strings): Global stylesheets to inject into every page.
-*   `mode` (string): Build mode: `'production'`, `'development'`, or `'testing'`.
-*   `testing` (object): Optional configuration for `'testing'` mode (e.g., `{ mocks: { components: { 'comp-id': { server: ... } }, plugins: { 'plugin-id': { server: { context: ... } } } } }`).
-*   `projectRoot` (string): The root directory of the project.
-*   `ignoreByAttribute` (array): Attributes to ignore during parse.
-*   `skipRenderByAttribute` (array): Attributes to skip rendering.
-*   `onError` (function): Custom callback for handling errors and warnings.
+- `plugins` (array): `CoralitePluginInstance[]`; each requires a non-empty `name`.
+- `assets` (array): Each item requires `dest` plus either `src`, or `pkg` + `path`.
+- `baseURL` (string): Base URL for asset paths (default `'/'`).
+- `styles` (object): Unified style pipeline.
+  * `styles.input` (string[]): Array of entry points mixing `.scss`/`.sass`/`.css`; output file names must be unique.
+  * `styles.processors` (object): `{ scss: <Sass options>, postcss: { plugins: [...] } }`.
+- `server` (object): Dev server options, e.g. `{ port: 3000 }`.
+- `incremental` (boolean, default `true`): Skip rebuild of unchanged pages/components via `.coralite/manifest.json`.
+- `csp` (object): Content Security Policy config (see §16).
+- `externalStyles` (array of strings): Global stylesheets injected into every page (as `<link>` tags).
+- `mode` (string): `'production'` | `'development'` | `'testing'`.
+- `testing` (object): Testing-mode config, e.g. `{ mocks: { components: {...}, plugins: {...} } }`.
+- `projectRoot` (string): The project root directory.
+- `ignoreByAttribute` (array): Elements to ignore during parsing by attribute name/value.
+- `skipRenderByAttribute` (array): Attributes that cause elements to parse but not render.
+- `onError` (function): Custom error/warning handler (`{ level, message, error }`).
 
 ### 7.3 Schema Example
 ```javascript
-import { defineConfig } from 'coralite';
+import { defineConfig } from 'coralite-scripts'
 
 export default defineConfig({
-  output: './dist',
-  components: './src/components',
-  pages: './src/pages',
+  output: 'dist',
+  public: 'public',
+  components: 'src/components',
+  pages: 'src/pages',
+  styles: {
+    input: ['src/css/main.scss'],
+    processors: {
+      scss: { style: 'compressed', loadPaths: ['node_modules'] }
+    }
+  },
+  server: { port: 3000 },
   mode: 'production',
   assets: [
     { src: './src/assets/images', dest: 'assets/images' }
   ]
-});
+})
 ```
 
 ## 8. Asset Management & Automated Injection (SRI)
@@ -822,5 +837,56 @@ Pages can customize or disable CSP using meta tags:
   - `calculateHash(content, algorithm)`: Computes base64 SHA hash for CSP.
   - `formatCSPDirectives(directives, options)`: Formats directive object into HTTP header string.
   - `injectCSPMeta(root, head, cspContent, reportOnly)`: Injects HTTP-equiv meta tag into document `<head>`.
+
+## 17. CLI & Build Tooling
+
+Coralite provides a unified suite of command-line tools for local development, automated testing, production compilation, static validation, and project scaffolding.
+
+### 17.1 `coralite-scripts` (Project Development & Build Runner)
+
+The primary CLI runner for Coralite web projects (`package.json` scripts: `start`, `test`, `build`).
+
+#### Commands:
+* **`coralite-scripts dev`** (default: `coralite-scripts`):
+  - Starts the local development server on default port `3000` (configurable via `server.port` in `coralite.config.js`).
+  - Writes compiled assets to a temporary `.coralite` output directory.
+  - Automatically injects the Server-Sent Events (SSE) live-reload script (`/__coralite/rebuild.js` and `/__coralite/rebuild`).
+  - Watches `pages`, `components`, `public`, and `styles.input` for instant live updates and CSS compilation.
+* **`coralite-scripts test`**:
+  - Starts the automated test server on port `3862` (specifically chosen to prevent port conflicts with concurrent dev instances).
+  - Activates `testing` mode (deterministic test IDs, telemetry enabled, CSS animations and transitions disabled).
+  - Disables SSE live-reload script injection and the file watcher for high-speed, stable E2E testing (Playwright, Cypress) and CI pipelines.
+* **`coralite-scripts build`**:
+  - Compiles the static site to the configured production `output` directory (e.g., `dist`).
+  - Incremental compilation is enabled by default (`incremental: true`), tracking changes via `.coralite/manifest.json` and skipping rebuilds of untouched pages/components.
+  - Automatically performs stale file cleanup at the end of the build to keep `output` synchronized with the source.
+
+#### Command-Line Flags:
+* `-v, --verbose`: Enable verbose logging output with detailed file and timing diagnostics.
+* `-c, --clean`: Completely clear the output directory before building.
+* `-a, --assets <mapping...>`: Static assets to copy during build (`pkg:path:dest` or `src:dest`). Mappings merge with and override assets defined in `coralite.config.js`.
+* `--no-incremental`: Disable change detection optimization and force a complete rebuild of all pages and components.
+
+### 17.2 Core `coralite` CLI & Static Validators
+
+Direct CLI interface exported by the core `coralite` package for standalone build operations and code auditing:
+* **`coralite [options]`** (or `coralite build`):
+  - Direct compiler with flags: `-c, --components <path>`, `-p, --pages <path>`, `-o, --output <path>`, `-m, --mode <mode>`, `-i, --ignore-attribute <key=value...>`, `-s, --skip-render-attribute <key...>`, `-d, --dry-run`, `-a, --assets <mapping...>`.
+* **`coralite validate-components`** (alias: `coralite validate:components`):
+  - Statically audits component `<template>`, `ref`s, CSS selectors, and scripts for dead code, missing refs, and unused getters/state/attributes.
+  - Flags: `-c, --components <path>`, `--coverage`, `--format <console|json>`, `--strict`.
+* **`coralite validate-plugins`** (alias: `coralite validate:plugins`):
+  - Validates plugin contracts, lifecycle hooks, and ensures isomorphic boundary compliance (no Node-only modules in client bundles).
+  - Flags: `-p, --plugins <path>`, `--format <console|json>`, `--strict`.
+
+### 17.3 `create-coralite` (Project Scaffolder)
+
+Interactive project generator tool (binaries: `create-coralite`, alias: `cca`):
+* **Usage**: `npm create coralite@latest`, `pnpm create coralite`, `npx create-coralite <project-name>`, or `cca [options]`.
+* **Flags**:
+  - `-o, --output <name>`: Target project directory.
+  - `-t, --template <name>`: Template choice: `css` or `scss`.
+* **Generated Structure**: Pre-configures `coralite.config.js` (`defineConfig` from `coralite-scripts`), standard directory layout (`src/pages`, `src/components`, `src/css`, `public`), and ready-to-run npm scripts (`dev`, `test`, `build`).
+
 
 
