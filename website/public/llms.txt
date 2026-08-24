@@ -753,26 +753,115 @@ Every `CoraliteError` exposes detailed diagnostic metadata:
 *   `stackFile` (string): The file name extracted from the stack trace.
 *   Cause (Error): The original error instance (if wrapped).
 
-## 14. Component Validation & Analyser (`coralite validate-components`)
+## 14. Component Validation & Self-Healing AST Auto-Fixer (`coralite validate-components`)
 
-Coralite includes a built-in static AST and template symbol validator (`lib/component-validator.js`) exposed via the CLI subcommand `coralite validate-components` (alias: `coralite validate:components`).
+Coralite includes a built-in static AST and template symbol validator (`lib/component-validator.js`) exposed via `coralite validate-components` (alias: `coralite validate:components`). It analyzes template syntax, script block boundaries, slot signatures, and state reactivity rules.
 
-### 14.1 Key Capabilities
-*   **Unused Symbol Detection**: Cross-references component `<template>` mustache tokens (`{{ var }}`), `ref="..."` attributes, CSS attribute selectors (`[attr]`), and script AST nodes (`attributes`, `server()`, `getters`, `client()`, `slots`) to flag unreferenced getters, server props, attributes, and refs.
-*   **Slot Context & Destructuring Analysis**: Analyzes slot parameter signatures (`(nodes, context)` or `(nodes, { state, observe, ... })`), tracking destructured state property usage and recognizing reserved slot context identifiers.
-*   **Reserved Key Collision Warnings**: Emits compiler warnings when a component's declared `attributes` or `server` properties collide with reserved slot context keys (`state`, `observe`, `signal`, `root`, `refs`, `instanceId`).
-*   **Comment Directives / Pragmas**: Supports inline ignore pragmas (`<!-- coralite-ignore symbol1 symbol2 -->`, `/* coralite-ignore symbol1 */`, or `@coralite-ignore-unused`) for intentional test dead code or plugin-managed refs.
-*   **Coverage Reporting**: Generates usage coverage percentages and test execution metrics via `coralite validate-components --coverage`.
-*   **CI Enforcement**: Supports `--strict` flag to fail builds if any unused code or unreferenced symbols exist.
+### 14.1 Diagnostic Rules Catalog
+| Code | Category | Description & Fix Action |
+| :--- | :--- | :--- |
+| `CORALITE-E101` | Attribute Schema | Non-primitive `Array` or `Object` constructor in attribute schema. (Action: `remove_attribute`) |
+| `CORALITE-E102` | Attribute Schema | Mutex violation: `required: true` combined with `default` value. (Action: `strip_default`) |
+| `CORALITE-E103` | Attribute Schema | Async `transform` or `validate` function. (Must be strictly synchronous) |
+| `CORALITE-E104` | Attribute/Server | Collision with reserved context keys (`state`, `observe`, `signal`, `root`, `refs`, `instanceId`, `emit`). |
+| `CORALITE-E201` | Template Syntax | Non-identifier expression in `<template>` interpolation (e.g. `{{ count + 1 }}`). (Action: `lift_to_getter`) |
+| `CORALITE-E202` | Ref Resolution | `refs('name')` call referencing missing template `ref`. Injects ref if exactly 1 candidate element exists. (Action: `inject_ref`) |
+| `CORALITE-E203` | CSP Encapsulation | Inline event listener attribute (`onclick="..."`) inside `<template>`. Violates CSP. (Action: remove inline listener) |
+| `CORALITE-E301` | Serialization | Outer static ES import referenced inside `client()` block. Rewrites to dynamic `await import(...)` inside `client()` unless shared with server/getters. (Action: `dynamic_import`) |
+| `CORALITE-E302` | Reactivity Loop | Direct state assignment inside `observe(...)` callback causing infinite reactivity loops. |
+| `CORALITE-E303` | Style Block | Asynchronous getter function in `style: { ... }` block. (Must be strictly synchronous) |
+| `CORALITE-W401` | Dead Code | Unused component getter, server property, or attribute. |
+| `CORALITE-W402` | Dead Code | Unused element `ref="..."` declaration. |
 
-## 15. Plugin Validation (`coralite validate-plugins`)
+### 14.2 Deterministic AST Auto-Fixer Engine (`--fix` & `--dry-run`)
+- **`--fix`**: AST auto-fixer modifies source `.html` files in-place using deterministic AST transformations (expression lifting, getter synthesis, ref injection, dynamic import rewriting, default stripping).
+- **`--dry-run`**: Previews proposed auto-fixes in terminal colorized unified diff format without writing changes to disk.
+- **Pragmas**: Inline comments (`<!-- coralite-ignore symbol -->`, `/* coralite-ignore symbol */`, or `@coralite-ignore-unused`) suppress dead-code diagnostics for intentional symbols.
 
-Coralite provides `coralite validate-plugins` (alias: `coralite validate:plugins`) powered by `lib/plugin-validator.js` to audit plugin definitions statically and dynamically.
+## 15. Plugin Validation & AST Auto-Fixer (`coralite validate-plugins`)
 
-### 15.1 Validation Checks
-*   **Contract & Name Validation**: Asserts non-empty `name` property and warns against reserved core plugin name collisions.
-*   **Lifecycle Hook Verification**: Asserts server (`onBeforeBuild`, `onAfterBuild`, `onPageSet`, etc.) and client (`onConnected`, `onDisconnected`) hooks are valid functions.
-*   **Isomorphic Boundary Protection**: Detects server-only module imports (`node:fs`, `express`) inside `client` plugin blocks and ensures `client.config` contains serializable plain objects.
+Coralite provides `coralite validate-plugins` (alias: `coralite validate:plugins`) powered by `lib/plugin-validator.js` and `lib/plugin-fixer.js` to audit and auto-fix plugin definitions.
+
+### 15.1 Diagnostic Rules Catalog
+| Code | Category | Description & Fix Action |
+| :--- | :--- | :--- |
+| `CORALITE-P101` | Contract | Missing or empty `name` property in plugin definition. |
+| `CORALITE-P102` | Contract | Reserved core plugin name collision (e.g. `metadata`, `refs`, `static-assets`, `testing`). |
+| `CORALITE-P201` | Architecture | Single-phase context function. Plugin `context` must use Two-Phase curried resolver `(pluginContext) => (instanceContext) => ({ ... })`. (Action: `wrap_two_phase_context`) |
+| `CORALITE-P202` | Lifecycle Hook | Server build hook is not a valid function. |
+| `CORALITE-P203` | Boundary | Server module import (`node:fs`, `node:path`) inside `client` plugin block. |
+| `CORALITE-P301` | Serialization | Client function referencing outer module-scope variable (outer variable leak). |
+| `CORALITE-P302` | Serialization | Non-serializable `client.config` object (contains functions or non-JSON primitives). |
+| `CORALITE-P303` | Lifecycle Hook | Client runtime hook is not a valid function. |
+| `CORALITE-P401` | Contract | Missing `definePlugin(...)` wrapper call around exported plugin object. (Action: `wrap_define_plugin`) |
+
+### 15.2 AST Plugin Fixer
+- Automatically wraps single-phase context functions into Two-Phase curried functions (`CORALITE-P201`).
+- Wraps raw exported objects in `definePlugin(...)` and injects `import { definePlugin } from 'coralite'` (`CORALITE-P401`).
+
+## 16. Page Validation & Encapsulation (`coralite validate-pages`)
+
+Coralite provides static page auditing (`lib/page-validator.js`) exposed via `coralite validate-pages` (or `coralite check --pages`). It checks page `.html` documents against component schemas and encapsulation standards.
+
+### 16.1 Diagnostic Rules Catalog
+| Code | Category | Description & Fix Action |
+| :--- | :--- | :--- |
+| `CORALITE-PAGE-101` | Custom Element | Unknown custom element tag name found on page. Emits Levenshtein fuzzy match suggestions for registered components. |
+| `CORALITE-PAGE-102` | Required Attribute | Page tag missing required component attribute (`required: true`). (Action: `add_required_attribute`) |
+| `CORALITE-PAGE-201` | Encapsulation | Encapsulation violation: Page inline `<script>` attempting to query or mutate internal component DOM via compound descendant selectors or direct `setAttribute`/`innerHTML` calls on custom elements. |
+
+## 17. Unified CLI Workflow (`coralite check`, `coralite fix`, `coralite init-agent`)
+
+Coralite centralizes project auditing, auto-fixing, and AI coding workspace setup through unified top-level commands.
+
+### 17.1 `coralite check`
+Runs a multi-domain workspace audit across Components, Plugins, and Pages.
+```bash
+coralite check [options]
+```
+- **Flags**:
+  - `-c, --components <path>`: Components directory (defaults to `src/components` or `.` if no candidate directories exist).
+  - `-p, --plugins <path>`: Plugins directory or file path.
+  - `--pages <path>`: Pages directory path.
+  - `--format <console|json>`: Output format (default: `console`).
+  - `--strict`: Exits with non-zero code if any errors or unused symbols exist.
+  - `--coverage`: Includes component test and evaluation coverage metrics.
+
+### 17.2 `coralite fix`
+Runs whole-workspace AST auto-linter across all target domains, writing fixes to disk and re-running diagnostics to confirm fix success.
+```bash
+coralite fix [--dry-run]
+```
+- **Flags**:
+  - `--dry-run`: Displays colorized unified diff previews of all proposed AST fixes without modifying files on disk.
+
+### 17.3 `coralite init-agent`
+Scaffolds zero-token `AGENTS.md` guidelines for AI coding assistants (Claude Code, Cursor, GitHub Copilot) in the current repository root.
+```bash
+coralite init-agent [--cursor] [--claude]
+```
+- **Flags**:
+  - `--cursor`: Scaffolds `.cursor/rules/coralite.mdc` rules alongside `AGENTS.md`.
+  - `--claude`: Scaffolds `.claude/AGENTS.md` rules alongside `AGENTS.md`.
+
+## 18. Performance Architecture & Benchmarking
+
+Coralite maintains a comparative micro-benchmark and macro-benchmark suite built on `mitata` and native Node.js performance tools under `benchmarks/`.
+
+### 18.1 Benchmark Suites
+1. **`01-dom-reactivity`**: DOM Reactivity & Microtask Batching. Measures JS Heap memory usage via Chrome DevTools Protocol (CDP) `HeapProfiler.collectGarbage` and `Runtime.getHeapUsage` across state mutation sweeps.
+2. **`02-bundle-hydration`**: Bundle Payload & Hydration Startup. Quantifies JS payload sizes (raw KB and gzip KB), client hydration duration (`hydrationMS`), and TTI (`ttiMS`) across Coralite, React 19, and Vue 3 using production esbuild and Playwright Chromium.
+3. **`03-ssr-throughput`**: Server-Side Compilation & Rendering Throughput. Measures pages/sec, total duration, average page latency, and peak heap usage across synthetic page workloads (100, 1,000, and 10,000 pages).
+4. **`04-internal`**: Micro-benchmarks for core engine primitives (`token-interpolation.js`, `lazy-proxy.js`, `ast-dom-creation.js`) using `mitata` and `do_not_optimize()` to eliminate V8 dead-code elimination.
+
+### 18.2 CLI Benchmark Runner
+```bash
+pnpm bench                      # Run full benchmark suite
+pnpm run bench:json             # Run benchmarks and output JSON summary report
+pnpm run bench:markdown         # Run benchmarks and generate Markdown table report
+node --expose-gc --experimental-vm-modules ./benchmarks/runner.js --suite dom-reactivity
+```
+Allowed `--suite` values: `all`, `dom-reactivity` (`dom`), `bundle-hydration` (`bundle`, `hydration`), `ssr-throughput` (`ssr`), `internal`.
 
 ## 16. Content Security Policy (CSP)
 

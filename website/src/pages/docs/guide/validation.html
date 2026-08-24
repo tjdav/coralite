@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <coralite-meta no-hydration title="Self-Healing Code & Diagnostics Guide | Coralite"
+    description="Learn how Coralite's AI self-healing compiler loop, static AST diagnostics, and deterministic auto-fixers deliver zero-defect web components and automated CI code auditing."></coralite-meta>
+</head>
+
+<body>
+  <coralite-navbar></coralite-navbar>
+
+  <main class="container content">
+    <h1 class="display">Self-Healing Code & Diagnostics</h1>
+    <p>
+      Coralite provides a comprehensive, AI-assisted self-healing diagnostic and AST auto-fixing engine designed to maintain zero-defect codebases across Web Components, Plugins, and Page templates.
+    </p>
+
+    <coralite-alert type="info">
+      <strong>AI Agent Ready:</strong> Coralite's diagnostic engine emits 4-part codeframes with exact source ranges and structural auto-fix actions, enabling AI pair-programming assistants to self-correct invalid code in a single turn.
+    </coralite-alert>
+
+    <coralite-heading level="2" text="1. The Self-Healing Compiler Loop"></coralite-heading>
+    <p>
+      The static analysis engine operates in a deterministic 4-stage self-healing compiler loop:
+    </p>
+
+    <ol>
+      <li><strong>Static Audit:</strong> Scans component templates, PostCSS stylesheets, JS AST blocks, and plugin definitions.</li>
+      <li><strong>Diagnostic Emission:</strong> Identifies structural violations, CSP anti-patterns, serialization leaks, and dead code, mapping them to explicit diagnostic codes (`CORALITE-E*`, `CORALITE-P*`, `CORALITE-PAGE-*`).</li>
+      <li><strong>AST Auto-Fixer:</strong> Applies 1-shot AST transformations (expression lifting to getters, dynamic client import rewriting, single-candidate ref injection, default stripping, and Two-Phase plugin currying).</li>
+      <li><strong>Post-Fix Re-audit:</strong> Re-evaluates modified source files to guarantee that zero errors remain and no regressions were introduced.</li>
+    </ol>
+
+    <coralite-heading level="2" text="2. Comprehensive Diagnostic Catalog"></coralite-heading>
+
+    <coralite-heading level="3" text="Component Diagnostics (CORALITE-E101 – E303, W401 – W402)"></coralite-heading>
+    <p>Audits template syntax, script block boundaries, slot signatures, and state reactivity rules.</p>
+
+    <ul>
+      <li><strong><code>CORALITE-E101</code> (Attribute Schema):</strong> Non-primitive <code>Array</code> or <code>Object</code> constructor in attribute schema. (Auto-fix action: <code>remove_attribute</code>)</li>
+      <li><strong><code>CORALITE-E102</code> (Attribute Schema):</strong> Mutex violation: <code>required: true</code> combined with <code>default</code> value. (Auto-fix action: <code>strip_default</code>)</li>
+      <li><strong><code>CORALITE-E103</code> (Attribute Schema):</strong> Async <code>transform</code> or <code>validate</code> function. Attribute handlers must be strictly synchronous.</li>
+      <li><strong><code>CORALITE-E104</code> (Attribute/Server):</strong> Collision with reserved context keys (<code>state</code>, <code>observe</code>, <code>signal</code>, <code>root</code>, <code>refs</code>, <code>instanceId</code>, <code>emit</code>).</li>
+      <li><strong><code>CORALITE-E201</code> (Template Syntax):</strong> Complex non-identifier expression inside template interpolation (e.g. <code>{{ count + 1 }}</code>). Synthesizes getter automatically. (Auto-fix action: <code>lift_to_getter</code>)</li>
+      <li><strong><code>CORALITE-E202</code> (Ref Resolution):</strong> <code>refs('name')</code> call referencing missing template <code>ref</code>. Injects ref if exactly 1 candidate element exists. (Auto-fix action: <code>inject_ref</code>)</li>
+      <li><strong><code>CORALITE-E203</code> (CSP Violation):</strong> Inline event listener attribute (<code>onclick="..."</code>) inside template violating CSP standards. (Auto-fix action: strips inline listener)</li>
+      <li><strong><code>CORALITE-E301</code> (Serialization Boundary):</strong> Client block referencing top-level static ES import. Rewrites to dynamic <code>await import(...)</code> inside <code>client()</code> while preserving shared SSR static imports. (Auto-fix action: <code>dynamic_import</code>)</li>
+      <li><strong><code>CORALITE-E302</code> (Reactivity Loop):</strong> Direct state assignment inside <code>observe(...)</code> callback causing infinite reactivity loops.</li>
+      <li><strong><code>CORALITE-E303</code> (Style Block):</strong> Asynchronous getter function in <code>style: { ... }</code> block. Style getters must be strictly synchronous.</li>
+      <li><strong><code>CORALITE-W401</code> (Dead Code Warning):</strong> Unused component getter, server state property, or attribute declaration.</li>
+      <li><strong><code>CORALITE-W402</code> (Dead Code Warning):</strong> Unused element <code>ref="..."</code> declaration.</li>
+    </ul>
+
+    <coralite-heading level="3" text="Plugin Diagnostics (CORALITE-P101 – P401)"></coralite-heading>
+    <p>Audits plugin contracts, lifecycle hooks, and isomorphic client boundary serialization.</p>
+
+    <ul>
+      <li><strong><code>CORALITE-P101</code> (Plugin Contract):</strong> Missing or empty <code>name</code> property in plugin definition.</li>
+      <li><strong><code>CORALITE-P102</code> (Plugin Contract):</strong> Reserved core plugin name collision (e.g. <code>metadata</code>, <code>refs</code>, <code>static-assets</code>, <code>testing</code>).</li>
+      <li><strong><code>CORALITE-P201</code> (Architecture):</strong> Single-phase context function. Must use Two-Phase curried resolver <code>(pluginContext) => (instanceContext) => ({ ... })</code>. (Auto-fix action: <code>wrap_two_phase_context</code>)</li>
+      <li><strong><code>CORALITE-P202</code> (Lifecycle Hook):</strong> Server build hook is not a valid function.</li>
+      <li><strong><code>CORALITE-P203</code> (Isomorphic Boundary):</strong> Server module import (e.g. <code>node:fs</code>) inside <code>client</code> plugin block.</li>
+      <li><strong><code>CORALITE-P301</code> (Serialization Boundary):</strong> Client function referencing outer module-scope variable (outer variable leak).</li>
+      <li><strong><code>CORALITE-P302</code> (Serialization Boundary):</strong> Non-serializable <code>client.config</code> object (contains functions or non-JSON primitives).</li>
+      <li><strong><code>CORALITE-P303</code> (Lifecycle Hook):</strong> Client runtime hook is not a valid function.</li>
+      <li><strong><code>CORALITE-P401</code> (Plugin Contract):</strong> Missing <code>definePlugin(...)</code> wrapper call around exported object. (Auto-fix action: <code>wrap_define_plugin</code>)</li>
+    </ul>
+
+    <coralite-heading level="3" text="Page Document Diagnostics (CORALITE-PAGE-101 – 201)"></coralite-heading>
+    <p>Audits HTML page documents against component schemas and encapsulation rules.</p>
+
+    <ul>
+      <li><strong><code>CORALITE-PAGE-101</code> (Custom Element):</strong> Unknown custom element tag found on page. Emits Levenshtein fuzzy match suggestions for registered components.</li>
+      <li><strong><code>CORALITE-PAGE-102</code> (Required Attribute):</strong> Page tag missing required component attribute (<code>required: true</code>). (Auto-fix action: <code>add_required_attribute</code>)</li>
+      <li><strong><code>CORALITE-PAGE-201</code> (Encapsulation Violation):</strong> Page inline <code>&lt;script&gt;</code> attempting to query or mutate internal component DOM via compound descendant selectors or direct attribute mutations.</li>
+    </ul>
+
+    <coralite-heading level="2" text="3. Automated AST Auto-Fixing (--fix & --dry-run)"></coralite-heading>
+    <p>
+      Execute 1-shot AST auto-fixing across your workspace using `coralite fix` or domain-specific commands:
+    </p>
+
+    <coralite-code language="bash"># Auto-fix all workspace components and plugins
+coralite fix
+
+# Preview proposed fixes in unified colorized diff format without modifying disk
+coralite fix --dry-run
+
+# Auto-fix components directly
+coralite validate-components --fix</coralite-code>
+
+    <coralite-heading level="2" text="4. AI Pair-Programming with init-agent"></coralite-heading>
+    <p>
+      Scaffold zero-token rule files for AI coding assistants (Claude Code, Cursor, GitHub Copilot) to prevent hallucinations and ensure code compliance from the first prompt:
+    </p>
+
+    <coralite-code language="bash"># Scaffold AGENTS.md in repo root
+coralite init-agent
+
+# Scaffold AGENTS.md plus .cursor/rules/coralite.mdc and .claude/AGENTS.md
+coralite init-agent --cursor --claude</coralite-code>
+
+    <coralite-heading level="2" text="5. Strict CI Quality Gates"></coralite-heading>
+    <p>
+      Integrate Coralite's strict audit into your continuous integration pipeline to guarantee zero warnings or dead code in production builds:
+    </p>
+
+    <coralite-code language="bash"># Strict workspace check (fails build if any errors or unused symbols exist)
+coralite check --strict --coverage</coralite-code>
+
+  </main>
+
+  <coralite-footer></coralite-footer>
+</body>
+
+</html>

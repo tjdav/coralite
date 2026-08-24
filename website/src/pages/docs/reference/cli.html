@@ -121,9 +121,126 @@
     <p>When a <code>coralite.config.js</code> file exists in your project the CLI will automatically load it:</p>
     <coralite-code language="bash">coralite -c src/components -p src/pages -o dist</coralite-code>
 
+    <coralite-heading level="2" text="coralite check (Workspace Audit)"></coralite-heading>
+    <p>
+      The <code>coralite check</code> command performs a multi-domain static audit across Components, Plugins, and Pages in your workspace.
+    </p>
+
+    <coralite-code language="bash">coralite check [options]</coralite-code>
+
+    <ul>
+      <li>
+        <p><strong><code>-c, --components &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Path to the components directory (defaults to candidate directory or <code>.</code>).</li>
+          <li>Example: <code>coralite check -c src/components</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>-p, --plugins &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Path to plugins directory or single plugin file.</li>
+          <li>Example: <code>coralite check -p src/plugins</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--pages &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Path to pages directory to audit HTML pages against component schemas.</li>
+          <li>Example: <code>coralite check --pages src/pages</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--format &lt;format&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Output report format. Options are <code>"console"</code> or <code>"json"</code>. Default is <code>"console"</code>.</li>
+          <li>Example: <code>coralite check --format json</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--strict</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Exit with status code 1 if any validation error or unused symbol warning is detected.</li>
+          <li>Example: <code>coralite check --strict</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--coverage</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Include component test and getter evaluation coverage metrics.</li>
+          <li>Example: <code>coralite check --coverage</code></li>
+        </ul>
+      </li>
+    </ul>
+
+    <coralite-heading level="2" text="coralite fix (Unified AST Auto-Fixer)"></coralite-heading>
+    <p>
+      The <code>coralite fix</code> command executes deterministic AST auto-fixers across Components and Plugins. It modifies source files in-place and re-audits the codebase to confirm issues are resolved.
+    </p>
+
+    <coralite-code language="bash">coralite fix [--dry-run]</coralite-code>
+
+    <ul>
+      <li>
+        <p><strong><code>--dry-run</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Preview proposed AST fixes in colorized unified diff format without modifying files on disk.</li>
+          <li>Example: <code>coralite fix --dry-run</code></li>
+        </ul>
+      </li>
+    </ul>
+
+    <coralite-heading level="2" text="coralite init-agent (AI Coding Rules Scaffolder)"></coralite-heading>
+    <p>
+      The <code>coralite init-agent</code> command scaffolds zero-token <code>AGENTS.md</code> guidelines in the repository root for AI coding assistants such as Claude Code, Cursor, and GitHub Copilot.
+    </p>
+
+    <coralite-code language="bash">coralite init-agent [options]</coralite-code>
+
+    <ul>
+      <li>
+        <p><strong><code>--cursor</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Also generate <code>.cursor/rules/coralite.mdc</code> for Cursor IDE context.</li>
+          <li>Example: <code>coralite init-agent --cursor</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--claude</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Also generate <code>.claude/AGENTS.md</code> for Claude Code CLI context.</li>
+          <li>Example: <code>coralite init-agent --claude</code></li>
+        </ul>
+      </li>
+    </ul>
+
+    <coralite-heading level="2" text="coralite validate-pages (Page Document Validator)"></coralite-heading>
+    <p>
+      The <code>coralite validate-pages</code> command audits static HTML pages for unknown custom element tags, missing required component attributes, and inline script encapsulation leaks.
+    </p>
+
+    <coralite-code language="bash">coralite validate-pages [options]</coralite-code>
+
+    <ul>
+      <li>
+        <p><strong><code>--pages &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Directory path containing page HTML files to validate.</li>
+          <li>Example: <code>coralite validate-pages --pages src/pages</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>-c, --components &lt;path&gt;</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Component directory used to load known component schemas for attribute validation.</li>
+          <li>Example: <code>coralite validate-pages --pages src/pages -c src/components</code></li>
+        </ul>
+      </li>
+    </ul>
+
     <coralite-heading level="2" text="coralite validate-components (Component Validator)"></coralite-heading>
     <p>
-      The <code>coralite validate-components</code> command (alias: <code>coralite validate:components</code>) performs static AST and template validation across components to identify unused getters, server state properties, attributes, and element <code>ref</code>s, ensuring clean and robust code.
+      The <code>coralite validate-components</code> command (alias: <code>coralite validate:components</code>) performs static AST and template validation across components to identify template syntax errors, missing refs, CSP violations, serialization leaks, and unused symbols.
     </p>
 
     <coralite-code language="bash">coralite validate-components [options]</coralite-code>
@@ -134,6 +251,20 @@
         <ul>
           <li>Description: The path to the components directory to validate (defaults to <code>src/components</code> or project config).</li>
           <li>Example: <code>coralite validate-components -c src/components</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--fix</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Apply 1-shot AST auto-fixes directly to component files (template expression lifting, ref injection, dynamic client imports).</li>
+          <li>Example: <code>coralite validate-components --fix</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--dry-run</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Preview proposed component fixes in unified diff format without writing to disk.</li>
+          <li>Example: <code>coralite validate-components --fix --dry-run</code></li>
         </ul>
       </li>
       <li>
@@ -172,6 +303,20 @@
         <ul>
           <li>Description: The path to a plugin file or plugins directory to validate (defaults to <code>src/plugins</code>).</li>
           <li>Example: <code>coralite validate-plugins -p src/plugins</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--fix</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Apply AST auto-fixes for plugins (auto-currying context functions to Two-Phase pattern, injecting <code>definePlugin</code> wrapper).</li>
+          <li>Example: <code>coralite validate-plugins --fix</code></li>
+        </ul>
+      </li>
+      <li>
+        <p><strong><code>--dry-run</code></strong> (optional)</p>
+        <ul>
+          <li>Description: Preview plugin AST fixes in unified diff format without modifying disk.</li>
+          <li>Example: <code>coralite validate-plugins --fix --dry-run</code></li>
         </ul>
       </li>
       <li>
