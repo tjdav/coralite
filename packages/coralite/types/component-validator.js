@@ -42,6 +42,7 @@
  * @property {'lift_to_getter' | 'dynamic_import' | 'inject_ref' | 'remove_attribute' | 'strip_default'} [action] - Programmatic fix action type (omitted for guidance-only fixes)
  * @property {string} [replacement] - Replacement string snippet
  * @property {CoraliteDiagnosticGetter} [getter] - Getter definition if lifting to getter
+ * @property {boolean} [isSharedWithOtherBlocks] - True if symbol is referenced outside client()
  */
 
 /**

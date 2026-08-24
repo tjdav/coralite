@@ -1180,6 +1180,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
                       // CORALITE-E104: Reserved context key collision
                       if (RESERVED_CONTEXT_KEYS.has(attrName)) {
+                        console.warn(`[Coralite Warning] Component attribute "${attrName}" in "${filePath || 'component'}" collides with a reserved context property (${attrName}).`)
                         diagnostics.push(createDiagnostic({
                           code: 'CORALITE-E104',
                           severity: 'error',
@@ -1309,6 +1310,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                           if (propName) {
                             // CORALITE-E104: Reserved context collision
                             if (RESERVED_CONTEXT_KEYS.has(propName)) {
+                              console.warn(`[Coralite Warning] Component server property "${propName}" in "${filePath || 'component'}" collides with a reserved context property (${propName}).`)
                               diagnostics.push(createDiagnostic({
                                 code: 'CORALITE-E104',
                                 severity: 'error',

@@ -324,33 +324,81 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
 
     if (candidates.length === 1) {
       const candidateTag = candidates[0].tagName
-      const tagRegex = new RegExp(`<(${candidateTag})([\\s>\\/])`, 'i')
-      const tagMatch = tagRegex.exec(code)
-      if (tagMatch) {
-        const insertPos = tagMatch.index + 1 + candidateTag.length
-        code = code.slice(0, insertPos) + ` ref="${strippedRef}"` + code.slice(insertPos)
-        fixesApplied.push({
-          code: 'CORALITE-E202',
-          description: diag.fix.description || `Add ref="${strippedRef}" to matching <${candidateTag}> element`
-        })
+      const templateMatch = /<template[\s\S]*?>([\s\S]*?)<\/template>/i.exec(code)
+      if (templateMatch) {
+        const templateContent = templateMatch[1]
+        const templateOffset = templateMatch.index + templateMatch[0].indexOf(templateContent)
+        const tagRegex = new RegExp(`<(${candidateTag})([\\s>\\/])`, 'i')
+        const tagMatch = tagRegex.exec(templateContent)
+        if (tagMatch) {
+          const insertPos = templateOffset + tagMatch.index + 1 + candidateTag.length
+          code = code.slice(0, insertPos) + ` ref="${strippedRef}"` + code.slice(insertPos)
+          fixesApplied.push({
+            code: 'CORALITE-E202',
+            description: diag.fix.description || `Add ref="${strippedRef}" to matching <${candidateTag}> element`
+          })
+        }
+      } else {
+        const tagRegex = new RegExp(`<(${candidateTag})([\\s>\\/])`, 'i')
+        const tagMatch = tagRegex.exec(code)
+        if (tagMatch) {
+          const insertPos = tagMatch.index + 1 + candidateTag.length
+          code = code.slice(0, insertPos) + ` ref="${strippedRef}"` + code.slice(insertPos)
+          fixesApplied.push({
+            code: 'CORALITE-E202',
+            description: diag.fix.description || `Add ref="${strippedRef}" to matching <${candidateTag}> element`
+          })
+        }
       }
     }
   }
 
   // 1.3 CORALITE-E203 (Inline Event Listener Removal)
   const e203Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E203' && d.fix?.action === 'remove_attribute')
-  for (const diag of e203Diagnostics) {
-    const matchMsg = diag.message.match(/attribute '([^']+)'/)
-    const attrName = matchMsg ? matchMsg[1] : null
+  if (e203Diagnostics.length > 0) {
+    if (code.includes('<template')) {
+      const templateMatch = /<template[\s\S]*?>([\s\S]*?)<\/template>/i.exec(code)
+      if (templateMatch) {
+        let templateContent = templateMatch[1]
+        const templateStart = templateMatch.index + templateMatch[0].indexOf(templateContent)
+        let templateModified = false
 
-    if (attrName) {
-      const attrRegex = new RegExp(`\\s+${attrName}=(?:"[^"]*"|'[^']*'|\\S+)`, 'gi')
-      if (attrRegex.test(code)) {
-        code = code.replace(attrRegex, '')
-        fixesApplied.push({
-          code: 'CORALITE-E203',
-          description: diag.fix.description || `Remove inline ${attrName} attribute`
-        })
+        for (const diag of e203Diagnostics) {
+          const matchMsg = diag.message.match(/attribute '([^']+)'/)
+          const attrName = matchMsg ? matchMsg[1] : null
+
+          if (attrName) {
+            const attrRegex = new RegExp(`\\s+${attrName}=(?:"[^"]*"|'[^']*'|\\S+)`, 'gi')
+            if (attrRegex.test(templateContent)) {
+              templateContent = templateContent.replace(attrRegex, '')
+              templateModified = true
+              fixesApplied.push({
+                code: 'CORALITE-E203',
+                description: diag.fix.description || `Remove inline ${attrName} attribute`
+              })
+            }
+          }
+        }
+
+        if (templateModified) {
+          code = code.slice(0, templateStart) + templateContent + code.slice(templateStart + templateMatch[1].length)
+        }
+      }
+    } else {
+      for (const diag of e203Diagnostics) {
+        const matchMsg = diag.message.match(/attribute '([^']+)'/)
+        const attrName = matchMsg ? matchMsg[1] : null
+
+        if (attrName) {
+          const attrRegex = new RegExp(`\\s+${attrName}=(?:"[^"]*"|'[^']*'|\\S+)`, 'gi')
+          if (attrRegex.test(code)) {
+            code = code.replace(attrRegex, '')
+            fixesApplied.push({
+              code: 'CORALITE-E203',
+              description: diag.fix.description || `Remove inline ${attrName} attribute`
+            })
+          }
+        }
       }
     }
   }
@@ -491,10 +539,14 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       const e301Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E301' && d.fix?.action === 'dynamic_import')
       if (e301Diagnostics.length > 0) {
         const targetSymbols = new Set()
+        const sharedSymbols = new Set()
         for (const diag of e301Diagnostics) {
           const m = diag.message.match(/Top-level import '([^']+)'/)
           if (m) {
             targetSymbols.add(m[1])
+            if (diag.fix?.isSharedWithOtherBlocks) {
+              sharedSymbols.add(m[1])
+            }
           }
         }
 
@@ -526,6 +578,10 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
                 isNamespace,
                 importedName
               })
+
+              if (sharedSymbols.has(localName)) {
+                specifiersToKeep.push(spec)
+              }
             } else {
               specifiersToKeep.push(spec)
             }

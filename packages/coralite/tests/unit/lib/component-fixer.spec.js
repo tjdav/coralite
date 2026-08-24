@@ -83,6 +83,61 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
     assert.ok(result.outputCode.includes("const d3 = await import('d3')"))
   })
 
+  test('CORALITE-E301: preserves top-level static import when shared with server() or getters', () => {
+    const input = `<template>
+  <div>Shared</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  import { formatDate } from './utils.js'
+
+  export default defineComponent({
+    getters: {
+      formatted(state) {
+        return formatDate(state.date)
+      }
+    },
+    client() {
+      const d = formatDate(new Date())
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'shared-import.html' })
+    assert.strictEqual(result.modified, true)
+    // Top-level import MUST be preserved because it is used in getters
+    assert.ok(result.outputCode.includes("import { formatDate } from './utils.js'"))
+    // Dynamic import must also be injected in client()
+    assert.ok(result.outputCode.includes('async client('))
+    assert.ok(result.outputCode.includes("const { formatDate } = await import('./utils.js')"))
+  })
+
+  test('Template boundary enforcement: ref injection and inline event removal strictly modify inside <template>', () => {
+    const input = `<template>
+  <button id="action-btn" onclick="doSomething()">Click Me</button>
+</template>
+
+<script>
+  // Comment with onclick="ignoreMe()" outside template
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs }) {
+      const btn = refs('action-btn')
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'boundary.html' })
+    assert.strictEqual(result.modified, true)
+    // Ref added inside template
+    assert.ok(result.outputCode.includes('<button ref="action-btn" id="action-btn">Click Me</button>'))
+    // Inline event removed from template button
+    assert.ok(!result.outputCode.includes('onclick="doSomething()"'))
+    // Code outside template remains untouched
+    assert.ok(result.outputCode.includes('// Comment with onclick="ignoreMe()" outside template'))
+  })
+
   test('CORALITE-E202: injects ref attribute into single matching candidate element', () => {
     const input = `<template>
   <button id="submit">Submit</button>
