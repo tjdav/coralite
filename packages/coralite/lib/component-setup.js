@@ -231,17 +231,17 @@ export function createComponentDefinition ({ app }) {
         state.errors[camelName] = res.error
         state['error_' + camelName] = res.error
         state['error_' + kebabName] = res.error
-        const isSuppressed = app?.options?.suppressValidationWarnings === true || app?.options?.mode === 'production'
-        if (!isSuppressed) {
-          const warnMessage = `[Coralite Warning]: Component "${module.id}" attribute "${camelName}" validation failed: ${res.error}`
-          if (app && typeof app.onError === 'function') {
-            app.onError({
-              level: 'WARN',
-              type: 'attribute_validation',
-              message: warnMessage,
-              componentId: module.id
-            })
-          } else if (!app || app?.options?.mode === 'development') {
+        const warnMessage = `[Coralite Warning]: Component "${module.id}" attribute "${camelName}" validation failed: ${res.error}`
+        if (app && typeof app.onError === 'function') {
+          app.onError({
+            level: 'WARN',
+            type: 'attribute_validation',
+            message: warnMessage,
+            componentId: module.id
+          })
+        } else {
+          const isSuppressed = app?.options?.suppressValidationWarnings === true || app?.options?.mode === 'production'
+          if (!isSuppressed) {
             console.warn(warnMessage)
           }
         }

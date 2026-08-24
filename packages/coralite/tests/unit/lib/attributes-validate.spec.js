@@ -290,7 +290,7 @@ describe('Component Attribute validate Feature', () => {
       assert.ok(errorsReported[0].message.includes('Component "user-card" attribute "age" validation failed: Must be an adult.'))
     })
 
-    it('SSR createComponentDefinition suppresses validation warning when suppressValidationWarnings is true or mode is production', async () => {
+    it('SSR createComponentDefinition always calls app.onError regardless of suppression settings when provided', async () => {
       const errorsReported = []
       const mockApp = {
         createComponentElement: () => null,
@@ -316,7 +316,9 @@ describe('Component Attribute validate Feature', () => {
         }
       }, invalidContext)
 
-      assert.strictEqual(errorsReported.length, 0)
+      assert.strictEqual(errorsReported.length, 1)
+      assert.strictEqual(errorsReported[0].level, 'WARN')
+      assert.strictEqual(errorsReported[0].type, 'attribute_validation')
 
       // Test mode: 'production'
       const prodApp = {
@@ -337,7 +339,79 @@ describe('Component Attribute validate Feature', () => {
         }
       }, invalidContext)
 
-      assert.strictEqual(errorsReported.length, 0)
+      assert.strictEqual(errorsReported.length, 2)
+      assert.strictEqual(errorsReported[1].level, 'WARN')
+      assert.strictEqual(errorsReported[1].type, 'attribute_validation')
+    })
+
+    it('SSR createComponentDefinition console.warn fallback is suppressed when suppressValidationWarnings is true or mode is production', async () => {
+      const originalWarn = console.warn
+      const warningsCaptured = []
+      console.warn = (msg) => {
+        warningsCaptured.push(msg)
+      }
+
+      try {
+        const mockAppSuppressed = {
+          createComponentElement: () => null,
+          options: { suppressValidationWarnings: true, mode: 'development' }
+        }
+        const defineComponentSuppressed = createComponentDefinition({ app: mockAppSuppressed })
+
+        const invalidContext = {
+          state: { age: '15' },
+          module: { id: 'user-card', path: { pathname: '/user.coral' } },
+          root: null
+        }
+
+        await defineComponentSuppressed({
+          attributes: {
+            age: {
+              type: Number,
+              validate: (v) => v >= 18 || 'Must be an adult'
+            }
+          }
+        }, invalidContext)
+
+        assert.strictEqual(warningsCaptured.length, 0)
+
+        const mockAppProd = {
+          createComponentElement: () => null,
+          options: { mode: 'production' }
+        }
+        const defineComponentProd = createComponentDefinition({ app: mockAppProd })
+
+        await defineComponentProd({
+          attributes: {
+            age: {
+              type: Number,
+              validate: (v) => v >= 18 || 'Must be an adult'
+            }
+          }
+        }, invalidContext)
+
+        assert.strictEqual(warningsCaptured.length, 0)
+
+        const mockAppDev = {
+          createComponentElement: () => null,
+          options: { mode: 'development' }
+        }
+        const defineComponentDev = createComponentDefinition({ app: mockAppDev })
+
+        await defineComponentDev({
+          attributes: {
+            age: {
+              type: Number,
+              validate: (v) => v >= 18 || 'Must be an adult'
+            }
+          }
+        }, invalidContext)
+
+        assert.strictEqual(warningsCaptured.length, 1)
+        assert.ok(warningsCaptured[0].includes('Component "user-card" attribute "age" validation failed: Must be an adult.'))
+      } finally {
+        console.warn = originalWarn
+      }
     })
 
     it('Client runtime CoraliteElement updates state.errors and error_* tokens on invalid setAttribute and proxy mutations', () => {
