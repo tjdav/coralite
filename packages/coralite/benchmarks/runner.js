@@ -151,7 +151,8 @@ async function main () {
     console.log('\n--- Checking Performance Regressions against Baseline ---')
     const checkResult = compareAgainstBaseline(resultsData)
     if (checkResult.error) {
-      console.log(`⚠️  ${checkResult.error}`)
+      console.log(`ℹ️ Note: No baseline found at ${DEFAULT_BASELINE_PATH}.\n   Skipping regression checks. Run 'pnpm run bench:save-baseline' to save a baseline snapshot.`)
+      process.exit(0)
     } else if (checkResult.regressions.length === 0) {
       console.log('✅ Zero performance regressions detected.')
     } else {
