@@ -1204,6 +1204,41 @@ export class CoraliteElement extends BaseElement {
       },
 
       set (t, p, v) {
+        if (p === 'errors') {
+          const existingKeys = Object.keys(errorsTarget)
+          const newKeys = (v && typeof v === 'object') ? Object.keys(v) : []
+          const affectedKeys = new Set([...existingKeys, ...newKeys])
+
+          for (const key of existingKeys) {
+            delete errorsTarget[key]
+            const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const kebabName = camelToKebab(camelName)
+            target['error_' + camelName] = ''
+            target['error_' + kebabName] = ''
+          }
+
+          if (v && typeof v === 'object') {
+            for (const key of Object.keys(v)) {
+              const val = v[key]
+              errorsTarget[key] = val
+              const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+              const kebabName = camelToKebab(camelName)
+              target['error_' + camelName] = val
+              target['error_' + kebabName] = val
+            }
+          }
+
+          self._scheduleUpdate()
+          self._markObserverDirty('errors')
+          for (const key of affectedKeys) {
+            const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const kebabName = camelToKebab(camelName)
+            self._markObserverDirty('error_' + camelName)
+            self._markObserverDirty('error_' + kebabName)
+          }
+          return true
+        }
+
         if (typeof p === 'string' && options.attributes) {
           const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
           const kebabName = camelToKebab(camelName)

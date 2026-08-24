@@ -347,5 +347,94 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
 
       document.body.removeChild(el)
     })
+
+    it('handles whole-object assignment to state.errors and null/undefined assignments while maintaining reference stability', () => {
+      let updateScheduledCount = 0
+
+      const compOptions = {
+        componentId: 'whole-object-errors-comp',
+        attributes: {
+          age: { type: Number },
+          score: { type: Number }
+        }
+      }
+
+      const CompClass = createCoraliteClass(compOptions)
+      customElements.define('whole-object-errors-comp', CompClass)
+
+      const el = document.createElement('whole-object-errors-comp')
+      document.body.appendChild(el)
+
+      const origScheduleUpdate = el._scheduleUpdate
+      el._scheduleUpdate = function () {
+        updateScheduledCount++
+        return origScheduleUpdate.apply(this, arguments)
+      }
+
+      const initialErrorsRef = el._state.errors
+      assert.strictEqual(el._state.errors, initialErrorsRef)
+
+      // Initial errors
+      el._state.errors.age = 'Invalid age'
+      assert.strictEqual(el._state.error_age, 'Invalid age')
+
+      // Whole-object assignment clears previous and assigns new errors
+      el._state.errors = { score: 'Low score' }
+
+      assert.strictEqual(el._state.errors, initialErrorsRef)
+      assert.strictEqual(el._state.errors.age, undefined)
+      assert.strictEqual(el._state.error_age, '')
+      assert.strictEqual(el._state['error_age'], '')
+
+      assert.strictEqual(el._state.errors.score, 'Low score')
+      assert.strictEqual(el._state.error_score, 'Low score')
+      assert.strictEqual(updateScheduledCount > 0, true)
+
+      // Reassigning null clears all errors
+      el._state.errors = null
+      assert.strictEqual(el._state.errors, initialErrorsRef)
+      assert.strictEqual(el._state.errors.score, undefined)
+      assert.strictEqual(el._state.error_score, '')
+
+      document.body.removeChild(el)
+    })
+
+    it('automatically re-evaluates getters reading state.errors when state.errors properties are mutated', () => {
+      let getterEvaluationCount = 0
+
+      const compOptions = {
+        componentId: 'getter-errors-reactive-comp',
+        attributes: {
+          age: { type: Number }
+        },
+        getters: {
+          ageErrorMessage: (state) => {
+            getterEvaluationCount++
+            return state.errors.age || 'No error'
+          }
+        }
+      }
+
+      const CompClass = createCoraliteClass(compOptions)
+      customElements.define('getter-errors-reactive-comp', CompClass)
+
+      const el = document.createElement('getter-errors-reactive-comp')
+      document.body.appendChild(el)
+
+      assert.strictEqual(el._state.ageErrorMessage, 'No error')
+      const initialEvaluations = getterEvaluationCount
+
+      // Direct mutation on errors.age
+      el._state.errors.age = 'Must be adult.'
+      assert.strictEqual(el._state.error_age, 'Must be adult.')
+      assert.strictEqual(el._state.ageErrorMessage, 'Must be adult.')
+      assert.strictEqual(getterEvaluationCount > initialEvaluations, true)
+
+      // Direct deletion on errors.age
+      delete el._state.errors.age
+      assert.strictEqual(el._state.ageErrorMessage, 'No error')
+
+      document.body.removeChild(el)
+    })
   })
 })
