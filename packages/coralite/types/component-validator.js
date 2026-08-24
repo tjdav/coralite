@@ -39,7 +39,7 @@
 /**
  * @typedef {Object} CoraliteDiagnosticFix
  * @property {string} description - Human-readable fix explanation
- * @property {'lift_to_getter' | 'dynamic_import' | 'inject_ref' | 'remove_attribute' | 'strip_default'} action - Fix action type
+ * @property {'lift_to_getter' | 'dynamic_import' | 'inject_ref' | 'remove_attribute' | 'strip_default'} [action] - Programmatic fix action type (omitted for guidance-only fixes)
  * @property {string} [replacement] - Replacement string snippet
  * @property {CoraliteDiagnosticGetter} [getter] - Getter definition if lifting to getter
  */
@@ -54,7 +54,7 @@
  * @property {number} [column] - 1-based column number
  * @property {string} [codeframe] - Formatted codeframe snippet
  * @property {string} [cause] - Root-cause explanation
- * @property {CoraliteDiagnosticFix} [fix] - 1-shot actionable fix metadata
+ * @property {CoraliteDiagnosticFix} [fix] - Actionable fix metadata
  */
 
 /**
@@ -63,7 +63,7 @@
  * @property {number} validComponents - Number of valid components (0 errors, 0 warnings)
  * @property {number} errorCount - Total errors found across all components
  * @property {number} warningCount - Total warnings found across all components
- * @property {number} fixableCount - Total fixable diagnostics across all components
+ * @property {number} fixableCount - Total diagnostics with fix.action
  * @property {number} usageCoveragePercentage - Overall usage coverage percentage
  */
 

@@ -1,11 +1,121 @@
 import kleur from 'kleur'
 
 /**
+ * Standard semantic dictionary mapping developer ref abbreviations to HTML tag names.
+ */
+const TAG_SYNONYMS = {
+  btn: ['button', 'input'],
+  button: ['button', 'input'],
+  input: ['input', 'textarea', 'select'],
+  inp: ['input', 'textarea', 'select'],
+  form: ['form'],
+  img: ['img', 'svg', 'image', 'picture'],
+  image: ['img', 'svg', 'image', 'picture'],
+  link: ['a'],
+  anchor: ['a'],
+  nav: ['nav', 'ul', 'ol'],
+  list: ['ul', 'ol', 'menu'],
+  card: ['div', 'article', 'section'],
+  container: ['div', 'main', 'section'],
+  dialog: ['dialog'],
+  modal: ['dialog', 'div']
+}
+
+/**
+ * Strips ANSI escape sequences from a string.
+ *
+ * @param {string} str - Input string
+ * @returns {string} String with ANSI escape sequences removed
+ */
+export function stripAnsi (str) {
+  if (typeof str !== 'string') {
+    return ''
+  }
+  return str.replace(/\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g, '')
+}
+
+/**
+ * Checks if a ref name semantically matches an HTML tag or its attributes (id / class).
+ *
+ * @param {string} refName - Element ref name
+ * @param {string} tagName - HTML tag name
+ * @param {Record<string, string>} [attribs={}] - Attribute key-value map
+ * @returns {boolean} True if semantic match is found
+ */
+export function isSemanticMatch (refName, tagName, attribs = {}) {
+  if (!refName || typeof refName !== 'string') {
+    return false
+  }
+
+  const normRef = refName.toLowerCase()
+  const normTag = (tagName || '').toLowerCase()
+
+  // 1. Direct tag match (e.g., ref="button" vs <button>)
+  if (normTag && normRef === normTag) {
+    return true
+  }
+
+  // 2. Tag synonyms match
+  const synonyms = TAG_SYNONYMS[normRef]
+  if (synonyms && normTag && synonyms.includes(normTag)) {
+    return true
+  }
+
+  // Split camelCase, PascalCase, kebab-case, or snake_case refName into words
+  const words = refName
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[-_]/g, ' ')
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
+
+  for (const word of words) {
+    if (normTag && word === normTag) {
+      return true
+    }
+    const wordSynonyms = TAG_SYNONYMS[word]
+    if (wordSynonyms && normTag && wordSynonyms.includes(normTag)) {
+      return true
+    }
+  }
+
+  // 3. ID matching (case-insensitive substring or token)
+  const idAttr = attribs?.id
+  if (idAttr && typeof idAttr === 'string') {
+    const normId = idAttr.toLowerCase()
+    if (normId.includes(normRef)) {
+      return true
+    }
+    for (const word of words) {
+      if (word.length >= 2 && normId.includes(word)) {
+        return true
+      }
+    }
+  }
+
+  // 4. Class matching (case-insensitive token)
+  const classAttr = attribs?.class
+  if (classAttr && typeof classAttr === 'string') {
+    const classTokens = classAttr.toLowerCase().split(/\s+/).filter(Boolean)
+    if (classTokens.includes(normRef)) {
+      return true
+    }
+    for (const word of words) {
+      if (classTokens.includes(word)) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+/**
  * Builds an ANSI-formatted codeframe snippet around a target line.
  *
  * @param {string} source - Source code string
  * @param {number} line - 1-based target line number
- * @param {number} column - 1-based target column number
+ * @param {number} [column] - 1-based target column number
  * @param {number} [radius=2] - Number of lines to include before and after target line
  * @returns {string} Formatted codeframe or empty string if invalid input/bounds
  */
@@ -170,7 +280,7 @@ export function formatValidationReport (report, options = {}) {
     const diagnostics = comp.diagnostics || []
     const compErrors = diagnostics.filter(d => d.severity === 'error').length
     const compWarnings = diagnostics.filter(d => d.severity === 'warning').length
-    const compFixable = diagnostics.filter(d => Boolean(d.fix)).length
+    const compFixable = diagnostics.filter(d => Boolean(d.fix && d.fix.action)).length
 
     computedErrorCount += compErrors
     computedWarningCount += compWarnings
