@@ -167,9 +167,76 @@ describe('Component Attribute transform Pipeline', () => {
       el.setAttribute('count', '10')
       document.body.appendChild(el)
 
-      assert.strictEqual(el._state.errors.count, 'Custom transformation error')
-      assert.strictEqual(el._state.error_count, 'Custom transformation error')
+      assert.strictEqual(el._state.errors.count, 'Custom transformation error.')
+      assert.strictEqual(el._state.error_count, 'Custom transformation error.')
       assert.strictEqual(el._state.count, '10')
+
+      document.body.removeChild(el)
+    })
+  })
+
+  describe('Transform Returning Undefined Behavior', () => {
+    it('clears/deletes state property in SSR when transform returns undefined', async () => {
+      const mockApp = { createComponentElement: () => null, options: {} }
+      const defineComponent = createComponentDefinition({ app: mockApp })
+
+      const context = {
+        state: { tag: 'clear-me' },
+        module: { id: 'undef-comp', path: { pathname: '/undef.coral' } },
+        root: null
+      }
+
+      const result = await defineComponent({
+        attributes: {
+          tag: {
+            type: String,
+            transform: (val) => val === 'clear-me' ? undefined : val
+          }
+        }
+      }, context)
+
+      assert.strictEqual(result.tag, undefined)
+      assert.strictEqual(Object.prototype.hasOwnProperty.call(result, 'tag'), false)
+    })
+
+    it('clears/deletes state property across _setupState, setAttribute, and proxy state setter when transform returns undefined', () => {
+      const tagName = 'trans-undef-' + Math.random().toString(36).substring(2, 9)
+      const UndefComp = createCoraliteClass({
+        componentId: 'trans-undef',
+        attributes: {
+          code: {
+            type: String,
+            transform: (val) => (val === 'reset' || val === '' ? undefined : val)
+          }
+        }
+      })
+      customElements.define(tagName, UndefComp)
+
+      // Test initial _setupState with attribute that transforms to undefined
+      const el = document.createElement(tagName)
+      el.setAttribute('code', 'reset')
+      document.body.appendChild(el)
+
+      assert.strictEqual(el._state.code, undefined)
+      assert.strictEqual(Object.prototype.hasOwnProperty.call(el._state, 'code'), false)
+
+      // Test setAttribute setting a valid value
+      el.setAttribute('code', 'active')
+      assert.strictEqual(el._state.code, 'active')
+
+      // Test setAttribute setting value that transforms to undefined
+      el.setAttribute('code', 'reset')
+      assert.strictEqual(el._state.code, undefined)
+      assert.strictEqual(Object.prototype.hasOwnProperty.call(el._state, 'code'), false)
+
+      // Test proxy state property setter with valid value
+      el._state.code = 'valid'
+      assert.strictEqual(el._state.code, 'valid')
+
+      // Test proxy state property setter returning undefined from transform
+      el._state.code = 'reset'
+      assert.strictEqual(el._state.code, undefined)
+      assert.strictEqual(Object.prototype.hasOwnProperty.call(el._state, 'code'), false)
 
       document.body.removeChild(el)
     })

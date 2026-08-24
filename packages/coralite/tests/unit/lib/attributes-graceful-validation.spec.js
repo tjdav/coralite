@@ -77,8 +77,8 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       assert.strictEqual(result.error_count, 'Validation failed for attribute "count".')
       assert.strictEqual(result.count, -5)
 
-      assert.strictEqual(result.errors.label, 'Invalid label format')
-      assert.strictEqual(result.error_label, 'Invalid label format')
+      assert.strictEqual(result.errors.label, 'Invalid label format.')
+      assert.strictEqual(result.error_label, 'Invalid label format.')
       assert.strictEqual(result.label, 'bad')
     })
 

@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { executeAttributeValidator, validateAttributeValue, createCoraliteClass } from '../../../lib/coralite-element.js'
+import { executeAttributeValidator, validateAttributeValue, createCoraliteClass, normalizeErrorMessage } from '../../../lib/coralite-element.js'
 import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/component-setup.js'
 import { CoraliteError } from '../../../lib/utils/errors.js'
 
@@ -80,7 +80,7 @@ describe('Component Attribute validate Feature', () => {
       })
     })
 
-    it('wraps thrown Error inside validate in CoraliteError preserving error message', () => {
+    it('wraps thrown Error inside validate in CoraliteError preserving and normalizing error message', () => {
       const schema = {
         validate: () => {
           throw new Error('Custom range exception')
@@ -91,9 +91,19 @@ describe('Component Attribute validate Feature', () => {
         executeAttributeValidator(100, schema, 'range', 'comp-a')
       }, (err) => {
         assert.ok(err instanceof CoraliteError)
-        assert.strictEqual(err.message, 'Component "comp-a" attribute "range" validation failed: Custom range exception')
+        assert.strictEqual(err.message, 'Component "comp-a" attribute "range" validation failed: Custom range exception.')
         return true
       })
+    })
+
+    it('normalizes error messages consistently with normalizeErrorMessage helper', () => {
+      assert.strictEqual(normalizeErrorMessage('No punctuation'), 'No punctuation.')
+      assert.strictEqual(normalizeErrorMessage('Already ends with period.'), 'Already ends with period.')
+      assert.strictEqual(normalizeErrorMessage('Exclamation mark!'), 'Exclamation mark!')
+      assert.strictEqual(normalizeErrorMessage('Question mark?'), 'Question mark?')
+      assert.strictEqual(normalizeErrorMessage('  trimmed whitespace   '), 'trimmed whitespace.')
+      assert.strictEqual(normalizeErrorMessage(''), '')
+      assert.strictEqual(normalizeErrorMessage(null), '')
     })
 
     it('throws CoraliteError when validate returns a Promise', () => {

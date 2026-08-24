@@ -59,6 +59,22 @@ export const RESERVED_DOM_ATTRIBUTES = new Set([
 ])
 
 /**
+ * Normalizes an error message ensuring it ends with terminal punctuation (.!?).
+ * @param {string} message - The error message to normalize.
+ * @returns {string} Normalized error message with terminal punctuation.
+ */
+export function normalizeErrorMessage (message) {
+  if (typeof message !== 'string') {
+    return ''
+  }
+  const trimmed = message.trim()
+  if (trimmed === '') {
+    return ''
+  }
+  return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`
+}
+
+/**
  * Infers the primitive constructor or type name from an array of allowed values.
  * @param {Array<any>} valuesArray - Array of allowed primitive values.
  * @returns {Function} String, Number, or Boolean constructor.
@@ -94,47 +110,10 @@ export function inferTypeFromValues (valuesArray) {
  * @returns {any} The validated value.
  */
 export function executeAttributeValidator (value, schema, name, componentId = 'component', errorOptions = {}) {
-  if (!schema || typeof schema.validate !== 'function') {
-    return value
-  }
-
-  let result
-  try {
-    result = schema.validate(value)
-  } catch (err) {
-    if (err instanceof CoraliteError) {
-      throw err
-    }
-    throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed: ${err.message}`, {
-      componentId,
-      cause: err,
-      ...errorOptions
-    })
-  }
-
-  if (result && typeof result.then === 'function') {
-    throw new CoraliteError(`Component "${componentId}" attribute "${name}" validate function must be synchronous. Use getters or server() for asynchronous validation.`, {
-      componentId,
-      ...errorOptions
-    })
-  }
-
-  if (result === false) {
-    throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed for value ${JSON.stringify(value)}.`, {
-      componentId,
-      ...errorOptions
-    })
-  }
-
-  if (typeof result === 'string' && result.trim() !== '') {
-    const customMessage = result.endsWith('.') ? result : `${result}.`
-    throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed: ${customMessage}`, {
-      componentId,
-      ...errorOptions
-    })
-  }
-
-  return value
+  return validateAttributeValue(value, schema, name, componentId, {
+    ...errorOptions,
+    graceful: false
+  })
 }
 
 /**
@@ -199,6 +178,7 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
   }
 
   // Step 3: transform
+  let isTransformed = false
   if (typeof schemaObj.transform === 'function') {
     let transformed
     try {
@@ -207,16 +187,17 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
       if (err instanceof CoraliteError && err.message.includes('transform function must be synchronous')) {
         throw err
       }
+      const normErr = normalizeErrorMessage(err.message)
       if (graceful) {
         return {
           value: val,
-          error: err.message
+          error: normErr
         }
       }
       if (err instanceof CoraliteError) {
         throw err
       }
-      throw new CoraliteError(`Component "${componentId}" failed executing transform on attribute "${name}": ${err.message}`, {
+      throw new CoraliteError(`Component "${componentId}" failed executing transform on attribute "${name}": ${normErr}`, {
         componentId,
         cause: err,
         ...errorOptions
@@ -229,6 +210,7 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
       })
     }
     val = transformed
+    isTransformed = true
   }
 
   // Step 4: values constraint check
@@ -262,6 +244,7 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
       if (graceful) {
         return {
           value: val,
+          ...(isTransformed && val === undefined ? { transformed: true } : {}),
           error: errorMsg
         }
       }
@@ -283,16 +266,18 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
       if (err instanceof CoraliteError && err.message.includes('validate function must be synchronous')) {
         throw err
       }
+      const normErr = normalizeErrorMessage(err.message)
       if (graceful) {
         return {
           value: val,
-          error: err.message
+          ...(isTransformed && val === undefined ? { transformed: true } : {}),
+          error: normErr
         }
       }
       if (err instanceof CoraliteError) {
         throw err
       }
-      throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed: ${err.message}`, {
+      throw new CoraliteError(`Component "${componentId}" attribute "${name}" validation failed: ${normErr}`, {
         componentId,
         cause: err,
         ...errorOptions
@@ -311,6 +296,7 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
       if (graceful) {
         return {
           value: val,
+          ...(isTransformed && val === undefined ? { transformed: true } : {}),
           error: errorMsg
         }
       }
@@ -321,10 +307,11 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     }
 
     if (typeof result === 'string' && result.trim() !== '') {
-      const customMessage = result.endsWith('.') ? result : `${result}.`
+      const customMessage = normalizeErrorMessage(result)
       if (graceful) {
         return {
           value: val,
+          ...(isTransformed && val === undefined ? { transformed: true } : {}),
           error: customMessage
         }
       }
@@ -338,6 +325,7 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
   // Step 6: State application
   return graceful ? {
     value: val,
+    ...(isTransformed && val === undefined ? { transformed: true } : {}),
     error: null
   } : val
 }
@@ -839,15 +827,16 @@ export class CoraliteElement extends BaseElement {
         this._state.errors[camelName] = res.error
         this._state['error_' + camelName] = res.error
         this._state['error_' + kebabName] = res.error
+        this._state[camelName] = res.value !== undefined ? res.value : newVal
       } else {
         delete this._state.errors[camelName]
         this._state['error_' + camelName] = ''
         this._state['error_' + kebabName] = ''
-      }
-      if (res.value === undefined && newVal === null) {
-        delete this._state[camelName]
-      } else {
-        this._state[camelName] = res.value !== undefined ? res.value : newVal
+        if (res.value === undefined) {
+          delete this._state[camelName]
+        } else {
+          this._state[camelName] = res.value
+        }
       }
     } else {
       if (newVal === null) {
@@ -944,15 +933,16 @@ export class CoraliteElement extends BaseElement {
           target.errors[camelName] = res.error
           target['error_' + camelName] = res.error
           target['error_' + kebabName] = res.error
+          target[camelName] = res.value !== undefined ? res.value : attr.value
         } else {
           delete target.errors[camelName]
           target['error_' + camelName] = ''
           target['error_' + kebabName] = ''
-        }
-        if (res.value !== undefined) {
-          target[camelName] = res.value
-        } else {
-          target[camelName] = attr.value
+          if (res.value !== undefined) {
+            target[camelName] = res.value
+          } else {
+            delete target[camelName]
+          }
         }
       } else {
         target[camelName] = attr.value
@@ -1154,6 +1144,24 @@ export class CoraliteElement extends BaseElement {
               delete t.errors[camelName]
               t['error_' + camelName] = ''
               t['error_' + kebabName] = ''
+            }
+            if (!res.error && res.value === undefined) {
+              const oldValue = t[p]
+              delete t[p]
+              if (p !== camelName) {
+                delete t[camelName]
+              }
+              if (oldValue !== undefined) {
+                self._scheduleUpdate()
+                if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
+                  const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
+                  if (!hasRecord) {
+                    self._observeStateKey(p, () => self._processSlots())
+                  }
+                }
+                self._markObserverDirty(p)
+              }
+              return true
             }
             v = res.value !== undefined ? res.value : v
           }
