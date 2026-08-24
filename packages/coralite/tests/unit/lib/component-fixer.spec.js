@@ -252,6 +252,33 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
     assert.strictEqual(result.fixesApplied.length, 4)
   })
 
+  test('CORALITE-W204: unwraps redundant top-level ref existence guards', () => {
+    const input = `<template>
+  <button ref="submit-btn">Submit</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs, signal }) {
+      const btn = refs('submit-btn')
+      if (btn) {
+        btn.addEventListener('click', () => {}, { signal })
+      }
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'w204-fix.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(!result.outputCode.includes('if (btn)'))
+    assert.ok(result.outputCode.includes("btn.addEventListener('click', () => {}, { signal })"))
+
+    const postValidation = validateComponentSource(result.outputCode, 'w204-fix.html')
+    const postW204s = postValidation.diagnostics.filter(d => d.code === 'CORALITE-W204')
+    assert.strictEqual(postW204s.length, 0)
+  })
+
   test('dryRun support: generates colorized diff without throwing', () => {
     const oldCode = '<div>Old</div>'
     const newCode = '<div>New</div>'

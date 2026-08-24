@@ -431,6 +431,60 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
         ranges: true
       })
 
+      // 2.0 CORALITE-W204 (Unwrap Redundant Ref Guards)
+      const w204Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-W204' && d.fix?.action === 'unwrap_ref_guard')
+      if (w204Diagnostics.length > 0) {
+        const w204Lines = new Set(w204Diagnostics.map(d => d.line))
+        const ifReplacements = []
+
+        walkAncestorJS(ast, {
+          IfStatement (ifNode) {
+            if (ifNode.alternate) {
+              return
+            }
+            if (w204Lines.has(ifNode.loc.start.line)) {
+              let replacement = ''
+              if (ifNode.consequent.type === 'BlockStatement') {
+                const body = ifNode.consequent.body
+                if (body.length > 0) {
+                  replacement = scriptContent.slice(body[0].range[0], body[body.length - 1].range[1])
+                } else {
+                  replacement = ''
+                }
+              } else {
+                replacement = scriptContent.slice(ifNode.consequent.range[0], ifNode.consequent.range[1])
+              }
+
+              const diag = w204Diagnostics.find(d => d.line === ifNode.loc.start.line)
+              ifReplacements.push({
+                start: ifNode.range[0],
+                end: ifNode.range[1],
+                replacement,
+                description: diag?.fix?.description || 'Unwrap redundant ref existence check'
+              })
+            }
+          }
+        })
+
+        if (ifReplacements.length > 0) {
+          ifReplacements.sort((a, b) => b.start - a.start)
+          for (const rep of ifReplacements) {
+            scriptContent = scriptContent.slice(0, rep.start) + rep.replacement + scriptContent.slice(rep.end)
+            fixesApplied.push({
+              code: 'CORALITE-W204',
+              description: rep.description
+            })
+          }
+
+          ast = parseJS(scriptContent, {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            locations: true,
+            ranges: true
+          })
+        }
+      }
+
       // 2.1 CORALITE-E102 (Attribute Mutex Resolution: strip default when required: true)
       const e102Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E102')
       if (e102Diagnostics.length > 0) {

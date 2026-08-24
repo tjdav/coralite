@@ -16,14 +16,12 @@
         actionText: 'Edit'
       }
     },
-    client ({ state, refs }) {
+    client ({ state, refs, signal }) {
       const textSpan = refs('textSpan')
       const btn = refs('btnChange')
-      if (btn) {
-        btn.addEventListener('click', () => {
-          state.actionText = 'Save'
-        })
-      }
+      btn.addEventListener('click', () => {
+        state.actionText = 'Save'
+      }, { signal })
     }
   })
 </script>

@@ -17,21 +17,17 @@
         clickStatus: 'Idle'
       }
     },
-    client ({ state, refs }) {
+    client ({ state, refs, signal }) {
       const searchBar = refs('searchBar')
       const btnCancel = refs('btnCancel')
 
-      if (searchBar) {
-        searchBar.addEventListener('input', (e) => {
-          state.clickStatus = 'Searching: ' + e.target.value
-        })
-      }
+      searchBar.addEventListener('input', (e) => {
+        state.clickStatus = 'Searching: ' + e.target.value
+      }, { signal })
 
-      if (btnCancel) {
-        btnCancel.addEventListener('click', () => {
-          state.clickStatus = 'Cancelled'
-        })
-      }
+      btnCancel.addEventListener('click', () => {
+        state.clickStatus = 'Cancelled'
+      }, { signal })
     }
   })
 </script>

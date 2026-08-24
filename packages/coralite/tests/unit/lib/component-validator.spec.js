@@ -511,7 +511,86 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(resError.valid, false)
   })
 
-  // 14. Backwards Compatibility Aliases
+  // 14. AST Ref Determinism Verification (CORALITE-W204)
+  test('CORALITE-W204: emits warning for top-level if (btn) and if (refs("btn")) existence checks', () => {
+    const code1 = `
+<template>
+  <button ref="submit-btn">Submit</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs }) {
+      const btn = refs('submit-btn')
+      if (btn) {
+        btn.addEventListener('click', () => {})
+      }
+    }
+  })
+</script>
+`
+    const res1 = validateComponentSource(code1, 'w204-1.html')
+    const w204s1 = res1.diagnostics.filter(d => d.code === 'CORALITE-W204')
+    assert.strictEqual(w204s1.length, 1)
+    assert.strictEqual(w204s1[0].severity, 'warning')
+    assert.strictEqual(w204s1[0].fix.action, 'unwrap_ref_guard')
+    assert.ok(w204s1[0].message.includes('Redundant existence check on ref "submit-btn"'))
+
+    const code2 = `
+<template>
+  <button ref="submit-btn">Submit</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs }) {
+      if (refs('submit-btn')) {
+        refs('submit-btn').addEventListener('click', () => {})
+      }
+    }
+  })
+</script>
+`
+    const res2 = validateComponentSource(code2, 'w204-2.html')
+    const w204s2 = res2.diagnostics.filter(d => d.code === 'CORALITE-W204')
+    assert.strictEqual(w204s2.length, 1)
+    assert.strictEqual(w204s2[0].severity, 'warning')
+    assert.strictEqual(w204s2[0].fix.action, 'unwrap_ref_guard')
+  })
+
+  test('CORALITE-W204: does NOT emit warning inside observe(), async callbacks, or direct access', () => {
+    const code = `
+<template>
+  <div ref="panel">Panel</div>
+  <button ref="btn">Button</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs, observe, signal }) {
+      const panel = refs('panel')
+      const btn = refs('btn')
+
+      btn.addEventListener('click', () => {}, { signal })
+
+      observe('tab', () => {
+        if (panel) {
+          panel.classList.toggle('active')
+        }
+      })
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'w204-nested.html')
+    const w204s = result.diagnostics.filter(d => d.code === 'CORALITE-W204')
+    assert.strictEqual(w204s.length, 0)
+  })
+
+  // 15. Backwards Compatibility Aliases
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)

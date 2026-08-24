@@ -34,14 +34,12 @@
     client: (context) => {
       const { state, signal, refs } = context
       const btn = refs('trigger')
-      if (btn) {
-        btn.addEventListener('click', () => {
-          // rapid assignments should trigger AbortSignal for previous getter calls
-          state.query = 'q1'
-          state.query = 'q2'
-          state.query = 'q3'
-        }, { signal })
-      }
+      btn.addEventListener('click', () => {
+        // rapid assignments should trigger AbortSignal for previous getter calls
+        state.query = 'q1'
+        state.query = 'q2'
+        state.query = 'q3'
+      }, { signal })
     }
   })
 </script>
