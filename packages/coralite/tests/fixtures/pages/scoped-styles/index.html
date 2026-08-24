@@ -42,6 +42,7 @@
   <section id="imperative-section">
     <div id="imperative-mount"></div>
     <button id="mount-imperative-btn">Mount Imperative Component</button>
+    <button id="mount-nested-imperative-btn">Mount Nested Imperative Component</button>
   </section>
 
   <script type="module">
@@ -50,6 +51,13 @@
       card.id = 'imperative-card'
       card.classList.add('active')
       document.getElementById('imperative-mount').appendChild(card)
+    })
+
+    document.getElementById('mount-nested-imperative-btn').addEventListener('click', () => {
+      const child = document.createElement('scoped-nested-child')
+      child.id = 'imperative-nested-child'
+      const parent = document.getElementById('nested-parent')
+      parent.appendChild(child)
     })
   </script>
 </body>
