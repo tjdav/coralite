@@ -199,44 +199,65 @@ describe('Component Attribute transform Pipeline', () => {
       assert.strictEqual(Object.prototype.hasOwnProperty.call(result, 'tag'), false)
     })
 
-    it('clears/deletes state property across _setupState, setAttribute, and proxy state setter when transform returns undefined', () => {
-      const tagName = 'trans-undef-' + Math.random().toString(36).substring(2, 9)
-      const UndefComp = createCoraliteClass({
-        componentId: 'trans-undef',
+    it('enforces 4-layer parity when transform returns undefined: SSR, _setupState, setAttribute, and proxy setter', async () => {
+      // Layer 1: SSR (createComponentDefinition)
+      const mockApp = { createComponentElement: () => null, options: {} }
+      const defineComponent = createComponentDefinition({ app: mockApp })
+      const ssrContext = {
+        state: { badge: 'clear-me' },
+        module: { id: 'parity-comp', path: { pathname: '/parity.coral' } },
+        root: null
+      }
+      const ssrResult = await defineComponent({
         attributes: {
-          code: {
+          badge: {
             type: String,
-            transform: (val) => (val === 'reset' || val === '' ? undefined : val)
+            transform: (v) => (v === 'clear-me' ? undefined : v)
+          }
+        }
+      }, ssrContext)
+
+      assert.strictEqual(ssrResult.badge, undefined)
+      assert.strictEqual('badge' in ssrResult, false)
+
+      // Setup client class for layers 2, 3, and 4
+      const tagName = 'parity-undef-' + Math.random().toString(36).substring(2, 9)
+      const ParityComp = createCoraliteClass({
+        componentId: 'parity-comp',
+        attributes: {
+          badge: {
+            type: String,
+            transform: (v) => (v === 'clear-me' ? undefined : v)
           }
         }
       })
-      customElements.define(tagName, UndefComp)
+      customElements.define(tagName, ParityComp)
 
-      // Test initial _setupState with attribute that transforms to undefined
+      // Layer 2: Client Mount (_setupState)
       const el = document.createElement(tagName)
-      el.setAttribute('code', 'reset')
+      el.setAttribute('badge', 'clear-me')
       document.body.appendChild(el)
 
-      assert.strictEqual(el._state.code, undefined)
-      assert.strictEqual(Object.prototype.hasOwnProperty.call(el._state, 'code'), false)
+      assert.strictEqual(el._state.badge, undefined)
+      assert.strictEqual('badge' in el._state, false)
 
-      // Test setAttribute setting a valid value
-      el.setAttribute('code', 'active')
-      assert.strictEqual(el._state.code, 'active')
+      // Layer 3: DOM Mutation (setAttribute)
+      el.setAttribute('badge', 'active')
+      assert.strictEqual(el._state.badge, 'active')
 
-      // Test setAttribute setting value that transforms to undefined
-      el.setAttribute('code', 'reset')
-      assert.strictEqual(el._state.code, undefined)
-      assert.strictEqual(Object.prototype.hasOwnProperty.call(el._state, 'code'), false)
+      el.setAttribute('badge', 'clear-me')
+      assert.strictEqual(el._state.badge, undefined)
+      assert.strictEqual('badge' in el._state, false)
 
-      // Test proxy state property setter with valid value
-      el._state.code = 'valid'
-      assert.strictEqual(el._state.code, 'valid')
+      // Layer 4: Proxy Assignment (el._state.badge = ...)
+      el._state.badge = 'valid'
+      assert.strictEqual(el._state.badge, 'valid')
 
-      // Test proxy state property setter returning undefined from transform
-      el._state.code = 'reset'
-      assert.strictEqual(el._state.code, undefined)
-      assert.strictEqual(Object.prototype.hasOwnProperty.call(el._state, 'code'), false)
+      el._state.badge = 'clear-me'
+      assert.strictEqual(el._state.badge, undefined)
+      assert.strictEqual('badge' in el._state, false)
+      assert.strictEqual(el._state.errors.badge, undefined)
+      assert.strictEqual(el._state.error_badge, '')
 
       document.body.removeChild(el)
     })

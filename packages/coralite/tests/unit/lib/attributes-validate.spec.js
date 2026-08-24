@@ -106,6 +106,43 @@ describe('Component Attribute validate Feature', () => {
       assert.strictEqual(normalizeErrorMessage(null), '')
     })
 
+    it('formats error messages consistently across validate returned strings and thrown errors (punctuation matrix)', () => {
+      // Returned string with exclamation mark !
+      const schemaReturnExclamation = { validate: () => 'Invalid value!' }
+      assert.throws(() => executeAttributeValidator(1, schemaReturnExclamation, 'test', 'comp-a'), (err) => {
+        assert.strictEqual(err.message, 'Component "comp-a" attribute "test" validation failed: Invalid value!')
+        return true
+      })
+
+      // Returned string with question mark ?
+      const schemaReturnQuestion = { validate: () => 'Did you mean admin?' }
+      assert.throws(() => executeAttributeValidator(1, schemaReturnQuestion, 'test', 'comp-a'), (err) => {
+        assert.strictEqual(err.message, 'Component "comp-a" attribute "test" validation failed: Did you mean admin?')
+        return true
+      })
+
+      // Returned string without terminal punctuation
+      const schemaReturnNoPunct = { validate: () => 'Invalid format' }
+      assert.throws(() => executeAttributeValidator(1, schemaReturnNoPunct, 'test', 'comp-a'), (err) => {
+        assert.strictEqual(err.message, 'Component "comp-a" attribute "test" validation failed: Invalid format.')
+        return true
+      })
+
+      // Thrown error with exclamation mark !
+      const schemaThrowExclamation = { validate: () => { throw new Error('Out of bounds!') } }
+      assert.throws(() => executeAttributeValidator(1, schemaThrowExclamation, 'test', 'comp-a'), (err) => {
+        assert.strictEqual(err.message, 'Component "comp-a" attribute "test" validation failed: Out of bounds!')
+        return true
+      })
+
+      // Thrown error without terminal punctuation
+      const schemaThrowNoPunct = { validate: () => { throw new Error('Out of bounds') } }
+      assert.throws(() => executeAttributeValidator(1, schemaThrowNoPunct, 'test', 'comp-a'), (err) => {
+        assert.strictEqual(err.message, 'Component "comp-a" attribute "test" validation failed: Out of bounds.')
+        return true
+      })
+    })
+
     it('throws CoraliteError when validate returns a Promise', () => {
       const schema = {
         validate: async (v) => v > 0

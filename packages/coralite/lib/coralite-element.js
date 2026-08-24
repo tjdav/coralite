@@ -209,6 +209,13 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
         ...errorOptions
       })
     }
+    if (transformed === undefined) {
+      return graceful ? {
+        value: undefined,
+        transformed: true,
+        error: null
+      } : undefined
+    }
     val = transformed
     isTransformed = true
   }
@@ -969,6 +976,8 @@ export class CoraliteElement extends BaseElement {
           }
           if (res.value !== undefined) {
             target[camelName] = res.value
+          } else {
+            delete target[camelName]
           }
         }
       }
@@ -1214,21 +1223,21 @@ export class CoraliteElement extends BaseElement {
               t['error_' + kebabName] = ''
             }
             if (!res.error && res.value === undefined) {
-              const oldValue = t[p]
+              delete t[camelName]
               delete t[p]
-              if (p !== camelName) {
-                delete t[camelName]
-              }
-              if (oldValue !== undefined) {
-                self._scheduleUpdate()
-                if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
-                  const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
-                  if (!hasRecord) {
-                    self._observeStateKey(p, () => self._processSlots())
-                  }
+              delete t.errors[camelName]
+              t['error_' + camelName] = ''
+              t['error_' + kebabName] = ''
+
+              self._scheduleUpdate()
+
+              if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
+                const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
+                if (!hasRecord) {
+                  self._observeStateKey(p, () => self._processSlots())
                 }
-                self._markObserverDirty(p)
               }
+              self._markObserverDirty(p)
               return true
             }
             v = res.value !== undefined ? res.value : v
