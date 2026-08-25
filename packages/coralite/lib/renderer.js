@@ -1944,8 +1944,8 @@ export function createRenderer ({
     }
 
     if (normalizedOptions.mode === 'production' || normalizedOptions.mode === 'testing') {
-      const allComponentIds = app.components.list.map(c => c.result.id)
-      globalScriptResult = await scriptManager.compileAllInstances(allComponentIds, normalizedOptions.mode)
+      globalScriptResult = await scriptManager.compileComponents(normalizedOptions.mode)
+
       Object.assign(outputFiles, globalScriptResult.outputFiles)
 
       if (globalScriptResult.manifest) {
@@ -2004,8 +2004,7 @@ export function createRenderer ({
       // Atomic site-wide rebuild for development
       if (!siteWideBundlePromise) {
         const bundlePromise = (async () => {
-          const allComponentIds = app.components.list.map(c => c.result.id)
-          const result = await scriptManager.compileAllInstances(allComponentIds, normalizedOptions.mode)
+          const result = await scriptManager.compileComponents(normalizedOptions.mode)
 
           // Only update if this is still the active build session
           if (siteWideBundlePromise === bundlePromise) {

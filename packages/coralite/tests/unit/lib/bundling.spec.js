@@ -26,15 +26,7 @@ describe('Bundling Leak Prevention', () => {
       defaultValues: { message: 'hello' }
     })
 
-    const instances = {
-      'inst-1': {
-        componentId: 'test-component',
-        instanceId: 'inst-1',
-        state: { message: 'hello' }
-      }
-    }
-
-    const result = await sm.compileAllInstances(instances, 'production')
+    const result = await sm.compileComponents('production')
 
     // Check all output files for forbidden server-side strings
     const forbidden = [

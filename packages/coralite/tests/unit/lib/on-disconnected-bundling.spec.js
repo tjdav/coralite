@@ -20,15 +20,7 @@ describe('ScriptManager onDisconnected bundling', () => {
       script: { content: '() => {}' }
     })
 
-    const instances = {
-      'inst-1': {
-        componentId: 'test-comp',
-        instanceId: 'inst-1',
-        state: {}
-      }
-    }
-
-    const result = await sm.compileAllInstances(instances, 'development')
+    const result = await sm.compileComponents('development')
 
     const runtimeHashName = result.manifest['coralite-runtime']
     const compiledScript = result.outputFiles[runtimeHashName].text

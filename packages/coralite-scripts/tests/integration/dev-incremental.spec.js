@@ -29,7 +29,7 @@ describe('Development Incremental Bundling', () => {
     })
 
     // 2. Initial compilation in development mode
-    const result1 = await sm.compileAllInstances({}, 'development')
+    const result1 = await sm.compileComponents('development')
     assert.ok(result1.manifest['comp-1'], 'comp-1 should be in initial manifest')
     assert.ok(!result1.manifest['comp-2'], 'comp-2 should NOT be in initial manifest')
 
@@ -43,7 +43,7 @@ describe('Development Incremental Bundling', () => {
     })
 
     // 4. Second compilation in development mode
-    const result2 = await sm.compileAllInstances({}, 'development')
+    const result2 = await sm.compileComponents('development')
 
     // 5. Verify the context was reset and new component is included
     assert.notStrictEqual(sm.context, firstContext, 'esbuild context should have been reset')

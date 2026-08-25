@@ -58,21 +58,7 @@ describe('ScriptManager Integration & Edge Cases', () => {
         }
       })
 
-      // Compile instances
-      const instances = {
-        'calc-1': {
-          componentId: 'calculator',
-          instanceId: 'calc-1',
-          state: {
-            a: 2,
-            b: 3,
-            multiplier: 10
-          },
-          component: {}
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'development')
+      const result = await sm.compileComponents('development')
 
       assert.ok(typeof result === 'object')
       const chunkHash = result.manifest['calculator'].js || result.manifest['calculator']
@@ -147,9 +133,11 @@ describe('ScriptManager Integration & Edge Cases', () => {
       assert.strictEqual(Object.keys(sm.contextProps).length, 0)
     })
 
-    it('should handle helper with no name', async () => {
-      await sm.addContextProp('', () => 'test')
-      assert.ok(sm.contextProps[''])
+    it('should throw when helper has no name', async () => {
+      await assert.rejects(
+        async () => { await sm.addContextProp('', () => 'test') },
+        /addContextProp requires a non-empty string name/
+      )
     })
 
     it('should handle component with non-function script', async () => {
@@ -162,38 +150,13 @@ describe('ScriptManager Integration & Edge Cases', () => {
       assert.strictEqual(registered.script, script)
     })
 
-    it('should handle instance with missing state', async () => {
+    it('should handle missing state in registered component', async () => {
       sm.registerComponent({
         id: 'test',
         script: { content: "() => 'test'" }
       })
 
-      const instances = {
-        'inst-1': {
-          componentId: 'test'
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'production')
-      assert.ok(typeof result === 'object')
-    })
-
-    it('should handle very large number of instances', async () => {
-      sm.registerComponent({
-        id: 'test',
-        script: { content: '(context) => context.values.x' }
-      })
-
-      const instances = {}
-      for (let i = 0; i < 100; i++) {
-        instances[`inst-${i}`] = {
-          componentId: 'test',
-          state: { x: i },
-          component: {}
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'production')
+      const result = await sm.compileComponents('production')
       assert.ok(typeof result === 'object')
     })
 
@@ -249,18 +212,7 @@ describe('ScriptManager Integration & Edge Cases', () => {
         }
       })
 
-      const instances = {
-        'inst-1': {
-          componentId: 'full',
-          state: {
-            x: 1,
-            ref_el: 'div'
-          },
-          page: { meta: { title: 'Test' } }
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'production')
+      const result = await sm.compileComponents('production')
       assert.ok(typeof result === 'object')
     })
 
@@ -288,14 +240,7 @@ describe('ScriptManager Integration & Edge Cases', () => {
         }
       })
 
-      const instances = {
-        'inst-1': {
-          componentId: 'test-ast',
-          instanceId: 'inst-1'
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'production')
+      const result = await sm.compileComponents('production')
       assert.ok(result, 'Should have successfully compiled')
 
       const chunkHash = result.manifest['test-ast'].js
@@ -318,15 +263,7 @@ describe('ScriptManager Integration & Edge Cases', () => {
         filePath
       })
 
-      const instances = {
-        'inst-1': {
-          componentId,
-          instanceId: 'inst-1',
-          state: { message: 'Hello' }
-        }
-      }
-
-      const outputResult = await sm.compileAllInstances(instances, 'development')
+      const outputResult = await sm.compileComponents('development')
 
       const runtimeHashName = outputResult.manifest['coralite-runtime']
       const output = outputResult.outputFiles[runtimeHashName].text
@@ -379,12 +316,7 @@ describe('ScriptManager Integration & Edge Cases', () => {
           script: { content: '() => {}' }
         })
 
-        const result = await sm.compileAllInstances({
-          inst: {
-            componentId: 'test',
-            instanceId: 'inst'
-          }
-        }, 'development')
+        const result = await sm.compileComponents('development')
 
         const runtime = result.manifest['coralite-runtime']
         const content = result.outputFiles[runtime].text

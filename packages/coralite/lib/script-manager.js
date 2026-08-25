@@ -86,11 +86,13 @@ ScriptManager.prototype.getClientContextContent = function () {
   let contextPropsStr = ''
 
   for (const [key, value] of Object.entries(this.contextProps)) {
-    contextPropsStr += `"${key}": async (globalContext) => {
+    const safeKey = JSON.stringify(key)
+
+    contextPropsStr += `${safeKey}: async (globalContext) => {
       const phase1 = ${value};
       const phase2 = await phase1(globalContext);
       if (typeof phase2 !== 'function') {
-        throw new Error('Coralite Plugin Error: The "context" function of client plugin "${key}" must return a function for the second phase (instance context). Received: ' + typeof phase2);
+        throw new Error('Coralite Plugin Error: The "context" function of client plugin ' + ${safeKey} + ' must return a function for the second phase (instance context). Received: ' + typeof phase2);
       }
       return (localContext) => phase2(localContext);
     },`
@@ -106,6 +108,10 @@ ScriptManager.prototype.getClientContextContent = function () {
  * @returns {Promise<ScriptManager>} - Returns this for method chaining
  */
 ScriptManager.prototype.addContextProp = async function (name, method) {
+  if (!name || typeof name !== 'string' || name.trim() === '') {
+    throw new CoraliteError('addContextProp requires a non-empty string name')
+  }
+
   this.contextProps[name] = normalizeFunction(method)
 
   return this
@@ -229,12 +235,12 @@ ScriptManager.prototype.disposeContext = async function () {
 }
 
 /**
- * Compile all instances for a component
- * @param {Object.<string, InstanceContext> | string[]} instances - The map of instanceId to instance data (development) or an array of component IDs (production).
- * @param {string} mode - Build mode
- * @returns {Promise<any>} Compiled script
+ * Compiles and bundles all registered components and the coralite-runtime client module using esbuild.
+ * Eagerly bundles the entire component registry to support declarative rendering and lazy imperative loading.
+ * @param {string} [mode='production'] - Build mode ('development', 'production', or 'testing')
+ * @returns {Promise<{ manifest: Object, outputFiles: Object, importMap: Object }>}
  */
-ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
+ScriptManager.prototype.compileComponents = async function (mode = 'production') {
   const entryCodeParts = []
   const moduleNamespace = 'coralite-script-module:'
   const componentNamespace = 'coralite-component:'
@@ -399,25 +405,23 @@ ScriptManager.prototype.compileAllInstances = async function (instances, mode) {
     }
     this._lastEntryPoints = currentEntryPoints
   }
-  const regex = /[-.:]/g
-
   // Create virtual entry points for each component
-  for (const componentId of processedComponentKeys) {
+  for (let i = 0; i < processedComponentKeys.length; i++) {
+    const componentId = processedComponentKeys[i]
     const sharedFn = this.sharedFunctions[componentId]
 
     if (sharedFn) {
-      const safeId = componentId.replace(regex, '_')
+      const alias = `_c${i}`
       let componentEntryCode = ''
 
       const scriptContent = sharedFn.script?.content
       const hasScript = scriptContent && !isEmptyFunction(scriptContent)
-      const hasState = sharedFn.script?.stateContent
 
-      if (hasScript || hasState) {
-        componentEntryCode += `import * as componentModule_${safeId} from "${virtualPrefix}${componentNamespace}${componentId}";\n`
+      if (hasScript) {
+        componentEntryCode += `import * as componentModule_${alias} from "${virtualPrefix}${componentNamespace}${componentId}";\n`
       }
 
-      if (sharedFn.styles && mode === 'production') {
+      if (sharedFn.styles && (mode === 'production' || mode === 'testing')) {
         componentEntryCode += `import "${virtualPrefix}${cssNamespace}${componentId}";\n`
       }
 
@@ -484,8 +488,8 @@ export default {
   style: (() => { const style = ${style}; return style; })(),
   dependencies: ${dependencies},
   imports: {},
-  client: ${hasScript ? `componentModule_${safeId}.script` : 'null'},
-  server: ${hasState ? `componentModule_${safeId}.state` : 'null'}
+  client: ${hasScript ? `componentModule_${alias}.script` : 'null'},
+  server: null
 };
 `
       this.virtualModules.set(componentId, componentEntryCode)
@@ -654,8 +658,9 @@ export default {
                 const fn = normalizeFunction(module.context)
                 const clientConfig = module.client?.config || module.config || {}
                 const configStr = serialize(clientConfig)
+                const safeClientName = JSON.stringify(clientName)
 
-                contents += `  "${clientName}": async (globalContext) => {\n`
+                contents += `  ${safeClientName}: async (globalContext) => {\n`
                 contents += `    const fn = ${fn};\n`
                 contents += `    const pluginConfig = ${configStr};\n`
                 contents += `    const pluginContext = new Proxy(globalContext, {
@@ -673,15 +678,15 @@ export default {
                            phase2 = await fn(pluginContext);
                         } catch (e) {
                            if (typeof window !== 'undefined' && window.__coralite__?.onError) {
-                             window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin "${clientName}" phase 1: ' + e?.message, error: e });
+                             window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1: ' + e?.message, error: e });
                            } else {
-                             console.error('Coralite Plugin Error: Failed to initialize client context for plugin "${clientName}" phase 1:', e);
+                             console.error('Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1:', e);
                            }
                            throw e;
                         }
 
                         if (typeof phase2 !== 'function') {
-                          throw new Error('Coralite Plugin Error: The "context" function of client plugin "${clientName}" must return a function for the second phase (instance context). Received: ' + typeof phase2);
+                          throw new Error('Coralite Plugin Error: The "context" function of client plugin ' + ${safeClientName} + ' must return a function for the second phase (instance context). Received: ' + typeof phase2);
                         }
                         return phase2;
                       },\n`
@@ -811,7 +816,10 @@ export default {
         const cleanEntry = entryPoint.includes(':') ? entryPoint.split(':').pop() : entryPoint
 
         // STRIP THE EXTENSION (Fixes E2E Bootstrapper Timeout)
-        const tagName = parse(cleanEntry).name
+        let tagName = cleanEntry
+        if (!this.virtualModules.has(cleanEntry)) {
+          tagName = parse(cleanEntry).name
+        }
 
         const relativePath = basename(outputPath)
 

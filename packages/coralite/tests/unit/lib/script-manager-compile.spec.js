@@ -74,14 +74,32 @@ describe('ScriptManager Compilation', () => {
     })
   })
 
-  describe('compileAllInstances() - Full Compilation', () => {
+  describe('addContextProp() Validation', () => {
+    it('should throw CoraliteError if name is invalid or empty', async () => {
+      const sm = new ScriptManager()
+      await assert.rejects(
+        async () => { await sm.addContextProp('', () => {}) },
+        /addContextProp requires a non-empty string name/
+      )
+      await assert.rejects(
+        async () => { await sm.addContextProp('   ', () => {}) },
+        /addContextProp requires a non-empty string name/
+      )
+      await assert.rejects(
+        async () => { await sm.addContextProp(null, () => {}) },
+        /addContextProp requires a non-empty string name/
+      )
+    })
+  })
+
+  describe('compileComponents() - Full Compilation', () => {
     let sm
 
     beforeEach(() => {
       sm = new ScriptManager()
     })
 
-    it('should compile single instance', async () => {
+    it('should compile single component', async () => {
       sm.registerComponent({
         id: 'test',
         script: {
@@ -91,41 +109,17 @@ describe('ScriptManager Compilation', () => {
         }
       })
 
-      const instances = {
-        'inst-1': {
-          componentId: 'test',
-          instanceId: 'inst-1',
-          state: { count: 5 },
-          component: {}
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'production')
+      const result = await sm.compileComponents('production')
 
       assert.ok(typeof result === 'object')
       assert.ok(result.manifest['test'])
     })
 
-    it('should handle empty instances object', async () => {
-      const result = await sm.compileAllInstances({}, 'production')
+    it('should handle empty registered components', async () => {
+      const result = await sm.compileComponents('production')
 
       assert.ok(typeof result === 'object')
       assert.ok(result.manifest['coralite-runtime'])
-    })
-
-    it('should handle instances without shared functions', async () => {
-      const instances = {
-        'inst-1': {
-          componentId: 'nonexistent',
-          instanceId: 'inst-1',
-          state: {},
-          component: {}
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'production')
-
-      assert.ok(typeof result === 'object')
     })
 
     it('should handle async shared functions', async () => {
@@ -139,16 +133,7 @@ describe('ScriptManager Compilation', () => {
         }
       })
 
-      const instances = {
-        'inst-1': {
-          componentId: 'async',
-          instanceId: 'inst-1',
-          state: { x: 42 },
-          component: {}
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'production')
+      const result = await sm.compileComponents('production')
 
       assert.ok(typeof result === 'object')
       const chunkHash = result.manifest['async'].js
@@ -170,19 +155,7 @@ describe('ScriptManager Compilation', () => {
         }
       })
 
-      const instances = {
-        'inst-1': {
-          componentId: 'complex',
-          instanceId: 'inst-1',
-          state: {
-            message: 'Hello World',
-            ref_element: 'div'
-          },
-          component: { title: 'Test' }
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'production')
+      const result = await sm.compileComponents('production')
 
       assert.ok(typeof result === 'object')
       assert.ok(result.manifest['complex'])
@@ -194,18 +167,8 @@ describe('ScriptManager Compilation', () => {
         script: { content: '(context) => context.values.x' }
       })
 
-      const instances = {
-        'inst-1': {
-          componentId: 'test',
-          instanceId: 'inst-1',
-          state: { x: 1 },
-          component: {}
-        }
-      }
+      const result = await sm.compileComponents('production')
 
-      const result = await sm.compileAllInstances(instances, 'production')
-
-      // Should be compiled properly
       assert.ok(result.manifest['test'])
     })
 
@@ -216,7 +179,7 @@ describe('ScriptManager Compilation', () => {
       })
 
       // First compilation
-      await sm.compileAllInstances({}, 'development')
+      await sm.compileComponents('development')
       const firstContext = sm.context
 
       // Register new component
@@ -226,7 +189,7 @@ describe('ScriptManager Compilation', () => {
       })
 
       // Second compilation
-      const result = await sm.compileAllInstances({}, 'development')
+      const result = await sm.compileComponents('development')
 
       assert.notStrictEqual(sm.context, firstContext, 'Esbuild context should have been reset')
       assert.ok(result.manifest['comp-1'], 'Manifest should contain comp-1')
@@ -244,18 +207,10 @@ describe('ScriptManager Compilation', () => {
         script: { content: '() => {}' }
       })
 
-      // Only pass 'declarative' as if it was the only one on the page
-      const instances = {
-        'inst-1': {
-          componentId: 'declarative',
-          instanceId: 'inst-1'
-        }
-      }
-
-      const result = await sm.compileAllInstances(instances, 'production')
+      const result = await sm.compileComponents('production')
 
       assert.ok(result.manifest['declarative'], 'Declarative component should be in manifest')
-      assert.ok(result.manifest['imperative'], 'Imperative component should be in manifest even if not in instances')
+      assert.ok(result.manifest['imperative'], 'Imperative component should be in manifest')
     })
 
     it('should handle nested imperative components by bundling all registered components', async () => {
@@ -276,11 +231,59 @@ describe('ScriptManager Compilation', () => {
         script: { content: '() => {}' }
       })
 
-      const result = await sm.compileAllInstances({}, 'production')
+      const result = await sm.compileComponents('production')
 
       assert.ok(result.manifest['parent'], 'Parent should be in manifest')
       assert.ok(result.manifest['child'], 'Child should be in manifest')
       assert.ok(result.manifest['grand-child'], 'Grand-child should be in manifest')
+    })
+
+    it('Component Identifier Collision Resilience: registers my-comp, my_comp, and my.comp simultaneously', async () => {
+      sm.registerComponent({
+        id: 'my-comp',
+        script: { content: '() => "comp-dash"' }
+      })
+      sm.registerComponent({
+        id: 'my_comp',
+        script: { content: '() => "comp-underscore"' }
+      })
+      sm.registerComponent({
+        id: 'my.comp',
+        script: { content: '() => "comp-dot"' }
+      })
+
+      const result = await sm.compileComponents('production')
+
+      assert.ok(result.manifest['my-comp'], 'my-comp should be in manifest')
+      assert.ok(result.manifest['my_comp'], 'my_comp should be in manifest')
+      assert.ok(result.manifest['my.comp'], 'my.comp should be in manifest')
+
+      assert.ok(result.outputFiles[result.manifest['my-comp'].js].text.includes('comp-dash'))
+      assert.ok(result.outputFiles[result.manifest['my_comp'].js].text.includes('comp-underscore'))
+      assert.ok(result.outputFiles[result.manifest['my.comp'].js].text.includes('comp-dot'))
+    })
+
+    it('Testing Mode CSS Emission: emits virtual CSS imports when mode === "testing"', async () => {
+      sm.registerComponent({
+        id: 'styled-comp',
+        styles: 'button { color: red; }',
+        script: { content: '() => {}' }
+      })
+
+      const result = await sm.compileComponents('testing')
+
+      assert.ok(result.manifest['styled-comp'], 'styled-comp should be in manifest')
+      assert.ok(result.manifest['styled-comp'].css, 'CSS bundle should be present in manifest in testing mode')
+    })
+
+    it('Context Property Escaping: escapes context property keys with special characters or quotes safely', async () => {
+      await sm.addContextProp('plugin "with" quotes\nand newlines', () => () => () => 'escaped')
+
+      const result = await sm.compileComponents('production')
+      const runtimeChunk = result.manifest['coralite-runtime']
+      const compiledRuntime = result.outputFiles[runtimeChunk].text
+
+      assert.ok(compiledRuntime.includes('plugin "with" quotes'), 'Escaped key should be in compiled runtime')
     })
   })
 
@@ -304,16 +307,7 @@ describe('ScriptManager Compilation', () => {
         script: { content: '() => {}' }
       })
 
-      const instances = {
-        'inst-1': {
-          instanceId: '1',
-          componentId: 'test',
-          state: {},
-          component: {}
-        }
-      }
-
-      const outputResult = await sm.compileAllInstances(instances, 'development')
+      const outputResult = await sm.compileComponents('development')
       const runtimeHashName = outputResult.manifest['coralite-runtime']
       const compiledScript = outputResult.outputFiles[runtimeHashName].text
 
