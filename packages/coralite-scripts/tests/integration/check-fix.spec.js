@@ -178,4 +178,83 @@ describe('check and fix commands', () => {
     assert.strictEqual(res.exitCode, 0)
     assert.strictEqual(res.result.summary.totalFiles, 1)
   })
+
+  it('8. check handles plugins array in coralite.config.js without throwing ERR_INVALID_ARG_TYPE', async () => {
+    await project.writeConfig(`
+      export default {
+        output: './dist',
+        components: './src/components',
+        pages: './src/pages',
+        public: './public',
+        plugins: [
+          { name: 'inline-test-plugin' }
+        ]
+      }
+    `)
+
+    await project.writeComponent('my-item.html', `
+<template>
+  <div>Item</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`)
+
+    const res = await project.runCheck()
+    assert.strictEqual(res.exitCode, 0)
+    assert.strictEqual(res.result.hasFailures, false)
+    assert.strictEqual(res.result.summary.errorCount, 0)
+  })
+
+  it('9. check and fix execute real CLI binary via child process against plugins array and missing folders', async () => {
+    const { execFile } = await import('node:child_process')
+    const { promisify } = await import('node:util')
+    const path = await import('node:path')
+    const execFileAsync = promisify(execFile)
+
+    const binPath = path.resolve(process.cwd(), 'bin/index.js')
+
+    await project.writeConfig(`
+      export default {
+        output: './dist',
+        components: './src/components',
+        pages: './src/pages',
+        public: './public',
+        plugins: [
+          { name: 'dummy-plugin' }
+        ]
+      }
+    `)
+
+    await project.writeComponent('card-element.html', `
+<template>
+  <div>{{ title }}</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      title: { type: String, default: 'Card' }
+    }
+  })
+</script>
+`)
+
+    // Run CLI check command via node child process
+    const checkRes = await execFileAsync(process.execPath, [binPath, 'check'], {
+      cwd: project.testDir
+    })
+
+    assert.ok(checkRes.stdout.includes('Coralite Workspace Check Report'))
+    assert.ok(checkRes.stdout.includes('Summary: 1 file(s) validated'))
+
+    // Run CLI fix command via node child process
+    const fixRes = await execFileAsync(process.execPath, [binPath, 'fix'], {
+      cwd: project.testDir
+    })
+
+    assert.ok(fixRes.stdout.includes('No fixable issues found') || fixRes.stdout.includes('Coralite Workspace Check Report'))
+  })
 })

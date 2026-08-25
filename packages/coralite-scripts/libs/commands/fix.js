@@ -23,14 +23,17 @@ function resolvePath (explicitPath, configProp, defaultCandidates, config = null
   if (explicitPath) {
     return explicitPath
   }
-  if (config && config[configProp]) {
+
+  if (config && typeof config[configProp] === 'string') {
     return config[configProp]
   }
+
   for (const cand of defaultCandidates) {
     if (existsSync(join(cwd, cand))) {
       return cand
     }
   }
+
   return null
 }
 
@@ -42,7 +45,7 @@ function resolvePath (explicitPath, configProp, defaultCandidates, config = null
  * @returns {string|null} Existing target path or null.
  */
 function resolveTargetDir (targetPath, cwd) {
-  if (!targetPath) {
+  if (!targetPath || typeof targetPath !== 'string') {
     return null
   }
   const relativePath = join(cwd, targetPath)

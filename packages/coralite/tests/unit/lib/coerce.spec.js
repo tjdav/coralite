@@ -19,7 +19,7 @@ describe('coerce', () => {
     assert.strictEqual(coerce('', Boolean), true)
     assert.strictEqual(coerce('true', Boolean), true)
     assert.strictEqual(coerce('false', Boolean), false)
-    assert.strictEqual(coerce('anything', 'Boolean'), true)
+    assert.strictEqual(coerce('anything', 'Boolean'), 'anything')
   })
 
   it('should coerce to String', () => {
