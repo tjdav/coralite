@@ -7,6 +7,9 @@
     "coralite-changelog": "./bin/changelog.js",
     "coralite-release-post": "./bin/release-post.js"
   },
+  "scripts": {
+    "test:unit": "node --experimental-vm-modules --test \"./tests/**/*.spec.js\""
+  },
   "author": {
     "name": "Thomas David",
     "url": "https://thomasjackdavid.com"
@@ -22,9 +25,6 @@
   "license": "MPL-2.0",
   "engines": {
     "node": ">=20.19.0"
-  },
-  "scripts": {
-    "test:unit": "node --test \"tests/**/*.spec.js\""
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",

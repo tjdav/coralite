@@ -1,3 +1,5 @@
+> ⚠️ **NOTE: This is a read-only mirror.** Development happens on [Codeberg](https://codeberg.org/tjdavid/coralite).
+
 # Coralite release
 
 Requires Node.js v20.19.0 or higher (Node.js v24 LTS recommended).
@@ -22,17 +24,41 @@ npm install --save-dev coralite-release
 
 This command creates new releases by bumping versions and tagging commits.
 
+#### Supported Release Types:
+- `major`: Standard major version bump (e.g., 1.0.0)
+- `minor`: Standard minor version bump (e.g., 0.48.0)
+- `patch`: Standard patch version bump (e.g., 0.47.2)
+- `premajor`: Prerelease for next major version (e.g., 1.0.0-rc.0)
+- `preminor`: Prerelease for next minor version (e.g., 0.48.0-rc.0)
+- `prepatch`: Prerelease for next patch version (e.g., 0.47.2-rc.0)
+- `prerelease`: Increment prerelease counter (e.g., 0.48.0-rc.1)
+- `rc`: Release candidate shortcut (smart bump: starts `preminor` RC or increments active RC)
+
 #### Options:
 - `-d, --dry-run`: Show what would be done without making changes
 - `-y, --yes`: Skip confirmation prompts
-- `-p, --preid <identifier>`: Identifier for prerelease version (e.g., "alpha", "beta")
+- `-p, --preid <identifier>`: Identifier for prerelease version (e.g., "rc", "beta", "alpha") (default: "rc")
 - `-m, --message <message>`: Custom release commit message
+- `--allow-any-branch`: Allow release from branches other than `main`, `master`, `release/*`, or `rc/*`
 - `--no-git-tag`: Skip creating git tag
 - `--no-git-commit`: Skip git commit (only update package.json files)
 
 #### Examples:
 
 ```bash
+# Start a release candidate for the next minor version (0.48.0-rc.0)
+coralite-release rc
+# or explicitly:
+coralite-release preminor --preid rc
+
+# Iterate on release candidates (0.48.0-rc.1)
+coralite-release rc
+# or explicitly:
+coralite-release prerelease
+
+# Graduate to final stable release (0.48.0)
+coralite-release minor
+
 # Bump patch version and create new tag
 coralite-release patch
 

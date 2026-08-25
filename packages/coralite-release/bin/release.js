@@ -21,8 +21,9 @@ program
   .argument('<type>', `Release type: ${RELEASE_TYPES.join(', ')}`)
   .option('-d, --dry-run', 'Show what would be done without making changes')
   .option('-y, --yes', 'Skip confirmation prompts')
-  .option('-p, --preid <identifier>', 'Identifier for prerelease version (e.g., "alpha", "beta")')
+  .option('-p, --preid <identifier>', 'Identifier for prerelease version (e.g., "rc", "beta", "alpha")', 'rc')
   .option('-m, --message <message>', 'Custom release commit message')
+  .option('--allow-any-branch', 'Allow release from branches other than main/master/release/rc')
   .option('--no-git-tag', 'Skip creating git tag')
   .option('--no-git-commit', 'Skip git commit (only update package.json files)')
   .action(async (type, options) => {
@@ -36,33 +37,49 @@ program
         process.exit(1)
       }
 
-      // Check if current branch is main
+      // Branch verification
       const branchStatus = await git.status()
-      if (branchStatus.current !== 'main') {
-        prompts.log.error(`Releases must be performed on the "main" branch. Current branch is: ${branchStatus.current}`)
-        process.exit(1)
+      const allowedBranchPatterns = [/^main$/, /^master$/, /^release\/.+$/, /^rc\/.+$/]
+      const isAllowedBranch = allowedBranchPatterns.some(pattern => pattern.test(branchStatus.current))
+      if (!isAllowedBranch && !options.allowAnyBranch) {
+        if (options.yes) {
+          prompts.log.error(`Releases must be performed on "main", "master", or "release/*" / "rc/*" branches. Current branch: ${branchStatus.current}. Use --allow-any-branch to override.`)
+          process.exit(1)
+        }
+        const proceedBranch = await prompts.confirm({
+          message: `Current branch is "${branchStatus.current}". Releases are typically done on main or release/* branches. Continue anyway?`,
+          initialValue: false
+        })
+        if (prompts.isCancel(proceedBranch) || !proceedBranch) {
+          prompts.log.info('Release cancelled')
+          process.exit(0)
+        }
       }
 
       // Pre-release checks
-      prompts.log.info('🔍 Running pre-release checks...')
+      if (!options.dryRun && !process.env.SKIP_PRE_RELEASE_CHECKS) {
+        prompts.log.info('🔍 Running pre-release checks...')
 
-      try {
-        prompts.log.step('Running Lint...')
-        execSync('pnpm lint', { stdio: 'inherit' })
+        try {
+          prompts.log.step('Running Lint...')
+          execSync('pnpm lint', { stdio: 'inherit' })
 
-        prompts.log.step('Verifying Build...')
-        execSync('pnpm run build:scripts', { stdio: 'inherit' })
+          prompts.log.step('Verifying Build...')
+          execSync('pnpm run build:scripts', { stdio: 'inherit' })
 
-        prompts.log.step('Running Unit Tests...')
-        execSync('pnpm test:unit', { stdio: 'inherit' })
+          prompts.log.step('Running Unit Tests...')
+          execSync('pnpm test:unit', { stdio: 'inherit' })
 
-        prompts.log.step('Verifying E2E Tests...')
-        execSync('pnpm run test:e2e', { stdio: 'inherit' })
+          prompts.log.step('Verifying E2E Tests...')
+          execSync('pnpm run test:e2e', { stdio: 'inherit' })
 
-        prompts.log.success('✅ All checks passed!')
-      } catch {
-        prompts.log.error('❌ Pre-release checks failed. Fix errors before releasing.')
-        process.exit(1)
+          prompts.log.success('✅ All checks passed!')
+        } catch {
+          prompts.log.error('❌ Pre-release checks failed. Fix errors before releasing.')
+          process.exit(1)
+        }
+      } else if (options.dryRun) {
+        prompts.log.info('🔍 [dry-run] Pre-release checks skipped')
       }
 
       // Check if working directory is clean
@@ -72,14 +89,16 @@ program
 
         status.files.forEach(file => console.log(`  ${file.path}`))
 
-        const proceed = await prompts.confirm({
-          message: 'Continue anyway? (Changes won’t be committed)',
-          initialValue: false
-        })
+        if (!options.yes) {
+          const proceed = await prompts.confirm({
+            message: 'Continue anyway? (Changes won’t be committed)',
+            initialValue: false
+          })
 
-        if (prompts.isCancel(proceed) || !proceed) {
-          prompts.log.info('Release cancelled')
-          process.exit(0)
+          if (prompts.isCancel(proceed) || !proceed) {
+            prompts.log.info('Release cancelled')
+            process.exit(0)
+          }
         }
       }
 
@@ -123,19 +142,59 @@ program
       }
 
       // Select package to release
-      const selectedPackageName = await prompts.select({
-        message: 'Select package to release:',
-        options: releaseChoices
-      })
+      let selectedPackageName
+      if (options.yes) {
+        selectedPackageName = releaseChoices[0]?.value
+      } else {
+        selectedPackageName = await prompts.select({
+          message: 'Select package to release:',
+          options: releaseChoices
+        })
+      }
 
-      if (prompts.isCancel(selectedPackageName)) {
+      if (!selectedPackageName || prompts.isCancel(selectedPackageName)) {
         prompts.log.info('Release cancelled')
         process.exit(0)
       }
 
       const selectedPkg = packages.find(p => p.name === selectedPackageName)
       const oldVersion = selectedPkg.version
-      const newVersion = calculateNewVersion(oldVersion, type, options.preid || 'rc')
+
+      let targetBase = 'preminor'
+      if (type === 'rc' && !semver.prerelease(oldVersion)) {
+        if (!options.yes) {
+          const preminorOption = calculateNewVersion(oldVersion, 'rc', options.preid || 'rc', 'preminor')
+          const prepatchOption = calculateNewVersion(oldVersion, 'rc', options.preid || 'rc', 'prepatch')
+          const premajorOption = calculateNewVersion(oldVersion, 'rc', options.preid || 'rc', 'premajor')
+
+          const selectedBase = await prompts.select({
+            message: `Select target release candidate type for ${selectedPkg.name}:`,
+            options: [
+              {
+                value: 'preminor',
+                label: `preminor (e.g. ${preminorOption}) (recommended)`
+              },
+              {
+                value: 'prepatch',
+                label: `prepatch (e.g. ${prepatchOption})`
+              },
+              {
+                value: 'premajor',
+                label: `premajor (e.g. ${premajorOption})`
+              }
+            ],
+            initialValue: 'preminor'
+          })
+
+          if (prompts.isCancel(selectedBase)) {
+            prompts.log.info('Release cancelled')
+            process.exit(0)
+          }
+          targetBase = selectedBase
+        }
+      }
+
+      const newVersion = calculateNewVersion(oldVersion, type, options.preid || 'rc', targetBase)
 
       // Display summary
       prompts.log.info('Release Plan:')
@@ -195,6 +254,11 @@ program
 
       if (options.dryRun) {
         prompts.log.info('Dry run completed. No changes were made.')
+        if (semver.prerelease(newVersion)) {
+          prompts.log.info(`📦 To publish this release candidate to npm, run:\n   pnpm --filter ${selectedPackageName} publish --tag ${options.preid || 'rc'}`)
+        } else {
+          prompts.log.info(`📦 To publish this release to npm, run:\n   pnpm --filter ${selectedPackageName} publish`)
+        }
         process.exit(0)
       }
 
@@ -314,12 +378,16 @@ program
       }
 
       // Push changes and tags
-      const shouldPush = await prompts.confirm({
-        message: 'Push changes and tags to remote?',
-        initialValue: true
-      })
+      let shouldPush = true
+      if (!options.yes) {
+        const confirmPush = await prompts.confirm({
+          message: 'Push changes and tags to remote?',
+          initialValue: true
+        })
+        shouldPush = !prompts.isCancel(confirmPush) && Boolean(confirmPush)
+      }
 
-      if (shouldPush && !prompts.isCancel(shouldPush)) {
+      if (shouldPush) {
         try {
           prompts.log.step('Pushing to remote...')
 
@@ -337,6 +405,12 @@ program
 
       prompts.log.success('Release completed successfully!')
 
+      if (semver.prerelease(newVersion)) {
+        prompts.log.info(`📦 To publish this release candidate to npm, run:\n   pnpm --filter ${selectedPackageName} publish --tag ${options.preid || 'rc'}`)
+      } else {
+        prompts.log.info(`📦 To publish this release to npm, run:\n   pnpm --filter ${selectedPackageName} publish`)
+      }
+
     } catch (error) {
       prompts.log.error(`Release failed: ${error.message}`)
       process.exit(1)
@@ -352,29 +426,37 @@ program
     }
   })
 
-// Helper function to calculate new version
 /**
- *
+ * Helper function to calculate new version using semver.
+ * @param {string} currentVersion - The current version string
+ * @param {string} releaseType - The release type ('major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease', 'rc')
+ * @param {string} [preid='rc'] - Identifier for prerelease version
+ * @param {string} [targetBase='preminor'] - Target release type base when bumping a stable version to an RC
+ * @returns {string} The calculated new version string
  */
 export function calculateNewVersion (currentVersion, releaseType, preid = 'rc', targetBase = 'preminor') {
-  const cleanedVersion = semver.clean(currentVersion) || currentVersion
-  let newVersion
+  const isPrerelease = Boolean(semver.prerelease(currentVersion))
 
   if (releaseType === 'rc') {
-    if (semver.prerelease(cleanedVersion)) {
-      newVersion = semver.inc(cleanedVersion, 'prerelease', preid)
-    } else {
-      newVersion = semver.inc(cleanedVersion, targetBase || 'preminor', preid)
+    if (isPrerelease) {
+      return semver.inc(currentVersion, 'prerelease', preid)
     }
-  } else {
-    newVersion = semver.inc(cleanedVersion, releaseType, preid)
+    return semver.inc(currentVersion, targetBase, preid)
   }
 
-  if (!newVersion) {
-    throw new Error(`Failed to calculate new version for "${currentVersion}" with release type "${releaseType}"`)
+  if (releaseType === 'prerelease') {
+    return semver.inc(currentVersion, 'prerelease', preid)
   }
 
-  return newVersion
+  if (['premajor', 'preminor', 'prepatch'].includes(releaseType)) {
+    return semver.inc(currentVersion, releaseType, preid)
+  }
+
+  if (['major', 'minor', 'patch'].includes(releaseType)) {
+    return semver.inc(currentVersion, releaseType)
+  }
+
+  throw new Error(`Unknown release type: ${releaseType}`)
 }
 
 // Handle unhandled rejections
@@ -383,8 +465,9 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1)
 })
 
-// Parse command line arguments if executed directly
-if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+// Parse command line arguments when executed directly
+const isMain = Boolean(process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]))
+if (isMain) {
   program.parse(process.argv)
 
   // Show help if no arguments provided
