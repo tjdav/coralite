@@ -167,9 +167,11 @@ try {
     console.log('Verifying CLI...')
     const cliPath = join(TEMP_DIR, 'node_modules', '.bin', binName)
     const helpOutput = execSync(`"${cliPath}" --help`, { cwd: TEMP_DIR }).toString()
-    if (!helpOutput.includes('Usage: Coralite scripts')) {
+
+    if (!helpOutput.includes('Usage: coralite-scripts') && !helpOutput.includes('Usage: Coralite scripts')) {
       throw new Error(`CLI help output verification failed. Output: ${helpOutput}`)
     }
+
     console.log('CLI verification passed.')
   } else {
     throw new Error(`Unknown package: ${targetPackageName}`)
