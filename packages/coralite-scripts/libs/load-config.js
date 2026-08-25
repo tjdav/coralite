@@ -11,6 +11,9 @@ import { defineConfig } from './config.js'
 /**
  * Loads the configuration for the Coralite project.
  *
+ * @param {string|{ cwd?: string, silent?: boolean }|null} [cwd=process.cwd()] - The current working directory or options object.
+ * @param {object} [options={}] - Additional options.
+ * @param {boolean} [options.silent=false] - Whether to suppress error logs when config is missing or fails.
  * @returns {Promise<CoraliteScriptConfig|null>} The configuration object containing path settings or null if no config found or invalid
  *
  * @example
@@ -19,9 +22,6 @@ import { defineConfig } from './config.js'
  *
  * const config = await loadConfig()
  * ```
- * @param {string|{ cwd?: string, silent?: boolean }} [cwd=process.cwd()] - The current working directory or options object.
- * @param {object} [options={}] - Additional options.
- * @param {boolean} [options.silent=false] - Whether to suppress error logs when config is missing or fails.
  */
 async function loadConfig (cwd = process.cwd(), { silent = false } = {}) {
   let targetCwd = typeof cwd === 'string' ? cwd : process.cwd()

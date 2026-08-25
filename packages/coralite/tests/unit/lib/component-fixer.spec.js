@@ -30,6 +30,30 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
     assert.strictEqual(postE201s.length, 0)
   })
 
+  test('CORALITE-E201: lifts multi-line expressions with template literals and ternaries', () => {
+    const input = `<template>
+  <div>{{
+    user.isVip
+      ? \`VIP: \${user.name}\`
+      : user.name
+  }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: { user: { type: Object } }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'multiline-expr.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('getters: {'))
+    assert.ok(!result.outputCode.includes('{{ user.isVip'))
+    assert.ok(result.outputCode.includes('{{ userIsVipVIPUserNameUserName }}'))
+    assert.ok(result.outputCode.includes('state.user?.isVip ? `VIP: ${state.user?.name ?? \'\'}` : state.user?.name'))
+  })
+
   test('CORALITE-E301: rewrites named static import used only in client() to dynamic import inside async client()', () => {
     const input = `<template>
   <div>Date</div>
@@ -160,6 +184,25 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
     const postValidation = validateComponentSource(result.outputCode, 'submit.html')
     const postE202s = postValidation.diagnostics.filter(d => d.code === 'CORALITE-E202')
     assert.strictEqual(postE202s.length, 0)
+  })
+
+  test('CORALITE-E202: skips ref injection when element already has a ref attribute', () => {
+    const input = `<template>
+  <button ref="existing-ref" id="action-btn">Action</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs }) {
+      const btn = refs('action-btn')
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'existing-ref.html' })
+    assert.ok(!result.outputCode.includes('ref="action-btn"'))
+    assert.ok(result.outputCode.includes('ref="existing-ref"'))
   })
 
   test('CORALITE-E202: skips ref injection when candidate count !== 1 (ambiguous)', () => {

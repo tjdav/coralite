@@ -118,6 +118,7 @@ function extractDestructuredKeys (patternNode, targetSet, localBindingNames) {
 
 function deriveGetterName (expr, existingKeys) {
   let processed = expr
+    .replace(/[\r\n\t]+/g, ' ')
     .replace(/!==|!=/g, ' NotEquals ')
     .replace(/===|==/g, ' Equals ')
     .replace(/>=/g, ' GreaterThanOrEqual ')
@@ -261,10 +262,10 @@ function generateGetterCode (getterName, expr) {
         fallback = null
       }
     } else {
-      innerCode = `state.${expr.replace(/[^a-zA-Z0-9_.]/g, '')}`
+      innerCode = `state.${expr.replace(/[\r\n\t]+/g, ' ').replace(/[^a-zA-Z0-9_.]/g, '')}`
     }
   } catch {
-    const cleanExpr = expr.replace(/[^a-zA-Z0-9_.]/g, '')
+    const cleanExpr = expr.replace(/[\r\n\t]+/g, ' ').replace(/[^a-zA-Z0-9_.]/g, '')
     innerCode = `state.${cleanExpr}`
   }
 
@@ -550,7 +551,8 @@ export function validateComponentSource (sourceCode, filePath = '') {
     const existingKeys = new Set([...definedGetters, ...definedAttributes, ...definedServerProps])
 
     const extractMustacheFromText = (text, searchFromIndex) => {
-      const mustacheRegex = /\{\{\s*(.+?)\s*\}\}/g
+      const mustacheRegex = /\{\{\s*([\s\S]+?)\s*\}\}/g
+
       let match
       while ((match = mustacheRegex.exec(text)) !== null) {
         const fullMatch = match[0]
@@ -649,7 +651,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 tagName: lowerName,
                 id: attribs?.id ? String(attribs.id).trim() : null,
                 className: attribs?.class ? String(attribs.class).trim() : null,
-                hasRef: Boolean(attribs?.ref)
+                hasRef: Boolean(attribs && (attribs.ref !== undefined || Object.keys(attribs).some(a => a.toLowerCase() === 'ref')))
               })
             }
             checkAttribs(attribs, templateSearchOffset)
@@ -750,7 +752,6 @@ export function validateComponentSource (sourceCode, filePath = '') {
           }
         }
       }
-
 
       const scriptStartLine = scriptContent && sourceCode.includes('<script') ? getLocForSubstring(sourceCode, scriptContent).line - 1 : 0
 
@@ -2002,8 +2003,9 @@ export function validateComponentSource (sourceCode, filePath = '') {
         }
       }
 
-      const candidateCount = candidates.length
-      const candidateTag = candidateCount === 1 ? candidates[0].tagName : null
+      const eligibleCandidates = candidates.filter(el => !el.hasRef)
+      const candidateCount = eligibleCandidates.length
+      const candidateTag = candidateCount === 1 ? eligibleCandidates[0].tagName : null
 
       const causeMessage = candidateCount === 1
         ? `Found 1 matching candidate element (<${candidateTag}>) in template for ref "${strippedRef}".`

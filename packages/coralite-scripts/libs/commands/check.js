@@ -11,7 +11,17 @@ import {
   formatPageValidationReport
 } from 'coralite'
 
-function resolvePath (explicitPath, configProp, defaultCandidates, config, cwd = process.cwd()) {
+/**
+ * Resolves directory or file path from CLI options, config, or default candidates.
+ *
+ * @param {string|undefined} explicitPath - Explicit path passed via CLI option.
+ * @param {string} configProp - Config property name in configuration object.
+ * @param {string[]} defaultCandidates - Array of candidate paths to check in cwd.
+ * @param {import('../../types/index.js').CoraliteScriptConfig|null} [config=null] - Configuration object.
+ * @param {string} [cwd=process.cwd()] - Current working directory.
+ * @returns {string|null} Resolved path or null.
+ */
+function resolvePath (explicitPath, configProp, defaultCandidates, config = null, cwd = process.cwd()) {
   if (explicitPath) {
     return explicitPath
   }
@@ -26,6 +36,13 @@ function resolvePath (explicitPath, configProp, defaultCandidates, config, cwd =
   return null
 }
 
+/**
+ * Resolves target directory or file relative to cwd.
+ *
+ * @param {string|null} targetPath - Relative or absolute target path.
+ * @param {string} cwd - Current working directory.
+ * @returns {string|null} Existing target path or null.
+ */
 function resolveTargetDir (targetPath, cwd) {
   if (!targetPath) {
     return null
@@ -41,11 +58,35 @@ function resolveTargetDir (targetPath, cwd) {
 }
 
 /**
+ * Calculates total fixable diagnostics count for plugins.
+ *
+ * @param {any} pluginReport - Plugin validation report object.
+ * @returns {number} Fixable count.
+ */
+function calculatePluginFixableCount (pluginReport) {
+  if (!pluginReport || !Array.isArray(pluginReport.plugins)) {
+    return 0
+  }
+  let count = 0
+  for (const p of pluginReport.plugins) {
+    if (Array.isArray(p.diagnostics)) {
+      for (const d of p.diagnostics) {
+        if (d && d.fix && d.fix.action) {
+          count++
+        }
+      }
+    }
+  }
+  return count
+}
+
+/**
  * Executes a unified validation check across components, plugins, and pages.
  *
  * @param {import('../../types/index.js').CoraliteScriptConfig|null} config - The configuration object.
  * @param {any} [options={}] - The CLI and command options.
  * @param {any} [logger=null] - Optional custom logger output stream.
+ * @returns {Promise<{ hasFailures: boolean, summary: object, reports: object, output: string }>} Validation result.
  */
 export async function checkCommand (config, options = {}, logger = null) {
   const cwd = options.cwd || process.cwd()
@@ -102,11 +143,15 @@ export async function checkCommand (config, options = {}, logger = null) {
       for (const c of compReport.components) {
         if (c.filePath) {
           const name = c.filePath.split('/').pop().replace(/\.(html|js)$/, '')
+          let attributesObj = {}
+          if (c.defined && Array.isArray(c.defined.attributes)) {
+            attributesObj = c.defined.attributes.reduce((acc, curr) => {
+              acc[curr] = {}
+              return acc
+            }, {})
+          }
           knownComponents.set(name, {
-            attributes: c.defined ? c.defined.attributes.reduce((acc, curr) => ({
-              ...acc,
-              [curr]: {}
-            }), {}) : {}
+            attributes: attributesObj
           })
         }
       }
@@ -114,32 +159,36 @@ export async function checkCommand (config, options = {}, logger = null) {
     pageReport = validatePagesDir(fullPageDir, { knownComponents })
   }
 
-  const totalFiles = (compReport ? compReport.summary.totalComponents : 0) +
-                     (pluginReport ? pluginReport.metrics.totalPlugins : 0) +
-                     (pageReport ? pageReport.summary.totalPages : 0)
+  const totalFiles = (compReport?.summary?.totalComponents ?? 0) +
+                     (pluginReport?.metrics?.totalPlugins ?? 0) +
+                     (pageReport?.summary?.totalPages ?? 0)
 
-  const validFiles = (compReport ? compReport.summary.validComponents : 0) +
-                     (pluginReport ? pluginReport.metrics.validPlugins : 0) +
-                     (pageReport ? pageReport.summary.validPages : 0)
+  const validFiles = (compReport?.summary?.validComponents ?? 0) +
+                     (pluginReport?.metrics?.validPlugins ?? 0) +
+                     (pageReport?.summary?.validPages ?? 0)
 
-  const errorCount = (compReport ? compReport.summary.errorCount : 0) +
-                     (pluginReport ? pluginReport.metrics.totalErrors : 0) +
-                     (pageReport ? pageReport.summary.errorCount : 0)
+  const errorCount = (compReport?.summary?.errorCount ?? 0) +
+                     (pluginReport?.metrics?.totalErrors ?? 0) +
+                     (pageReport?.summary?.errorCount ?? 0)
 
-  const warningCount = (compReport ? compReport.summary.warningCount : 0) +
-                       (pluginReport ? pluginReport.metrics.totalWarnings : 0) +
-                       (pageReport ? pageReport.summary.warningCount : 0)
+  const warningCount = (compReport?.summary?.warningCount ?? 0) +
+                       (pluginReport?.metrics?.totalWarnings ?? 0) +
+                       (pageReport?.summary?.warningCount ?? 0)
 
-  const fixableCount = (compReport ? compReport.summary.fixableCount : 0) +
-                       (pluginReport ? (pluginReport.plugins || []).reduce((acc, p) => acc + (p.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length, 0) : 0) +
-                       (pageReport ? pageReport.summary.fixableCount : 0)
+  const fixableCount = (compReport?.summary?.fixableCount ?? 0) +
+                       calculatePluginFixableCount(pluginReport) +
+                       (pageReport?.summary?.fixableCount ?? 0)
 
   let totalUnused = 0
-  if (compReport && compReport.metrics) {
-    totalUnused = compReport.metrics.totalUnused || 0
+  if (compReport?.metrics?.totalUnused !== undefined) {
+    totalUnused = compReport.metrics.totalUnused
+  } else if (compReport?.summary && ('totalUnused' in compReport.summary)) {
+    /** @type {Record<string, any>} */
+    const summaryObj = compReport.summary
+    totalUnused = Number(summaryObj.totalUnused) || 0
   }
 
-  const usageCoveragePercentage = compReport ? compReport.summary.usageCoveragePercentage : 100
+  const usageCoveragePercentage = compReport?.summary?.usageCoveragePercentage ?? 100
 
   let outputStr = ''
 
@@ -182,7 +231,11 @@ export async function checkCommand (config, options = {}, logger = null) {
     }
 
     out += colours.gray('─'.repeat(60)) + '\n'
-    const summaryColor = errorCount === 0 ? colours.green().bold : colours.red().bold
+
+    let summaryColor = colours.green().bold
+    if (errorCount > 0) {
+      summaryColor = colours.red().bold
+    }
 
     let summaryLine = `Summary: ${totalFiles} file(s) validated across 3 domains | ${validFiles} valid | ${errorCount} error(s) | ${warningCount} warning(s)`
     if (fixableCount > 0) {

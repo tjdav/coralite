@@ -159,7 +159,7 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     })
   }
 
-  const targetType = schemaObj.type || (schemaObj.values ? inferTypeFromValues(schemaObj.values) : undefined)
+  const targetType = schemaObj.type
   const isBooleanType = targetType === Boolean || targetType === 'Boolean'
 
   // Handle omitted value (optional attribute with or without default)
@@ -373,7 +373,7 @@ export function coerce (value, type) {
       return false
     }
 
-    return value
+    return Boolean(value)
   }
 
   if (value === null || value === undefined) {

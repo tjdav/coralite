@@ -9,7 +9,17 @@ import {
 } from 'coralite'
 import { checkCommand } from './check.js'
 
-function resolvePath (explicitPath, configProp, defaultCandidates, config, cwd = process.cwd()) {
+/**
+ * Resolves directory or file path from CLI options, config, or default candidates.
+ *
+ * @param {string|undefined} explicitPath - Explicit path passed via CLI option.
+ * @param {string} configProp - Config property name in configuration object.
+ * @param {string[]} defaultCandidates - Array of candidate paths to check in cwd.
+ * @param {import('../../types/index.js').CoraliteScriptConfig|null} [config=null] - Configuration object.
+ * @param {string} [cwd=process.cwd()] - Current working directory.
+ * @returns {string|null} Resolved path or null.
+ */
+function resolvePath (explicitPath, configProp, defaultCandidates, config = null, cwd = process.cwd()) {
   if (explicitPath) {
     return explicitPath
   }
@@ -24,6 +34,13 @@ function resolvePath (explicitPath, configProp, defaultCandidates, config, cwd =
   return null
 }
 
+/**
+ * Resolves target directory or file relative to cwd.
+ *
+ * @param {string|null} targetPath - Relative or absolute target path.
+ * @param {string} cwd - Current working directory.
+ * @returns {string|null} Existing target path or null.
+ */
 function resolveTargetDir (targetPath, cwd) {
   if (!targetPath) {
     return null
@@ -44,6 +61,7 @@ function resolveTargetDir (targetPath, cwd) {
  * @param {import('../../types/index.js').CoraliteScriptConfig|null} config - The configuration object.
  * @param {any} [options={}] - The CLI and command options.
  * @param {any} [logger=null] - Optional custom logger output stream.
+ * @returns {Promise<{ totalFixesCount: number, modifiedFiles: string[], diffs: string[], checkResult: any, hasFailures: boolean }>} Fix execution result.
  */
 export async function fixCommand (config, options = {}, logger = null) {
   const cwd = options.cwd || process.cwd()

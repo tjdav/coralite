@@ -238,16 +238,21 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       continue
     }
 
-    const matchMsg = diag.message.match(/Inline expression '\{\{\s*(.+?)\s*\}\}'/)
+    const matchMsg = diag.message.match(/Inline expression '\{\{\s*([\s\S]+?)\s*\}\}'/)
     const rawExpr = matchMsg ? matchMsg[1] : null
 
     if (rawExpr) {
-      const escapedExpr = rawExpr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const escapedExpr = rawExpr
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        .replace(/\s+/g, '\\s+')
       const mustacheRegex = new RegExp(`\\{\\{\\s*${escapedExpr}\\s*\\}\\}`, 'g')
 
       if (mustacheRegex.test(code)) {
         code = code.replace(mustacheRegex, diag.fix.replacement || `{{ ${getterInfo.name} }}`)
-        gettersToInject.push(getterInfo)
+        if (!gettersToInject.some(g => g.name === getterInfo.name)) {
+          gettersToInject.push(getterInfo)
+        }
+
         fixesApplied.push({
           code: 'CORALITE-E201',
           description: diag.fix.description || `Lift expression to getter '${getterInfo.name}'`
@@ -287,6 +292,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
                 tagName: lowerName,
                 id: attribs?.id ? String(attribs.id).trim() : null,
                 className: attribs?.class ? String(attribs.class).trim() : null,
+                hasRef: Boolean(attribs && Object.keys(attribs).some(a => a.toLowerCase() === 'ref')),
                 rawAttribs: attribs
               })
             }
@@ -322,32 +328,48 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       }
     }
 
-    if (candidates.length === 1) {
-      const candidateTag = candidates[0].tagName
+    const eligibleCandidates = candidates.filter(el => !el.hasRef)
+
+    if (eligibleCandidates.length === 1) {
+      const candidateTag = eligibleCandidates[0].tagName
       const templateMatch = /<template[\s\S]*?>([\s\S]*?)<\/template>/i.exec(code)
       if (templateMatch) {
         const templateContent = templateMatch[1]
         const templateOffset = templateMatch.index + templateMatch[0].indexOf(templateContent)
-        const tagRegex = new RegExp(`<(${candidateTag})([\\s>\\/])`, 'i')
-        const tagMatch = tagRegex.exec(templateContent)
-        if (tagMatch) {
-          const insertPos = templateOffset + tagMatch.index + 1 + candidateTag.length
-          code = code.slice(0, insertPos) + ` ref="${strippedRef}"` + code.slice(insertPos)
-          fixesApplied.push({
-            code: 'CORALITE-E202',
-            description: diag.fix.description || `Add ref="${strippedRef}" to matching <${candidateTag}> element`
-          })
+        const tagRegex = new RegExp(`<(${candidateTag})([\\s>\\/])`, 'gi')
+        let tagMatch
+        while ((tagMatch = tagRegex.exec(templateContent)) !== null) {
+          const endTagIndex = templateContent.indexOf('>', tagMatch.index)
+          const fullTagStr = templateContent.slice(tagMatch.index, endTagIndex + 1)
+
+          if (!/\bref\s*=/i.test(fullTagStr)) {
+            const insertPos = templateOffset + tagMatch.index + 1 + candidateTag.length
+
+            code = code.slice(0, insertPos) + ` ref="${strippedRef}"` + code.slice(insertPos)
+
+            fixesApplied.push({
+              code: 'CORALITE-E202',
+              description: diag.fix.description || `Add ref="${strippedRef}" to matching <${candidateTag}> element`
+            })
+
+            break
+          }
         }
       } else {
-        const tagRegex = new RegExp(`<(${candidateTag})([\\s>\\/])`, 'i')
-        const tagMatch = tagRegex.exec(code)
-        if (tagMatch) {
-          const insertPos = tagMatch.index + 1 + candidateTag.length
-          code = code.slice(0, insertPos) + ` ref="${strippedRef}"` + code.slice(insertPos)
-          fixesApplied.push({
-            code: 'CORALITE-E202',
-            description: diag.fix.description || `Add ref="${strippedRef}" to matching <${candidateTag}> element`
-          })
+        const tagRegex = new RegExp(`<(${candidateTag})([\\s>\\/])`, 'gi')
+        let tagMatch
+        while ((tagMatch = tagRegex.exec(code)) !== null) {
+          const endTagIndex = code.indexOf('>', tagMatch.index)
+          const fullTagStr = code.slice(tagMatch.index, endTagIndex + 1)
+          if (!/\bref\s*=/i.test(fullTagStr)) {
+            const insertPos = tagMatch.index + 1 + candidateTag.length
+            code = code.slice(0, insertPos) + ` ref="${strippedRef}"` + code.slice(insertPos)
+            fixesApplied.push({
+              code: 'CORALITE-E202',
+              description: diag.fix.description || `Add ref="${strippedRef}" to matching <${candidateTag}> element`
+            })
+            break
+          }
         }
       }
     }

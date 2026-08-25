@@ -70,6 +70,28 @@ describe('CLI Integration Tests (coralite.js)', () => {
       assert.strictEqual(json.summary.errorCount, 0)
     })
 
+    test('exits with code 0 when only warnings exist in standard mode, and code 1 in --strict mode', () => {
+      const pageDir = join(tmpDir, 'pages')
+      mkdirSync(pageDir, { recursive: true })
+      writeFileSync(join(pageDir, 'index.html'), `
+<!DOCTYPE html>
+<html>
+  <body>
+    <unknown-element></unknown-element>
+  </body>
+</html>
+`)
+
+      // Standard mode: exits with code 0 even with warnings
+      const output = execSync(`node "${cliBin}" check --pages pages`, { cwd: tmpDir }).toString()
+      assert.match(output, /1 warning\(s\)/)
+
+      // Strict mode: exits with code 1 when warnings exist
+      assert.throws(() => {
+        execSync(`node "${cliBin}" check --pages pages --strict`, { cwd: tmpDir, stdio: 'pipe' })
+      })
+    })
+
     test('exits with code 1 when errors exist in unified check', () => {
       const compDir = join(tmpDir, 'components')
       mkdirSync(compDir, { recursive: true })

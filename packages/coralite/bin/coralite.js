@@ -120,28 +120,37 @@ program
         pageReport = validatePagesDir(pageDir, { knownComponents })
       }
 
-      const totalFiles = (compReport ? compReport.summary.totalComponents : 0) +
-                         (pluginReport ? pluginReport.metrics.totalPlugins : 0) +
-                         (pageReport ? pageReport.summary.totalPages : 0)
+      const totalFiles = (compReport?.summary?.totalComponents ?? 0) +
+                         (pluginReport?.metrics?.totalPlugins ?? 0) +
+                         (pageReport?.summary?.totalPages ?? 0)
 
-      const validFiles = (compReport ? compReport.summary.validComponents : 0) +
-                         (pluginReport ? pluginReport.metrics.validPlugins : 0) +
-                         (pageReport ? pageReport.summary.validPages : 0)
+      const validFiles = (compReport?.summary?.validComponents ?? 0) +
+                         (pluginReport?.metrics?.validPlugins ?? 0) +
+                         (pageReport?.summary?.validPages ?? 0)
 
-      const errorCount = (compReport ? compReport.summary.errorCount : 0) +
-                         (pluginReport ? pluginReport.metrics.totalErrors : 0) +
-                         (pageReport ? pageReport.summary.errorCount : 0)
+      const errorCount = (compReport?.summary?.errorCount ?? 0) +
+                         (pluginReport?.metrics?.totalErrors ?? 0) +
+                         (pageReport?.summary?.errorCount ?? 0)
 
-      const warningCount = (compReport ? compReport.summary.warningCount : 0) +
-                           (pluginReport ? pluginReport.metrics.totalWarnings : 0) +
-                           (pageReport ? pageReport.summary.warningCount : 0)
+      const warningCount = (compReport?.summary?.warningCount ?? 0) +
+                           (pluginReport?.metrics?.totalWarnings ?? 0) +
+                           (pageReport?.summary?.warningCount ?? 0)
 
-      const fixableCount = (compReport ? compReport.summary.fixableCount : 0) +
+      const fixableCount = (compReport?.summary?.fixableCount ?? 0) +
                            (pluginReport ? (pluginReport.plugins || []).reduce((acc, p) => acc + (p.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length, 0) : 0) +
-                           (pageReport ? pageReport.summary.fixableCount : 0)
+                           (pageReport?.summary?.fixableCount ?? 0)
 
-      const totalUnused = compReport ? compReport.metrics.totalUnused : 0
-      const usageCoveragePercentage = compReport ? compReport.summary.usageCoveragePercentage : 100
+      let totalUnused = 0
+      if (compReport?.metrics?.totalUnused !== undefined) {
+        totalUnused = Number(compReport.metrics.totalUnused) || 0
+      } else if (compReport?.summary && ('totalUnused' in compReport.summary)) {
+        /** @type {Record<string, any>} */
+        const summaryObj = compReport.summary
+
+        totalUnused = Number(summaryObj.totalUnused) || 0
+      }
+
+      const usageCoveragePercentage = compReport?.summary?.usageCoveragePercentage ?? 100
 
       if (options.format === 'json') {
         const jsonOutput = {
@@ -190,7 +199,7 @@ program
         process.stdout.write(summaryColor(summaryLine) + '\n\n')
       }
 
-      const hasFailures = errorCount > 0 || (options.strict && (warningCount > 0 || totalUnused > 0))
+      const hasFailures = errorCount > 0 || (Boolean(options.strict) && (warningCount > 0 || totalUnused > 0))
       if (hasFailures) {
         process.exit(1)
       }

@@ -62,6 +62,22 @@ describe('Coralite Page Validator (page-validator.js)', () => {
       assert.equal(result.valid, true)
       assert.equal(result.diagnostics.length, 0)
     })
+
+    it('ignores custom element tags enclosed within HTML comments', () => {
+      const source = `
+        <!-- <coralite-card></coralite-card> -->
+        <!-- <unknown-widget></unknown-widget> -->
+        <div>Valid HTML</div>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map([
+          ['coralite-card', { attributes: { title: { required: true } } }]
+        ])
+      })
+
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
   })
 
   describe('CORALITE-PAGE-102: Missing Required Attribute', () => {

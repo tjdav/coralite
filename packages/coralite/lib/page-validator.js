@@ -14,6 +14,20 @@ import { createDiagnostic, formatValidationReport } from './utils/diagnostics.js
  */
 
 /**
+ * Strips HTML comments while preserving original line numbers and character offsets.
+ *
+ * @param {string} html - Raw HTML source code.
+ * @returns {string} Cleaned HTML source code with comment contents replaced by spaces.
+ */
+function stripHtmlComments (html) {
+  if (!html || !html.includes('<!--')) {
+    return html
+  }
+
+  return html.replace(/<!--[\s\S]*?-->/g, (match) => match.replace(/[^\r\n]/g, ' '))
+}
+
+/**
  * Calculates Levenshtein distance between two strings.
  *
  * @param {string} a - First string
@@ -121,6 +135,8 @@ export function validatePageSource (sourceCode, options = {}) {
   /** @type {CoraliteDiagnostic[]} */
   const diagnostics = []
 
+  const cleanSourceCode = stripHtmlComments(sourceCode)
+
   // Normalize knownComponents map
   const knownMap = new Map()
   if (options.knownComponents) {
@@ -168,7 +184,7 @@ export function validatePageSource (sourceCode, options = {}) {
         if (tagName === 'script') {
           currentSection = 'script'
           scriptContent = ''
-          scriptSearchOffset = sourceCode.indexOf('<script')
+          scriptSearchOffset = cleanSourceCode.indexOf('<script')
           return
         }
 
@@ -181,7 +197,7 @@ export function validatePageSource (sourceCode, options = {}) {
           }
 
           const normTag = camelToKebab(tagName)
-          const tagLoc = getLocForSubstring(sourceCode, `<${name}`, 0)
+          const tagLoc = getLocForSubstring(cleanSourceCode, `<${name}`, 0)
 
           if (!knownMap.has(normTag)) {
             // CORALITE-PAGE-101: Unknown Custom Element
@@ -254,7 +270,7 @@ export function validatePageSource (sourceCode, options = {}) {
     }
   )
 
-  parser.write(sourceCode)
+  parser.write(cleanSourceCode)
   parser.end()
 
   const errorCount = diagnostics.filter(d => d.severity === 'error').length
