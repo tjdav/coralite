@@ -436,27 +436,29 @@ program
  */
 export function calculateNewVersion (currentVersion, releaseType, preid = 'rc', targetBase = 'preminor') {
   const isPrerelease = Boolean(semver.prerelease(currentVersion))
+  let result = null
 
   if (releaseType === 'rc') {
     if (isPrerelease) {
-      return semver.inc(currentVersion, 'prerelease', preid)
+      result = semver.inc(currentVersion, 'prerelease', preid)
+    } else {
+      result = semver.inc(currentVersion, targetBase, preid)
     }
-    return semver.inc(currentVersion, targetBase, preid)
+  } else if (releaseType === 'prerelease') {
+    result = semver.inc(currentVersion, 'prerelease', preid)
+  } else if (['premajor', 'preminor', 'prepatch'].includes(releaseType)) {
+    result = semver.inc(currentVersion, releaseType, preid)
+  } else if (['major', 'minor', 'patch'].includes(releaseType)) {
+    result = semver.inc(currentVersion, releaseType)
+  } else {
+    throw new Error(`Unknown release type: ${releaseType}`)
   }
 
-  if (releaseType === 'prerelease') {
-    return semver.inc(currentVersion, 'prerelease', preid)
+  if (!result) {
+    throw new Error(`Failed to calculate new version for "${currentVersion}" with release type "${releaseType}"`)
   }
 
-  if (['premajor', 'preminor', 'prepatch'].includes(releaseType)) {
-    return semver.inc(currentVersion, releaseType, preid)
-  }
-
-  if (['major', 'minor', 'patch'].includes(releaseType)) {
-    return semver.inc(currentVersion, releaseType)
-  }
-
-  throw new Error(`Unknown release type: ${releaseType}`)
+  return result
 }
 
 // Handle unhandled rejections

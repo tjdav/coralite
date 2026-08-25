@@ -51,9 +51,16 @@ describe('calculateNewVersion', () => {
     assert.equal(calculateNewVersion('0.48.0-rc.1', 'major'), '1.0.0')
   })
 
-  it('should throw error when semver returns null for invalid release type or version', () => {
+  it('should throw error for invalid release type', () => {
     assert.throws(
       () => calculateNewVersion('0.47.1', 'invalid-type'),
+      /Unknown release type/
+    )
+  })
+
+  it('should throw error when semver returns null for invalid version', () => {
+    assert.throws(
+      () => calculateNewVersion('invalid-version', 'minor'),
       /Failed to calculate new version/
     )
   })
