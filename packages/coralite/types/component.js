@@ -76,6 +76,13 @@
  */
 
 /**
+ * @typedef {Object} CoraliteSlotElement
+ * @property {string} name - Slot name
+ * @property {CoraliteElement} element - Corresponding slot element node
+ * @property {CoraliteElement} [customElement] - Corresponding custom element node
+ */
+
+/**
  * Represents a text node token with associated metadata.
  * @typedef {Object} CoraliteTextNodeToken
  * @property {CoraliteTextNode} textNode - Text node that contains the token

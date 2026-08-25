@@ -30,4 +30,44 @@
  * @property {boolean} [incremental] - Enable or disable incremental build change detection
  */
 
+/**
+ * @typedef {Object} CoraliteCheckOptions
+ * @property {string} [components] - Path to components directory
+ * @property {string} [plugins] - Path to plugin file or directory
+ * @property {string} [pages] - Path to pages directory
+ * @property {'console' | 'json'} [format='console'] - Output format
+ * @property {boolean} [strict=false] - Fail with non-zero exit code if warnings or unused tokens exist
+ * @property {boolean} [coverage=false] - Include component test coverage metrics
+ * @property {string} [cwd] - Working directory path override
+ */
+
+/**
+ * @typedef {Object} CoraliteFixOptions
+ * @property {string} [components] - Path to components directory
+ * @property {string} [plugins] - Path to plugin file or directory
+ * @property {string} [pages] - Path to pages directory
+ * @property {boolean} [dryRun=false] - Preview changes without writing to disk
+ * @property {string} [cwd] - Working directory path override
+ */
+
+/**
+ * @typedef {Object} CoraliteCheckSummary
+ * @property {number} totalFiles
+ * @property {number} validFiles
+ * @property {number} errorCount
+ * @property {number} warningCount
+ * @property {number} fixableCount
+ * @property {number} totalUnused
+ * @property {number} usageCoveragePercentage
+ */
+
+/**
+ * @typedef {Object} CoraliteFixResult
+ * @property {number} totalFixesCount
+ * @property {string[]} modifiedFiles
+ * @property {string[]} diffs
+ * @property {any} [checkResult]
+ * @property {boolean} hasFailures
+ */
+
 export default {}

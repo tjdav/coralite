@@ -19,19 +19,37 @@ import { defineConfig } from './config.js'
  *
  * const config = await loadConfig()
  * ```
- * @param {string} [cwd=process.cwd()] - The current working directory.
+ * @param {string|{ cwd?: string, silent?: boolean }} [cwd=process.cwd()] - The current working directory or options object.
+ * @param {object} [options={}] - Additional options.
+ * @param {boolean} [options.silent=false] - Whether to suppress error logs when config is missing or fails.
  */
-async function loadConfig (cwd = process.cwd()) {
-  const configPath = pathToFileURL(join(cwd, 'coralite.config.js'))
+async function loadConfig (cwd = process.cwd(), { silent = false } = {}) {
+  let targetCwd = typeof cwd === 'string' ? cwd : process.cwd()
+  let isSilent = silent
+
+  if (cwd && typeof cwd === 'object') {
+    if (typeof cwd.cwd === 'string') {
+      targetCwd = cwd.cwd
+    }
+    if (typeof cwd.silent === 'boolean') {
+      isSilent = cwd.silent
+    }
+  }
+
+  const configPath = pathToFileURL(join(targetCwd, 'coralite.config.js'))
 
   try {
     await access(configPath)
   } catch (error) {
     if (error.code === 'ENOENT') {
-      displayError('Configuration file not found', `Could not find coralite.config.js at ${configPath}`)
+      if (!isSilent) {
+        displayError('Configuration file not found', `Could not find coralite.config.js at ${configPath}`)
+      }
       return null
     }
-    displayError('Failed to access configuration file', error)
+    if (!isSilent) {
+      displayError('Failed to access configuration file', error)
+    }
     return null
   }
 
@@ -39,13 +57,17 @@ async function loadConfig (cwd = process.cwd()) {
     const config = await import(`${configPath.toString()}?t=${Date.now()}`)
 
     if (!config.default) {
-      displayError('Config file must export a default object')
+      if (!isSilent) {
+        displayError('Config file must export a default object')
+      }
       return null
     }
 
     return defineConfig(config.default)
   } catch (error) {
-    displayError('Failed to load configuration file', error.message || error)
+    if (!isSilent) {
+      displayError('Failed to load configuration file', error.message || error)
+    }
     throw error
   }
 }

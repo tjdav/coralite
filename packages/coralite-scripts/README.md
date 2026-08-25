@@ -1,6 +1,6 @@
 # Coralite Scripts
 
-Welcome to **Coralite Scripts**, a lightweight script toolset for building and serving Coralite applications. This guide walks you through setting up your local development environment using the provided `coralite-scripts` package and configuration files.
+Welcome to **Coralite Scripts**, a lightweight script toolset for building, validating, auto-fixing, and serving Coralite applications. This guide walks you through setting up your local development environment using the provided `coralite-scripts` package and configuration files.
 
 ---
 
@@ -13,7 +13,8 @@ my-coralite-site/
 ├── src/
 │   ├── pages/        # Your page components (e.g., `about.html`, `index.html`)
 │   ├── css/          # SCSS/Sass/CSS global styles
-│   └── components/   # Reusable component files
+│   ├── components/   # Reusable component files
+│   └── plugins/      # Custom Coralite plugins
 ├── public/           # Static assets (CSS, JS, images)
 ├── dist/             # Output directory for built site (auto-generated)
 ├── coralite.config.js # Configuration file
@@ -35,6 +36,7 @@ export default defineConfig({
   public: 'public',
   pages: 'src/pages',
   components: 'src/components',
+  plugins: 'src/plugins',
   
   // Style pipeline (CSS, Sass, PostCSS)
   styles: {
@@ -61,11 +63,11 @@ export default defineConfig({
 })
 ```
 
-> This tells Coralite where to find your source files, compile CSS from SCSS/Sass/CSS, and serve static assets. It also sets up advanced features like copying static assets or ignoring/skipping rendering of specific elements based on attributes.
+> This tells Coralite where to find your source files, compile CSS from SCSS/Sass/CSS, serve static assets, and run validation or fixing tasks.
 
 ---
 
-## Step 2: Start the Development Server
+## Step 2: Available Scripts
 
 Update your `package.json` scripts to include:
 
@@ -74,7 +76,9 @@ Update your `package.json` scripts to include:
   "scripts": {
     "start": "coralite-scripts dev",
     "test": "coralite-scripts test",
-    "build": "coralite-scripts build"
+    "build": "coralite-scripts build",
+    "check": "coralite-scripts check",
+    "fix": "coralite-scripts fix"
   }
 }
 ```
@@ -86,6 +90,42 @@ npm run start
 ```
 
 > The server runs on `http://localhost:3000` by default.
+
+---
+
+## Workspace Check (`coralite-scripts check`)
+
+Run a unified multi-domain validation pass across components, plugins, and pages:
+
+```bash
+coralite-scripts check
+```
+
+### Options
+
+* `-c, --components <path>`: Override components directory path.
+* `-p, --plugins <path>`: Override plugin file or directory path.
+* `--pages <path>`: Override pages directory path.
+* `--format <format>`: Output format (`console` or `json`, default `console`).
+* `--strict`: Fail with exit code 1 if warnings or unused tokens exist.
+* `--coverage`: Include component test coverage metrics.
+
+---
+
+## Workspace Auto-Fixer (`coralite-scripts fix`)
+
+Run AST auto-fixers across components and plugins:
+
+```bash
+coralite-scripts fix
+```
+
+### Options
+
+* `-c, --components <path>`: Override components directory path.
+* `-p, --plugins <path>`: Override plugin file or directory path.
+* `--pages <path>`: Override pages directory path.
+* `--dry-run`: Preview unified diffs without modifying files on disk.
 
 ---
 

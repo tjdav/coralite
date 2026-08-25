@@ -3,6 +3,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { buildCommand } from '../../libs/commands/build.js'
+import { checkCommand } from '../../libs/commands/check.js'
+import { fixCommand } from '../../libs/commands/fix.js'
 import loadConfig from '../../libs/load-config.js'
 import { parseAssetMapping, mergeAssets } from '../../libs/assets.js'
 
@@ -16,25 +18,31 @@ const coraliteScriptsLib = path.resolve(__dirname, '../../libs/config.js')
  *   testDir: string,
  *   pagesDir: string,
  *   componentsDir: string,
+ *   pluginsDir: string,
  *   publicDir: string,
  *   outputDir: string,
  *   cleanup: () => Promise<void>,
  *   writePage: (name: string, content: string) => Promise<string>,
  *   writeComponent: (name: string, content: string) => Promise<string>,
+ *   writePlugin: (name: string, content: string) => Promise<string>,
  *   deletePage: (name: string) => Promise<void>,
  *   writeConfig: (content: string) => Promise<string>,
- *   runBuild: (args?: string[]) => Promise<{ stdout: string, stderr: string, exitCode: number }>
+ *   runBuild: (args?: string[]) => Promise<{ stdout: string, stderr: string, exitCode: number }>,
+ *   runCheck: (args?: string[]) => Promise<{ stdout: string, stderr: string, exitCode: number, result: any }>,
+ *   runFix: (args?: string[]) => Promise<{ stdout: string, stderr: string, exitCode: number, result: any }>
  * }>}
  */
 export async function createCLIProject () {
   const testDir = await mkdtemp(path.join(tmpdir(), 'coralite-cli-test-'))
   const pagesDir = path.join(testDir, 'src', 'pages')
   const componentsDir = path.join(testDir, 'src', 'components')
+  const pluginsDir = path.join(testDir, 'src', 'plugins')
   const publicDir = path.join(testDir, 'public')
   const outputDir = path.join(testDir, 'dist')
 
   await mkdir(pagesDir, { recursive: true })
   await mkdir(componentsDir, { recursive: true })
+  await mkdir(pluginsDir, { recursive: true })
   await mkdir(publicDir, { recursive: true })
   await mkdir(outputDir, { recursive: true })
 
@@ -42,6 +50,7 @@ export async function createCLIProject () {
     testDir,
     pagesDir,
     componentsDir,
+    pluginsDir,
     publicDir,
     outputDir,
     cleanup: async function () {
@@ -60,6 +69,10 @@ export async function createCLIProject () {
     },
     writeComponent: (name, content) => {
       const filePath = path.join(componentsDir, name)
+      return writeFile(filePath, content).then(() => filePath)
+    },
+    writePlugin: (name, content) => {
+      const filePath = path.join(pluginsDir, name)
       return writeFile(filePath, content).then(() => filePath)
     },
     writeConfig: (content) => {
@@ -158,6 +171,104 @@ export async function createCLIProject () {
       } finally {
         process.chdir(originalCwd)
       }
+    },
+    runCheck: async (args = []) => {
+      const getArg = (flag, shortFlag) => {
+        let idx = args.indexOf(flag)
+        if (idx === -1 && shortFlag) idx = args.indexOf(shortFlag)
+        if (idx !== -1 && idx + 1 < args.length) return args[idx + 1]
+        return undefined
+      }
+
+      const options = {
+        components: getArg('--components', '-c'),
+        plugins: getArg('--plugins', '-p'),
+        pages: getArg('--pages'),
+        format: getArg('--format') || 'console',
+        strict: args.includes('--strict'),
+        coverage: args.includes('--coverage'),
+        cwd: testDir
+      }
+
+      let stdout = ''
+      let stderr = ''
+
+      const logger = {
+        write: (msg) => { stdout += msg },
+        log: (msg) => { stdout += msg + '\n' }
+      }
+
+      const originalCwd = process.cwd()
+      process.chdir(testDir)
+
+      try {
+        const config = await loadConfig(testDir, { silent: true })
+        const result = await checkCommand(config, options, logger)
+        return {
+          stdout,
+          stderr,
+          exitCode: result.hasFailures ? 1 : 0,
+          result
+        }
+      } catch (err) {
+        stderr += (err ? err.message : '') + '\n'
+        return {
+          stdout,
+          stderr,
+          exitCode: 1,
+          result: null
+        }
+      } finally {
+        process.chdir(originalCwd)
+      }
+    },
+    runFix: async (args = []) => {
+      const getArg = (flag, shortFlag) => {
+        let idx = args.indexOf(flag)
+        if (idx === -1 && shortFlag) idx = args.indexOf(shortFlag)
+        if (idx !== -1 && idx + 1 < args.length) return args[idx + 1]
+        return undefined
+      }
+
+      const options = {
+        components: getArg('--components', '-c'),
+        plugins: getArg('--plugins', '-p'),
+        pages: getArg('--pages'),
+        dryRun: args.includes('--dry-run'),
+        cwd: testDir
+      }
+
+      let stdout = ''
+      let stderr = ''
+
+      const logger = {
+        write: (msg) => { stdout += msg },
+        log: (msg) => { stdout += msg + '\n' }
+      }
+
+      const originalCwd = process.cwd()
+      process.chdir(testDir)
+
+      try {
+        const config = await loadConfig(testDir, { silent: true })
+        const result = await fixCommand(config, options, logger)
+        return {
+          stdout,
+          stderr,
+          exitCode: result.hasFailures ? 1 : 0,
+          result
+        }
+      } catch (err) {
+        stderr += (err ? err.message : '') + '\n'
+        return {
+          stdout,
+          stderr,
+          exitCode: 1,
+          result: null
+        }
+      } finally {
+        process.chdir(originalCwd)
+      }
     }
   }
 
@@ -170,6 +281,7 @@ export async function createCLIProject () {
       output: './dist',
       components: './src/components',
       pages: './src/pages',
+      plugins: './src/plugins',
       public: './public'
     })
   `)
