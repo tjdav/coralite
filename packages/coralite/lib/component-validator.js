@@ -359,6 +359,10 @@ export function validateComponentSource (sourceCode, filePath = '') {
   const importLocations = new Map()
   // attr -> { line, column }
   const attributeLocations = new Map()
+  // getter -> { line, column }
+  const getterLocations = new Map()
+  // serverProp -> { line, column }
+  const serverPropLocations = new Map()
   const usedTopLevelImportsInClient = new Set()
   const usedTopLevelImportsOutsideClient = new Set()
 
@@ -554,6 +558,11 @@ export function validateComponentSource (sourceCode, filePath = '') {
                           const propName = getPropKeyName(retProp)
                           if (propName) {
                             definedServerProps.add(propName)
+                            const targetNode = retProp.key || retProp
+                            serverPropLocations.set(propName, {
+                              line: targetNode.loc.start.line + scriptStartLine,
+                              column: targetNode.loc.start.column + 1
+                            })
                           }
                         }
                       }
@@ -568,6 +577,11 @@ export function validateComponentSource (sourceCode, filePath = '') {
                     const gName = getPropKeyName(getterProp)
                     if (gName) {
                       definedGetters.add(gName)
+                      const targetNode = getterProp.key || getterProp
+                      getterLocations.set(gName, {
+                        line: targetNode.loc.start.line + scriptStartLine,
+                        column: targetNode.loc.start.column + 1
+                      })
                     }
                   }
                 }
@@ -1171,6 +1185,17 @@ export function validateComponentSource (sourceCode, filePath = '') {
               (callNode.callee.type === 'MemberExpression' && getNodePropName(callNode.callee.property, callNode.callee.computed) === 'observe')
 
             if (isObserveCall && callNode.arguments.length > 0) {
+              const targetArg = callNode.arguments[0]
+              if (targetArg.type === 'Literal' && typeof targetArg.value === 'string') {
+                targetStateSet.add(targetArg.value)
+              } else if (targetArg.type === 'ArrayExpression') {
+                for (const el of targetArg.elements) {
+                  if (el && el.type === 'Literal' && typeof el.value === 'string') {
+                    targetStateSet.add(el.value)
+                  }
+                }
+              }
+
               const callbackFn = callNode.arguments.length > 1 ? callNode.arguments[1] : callNode.arguments[0]
               if (callbackFn && (callbackFn.type === 'FunctionExpression' || callbackFn.type === 'ArrowFunctionExpression')) {
                 const callbackStateVars = new Set(['state'])
@@ -1781,15 +1806,25 @@ export function validateComponentSource (sourceCode, filePath = '') {
   // Cross-reference unused items & emit CORALITE-W401
   const unusedGetters = []
   for (const getter of definedGetters) {
-    if (!isEntireComponentIgnored && !ignoredSymbols.has(getter) && !templateTokens.has(getter) && !stateReads.has(getter)) {
+    if (
+      !isEntireComponentIgnored &&
+      !ignoredSymbols.has(getter) &&
+      !templateTokens.has(getter) &&
+      !stateReads.has(getter) &&
+      !getterStateDependencies.has(getter)
+    ) {
       unusedGetters.push(getter)
+      const loc = getterLocations.get(getter) || {
+        line: 1,
+        column: 1
+      }
       diagnostics.push(createDiagnostic({
         code: 'CORALITE-W401',
         severity: 'warning',
         message: `Unused getter '${getter}'.`,
         filePath,
-        line: 1,
-        column: 1,
+        line: loc.line,
+        column: loc.column,
         sourceCode,
         cause: `Unreferenced getter '${getter}'.`,
         fix: {
@@ -1809,13 +1844,18 @@ export function validateComponentSource (sourceCode, filePath = '') {
       !getterStateDependencies.has(prop)
     ) {
       unusedServerProps.push(prop)
+      const loc = serverPropLocations.get(prop) || {
+        line: 1,
+        column: 1
+      }
+
       diagnostics.push(createDiagnostic({
         code: 'CORALITE-W401',
         severity: 'warning',
         message: `Unused server property '${prop}'.`,
         filePath,
-        line: 1,
-        column: 1,
+        line: loc.line,
+        column: loc.column,
         sourceCode,
         cause: `Unreferenced server property '${prop}'.`,
         fix: {

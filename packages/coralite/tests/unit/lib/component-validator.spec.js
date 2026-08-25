@@ -830,7 +830,92 @@ ${templateLines}
     assert.strictEqual(w402s4.length, 1)
   })
 
-  // 19. Backwards Compatibility Aliases
+  // 20. Inter-Getter Dependencies & Observer Tracking & Coordinates
+  test('should recognize inter-getter state dependencies and suppress CORALITE-W401', () => {
+    const componentSource = `
+<template>
+  <div aria-expanded="{{ isAriaExpanded }}">Header</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      variant: String,
+      expanded: Boolean
+    },
+    getters: {
+      isAccordion: (state) => state.variant === 'accordion',
+      isAriaExpanded: (state) => {
+        if (!state.isAccordion) return null
+        return state.expanded ? 'true' : 'false'
+      }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(componentSource, 'test-inter-getter.html')
+    const w401s = result.diagnostics.filter(d => d.code === 'CORALITE-W401')
+    assert.strictEqual(w401s.length, 0, 'Getter consumed by another getter should not emit CORALITE-W401')
+  })
+
+  test('should report accurate line and column numbers for unused getters and server properties', () => {
+    const componentSource = `
+<template>
+  <div>Simple Component</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    async server() {
+      return {
+        unusedServerProp: 42
+      }
+    },
+    getters: {
+      unusedGetter: (state) => state.unknown
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(componentSource, 'test-coords.html')
+    const w401s = result.diagnostics.filter(d => d.code === 'CORALITE-W401')
+    assert.strictEqual(w401s.length, 2)
+
+    const serverPropDiag = w401s.find(d => d.message.includes('unusedServerProp'))
+    const getterDiag = w401s.find(d => d.message.includes('unusedGetter'))
+
+    assert.ok(serverPropDiag, 'Server prop diagnostic should exist')
+    assert.strictEqual(serverPropDiag.line, 10, 'Server prop should point to line 10')
+
+    assert.ok(getterDiag, 'Getter diagnostic should exist')
+    assert.strictEqual(getterDiag.line, 14, 'Getter should point to line 14')
+  })
+
+  test('should recognize properties observed via observe() and suppress CORALITE-W401', () => {
+    const componentSource = `
+<template>
+  <div>Observer Component</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      activeTab: String,
+      sidebarOpen: Boolean
+    },
+    client: ({ observe }) => {
+      observe('activeTab', (val) => {})
+      observe(['sidebarOpen'], (val) => {})
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(componentSource, 'test-observer.html')
+    const w401s = result.diagnostics.filter(d => d.code === 'CORALITE-W401')
+    assert.strictEqual(w401s.length, 0, 'Attributes observed via observe() should not emit CORALITE-W401')
+  })
+
+  // 21. Backwards Compatibility Aliases
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)
