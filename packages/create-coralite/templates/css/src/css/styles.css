@@ -4,9 +4,6 @@
  * 1. Design Tokens (:root CSS Custom Properties)
  * 2. Reset & Typography (html, body, headings, links)
  * 3. Layout & Utilities (.container, .d-flex, .gap, .text-center)
- *
- * Note: Component-specific styles belong in the <style> block of
- * each component (*.html), using :host and scoped classes.
  */
 
 /* Variables */
