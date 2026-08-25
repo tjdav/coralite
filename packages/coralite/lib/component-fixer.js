@@ -537,6 +537,9 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       // 2.0 CORALITE-W204 (Unwrap Redundant Ref Guards)
       const w204Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-W204' && d.fix?.action === 'unwrap_ref_guard')
       if (w204Diagnostics.length > 0) {
+        const scriptStartLine = isHtmlFile && scriptContent
+          ? (code.slice(0, scriptStart).split('\n').length - 1)
+          : 0
         const w204Lines = new Set(w204Diagnostics.map(d => d.line))
         const ifReplacements = []
 
@@ -545,7 +548,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
             if (ifNode.alternate) {
               return
             }
-            if (w204Lines.has(ifNode.loc.start.line)) {
+            if (w204Lines.has(ifNode.loc.start.line + scriptStartLine)) {
               let replacement = ''
               if (ifNode.consequent.type === 'BlockStatement') {
                 const body = ifNode.consequent.body
@@ -558,7 +561,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
                 replacement = scriptContent.slice(ifNode.consequent.range[0], ifNode.consequent.range[1])
               }
 
-              const diag = w204Diagnostics.find(d => d.line === ifNode.loc.start.line)
+              const diag = w204Diagnostics.find(d => d.line === (ifNode.loc.start.line + scriptStartLine))
               ifReplacements.push({
                 start: ifNode.range[0],
                 end: ifNode.range[1],

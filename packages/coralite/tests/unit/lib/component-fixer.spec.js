@@ -350,6 +350,31 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
     assert.strictEqual(postE105s.length, 0)
   })
 
+  test('CORALITE-W204: unwraps ref guard in HTML components with leading template lines', () => {
+    const templateLines = Array.from({ length: 40 }, (_, i) => `  <div>Line ${i + 1}</div>`).join('\n')
+    const input = `<template>
+${templateLines}
+  <button ref="submit-btn">Submit</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs, signal }) {
+      const btn = refs('submit-btn')
+      if (btn) {
+        btn.addEventListener('click', () => {}, { signal })
+      }
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'w204-html-offset.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(!result.outputCode.includes('if (btn)'))
+    assert.ok(result.outputCode.includes("btn.addEventListener('click', () => {}, { signal })"))
+  })
+
   test('dryRun support: generates colorized diff without throwing', () => {
     const oldCode = '<div>Old</div>'
     const newCode = '<div>New</div>'

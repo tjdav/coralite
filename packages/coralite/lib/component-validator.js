@@ -357,6 +357,10 @@ export function validateComponentSource (sourceCode, filePath = '') {
     scriptContent = sourceCode
   }
 
+  const scriptStartLine = scriptContent && sourceCode.includes('<script')
+    ? getLocForSubstring(sourceCode, scriptContent).line - 1
+    : 0
+
   // Parse Script AST first to populate definedAttributes, definedGetters, definedServerProps before template evaluation
   if (scriptContent) {
     try {
@@ -408,7 +412,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
           targetMap.set(patternNode.name, isImport ? importSource : 'local')
           if (!importLocations.has(patternNode.name)) {
             importLocations.set(patternNode.name, {
-              line: patternNode.loc.start.line,
+              line: patternNode.loc.start.line + scriptStartLine,
               column: patternNode.loc.start.column + 1
             })
           }
@@ -441,7 +445,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
               if (spec.local && spec.local.name) {
                 topLevelImports.set(spec.local.name, source)
                 importLocations.set(spec.local.name, {
-                  line: spec.loc.start.line,
+                  line: spec.loc.start.line + scriptStartLine,
                   column: spec.loc.start.column + 1
                 })
               }
@@ -730,7 +734,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
               if (spec.local && spec.local.name) {
                 topLevelImports.set(spec.local.name, source)
                 importLocations.set(spec.local.name, {
-                  line: spec.loc.start.line,
+                  line: spec.loc.start.line + scriptStartLine,
                   column: spec.loc.start.column + 1
                 })
               }
@@ -752,8 +756,6 @@ export function validateComponentSource (sourceCode, filePath = '') {
           }
         }
       }
-
-      const scriptStartLine = scriptContent && sourceCode.includes('<script') ? getLocForSubstring(sourceCode, scriptContent).line - 1 : 0
 
       const analyzeFunctionBlock = (fnNode, targetStateSet, targetRefsMap, isGetterFn = false, isClientFn = false, paramIdx = 0, isSlotFn = false, isServerFn = false) => {
         if (!fnNode || !fnNode.body) {
@@ -869,7 +871,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                         const rName = getPropKeyName(refProp)
                         if (rName) {
                           targetRefsMap.set(rName, {
-                            line: refProp.loc.start.line,
+                            line: refProp.loc.start.line + scriptStartLine,
                             column: refProp.loc.start.column + 1
                           })
                         }
@@ -978,7 +980,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                   const rName = getPropKeyName(refProp)
                   if (rName) {
                     targetRefsMap.set(rName, {
-                      line: refProp.loc.start.line,
+                      line: refProp.loc.start.line + scriptStartLine,
                       column: refProp.loc.start.column + 1
                     })
                   }
@@ -1017,7 +1019,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                           const rName = getPropKeyName(refProp)
                           if (rName) {
                             targetRefsMap.set(rName, {
-                              line: refProp.loc.start.line,
+                              line: refProp.loc.start.line + scriptStartLine,
                               column: refProp.loc.start.column + 1
                             })
                           }
@@ -1103,7 +1105,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
               const keyName = getNodePropName(propNode, memNode.computed)
               if (keyName) {
                 targetRefsMap.set(keyName, {
-                  line: memNode.loc.start.line,
+                  line: memNode.loc.start.line + scriptStartLine,
                   column: memNode.loc.start.column + 1
                 })
               }
@@ -1130,7 +1132,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
               const arg0 = callNode.arguments[0]
               if (arg0.type === 'Literal' && typeof arg0.value === 'string') {
                 targetRefsMap.set(arg0.value, {
-                  line: callNode.loc.start.line,
+                  line: callNode.loc.start.line + scriptStartLine,
                   column: callNode.loc.start.column + 1
                 })
               }
@@ -1164,7 +1166,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                         severity: 'warning',
                         message: 'State mutation detected inside observe() callback.',
                         filePath,
-                        line: locNode.loc.start.line,
+                        line: locNode.loc.start.line + scriptStartLine,
                         column: locNode.loc.start.column + 1,
                         sourceCode,
                         cause: 'Mutating state inside observe() callback creates reactive loops.',
@@ -1188,11 +1190,33 @@ export function validateComponentSource (sourceCode, filePath = '') {
             }
           },
 
+          Property (propNode) {
+            if (isClientFn) {
+              const keyName = getPropKeyName(propNode)
+              if (keyName && templateRefs.has(keyName)) {
+                const targetNode = propNode.key || propNode
+                targetRefsMap.set(keyName, {
+                  line: targetNode.loc.start.line + scriptStartLine,
+                  column: targetNode.loc.start.column + 1
+                })
+              }
+            }
+          },
+
+          Identifier (idNode) {
+            if (isClientFn && templateRefs.has(idNode.name)) {
+              targetRefsMap.set(idNode.name, {
+                line: idNode.loc.start.line + scriptStartLine,
+                column: idNode.loc.start.column + 1
+              })
+            }
+          },
+
           Literal (litNode) {
             if (isClientFn && typeof litNode.value === 'string') {
               if (templateRefs.has(litNode.value)) {
                 targetRefsMap.set(litNode.value, {
-                  line: litNode.loc.start.line,
+                  line: litNode.loc.start.line + scriptStartLine,
                   column: litNode.loc.start.column + 1
                 })
               }
@@ -1227,7 +1251,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                     const attrName = getPropKeyName(attrProp)
                     if (attrName) {
                       attributeLocations.set(attrName, {
-                        line: attrProp.loc.start.line,
+                        line: attrProp.loc.start.line + scriptStartLine,
                         column: attrProp.loc.start.column + 1
                       })
 
@@ -1238,7 +1262,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                           severity: 'error',
                           message: `Attribute '${attrName}' collides with reserved slot context key.`,
                           filePath,
-                          line: attrProp.loc.start.line,
+                          line: attrProp.loc.start.line + scriptStartLine,
                           column: attrProp.loc.start.column + 1,
                           sourceCode,
                           cause: 'Property collides with reserved slot context keys.',
@@ -1273,7 +1297,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                                 severity: 'error',
                                 message: `Attribute '${attrName}' defines blocked type '${typeName}'.`,
                                 filePath,
-                                line: cfgProp.loc.start.line,
+                                line: cfgProp.loc.start.line + scriptStartLine,
                                 column: cfgProp.loc.start.column + 1,
                                 sourceCode,
                                 cause: 'Array and Object types in attributes cause state pollution and serialization boundary leaks.',
@@ -1311,7 +1335,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                                 severity: 'error',
                                 message: `Attribute '${attrName}' specifies an async ${cfgKey} function.`,
                                 filePath,
-                                line: cfgProp.loc.start.line,
+                                line: cfgProp.loc.start.line + scriptStartLine,
                                 column: cfgProp.loc.start.column + 1,
                                 sourceCode,
                                 cause: 'Attribute transform and validate functions must be strictly synchronous.',
@@ -1330,7 +1354,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                             severity: 'error',
                             message: `Attribute '${attrName}' specifies both required: true and a default value.`,
                             filePath,
-                            line: targetLoc.start.line,
+                            line: targetLoc.start.line + scriptStartLine,
                             column: targetLoc.start.column + 1,
                             sourceCode,
                             cause: 'Attributes cannot specify both required: true and a default value.',
@@ -1367,7 +1391,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                                 severity: 'error',
                                 message: `Server property '${propName}' collides with reserved slot context key.`,
                                 filePath,
-                                line: retProp.loc.start.line,
+                                line: retProp.loc.start.line + scriptStartLine,
                                 column: retProp.loc.start.column + 1,
                                 sourceCode,
                                 cause: 'Property collides with reserved slot context keys.',
@@ -1431,7 +1455,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                         severity: 'error',
                         message: `Style getter function '${sName}' is async or returns a Promise.`,
                         filePath,
-                        line: styleProp.loc.start.line,
+                        line: styleProp.loc.start.line + scriptStartLine,
                         column: styleProp.loc.start.column + 1,
                         sourceCode,
                         cause: 'Style getter functions must be strictly synchronous.',
@@ -1567,7 +1591,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                                 ? `Top-level variable '${idName}' referenced inside client() block.`
                                 : `Top-level import '${idName}' referenced inside client() block.`,
                               filePath,
-                              line: idNode.loc.start.line,
+                              line: idNode.loc.start.line + scriptStartLine,
                               column: idNode.loc.start.column + 1,
                               sourceCode,
                               cause: isLocalDecl
@@ -1706,7 +1730,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                           severity: 'warning',
                           message: `Redundant existence check on ref "${refName}". Template refs are guaranteed to exist at component mount time. Use direct access 'refs("${refName}").method()' and pass '{ signal }' for lifecycle management.`,
                           filePath,
-                          line: ifNode.loc.start.line,
+                          line: ifNode.loc.start.line + scriptStartLine,
                           column: ifNode.loc.start.column + 1,
                           sourceCode,
                           cause: `Top-level ref existence check on "${refName}" is redundant because Coralite guarantees refs exist at mount time.`,

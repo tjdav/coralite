@@ -649,7 +649,59 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(result.valid, true)
   })
 
-  // 17. Backwards Compatibility Aliases
+  // 17. Single-File HTML Script Offset Accuracy
+  test('Single-File HTML Script Offset Accuracy: reports file-relative line coordinates and codeframe previews', () => {
+    const templateLines = Array.from({ length: 50 }, (_, i) => `  <div>Template line ${i + 1}</div>`).join('\n')
+    const code = `<template>
+${templateLines}
+  <button ref="my-btn">Click</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs }) {
+      const btn = refs('my-btn')
+      if (btn) {
+        btn.focus()
+      }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'offset-test.html')
+    const w204 = result.diagnostics.find(d => d.code === 'CORALITE-W204')
+    assert.ok(w204)
+    // scriptContent starts at line 56, if (btn) is line 5 of scriptContent => 55 + 5 = line 60 of file
+    assert.strictEqual(w204.line, 60)
+    assert.ok(w204.codeframe.includes('60 |       if (btn) {'))
+  })
+
+  // 18. Unquoted Object Key Ref References and Direct Identifiers
+  test('Unquoted Object Key Ref References: recognizes object property keys and identifiers as ref usages', () => {
+    const code = `<template>
+  <button ref="btnMusic">Music</button>
+  <button ref="btnPictures">Pictures</button>
+  <button ref="btnVideo">Video</button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client() {
+      const lookup = { btnMusic: 'music', btnPictures: 'pictures' }
+      const active = btnVideo
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'lookup-test.html')
+    const w402s = result.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s.length, 0)
+    assert.strictEqual(result.unused.refs.length, 0)
+  })
+
+  // 19. Backwards Compatibility Aliases
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)
