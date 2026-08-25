@@ -2,6 +2,7 @@
 import { simpleGit } from 'simple-git'
 import * as prompts from '@clack/prompts'
 import { writeFileSync, existsSync, readFileSync } from 'fs'
+import semver from 'semver'
 
 /**
  * Generates a changelog file based on git history.
@@ -36,21 +37,48 @@ export async function changelog (options = {}) {
     // Get all tags
     const tags = await git.tags()
     let sortedTags = tags.all
-      .filter(tag => tag.startsWith('v') || /^\d+\.\d+\.\d+/.test(tag))
+      .filter(tag => {
+        const cleaned = tag.replace(/^v/, '')
+        return Boolean(semver.valid(cleaned))
+      })
       .sort((a, b) => {
         const cleanA = a.replace(/^v/, '')
         const cleanB = b.replace(/^v/, '')
-        return cleanB.localeCompare(cleanA, undefined, {
-          numeric: true,
-          sensitivity: 'base'
-        })
+        return semver.rcompare(cleanA, cleanB)
       })
 
     let fromTag = options.from
     const toRef = options.to || 'HEAD'
 
+    const getCleanVersion = (tagOrVer) => {
+      if (!tagOrVer) {
+        return null
+      }
+      const cleaned = tagOrVer.replace(/^v/, '')
+      return semver.clean(cleaned) || cleaned
+    }
+
+    let targetVersion = null
+    if (options.nextVersion) {
+      targetVersion = semver.clean(options.nextVersion) || options.nextVersion
+    } else if (toRef !== 'HEAD') {
+      targetVersion = getCleanVersion(toRef)
+    }
+
+    const isStableTarget = Boolean(targetVersion && semver.valid(targetVersion) && !semver.prerelease(targetVersion))
+
     if (!fromTag) {
-      if (sortedTags.length > 0) {
+      if (isStableTarget) {
+        const previousStableTag = sortedTags.find(tag => {
+          const cleaned = getCleanVersion(tag)
+          return Boolean(semver.valid(cleaned) && !semver.prerelease(cleaned) && cleaned !== targetVersion)
+        })
+        if (previousStableTag) {
+          fromTag = previousStableTag
+        }
+      }
+
+      if (!fromTag && sortedTags.length > 0) {
         fromTag = sortedTags[0]
         // If we are at the latest tag commit, use the previous one
         try {

@@ -7,6 +7,7 @@ import { writeFileSync, readFileSync } from 'fs'
 import path from 'path'
 import { globSync } from 'glob'
 import { execFileSync } from 'child_process'
+import semver from 'semver'
 
 const SYSTEM_PROMPT = `You are a technical writer assisting a solo developer with Coralite project releases.
 Your task is to generate a structured GitHub Release Post based on provided git commit messages and technical summaries.
@@ -153,19 +154,18 @@ program
       // Sort tags by version
       const sortedTags = tags.all
         .filter(tag => {
-          if (packageName) {
-            return tag.startsWith(`${packageName}-v`)
+          const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
+          if (packageName && !tag.startsWith(`${packageName}-v`)) {
+            return false
           }
-          return tag.startsWith('v') || /^\d+\.\d+\.\d+/.test(tag)
+          const cleaned = tag.replace(prefixRegex, '')
+          return Boolean(semver.valid(cleaned))
         })
         .sort((a, b) => {
           const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
           const cleanA = a.replace(prefixRegex, '')
           const cleanB = b.replace(prefixRegex, '')
-          return cleanB.localeCompare(cleanA, undefined, {
-            numeric: true,
-            sensitivity: 'base'
-          })
+          return semver.rcompare(cleanA, cleanB)
         })
 
       if (sortedTags.length < 1) {
@@ -203,32 +203,56 @@ program
 
       // Automatically determine fromTag if not provided
       if (!fromTag) {
-        // Find the index of toRef in sorted tags to get the previous version
-        const toIndex = sortedTags.indexOf(toRef)
-
-        if (toRef === 'HEAD') {
-          fromTag = sortedTags[0]
-        } else if (toIndex !== -1 && toIndex + 1 < sortedTags.length) {
-          // toRef is found in tags, use the one right before it (older version)
-          fromTag = sortedTags[toIndex + 1]
-        } else {
-          // toRef is either not a standard tag, or it is the oldest tag.
-          prompts.log.warn('Could not automatically determine the previous tag.')
-
-          const fromChoices = sortedTags.map(tag => ({
-            value: tag,
-            label: tag
-          }))
-          const selectedFrom = await prompts.select({
-            message: 'Select the previous tag (to compare against):',
-            options: fromChoices
-          })
-
-          if (prompts.isCancel(selectedFrom)) {
-            prompts.log.info('Operation cancelled')
-            process.exit(0)
+        const getCleanVersion = (tagOrVer) => {
+          if (!tagOrVer) {
+            return null
           }
-          fromTag = selectedFrom
+          const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
+          const cleaned = tagOrVer.replace(prefixRegex, '')
+          return semver.clean(cleaned) || cleaned
+        }
+
+        const targetVersion = toRef !== 'HEAD' ? getCleanVersion(toRef) : null
+        const isStableTarget = Boolean(targetVersion && semver.valid(targetVersion) && !semver.prerelease(targetVersion))
+
+        if (isStableTarget) {
+          const previousStableTag = sortedTags.find(tag => {
+            const cleaned = getCleanVersion(tag)
+            return Boolean(semver.valid(cleaned) && !semver.prerelease(cleaned) && cleaned !== targetVersion)
+          })
+          if (previousStableTag) {
+            fromTag = previousStableTag
+          }
+        }
+
+        if (!fromTag) {
+          // Find the index of toRef in sorted tags to get the previous version
+          const toIndex = sortedTags.indexOf(toRef)
+
+          if (toRef === 'HEAD') {
+            fromTag = sortedTags[0]
+          } else if (toIndex !== -1 && toIndex + 1 < sortedTags.length) {
+            // toRef is found in tags, use the one right before it (older version)
+            fromTag = sortedTags[toIndex + 1]
+          } else {
+            // toRef is either not a standard tag, or it is the oldest tag.
+            prompts.log.warn('Could not automatically determine the previous tag.')
+
+            const fromChoices = sortedTags.map(tag => ({
+              value: tag,
+              label: tag
+            }))
+            const selectedFrom = await prompts.select({
+              message: 'Select the previous tag (to compare against):',
+              options: fromChoices
+            })
+
+            if (prompts.isCancel(selectedFrom)) {
+              prompts.log.info('Operation cancelled')
+              process.exit(0)
+            }
+            fromTag = selectedFrom
+          }
         }
       }
 

@@ -37,6 +37,7 @@
     "@clack/prompts": "^0.11.0",
     "commander": "^13.1.0",
     "kleur": "^4.1.5",
+    "semver": "^7.6.3",
     "simple-git": "^3.36.0"
   }
 }

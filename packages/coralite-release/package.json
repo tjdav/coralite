@@ -23,10 +23,14 @@
   "engines": {
     "node": ">=20.19.0"
   },
+  "scripts": {
+    "test:unit": "node --test \"tests/**/*.spec.js\""
+  },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
     "commander": "^13.1.0",
     "glob": "^11.1.0",
+    "semver": "^7.6.3",
     "simple-git": "^3.36.0"
   }
 }

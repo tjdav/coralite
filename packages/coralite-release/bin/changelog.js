@@ -5,6 +5,7 @@ import { simpleGit } from 'simple-git'
 import { program } from 'commander'
 import { writeFileSync, existsSync, readFileSync } from 'fs'
 import path from 'path'
+import semver from 'semver'
 
 program
   .name('generate-changelog')
@@ -36,23 +37,21 @@ program
         process.exit(1)
       }
 
-      // Sort tags by version (assuming semantic versioning)
-      // Filter by package prefix if packageName is provided
+      // Sort tags by version using semver
       const sortedTags = tags.all
         .filter(tag => {
-          if (packageName) {
-            return tag.startsWith(`${packageName}-v`)
+          const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
+          if (packageName && !tag.startsWith(`${packageName}-v`)) {
+            return false
           }
-          return tag.startsWith('v') || /^\d+\.\d+\.\d+/.test(tag)
+          const cleaned = tag.replace(prefixRegex, '')
+          return Boolean(semver.valid(cleaned))
         })
         .sort((a, b) => {
           const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
           const cleanA = a.replace(prefixRegex, '')
           const cleanB = b.replace(prefixRegex, '')
-          return cleanB.localeCompare(cleanA, undefined, {
-            numeric: true,
-            sensitivity: 'base'
-          })
+          return semver.rcompare(cleanA, cleanB)
         })
 
       if (sortedTags.length < 1) {
@@ -66,25 +65,56 @@ program
       let fromTag = options.from
       const toRef = options.to || 'HEAD'
 
-      if (!fromTag) {
-        try {
-          // Check if toRef points to the same commit as latestTag
-          // Use ^{} to peel tags to their commits
-          const [toCommit, latestCommit] = await Promise.all([
-            git.revparse([`${toRef}^{}`]),
-            git.revparse([`${latestTag}^{}`])
-          ])
+      const getCleanVersion = (tagOrVer) => {
+        if (!tagOrVer) {
+          return null
+        }
+        const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
+        const cleaned = tagOrVer.replace(prefixRegex, '')
+        return semver.clean(cleaned) || cleaned
+      }
 
-          if (toCommit.trim() === latestCommit.trim()) {
-            // We are generating changelog for the latest tag itself
-            fromTag = sortedTags[1] || latestTag
-          } else {
-            // We are generating changelog for new changes since latest tag
-            fromTag = latestTag
+      let targetVersion = null
+      if (options.nextVersion) {
+        targetVersion = semver.clean(options.nextVersion) || options.nextVersion
+      } else if (toRef !== 'HEAD') {
+        targetVersion = getCleanVersion(toRef)
+      }
+
+      const isStableTarget = Boolean(targetVersion && semver.valid(targetVersion) && !semver.prerelease(targetVersion))
+
+      if (!fromTag) {
+        if (isStableTarget) {
+          // Look for the most recent stable tag where cleanedVersion !== targetVersion
+          const previousStableTag = sortedTags.find(tag => {
+            const cleaned = getCleanVersion(tag)
+            return Boolean(semver.valid(cleaned) && !semver.prerelease(cleaned) && cleaned !== targetVersion)
+          })
+          if (previousStableTag) {
+            fromTag = previousStableTag
           }
-        } catch {
-          // Fallback if git commands fail (e.g. invalid ref)
-          fromTag = sortedTags[1] || latestTag
+        }
+
+        if (!fromTag) {
+          try {
+            // Check if toRef points to the same commit as latestTag
+            // Use ^{} to peel tags to their commits
+            const [toCommit, latestCommit] = await Promise.all([
+              git.revparse([`${toRef}^{}`]),
+              git.revparse([`${latestTag}^{}`])
+            ])
+
+            if (toCommit.trim() === latestCommit.trim()) {
+              // We are generating changelog for the latest tag itself
+              fromTag = sortedTags[1] || latestTag
+            } else {
+              // We are generating changelog for new changes since latest tag
+              fromTag = latestTag
+            }
+          } catch {
+            // Fallback if git commands fail (e.g. invalid ref)
+            fromTag = sortedTags[1] || latestTag
+          }
         }
       }
 

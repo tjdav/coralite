@@ -148,6 +148,9 @@ importers:
       kleur:
         specifier: ^4.1.5
         version: 4.1.5
+      semver:
+        specifier: ^7.6.3
+        version: 7.8.5
       simple-git:
         specifier: ^3.36.0
         version: 3.36.0(supports-color@7.2.0)
@@ -163,6 +166,9 @@ importers:
       glob:
         specifier: ^11.1.0
         version: 11.1.0
+      semver:
+        specifier: ^7.6.3
+        version: 7.8.5
       simple-git:
         specifier: ^3.36.0
         version: 3.36.0(supports-color@7.2.0)

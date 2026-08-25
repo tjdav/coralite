@@ -8,9 +8,10 @@ import { simpleGit } from 'simple-git'
 import { execSync } from 'child_process'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import semver from 'semver'
 
 // Define available release types
-const RELEASE_TYPES = ['major', 'minor', 'patch', 'prerelease']
+export const RELEASE_TYPES = ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease', 'rc']
 
 // Initialize commander
 program
@@ -134,7 +135,7 @@ program
 
       const selectedPkg = packages.find(p => p.name === selectedPackageName)
       const oldVersion = selectedPkg.version
-      const newVersion = calculateNewVersion(oldVersion, type, options.preid)
+      const newVersion = calculateNewVersion(oldVersion, type, options.preid || 'rc')
 
       // Display summary
       prompts.log.info('Release Plan:')
@@ -352,36 +353,25 @@ program
   })
 
 // Helper function to calculate new version
-function calculateNewVersion (currentVersion, releaseType, preid = 'alpha') {
-  // Simple semver bumping logic
-  const parts = currentVersion.replace(/^v/, '').split('-')
-  const versionParts = parts[0].split('.').map(Number)
-
+/**
+ *
+ */
+export function calculateNewVersion (currentVersion, releaseType, preid = 'rc', targetBase = 'preminor') {
+  const cleanedVersion = semver.clean(currentVersion) || currentVersion
   let newVersion
 
-  switch (releaseType) {
-    case 'major':
-      newVersion = `${versionParts[0] + 1}.0.0`
-      break
-    case 'minor':
-      newVersion = `${versionParts[0]}.${versionParts[1] + 1}.0`
-      break
-    case 'patch':
-      newVersion = `${versionParts[0]}.${versionParts[1]}.${versionParts[2] + 1}`
-      break
-    case 'prerelease':
-      if (parts.length > 1 && parts[1].startsWith(preid)) {
-        // Increment existing prerelease
-        const prereleaseParts = parts[1].split('.')
-        const num = parseInt(prereleaseParts[prereleaseParts.length - 1]) || 0
-        newVersion = `${parts[0]}-${preid}.${num + 1}`
-      } else {
-        // Start new prerelease
-        newVersion = `${parts[0]}-${preid}.0`
-      }
-      break
-    default:
-      throw new Error(`Unknown release type: ${releaseType}`)
+  if (releaseType === 'rc') {
+    if (semver.prerelease(cleanedVersion)) {
+      newVersion = semver.inc(cleanedVersion, 'prerelease', preid)
+    } else {
+      newVersion = semver.inc(cleanedVersion, targetBase || 'preminor', preid)
+    }
+  } else {
+    newVersion = semver.inc(cleanedVersion, releaseType, preid)
+  }
+
+  if (!newVersion) {
+    throw new Error(`Failed to calculate new version for "${currentVersion}" with release type "${releaseType}"`)
   }
 
   return newVersion
@@ -393,10 +383,12 @@ process.on('unhandledRejection', (reason, promise) => {
   process.exit(1)
 })
 
-// Parse command line arguments
-program.parse(process.argv)
+// Parse command line arguments if executed directly
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  program.parse(process.argv)
 
-// Show help if no arguments provided
-if (process.argv.length <= 2) {
-  program.help()
+  // Show help if no arguments provided
+  if (process.argv.length <= 2) {
+    program.help()
+  }
 }
