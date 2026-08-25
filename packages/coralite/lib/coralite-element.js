@@ -1066,64 +1066,117 @@ export class CoraliteElement extends BaseElement {
     }
 
     const errorsTarget = target.errors || {}
-    const errorsProxy = new Proxy(errorsTarget, {
-      get (t, p, receiver) {
-        if (typeof p !== 'string') {
-          return Reflect.get(t, p, receiver)
-        }
-        if (self._collectingDependencies) {
-          self._collectingDependencies.add('errors')
-          const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-          const kebabName = camelToKebab(camelName)
-          self._collectingDependencies.add('error_' + camelName)
-          self._collectingDependencies.add('error_' + kebabName)
-        }
-        return Reflect.get(t, p, receiver)
-      },
+    const errorProxiesMap = new WeakMap()
 
-      set (t, p, v) {
-        if (typeof p !== 'string') {
-          return Reflect.set(t, p, v)
-        }
-        const oldValue = t[p]
-        if (oldValue === v) {
-          return true
-        }
-        const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-        const kebabName = camelToKebab(camelName)
+    const createErrorProxy = (errTarget, topKey = null) => {
+      if (errTarget === null || typeof errTarget !== 'object') {
+        return errTarget
+      }
+      let keyMap = errorProxiesMap.get(errTarget)
+      if (!keyMap) {
+        keyMap = new Map()
+        errorProxiesMap.set(errTarget, keyMap)
+      }
+      if (keyMap.has(topKey)) {
+        return keyMap.get(topKey)
+      }
 
-        t[p] = v
-        target['error_' + camelName] = v
-        target['error_' + kebabName] = v
+      const proxy = new Proxy(errTarget, {
+        get (t, p, receiver) {
+          if (typeof p !== 'string') {
+            return Reflect.get(t, p, receiver)
+          }
 
-        self._scheduleUpdate()
-        self._markObserverDirty('errors')
-        self._markObserverDirty('error_' + camelName)
-        self._markObserverDirty('error_' + kebabName)
-        return true
-      },
+          const currentTopKey = topKey || p
 
-      deleteProperty (t, p) {
-        if (typeof p !== 'string') {
-          return Reflect.deleteProperty(t, p)
-        }
-        const oldValue = t[p]
-        const deleted = Reflect.deleteProperty(t, p)
-        if (deleted && oldValue !== undefined) {
-          const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-          const kebabName = camelToKebab(camelName)
+          if (self._collectingDependencies) {
+            self._collectingDependencies.add('errors')
+            const camelTop = currentTopKey.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const kebabTop = camelToKebab(camelTop)
+            self._collectingDependencies.add('error_' + camelTop)
+            self._collectingDependencies.add('error_' + kebabTop)
+          }
 
-          target['error_' + camelName] = ''
-          target['error_' + kebabName] = ''
+          const val = Reflect.get(t, p, receiver)
+          if (val !== null && typeof val === 'object') {
+            return createErrorProxy(val, currentTopKey)
+          }
+          return val
+        },
+
+        set (t, p, v) {
+          if (typeof p !== 'string') {
+            return Reflect.set(t, p, v)
+          }
+          const oldValue = t[p]
+          if (oldValue === v) {
+            return true
+          }
+
+          const currentTopKey = topKey || p
+          const camelTop = currentTopKey.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+          const kebabTop = camelToKebab(camelTop)
+
+          t[p] = v
+
+          const rootVal = errorsTarget[currentTopKey]
+          let flatVal = rootVal
+          if (rootVal === null || rootVal === undefined) {
+            flatVal = ''
+          }
+
+          target['error_' + camelTop] = flatVal
+          target['error_' + kebabTop] = flatVal
 
           self._scheduleUpdate()
           self._markObserverDirty('errors')
-          self._markObserverDirty('error_' + camelName)
-          self._markObserverDirty('error_' + kebabName)
+          self._markObserverDirty(currentTopKey)
+          self._markObserverDirty('error_' + camelTop)
+          self._markObserverDirty('error_' + kebabTop)
+          return true
+        },
+
+        deleteProperty (t, p) {
+          if (typeof p !== 'string') {
+            return Reflect.deleteProperty(t, p)
+          }
+          const hasProp = Object.prototype.hasOwnProperty.call(t, p)
+          const oldValue = t[p]
+
+          if (!hasProp || oldValue === undefined) {
+            return true
+          }
+
+          const deleted = Reflect.deleteProperty(t, p)
+          if (deleted) {
+            const currentTopKey = topKey || p
+            const camelTop = currentTopKey.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const kebabTop = camelToKebab(camelTop)
+
+            const rootVal = errorsTarget[currentTopKey]
+            let flatVal = rootVal
+            if (rootVal === null || rootVal === undefined) {
+              flatVal = ''
+            }
+
+            target['error_' + camelTop] = flatVal
+            target['error_' + kebabTop] = flatVal
+
+            self._scheduleUpdate()
+            self._markObserverDirty('errors')
+            self._markObserverDirty(currentTopKey)
+            self._markObserverDirty('error_' + camelTop)
+            self._markObserverDirty('error_' + kebabTop)
+          }
+          return deleted
         }
-        return deleted
-      }
-    })
+      })
+
+      keyMap.set(topKey, proxy)
+      return proxy
+    }
+
+    const errorsProxy = createErrorProxy(errorsTarget, null)
     target.errors = errorsProxy
 
     const getGetterFn = (key) => {
@@ -1254,6 +1307,7 @@ export class CoraliteElement extends BaseElement {
           for (const key of affectedKeys) {
             const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
             const kebabName = camelToKebab(camelName)
+            self._markObserverDirty(key)
             self._markObserverDirty('error_' + camelName)
             self._markObserverDirty('error_' + kebabName)
           }

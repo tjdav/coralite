@@ -102,6 +102,37 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       assert.strictEqual(result['error_user-age'], 'Underage user.')
       assert.strictEqual(result.userAge, 12)
     })
+
+    it('ensures instance error isolation during concurrent component rendering', async () => {
+      const define = createComponentDefinition({ app: dummyApp })
+      const module = { id: 'concurrent-comp', path: { pathname: '/concurrent-comp.html' } }
+
+      const options = {
+        attributes: {
+          score: {
+            type: Number,
+            validate: (v) => v >= 50 || 'Score too low.'
+          }
+        }
+      }
+
+      const tasks = [
+        define(options, { state: { score: 20 }, module }),
+        define(options, { state: { score: 80 }, module }),
+        define(options, { state: { score: 10 }, module })
+      ]
+
+      const [res1, res2, res3] = await Promise.all(tasks)
+
+      assert.strictEqual(res1.errors.score, 'Score too low.')
+      assert.strictEqual(res1.error_score, 'Score too low.')
+
+      assert.strictEqual(Object.keys(res2.errors).length, 0)
+      assert.strictEqual(res2.error_score, '')
+
+      assert.strictEqual(res3.errors.score, 'Score too low.')
+      assert.strictEqual(res3.error_score, 'Score too low.')
+    })
   })
 
   describe('Client Runtime (CoraliteElement)', () => {
@@ -433,6 +464,80 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       // Direct deletion on errors.age
       delete el._state.errors.age
       assert.strictEqual(el._state.ageErrorMessage, 'No error')
+
+      document.body.removeChild(el)
+    })
+
+    it('recursively wraps assigned objects under state.errors in reactive error proxies so deep mutations trigger updates', () => {
+      let updateScheduledCount = 0
+
+      const compOptions = {
+        componentId: 'nested-errors-comp'
+      }
+
+      const CompClass = createCoraliteClass(compOptions)
+      customElements.define('nested-errors-comp', CompClass)
+
+      const el = document.createElement('nested-errors-comp')
+      document.body.appendChild(el)
+
+      const origScheduleUpdate = el._scheduleUpdate
+      el._scheduleUpdate = function () {
+        updateScheduledCount++
+        return origScheduleUpdate.apply(this, arguments)
+      }
+
+      // Assign nested object under state.errors
+      el._state.errors.form = { email: 'Invalid format' }
+      assert.strictEqual(updateScheduledCount, 1)
+      assert.strictEqual(el._state.errors.form.email, 'Invalid format')
+      assert.deepStrictEqual(el._state.error_form, { email: 'Invalid format' })
+
+      // Deep mutation on nested object
+      el._state.errors.form.email = 'Required field'
+      assert.strictEqual(updateScheduledCount, 2)
+      assert.strictEqual(el._state.errors.form.email, 'Required field')
+
+      // Deep deletion on nested object
+      delete el._state.errors.form.email
+      assert.strictEqual(updateScheduledCount, 3)
+      assert.strictEqual(el._state.errors.form.email, undefined)
+
+      document.body.removeChild(el)
+    })
+
+    it('ensures attempting to delete a non-existent or undefined error property is a safe no-op', () => {
+      let updateScheduledCount = 0
+
+      const compOptions = {
+        componentId: 'noop-delete-errors-comp'
+      }
+
+      const CompClass = createCoraliteClass(compOptions)
+      customElements.define('noop-delete-errors-comp', CompClass)
+
+      const el = document.createElement('noop-delete-errors-comp')
+      document.body.appendChild(el)
+
+      const origScheduleUpdate = el._scheduleUpdate
+      el._scheduleUpdate = function () {
+        updateScheduledCount++
+        return origScheduleUpdate.apply(this, arguments)
+      }
+
+      // Delete non-existent top-level error property
+      const res1 = delete el._state.errors.nonExistentKey
+      assert.strictEqual(res1, true)
+      assert.strictEqual(updateScheduledCount, 0)
+
+      // Set nested error structure
+      el._state.errors.form = {}
+      updateScheduledCount = 0
+
+      // Delete non-existent nested error property
+      const res2 = delete el._state.errors.form.missingField
+      assert.strictEqual(res2, true)
+      assert.strictEqual(updateScheduledCount, 0)
 
       document.body.removeChild(el)
     })
