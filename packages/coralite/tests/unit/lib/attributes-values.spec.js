@@ -22,12 +22,45 @@ describe('Component Attribute values & Validation', () => {
     })
 
     it('validateAttributeValue coerces string inputs for numeric and boolean allowed values', () => {
-      const numSchema = { values: [10, 20, 30] }
+      const numSchema = { values: [0, 10, 20, 30] }
       assert.strictEqual(validateAttributeValue('20', numSchema, 'level', 'meter-box'), 20)
+      assert.strictEqual(validateAttributeValue('0', numSchema, 'level', 'meter-box'), 0)
 
       const boolSchema = { values: [true, false] }
       assert.strictEqual(validateAttributeValue('true', boolSchema, 'active', 'toggle-btn'), true)
       assert.strictEqual(validateAttributeValue('false', boolSchema, 'active', 'toggle-btn'), false)
+    })
+
+    it('coerces empty/whitespace strings to null for type: Number to prevent false matches against 0', () => {
+      const numSchema = { type: Number, values: [0, 10, 20] }
+      assert.throws(() => {
+        validateAttributeValue('', numSchema, 'count', 'comp')
+      }, (err) => {
+        assert.ok(err instanceof CoraliteError)
+        assert.strictEqual(err.message, 'Invalid value null for attribute "count" in component "comp". Expected one of: 0, 10, 20.')
+        return true
+      })
+
+      assert.throws(() => {
+        validateAttributeValue('   ', numSchema, 'count', 'comp')
+      }, (err) => {
+        assert.ok(err instanceof CoraliteError)
+        assert.strictEqual(err.message, 'Invalid value null for attribute "count" in component "comp". Expected one of: 0, 10, 20.')
+        return true
+      })
+    })
+
+    it('evaluates boolean matrix correctly for type: Boolean across string, null, and undefined inputs', () => {
+      const boolSchema = { type: Boolean }
+      assert.strictEqual(validateAttributeValue('true', boolSchema, 'disabled', 'comp'), true)
+      assert.strictEqual(validateAttributeValue('false', boolSchema, 'disabled', 'comp'), false)
+      assert.strictEqual(validateAttributeValue('', boolSchema, 'disabled', 'comp'), true)
+      assert.strictEqual(validateAttributeValue(null, boolSchema, 'disabled', 'comp'), false)
+      assert.strictEqual(validateAttributeValue(undefined, boolSchema, 'disabled', 'comp'), undefined)
+
+      const boolWithDefault = { type: Boolean, default: true }
+      assert.strictEqual(validateAttributeValue(undefined, boolWithDefault, 'disabled', 'comp'), true)
+      assert.strictEqual(validateAttributeValue(null, boolWithDefault, 'disabled', 'comp'), false)
     })
 
     it('validateAttributeValue handles undefined and null values', () => {

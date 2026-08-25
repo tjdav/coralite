@@ -261,6 +261,45 @@ describe('Component Attribute transform Pipeline', () => {
 
       document.body.removeChild(el)
     })
+
+    it('unsets state property and updates derived getter state when attribute transforms to undefined or is deleted', () => {
+      const tagName = 'trans-getter-' + Math.random().toString(36).substring(2, 9)
+      const UndefGetterComp = createCoraliteClass({
+        componentId: 'trans-getter',
+        attributes: {
+          userRole: {
+            type: String,
+            transform: (val) => val === 'guest' ? undefined : val
+          }
+        },
+        getters: {
+          roleUpper: (state) => state.userRole ? state.userRole.toUpperCase() : 'NONE'
+        }
+      })
+      customElements.define(tagName, UndefGetterComp)
+
+      const el = document.createElement(tagName)
+      el.setAttribute('user-role', 'admin')
+      document.body.appendChild(el)
+
+      assert.strictEqual(el._state.roleUpper, 'ADMIN')
+
+      // Setting value that transforms to undefined unsets userRole
+      el._state.userRole = 'guest'
+      assert.strictEqual(el._state.userRole, undefined)
+      assert.strictEqual('userRole' in el._state, false)
+      assert.strictEqual(el._state.roleUpper, 'NONE')
+
+      // Direct property deletion unsets userRole
+      el._state.userRole = 'editor'
+      assert.strictEqual(el._state.roleUpper, 'EDITOR')
+
+      delete el._state.userRole
+      assert.strictEqual('userRole' in el._state, false)
+      assert.strictEqual(el._state.roleUpper, 'NONE')
+
+      document.body.removeChild(el)
+    })
   })
 
   describe('Client Runtime Reactivity', () => {

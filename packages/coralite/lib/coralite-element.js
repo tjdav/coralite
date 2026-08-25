@@ -159,9 +159,12 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     })
   }
 
+  const targetType = schemaObj.type || (schemaObj.values ? inferTypeFromValues(schemaObj.values) : undefined)
+  const isBooleanType = targetType === Boolean || targetType === 'Boolean'
+
   // Handle omitted value (optional attribute with or without default)
   let val = value
-  if (val === undefined || val === null) {
+  if (val === undefined || (val === null && !isBooleanType)) {
     if (schemaObj.default !== undefined) {
       val = schemaObj.default
     } else {
@@ -172,12 +175,10 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     }
   }
 
-  // Step 2: coerce (always runs before transform)
-  if (schemaObj.type) {
-    val = coerce(val, schemaObj.type)
+  if (targetType) {
+    val = coerce(val, targetType)
   }
 
-  // Step 3: transform
   let isTransformed = false
   if (typeof schemaObj.transform === 'function') {
     let transformed
@@ -345,14 +346,38 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
  * @returns {any} The coerced value.
  */
 export function coerce (value, type) {
-  if (value === null || value === undefined) {
-    return value
-  }
-
   let targetType = type
   if (Array.isArray(type) || (type && typeof type === 'object' && Array.isArray(type.values))) {
     const valuesArray = Array.isArray(type) ? type : type.values
     targetType = type.type || inferTypeFromValues(valuesArray)
+  }
+
+  if (targetType === Boolean || targetType === 'Boolean') {
+    if (value === undefined) {
+      return undefined
+    }
+
+    if (value === null || value === 'null') {
+      return false
+    }
+
+    if (typeof value === 'boolean') {
+      return value
+    }
+
+    if (value === '' || value === 'true') {
+      return true
+    }
+
+    if (value === 'false') {
+      return false
+    }
+
+    return value
+  }
+
+  if (value === null || value === undefined) {
+    return value
   }
 
   if (targetType !== String && targetType !== 'String' && typeof value === 'string' && value.includes('{{') && value.includes('}}')) {
@@ -363,18 +388,14 @@ export function coerce (value, type) {
     if (typeof value === 'number') {
       return Number.isNaN(value) ? null : value
     }
-    const num = Number(value)
-    return Number.isNaN(num) ? null : num
-  }
 
-  if (targetType === Boolean || targetType === 'Boolean') {
-    if (typeof value === 'boolean') {
-      return value
+    if (typeof value === 'string' && value.trim() === '') {
+      return null
     }
-    if (value === '') {
-      return true
-    }
-    return value !== 'false' && value !== null
+
+    const num = Number(value)
+
+    return Number.isNaN(num) ? null : num
   }
 
   if (targetType === String || targetType === 'String') {
@@ -1258,11 +1279,25 @@ export class CoraliteElement extends BaseElement {
               t['error_' + kebabName] = ''
             }
             if (!res.error && res.value === undefined) {
-              delete t[camelName]
-              delete t[p]
+              Reflect.deleteProperty(t, camelName)
+              Reflect.deleteProperty(t, kebabName)
+              Reflect.deleteProperty(t, p)
               delete t.errors[camelName]
               t['error_' + camelName] = ''
               t['error_' + kebabName] = ''
+
+              if (self._getterAbortControllers?.[camelName]) {
+                self._getterAbortControllers[camelName].abort()
+                delete self._getterAbortControllers[camelName]
+              }
+              if (self._getterAbortControllers?.[kebabName]) {
+                self._getterAbortControllers[kebabName].abort()
+                delete self._getterAbortControllers[kebabName]
+              }
+              if (self._getterAbortControllers?.[p]) {
+                self._getterAbortControllers[p].abort()
+                delete self._getterAbortControllers[p]
+              }
 
               self._scheduleUpdate()
 
@@ -1272,6 +1307,8 @@ export class CoraliteElement extends BaseElement {
                   self._observeStateKey(p, () => self._processSlots())
                 }
               }
+              self._markObserverDirty(camelName)
+              self._markObserverDirty(kebabName)
               self._markObserverDirty(p)
               return true
             }
@@ -1313,8 +1350,29 @@ export class CoraliteElement extends BaseElement {
         if (typeof p !== 'string') {
           return Reflect.deleteProperty(t, p)
         }
-        const oldValue = t[p]
-        const deleted = Reflect.deleteProperty(t, p)
+        const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+        const kebabName = camelToKebab(camelName)
+
+        const oldValue = t[p] ?? t[camelName] ?? t[kebabName]
+
+        const deleted1 = Reflect.deleteProperty(t, camelName)
+        const deleted2 = Reflect.deleteProperty(t, kebabName)
+        const deleted3 = Reflect.deleteProperty(t, p)
+        const deleted = deleted1 || deleted2 || deleted3
+
+        if (self._getterAbortControllers?.[camelName]) {
+          self._getterAbortControllers[camelName].abort()
+          delete self._getterAbortControllers[camelName]
+        }
+        if (self._getterAbortControllers?.[kebabName]) {
+          self._getterAbortControllers[kebabName].abort()
+          delete self._getterAbortControllers[kebabName]
+        }
+        if (self._getterAbortControllers?.[p]) {
+          self._getterAbortControllers[p].abort()
+          delete self._getterAbortControllers[p]
+        }
+
         if (deleted && oldValue !== undefined) {
           self._scheduleUpdate()
           if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
@@ -1323,6 +1381,8 @@ export class CoraliteElement extends BaseElement {
               self._observeStateKey(p, () => self._processSlots())
             }
           }
+          self._markObserverDirty(camelName)
+          self._markObserverDirty(kebabName)
           self._markObserverDirty(p)
         }
         return deleted
