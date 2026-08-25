@@ -237,8 +237,22 @@ export async function transformCss (css, onError, options = {}) {
     }
   ])
 
-  const result = await processor.process(css, { from: undefined })
-  return result.css
+  try {
+    const result = await processor.process(css, { from: undefined })
+    return result.css
+  } catch (error) {
+    const message = 'Error processing CSS: ' + (error.message || error)
+    if (typeof onError === 'function') {
+      onError({
+        level: 'ERR',
+        message,
+        error
+      })
+    } else {
+      console.error(message, error)
+    }
+    return css
+  }
 }
 
 /**

@@ -236,6 +236,34 @@ test('Style Transformation Logic', async (t) => {
     assert.match(result, /&\s*>\s*slot\s*>\s*p,\s*&\s*>\s*p\[slot\]\s*\{\s*font-size:\s*1rem;?\s*\}/)
   })
 
+  await t.test('transformCss catches top-level PostCSS parsing errors, routes to onError, and returns raw CSS fallback', async () => {
+    const malformedCss = 'button { color: red;'
+    let reportedError = null
+
+    const result = await transformCss(malformedCss, (errData) => {
+      reportedError = errData
+    })
+
+    assert.ok(reportedError)
+    assert.equal(reportedError.level, 'ERR')
+    assert.ok(reportedError.message.includes('Error processing CSS'))
+    assert.equal(result, malformedCss)
+  })
+
+  await t.test('transformCss catches malformed selector parsing errors and reports to onError without throwing', async () => {
+    const cssWithBrokenSelector = '[attr= { color: red; } .valid { color: blue; }'
+    let reportedError = null
+
+    const result = await transformCss(cssWithBrokenSelector, (errData) => {
+      reportedError = errData
+    })
+
+    assert.ok(reportedError)
+    assert.equal(reportedError.level, 'ERR')
+    assert.ok(reportedError.message.includes('Error parsing selector') || reportedError.message.includes('Error processing CSS'))
+    assert.ok(result.includes('color: blue'))
+  })
+
   await t.test('injectStyles wraps component CSS in @layer components, preserving c-token', async () => {
     const head = createCoraliteElement({ name: 'head', children: [] })
     const root = createCoraliteComponent({ children: [head] })

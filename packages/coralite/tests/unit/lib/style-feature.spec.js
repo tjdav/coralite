@@ -286,6 +286,53 @@ describe('Component Reactive style Feature', () => {
         return err instanceof CoraliteError && err.message.includes('failed: Custom style calculation error')
       })
     })
+
+    test('enforces Two-Phase Atomic Evaluation: existing styles remain untouched if a subsequent getter throws', () => {
+      const componentOptions = {
+        componentId: 'atomic-style-comp',
+        defaultValues: {
+          fail: false
+        },
+        style: {
+          backgroundColor: 'blue',
+          color: (state) => {
+            if (state.fail) {
+              throw new Error('Getter failure')
+            }
+            return 'white'
+          }
+        }
+      }
+
+      const CustomClass = createCoraliteClass(componentOptions)
+      window.customElements.define('atomic-style-comp', CustomClass)
+
+      const element = document.createElement('atomic-style-comp')
+      element.componentOptions = componentOptions
+      // @ts-ignore
+      element._setupState()
+      // @ts-ignore
+      element._applyStyles()
+
+      assert.equal(element.style.getPropertyValue('background-color'), 'blue')
+      assert.equal(element.style.getPropertyValue('color'), 'white')
+
+      // Pre-set existing inline style to test atomic preservation
+      element.style.setProperty('background-color', 'green')
+
+      // Trigger failure directly in getter without leaving state dirty for background microtask
+      element.componentOptions.style.color = () => {
+        throw new Error('Getter failure')
+      }
+
+      assert.throws(() => {
+        // @ts-ignore
+        element._applyStyles()
+      }, CoraliteError)
+
+      // Background color should remain 'green' because Phase 2 was never reached
+      assert.equal(element.style.getPropertyValue('background-color'), 'green')
+    })
   })
 
   describe('Definition Time Validation', () => {

@@ -1618,6 +1618,10 @@ export class CoraliteElement extends BaseElement {
     }
 
     const roState = createReadOnlyProxy(this._state)
+    /** @type {Array<{ normKey: string, val: any }>} */
+    const evaluatedProps = []
+
+    // Phase 1: Evaluation & Validation
     for (const [key, valOrFn] of Object.entries(styleObj)) {
       const normKey = normalizeStyleKey(key)
       if (!normKey) {
@@ -1654,6 +1658,14 @@ export class CoraliteElement extends BaseElement {
         })
       }
 
+      evaluatedProps.push({
+        normKey,
+        val
+      })
+    }
+
+    // Phase 2: Application
+    for (const { normKey, val } of evaluatedProps) {
       if (val !== null && val !== undefined && val !== false && val !== '') {
         this.style.setProperty(normKey, String(val))
       } else {
