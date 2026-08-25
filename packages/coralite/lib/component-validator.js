@@ -294,6 +294,25 @@ function extractIdentifiersFromExpr (expr, targetSet) {
   }
 }
 
+function isRefUsedInSelector (refName, stringPool, cleanCss) {
+  const variants = [refName, kebabToCamel(refName), camelToKebab(refName)]
+  const uniqueVariants = Array.from(new Set(variants))
+  const escapedVariants = uniqueVariants.map(v => v.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'))
+  const selectorPattern = new RegExp(`(?<![\\w-])ref\\s*[$*~^]?=\\s*["']?\\b(?:${escapedVariants.join('|')})\\b["']?`, 'i')
+
+  for (const str of stringPool) {
+    if (selectorPattern.test(str)) {
+      return true
+    }
+  }
+
+  if (selectorPattern.test(cleanCss)) {
+    return true
+  }
+
+  return false
+}
+
 function createDiagnostic ({ code, severity, message, filePath, line, column, sourceCode, cause, fix }) {
   const diagnostic = {
     code,
@@ -325,6 +344,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
   let scriptContent = ''
   let styleContent = ''
 
+  const scriptStringPool = []
   const templateTokens = new Set()
   // ref -> { line, column }
   const templateRefs = new Map()
@@ -438,6 +458,21 @@ export function validateComponentSource (sourceCode, filePath = '') {
       }
 
       if (ast && ast.body) {
+        walkJS(ast, {
+          Literal (litNode) {
+            if (typeof litNode.value === 'string') {
+              scriptStringPool.push(litNode.value)
+            }
+          },
+          TemplateLiteral (tplNode) {
+            for (const elem of tplNode.quasis || []) {
+              if (elem.value && elem.value.raw) {
+                scriptStringPool.push(elem.value.raw)
+              }
+            }
+          }
+        })
+
         for (const node of ast.body) {
           if (node.type === 'ImportDeclaration') {
             const source = node.source ? node.source.value : ''
@@ -1101,14 +1136,6 @@ export function validateComponentSource (sourceCode, filePath = '') {
               if (keyName) {
                 targetStateSet.add(keyName)
               }
-            } else if (matchedTarget === 'refs') {
-              const keyName = getNodePropName(propNode, memNode.computed)
-              if (keyName) {
-                targetRefsMap.set(keyName, {
-                  line: memNode.loc.start.line + scriptStartLine,
-                  column: memNode.loc.start.column + 1
-                })
-              }
             } else if (matchedTarget === 'errors') {
               const keyName = getNodePropName(propNode, memNode.computed)
               if (keyName) {
@@ -1198,26 +1225,6 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 targetRefsMap.set(keyName, {
                   line: targetNode.loc.start.line + scriptStartLine,
                   column: targetNode.loc.start.column + 1
-                })
-              }
-            }
-          },
-
-          Identifier (idNode) {
-            if (isClientFn && templateRefs.has(idNode.name)) {
-              targetRefsMap.set(idNode.name, {
-                line: idNode.loc.start.line + scriptStartLine,
-                column: idNode.loc.start.column + 1
-              })
-            }
-          },
-
-          Literal (litNode) {
-            if (isClientFn && typeof litNode.value === 'string') {
-              if (templateRefs.has(litNode.value)) {
-                targetRefsMap.set(litNode.value, {
-                  line: litNode.loc.start.line + scriptStartLine,
-                  column: litNode.loc.start.column + 1
                 })
               }
             }
@@ -1855,6 +1862,8 @@ export function validateComponentSource (sourceCode, filePath = '') {
   }
 
   // Element refs cross-referencing (CORALITE-W402 & CORALITE-E202)
+  const cleanStyleContent = styleContent ? styleContent.replace(/\/\*[\s\S]*?\*\//g, '') : ''
+
   const unusedRefs = []
   for (const [ref, loc] of templateRefs.entries()) {
     const refToken = 'ref_' + ref
@@ -1862,6 +1871,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
     const refKebabToken = 'ref_' + camelToKebab(ref)
 
     const isUsed =
+      isRefUsedInSelector(ref, scriptStringPool, cleanStyleContent) ||
       refsCalls.has(ref) ||
       refsCalls.has(refToken) ||
       refsCalls.has(refCamelToken) ||

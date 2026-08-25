@@ -677,9 +677,70 @@ ${templateLines}
     assert.ok(w204.codeframe.includes('60 |       if (btn) {'))
   })
 
-  // 18. Unquoted Object Key Ref References and Direct Identifiers
-  test('Unquoted Object Key Ref References: recognizes object property keys and identifiers as ref usages', () => {
-    const code = `<template>
+  // 18. Precision Ref Selectors (Positive Test Cases)
+  test('Precision Ref Selectors: recognizes ref selectors in JS strings, template literals, and <style>', () => {
+    // 1. DOM Event Delegation (closest)
+    const code1 = `
+<template><button ref="btnApply">Apply</button></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      root.addEventListener('click', e => {
+        if (e.target.closest('[ref="btnApply"]') || e.target.closest('[ref$="btnApply"]')) {}
+      })
+    }
+  })
+</script>
+`
+    const res1 = validateComponentSource(code1, 'test-selector-closest.html')
+    const w402s1 = res1.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s1.length, 0)
+
+    // 2. Query Selector (querySelector)
+    const code2 = `
+<template><img ref="avatarImage" src="avatar.png"></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      const img = root.querySelector('img[ref="avatarImage"]')
+    }
+  })
+</script>
+`
+    const res2 = validateComponentSource(code2, 'test-selector-query.html')
+    const w402s2 = res2.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s2.length, 0)
+
+    // 3. Module-level CSS-in-JS Selector Constant
+    const code3 = `
+<template><div ref="container"></div></template>
+<script>
+  import { defineComponent } from 'coralite'
+  const CONTAINER_SEL = '[ref="container"]'
+  export default defineComponent({ client: () => {} })
+</script>
+`
+    const res3 = validateComponentSource(code3, 'test-selector-const.html')
+    const w402s3 = res3.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s3.length, 0)
+
+    // 4. <style> Ref Selector
+    const code4 = `
+<template><div ref="banner"></div></template>
+<style>[ref="banner"] { display: block; }</style>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const res4 = validateComponentSource(code4, 'test-selector-style.html')
+    const w402s4 = res4.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s4.length, 0)
+
+    // 5. Object Map Keys (subItemBtns pattern)
+    const code5 = `<template>
   <button ref="btnMusic">Music</button>
   <button ref="btnPictures">Pictures</button>
   <button ref="btnVideo">Video</button>
@@ -688,17 +749,85 @@ ${templateLines}
 <script>
   import { defineComponent } from 'coralite'
   export default defineComponent({
-    client() {
-      const lookup = { btnMusic: 'music', btnPictures: 'pictures' }
-      const active = btnVideo
+    client({ refs }) {
+      const subItemBtns = {
+        btnMusic: 'music',
+        btnPictures: 'pictures',
+        btnVideo: 'video'
+      }
+      Object.entries(subItemBtns).forEach(([refName, viewName]) => {
+        const btn = refs(refName)
+      })
     }
   })
 </script>
 `
-    const result = validateComponentSource(code, 'lookup-test.html')
-    const w402s = result.diagnostics.filter(d => d.code === 'CORALITE-W402')
-    assert.strictEqual(w402s.length, 0)
-    assert.strictEqual(result.unused.refs.length, 0)
+    const res5 = validateComponentSource(code5, 'test-lookup-map.html')
+    const w402s5 = res5.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s5.length, 0)
+  })
+
+  // 19. Precision Ref Selectors (Negative Test Cases - Must Emit CORALITE-W402)
+  test('Precision Ref Selectors: continues to warn CORALITE-W402 for non-ref selectors, comments, and invalid accesses', () => {
+    // 1. Coincidental getElementById / data-ref
+    const code1 = `
+<template><button ref="btnApply">Apply</button></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: () => {
+      document.getElementById('btnApply')
+      document.querySelector('[data-ref="btnApply"]')
+    }
+  })
+</script>
+`
+    const res1 = validateComponentSource(code1, 'test-neg-getelem.html')
+    const w402s1 = res1.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s1.length, 1)
+
+    // 2. Plain CSS Class / ID (no ref=)
+    const code2 = `
+<template><button ref="btnApply">Apply</button></template>
+<style>.btnApply { color: red; } #btnApply { color: blue; }</style>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const res2 = validateComponentSource(code2, 'test-neg-plaincss.html')
+    const w402s2 = res2.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s2.length, 1)
+
+    // 3. Comment Mention Only
+    const code3 = `
+<template><button ref="btnApply">Apply</button></template>
+<style>/* [ref="btnApply"] */</style>
+<script>
+  // [ref="btnApply"]
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ client: () => {} })
+</script>
+`
+    const res3 = validateComponentSource(code3, 'test-neg-comments.html')
+    const w402s3 = res3.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s3.length, 1)
+
+    // 4. Invalid Property Access refs.btnApply
+    const code4 = `
+<template><button ref="btnApply">Apply</button></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ refs }) => {
+      const b = refs.btnApply
+    }
+  })
+</script>
+`
+    const res4 = validateComponentSource(code4, 'test-neg-refs-member.html')
+    const w402s4 = res4.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(w402s4.length, 1)
   })
 
   // 19. Backwards Compatibility Aliases
