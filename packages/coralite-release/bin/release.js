@@ -2,7 +2,7 @@
 
 import { program } from 'commander'
 import * as prompts from '@clack/prompts'
-import { readFileSync, writeFileSync, existsSync, copyFileSync, unlinkSync } from 'fs'
+import { readFileSync, writeFileSync, existsSync, copyFileSync, unlinkSync, realpathSync } from 'fs'
 import { globSync } from 'glob'
 import { simpleGit } from 'simple-git'
 import { execSync } from 'child_process'
@@ -468,8 +468,21 @@ process.on('unhandledRejection', (reason, promise) => {
 })
 
 // Parse command line arguments when executed directly
-const isMain = Boolean(process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1]))
-if (isMain) {
+function isMainModule () {
+  if (!process.argv[1]) {
+    return false
+  }
+
+  try {
+    const realArgv = realpathSync(process.argv[1])
+    const realMeta = realpathSync(fileURLToPath(import.meta.url))
+    return realArgv === realMeta
+  } catch {
+    return false
+  }
+}
+
+if (isMainModule()) {
   program.parse(process.argv)
 
   // Show help if no arguments provided
