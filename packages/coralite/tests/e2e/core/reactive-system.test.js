@@ -86,7 +86,7 @@ test.describe('Reactive System - Observe Context & Side-effects', () => {
 
     const warnings = []
     page.on('console', msg => {
-      if (msg.type() === 'warning' || msg.text().includes('[Coralite Warning]')) {
+      if (msg.type() === 'warning' || msg.text().includes('State mutation detected inside an observe() callback.')) {
         warnings.push(msg.text())
       }
     })
@@ -97,7 +97,7 @@ test.describe('Reactive System - Observe Context & Side-effects', () => {
     // Give a short timeout for logs to flush
     await page.waitForTimeout(50)
 
-    const expectedWarning = '[Coralite Warning]: State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.'
+    const expectedWarning = 'State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.'
 
     if (mode === 'development') {
       expect(warnings).toContain(expectedWarning)

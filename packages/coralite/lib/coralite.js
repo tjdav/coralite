@@ -4,7 +4,7 @@ import { ScriptManager } from './script-manager.js'
 import { metadataPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join, normalize, relative } from 'node:path'
-import { handleError } from './utils/errors.js'
+import { CoraliteError, handleError, defaultOnError } from './utils/errors.js'
 import { createExecutionError } from './utils/server/errors.js'
 import { transformNode } from './parser.js'
 import { evaluate } from './compiler.js'
@@ -55,10 +55,16 @@ export async function createCoralite ({
   incremental = true,
   csp
 }) {
+  if (onError !== undefined && typeof onError !== 'function') {
+    throw new CoraliteError('createCoralite requires "onError" option to be a function if provided')
+  }
+
+  const resolvedOnError = onError || defaultOnError
+
   // Validate required parameters
   if (!components || typeof components !== 'string') {
     handleError({
-      onErrorCallback: onError,
+      onErrorCallback: resolvedOnError,
       data: {
         level: 'ERR',
         message: 'createCoralite requires "components" option to be defined as a string'
@@ -68,7 +74,7 @@ export async function createCoralite ({
 
   if (!pages || typeof pages !== 'string') {
     handleError({
-      onErrorCallback: onError,
+      onErrorCallback: resolvedOnError,
       data: {
         level: 'ERR',
         message: 'createCoralite requires "pages" option to be defined as a string'
@@ -106,6 +112,10 @@ export async function createCoralite ({
   // @ts-ignore
   const app = {
     options: normalizedOptions,
+    onError: (data) => handleError({
+      onErrorCallback: resolvedOnError,
+      data
+    }),
     pages: null,
     components: null,
     build: null,
@@ -138,10 +148,10 @@ export async function createCoralite ({
       const existingUserAsset = userAssets.find(a => a.dest === assetOptions.dest)
       if (existingUserAsset) {
         handleError({
-          onErrorCallback: onError,
+          onErrorCallback: resolvedOnError,
           data: {
             level: 'WARN',
-            message: `[Coralite] Asset destination collision for "${assetOptions.dest}": user config asset takes precedence over plugin asset.`
+            message: `Asset destination collision for "${assetOptions.dest}": user config asset takes precedence over plugin asset.`
           }
         })
         return join(app.options.output || process.cwd(), assetOptions.dest)
@@ -250,7 +260,7 @@ export async function createCoralite ({
   const serverGlobalContext = { app }
 
   const _handleErrorLocal = (data) => handleError({
-    onErrorCallback: onError,
+    onErrorCallback: resolvedOnError,
     data
   })
 
@@ -343,7 +353,7 @@ export async function createCoralite ({
       const createdDir = {}
       if (!app.options.output) {
         handleError({
-          onErrorCallback: onError,
+          onErrorCallback: resolvedOnError,
           data: {
             level: 'ERR',
             message: 'Coralite instance must be configured with an "output" option to use save()'

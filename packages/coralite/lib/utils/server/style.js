@@ -1,5 +1,6 @@
 import postcss from 'postcss'
 import selectorParser from 'postcss-selector-parser'
+import { CoraliteError, defaultOnError } from '../errors.js'
 
 /**
  * @import { CoraliteOnError } from '../../../types/index.js'
@@ -263,7 +264,11 @@ export async function transformCss (css, onError, options = {}) {
  * @param {CoraliteOnError} [onError] - Error handler callback
  * @returns {Promise<string>} Formatted CSS blocks
  */
-export async function formatComponentCss (componentId, rawCss, onError) {
+export async function formatComponentCss (componentId, rawCss, onError = defaultOnError) {
+  if (onError !== undefined && typeof onError !== 'function') {
+    throw new CoraliteError('formatComponentCSS requires "onError" to be a function')
+  }
+
   if (!rawCss || !rawCss.trim()) {
     return ''
   }

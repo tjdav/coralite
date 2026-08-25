@@ -432,7 +432,7 @@ describe('CoraliteElement', () => {
         window.__coralite__.mode = prevMode
 
         assert.ok(warningMsg, 'Should have emitted a warning msg')
-        assert.ok(warningMsg.includes('[Coralite Warning]: State mutation detected inside an observe() callback.'))
+        assert.ok(warningMsg.includes('State mutation detected inside an observe() callback.'))
         document.body.removeChild(el)
         done()
       })

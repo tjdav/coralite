@@ -38,7 +38,7 @@ export async function setupPlugins ({
           data: {
             level: 'WARN',
             type: 'unmatched_plugin_mock',
-            message: `[Coralite Warning]: Mock defined for plugin "${mockKey}", but no plugin with that name is registered.`
+            message: `Mock defined for plugin "${mockKey}", but no plugin with that name is registered.`
           }
         })
       }

@@ -8,7 +8,7 @@ import {
   relinkChildren
 } from './dom.js'
 import { isValidCustomElementName, VALID_TAGS } from '../tags.js'
-import { CoraliteError } from '../errors.js'
+import { CoraliteError, defaultOnError } from '../errors.js'
 
 /**
  * @import {
@@ -95,7 +95,11 @@ function handleSlotOpenTag (element, attributes, templateId, slotElements) {
  * @returns {ParseHTMLResult}
  * @example parseHTML('<h1>Hello world!</h1>')
  */
-export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onError) {
+export function parseHTML (string, ignoreByAttribute, skipRenderByAttribute, onError = defaultOnError) {
+  if (onError !== undefined && typeof onError !== 'function') {
+    throw new CoraliteError('parseHTML requires "onError" to be a function')
+  }
+
   // root element reference
   const root = createCoraliteComponent({
     type: 'root',
@@ -553,26 +557,18 @@ export function createElement ({
         element.slots = []
       } else {
         const message = 'Invalid custom element tag name: "' + name + '" (' + specUrl + ')'
-        if (typeof onError === 'function') {
-          onError({
-            level: 'WARN',
-            message
-          })
-        } else {
-          console.warn(message)
-        }
+        onError({
+          level: 'WARN',
+          message
+        })
       }
     } catch (error) {
       const message = error.message + ' (' + specUrl + ')'
-      if (typeof onError === 'function') {
-        onError({
-          level: 'WARN',
-          message,
-          error
-        })
-      } else {
-        console.warn(message)
-      }
+      onError({
+        level: 'WARN',
+        message,
+        error
+      })
     }
   }
 

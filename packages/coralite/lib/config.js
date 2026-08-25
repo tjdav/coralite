@@ -12,6 +12,10 @@ import { CoraliteError, handleError } from './utils/errors.js'
  * @throws {Error} If the configuration is invalid
  */
 export function defineConfig (options, { onError } = {}) {
+  if (onError !== undefined && typeof onError !== 'function') {
+    throw new CoraliteError('defineConfig requires "onError" option to be a function if provided')
+  }
+
   // Validate that options is an object
   if (!options || typeof options !== 'object') {
     throw new CoraliteError('Config must be an object')
@@ -171,7 +175,7 @@ export function defineConfig (options, { onError } = {}) {
           data: {
             level: 'WARN',
             type: 'config_duplicate_asset',
-            message: `[Coralite Warning] Duplicate asset destination "${asset.dest}" detected in options.assets. Later entry overrides earlier entry.`
+            message: `Duplicate asset destination "${asset.dest}" detected in options.assets. Later entry overrides earlier entry.`
           }
         })
       }

@@ -159,7 +159,7 @@ export function validateAttributeValue (value, schema, name, componentId = 'comp
     })
   }
 
-  const targetType = schemaObj.type
+  const targetType = schemaObj.type || (schemaObj.values ? inferTypeFromValues(schemaObj.values) : undefined)
   const isBooleanType = targetType === Boolean || targetType === 'Boolean'
 
   // Handle omitted value (optional attribute with or without default)
@@ -373,7 +373,7 @@ export function coerce (value, type) {
       return false
     }
 
-    return Boolean(value)
+    return value
   }
 
   if (value === null || value === undefined) {
@@ -1379,7 +1379,7 @@ export class CoraliteElement extends BaseElement {
           const mode = (typeof window !== 'undefined' && window['__coralite__'] && window['__coralite__'].mode) || 'production'
 
           if (mode === 'development' && self._isExecutingObserver) {
-            console.warn('[Coralite Warning]: State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.')
+            console.warn('State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.')
           }
         }
 

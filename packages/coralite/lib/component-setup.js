@@ -231,7 +231,8 @@ export function createComponentDefinition ({ app }) {
         state.errors[camelName] = res.error
         state['error_' + camelName] = res.error
         state['error_' + kebabName] = res.error
-        const warnMessage = `[Coralite Warning]: Component "${module.id}" attribute "${camelName}" validation failed: ${res.error}`
+
+        const warnMessage = `Component "${module.id}" attribute "${camelName}" validation failed: ${res.error}`
         const isSuppressed = app?.options?.suppressValidationWarnings === true || app?.options?.mode === 'production'
 
         if (app && typeof app.onError === 'function') {
@@ -667,7 +668,7 @@ export async function registerBaseComponent ({
 
     await _safeRegister(component, scriptManager, scriptResult?.__script__, onError)
   } catch (_err) {
-    const warnMessage = `[Coralite Warning]: Base evaluation for component "${component.id}" failed: ${_err.message}. Registering static fallback definition.`
+    const warnMessage = `Base evaluation for component "${component.id}" failed: ${_err.message}. Registering static fallback definition.`
     handleError({
       onErrorCallback: onError,
       data: {

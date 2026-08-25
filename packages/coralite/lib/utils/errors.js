@@ -63,7 +63,11 @@ export function defaultOnError ({ level, message, error }) {
  * @param {Function} [options.onErrorCallback] - The optional custom error callback function.
  * @param {CoraliteErrorData} options.data - The error data to be handled.
  */
-export function handleError ({ onErrorCallback, data }) {
+export function handleError ({ onErrorCallback = defaultOnError, data }) {
+  if (typeof onErrorCallback !== 'function') {
+    throw new CoraliteError('handleError requires "onErrorCallback" to be a function')
+  }
+
   const { error } = data
 
   if (error && typeof error === 'object' && 'isCoraliteError' in error && error.isCoraliteError) {
@@ -85,9 +89,5 @@ export function handleError ({ onErrorCallback, data }) {
     data.stackFile ??= error.stackFile
   }
 
-  if (onErrorCallback) {
-    onErrorCallback(data)
-  } else {
-    defaultOnError(data)
-  }
+  onErrorCallback(data)
 }

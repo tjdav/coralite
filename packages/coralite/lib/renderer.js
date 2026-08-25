@@ -1820,7 +1820,7 @@ export function createRenderer ({
       throw new CoraliteError('addRenderQueue requires a buildId')
     }
     if (sealedQueues.has(buildId)) {
-      console.warn(`[Coralite] Attempted to add to sealed queue for build "${buildId}". All virtual pages must be added in onBeforeBuild.`)
+      console.warn(`Attempted to add to sealed queue for build "${buildId}". All virtual pages must be added in onBeforeBuild.`)
       return
     }
     const queue = renderQueues.get(buildId)
