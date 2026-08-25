@@ -48,9 +48,10 @@ function resolvePath (explicitPath, configProp, defaultCandidates) {
   if (explicitPath) {
     return explicitPath
   }
-  if (config && config[configProp]) {
+  if (config && typeof config[configProp] === 'string') {
     return config[configProp]
   }
+
   for (const cand of defaultCandidates) {
     if (existsSync(join(process.cwd(), cand))) {
       return cand
@@ -171,28 +172,30 @@ program
         process.stdout.write('\n' + kleur.bold().cyan('🪸 Coralite Workspace Check Report') + '\n')
         process.stdout.write(kleur.gray('─'.repeat(60)) + '\n\n')
 
-        if (compReport) {
-          process.stdout.write(kleur.bold().blue('🪸 Components') + '\n')
+        let validatedDomainsCount = 0
+
+        if (compReport && (compReport.summary?.totalComponents ?? 0) > 0) {
+          validatedDomainsCount++
           process.stdout.write(formatComponentValidationReport(compReport, {
             format: 'console',
             coverage: options.coverage
           }))
         }
 
-        if (pluginReport) {
-          process.stdout.write(kleur.bold().magenta('🔌 Plugins') + '\n')
+        if (pluginReport && (pluginReport.metrics?.totalPlugins ?? 0) > 0) {
+          validatedDomainsCount++
           process.stdout.write(formatPluginValidationReport(pluginReport, { format: 'console' }))
         }
 
-        if (pageReport) {
-          process.stdout.write(kleur.bold().yellow('📄 Pages') + '\n')
+        if (pageReport && (pageReport.summary?.totalPages ?? 0) > 0) {
+          validatedDomainsCount++
           process.stdout.write(formatPageValidationReport(pageReport, { format: 'console' }))
         }
 
         process.stdout.write(kleur.gray('─'.repeat(60)) + '\n')
         const summaryColor = errorCount === 0 ? kleur.green().bold : kleur.red().bold
 
-        let summaryLine = `Summary: ${totalFiles} file(s) validated across 3 domains | ${validFiles} valid | ${errorCount} error(s) | ${warningCount} warning(s)`
+        let summaryLine = `Summary: ${totalFiles} file(s) validated across ${validatedDomainsCount} domain(s) | ${validFiles} valid | ${errorCount} error(s) | ${warningCount} warning(s)`
         if (fixableCount > 0) {
           summaryLine += ` | ${fixableCount} fixable with --fix`
         }
@@ -456,6 +459,51 @@ program
       process.stdout.write(formatted)
 
       const hasFailures = (initialReport.metrics.totalErrors && initialReport.metrics.totalErrors > 0) || (options.strict && initialReport.metrics.totalUnused > 0)
+      if (hasFailures) {
+        process.exit(1)
+      }
+    } catch (err) {
+      process.stderr.write(kleur.red().bold('ERROR: ') + err.message + '\n')
+      process.exit(1)
+    }
+  })
+
+program
+  .command('validate-pages')
+  .alias('validate:pages')
+  .description('Validate Coralite HTML pages against component schemas and encapsulation rules')
+  .option('-c, --components <path>', 'Path to components directory')
+  .option('--pages <path>', 'Path to pages directory')
+  .option('--format <format>', 'Output format: "console" or "json"', 'console')
+  .option('--strict', 'Fail with non-zero exit code if validation warnings are found', false)
+  .action(async (options) => {
+    const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
+    const pageDir = resolvePath(options.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages']) || '.'
+
+    try {
+      let knownComponents = new Map()
+      if (compDir && existsSync(compDir)) {
+        const compReport = validateComponentsDir(compDir)
+        if (compReport && compReport.components) {
+          for (const c of compReport.components) {
+            if (c.filePath) {
+              const name = c.filePath.split('/').pop().replace(/\.(html|js)$/, '')
+              knownComponents.set(name, {
+                attributes: c.defined ? c.defined.attributes.reduce((acc, curr) => ({
+                  ...acc,
+                  [curr]: {}
+                }), {}) : {}
+              })
+            }
+          }
+        }
+      }
+
+      const pageReport = validatePagesDir(pageDir, { knownComponents })
+      const formatted = formatPageValidationReport(pageReport, { format: options.format })
+      process.stdout.write(formatted)
+
+      const hasFailures = pageReport.summary.errorCount > 0 || (options.strict && pageReport.summary.warningCount > 0)
       if (hasFailures) {
         process.exit(1)
       }

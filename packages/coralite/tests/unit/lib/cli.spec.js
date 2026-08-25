@@ -146,6 +146,46 @@ export default {
     })
   })
 
+  describe('coralite validate-pages', () => {
+    test('validates pages directory and outputs console report', () => {
+      const pageDir = join(tmpDir, 'pages')
+      mkdirSync(pageDir, { recursive: true })
+      writeFileSync(join(pageDir, 'index.html'), `
+<!DOCTYPE html>
+<html>
+  <body>
+    <div>Valid Page</div>
+  </body>
+</html>
+`)
+
+      const output = execSync(`node "${cliBin}" validate-pages --pages pages`, { cwd: tmpDir }).toString()
+      assert.match(output, /📄 Coralite Page Validation Report/)
+      assert.match(output, /✔ VALID/)
+      assert.match(output, /Summary: 1 page\(s\) validated/)
+    })
+
+    test('supports --format json', () => {
+      const pageDir = join(tmpDir, 'pages')
+      mkdirSync(pageDir, { recursive: true })
+      writeFileSync(join(pageDir, 'index.html'), `
+<!DOCTYPE html>
+<html>
+  <body>
+    <div>Valid Page</div>
+  </body>
+</html>
+`)
+
+      const output = execSync(`node "${cliBin}" validate-pages --pages pages --format json`, { cwd: tmpDir }).toString()
+      const json = JSON.parse(output)
+      assert.ok(json.pages)
+      assert.ok(json.summary)
+      assert.strictEqual(json.summary.totalPages, 1)
+      assert.strictEqual(json.summary.validPages, 1)
+    })
+  })
+
   describe('validate-plugins --fix and --dry-run', () => {
     test('validate-plugins --fix applies AST plugin fixes', () => {
       const plugDir = join(tmpDir, 'plugins')

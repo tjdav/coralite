@@ -3,8 +3,9 @@ import { parse as parseJS } from 'acorn'
 import { ancestor as walkAncestorJS } from 'acorn-walk'
 import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
 import { join, extname, relative, resolve, basename } from 'node:path'
+import kleur from 'kleur'
 import { camelToKebab } from './utils/core.js'
-import { createDiagnostic, formatValidationReport } from './utils/diagnostics.js'
+import { createDiagnostic, formatDiagnosticTerminal } from './utils/diagnostics.js'
 
 /**
  * @import {
@@ -598,5 +599,45 @@ export function validatePagesDir (pagesDir, options = {}) {
  * @returns {string} Formatted output
  */
 export function formatPageValidationReport (report, options = {}) {
-  return formatValidationReport(report, options)
+  const format = options.format || 'console'
+
+  if (format === 'json') {
+    return JSON.stringify(report, null, 2) + '\n'
+  }
+
+  let out = '\n' + kleur.bold().cyan('📄 Coralite Page Validation Report') + '\n'
+  out += kleur.gray('─'.repeat(60)) + '\n\n'
+
+  const pages = report?.pages || []
+  for (const page of pages) {
+    const diagnostics = page.diagnostics || []
+    const status = page.valid ? kleur.green().bold('✔ VALID') : kleur.red().bold('✖ INVALID')
+    out += `${kleur.bold(page.filePath)} ─ ${status}\n`
+
+    if (diagnostics.length === 0) {
+      out += `  ${kleur.green('✔')} All custom elements, attributes, and script encapsulation are valid.\n\n`
+    } else {
+      for (const diag of diagnostics) {
+        out += `${formatDiagnosticTerminal(diag)}\n`
+      }
+      out += '\n'
+    }
+  }
+
+  out += kleur.gray('─'.repeat(60)) + '\n'
+  const summary = report?.summary || {}
+  const totalPages = summary.totalPages ?? pages.length
+  const validPages = summary.validPages ?? pages.filter(p => p.valid).length
+  const errorCount = summary.errorCount ?? 0
+  const warningCount = summary.warningCount ?? 0
+  const fixableCount = summary.fixableCount ?? 0
+
+  const summaryColor = errorCount === 0 ? kleur.green().bold : kleur.red().bold
+  let summaryLine = `Summary: ${totalPages} page(s) validated | ${validPages} valid | ${errorCount} error(s) | ${warningCount} warning(s)`
+  if (fixableCount > 0) {
+    summaryLine += ` | ${fixableCount} fixable with --fix`
+  }
+  out += summaryColor(summaryLine) + '\n\n'
+
+  return out
 }

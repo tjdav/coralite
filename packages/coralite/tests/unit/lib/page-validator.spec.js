@@ -208,7 +208,7 @@ describe('Coralite Page Validator (page-validator.js)', () => {
 
       const formatted = formatPageValidationReport(report)
       assert.ok(typeof formatted === 'string')
-      assert.match(formatted, /Coralite Component Code & Schema Diagnostics/)
+      assert.match(formatted, /Coralite Page Validation Report/)
 
       rmSync(tmpDir, { recursive: true, force: true })
     })

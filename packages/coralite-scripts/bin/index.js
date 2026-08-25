@@ -2,6 +2,7 @@
 
 import loadConfig from '../libs/load-config.js'
 import { Command } from 'commander'
+import kleur from 'kleur'
 import server from '../libs/server.js'
 import pkg from '../package.json' with { type: 'json' }
 import { join } from 'node:path'
@@ -129,9 +130,15 @@ program
   .option('--strict', 'Fail with non-zero exit code if warnings or unused code exist', false)
   .option('--coverage', 'Include component test execution coverage metrics', false)
   .action(async (options) => {
-    const config = await loadConfig(process.cwd(), { silent: true })
-    const res = await checkCommand(config, options)
-    if (res.hasFailures) {
+    try {
+      const config = await loadConfig(process.cwd(), { silent: true })
+      const res = await checkCommand(config, options)
+
+      if (res.hasFailures) {
+        process.exit(1)
+      }
+    } catch (err) {
+      process.stderr.write(kleur.red().bold('ERROR: ') + err.message + '\n')
       process.exit(1)
     }
   })
@@ -145,9 +152,14 @@ program
   .option('--pages <path>', 'Path to pages directory')
   .option('--dry-run', 'Preview changes that would be made without writing to disk', false)
   .action(async (options) => {
-    const config = await loadConfig(process.cwd(), { silent: true })
-    const res = await fixCommand(config, options)
-    if (res.hasFailures) {
+    try {
+      const config = await loadConfig(process.cwd(), { silent: true })
+      const res = await fixCommand(config, options)
+      if (res.hasFailures) {
+        process.exit(1)
+      }
+    } catch (err) {
+      process.stderr.write(kleur.red().bold('ERROR: ') + err.message + '\n')
       process.exit(1)
     }
   })

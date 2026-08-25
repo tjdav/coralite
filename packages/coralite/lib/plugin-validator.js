@@ -1260,6 +1260,7 @@ export async function validatePluginsDir (pluginsDir) {
   let totalErrors = 0
   let totalWarnings = 0
   let validPlugins = 0
+  let fixableCount = 0
 
   for (const res of results) {
     totalErrors += res.metrics.errors
@@ -1267,10 +1268,19 @@ export async function validatePluginsDir (pluginsDir) {
     if (res.valid) {
       validPlugins++
     }
+    const fixables = (res.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length
+    fixableCount += fixables
   }
 
   return {
     plugins: results,
+    summary: {
+      totalPlugins: results.length,
+      validPlugins,
+      errorCount: totalErrors,
+      warningCount: totalWarnings,
+      fixableCount
+    },
     metrics: {
       totalPlugins: results.length,
       validPlugins,

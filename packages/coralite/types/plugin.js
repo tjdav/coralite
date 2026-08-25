@@ -354,8 +354,18 @@
  */
 
 /**
+ * @typedef {Object} CoralitePluginDirectoryValidationSummary
+ * @property {number} totalPlugins - Total plugins analyzed
+ * @property {number} validPlugins - Count of fully valid plugins
+ * @property {number} errorCount - Total error count across all plugins
+ * @property {number} warningCount - Total warning count across all plugins
+ * @property {number} fixableCount - Total fixable issues count across all plugins
+ */
+
+/**
  * @typedef {Object} CoralitePluginDirectoryValidationReport
  * @property {CoralitePluginValidationResult[]} plugins - Array of validation results
+ * @property {CoralitePluginDirectoryValidationSummary} [summary] - Standardized summary metrics
  * @property {CoralitePluginDirectoryValidationMetrics} metrics - Aggregate metrics
  */
 
