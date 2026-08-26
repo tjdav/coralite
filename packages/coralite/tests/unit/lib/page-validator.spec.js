@@ -186,7 +186,7 @@ describe('Coralite Page Validator (page-validator.js)', () => {
   })
 
   describe('validatePagesDir & formatPageValidationReport', () => {
-    it('validates a directory of pages recursively', () => {
+    it('validates a directory of pages recursively', async () => {
       const tmpDir = join(tmpdir(), `coralite-page-val-test-${Date.now()}`)
       mkdirSync(tmpDir, { recursive: true })
 
@@ -196,7 +196,7 @@ describe('Coralite Page Validator (page-validator.js)', () => {
       writeFileSync(page1, '<user-card user-id="10"></user-card>')
       writeFileSync(page2, '<user-card></user-card>')
 
-      const report = validatePagesDir(tmpDir, {
+      const report = await validatePagesDir(tmpDir, {
         knownComponents: new Map([
           ['user-card', { attributes: { userId: { required: true } } }]
         ])

@@ -81,7 +81,7 @@ program
     try {
       let compReport = null
       if (compDir && existsSync(compDir)) {
-        compReport = validateComponentsDir(compDir, { coverage: options.coverage })
+        compReport = await validateComponentsDir(compDir, { coverage: options.coverage })
       }
 
       let pluginReport = null
@@ -118,7 +118,7 @@ program
             }
           }
         }
-        pageReport = validatePagesDir(pageDir, { knownComponents })
+        pageReport = await validatePagesDir(pageDir, { knownComponents })
       }
 
       const totalFiles = (compReport?.summary?.totalComponents ?? 0) +
@@ -229,7 +229,7 @@ program
 
       // Fix Components
       if (compDir && existsSync(compDir)) {
-        const compReport = validateComponentsDir(compDir)
+        const compReport = await validateComponentsDir(compDir)
         for (const compRes of compReport.components) {
           if (!compRes.filePath) {
             continue
@@ -407,7 +407,7 @@ program
     const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components']) || '.'
 
     try {
-      let initialReport = validateComponentsDir(compDir, { coverage: options.coverage })
+      let initialReport = await validateComponentsDir(compDir, { coverage: options.coverage })
 
       if (options.fix || options.dryRun) {
         let totalFixesCount = 0
@@ -448,7 +448,7 @@ program
             )
           )
           // Re-run validation so final report reflects post-fix state
-          initialReport = validateComponentsDir(compDir, { coverage: options.coverage })
+          initialReport = await validateComponentsDir(compDir, { coverage: options.coverage })
         }
       }
 
@@ -483,7 +483,7 @@ program
     try {
       let knownComponents = new Map()
       if (compDir && existsSync(compDir)) {
-        const compReport = validateComponentsDir(compDir)
+        const compReport = await validateComponentsDir(compDir)
         if (compReport && compReport.components) {
           for (const c of compReport.components) {
             if (c.filePath) {
@@ -499,7 +499,7 @@ program
         }
       }
 
-      const pageReport = validatePagesDir(pageDir, { knownComponents })
+      const pageReport = await validatePagesDir(pageDir, { knownComponents })
       const formatted = formatPageValidationReport(pageReport, { format: options.format })
       process.stdout.write(formatted)
 

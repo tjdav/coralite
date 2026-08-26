@@ -114,7 +114,7 @@ export async function checkCommand (config, options = {}, logger = null) {
   let compReport = null
   const fullCompDir = resolveTargetDir(compDir, cwd)
   if (fullCompDir) {
-    compReport = validateComponentsDir(fullCompDir, { coverage: Boolean(options.coverage) })
+    compReport = await validateComponentsDir(fullCompDir, { coverage: Boolean(options.coverage) })
   }
 
   let pluginReport = null
@@ -159,7 +159,7 @@ export async function checkCommand (config, options = {}, logger = null) {
         }
       }
     }
-    pageReport = validatePagesDir(fullPageDir, { knownComponents })
+    pageReport = await validatePagesDir(fullPageDir, { knownComponents })
   }
 
   const totalFiles = (compReport?.summary?.totalComponents ?? 0) +

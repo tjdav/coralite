@@ -1,7 +1,7 @@
 import { Parser } from 'htmlparser2'
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readFile, readdir, stat, access } from 'node:fs/promises'
 import { join, extname, relative, resolve } from 'node:path'
 import { camelToKebab, kebabToCamel } from './utils/core.js'
 import { buildCodeframe, formatValidationReport } from './utils/diagnostics.js'
@@ -2153,36 +2153,40 @@ export function validateComponentSource (sourceCode, filePath = '') {
  *
  * @param {string} componentsDir - Path to components directory
  * @param {Object} [options={}] - Options like coverage flag
- * @returns {CoraliteComponentDirectoryValidationReport} Aggregated directory validation report
+ * @returns {Promise<CoraliteComponentDirectoryValidationReport>} Aggregated directory validation report
  */
-export function validateComponentsDir (componentsDir, options = {}) {
+export async function validateComponentsDir (componentsDir, options = {}) {
   const absoluteDir = resolve(componentsDir)
   const results = []
 
-  if (!existsSync(absoluteDir)) {
+  try {
+    await access(absoluteDir)
+  } catch {
     throw new Error(`Components directory not found: ${absoluteDir}`)
   }
 
-  function scanDir (dir) {
-    const entries = readdirSync(dir)
-    for (const entry of entries) {
+  const scanDir = async (dir) => {
+    const entries = await readdir(dir)
+    await Promise.all(entries.map(async (entry) => {
       const fullPath = join(dir, entry)
-      const stat = statSync(fullPath)
+      const st = await stat(fullPath)
 
-      if (stat.isDirectory()) {
-        scanDir(fullPath)
-      } else if (stat.isFile() && (extname(entry) === '.html' || extname(entry) === '.js')) {
-        const content = readFileSync(fullPath, 'utf8')
+      if (st.isDirectory()) {
+        await scanDir(fullPath)
+      } else if (st.isFile() && (extname(entry) === '.html' || extname(entry) === '.js')) {
+        const content = await readFile(fullPath, 'utf8')
         if (content.includes('defineComponent') || content.includes('<template')) {
           const relPath = relative(process.cwd(), fullPath)
           const result = validateComponentSource(content, relPath)
           results.push(result)
         }
       }
-    }
+    }))
   }
 
-  scanDir(absoluteDir)
+  await scanDir(absoluteDir)
+
+  results.sort((a, b) => (a.filePath || '').localeCompare(b.filePath || ''))
 
   let totalDefined = 0
   let totalUnused = 0

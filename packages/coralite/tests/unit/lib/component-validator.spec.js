@@ -1,7 +1,11 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
+import { tmpdir } from 'node:os'
+import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { join } from 'node:path'
 import {
   validateComponentSource,
+  validateComponentsDir,
   formatComponentValidationReport,
   analyseComponentSource,
   formatComponentAnalysis
@@ -919,5 +923,24 @@ ${templateLines}
   test('supports legacy aliases (analyseComponentSource, formatComponentAnalysis)', () => {
     assert.strictEqual(analyseComponentSource, validateComponentSource)
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)
+  })
+
+  // 22. validateComponentsDir Async Directory Validation
+  test('validateComponentsDir validates directory of components asynchronously', async () => {
+    const tmpDir = join(tmpdir(), `coralite-comp-val-test-${Date.now()}`)
+    mkdirSync(tmpDir, { recursive: true })
+
+    const comp1 = join(tmpDir, 'Card.html')
+    const comp2 = join(tmpDir, 'Button.html')
+
+    writeFileSync(comp1, '<template><div>{{ title }}</div></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { title: String } })</script>')
+    writeFileSync(comp2, '<template><button>{{ label }}</button></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { label: String } })</script>')
+
+    const report = await validateComponentsDir(tmpDir)
+    assert.strictEqual(report.summary.totalComponents, 2)
+    assert.strictEqual(report.summary.validComponents, 2)
+    assert.strictEqual(report.summary.errorCount, 0)
+
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 })

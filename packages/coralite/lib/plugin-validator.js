@@ -1261,6 +1261,8 @@ export async function validatePluginsDir (pluginsDir) {
 
   await scanDir(absoluteDir)
 
+  results.sort((a, b) => (a.filePath || '').localeCompare(b.filePath || ''))
+
   let totalErrors = 0
   let totalWarnings = 0
   let validPlugins = 0

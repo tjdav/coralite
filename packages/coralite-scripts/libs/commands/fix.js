@@ -88,7 +88,7 @@ export async function fixCommand (config, options = {}, logger = null) {
   const fullCompDir = resolveTargetDir(compDir, cwd)
 
   if (fullCompDir) {
-    const compReport = validateComponentsDir(fullCompDir)
+    const compReport = await validateComponentsDir(fullCompDir)
     for (const compRes of compReport.components) {
       if (!compRes.filePath) {
         continue

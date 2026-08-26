@@ -1,7 +1,7 @@
 import { Parser } from 'htmlparser2'
 import { parse as parseJS } from 'acorn'
 import { ancestor as walkAncestorJS } from 'acorn-walk'
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readFile, readdir, stat, access } from 'node:fs/promises'
 import { join, extname, relative, resolve, basename } from 'node:path'
 import kleur from 'kleur'
 import { camelToKebab } from './utils/core.js'
@@ -521,26 +521,28 @@ function isCustomElementRefNode (node, customElementVars, knownMap) {
  *
  * @param {string} pagesDir - Path to pages directory
  * @param {Object} [options={}] - Options for validation
- * @returns {Object} Aggregated directory report
+ * @returns {Promise<Object>} Aggregated directory report
  */
-export function validatePagesDir (pagesDir, options = {}) {
+export async function validatePagesDir (pagesDir, options = {}) {
   const absoluteDir = resolve(pagesDir)
   const results = []
 
-  if (!existsSync(absoluteDir)) {
+  try {
+    await access(absoluteDir)
+  } catch {
     throw new Error(`Pages directory not found: ${absoluteDir}`)
   }
 
-  function scanDir (dir) {
-    const entries = readdirSync(dir)
-    for (const entry of entries) {
+  const scanDir = async (dir) => {
+    const entries = await readdir(dir)
+    await Promise.all(entries.map(async (entry) => {
       const fullPath = join(dir, entry)
-      const stat = statSync(fullPath)
+      const st = await stat(fullPath)
 
-      if (stat.isDirectory()) {
-        scanDir(fullPath)
-      } else if (stat.isFile() && extname(entry) === '.html') {
-        const content = readFileSync(fullPath, 'utf8')
+      if (st.isDirectory()) {
+        await scanDir(fullPath)
+      } else if (st.isFile() && extname(entry) === '.html') {
+        const content = await readFile(fullPath, 'utf8')
         const relPath = relative(process.cwd(), fullPath)
         const result = validatePageSource(content, {
           ...options,
@@ -549,10 +551,12 @@ export function validatePagesDir (pagesDir, options = {}) {
         result.pageName = basename(entry, '.html')
         results.push(result)
       }
-    }
+    }))
   }
 
-  scanDir(absoluteDir)
+  await scanDir(absoluteDir)
+
+  results.sort((a, b) => (a.filePath || '').localeCompare(b.filePath || ''))
 
   let errorCount = 0
   let warningCount = 0
