@@ -212,54 +212,111 @@ program
       // Dry run pack
       const pkgDir = path.dirname(selectedPkg.path)
 
-      if (selectedPackageName === 'coralite') {
-        const sourceLlms = path.resolve(process.cwd(), 'website/public/llms.txt')
-        copiedLlmsTarget = path.resolve(pkgDir, 'llms.txt')
-        if (existsSync(sourceLlms)) {
-          copyFileSync(sourceLlms, copiedLlmsTarget)
-          prompts.log.success('📄 Copied website/public/llms.txt to packages/coralite/llms.txt')
+      let pkgVersionModified = false
+      const restoreOriginalPkg = () => {
+        if (pkgVersionModified) {
+          try {
+            writeFileSync(selectedPkg.path, selectedPkg.content)
+            pkgVersionModified = false
+          } catch {
+          }
+        }
+        if (copiedLlmsTarget && existsSync(copiedLlmsTarget)) {
+          try {
+            unlinkSync(copiedLlmsTarget)
+            copiedLlmsTarget = null
+          } catch {
+          }
         }
       }
 
-      prompts.log.info(`📦 Verifying package content for ${selectedPackageName}...`)
-      execSync('pnpm pack --dry-run', {
-        cwd: pkgDir,
-        stdio: 'inherit'
-      })
+      const onSignal = () => {
+        restoreOriginalPkg()
+        process.exit(1)
+      }
 
-      if (!options.yes) {
-        const packConfirmed = await prompts.confirm({
-          message: 'Does the package content look correct?',
-          initialValue: true
+      const cleanupSignalHandlers = () => {
+        process.removeListener('SIGINT', onSignal)
+        process.removeListener('SIGTERM', onSignal)
+        process.removeListener('exit', restoreOriginalPkg)
+      }
+
+      process.on('SIGINT', onSignal)
+      process.on('SIGTERM', onSignal)
+      process.on('exit', restoreOriginalPkg)
+
+      try {
+        if (selectedPackageName === 'coralite') {
+          const sourceLlms = path.resolve(process.cwd(), 'website/public/llms.txt')
+          copiedLlmsTarget = path.resolve(pkgDir, 'llms.txt')
+          if (existsSync(sourceLlms)) {
+            copyFileSync(sourceLlms, copiedLlmsTarget)
+            prompts.log.success('📄 Copied website/public/llms.txt to packages/coralite/llms.txt')
+          }
+        }
+
+        // Temporarily write newVersion to package.json so pack --dry-run reflects target version
+        const tempPkgData = {
+          ...selectedPkg.data,
+          version: newVersion
+        }
+        writeFileSync(selectedPkg.path, JSON.stringify(tempPkgData, null, 2) + '\n')
+        pkgVersionModified = true
+
+        prompts.log.info(`📦 Verifying package content for ${selectedPackageName}...`)
+        execSync('pnpm pack --dry-run', {
+          cwd: pkgDir,
+          stdio: 'inherit'
         })
 
-        if (prompts.isCancel(packConfirmed) || !packConfirmed) {
-          prompts.log.info('Release cancelled')
+        if (!options.yes) {
+          const packConfirmed = await prompts.confirm({
+            message: 'Does the package content look correct?',
+            initialValue: true
+          })
+
+          if (prompts.isCancel(packConfirmed) || !packConfirmed) {
+            restoreOriginalPkg()
+            cleanupSignalHandlers()
+            prompts.log.info('Release cancelled')
+            process.exit(0)
+          }
+        }
+
+        // Skip confirmation if --yes flag is provided
+        if (!options.yes) {
+          const confirmed = await prompts.confirm({
+            message: 'Continue with release?',
+            initialValue: false
+          })
+
+          if (prompts.isCancel(confirmed) || !confirmed) {
+            restoreOriginalPkg()
+            cleanupSignalHandlers()
+            prompts.log.info('Release cancelled')
+            process.exit(0)
+          }
+        }
+
+        if (options.dryRun) {
+          restoreOriginalPkg()
+          cleanupSignalHandlers()
+          prompts.log.info('Dry run completed. No changes were made.')
+          if (semver.prerelease(newVersion)) {
+            prompts.log.info(`📦 To publish this release candidate to npm, run:\n   pnpm --filter ${selectedPackageName} publish --tag ${options.preid || 'rc'}`)
+          } else {
+            prompts.log.info(`📦 To publish this release to npm, run:\n   pnpm --filter ${selectedPackageName} publish`)
+          }
           process.exit(0)
         }
-      }
 
-      // Skip confirmation if --yes flag is provided
-      if (!options.yes) {
-        const confirmed = await prompts.confirm({
-          message: 'Continue with release?',
-          initialValue: false
-        })
-
-        if (prompts.isCancel(confirmed) || !confirmed) {
-          prompts.log.info('Release cancelled')
-          process.exit(0)
-        }
-      }
-
-      if (options.dryRun) {
-        prompts.log.info('Dry run completed. No changes were made.')
-        if (semver.prerelease(newVersion)) {
-          prompts.log.info(`📦 To publish this release candidate to npm, run:\n   pnpm --filter ${selectedPackageName} publish --tag ${options.preid || 'rc'}`)
-        } else {
-          prompts.log.info(`📦 To publish this release to npm, run:\n   pnpm --filter ${selectedPackageName} publish`)
-        }
-        process.exit(0)
+        // Proceeding with actual release: restore temporary version modification before global package updates
+        restoreOriginalPkg()
+        cleanupSignalHandlers()
+      } catch (packErr) {
+        restoreOriginalPkg()
+        cleanupSignalHandlers()
+        throw packErr
       }
 
       // Update package.json files

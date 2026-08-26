@@ -99,6 +99,13 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.match(output, /Dry run completed/)
       assert.match(output, /📦 To publish this release to npm, run:/)
       assert.doesNotMatch(output, /--tag/)
+
+      // Verify that pnpm pack --dry-run outputs the target package version preview
+      assert.match(output, /coralite-.*\.tgz/)
+
+      // Verify that package.json on disk was restored cleanly and has no git diff
+      const gitDiff = execFileSync('git', ['diff', 'packages/coralite/package.json'], { cwd: repoRoot, encoding: 'utf8' })
+      assert.strictEqual(gitDiff.trim(), '')
     })
   })
 })

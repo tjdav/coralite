@@ -86,23 +86,70 @@ export async function release (type, options) {
     console.log(`  Commit message: "${commitMessage}"`)
 
     // Dry run pack
-    prompts.log.info(`📦 Verifying package content...`)
-    execSync('npm pack --dry-run', { stdio: 'inherit' })
-
-    if (!options.yes) {
-      const confirmed = await prompts.confirm({
-        message: 'Continue with release?',
-        initialValue: false
-      })
-      if (prompts.isCancel(confirmed) || !confirmed) {
-        prompts.log.info('Release cancelled')
-        process.exit(0)
+    let pkgVersionModified = false
+    const restoreOriginalPkg = () => {
+      if (pkgVersionModified) {
+        try {
+          writeFileSync(pkgPath, pkgContent)
+          pkgVersionModified = false
+        } catch {
+        }
       }
     }
 
-    if (options.dryRun) {
-      prompts.log.info('Dry run completed. No changes were made.')
-      process.exit(0)
+    const onSignal = () => {
+      restoreOriginalPkg()
+      process.exit(1)
+    }
+
+    const cleanupSignalHandlers = () => {
+      process.removeListener('SIGINT', onSignal)
+      process.removeListener('SIGTERM', onSignal)
+      process.removeListener('exit', restoreOriginalPkg)
+    }
+
+    process.on('SIGINT', onSignal)
+    process.on('SIGTERM', onSignal)
+    process.on('exit', restoreOriginalPkg)
+
+    try {
+      // Temporarily write newVersion to package.json so pack --dry-run reflects target version
+      const tempPkgData = {
+        ...pkg,
+        version: newVersion
+      }
+      writeFileSync(pkgPath, JSON.stringify(tempPkgData, null, 2) + '\n')
+      pkgVersionModified = true
+
+      prompts.log.info(`📦 Verifying package content...`)
+      execSync('npm pack --dry-run', { stdio: 'inherit' })
+
+      if (!options.yes) {
+        const confirmed = await prompts.confirm({
+          message: 'Continue with release?',
+          initialValue: false
+        })
+        if (prompts.isCancel(confirmed) || !confirmed) {
+          restoreOriginalPkg()
+          cleanupSignalHandlers()
+          prompts.log.info('Release cancelled')
+          process.exit(0)
+        }
+      }
+
+      if (options.dryRun) {
+        restoreOriginalPkg()
+        cleanupSignalHandlers()
+        prompts.log.info('Dry run completed. No changes were made.')
+        process.exit(0)
+      }
+
+      restoreOriginalPkg()
+      cleanupSignalHandlers()
+    } catch (packErr) {
+      restoreOriginalPkg()
+      cleanupSignalHandlers()
+      throw packErr
     }
 
     // Update package.json
