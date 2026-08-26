@@ -9,9 +9,6 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    attributes: {
-      title: { type: String }
-    },
     async server (context) {
       const page = context.state.page || context.page
       const meta = page?.meta || {}

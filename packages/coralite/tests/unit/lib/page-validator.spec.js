@@ -338,5 +338,32 @@ describe('Coralite Page Validator (page-validator.js)', () => {
 
       rmSync(tmpDir, { recursive: true, force: true })
     })
+
+    it('forwards ignoreAttributes, skipRenderByAttribute, ignoreTags and slots in validatePagesDir', async () => {
+      const tmpDir = join(tmpdir(), `coralite-page-val-config-${Date.now()}`)
+      mkdirSync(tmpDir, { recursive: true })
+
+      const page1 = join(tmpDir, 'page1.html')
+      writeFileSync(
+        page1,
+        '<third-party data-custom></third-party>\n<layout-wrapper><unknown-inner></unknown-inner></layout-wrapper>\n<ignored-elem></ignored-elem>'
+      )
+
+      const report = await validatePagesDir(tmpDir, {
+        knownComponents: new Map([
+          ['layout-wrapper', { attributes: {}, slots: ['default'] }]
+        ]),
+        ignoreAttributes: ['data-custom'],
+        skipRenderByAttribute: ['data-custom'],
+        ignoreTags: ['ignored-elem']
+      })
+
+      assert.equal(report.summary.totalPages, 1)
+      assert.equal(report.summary.validPages, 1)
+      assert.equal(report.summary.errorCount, 0)
+      assert.equal(report.summary.warningCount, 0)
+
+      rmSync(tmpDir, { recursive: true, force: true })
+    })
   })
 })
