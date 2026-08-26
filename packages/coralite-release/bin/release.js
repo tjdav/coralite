@@ -13,6 +13,49 @@ import semver from 'semver'
 // Define available release types
 export const RELEASE_TYPES = ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease', 'rc']
 
+// Define topological dependency order for monorepo packages
+export const TOPOLOGICAL_ORDER = [
+  'coralite',
+  'coralite-scripts',
+  'create-coralite',
+  'coralite-plugin-scripts',
+  'create-coralite-plugin'
+]
+
+/**
+ * Helper to sort packages or package names according to TOPOLOGICAL_ORDER.
+ * Packages not listed in TOPOLOGICAL_ORDER are placed at the end.
+ * @param {Array<object|string>} packages - List of package objects or string names
+ * @returns {Array<object|string>} Sorted copy of packages
+ */
+export function sortPackagesInTopologicalOrder (packages) {
+  return [...packages].sort((a, b) => {
+    const nameA = typeof a === 'string' ? a : (a.name || a.value)
+    const nameB = typeof b === 'string' ? b : (b.name || b.value)
+    const idxA = TOPOLOGICAL_ORDER.indexOf(nameA)
+    const idxB = TOPOLOGICAL_ORDER.indexOf(nameB)
+    const posA = idxA === -1 ? TOPOLOGICAL_ORDER.length : idxA
+    const posB = idxB === -1 ? TOPOLOGICAL_ORDER.length : idxB
+    return posA - posB
+  })
+}
+
+/**
+ * Helper to parse comma- or space-separated package input options.
+ * @param {string|string[]} input - Package option input
+ * @returns {string[]} Array of trimmed package names
+ */
+export function parsePackageOption (input) {
+  if (!input) {
+    return []
+  }
+  const list = Array.isArray(input) ? input : [input]
+  return list
+    .flatMap(item => String(item).split(','))
+    .map(name => name.trim())
+    .filter(Boolean)
+}
+
 // Initialize commander
 program
   .name('release')
@@ -21,7 +64,9 @@ program
   .argument('<type>', `Release type: ${RELEASE_TYPES.join(', ')}`)
   .option('-d, --dry-run', 'Show what would be done without making changes')
   .option('-y, --yes', 'Skip confirmation prompts')
-  .option('-p, --preid <identifier>', 'Identifier for prerelease version (e.g., "rc", "beta", "alpha")', 'rc')
+  .option('-p, --package <packages...>', 'Specific package(s) to release (comma or space separated)')
+  .option('-a, --all', 'Release all packages in topological order')
+  .option('--preid <identifier>', 'Identifier for prerelease version (e.g., "rc", "beta", "alpha")', 'rc')
   .option('-m, --message <message>', 'Custom release commit message')
   .option('--allow-any-branch', 'Allow release from branches other than main/master/release/rc')
   .option('--no-git-tag', 'Skip creating git tag')
@@ -53,6 +98,29 @@ program
         if (prompts.isCancel(proceedBranch) || !proceedBranch) {
           prompts.log.info('Release cancelled')
           process.exit(0)
+        }
+      }
+
+      // Pre-flight remote sync check
+      const currentBranch = branchStatus.current || 'main'
+      try {
+        await git.fetch('origin')
+        const localHead = (await git.revparse(['HEAD'])).trim()
+        const remoteHead = (await git.revparse([`origin/${currentBranch}`])).trim()
+
+        if (localHead !== remoteHead) {
+          const behindCountStr = (await git.raw(['rev-list', '--count', `HEAD..origin/${currentBranch}`])).trim()
+          const behindCount = parseInt(behindCountStr, 10)
+          if (!isNaN(behindCount) && behindCount > 0) {
+            prompts.log.error(`Your local branch is behind origin/${currentBranch} by ${behindCount} commit(s). Please pull latest changes before releasing.`)
+            process.exit(1)
+          }
+        }
+      } catch (remoteErr) {
+        if (options.dryRun) {
+          prompts.log.warn(`🔍 [dry-run] Remote sync check skipped or failed: ${remoteErr.message}`)
+        } else {
+          prompts.log.warn(`⚠️ Could not check remote sync with origin/${currentBranch}: ${remoteErr.message}`)
         }
       }
 
@@ -141,34 +209,100 @@ program
         })
       }
 
-      // Select package to release
-      let selectedPackageName
-      if (options.yes) {
-        selectedPackageName = releaseChoices[0]?.value
+      const publishablePackages = packages.filter(p => packageFiles.includes(p.path) && p.version)
+      const sortedPublishable = sortPackagesInTopologicalOrder(publishablePackages)
+
+      // Determine selected package names
+      const cliPackageNames = parsePackageOption(options.package)
+      let selectedNames = []
+
+      if (options.all) {
+        selectedNames = sortedPublishable.map(p => p.name)
+      } else if (cliPackageNames.length > 0) {
+        selectedNames = cliPackageNames
+      } else if (options.yes) {
+        // Default to coralite or first available package for backwards compatibility
+        const defaultPkg = sortedPublishable.find(p => p.name === 'coralite') || sortedPublishable[0]
+        selectedNames = defaultPkg ? [defaultPkg.name] : []
       } else {
-        selectedPackageName = await prompts.select({
-          message: 'Select package to release:',
-          options: releaseChoices
+        const selectionType = await prompts.select({
+          message: 'Select package(s) to release:',
+          options: [
+            {
+              value: '__ALL__',
+              label: '🚀 All packages (in topological order)'
+            },
+            {
+              value: '__CORE_STACK__',
+              label: '📦 Core stack (coralite → coralite-scripts → create-coralite)'
+            },
+            {
+              value: '__MULTISELECT__',
+              label: '☑️  Custom multi-select...'
+            },
+            ...releaseChoices
+          ]
         })
+
+        if (!selectionType || prompts.isCancel(selectionType)) {
+          prompts.log.info('Release cancelled')
+          process.exit(0)
+        }
+
+        if (selectionType === '__ALL__') {
+          selectedNames = sortedPublishable.map(p => p.name)
+        } else if (selectionType === '__CORE_STACK__') {
+          selectedNames = ['coralite', 'coralite-scripts', 'create-coralite']
+        } else if (selectionType === '__MULTISELECT__') {
+          const chosen = await prompts.multiselect({
+            message: 'Select packages to release:',
+            options: releaseChoices.map(c => ({
+              value: c.value,
+              label: c.label
+            }))
+          })
+
+          if (!chosen || prompts.isCancel(chosen) || chosen.length === 0) {
+            prompts.log.info('Release cancelled')
+            process.exit(0)
+          }
+
+          selectedNames = chosen
+        } else {
+          selectedNames = [selectionType]
+        }
       }
 
-      if (!selectedPackageName || prompts.isCancel(selectedPackageName)) {
-        prompts.log.info('Release cancelled')
-        process.exit(0)
+      if (selectedNames.length === 0) {
+        prompts.log.error('No packages selected for release.')
+        process.exit(1)
       }
 
-      const selectedPkg = packages.find(p => p.name === selectedPackageName)
-      const oldVersion = selectedPkg.version
+      // Map selected names to package objects and sort in topological order
+      const selectedPackages = sortPackagesInTopologicalOrder(
+        selectedNames.map(name => {
+          const found = publishablePackages.find(p => p.name === name)
+          if (!found) {
+            prompts.log.error(`Package "${name}" not found in monorepo packages.`)
+            process.exit(1)
+          }
+          return found
+        })
+      )
 
+      // Target base selection for RC bump if any selected package is stable
       let targetBase = 'preminor'
-      if (type === 'rc' && !semver.prerelease(oldVersion)) {
+      const hasStablePackage = selectedPackages.some(pkg => !semver.prerelease(pkg.version))
+
+      if (type === 'rc' && hasStablePackage) {
         if (!options.yes) {
-          const preminorOption = calculateNewVersion(oldVersion, 'rc', options.preid || 'rc', 'preminor')
-          const prepatchOption = calculateNewVersion(oldVersion, 'rc', options.preid || 'rc', 'prepatch')
-          const premajorOption = calculateNewVersion(oldVersion, 'rc', options.preid || 'rc', 'premajor')
+          const samplePkg = selectedPackages.find(pkg => !semver.prerelease(pkg.version)) || selectedPackages[0]
+          const preminorOption = calculateNewVersion(samplePkg.version, 'rc', options.preid || 'rc', 'preminor')
+          const prepatchOption = calculateNewVersion(samplePkg.version, 'rc', options.preid || 'rc', 'prepatch')
+          const premajorOption = calculateNewVersion(samplePkg.version, 'rc', options.preid || 'rc', 'premajor')
 
           const selectedBase = await prompts.select({
-            message: `Select target release candidate type for ${selectedPkg.name}:`,
+            message: `Select target release candidate type for stable packages (e.g. ${samplePkg.name}):`,
             options: [
               {
                 value: 'preminor',
@@ -194,30 +328,37 @@ program
         }
       }
 
-      const newVersion = calculateNewVersion(oldVersion, type, options.preid || 'rc', targetBase)
+      // Calculate new versions for each selected package
+      const plannedReleases = selectedPackages.map(pkg => {
+        const oldVersion = pkg.version
+        const newVersion = calculateNewVersion(oldVersion, type, options.preid || 'rc', targetBase)
+        const commitMessage = options.message || `release(${pkg.name}): version ${newVersion}`
+        const tagName = `${pkg.name}-v${newVersion}`
+        return {
+          pkg,
+          name: pkg.name,
+          oldVersion,
+          newVersion,
+          commitMessage,
+          tagName
+        }
+      })
 
-      // Display summary
+      // Display consolidated Release Plan summary
       prompts.log.info('Release Plan:')
       console.log('')
-      console.log(`  ${selectedPkg.name}: ${oldVersion} → ${newVersion}`)
+      for (const rel of plannedReleases) {
+        console.log(`  ${rel.name}: ${rel.oldVersion} → ${rel.newVersion}`)
+        console.log(`    Commit: "${rel.commitMessage}"`)
+        console.log(`    Tag:    "${rel.tagName}"`)
+      }
       console.log('')
 
-      // Get custom message or use default
-      const defaultMessage = `release(${selectedPkg.name}): version ${newVersion}`
-      const commitMessage = options.message || defaultMessage
-
-      console.log(`Commit message: "${commitMessage}"`)
-      console.log('')
-
-      // Dry run pack
-      const pkgDir = path.dirname(selectedPkg.path)
-
-      let pkgVersionModified = false
-      const restoreOriginalPkg = () => {
-        if (pkgVersionModified) {
+      // Dry run pack for all selected packages upfront
+      const restoreOriginalPkgs = () => {
+        for (const rel of plannedReleases) {
           try {
-            writeFileSync(selectedPkg.path, selectedPkg.content)
-            pkgVersionModified = false
+            writeFileSync(rel.pkg.path, rel.pkg.content)
           } catch {
           }
         }
@@ -231,67 +372,67 @@ program
       }
 
       const onSignal = () => {
-        restoreOriginalPkg()
+        restoreOriginalPkgs()
         process.exit(1)
       }
 
       const cleanupSignalHandlers = () => {
         process.removeListener('SIGINT', onSignal)
         process.removeListener('SIGTERM', onSignal)
-        process.removeListener('exit', restoreOriginalPkg)
+        process.removeListener('exit', restoreOriginalPkgs)
       }
 
       process.on('SIGINT', onSignal)
       process.on('SIGTERM', onSignal)
-      process.on('exit', restoreOriginalPkg)
+      process.on('exit', restoreOriginalPkgs)
 
       try {
-        if (selectedPackageName === 'coralite') {
-          const sourceLlms = path.resolve(process.cwd(), 'website/public/llms.txt')
-          copiedLlmsTarget = path.resolve(pkgDir, 'llms.txt')
-          if (existsSync(sourceLlms)) {
-            copyFileSync(sourceLlms, copiedLlmsTarget)
-            prompts.log.success('📄 Copied website/public/llms.txt to packages/coralite/llms.txt')
+        for (const rel of plannedReleases) {
+          const pkgDir = path.dirname(rel.pkg.path)
+          if (rel.name === 'coralite') {
+            const sourceLlms = path.resolve(process.cwd(), 'website/public/llms.txt')
+            copiedLlmsTarget = path.resolve(pkgDir, 'llms.txt')
+            if (existsSync(sourceLlms)) {
+              copyFileSync(sourceLlms, copiedLlmsTarget)
+              prompts.log.success('📄 Copied website/public/llms.txt to packages/coralite/llms.txt')
+            }
           }
-        }
 
-        // Temporarily write newVersion to package.json so pack --dry-run reflects target version
-        const tempPkgData = {
-          ...selectedPkg.data,
-          version: newVersion
-        }
-        writeFileSync(selectedPkg.path, JSON.stringify(tempPkgData, null, 2) + '\n')
-        pkgVersionModified = true
+          const tempPkgData = {
+            ...rel.pkg.data,
+            version: rel.newVersion
+          }
+          writeFileSync(rel.pkg.path, JSON.stringify(tempPkgData, null, 2) + '\n')
 
-        prompts.log.info(`📦 Verifying package content for ${selectedPackageName}...`)
-        execSync('pnpm pack --dry-run', {
-          cwd: pkgDir,
-          stdio: 'inherit'
-        })
+          prompts.log.info(`📦 Verifying package content for ${rel.name}...`)
+          execSync('pnpm pack --dry-run', {
+            cwd: pkgDir,
+            stdio: 'inherit'
+          })
+        }
 
         if (!options.yes) {
           const packConfirmed = await prompts.confirm({
-            message: 'Does the package content look correct?',
+            message: 'Does the package content look correct for all selected packages?',
             initialValue: true
           })
 
           if (prompts.isCancel(packConfirmed) || !packConfirmed) {
-            restoreOriginalPkg()
+            restoreOriginalPkgs()
             cleanupSignalHandlers()
             prompts.log.info('Release cancelled')
             process.exit(0)
           }
         }
 
-        // Skip confirmation if --yes flag is provided
         if (!options.yes) {
           const confirmed = await prompts.confirm({
-            message: 'Continue with release?',
+            message: `Continue with release of ${plannedReleases.length} package(s)?`,
             initialValue: false
           })
 
           if (prompts.isCancel(confirmed) || !confirmed) {
-            restoreOriginalPkg()
+            restoreOriginalPkgs()
             cleanupSignalHandlers()
             prompts.log.info('Release cancelled')
             process.exit(0)
@@ -299,173 +440,190 @@ program
         }
 
         if (options.dryRun) {
-          restoreOriginalPkg()
+          restoreOriginalPkgs()
           cleanupSignalHandlers()
           prompts.log.info('Dry run completed. No changes were made.')
-          if (semver.prerelease(newVersion)) {
-            prompts.log.info(`📦 To publish this release candidate to npm, run:\n   pnpm --filter ${selectedPackageName} publish --tag ${options.preid || 'rc'}`)
-          } else {
-            prompts.log.info(`📦 To publish this release to npm, run:\n   pnpm --filter ${selectedPackageName} publish`)
+          console.log('')
+          for (const rel of plannedReleases) {
+            console.log(`  [dry-run] Planned steps for ${rel.name} (${rel.oldVersion} → ${rel.newVersion}):`)
+            console.log(`    1. Update version in ${rel.pkg.path}`)
+            console.log(`    2. Update dependent package.json files across monorepo to ^${rel.newVersion}`)
+            console.log(`    3. Generate CHANGELOG.md for ${rel.name}`)
+            console.log(`    4. Git commit: "${rel.commitMessage}"`)
+            console.log(`    5. Git tag: "${rel.tagName}"`)
+            console.log(`    6. Git push origin ${currentBranch} & tag "${rel.tagName}"`)
+            console.log('')
+          }
+
+          for (const rel of plannedReleases) {
+            if (semver.prerelease(rel.newVersion)) {
+              prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish --tag ${options.preid || 'rc'}`)
+            } else {
+              prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish`)
+            }
           }
           process.exit(0)
         }
 
-        // Proceeding with actual release: restore temporary version modification before global package updates
-        restoreOriginalPkg()
+        // Restore original packages before sequential execution loop
+        restoreOriginalPkgs()
         cleanupSignalHandlers()
       } catch (packErr) {
-        restoreOriginalPkg()
+        restoreOriginalPkgs()
         cleanupSignalHandlers()
         throw packErr
       }
 
-      // Update package.json files
-      const modifiedFiles = []
-      for (const pkg of packages) {
-        let updated = false
+      // Sequential Execution Loop per Package P_i
+      const succeededPackages = []
+      const skippedPackages = [...plannedReleases]
+      let failedPackage = null
 
-        // Update version if this is the selected package
-        if (pkg.name === selectedPackageName) {
-          pkg.data.version = newVersion
-          updated = true
-          prompts.log.success(`Updated ${pkg.name} version: ${oldVersion} → ${newVersion}`)
-        }
-
-        // Update dependencies
-        if (pkg.data.dependencies && pkg.data.dependencies[selectedPackageName]) {
-          if (!pkg.data.dependencies[selectedPackageName].startsWith('workspace:')) {
-            pkg.data.dependencies[selectedPackageName] = '^' + newVersion
-            updated = true
-            prompts.log.info(`Updated dependency in ${pkg.name}`)
-          }
-        }
-
-        // Update devDependencies
-        if (pkg.data.devDependencies && pkg.data.devDependencies[selectedPackageName]) {
-          if (!pkg.data.devDependencies[selectedPackageName].startsWith('workspace:')) {
-            pkg.data.devDependencies[selectedPackageName] = '^' + newVersion
-            updated = true
-            prompts.log.info(`Updated devDependency in ${pkg.name}`)
-          }
-        }
-
-        if (updated) {
-          writeFileSync(pkg.path, JSON.stringify(pkg.data, null, 2) + '\n')
-          modifiedFiles.push(pkg.path)
-        }
-      }
-
-      // Generate Changelog
-      prompts.log.step('Generating Changelog...')
-      try {
-        const __dirname = path.dirname(fileURLToPath(import.meta.url))
-        const changelogScript = path.join(__dirname, 'changelog.js')
-
-        execSync(`node ${changelogScript} --next-version ${newVersion} --package ${selectedPkg.name} --path ${pkgDir} -y --no-git`, { stdio: 'inherit' })
-        prompts.log.success('✅ Generated Changelog')
-      } catch (error) {
-        prompts.log.error(`Failed to generate changelog: ${error.message}`)
-        if (!options.yes) {
-          const continueWithoutChangelog = await prompts.confirm({
-            message: 'Continue without changelog?',
-            initialValue: false
-          })
-          if (prompts.isCancel(continueWithoutChangelog) || !continueWithoutChangelog) {
-            process.exit(1)
-          }
-        }
-      }
-
-      // Git commit if not disabled
-      let commitSuccessful = false
-      if (options.gitCommit) {
-        try {
-          // Track modified files to stage
-          const filesToStage = [...modifiedFiles]
-
-          // Add changelog
-          const changelogPath = path.join(pkgDir, 'CHANGELOG.md')
-          filesToStage.push(changelogPath)
-
-          // Filter only files that exist on disk and were actually modified
-          const existingFilesToStage = filesToStage.filter(f => existsSync(f))
-
-          if (existingFilesToStage.length > 0) {
-            prompts.log.step('Committing version changes...')
-            await git.add(existingFilesToStage)
-            const commitResult = await git.commit(commitMessage, { '--no-verify': null })
-
-            if (commitResult.commit) {
-              prompts.log.success(`✅ Committed version changes (${commitResult.commit})`)
-              commitSuccessful = true
-            } else {
-              prompts.log.warn('No changes were committed (possibly already committed or no changes detected)')
-              // We consider it successful if there was nothing to commit
-              commitSuccessful = true
-            }
-          } else {
-            prompts.log.warn('No modified files found to commit')
-            commitSuccessful = true
-          }
-        } catch (error) {
-          prompts.log.error('Failed to commit changes: ' + error.message)
-          if (!options.yes) {
-            const continueWithoutCommit = await prompts.confirm({
-              message: 'Continue with tag creation anyway?',
-              initialValue: false
-            })
-            if (prompts.isCancel(continueWithoutCommit) || !continueWithoutCommit) {
-              process.exit(1)
-            }
-          }
-        }
-      }
-
-      // Create git tag if not disabled
-      if (options.gitTag && commitSuccessful) {
-        const tagName = `${selectedPackageName}-v${newVersion}`
-
-        try {
-          await git.addAnnotatedTag(tagName, commitMessage)
-          prompts.log.success(`🔖 Created git tag: ${tagName}`)
-        } catch (error) {
-          prompts.log.error(`Failed to create git tag: ${tagName} — ${error.message}`)
-          process.exit(1)
-        }
-      }
-
-      // Push changes and tags
       let shouldPush = true
       if (!options.yes) {
         const confirmPush = await prompts.confirm({
-          message: 'Push changes and tags to remote?',
+          message: 'Push changes and tags to remote during sequential release?',
           initialValue: true
         })
         shouldPush = !prompts.isCancel(confirmPush) && Boolean(confirmPush)
       }
 
-      if (shouldPush) {
+      for (let i = 0; i < plannedReleases.length; i++) {
+        const rel = plannedReleases[i]
+        skippedPackages.shift()
+
+        prompts.log.info(`\n🚀 [${i + 1}/${plannedReleases.length}] Releasing package: ${rel.name} (${rel.oldVersion} → ${rel.newVersion})`)
+
         try {
-          prompts.log.step('Pushing to remote...')
+          const modifiedFiles = []
 
-          await git.push('origin', 'main')
+          // 1. Update version in P_i's package.json & update dependencies across all packages/templates
+          for (const pkg of packages) {
+            let updated = false
 
-          if (options.gitTag) {
-            await git.pushTags()
+            if (pkg.name === rel.name) {
+              pkg.data.version = rel.newVersion
+              updated = true
+              prompts.log.success(`Updated ${pkg.name} version: ${rel.oldVersion} → ${rel.newVersion}`)
+            }
+
+            if (pkg.data.dependencies && pkg.data.dependencies[rel.name]) {
+              if (!pkg.data.dependencies[rel.name].startsWith('workspace:')) {
+                pkg.data.dependencies[rel.name] = '^' + rel.newVersion
+                updated = true
+                prompts.log.info(`Updated dependency on ${rel.name} in ${pkg.name}`)
+              }
+            }
+
+            if (pkg.data.devDependencies && pkg.data.devDependencies[rel.name]) {
+              if (!pkg.data.devDependencies[rel.name].startsWith('workspace:')) {
+                pkg.data.devDependencies[rel.name] = '^' + rel.newVersion
+                updated = true
+                prompts.log.info(`Updated devDependency on ${rel.name} in ${pkg.name}`)
+              }
+            }
+
+            if (updated) {
+              writeFileSync(pkg.path, JSON.stringify(pkg.data, null, 2) + '\n')
+              modifiedFiles.push(pkg.path)
+            }
           }
 
-          prompts.log.success('✅ Successfully pushed to remote')
-        } catch (error) {
-          prompts.log.error(`Failed to push to remote: ${error.message}`)
+          // 2. Generate Changelog for P_i
+          const pkgDir = path.dirname(rel.pkg.path)
+          prompts.log.step(`Generating Changelog for ${rel.name}...`)
+          try {
+            const __dirname = path.dirname(fileURLToPath(import.meta.url))
+            const changelogScript = path.join(__dirname, 'changelog.js')
+
+            execSync(`node ${changelogScript} --next-version ${rel.newVersion} --package ${rel.name} --path ${pkgDir} -y --no-git`, { stdio: 'inherit' })
+            prompts.log.success(`✅ Generated Changelog for ${rel.name}`)
+          } catch (error) {
+            prompts.log.error(`Failed to generate changelog for ${rel.name}: ${error.message}`)
+            if (!options.yes) {
+              const continueWithoutChangelog = await prompts.confirm({
+                message: `Continue ${rel.name} release without changelog?`,
+                initialValue: false
+              })
+              if (prompts.isCancel(continueWithoutChangelog) || !continueWithoutChangelog) {
+                throw error
+              }
+            }
+          }
+
+          // 3. Git commit P_i
+          let commitSuccessful = false
+          if (options.gitCommit) {
+            const filesToStage = [...modifiedFiles]
+            const changelogPath = path.join(pkgDir, 'CHANGELOG.md')
+            filesToStage.push(changelogPath)
+
+            const existingFilesToStage = filesToStage.filter(f => existsSync(f))
+
+            if (existingFilesToStage.length > 0) {
+              prompts.log.step(`Committing version changes for ${rel.name}...`)
+              await git.add(existingFilesToStage)
+              const commitResult = await git.commit(rel.commitMessage, { '--no-verify': null })
+
+              if (commitResult.commit) {
+                prompts.log.success(`✅ Committed version changes for ${rel.name} (${commitResult.commit})`)
+                commitSuccessful = true
+              } else {
+                prompts.log.warn(`No changes were committed for ${rel.name}`)
+                commitSuccessful = true
+              }
+            } else {
+              prompts.log.warn(`No modified files found to commit for ${rel.name}`)
+              commitSuccessful = true
+            }
+          }
+
+          // 4. Create git tag for P_i
+          if (options.gitTag && commitSuccessful) {
+            try {
+              await git.addAnnotatedTag(rel.tagName, rel.commitMessage)
+              prompts.log.success(`🔖 Created git tag: ${rel.tagName}`)
+            } catch (error) {
+              prompts.log.error(`Failed to create git tag ${rel.tagName}: ${error.message}`)
+              throw error
+            }
+          }
+
+          // 5. Push commit and tag for P_i
+          if (shouldPush) {
+            prompts.log.step(`Pushing changes and tag for ${rel.name} to remote...`)
+            await git.push('origin', currentBranch)
+            if (options.gitTag) {
+              await git.push('origin', rel.tagName)
+            }
+            prompts.log.success(`✅ Successfully pushed ${rel.name} (${rel.tagName}) to remote`)
+          }
+
+          succeededPackages.push(rel)
+
+          // 6. Settlement delay (1.5s) before next package P_{i+1}
+          if (i < plannedReleases.length - 1) {
+            prompts.log.info('⏳ Settlement pause (1.5s) before processing next package...')
+            await new Promise(resolve => setTimeout(resolve, 1500))
+          }
+        } catch (stepErr) {
+          failedPackage = rel
+          prompts.log.error(`\n❌ Sequential release failed at package: ${rel.name}`)
+          prompts.log.error(`  Succeeded: ${succeededPackages.map(p => p.name).join(', ') || 'None'}`)
+          prompts.log.error(`  Failed:    ${failedPackage.name} (${stepErr.message})`)
+          prompts.log.error(`  Skipped:   ${skippedPackages.map(p => p.name).join(', ') || 'None'}`)
+          process.exit(1)
         }
       }
 
-      prompts.log.success('Release completed successfully!')
-
-      if (semver.prerelease(newVersion)) {
-        prompts.log.info(`📦 To publish this release candidate to npm, run:\n   pnpm --filter ${selectedPackageName} publish --tag ${options.preid || 'rc'}`)
-      } else {
-        prompts.log.info(`📦 To publish this release to npm, run:\n   pnpm --filter ${selectedPackageName} publish`)
+      prompts.log.success('\n🎉 Multi-package sequential release completed successfully!')
+      console.log('')
+      for (const rel of succeededPackages) {
+        if (semver.prerelease(rel.newVersion)) {
+          prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish --tag ${options.preid || 'rc'}`)
+        } else {
+          prompts.log.info(`📦 To publish ${rel.name} to npm, run:\n   pnpm --filter ${rel.name} publish`)
+        }
       }
 
     } catch (error) {

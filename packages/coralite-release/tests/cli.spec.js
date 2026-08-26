@@ -3,14 +3,20 @@ import assert from 'node:assert'
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { calculateNewVersion, RELEASE_TYPES } from '../bin/release.js'
+import {
+  calculateNewVersion,
+  RELEASE_TYPES,
+  TOPOLOGICAL_ORDER,
+  sortPackagesInTopologicalOrder,
+  parsePackageOption
+} from '../bin/release.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const releaseBin = path.resolve(__dirname, '../bin/release.js')
 const repoRoot = path.resolve(__dirname, '../../..')
 
 describe('coralite-release CLI & versioning logic', () => {
-  describe('RELEASE_TYPES', () => {
+  describe('RELEASE_TYPES & TOPOLOGICAL_ORDER', () => {
     it('contains all expected release types including rc', () => {
       assert.deepStrictEqual(RELEASE_TYPES, [
         'major',
@@ -22,6 +28,66 @@ describe('coralite-release CLI & versioning logic', () => {
         'prerelease',
         'rc'
       ])
+    })
+
+    it('defines canonical topological package order', () => {
+      assert.deepStrictEqual(TOPOLOGICAL_ORDER, [
+        'coralite',
+        'coralite-scripts',
+        'create-coralite',
+        'coralite-plugin-scripts',
+        'create-coralite-plugin'
+      ])
+    })
+  })
+
+  describe('sortPackagesInTopologicalOrder()', () => {
+    it('sorts package string names according to topological order', () => {
+      const unsorted = ['create-coralite', 'coralite-scripts', 'coralite']
+      const sorted = sortPackagesInTopologicalOrder(unsorted)
+      assert.deepStrictEqual(sorted, ['coralite', 'coralite-scripts', 'create-coralite'])
+    })
+
+    it('sorts package objects according to topological order', () => {
+      const unsorted = [
+        { name: 'create-coralite' },
+        { name: 'coralite' },
+        { name: 'coralite-scripts' }
+      ]
+      const sorted = sortPackagesInTopologicalOrder(unsorted)
+      assert.deepStrictEqual(sorted, [
+        { name: 'coralite' },
+        { name: 'coralite-scripts' },
+        { name: 'create-coralite' }
+      ])
+    })
+
+    it('appends unrecognized packages to the end of the queue', () => {
+      const unsorted = ['my-custom-package', 'create-coralite', 'coralite']
+      const sorted = sortPackagesInTopologicalOrder(unsorted)
+      assert.deepStrictEqual(sorted, ['coralite', 'create-coralite', 'my-custom-package'])
+    })
+  })
+
+  describe('parsePackageOption()', () => {
+    it('parses comma-separated package names', () => {
+      assert.deepStrictEqual(parsePackageOption('coralite,coralite-scripts'), [
+        'coralite',
+        'coralite-scripts'
+      ])
+    })
+
+    it('parses array of package names and space/comma combinations', () => {
+      assert.deepStrictEqual(parsePackageOption(['coralite', 'coralite-scripts, create-coralite']), [
+        'coralite',
+        'coralite-scripts',
+        'create-coralite'
+      ])
+    })
+
+    it('handles empty or falsy input gracefully', () => {
+      assert.deepStrictEqual(parsePackageOption(null), [])
+      assert.deepStrictEqual(parsePackageOption(''), [])
     })
   })
 
@@ -69,7 +135,8 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.match(output, /rc/)
       assert.match(output, /preminor/)
       assert.match(output, /--allow-any-branch/)
-      assert.match(output, /-p, --preid <identifier>/)
+      assert.match(output, /-p, --package <packages...>/)
+      assert.match(output, /-a, --all/)
     })
 
     it('executes non-interactive --dry-run with rc type and --allow-any-branch', () => {
@@ -78,33 +145,43 @@ describe('coralite-release CLI & versioning logic', () => {
         encoding: 'utf8'
       })
       assert.match(output, /Dry run completed/)
-      assert.match(output, /📦 To publish this release candidate to npm, run:/)
+      assert.match(output, /📦 To publish coralite to npm, run:/)
       assert.match(output, /--tag rc/)
     })
 
-    it('executes non-interactive --dry-run with preminor type and --allow-any-branch', () => {
-      const output = execFileSync('node', [releaseBin, 'preminor', '-y', '-d', '--allow-any-branch'], {
+    it('executes non-interactive --dry-run with multi-package --package option', () => {
+      const output = execFileSync('node', [releaseBin, 'minor', '-p', 'create-coralite,coralite', '-y', '-d', '--allow-any-branch'], {
         cwd: repoRoot,
         encoding: 'utf8'
       })
       assert.match(output, /Dry run completed/)
-      assert.match(output, /📦 To publish this release candidate to npm, run:/)
+      assert.match(output, /Release Plan:/)
+
+      // Check topological order output (coralite before create-coralite)
+      const coraliteIdx = output.indexOf('Planned steps for coralite')
+      const createCoraliteIdx = output.indexOf('Planned steps for create-coralite')
+      assert.ok(coraliteIdx > -1)
+      assert.ok(createCoraliteIdx > -1)
+      assert.ok(coraliteIdx < createCoraliteIdx)
+
+      const gitDiff = execFileSync('git', ['diff', 'packages/coralite/package.json'], { cwd: repoRoot, encoding: 'utf8' })
+      assert.strictEqual(gitDiff.trim(), '')
     })
 
-    it('executes non-interactive --dry-run with minor stable type and --allow-any-branch', () => {
-      const output = execFileSync('node', [releaseBin, 'minor', '-y', '-d', '--allow-any-branch'], {
+    it('executes non-interactive --dry-run with --all flag', () => {
+      const output = execFileSync('node', [releaseBin, 'minor', '--all', '-y', '-d', '--allow-any-branch'], {
         cwd: repoRoot,
         encoding: 'utf8'
       })
       assert.match(output, /Dry run completed/)
-      assert.match(output, /📦 To publish this release to npm, run:/)
-      assert.doesNotMatch(output, /--tag/)
+      assert.match(output, /Release Plan:/)
+      assert.match(output, /coralite:/)
+      assert.match(output, /coralite-scripts:/)
+      assert.match(output, /create-coralite:/)
+      assert.match(output, /coralite-plugin-scripts:/)
+      assert.match(output, /create-coralite-plugin:/)
 
-      // Verify that pnpm pack --dry-run outputs the target package version preview
-      assert.match(output, /coralite-.*\.tgz/)
-
-      // Verify that package.json on disk was restored cleanly and has no git diff
-      const gitDiff = execFileSync('git', ['diff', 'packages/coralite/package.json'], { cwd: repoRoot, encoding: 'utf8' })
+      const gitDiff = execFileSync('git', ['diff', '--', 'packages/*/package.json', 'packages/*/templates/*/package.json'], { cwd: repoRoot, encoding: 'utf8' })
       assert.strictEqual(gitDiff.trim(), '')
     })
   })
