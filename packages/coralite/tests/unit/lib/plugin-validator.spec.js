@@ -318,6 +318,22 @@ describe('plugin-validator.js', () => {
       assert.equal(result.pluginName, 'mock-plugin')
     })
 
+    it('should throw Error when validating missing plugin file', async () => {
+      const missingPath = join(__dirname, '../../fixtures/plugins/non-existent-plugin.js')
+      await assert.rejects(
+        () => validatePluginFile(missingPath),
+        { message: `Plugin file not found: ${missingPath}` }
+      )
+    })
+
+    it('should throw Error when validating missing plugins directory', async () => {
+      const missingDir = join(__dirname, '../../fixtures/plugins/non-existent-dir')
+      await assert.rejects(
+        () => validatePluginsDir(missingDir),
+        { message: `Plugins directory not found: ${missingDir}` }
+      )
+    })
+
     it('should validate directory of plugins', async () => {
       const fixturesDir = join(__dirname, '../../fixtures/plugins')
       const report = await validatePluginsDir(fixturesDir)

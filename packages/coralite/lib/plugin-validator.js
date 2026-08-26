@@ -1,6 +1,6 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
-import { readFileSync, readdirSync, statSync, existsSync } from 'node:fs'
+import { readFile, readdir, stat, access } from 'node:fs/promises'
 import { join, resolve, extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import kleur from 'kleur'
@@ -1136,11 +1136,13 @@ export function validatePluginObject (plugin, filePath = '') {
  */
 export async function validatePluginFile (filePath) {
   const absPath = resolve(filePath)
-  if (!existsSync(absPath)) {
+  try {
+    await access(absPath)
+  } catch {
     throw new Error(`Plugin file not found: ${absPath}`)
   }
 
-  const sourceCode = readFileSync(absPath, 'utf-8')
+  const sourceCode = await readFile(absPath, 'utf-8')
   const staticResult = validatePluginSource(sourceCode, filePath)
 
   try {
@@ -1209,19 +1211,21 @@ export async function validatePluginsDir (pluginsDir) {
   /** @type {CoralitePluginValidationResult[]} */
   const results = []
 
-  if (!existsSync(absoluteDir)) {
+  try {
+    await access(absoluteDir)
+  } catch {
     throw new Error(`Plugins directory not found: ${absoluteDir}`)
   }
 
   const scanDir = async (dir) => {
-    const entries = readdirSync(dir)
-    for (const entry of entries) {
+    const entries = await readdir(dir)
+    await Promise.all(entries.map(async (entry) => {
       const fullPath = join(dir, entry)
-      const stat = statSync(fullPath)
+      const st = await stat(fullPath)
 
-      if (stat.isDirectory()) {
+      if (st.isDirectory()) {
         await scanDir(fullPath)
-      } else if (stat.isFile()) {
+      } else if (st.isFile()) {
         const ext = extname(entry)
         if (ext === '.js' || ext === '.mjs') {
           try {
@@ -1252,7 +1256,7 @@ export async function validatePluginsDir (pluginsDir) {
           }
         }
       }
-    }
+    }))
   }
 
   await scanDir(absoluteDir)
