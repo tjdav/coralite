@@ -1,5 +1,33 @@
 # Changelog
 
+## v1.0.0-rc.0
+
+> Comparing `coralite-scripts-v0.47.1` to `HEAD`
+
+**Summary:** 9 commits
+
+### ✨ Features
+
+- add inert containers, slot transformations, and CLI config support (validator) ([a2c7c93](https://codeberg.org/tjdavid/coralite/commit/a2c7c9321a7d82c8e2408976df62714232dc6dd2))
+- update CLI options, branch policies & RC workflow (coralite-release) ([b49842b](https://codeberg.org/tjdavid/coralite/commit/b49842baf62e0f97f6b5eeef77e108bf27be7f40))
+- integrate semver engine, smart rc alias, and stable tag baseline resolution (release) ([c6a9801](https://codeberg.org/tjdavid/coralite/commit/c6a98010fc56717916014a1c182790a1c1c25677))
+- Improve validation logic, type safety, and CLI contracts (coralite) ([1df611c](https://codeberg.org/tjdavid/coralite/commit/1df611c0a20d8036432812f4d0a272333dc0cb14))
+- integrate check and fix subcommands (coralite-scripts) ([7efba81](https://codeberg.org/tjdavid/coralite/commit/7efba816dd320982421a01f29519f0b975a44c39))
+
+### 🐛 Bug Fixes
+
+- page reporting, cli formatting & domain validation schemas ([4e89412](https://codeberg.org/tjdavid/coralite/commit/4e894125cefbc503b24c9de0dc25d9955b6df673))
+- guard path resolution against non-string config props (coralite-scripts) ([1c91829](https://codeberg.org/tjdavid/coralite/commit/1c91829f3c7233751828474b9de69a24974502d9))
+
+### ⚡ Performance Improvements
+
+- optimize directory validation with async file I/O (validator) ([b370150](https://codeberg.org/tjdavid/coralite/commit/b3701500aed76853800c11b2c9b045918fe2360d))
+
+### ♻️ Code Refactoring
+
+- rename compileAllInstances to compileComponents ([97ebf54](https://codeberg.org/tjdavid/coralite/commit/97ebf54f5fb64fb7cc5c75386739158724170335))
+
+
 ## v0.46.1
 
 > Comparing `coralite-scripts-v0.46.0` to `HEAD`
