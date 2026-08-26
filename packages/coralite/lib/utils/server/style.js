@@ -75,8 +75,26 @@ export async function transformCss (css, onError, options = {}) {
             }
 
             // 1. Transform :host and :host-context in selector first
-            const hostContextNode = selector.nodes.find(n => n.type === 'pseudo' && n.value === ':host-context')
-            const hostNode = selector.nodes.find(n => n.type === 'pseudo' && n.value === ':host')
+            let hostContextNode = null
+            let hostNode = null
+
+            for (let i = 0; i < selector.nodes.length; i++) {
+              const node = selector.nodes[i]
+              if (node.type === 'pseudo') {
+                if (node.value === ':host-context') {
+                  if (!hostContextNode) {
+                    hostContextNode = node
+                  }
+                } else if (node.value === ':host') {
+                  if (!hostNode) {
+                    hostNode = node
+                  }
+                }
+                if (hostContextNode && hostNode) {
+                  break
+                }
+              }
+            }
 
             if (hostContextNode || hostNode) {
               const hostReplacement = mode === 'scope'
