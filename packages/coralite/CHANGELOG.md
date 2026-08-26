@@ -1,5 +1,114 @@
 # Changelog
 
+## v1.0.0-rc.0
+
+> Comparing `coralite-v0.47.1` to `HEAD`
+
+**Summary:** 78 commits
+
+### ✨ Features
+
+- add dedicated publish tool and simplify CI workflows (release) ([6e316e4](https://codeberg.org/tjdavid/coralite/commit/6e316e4599dea3cafac354fea32d66f7f525be50))
+- add inert containers, slot transformations, and CLI config support (validator) ([a2c7c93](https://codeberg.org/tjdavid/coralite/commit/a2c7c9321a7d82c8e2408976df62714232dc6dd2))
+- update CLI options, branch policies & RC workflow (coralite-release) ([b49842b](https://codeberg.org/tjdavid/coralite/commit/b49842baf62e0f97f6b5eeef77e108bf27be7f40))
+- integrate semver engine, smart rc alias, and stable tag baseline resolution (release) ([c6a9801](https://codeberg.org/tjdavid/coralite/commit/c6a98010fc56717916014a1c182790a1c1c25677))
+- enforce onError as strict function and clean up warning prefixes ([de95da6](https://codeberg.org/tjdavid/coralite/commit/de95da69f8f2f00ea1d7c40ffc548cd9418cb815))
+- Improve validation logic, type safety, and CLI contracts (coralite) ([1df611c](https://codeberg.org/tjdavid/coralite/commit/1df611c0a20d8036432812f4d0a272333dc0cb14))
+- Improve CSS handling resilience and atomic style evaluation ([6ed25d9](https://codeberg.org/tjdavid/coralite/commit/6ed25d99f043144455a17eeaa1428f9182ae8328))
+- integrate check and fix subcommands (coralite-scripts) ([7efba81](https://codeberg.org/tjdavid/coralite/commit/7efba816dd320982421a01f29519f0b975a44c39))
+- Unify error and diagnostic routing across components (coralite) ([4291017](https://codeberg.org/tjdavid/coralite/commit/42910179fe559e5cc3cd95c9b8768adc3c6320ca))
+- implement CORALITE-E105 diagnostic, errors coverage, and website component modernization ([a313bf7](https://codeberg.org/tjdavid/coralite/commit/a313bf756cc2611810d8f083cb01b331f037eecb))
+- make state.errors deeply reactive via nested proxy ([f5cbda7](https://codeberg.org/tjdavid/coralite/commit/f5cbda79edb8255bcf7c1af205b28770e39cb0f6))
+- add automated regression checking and fast CI runner (benchmarks) ([3c5059e](https://codeberg.org/tjdavid/coralite/commit/3c5059ed32f5d9f19595b4c33d8b9264349ae1a0))
+- implement AST ref determinism verification (CORALITE-W204) ([2125c86](https://codeberg.org/tjdavid/coralite/commit/2125c8691e7104de9ba2991561028f2d0e0a68fd))
+- add Suite 5 stress-lifecycle benchmark suite (bench) ([2418247](https://codeberg.org/tjdavid/coralite/commit/241824760eaddbf7bb212a2eb2f3f826f0b29195))
+- add Svelte 5, Suite 5 stress workloads, and CI regression gates (benchmarks) ([a3cf883](https://codeberg.org/tjdavid/coralite/commit/a3cf883c7a91df100e4196d57c9308a31d500508))
+- add check, fix, and init-agent commands (cli) ([0837e6d](https://codeberg.org/tjdavid/coralite/commit/0837e6d15ddeed811dc47e3c1aba7a91730d9bbe))
+- implement static page validator for component schemas and encapsulation ([0617491](https://codeberg.org/tjdavid/coralite/commit/061749146b5bfa074ee409f42eeea90c469a227f))
+- implement SSR throughput suite and port internal engine micro-benchmarks to mitata (benchmarks) ([4c386e0](https://codeberg.org/tjdavid/coralite/commit/4c386e023fc4c458b5add9b80fa4bb1ff5575732))
+- standardize CORALITE-P diagnostic codes and add plugin-fixer AST engine (plugin-validator) ([06918a4](https://codeberg.org/tjdavid/coralite/commit/06918a4ae1ddbf68cb03645f89f404bf39a5e8e5))
+- implement bundle size & client hydration benchmark suite (benchmarks) ([b1dd00c](https://codeberg.org/tjdavid/coralite/commit/b1dd00cc2606d522fbda18a1a27048729e071ad3))
+- add 1k and 10k row DOM reactivity benchmark suite (benchmarks) ([5c208b6](https://codeberg.org/tjdavid/coralite/commit/5c208b64867705b10e281b9f333ec823ed08d4a6))
+- update JSDoc type contracts and fix action tests (diagnostics) ([957ad8a](https://codeberg.org/tjdavid/coralite/commit/957ad8a364421df619d86ac8e26f4a843df461f8))
+- set up foundation for benchmark suite (benchmarks) ([540aaca](https://codeberg.org/tjdavid/coralite/commit/540aaca5e99b5a14d0b1a9e1441cc3782db841b2))
+- preserve shared top-level imports and bound template fixes (component-fixer) ([b56ce6b](https://codeberg.org/tjdavid/coralite/commit/b56ce6b7c6a9ad173800ab2a58fdc88257d67cf9))
+- enhance component validator diagnostics and import tracking (coralite) ([c12cb4b](https://codeberg.org/tjdavid/coralite/commit/c12cb4b49503bde74838fa6b840078b5997a8df2))
+- implement JSDoc type contracts and diagnostic formatters (diagnostics) ([5eccc4d](https://codeberg.org/tjdavid/coralite/commit/5eccc4dfa8ed7f82dae1cf6672385f13dcd0c4b5))
+- add safe AST component-fixer engine and CLI --fix flags (component-validator) ([86aaadf](https://codeberg.org/tjdavid/coralite/commit/86aaadff66876544988813a0e6569fbfa441bb44))
+- enhance component validator static AST analysis (coralite) ([d3e0e9a](https://codeberg.org/tjdavid/coralite/commit/d3e0e9a078dde62eb7b888a51ca66ecd88518171))
+- add deep static AST diagnostics and defensive getters (validator) ([19667da](https://codeberg.org/tjdavid/coralite/commit/19667daa58da1a4d211ef32d89719f830ccdf35f))
+- add JSDoc typedefs and diagnostics report formatter (diagnostics) ([0cc0ece](https://codeberg.org/tjdavid/coralite/commit/0cc0ece19dbec680d10d1b226732039fc7631ef5))
+- make state.errors reactive and update component validator ([34c8451](https://codeberg.org/tjdavid/coralite/commit/34c845108910c6e29397e42c5a5492b18286d047))
+- implement graceful attribute validation (state.errors & error_* tokens) ([eb03aaf](https://codeberg.org/tjdavid/coralite/commit/eb03aaf9a07d5ae8fa75347d0183d43a186340df))
+- add scoped CSS component fixtures and harness page ([a6b9951](https://codeberg.org/tjdavid/coralite/commit/a6b9951f2052fef391f09d59daf8eeff8cdf0dfd))
+- add native @scope donut boundary generation (style) ([4775bc3](https://codeberg.org/tjdavid/coralite/commit/4775bc34e80f423d584fb0b24d1e0c9725e36cfb))
+- add modern selector primitives to component CSS (style) ([8200bc8](https://codeberg.org/tjdavid/coralite/commit/8200bc84297b7b2a060ac22252edeb8f1604267e))
+- tame scoped CSS specificity with :where() and @layer components (css) ([589a65c](https://codeberg.org/tjdavid/coralite/commit/589a65cc1619e927746493ecb9371af9e9f95dcb))
+- attribute validation and reactive proxy features (coralite) ([f8371f9](https://codeberg.org/tjdavid/coralite/commit/f8371f9eab164fc9dfa9e5dfd71b911ae476f42c))
+- implement :host and :host-context() selector transforms (style) ([b855915](https://codeberg.org/tjdavid/coralite/commit/b85591526d3bc791eda01136cec579b456607723))
+- custom element tag-based style scoping (styling) ([0c1a9b3](https://codeberg.org/tjdavid/coralite/commit/0c1a9b3929eb697888f2394b730e1418b894f3d2))
+- add native reactive style block to component definitions ([e285b5d](https://codeberg.org/tjdavid/coralite/commit/e285b5d2e99b9c815d42f9dab07f3016584e1c76))
+- component attribute pipeline, emit helper, and DOM attribute filtering ([7514cbb](https://codeberg.org/tjdavid/coralite/commit/7514cbba0c5ea99bcfb8545bc058e7682a38c3e8))
+- implement custom synchronous attribute validate feature ([f895df6](https://codeberg.org/tjdavid/coralite/commit/f895df60975694e4f82527026108e4dd889d0fec))
+- add synchronous transform pipeline for component attributes (attributes) ([5cfeca3](https://codeberg.org/tjdavid/coralite/commit/5cfeca380ac1c8538d7b3803408a2724cdcafa22))
+- add required component attribute validation (attributes) ([f756128](https://codeberg.org/tjdavid/coralite/commit/f756128ebc7b53debf3d31a01f34dd9105cc28c2))
+- add built-in emit helper to component script context ([6e490fd](https://codeberg.org/tjdavid/coralite/commit/6e490fd7eb9513eb8fbadb8c7396fe83ca2ee5c1))
+- add component attribute values validation (coralite) ([0919c9b](https://codeberg.org/tjdavid/coralite/commit/0919c9b611eb2b238be73cd67e9908a1217de57d))
+
+### 🐛 Bug Fixes
+
+- remove unreferenced attribute declaration and verify configuration forwarding (website) ([1588870](https://codeberg.org/tjdavid/coralite/commit/1588870afd7faf3c1946d39649ed968acd3611fb))
+- suppress W401 for getter dependencies & observer properties with exact coordinates (coralite) ([be97752](https://codeberg.org/tjdavid/coralite/commit/be97752990ab093e891e6424ee64e0ff5a3d1636))
+- fix CORALITE-W402 false positives via precision ref selectors (component-validator) ([074a3c9](https://codeberg.org/tjdavid/coralite/commit/074a3c9d98d1bf3debf93eb83a81c4c5419fa3db))
+- HTML component script line offsets and template ref lookup accuracy ([a9e229a](https://codeberg.org/tjdavid/coralite/commit/a9e229a489d151f7bb8cbd2810c7f97b6f4d4319))
+- page reporting, cli formatting & domain validation schemas ([4e89412](https://codeberg.org/tjdavid/coralite/commit/4e894125cefbc503b24c9de0dc25d9955b6df673))
+- guard path resolution against non-string config props (coralite-scripts) ([1c91829](https://codeberg.org/tjdavid/coralite/commit/1c91829f3c7233751828474b9de69a24974502d9))
+- harden component attribute pipeline and transform semantics (coralite) ([b4ad1a4](https://codeberg.org/tjdavid/coralite/commit/b4ad1a43a3160bc9c2a7ef54b6fc896ac41fbe48))
+- resolvePath fallback and plugin fixableCount calculation (cli) ([df18adb](https://codeberg.org/tjdavid/coralite/commit/df18adb75a360cd438032fbb10b7e1806988bc27))
+- benchmark suite accuracy, security, and CLI validation ([6105733](https://codeberg.org/tjdavid/coralite/commit/610573347d849208127e2acd99501a7cfdc5109f))
+- SSR validation warning refinements ([99df35a](https://codeberg.org/tjdavid/coralite/commit/99df35ac898540c786d34e732fb7cbb47f580242))
+- SSR validation error leakage across client component instances ([3ceda31](https://codeberg.org/tjdavid/coralite/commit/3ceda317d30e4615da94d0696e3b7dee6fbd3093))
+- imperative boundary, late :host ordering, and stylesheet assembly ([0cf5049](https://codeberg.org/tjdavid/coralite/commit/0cf5049a3d0ce3edae57dad97d3b986bb8a550da))
+- consolidate c-token styles and remove display: contents (style) ([75a96f6](https://codeberg.org/tjdavid/coralite/commit/75a96f635782908be1f852c90c58f84837536b5f))
+- CSS scoping engine (:host unwrapping & descendant scoping) ([ae2a3f5](https://codeberg.org/tjdavid/coralite/commit/ae2a3f5ea9bb2fcdb12f03abe05957b69d152e5e))
+
+### ⚡ Performance Improvements
+
+- optimize directory validation with async file I/O (validator) ([b370150](https://codeberg.org/tjdavid/coralite/commit/b3701500aed76853800c11b2c9b045918fe2360d))
+- optimize DOM ref traversal and remove Array allocations ([57e929f](https://codeberg.org/tjdavid/coralite/commit/57e929f8cf2ec6ff225ffbf983627406365ee3e3))
+- replace synchronous fs methods with async fs/promises in plugin-validator (coralite) ([ecb7068](https://codeberg.org/tjdavid/coralite/commit/ecb70686b47d11d9834cc1df0cb91462d4c2f797))
+- optimize selector pseudo-node traversals in transformCss ([f17f1af](https://codeberg.org/tjdavid/coralite/commit/f17f1afc8dc4bfdf9212098e1cc41e247eb31199))
+
+### 📚 Documentation
+
+- overhaul plugin architecture to use Two-Phase Curried Context ([7214560](https://codeberg.org/tjdavid/coralite/commit/7214560500f27abda91c55df72178b63177c56df))
+- documentation with reactive styling and slot features (coralite) ([fd65f2f](https://codeberg.org/tjdavid/coralite/commit/fd65f2f2dda59284c693793091d1a4f42ebdd4f2))
+- Improve CSS scoping documentation and update user-card component (coralite) ([9789089](https://codeberg.org/tjdavid/coralite/commit/97890890bc8114e63e14a930cc813a1de37f29c9))
+
+### ♻️ Code Refactoring
+
+- extract attribute and DOM utilities from coralite-element (coralite) ([31427a8](https://codeberg.org/tjdavid/coralite/commit/31427a8a574564f04f8e9aec14e73b25a34f8020))
+- extract attribute and dom utilities into dedicated modules ([1dddb42](https://codeberg.org/tjdavid/coralite/commit/1dddb42ff1c34f0bae2f1e385af5ec84577b20b0))
+- rename compileAllInstances to compileComponents ([97ebf54](https://codeberg.org/tjdavid/coralite/commit/97ebf54f5fb64fb7cc5c75386739158724170335))
+- Harden reactive error state proxy (coralite-element) ([50a33e5](https://codeberg.org/tjdavid/coralite/commit/50a33e533ca2929d1bd44d3ef92fcf13fa74c2a2))
+- deduplicate executeAttributeValidator and enforce transform return semantics (coralite) ([d7e01c7](https://codeberg.org/tjdavid/coralite/commit/d7e01c7231fd07d8ad8f852f3263dc08cf1618e2))
+- dedupe executeAttributeValidator and normalize errors (attributes) ([42c4d6b](https://codeberg.org/tjdavid/coralite/commit/42c4d6b1acfad36260e974e40c800d78313208e5))
+
+### ✅ Tests
+
+- add scoped styles Playwright E2E test suite (coralite) ([e85cf33](https://codeberg.org/tjdavid/coralite/commit/e85cf33bc4e95438a2a93bf38b0af243820e2a32))
+- add unit tests for late :host ordering, stylesheet consolidation, and imperative boundary stamping (coralite) ([e456b64](https://codeberg.org/tjdavid/coralite/commit/e456b64fbcd3b90b5a890f300779a8628317170c))
+- consolidate and modularize e2e test suite (e2e) ([a75a5e8](https://codeberg.org/tjdavid/coralite/commit/a75a5e897880a80629b91efec4f1f9b0c8f97dfe))
+
+### 🧹 Chores
+
+- Remove unnecessary llms copy step from package.json build scripts (packages/coralite) ([76a10dd](https://codeberg.org/tjdavid/coralite/commit/76a10ddf478cb20ff4f578ba4043b191fdca51f0))
+
+### 🔨 Other Changes
+
+- docs and ssr: sync attribute docs and refine ssr validation warnings ([144db9c](https://codeberg.org/tjdavid/coralite/commit/144db9c6143df3510391bb241b647c57b3cb1143))
+
+
 ## v0.47.1
 
 > Comparing `coralite-v0.47.0` to `HEAD`
