@@ -1,3 +1,4 @@
+export * from './attributes.js'
 export * from './core.js'
 export * from './diagnostics.js'
 export * from './errors.js'

@@ -9,7 +9,7 @@ import {
 import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
 import { formatComponentCss } from './utils/server/style.js'
 import { camelToKebab } from './utils/core.js'
-import { inferTypeFromValues, validateAttributeValue } from './coralite-element.js'
+import { inferTypeFromValues, validateAttributeValue } from './utils/attributes.js'
 
 /**
  * Normalizes and validates component attribute definitions at definition time.
