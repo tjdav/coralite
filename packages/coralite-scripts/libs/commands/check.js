@@ -154,12 +154,18 @@ export async function checkCommand (config, options = {}, logger = null) {
             }, {})
           }
           knownComponents.set(name, {
-            attributes: attributesObj
+            attributes: attributesObj,
+            slots: c.defined?.slots || []
           })
         }
       }
     }
-    pageReport = await validatePagesDir(fullPageDir, { knownComponents })
+    pageReport = await validatePagesDir(fullPageDir, {
+      knownComponents,
+      ignoreAttributes: config?.ignoreByAttribute,
+      skipRenderByAttribute: config?.skipRenderByAttribute,
+      ignoreTags: config?.ignoreTags
+    })
   }
 
   const totalFiles = (compReport?.summary?.totalComponents ?? 0) +

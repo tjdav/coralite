@@ -14,6 +14,8 @@ import { createDiagnostic, formatDiagnosticTerminal } from './utils/diagnostics.
  * } from '../types/index.js'
  */
 
+const INERT_TAGS = new Set(['template', 'code', 'pre', 'noscript'])
+
 /**
  * Strips HTML comments while preserving original line numbers and character offsets.
  *
@@ -129,6 +131,7 @@ function getLocForSubstring (source, substring, searchFrom = 0) {
  * @param {Map<string, Object>|Record<string, Object>} [options.knownComponents] - Map or object of registered component definitions
  * @param {string[]|Set<string>|string} [options.ignoreAttributes] - Attributes that bypass custom element tag checks
  * @param {string[]|Set<string>|string} [options.skipRenderByAttribute] - Alias for ignoreAttributes
+ * @param {string[]|Set<string>|string} [options.ignoreTags] - Custom element tags to skip validation for
  * @returns {Object} Validation result object
  */
 export function validatePageSource (sourceCode, options = {}) {
@@ -173,9 +176,31 @@ export function validatePageSource (sourceCode, options = {}) {
   addIgnoreList(options.ignoreAttributes)
   addIgnoreList(options.skipRenderByAttribute)
 
+  // Normalize ignoreTags
+  const ignoreTags = new Set()
+  const addIgnoreTags = (list) => {
+    if (!list) {
+      return
+    }
+    let items = [list]
+    if (Array.isArray(list)) {
+      items = list
+    } else if (list instanceof Set) {
+      items = Array.from(list)
+    }
+    for (const item of items) {
+      if (typeof item === 'string') {
+        ignoreTags.add(item.toLowerCase().trim())
+      }
+    }
+  }
+  addIgnoreTags(options.ignoreTags)
+
   let currentSection = null
   let scriptContent = ''
   let scriptSearchOffset = 0
+
+  const inertStack = []
 
   const parser = new Parser(
     {
@@ -189,63 +214,93 @@ export function validatePageSource (sourceCode, options = {}) {
           return
         }
 
-        // Custom element detection (tag name containing a hyphen)
-        if (tagName.includes('-')) {
-          // Check if element carries an ignored attribute
-          const hasIgnoredAttr = Object.keys(attribs || {}).some(attr => ignoreAttrs.has(attr.toLowerCase()))
-          if (hasIgnoredAttr) {
-            return
-          }
+        let isCustomElementPushedToInert = false
 
+        if (inertStack.length > 0) {
+          // Inside an inert subtree: skip custom element (CORALITE-PAGE-101) and required attribute (CORALITE-PAGE-102) validation
+        } else if (tagName.includes('-')) {
           const normTag = camelToKebab(tagName)
-          const tagLoc = getLocForSubstring(cleanSourceCode, `<${name}`, 0)
+          const hasIgnoredAttr = Object.keys(attribs || {}).some(a => ignoreAttrs.has(a.toLowerCase()))
 
-          if (!knownMap.has(normTag)) {
-            // CORALITE-PAGE-101: Unknown Custom Element
-            const closest = findClosestTag(normTag, knownMap.keys())
-            const message = closest
-              ? `Unknown custom element tag "<${tagName}>". Did you mean "<${closest}>"?`
-              : `Unknown custom element tag "<${tagName}>"`
-
-            diagnostics.push(createDiagnostic({
-              code: 'CORALITE-PAGE-101',
-              severity: 'warning',
-              message,
-              filePath,
-              line: tagLoc.line,
-              column: tagLoc.column,
-              sourceCode,
-              cause: 'Custom elements rendered in page HTML must be defined in the components directory, registered by an isomorphic plugin, or configured in ignoreByAttribute.'
-            }))
+          if (ignoreTags.has(normTag) || ignoreTags.has(tagName)) {
+            // Skip custom element check
+          } else if (hasIgnoredAttr) {
+            inertStack.push({
+              tag: tagName,
+              reason: 'ignored-attr'
+            })
+            isCustomElementPushedToInert = true
           } else {
-            // CORALITE-PAGE-102: Missing Required Attribute
-            const compDef = knownMap.get(normTag) || {}
-            const attrSchema = compDef.attributes || {}
+            const tagLoc = getLocForSubstring(cleanSourceCode, `<${name}`, 0)
 
-            for (const [attrKey, schema] of Object.entries(attrSchema)) {
-              if (schema && (schema.required === true || schema.required === 'true')) {
-                const kebabAttr = camelToKebab(attrKey).toLowerCase()
-                const presentAttrs = Object.keys(attribs || {}).map(a => a.toLowerCase())
+            if (!knownMap.has(normTag)) {
+              // CORALITE-PAGE-101: Unknown Custom Element
+              const closest = findClosestTag(normTag, knownMap.keys())
+              const message = closest
+                ? `Unknown custom element tag "<${tagName}>". Did you mean "<${closest}>"?`
+                : `Unknown custom element tag "<${tagName}>"`
 
-                if (!presentAttrs.includes(kebabAttr)) {
-                  diagnostics.push(createDiagnostic({
-                    code: 'CORALITE-PAGE-102',
-                    severity: 'error',
-                    message: `Missing required attribute '${kebabAttr}' on <${tagName}>.`,
-                    filePath,
-                    line: tagLoc.line,
-                    column: tagLoc.column,
-                    sourceCode,
-                    cause: `Attribute '${kebabAttr}' is marked as required: true in <${tagName}> schema but missing from element tag.`,
-                    fix: {
-                      action: 'add_required_attribute',
-                      description: `Add required attribute '${kebabAttr}' to <${tagName}>`,
-                      replacement: `${kebabAttr}=""`
-                    }
-                  }))
+              diagnostics.push(createDiagnostic({
+                code: 'CORALITE-PAGE-101',
+                severity: 'warning',
+                message,
+                filePath,
+                line: tagLoc.line,
+                column: tagLoc.column,
+                sourceCode,
+                cause: 'Custom elements rendered in page HTML must be defined in the components directory, registered by an isomorphic plugin, or configured in ignoreByAttribute or ignoreTags.'
+              }))
+            } else {
+              // CORALITE-PAGE-102: Missing Required Attribute
+              const compDef = knownMap.get(normTag) || {}
+              const attrSchema = compDef.attributes || {}
+
+              for (const [attrKey, schema] of Object.entries(attrSchema)) {
+                if (schema && (schema.required === true || schema.required === 'true')) {
+                  const kebabAttr = camelToKebab(attrKey).toLowerCase()
+                  const presentAttrs = Object.keys(attribs || {}).map(a => a.toLowerCase())
+
+                  if (!presentAttrs.includes(kebabAttr)) {
+                    diagnostics.push(createDiagnostic({
+                      code: 'CORALITE-PAGE-102',
+                      severity: 'error',
+                      message: `Missing required attribute '${kebabAttr}' on <${tagName}>.`,
+                      filePath,
+                      line: tagLoc.line,
+                      column: tagLoc.column,
+                      sourceCode,
+                      cause: `Attribute '${kebabAttr}' is marked as required: true in <${tagName}> schema but missing from element tag.`,
+                      fix: {
+                        action: 'add_required_attribute',
+                        description: `Add required attribute '${kebabAttr}' to <${tagName}>`,
+                        replacement: `${kebabAttr}=""`
+                      }
+                    }))
+                  }
                 }
               }
+
+              // Check if component defines custom slots
+              if (compDef.slots && compDef.slots.length > 0) {
+                inertStack.push({
+                  tag: tagName,
+                  reason: 'slots'
+                })
+                isCustomElementPushedToInert = true
+              }
             }
+          }
+        }
+
+        if (!isCustomElementPushedToInert) {
+          const isStandardInertTag = INERT_TAGS.has(tagName)
+          const hasIgnoredAttr = Object.keys(attribs || {}).some(a => ignoreAttrs.has(a.toLowerCase()))
+          if (isStandardInertTag || hasIgnoredAttr) {
+            const reason = hasIgnoredAttr ? 'ignored-attr' : 'inert-tag'
+            inertStack.push({
+              tag: tagName,
+              reason
+            })
           }
         }
       },
@@ -257,11 +312,17 @@ export function validatePageSource (sourceCode, options = {}) {
       },
 
       onclosetag (name) {
-        if (name.toLowerCase() === 'script' && currentSection === 'script') {
+        const tagName = name.toLowerCase()
+        if (tagName === 'script' && currentSection === 'script') {
           currentSection = null
           if (scriptContent.trim()) {
             analyzeInlineScript(scriptContent, sourceCode, filePath, diagnostics, knownMap, scriptSearchOffset)
           }
+          return
+        }
+
+        if (inertStack.length > 0 && inertStack[inertStack.length - 1].tag === tagName) {
+          inertStack.pop()
         }
       }
     },

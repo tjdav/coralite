@@ -925,7 +925,28 @@ ${templateLines}
     assert.strictEqual(formatComponentAnalysis, formatComponentValidationReport)
   })
 
-  // 22. validateComponentsDir Async Directory Validation
+  // 22. defined.slots metadata extraction
+  test('records defined slot names in result.defined.slots', () => {
+    const componentSource = `
+      <template>
+        <slot name="header"></slot>
+        <slot name="default"></slot>
+      </template>
+      <script>
+        import { defineComponent } from 'coralite'
+        export default defineComponent({
+          slots: {
+            header (context) { return 'Header' },
+            default (context) { return 'Default' }
+          }
+        })
+      </script>
+    `
+    const result = validateComponentSource(componentSource, 'Card.html')
+    assert.deepEqual(result.defined.slots, ['header', 'default'])
+  })
+
+  // 23. validateComponentsDir Async Directory Validation
   test('validateComponentsDir validates directory of components asynchronously', async () => {
     const tmpDir = join(tmpdir(), `coralite-comp-val-test-${Date.now()}`)
     mkdirSync(tmpDir, { recursive: true })

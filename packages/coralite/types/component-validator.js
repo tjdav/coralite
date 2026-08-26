@@ -5,6 +5,7 @@
  * @property {string[]} attributes - Defined attribute schema keys
  * @property {string[]} refs - Element ref names in template
  * @property {string[]} [imports] - Top level imported symbols
+ * @property {string[]} [slots] - Defined slot names
  */
 
 /**

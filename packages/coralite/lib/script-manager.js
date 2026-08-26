@@ -1,17 +1,40 @@
 import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
-import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
 import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap } from './utils/core.js'
-import { findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
+import { getAST, findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
 import { CoraliteError } from './utils/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname, basename } from 'node:path'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 import render from 'dom-serializer'
 
+// The canonical empty fallback signature shared by component scripts.
+const EMPTY_FUNCTION_SIGNATURE = 'function(){}'
+
+// Detects whether a code point is whitespace (same set as \s in regex).
+// Uses charCodeAt for a full-whitespace set comparison rather than a regex
+// or a switch that could diverge from JS \s semantics.
+const isWhitespace = (char) => {
+  const code = char.charCodeAt(0)
+  // \t \n \v \f \r space
+  if (code === 0x09 || code === 0x0a || code === 0x0b || code === 0x0c || code === 0x0d || code === 0x20) {
+    return true
+  }
+  // Non-ASCII whitespace: NBSP, OGHAM, en/em spaces (2000-200A), LS/PS,
+  // narrow no-break, medium math space, ideographic space, BOM.
+  if (code === 0x00a0 || code === 0x1680 || (code >= 0x2000 && code <= 0x200a) ||
+      code === 0x2028 || code === 0x2029 || code === 0x202f || code === 0x205f ||
+      code === 0x3000 || code === 0xfeff) {
+    return true
+  }
+  return false
+}
+
 /**
- * Helper to unify empty function checks
+ * Helper to unify empty function checks. Scans the content once without
+ * allocating a whitespace-stripped copy of the whole script (the regex
+ * variant does this for every component on every build).
  * @param {string} content - The content of the function to check.
  * @returns {boolean} - Returns true if the function is empty or has only whitespace.
  */
@@ -19,7 +42,24 @@ const isEmptyFunction = (content) => {
   if (!content) {
     return true
   }
-  return content.replace(/\s+/g, '') === 'function(){}'
+
+  let matchIndex = 0
+  const signatureLength = EMPTY_FUNCTION_SIGNATURE.length
+
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i]
+    if (isWhitespace(char)) {
+      continue
+    }
+    // Early-exit as soon as a non-whitespace char stops matching the empty
+    // signature. Real client scripts bail out within the first few chars.
+    if (matchIndex >= signatureLength || char !== EMPTY_FUNCTION_SIGNATURE[matchIndex]) {
+      return false
+    }
+    matchIndex++
+  }
+
+  return matchIndex === signatureLength
 }
 
 /**
@@ -723,10 +763,7 @@ export default {
                 let strippedContent = sharedFn.script.content
 
                 try {
-                  const ast = parseJS(strippedContent, {
-                    ecmaVersion: 'latest',
-                    sourceType: 'module'
-                  })
+                  const ast = getAST(strippedContent)
                   let dataStart = -1
                   let dataEnd = -1
 

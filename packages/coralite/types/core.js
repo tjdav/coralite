@@ -149,6 +149,7 @@
  * @property {CoraliteStaticAsset[]} [assets] - Static assets to copy during build.
  * @property {Array<string | Attribute>} [ignoreByAttribute] - An array of attribute names and values to ignore by element type.
  * @property {Array<string | Attribute>} [skipRenderByAttribute] - An array of attribute names and values to skip rendering by element type.
+ * @property {string[]} [ignoreTags] - An array of custom element tag names to skip during validation.
  * @property {CoraliteOnError} [onError] - Optional callback function for handling errors and warnings.
  * @property {(info: CoraliteComponentBuildInfo) => void | Promise<void>} [onComponentBuild] - Optional callback function for handling component build reporting.
  * @property {string[]} [externalStyles] - Global styles to inject into every page

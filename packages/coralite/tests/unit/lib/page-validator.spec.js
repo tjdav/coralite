@@ -126,6 +126,132 @@ describe('Coralite Page Validator (page-validator.js)', () => {
     })
   })
 
+  describe('Inert Containers and Slot Transformations', () => {
+    it('does not flag custom elements inside standard inert tags (<template>, <code>, <pre>, <noscript>)', () => {
+      const source = `
+        <template>
+          <unknown-in-template></unknown-in-template>
+        </template>
+        <code>
+          <unknown-in-code></unknown-in-code>
+        </code>
+        <pre>
+          <unknown-in-pre></unknown-in-pre>
+        </pre>
+        <noscript>
+          <unknown-in-noscript></unknown-in-noscript>
+        </noscript>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map()
+      })
+
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
+
+    it('does not flag custom elements inside components with declared slots in knownComponents', () => {
+      const source = `
+        <my-layout>
+          <unknown-slotted-child></unknown-slotted-child>
+        </my-layout>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map([
+          ['my-layout', { slots: ['default'] }]
+        ])
+      })
+
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
+
+    it('ignores elements inside subtrees carrying ignored attributes (e.g. <div no-hydration>)', () => {
+      const source = `
+        <div no-hydration>
+          <unknown-widget-in-div></unknown-widget-in-div>
+        </div>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map(),
+        ignoreAttributes: ['no-hydration']
+      })
+
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
+
+    it('does not flag custom elements listed in ignoreTags', () => {
+      const source = `
+        <external-widget></external-widget>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map(),
+        ignoreTags: ['external-widget']
+      })
+
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
+
+    it('handles nested inert containers without premature stack popping', () => {
+      const source = `
+        <my-layout>
+          <pre>
+            <code>
+              <unknown-deep-nested></unknown-deep-nested>
+            </code>
+          </pre>
+          <template>
+            <another-unknown></another-unknown>
+          </template>
+        </my-layout>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map([
+          ['my-layout', { slots: ['default'] }]
+        ])
+      })
+
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
+
+    it('restores normal validation immediately after exiting an inert container (sibling restoration)', () => {
+      const source = `
+        <pre>
+          <unknown-inside-pre></unknown-inside-pre>
+        </pre>
+        <unknown-sibling></unknown-sibling>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map()
+      })
+
+      assert.equal(result.valid, false)
+      assert.equal(result.diagnostics.length, 1)
+      assert.equal(result.diagnostics[0].code, 'CORALITE-PAGE-101')
+      assert.equal(result.diagnostics[0].message, 'Unknown custom element tag "<unknown-sibling>"')
+    })
+
+    it('unwinds stack cleanly for void elements with ignored attributes', () => {
+      const source = `
+        <img no-hydration>
+        <input no-hydration>
+        <unknown-element-after-void></unknown-element-after-void>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map(),
+        ignoreAttributes: ['no-hydration']
+      })
+
+      assert.equal(result.valid, false)
+      assert.equal(result.diagnostics.length, 1)
+      assert.equal(result.diagnostics[0].code, 'CORALITE-PAGE-101')
+      assert.equal(result.diagnostics[0].message, 'Unknown custom element tag "<unknown-element-after-void>"')
+    })
+  })
+
   describe('CORALITE-PAGE-201: Encapsulation Violations in Script Tags', () => {
     it('detects compound descendant selectors targeting inside custom elements', () => {
       const source = `

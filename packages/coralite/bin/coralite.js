@@ -113,12 +113,18 @@ program
                 attributes: c.defined ? c.defined.attributes.reduce((acc, curr) => ({
                   ...acc,
                   [curr]: {}
-                }), {}) : {}
+                }), {}) : {},
+                slots: c.defined?.slots || []
               })
             }
           }
         }
-        pageReport = await validatePagesDir(pageDir, { knownComponents })
+        pageReport = await validatePagesDir(pageDir, {
+          knownComponents,
+          ignoreAttributes: config?.ignoreByAttribute,
+          skipRenderByAttribute: config?.skipRenderByAttribute,
+          ignoreTags: config?.ignoreTags
+        })
       }
 
       const totalFiles = (compReport?.summary?.totalComponents ?? 0) +
@@ -492,14 +498,20 @@ program
                 attributes: c.defined ? c.defined.attributes.reduce((acc, curr) => ({
                   ...acc,
                   [curr]: {}
-                }), {}) : {}
+                }), {}) : {},
+                slots: c.defined?.slots || []
               })
             }
           }
         }
       }
 
-      const pageReport = await validatePagesDir(pageDir, { knownComponents })
+      const pageReport = await validatePagesDir(pageDir, {
+        knownComponents,
+        ignoreAttributes: config?.ignoreByAttribute,
+        skipRenderByAttribute: config?.skipRenderByAttribute,
+        ignoreTags: config?.ignoreTags
+      })
       const formatted = formatPageValidationReport(pageReport, { format: options.format })
       process.stdout.write(formatted)
 

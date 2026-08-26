@@ -353,6 +353,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
   const definedAttributes = new Set()
   const definedServerProps = new Set()
   const definedGetters = new Set()
+  const definedSlots = new Set()
   // localName -> importSource
   const topLevelImports = new Map()
   // localName -> { line, column }
@@ -582,6 +583,17 @@ export function validateComponentSource (sourceCode, filePath = '') {
                         line: targetNode.loc.start.line + scriptStartLine,
                         column: targetNode.loc.start.column + 1
                       })
+                    }
+                  }
+                }
+              }
+
+              if (keyName === 'slots' && prop.value.type === 'ObjectExpression') {
+                for (const slotProp of prop.value.properties) {
+                  if (slotProp.type === 'Property') {
+                    const slotName = getPropKeyName(slotProp)
+                    if (slotName) {
+                      definedSlots.add(slotName)
                     }
                   }
                 }
@@ -1460,11 +1472,17 @@ export function validateComponentSource (sourceCode, filePath = '') {
               // Slots block
               if (keyName === 'slots' && prop.value.type === 'ObjectExpression') {
                 for (const slotProp of prop.value.properties) {
-                  if (
-                    slotProp.type === 'Property' &&
-                    (slotProp.value.type === 'FunctionExpression' || slotProp.value.type === 'ArrowFunctionExpression')
-                  ) {
-                    analyzeFunctionBlock(slotProp.value, stateReads, refsCalls, false, false, 1, true)
+                  if (slotProp.type === 'Property') {
+                    const slotName = getPropKeyName(slotProp)
+                    if (slotName) {
+                      definedSlots.add(slotName)
+                    }
+                    if (
+                      slotProp.value.type === 'FunctionExpression' ||
+                      slotProp.value.type === 'ArrowFunctionExpression'
+                    ) {
+                      analyzeFunctionBlock(slotProp.value, stateReads, refsCalls, false, false, 1, true)
+                    }
                   }
                 }
               }
@@ -2128,7 +2146,8 @@ export function validateComponentSource (sourceCode, filePath = '') {
       serverProps: Array.from(definedServerProps),
       attributes: Array.from(definedAttributes),
       refs: Array.from(templateRefs.keys()),
-      imports: Array.from(topLevelImports.keys())
+      imports: Array.from(topLevelImports.keys()),
+      slots: Array.from(definedSlots)
     },
     unused: {
       getters: unusedGetters,

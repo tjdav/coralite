@@ -16,19 +16,35 @@ import { BOOLEAN_ATTRIBUTES } from '../tags.js'
  * } from '../../../types/index.js'
  */
 
-const astCache = new Map()
+// Split caches by the locations flag and key directly on the code string to
+// avoid building a new full-code string key on every lookup. Script extraction
+// parses the same component script many times per build (findAndExtractScript +
+// extractComponentProperty x5), so this avoids re-hashing and re-allocating the
+// entire script for every cache hit.
+const astCacheWithLocations = new Map()
+const astCacheWithoutLocations = new Map()
 
-function getAST (code, locations = false) {
-  const cacheKey = `${code}_${locations}`
-  if (astCache.has(cacheKey)) {
-    return astCache.get(cacheKey)
+/**
+ * Parses a module-script string into an AST, cached per unique code string.
+ * Uses two maps (split by the locations flag) keyed directly on the code to
+ * avoid re-hashing and re-allocating the full script on every cache hit.
+ *
+ * @param {string} code - The script source to parse.
+ * @param {boolean} [locations] - Whether the AST should include source locations.
+ * @returns {import("acorn").Program} The parsed AST.
+ */
+export function getAST (code, locations = false) {
+  const astCache = locations ? astCacheWithLocations : astCacheWithoutLocations
+  const cached = astCache.get(code)
+  if (cached) {
+    return cached
   }
   const ast = parseJS(code, {
     ecmaVersion: 'latest',
     sourceType: 'module',
     locations
   })
-  astCache.set(cacheKey, ast)
+  astCache.set(code, ast)
   return ast
 }
 
