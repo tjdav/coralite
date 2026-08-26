@@ -258,6 +258,7 @@ async function main () {
     if (registry === 'npmjs') {
       if (process.env.NPM_TOKEN && !isDryRun) {
         execSync(`pnpm config set //registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}`, { stdio: 'inherit' })
+        execSync(`npm config set //registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}`, { stdio: 'inherit' })
       }
     } else if (registry === 'codeberg') {
       if (process.env.CODEBERG_TOKEN && !isDryRun) {
@@ -278,9 +279,13 @@ async function main () {
       console.log(`🚀 Publishing ${packageName}@${version} to ${registry} (tag: ${distTag})...`)
 
       if (registry === 'npmjs') {
-        execSync(`pnpm --filter "${packageName}" publish --registry https://registry.npmjs.org/ --tag ${distTag} --no-git-checks`, {
+        execSync(`pnpm --filter "${packageName}" publish --registry https://registry.npmjs.org/ --tag ${distTag} --access public --no-git-checks`, {
           cwd: rootDir,
-          stdio: 'inherit'
+          stdio: 'inherit',
+          env: {
+            ...process.env,
+            NODE_AUTH_TOKEN: process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN
+          }
         })
       } else if (registry === 'codeberg') {
         try {
@@ -300,7 +305,7 @@ async function main () {
             execSync(`node -e "setTimeout(() => {}, ${sleepSec * 1000})"`)
 
             try {
-              execSync(`npm view "${packageName}@${version}" version`, { stdio: 'ignore' })
+              execSync(`npm view "${packageName}@${version}" version --registry https://codeberg.org/api/packages/tjdavid/npm/`, { stdio: 'ignore' })
               console.log(`::notice::Verified! ${packageName}@${version} is live on Codeberg despite the initial E500.`)
               verified = true
               break

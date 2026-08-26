@@ -15,18 +15,6 @@ jobs:
       - name: Checkout
         uses: https://code.forgejo.org/actions/checkout@v4
 
-      - name: Extract Package Name
-        run: |
-          PACKAGE_NAME=$(echo ${{ github.ref_name }} | sed -E 's/-v[0-9]+\.[0-9]+\.[0-9]+.*//')
-          echo "PACKAGE_NAME=$PACKAGE_NAME" >> $GITHUB_ENV
-
-          # Find the directory for this package name
-          PKG_PATH=$(pnpm list --filter "$PACKAGE_NAME" --depth -1 --json | node -e "
-            const input = JSON.parse(require('fs').readFileSync(0));
-            console.log(input[0]?.path || '');
-          ")
-          echo "PACKAGE_PATH=$PKG_PATH" >> $GITHUB_ENV
-
       - name: Cache pnpm modules
         uses: https://code.forgejo.org/actions/cache@v3
         with:
@@ -38,54 +26,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm --filter "${{ env.PACKAGE_NAME }}..." run --if-present build
-
-      - name: set npm config
-        run: |
-          # Codeberg Auth
-          npm config set registry https://codeberg.org/api/packages/tjdavid/npm/
-          npm config set -- '//codeberg.org/api/packages/tjdavid/npm/:_authToken' "${{secrets.CODEBERG_TOKEN}}"
-
-          # Prevent timeout retries which cause 409 Conflicts if the first publish attempt succeeds
-          npm config set fetch-retries 0
-          npm config set fetch-timeout 600000
-
       - name: Publish to Codeberg
+        env:
+          CODEBERG_TOKEN: ${{ secrets.CODEBERG_TOKEN }}
         run: |
-          IS_PRIVATE=$(node -p "require('${{ env.PACKAGE_PATH }}/package.json').private || false")
-          VERSION=$(node -p "require('${{ env.PACKAGE_PATH }}/package.json').version")
-          
-          if [ "$IS_PRIVATE" = "true" ]; then
-            echo "::notice::Skipping publish for $PACKAGE_NAME (Private package)."
-          else
-            echo "🚀 Publishing $PACKAGE_NAME@$VERSION to Codeberg..."
-            
-            cd "${{ env.PACKAGE_PATH }}"
-            
-            if npm publish; then
-              echo "::notice::Successfully published $PACKAGE_NAME@$VERSION."
-            else
-              echo "⚠️ npm publish reported a failure (Likely a Codeberg E500 false-negative). Polling registry..."
-              
-              # Polling configuration
-              MAX_RETRIES=4
-              SLEEP_TIME=5
-              ATTEMPT=1
-              
-              while [ $ATTEMPT -le $MAX_RETRIES ]; do
-                echo "Attempt $ATTEMPT of $MAX_RETRIES: Waiting $SLEEP_TIME seconds for Codeberg to settle..."
-                sleep $SLEEP_TIME
-                
-                if npm view "$PACKAGE_NAME@$VERSION" version > /dev/null 2>&1; then
-                  echo "::notice::Verified! $PACKAGE_NAME@$VERSION is live on Codeberg despite the initial E500."
-                  exit 0
-                fi
-                
-                ATTEMPT=$((ATTEMPT + 1))
-              done
-              
-              echo "::error::Publish failed permanently. Version not found on registry after 20 seconds."
-              exit 1
-            fi
-          fi
+          node packages/coralite-release/bin/publish.js --registry codeberg --tag-ref "${{ github.ref_name }}"
