@@ -1,5 +1,31 @@
 # Changelog
 
+## v1.0.0-rc.0
+
+> Comparing `create-coralite-v0.47.1` to `HEAD`
+
+**Summary:** 7 commits
+
+### ✨ Features
+
+- integrate check and fix subcommands (coralite-scripts) ([7efba81](https://codeberg.org/tjdavid/coralite/commit/7efba816dd320982421a01f29519f0b975a44c39))
+
+### ♻️ Code Refactoring
+
+- Optimize performance and improve clarity in Counter and Footer components (components) ([86919b2](https://codeberg.org/tjdavid/coralite/commit/86919b2ac4bc2a01ab6a9c9ed6e465cdf45a3947))
+- Update CSS style guide comments ([940562d](https://codeberg.org/tjdavid/coralite/commit/940562dfc3bad32123ce11363b9e8e3aea19a15c))
+- modernize css and scss starter templates (create-coralite) ([a4e600d](https://codeberg.org/tjdavid/coralite/commit/a4e600dcbb51d98c6273f00de76f6dd2a7caa3ad))
+- update starter template components to latest API (create-coralite) ([8138e6c](https://codeberg.org/tjdavid/coralite/commit/8138e6cb0537534903514a2189b7822c4652edc5))
+
+### 🧹 Chores
+
+- Update default typography and font imports (styles) ([111af40](https://codeberg.org/tjdavid/coralite/commit/111af402571f7db0859396d85acfd16590cfad6c))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 1.0.0-rc.0 ([3c61bf5](https://codeberg.org/tjdavid/coralite/commit/3c61bf5c1fb72b812fb66fb6fb1badab4797e317))
+
+
 ## v0.47.1
 
 > Comparing `create-coralite-v0.47.0` to `HEAD`
