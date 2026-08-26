@@ -456,6 +456,29 @@ export function isOwnedByComponent (candidate, instanceId, hostElement) {
 }
 
 /**
+ * Finds a ref candidate DOM node owned by a Coralite component instance without allocating intermediate arrays.
+ *
+ * @param {any} root - The root DOM element to search within.
+ * @param {string} refName - The short ref identifier (e.g., 'btn').
+ * @param {string} uniqueRefValue - The unique instance-prefixed ref value (e.g., 'comp-0__btn').
+ * @param {string} instanceId - The component instance ID.
+ * @returns {any} The matching DOM node, or null if none found.
+ */
+export function findOwnedRefNode (root, refName, uniqueRefValue, instanceId) {
+  if (!root || typeof root.querySelectorAll !== 'function') {
+    return null
+  }
+  const candidates = root.querySelectorAll(`[ref="${refName}"], [ref="${uniqueRefValue}"]`)
+  for (let i = 0; i < candidates.length; i++) {
+    const candidate = candidates[i]
+    if (isOwnedByComponent(candidate, instanceId, root)) {
+      return candidate
+    }
+  }
+  return null
+}
+
+/**
  * @typedef {Object} CoraliteComponentOptions
  * @property {string} componentId - The unique identifier for the component.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
@@ -917,9 +940,7 @@ export class CoraliteElement extends BaseElement {
         }
 
         if (!node) {
-          node = Array.from(this.querySelectorAll(`[ref="${ref.name}"], [ref="${uniqueRefValue}"]`)).find(
-            candidate => isOwnedByComponent(candidate, this._instanceId, this)
-          ) || null
+          node = findOwnedRefNode(this, ref.name, uniqueRefValue, this._instanceId)
         }
 
         if (!node) {
@@ -2233,9 +2254,7 @@ export class CoraliteElement extends BaseElement {
         }
         let node = this.querySelector(`[ref="${refId}"]`)
         if (!node) {
-          node = Array.from(this.querySelectorAll(`[ref="${id}"], [ref="${refId}"]`)).find(
-            candidate => isOwnedByComponent(candidate, this._instanceId, this)
-          ) || null
+          node = findOwnedRefNode(this, id, refId, this._instanceId)
         }
         return node
       }
@@ -2433,9 +2452,7 @@ export class CoraliteElement extends BaseElement {
         let node = self.querySelector(`[ref="${refId}"]`)
 
         if (!node) {
-          node = Array.from(self.querySelectorAll(`[ref="${id}"], [ref="${refId}"]`)).find(
-            candidate => isOwnedByComponent(candidate, self._instanceId, self)
-          ) || null
+          node = findOwnedRefNode(self, id, refId, self._instanceId)
         }
 
         return node
@@ -2526,9 +2543,7 @@ export class CoraliteElement extends BaseElement {
             }
             let node = self.querySelector(`[ref="${refId}"]`)
             if (!node) {
-              node = Array.from(self.querySelectorAll(`[ref="${prop}"], [ref="${refId}"]`)).find(
-                candidate => isOwnedByComponent(candidate, self._instanceId, self)
-              ) || null
+              node = findOwnedRefNode(self, prop, refId, self._instanceId)
             }
             return node
           },
