@@ -15,6 +15,8 @@
   "scripts": {
     "build": "coralite-scripts build",
     "start": "cross-env NODE_ENV='--experimental-vm-modules --experimental-import-meta-resolve' coralite-scripts dev",
+    "check": "coralite-scripts check",
+    "fix": "coralite-scripts fix",
     "lint:css": "stylelint 'src/css/*.css'",
     "lint:css:fix": "stylelint --fix 'src/css/*.css'"
   },
