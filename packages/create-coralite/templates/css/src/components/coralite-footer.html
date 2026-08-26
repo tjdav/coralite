@@ -1,6 +1,6 @@
 <template id="coralite-footer">
   <footer class="text-center">
-    Made with <a href="https://coralite.dev/" target="_blank">{{ capitaliseName }}</a> © {{ year }}
+    Made with <a href="https://coralite.dev/" target="_blank">{{ name }}</a> © {{ year }}
   </footer>
 </template>
 
@@ -17,21 +17,17 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
+    // Declare component attributes with automatic type coercion, defaults, and transformation
     attributes: {
       name: {
         type: String,
-        default: 'Coralite',
-        transform: (val) => val.trim()
+        // Synchronously transform and format attribute values before state application
+        transform: (val) => (val ? val.trim().charAt(0).toUpperCase() + val.trim().slice(1) : 'Coralite')
       }
     },
 
+    // Pure computed getters for derived or dynamic values
     getters: {
-      capitaliseName: (state) => {
-        if (!state.name) {
-          return 'Coralite'
-        }
-        return state.name.charAt(0).toUpperCase() + state.name.slice(1)
-      },
       year: () => new Date().getFullYear()
     }
   })

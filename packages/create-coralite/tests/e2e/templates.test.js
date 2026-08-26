@@ -127,9 +127,20 @@ for (const templateName of templates) {
       await new Promise(r => setTimeout(r, 1000))
     })
 
-    test('should render all declarative components and load confetti library on counter click', async ({ page }) => {
+    test('should render all declarative components, preload confetti library on mount, and handle counter interaction', async ({ page }) => {
       const serverUrl = `http://localhost:${port}`
+
+      // Listen for top-level dynamic HTTPS ESM import of canvas-confetti library during hydration
+      const confettiResponsePromise = page.waitForResponse(
+        res => res.url().includes('canvas-confetti') && res.status() === 200,
+        { timeout: 15000 }
+      )
+
       await page.goto(serverUrl)
+
+      // Assert confetti library was pre-fetched successfully on client mount
+      const confettiResponse = await confettiResponsePromise
+      expect(confettiResponse.ok()).toBe(true)
 
       // Verify all declarative components exist and are rendered in the DOM
       const counterComponent = page.locator('coralite-counter')
@@ -140,23 +151,17 @@ for (const templateName of templates) {
       await expect(cardComponent).toBeVisible()
       await expect(footerComponent).toBeVisible()
 
+      // Verify footer rendered capitalized name via attribute transform and dynamic year getter
+      const currentYear = new Date().getFullYear().toString()
+      await expect(footerComponent).toContainText(`Made with Coralite © ${currentYear}`)
+
       // Verify initial counter button state
       const countBtn = counterComponent.locator('button')
       await expect(countBtn).toBeVisible()
       await expect(countBtn).toHaveText(/Count is 0/)
 
-      // Listen for dynamic HTTPS ESM import of canvas-confetti library
-      const confettiResponsePromise = page.waitForResponse(
-        res => res.url().includes('canvas-confetti') && res.status() === 200,
-        { timeout: 15000 }
-      )
-
       // Click count button
       await countBtn.click()
-
-      // Assert confetti library fetched successfully
-      const confettiResponse = await confettiResponsePromise
-      expect(confettiResponse.ok()).toBe(true)
 
       // Assert count state incremented to 1
       await expect(countBtn).toHaveText(/Count is 1/)

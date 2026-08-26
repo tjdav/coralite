@@ -31,6 +31,7 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
+    // Declare and validate component input attributes
     attributes: {
       step: {
         type: Number,
@@ -39,24 +40,30 @@
       }
     },
 
+    // Server-side initial state (executed during SSR/build and stripped from client bundle)
     server () {
       return {
         count: 0
       }
     },
 
-    client ({ state, signal, refs, emit }) {
+    // Client-side interactive controller (executed in the browser upon hydration)
+    async client ({ state, signal, refs, emit }) {
+      // Dynamically import third-party modules ahead of time to avoid click latency
+      const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
+
+      // Query element using its scoped ref attribute
       const button = refs('count-button')
 
-      button.addEventListener('click', async () => {
+      // Bind event listener with automatic signal cleanup on component unmount
+      button.addEventListener('click', () => {
         // Direct reactive mutation triggers Coralite's O(1) microtask DOM updates
         state.count += state.step
 
-        // Dispatch custom event to parent listeners
+        // Dispatch custom DOM event to parent listeners
         emit('count-change', { count: state.count })
 
-        // Explode confetti :)
-        const { default: confetti } = await import('https://esm.sh/canvas-confetti@latest')
+        // Trigger confetti animation instantly
         confetti()
       }, { signal })
     }
