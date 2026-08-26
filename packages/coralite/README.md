@@ -225,39 +225,92 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 
 ## Extending the Engine (`definePlugin`)
 
-Coralite uses a strictly typed isomorphic plugin architecture. A plugin is divided into `server` (Node.js/Build) and `client` (Browser/Runtime) blocks, using a **Two-Phase Curried** API to safely inject context exactly where you need it.
+Coralite features a strictly isomorphic plugin architecture where plugins are divided into `server` (Node.js/Build) and `client` (Browser/Runtime) blocks.
+
+Both layers utilize a **Two-Phase Curried Context** pattern `(pluginContext) => (instanceContext) => ({ ... })` that provides a clear separation between global setup and instance-scoped execution:
+
+1. **Phase 1: Global Setup (`pluginContext`)**: Runs **once** during framework/plugin registration. Use this to initialize shared resources (e.g. database pools, in-memory caches, global event buses). Properties attached to `pluginContext` are shared across the entire server build or client runtime.
+2. **Phase 2: Instance Resolver (`instanceContext`)**: Runs for **each component instance**. Receives instance metadata (`instanceId`, `componentId`, `page`, `root`) and allows lazy cross-plugin resolution. The returned object is automatically injected into that component's `server()` or `client()` block under the plugin's namespace.
 
 ```javascript
 import { definePlugin } from 'coralite'
 
-export default function myPlugin(options = {}) {
+export default function telemetryPlugin(options = {}) {
   return definePlugin({
-    name: 'my-plugin',
+    name: 'telemetry', // Namespaces the context in components: context.telemetry
 
     server: {
-      // Symmetrical context: available in defineComponent server block
-      context: (pluginContext) => (instanceContext) => {
-        return {
-          getData: () => ({ custom: 'data' })
-        }
-      },
-      onBeforeComponentRender: ({ state }) => {
-        state.pluginAdded = true
+      // Phase 1 (pluginContext): Runs ONCE on server startup
+      // Phase 2 (instanceContext): Runs per component to inject instance-scoped APIs
+      context: (pluginContext) => {
+        const buildMetrics = new Map()
+        pluginContext.metrics = buildMetrics // Shared globally across server plugins
+
+        return (instanceContext) => ({
+          trackServerEvent: (name, data = {}) => {
+            buildMetrics.set(`${instanceContext.componentId}:${instanceContext.instanceId}`, {
+              event: name,
+              route: instanceContext.page?.url,
+              timestamp: Date.now(),
+              ...data
+            })
+          }
+        })
       }
     },
 
     client: {
-      // Injects context helpers directly into the component's client block
-      context: (pluginContext) => (instanceContext) => {
-        return {
-          myHelper: () => {
-            console.log('Hello from component', instanceContext.instanceId)
+      // Phase 1 (pluginContext): Initializes shared client resources (e.g. centralized EventBus)
+      // Phase 2 (instanceContext): Injects instance-scoped tracking tagged with component metadata
+      context: (pluginContext) => {
+        const sharedBus = new EventTarget()
+        pluginContext.bus = sharedBus // Shared across all component instances in browser
+
+        return (instanceContext) => ({
+          emitEvent: (type, detail = {}) => {
+            sharedBus.dispatchEvent(new CustomEvent(type, {
+              detail: {
+                ...detail,
+                originId: instanceContext.instanceId,
+                originTag: instanceContext.componentId
+              }
+            }))
+          },
+          onEvent: (type, handler) => {
+            sharedBus.addEventListener(type, handler)
           }
-        }
+        })
       }
     }
   })
 }
+```
+
+### Consuming Plugin Context in Components
+
+Components access the injected APIs directly via destructuring in `server()` and `client()`:
+
+```html
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    async server({ telemetry, state }) {
+      // Sourced from server Phase 2 resolver
+      telemetry.trackServerEvent('user_rendered', { userId: state.userId })
+      return {}
+    },
+
+    client({ telemetry, state, signal }) {
+      // Sourced from client Phase 2 resolver
+      telemetry.onEvent('cart:updated', (e) => {
+        console.log('Cart updated from component', e.detail.originTag)
+      })
+
+      telemetry.emitEvent('item_viewed', { itemId: state.userId })
+    }
+  })
+</script>
 ```
 
 ---
