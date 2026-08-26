@@ -14,15 +14,24 @@
     client ({ refs, signal }) {
       const button = refs('backToTopBtn')
 
-      const toggleVisibility = () => {
-        if (window.scrollY > 300) {
-          button.classList.add('visible')
-        } else {
-          button.classList.remove('visible')
+      // Throttle scroll handling to at most once per animation frame and make
+      // the listener passive so it never blocks scrolling on the main thread.
+      let ticking = false
+      const onScroll = () => {
+        if (ticking) {
+          return
         }
+        ticking = true
+        requestAnimationFrame(() => {
+          button.classList.toggle('visible', window.scrollY > 300)
+          ticking = false
+        })
       }
 
-      window.addEventListener('scroll', toggleVisibility, { signal })
+      window.addEventListener('scroll', onScroll, {
+        passive: true,
+        signal
+      })
 
       button.addEventListener('click', (e) => {
         e.preventDefault()
@@ -31,6 +40,9 @@
           behavior: 'smooth'
         })
       }, { signal })
+
+      // Set the correct initial visibility (e.g. when a page loads mid-scroll).
+      onScroll()
     }
   })
 </script>

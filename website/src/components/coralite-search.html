@@ -117,10 +117,12 @@
         }
       }, { signal })
 
-      // Handle search
-      searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.trim()
-  
+      // Debounce input so we don't run a Fuse search over the whole index on
+      // every single keystroke while the user is typing.
+      const DEBOUNCE_MS = 150
+      let debounceTimer = null
+
+      const renderResults = (query) => {
         if (!query) {
           searchResults.innerHTML = '<li class="search-empty">Type to start searching...</li>'
           return
@@ -149,7 +151,7 @@
   
           const a = document.createElement('a')
           a.href = item.url
-  
+
           if (!item.url.startsWith('/')) {
             a.href = '/' + item.url
           }
@@ -160,14 +162,14 @@
           title.className = 'search-result-title'
           title.textContent = item.title
   
+          const description = item.content ? item.content.substring(0, 100) + '...' : item.description
           const desc = document.createElement('div')
-
           desc.className = 'search-result-desc'
-          desc.textContent = item.content ? item.content.substring(0, 100) + '...' : item.description
+          desc.textContent = description
   
           a.appendChild(title)
   
-          if (desc.innerHTML) {
+          if (description) {
             a.appendChild(desc)
           }
   
@@ -179,7 +181,24 @@
             searchPopover.hidePopover()
           })
         })
+      }
+
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer)
+
+        // Give immediate feedback while the index is still loading.
+        const query = e.target.value.trim()
+        if (query && !fuse) {
+          searchResults.innerHTML = '<li class="search-loading">Loading search index...</li>'
+        }
+
+        debounceTimer = setTimeout(() => {
+          renderResults(searchInput.value.trim())
+        }, DEBOUNCE_MS)
       }, { signal })
+
+      // Cancel any pending debounced search when the component unmounts.
+      signal.addEventListener('abort', () => clearTimeout(debounceTimer))
     }
   })
 </script>

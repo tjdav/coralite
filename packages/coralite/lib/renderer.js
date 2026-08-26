@@ -1,10 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { dirname, join, relative } from 'node:path'
 import { availableParallelism } from 'node:os'
-import { readFile, writeFile, mkdir, rename, access, stat } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, rename, access } from 'node:fs/promises'
 import pLimit from 'p-limit'
 import serialize from 'serialize-javascript'
-import picomatch from 'picomatch'
 import {
   cleanKeys,
   cloneModuleInstance,
@@ -40,6 +39,8 @@ import {
   formatCSPDirectives,
   injectCSPMeta
 } from './utils/server/csp.js'
+import picomatch from 'picomatch'
+import { stat } from 'node:fs/promises'
 import { generateClientRuntime } from './utils/client/runtime.js'
 import { formatComponentCss, buildComponentStylesheet } from './utils/server/style.js'
 import { transformNode } from './parser.js'
@@ -72,6 +73,20 @@ import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from '.
  * @import { ScriptManager } from './script-manager.js'
  */
 
+/**
+ * Factory for the rendering pipeline.
+ *
+ * @param {Object} dependencies - The dependencies required to create the renderer.
+ * @param {CoraliteInstance} dependencies.app - The global Coralite app instance.
+ * @param {ScriptManager} dependencies.scriptManager - The script manager for handling client-side scripts.
+ * @param {Object} dependencies.source - The framework source utilities and context.
+ * @param {Function} dependencies.evaluate - The function used to evaluate component scripts.
+ * @param {CoraliteOnError} dependencies.handleError - The callback for handling errors during rendering.
+ * @param {Object} dependencies.hooks - The collection of bound plugin hooks.
+ * @param {any} dependencies.options - The normalized configuration options for the framework.
+ * @param {Function} dependencies.createExecutionError - The factory function for creating detailed execution errors.
+ * @returns {Object}
+ */
 /**
  * Filters out reserved DOM attributes unless explicitly declared in the component's attributes schema.
  *

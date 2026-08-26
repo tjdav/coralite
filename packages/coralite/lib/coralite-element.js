@@ -3,17 +3,12 @@ import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
 import { CoraliteError } from './utils/errors.js'
+import { BOOLEAN_ATTRIBUTES } from './utils/tags.js'
 import {
   RESERVED_DOM_ATTRIBUTES,
-  normalizeErrorMessage,
-  inferTypeFromValues,
-  executeAttributeValidator,
-  validateAttributeValue,
-  coerce
+  validateAttributeValue
 } from './utils/attributes.js'
 import {
-  getEnclosingComponent,
-  isOwnedByComponent,
   findOwnedRefNode
 } from './utils/client/dom.js'
 
@@ -23,11 +18,14 @@ export {
   inferTypeFromValues,
   executeAttributeValidator,
   validateAttributeValue,
-  coerce,
+  coerce
+} from './utils/attributes.js'
+
+export {
   getEnclosingComponent,
   isOwnedByComponent,
   findOwnedRefNode
-}
+} from './utils/client/dom.js'
 
 /**
  * @import {
@@ -36,35 +34,6 @@ export {
  *  CoraliteClientPluginBeforeComponentRenderCallback
  * } from '../types/plugin.js'
  */
-
-const BOOLEAN_ATTRIBUTES = new Set([
-  'allowfullscreen',
-  'async',
-  'autofocus',
-  'autoplay',
-  'checked',
-  'controls',
-  'default',
-  'defer',
-  'disabled',
-  'formnovalidate',
-  'hidden',
-  'inert',
-  'ismap',
-  'itemscope',
-  'loop',
-  'multiple',
-  'muted',
-  'nomodule',
-  'novalidate',
-  'open',
-  'playsinline',
-  'readonly',
-  'required',
-  'reversed',
-  'selected',
-  'truespeed'
-])
 
 /**
  * @typedef {Object} CoraliteComponentOptions
