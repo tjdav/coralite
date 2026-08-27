@@ -6,18 +6,11 @@ import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, readdirSync } from 'node:fs'
 import pkg from '../package.json' with { type: 'json' }
-
-// @ts-ignore
 import { createCoralite } from '#lib'
-// @ts-ignore
 import { validateComponentsDir, formatComponentValidationReport } from '#lib/component-validator.js'
-// @ts-ignore
 import { applyComponentFixes } from '#lib/component-fixer.js'
-// @ts-ignore
 import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/plugin-validator.js'
-// @ts-ignore
 import { applyPluginFixes } from '#lib/plugin-fixer.js'
-// @ts-ignore
 import { validatePagesDir, formatPageValidationReport } from '#lib/page-validator.js'
 
 // remove all Node warnings before doing anything else
