@@ -10,14 +10,18 @@ import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill
 import render from 'dom-serializer'
 
 // The canonical empty fallback signature shared by component scripts.
-const EMPTY_FUNCTION_SIGNATURE = 'function(){}'
+export const EMPTY_FUNCTION_SIGNATURE = 'function(){}'
 
-// Detects whether a code point is whitespace (same set as \s in regex).
-// Uses charCodeAt for a full-whitespace set comparison rather than a regex
-// or a switch that could diverge from JS \s semantics.
-const isWhitespace = (char) => {
+/**
+ * Detects whether a code point is whitespace.
+ * Uses charCodeAt for a full-whitespace set comparison.
+ *
+ * @param {string} char - A single character string
+ * @returns {boolean} - True if the character is whitespace or a line terminator
+ */
+export const isWhitespace = (char) => {
   const code = char.charCodeAt(0)
-  // \t \n \v \f \r space
+  // ASCII: \t (0x09), \n (0x0a), \v (0x0b), \f (0x0c), \r (0x0d), space (0x20)
   if (code === 0x09 || code === 0x0a || code === 0x0b || code === 0x0c || code === 0x0d || code === 0x20) {
     return true
   }
@@ -35,10 +39,11 @@ const isWhitespace = (char) => {
  * Helper to unify empty function checks. Scans the content once without
  * allocating a whitespace-stripped copy of the whole script (the regex
  * variant does this for every component on every build).
- * @param {string} content - The content of the function to check.
- * @returns {boolean} - Returns true if the function is empty or has only whitespace.
+ *
+ * @param {string} [content] - The content of the function to check.
+ * @returns {boolean} - Returns true if the function matches the empty fallback signature.
  */
-const isEmptyFunction = (content) => {
+export const isEmptyFunction = (content) => {
   if (!content) {
     return true
   }
