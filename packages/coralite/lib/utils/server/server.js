@@ -25,13 +25,28 @@ const astCacheWithLocations = new Map()
 const astCacheWithoutLocations = new Map()
 
 /**
+ * Clears both internal AST caches (with and without locations).
+ * Useful for test isolation and dev-server resets.
+ */
+export function clearASTCache () {
+  astCacheWithLocations.clear()
+  astCacheWithoutLocations.clear()
+}
+
+/**
  * Parses a module-script string into an AST, cached per unique code string.
  * Uses two maps (split by the locations flag) keyed directly on the code to
  * avoid re-hashing and re-allocating the full script on every cache hit.
  *
+ * IMPORTANT: The returned AST is a shared, cached reference and MUST be
+ * treated as strictly read-only. Callers must perform transformations via
+ * string slicing/replacements (e.g. using node.start / node.end) and never
+ * mutate AST node properties in place.
+ *
  * @param {string} code - The script source to parse.
- * @param {boolean} [locations] - Whether the AST should include source locations.
- * @returns {import("acorn").Program} The parsed AST.
+ * @param {boolean} [locations=false] - Whether the AST should include source locations (loc).
+ * @returns {import("acorn").Program} The parsed AST (shared reference, read-only).
+ * @readonly
  */
 export function getAST (code, locations = false) {
   const astCache = locations ? astCacheWithLocations : astCacheWithoutLocations
