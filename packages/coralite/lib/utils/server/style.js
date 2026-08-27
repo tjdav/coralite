@@ -297,7 +297,9 @@ export async function formatComponentCss (componentId, rawCss, onError = default
   const indent = (str) => str.split('\n').map(line => (line ? `      ${line}` : '')).join('\n')
 
   return `  @supports (@scope) {
-    @scope (:where(${componentId})) to (slot, [data-cid], :is([is], c-token)) {
+    /* Use :scope [data-cid] to ensure the limit only matches descendant components,
+       preventing the scope root itself (which carries data-cid) from collapsing the scope. */
+    @scope (:where(${componentId})) to (slot, :scope [data-cid], :is([is], c-token)) {
 ${indent(scopeCss)}
     }
   }

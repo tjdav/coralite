@@ -224,7 +224,7 @@ test('Style Transformation Logic', async (t) => {
 
     // Verify @supports (@scope) structure with donut boundary
     assert.match(result, /@supports\s+\(@scope\)\s*\{/)
-    assert.match(result, /@scope\s*\(:where\(my-card\)\)\s*to\s*\(slot,\s*\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)\s*\{/)
+    assert.match(result, /@scope\s*\(:where\(my-card\)\)\s*to\s*\(slot,\s*:scope\s+\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)\s*\{/)
     assert.match(result, /:scope\s*\{\s*display:\s*block;\s*border:\s*1px solid #ccc;?\s*\}/)
     assert.match(result, /\.title\s*\{\s*color:\s*primary;?\s*\}/)
     assert.match(result, /:scope\s*>\s*slot\s*>\s*p,\s*:scope\s*>\s*p\[slot\]\s*\{\s*font-size:\s*1rem;?\s*\}/)
@@ -280,7 +280,14 @@ test('Style Transformation Logic', async (t) => {
 
     // Verify @layer components wrapping
     assert.match(content, /@layer components \{\s*@supports\s+\(@scope\)\s*\{/)
-    assert.match(content, /@scope\s*\(:where\(my-comp\)\)\s*to\s*\(slot,\s*\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)/)
+    assert.match(content, /@scope\s*\(:where\(my-comp\)\)\s*to\s*\(slot,\s*:scope\s+\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)/)
     assert.match(content, /@supports not\s+\(@scope\)\s*\{\s*:where\(my-comp\)/)
+  })
+
+  await t.test('formatComponentCss uses descendant-relative :scope [data-cid] donut limit to prevent scope collapse', async () => {
+    const result = await formatComponentCss('nested-comp', '.box { color: green; }')
+
+    assert.ok(result.includes(':scope [data-cid]'), 'CSS should use descendant-relative :scope [data-cid]')
+    assert.doesNotMatch(result, /to\s*\([^)]*,\s*\[data-cid\s*\]/, 'CSS should not contain bare [data-cid] limit without :scope prefix')
   })
 })
