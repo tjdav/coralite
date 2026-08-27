@@ -8,17 +8,17 @@ import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, readdirSy
 import pkg from '../package.json' with { type: 'json' }
 
 // @ts-ignore
-import { createCoralite } from '../dist/lib/index.js'
+import { createCoralite } from '#lib'
 // @ts-ignore
-import { validateComponentsDir, formatComponentValidationReport } from '../dist/lib/component-validator.js'
+import { validateComponentsDir, formatComponentValidationReport } from '#lib/component-validator.js'
 // @ts-ignore
-import { applyComponentFixes } from '../dist/lib/component-fixer.js'
+import { applyComponentFixes } from '#lib/component-fixer.js'
 // @ts-ignore
-import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '../dist/lib/plugin-validator.js'
+import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/plugin-validator.js'
 // @ts-ignore
-import { applyPluginFixes } from '../dist/lib/plugin-fixer.js'
+import { applyPluginFixes } from '#lib/plugin-fixer.js'
 // @ts-ignore
-import { validatePagesDir, formatPageValidationReport } from '../dist/lib/page-validator.js'
+import { validatePagesDir, formatPageValidationReport } from '#lib/page-validator.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')

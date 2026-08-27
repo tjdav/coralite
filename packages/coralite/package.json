@@ -32,10 +32,10 @@
   "scripts": {
     "lint:format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
-    "test:unit": "node --experimental-vm-modules --experimental-import-meta-resolve --test \"./tests/unit/**/*.spec.js\"",
-    "test:unit:watch": "node --experimental-vm-modules --experimental-import-meta-resolve --test --watch \"./tests/unit/**/*.spec.js\"",
-    "test:unit:coverage": "node --experimental-vm-modules --experimental-import-meta-resolve --experimental-test-coverage --test \"./tests/unit/**/*.spec.js\"",
-    "test:component:coverage": "node bin/coralite.js validate-components --coverage -c tests/fixtures/components",
+    "test:unit": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --test \"./tests/unit/**/*.spec.js\"",
+    "test:unit:watch": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --test --watch \"./tests/unit/**/*.spec.js\"",
+    "test:unit:coverage": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --experimental-test-coverage --test \"./tests/unit/**/*.spec.js\"",
+    "test:component:coverage": "node --conditions=development bin/coralite.js validate-components --coverage -c tests/fixtures/components",
     "test:e2e": "pnpm build && pnpm clean:e2e && pnpm build:html:dev && pnpm build:html:prod && pnpm build:html:testing && playwright test",
     "test:e2e:report": "playwright show-report",
     "test:e2e:ui": "playwright test --ui",
@@ -50,9 +50,9 @@
     "build:html:dev": "node --experimental-vm-modules ./tests/scripts/build-html.js --mode development --outDir .coralite-dev",
     "build:html:prod": "node --experimental-vm-modules ./tests/scripts/build-html.js --mode production --outDir .coralite-prod",
     "build:html:testing": "node --experimental-vm-modules ./tests/scripts/build-testing.js",
-    "bench": "node --expose-gc --experimental-vm-modules ./benchmarks/runner.js",
-    "bench:ci": "node --expose-gc --experimental-vm-modules ./benchmarks/ci.js",
-    "bench:save-baseline": "node --expose-gc --experimental-vm-modules ./benchmarks/runner.js --save-baseline"
+    "bench": "node --conditions=development --expose-gc --experimental-vm-modules ./benchmarks/runner.js",
+    "bench:ci": "node --conditions=development --expose-gc --experimental-vm-modules ./benchmarks/ci.js",
+    "bench:save-baseline": "node --conditions=development --expose-gc --experimental-vm-modules ./benchmarks/runner.js --save-baseline"
   },
   "files": [
     "dist",
@@ -63,8 +63,16 @@
     "coralite": "bin/coralite.js"
   },
   "imports": {
-    "#lib": "./lib/index.js",
-    "#plugins": "./plugins/index.js"
+    "#lib": {
+      "development": "./lib/index.js",
+      "default": "./dist/lib/index.js"
+    },
+    "#lib/*": {
+      "development": "./lib/*",
+      "default": "./dist/lib/*"
+    },
+    "#plugins": "./plugins/index.js",
+    "#plugins/*": "./plugins/*"
   },
   "exports": {
     ".": {

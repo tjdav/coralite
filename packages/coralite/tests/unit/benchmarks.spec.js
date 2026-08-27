@@ -275,7 +275,7 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
     it('exits with status 1 and prints error when invalid suite is provided', async () => {
       const runnerPath = path.resolve(import.meta.dirname, '../../benchmarks/runner.js')
       await assert.rejects(
-        execFileAsync(process.execPath, ['--experimental-vm-modules', '--experimental-import-meta-resolve', runnerPath, '--suite=invalid-suite-name']),
+        execFileAsync(process.execPath, ['--conditions=development', '--experimental-vm-modules', '--experimental-import-meta-resolve', runnerPath, '--suite=invalid-suite-name']),
         (err) => {
           const combinedOutput = (err.stdout || '') + (err.stderr || '')
           assert.strictEqual(err.code, 1)
@@ -287,7 +287,7 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
 
     it('prints help message and exits 0 when --help is passed', async () => {
       const runnerPath = path.resolve(import.meta.dirname, '../../benchmarks/runner.js')
-      const { stdout } = await execFileAsync(process.execPath, ['--experimental-vm-modules', '--experimental-import-meta-resolve', runnerPath, '--help'])
+      const { stdout } = await execFileAsync(process.execPath, ['--conditions=development', '--experimental-vm-modules', '--experimental-import-meta-resolve', runnerPath, '--help'])
       assert.ok(stdout.includes('Coralite Benchmark Runner CLI'))
       assert.ok(stdout.includes('--check-regression'))
       assert.ok(stdout.includes('--save-baseline'))
