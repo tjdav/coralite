@@ -325,24 +325,39 @@ Each key in the `slots` object corresponds to a slot name (use `'default'` for u
 
 ### 5.6 CSS Scoping (PostCSS)
 
-Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler scopes component CSS rules under the custom element's tag name (e.g., `my-button { ... }`) leveraging native CSS nesting without synthetic DOM attributes like `data-style-selector`.
+Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler automatically encapsulates component CSS inside the `components` cascade layer (`@layer components`) and generates native CSS `@scope` rules with a donut boundary (`to (slot, :scope [data-cid], :is([is], c-token))`) to prevent style bleeding into child components or slotted elements. For older runtimes, it provides an automatic fallback using zero-specificity `:where()` host selectors and native CSS nesting.
 
-#### 5.6.1 Root Custom Element Styling (`:host` & `:host-context()`)
+#### 5.6.1 Cascade Layers (`@layer components`) & Specificity Taming (`:where()`)
+* **Zero Specificity Bonus (`:where()`)**: Host custom element selectors are wrapped with `:where(tag-name)` (e.g., `:where(my-card)`), adding zero specificity (`0, 0, 0`). Component internal selectors (like `.title` or `button`) retain their base specificity instead of inflating.
+* **The Cascade Layer Rule**: All component styles are bundled inside `@layer components`. By standard CSS cascade semantics, **unlayered CSS rules take precedence over layered CSS rules**, regardless of selector specificity.
+* **Utility & Page Overrides Without `!important`**: Utility classes (e.g., Tailwind, Bootstrap, custom utility classes like `.hidden` or `.p-4`) or page-level styles override component styles cleanly without specificity battles.
+* **Global Layer Ordering**: Developers can establish explicit layer hierarchies in their global stylesheet:
+  ```css
+  @layer reset, base, components, utilities;
+  ```
+  - `reset` and `base`: Provide base defaults that components override.
+  - `components`: Automatically hosts all Coralite component styles.
+  - `utilities`: Overrides component styles with zero friction.
+* **Root `c-token` Inertia**: The rule `c-token { display: contents; }` is emitted unlayered at the stylesheet root to ensure reactive DOM markers remain transparent.
+* **Light DOM Slot Projections (`::slotted()`)**: The pseudo-element `::slotted(selector)` is transformed into dual Light DOM branches (`:scope > slot > selector, :scope > selector[slot]`), styling slotted content directly within the component layer.
+
+#### 5.6.2 Root Custom Element Styling (`:host` & `:host-context()`)
 * **Preferred Method for Root Element**: `:host` and `:host-context()` are the **preferred, canonical method** for modifying and styling the root custom element container itself (e.g., `<my-button>`).
 * **`:host` Transformations**:
-  - `:host` transforms to `&` (e.g., `:host { display: block; margin: 1rem; }` $\to$ `& { display: block; margin: 1rem; }` $\to$ `my-button { display: block; margin: 1rem; }`).
-  - `:host(.active)` and `:host([disabled])` transform to compound selectors `&.active` and `&[disabled]`.
-  - `:host:hover` / `:host:focus-visible` transform to pseudo-states `&:hover` / `&:focus-visible`.
-  - `:host > .inner` transforms to child combinators `& > .inner`.
+  - In `@scope` mode, `:host` transforms to `:scope` (e.g., `:host { display: block; }` $\to$ `:scope { display: block; }`).
+  - In nesting mode, top-level `:host` declarations are unwrapped into the `:where(tag-name)` block.
+  - `:host(.active)` and `:host([disabled])` transform to compound selectors `:scope.active` / `:scope[disabled]`.
+  - `:host:hover` / `:host:focus-visible` transform to pseudo-states `:scope:hover` / `:scope:focus-visible`.
+  - `:host > .inner` transforms to child combinators `:scope > .inner`.
 * **`:host-context(<context>)` Transformations**:
-  - `:host-context(<context>)` transforms to `<context> &` (e.g., `:host-context(.dark) { color: white; }` $\to$ `.dark & { color: white; }` $\to$ `.dark my-button { color: white; }`).
-  - Compound chained rules like `:host-context(.dark):host(.active)` transform to `.dark &.active`.
+  - `:host-context(<context>)` transforms to `<context> :scope` / `<context> &` (e.g., `:host-context(.dark) { color: white; }` $\to$ `.dark :scope { color: white; }`).
+  - Compound chained rules like `:host-context(.dark):host(.active)` transform to `.dark :scope.active`.
 
-#### 5.6.2 Internal Scoped Classes Within Component (`:host` is NOT Required)
+#### 5.6.3 Internal Scoped Classes Within Component (`:host` is NOT Required)
 * **CRITICAL RULE**: To modify or style a scoped class or element **within the component template** (e.g., `.card`, `.title`, `button`, `.content`), **`:host` is not required**.
 * Standard selectors like `.card { ... }` or `button { ... }` are automatically nested under the component tag name by the compiler (`my-button { .card { ... } }`). You do not need to write `:host .card` or `:host > .card`.
 
-#### 5.6.3 Scoped CSS Example
+#### 5.6.4 Scoped CSS Example
 ```html
 <template id="user-card">
   <div class="header">

@@ -24,17 +24,20 @@
     </p>
 
     <p>
-      Coralite achieves this by wrapping your component styles under the custom element's tag name (e.g., <code>my-button { ... }</code>).
-      Using native CSS nesting, your component rules seamlessly target elements within instances of that component.
+      Coralite achieves this at build time by wrapping component styles in the <code>components</code> CSS cascade layer (<code>@layer components</code>) and leveraging modern CSS <code>@scope</code> with a "donut boundary" to prevent styles from penetrating into nested child components or slotted Light DOM content. For browsers without native <code>@scope</code> support, a fallback using zero-specificity <code>:where()</code> and native CSS nesting is automatically generated.
     </p>
 
     <coralite-code-html>
-      <!-- Source Component -->
+      <!-- Source Component (my-button.html) -->
       <template id="my-button">
         <button>Click me</button>
       </template>
 
       <style>
+        :host {
+          display: inline-block;
+        }
+
         button {
           background: blue;
           color: white;
@@ -43,8 +46,110 @@
     </coralite-code-html>
 
     <p>
-      The above component will be transformed during the build process into <code>my-button { button { background: blue; color: white; } }</code>, ensuring styles strictly apply inside instances of <code>&lt;my-button&gt;</code> without adding synthetic DOM attributes.
+      During the build process, the component's styles are transformed into the following structured stylesheet:
     </p>
+
+    <coralite-code-highlight language="css">
+c-token { display: contents; }
+
+@layer components {
+  @supports (@scope) {
+    /* Scoped with donut boundary preventing leakage into slots & child components */
+    @scope (:where(my-button)) to (slot, :scope [data-cid], :is([is], c-token)) {
+      :scope {
+        display: inline-block;
+      }
+      button {
+        background: blue;
+        color: white;
+      }
+    }
+  }
+
+  @supports not (@scope) {
+    /* Fallback using zero-specificity :where() and CSS nesting */
+    :where(my-button) {
+      display: inline-block;
+      button {
+        background: blue;
+        color: white;
+      }
+    }
+  }
+}
+    </coralite-code-highlight>
+
+    <coralite-heading level="2" text="Cascade Layers (@layer components) & Specificity"></coralite-heading>
+
+    <p>
+      By wrapping component styles inside <code>@layer components</code> and using <code>:where()</code> for tag selectors, Coralite solves two of the most common styling challenges in web component development:
+    </p>
+
+    <coralite-heading level="3" text="1. Specificity Taming with :where()"></coralite-heading>
+
+    <p>
+      The <code>:where()</code> pseudo-class has <strong>0 specificity</strong> (<code>0, 0, 0</code>). Wrapping the custom element selector in <code>:where(my-button)</code> ensures that component encapsulation never artificially inflates selector specificity.
+      An internal rule like <code>.btn { ... }</code> retains its normal single-class specificity (<code>0, 1, 0</code>) instead of being inflated to (<code>0, 1, 1</code>), keeping your CSS easy to override and predict.
+    </p>
+
+    <coralite-heading level="3" text="2. Cascade Layer Priority (@layer components)"></coralite-heading>
+
+    <p>
+      According to the CSS Cascade Layers specification, <strong>unlayered CSS rules always take precedence over layered CSS rules</strong>, regardless of selector specificity.
+      Because Coralite places component styles into <code>@layer components</code>:
+    </p>
+
+    <ul>
+      <li><strong>Utility Classes Win:</strong> Unlayered utility classes (like Tailwind, Bootstrap, or custom utility classes such as <code>.hidden</code> or <code>.p-4</code>) naturally override component styles without needing <code>!important</code>.</li>
+      <li><strong>Page-Level Overrides:</strong> Ad-hoc styles defined in page-level stylesheets or <code>&lt;style&gt;</code> blocks apply over component styles cleanly.</li>
+    </ul>
+
+    <coralite-heading level="3" text="3. Establishing Explicit Cascade Order"></coralite-heading>
+
+    <p>
+      You can explicitly control the layer evaluation order across your entire application by declaring a layer hierarchy at the top of your global CSS (e.g., in <code>src/css/main.css</code>):
+    </p>
+
+    <coralite-code-highlight language="css">
+/* Define explicit cascade order at the top of your global stylesheet */
+@layer reset, base, components, utilities;
+
+@layer reset {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  .hidden {
+    display: none;
+  }
+  .flex {
+    display: flex;
+  }
+  .text-center {
+    text-align: center;
+  }
+}
+    </coralite-code-highlight>
+
+    <p>
+      In this hierarchy:
+    </p>
+
+    <ul>
+      <li><code>reset</code> and <code>base</code> provide low-priority defaults that component styles can effortlessly override.</li>
+      <li><code>components</code> automatically receives all Coralite component styles.</li>
+      <li><code>utilities</code> (and any unlayered styles) cleanly override component styles without specificity battles.</li>
+    </ul>
+
+    <coralite-heading level="3" text="4. Root Tokens & Slot Projections"></coralite-heading>
+
+    <ul>
+      <li><strong>Root <code>c-token</code>:</strong> The rule <code>c-token { display: contents; }</code> is emitted outside the component layer at the root of the stylesheet. This ensures reactive attribute and slot placeholders remain layout-transparent and inert across all layers.</li>
+      <li><strong>Light DOM Slot Projections (<code>::slotted()</code>):</strong> When you style slotted content using <code>::slotted(selector)</code>, Coralite transforms the selector into dual Light DOM branches (<code>:scope > slot > selector, :scope > selector[slot]</code>), keeping slot styles encapsulated within the <code>components</code> layer.</li>
+    </ul>
 
     <coralite-heading level="2" text="Styling the Root Custom Element (:host & :host-context)"></coralite-heading>
 
@@ -250,7 +355,7 @@
     </ul>
 
     <p>
-      You can use global utility classes (like Bootstrap or Tailwind) within your components alongside your scoped styles.
+      You can use global utility classes (like Bootstrap or Tailwind) within your components alongside your scoped styles. Because component styles are automatically placed in <code>@layer components</code>, global utility classes and unlayered styles take precedence naturally without specificity conflicts.
     </p>
 
     <coralite-heading level="2" text="Using Preprocessors"></coralite-heading>
