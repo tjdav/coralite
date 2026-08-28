@@ -97,6 +97,11 @@ export function setupDevTools () {
 
       getEvents () {
         return Array.from(eventLog)
+      },
+
+      get stylesLoaded () {
+        // @ts-ignore
+        return Array.from(window.__coralite_styles_loaded__ || [])
       }
     }
 

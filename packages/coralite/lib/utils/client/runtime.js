@@ -12,6 +12,7 @@
  * @param {string} [options.hydrationData='{}'] - Serialized hydration data.
  * @param {string} [options.mode='production'] - Build mode.
  * @param {string} [options.instanceCounters='{}'] - Serialized instance counters map.
+ * @param {string} [options.inlinedStyles='[]'] - Serialized inlined styles array.
  * @returns {string} The generated JavaScript runtime.
  */
 export function generateClientRuntime ({
@@ -20,7 +21,8 @@ export function generateClientRuntime ({
   declarativeTags = [],
   hydrationData = '{}',
   mode = 'production',
-  instanceCounters = '{}'
+  instanceCounters = '{}',
+  inlinedStyles = '[]'
 }) {
   return `
 (async () => {
@@ -35,6 +37,7 @@ export function generateClientRuntime ({
   window.__coralite_instanceCounters = window.__coralite_instanceCounters || ${instanceCounters};
   const hydrationData = ${hydrationData};
   const declarativeTags = ${JSON.stringify(declarativeTags)};
+  window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${inlinedStyles});
 
   if (typeof setupDevTools === 'function') {
     setupDevTools();
@@ -106,17 +109,14 @@ export function generateClientRuntime ({
 
       if (cssPath) {
         const fullCssPath = '${base}assets/css/' + cssPath;
-        const inlineStyles = document.getElementById('coralite-inline-styles');
-        const hasStyleInInline = inlineStyles && (
-          inlineStyles.textContent.includes(componentId + ' {') ||
-          inlineStyles.textContent.includes(componentId + '{')
-        );
+        const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(componentId);
 
-        if (!document.querySelector('link[href="' + fullCssPath + '"]') && !hasStyleInInline) {
+        if (!document.querySelector('link[href="' + fullCssPath + '"]') && !isLoaded) {
           const link = document.createElement('link');
           link.rel = 'stylesheet';
           link.href = fullCssPath;
           document.head.appendChild(link);
+          if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(componentId);
         }
       }
 
@@ -126,17 +126,14 @@ export function generateClientRuntime ({
         if (!customElements.get(id)) {
           if (module.default.styles && !cssPath) {
             const styleId = 'coralite-style-' + id;
-            const inlineStyles = document.getElementById('coralite-inline-styles');
-            const hasStyleInInline = inlineStyles && (
-              inlineStyles.textContent.includes(id + ' {') ||
-              inlineStyles.textContent.includes(id + '{')
-            );
+            const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(id);
 
-            if (!document.getElementById(styleId) && !hasStyleInInline) {
+            if (!document.getElementById(styleId) && !isLoaded) {
               const style = document.createElement('style');
               style.id = styleId;
               style.textContent = id + ' {\\n' + module.default.styles + '\\n}';
               document.head.appendChild(style);
+              if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(id);
             }
           }
           customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks, hydrationData));

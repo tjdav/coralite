@@ -1626,13 +1626,18 @@ export function createRenderer ({
             }
           }
 
+          const inlinedStyles = mappedSessionObject.styles && mappedSessionObject.styles.size > 0
+            ? Array.from(mappedSessionObject.styles.keys())
+            : []
+
           const scriptContent = generateClientRuntime({
             base,
             sharedChunkPath: scriptResult.manifest['coralite-runtime'],
             declarativeTags: Array.from(declarativeTags),
             hydrationData: serialize(hydrationData),
             mode: normalizedOptions.mode,
-            instanceCounters: serialize(mappedSessionObject.instanceCounters || {})
+            instanceCounters: serialize(mappedSessionObject.instanceCounters || {}),
+            inlinedStyles: serialize(inlinedStyles)
           })
 
           if (isExternalScripts) {

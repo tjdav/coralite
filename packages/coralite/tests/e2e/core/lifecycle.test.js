@@ -30,7 +30,7 @@ test.describe('Granular Lifecycle', () => {
     expect(phases.hydrated).toBe(true)
   })
 
-  test('should support waitFor(element) for imperative components', async ({ page }) => {
+  test('should support waitFor(element) for imperative components and correctly track inlined/dynamic styles', async ({ page }) => {
     await page.goto('/style-behavior/')
     await waitForHydration(page)
 
@@ -50,10 +50,21 @@ test.describe('Granular Lifecycle', () => {
       }
 
       await window.__coralite__.lifecycle.waitFor(child)
-      return true
+
+      const isLoadedInSet = window.__coralite_styles_loaded__ ? window.__coralite_styles_loaded__.has('style-imperative-only') : false
+      const isLoadedInDevTools = window.__coralite__ && window.__coralite__.stylesLoaded ? window.__coralite__.stylesLoaded.includes('style-imperative-only') : false
+
+      return {
+        ready: true,
+        isLoadedInSet,
+        isLoadedInDevTools
+      }
     })
 
-    expect(result).toBe(true)
+    expect(result.ready).toBe(true)
+    await expect(page.locator('style-imperative-only .imperative-only-box')).toHaveCSS('color', 'rgb(0, 128, 0)')
+    expect(result.isLoadedInSet).toBe(true)
+    expect(result.isLoadedInDevTools).toBe(true)
   })
 
   test('waitFor(element) should resolve immediately if component is already ready', async ({ page }) => {
