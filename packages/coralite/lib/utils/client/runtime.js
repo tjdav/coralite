@@ -131,7 +131,9 @@ export function generateClientRuntime ({
             if (!document.getElementById(styleId) && !isLoaded) {
               const style = document.createElement('style');
               style.id = styleId;
-              style.textContent = id + ' {\\n' + module.default.styles + '\\n}';
+              const cssContent = module.default.styles;
+              const isAtRule = /^\\s*@(scope|layer|media|supports|keyframes|font-face|container)\\b/i.test(cssContent);
+              style.textContent = isAtRule ? cssContent : id + ' {\\n' + cssContent + '\\n}';
               document.head.appendChild(style);
               if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(id);
             }

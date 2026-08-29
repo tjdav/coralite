@@ -52,6 +52,7 @@ import {
   isCoraliteCollectionItem
 } from './utils/types.js'
 import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './utils/server/dom.js'
+import { emitFragment, prepareAllComponentOps } from './utils/server/fragment.js'
 
 /**
  * @import {
@@ -94,7 +95,7 @@ import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from '.
  * @param {Object} [declaredAttributes={}] - Component attributes schema object.
  * @returns {Object} Filtered attributes object.
  */
-function filterReservedAttributes (attribs, declaredAttributes = {}) {
+export function filterReservedAttributes (attribs, declaredAttributes = {}) {
   if (!attribs || typeof attribs !== 'object') {
     return {}
   }
@@ -465,6 +466,29 @@ export function createRenderer ({
       contextId = session.generateId(componentId)
     }
 
+    const hasAstMutatingHooks = hooks.hasComponentRenderHooks ? hooks.hasComponentRenderHooks() : false
+
+    if (moduleComponent.result.__opsCapable && !hasAstMutatingHooks && !noHydration) {
+      session._fragFast = (session._fragFast || 0) + 1
+      return emitFragment({
+        id,
+        moduleComponent,
+        state,
+        element,
+        page,
+        root,
+        contextId,
+        index,
+        session,
+        noHydration,
+        evaluate,
+        createComponentElement,
+        hooks,
+        app
+      })
+    }
+
+    session._fragLegacy = (session._fragLegacy || 0) + 1
     const instanceId = contextId
     let componentState = { ...state }
     if (head) {
@@ -2129,6 +2153,7 @@ export function createRenderer ({
 
     if (anyComponentChanged) {
       app._refreshDependencyGraph()
+      prepareAllComponentOps(app)
     }
 
     const pageCustomElements = {

@@ -16,7 +16,7 @@ import {
 import CoraliteCollection from './collection.js'
 
 // Refactored helper imports
-import { createComponentDefinition, registerBaseComponent } from './component-setup.js'
+import { createComponentDefinition, registerBaseComponent, prepareAllComponentOps } from './component-setup.js'
 import { setupPlugins } from './plugin-setup.js'
 import { createPageHandlers } from './collection-handlers.js'
 import { createRenderer } from './renderer.js'
@@ -307,6 +307,15 @@ export async function createCoralite ({
     app
   })
 
+  const CORE_PLUGIN_NAMES = new Set(['testing', 'metadata', 'staticAsset', 'static-assets'])
+  const hasCustomComponentRenderHooks = (userPlugins || []).some(p => {
+    const name = p?.name || p?.server?.name
+    if (CORE_PLUGIN_NAMES.has(name)) {
+      return false
+    }
+    return Boolean(p?.server?.onBeforeComponentRender || p?.server?.onAfterComponentRender)
+  })
+
   const _defineComponent = createComponentDefinition({ app })
 
   const _evaluateLocal = (options) => evaluate({
@@ -329,7 +338,16 @@ export async function createCoralite ({
     hooks: {
       trigger: _triggerPluginHookLocal,
       triggerAggregate: _triggerPluginAggregateHookLocal,
-      bind: _bindPluginsLocal
+      bind: _bindPluginsLocal,
+      hasComponentRenderHooks: () => {
+        if (normalizedOptions.mode === 'development' || normalizedOptions.mode === 'testing') {
+          return (
+            (plugins.hooks.onBeforeComponentRender && plugins.hooks.onBeforeComponentRender.length > 0) ||
+            (plugins.hooks.onAfterComponentRender && plugins.hooks.onAfterComponentRender.length > 0)
+          )
+        }
+        return hasCustomComponentRenderHooks
+      }
     },
     options: normalizedOptions,
     createExecutionError
@@ -508,9 +526,13 @@ export async function createCoralite ({
       scriptManager,
       createSession: renderer.createSession,
       mode: app.options.mode,
-      onError: _handleErrorLocal
+      onError: _handleErrorLocal,
+      app
     })
   }
+
+  // Compile fragment ops and capability flags in a single pass after all components are registered
+  prepareAllComponentOps(app)
 
   app.pages = new CoraliteCollection({
     rootDir: app.options.pages,

@@ -89,6 +89,13 @@ function traverseAndAddTestId (children, instanceId, { autoTestId = false, count
 export const testingPlugin = definePlugin({
   name: 'testing',
   server: {
+    onComponentSet: (ctx) => {
+      /** @type {any} */
+      const { module, app } = ctx
+      if (app.options.mode === 'production' && module?.template?.children) {
+        traverseAndAddTestId(module.template.children, null, { mode: 'production' })
+      }
+    },
     onBeforeBuild: ({ app }) => {
       // Velocity Engine remains strictly for 'testing' mode to ensure stability
       if (app.options.mode !== 'testing') {
@@ -105,10 +112,12 @@ export const testingPlugin = definePlugin({
       app.options.externalStyles.push(`data:text/css;base64,${Buffer.from(velocityStyle).toString('base64')}`)
     },
     onBeforeComponentRender: ({ instanceId, template, app }) => {
+      if (app.options.mode === 'production') {
+        return
+      }
       const mode = app.options.mode
       const isDevOrTest = mode === 'development' || mode === 'testing'
       const counters = {}
-
 
       /** @type {any} */
       const templateNode = template

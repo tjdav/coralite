@@ -2,6 +2,7 @@ import { dirname, join, relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseHTML, parseModule } from './utils/server/parse.js'
 import { registerBaseComponent } from './component-setup.js'
+import { prepareAllComponentOps } from './utils/server/fragment.js'
 
 /**
  * @import {
@@ -213,8 +214,11 @@ export function createPageHandlers ({
       scriptManager,
       createSession,
       mode: app.options.mode,
-      onError: handleError
+      onError: handleError,
+      app
     })
+
+    prepareAllComponentOps(app)
 
     return res.component
   }

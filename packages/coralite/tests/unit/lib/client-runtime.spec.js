@@ -186,6 +186,22 @@ describe('client-side processHTML', () => {
     }
   })
 
+  it('should preserve CSS at-rules without component wrapper and scope standard rules', () => {
+    const atRules = ['scope', 'layer', 'media', 'supports', 'keyframes', 'font-face', 'container']
+    const regex = /^\s*@(scope|layer|media|supports|keyframes|font-face|container)\b/i
+
+    for (const rule of atRules) {
+      const sampleCss = `@${rule} (min-width: 600px) { .box { color: red; } }`
+      assert.strictEqual(regex.test(sampleCss), true, `@${rule} should be detected as at-rule`)
+    }
+
+    const standardCss = '.box { color: red; }'
+    assert.strictEqual(regex.test(standardCss), false, 'Standard CSS should not be detected as at-rule')
+
+    const stringAtCss = 'content: "@";'
+    assert.strictEqual(regex.test(stringAtCss), false, 'CSS with @ in property values should not be detected as at-rule')
+  })
+
   it('should prefix ref attributes and add data-coralite-owner in all modes', () => {
     for (const mode of ['development', 'testing', 'production']) {
       const processHTML = getProcessHTML(mode)

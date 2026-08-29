@@ -1,4 +1,5 @@
 import { definePlugin } from '../lib/plugin.js'
+import { parseHTML } from '../lib/utils/server/parse.js'
 
 /**
  * @import { ParseHTMLResult } from '../types/index.js'
@@ -31,23 +32,50 @@ async function processMetadataElement (element, context, index) {
     })
 
     if (componentElement) {
-      const componentChildren = Array.isArray(componentElement) ? componentElement : (componentElement.children || [])
+      const parseChildren = (nodes) => {
+        if (!Array.isArray(nodes)) {
+          return []
+        }
+        const result = []
+        for (const node of nodes) {
+          if (node.type === 'text' && typeof node.data === 'string' && node.data.includes('<')) {
+            const parsed = parseHTML(node.data)
+            if (parsed?.root?.children) {
+              result.push(...parsed.root.children)
+              continue
+            }
+          }
+          result.push(node)
+        }
+        return result
+      }
+
+      const rawChildren = Array.isArray(componentElement) ? componentElement : (componentElement.children || [])
+      const componentChildren = parseChildren(rawChildren)
+
       for (let j = 0; j < componentChildren.length; j++) {
         const child = componentChildren[j]
         if (child.type === 'tag' && child.name === 'meta' && child.attribs?.name && child.attribs?.content) {
           page.meta[child.attribs.name] = child.attribs.content
         } else if (child.type === 'tag' && child.name === 'title') {
-          const titleText = child.children
-            .map(c => {
+          const extractText = (nodes) => {
+            if (!Array.isArray(nodes)) {
+              return ''
+            }
+            return nodes.map(c => {
               if (c.type === 'text') {
-                return c.data
+                return c.data.replace(/<\/?c-token>/g, '')
               }
-              if (c.name === 'c-token') {
-                return c.children[0].data
+              if (c.type === 'tag' && c.name === 'c-token' && c.children) {
+                return extractText(c.children)
+              }
+              if (c.children) {
+                return extractText(c.children)
               }
               return ''
-            })
-            .join('')
+            }).join('')
+          }
+          const titleText = extractText(child.children)
 
           if (titleText) {
             page.meta.title = titleText

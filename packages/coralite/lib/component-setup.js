@@ -10,6 +10,9 @@ import { findAndExtractScript, extractComponentProperty } from './utils/server/s
 import { formatComponentCss } from './utils/server/style.js'
 import { camelToKebab } from './utils/core.js'
 import { inferTypeFromValues, validateAttributeValue } from './utils/attributes.js'
+import { prepareAllComponentOps } from './utils/server/fragment.js'
+
+export { prepareAllComponentOps }
 
 /**
  * Normalizes and validates component attribute definitions at definition time.
@@ -621,6 +624,12 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
 }
 
 /**
+ * Compiles fragment ops and freezes component template AST for fast-path SSR rendering.
+ *
+ * @param {Object} component - Component result object.
+ * @param {Object} app - Global Coralite app instance.
+ */
+/**
  * Performs base evaluation and registers a component in the script manager.
  * Used during discovery and updates to lock in the pristine component definition.
  *
@@ -631,6 +640,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
  * @param {Function} options.createSession - The session creation function.
  * @param {string} options.mode - The current build mode.
  * @param {import('../types/index.js').CoraliteOnError} [options.onError] - Error handler callback.
+ * @param {any} [options.app] - Global Coralite app instance.
  * @returns {Promise<void>}
  */
 export async function registerBaseComponent ({
@@ -639,14 +649,16 @@ export async function registerBaseComponent ({
   scriptManager,
   createSession,
   mode,
-  onError
+  onError,
+  app: _app
 }) {
   if (!component) {
     return
   }
 
   if (!component.script) {
-    return _safeRegister(component, scriptManager, null, onError)
+    await _safeRegister(component, scriptManager, null, onError)
+    return
   }
 
   const baseSession = createSession('base-evaluation')

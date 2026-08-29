@@ -237,6 +237,8 @@
  * @property {Object.<string, any>} source.contextInstances - Map of context instances.
  * @property {'production' | 'development' | 'testing'} [mode] - Current build mode.
  * @property {CoraliteCSPResult} [csp] - CSP result object.
+ * @property {number} [_fragFast] - Counter for fast fragment op dispatches.
+ * @property {number} [_fragLegacy] - Counter for legacy fallback dispatches.
  */
 
 /**
