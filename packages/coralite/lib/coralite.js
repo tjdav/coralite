@@ -90,7 +90,7 @@ export async function createCoralite ({
   const normalizedOptions = {
     components,
     pages,
-    plugins: [...(userPlugins || [])],
+    plugins: Array.isArray(userPlugins) ? [...userPlugins] : [],
     assets,
     externalStyles,
     baseURL,
@@ -308,7 +308,7 @@ export async function createCoralite ({
   })
 
   const CORE_PLUGIN_NAMES = new Set(['testing', 'metadata', 'staticAsset', 'static-assets'])
-  const hasCustomComponentRenderHooks = (userPlugins || []).some(p => {
+  const hasCustomComponentRenderHooks = Array.isArray(userPlugins) && userPlugins.some(p => {
     const name = p?.name || p?.server?.name
     if (CORE_PLUGIN_NAMES.has(name)) {
       return false

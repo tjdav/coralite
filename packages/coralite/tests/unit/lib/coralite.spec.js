@@ -23,6 +23,35 @@ describe('Coralite', () => {
   })
 
   describe('Plugins Initialization', () => {
+    it('should initialize clean array options when plugins option is string path, null, undefined, or empty array', async () => {
+      const stringPluginsCoralite = await project.createCoralite({
+        plugins: './src/plugins'
+      })
+      assert.ok(Array.isArray(stringPluginsCoralite.options.plugins))
+      assert.ok(stringPluginsCoralite.options.plugins.some(p => p.name === 'testing'))
+      assert.ok(stringPluginsCoralite.options.plugins.some(p => p.name === 'metadata'))
+
+      const nullPluginsCoralite = await project.createCoralite({
+        plugins: null
+      })
+      assert.ok(Array.isArray(nullPluginsCoralite.options.plugins))
+
+      const undefinedPluginsCoralite = await project.createCoralite({
+        plugins: undefined
+      })
+      assert.ok(Array.isArray(undefinedPluginsCoralite.options.plugins))
+
+      const emptyArrayPluginsCoralite = await project.createCoralite({
+        plugins: []
+      })
+      assert.ok(Array.isArray(emptyArrayPluginsCoralite.options.plugins))
+
+      // Verify page building succeeds without throwing TypeError
+      const results = await stringPluginsCoralite.build()
+      assert.strictEqual(results.length, 1)
+      assert.ok(results[0].content.includes('Hello World'))
+    })
+
     it('should unshift staticAssetPlugin when assets option is provided', async () => {
       const assets = [
         {

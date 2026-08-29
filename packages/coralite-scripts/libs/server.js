@@ -265,7 +265,7 @@ async function server (config, options, runMode = 'dev') {
       coralite = await createCoralite({
         components: currentConfig.components,
         pages: currentConfig.pages,
-        plugins: currentConfig.plugins,
+        plugins: Array.isArray(currentConfig.plugins) ? currentConfig.plugins : [],
         assets: currentConfig.assets,
         csp: currentConfig.csp,
         externalStyles: currentConfig.styles?.input?.map(input => {
@@ -297,7 +297,7 @@ async function server (config, options, runMode = 'dev') {
         app._router.stack.splice(originalAppRouter.stack.length)
       }
 
-      if (currentConfig.plugins) {
+      if (Array.isArray(currentConfig.plugins)) {
         await extractPluginPaths()
 
         for (const plugin of currentConfig.plugins) {

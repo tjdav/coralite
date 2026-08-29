@@ -69,7 +69,7 @@ export async function buildCommand (config, options, logger = null) {
   const coralite = await createCoralite({
     components: config.components,
     pages: config.pages,
-    plugins: config.plugins,
+    plugins: Array.isArray(config.plugins) ? config.plugins : [],
     assets: config.assets,
     csp: config.csp,
     incremental,
