@@ -212,7 +212,24 @@ test('Style Transformation Logic', async (t) => {
     assert.match(result, /@-webkit-keyframes\s+slide\s*\{\s*from\s*\{\s*transform:\s*translateX\(0\);?\s*\}\s*to\s*\{\s*transform:\s*translateX\(100%\);?\s*\}\s*\}/)
   })
 
-  await t.test('formatComponentCss generates @supports (@scope) donut boundary and @supports not (@scope) fallback', async () => {
+  await t.test('formatComponentCss generates single @scope when no ::slotted() rules are present', async () => {
+    const componentId = 'my-card'
+    const css = `
+      :host { display: block; }
+      .title { color: primary; }
+    `
+
+    const result = await formatComponentCss(componentId, css)
+
+    assert.match(result, /@supports\s+\(@scope\)\s*\{/)
+    assert.match(result, /@scope\s*\(:where\(my-card\)\)\s*to\s*\(slot,\s*:scope\s+\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)\s*\{/)
+    assert.match(result, /\.title\s*\{\s*color:\s*primary;?\s*\}/)
+
+    // Should NOT contain the second slotted @scope limit
+    assert.doesNotMatch(result, /@scope\s*\(:where\(my-card\)\)\s*to\s*\(:scope\s+\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)/)
+  })
+
+  await t.test('formatComponentCss generates dual @scope blocks when ::slotted() rules are present', async () => {
     const componentId = 'my-card'
     const css = `
       :host { display: block; border: 1px solid #ccc; }
@@ -222,18 +239,45 @@ test('Style Transformation Logic', async (t) => {
 
     const result = await formatComponentCss(componentId, css)
 
-    // Verify @supports (@scope) structure with donut boundary
+    // Verify @supports (@scope) structure with dual scope blocks and comment headers
     assert.match(result, /@supports\s+\(@scope\)\s*\{/)
+    assert.match(result, /\/\* Standard component scope: donut hole prevents styles from leaking into slots or child components \*\//)
     assert.match(result, /@scope\s*\(:where\(my-card\)\)\s*to\s*\(slot,\s*:scope\s+\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)\s*\{/)
     assert.match(result, /:scope\s*\{\s*display:\s*block;\s*border:\s*1px solid #ccc;?\s*\}/)
     assert.match(result, /\.title\s*\{\s*color:\s*primary;?\s*\}/)
+
+    assert.match(result, /\/\* Slotted scope: allows explicit ::slotted\(\) transforms to target projected children while encapsulating child components \*\//)
+    assert.match(result, /@scope\s*\(:where\(my-card\)\)\s*to\s*\(:scope\s+\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)\s*\{/)
     assert.match(result, /:scope\s*>\s*slot\s*>\s*p,\s*:scope\s*>\s*p\[slot\]\s*\{\s*font-size:\s*1rem;?\s*\}/)
 
-    // Verify @supports not (@scope) fallback structure
+    // Verify @supports not (@scope) fallback structure (combines both)
     assert.match(result, /@supports not\s+\(@scope\)\s*\{/)
     assert.match(result, /:where\(my-card\)\s*\{/)
     assert.match(result, /display:\s*block;\s*border:\s*1px solid #ccc;?/)
     assert.match(result, /&\s*>\s*slot\s*>\s*p,\s*&\s*>\s*p\[slot\]\s*\{\s*font-size:\s*1rem;?\s*\}/)
+  })
+
+  await t.test('formatComponentCss correctly partitions mixed comma-separated selectors and at-rules', async () => {
+    const componentId = 'my-card'
+    const css = `
+      p, ::slotted(p) { color: red; }
+      @media (min-width: 768px) {
+        .btn { display: flex; }
+        :host([split-count="3"]) ::slotted(*:first-child) { margin-top: 0; }
+      }
+    `
+
+    const result = await formatComponentCss(componentId, css)
+
+    // Regular scope should contain `p { color: red; }` and `.btn { display: flex; }` inside @media
+    const regularScopeMatch = result.match(/@scope\s*\(:where\(my-card\)\)\s*to\s*\(slot[\s\S]*?\n    \}/)
+    assert.ok(regularScopeMatch, 'regular scope block should exist')
+    assert.match(regularScopeMatch[0], /p\s*\{\s*color:\s*red;?\s*\}/)
+    assert.match(regularScopeMatch[0], /@media\s+\(min-width:\s*768px\)\s*\{\s*\.btn\s*\{\s*display:\s*flex;?\s*\}\s*\}/)
+    assert.doesNotMatch(regularScopeMatch[0], /::slotted/)
+
+    // Slotted scope should contain transformed slotted selectors
+    assert.match(result, /@scope\s*\(:where\(my-card\)\)\s*to\s*\(:scope\s+\[data-cid\],\s*:is\(\[is\],\s*c-token\)\)\s*\{[\s\S]*?:scope\s*>\s*slot\s*>\s*p,\s*:scope\s*>\s*p\[slot\]\s*\{\s*color:\s*red;?\s*\}[\s\S]*?@media\s+\(min-width:\s*768px\)\s*\{\s*:scope\[split-count="3"\]\s*>\s*slot\s*>\s*\*:first-child,\s*:scope\[split-count="3"\]\s*>\s*\*:first-child\[slot\]\s*\{\s*margin-top:\s*0;?\s*\}\s*\}/)
   })
 
   await t.test('transformCss catches top-level PostCSS parsing errors, routes to onError, and returns raw CSS fallback', async () => {

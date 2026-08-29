@@ -24,29 +24,43 @@
     </p>
 
     <p>
-      Coralite achieves this at build time by wrapping component styles in the <code>components</code> CSS cascade layer (<code>@layer components</code>) and leveraging modern CSS <code>@scope</code> with a "donut boundary" to prevent styles from penetrating into nested child components or slotted Light DOM content. For browsers without native <code>@scope</code> support, a fallback using zero-specificity <code>:where()</code> and native CSS nesting is automatically generated.
+      Coralite achieves this at build time by wrapping component styles in the <code>components</code> CSS cascade layer (<code>@layer components</code>) and leveraging modern CSS <code>@scope</code> with dual-scope partitioning:
     </p>
 
+    <ul>
+      <li><strong>Standard Component Scope:</strong> Uses a "donut boundary" (<code>to (slot, :scope [data-cid], :is([is], c-token))</code>) to strictly encapsulate standard component rules (like <code>p</code>, <code>.btn</code>, <code>img</code>), preventing them from leaking into nested child components or slotted consumer content.</li>
+      <li><strong>Slotted Scope:</strong> Emitted only when <code>::slotted()</code> rules are present. Omits <code>slot</code> from the scope limit (<code>to (:scope [data-cid], :is([is], c-token))</code>) so transformed <code>::slotted()</code> Light DOM slot projections can target projected consumer elements while keeping child components encapsulated.</li>
+    </ul>
+
     <coralite-code-html>
-      <!-- Source Component (my-button.html) -->
-      <template id="my-button">
-        <button>Click me</button>
+      <!-- Source Component (my-card.html) -->
+      <template id="my-card">
+        <div class="card">
+          <h2 class="title">{{ title }}</h2>
+          <div class="body"><slot></slot></div>
+        </div>
       </template>
 
       <style>
         :host {
-          display: inline-block;
+          display: block;
         }
 
-        button {
-          background: blue;
-          color: white;
+        /* Standard rule: will NOT affect slotted <p> elements */
+        p {
+          color: #64748b;
+        }
+
+        /* Slotted rule: explicitly styles projected consumer <p> elements */
+        ::slotted(p) {
+          font-size: 1rem;
+          line-height: 1.5;
         }
       </style>
     </coralite-code-html>
 
     <p>
-      During the build process, the component's styles are transformed into the following structured stylesheet:
+      During the build process, the component's styles are transformed into dual <code>@scope</code> blocks:
     </p>
 
     <coralite-code-highlight language="css">
@@ -54,25 +68,31 @@ c-token { display: contents; }
 
 @layer components {
   @supports (@scope) {
-    /* Scoped with donut boundary preventing leakage into slots & child components */
-    @scope (:where(my-button)) to (slot, :scope [data-cid], :is([is], c-token)) {
+    /* Standard component scope: donut hole prevents styles from leaking into slots or child components */
+    @scope (:where(my-card)) to (slot, :scope [data-cid], :is([is], c-token)) {
       :scope {
-        display: inline-block;
+        display: block;
       }
-      button {
-        background: blue;
-        color: white;
+      p {
+        color: #64748b;
+      }
+    }
+
+    /* Slotted scope: allows explicit ::slotted() transforms to target projected children while encapsulating child components */
+    @scope (:where(my-card)) to (:scope [data-cid], :is([is], c-token)) {
+      :scope > slot > p, :scope > p[slot] {
+        font-size: 1rem;
+        line-height: 1.5;
       }
     }
   }
 
   @supports not (@scope) {
     /* Fallback using zero-specificity :where() and CSS nesting */
-    :where(my-button) {
-      display: inline-block;
-      button {
-        background: blue;
-        color: white;
+    :where(my-card) {
+      display: block;
+      p, :where(& > slot > p, & > p[slot]) {
+        color: #64748b;
       }
     }
   }

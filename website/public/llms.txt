@@ -323,9 +323,13 @@ Each key in the `slots` object corresponds to a slot name (use `'default'` for u
 * **SSR Graceful Fallback**: During SSR build, `root` is `null`, `refs()` returns `null`, `observe()` returns a no-op disposer, and `signal` is non-aborted. If a slot function accesses browser-only APIs without guard checks, Coralite catches the exception and gracefully falls back to the original slot content.
 * **Scope & Preservation**: Slotted content is evaluated within the parent component's local scope. Coralite maps original Light DOM elements automatically, projecting them synchronously upon connected callbacks for dynamic imperative components.
 
-### 5.6 CSS Scoping (PostCSS)
+### 5.6 CSS Scoping (PostCSS) & Dual-Scope Partitioning
 
-Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler automatically encapsulates component CSS inside the `components` cascade layer (`@layer components`) and generates native CSS `@scope` rules with a donut boundary (`to (slot, :scope [data-cid], :is([is], c-token))`) to prevent style bleeding into child components or slotted elements. For older runtimes, it provides an automatic fallback using zero-specificity `:where()` host selectors and native CSS nesting.
+Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler automatically encapsulates component CSS inside the `components` cascade layer (`@layer components`) and partitions component CSS into dual native CSS `@scope` rules:
+1. **Standard Component Scope (Donut Hole Preserved)**: `@scope (:where(component-name)) to (slot, :scope [data-cid], :is([is], c-token))` prevents standard component styles from penetrating into nested child components or consumer slotted elements.
+2. **Slotted Scope (Emitted Only When `::slotted()` is Used)**: `@scope (:where(component-name)) to (:scope [data-cid], :is([is], c-token))` targets transformed `::slotted()` Light DOM slot projections (`:scope > slot > selector, :scope > selector[slot]`), omitting `slot` from the limit boundary while continuing to protect child components.
+
+For older runtimes without native `@scope` support, an automatic fallback using zero-specificity `:where()` host selectors and native CSS nesting is generated.
 
 #### 5.6.1 Cascade Layers (`@layer components`) & Specificity Taming (`:where()`)
 * **Zero Specificity Bonus (`:where()`)**: Host custom element selectors are wrapped with `:where(tag-name)` (e.g., `:where(my-card)`), adding zero specificity (`0, 0, 0`). Component internal selectors (like `.title` or `button`) retain their base specificity instead of inflating.
@@ -339,7 +343,7 @@ Coralite components are strictly scoped by default, despite rendering in the glo
   - `components`: Automatically hosts all Coralite component styles.
   - `utilities`: Overrides component styles with zero friction.
 * **Root `c-token` Inertia**: The rule `c-token { display: contents; }` is emitted unlayered at the stylesheet root to ensure reactive DOM markers remain transparent.
-* **Light DOM Slot Projections (`::slotted()`)**: The pseudo-element `::slotted(selector)` is transformed into dual Light DOM branches (`:scope > slot > selector, :scope > selector[slot]`), styling slotted content directly within the component layer.
+* **Light DOM Slot Projections (`::slotted()`)**: The pseudo-element `::slotted(selector)` is transformed into dual Light DOM branches (`:scope > slot > selector, :scope > selector[slot]`), styling slotted content directly within the component layer under the slotted `@scope` block.
 
 #### 5.6.2 Root Custom Element Styling (`:host` & `:host-context()`)
 * **Preferred Method for Root Element**: `:host` and `:host-context()` are the **preferred, canonical method** for modifying and styling the root custom element container itself (e.g., `<my-button>`).

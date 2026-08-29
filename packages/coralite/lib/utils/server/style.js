@@ -10,7 +10,112 @@ import { CoraliteError, defaultOnError } from '../errors.js'
  * Options for CSS transformation
  * @typedef {Object} TransformCssOptions
  * @property {'nesting' | 'scope'} [mode='nesting'] - Transformation mode
+ * @property {boolean} [splitSlotted=false] - Whether to split output into regular and slotted CSS objects
  */
+
+/**
+ * Helper to determine if a PostCSS node contains effective declarations or rules.
+ * @param {import('postcss').Node | import('postcss').Container} node - The PostCSS node or container to check.
+ * @returns {boolean} Whether the node contains effective declarations or rules.
+ */
+function hasEffectiveNodes (node) {
+  if (!('nodes' in node) || !node.nodes || node.nodes.length === 0) {
+    return false
+  }
+  return node.nodes.some(child => {
+    if (child.type === 'decl') {
+      return true
+    }
+    if (child.type === 'rule') {
+      return hasEffectiveNodes(child)
+    }
+    if (child.type === 'atrule') {
+      return hasEffectiveNodes(child)
+    }
+    return false
+  })
+}
+
+/**
+ * Partitions a PostCSS Root into regular rules and slotted rules ASTs.
+ * @param {import('postcss').Root} root - The PostCSS root node to partition.
+ * @returns {{ regularRoot: import('postcss').Root, slottedRoot: import('postcss').Root }} Partitioned regular and slotted PostCSS root nodes.
+ */
+function partitionAst (root) {
+  const regularRoot = root.clone()
+  const slottedRoot = root.clone()
+
+  const cleanTree = (node, keepSlotted) => {
+    if (node.type === 'rule') {
+      if (node.nodes) {
+        const children = [...node.nodes]
+        children.forEach(child => {
+          if (child.type === 'rule' || child.type === 'atrule') {
+            cleanTree(child, keepSlotted)
+          }
+        })
+      }
+
+      const selectors = node.selectors || [node.selector]
+      const hasSlotted = selectors.some(s => s.includes('::slotted'))
+
+      if (!hasSlotted) {
+        if (keepSlotted) {
+          if (node.nodes) {
+            node.nodes.forEach(child => {
+              if (child.type === 'decl' || child.type === 'comment') {
+                child.remove()
+              }
+            })
+          }
+        }
+      } else {
+        const remainingSelectors = selectors.filter(s => (keepSlotted ? s.includes('::slotted') : !s.includes('::slotted')))
+        if (remainingSelectors.length === 0) {
+          if (node.nodes) {
+            node.nodes.forEach(child => {
+              if (child.type === 'decl' || child.type === 'comment') {
+                child.remove()
+              }
+            })
+          }
+        } else {
+          node.selectors = remainingSelectors
+        }
+      }
+
+      if (!hasEffectiveNodes(node)) {
+        node.remove()
+      }
+    } else if (node.type === 'atrule') {
+      if (/keyframes$/i.test(node.name)) {
+        if (keepSlotted) {
+          node.remove()
+        }
+        return
+      }
+
+      if (node.nodes) {
+        const children = [...node.nodes]
+        children.forEach(child => cleanTree(child, keepSlotted))
+        if (!hasEffectiveNodes(node)) {
+          node.remove()
+        }
+      }
+    }
+  }
+
+  const regChildren = [...regularRoot.nodes]
+  regChildren.forEach(child => cleanTree(child, false))
+
+  const slotChildren = [...slottedRoot.nodes]
+  slotChildren.forEach(child => cleanTree(child, true))
+
+  return {
+    regularRoot,
+    slottedRoot
+  }
+}
 
 /**
  * Transforms component CSS:
@@ -25,10 +130,11 @@ import { CoraliteError, defaultOnError } from '../errors.js'
  * @param {string} css - The raw CSS content from the component <style> block
  * @param {CoraliteOnError} [onError] - Error handler callback
  * @param {TransformCssOptions} [options={}] - Options object
- * @returns {Promise<string>} Transformed CSS
+ * @returns {Promise<string | { regularCss: string, slottedCss: string }>} Transformed CSS
  */
 export async function transformCss (css, onError, options = {}) {
   const mode = options.mode || 'nesting'
+  const splitSlotted = options.splitSlotted || false
   const processor = postcss([
     {
       postcssPlugin: 'coralite-style-transform',
@@ -256,6 +362,72 @@ export async function transformCss (css, onError, options = {}) {
     }
   ])
 
+  if (splitSlotted) {
+    let root
+    try {
+      root = postcss.parse(css)
+    } catch (error) {
+      const message = 'Error processing CSS: ' + (error.message || error)
+      if (typeof onError === 'function') {
+        onError({
+          level: 'ERR',
+          message,
+          error
+        })
+      } else {
+        console.error(message, error)
+      }
+      return {
+        regularCss: css,
+        slottedCss: ''
+      }
+    }
+
+    const { regularRoot, slottedRoot } = partitionAst(root)
+
+    let regularCss = ''
+    let slottedCss = ''
+
+    try {
+      const regResult = await processor.process(regularRoot, { from: undefined })
+      regularCss = regResult.css
+    } catch (error) {
+      const message = 'Error processing CSS: ' + (error.message || error)
+      if (typeof onError === 'function') {
+        onError({
+          level: 'ERR',
+          message,
+          error
+        })
+      } else {
+        console.error(message, error)
+      }
+      regularCss = css
+    }
+
+    try {
+      const slotResult = await processor.process(slottedRoot, { from: undefined })
+      slottedCss = slotResult.css
+    } catch (error) {
+      const message = 'Error processing CSS: ' + (error.message || error)
+      if (typeof onError === 'function') {
+        onError({
+          level: 'ERR',
+          message,
+          error
+        })
+      } else {
+        console.error(message, error)
+      }
+      slottedCss = ''
+    }
+
+    return {
+      regularCss,
+      slottedCss
+    }
+  }
+
   try {
     const result = await processor.process(css, { from: undefined })
     return result.css
@@ -291,18 +463,44 @@ export async function formatComponentCss (componentId, rawCss, onError = default
     return ''
   }
 
-  const scopeCss = await transformCss(rawCss, onError, { mode: 'scope' })
-  const fallbackCss = await transformCss(rawCss, onError, { mode: 'nesting' })
+  const transformed = await transformCss(rawCss, onError, {
+    mode: 'scope',
+    splitSlotted: true
+  })
+  const { regularCss, slottedCss } = typeof transformed === 'object' ? transformed : {
+    regularCss: transformed,
+    slottedCss: ''
+  }
+  const fallback = await transformCss(rawCss, onError, { mode: 'nesting' })
+  const fallbackCss = typeof fallback === 'string' ? fallback : fallback.regularCss
 
   const indent = (str) => str.split('\n').map(line => (line ? `      ${line}` : '')).join('\n')
 
-  return `  @supports (@scope) {
+  let scopeBlock = '  @supports (@scope) {'
+
+  if (slottedCss && slottedCss.trim()) {
+    scopeBlock += `
+    /* Standard component scope: donut hole prevents styles from leaking into slots or child components */
+    @scope (:where(${componentId})) to (slot, :scope [data-cid], :is([is], c-token)) {
+${indent(regularCss)}
+    }
+
+    /* Slotted scope: allows explicit ::slotted() transforms to target projected children while encapsulating child components */
+    @scope (:where(${componentId})) to (:scope [data-cid], :is([is], c-token)) {
+${indent(slottedCss)}
+    }`
+  } else {
+    scopeBlock += `
     /* Use :scope [data-cid] to ensure the limit only matches descendant components,
        preventing the scope root itself (which carries data-cid) from collapsing the scope. */
     @scope (:where(${componentId})) to (slot, :scope [data-cid], :is([is], c-token)) {
-${indent(scopeCss)}
-    }
+${indent(regularCss)}
+    }`
   }
+
+  scopeBlock += '\n  }'
+
+  return `${scopeBlock}
 
   @supports not (@scope) {
     :where(${componentId}) {
