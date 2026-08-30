@@ -125,6 +125,17 @@ export async function runDomReactivitySuite (options = {}) {
     for (const fw of frameworks) {
       console.log(`Running DOM reactivity benchmark for framework: ${fw}...`)
       const page = await browser.newPage()
+
+      const pageErrors = []
+      page.on('pageerror', (err) => {
+        pageErrors.push(err.message || String(err))
+      })
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') {
+          pageErrors.push(msg.text())
+        }
+      })
+
       await page.goto(`${serverUrl}/${fw}/index.html`)
 
       const runBtnId = rows === 10000 ? '#runlots' : '#run'
@@ -136,8 +147,10 @@ export async function runDomReactivitySuite (options = {}) {
         return Boolean(docBtn || compBtn || shadowBtn)
       }, runBtnId)
 
-      const measureClickToPaint = async (selector) => {
-        return await page.evaluate(async (btnSelector) => {
+      const measureClickToPaint = async (selector, expectedRowCount) => {
+        pageErrors.length = 0
+
+        const duration = await page.evaluate(async (btnSelector) => {
           const start = performance.now()
           let btn = document.querySelector(btnSelector)
           if (!btn) {
@@ -153,11 +166,29 @@ export async function runDomReactivitySuite (options = {}) {
           await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)))
           return performance.now() - start
         }, selector)
+
+        if (pageErrors.length > 0) {
+          throw new Error(`[${fw}] Runtime error during ${selector}: ${pageErrors.join('; ')}`)
+        }
+
+        if (expectedRowCount !== undefined) {
+          const actualCount = await page.evaluate(() => {
+            const tbody = document.querySelector('tbody') ||
+              document.querySelector('coralite-app')?.querySelector('tbody') ||
+              document.querySelector('coralite-app')?.shadowRoot?.querySelector('tbody')
+            return tbody ? tbody.children.length : 0
+          })
+          if (actualCount !== expectedRowCount) {
+            throw new Error(`[${fw}] Row count mismatch after ${selector}: expected ${expectedRowCount}, got ${actualCount}`)
+          }
+        }
+
+        return duration
       }
 
       // Warmup pass
-      await measureClickToPaint(runBtnId)
-      await measureClickToPaint('#clear')
+      await measureClickToPaint(runBtnId, rows)
+      await measureClickToPaint('#clear', 0)
 
       const createKey = rows === 10000 ? 'create10k' : 'create1k'
       const replaceKey = rows === 10000 ? 'replace10k' : 'replace1k'
@@ -172,26 +203,26 @@ export async function runDomReactivitySuite (options = {}) {
 
       for (let i = 0; i < iterations; i++) {
         // Ensure starting clean
-        await measureClickToPaint('#clear')
+        await measureClickToPaint('#clear', 0)
 
-        const createTime = await measureClickToPaint(runBtnId)
+        const createTime = await measureClickToPaint(runBtnId, rows)
         timings[createKey].push(createTime)
 
-        const replaceTime = await measureClickToPaint('#replace')
+        const replaceTime = await measureClickToPaint('#replace', rows)
         timings[replaceKey].push(replaceTime)
 
-        const updateTime = await measureClickToPaint('#update')
+        const updateTime = await measureClickToPaint('#update', rows)
         timings.update10th.push(updateTime)
 
-        const swapTime = await measureClickToPaint('#swaprows')
+        const swapTime = await measureClickToPaint('#swaprows', rows)
         timings.swapRows.push(swapTime)
 
-        const clearTime = await measureClickToPaint('#clear')
+        const clearTime = await measureClickToPaint('#clear', 0)
         timings.clear.push(clearTime)
       }
 
       // Populate dataset for Heap Memory Measurement
-      await measureClickToPaint(runBtnId)
+      await measureClickToPaint(runBtnId, rows)
 
       const cdp = await page.context().newCDPSession(page)
       await cdp.send('HeapProfiler.collectGarbage').catch(() => {})

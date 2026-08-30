@@ -1,48 +1,34 @@
 import { buildData, updateData, swapRows } from '../../../../utils/data-generator.js'
 
+// Pre-compiled row template for high-speed cloneNode allocation
+const rowTemplate = document.createElement('template')
+rowTemplate.innerHTML = '<tr><td class="col-id"></td><td class="col-label"><a class="lbl"></a></td><td class="col-delete"><button class="btn-delete" type="button">🗑️</button></td></tr>'
+
 let data = []
 let selected = null
 const tbody = document.getElementById('tbody')
 
-function renderRow (item) {
-  const tr = document.createElement('tr')
-  if (selected === item.id) {
+function renderRow (item, currentSelected) {
+  const tr = rowTemplate.content.firstElementChild.cloneNode(true)
+  if (currentSelected === item.id) {
     tr.className = 'danger'
   }
   tr.setAttribute('data-id', String(item.id))
-
-  const td1 = document.createElement('td')
-  td1.className = 'col-id'
-  td1.textContent = String(item.id)
-
-  const td2 = document.createElement('td')
-  td2.className = 'col-label'
-  const a = document.createElement('a')
-  a.className = 'lbl'
-  a.textContent = item.label
-  td2.appendChild(a)
-
-  const td3 = document.createElement('td')
-  td3.className = 'col-delete'
-  const btn = document.createElement('button')
-  btn.className = 'btn-delete'
-  btn.type = 'button'
-  btn.textContent = '🗑️'
-  td3.appendChild(btn)
-
-  tr.appendChild(td1)
-  tr.appendChild(td2)
-  tr.appendChild(td3)
+  tr.children[0].textContent = String(item.id)
+  tr.children[1].firstElementChild.textContent = item.label
   return tr
 }
 
 function renderAll () {
-  tbody.innerHTML = ''
+  if (data.length === 0) {
+    tbody.replaceChildren()
+    return
+  }
   const fragment = document.createDocumentFragment()
   for (let i = 0; i < data.length; i++) {
-    fragment.appendChild(renderRow(data[i]))
+    fragment.appendChild(renderRow(data[i], selected))
   }
-  tbody.appendChild(fragment)
+  tbody.replaceChildren(fragment)
 }
 
 document.getElementById('run').addEventListener('click', () => {
@@ -69,7 +55,7 @@ document.getElementById('update').addEventListener('click', () => {
   const trs = tbody.children
   for (let i = 0; i < data.length; i += 10) {
     if (trs[i]) {
-      const lbl = trs[i].querySelector('.lbl')
+      const lbl = trs[i].children[1]?.firstElementChild
       if (lbl) {
         lbl.textContent = data[i].label
       }
@@ -98,7 +84,7 @@ document.getElementById('swaprows').addEventListener('click', () => {
 document.getElementById('clear').addEventListener('click', () => {
   data = []
   selected = null
-  tbody.innerHTML = ''
+  tbody.replaceChildren()
 })
 
 tbody.addEventListener('click', (e) => {

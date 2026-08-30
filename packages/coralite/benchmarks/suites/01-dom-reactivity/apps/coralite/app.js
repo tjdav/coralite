@@ -1,6 +1,10 @@
 import { createCoraliteClass } from '../../../../../lib/coralite-element.js'
 import { buildData, updateData, swapRows } from '../../../../utils/data-generator.js'
 
+// Pre-compiled row template for high-speed cloneNode allocation
+const rowTemplate = document.createElement('template')
+rowTemplate.innerHTML = '<tr><td class="col-id"></td><td class="col-label"><a class="lbl"></a></td><td class="col-delete"><button class="btn-delete" type="button">🗑️</button></td></tr>'
+
 const CoraliteApp = createCoraliteClass({
   componentId: 'coralite-app',
   defaultValues: {
@@ -22,53 +26,44 @@ const CoraliteApp = createCoraliteClass({
       </table>
     </div>
   `,
-  client ({ state, refs, root, observe }) {
-    const tbody = refs('tbody')
+  client ({ state, root, observe }) {
+    const tbody = root.querySelector('tbody')
+    let skipValue = null
 
-    function renderRow (item) {
-      const tr = document.createElement('tr')
-      if (state.selected === item.id) {
+    function renderRow (item, selected) {
+      const tr = rowTemplate.content.firstElementChild.cloneNode(true)
+      if (selected === item.id) {
         tr.className = 'danger'
       }
 
       tr.setAttribute('data-id', String(item.id))
-
-      const td1 = document.createElement('td')
-      td1.className = 'col-id'
-      td1.textContent = String(item.id)
-
-      const td2 = document.createElement('td')
-      td2.className = 'col-label'
-      const a = document.createElement('a')
-      a.className = 'lbl'
-      a.textContent = item.label
-      td2.appendChild(a)
-
-      const td3 = document.createElement('td')
-      td3.className = 'col-delete'
-      const btn = document.createElement('button')
-      btn.className = 'btn-delete'
-      btn.type = 'button'
-      btn.textContent = '🗑️'
-      td3.appendChild(btn)
-
-      tr.appendChild(td1)
-      tr.appendChild(td2)
-      tr.appendChild(td3)
+      // Invariant: children[0] = td.col-id, children[1] = td.col-label > a.lbl
+      tr.children[0].textContent = String(item.id)
+      tr.children[1].firstElementChild.textContent = item.label
       return tr
     }
 
     function renderAll () {
-      tbody.innerHTML = ''
-      const fragment = document.createDocumentFragment()
       const list = state.data || []
-      for (let i = 0; i < list.length; i++) {
-        fragment.appendChild(renderRow(list[i]))
+      if (list.length === 0) {
+        tbody.replaceChildren()
+        return
       }
-      tbody.appendChild(fragment)
+
+      const selected = state.selected
+      const fragment = document.createDocumentFragment()
+      for (let i = 0; i < list.length; i++) {
+        fragment.appendChild(renderRow(list[i], selected))
+      }
+      tbody.replaceChildren(fragment)
     }
 
     observe('data', () => {
+      if (skipValue !== null && state.data === skipValue) {
+        skipValue = null
+        return
+      }
+      skipValue = null
       renderAll()
     })
 
@@ -109,12 +104,37 @@ const CoraliteApp = createCoraliteClass({
     })
 
     updateBtn.addEventListener('click', () => {
-      state.data = updateData(state.data, 10)
+      const newData = updateData(state.data, 10)
+      skipValue = newData
+      state.data = newData
+      const trs = tbody.children
+      for (let i = 0; i < newData.length; i += 10) {
+        if (trs[i]) {
+          const lbl = trs[i].children[1]?.firstElementChild
+          if (lbl) {
+            lbl.textContent = newData[i].label
+          }
+        }
+      }
     })
 
     swaprowsBtn.addEventListener('click', () => {
       if (state.data.length > 998) {
-        state.data = swapRows(state.data, 1, 998)
+        const newData = swapRows(state.data, 1, 998)
+        skipValue = newData
+        state.data = newData
+        const row1 = tbody.children[1]
+        const row998 = tbody.children[998]
+        if (row1 && row998) {
+          const next1 = row1.nextSibling
+          const next998 = row998.nextSibling
+          if (next1 === row998) {
+            tbody.insertBefore(row998, row1)
+          } else {
+            tbody.insertBefore(row998, next1)
+            tbody.insertBefore(row1, next998)
+          }
+        }
       }
     })
 
@@ -129,7 +149,10 @@ const CoraliteApp = createCoraliteClass({
         const tr = target.closest('tr')
         if (tr) {
           const id = parseInt(tr.getAttribute('data-id'), 10)
-          state.data = state.data.filter(item => item.id !== id)
+          const newData = state.data.filter(item => item.id !== id)
+          skipValue = newData
+          state.data = newData
+          tr.remove()
         }
       } else if (target.classList.contains('lbl')) {
         const tr = target.closest('tr')
