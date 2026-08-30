@@ -1492,19 +1492,30 @@ export class CoraliteElement extends BaseElement {
 
     for (const newDep of newDeps) {
       if (!record.dependencies.has(newDep)) {
-        if (!this._subscriberMap.has(newDep)) {
-          this._subscriberMap.set(newDep, new Set())
+        let subs = this._subscriberMap.get(newDep)
+        if (!subs) {
+          subs = new Set()
+          this._subscriberMap.set(newDep, subs)
         }
-        this._subscriberMap.get(newDep).add(record)
+        subs.add(record)
       }
     }
 
-    record.dependencies = newDeps
+    // O(1) Double-buffer pointer swap
+    if (record.dependencies !== newDeps) {
+      const oldSet = record.dependencies
+      record.dependencies = newDeps
+      record._nextDependencies = oldSet
+    }
 
     if (!this._dependencyGraph) {
       this._dependencyGraph = new Map()
     }
-    this._dependencyGraph.set(record.key, newDeps)
+    if (record.dependencies.size > 0) {
+      this._dependencyGraph.set(record.key, record.dependencies)
+    } else {
+      this._dependencyGraph.delete(record.key)
+    }
   }
 
   /**

@@ -39,6 +39,13 @@ export class ObserverRecord {
     this.dependencies = new Set()
 
     /**
+     * Secondary dependency collection buffer for O(1) double-buffering.
+     * @type {Set<string>}
+     * @protected
+     */
+    this._nextDependencies = new Set()
+
+    /**
      * The last evaluated value of the observed state property.
      * @type {any}
      */
@@ -62,9 +69,9 @@ export class ObserverRecord {
     const parentCollector = this.element._collectingDependencies
     // @ts-ignore
     this.element._activeObserverRecord = this
-    const dependencies = new Set()
+    this._nextDependencies.clear()
     // @ts-ignore
-    this.element._collectingDependencies = dependencies
+    this.element._collectingDependencies = this._nextDependencies
 
     let value
     try {
@@ -77,7 +84,7 @@ export class ObserverRecord {
       this.element._collectingDependencies = parentCollector
     }
 
-    this.element._updateObserverSubscriptions(this, dependencies)
+    this.element._updateObserverSubscriptions(this, this._nextDependencies)
     return value
   }
 
@@ -120,6 +127,7 @@ export class ObserverRecord {
    * @returns {void}
    */
   cleanup () {
-    this.element._updateObserverSubscriptions(this, new Set())
+    this._nextDependencies.clear()
+    this.element._updateObserverSubscriptions(this, this._nextDependencies)
   }
 }
