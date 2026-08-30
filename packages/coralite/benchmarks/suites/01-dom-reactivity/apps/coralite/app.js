@@ -139,8 +139,11 @@ const CoraliteApp = createCoraliteClass({
     })
 
     clearBtn.addEventListener('click', () => {
+      const empty = []
+      skipValue = empty
       state.selected = null
-      state.data = []
+      state.data = empty
+      tbody.replaceChildren()
     })
 
     tbody.addEventListener('click', (e) => {
