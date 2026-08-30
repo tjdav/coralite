@@ -87,10 +87,14 @@ describe('onBeforeBuild Build Queue', () => {
       plugins: [plugin]
     })
 
-    const results = await app.build('/index.html')
+    const results = await app.build()
     const explicitPage = results.find(r => r.path.pathname === '/explicit-virtual-page')
-    assert.ok(explicitPage, 'Explicitly added virtual page should be in the build results even in targeted build if added via addRenderQueue')
+    assert.ok(explicitPage, 'Explicitly added virtual page should be in full build results when added via addRenderQueue')
     assert.strictEqual(explicitPage.content.includes('Explicit'), true)
+
+    const targetedResults = await app.build('/index.html')
+    const targetedExplicitPage = targetedResults.find(r => r.path.pathname === '/explicit-virtual-page')
+    assert.strictEqual(targetedExplicitPage, undefined, 'Virtual page added via addRenderQueue should be scoped out in targeted build')
   })
 
   test('deduplication of pages in build queue', async () => {

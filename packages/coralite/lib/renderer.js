@@ -1087,9 +1087,12 @@ export function createRenderer ({
                   pagePath: pageItem.path.pathname
                 })
               }
-              content = pageItem.content !== undefined ? pageItem.content : (()=>{
+
+              if (pageItem.content !== undefined) {
+                content = pageItem.content
+              } else {
                 throw e
-              })()
+              }
             }
           }
 
@@ -2098,6 +2101,14 @@ export function createRenderer ({
     const resolvedQueue = resolvePageQueue(app.pages, buildPath)
     const queue = renderQueues.get(buildId)
 
+    if (buildPath) {
+      const targetPathnames = new Set(resolvedQueue.map(item => item.path.pathname))
+      const filtered = queue.filter(item => targetPathnames.has(item.path.pathname))
+
+      queue.length = 0
+      queue.push(...filtered)
+    }
+
     for (let i = 0; i < resolvedQueue.length; i++) {
       const item = resolvedQueue[i]
       if (!queue.includes(item)) {
@@ -2140,14 +2151,29 @@ export function createRenderer ({
     const componentChanges = new Map()
     const allComponents = app.components.list
     let anyComponentChanged = false
-    for (const component of allComponents) {
-      const { changed, metadata } = await checkFileChange(component.path.pathname, manifest.physical[component.path.pathname])
+
+    const componentCheckResults = await Promise.all(allComponents.map(async (component) => {
+      const prevMeta = manifest.physical[component.path.pathname]
+      const { changed, metadata } = await checkFileChange(component.path.pathname, prevMeta)
       newManifest.physical[component.path.pathname] = metadata
-      if (changed || !manifest.physical[component.path.pathname]) {
-        componentChanges.set(component.result.id, true)
+      const isStale = (prevMeta && changed) || !component.result
+      return {
+        component,
+        isStale
+      }
+    }))
+
+    for (const { component, isStale } of componentCheckResults) {
+      if (isStale) {
+        if (component.result) {
+          componentChanges.set(component.result.id, true)
+        }
         anyComponentChanged = true
         // Force re-parse
         await app.components.updateItem(component.path.pathname)
+        if (component.result) {
+          componentChanges.set(component.result.id, true)
+        }
       }
     }
 
