@@ -254,6 +254,27 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._needsDOMUpdate = false
+
+    /**
+     * Set tracking state keys that have slot observation registered.
+     * @type {Set<string>|null}
+     * @protected
+     */
+    this._slotObservedKeys = null
+
+    /**
+     * Cached scratch buffer array for running dirty observers without allocations.
+     * @type {Array<ObserverRecord>|null}
+     * @protected
+     */
+    this._dirtyObserversBuffer = null
+
+    /**
+     * Cached flag indicating whether Coralite client runtime is running in development mode.
+     * @type {boolean}
+     * @protected
+     */
+    this._isDevMode = false
   }
 
   /**
@@ -272,6 +293,9 @@ export class CoraliteElement extends BaseElement {
     this._observerRecords = new Set()
     this._dependencyGraph = new Map()
     this._dirtyObservers = new Set()
+    this._slotObservedKeys = new Set()
+    this._dirtyObserversBuffer = []
+    this._isDevMode = typeof window !== 'undefined' && Boolean(window['__coralite__']) && window['__coralite__'].mode === 'development'
 
     if (!this.componentOptions) {
       return
@@ -397,6 +421,14 @@ export class CoraliteElement extends BaseElement {
       this._slotHasInternalObservers.clear()
       this._slotHasInternalObservers = null
     }
+
+    if (this._slotObservedKeys) {
+      this._slotObservedKeys.clear()
+      this._slotObservedKeys = null
+    }
+
+    this._dirtyObserversBuffer = null
+    this._isDevMode = false
 
     this._slotRuntimeReady = false
     this._processSlotsOnReady = false
@@ -944,8 +976,8 @@ export class CoraliteElement extends BaseElement {
               }
 
               if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
-                const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
-                if (!hasRecord) {
+                if (self._slotObservedKeys && !self._slotObservedKeys.has(p)) {
+                  self._slotObservedKeys.add(p)
                   self._observeStateKey(p, () => self._processSlots())
                 }
               }
@@ -964,25 +996,30 @@ export class CoraliteElement extends BaseElement {
           return true
         }
 
-        if (typeof p === 'string') {
-          const mode = (typeof window !== 'undefined' && window['__coralite__'] && window['__coralite__'].mode) || 'production'
-
-          if (mode === 'development' && self._isExecutingObserver) {
-            console.warn('State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.')
-          }
+        if (typeof p === 'string' && self._isDevMode && self._isExecutingObserver) {
+          console.warn('State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.')
         }
 
         t[p] = v
 
         if (typeof p === 'string' && self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
-          const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
-          if (!hasRecord) {
+          if (self._slotObservedKeys && !self._slotObservedKeys.has(p)) {
+            self._slotObservedKeys.add(p)
             self._observeStateKey(p, () => self._processSlots())
           }
         }
 
         if (typeof p === 'string') {
-          self._markObserverDirty(p)
+          if (!p.includes('-') && p === p.toLowerCase()) {
+            self._markObserverDirty(p)
+          } else {
+            const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const kebabName = camelToKebab(camelName)
+
+            self._markObserverDirty(camelName)
+            self._markObserverDirty(kebabName)
+            self._markObserverDirty(p)
+          }
         }
 
         self._scheduleUpdate()
@@ -1019,8 +1056,8 @@ export class CoraliteElement extends BaseElement {
 
         if (deleted && oldValue !== undefined) {
           if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
-            const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
-            if (!hasRecord) {
+            if (self._slotObservedKeys && !self._slotObservedKeys.has(p)) {
+              self._slotObservedKeys.add(p)
               self._observeStateKey(p, () => self._processSlots())
             }
           }
@@ -1546,12 +1583,21 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
-    const observers = Array.from(this._dirtyObservers)
+    if (!this._dirtyObserversBuffer) {
+      this._dirtyObserversBuffer = []
+    }
+    const buffer = this._dirtyObserversBuffer
+    buffer.length = 0
+
+    for (const record of this._dirtyObservers) {
+      buffer.push(record)
+    }
     this._dirtyObservers.clear()
 
-    for (let i = 0; i < observers.length; i++) {
-      observers[i].run()
+    for (let i = 0; i < buffer.length; i++) {
+      buffer[i].run()
     }
+    buffer.length = 0
   }
 
   /**
