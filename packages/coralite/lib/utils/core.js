@@ -636,9 +636,15 @@ export function createReactiveProxy (target, onChange, proxies = new WeakMap()) 
     return proxies.get(target)
   }
 
+  const isArray = Array.isArray(target)
+
   const handler = {
     get (target, property, receiver) {
       const value = Reflect.get(target, property, receiver)
+      if (isArray) {
+        return value
+      }
+
       if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
         return createReactiveProxy(value, onChange, proxies)
       }
@@ -695,12 +701,18 @@ export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = 
     return proxies.get(target)
   }
 
+  const isArray = Array.isArray(target)
+
   const handler = {
     get (target, property, receiver) {
       const value = Reflect.get(target, property, receiver)
 
       if (tracker && tracker.activeCollector && typeof property === 'string') {
         tracker.activeCollector(property)
+      }
+
+      if (isArray) {
+        return value
       }
 
       if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {

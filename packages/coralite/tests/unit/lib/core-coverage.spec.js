@@ -123,6 +123,35 @@ describe('core.js Coverage Gaps', () => {
       proxy.a = 1
       assert.strictEqual(changed, false)
     })
+
+    it('should return raw item object on array element read without proxy wrapping', () => {
+      const item = { id: 1, label: 'test' }
+      const target = { data: [item] }
+      const proxy = createReactiveProxy(target, () => {})
+      const readItem = proxy.data[0]
+      assert.strictEqual(readItem, item)
+    })
+
+    it('should maintain reactivity on array mutations and reassignments', () => {
+      const changes = []
+      const target = { data: [{ id: 1 }] }
+      const proxy = createReactiveProxy(target, change => {
+        changes.push(change)
+      })
+
+      proxy.data.push({ id: 2 })
+      assert.ok(changes.length > 0)
+
+      changes.length = 0
+      proxy.data[0] = { id: 99 }
+      assert.strictEqual(changes.length, 1)
+      assert.strictEqual(changes[0].property, '0')
+
+      changes.length = 0
+      proxy.data = [{ id: 100 }]
+      assert.strictEqual(changes.length, 1)
+      assert.strictEqual(changes[0].property, 'data')
+    })
   })
 
   describe('createReadOnlyProxy', () => {
@@ -138,6 +167,30 @@ describe('core.js Coverage Gaps', () => {
       target.self = target
       const proxy = createReadOnlyProxy(target)
       assert.strictEqual(proxy.self, proxy)
+    })
+
+    it('should return raw item object on array element read without proxy wrapping', () => {
+      const item = { id: 1, label: 'test' }
+      const target = { data: [item] }
+      const proxy = createReadOnlyProxy(target)
+      const readItem = proxy.data[0]
+      assert.strictEqual(readItem, item)
+    })
+
+    it('should invoke tracker activeCollector on array property read', () => {
+      const collected = []
+      const tracker = {
+        activeCollector (prop) {
+          collected.push(prop)
+        }
+      }
+      const item = { id: 10 }
+      const target = { data: [item] }
+      const proxy = createReadOnlyProxy(target, new WeakMap(), tracker)
+
+      const readItem = proxy.data[0]
+      assert.strictEqual(readItem, item)
+      assert.deepStrictEqual(collected, ['data', '0'])
     })
   })
 
