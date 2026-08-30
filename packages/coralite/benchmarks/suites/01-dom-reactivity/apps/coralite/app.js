@@ -3,7 +3,8 @@ import { buildData, updateData, swapRows } from '../../../../utils/data-generato
 
 // Pre-compiled row template for high-speed cloneNode allocation
 const rowTemplate = document.createElement('template')
-rowTemplate.innerHTML = '<tr><td class="col-id"></td><td class="col-label"><a class="lbl"></a></td><td class="col-delete"><button class="btn-delete" type="button">🗑️</button></td></tr>'
+rowTemplate.innerHTML = '<tr><td class="col-id"> </td><td class="col-label"><a class="lbl"> </a></td><td class="col-delete"><button class="btn-delete" type="button">🗑️</button></td></tr>'
+const templateRow = rowTemplate.content.firstChild
 
 const CoraliteApp = createCoraliteClass({
   componentId: 'coralite-app',
@@ -31,28 +32,30 @@ const CoraliteApp = createCoraliteClass({
     let skipValue = null
 
     function renderRow (item, selected) {
-      const tr = rowTemplate.content.firstElementChild.cloneNode(true)
+      const tr = templateRow.cloneNode(true)
       if (selected === item.id) {
         tr.className = 'danger'
       }
 
       tr.setAttribute('data-id', String(item.id))
-      // Invariant: children[0] = td.col-id, children[1] = td.col-label > a.lbl
-      tr.children[0].textContent = String(item.id)
-      tr.children[1].firstElementChild.textContent = item.label
+      const td1 = tr.firstChild
+      const a = td1.nextSibling.firstChild
+      td1.firstChild.nodeValue = item.id
+      a.firstChild.nodeValue = item.label
       return tr
     }
 
     function renderAll () {
       const list = state.data || []
-      if (list.length === 0) {
+      const len = list.length
+      if (len === 0) {
         tbody.replaceChildren()
         return
       }
 
       const selected = state.selected
       const fragment = document.createDocumentFragment()
-      for (let i = 0; i < list.length; i++) {
+      for (let i = 0; i < len; i++) {
         fragment.appendChild(renderRow(list[i], selected))
       }
       tbody.replaceChildren(fragment)
@@ -88,19 +91,28 @@ const CoraliteApp = createCoraliteClass({
     const clearBtn = root.querySelector('#clear')
 
     runBtn.addEventListener('click', () => {
+      const newData = buildData(1000)
+      skipValue = newData
       state.selected = null
-      state.data = buildData(1000)
+      state.data = newData
+      renderAll()
     })
 
     runlotsBtn.addEventListener('click', () => {
+      const newData = buildData(10000)
+      skipValue = newData
       state.selected = null
-      state.data = buildData(10000)
+      state.data = newData
+      renderAll()
     })
 
     replaceBtn.addEventListener('click', () => {
-      state.selected = null
       const count = state.data.length > 0 ? state.data.length : 1000
-      state.data = buildData(count)
+      const newData = buildData(count)
+      skipValue = newData
+      state.selected = null
+      state.data = newData
+      renderAll()
     })
 
     updateBtn.addEventListener('click', () => {

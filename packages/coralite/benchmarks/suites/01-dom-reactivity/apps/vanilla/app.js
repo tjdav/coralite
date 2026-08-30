@@ -2,20 +2,23 @@ import { buildData, updateData, swapRows } from '../../../../utils/data-generato
 
 // Pre-compiled row template for high-speed cloneNode allocation
 const rowTemplate = document.createElement('template')
-rowTemplate.innerHTML = '<tr><td class="col-id"></td><td class="col-label"><a class="lbl"></a></td><td class="col-delete"><button class="btn-delete" type="button">🗑️</button></td></tr>'
+rowTemplate.innerHTML = '<tr><td class="col-id"> </td><td class="col-label"><a class="lbl"> </a></td><td class="col-delete"><button class="btn-delete" type="button">🗑️</button></td></tr>'
+const templateRow = rowTemplate.content.firstChild
 
 let data = []
 let selected = null
 const tbody = document.getElementById('tbody')
 
 function renderRow (item, currentSelected) {
-  const tr = rowTemplate.content.firstElementChild.cloneNode(true)
+  const tr = templateRow.cloneNode(true)
   if (currentSelected === item.id) {
     tr.className = 'danger'
   }
   tr.setAttribute('data-id', String(item.id))
-  tr.children[0].textContent = String(item.id)
-  tr.children[1].firstElementChild.textContent = item.label
+  const td1 = tr.firstChild
+  const a = td1.nextSibling.firstChild
+  td1.firstChild.nodeValue = item.id
+  a.firstChild.nodeValue = item.label
   return tr
 }
 
