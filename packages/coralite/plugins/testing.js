@@ -1,6 +1,10 @@
 import { definePlugin } from '../lib/plugin.js'
 
 /**
+ * @import { CoralitePluginComponentContext, CoralitePluginBeforeComponentRenderContext, CoralitePluginAfterComponentRenderContext, CoralitePluginPageSetContext, CoraliteModule, CoraliteAnyNode } from '../types/index.js'
+ */
+
+/**
  * Traverses an AST recursively and duplicates 'ref' attributes to 'data-testid'.
  * Also adds deterministic data-testid to interactive elements in testing mode.
  * Note: Modifying AST nodes in-place is required to preserve reference identity
@@ -86,17 +90,44 @@ function traverseAndAddTestId (children, instanceId, { autoTestId = false, count
   }
 }
 
+/**
+ * Strips test and data-testid attributes from a component AST and its attribute token values in production mode.
+ * @param {CoraliteModule} [component] - The component module.
+ */
+function stripTestAttributesFromComponent (component) {
+  if (!component) {
+    return
+  }
+
+  if (component.template && component.template.children) {
+    traverseAndAddTestId(component.template.children, null, { mode: 'production' })
+  }
+
+  if (component.values && component.values.attributes) {
+    component.values.attributes = component.values.attributes.filter(attr => attr.name !== 'data-testid' && attr.name !== 'test')
+  }
+}
+
 export const testingPlugin = definePlugin({
   name: 'testing',
   server: {
-    onComponentSet: (ctx) => {
-      /** @type {any} */
-      const { module, app } = ctx
-      if (app.options.mode === 'production' && module?.template?.children) {
-        traverseAndAddTestId(module.template.children, null, { mode: 'production' })
+    /**
+     * @param {CoralitePluginComponentContext} context
+     */
+    onComponentSet ({ component, module, app }) {
+      if (app.options.mode === 'production') {
+        stripTestAttributesFromComponent(component || module)
       }
     },
-    onBeforeBuild: ({ app }) => {
+    /**
+     * @param {CoralitePluginComponentContext} context
+     */
+    onComponentUpdate ({ component, module, app }) {
+      if (app.options.mode === 'production') {
+        stripTestAttributesFromComponent(component || module)
+      }
+    },
+    onBeforeBuild ({ app }) {
       // Velocity Engine remains strictly for 'testing' mode to ensure stability
       if (app.options.mode !== 'testing') {
         return
@@ -111,7 +142,10 @@ export const testingPlugin = definePlugin({
 `.trim()
       app.options.externalStyles.push(`data:text/css;base64,${Buffer.from(velocityStyle).toString('base64')}`)
     },
-    onBeforeComponentRender: ({ instanceId, template, app }) => {
+    /**
+     * @param {CoralitePluginBeforeComponentRenderContext} context
+     */
+    onBeforeComponentRender ({ instanceId, template, app }) {
       if (app.options.mode === 'production') {
         return
       }
@@ -119,53 +153,46 @@ export const testingPlugin = definePlugin({
       const isDevOrTest = mode === 'development' || mode === 'testing'
       const counters = {}
 
-      /** @type {any} */
-      const templateNode = template
-      if (templateNode && templateNode.children) {
-        traverseAndAddTestId(templateNode.children, instanceId, {
+      if (template && 'children' in template && template.children) {
+        traverseAndAddTestId(template.children, instanceId, {
           autoTestId: isDevOrTest,
           counters,
           mode
         })
       }
     },
-    onAfterComponentRender: ({ result, app }) => {
-      const mode = app.options.mode
-      if (mode !== 'production') {
+    /**
+     * @param {CoralitePluginAfterComponentRenderContext} context
+     */
+    onAfterComponentRender ({ result, app }) {
+      if (app.options.mode !== 'production') {
         return
       }
 
       // Final safety pass for production to ensure all data-testid are stripped
-      const traverse = (children) => {
-        if (!Array.isArray(children)) {
-          return
-        }
-        for (const node of children) {
-          if (node.type === 'tag' && node.attribs) {
-            delete node.attribs['data-testid']
-            delete node.attribs.test
-          }
-          if (node.children) {
-            traverse(node.children)
-          }
-        }
+      let nodes = []
+      if (Array.isArray(result)) {
+        nodes = result
+      } else if (result && 'children' in result && result.children) {
+        nodes = result.children
       }
 
-      // @ts-ignore
-      if (result && result.children) {
-        // @ts-ignore
-        traverse(result.children)
-      }
+      traverseAndAddTestId(nodes, null, { mode: 'production' })
     },
-    onPageSet: ({ elements, app }) => {
+    /**
+     * @param {CoralitePluginPageSetContext} context
+     */
+    onPageSet ({ elements, app }) {
       const mode = app.options.mode
       const isDevOrTest = mode === 'development' || mode === 'testing'
       const counters = {}
-      traverseAndAddTestId(elements?.root?.children, 'page', {
-        autoTestId: isDevOrTest,
-        counters,
-        mode
-      })
+      if (elements?.root?.children) {
+        traverseAndAddTestId(elements.root.children, 'page', {
+          autoTestId: isDevOrTest,
+          counters,
+          mode
+        })
+      }
     }
   }
 })

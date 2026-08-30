@@ -197,13 +197,13 @@ describe('testingPlugin', () => {
     assert.ok(appTest.options.externalStyles[0].startsWith('data:text/css;base64,'))
   })
 
-  it('should perform a final safety pass in production to strip data-testid', () => {
-    const result = {
+  it('should perform a final safety pass in production to strip data-testid for objects and arrays', () => {
+    const resultObj = {
       children: [
         {
           type: 'tag',
           name: 'div',
-          attribs: { 'data-testid': 'stray-id' },
+          attribs: { 'data-testid': 'stray-id', test: 'old-test' },
           children: [
             {
               type: 'tag',
@@ -216,11 +216,112 @@ describe('testingPlugin', () => {
     }
 
     testingPlugin.server.onAfterComponentRender({
-      result,
+      result: resultObj,
       app: appProd
     })
 
-    assert.strictEqual(result.children[0].attribs['data-testid'], undefined)
-    assert.strictEqual(result.children[0].children[0].attribs['data-testid'], undefined)
+    assert.strictEqual(resultObj.children[0].attribs['data-testid'], undefined)
+    assert.strictEqual(resultObj.children[0].attribs.test, undefined)
+    assert.strictEqual(resultObj.children[0].children[0].attribs['data-testid'], undefined)
+
+    const resultArray = [
+      {
+        type: 'tag',
+        name: 'div',
+        attribs: { 'data-testid': 'array-stray' }
+      }
+    ]
+
+    testingPlugin.server.onAfterComponentRender({
+      result: resultArray,
+      app: appProd
+    })
+
+    assert.strictEqual(resultArray[0].attribs['data-testid'], undefined)
+  })
+
+  it('should strip test attributes onComponentSet and onComponentUpdate in production mode', () => {
+    const component = {
+      template: {
+        children: [
+          {
+            type: 'tag',
+            name: 'button',
+            attribs: { 'data-testid': 'action-btn', test: 'legacy-btn' }
+          }
+        ]
+      },
+      values: {
+        attributes: [
+          { name: 'data-testid', value: 'action-btn' },
+          { name: 'test', value: 'legacy-btn' },
+          { name: 'class', value: 'btn-primary' }
+        ]
+      }
+    }
+
+    // Test onComponentSet with component property
+    testingPlugin.server.onComponentSet({
+      component,
+      app: appProd
+    })
+
+    assert.strictEqual(component.template.children[0].attribs['data-testid'], undefined)
+    assert.strictEqual(component.template.children[0].attribs.test, undefined)
+    assert.strictEqual(component.values.attributes.length, 1)
+    assert.strictEqual(component.values.attributes[0].name, 'class')
+
+    // Test onComponentUpdate with module fallback property
+    const module = {
+      template: {
+        children: [
+          {
+            type: 'tag',
+            name: 'div',
+            attribs: { 'data-testid': 'card-container' }
+          }
+        ]
+      },
+      values: {
+        attributes: [
+          { name: 'data-testid', value: 'card-container' }
+        ]
+      }
+    }
+
+    testingPlugin.server.onComponentUpdate({
+      module,
+      app: appProd
+    })
+
+    assert.strictEqual(module.template.children[0].attribs['data-testid'], undefined)
+    assert.strictEqual(module.values.attributes.length, 0)
+  })
+
+  it('should preserve test attributes onComponentSet in development mode', () => {
+    const component = {
+      template: {
+        children: [
+          {
+            type: 'tag',
+            name: 'button',
+            attribs: { 'data-testid': 'action-btn' }
+          }
+        ]
+      },
+      values: {
+        attributes: [
+          { name: 'data-testid', value: 'action-btn' }
+        ]
+      }
+    }
+
+    testingPlugin.server.onComponentSet({
+      component,
+      app: appDev
+    })
+
+    assert.strictEqual(component.template.children[0].attribs['data-testid'], 'action-btn')
+    assert.strictEqual(component.values.attributes.length, 1)
   })
 })

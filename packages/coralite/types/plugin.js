@@ -197,7 +197,8 @@
 
 /**
  * @typedef {Object} CoralitePluginComponentContext
- * @property {CoraliteModule} component - The component module being set or updated
+ * @property {CoraliteModule} [component] - The component module being set or updated
+ * @property {CoraliteModule} [module] - The component module being set or updated (alias for component)
  * @property {CoraliteInstance} app - The global coralite app instance
  * @property {any} [config] - Plugin configuration object
  */

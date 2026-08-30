@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { execSync, spawn } from 'node:child_process'
-import { mkdtemp, rm, readFile, writeFile, copyFile, readdir } from 'node:fs/promises'
+import { mkdtemp, rm, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path, { join } from 'node:path'
 import { existsSync } from 'node:fs'
@@ -35,31 +35,17 @@ for (const templateName of templates) {
         throw new Error(`Scaffolded directory ${projectPath} does not exist`)
       }
 
-      // Resolve tarballs from the pre-built global setup location
-      const tarballsDir = path.resolve(process.cwd(), 'tests/e2e/.tarballs')
-      const filesInTarballs = await readdir(tarballsDir)
-      const coraliteTarName = filesInTarballs.find(f => f.startsWith('coralite-') && !f.startsWith('coralite-scripts-'))
-      const scriptsTarName = filesInTarballs.find(f => f.startsWith('coralite-scripts-'))
+      // Resolve workspace dependencies directly via file: links
+      const repoRoot = path.resolve(process.cwd(), '../..')
+      const coralitePkgPath = path.join(repoRoot, 'packages/coralite')
+      const scriptsPkgPath = path.join(repoRoot, 'packages/coralite-scripts')
 
-      if (!coraliteTarName || !scriptsTarName) {
-        throw new Error(`Pre-built tarballs not found in ${tarballsDir}. Did globalSetup run?`)
-      }
-
-      const coraliteTarPath = join(tarballsDir, coraliteTarName)
-      const scriptsTarPath = join(tarballsDir, scriptsTarName)
-
-      // Copy tarballs to local tempDir so they can be referenced easily
-      const localCoraliteTarPath = join(tempDir, coraliteTarName)
-      const localScriptsTarPath = join(tempDir, scriptsTarName)
-      await copyFile(coraliteTarPath, localCoraliteTarPath)
-      await copyFile(scriptsTarPath, localScriptsTarPath)
-
-      // Update package.json in scaffolded project to use packed tarballs
+      // Update package.json in scaffolded project to use workspace file: dependencies
       const pkgJsonPath = join(projectPath, 'package.json')
       const pkgJson = JSON.parse(await readFile(pkgJsonPath, 'utf8'))
 
-      const relativeCoralitePath = path.relative(projectPath, localCoraliteTarPath).split(path.sep).join('/')
-      const relativeScriptsPath = path.relative(projectPath, localScriptsTarPath).split(path.sep).join('/')
+      const relativeCoralitePath = path.relative(projectPath, coralitePkgPath).split(path.sep).join('/')
+      const relativeScriptsPath = path.relative(projectPath, scriptsPkgPath).split(path.sep).join('/')
 
       pkgJson.devDependencies = pkgJson.devDependencies || {}
       pkgJson.devDependencies['coralite'] = 'file:' + relativeCoralitePath
@@ -159,6 +145,10 @@ for (const templateName of templates) {
       const countBtn = counterComponent.locator('button')
       await expect(countBtn).toBeVisible()
       await expect(countBtn).toHaveText(/Count is 0/)
+
+      // Wait for counter component custom element definition and async client lifecycle
+      await page.waitForFunction(() => !!customElements.get('coralite-counter'))
+      await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 200)))
 
       // Click count button
       await countBtn.click()

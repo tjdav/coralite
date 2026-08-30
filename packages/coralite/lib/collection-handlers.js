@@ -178,13 +178,14 @@ export function createPageHandlers ({
 
     const res = await triggerHook('onComponentSet', {
       component,
+      module: component,
       app
     })
 
     return {
       type: 'component',
-      id: res.component.id,
-      value: res.component
+      id: res.component?.id || res.module?.id || component.id,
+      value: res.component || res.module || component
     }
   }
 
@@ -205,6 +206,7 @@ export function createPageHandlers ({
 
     const res = await triggerHook('onComponentUpdate', {
       component,
+      module: component,
       app
     })
 
