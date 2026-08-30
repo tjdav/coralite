@@ -191,9 +191,17 @@
     classPrefix: 'code-'
   })
 
+  const highlightCache = new Map()
+
   const highlight = (str, lang) => {
+    const key = `${lang}:${str}`
+    if (highlightCache.has(key)) {
+      return highlightCache.get(key)
+    }
     const highlighted = code.highlight(dedent(str).trim(), { language: lang }).value
-    return parseHTML(highlighted).root.children
+    const nodes = parseHTML(highlighted).root.children
+    highlightCache.set(key, nodes)
+    return nodes
   }
 
   export default defineComponent({
