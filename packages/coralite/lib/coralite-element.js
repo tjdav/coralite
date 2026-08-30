@@ -104,7 +104,7 @@ export class CoraliteElement extends BaseElement {
 
     /**
      * The collection of DOM nodes mapped to template tokens and attributes.
-     * @type {Array<{type: string, node: Node, path?: number[], template?: string, name?: string}>}
+     * @type {Array<{type: string, node: Node, path?: number[], template?: string, name?: string, tokens?: string[], isSingleToken?: boolean, singleTokenKey?: string}>}
      * @protected
      */
     this._bindings = []
@@ -1188,15 +1188,34 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
+    const extractTokens = (template) => {
+      const tokens = []
+      template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
+        tokens.push(key)
+        return ''
+      })
+      const trimmed = template.trim()
+      const isSingleToken = tokens.length === 1 && (trimmed === `{{${tokens[0]}}}` || trimmed === `{{ ${tokens[0]} }}`)
+      return {
+        tokens,
+        isSingleToken,
+        singleTokenKey: tokens[0]
+      }
+    }
+
     if (map.texts) {
       for (const item of map.texts) {
         const node = this.getNodeByPath(item.path)
         if (node) {
+          const { tokens, isSingleToken, singleTokenKey } = extractTokens(item.template)
           this._bindings.push({
             type: item.type || 'text',
             node,
             path: item.path,
-            template: item.template
+            template: item.template,
+            tokens,
+            isSingleToken,
+            singleTokenKey
           })
         }
       }
@@ -1206,12 +1225,16 @@ export class CoraliteElement extends BaseElement {
       for (const item of map.attributes) {
         const node = this.getNodeByPath(item.path)
         if (node) {
+          const { tokens, isSingleToken, singleTokenKey } = extractTokens(item.template)
           this._bindings.push({
             type: 'attribute',
             node,
             path: item.path,
             name: item.name,
-            template: item.template
+            template: item.template,
+            tokens,
+            isSingleToken,
+            singleTokenKey
           })
         }
       }
@@ -1350,10 +1373,11 @@ export class CoraliteElement extends BaseElement {
     /** @type {Set<string>} */
     const requiredTokens = new Set()
     for (const binding of this._bindings) {
-      binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
-        requiredTokens.add(key)
-        return ''
-      })
+      if (binding.tokens) {
+        for (let i = 0; i < binding.tokens.length; i++) {
+          requiredTokens.add(binding.tokens[i])
+        }
+      }
     }
 
     const evaluatedTokens = {}
@@ -1394,9 +1418,11 @@ export class CoraliteElement extends BaseElement {
           continue
         }
 
-        const hydratedValue = binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
-          return tokenValues[key] ?? ''
-        })
+        const hydratedValue = binding.isSingleToken
+          ? String(tokenValues[binding.singleTokenKey] ?? '')
+          : binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
+            return tokenValues[key] ?? ''
+          })
 
         if (binding.type === 'text') {
           if (node.textContent !== hydratedValue) {
