@@ -247,6 +247,13 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._refsKeysCache = null
+
+    /**
+     * Fast-path flag indicating if the component has active DOM bindings, reactive styles, slots, or after-render hooks.
+     * @type {boolean}
+     * @protected
+     */
+    this._needsDOMUpdate = false
   }
 
   /**
@@ -265,7 +272,6 @@ export class CoraliteElement extends BaseElement {
     this._observerRecords = new Set()
     this._dependencyGraph = new Map()
     this._dirtyObservers = new Set()
-    this._isFlushingObservers = false
 
     if (!this.componentOptions) {
       return
@@ -323,6 +329,12 @@ export class CoraliteElement extends BaseElement {
 
     this._setupState()
     this._setupBindings()
+    this._needsDOMUpdate = Boolean(
+      (this._bindings && this._bindings.length > 0) ||
+      (this.componentOptions?.style && typeof this.componentOptions.style === 'object' && Object.keys(this.componentOptions.style).length > 0) ||
+      (this.componentOptions?.slots && Object.keys(this.componentOptions.slots).length > 0) ||
+      (this._hooks && this._hooks.onAfterComponentRender && this._hooks.onAfterComponentRender.length > 0)
+    )
     this._init(isImperative)
 
     if (this._getOwnSlots().length > 0) {
@@ -706,11 +718,11 @@ export class CoraliteElement extends BaseElement {
           target['error_' + camelTop] = flatVal
           target['error_' + kebabTop] = flatVal
 
-          self._scheduleUpdate()
           self._markObserverDirty('errors')
           self._markObserverDirty(currentTopKey)
           self._markObserverDirty('error_' + camelTop)
           self._markObserverDirty('error_' + kebabTop)
+          self._scheduleUpdate()
           return true
         },
 
@@ -740,11 +752,11 @@ export class CoraliteElement extends BaseElement {
             target['error_' + camelTop] = flatVal
             target['error_' + kebabTop] = flatVal
 
-            self._scheduleUpdate()
             self._markObserverDirty('errors')
             self._markObserverDirty(currentTopKey)
             self._markObserverDirty('error_' + camelTop)
             self._markObserverDirty('error_' + kebabTop)
+            self._scheduleUpdate()
           }
           return deleted
         }
@@ -880,7 +892,6 @@ export class CoraliteElement extends BaseElement {
             }
           }
 
-          self._scheduleUpdate()
           self._markObserverDirty('errors')
           for (const key of affectedKeys) {
             const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
@@ -889,6 +900,7 @@ export class CoraliteElement extends BaseElement {
             self._markObserverDirty('error_' + camelName)
             self._markObserverDirty('error_' + kebabName)
           }
+          self._scheduleUpdate()
           return true
         }
 
@@ -931,8 +943,6 @@ export class CoraliteElement extends BaseElement {
                 delete self._getterAbortControllers[p]
               }
 
-              self._scheduleUpdate()
-
               if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
                 const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
                 if (!hasRecord) {
@@ -942,6 +952,7 @@ export class CoraliteElement extends BaseElement {
               self._markObserverDirty(camelName)
               self._markObserverDirty(kebabName)
               self._markObserverDirty(p)
+              self._scheduleUpdate()
               return true
             }
             v = res.value !== undefined ? res.value : v
@@ -962,7 +973,6 @@ export class CoraliteElement extends BaseElement {
         }
 
         t[p] = v
-        self._scheduleUpdate()
 
         if (typeof p === 'string' && self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
           const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
@@ -974,6 +984,8 @@ export class CoraliteElement extends BaseElement {
         if (typeof p === 'string') {
           self._markObserverDirty(p)
         }
+
+        self._scheduleUpdate()
 
         return true
       },
@@ -1006,7 +1018,6 @@ export class CoraliteElement extends BaseElement {
         }
 
         if (deleted && oldValue !== undefined) {
-          self._scheduleUpdate()
           if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
             const hasRecord = self._observerRecords && Array.from(self._observerRecords).some(rec => rec.key === p)
             if (!hasRecord) {
@@ -1016,6 +1027,7 @@ export class CoraliteElement extends BaseElement {
           self._markObserverDirty(camelName)
           self._markObserverDirty(kebabName)
           self._markObserverDirty(p)
+          self._scheduleUpdate()
         }
         return deleted
       }
@@ -1172,17 +1184,45 @@ export class CoraliteElement extends BaseElement {
   /**
    * Schedules a DOM update in the next microtask queue.
    * This guarantees that multiple synchronous state mutations result in only one render pass.
+   * Note: Observers must be marked dirty via _markObserverDirty() BEFORE calling _scheduleUpdate() so microtask elision checks inspect updated observers.
    * @private
    */
   _scheduleUpdate () {
     if (this._isUpdatePending) {
       return
     }
+    if (!this._needsDOMUpdate && (!this._dirtyObservers || this._dirtyObservers.size === 0)) {
+      return
+    }
+
     this._isUpdatePending = true
+
     queueMicrotask(() => {
-      this._updateDOM()
-      this._isUpdatePending = false
+      this._flushBatch()
     })
+  }
+
+  /**
+   * Executes the unified reactive batch in a single microtask turn.
+   * @private
+   */
+  _flushBatch () {
+    this._isUpdatePending = false
+
+    if (!this.isConnected) {
+      if (this._dirtyObservers) {
+        this._dirtyObservers.clear()
+      }
+      return
+    }
+
+    if (this._needsDOMUpdate) {
+      this._updateDOM()
+    }
+
+    if (this._dirtyObservers && this._dirtyObservers.size > 0) {
+      this._flushDirtyObservers()
+    }
   }
 
   /**
@@ -1261,6 +1301,10 @@ export class CoraliteElement extends BaseElement {
    * @private
    */
   _updateDOM () {
+    if (!this._needsDOMUpdate) {
+      return
+    }
+
     // Create a unique lock for this specific render cycle
     const renderVersion = Symbol()
     this._currentRenderVersion = renderVersion
@@ -1479,21 +1523,8 @@ export class CoraliteElement extends BaseElement {
         }
         this._dirtyObservers.add(record)
       }
-      this._scheduleObserversFlush()
+      this._scheduleUpdate()
     }
-  }
-
-  /**
-   *
-   */
-  _scheduleObserversFlush () {
-    if (this._isFlushingObservers) {
-      return
-    }
-    this._isFlushingObservers = true
-    queueMicrotask(() => {
-      this._flushDirtyObservers()
-    })
   }
 
   /**
@@ -1501,17 +1532,15 @@ export class CoraliteElement extends BaseElement {
    */
   _flushDirtyObservers () {
     if (!this._dirtyObservers || this._dirtyObservers.size === 0) {
-      this._isFlushingObservers = false
       return
     }
 
     const observers = Array.from(this._dirtyObservers)
     this._dirtyObservers.clear()
-    this._isFlushingObservers = false
 
-    observers.forEach(obs => {
-      obs.run()
-    })
+    for (let i = 0; i < observers.length; i++) {
+      observers[i].run()
+    }
   }
 
   /**
@@ -1701,6 +1730,7 @@ export class CoraliteElement extends BaseElement {
       }
 
       if (needsComputedRecompute) {
+        this._needsDOMUpdate = true
         this._processSlots()
       }
     } finally {
