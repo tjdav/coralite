@@ -291,6 +291,12 @@ async function server (config, options, runMode = 'dev') {
 
       displaySuccess('Coralite initialized successfully')
 
+      if (runMode === 'dev') {
+        coralite.build().catch((error) => {
+          displayError(error.message, error)
+        })
+      }
+
       // Reset express routing to remove old plugin routes before adding new ones
       if (originalAppRouter && originalAppRouter.stack) {
         // Splice the router stack back to its original length to remove newly added routes
@@ -433,10 +439,10 @@ async function server (config, options, runMode = 'dev') {
               rebuildScript = buildLiveReloadScript(currentConfig)
             }
 
-            // Only set item if it's not already in the collection (virtual pages are pre-registered)
+            // Only set item if it does not already exist in coralite.pages
             const item = coralite.pages.getItem(pathname)
 
-            if (!item || item.virtual !== true) {
+            if (!item) {
               await coralite.pages.setItem(pathname)
             }
 
