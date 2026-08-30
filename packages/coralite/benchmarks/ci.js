@@ -24,10 +24,10 @@ async function runCI () {
   resultsData.suites.internal = await runInternalSuite()
   triggerGC()
 
-  // 2. Run 1-iteration DOM reactivity smoke test
+  // 2. Run DOM reactivity smoke test (9 iterations)
   console.log('Running DOM reactivity smoke test...')
   resultsData.suites['dom-reactivity'] = await runDomReactivitySuite({
-    iterations: 1,
+    iterations: 9,
     rows: 1000
   })
 

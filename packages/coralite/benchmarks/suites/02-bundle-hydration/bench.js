@@ -15,7 +15,8 @@ function calculateMedian (numbers) {
   if (!numbers || numbers.length === 0) {
     return 0
   }
-  const sorted = [...numbers].sort((a, b) => a - b)
+  const sample = numbers.length > 1 ? numbers.slice(1) : numbers
+  const sorted = [...sample].sort((a, b) => a - b)
   const mid = Math.floor(sorted.length / 2)
   if (sorted.length % 2 === 0) {
     return +((sorted[mid - 1] + sorted[mid]) / 2).toFixed(2)
@@ -71,11 +72,11 @@ async function createStaticServer (rootDir) {
  * Runs the bundle size and client hydration latency benchmark suite.
  *
  * @param {Object} [options] - Options for running the benchmark suite.
- * @param {number} [options.iterations=5] - Number of iterations per benchmark run.
+ * @param {number} [options.iterations=9] - Number of iterations per benchmark run.
  * @returns {Promise<Object>} Benchmark results
  */
 export async function runBundleHydrationSuite (options = {}) {
-  const iterations = options.iterations || 5
+  const iterations = options.iterations || 9
   const buildDir = path.join(__dirname, '.bench-build')
   await fs.mkdir(buildDir, { recursive: true })
 

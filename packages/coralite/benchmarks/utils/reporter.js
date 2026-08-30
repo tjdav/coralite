@@ -44,7 +44,21 @@ export function writeJSONResults (data, outputPath = DEFAULT_RESULTS_PATH) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true })
   }
-  fs.writeFileSync(outputPath, JSON.stringify(data, null, 2), 'utf-8')
+  let mergedData = data
+  if (fs.existsSync(outputPath)) {
+    try {
+      const existing = JSON.parse(fs.readFileSync(outputPath, 'utf-8'))
+      mergedData = {
+        ...existing,
+        ...data,
+        suites: {
+          ...(existing.suites || {}),
+          ...(data.suites || {})
+        }
+      }
+    } catch {}
+  }
+  fs.writeFileSync(outputPath, JSON.stringify(mergedData, null, 2), 'utf-8')
 }
 
 /**
@@ -145,11 +159,26 @@ export function generateMarkdownTable (suiteName, suiteResults) {
  * @param {string} [outputPath] - Destination file path
  */
 export function writeMarkdownResults (data, outputPath = DEFAULT_BENCHMARKS_MD_PATH) {
-  let content = '# Coralite Performance Benchmarks\n\n'
-  content += `Last updated: ${data.timestamp}\n\n`
-  content += `**Environment:** Node ${data.environment.node} (${data.environment.platform} ${data.environment.arch})\n\n`
+  let completeData = data
+  if (fs.existsSync(DEFAULT_RESULTS_PATH)) {
+    try {
+      const latest = JSON.parse(fs.readFileSync(DEFAULT_RESULTS_PATH, 'utf-8'))
+      completeData = {
+        ...latest,
+        ...data,
+        suites: {
+          ...(latest.suites || {}),
+          ...(data.suites || {})
+        }
+      }
+    } catch {}
+  }
 
-  for (const [suiteName, suiteResults] of Object.entries(data.suites || {})) {
+  let content = '# Coralite Performance Benchmarks\n\n'
+  content += `Last updated: ${completeData.timestamp}\n\n`
+  content += `**Environment:** Node ${completeData.environment.node} (${completeData.environment.platform} ${completeData.environment.arch})\n\n`
+
+  for (const [suiteName, suiteResults] of Object.entries(completeData.suites || {})) {
     content += generateMarkdownTable(suiteName, suiteResults) + '\n\n'
   }
 

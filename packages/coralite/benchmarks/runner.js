@@ -14,7 +14,7 @@ function parseArgs () {
     help: false,
     suite: 'all',
     json: false,
-    iterations: 5,
+    iterations: 9,
     rows: 1000,
     checkRegression: false,
     warnOnly: false,
@@ -38,9 +38,9 @@ function parseArgs () {
     } else if (arg === '--save-baseline') {
       flags.saveBaseline = true
     } else if (arg.startsWith('--iterations=')) {
-      flags.iterations = parseInt(arg.split('=')[1], 10) || 5
+      flags.iterations = parseInt(arg.split('=')[1], 10) || 9
     } else if (arg === '-i' && i + 1 < args.length) {
-      flags.iterations = parseInt(args[++i], 10) || 5
+      flags.iterations = parseInt(args[++i], 10) || 9
     } else if (arg.startsWith('--rows=')) {
       flags.rows = parseInt(arg.split('=')[1], 10) || 1000
     } else if (arg === '-r' && i + 1 < args.length) {
@@ -65,7 +65,7 @@ Options:
   --check-regression  Compare run against baseline.json and exit with code 1 on regression
   --warn-only         Print regression warnings without exiting with code 1
   --save-baseline     Save current run results to baselines/baseline.json
-  --iterations=<n>, -i Set iteration count per test (default: 5)
+  --iterations=<n>, -i Set iteration count per test (default: 9)
   --rows=<n>, -r      Set row count for DOM reactivity suite (default: 1000)
 `)
 }

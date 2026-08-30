@@ -14,7 +14,8 @@ function calculateMedian (numbers) {
   if (!numbers || numbers.length === 0) {
     return 0
   }
-  const sorted = [...numbers].sort((a, b) => a - b)
+  const sample = numbers.length > 1 ? numbers.slice(1) : numbers
+  const sorted = [...sample].sort((a, b) => a - b)
   const mid = Math.floor(sorted.length / 2)
   if (sorted.length % 2 === 0) {
     return +((sorted[mid - 1] + sorted[mid]) / 2).toFixed(2)
@@ -105,7 +106,7 @@ async function bundleApps (buildDir) {
  *
  */
 export async function runDomReactivitySuite (options = {}) {
-  const iterations = options.iterations || 5
+  const iterations = options.iterations || 9
   const rows = options.rows || 1000
   const buildDir = path.join(__dirname, '.bench-build')
 
@@ -188,6 +189,9 @@ export async function runDomReactivitySuite (options = {}) {
 
       // Warmup pass
       await measureClickToPaint(runBtnId, rows)
+      await measureClickToPaint('#replace', rows)
+      await measureClickToPaint('#update', rows)
+      await measureClickToPaint('#swaprows', rows)
       await measureClickToPaint('#clear', 0)
 
       const createKey = rows === 10000 ? 'create10k' : 'create1k'

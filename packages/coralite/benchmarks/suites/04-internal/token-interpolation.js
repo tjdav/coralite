@@ -11,6 +11,16 @@ export function setupTokenInterpolationBench () {
     parent: { children: [] }
   }
 
+  // Warmup V8 JIT compiler for replaceToken
+  for (let i = 0; i < 1000; i++) {
+    replaceToken({
+      type: 'textNode',
+      node: { ...dummyTextNode },
+      content: '{{ name }}',
+      value: 'World'
+    })
+  }
+
   bench('Coralite Token Replace (textNode)', () => {
     const node = { ...dummyTextNode }
     replaceToken({
