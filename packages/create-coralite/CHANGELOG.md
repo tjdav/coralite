@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.0-rc.1
+
+> Comparing `create-coralite-v1.0.0-rc.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- strip test attributes in production and streamline create-coralite e2e (testing) ([618c55f](https://codeberg.org/tjdavid/coralite/commit/618c55fca54c097f8b21b697042a4005a25e781d))
+- Refactor publishing workflows for npm and Codeberg (ci) ([120bdb2](https://codeberg.org/tjdavid/coralite/commit/120bdb2dc77b05e85e33ae80dae1ef92eb65e6bc))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 1.0.0-rc.1 ([b3eaf5c](https://codeberg.org/tjdavid/coralite/commit/b3eaf5c1afa9d8b64ac9adab941338166a2ed11e))
+
+
 ## v1.0.0-rc.0
 
 > Comparing `create-coralite-v0.47.1` to `HEAD`
