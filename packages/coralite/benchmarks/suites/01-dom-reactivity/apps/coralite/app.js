@@ -12,6 +12,9 @@ const CoraliteApp = createCoraliteClass({
     data: [],
     selected: null
   },
+  hydrationMap: {
+    refs: [{ name: 'tbody' }]
+  },
   templateHTML: `
     <div id="main">
       <div class="toolbar">
@@ -27,9 +30,8 @@ const CoraliteApp = createCoraliteClass({
       </table>
     </div>
   `,
-  client ({ state, root, observe }) {
-    const tbody = root.querySelector('tbody')
-    let skipValue = null
+  client ({ state, root, refs, observe }) {
+    const tbody = refs('tbody')
 
     function renderRow (item, selected) {
       const tr = templateRow.cloneNode(true)
@@ -45,15 +47,13 @@ const CoraliteApp = createCoraliteClass({
       return tr
     }
 
-    function renderAll () {
-      const list = state.data || []
-      const len = list.length
+    function renderAll (list, selected) {
+      const len = list ? list.length : 0
       if (len === 0) {
         tbody.replaceChildren()
         return
       }
 
-      const selected = state.selected
       const fragment = document.createDocumentFragment()
       for (let i = 0; i < len; i++) {
         fragment.appendChild(renderRow(list[i], selected))
@@ -61,22 +61,89 @@ const CoraliteApp = createCoraliteClass({
       tbody.replaceChildren(fragment)
     }
 
-    observe('data', () => {
-      if (skipValue !== null && state.data === skipValue) {
-        skipValue = null
+    observe('data', (newData, oldData) => {
+      const newLen = newData ? newData.length : 0
+      const oldLen = oldData ? oldData.length : 0
+
+      if (newLen === 0) {
+        tbody.replaceChildren()
         return
       }
-      skipValue = null
-      renderAll()
+
+      if (oldLen === 0 || oldLen !== newLen) {
+        renderAll(newData, state.selected)
+        return
+      }
+
+      // Fast-path for in-place modifications (same length)
+      const diffIndices = []
+      for (let i = 0; i < newLen; i++) {
+        if (oldData[i] !== newData[i]) {
+          diffIndices.push(i)
+          if (diffIndices.length > 105) {
+            break
+          }
+        }
+      }
+
+      // Swapping 2 rows
+      if (diffIndices.length === 2) {
+        const [i, j] = diffIndices
+        if (oldData[i].id === newData[j].id && oldData[j].id === newData[i].id) {
+          const row1 = tbody.children[i]
+          const row2 = tbody.children[j]
+          if (row1 && row2) {
+            const next1 = row1.nextSibling
+            const next2 = row2.nextSibling
+            if (next1 === row2) {
+              tbody.insertBefore(row2, row1)
+            } else {
+              tbody.insertBefore(row2, next1)
+              tbody.insertBefore(row1, next2)
+            }
+            return
+          }
+        }
+      }
+
+      // Partial updates (e.g., every 10th row)
+      if (diffIndices.length > 0 && diffIndices.length <= 105) {
+        let isAllSameId = true
+        for (let k = 0; k < diffIndices.length; k++) {
+          const idx = diffIndices[k]
+          if (oldData[idx].id !== newData[idx].id) {
+            isAllSameId = false
+            break
+          }
+        }
+
+        if (isAllSameId) {
+          const trs = tbody.children
+          for (let k = 0; k < diffIndices.length; k++) {
+            const idx = diffIndices[k]
+            const tr = trs[idx]
+            if (tr) {
+              const lbl = tr.children[1]?.firstElementChild
+              if (lbl) {
+                lbl.textContent = newData[idx].label
+              }
+            }
+          }
+          return
+        }
+      }
+
+      // Fallback full render
+      renderAll(newData, state.selected)
     })
 
-    observe('selected', () => {
+    observe('selected', (newSelected, oldSelected) => {
       const currentDanger = tbody.querySelector('tr.danger')
       if (currentDanger) {
         currentDanger.classList.remove('danger')
       }
-      if (state.selected !== null) {
-        const targetTr = tbody.querySelector(`tr[data-id="${state.selected}"]`)
+      if (newSelected !== null) {
+        const targetTr = tbody.querySelector(`tr[data-id="${newSelected}"]`)
         if (targetTr) {
           targetTr.classList.add('danger')
         }
@@ -91,71 +158,34 @@ const CoraliteApp = createCoraliteClass({
     const clearBtn = root.querySelector('#clear')
 
     runBtn.addEventListener('click', () => {
-      const newData = buildData(1000)
-      skipValue = newData
       state.selected = null
-      state.data = newData
-      renderAll()
+      state.data = buildData(1000)
     })
 
     runlotsBtn.addEventListener('click', () => {
-      const newData = buildData(10000)
-      skipValue = newData
       state.selected = null
-      state.data = newData
-      renderAll()
+      state.data = buildData(10000)
     })
 
     replaceBtn.addEventListener('click', () => {
       const count = state.data.length > 0 ? state.data.length : 1000
-      const newData = buildData(count)
-      skipValue = newData
       state.selected = null
-      state.data = newData
-      renderAll()
+      state.data = buildData(count)
     })
 
     updateBtn.addEventListener('click', () => {
-      const newData = updateData(state.data, 10)
-      skipValue = newData
-      state.data = newData
-      const trs = tbody.children
-      for (let i = 0; i < newData.length; i += 10) {
-        if (trs[i]) {
-          const lbl = trs[i].children[1]?.firstElementChild
-          if (lbl) {
-            lbl.textContent = newData[i].label
-          }
-        }
-      }
+      state.data = updateData(state.data, 10)
     })
 
     swaprowsBtn.addEventListener('click', () => {
       if (state.data.length > 998) {
-        const newData = swapRows(state.data, 1, 998)
-        skipValue = newData
-        state.data = newData
-        const row1 = tbody.children[1]
-        const row998 = tbody.children[998]
-        if (row1 && row998) {
-          const next1 = row1.nextSibling
-          const next998 = row998.nextSibling
-          if (next1 === row998) {
-            tbody.insertBefore(row998, row1)
-          } else {
-            tbody.insertBefore(row998, next1)
-            tbody.insertBefore(row1, next998)
-          }
-        }
+        state.data = swapRows(state.data, 1, 998)
       }
     })
 
     clearBtn.addEventListener('click', () => {
-      const empty = []
-      skipValue = empty
       state.selected = null
-      state.data = empty
-      tbody.replaceChildren()
+      state.data = []
     })
 
     tbody.addEventListener('click', (e) => {
@@ -164,10 +194,7 @@ const CoraliteApp = createCoraliteClass({
         const tr = target.closest('tr')
         if (tr) {
           const id = parseInt(tr.getAttribute('data-id'), 10)
-          const newData = state.data.filter(item => item.id !== id)
-          skipValue = newData
-          state.data = newData
-          tr.remove()
+          state.data = state.data.filter(item => item.id !== id)
         }
       } else if (target.classList.contains('lbl')) {
         const tr = target.closest('tr')
