@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.0-rc.1
+
+> Comparing `coralite-scripts-v1.0.0-rc.0` to `HEAD`
+
+**Summary:** 3 commits
+
+### 🐛 Bug Fixes
+
+- handle non-array plugins configuration across monorepo ([287e8f1](https://codeberg.org/tjdavid/coralite/commit/287e8f16359d57efbae3e4dfc422570195e2e28a))
+- Refactor publishing workflows for npm and Codeberg (ci) ([120bdb2](https://codeberg.org/tjdavid/coralite/commit/120bdb2dc77b05e85e33ae80dae1ef92eb65e6bc))
+
+### ⚡ Performance Improvements
+
+- optimize dev server bundle pre-warming and request handling (coralite-scripts) ([0f5f9f4](https://codeberg.org/tjdavid/coralite/commit/0f5f9f489d24714b9632a8bcfa2d12be23bbf2f5))
+
+
 ## v1.0.0-rc.0
 
 > Comparing `coralite-scripts-v0.47.1` to `HEAD`
