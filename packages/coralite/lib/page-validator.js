@@ -15,6 +15,10 @@ import { createDiagnostic, formatDiagnosticTerminal } from './utils/diagnostics.
  */
 
 const INERT_TAGS = new Set(['template', 'code', 'pre', 'noscript'])
+const DECLARATOR_QUERY_METHODS = new Set(['querySelector', 'querySelectorAll', 'getElementById', 'getElementsByTagName', 'getElementsByClassName'])
+const COMPOUND_QUERY_METHODS = new Set(['querySelector', 'querySelectorAll', 'getElementsByClassName', 'getElementsByTagName', 'matches', 'closest'])
+const MUTABLE_HTML_PROPERTIES = new Set(['innerHTML', 'outerHTML'])
+const REF_QUERY_METHODS = new Set(['querySelector', 'querySelectorAll', 'getElementById'])
 
 /**
  * Strips HTML comments while preserving original line numbers and character offsets.
@@ -408,7 +412,7 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
 
       if (node.init.type === 'CallExpression' && node.init.callee) {
         const calleeStr = getCalleeName(node.init.callee)
-        if (['querySelector', 'querySelectorAll', 'getElementById', 'getElementsByTagName', 'getElementsByClassName'].includes(calleeStr)) {
+        if (DECLARATOR_QUERY_METHODS.has(calleeStr)) {
           const firstArg = node.init.arguments[0]
           if (firstArg && firstArg.type === 'Literal' && typeof firstArg.value === 'string') {
             if (isCustomElementSelector(firstArg.value)) {
@@ -428,7 +432,7 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
       const calleeStr = getCalleeName(node.callee)
 
       // 1. Compound descendant selector check
-      if (['querySelector', 'querySelectorAll', 'getElementsByClassName', 'getElementsByTagName', 'matches', 'closest'].includes(calleeStr)) {
+      if (COMPOUND_QUERY_METHODS.has(calleeStr)) {
         if (node.arguments.length > 0) {
           const arg0 = node.arguments[0]
           if (arg0 && arg0.type === 'Literal' && typeof arg0.value === 'string') {
@@ -492,7 +496,7 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
       // Direct component mutation via .innerHTML / .outerHTML assignment
       if (node.left && node.left.type === 'MemberExpression' && node.left.property && node.left.property.type === 'Identifier') {
         const propName = node.left.property.name
-        if (['innerHTML', 'outerHTML'].includes(propName)) {
+        if (MUTABLE_HTML_PROPERTIES.has(propName)) {
           const objNode = node.left.object
           if (isCustomElementRefNode(objNode, customElementVars, knownMap)) {
             const line = node.loc ? node.loc.start.line : 1
@@ -558,7 +562,7 @@ function isCustomElementRefNode (node, customElementVars, knownMap) {
 
   if (node.type === 'CallExpression') {
     const calleeStr = getCalleeName(node.callee)
-    if (['querySelector', 'querySelectorAll', 'getElementById'].includes(calleeStr)) {
+    if (REF_QUERY_METHODS.has(calleeStr)) {
       const arg0 = node.arguments[0]
       if (arg0 && arg0.type === 'Literal' && typeof arg0.value === 'string') {
         const sel = arg0.value.toLowerCase()
