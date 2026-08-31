@@ -1,5 +1,46 @@
 # Changelog
 
+## v1.0.0-rc.1
+
+> Comparing `coralite-v1.0.0-rc.0` to `HEAD`
+
+**Summary:** 22 commits
+
+### ✨ Features
+
+- Improve DOM reactivity and ref handling in Coralite ([d5e7bea](https://codeberg.org/tjdavid/coralite/commit/d5e7bea143a544bcab470a7d3cb06f3eaf0e8a96))
+- enhance statistical power and suite merging (benchmarks) ([4a35f11](https://codeberg.org/tjdavid/coralite/commit/4a35f111bdaeb9229548d5b7437628ce260c03a6))
+- dual-scope partitioning for slotted content styling (style) ([ff02fbb](https://codeberg.org/tjdavid/coralite/commit/ff02fbb5c9c1fdec54e77b01226210c7977cf085))
+- implement Fragment-Op Renderer fast path for SSR ([5457a49](https://codeberg.org/tjdavid/coralite/commit/5457a49e67ec07bbcc503f3b722d68c304e5d721))
+- harden getAST caching, JSDoc contract and clearASTCache utility ([3640b2f](https://codeberg.org/tjdavid/coralite/commit/3640b2fc9eaf208f7b0e29e68819fcb03b8c53f2))
+- Implement conditional imports for development/production build paths (coralite) ([f354c88](https://codeberg.org/tjdavid/coralite/commit/f354c88425d04e0812e68c440ae3d41a2e18f1ba))
+
+### 🐛 Bug Fixes
+
+- resolve dom-reactivity benchmark crash, harden harness, and update baselines (benchmarks) ([f321945](https://codeberg.org/tjdavid/coralite/commit/f321945206811308040df5cb6c4bd79ad56c269b))
+- strip test attributes in production and streamline create-coralite e2e (testing) ([618c55f](https://codeberg.org/tjdavid/coralite/commit/618c55fca54c097f8b21b697042a4005a25e781d))
+- handle non-array plugins configuration across monorepo ([287e8f1](https://codeberg.org/tjdavid/coralite/commit/287e8f16359d57efbae3e4dfc422570195e2e28a))
+- track inlined component styles via Set registry (runtime) ([2436b07](https://codeberg.org/tjdavid/coralite/commit/2436b072888d459f8dda0cfd09170bb1526bd836))
+- update @scope donut boundary to :scope [data-cid] (coralite) ([e9a1c1c](https://codeberg.org/tjdavid/coralite/commit/e9a1c1c6d54ada63a260314ca5ea6bb6a8345c80))
+- Refactor publishing workflows for npm and Codeberg (ci) ([120bdb2](https://codeberg.org/tjdavid/coralite/commit/120bdb2dc77b05e85e33ae80dae1ef92eb65e6bc))
+
+### ⚡ Performance Improvements
+
+- pre-compile binding tokens and fast-path single-token updates (element) ([7838ba3](https://codeberg.org/tjdavid/coralite/commit/7838ba3aa3fd6a231f4f74dd89e5706122f79f66))
+- optimize state proxy set trap and slot observer tracking (coralite-element) ([255d587](https://codeberg.org/tjdavid/coralite/commit/255d5875533bb9fdb231bf2a5378bc6a62f14247))
+- optimize bulk DOM row creation (benchmarks) ([4b4a7af](https://codeberg.org/tjdavid/coralite/commit/4b4a7afcde80b2b627aa286e90089d09d551e2f1))
+- use surgical clear in coralite reactivity app (benchmarks) ([fe65700](https://codeberg.org/tjdavid/coralite/commit/fe65700666a6d7f16aa9ffe884a0bbb7764ceab3))
+- de-allocate observer flush using O(1) double-buffer pointer swap (observer) ([d2a6e04](https://codeberg.org/tjdavid/coralite/commit/d2a6e0454460c61f9c9857f95cdf8c3f64f1fded))
+- eliminate proxy allocation churn on array item reads (core) ([64e424d](https://codeberg.org/tjdavid/coralite/commit/64e424d581c9533ae9fbaa8dff5b2d88b35bf519))
+- unify reactive microtask batching and add _needsDOMUpdate fast-path ([68960c3](https://codeberg.org/tjdavid/coralite/commit/68960c3391ce15fc9b4e908af05ae0725fd572dc))
+- optimize cold-start parsing and queue scoping (renderer) ([1e434a2](https://codeberg.org/tjdavid/coralite/commit/1e434a2c581efb06c719a4496cde8c3b1bd25fc1))
+- optimize isEmptyFunction with character scan (script-manager) ([8335f41](https://codeberg.org/tjdavid/coralite/commit/8335f41f8a2b59c9e2a419e6581518df0abe5ea6))
+
+### ♻️ Code Refactoring
+
+- Remove unnecessary @ts-ignore annotations in coralite.js ([c75d279](https://codeberg.org/tjdavid/coralite/commit/c75d279dd5381d467a8b7cffb912b7e925e2ce1e))
+
+
 ## v1.0.0-rc.0
 
 > Comparing `coralite-v0.47.1` to `HEAD`
