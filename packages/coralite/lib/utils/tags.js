@@ -2,14 +2,20 @@ import { CoraliteError } from './errors.js'
 
 export const BOOLEAN_ATTRIBUTES = new Set([
   'allowfullscreen',
+  'allowpaymentrequest',
   'async',
   'autofocus',
   'autoplay',
   'checked',
+  'compact',
   'controls',
+  'credentialless',
+  'declare',
   'default',
   'defer',
   'disabled',
+  'disablepictureinpicture',
+  'disableremoteplayback',
   'formnovalidate',
   'hidden',
   'inert',
@@ -18,16 +24,36 @@ export const BOOLEAN_ATTRIBUTES = new Set([
   'loop',
   'multiple',
   'muted',
+  'nohref',
   'nomodule',
+  'noresize',
+  'noshade',
   'novalidate',
+  'nowrap',
   'open',
   'playsinline',
   'readonly',
   'required',
   'reversed',
+  'scoped',
+  'seamless',
   'selected',
-  'truespeed'
+  'shadowrootclonable',
+  'shadowrootdelegatesfocus',
+  'shadowrootserializable',
+  'truespeed',
+  'typemustmatch',
+  'webkitdirectory'
 ])
+
+/**
+ * Checks whether an attribute name is a WAI-ARIA attribute (starts with "aria-").
+ * @param {string} name - The attribute name to check.
+ * @returns {boolean} - True if the attribute starts with "aria-", false otherwise.
+ */
+export function isAriaAttribute (name) {
+  return typeof name === 'string' && name.toLowerCase().startsWith('aria-')
+}
 
 export const VALID_TAGS = {
   a: true,

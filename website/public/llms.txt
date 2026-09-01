@@ -144,15 +144,19 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   - Changing an attribute in the DOM (e.g., `element.setAttribute('is-checked', 'true')`) automatically triggers the `attributeChangedCallback`, recoerces the value, and updates the unified `state.isChecked`.
   - Mutating the property directly in `state` (inside the `client` block) updates the internal reactivity tree, but does *not* automatically reflect back to the physical DOM attribute unless manually synchronized (avoiding costly DOM reflection loops).
 
-* **Native HTML Boolean Attributes Toggling (`BOOLEAN_ATTRIBUTES`)**:
-  - **Overview**: When reactive tokens are bound to attributes inside component templates (e.g., `<button disabled="{{ isDisabled }}">`), Coralite applies specialized toggling logic if the target attribute name is in the reserved native HTML boolean attributes list.
-  - **The Reserved List**: Includes standard HTML boolean attributes: `allowfullscreen`, `async`, `autofocus`, `autoplay`, `checked`, `controls`, `default`, `defer`, `disabled`, `formnovalidate`, `hidden`, `inert`, `ismap`, `itemscope`, `loop`, `multiple`, `muted`, `nomodule`, `novalidate`, `open`, `playsinline`, `readonly`, `required`, `reversed`, `selected`, and `truespeed`.
+* **Native HTML Boolean Attributes Toggling (`BOOLEAN_ATTRIBUTES` - 43 Attributes)**:
+  - **Overview**: When reactive tokens are bound to single-token attributes inside component templates (e.g., `<button disabled="{{ isDisabled }}">`), Coralite applies specialized presence toggling logic if the target attribute name is in the reserved native HTML boolean attributes list.
+  - **The Full 43-Attribute List**: `allowfullscreen`, `allowpaymentrequest`, `async`, `autofocus`, `autoplay`, `checked`, `compact`, `controls`, `credentialless`, `declare`, `default`, `defer`, `disabled`, `disablepictureinpicture`, `disableremoteplayback`, `formnovalidate`, `hidden`, `inert`, `ismap`, `itemscope`, `loop`, `multiple`, `muted`, `nohref`, `nomodule`, `noresize`, `noshade`, `novalidate`, `nowrap`, `open`, `playsinline`, `readonly`, `required`, `reversed`, `scoped`, `seamless`, `selected`, `shadowrootclonable`, `shadowrootdelegatesfocus`, `shadowrootserializable`, `truespeed`, `typemustmatch`, and `webkitdirectory`.
   - **How it Works**:
-    - If the bound value resolves to any falsy value (specifically `""`, `"false"`, `"null"`, `"0"`, or `"undefined"`), the attribute is **completely removed** from the target element (via `element.removeAttribute(name)`). This matches native HTML behavior, where the mere presence of a boolean attribute (even if written as `disabled="false"`) evaluates to true in the browser.
-    - If the bound value is truthy, the attribute is set as an empty string presence attribute (via `element.setAttribute(name, '')`).
-  - **Limitations**:
-    - This automatic add/remove toggling logic *only* applies to attributes on the reserved native HTML list.
-    - Custom boolean attributes (e.g., `<div is-active="{{ isActive }}">`) or other attributes not on the reserved list are not removed; instead, their values are written directly as string attributes (e.g., `is-active="false"`).
+    - If the single-token value resolves to any falsy value (`""`, `"false"`, `"null"`, `"0"`, `"undefined"`, `false`, `null`, `undefined`, `0`), the attribute is **completely removed** from the element (`removeAttribute` in CSR, deleted from `node.attribs` in SSR).
+    - If truthy, the attribute is set as an empty string presence attribute (e.g., `disabled=""`).
+
+* **WAI-ARIA Attributes Auto-Removal (`aria-*`)**:
+  - **Overview**: When an `aria-*` attribute (e.g., `aria-hidden`, `aria-expanded`, `aria-label`, `aria-disabled`, `aria-valuenow`, `aria-current`) is bound with a single template token (e.g. `<div aria-hidden="{{ isHidden }}">`):
+    - If the evaluated value is **falsy** (`false`, `"false"`, `null`, `"null"`, `undefined`, `"undefined"`, `""`), the attribute is **completely removed** from the element.
+    - **Preservation of 0**: Numeric `0` and string `"0"` are valid ARIA values (e.g., `aria-valuenow="0"`). They do NOT trigger removal and are set as `"0"`.
+    - If truthy (or `0` / `"0"`), the attribute is set to its evaluated string representation (e.g. `aria-hidden="true"`, `aria-label="Search"`).
+    - Multi-token / composite bindings (e.g. `aria-label="Prefix {{ label }}"`) retain static text and standard string replacement rules without auto-removal.
 
 
 #### 2. `server({ state, page, root, module, id, session, app, noHydration, ...plugins })` (Async/Server)

@@ -266,6 +266,7 @@ client: ({ state, signal, refs, observe, emit }) => {
 
     <ul>
       <li><strong>Keep Templates Simple:</strong> Templates should only contain HTML and <code>{{ token }}</code> placeholders. Avoid complex logic in HTML.</li>
+      <li><strong>Boolean & ARIA Attribute Toggling:</strong> Native HTML boolean attributes (43 standard attributes) and <code>aria-*</code> attributes are automatically added or removed when bound to single state tokens. Learn more in the <a href="../reference/define-component.html#native-html-boolean-attributes--wai-aria-auto-removal">defineComponent Reference</a>.</li>
       <li><strong>Prefer Primitives for Attributes:</strong> Only pass Strings, Numbers, and Booleans via attributes. Use <code>server</code> for complex objects.</li>
       <li><strong>Clean Up with AbortSignal:</strong> Always pass the <code>signal</code> to <code>addEventListener</code> or <code>fetch</code> inside your <code>client</code> to prevent memory leaks.</li>
     </ul>

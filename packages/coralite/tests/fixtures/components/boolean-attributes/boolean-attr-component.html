@@ -1,7 +1,7 @@
 <template id="boolean-attr-component">
   <div>
     <input type="checkbox" data-testid="checkbox" checked="{{ isChecked }}">
-    <button data-testid="btn" disabled="{{ isDisabled }}">Click</button>
+    <button data-testid="btn" disabled="{{ isDisabled }}" allowpaymentrequest="{{ isPay }}" aria-expanded="{{ isExpanded }}" aria-label="{{ ariaLabel }}">Click</button>
     <button ref="toggle-btn" data-testid="toggle-btn">Toggle</button>
   </div>
 </template>
@@ -18,11 +18,24 @@
       isDisabled: {
         type: Boolean,
         default: false
+      },
+      isPay: {
+        type: Boolean,
+        default: false
+      },
+      isExpanded: {
+        type: Boolean,
+        default: false
+      },
+      ariaLabel: {
+        type: String,
+        default: ''
       }
     },
     client ({ state, refs }) {
       refs('toggle-btn').addEventListener('click', () => {
         state.isChecked = !state.isChecked
+        state.isExpanded = !state.isExpanded
       })
     }
   })

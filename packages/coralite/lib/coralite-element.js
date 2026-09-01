@@ -3,7 +3,7 @@ import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
 import { CoraliteError } from './utils/errors.js'
-import { BOOLEAN_ATTRIBUTES } from './utils/tags.js'
+import { BOOLEAN_ATTRIBUTES, isAriaAttribute } from './utils/tags.js'
 import {
   RESERVED_DOM_ATTRIBUTES,
   validateAttributeValue
@@ -1441,12 +1441,22 @@ export class CoraliteElement extends BaseElement {
           // @ts-ignore
           const element = node
 
-          if (BOOLEAN_ATTRIBUTES.has(binding.name)) {
+          const lowerName = binding.name ? binding.name.toLowerCase() : ''
+          if (BOOLEAN_ATTRIBUTES.has(lowerName)) {
             const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === '0' || hydratedValue === 'undefined'
             if (isFalsy) {
               element.removeAttribute(binding.name)
             } else {
               element.setAttribute(binding.name, '')
+            }
+          } else if (binding.isSingleToken && isAriaAttribute(lowerName)) {
+            const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === 'undefined'
+            if (isFalsy) {
+              element.removeAttribute(binding.name)
+            } else {
+              if (element.getAttribute(binding.name) !== hydratedValue) {
+                element.setAttribute(binding.name, hydratedValue)
+              }
             }
           } else {
             if (element.getAttribute(binding.name) !== hydratedValue) {

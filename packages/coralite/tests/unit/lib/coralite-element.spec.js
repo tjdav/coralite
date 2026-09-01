@@ -205,9 +205,10 @@ describe('CoraliteElement', () => {
     const toggleTagName = 'toggle-comp-' + Math.random().toString(36).substring(2, 9)
     const ToggleElement = createCoraliteClass({
       componentId: 'toggle-comp',
-      templateHTML: '<div><button id="btn" disabled="{{ isDisabled }}">Btn</button><span id="span" active="{{ isActive }}">Span</span></div>',
+      templateHTML: '<div><button id="btn" disabled="{{ isDisabled }}" allowpaymentrequest="{{ isPay }}">Btn</button><span id="span" active="{{ isActive }}">Span</span></div>',
       defaultValues: {
         isDisabled: false,
+        isPay: false,
         isActive: false
       },
       hydrationMap: {
@@ -216,6 +217,11 @@ describe('CoraliteElement', () => {
             path: [0, 0],
             name: 'disabled',
             template: '{{ isDisabled }}'
+          },
+          {
+            path: [0, 0],
+            name: 'allowpaymentrequest',
+            template: '{{ isPay }}'
           },
           {
             path: [0, 1],
@@ -233,31 +239,126 @@ describe('CoraliteElement', () => {
     const btn = el.querySelector('#btn')
     const span = el.querySelector('#span')
 
-    // Initially falsy, so native 'disabled' should be removed, while non-native 'active' is set to falsy string
+    // Initially falsy, so native 'disabled' and 'allowpaymentrequest' should be removed, while non-native 'active' is set to falsy string
     assert.strictEqual(btn.hasAttribute('disabled'), false)
+    assert.strictEqual(btn.hasAttribute('allowpaymentrequest'), false)
     assert.strictEqual(span.getAttribute('active'), 'false')
 
     // Change to truthy
     // @ts-ignore
     el._state.isDisabled = true
     // @ts-ignore
+    el._state.isPay = true
+    // @ts-ignore
     el._state.isActive = true
 
     queueMicrotask(() => {
-      // Button disabled should be set to empty string, span active to true
+      // Button disabled and allowpaymentrequest should be set to empty string, span active to true
       assert.strictEqual(btn.getAttribute('disabled'), '')
+      assert.strictEqual(btn.getAttribute('allowpaymentrequest'), '')
       assert.strictEqual(span.getAttribute('active'), 'true')
 
       // Change back to falsy
       // @ts-ignore
       el._state.isDisabled = false
       // @ts-ignore
+      el._state.isPay = false
+      // @ts-ignore
       el._state.isActive = false
 
       queueMicrotask(() => {
-        // Button disabled should be completely removed, span active should be set to string 'false'
+        // Button disabled and allowpaymentrequest should be completely removed, span active should be set to string 'false'
         assert.strictEqual(btn.hasAttribute('disabled'), false)
+        assert.strictEqual(btn.hasAttribute('allowpaymentrequest'), false)
         assert.strictEqual(span.getAttribute('active'), 'false')
+
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
+
+  it('should auto-remove single-token aria-* attributes on falsy values, preserve 0 and "0", and handle truthy values', (t, done) => {
+    const ariaTagName = 'aria-comp-' + Math.random().toString(36).substring(2, 9)
+    const AriaElement = createCoraliteClass({
+      componentId: 'aria-comp',
+      templateHTML: '<div><button id="btn" aria-hidden="{{ isHidden }}" aria-label="{{ label }}" aria-valuenow="{{ valNow }}" aria-describedby="desc-{{ id }}">Btn</button></div>',
+      defaultValues: {
+        isHidden: false,
+        label: 'Submit form',
+        valNow: 0,
+        id: '123'
+      },
+      hydrationMap: {
+        attributes: [
+          {
+            path: [0, 0],
+            name: 'aria-hidden',
+            template: '{{ isHidden }}'
+          },
+          {
+            path: [0, 0],
+            name: 'aria-label',
+            template: '{{ label }}'
+          },
+          {
+            path: [0, 0],
+            name: 'aria-valuenow',
+            template: '{{ valNow }}'
+          },
+          {
+            path: [0, 0],
+            name: 'aria-describedby',
+            template: 'desc-{{ id }}'
+          }
+        ]
+      }
+    })
+    customElements.define(ariaTagName, AriaElement)
+
+    const el = document.createElement(ariaTagName)
+    document.body.appendChild(el)
+
+    const btn = el.querySelector('#btn')
+
+    // Initially:
+    // isHidden = false -> aria-hidden should be completely removed
+    assert.strictEqual(btn.hasAttribute('aria-hidden'), false)
+
+    // label = 'Submit form' -> aria-label="Submit form"
+    assert.strictEqual(btn.getAttribute('aria-label'), 'Submit form')
+
+    // valNow = 0 -> aria-valuenow="0" (0 preserved for ARIA!)
+    assert.strictEqual(btn.getAttribute('aria-valuenow'), '0')
+
+    // Composite aria-describedby = "desc-123"
+    assert.strictEqual(btn.getAttribute('aria-describedby'), 'desc-123')
+
+    // Mutate state: set isHidden = true, label = null, valNow = "0"
+    // @ts-ignore
+    el._state.isHidden = true
+    // @ts-ignore
+    el._state.label = null
+    // @ts-ignore
+    el._state.valNow = '0'
+
+    queueMicrotask(() => {
+      // isHidden = true -> aria-hidden="true"
+      assert.strictEqual(btn.getAttribute('aria-hidden'), 'true')
+
+      // label = null -> aria-label removed
+      assert.strictEqual(btn.hasAttribute('aria-label'), false)
+
+      // valNow = "0" -> aria-valuenow="0" preserved
+      assert.strictEqual(btn.getAttribute('aria-valuenow'), '0')
+
+      // Mutate isHidden to "false", "null", "undefined", ""
+      // @ts-ignore
+      el._state.isHidden = 'false'
+
+      queueMicrotask(() => {
+        // "false" string -> falsy for aria auto-removal, so removed
+        assert.strictEqual(btn.hasAttribute('aria-hidden'), false)
 
         document.body.removeChild(el)
         done()

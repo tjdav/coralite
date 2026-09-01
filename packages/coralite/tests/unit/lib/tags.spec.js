@@ -5,12 +5,93 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import {
+  BOOLEAN_ATTRIBUTES,
+  isAriaAttribute,
   VALID_TAGS,
   RESERVED_ELEMENT_NAMES,
   isValidCustomElementName
 } from '../../../lib/utils/tags.js'
 
 describe('tags.js', () => {
+  describe('BOOLEAN_ATTRIBUTES', () => {
+    it('should export BOOLEAN_ATTRIBUTES set with 43 attributes', () => {
+      assert.ok(BOOLEAN_ATTRIBUTES)
+      assert.strictEqual(BOOLEAN_ATTRIBUTES.size, 43)
+    })
+
+    it('should contain all standard 43 HTML boolean attributes', () => {
+      const expected = [
+        'allowfullscreen',
+        'allowpaymentrequest',
+        'async',
+        'autofocus',
+        'autoplay',
+        'checked',
+        'compact',
+        'controls',
+        'credentialless',
+        'declare',
+        'default',
+        'defer',
+        'disabled',
+        'disablepictureinpicture',
+        'disableremoteplayback',
+        'formnovalidate',
+        'hidden',
+        'inert',
+        'ismap',
+        'itemscope',
+        'loop',
+        'multiple',
+        'muted',
+        'nohref',
+        'nomodule',
+        'noresize',
+        'noshade',
+        'novalidate',
+        'nowrap',
+        'open',
+        'playsinline',
+        'readonly',
+        'required',
+        'reversed',
+        'scoped',
+        'seamless',
+        'selected',
+        'shadowrootclonable',
+        'shadowrootdelegatesfocus',
+        'shadowrootserializable',
+        'truespeed',
+        'typemustmatch',
+        'webkitdirectory'
+      ]
+      expected.forEach(attr => {
+        assert.ok(BOOLEAN_ATTRIBUTES.has(attr), `BOOLEAN_ATTRIBUTES should contain "${attr}"`)
+      })
+    })
+  })
+
+  describe('isAriaAttribute', () => {
+    it('should return true for valid WAI-ARIA attributes case-insensitively', () => {
+      assert.strictEqual(isAriaAttribute('aria-hidden'), true)
+      assert.strictEqual(isAriaAttribute('aria-label'), true)
+      assert.strictEqual(isAriaAttribute('ARIA-EXPANDED'), true)
+      assert.strictEqual(isAriaAttribute('aria-valuenow'), true)
+      assert.strictEqual(isAriaAttribute('Aria-Disabled'), true)
+    })
+
+    it('should return false for non-ARIA or invalid input', () => {
+      assert.strictEqual(isAriaAttribute('aria'), false)
+      assert.strictEqual(isAriaAttribute('arial'), false)
+      assert.strictEqual(isAriaAttribute('disabled'), false)
+      assert.strictEqual(isAriaAttribute('data-aria'), false)
+      assert.strictEqual(isAriaAttribute(''), false)
+      assert.strictEqual(isAriaAttribute(null), false)
+      assert.strictEqual(isAriaAttribute(undefined), false)
+      assert.strictEqual(isAriaAttribute(123), false)
+    })
+  })
+
   describe('VALID_TAGS', () => {
     it('should export VALID_TAGS object', () => {
       assert.ok(VALID_TAGS)

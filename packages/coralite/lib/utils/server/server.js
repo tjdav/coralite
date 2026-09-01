@@ -5,7 +5,7 @@ import { sanitize } from 'isomorphic-dompurify'
 import { parseHTML } from './parse.js'
 import { isCoraliteNode } from '../types.js'
 import { createCoraliteTextNode, relinkChildren } from './dom.js'
-import { BOOLEAN_ATTRIBUTES } from '../tags.js'
+import { BOOLEAN_ATTRIBUTES, isAriaAttribute } from '../tags.js'
 
 /**
  * @import {
@@ -631,7 +631,9 @@ export function replaceToken ({
     type === 'attribute'
     && node.type === 'tag'
   ) {
-    if (BOOLEAN_ATTRIBUTES.has(attribute) && (node.attribs[attribute] || '').trim() === content) {
+    const attrLower = attribute ? attribute.toLowerCase() : ''
+    const isSingleToken = (node.attribs[attribute] || '').trim() === content
+    if (BOOLEAN_ATTRIBUTES.has(attrLower) && isSingleToken) {
       // @ts-ignore
       const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '0' || value === 0 || value === '' || value === false || value === null || value === undefined
 
@@ -640,8 +642,20 @@ export function replaceToken ({
       } else {
         node.attribs[attribute] = ''
       }
-    } else if (typeof value === 'string') {
-      node.attribs[attribute] = node.attribs[attribute].replace(content, value)
+    } else if (isAriaAttribute(attrLower) && isSingleToken) {
+      // @ts-ignore
+      const isFalsy = value === 'false' || value === 'null' || value === 'undefined' || value === '' || value === false || value === null || value === undefined
+
+      if (isFalsy) {
+        delete node.attribs[attribute]
+      } else {
+        node.attribs[attribute] = String(value)
+      }
+    } else {
+      const strVal = value == null ? '' : String(value)
+      if (node.attribs[attribute] !== undefined) {
+        node.attribs[attribute] = node.attribs[attribute].replace(content, strVal)
+      }
     }
   } else if (node.type === 'text') {
     if (typeof value === 'object' && value !== null) {

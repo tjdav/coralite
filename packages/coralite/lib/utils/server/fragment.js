@@ -3,6 +3,7 @@ import { createCoraliteTextNode } from './dom.js'
 import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle } from '../core.js'
 import { filterReservedAttributes } from '../../renderer.js'
 import { CoraliteError } from '../errors.js'
+import { BOOLEAN_ATTRIBUTES, isAriaAttribute } from '../tags.js'
 
 /**
  * Deeply freezes a target value (object, array) recursively, excluding DOM AST nodes.
@@ -654,15 +655,36 @@ export async function emitFragment ({
         }
 
         for (const item of op.attrItems) {
-          let attrVal = nodeCopy.attribs[item.name] || ''
-          for (const token of item.tokens) {
-            let val = componentState[token.name]
-            if (val == null) {
-              val = ''
+          const attrLower = item.name ? item.name.toLowerCase() : ''
+          const isSingleToken = item.tokens && item.tokens.length === 1 && (nodeCopy.attribs[item.name] || '').trim() === item.tokens[0].content
+
+          if (BOOLEAN_ATTRIBUTES.has(attrLower) && isSingleToken) {
+            const rawVal = componentState[item.tokens[0].name]
+            const isFalsy = rawVal === 'false' || rawVal === 'null' || rawVal === 'undefined' || rawVal === '0' || rawVal === 0 || rawVal === '' || rawVal === false || rawVal === null || rawVal === undefined
+            if (isFalsy) {
+              delete nodeCopy.attribs[item.name]
+            } else {
+              nodeCopy.attribs[item.name] = ''
             }
-            attrVal = attrVal.replace(token.content, String(val))
+          } else if (isAriaAttribute(attrLower) && isSingleToken) {
+            const rawVal = componentState[item.tokens[0].name]
+            const isFalsy = rawVal === 'false' || rawVal === 'null' || rawVal === 'undefined' || rawVal === '' || rawVal === false || rawVal === null || rawVal === undefined
+            if (isFalsy) {
+              delete nodeCopy.attribs[item.name]
+            } else {
+              nodeCopy.attribs[item.name] = String(rawVal)
+            }
+          } else {
+            let attrVal = nodeCopy.attribs[item.name] || ''
+            for (const token of item.tokens) {
+              let val = componentState[token.name]
+              if (val == null) {
+                val = ''
+              }
+              attrVal = attrVal.replace(token.content, String(val))
+            }
+            nodeCopy.attribs[item.name] = attrVal
           }
-          nodeCopy.attribs[item.name] = attrVal
         }
 
         let innerContent = ''
