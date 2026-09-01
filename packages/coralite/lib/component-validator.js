@@ -15,6 +15,11 @@ import { buildCodeframe, formatValidationReport } from './utils/diagnostics.js'
  */
 
 const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'instanceId', 'emit'])
+const RESERVED_IDENTIFIERS = new Set(['undefined', 'null', 'true', 'false', 'NaN'])
+const ARITHMETIC_OPERATORS = new Set(['+', '-', '*', '/', '%'])
+const COMPARISON_OPERATORS = new Set(['>', '<', '>=', '<=', '==', '===', '!=', '!=='])
+const TOP_LEVEL_CONFIG_KEYS = new Set(['server', 'getters', 'slots', 'style'])
+const INTERACTIVE_TAGS = new Set(['button', 'input', 'form', 'a', 'select', 'textarea'])
 
 const NUMBER_WORDS = {
   0: 'Zero',
@@ -173,7 +178,7 @@ function buildDefensiveExpr (node) {
   switch (node.type) {
     case 'Identifier': {
       const name = node.name
-      if (['undefined', 'null', 'true', 'false', 'NaN'].includes(name)) {
+      if (RESERVED_IDENTIFIERS.has(name)) {
         return name
       }
       return `state.${name}`
@@ -251,9 +256,9 @@ function generateGetterCode (getterName, expr) {
       innerCode = buildDefensiveExpr(exprNode)
 
       if (exprNode.type === 'BinaryExpression') {
-        if (['+', '-', '*', '/', '%'].includes(exprNode.operator)) {
+        if (ARITHMETIC_OPERATORS.has(exprNode.operator)) {
           fallback = '0'
-        } else if (['>', '<', '>=', '<=', '==', '===', '!=', '!=='].includes(exprNode.operator)) {
+        } else if (COMPARISON_OPERATORS.has(exprNode.operator)) {
           fallback = null
         }
       } else if (exprNode.type === 'UnaryExpression' && exprNode.operator === '!') {
@@ -281,7 +286,7 @@ function extractIdentifiersFromExpr (expr, targetSet) {
     const ast = parseJS(`(${expr})`, { ecmaVersion: 'latest' })
     walkJS(ast, {
       Identifier (idNode) {
-        if (!['undefined', 'null', 'true', 'false', 'NaN'].includes(idNode.name)) {
+        if (!RESERVED_IDENTIFIERS.has(idNode.name)) {
           targetSet.add(idNode.name)
         }
       }
@@ -522,7 +527,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
                 continue
               }
               const keyName = getPropKeyName(prop)
-              if (keyName && ['server', 'getters', 'slots', 'style'].includes(keyName)) {
+              if (keyName && TOP_LEVEL_CONFIG_KEYS.has(keyName)) {
                 collectTopLevelImportsOutsideClient(prop.value)
               }
             }
@@ -2087,7 +2092,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
       let candidates = templateElements.filter(isSemanticMatch)
       if (candidates.length === 0) {
-        const interactiveCandidates = templateElements.filter(el => ['button', 'input', 'form', 'a', 'select', 'textarea'].includes(el.tagName))
+        const interactiveCandidates = templateElements.filter(el => INTERACTIVE_TAGS.has(el.tagName))
         if (interactiveCandidates.length > 0) {
           candidates = interactiveCandidates
         } else {

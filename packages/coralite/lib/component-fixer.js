@@ -5,6 +5,8 @@ import kleur from 'kleur'
 import { validateComponentSource } from './component-validator.js'
 import { kebabToCamel, camelToKebab } from './utils/core.js'
 
+const INTERACTIVE_TAGS = new Set(['button', 'input', 'form', 'a', 'select', 'textarea'])
+
 /**
  * @import { CoraliteDiagnostic } from '../types/index.js'
  */
@@ -320,7 +322,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
 
     let candidates = templateElements.filter(el => isSemanticMatch(el, strippedRef))
     if (candidates.length === 0) {
-      const interactive = templateElements.filter(el => ['button', 'input', 'form', 'a', 'select', 'textarea'].includes(el.tagName))
+      const interactive = templateElements.filter(el => INTERACTIVE_TAGS.has(el.tagName))
       if (interactive.length > 0) {
         candidates = interactive
       } else {
