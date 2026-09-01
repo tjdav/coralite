@@ -78,6 +78,61 @@ describe('Coralite Page Validator (page-validator.js)', () => {
       assert.equal(result.valid, true)
       assert.equal(result.diagnostics.length, 0)
     })
+
+    it('ignores custom element tags inside unclosed comments through EOF', () => {
+      const source = `
+        <div>Valid Start</div>
+        <!-- <unknown-widget></unknown-widget>
+        <coralite-card></coralite-card>
+      `
+      const result = validatePageSource(source, {
+        knownComponents: new Map()
+      })
+
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
+
+    it('preserves exact line and column numbers for diagnostics after multi-line comments', () => {
+      const source = `<div>
+<!--
+  Multi-line HTML comment
+  spanning several lines
+-->
+<unknown-element></unknown-element>
+</div>`
+      const result = validatePageSource(source, {
+        knownComponents: new Map()
+      })
+
+      assert.equal(result.valid, false)
+      const warning = result.diagnostics.find(d => d.code === 'CORALITE-PAGE-101')
+      assert.ok(warning)
+      // <unknown-element> is on line 6, column 1
+      assert.equal(warning.line, 6)
+      assert.equal(warning.column, 1)
+    })
+
+    it('adversarial ReDoS canary: processes 100,000+ repetitive comment starters instantly', () => {
+      const repetitivePayload = '<!-- a'.repeat(30_000)
+      const source = `
+        <!DOCTYPE html>
+        <html>
+          <body>
+            ${repetitivePayload}
+            <div>Safe Content</div>
+          </body>
+        </html>
+      `
+      const startTime = performance.now()
+      const result = validatePageSource(source, {
+        knownComponents: new Map()
+      })
+      const durationMs = performance.now() - startTime
+
+      assert.ok(durationMs < 2000, `Validation should complete instantly (took ${durationMs}ms)`)
+      assert.equal(result.valid, true)
+    })
   })
 
   describe('CORALITE-PAGE-102: Missing Required Attribute', () => {

@@ -4,7 +4,7 @@ import { ancestor as walkAncestorJS } from 'acorn-walk'
 import { readFile, readdir, stat, access } from 'node:fs/promises'
 import { join, extname, relative, resolve, basename } from 'node:path'
 import kleur from 'kleur'
-import { camelToKebab } from './utils/core.js'
+import { camelToKebab, stripHtmlComments } from './utils/core.js'
 import { createDiagnostic, formatDiagnosticTerminal } from './utils/diagnostics.js'
 
 /**
@@ -19,20 +19,6 @@ const DECLARATOR_QUERY_METHODS = new Set(['querySelector', 'querySelectorAll', '
 const COMPOUND_QUERY_METHODS = new Set(['querySelector', 'querySelectorAll', 'getElementsByClassName', 'getElementsByTagName', 'matches', 'closest'])
 const MUTABLE_HTML_PROPERTIES = new Set(['innerHTML', 'outerHTML'])
 const REF_QUERY_METHODS = new Set(['querySelector', 'querySelectorAll', 'getElementById'])
-
-/**
- * Strips HTML comments while preserving original line numbers and character offsets.
- *
- * @param {string} html - Raw HTML source code.
- * @returns {string} Cleaned HTML source code with comment contents replaced by spaces.
- */
-function stripHtmlComments (html) {
-  if (!html || !html.includes('<!--')) {
-    return html
-  }
-
-  return html.replace(/<!--[\s\S]*?-->/g, (match) => match.replace(/[^\r\n]/g, ' '))
-}
 
 /**
  * Calculates Levenshtein distance between two strings.

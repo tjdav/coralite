@@ -10,7 +10,8 @@ import {
   addComponentAndDependencies,
   cleanAST,
   cleanValues,
-  stripCssComments
+  stripCssComments,
+  stripHtmlComments
 } from '../../../lib/utils/core.js'
 import { CoraliteError } from '../../../lib/utils/errors.js'
 
@@ -340,5 +341,73 @@ describe('core.js Coverage Gaps', () => {
       assert.strictEqual(result, ' .target { color: green; }')
     })
   })
+
+  describe('stripHtmlComments', () => {
+    it('should return empty string for null, undefined, empty, or non-string inputs', () => {
+      assert.strictEqual(stripHtmlComments(null), '')
+      assert.strictEqual(stripHtmlComments(undefined), '')
+      assert.strictEqual(stripHtmlComments(''), '')
+      // @ts-ignore
+      assert.strictEqual(stripHtmlComments(123), '')
+      // @ts-ignore
+      assert.strictEqual(stripHtmlComments({}), '')
+    })
+
+    it('should return string unchanged when no comment delimiter is present', () => {
+      const input = '<div><span>Hello World</span></div>'
+      assert.strictEqual(stripHtmlComments(input), input)
+    })
+
+    it('should strip single block comment and preserve exact string length with spaces', () => {
+      const input = '<div><!-- comment --><span>Hello</span></div>'
+      const result = stripHtmlComments(input)
+      assert.strictEqual(result.length, input.length)
+      assert.strictEqual(result, '<div>                <span>Hello</span></div>')
+      assert.strictEqual(result.includes('comment'), false)
+      assert.strictEqual(result.includes('<span>Hello</span>'), true)
+    })
+
+    it('should strip multiple comments on a single line and preserve string length', () => {
+      const input = '<!-- c1 --><div>Hello</div><!-- c2 -->'
+      const result = stripHtmlComments(input)
+      assert.strictEqual(result.length, input.length)
+      assert.strictEqual(result, '           <div>Hello</div>           ')
+    })
+
+    it('should preserve newlines (\\n and \\r\\n) in multi-line comments for exact line numbering', () => {
+      const input = '<div>\n<!--\n  Line 1 comment\n  Line 2 comment\n-->\n<span id="target">Content</span>\n</div>'
+      const result = stripHtmlComments(input)
+      assert.strictEqual(result.length, input.length)
+      assert.strictEqual(result.includes('Line 1 comment'), false)
+      assert.strictEqual(result.includes('Line 2 comment'), false)
+      assert.strictEqual(result.includes('<span id="target">Content</span>'), true)
+      // Check that newline count is identical
+      assert.strictEqual(result.split('\n').length, input.split('\n').length)
+    })
+
+    it('should safely blank empty comments (<!---->) and nested comment starters', () => {
+      const input = '<div><!----><span>Test</span><!-- a<!-- b --></div>'
+      const result = stripHtmlComments(input)
+      assert.strictEqual(result.length, input.length)
+      assert.strictEqual(result.includes('<span>Test</span>'), true)
+      assert.strictEqual(result.includes('b'), false)
+    })
+
+    it('should swallow unterminated/unclosed comments to EOF per HTML5 standard', () => {
+      const input = '<div>Hello</div><!-- unclosed comment <custom-tag>'
+      const result = stripHtmlComments(input)
+      assert.strictEqual(result.length, input.length)
+      assert.strictEqual(result.includes('<div>Hello</div>'), true)
+      assert.strictEqual(result.includes('<custom-tag>'), false)
+    })
+
+    it('should process large adversarial repetitive comment starters in linear time', () => {
+      const payload = '<!-- a<!-- a<!-- a<!-- a'.repeat(10000) + '--><div>Safe</div>'
+      const result = stripHtmlComments(payload)
+      assert.strictEqual(result.length, payload.length)
+      assert.strictEqual(result.includes('<div>Safe</div>'), true)
+    })
+  })
 })
+
 

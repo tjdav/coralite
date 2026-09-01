@@ -129,6 +129,62 @@ export function stripCssComments (css) {
   return result
 }
 
+/**
+ * Strips HTML comments in linear O(n) time, eliminating polynomial ReDoS vulnerabilities,
+ * while preserving original line numbers and character offsets by replacing comment contents with spaces.
+ * Unterminated comments consume through to the end of input per HTML standard parsing rules.
+ *
+ * @param {string} [html] - Raw HTML source code
+ * @returns {string} Cleaned HTML source code with comment contents replaced by spaces
+ */
+export function stripHtmlComments (html) {
+  if (!html || typeof html !== 'string') {
+    return ''
+  }
+  if (!html.includes('<!--')) {
+    return html
+  }
+
+  let result = ''
+  let inComment = false
+  const len = html.length
+
+  for (let i = 0; i < len; i++) {
+    if (!inComment) {
+      if (
+        html[i] === '<' &&
+        html[i + 1] === '!' &&
+        html[i + 2] === '-' &&
+        html[i + 3] === '-'
+      ) {
+        inComment = true
+        result += '    '
+        i += 3
+      } else {
+        result += html[i]
+      }
+    } else if (
+      html[i] === '-' &&
+      html[i + 1] === '-' &&
+      html[i + 2] === '>'
+    ) {
+      inComment = false
+      result += '   '
+      i += 2
+    } else {
+      const ch = html[i]
+      if (ch === '\r' || ch === '\n') {
+        result += ch
+      } else {
+        result += ' '
+      }
+    }
+  }
+
+  return result
+}
+
+
 
 /**
  * Converts all keys in an object from kebab-case to camelCase
