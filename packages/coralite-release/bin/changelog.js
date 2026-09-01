@@ -5,7 +5,7 @@ import { simpleGit } from 'simple-git'
 import { program } from 'commander'
 import { writeFileSync, existsSync, readFileSync } from 'fs'
 import path from 'path'
-import semver from 'semver'
+import { sortTags, resolveBaselineTag } from '../lib/tags.js'
 
 program
   .name('generate-changelog')
@@ -38,21 +38,7 @@ program
       }
 
       // Sort tags by version using semver
-      const sortedTags = tags.all
-        .filter(tag => {
-          const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
-          if (packageName && !tag.startsWith(`${packageName}-v`)) {
-            return false
-          }
-          const cleaned = tag.replace(prefixRegex, '')
-          return Boolean(semver.valid(cleaned))
-        })
-        .sort((a, b) => {
-          const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
-          const cleanA = a.replace(prefixRegex, '')
-          const cleanB = b.replace(prefixRegex, '')
-          return semver.rcompare(cleanA, cleanB)
-        })
+      const sortedTags = sortTags(tags.all, packageName)
 
       if (sortedTags.length < 1) {
         prompts.log.warn('No valid semantic version tags found.')
@@ -65,55 +51,53 @@ program
       let fromTag = options.from
       const toRef = options.to || 'HEAD'
 
-      const getCleanVersion = (tagOrVer) => {
-        if (!tagOrVer) {
-          return null
-        }
-        const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
-        const cleaned = tagOrVer.replace(prefixRegex, '')
-        return semver.clean(cleaned) || cleaned
-      }
-
-      let targetVersion = null
-      if (options.nextVersion) {
-        targetVersion = semver.clean(options.nextVersion) || options.nextVersion
-      } else if (toRef !== 'HEAD') {
-        targetVersion = getCleanVersion(toRef)
-      }
-
-      const isStableTarget = Boolean(targetVersion && semver.valid(targetVersion) && !semver.prerelease(targetVersion))
-
       if (!fromTag) {
-        if (isStableTarget) {
-          // Look for the most recent stable tag where cleanedVersion !== targetVersion
-          const previousStableTag = sortedTags.find(tag => {
-            const cleaned = getCleanVersion(tag)
-            return Boolean(semver.valid(cleaned) && !semver.prerelease(cleaned) && cleaned !== targetVersion)
-          })
-          if (previousStableTag) {
-            fromTag = previousStableTag
-          }
-        }
-
-        if (!fromTag) {
+        let isToSameAsLatest = false
+        if (toRef === 'HEAD' && !options.nextVersion && sortedTags.length > 0) {
           try {
-            // Check if toRef points to the same commit as latestTag
-            // Use ^{} to peel tags to their commits
             const [toCommit, latestCommit] = await Promise.all([
               git.revparse([`${toRef}^{}`]),
               git.revparse([`${latestTag}^{}`])
             ])
-
-            if (toCommit.trim() === latestCommit.trim()) {
-              // We are generating changelog for the latest tag itself
-              fromTag = sortedTags[1] || latestTag
-            } else {
-              // We are generating changelog for new changes since latest tag
-              fromTag = latestTag
-            }
+            isToSameAsLatest = toCommit.trim() === latestCommit.trim()
           } catch {
-            // Fallback if git commands fail (e.g. invalid ref)
-            fromTag = sortedTags[1] || latestTag
+            // ignore
+          }
+        }
+
+        fromTag = resolveBaselineTag({
+          sortedTags,
+          packageName,
+          toRef,
+          nextVersion: options.nextVersion,
+          fromTag,
+          isToSameAsLatest
+        })
+
+        if (!fromTag) {
+          if (process.env.TEST_NON_INTERACTIVE || options.yes) {
+            try {
+              const firstCommit = await git.raw(['rev-list', '--max-parents=0', 'HEAD'])
+              fromTag = firstCommit.trim()
+            } catch {
+              prompts.log.warn('Could not determine start commit. Changelog might be empty.')
+            }
+          } else {
+            prompts.log.warn('Could not automatically determine the previous tag.')
+            const fromChoices = sortedTags.map(tag => ({
+              value: tag,
+              label: tag
+            }))
+            const selectedFrom = await prompts.select({
+              message: 'Select the previous tag (to compare against):',
+              options: fromChoices
+            })
+
+            if (prompts.isCancel(selectedFrom)) {
+              prompts.log.info('Operation cancelled')
+              process.exit(0)
+            }
+            fromTag = selectedFrom
           }
         }
       }

@@ -68,29 +68,62 @@ export async function changelog (options = {}) {
     const isStableTarget = Boolean(targetVersion && semver.valid(targetVersion) && !semver.prerelease(targetVersion))
 
     if (!fromTag) {
-      if (isStableTarget) {
-        const previousStableTag = sortedTags.find(tag => {
-          const cleaned = getCleanVersion(tag)
-          return Boolean(semver.valid(cleaned) && !semver.prerelease(cleaned) && cleaned !== targetVersion)
-        })
-        if (previousStableTag) {
-          fromTag = previousStableTag
-        }
-      }
-
-      if (!fromTag && sortedTags.length > 0) {
-        fromTag = sortedTags[0]
-        // If we are at the latest tag commit, use the previous one
-        try {
-          const [toCommit, latestCommit] = await Promise.all([
-            git.revparse([`${toRef}^{}`]),
-            git.revparse([`${fromTag}^{}`])
-          ])
-          if (toCommit.trim() === latestCommit.trim()) {
-            fromTag = sortedTags[1] || null
+      if (toRef === 'HEAD') {
+        if (isStableTarget) {
+          const previousStableTag = sortedTags.find(tag => {
+            const cleaned = getCleanVersion(tag)
+            return Boolean(semver.valid(cleaned) && !semver.prerelease(cleaned) && semver.lt(cleaned, targetVersion))
+          })
+          if (previousStableTag) {
+            fromTag = previousStableTag
           }
-        } catch {
-          // ignore
+        }
+
+        if (!fromTag && sortedTags.length > 0) {
+          fromTag = sortedTags[0]
+          if (!options.nextVersion) {
+            try {
+              const [toCommit, latestCommit] = await Promise.all([
+                git.revparse([`${toRef}^{}`]),
+                git.revparse([`${fromTag}^{}`])
+              ])
+              if (toCommit.trim() === latestCommit.trim()) {
+                fromTag = sortedTags[1] || null
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+      } else {
+        let toIndex = sortedTags.indexOf(toRef)
+        if (toIndex === -1 && targetVersion) {
+          toIndex = sortedTags.findIndex(tag => {
+            const cleaned = getCleanVersion(tag)
+            return Boolean(cleaned && semver.valid(cleaned) && semver.eq(cleaned, targetVersion))
+          })
+        }
+
+        const olderTags = toIndex !== -1
+          ? sortedTags.slice(toIndex + 1)
+          : sortedTags.filter(tag => {
+            const cleaned = getCleanVersion(tag)
+            return Boolean(cleaned && semver.valid(cleaned) && targetVersion && semver.lt(cleaned, targetVersion))
+          })
+
+        if (olderTags.length > 0) {
+          if (isStableTarget) {
+            const prevStable = olderTags.find(tag => {
+              const cleaned = getCleanVersion(tag)
+              return Boolean(semver.valid(cleaned) && !semver.prerelease(cleaned))
+            })
+            if (prevStable) {
+              fromTag = prevStable
+            }
+          }
+          if (!fromTag) {
+            fromTag = olderTags[0]
+          }
         }
       }
     }

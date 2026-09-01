@@ -1,61 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import semver from 'semver'
-
-function sortTags (tags, packageName) {
-  const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
-  return tags
-    .filter(tag => {
-      if (packageName && !tag.startsWith(`${packageName}-v`)) return false
-      const cleaned = tag.replace(prefixRegex, '')
-      return Boolean(semver.valid(cleaned))
-    })
-    .sort((a, b) => {
-      const cleanA = a.replace(prefixRegex, '')
-      const cleanB = b.replace(prefixRegex, '')
-      return semver.rcompare(cleanA, cleanB)
-    })
-}
-
-function resolveFromTag (sortedTags, packageName, toRef, nextVersion, explicitFrom) {
-  if (explicitFrom) return explicitFrom
-
-  const getCleanVersion = (tagOrVer) => {
-    if (!tagOrVer) return null
-    const prefixRegex = packageName ? new RegExp(`^${packageName}-v`) : /^v/
-    const cleaned = tagOrVer.replace(prefixRegex, '')
-    return semver.clean(cleaned) || cleaned
-  }
-
-  let targetVersion = null
-  if (nextVersion) {
-    targetVersion = semver.clean(nextVersion) || nextVersion
-  } else if (toRef && toRef !== 'HEAD') {
-    targetVersion = getCleanVersion(toRef)
-  }
-
-  const isStableTarget = Boolean(targetVersion && semver.valid(targetVersion) && !semver.prerelease(targetVersion))
-
-  if (isStableTarget) {
-    const previousStableTag = sortedTags.find(tag => {
-      const cleaned = getCleanVersion(tag)
-      return Boolean(semver.valid(cleaned) && !semver.prerelease(cleaned) && cleaned !== targetVersion)
-    })
-    if (previousStableTag) {
-      return previousStableTag
-    }
-  }
-
-  // Fallback / default to previous immediate tag
-  const toIndex = sortedTags.indexOf(toRef)
-  if (toRef === 'HEAD') {
-    return sortedTags[0]
-  } else if (toIndex !== -1 && toIndex + 1 < sortedTags.length) {
-    return sortedTags[toIndex + 1]
-  }
-
-  return sortedTags[0]
-}
+import { sortTags, resolveBaselineTag } from '../lib/tags.js'
 
 describe('Tag sorting and baseline resolution', () => {
   it('should correctly sort mixed tags using semver.rcompare', () => {
@@ -92,7 +37,60 @@ describe('Tag sorting and baseline resolution', () => {
     ])
   })
 
-  it('should select previous stable tag as baseline for graduating stable releases', () => {
+  it('1. Selecting an existing historical stable release (e.g. toRef = "coralite-v0.46.2" -> baseline "coralite-v0.46.1")', () => {
+    const sortedTags = [
+      'coralite-v0.47.1',
+      'coralite-v0.47.0',
+      'coralite-v0.46.2',
+      'coralite-v0.46.1',
+      'coralite-v0.46.0'
+    ]
+
+    const baseline = resolveBaselineTag({
+      sortedTags,
+      packageName: 'coralite',
+      toRef: 'coralite-v0.46.2'
+    })
+
+    assert.equal(baseline, 'coralite-v0.46.1')
+  })
+
+  it('2. Selecting a graduating stable release with intermediate RCs (e.g. toRef = "coralite-v0.48.0" with RCs -> baseline "coralite-v0.47.1")', () => {
+    const sortedTags = [
+      'coralite-v0.48.0',
+      'coralite-v0.48.0-rc.1',
+      'coralite-v0.48.0-rc.0',
+      'coralite-v0.47.1',
+      'coralite-v0.47.0'
+    ]
+
+    const baseline = resolveBaselineTag({
+      sortedTags,
+      packageName: 'coralite',
+      toRef: 'coralite-v0.48.0'
+    })
+
+    assert.equal(baseline, 'coralite-v0.47.1')
+  })
+
+  it('3. Selecting a historical RC release (e.g. toRef = "coralite-v0.48.0-rc.1" -> baseline "coralite-v0.48.0-rc.0")', () => {
+    const sortedTags = [
+      'coralite-v0.48.0',
+      'coralite-v0.48.0-rc.1',
+      'coralite-v0.48.0-rc.0',
+      'coralite-v0.47.1'
+    ]
+
+    const baseline = resolveBaselineTag({
+      sortedTags,
+      packageName: 'coralite',
+      toRef: 'coralite-v0.48.0-rc.1'
+    })
+
+    assert.equal(baseline, 'coralite-v0.48.0-rc.0')
+  })
+
+  it('4. Resolving baseline for graduating stable release on HEAD with nextVersion', () => {
     const sortedTags = [
       'coralite-v0.48.0-rc.1',
       'coralite-v0.48.0-rc.0',
@@ -100,20 +98,90 @@ describe('Tag sorting and baseline resolution', () => {
       'coralite-v0.47.0'
     ]
 
-    // Graduating to stable 0.48.0
-    const baseline = resolveFromTag(sortedTags, 'coralite', 'HEAD', '0.48.0')
+    const baseline = resolveBaselineTag({
+      sortedTags,
+      packageName: 'coralite',
+      toRef: 'HEAD',
+      nextVersion: '0.48.0'
+    })
+
     assert.equal(baseline, 'coralite-v0.47.1')
   })
 
-  it('should select immediate previous tag as baseline for intermediate RC releases', () => {
+  it('5. Resolving baseline for unreleased HEAD changes', () => {
     const sortedTags = [
-      'coralite-v0.48.0-rc.0',
       'coralite-v0.47.1',
       'coralite-v0.47.0'
     ]
 
-    // Generating release for RC 0.48.0-rc.1
-    const baseline = resolveFromTag(sortedTags, 'coralite', 'HEAD', '0.48.0-rc.1')
-    assert.equal(baseline, 'coralite-v0.48.0-rc.0')
+    const baseline = resolveBaselineTag({
+      sortedTags,
+      packageName: 'coralite',
+      toRef: 'HEAD'
+    })
+
+    assert.equal(baseline, 'coralite-v0.47.1')
+  })
+
+  it('6. Handling oldest tag with no preceding tags (returns null)', () => {
+    const sortedTags = [
+      'coralite-v0.46.0'
+    ]
+
+    const baseline = resolveBaselineTag({
+      sortedTags,
+      packageName: 'coralite',
+      toRef: 'coralite-v0.46.0'
+    })
+
+    assert.equal(baseline, null)
+  })
+
+  it('7. Respects explicit fromTag when provided', () => {
+    const sortedTags = [
+      'coralite-v0.47.1',
+      'coralite-v0.47.0'
+    ]
+
+    const baseline = resolveBaselineTag({
+      sortedTags,
+      packageName: 'coralite',
+      toRef: 'coralite-v0.47.1',
+      fromTag: 'coralite-v0.46.0'
+    })
+
+    assert.equal(baseline, 'coralite-v0.46.0')
+  })
+
+  it('8. Fallback to semver matching when toRef string has no package prefix', () => {
+    const sortedTags = [
+      'coralite-v0.47.1',
+      'coralite-v0.46.2',
+      'coralite-v0.46.1'
+    ]
+
+    const baseline = resolveBaselineTag({
+      sortedTags,
+      packageName: 'coralite',
+      toRef: '0.46.2'
+    })
+
+    assert.equal(baseline, 'coralite-v0.46.1')
+  })
+
+  it('9. Resolves HEAD when sitting directly on latest tag commit (isToSameAsLatest = true)', () => {
+    const sortedTags = [
+      'coralite-v0.47.1',
+      'coralite-v0.47.0'
+    ]
+
+    const baseline = resolveBaselineTag({
+      sortedTags,
+      packageName: 'coralite',
+      toRef: 'HEAD',
+      isToSameAsLatest: true
+    })
+
+    assert.equal(baseline, 'coralite-v0.47.0')
   })
 })
