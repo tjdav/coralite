@@ -10,12 +10,75 @@ import {
   addComponentAndDependencies,
   cleanAST,
   cleanValues,
+  indexOfCI,
+  extractTemplateBlock,
   stripCssComments,
   stripHtmlComments
 } from '../../../lib/utils/core.js'
 import { CoraliteError } from '../../../lib/utils/errors.js'
 
 describe('core.js Coverage Gaps', () => {
+  describe('indexOfCI', () => {
+    it('returns -1 for invalid or missing inputs', () => {
+      assert.strictEqual(indexOfCI(null, 'needle'), -1)
+      assert.strictEqual(indexOfCI('source', null), -1)
+      assert.strictEqual(indexOfCI('', 'needle'), -1)
+      assert.strictEqual(indexOfCI('source', ''), -1)
+    })
+
+    it('performs case-insensitive searching', () => {
+      assert.strictEqual(indexOfCI('Hello World', 'WORLD'), 6)
+      assert.strictEqual(indexOfCI('Hello World', 'world'), 6)
+      assert.strictEqual(indexOfCI('<TEMPLATE>content</TEMPLATE>', '<template'), 0)
+    })
+
+    it('respects search starting position from index', () => {
+      const src = 'test test test'
+      assert.strictEqual(indexOfCI(src, 'test', 1), 5)
+      assert.strictEqual(indexOfCI(src, 'test', 6), 10)
+    })
+
+    it('returns -1 when needle is not found', () => {
+      assert.strictEqual(indexOfCI('Hello World', 'missing'), -1)
+    })
+  })
+
+  describe('extractTemplateBlock', () => {
+    it('returns null for invalid inputs or code without template block', () => {
+      assert.strictEqual(extractTemplateBlock(null), null)
+      assert.strictEqual(extractTemplateBlock(''), null)
+      assert.strictEqual(extractTemplateBlock('<div>No template tag</div>'), null)
+    })
+
+    it('extracts content and byte offsets for standard <template> block', () => {
+      const src = '<template><div>Hello</div></template>'
+      const block = extractTemplateBlock(src)
+      assert.ok(block)
+      assert.strictEqual(block.content, '<div>Hello</div>')
+      assert.strictEqual(block.start, 10)
+      assert.strictEqual(block.end, 26)
+    })
+
+    it('handles uppercase <TEMPLATE> and mixed-case tags', () => {
+      const src = '<TEMPLATE><div>Upper</div></TEMPLATE>'
+      const block = extractTemplateBlock(src)
+      assert.ok(block)
+      assert.strictEqual(block.content, '<div>Upper</div>')
+    })
+
+    it('ignores custom element tags like <template-item>', () => {
+      const src = '<template-item>skip</template-item><template><span>actual</span></template>'
+      const block = extractTemplateBlock(src)
+      assert.ok(block)
+      assert.strictEqual(block.content, '<span>actual</span>')
+    })
+
+    it('returns null for unclosed <template> tag', () => {
+      const src = '<template><div>Unclosed'
+      assert.strictEqual(extractTemplateBlock(src), null)
+    })
+  })
+
   describe('cleanKeys', () => {
     it('should return empty object when given an empty object', () => {
       const input = {}

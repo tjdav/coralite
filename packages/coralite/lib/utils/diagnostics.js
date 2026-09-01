@@ -22,6 +22,41 @@ const TAG_SYNONYMS = {
 }
 
 /**
+ * Extracts an inline template expression from a diagnostic message in linear O(n) time.
+ * @param {string} [message] - Diagnostic message string
+ * @returns {string|null} Extracted raw expression or null if not found
+ */
+export function extractInlineExpression (message) {
+  if (!message || typeof message !== 'string') {
+    return null
+  }
+
+  const prefix = "Inline expression '{{\n"
+  const start = message.indexOf(prefix)
+  if (start === -1) {
+    const shortPrefix = "Inline expression '{{"
+    const shortStart = message.indexOf(shortPrefix)
+    if (shortStart === -1) {
+      return null
+    }
+    const shortEnd = message.indexOf("}}'", shortStart + shortPrefix.length)
+    if (shortEnd === -1) {
+      return null
+    }
+    const expr = message.slice(shortStart + shortPrefix.length, shortEnd).trim()
+    return expr || null
+  }
+
+  const end = message.indexOf("}}'", start + prefix.length)
+  if (end === -1) {
+    return null
+  }
+
+  const expr = message.slice(start + prefix.length, end).trim()
+  return expr || null
+}
+
+/**
  * Creates a normalized CoraliteDiagnostic object with an optional codeframe snippet.
  *
  * @param {Object} params

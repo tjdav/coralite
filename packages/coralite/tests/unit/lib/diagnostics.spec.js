@@ -5,10 +5,41 @@ import {
   isSemanticMatch,
   buildCodeframe,
   formatDiagnosticTerminal,
-  formatValidationReport
+  formatValidationReport,
+  extractInlineExpression
 } from '../../../lib/utils/diagnostics.js'
 
 describe('diagnostics utilities', () => {
+  describe('extractInlineExpression', () => {
+    it('returns null for null, undefined, empty, or non-string inputs', () => {
+      assert.equal(extractInlineExpression(null), null)
+      assert.equal(extractInlineExpression(undefined), null)
+      assert.equal(extractInlineExpression(''), null)
+      // @ts-ignore
+      assert.equal(extractInlineExpression(123), null)
+    })
+
+    it('extracts expression from standard single-line diagnostic message', () => {
+      const msg = "Inline expression '{{ user.name + 1 }}' in template must be lifted to a derived getter."
+      assert.equal(extractInlineExpression(msg), 'user.name + 1')
+    })
+
+    it('extracts expression from multi-line diagnostic message', () => {
+      const msg = "Inline expression '{{\n  user.isVip\n    ? `VIP: ${user.name}`\n    : user.name\n}}' in template must be lifted."
+      assert.equal(extractInlineExpression(msg), 'user.isVip\n    ? `VIP: ${user.name}`\n    : user.name')
+    })
+
+    it('returns null if expression inside delimiters is whitespace only', () => {
+      const msg = "Inline expression '{{   }}' in template must be lifted."
+      assert.equal(extractInlineExpression(msg), null)
+    })
+
+    it('returns null when message does not contain inline expression pattern', () => {
+      const msg = 'Unused server property count.'
+      assert.equal(extractInlineExpression(msg), null)
+    })
+  })
+
   describe('stripAnsi', () => {
     it('strips ANSI color and style codes from string', () => {
       const colored = '\x1b[31m\x1b[1mError:\x1b[0m Something went wrong'

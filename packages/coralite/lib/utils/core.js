@@ -130,6 +130,75 @@ export function stripCssComments (css) {
 }
 
 /**
+ * Case-insensitive search on raw string without length-expanding lowercasing side-effects.
+ * @param {string} str - Source string
+ * @param {string} needle - Substring to find
+ * @param {number} [from=0] - Search start index
+ * @returns {number} Index of match or -1
+ */
+export function indexOfCI (str, needle, from = 0) {
+  if (!str || typeof str !== 'string' || !needle || typeof needle !== 'string') {
+    return -1
+  }
+  const nLow = needle.toLowerCase()
+  const n0 = nLow[0]
+  const limit = str.length - needle.length
+  for (let i = from; i <= limit; i++) {
+    if (str[i].toLowerCase() === n0 && str.slice(i, i + needle.length).toLowerCase() === nLow) {
+      return i
+    }
+  }
+  return -1
+}
+
+/**
+ * Deterministically extracts the first <template> block's inner content and its byte offsets in linear O(n) time.
+ * @param {string} [sourceCode] - Component source code
+ * @returns {{ content: string, start: number, end: number } | null} Template block info or null if not found
+ */
+export function extractTemplateBlock (sourceCode) {
+  if (!sourceCode || typeof sourceCode !== 'string') {
+    return null
+  }
+
+  let searchFrom = 0
+  while (searchFrom <= sourceCode.length - 9) {
+    const openTagStart = indexOfCI(sourceCode, '<template', searchFrom)
+    if (openTagStart === -1) {
+      return null
+    }
+
+    const charAfter = sourceCode[openTagStart + 9]
+    if (charAfter !== undefined && charAfter !== '>' && charAfter !== '/' && !/\s/.test(charAfter)) {
+      searchFrom = openTagStart + 9
+      continue
+    }
+
+    const openTagEnd = sourceCode.indexOf('>', openTagStart + 9)
+    if (openTagEnd === -1) {
+      return null
+    }
+
+    const closeTagStart = indexOfCI(sourceCode, '</template>', openTagEnd + 1)
+    if (closeTagStart === -1) {
+      return null
+    }
+
+    const contentStart = openTagEnd + 1
+    const contentEnd = closeTagStart
+    const content = sourceCode.slice(contentStart, contentEnd)
+
+    return {
+      content,
+      start: contentStart,
+      end: contentEnd
+    }
+  }
+
+  return null
+}
+
+/**
  * Strips HTML comments in linear O(n) time, eliminating polynomial ReDoS vulnerabilities,
  * while preserving original line numbers and character offsets by replacing comment contents with spaces.
  * Unterminated comments consume through to the end of input per HTML standard parsing rules.
