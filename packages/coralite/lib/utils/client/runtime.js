@@ -66,8 +66,8 @@ export function generateClientRuntime ({
             overlay.style.left = '0';
             overlay.style.width = '100%';
             overlay.style.height = '100%';
-            overlay.style.backgroundColor = 'rgba(255,0,0,0.9)';
-            overlay.style.color = 'white';
+            overlay.style.backgroundColor = 'rgba(127, 29, 29, 0.98)';
+            overlay.style.color = '#ffffff';
             overlay.style.padding = '20px';
             overlay.style.zIndex = '10000';
             overlay.style.fontFamily = 'monospace';
@@ -81,6 +81,11 @@ export function generateClientRuntime ({
 
             overlay.appendChild(heading);
             overlay.appendChild(desc);
+            if (error.stack) {
+              const stackTrace = document.createElement('pre');
+              stackTrace.textContent = error.stack;
+              overlay.appendChild(stackTrace);
+            }
             document.body.appendChild(overlay);
           }
           throw error;
