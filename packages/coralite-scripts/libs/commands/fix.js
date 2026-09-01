@@ -1,6 +1,7 @@
 import colours from 'kleur'
 import { join } from 'node:path'
-import { existsSync, readFileSync, writeFileSync, statSync, readdirSync } from 'node:fs'
+import { existsSync, statSync, readdirSync } from 'node:fs'
+import { readFile, writeFile } from 'node:fs/promises'
 import {
   validateComponentsDir,
   applyComponentFixes,
@@ -89,30 +90,35 @@ export async function fixCommand (config, options = {}, logger = null) {
 
   if (fullCompDir) {
     const compReport = await validateComponentsDir(fullCompDir)
-    for (const compRes of compReport.components) {
-      if (!compRes.filePath) {
-        continue
-      }
-      const rawCode = readFileSync(compRes.filePath, 'utf8')
-      const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
-        filePath: compRes.filePath,
-        dryRun: Boolean(options.dryRun)
+
+    await Promise.all(
+      compReport.components.map(async (compRes) => {
+        if (!compRes.filePath) {
+          return
+        }
+
+        const rawCode = await readFile(compRes.filePath, 'utf8')
+        const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
+          filePath: compRes.filePath,
+          dryRun: Boolean(options.dryRun)
+        })
+
+        if (fixResult.modified) {
+          totalFixesCount += fixResult.fixesApplied.length
+          modifiedFiles.push(compRes.filePath)
+
+          if (fixResult.diff) {
+            diffs.push(fixResult.diff)
+          }
+
+          if (options.dryRun) {
+            log(fixResult.diff + '\n')
+          } else {
+            await writeFile(compRes.filePath, fixResult.outputCode, 'utf8')
+          }
+        }
       })
-
-      if (fixResult.modified) {
-        totalFixesCount += fixResult.fixesApplied.length
-        modifiedFiles.push(compRes.filePath)
-        if (fixResult.diff) {
-          diffs.push(fixResult.diff)
-        }
-
-        if (options.dryRun) {
-          log(fixResult.diff + '\n')
-        } else {
-          writeFileSync(compRes.filePath, fixResult.outputCode, 'utf8')
-        }
-      }
-    }
+    )
   }
 
   const fullPluginTarget = resolveTargetDir(pluginTarget, cwd)
@@ -135,28 +141,30 @@ export async function fixCommand (config, options = {}, logger = null) {
       scan(fullPluginTarget)
     }
 
-    for (const pFile of pluginFiles) {
-      const rawCode = readFileSync(pFile, 'utf8')
-      const pResult = validatePluginSource(rawCode, pFile)
-      const fixResult = applyPluginFixes(rawCode, pResult.diagnostics || [], {
-        filePath: pFile,
-        dryRun: Boolean(options.dryRun)
+    await Promise.all(
+      pluginFiles.map(async (pFile) => {
+        const rawCode = await readFile(pFile, 'utf8')
+        const pResult = validatePluginSource(rawCode, pFile)
+        const fixResult = applyPluginFixes(rawCode, pResult.diagnostics || [], {
+          filePath: pFile,
+          dryRun: Boolean(options.dryRun)
+        })
+
+        if (fixResult.modified) {
+          totalFixesCount += fixResult.fixesApplied.length
+          modifiedFiles.push(pFile)
+          if (fixResult.diff) {
+            diffs.push(fixResult.diff)
+          }
+
+          if (options.dryRun) {
+            log(fixResult.diff + '\n')
+          } else {
+            await writeFile(pFile, fixResult.outputCode, 'utf8')
+          }
+        }
       })
-
-      if (fixResult.modified) {
-        totalFixesCount += fixResult.fixesApplied.length
-        modifiedFiles.push(pFile)
-        if (fixResult.diff) {
-          diffs.push(fixResult.diff)
-        }
-
-        if (options.dryRun) {
-          log(fixResult.diff + '\n')
-        } else {
-          writeFileSync(pFile, fixResult.outputCode, 'utf8')
-        }
-      }
-    }
+    )
   }
 
   if (options.dryRun) {

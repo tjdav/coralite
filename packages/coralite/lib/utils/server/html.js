@@ -201,7 +201,9 @@ export async function* discoverHtmlFiles ({
 }
 
 /**
- * Reads an HTML file and returns its content as a string.
+ * Reads an HTML file synchronously and returns its content as a string.
+ * @deprecated Note: This function blocks the Node.js event loop during synchronous file I/O.
+ * Prefer using the asynchronous {@link getHtmlFile} for non-blocking performance where possible.
  * @param {string} pathname - The path to the HTML file.
  * @throws {Error} If the file cannot be read.
  */

@@ -4,7 +4,8 @@ import { Command } from 'commander'
 import kleur from 'kleur'
 import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
-import { existsSync, readFileSync, writeFileSync, mkdirSync, statSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, statSync, readdirSync } from 'node:fs'
+import { readFile, writeFile } from 'node:fs/promises'
 import pkg from '../package.json' with { type: 'json' }
 import { createCoralite } from '#lib'
 import { validateComponentsDir, formatComponentValidationReport } from '#lib/component-validator.js'
@@ -229,26 +230,31 @@ program
       // Fix Components
       if (compDir && existsSync(compDir)) {
         const compReport = await validateComponentsDir(compDir)
-        for (const compRes of compReport.components) {
-          if (!compRes.filePath) {
-            continue
-          }
-          const rawCode = readFileSync(compRes.filePath, 'utf8')
-          const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
-            filePath: compRes.filePath,
-            dryRun: options.dryRun
-          })
 
-          if (fixResult.modified) {
-            totalFixesCount += fixResult.fixesApplied.length
-            modifiedFiles.push(compRes.filePath)
-            if (options.dryRun) {
-              process.stdout.write(fixResult.diff + '\n')
-            } else {
-              writeFileSync(compRes.filePath, fixResult.outputCode, 'utf8')
+        await Promise.all(
+          compReport.components.map(async (compRes) => {
+            if (!compRes.filePath) {
+              return
             }
-          }
-        }
+
+            const rawCode = await readFile(compRes.filePath, 'utf8')
+            const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
+              filePath: compRes.filePath,
+              dryRun: options.dryRun
+            })
+
+            if (fixResult.modified) {
+              totalFixesCount += fixResult.fixesApplied.length
+              modifiedFiles.push(compRes.filePath)
+
+              if (options.dryRun) {
+                process.stdout.write(fixResult.diff + '\n')
+              } else {
+                await writeFile(compRes.filePath, fixResult.outputCode, 'utf8')
+              }
+            }
+          })
+        )
       }
 
       // Fix Plugins
@@ -270,24 +276,26 @@ program
           scan(pluginTarget)
         }
 
-        for (const pFile of pluginFiles) {
-          const rawCode = readFileSync(pFile, 'utf8')
-          const pResult = validatePluginSource(rawCode, pFile)
-          const fixResult = applyPluginFixes(rawCode, pResult.diagnostics || [], {
-            filePath: pFile,
-            dryRun: options.dryRun
-          })
+        await Promise.all(
+          pluginFiles.map(async (pFile) => {
+            const rawCode = await readFile(pFile, 'utf8')
+            const pResult = validatePluginSource(rawCode, pFile)
+            const fixResult = applyPluginFixes(rawCode, pResult.diagnostics || [], {
+              filePath: pFile,
+              dryRun: options.dryRun
+            })
 
-          if (fixResult.modified) {
-            totalFixesCount += fixResult.fixesApplied.length
-            modifiedFiles.push(pFile)
-            if (options.dryRun) {
-              process.stdout.write(fixResult.diff + '\n')
-            } else {
-              writeFileSync(pFile, fixResult.outputCode, 'utf8')
+            if (fixResult.modified) {
+              totalFixesCount += fixResult.fixesApplied.length
+              modifiedFiles.push(pFile)
+              if (options.dryRun) {
+                process.stdout.write(fixResult.diff + '\n')
+              } else {
+                await writeFile(pFile, fixResult.outputCode, 'utf8')
+              }
             }
-          }
-        }
+          })
+        )
       }
 
       if (options.dryRun) {
@@ -364,26 +372,26 @@ program
 
     try {
       const agentsPath = join(process.cwd(), 'AGENTS.md')
-      writeFileSync(agentsPath, agentsContent, 'utf8')
+      await writeFile(agentsPath, agentsContent, 'utf8')
       process.stdout.write(kleur.bold().green('✔ Scaffolding complete: AGENTS.md created in project root.\n'))
 
       if (options.cursor) {
         const cursorRulesPath = join(process.cwd(), '.cursorrules')
         const cursorContent = `# Cursor Rules for Coralite Project\n# Refer to AGENTS.md for complete invariants.\n\n${agentsContent}`
-        writeFileSync(cursorRulesPath, cursorContent, 'utf8')
+        await writeFile(cursorRulesPath, cursorContent, 'utf8')
 
         const cursorMdcDir = join(process.cwd(), '.cursor/rules')
         if (!existsSync(cursorMdcDir)) {
           mkdirSync(cursorMdcDir, { recursive: true })
         }
-        writeFileSync(join(cursorMdcDir, 'coralite.mdc'), cursorContent, 'utf8')
+        await writeFile(join(cursorMdcDir, 'coralite.mdc'), cursorContent, 'utf8')
         process.stdout.write(kleur.bold().green('✔ Created .cursorrules and .cursor/rules/coralite.mdc\n'))
       }
 
       if (options.claude) {
         const claudePath = join(process.cwd(), 'CLAUDE.md')
         const claudeContent = `# Claude Code Project Guidance\n# Refer to AGENTS.md for full architecture details.\n\n${agentsContent}`
-        writeFileSync(claudePath, claudeContent, 'utf8')
+        await writeFile(claudePath, claudeContent, 'utf8')
         process.stdout.write(kleur.bold().green('✔ Created CLAUDE.md\n'))
       }
     } catch (err) {
@@ -412,27 +420,29 @@ program
         let totalFixesCount = 0
         const modifiedFiles = []
 
-        for (const compRes of initialReport.components) {
-          if (!compRes.filePath) {
-            continue
-          }
-          const rawCode = readFileSync(compRes.filePath, 'utf8')
-          const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
-            filePath: compRes.filePath,
-            dryRun: options.dryRun
-          })
-
-          if (fixResult.modified) {
-            totalFixesCount += fixResult.fixesApplied.length
-            modifiedFiles.push(compRes.filePath)
-
-            if (options.dryRun) {
-              process.stdout.write(fixResult.diff + '\n')
-            } else {
-              writeFileSync(compRes.filePath, fixResult.outputCode, 'utf8')
+        await Promise.all(
+          initialReport.components.map(async (compRes) => {
+            if (!compRes.filePath) {
+              return
             }
-          }
-        }
+            const rawCode = await readFile(compRes.filePath, 'utf8')
+            const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
+              filePath: compRes.filePath,
+              dryRun: options.dryRun
+            })
+
+            if (fixResult.modified) {
+              totalFixesCount += fixResult.fixesApplied.length
+              modifiedFiles.push(compRes.filePath)
+
+              if (options.dryRun) {
+                process.stdout.write(fixResult.diff + '\n')
+              } else {
+                await writeFile(compRes.filePath, fixResult.outputCode, 'utf8')
+              }
+            }
+          })
+        )
 
         if (options.dryRun) {
           process.stdout.write(
@@ -551,27 +561,29 @@ program
         let totalFixesCount = 0
         const modifiedFiles = []
 
-        for (const pRes of report.plugins) {
-          if (!pRes.filePath) {
-            continue
-          }
-          const rawCode = readFileSync(pRes.filePath, 'utf8')
-          const fixResult = applyPluginFixes(rawCode, pRes.diagnostics || [], {
-            filePath: pRes.filePath,
-            dryRun: options.dryRun
-          })
-
-          if (fixResult.modified) {
-            totalFixesCount += fixResult.fixesApplied.length
-            modifiedFiles.push(pRes.filePath)
-
-            if (options.dryRun) {
-              process.stdout.write(fixResult.diff + '\n')
-            } else {
-              writeFileSync(pRes.filePath, fixResult.outputCode, 'utf8')
+        await Promise.all(
+          report.plugins.map(async (pRes) => {
+            if (!pRes.filePath) {
+              return
             }
-          }
-        }
+            const rawCode = await readFile(pRes.filePath, 'utf8')
+            const fixResult = applyPluginFixes(rawCode, pRes.diagnostics || [], {
+              filePath: pRes.filePath,
+              dryRun: options.dryRun
+            })
+
+            if (fixResult.modified) {
+              totalFixesCount += fixResult.fixesApplied.length
+              modifiedFiles.push(pRes.filePath)
+
+              if (options.dryRun) {
+                process.stdout.write(fixResult.diff + '\n')
+              } else {
+                await writeFile(pRes.filePath, fixResult.outputCode, 'utf8')
+              }
+            }
+          })
+        )
 
         if (options.dryRun) {
           process.stdout.write(
