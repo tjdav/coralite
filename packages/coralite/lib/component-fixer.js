@@ -8,6 +8,72 @@ import { kebabToCamel, camelToKebab } from './utils/core.js'
 const INTERACTIVE_TAGS = new Set(['button', 'input', 'form', 'a', 'select', 'textarea'])
 
 /**
+ * Case-insensitive search on raw string without length-expanding lowercasing side-effects.
+ * @param {string} str - Source string
+ * @param {string} needle - Substring to find
+ * @param {number} [from=0] - Search start index
+ * @returns {number} Index of match or -1
+ */
+function indexOfCI (str, needle, from = 0) {
+  const nLow = needle.toLowerCase()
+  const n0 = nLow[0]
+  const limit = str.length - needle.length
+  for (let i = from; i <= limit; i++) {
+    if (str[i].toLowerCase() === n0 && str.slice(i, i + needle.length).toLowerCase() === nLow) {
+      return i
+    }
+  }
+  return -1
+}
+
+/**
+ * Deterministically extracts the first <template> block's inner content and its byte offsets in linear O(n) time.
+ * @param {string} [sourceCode] - Component source code
+ * @returns {{ content: string, start: number, end: number } | null} Template block info or null if not found
+ */
+function extractTemplateBlock (sourceCode) {
+  if (!sourceCode || typeof sourceCode !== 'string') {
+    return null
+  }
+
+  let searchFrom = 0
+  while (searchFrom <= sourceCode.length - 9) {
+    const openTagStart = indexOfCI(sourceCode, '<template', searchFrom)
+    if (openTagStart === -1) {
+      return null
+    }
+
+    const charAfter = sourceCode[openTagStart + 9]
+    if (charAfter !== undefined && charAfter !== '>' && charAfter !== '/' && !/\s/.test(charAfter)) {
+      searchFrom = openTagStart + 9
+      continue
+    }
+
+    const openTagEnd = sourceCode.indexOf('>', openTagStart + 9)
+    if (openTagEnd === -1) {
+      return null
+    }
+
+    const closeTagStart = indexOfCI(sourceCode, '</template>', openTagEnd + 1)
+    if (closeTagStart === -1) {
+      return null
+    }
+
+    const contentStart = openTagEnd + 1
+    const contentEnd = closeTagStart
+    const content = sourceCode.slice(contentStart, contentEnd)
+
+    return {
+      content,
+      start: contentStart,
+      end: contentEnd
+    }
+  }
+
+  return null
+}
+
+/**
  * @import { CoraliteDiagnostic } from '../types/index.js'
  */
 
@@ -358,10 +424,9 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
 
     if (eligibleCandidates.length === 1) {
       const candidateTag = eligibleCandidates[0].tagName
-      const templateMatch = /<template[\s\S]*?>([\s\S]*?)<\/template>/i.exec(code)
-      if (templateMatch) {
-        const templateContent = templateMatch[1]
-        const templateOffset = templateMatch.index + templateMatch[0].indexOf(templateContent)
+      const templateBlock = extractTemplateBlock(code)
+      if (templateBlock) {
+        const { content: templateContent, start: templateOffset } = templateBlock
         const tagRegex = new RegExp(`<(${candidateTag})([\\s>\\/])`, 'gi')
         let tagMatch
         while ((tagMatch = tagRegex.exec(templateContent)) !== null) {
@@ -404,35 +469,33 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
   // 1.3 CORALITE-E203 (Inline Event Listener Removal)
   const e203Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E203' && d.fix?.action === 'remove_attribute')
   if (e203Diagnostics.length > 0) {
-    if (code.includes('<template')) {
-      const templateMatch = /<template[\s\S]*?>([\s\S]*?)<\/template>/i.exec(code)
-      if (templateMatch) {
-        let templateContent = templateMatch[1]
-        const templateStart = templateMatch.index + templateMatch[0].indexOf(templateContent)
-        let templateModified = false
+    const templateBlock = extractTemplateBlock(code)
+    if (templateBlock) {
+      let templateContent = templateBlock.content
+      const templateStart = templateBlock.start
+      let templateModified = false
 
-        for (const diag of e203Diagnostics) {
-          const matchMsg = diag.message.match(/attribute '([^']+)'/)
-          const attrName = matchMsg ? matchMsg[1] : null
+      for (const diag of e203Diagnostics) {
+        const matchMsg = diag.message.match(/attribute '([^']+)'/)
+        const attrName = matchMsg ? matchMsg[1] : null
 
-          if (attrName) {
-            const attrRegex = new RegExp(`\\s+${attrName}=(?:"[^"]*"|'[^']*'|\\S+)`, 'gi')
-            if (attrRegex.test(templateContent)) {
-              templateContent = templateContent.replace(attrRegex, '')
-              templateModified = true
-              fixesApplied.push({
-                code: 'CORALITE-E203',
-                description: diag.fix.description || `Remove inline ${attrName} attribute`
-              })
-            }
+        if (attrName) {
+          const attrRegex = new RegExp(`\\s+${attrName}=(?:"[^"]*"|'[^']*'|\\S+)`, 'gi')
+          if (attrRegex.test(templateContent)) {
+            templateContent = templateContent.replace(attrRegex, '')
+            templateModified = true
+            fixesApplied.push({
+              code: 'CORALITE-E203',
+              description: diag.fix.description || `Remove inline ${attrName} attribute`
+            })
           }
         }
-
-        if (templateModified) {
-          code = code.slice(0, templateStart) + templateContent + code.slice(templateStart + templateMatch[1].length)
-        }
       }
-    } else {
+
+      if (templateModified) {
+        code = code.slice(0, templateStart) + templateContent + code.slice(templateBlock.end)
+      }
+    } else if (indexOfCI(code, '<template') === -1) {
       for (const diag of e203Diagnostics) {
         const matchMsg = diag.message.match(/attribute '([^']+)'/)
         const attrName = matchMsg ? matchMsg[1] : null

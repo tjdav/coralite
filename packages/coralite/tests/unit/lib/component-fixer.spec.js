@@ -514,4 +514,70 @@ ${templateLines}
     assert.ok(diff.includes('- <div>Old</div>'))
     assert.ok(diff.includes('+ <div>New</div>'))
   })
+
+  test('extractTemplateBlock: handles case-insensitivity (<TEMPLATE>, <Template>)', () => {
+    const uppercaseInput = `<TEMPLATE>
+  <button id="action">Upper</button>
+</TEMPLATE>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ client({ refs }) { const b = refs('action-btn') } })
+</script>`
+
+    const result = applyComponentFixes(uppercaseInput, null, { filePath: 'uppercase.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('<button ref="action-btn" id="action">Upper</button>'))
+  })
+
+  test('extractTemplateBlock: preserves byte offsets with length-expanding Unicode characters (e.g. İ)', () => {
+    const unicodeInput = `// Special comment with İ (U+0130 expands to i\\u0307 in lowerCase)
+<template>
+  <button id="submit">Submit</button>
+</template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ client({ refs }) { const b = refs('submit-btn') } })
+</script>`
+
+    const result = applyComponentFixes(unicodeInput, null, { filePath: 'unicode.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('<button ref="submit-btn" id="submit">Submit</button>'))
+    assert.ok(result.outputCode.startsWith('// Special comment with İ'))
+  })
+
+  test('extractTemplateBlock: ignores custom element tags like <template-item>', () => {
+    const customTagInput = `<template-item>Not a template block</template-item>
+<template>
+  <button id="valid">Valid</button>
+</template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ client({ refs }) { const b = refs('valid-btn') } })
+</script>`
+
+    const result = applyComponentFixes(customTagInput, null, { filePath: 'custom-tag.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('<template-item>Not a template block</template-item>'))
+    assert.ok(result.outputCode.includes('<button ref="valid-btn" id="valid">Valid</button>'))
+  })
+
+  test('ReDoS canary: processes 20,000+ unclosed <template tags in under 2000ms', () => {
+    const maliciousCode = '<template '.repeat(20000) + '<div>Content</div>'
+    const precomputedDiagnostics = [{
+      code: 'CORALITE-E202',
+      severity: 'error',
+      message: 'Missing ref "action-btn" for element <button>',
+      fix: {
+        action: 'inject_ref',
+        description: 'Add ref="action-btn" to matching <button> element'
+      }
+    }]
+
+    const start = performance.now()
+    const result = applyComponentFixes(maliciousCode, precomputedDiagnostics, { filePath: 'redos-canary.html' })
+    const duration = performance.now() - start
+
+    assert.ok(duration < 2000, `Execution took ${duration.toFixed(2)}ms (expected < 2000ms)`)
+    assert.strictEqual(result.modified, false)
+  })
 })
