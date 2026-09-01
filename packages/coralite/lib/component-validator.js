@@ -3,7 +3,7 @@ import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import { readFile, readdir, stat, access } from 'node:fs/promises'
 import { join, extname, relative, resolve } from 'node:path'
-import { camelToKebab, kebabToCamel } from './utils/core.js'
+import { camelToKebab, kebabToCamel, stripCssComments } from './utils/core.js'
 import { buildCodeframe, formatValidationReport } from './utils/diagnostics.js'
 
 /**
@@ -1925,7 +1925,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
   }
 
   // Element refs cross-referencing (CORALITE-W402 & CORALITE-E202)
-  const cleanStyleContent = styleContent ? styleContent.replace(/\/\*[\s\S]*?\*\//g, '') : ''
+  const cleanStyleContent = stripCssComments(styleContent)
 
   const unusedRefs = []
   for (const [ref, loc] of templateRefs.entries()) {

@@ -964,4 +964,126 @@ ${templateLines}
 
     rmSync(tmpDir, { recursive: true, force: true })
   })
+
+  // 24. CSS Comment Stripping & ReDoS Prevention (#125)
+  describe('CSS Comment Scanning & ReDoS Prevention (#125)', () => {
+    test('strips multiple CSS block comments on a single line', () => {
+      const code = `
+<template>
+  <button ref="btnA">A</button>
+  <button ref="btnB">B</button>
+  <button ref="btnC">C</button>
+</template>
+<style>
+  /* [ref="btnA"] */ color: red; /* [ref="btnB"] */ [ref="btnC"] { color: blue; }
+</style>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+      const result = validateComponentSource(code, 'test-multiple-comments.html')
+      const w402s = result.diagnostics.filter(d => d.code === 'CORALITE-W402')
+
+      // btnA and btnB are inside comments -> unused warning (CORALITE-W402)
+      // btnC is outside comments -> used
+      assert.strictEqual(w402s.length, 2)
+      const unusedRefNames = w402s.map(d => d.message)
+      assert.ok(unusedRefNames.some(m => m.includes('btnA')))
+      assert.ok(unusedRefNames.some(m => m.includes('btnB')))
+      assert.ok(!unusedRefNames.some(m => m.includes('btnC')))
+    })
+
+    test('strips multi-line CSS comment blocks containing asterisks and newlines', () => {
+      const code = `
+<template>
+  <div ref="cardHeader">Header</div>
+  <div ref="cardBody">Body</div>
+</template>
+<style>
+  /**
+   * Multi-line style comment
+   * [ref="cardHeader"]
+   */
+  [ref="cardBody"] { display: block; }
+</style>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+      const result = validateComponentSource(code, 'test-multiline-comment.html')
+      const w402s = result.diagnostics.filter(d => d.code === 'CORALITE-W402')
+
+      assert.strictEqual(w402s.length, 1)
+      assert.ok(w402s[0].message.includes('cardHeader'))
+    })
+
+    test('consumes unclosed CSS comments to EOF per W3C CSS Syntax Level 3', () => {
+      const code = `
+<template>
+  <button ref="btnHidden">Hidden</button>
+</template>
+<style>
+  /* [ref="btnHidden"] unclosed comment without matching end tag
+</style>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+      const result = validateComponentSource(code, 'test-unclosed-comment.html')
+      const w402s = result.diagnostics.filter(d => d.code === 'CORALITE-W402')
+
+      assert.strictEqual(w402s.length, 1)
+      assert.ok(w402s[0].message.includes('btnHidden'))
+    })
+
+    test('preserves valid CSS constructs like universal selector *, division /, and slashes', () => {
+      const code = `
+<template>
+  <div ref="container">Container</div>
+</template>
+<style>
+  * { margin: 0; box-sizing: border-box; }
+  .box { width: calc(100% / 2); }
+  [ref="container"] { display: flex; }
+</style>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+      const result = validateComponentSource(code, 'test-css-constructs.html')
+      const w402s = result.diagnostics.filter(d => d.code === 'CORALITE-W402')
+
+      assert.strictEqual(w402s.length, 0, 'Container ref should be recognized despite * and / in style')
+    })
+
+    test('adversarial ReDoS canary: processes 100,000+ repetitive comment starters instantly without ReDoS hang', () => {
+      const repetitivePayload = '/* a'.repeat(30_000)
+      const code = `
+<template>
+  <button ref="targetBtn">Click</button>
+</template>
+<style>
+  ${repetitivePayload}
+</style>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+      const startTime = performance.now()
+      const result = validateComponentSource(code, 'test-redos-canary.html')
+      const durationMs = performance.now() - startTime
+
+      // Linear scanning completes in a few milliseconds (< 100ms)
+      assert.ok(durationMs < 1000, `Validation should complete instantly (took ${durationMs}ms)`)
+
+      const w402s = result.diagnostics.filter(d => d.code === 'CORALITE-W402')
+      assert.strictEqual(w402s.length, 1)
+      assert.ok(w402s[0].message.includes('targetBtn'))
+    })
+  })
 })

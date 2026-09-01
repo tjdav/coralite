@@ -98,6 +98,39 @@ export function formatInlineStyle (styleMap) {
 }
 
 /**
+ * Strips CSS/SCSS block comments in linear O(n) time, eliminating polynomial ReDoS vulnerabilities.
+ * Unterminated block comments consume through to the end of input per CSS Syntax Level 3.
+ * @param {string} [css] - Raw CSS content
+ * @returns {string} CSS content with comments removed
+ */
+export function stripCssComments (css) {
+  if (!css || typeof css !== 'string') {
+    return ''
+  }
+
+  let result = ''
+  let inComment = false
+  const len = css.length
+
+  for (let i = 0; i < len; i++) {
+    if (!inComment) {
+      if (css[i] === '/' && css[i + 1] === '*') {
+        inComment = true
+        i++
+      } else {
+        result += css[i]
+      }
+    } else if (css[i] === '*' && css[i + 1] === '/') {
+      inComment = false
+      i++
+    }
+  }
+
+  return result
+}
+
+
+/**
  * Converts all keys in an object from kebab-case to camelCase
  * @template T
  * @param {Record<string, T>} object - The object with kebab-case keys

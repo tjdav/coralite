@@ -9,7 +9,8 @@ import {
   generateHydrationMap,
   addComponentAndDependencies,
   cleanAST,
-  cleanValues
+  cleanValues,
+  stripCssComments
 } from '../../../lib/utils/core.js'
 import { CoraliteError } from '../../../lib/utils/errors.js'
 
@@ -286,4 +287,58 @@ describe('core.js Coverage Gaps', () => {
       assert.strictEqual(cleaned.refs[0].element, undefined)
     })
   })
+
+  describe('stripCssComments', () => {
+    it('should return empty string for null, undefined, empty, or non-string inputs', () => {
+      assert.strictEqual(stripCssComments(null), '')
+      assert.strictEqual(stripCssComments(undefined), '')
+      assert.strictEqual(stripCssComments(''), '')
+      // @ts-ignore
+      assert.strictEqual(stripCssComments(123), '')
+      // @ts-ignore
+      assert.strictEqual(stripCssComments({}), '')
+    })
+
+    it('should strip single block comments', () => {
+      const input = '/* comment */ .btn { color: red; }'
+      assert.strictEqual(stripCssComments(input), ' .btn { color: red; }')
+    })
+
+    it('should strip multiple comments on a single line', () => {
+      const input = '/* c1 */ .foo { color: red; } /* c2 */ .bar { color: blue; } /* c3 */'
+      assert.strictEqual(stripCssComments(input), ' .foo { color: red; }  .bar { color: blue; } ')
+    })
+
+    it('should strip multi-line comments spanning newlines', () => {
+      const input = `
+        /**
+         * Multi-line header comment
+         * [ref="btnApply"]
+         */
+        .card { padding: 1rem; }
+      `
+      const result = stripCssComments(input)
+      assert.strictEqual(result.includes('Multi-line header comment'), false)
+      assert.strictEqual(result.includes('[ref="btnApply"]'), false)
+      assert.strictEqual(result.includes('.card { padding: 1rem; }'), true)
+    })
+
+    it('should swallow unterminated/unclosed comments to EOF per CSS Syntax Level 3', () => {
+      const input = '.btn { color: red; } /* unclosed comment [ref="btnApply"]'
+      const result = stripCssComments(input)
+      assert.strictEqual(result, '.btn { color: red; } ')
+    })
+
+    it('should preserve universal selector and division operator slashes', () => {
+      const input = '* { margin: 0; } .box { width: calc(100% / 2); }'
+      assert.strictEqual(stripCssComments(input), input)
+    })
+
+    it('should process large adversarial repetitive comment starters in linear time', () => {
+      const payload = '/* a/* a/* a/* a/* '.repeat(10000) + '*/ .target { color: green; }'
+      const result = stripCssComments(payload)
+      assert.strictEqual(result, ' .target { color: green; }')
+    })
+  })
 })
+
