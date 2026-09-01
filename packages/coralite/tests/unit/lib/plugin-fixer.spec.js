@@ -132,4 +132,109 @@ export default {
     const diff = generateColorizedDiff('old', 'new', 'test.js')
     assert.ok(diff.includes('[DRY-RUN PREVIEW] test.js'))
   })
+
+  test('CORALITE-P401: preserves aliased imports when appending definePlugin', () => {
+    const input = `
+import { createCoralite as init } from 'coralite'
+
+export default {
+  name: 'aliased-import-plugin',
+  server: {}
+}`
+
+    const result = applyPluginFixes(input, null, { filePath: 'aliased-plugin.js' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes("import { createCoralite as init, definePlugin } from 'coralite'"))
+    assert.ok(result.outputCode.includes('export default definePlugin({'))
+  })
+
+  test('CORALITE-P401: prepends new import when existing coralite import is default import', () => {
+    const input = `
+import coralite from 'coralite'
+
+export default {
+  name: 'default-import-plugin',
+  server: {}
+}`
+
+    const result = applyPluginFixes(input, null, { filePath: 'default-import-plugin.js' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.startsWith("import { definePlugin } from 'coralite'\n"))
+    assert.ok(result.outputCode.includes("import coralite from 'coralite'"))
+    assert.ok(result.outputCode.includes('export default definePlugin({'))
+  })
+
+  test('CORALITE-P401: prepends new import when existing coralite import is namespace import', () => {
+    const input = `
+import * as coralite from 'coralite'
+
+export default {
+  name: 'namespace-import-plugin',
+  server: {}
+}`
+
+    const result = applyPluginFixes(input, null, { filePath: 'namespace-import-plugin.js' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.startsWith("import { definePlugin } from 'coralite'\n"))
+    assert.ok(result.outputCode.includes("import * as coralite from 'coralite'"))
+    assert.ok(result.outputCode.includes('export default definePlugin({'))
+  })
+
+  test('CORALITE-P401: prepends new import when existing coralite import is side-effect-only import', () => {
+    const input = `
+import 'coralite'
+
+export default {
+  name: 'side-effect-import-plugin',
+  server: {}
+}`
+
+    const result = applyPluginFixes(input, null, { filePath: 'side-effect-import-plugin.js' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.startsWith("import { definePlugin } from 'coralite'\n"))
+    assert.ok(result.outputCode.includes("import 'coralite'"))
+    assert.ok(result.outputCode.includes('export default definePlugin({'))
+  })
+
+  test('CORALITE-P401: skips import injection when definePlugin is already imported or aliased', () => {
+    const inputDirect = `
+import { definePlugin } from 'coralite'
+
+export default {
+  name: 'already-imported-plugin',
+  server: {}
+}`
+
+    const resDirect = applyPluginFixes(inputDirect, null, { filePath: 'already-imported.js' })
+    assert.strictEqual(resDirect.modified, true)
+    assert.ok(resDirect.outputCode.includes("import { definePlugin } from 'coralite'"))
+    assert.strictEqual(resDirect.outputCode.match(/^import\b/gm).length, 1)
+
+    const inputAliased = `
+import { definePlugin as dp } from 'coralite'
+
+export default {
+  name: 'aliased-define-plugin',
+  server: {}
+}`
+
+    const resAliased = applyPluginFixes(inputAliased, null, { filePath: 'aliased-define.js' })
+    assert.strictEqual(resAliased.modified, true)
+    assert.ok(resAliased.outputCode.includes("import { definePlugin as dp } from 'coralite'"))
+    assert.strictEqual(resAliased.outputCode.match(/^import\b/gm).length, 1)
+  })
+
+  test('CORALITE-P401: adversarial ReDoS canary processes comment storm in sub-second time', () => {
+    const commentStorm = '// import { foo } from \'coralite\'\n'.repeat(20000)
+    const code = `${commentStorm}\nexport default {\n  name: 'redos-canary-plugin'\n}`
+
+    const start = performance.now()
+    const result = applyPluginFixes(code, null, { filePath: 'redos-canary.js' })
+    const durationMs = performance.now() - start
+
+    assert.ok(durationMs < 2000, `Expected ReDoS canary to run under 2000ms, took ${durationMs}ms`)
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes("import { definePlugin } from 'coralite'"))
+    assert.ok(result.outputCode.includes('export default definePlugin({'))
+  })
 })

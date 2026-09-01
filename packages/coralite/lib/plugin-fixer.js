@@ -190,22 +190,62 @@ export function applyPluginFixes (sourceCode, diagnostics = null, options = {}) 
           const rawObjCode = code.slice(objStart, objEnd)
           const wrappedCode = `definePlugin(${rawObjCode})`
 
-          code = code.slice(0, objStart) + wrappedCode + code.slice(objEnd)
+          /** @type {Array<{ start: number, end: number, replacement: string }>} */
+          const p401Replacements = [
+            {
+              start: objStart,
+              end: objEnd,
+              replacement: wrappedCode
+            }
+          ]
+
           fixesApplied.push({
             code: 'CORALITE-P401',
             description: 'Wrap returned object in definePlugin()'
           })
 
-          const coraliteImportMatch = /import\s+\{([^}]+)\}\s+from\s+['"]coralite['"]/i.exec(code)
-          if (coraliteImportMatch) {
-            const specifiersStr = coraliteImportMatch[1]
-            const specifiers = specifiersStr.split(',').map(s => s.trim()).filter(Boolean)
-            if (!specifiers.includes('definePlugin')) {
+          /** @type {any[]} */
+          const coraliteImports = ast.body.filter(
+            stmt => stmt.type === 'ImportDeclaration' && stmt.source && stmt.source.value === 'coralite'
+          )
+
+          const hasDefinePlugin = coraliteImports.some(imp => {
+            return imp.specifiers && imp.specifiers.some(
+              s => (s.type === 'ImportSpecifier' && s.imported && s.imported.name === 'definePlugin') ||
+                   (s.local && s.local.name === 'definePlugin')
+            )
+          })
+
+          if (!hasDefinePlugin) {
+            const namedImportNode = coraliteImports.find(imp => {
+              return imp.specifiers && imp.specifiers.length > 0 &&
+                imp.specifiers.every(s => s.type === 'ImportSpecifier')
+            })
+
+            if (namedImportNode && namedImportNode.range) {
+              const specifiers = namedImportNode.specifiers.map(s => {
+                return s.imported && s.imported.name !== s.local.name
+                  ? `${s.imported.name} as ${s.local.name}`
+                  : s.local.name
+              })
               specifiers.push('definePlugin')
-              code = code.replace(coraliteImportMatch[0], `import { ${specifiers.join(', ')} } from 'coralite'`)
+              p401Replacements.push({
+                start: namedImportNode.range[0],
+                end: namedImportNode.range[1],
+                replacement: `import { ${specifiers.join(', ')} } from 'coralite'`
+              })
+            } else {
+              p401Replacements.push({
+                start: 0,
+                end: 0,
+                replacement: "import { definePlugin } from 'coralite'\n"
+              })
             }
-          } else {
-            code = `import { definePlugin } from 'coralite'\n${code}`
+          }
+
+          p401Replacements.sort((a, b) => b.start - a.start)
+          for (const rep of p401Replacements) {
+            code = code.slice(0, rep.start) + rep.replacement + code.slice(rep.end)
           }
         }
       }
