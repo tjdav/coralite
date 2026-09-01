@@ -11,6 +11,31 @@ const INTERACTIVE_TAGS = new Set(['button', 'input', 'form', 'a', 'select', 'tex
  * @import { CoraliteDiagnostic } from '../types/index.js'
  */
 
+/**
+ * Extracts an inline template expression from a diagnostic message in linear O(n) time.
+ * @param {string} [message] - Diagnostic message string
+ * @returns {string|null} Extracted raw expression or null if not found
+ */
+function extractInlineExpression (message) {
+  if (!message || typeof message !== 'string') {
+    return null
+  }
+
+  const prefix = "Inline expression '{{"
+  const start = message.indexOf(prefix)
+  if (start === -1) {
+    return null
+  }
+
+  const end = message.indexOf("}}'", start + prefix.length)
+  if (end === -1) {
+    return null
+  }
+
+  const expr = message.slice(start + prefix.length, end).trim()
+  return expr || null
+}
+
 function getPropKeyName (propNode) {
   if (!propNode || propNode.type !== 'Property') {
     return null
@@ -240,8 +265,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
       continue
     }
 
-    const matchMsg = diag.message.match(/Inline expression '\{\{\s*([\s\S]+?)\s*\}\}'/)
-    const rawExpr = matchMsg ? matchMsg[1] : null
+    const rawExpr = diag.fix?.expr || extractInlineExpression(diag.message)
 
     if (rawExpr) {
       const escapedExpr = rawExpr

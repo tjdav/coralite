@@ -649,6 +649,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
             cause: 'Inline complex template expressions bypass static reactivity analysis. Lift expressions into derived getters.',
             fix: {
               action: 'lift_to_getter',
+              expr,
               description: `Lift expression to getter '${getterName}'`,
               replacement: `{{ ${getterName} }}`,
               getter: {

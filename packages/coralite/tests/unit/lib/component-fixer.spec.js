@@ -375,6 +375,136 @@ ${templateLines}
     assert.ok(result.outputCode.includes("btn.addEventListener('click', () => {}, { signal })"))
   })
 
+  test('CORALITE-E201: primary path uses diag.fix.expr directly without parsing message', () => {
+    const input = `<template>
+  <div>{{ val }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>`
+
+    const precomputedDiagnostics = [{
+      code: 'CORALITE-E201',
+      severity: 'error',
+      message: 'Unparsed fallback diagnostic message format',
+      fix: {
+        action: 'lift_to_getter',
+        expr: 'val',
+        description: "Lift expression to getter 'valGetter'",
+        replacement: '{{ valGetter }}',
+        getter: {
+          name: 'valGetter',
+          code: 'valGetter: (state) => state.val'
+        }
+      }
+    }]
+
+    const result = applyComponentFixes(input, precomputedDiagnostics, { filePath: 'primary-path.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('{{ valGetter }}'))
+    assert.ok(result.outputCode.includes('valGetter: (state) => state.val'))
+  })
+
+  test('CORALITE-E201: fallback path extracts inline expression from diag.message when diag.fix.expr is absent', () => {
+    const input = `<template>
+  <div>{{ count + 1 }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>`
+
+    const precomputedDiagnostics = [{
+      code: 'CORALITE-E201',
+      severity: 'error',
+      message: "Inline expression '{{ count + 1 }}' in template must be lifted to a derived getter.",
+      fix: {
+        action: 'lift_to_getter',
+        description: "Lift expression to getter 'countPlusOne'",
+        replacement: '{{ countPlusOne }}',
+        getter: {
+          name: 'countPlusOne',
+          code: 'countPlusOne: (state) => (state.count + 1)'
+        }
+      }
+    }]
+
+    const result = applyComponentFixes(input, precomputedDiagnostics, { filePath: 'fallback-path.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('{{ countPlusOne }}'))
+    assert.ok(result.outputCode.includes('countPlusOne: (state) => (state.count + 1)'))
+  })
+
+  test('CORALITE-E201: whitespace-only mustache expression {{ }} returns null and skips fix', () => {
+    const input = `<template>
+  <div>{{   }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>`
+
+    const precomputedDiagnostics = [{
+      code: 'CORALITE-E201',
+      severity: 'error',
+      message: "Inline expression '{{   }}' in template must be lifted to a derived getter.",
+      fix: {
+        action: 'lift_to_getter',
+        description: "Lift expression to getter 'derived'",
+        replacement: '{{ derived }}',
+        getter: {
+          name: 'derived',
+          code: 'derived: (state) => state.derived'
+        }
+      }
+    }]
+
+    const result = applyComponentFixes(input, precomputedDiagnostics, { filePath: 'whitespace-mustache.html' })
+    assert.strictEqual(result.modified, false)
+    assert.strictEqual(result.fixesApplied.length, 0)
+    assert.ok(result.outputCode.includes('{{   }}'))
+  })
+
+  test('CORALITE-E201: ReDoS canary executes in under 5ms with 100,000+ whitespace characters', () => {
+    const spaces = ' '.repeat(100000)
+    const adversarialMessage = `Inline expression '{{${spaces}foo.bar${spaces}}}' in template must be lifted.`
+    const input = `<template>
+  <div>{{ foo.bar }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>`
+
+    const precomputedDiagnostics = [{
+      code: 'CORALITE-E201',
+      severity: 'error',
+      message: adversarialMessage,
+      fix: {
+        action: 'lift_to_getter',
+        description: "Lift expression to getter 'fooBar'",
+        replacement: '{{ fooBar }}',
+        getter: {
+          name: 'fooBar',
+          code: 'fooBar: (state) => state.foo?.bar'
+        }
+      }
+    }]
+
+    const start = performance.now()
+    const result = applyComponentFixes(input, precomputedDiagnostics, { filePath: 'canary.html' })
+    const duration = performance.now() - start
+
+    assert.ok(duration < 5, `Execution took ${duration.toFixed(2)}ms (expected < 5ms)`)
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('{{ fooBar }}'))
+  })
+
   test('dryRun support: generates colorized diff without throwing', () => {
     const oldCode = '<div>Old</div>'
     const newCode = '<div>New</div>'
