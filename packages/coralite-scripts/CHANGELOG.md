@@ -1,5 +1,16 @@
 # Changelog
 
+## v1.0.0-rc.2
+
+> Comparing `coralite-scripts-v1.0.0-rc.1` to `HEAD`
+
+**Summary:** 1 commit
+
+### ⚡ Performance Improvements
+
+- replace blocking readFileSync with async readFile in CLI auto-fixers ([f629341](https://codeberg.org/tjdavid/coralite/commit/f62934143236b163a37416e2ebc931ee5c50e218))
+
+
 ## v1.0.0-rc.1
 
 > Comparing `coralite-scripts-v1.0.0-rc.0` to `HEAD`
