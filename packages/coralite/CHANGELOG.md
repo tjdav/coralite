@@ -1,5 +1,39 @@
 # Changelog
 
+## v1.0.0-rc.2
+
+> Comparing `coralite-v1.0.0-rc.1` to `HEAD`
+
+**Summary:** 11 commits, 1 pull request
+
+### ✨ Features
+
+- extend native HTML boolean attributes (43 total) & aria-* auto-remove in templates ([2a3036e](https://codeberg.org/tjdavid/coralite/commit/2a3036e2af054d7e83c3edeb03420e1532445df7))
+
+### 🐛 Bug Fixes
+
+- replace polynomial regex with linear template block scanner (component-fixer) ([06802bd](https://codeberg.org/tjdavid/coralite/commit/06802bd36f2bb2d1a4f48d8489fbccf7ec1342ab))
+- replace polynomial regex with AST-based import analysis (plugin-fixer) ([658cc75](https://codeberg.org/tjdavid/coralite/commit/658cc754054c3cadb7afc49f18f7e0f76887c890))
+- fix polynomial ReDoS in E201 diagnostic parsing (component-fixer) ([f33efb4](https://codeberg.org/tjdavid/coralite/commit/f33efb40f29c18e64c48e6efdaab91a69e4288bf))
+- fix polynomial ReDoS in HTML comment stripping (page-validator) ([bee1823](https://codeberg.org/tjdavid/coralite/commit/bee18237838b9b9c760f06f144847e8169915b6c))
+- fix polynomial ReDoS in style comment stripping (component-validator) ([fd5d19d](https://codeberg.org/tjdavid/coralite/commit/fd5d19dcf7f7af3080edb047b853e70e82541990))
+- XSS in error overlay and improve WCAG AA contrast ([c937d35](https://codeberg.org/tjdavid/coralite/commit/c937d35899f883c7fc9b98d7a270877eb446e533))
+
+### ⚡ Performance Improvements
+
+- replace blocking readFileSync with async readFile in CLI auto-fixers ([f629341](https://codeberg.org/tjdavid/coralite/commit/f62934143236b163a37416e2ebc931ee5c50e218))
+- replace inline Array lookups with Set constants (validator) ([ed2d978](https://codeberg.org/tjdavid/coralite/commit/ed2d97813cedfd0d0ee1485e4112d84ee87cc168))
+- replace inline array lookups with Set constants (page-validator) ([6ff6875](https://codeberg.org/tjdavid/coralite/commit/6ff6875f8e17808d25e0c9cabdded2f7b27b66ac))
+
+### ♻️ Code Refactoring
+
+- centralize linear-time scanning utilities (#122, #121, #115) (utils) ([#122](https://codeberg.org/tjdavid/coralite/pulls/122)) ([53803e6](https://codeberg.org/tjdavid/coralite/commit/53803e6730cef1e923258bc50dfc6275318198d9))
+
+### 🔗 Pull Requests
+
+- [#122](https://codeberg.org/tjdavid/coralite/pull/122)
+
+
 ## v1.0.0-rc.1
 
 > Comparing `coralite-v1.0.0-rc.0` to `HEAD`
