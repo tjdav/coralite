@@ -110,5 +110,23 @@ describe('coralite-publish utility functions', () => {
 
       assert.match(output, /\[DRY RUN\] Would publish coralite-scripts@1.0.0-rc.3 to codeberg with tag "rc"/)
     })
+
+    it('fails with clear error message when auth token is missing for live publish', () => {
+      assert.throws(() => {
+        execSync(
+          'node --experimental-vm-modules packages/coralite-release/bin/publish.js --package create-coralite --skip-build',
+          {
+            cwd: rootDir,
+            encoding: 'utf8',
+            env: {
+              ...process.env,
+              NPM_TOKEN: '',
+              NODE_AUTH_TOKEN: ''
+            },
+            stdio: ['pipe', 'pipe', 'pipe']
+          }
+        )
+      }, /NPM_TOKEN or NODE_AUTH_TOKEN environment variable is required/)
+    })
   })
 })

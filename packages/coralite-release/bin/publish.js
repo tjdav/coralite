@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { existsSync, copyFileSync, unlinkSync, readFileSync } from 'node:fs'
+import { existsSync, copyFileSync, unlinkSync, readFileSync, writeFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execSync } from 'node:child_process'
@@ -211,6 +211,7 @@ async function main () {
 
   let copiedLlms = false
   const targetLlms = resolve(pkgDir, 'llms.txt')
+  const createdNpmrcFiles = []
 
   const cleanup = () => {
     if (copiedLlms && existsSync(targetLlms)) {
@@ -219,6 +220,16 @@ async function main () {
         console.log(`✔ Cleaned up temporary asset: ${targetLlms}`)
       } catch (err) {
         console.warn(`⚠️ Failed to cleanup ${targetLlms}: ${err.message}`)
+      }
+    }
+    for (const npmrcPath of createdNpmrcFiles) {
+      if (existsSync(npmrcPath)) {
+        try {
+          unlinkSync(npmrcPath)
+          console.log(`✔ Cleaned up temporary npmrc: ${npmrcPath}`)
+        } catch (err) {
+          console.warn(`⚠️ Failed to cleanup ${npmrcPath}: ${err.message}`)
+        }
       }
     }
   }
@@ -255,17 +266,56 @@ async function main () {
     console.log(`🔍 Verifying package contents for ${packageName}...`)
     verifyPackageFiles(pkgDir, pkgJson.files)
 
+    const npmToken = process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN
+    const codebergToken = process.env.CODEBERG_TOKEN
+
     if (registry === 'npmjs') {
-      if (process.env.NPM_TOKEN && !isDryRun) {
-        execSync(`pnpm config set //registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}`, { stdio: 'inherit' })
-        execSync(`npm config set //registry.npmjs.org/:_authToken=${process.env.NPM_TOKEN}`, { stdio: 'inherit' })
+      if (!isDryRun) {
+        if (!npmToken) {
+          throw new Error('NPM_TOKEN or NODE_AUTH_TOKEN environment variable is required to publish to npmjs.')
+        }
+        const npmrcContent = `//registry.npmjs.org/:_authToken=${npmToken}\nregistry=https://registry.npmjs.org/\n`
+        const pkgNpmrc = resolve(pkgDir, '.npmrc')
+        const rootNpmrc = resolve(rootDir, '.npmrc')
+        if (!existsSync(pkgNpmrc)) {
+          writeFileSync(pkgNpmrc, npmrcContent, 'utf8')
+          createdNpmrcFiles.push(pkgNpmrc)
+        }
+        if (!existsSync(rootNpmrc)) {
+          writeFileSync(rootNpmrc, npmrcContent, 'utf8')
+          createdNpmrcFiles.push(rootNpmrc)
+        }
+        try {
+          execSync(`pnpm config set //registry.npmjs.org/:_authToken "${npmToken}"`, { stdio: 'inherit' })
+          execSync(`npm config set //registry.npmjs.org/:_authToken "${npmToken}"`, { stdio: 'inherit' })
+        } catch {
+          // ignore config set errors if .npmrc is placed
+        }
       }
     } else if (registry === 'codeberg') {
-      if (process.env.CODEBERG_TOKEN && !isDryRun) {
-        execSync('npm config set registry https://codeberg.org/api/packages/tjdavid/npm/', { stdio: 'inherit' })
-        execSync(`npm config set //codeberg.org/api/packages/tjdavid/npm/:_authToken ${process.env.CODEBERG_TOKEN}`, { stdio: 'inherit' })
-        execSync('npm config set fetch-retries 0', { stdio: 'inherit' })
-        execSync('npm config set fetch-timeout 600000', { stdio: 'inherit' })
+      if (!isDryRun) {
+        if (!codebergToken) {
+          throw new Error('CODEBERG_TOKEN environment variable is required to publish to Codeberg.')
+        }
+        const npmrcContent = `//codeberg.org/api/packages/tjdavid/npm/:_authToken=${codebergToken}\nregistry=https://codeberg.org/api/packages/tjdavid/npm/\nfetch-retries=0\nfetch-timeout=600000\n`
+        const pkgNpmrc = resolve(pkgDir, '.npmrc')
+        const rootNpmrc = resolve(rootDir, '.npmrc')
+        if (!existsSync(pkgNpmrc)) {
+          writeFileSync(pkgNpmrc, npmrcContent, 'utf8')
+          createdNpmrcFiles.push(pkgNpmrc)
+        }
+        if (!existsSync(rootNpmrc)) {
+          writeFileSync(rootNpmrc, npmrcContent, 'utf8')
+          createdNpmrcFiles.push(rootNpmrc)
+        }
+        try {
+          execSync('npm config set registry https://codeberg.org/api/packages/tjdavid/npm/', { stdio: 'inherit' })
+          execSync(`npm config set //codeberg.org/api/packages/tjdavid/npm/:_authToken "${codebergToken}"`, { stdio: 'inherit' })
+          execSync('npm config set fetch-retries 0', { stdio: 'inherit' })
+          execSync('npm config set fetch-timeout 600000', { stdio: 'inherit' })
+        } catch {
+          // ignore config set errors if .npmrc is placed
+        }
       }
     } else {
       throw new Error(`Unsupported registry: ${registry}. Allowed options: "npmjs", "codeberg".`)
@@ -279,12 +329,13 @@ async function main () {
       console.log(`🚀 Publishing ${packageName}@${version} to ${registry} (tag: ${distTag})...`)
 
       if (registry === 'npmjs') {
-        execSync(`pnpm --filter "${packageName}" publish --registry https://registry.npmjs.org/ --tag ${distTag} --access public --no-git-checks`, {
-          cwd: rootDir,
+        execSync(`pnpm publish --registry https://registry.npmjs.org/ --tag ${distTag} --access public --no-git-checks --no-provenance`, {
+          cwd: pkgDir,
           stdio: 'inherit',
           env: {
             ...process.env,
-            NODE_AUTH_TOKEN: process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN
+            NODE_AUTH_TOKEN: npmToken,
+            NPM_TOKEN: npmToken
           }
         })
       } else if (registry === 'codeberg') {
