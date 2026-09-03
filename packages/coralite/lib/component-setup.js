@@ -299,8 +299,14 @@ export function createComponentDefinition ({ app }) {
 
     if (getters) {
       const roState = createReadOnlyProxy(state)
+      const serverGetterContext = {
+        signal: new AbortController().signal,
+        root: root || null,
+        refs: () => null
+      }
+
       for (const [key, getter] of Object.entries(getters)) {
-        const result = getter(roState, { signal: new AbortController().signal })
+        const result = getter(roState, serverGetterContext)
         state[key] = (result && typeof result.then === 'function') ? await result : result
         if (state.__script__ && state.__script__.state) {
           state.__script__.state[key] = state[key]

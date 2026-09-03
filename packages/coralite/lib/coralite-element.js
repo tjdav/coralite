@@ -41,6 +41,14 @@ export {
  */
 
 /**
+ * Context payload provided as the second argument to derived state getters.
+ * @typedef {Object} CoraliteGetterContext
+ * @property {AbortSignal} signal - AbortSignal to detect stale async operations.
+ * @property {HTMLElement} root - The host custom element instance.
+ * @property {function(string): HTMLElement|null} refs - Resolves an element marked with a ref identifier.
+ */
+
+/**
  * @typedef {Object} CoraliteComponentOptions
  * @property {string} componentId - The unique identifier for the component.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
@@ -693,6 +701,22 @@ export class CoraliteElement extends BaseElement {
       }
     }
 
+    const self = this
+    const getRef = (id) => {
+      const refId = self._state ? self._state[`ref_${id}`] : target[`ref_${id}`]
+      if (!refId && typeof refId !== 'string') {
+        return null
+      }
+      if (self.getAttribute && (self.getAttribute('ref') === refId || self.getAttribute('ref') === id)) {
+        return self
+      }
+      let node = self.querySelector ? self.querySelector(`[ref="${refId}"]`) : null
+      if (!node && typeof findOwnedRefNode === 'function') {
+        node = findOwnedRefNode(self, id, refId, self._instanceId)
+      }
+      return node
+    }
+
     // Define derived state getters with isolation controllers
     this._getterAbortControllers = {}
     for (const [key, getter] of Object.entries(options.getters || {})) {
@@ -712,14 +736,19 @@ export class CoraliteElement extends BaseElement {
             }
           }
           const roState = createReadOnlyProxy(this._state, new WeakMap(), tracker)
-          return getter(roState, { signal: this._getterAbortControllers[key].signal })
+          const context = {
+            signal: this._getterAbortControllers[key].signal,
+            root: this,
+            refs: getRef
+          }
+          return getter(roState, context)
         },
         enumerable: true,
         configurable: true
       })
     }
 
-    this._state = this._createReactiveProxy(target)
+    this._state = this._createReactiveProxy(target, getRef)
     this._registerSlotStateObserver()
   }
 
@@ -730,12 +759,27 @@ export class CoraliteElement extends BaseElement {
    * @returns {Proxy} The reactive state proxy.
    * @internal
    */
-  _createReactiveProxy (target) {
+  _createReactiveProxy (target, getRef) {
     const self = this
     const options = this.componentOptions
     if (!options) {
       return target
     }
+
+    const resolveRef = getRef || ((id) => {
+      const refId = self._state ? self._state[`ref_${id}`] : target[`ref_${id}`]
+      if (!refId && typeof refId !== 'string') {
+        return null
+      }
+      if (self.getAttribute && (self.getAttribute('ref') === refId || self.getAttribute('ref') === id)) {
+        return self
+      }
+      let node = self.querySelector ? self.querySelector(`[ref="${refId}"]`) : null
+      if (!node && typeof findOwnedRefNode === 'function') {
+        node = findOwnedRefNode(self, id, refId, self._instanceId)
+      }
+      return node
+    })
 
     const errorsTarget = target.errors || {}
     const errorProxiesMap = new WeakMap()
@@ -902,7 +946,12 @@ export class CoraliteElement extends BaseElement {
             if (options.getters && getterKey in options.getters) {
               value = Reflect.get(t, p, receiver)
             } else {
-              value = getterFn(self._state)
+              const getterContext = {
+                signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal,
+                root: self,
+                refs: resolveRef
+              }
+              value = getterFn(self._state, getterContext)
             }
           } finally {
             self._collectingDependencies = parentCollecting
@@ -927,7 +976,12 @@ export class CoraliteElement extends BaseElement {
                   if (options.getters && getterKey in options.getters) {
                     Reflect.get(t, p, receiver)
                   } else {
-                    getterFn(self._state)
+                    const getterContext = {
+                      signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal,
+                      root: self,
+                      refs: resolveRef
+                    }
+                    getterFn(self._state, getterContext)
                   }
                 } finally {
                   self._collectingDependencies = originalCollector

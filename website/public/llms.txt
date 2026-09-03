@@ -188,7 +188,19 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
 #### 3. `getters` (Sync)
 
 * **Purpose**: Pure functions used to derive new UI data from the unified state.
-* **The Flat Argument**: Getters receive the **Unified State Proxy** as their only argument. This single proxy contains both the coerced `attributes` and the initialized `server` state.
+* **Signature & Arguments**: Getters receive the **Unified State Proxy** as their first argument (`state`), and an optional contextual helper object `{ root, refs, signal }` as their second argument.
+  - `state`: The unified reactive state proxy containing coerced `attributes` and initialized `server` data.
+  - `root`: The host custom element instance (`HTMLElement`). Enables contextual parent queries (e.g. `root.closest('my-list')`) or Light DOM inspection (`root.querySelectorAll(...)`).
+  - `refs`: Scoped reference resolver function `refs(id)` to query owned ref elements within the component template (returns `null` gracefully if not found or before mounting).
+  - `signal`: An `AbortSignal` for detecting stale async operations.
+* **Contextual Examples**:
+  ```javascript
+  getters: {
+    itemRole: (state, { root }) => root?.closest('atoll-list') ? 'listitem' : (state.isClickable ? 'button' : null),
+    inputLength: (state, { refs }) => refs('input')?.value.length ?? 0
+  }
+  ```
+* **Backwards Compatibility**: Function signature `(state) => ...` is 100% backwards-compatible.
 * **Rule**: Getters must be pure and synchronous. You must **never** perform side-effects, mutate state, or execute asynchronous code (`fetch`) inside a getter.
 * **Unified Recursive Dependency Tracking**:
   - Getters now support **automatic transitive dependency tracking** (no need to manually flatten nested getter chains). If getter `A` reads getter `B`, and getter `B` reads leaf property `C`, mutating `C` automatically cascades re-evaluation through `B` and `A`, and notifies any observers subscribed to `A`.
