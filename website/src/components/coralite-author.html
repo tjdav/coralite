@@ -35,10 +35,10 @@ export default defineComponent({
     }
   },
   getters: {
-    author: (state) => state.authors[state.name] || null,
-    url: (state) => state.author?.url || '',
-    fullName: (state) => state.author?.name || 'Unknown',
-    img: (state) => {
+    author: ({ state }) => state.authors[state.name] || null,
+    url: ({ state }) => state.author?.url || '',
+    fullName: ({ state }) => state.author?.name || 'Unknown',
+    img: ({ state }) => {
       const currentAuthor = state.author
       if (!currentAuthor) {
         return '<picture><img class="post-author-img" src="/images/default.png" alt="Unknown Author"></picture>'
@@ -51,7 +51,7 @@ export default defineComponent({
       pictureHtml += '</picture>'
       return pictureHtml
     },
-    localeDate: (state) => {
+    localeDate: ({ state }) => {
       if (!state.dateTime) {
         return ''
       }

@@ -79,7 +79,7 @@
               }
             },
             getters: {
-              greeting: (state) => `Hello, ${state.name}!`
+              greeting: ({ state }) => `Hello, ${state.name}!`
             },
             client: ({ refs }) => {
               const btn = refs('actionBtn')
@@ -428,8 +428,8 @@
               date: { type: String }
           },
           getters: {
-            fullName: (state) => `${state.firstName} ${state.lastName}`.trim(),
-            formattedDate: (state) => state.date ? new Date(state.date).toLocaleDateString() : ''
+            fullName: ({ state }) => `${state.firstName} ${state.lastName}`.trim(),
+            formattedDate: ({ state }) => state.date ? new Date(state.date).toLocaleDateString() : ''
           },
           slots: {
             // Custom Light DOM interception and transformation

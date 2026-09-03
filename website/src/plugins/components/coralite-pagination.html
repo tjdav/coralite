@@ -45,7 +45,7 @@
       }
     },
     getters: {
-      paginationLinks: (state) => {
+      paginationLinks: ({ state }) => {
         const getPageUrl = (page) => {
           if (page === 1) {
             return state.baseUrl

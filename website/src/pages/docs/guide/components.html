@@ -195,7 +195,7 @@ async server({ myPlugin }) {
     <p>Getters calculate state based on other state. They are pure, synchronous, and reactive.</p>
     <coralite-code-highlight language="javascript">
 getters: {
-  postCount: (state) => state.posts.length
+  postCount: ({ state }) => state.posts.length
 }
     </coralite-code-highlight>
 

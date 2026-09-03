@@ -39,8 +39,8 @@ export default defineComponent({
     lastName: String
   },
   getters: {
-    fullName() {
-      return `${this.firstName} ${this.lastName}`;
+    fullName({ state }) {
+      return `${state.firstName} ${state.lastName}`;
     }
   },
   template: `<div>Welcome, {{ fullName }}!</div>`

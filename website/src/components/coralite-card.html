@@ -37,7 +37,7 @@
       }
     },
     getters: {
-      schemeClass: (state) => (state.colourScheme === 'light' ? 'card-light' : '')
+      schemeClass: ({ state }) => (state.colourScheme === 'light' ? 'card-light' : '')
     }
   })
 </script>

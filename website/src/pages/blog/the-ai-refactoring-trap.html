@@ -49,7 +49,7 @@ export default defineComponent({
 
   // getters: Pure, synchronous functions for derived UI data
   getters: {
-    isDarkMode: (state) => state.theme === 'dark'
+    isDarkMode: ({ state }) => state.theme === 'dark'
   },
 
   // client: The client-side controller for side-effects and native DOM events

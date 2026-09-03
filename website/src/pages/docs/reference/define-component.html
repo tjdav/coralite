@@ -44,8 +44,8 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
       </tr>
       <tr slot="body">
         <td><code>getters</code></td>
-        <td><code>Record&lt;string, (state: ReadonlyState) => any&gt;</code></td>
-        <td>Pure functions for derived state. Receives a read-only state proxy.</td>
+        <td><code>Record&lt;string, (context: CoraliteGetterContext) => any&gt;</code></td>
+        <td>Pure functions for derived state. Receives single context object parameter <code>{ state, root, refs, signal }</code>.</td>
       </tr>
       <tr slot="body">
         <td><code>style</code></td>
@@ -266,8 +266,7 @@ async server(context) {
 
     <coralite-code-highlight language="javascript">
 getters: {
-    // state is a Read-Only Proxy here
-    visibleUsers: (state) => state.users.slice(0, state.maxItems)
+    visibleUsers: ({ state }) => state.users.slice(0, state.maxItems)
 }
     </coralite-code-highlight>
 

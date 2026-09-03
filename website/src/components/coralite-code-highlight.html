@@ -65,7 +65,7 @@
       }
     },
     getters: {
-      languageClass: (state) => state.language.toLowerCase()
+      languageClass: ({ state }) => state.language.toLowerCase()
     },
     slots: {
       default (content, state) {

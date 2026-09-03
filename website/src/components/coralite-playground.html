@@ -289,15 +289,15 @@
               // GETTERS: Pure Derived UI Data (Handling ALL logic and negation)
               getters: {
                 // Math logic
-                finalPrice: (state) => {
+                finalPrice: ({ state }) => {
                   return Math.max(0, state.basePrice - state.discountAmount).toFixed(2);
                 },
                 // Negation logic for the native 'hidden' attribute
-                hideValidationMessage: (state) => {
+                hideValidationMessage: ({ state }) => {
                   return state.isApplyingDiscount === false;
                 },
                 // Negation logic for the native 'hidden' attribute
-                hideDiscountRow: (state) => {
+                hideDiscountRow: ({ state }) => {
                   return state.promoCode === '';
                 }
               },

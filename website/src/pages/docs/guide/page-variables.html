@@ -57,7 +57,7 @@
           },
           getters: {
             // Mapping nested page variable to a flat state property
-            activeClass: (state) => (state.href === state.page.url.pathname ? 'active' : '')
+            activeClass: ({ state }) => (state.href === state.page.url.pathname ? 'active' : '')
           }
         })
       </script>

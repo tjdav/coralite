@@ -38,7 +38,7 @@ defineComponent({
     };
   },
   getters: {
-    totalClicks(state) {
+    totalClicks({ state }) {
       return state.initialCount + state.clicks;
     }
   },

@@ -113,19 +113,11 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   Below are the exact coercion logic patterns utilized at compile-time (server-side) and run-time (client-side) to normalize raw HTML string attributes into JS values:
 
   - **`Boolean` Coercion Pattern**:
-    - **How it Works**:
-      - **Client-Side Coercion**:
-        ```javascript
-        if (value === '') return true;
-        return value !== 'false' && value !== null;
-        ```
-      - **Server-Side Coercion**:
-        ```javascript
-        state[key] = value !== 'false' && value !== null && value !== '';
-        ```
-    - **Limitations & Hydration Mismatch Warning**:
-      - *The Empty Attribute SSR Mismatch*: An empty HTML attribute (e.g. `<my-component is-checked></my-component>` or just `<my-component is-checked>`) is parsed as `""` (empty string) in HTML. On the client, this empty string evaluates to `true` (standard browser behavior for attributes like `disabled` or `checked`). However, on the server, it evaluates to `false` (due to the `value !== ''` check).
-      - *Solution*: To ensure consistent behavior between Server-Side Rendering (SSR) and Client-Side Hydration, developers should explicitly pass the string value `"true"` (e.g., `<my-component is-checked="true">`) instead of using shorthand empty attributes, or rely on a declared `default` value in the attribute schema.
+    - **Logic**: Evaluates through Coralite's unified isomorphic `coerce(value, Boolean)` engine:
+      - `""` (empty attribute) and `"true"` coerce to `true`.
+      - `"false"`, `null`, and `"null"` coerce to `false`.
+      - `undefined` remains `undefined` (or falls back to declared `default`).
+    - **Empty Attributes**: An empty HTML attribute (e.g. `<my-component is-checked></my-component>` or `<my-component is-checked>`) is parsed as `""` (empty string) in HTML and coerces to `true` identically across both server-side rendering (SSR) and client-side hydration.
   
   - **`Number` Coercion Pattern**:
     - **Logic**: Evaluates `Number(value)`.
@@ -143,7 +135,7 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
     | **`"false"`** | `false` | `NaN` | `"false"` |
     | **`"42"`** | `true` | `42` | `"42"` |
     | **`"0"`** | `true` | `0` | `"0"` |
-    | **`""` (empty attribute)** | `true` (client) / `false` (server) | `0` | `""` |
+    | **`""` (empty attribute)** | `true` | `0` | `""` |
     | **`null` / Absent** | `false` (or `default` value) | `null` (or `default` value) | `null` (or `default` value) |
     | **`"hello"`** | `true` | `NaN` | `"hello"` |
 
@@ -185,25 +177,26 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
 
 * **Serialization**: This block is fully stripped from the client bundle by the build tool. The returned object is serialized and merged into the unified client-side `state`.
 
-#### 3. `getters` (Sync)
+#### 3. `getters` (Derived State)
 
-* **Purpose**: Pure functions used to derive new UI data from the unified state.
-* **Signature & Arguments**: Getters receive the **Unified State Proxy** as their first argument (`state`), and an optional contextual helper object `{ root, refs, signal }` as their second argument.
-  - `state`: The unified reactive state proxy containing coerced `attributes` and initialized `server` data.
+* **Purpose**: Pure functions used to derive computed UI state from the component's unified state and context.
+* **Signature & Arguments**: Getters receive a single **Unified Context Object** `{ state, root, refs, signal }`:
+  - `state`: The unified read-only reactive state proxy containing coerced `attributes` and initialized `server` data.
   - `root`: The host custom element instance (`HTMLElement`). Enables contextual parent queries (e.g. `root.closest('my-list')`) or Light DOM inspection (`root.querySelectorAll(...)`).
   - `refs`: Scoped reference resolver function `refs(id)` to query owned ref elements within the component template (returns `null` gracefully if not found or before mounting).
   - `signal`: An `AbortSignal` for detecting stale async operations.
+* **Strict Unified Context (NO Backwards Compatibility)**: Getters strictly receive the unified context object as their single argument. You **MUST** destructure the properties you need (e.g., `({ state }) => ...`). Legacy `(state) => ...` without destructuring is **not** backwards-compatible by design, as the parameter receives the context object rather than `state`.
 * **Contextual Examples**:
   ```javascript
   getters: {
-    itemRole: (state, { root }) => root?.closest('atoll-list') ? 'listitem' : (state.isClickable ? 'button' : null),
-    inputLength: (state, { refs }) => refs('input')?.value.length ?? 0
+    fullName: ({ state }) => `${state.firstName} ${state.lastName}`,
+    itemRole: ({ state, root }) => root?.closest('atoll-list') ? 'listitem' : (state.isClickable ? 'button' : null),
+    inputLength: ({ refs }) => refs('input')?.value.length ?? 0
   }
   ```
-* **Backwards Compatibility**: Function signature `(state) => ...` is 100% backwards-compatible.
-* **Rule**: Getters must be pure and synchronous. You must **never** perform side-effects, mutate state, or execute asynchronous code (`fetch`) inside a getter.
+* **Purity Rule**: Getters must be pure functions. You must **never** perform side-effects or mutate state directly inside a getter.
 * **Unified Recursive Dependency Tracking**:
-  - Getters now support **automatic transitive dependency tracking** (no need to manually flatten nested getter chains). If getter `A` reads getter `B`, and getter `B` reads leaf property `C`, mutating `C` automatically cascades re-evaluation through `B` and `A`, and notifies any observers subscribed to `A`.
+  - Getters support **automatic transitive dependency tracking** (no need to manually flatten nested getter chains). If getter `A` reads getter `B`, and getter `B` reads leaf property `C`, mutating `C` automatically cascades re-evaluation through `B` and `A`, and notifies any observers subscribed to `A`.
   - **Circular Dependency Protection**: If a circular dependency chain is detected at runtime (e.g. `A` depends on `B` and `B` depends on `A`), the engine throws a descriptive error: `Circular dependency detected: A → B → A` to prevent infinite reactive evaluation loops.
   - **Async Getter Lifecycle & Trackability**: For asynchronous getters returning a `Promise`, Coralite tracks any state properties read synchronously before the first `await`. Once the `Promise` resolves, Coralite performs an asynchronous dependency sweep to record any properties accessed during the post-resolution handler.
   - **Batched Dirty Checking**: Observers and getter re-evaluations are batched via a microtask queue (`queueMicrotask`). When state properties change, all transitive observer and getter dependencies are marked as dirty, and then flushed and invoked exactly once at the end of the current microtask, eliminating redundant computations and DOM paints (e.g. in a diamond dependency pattern `A ← B, C → D`).
@@ -237,7 +230,11 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
 
 **⚠️ WARNING:** When dynamically adding Coralite components/custom elements to the DOM, you MUST use `document.createElement('tag-name')`. Using `element.innerHTML = '<tag-name></tag-name>'` will prevent the framework from detecting, upgrading, and initializing the component.
 
-#### 5. The Isomorphic Lifecycle Flow
+#### 6. `slots` (Reactive Element Builders)
+
+* **Purpose**: Allows components to intercept, transform, and reactively build content projected into component `<slot>` elements (detailed in §5.6).
+
+### 5.3 The Isomorphic Lifecycle Flow
 
 Coralite components follow a strict, deterministic initialization flow to ensure perfectly hydrated SSR:
 
@@ -248,7 +245,7 @@ Coralite components follow a strict, deterministic initialization flow to ensure
 5. **Template Render**: The template is rendered using purely flat keys from the Unified Proxy.
 6. **Client Hydration (Browser)**: The `client` block mounts, receiving the exact same Unified Proxy alongside `refs` and `observe` to handle interactivity and side-effects.
 
-### 5.3 The "Smart State, Dumb Template" Paradigm
+### 5.4 The "Smart State, Dumb Template" Paradigm
 
 HTML templates in Coralite are strictly declarative and "dumb". They map directly to flat keys on the unified `state` proxy.
 * **No Inline Logic**: Templates do not support dot-notation (e.g., `user.name`), logical negations (e.g., `!isLoading`), or evaluations (e.g., `count > 0`).
@@ -267,17 +264,17 @@ HTML templates in Coralite are strictly declarative and "dumb". They map directl
 ```
 ```js
 getters: {
-  disableSubmit: (state) => state.isLoading || state.hasError,
-  hideBanner: (state) => !state.showBanner
+  disableSubmit: ({ state }) => state.isLoading || state.hasError,
+  hideBanner: ({ state }) => !state.showBanner
 }
 ```
 
-### 5.4 Native Web APIs & Event Dispatching
+### 5.5 Native Web APIs & Event Dispatching
 
 * **Communication**: Use the `emit(name, detail?, options?)` helper on `CoraliteScriptContext` (or standard `CustomEvent`) for component-to-component communication. `emit` dispatches a custom event from the host custom element with `bubbles: true` and `composed: true` by default, allowing parent elements to easily listen for events on child components.
 * **Cleanup**: Always use the provided `AbortSignal` (`signal`) to clean up event listeners and abort pending network requests when the component unmounts.
 
-### 5.5 Reactive Slots Projection & Element Builders (`slots`)
+### 5.6 Reactive Slots Projection & Element Builders (`slots`)
 
 Coralite's native `slots` system allows components to intercept, transform, and reactively build content projected into component `<slot>` elements. Slots act as self-contained, reactive element builders receiving the full component context.
 
@@ -348,7 +345,7 @@ Each key in the `slots` object corresponds to a slot name (use `'default'` for u
 * **SSR Graceful Fallback**: During SSR build, `root` is `null`, `refs()` returns `null`, `observe()` returns a no-op disposer, and `signal` is non-aborted. If a slot function accesses browser-only APIs without guard checks, Coralite catches the exception and gracefully falls back to the original slot content.
 * **Scope & Preservation**: Slotted content is evaluated within the parent component's local scope. Coralite maps original Light DOM elements automatically, projecting them synchronously upon connected callbacks for dynamic imperative components.
 
-### 5.6 CSS Scoping (PostCSS) & Dual-Scope Partitioning
+### 5.7 CSS Scoping (PostCSS) & Dual-Scope Partitioning
 
 Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler automatically encapsulates component CSS inside the `components` cascade layer (`@layer components`) and partitions component CSS into dual native CSS `@scope` rules:
 1. **Standard Component Scope (Donut Hole Preserved)**: `@scope (:where(component-name)) to (slot, :scope [data-cid], :is([is], c-token))` prevents standard component styles from penetrating into nested child components or consumer slotted elements.
@@ -356,7 +353,7 @@ Coralite components are strictly scoped by default, despite rendering in the glo
 
 For older runtimes without native `@scope` support, an automatic fallback using zero-specificity `:where()` host selectors and native CSS nesting is generated.
 
-#### 5.6.1 Cascade Layers (`@layer components`) & Specificity Taming (`:where()`)
+#### 5.7.1 Cascade Layers (`@layer components`) & Specificity Taming (`:where()`)
 * **Zero Specificity Bonus (`:where()`)**: Host custom element selectors are wrapped with `:where(tag-name)` (e.g., `:where(my-card)`), adding zero specificity (`0, 0, 0`). Component internal selectors (like `.title` or `button`) retain their base specificity instead of inflating.
 * **The Cascade Layer Rule**: All component styles are bundled inside `@layer components`. By standard CSS cascade semantics, **unlayered CSS rules take precedence over layered CSS rules**, regardless of selector specificity.
 * **Utility & Page Overrides Without `!important`**: Utility classes (e.g., Tailwind, Bootstrap, custom utility classes like `.hidden` or `.p-4`) or page-level styles override component styles cleanly without specificity battles.
@@ -370,7 +367,7 @@ For older runtimes without native `@scope` support, an automatic fallback using 
 * **Root `c-token` Inertia**: The rule `c-token { display: contents; }` is emitted unlayered at the stylesheet root to ensure reactive DOM markers remain transparent.
 * **Light DOM Slot Projections (`::slotted()`)**: The pseudo-element `::slotted(selector)` is transformed into dual Light DOM branches (`:scope > slot > selector, :scope > selector[slot]`), styling slotted content directly within the component layer under the slotted `@scope` block.
 
-#### 5.6.2 Root Custom Element Styling (`:host` & `:host-context()`)
+#### 5.7.2 Root Custom Element Styling (`:host` & `:host-context()`)
 * **Preferred Method for Root Element**: `:host` and `:host-context()` are the **preferred, canonical method** for modifying and styling the root custom element container itself (e.g., `<my-button>`).
 * **`:host` Transformations**:
   - In `@scope` mode, `:host` transforms to `:scope` (e.g., `:host { display: block; }` $\to$ `:scope { display: block; }`).
@@ -382,11 +379,11 @@ For older runtimes without native `@scope` support, an automatic fallback using 
   - `:host-context(<context>)` transforms to `<context> :scope` / `<context> &` (e.g., `:host-context(.dark) { color: white; }` $\to$ `.dark :scope { color: white; }`).
   - Compound chained rules like `:host-context(.dark):host(.active)` transform to `.dark :scope.active`.
 
-#### 5.6.3 Internal Scoped Classes Within Component (`:host` is NOT Required)
+#### 5.7.3 Internal Scoped Classes Within Component (`:host` is NOT Required)
 * **CRITICAL RULE**: To modify or style a scoped class or element **within the component template** (e.g., `.card`, `.title`, `button`, `.content`), **`:host` is not required**.
 * Standard selectors like `.card { ... }` or `button { ... }` are automatically nested under the component tag name by the compiler (`my-button { .card { ... } }`). You do not need to write `:host .card` or `:host > .card`.
 
-#### 5.6.4 Scoped CSS Example
+#### 5.7.4 Scoped CSS Example
 ```html
 <template id="user-card">
   <div class="header">
@@ -611,6 +608,20 @@ export default defineConfig({
 });
 ```
 
+### 8.2 NPM Package Resolution
+If `src` is missing, use `pkg` and `path` to resolve assets from `node_modules`.
+```javascript
+export default defineConfig({
+  assets: [
+    { 
+      pkg: 'flag-icons', 
+      path: 'flags/4x3/es.svg', 
+      dest: 'assets/flags/4x3/es.svg' 
+    }
+  ]
+});
+```
+
 ### 8.3 Declarative Asset Injection & SRI
 Assets can declaratively inject tags into pages using `inject`. When `sri: true` is set, Coralite computes an unquoted base64 `integrity="sha384-..."` digest from the on-disk asset bytes and automatically defaults `crossorigin="anonymous"`.
 
@@ -636,20 +647,6 @@ export default defineConfig({
 Plugins can copy/write assets and queue HTML tag injections during build lifecycle hooks:
 * `app.registerAsset({ dest, content, src, pkg, path, inject })`: Writes or copies an asset to the output directory and registers tracking.
 * `session.injectTag({ type, src, content, placement, sri, pages, attributes })`: Queues an HTML tag to be injected into matching page documents during rendering. Injected tags are deduplicated against existing AST elements and queued tags.
-
-### 8.2 NPM Package Resolution
-If `src` is missing, use `pkg` and `path` to resolve assets from `node_modules`.
-```javascript
-export default defineConfig({
-  assets: [
-    { 
-      pkg: 'flag-icons', 
-      path: 'flags/4x3/es.svg', 
-      dest: 'assets/flags/4x3/es.svg' 
-    }
-  ]
-});
-```
 
 ## 9. Built-In Plugins
 
@@ -843,70 +840,6 @@ Coralite provides `coralite validate-plugins` (alias: `coralite validate:plugins
 - Automatically wraps single-phase context functions into Two-Phase curried functions (`CORALITE-P201`).
 - Wraps raw exported objects in `definePlugin(...)` and injects `import { definePlugin } from 'coralite'` (`CORALITE-P401`).
 
-## 16. Page Validation & Encapsulation (`coralite validate-pages`)
-
-Coralite provides static page auditing (`lib/page-validator.js`) exposed via `coralite validate-pages` (or `coralite check --pages`). It checks page `.html` documents against component schemas and encapsulation standards.
-
-### 16.1 Diagnostic Rules Catalog
-| Code | Category | Description & Fix Action |
-| :--- | :--- | :--- |
-| `CORALITE-PAGE-101` | Custom Element | Unknown custom element tag name found on page. Emits Levenshtein fuzzy match suggestions for registered components. |
-| `CORALITE-PAGE-102` | Required Attribute | Page tag missing required component attribute (`required: true`). (Action: `add_required_attribute`) |
-| `CORALITE-PAGE-201` | Encapsulation | Encapsulation violation: Page inline `<script>` attempting to query or mutate internal component DOM via compound descendant selectors or direct `setAttribute`/`innerHTML` calls on custom elements. |
-
-## 17. Unified CLI Workflow (`coralite check`, `coralite fix`, `coralite init-agent`)
-
-Coralite centralizes project auditing, auto-fixing, and AI coding workspace setup through unified top-level commands.
-
-### 17.1 `coralite check`
-Runs a multi-domain workspace audit across Components, Plugins, and Pages.
-```bash
-coralite check [options]
-```
-- **Flags**:
-  - `-c, --components <path>`: Components directory (defaults to `src/components` or `.` if no candidate directories exist).
-  - `-p, --plugins <path>`: Plugins directory or file path.
-  - `--pages <path>`: Pages directory path.
-  - `--format <console|json>`: Output format (default: `console`).
-  - `--strict`: Exits with non-zero code if any errors or unused symbols exist.
-  - `--coverage`: Includes component test and evaluation coverage metrics.
-
-### 17.2 `coralite fix`
-Runs whole-workspace AST auto-linter across all target domains, writing fixes to disk and re-running diagnostics to confirm fix success.
-```bash
-coralite fix [--dry-run]
-```
-- **Flags**:
-  - `--dry-run`: Displays colorized unified diff previews of all proposed AST fixes without modifying files on disk.
-
-### 17.3 `coralite init-agent`
-Scaffolds zero-token `AGENTS.md` guidelines for AI coding assistants (Claude Code, Cursor, GitHub Copilot) in the current repository root.
-```bash
-coralite init-agent [--cursor] [--claude]
-```
-- **Flags**:
-  - `--cursor`: Scaffolds `.cursor/rules/coralite.mdc` rules alongside `AGENTS.md`.
-  - `--claude`: Scaffolds `.claude/AGENTS.md` rules alongside `AGENTS.md`.
-
-## 18. Performance Architecture & Benchmarking
-
-Coralite maintains a comparative micro-benchmark and macro-benchmark suite built on `mitata` and native Node.js performance tools under `benchmarks/`.
-
-### 18.1 Benchmark Suites
-1. **`01-dom-reactivity`**: DOM Reactivity & Microtask Batching. Measures JS Heap memory usage via Chrome DevTools Protocol (CDP) `HeapProfiler.collectGarbage` and `Runtime.getHeapUsage` across state mutation sweeps.
-2. **`02-bundle-hydration`**: Bundle Payload & Hydration Startup. Quantifies JS payload sizes (raw KB and gzip KB), client hydration duration (`hydrationMS`), and TTI (`ttiMS`) across Coralite, React 19, and Vue 3 using production esbuild and Playwright Chromium.
-3. **`03-ssr-throughput`**: Server-Side Compilation & Rendering Throughput. Measures pages/sec, total duration, average page latency, and peak heap usage across synthetic page workloads (100, 1,000, and 10,000 pages).
-4. **`04-internal`**: Micro-benchmarks for core engine primitives (`token-interpolation.js`, `lazy-proxy.js`, `ast-dom-creation.js`) using `mitata` and `do_not_optimize()` to eliminate V8 dead-code elimination.
-
-### 18.2 CLI Benchmark Runner
-```bash
-pnpm bench                      # Run full benchmark suite
-pnpm run bench:json             # Run benchmarks and output JSON summary report
-pnpm run bench:markdown         # Run benchmarks and generate Markdown table report
-node --expose-gc --experimental-vm-modules ./benchmarks/runner.js --suite dom-reactivity
-```
-Allowed `--suite` values: `all`, `dom-reactivity` (`dom`), `bundle-hydration` (`bundle`, `hydration`), `ssr-throughput` (`ssr`), `internal`.
-
 ## 16. Content Security Policy (CSP)
 
 Coralite provides first-class, build-time and runtime Content Security Policy (CSP Level 2/3) support.
@@ -971,11 +904,22 @@ Pages can customize or disable CSP using meta tags:
   - `formatCSPDirectives(directives, options)`: Formats directive object into HTTP header string.
   - `injectCSPMeta(root, head, cspContent, reportOnly)`: Injects HTTP-equiv meta tag into document `<head>`.
 
-## 17. CLI & Build Tooling
+## 17. Page Validation & Encapsulation (`coralite validate-pages`)
+
+Coralite provides static page auditing (`lib/page-validator.js`) exposed via `coralite validate-pages` (or `coralite check --pages`). It checks page `.html` documents against component schemas and encapsulation standards.
+
+### 17.1 Diagnostic Rules Catalog
+| Code | Category | Description & Fix Action |
+| :--- | :--- | :--- |
+| `CORALITE-PAGE-101` | Custom Element | Unknown custom element tag name found on page. Emits Levenshtein fuzzy match suggestions for registered components. |
+| `CORALITE-PAGE-102` | Required Attribute | Page tag missing required component attribute (`required: true`). (Action: `add_required_attribute`) |
+| `CORALITE-PAGE-201` | Encapsulation | Encapsulation violation: Page inline `<script>` attempting to query or mutate internal component DOM via compound descendant selectors or direct `setAttribute`/`innerHTML` calls on custom elements. |
+
+## 18. CLI & Build Tooling Ecosystem
 
 Coralite provides a unified suite of command-line tools for local development, automated testing, production compilation, static validation, and project scaffolding.
 
-### 17.1 `coralite-scripts` (Project Development & Build Runner)
+### 18.1 `coralite-scripts` (Project Development & Build Runner)
 
 The primary CLI runner for Coralite web projects (`package.json` scripts: `start`, `test`, `build`).
 
@@ -1000,7 +944,7 @@ The primary CLI runner for Coralite web projects (`package.json` scripts: `start
 * `-a, --assets <mapping...>`: Static assets to copy during build (`pkg:path:dest` or `src:dest`). Mappings merge with and override assets defined in `coralite.config.js`.
 * `--no-incremental`: Disable change detection optimization and force a complete rebuild of all pages and components.
 
-### 17.2 Core `coralite` CLI & Static Validators
+### 18.2 Core `coralite` CLI & Standalone Compiler
 
 Direct CLI interface exported by the core `coralite` package for standalone build operations and code auditing:
 * **`coralite [options]`** (or `coralite build`):
@@ -1012,7 +956,17 @@ Direct CLI interface exported by the core `coralite` package for standalone buil
   - Validates plugin contracts, lifecycle hooks, and ensures isomorphic boundary compliance (no Node-only modules in client bundles).
   - Flags: `-p, --plugins <path>`, `--format <console|json>`, `--strict`.
 
-### 17.3 `create-coralite` (Project Scaffolder)
+### 18.3 Unified Workspace Diagnostics & Auto-Fixing (`coralite check`, `coralite fix`, `coralite init-agent`)
+
+Centralized project auditing, whole-repo auto-fixing, and AI coding workspace setup through unified top-level commands:
+* **`coralite check [options]`**: Runs a multi-domain workspace audit across Components, Plugins, and Pages.
+  - Flags: `-c, --components <path>`, `-p, --plugins <path>`, `--pages <path>`, `--format <console|json>`, `--strict`, `--coverage`.
+* **`coralite fix [--dry-run]`**: Runs whole-workspace AST auto-linter across all target domains, writing fixes to disk and confirming fix success.
+  - Flags: `--dry-run` (displays colorized unified diff previews of all proposed AST fixes without modifying files on disk).
+* **`coralite init-agent [--cursor] [--claude]`**: Scaffolds zero-token `AGENTS.md` guidelines for AI coding assistants (Claude Code, Cursor, GitHub Copilot) in the current repository root.
+  - Flags: `--cursor` (scaffolds `.cursor/rules/coralite.mdc`), `--claude` (scaffolds `.claude/AGENTS.md`).
+
+### 18.4 `create-coralite` (Project Scaffolder)
 
 Interactive project generator tool (binaries: `create-coralite`, alias: `cca`):
 * **Usage**: `npm create coralite@latest`, `pnpm create coralite`, `npx create-coralite <project-name>`, or `cca [options]`.
@@ -1020,6 +974,25 @@ Interactive project generator tool (binaries: `create-coralite`, alias: `cca`):
   - `-o, --output <name>`: Target project directory.
   - `-t, --template <name>`: Template choice: `css` or `scss`.
 * **Generated Structure**: Pre-configures `coralite.config.js` (`defineConfig` from `coralite-scripts`), standard directory layout (`src/pages`, `src/components`, `src/css`, `public`), and ready-to-run npm scripts (`dev`, `test`, `build`).
+
+## 19. Performance Architecture & Benchmarking
+
+Coralite maintains a comparative micro-benchmark and macro-benchmark suite built on `mitata` and native Node.js performance tools under `benchmarks/`.
+
+### 19.1 Benchmark Suites
+1. **`01-dom-reactivity`**: DOM Reactivity & Microtask Batching. Measures JS Heap memory usage via Chrome DevTools Protocol (CDP) `HeapProfiler.collectGarbage` and `Runtime.getHeapUsage` across state mutation sweeps.
+2. **`02-bundle-hydration`**: Bundle Payload & Hydration Startup. Quantifies JS payload sizes (raw KB and gzip KB), client hydration duration (`hydrationMS`), and TTI (`ttiMS`) across Coralite, React 19, and Vue 3 using production esbuild and Playwright Chromium.
+3. **`03-ssr-throughput`**: Server-Side Compilation & Rendering Throughput. Measures pages/sec, total duration, average page latency, and peak heap usage across synthetic page workloads (100, 1,000, and 10,000 pages).
+4. **`04-internal`**: Micro-benchmarks for core engine primitives (`token-interpolation.js`, `lazy-proxy.js`, `ast-dom-creation.js`) using `mitata` and `do_not_optimize()` to eliminate V8 dead-code elimination.
+
+### 19.2 CLI Benchmark Runner
+```bash
+pnpm bench                      # Run full benchmark suite
+pnpm run bench:json             # Run benchmarks and output JSON summary report
+pnpm run bench:markdown         # Run benchmarks and generate Markdown table report
+node --expose-gc --experimental-vm-modules ./benchmarks/runner.js --suite dom-reactivity
+```
+Allowed `--suite` values: `all`, `dom-reactivity` (`dom`), `bundle-hydration` (`bundle`, `hydration`), `ssr-throughput` (`ssr`), `internal`.
 
 
 

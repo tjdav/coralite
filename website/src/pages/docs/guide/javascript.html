@@ -49,7 +49,7 @@
 
         // Derived State: Pure functions (Read-Only)
         getters: {
-            greeting: (state) => `Hello, ${state.userName}!`
+            greeting: ({ state }) => `Hello, ${state.userName}!`
         },
 
         // Client-Side: Controller (Read/Write)
