@@ -14,7 +14,7 @@ import { buildCodeframe, formatValidationReport } from './utils/diagnostics.js'
  * } from '../types/index.js'
  */
 
-const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'instanceId', 'emit'])
+const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'slots', 'instanceId', 'emit'])
 const RESERVED_IDENTIFIERS = new Set(['undefined', 'null', 'true', 'false', 'NaN'])
 const ARITHMETIC_OPERATORS = new Set(['+', '-', '*', '/', '%'])
 const COMPARISON_OPERATORS = new Set(['>', '<', '>=', '<=', '==', '===', '!=', '!=='])

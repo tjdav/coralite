@@ -180,10 +180,11 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
 #### 3. `getters` (Derived State)
 
 * **Purpose**: Pure functions used to derive computed UI state from the component's unified state and context.
-* **Signature & Arguments**: Getters receive a single **Unified Context Object** `{ state, root, refs, signal }`:
+* **Signature & Arguments**: Getters receive a single **Unified Context Object** `{ state, root, refs, slots, signal }`:
   - `state`: The unified read-only reactive state proxy containing coerced `attributes` and initialized `server` data.
   - `root`: The host custom element instance (`HTMLElement`). Enables contextual parent queries (e.g. `root.closest('my-list')`) or Light DOM inspection (`root.querySelectorAll(...)`).
   - `refs`: Scoped reference resolver function `refs(id)` to query owned ref elements within the component template (returns `null` gracefully if not found or before mounting).
+  - `slots`: Isomorphic helper object for querying projected Light DOM content (`slots.has(name)`, `slots.get(name)`, `slots.count(name)`, `slots.names`, and proxy shorthand like `slots.default` or `slots.leading`).
   - `signal`: An `AbortSignal` for detecting stale async operations.
 * **Strict Unified Context (NO Backwards Compatibility)**: Getters strictly receive the unified context object as their single argument. You **MUST** destructure the properties you need (e.g., `({ state }) => ...`). Legacy `(state) => ...` without destructuring is **not** backwards-compatible by design, as the parameter receives the context object rather than `state`.
 * **Contextual Examples**:
@@ -191,7 +192,9 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   getters: {
     fullName: ({ state }) => `${state.firstName} ${state.lastName}`,
     itemRole: ({ state, root }) => root?.closest('atoll-list') ? 'listitem' : (state.isClickable ? 'button' : null),
-    inputLength: ({ refs }) => refs('input')?.value.length ?? 0
+    inputLength: ({ refs }) => refs('input')?.value.length ?? 0,
+    hasIcon: ({ slots }) => slots.has('icon'),
+    itemCount: ({ slots }) => slots.count('default')
   }
   ```
 * **Purity Rule**: Getters must be pure functions. You must **never** perform side-effects or mutate state directly inside a getter.
@@ -213,13 +216,19 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   - **Synchronous Getter Rule**: Style getter functions must be strictly synchronous. Returning a `Promise` throws a `CoraliteError`.
 * **SSR & Hydration**: Generates inline `style="..."` attributes on the host element during SSR compilation, and reactively patches host element `style` properties on the client upon state changes.
 
-#### 5. `client({ state, signal, refs, root, instanceId, observe, emit, ...plugins })` (Client)
+#### 5. `client({ state, signal, refs, slots, root, instanceId, observe, emit, ...plugins })` (Client)
 
 * **Purpose**: The client-side controller for the component. Formerly known as `script`.
 * **Arguments** (Injected via Client Context):
   * `state`: A **Read/Write Mutable Proxy**. Mutations here automatically trigger getter evaluations and precise DOM updates.
   * `signal`: An `AbortSignal` mapped to the component's lifecycle. Used for native cleanup (e.g., aborting fetch requests, removing global listeners) when disconnected.
   * `refs`: A function used to reliably select elements within the component's local template. It accepts the string value of a `ref` attribute and returns the corresponding `HTMLElement` (e.g., `const btn = refs('btn')`).
+  * `slots`: Isomorphic helper object for querying projected Light DOM content:
+    - `slots.has(name = 'default')`: Returns `true` if user-provided projected nodes exist for the specified slot. Ignores template fallback content.
+    - `slots.get(name = 'default')`: Returns an array of projected `Node` elements (filtering out comment nodes and empty/whitespace text nodes).
+    - `slots.count(name = 'default')`: Returns the number of projected nodes for the specified slot.
+    - `slots.names`: Returns an array of available slot name strings (e.g., `['default', 'leading']`).
+    - **Direct Property Shorthand**: Via Proxy, `slots.default`, `slots.leading`, or `slots[name]` evaluate directly to `slots.get(name)`.
   * `root`: The root HTML element instance of the Web Component (inherits from `HTMLElement`).
   * `instanceId`: A unique identifier string for this specific component instance.
   * `observe`: A function `observe(key, callback)` to execute explicit side-effects on state changes. Receives `(newValue, oldValue)`. Returns a disposer function (`() => void`) to stop observing. Automatically cleaned up when disconnected.

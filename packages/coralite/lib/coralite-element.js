@@ -41,13 +41,97 @@ export {
  */
 
 /**
+ * Helper for querying slotted content.
+ * @typedef {Object} CoraliteSlotsHelper
+ * @property {function(string=): boolean} has - Checks if content was provided for a slot.
+ * @property {function(string=): Node[]} get - Returns array of projected nodes for a slot.
+ * @property {function(string=): number} count - Returns number of projected nodes for a slot.
+ * @property {string[]} names - List of declared slot names.
+ * @property {Node[]} default - Projected nodes in the default slot.
+ */
+
+/**
  * Context payload provided as the single argument to derived state getters.
  * @typedef {Object} CoraliteGetterContext
  * @property {Object} state - Read-only reactive state proxy.
  * @property {HTMLElement} root - The host custom element instance.
  * @property {function(string): HTMLElement|null} refs - Resolves an element marked with a ref identifier.
+ * @property {CoraliteSlotsHelper} slots - Helper for querying slotted content.
  * @property {AbortSignal} signal - AbortSignal to detect stale async operations.
  */
+
+/**
+ * Helper for querying slotted content in client elements.
+ * @param {CoraliteElement} element - Host element instance.
+ * @returns {CoraliteSlotsHelper} Slots helper proxy.
+ */
+function createClientSlotsHelper (element) {
+  const filterNodes = (nodes) => {
+    return Array.from(nodes).filter(node => {
+      if (!node) {
+        return false
+      }
+
+      if (node.nodeType === 8) {
+        return false
+      }
+
+      if (node.nodeType === 3 && !node.textContent.trim()) {
+        return false
+      }
+
+      return true
+    })
+  }
+
+  const getSlotNodes = (name = 'default') => {
+    /** @type {any} */
+    const el = element
+    const ownSlots = typeof el._getOwnSlots === 'function' ? el._getOwnSlots() : []
+    const targetSlot = ownSlots.find((slot) => (slot.getAttribute('name') || 'default') === name)
+
+    if (!targetSlot) {
+      return []
+    }
+
+    if (targetSlot.hasAttribute('data-coralite-fallback')) {
+      return []
+    }
+
+    if (targetSlot._originalNodes && Array.isArray(targetSlot._originalNodes)) {
+      return filterNodes(targetSlot._originalNodes)
+    }
+
+    return filterNodes(targetSlot.childNodes)
+  }
+
+  /** @type {any} */
+  const slotsProxy = new Proxy({
+    has: (name = 'default') => getSlotNodes(name).length > 0,
+    get: (name = 'default') => getSlotNodes(name),
+    count: (name = 'default') => getSlotNodes(name).length,
+    get names () {
+      /** @type {any} */
+      const el = element
+      const ownSlots = typeof el._getOwnSlots === 'function' ? el._getOwnSlots() : []
+      return ownSlots.map((s) => s.getAttribute('name') || 'default')
+    }
+  }, {
+    get (target, prop) {
+      if (prop in target) {
+        /** @type {any} */
+        const t = target
+        return t[prop]
+      }
+      if (typeof prop === 'string') {
+        return getSlotNodes(prop)
+      }
+      return undefined
+    }
+  })
+
+  return slotsProxy
+}
 
 /**
  * @typedef {function(CoraliteGetterContext): any} CoraliteGetter
@@ -391,12 +475,13 @@ export class CoraliteElement extends BaseElement {
       (this.componentOptions?.slots && Object.keys(this.componentOptions.slots).length > 0) ||
       (this._hooks && this._hooks.onAfterComponentRender && this._hooks.onAfterComponentRender.length > 0)
     )
-    this._init(isImperative)
 
     if (this._getOwnSlots().length > 0) {
       this._setupSlotObserver()
       this._reconcileLightDOM()
     }
+
+    this._init(isImperative)
   }
 
   /**
@@ -745,6 +830,7 @@ export class CoraliteElement extends BaseElement {
             state: roState,
             root: this,
             refs: getRef,
+            slots: createClientSlotsHelper(this),
             signal: this._getterAbortControllers[key].signal
           }
           return getter(context)
@@ -957,6 +1043,7 @@ export class CoraliteElement extends BaseElement {
                 state: roState,
                 root: self,
                 refs: resolveRef,
+                slots: createClientSlotsHelper(self),
                 signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal
               }
               value = getterFn(getterContext)
@@ -989,6 +1076,7 @@ export class CoraliteElement extends BaseElement {
                       state: roState,
                       root: self,
                       refs: resolveRef,
+                      slots: createClientSlotsHelper(self),
                       signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal
                     }
                     getterFn(getterContext)
@@ -2113,6 +2201,7 @@ export class CoraliteElement extends BaseElement {
       state: this._state,
       root: this,
       signal: this._abortController?.signal,
+      slots: createClientSlotsHelper(this),
       refs: (id) => {
         const refId = this._state[`ref_${id}`]
         if (!refId && typeof refId !== 'string') {
@@ -2326,6 +2415,7 @@ export class CoraliteElement extends BaseElement {
 
         return node
       },
+      slots: createClientSlotsHelper(this),
       observe,
       emit
     }

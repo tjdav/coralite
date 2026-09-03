@@ -15,6 +15,66 @@ import { prepareAllComponentOps } from './utils/server/fragment.js'
 export { prepareAllComponentOps }
 
 /**
+ * Creates the isomorphic slots helper object for a server component context.
+ * @param {Object|null} root - Server AST root node.
+ * @returns {Object} Server slots helper proxy.
+ */
+function createServerSlotsHelper (root) {
+  const filterNodes = (nodes) => {
+    return nodes.filter(node => {
+      if (!node) {
+        return false
+      }
+      if (isCoraliteComment(node) || node.type === 'comment') {
+        return false
+      }
+      if (isCoraliteTextNode(node) || node.type === 'text') {
+        let text = ''
+        if (typeof node.data === 'string') {
+          text = node.data
+        } else if (typeof node.content === 'string') {
+          text = node.content
+        }
+        if (!text.trim()) {
+          return false
+        }
+      }
+      return true
+    })
+  }
+
+  const getSlotNodes = (name = 'default') => {
+    if (!root || !Array.isArray(root.slots)) {
+      return []
+    }
+    const matching = root.slots.filter(s => (s.name || 'default') === name).map(s => s.node)
+    return filterNodes(matching)
+  }
+
+  return new Proxy({
+    has: (name = 'default') => getSlotNodes(name).length > 0,
+    get: (name = 'default') => getSlotNodes(name),
+    count: (name = 'default') => getSlotNodes(name).length,
+    get names () {
+      if (!root || !Array.isArray(root.slots)) {
+        return []
+      }
+      return Array.from(new Set(root.slots.map(s => s.name || 'default')))
+    }
+  }, {
+    get (target, prop) {
+      if (prop in target) {
+        return target[prop]
+      }
+      if (typeof prop === 'string') {
+        return getSlotNodes(prop)
+      }
+      return undefined
+    }
+  })
+}
+
+/**
  * Normalizes and validates component attribute definitions at definition time.
  * @param {Object} attributes - Raw component attributes option.
  * @param {string} componentId - Component ID for error messages.
@@ -299,11 +359,13 @@ export function createComponentDefinition ({ app }) {
 
     if (getters) {
       const roState = createReadOnlyProxy(state)
+      const serverSlots = createServerSlotsHelper(root)
       for (const [key, getter] of Object.entries(getters)) {
         const serverContext = {
           state: roState,
           root: root || null,
           refs: () => null,
+          slots: serverSlots,
           signal: new AbortController().signal
         }
         const result = getter(serverContext)
@@ -340,6 +402,7 @@ export function createComponentDefinition ({ app }) {
             state,
             root: null,
             refs: () => null,
+            slots: createServerSlotsHelper(root),
             observe: () => () => {
             },
             emit: () => false,
