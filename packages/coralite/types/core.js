@@ -274,6 +274,7 @@
  * @property {CoraliteSession} [session] - The current rendering session object.
  * @property {boolean} [noHydration] - If true, hydration scripts will not be generated for this component.
  * @property {boolean} [head=true] - Whether this component is being processed as a top-level head element.
+ * @property {Array<Record<string|symbol, any>>} [contextFrames] - Threaded stack of ancestor context frames for SSR.
  */
 
 /**

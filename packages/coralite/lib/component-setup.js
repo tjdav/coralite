@@ -12,7 +12,7 @@ import { camelToKebab } from './utils/core.js'
 import { inferTypeFromValues, validateAttributeValue } from './utils/attributes.js'
 import { prepareAllComponentOps } from './utils/server/fragment.js'
 
-export { prepareAllComponentOps }
+export { prepareAllComponentOps, createServerSlotsHelper }
 
 /**
  * Creates the isomorphic slots helper object for a server component context.
@@ -231,7 +231,7 @@ export function createComponentDefinition ({ app }) {
    * @returns {Promise<Object>}
    */
   return async (options, context) => {
-    const { attributes, server, getters, slots, client, style } = options
+    const { attributes, server, getters, slots, client, style, provide, consume } = options
     const { state: initialState, module, root } = context
 
     const normalizedAttributes = normalizeAndValidateAttributes(attributes, module.id, module.path?.pathname)
@@ -266,6 +266,48 @@ export function createComponentDefinition ({ app }) {
 
     state.errors = state.errors || {}
 
+    // Resolve SSR consumed context values from threaded contextFrames
+    if (consume) {
+      const contextFrames = context.contextFrames || []
+      let consumerItems = []
+      if (Array.isArray(consume)) {
+        consumerItems = consume.map(k => {
+          return {
+            key: k,
+            default: null
+          }
+        })
+      } else if (consume && typeof consume === 'object') {
+        consumerItems = Object.entries(consume).map(([k, cfg]) => {
+          return {
+            key: k,
+            default: (cfg && typeof cfg === 'object' && 'default' in cfg) ? cfg.default : null
+          }
+        })
+      }
+
+      for (const item of consumerItems) {
+        const key = item.key
+        const camelProp = typeof key === 'string'
+          ? key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+          : key
+
+        let resolvedVal = item.default
+        for (let i = contextFrames.length - 1; i >= 0; i--) {
+          const frame = contextFrames[i]
+          if (frame && (Object.prototype.hasOwnProperty.call(frame, key) || (typeof key === 'symbol' && key in frame))) {
+            resolvedVal = frame[key]
+            break
+          }
+        }
+
+        state[camelProp] = resolvedVal
+        if (typeof key === 'string' && key !== camelProp) {
+          state[key] = resolvedVal
+        }
+      }
+    }
+
     for (const key of Object.keys(normalizedAttributes)) {
       const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
       const kebabName = camelToKebab(camelName)
@@ -279,7 +321,9 @@ export function createComponentDefinition ({ app }) {
       state: {},
       defaultValues: scriptDefaultValues,
       slots: slots || {},
-      style: style || {}
+      style: style || {},
+      provide: provide || {},
+      consume: consume || null
     }
 
     for (const [key, schema] of Object.entries(normalizedAttributes)) {
@@ -521,8 +565,10 @@ export function createComponentDefinition ({ app }) {
     const hasServer = typeof server === 'function'
     const hasStyles = module.styles && module.styles.length > 0
     const hasComponentStyle = style && Object.keys(style).length > 0
+    const hasProvide = provide && Object.keys(provide).length > 0
+    const hasConsume = Boolean(consume)
 
-    if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle) {
+    if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume) {
       const args = {}
       for (const key in state) {
         if (!Object.hasOwn(state, key) || key === '__script__') {
@@ -688,6 +734,8 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     styles: stylesHTML,
     slots: scriptMeta.slots,
     style: scriptMeta.style,
+    provide: scriptMeta.provide,
+    consume: scriptMeta.consume,
     override: true
   })
 }

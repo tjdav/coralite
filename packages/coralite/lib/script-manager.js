@@ -175,6 +175,8 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
  * @param {string} [options.styles=''] - The raw CSS string for the component.
  * @param {Object.<string, Function>} [options.slots={}] - The transformation functions for computed slots.
  * @param {Object} [options.style={}] - Reactive style definitions.
+ * @param {Object} [options.provide={}] - Provided context definitions.
+ * @param {Array|Object|null} [options.consume=null] - Consumed context keys.
  * @param {boolean} [options.override=false] - Whether to override existing component definition.
  */
 ScriptManager.prototype.registerComponent = function ({
@@ -188,6 +190,8 @@ ScriptManager.prototype.registerComponent = function ({
   styles = '',
   slots = {},
   style = {},
+  provide = {},
+  consume = null,
   override = false
 }) {
   // Initialize base object if it's the first time we are seeing this ID
@@ -254,6 +258,18 @@ ScriptManager.prototype.registerComponent = function ({
   if (hasObjectKeys(style)) {
     if (isNew || override) {
       target.style = style
+    }
+  }
+
+  if (hasObjectKeys(provide)) {
+    if (isNew || override) {
+      target.provide = provide
+    }
+  }
+
+  if (consume) {
+    if (isNew || override) {
+      target.consume = consume
     }
   }
 
@@ -519,6 +535,18 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
       }
       const style = serialize(normalizedStyle)
 
+      let normalizedProvide = sharedFn.provide || sharedFn.script?.provide || {}
+      if (normalizedProvide) {
+        normalizedProvide = normalizeObjectFunctions(normalizedProvide, astTransformer)
+      }
+      const provide = serialize(normalizedProvide)
+
+      let normalizedConsume = sharedFn.consume || sharedFn.script?.consume || null
+      if (normalizedConsume) {
+        normalizedConsume = normalizeObjectFunctions(normalizedConsume, astTransformer)
+      }
+      const consume = serialize(normalizedConsume)
+
       componentEntryCode += `
 export default {
   componentId: "${componentId}",
@@ -531,6 +559,8 @@ export default {
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
   slots: (() => { const slots = ${slots}; return slots; })(),
   style: (() => { const style = ${style}; return style; })(),
+  provide: (() => { const provide = ${provide}; return provide; })(),
+  consume: (() => { const consume = ${consume}; return consume; })(),
   dependencies: ${dependencies},
   imports: {},
   client: ${hasScript ? `componentModule_${alias}.script` : 'null'},

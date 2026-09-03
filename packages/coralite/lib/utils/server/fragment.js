@@ -78,14 +78,34 @@ const VISITING = Symbol('VISITING')
  * @param {Object} component - Component document object.
  * @returns {boolean} True if locally ops capable.
  */
-export function isLocallyOpsCapable (component) {
+export function isLocallyOpsCapable (component, app = null) {
   if (!component) {
     return false
   }
   const hasDeclaredSlots = Boolean(component.slotElements && Object.keys(component.slotElements).length > 0)
-  const scriptMetaSlots = component.script?.slots || component.attributes?.slots || {}
+  const scriptMetaSlots = component.__script__?.slots || component.script?.slots || component.attributes?.slots || {}
   const hasScriptSlots = Boolean(scriptMetaSlots && Object.keys(scriptMetaSlots).length > 0)
   if (hasDeclaredSlots || hasScriptSlots) {
+    return false
+  }
+
+  let sharedFn = null
+  if (app && app.scriptManager && app.scriptManager.sharedFunctions) {
+    sharedFn = app.scriptManager.sharedFunctions[component.id]
+  }
+
+  const scriptMeta = component.__script__ || (typeof component.script === 'object' ? component.script : {})
+  const scriptStr = typeof component.script === 'string' ? component.script : ''
+
+  const hasProvide = Boolean(
+    (sharedFn ? (sharedFn.provide && Object.keys(sharedFn.provide).length > 0) : scriptStr.includes('provide:')) ||
+    (scriptMeta.provide && Object.keys(scriptMeta.provide).length > 0)
+  )
+  const hasConsume = Boolean(
+    (sharedFn ? Boolean(sharedFn.consume) : scriptStr.includes('consume:')) ||
+    Boolean(scriptMeta.consume)
+  )
+  if (hasProvide || hasConsume) {
     return false
   }
 
@@ -142,7 +162,7 @@ export function checkComponentCapability (component, app, memo = new Map()) {
 
   memo.set(id, VISITING)
 
-  if (!isLocallyOpsCapable(component)) {
+  if (!isLocallyOpsCapable(component, app)) {
     memo.set(id, false)
     component.__opsCapable = false
     return false
@@ -213,7 +233,7 @@ export function compileOps (component, app) {
     }
   }
 
-  if (!isLocallyOpsCapable(component)) {
+  if (!isLocallyOpsCapable(component, app)) {
     return {
       ops: [],
       opsCapable: false
@@ -470,6 +490,7 @@ export function compileOps (component, app) {
  * @param {Function} params.createComponentElement - Element creation function.
  * @param {Object} params.hooks - Bound hooks object.
  * @param {Object} params.app - App instance.
+ * @param {Array<Record<string|symbol, any>>} [params.contextFrames] - Threaded context frames.
  * @returns {Promise<Object>} Root AST node with fragment text node child.
  */
 export async function emitFragment ({
@@ -486,7 +507,8 @@ export async function emitFragment ({
   evaluate,
   createComponentElement,
   hooks,
-  app
+  app,
+  contextFrames = []
 }) {
   const module = moduleComponent.result
   const instanceId = contextId
@@ -760,7 +782,8 @@ export async function emitFragment ({
           index: 0,
           session,
           noHydration: childNoHydration,
-          head: false
+          head: false,
+          contextFrames
         })
 
         let childHTML = ''

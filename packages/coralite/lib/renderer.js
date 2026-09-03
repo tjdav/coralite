@@ -53,6 +53,7 @@ import {
 } from './utils/types.js'
 import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './utils/server/dom.js'
 import { emitFragment, prepareAllComponentOps } from './utils/server/fragment.js'
+import { createServerSlotsHelper } from './component-setup.js'
 
 /**
  * @import {
@@ -183,7 +184,7 @@ export function createRenderer ({
     return sessionObj
   }
 
-  const _replaceSlots = async ({ id, instanceId, element, module, state, page, root, index, session, noHydration }) => {
+  const _replaceSlots = async ({ id, instanceId, element, module, state, page, root, index, session, noHydration, contextFrames = [] }) => {
     const slots = module.slotElements ? module.slotElements[id] : null
     if (!slots) {
       return
@@ -269,7 +270,8 @@ export function createRenderer ({
                 index,
                 session,
                 noHydration: childNoHydration,
-                head: false
+                head: false,
+                contextFrames
               }).then(componentElement => ({
                 componentElement,
                 node,
@@ -428,7 +430,9 @@ export function createRenderer ({
         templateValues,
         defaultValues,
         styles: stylesHTML,
-        slots: scriptObj.slots
+        slots: scriptObj.slots,
+        provide: scriptMeta.provide,
+        consume: scriptMeta.consume
       })
 
       if (nestedComponents.length > 0) {
@@ -452,7 +456,7 @@ export function createRenderer ({
    * @param {ComponentElementOptions} options - Configuration and context for the component instance.
    * @returns {Promise<CoraliteAnyNode | CoraliteAnyNode[] | void>} The rendered AST node(s) for the component.
    */
-  const createComponentElement = async ({ id, state = {}, element, page, root, contextId, index, session, noHydration, head = true }) => {
+  const createComponentElement = async ({ id, state = {}, element, page, root, contextId, index, session, noHydration, head = true, contextFrames = [] }) => {
     if (!session) {
       session = _createSession()
     }
@@ -484,7 +488,8 @@ export function createRenderer ({
         evaluate,
         createComponentElement,
         hooks,
-        app
+        app,
+        contextFrames
       })
     }
 
@@ -545,6 +550,7 @@ export function createRenderer ({
     }
 
     let evaluatedStyle = null
+    let evaluatedScriptMeta = null
     if (module.script) {
       let scriptResult = {}
       try {
@@ -571,13 +577,15 @@ export function createRenderer ({
           contextId,
           session,
           noHydration,
-          mode: app.options.mode
+          mode: app.options.mode,
+          contextFrames
         })
       } catch (error) {
         throw createExecutionError(error, module, moduleComponent, page, contextId)
       }
 
       if (scriptResult && scriptResult.__script__ != null) {
+        evaluatedScriptMeta = scriptResult.__script__
         /** @type {any} */
         const scriptMetaAny = scriptResult.__script__
         evaluatedStyle = scriptMetaAny.style
@@ -636,7 +644,9 @@ export function createRenderer ({
           templateValues,
           defaultValues: componentDefaultValues,
           styles: stylesHTML,
-          slots: scriptResult.__script__.slots || {}
+          slots: scriptResult.__script__.slots || {},
+          provide: scriptResult.__script__.provide || {},
+          consume: scriptResult.__script__.consume || null
         })
 
         if (mergedComponents.length > 0) {
@@ -670,6 +680,44 @@ export function createRenderer ({
     }
 
     session.state[contextId] = componentState
+
+    // Evaluate provided context values and build immutable childContextFrames for SSR
+    let childContextFrames = contextFrames
+    const sharedFn = scriptManager.sharedFunctions?.[module.id]
+    const scriptMeta = moduleComponent.result?.script || {}
+    /** @type {any} */
+    const moduleScript = module.script
+    const provideObj = (evaluatedScriptMeta && evaluatedScriptMeta.provide) ||
+      (sharedFn && sharedFn.provide) ||
+      scriptMeta.provide ||
+      (moduleScript && typeof moduleScript === 'object' ? moduleScript.provide : null) ||
+      null
+
+    if (provideObj && typeof provideObj === 'object') {
+      const newFrame = {}
+      const roState = createReadOnlyProxy(componentState)
+      for (const [key, valOrFn] of Object.entries(provideObj)) {
+        if (typeof key === 'string') {
+          if (typeof valOrFn === 'function') {
+            try {
+              const context = {
+                state: roState,
+                root: element || root,
+                refs: () => null,
+                slots: createServerSlotsHelper(element || root),
+                signal: new AbortController().signal
+              }
+              newFrame[key] = valOrFn(context)
+            } catch {
+              newFrame[key] = undefined
+            }
+          } else {
+            newFrame[key] = valOrFn
+          }
+        }
+      }
+      childContextFrames = [...contextFrames, newFrame]
+    }
 
     const attributes = module.values.attributes
     for (let i = 0; i < attributes.length; i++) {
@@ -785,7 +833,8 @@ export function createRenderer ({
         index,
         session,
         noHydration: childNoHydration,
-        head: false
+        head: false,
+        contextFrames: childContextFrames
       }).then(childComponentElement => ({
         childComponentElement,
         customElement,
@@ -843,14 +892,15 @@ export function createRenderer ({
       root,
       index,
       session,
-      noHydration
+      noHydration,
+      contextFrames: childContextFrames
     })
 
     // Evaluate host component reactive styles
-    const scriptMeta = moduleComponent.result?.script || {}
+    const hostScriptMeta = moduleComponent.result?.script || {}
     /** @type {any} */
-    const moduleScriptObj = module.script
-    const componentStyleObj = evaluatedStyle || scriptMeta.style || moduleScriptObj?.style || {}
+    const hostModuleScript = module.script
+    const componentStyleObj = evaluatedStyle || hostScriptMeta.style || (hostModuleScript && typeof hostModuleScript === 'object' ? hostModuleScript.style : null) || {}
     if (componentStyleObj && typeof componentStyleObj === 'object' && Object.keys(componentStyleObj).length > 0) {
       const computedStylesMap = new Map()
       /** @type {any} */
@@ -954,6 +1004,7 @@ export function createRenderer ({
       session,
       app
     })
+
     return mappedAfterContext.result
   }
 
@@ -1010,7 +1061,8 @@ export function createRenderer ({
         contextId,
         index: i,
         session: mappedSessionObject,
-        noHydration
+        noHydration,
+        contextFrames: []
       }).then(componentElement => ({
         componentElement,
         customElement,

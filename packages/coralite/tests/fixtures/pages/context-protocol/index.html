@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>W3C Context Protocol Test</title>
+</head>
+<body>
+  <div id="container-a">
+    <context-provider id="provider-a" theme="dark" count="0">
+      <context-consumer id="child-1"></context-consumer>
+    </context-provider>
+  </div>
+
+  <div id="container-b">
+    <context-provider id="provider-b" theme="light" count="10">
+      <context-consumer id="child-2"></context-consumer>
+    </context-provider>
+  </div>
+
+  <div id="container-standalone">
+    <context-consumer id="child-standalone"></context-consumer>
+  </div>
+
+  <button id="btn-reparent">Reparent Child 1</button>
+
+  <script type="module">
+    document.getElementById('btn-reparent')?.addEventListener('click', () => {
+      const providerB = document.getElementById('provider-b')
+      const child1 = document.getElementById('child-1')
+      if (providerB && child1) {
+        providerB.appendChild(child1)
+      }
+    })
+  </script>
+</body>
+</html>

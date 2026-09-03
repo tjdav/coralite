@@ -18,7 +18,7 @@ const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 're
 const RESERVED_IDENTIFIERS = new Set(['undefined', 'null', 'true', 'false', 'NaN'])
 const ARITHMETIC_OPERATORS = new Set(['+', '-', '*', '/', '%'])
 const COMPARISON_OPERATORS = new Set(['>', '<', '>=', '<=', '==', '===', '!=', '!=='])
-const TOP_LEVEL_CONFIG_KEYS = new Set(['server', 'getters', 'slots', 'style'])
+const TOP_LEVEL_CONFIG_KEYS = new Set(['server', 'getters', 'slots', 'style', 'provide', 'consume'])
 const INTERACTIVE_TAGS = new Set(['button', 'input', 'form', 'a', 'select', 'textarea'])
 
 const NUMBER_WORDS = {
@@ -357,6 +357,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
 
   const definedAttributes = new Set()
   const definedServerProps = new Set()
+  const definedConsumedKeys = new Set()
   const definedGetters = new Set()
   const definedSlots = new Set()
   // localName -> importSource
@@ -549,6 +550,70 @@ export function validateComponentSource (sourceCode, filePath = '') {
                       definedAttributes.add(attrName)
                     }
                   }
+                }
+              }
+
+              if (keyName === 'provide') {
+                if (prop.value.type !== 'ObjectExpression') {
+                  const targetNode = prop.key || prop
+                  diagnostics.push(createDiagnostic({
+                    code: 'CORALITE-E106',
+                    severity: 'error',
+                    message: "Component 'provide' option must be an object.",
+                    filePath,
+                    line: targetNode.loc.start.line + scriptStartLine,
+                    column: targetNode.loc.start.column + 1,
+                    sourceCode,
+                    cause: "Component 'provide' defines context providers for descendant components and must be an object.",
+                    fix: {
+                      action: 'convert_to_object',
+                      description: "Change 'provide' to an object of context providers"
+                    }
+                  }))
+                }
+              }
+
+              if (keyName === 'consume') {
+                if (prop.value.type === 'ArrayExpression') {
+                  for (const el of prop.value.elements) {
+                    if (el && el.type === 'Literal' && typeof el.value === 'string') {
+                      const keyStr = el.value
+                      const camelKey = kebabToCamel(keyStr)
+                      definedConsumedKeys.add(keyStr)
+                      definedConsumedKeys.add(camelKey)
+                      definedServerProps.add(keyStr)
+                      definedServerProps.add(camelKey)
+                    }
+                  }
+                } else if (prop.value.type === 'ObjectExpression') {
+                  for (const cProp of prop.value.properties) {
+                    if (cProp.type === 'Property') {
+                      const cKey = getPropKeyName(cProp)
+                      if (cKey) {
+                        const camelKey = kebabToCamel(cKey)
+                        definedConsumedKeys.add(cKey)
+                        definedConsumedKeys.add(camelKey)
+                        definedServerProps.add(cKey)
+                        definedServerProps.add(camelKey)
+                      }
+                    }
+                  }
+                } else {
+                  const targetNode = prop.key || prop
+                  diagnostics.push(createDiagnostic({
+                    code: 'CORALITE-E106',
+                    severity: 'error',
+                    message: "Component 'consume' option must be an array or object.",
+                    filePath,
+                    line: targetNode.loc.start.line + scriptStartLine,
+                    column: targetNode.loc.start.column + 1,
+                    sourceCode,
+                    cause: "Component 'consume' declares context keys from ancestor components and must be an array of strings/symbols or an object with defaults.",
+                    fix: {
+                      action: 'convert_to_array',
+                      description: "Change 'consume' to an array of context keys"
+                    }
+                  }))
                 }
               }
 
@@ -1861,6 +1926,7 @@ export function validateComponentSource (sourceCode, filePath = '') {
   const unusedServerProps = []
   for (const prop of definedServerProps) {
     if (
+      !definedConsumedKeys.has(prop) &&
       !isEntireComponentIgnored &&
       !ignoredSymbols.has(prop) &&
       !templateTokens.has(prop) &&

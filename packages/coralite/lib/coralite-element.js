@@ -146,6 +146,8 @@ function createClientSlotsHelper (element) {
  * @property {Object.<string, Function>} [getters] - Pure functions for derived state, supporting Promises.
  * @property {Object.<string, Function>} [slots] - Transformation functions for projected Light DOM.
  * @property {Object.<string, ((state: any) => string | number | null | undefined | false) | string | number>} [style] - Reactive style definitions and CSS custom properties.
+ * @property {Object.<string|symbol, Function|any>} [provide] - Provided context definitions for descendant components.
+ * @property {Array<string|symbol> | Object.<string|symbol, { default?: any }>} [consume] - Consumed context keys from ancestor components.
  * @property {Function} [client] - The client-side controller logic.
  * @property {Object} [hydrationMap] - AST mapping for reactive text nodes, attributes, and refs.
  * @property {Object} [templateValues] - Token positions for AST updates.
@@ -391,6 +393,20 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._isReflectingFromAttribute = false
+
+    /**
+     * Context subscription records for provided context keys.
+     * @type {Map<string|symbol, Set<{callback: Function, getValueWithDeps: Function, deps: Set<string>, unsubscribe?: Function, isFunction?: boolean}>>}
+     * @protected
+     */
+    this._contextSubscriptions = new Map()
+
+    /**
+     * Array of unsubscription functions for consumed contexts.
+     * @type {Array<Function>}
+     * @protected
+     */
+    this._contextUnsubscribers = []
   }
 
   /**
@@ -466,8 +482,12 @@ export class CoraliteElement extends BaseElement {
     this._slotRuntimeReady = false
     this._processSlotsOnReady = false
     this._slotHasInternalObservers = new Map()
+    this._contextUnsubscribers = []
 
     this._setupState()
+    if (this.componentOptions?.consume) {
+      this._setupContextConsumers(this.componentOptions.consume)
+    }
     this._setupBindings()
     this._needsDOMUpdate = Boolean(
       (this._bindings && this._bindings.length > 0) ||
@@ -475,10 +495,20 @@ export class CoraliteElement extends BaseElement {
       (this.componentOptions?.slots && Object.keys(this.componentOptions.slots).length > 0) ||
       (this._hooks && this._hooks.onAfterComponentRender && this._hooks.onAfterComponentRender.length > 0)
     )
-
     if (this._getOwnSlots().length > 0) {
       this._setupSlotObserver()
       this._reconcileLightDOM()
+    }
+
+    if (this.componentOptions?.provide) {
+      const CustomEventCtor = typeof window !== 'undefined' && window.CustomEvent ? window.CustomEvent : CustomEvent
+      this.dispatchEvent(new CustomEventCtor('context-provider', {
+        bubbles: true,
+        composed: true,
+        detail: {
+          element: this
+        }
+      }))
     }
 
     this._init(isImperative)
@@ -491,6 +521,17 @@ export class CoraliteElement extends BaseElement {
    * @this {any}
    */
   disconnectedCallback () {
+    if (this._contextUnsubscribers && this._contextUnsubscribers.length > 0) {
+      for (const unsub of this._contextUnsubscribers) {
+        try {
+          unsub()
+        } catch {
+          /* ignore */
+        }
+      }
+      this._contextUnsubscribers = []
+    }
+
     if (this._slotObserver) {
       this._slotObserver.disconnect()
       this._slotObserver = null
@@ -633,6 +674,27 @@ export class CoraliteElement extends BaseElement {
    * @private
    */
   _setupState () {
+    if (this._state) {
+      return
+    }
+
+    if (!this._instanceId) {
+      if (this.hasAttribute('data-cid')) {
+        this._instanceId = this.getAttribute('data-cid')
+      } else if (this.componentOptions?.componentId) {
+        // @ts-ignore
+        window.__coralite_instanceCounters = window.__coralite_instanceCounters || {}
+        const prefix = this.componentOptions.componentId
+        // @ts-ignore
+        if (window.__coralite_instanceCounters[prefix] === undefined) {
+          // @ts-ignore
+          window.__coralite_instanceCounters[prefix] = 0
+        }
+        // @ts-ignore
+        this._instanceId = `${prefix}-${window.__coralite_instanceCounters[prefix]++}`
+      }
+    }
+
     if (!this.hasAttribute('data-cid') && this._instanceId) {
       this.setAttribute('data-cid', this._instanceId)
     }
@@ -753,6 +815,39 @@ export class CoraliteElement extends BaseElement {
       }
     }
 
+    // Initialize consumed context properties on state target
+    if (options.consume) {
+      let consumerItems = []
+      if (Array.isArray(options.consume)) {
+        consumerItems = options.consume.map(k => {
+          return {
+            key: k,
+            default: null
+          }
+        })
+      } else if (options.consume && typeof options.consume === 'object') {
+        consumerItems = Object.entries(options.consume).map(([k, cfg]) => {
+          return {
+            key: k,
+            default: (cfg && typeof cfg === 'object' && 'default' in cfg) ? cfg.default : null
+          }
+        })
+      }
+
+      for (const item of consumerItems) {
+        const key = item.key
+        const camelProp = typeof key === 'string'
+          ? key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+          : key
+        if (!(camelProp in target)) {
+          target[camelProp] = item.default
+        }
+        if (typeof key === 'string' && key !== camelProp && !(key in target)) {
+          target[key] = item.default
+        }
+      }
+    }
+
     // Hydrate data() block results from the SSR payload
     if (this._hydrationData && this._hydrationData[this._instanceId]) {
       Object.assign(target, this._hydrationData[this._instanceId])
@@ -842,6 +937,206 @@ export class CoraliteElement extends BaseElement {
 
     this._state = this._createReactiveProxy(target, getRef)
     this._registerSlotStateObserver()
+
+  }
+
+  /**
+   * Configures the W3C Context Protocol provider listener on the element instance.
+   * @param {Object.<string|symbol, Function|any>} provides - Context keys and providers.
+   * @protected
+   */
+  _setupContextProvider (provides) {
+    if (!provides || typeof provides !== 'object') {
+      return
+    }
+
+    this.addEventListener('context-request', (e) => {
+      /** @type {any} */
+      const event = e
+      const key = event.context ?? event.detail?.context
+      const callback = event.callback ?? event.detail?.callback
+      const subscribe = event.subscribe ?? event.detail?.subscribe
+
+      if (key === undefined || key === null) {
+        return
+      }
+
+      const isProvided = (typeof key === 'symbol')
+        ? (key in provides || Object.prototype.hasOwnProperty.call(provides, key))
+        : (Object.prototype.hasOwnProperty.call(provides, key) || key in provides)
+
+      if (isProvided) {
+        event.stopImmediatePropagation()
+
+        if (typeof callback === 'function') {
+          const getValueWithDeps = () => {
+            if (!this._state && this.componentOptions) {
+              this._setupState()
+            }
+            const valOrFn = provides[key]
+            if (typeof valOrFn !== 'function') {
+              return {
+                value: valOrFn,
+                deps: new Set()
+              }
+            }
+
+            const deps = new Set()
+            const prevCollector = this._collectingDependencies
+            this._collectingDependencies = deps
+            try {
+              const roState = createReadOnlyProxy(this._state)
+              const context = {
+                state: roState,
+                root: this,
+                refs: (id) => {
+                  const refId = this._state ? this._state[`ref_${id}`] : null
+                  if (!refId && typeof refId !== 'string') {
+                    return null
+                  }
+                  if (this.getAttribute && (this.getAttribute('ref') === refId || this.getAttribute('ref') === id)) {
+                    return this
+                  }
+                  let node = this.querySelector ? this.querySelector(`[ref="${refId}"]`) : null
+                  if (!node && typeof findOwnedRefNode === 'function') {
+                    node = findOwnedRefNode(this, id, refId, this._instanceId)
+                  }
+                  return node
+                },
+                slots: createClientSlotsHelper(this),
+                signal: this._abortController?.signal || new AbortController().signal
+              }
+              const value = valOrFn(context)
+              return {
+                value,
+                deps
+              }
+            } finally {
+              this._collectingDependencies = prevCollector
+            }
+          }
+
+          const initial = getValueWithDeps()
+          let unsubscribe = undefined
+
+          if (subscribe) {
+            if (!this._contextSubscriptions) {
+              this._contextSubscriptions = new Map()
+            }
+            if (!this._contextSubscriptions.has(key)) {
+              this._contextSubscriptions.set(key, new Set())
+            }
+            const subs = this._contextSubscriptions.get(key)
+            const subRecord = {
+              callback,
+              getValueWithDeps,
+              deps: initial.deps,
+              isFunction: typeof provides[key] === 'function'
+            }
+            subs.add(subRecord)
+            unsubscribe = () => {
+              subs.delete(subRecord)
+              if (subs.size === 0) {
+                this._contextSubscriptions.delete(key)
+              }
+            }
+            subRecord.unsubscribe = unsubscribe
+          }
+
+          callback(initial.value, unsubscribe)
+        }
+      }
+    })
+  }
+
+  /**
+   * Dispatches context-request events for consumed context keys.
+   * @param {Array<string|symbol> | Object.<string|symbol, { default?: any }>} consume - Consumed keys.
+   * @protected
+   */
+  _setupContextConsumers (consume) {
+    if (!consume) {
+      return
+    }
+
+    let consumerItems = []
+    if (Array.isArray(consume)) {
+      consumerItems = consume.map(k => {
+        return {
+          key: k,
+          default: null
+        }
+      })
+    } else if (consume && typeof consume === 'object') {
+      consumerItems = Object.entries(consume).map(([k, cfg]) => {
+        return {
+          key: k,
+          default: (cfg && typeof cfg === 'object' && 'default' in cfg) ? cfg.default : null
+        }
+      })
+    }
+
+    for (const item of consumerItems) {
+      const key = item.key
+      const camelProp = typeof key === 'string'
+        ? key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+        : key
+
+      let satisfied = false
+      const callback = (value, unsubscribe) => {
+        satisfied = true
+        if (typeof unsubscribe === 'function') {
+          this._contextUnsubscribers.push(unsubscribe)
+        }
+        if (this._state) {
+          this._state[camelProp] = value
+          if (typeof key === 'string' && key !== camelProp) {
+            this._state[key] = value
+          }
+        }
+      }
+
+      const dispatchReq = () => {
+        const CustomEventCtor = typeof window !== 'undefined' && window.CustomEvent ? window.CustomEvent : CustomEvent
+        const event = new CustomEventCtor('context-request', {
+          bubbles: true,
+          composed: true,
+          detail: {
+            context: key,
+            subscribe: true,
+            callback
+          }
+        })
+        Object.assign(event, {
+          context: key,
+          subscribe: true,
+          callback
+        })
+        this.dispatchEvent(event)
+      }
+
+      dispatchReq()
+
+      if (!satisfied && typeof window !== 'undefined') {
+        const onProvider = (e) => {
+          if (satisfied) {
+            window.removeEventListener('context-provider', onProvider)
+            return
+          }
+          const provEl = e.detail?.element || e.target
+          if (provEl && provEl.contains && provEl.contains(this)) {
+            dispatchReq()
+            if (satisfied) {
+              window.removeEventListener('context-provider', onProvider)
+            }
+          }
+        }
+        window.addEventListener('context-provider', onProvider)
+        this._contextUnsubscribers.push(() => {
+          window.removeEventListener('context-provider', onProvider)
+        })
+      }
+    }
   }
 
   /**
@@ -1276,6 +1571,22 @@ export class CoraliteElement extends BaseElement {
           }
         }
 
+        if (self._contextSubscriptions && self._contextSubscriptions.size > 0) {
+          for (const [key, subs] of self._contextSubscriptions.entries()) {
+            for (const sub of Array.from(subs)) {
+              if (sub.isFunction && (sub.deps.size === 0 || (typeof p === 'string' && sub.deps.has(p)))) {
+                try {
+                  const { value, deps } = sub.getValueWithDeps()
+                  sub.deps = deps
+                  sub.callback(value, sub.unsubscribe)
+                } catch (err) {
+                  console.error(`Coralite Context Error: Failed to notify subscriber for "${typeof key === 'symbol' ? key.toString() : key}":`, err)
+                }
+              }
+            }
+          }
+        }
+
         self._scheduleUpdate()
 
         return true
@@ -1332,6 +1643,23 @@ export class CoraliteElement extends BaseElement {
           self._markObserverDirty(camelName)
           self._markObserverDirty(kebabName)
           self._markObserverDirty(p)
+
+          if (self._contextSubscriptions && self._contextSubscriptions.size > 0) {
+            for (const [key, subs] of self._contextSubscriptions.entries()) {
+              for (const sub of Array.from(subs)) {
+                if (sub.isFunction && (sub.deps.size === 0 || (typeof p === 'string' && sub.deps.has(p)))) {
+                  try {
+                    const { value, deps } = sub.getValueWithDeps()
+                    sub.deps = deps
+                    sub.callback(value, sub.unsubscribe)
+                  } catch (err) {
+                    console.error(`Coralite Context Error: Failed to notify subscriber for "${typeof key === 'symbol' ? key.toString() : key}":`, err)
+                  }
+                }
+              }
+            }
+          }
+
           self._scheduleUpdate()
         }
         return deleted
@@ -2200,8 +2528,8 @@ export class CoraliteElement extends BaseElement {
       instanceId: this._instanceId,
       state: this._state,
       root: this,
-      signal: this._abortController?.signal,
       slots: createClientSlotsHelper(this),
+      signal: this._abortController?.signal,
       refs: (id) => {
         const refId = this._state[`ref_${id}`]
         if (!refId && typeof refId !== 'string') {
@@ -2396,6 +2724,7 @@ export class CoraliteElement extends BaseElement {
       state: this._state,
       errors: this._state.errors,
       root: this,
+      slots: createClientSlotsHelper(this),
       signal: this._abortController.signal,
       refs (id) {
         const refId = self._state[`ref_${id}`]
@@ -2415,7 +2744,6 @@ export class CoraliteElement extends BaseElement {
 
         return node
       },
-      slots: createClientSlotsHelper(this),
       observe,
       emit
     }
@@ -2672,6 +3000,10 @@ export function createCoraliteClass (options, contextGetter = null, hooks = {}, 
         onBeforeComponentRender: hooks.onBeforeComponentRender || [],
         onAfterComponentRender: hooks.onAfterComponentRender || [],
         onDisconnected: hooks.onDisconnected || []
+      }
+
+      if (options.provide) {
+        this._setupContextProvider(options.provide)
       }
     }
   }

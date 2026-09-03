@@ -1,0 +1,29 @@
+<template id="context-consumer">
+  <div class="consumer-box">
+    <span class="theme-value">{{ themeOutput }}</span>
+    <span class="count-value">{{ countOutput }}</span>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    consume: ['app-context'],
+    getters: {
+      themeOutput: ({ state }) => state.appContext?.theme || 'none',
+      countOutput: ({ state }) => state.appContext?.count ?? -1
+    },
+    client ({ root }) {
+      root.setAttribute('data-client-ready', 'true')
+    }
+  })
+</script>
+
+<style>
+  .consumer-box {
+    padding: 5px;
+    margin: 5px;
+    background: #f0f0f0;
+  }
+</style>

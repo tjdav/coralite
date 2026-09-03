@@ -122,6 +122,7 @@
  * @property {string} id - Unique identifier for the value context.
  * @property {boolean} [noHydration] - Indicates if the component should be stripped and not hydrated
  * @property {CoraliteInstance} app - The global coralite app instance
+ * @property {Array<Record<string|symbol, any>>} [contextFrames] - Threaded stack of ancestor context frames for SSR
  */
 
 /**

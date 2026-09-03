@@ -1,0 +1,40 @@
+<template id="context-provider">
+  <div class="provider-box">
+    <button id="btn-toggle-theme" ref="btnToggleTheme">Toggle Theme</button>
+    <button id="btn-increment" ref="btnIncrement">Increment</button>
+    <slot></slot>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: {
+      theme: { type: String, default: 'light' },
+      count: { type: Number, default: 0 }
+    },
+    provide: {
+      'app-context': ({ state }) => ({
+        theme: state.theme,
+        count: state.count
+      })
+    },
+    client ({ state, refs, root }) {
+      refs('btnToggleTheme')?.addEventListener('click', () => {
+        state.theme = state.theme === 'light' ? 'dark' : 'light'
+      })
+      refs('btnIncrement')?.addEventListener('click', () => {
+        state.count++
+      })
+      root.setAttribute('data-client-ready', 'true')
+    }
+  })
+</script>
+
+<style>
+  .provider-box {
+    padding: 10px;
+    border: 1px solid #ccc;
+  }
+</style>
