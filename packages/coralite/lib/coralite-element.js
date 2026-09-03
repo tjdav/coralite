@@ -41,11 +41,16 @@ export {
  */
 
 /**
- * Context payload provided as the second argument to derived state getters.
+ * Context payload provided as the single argument to derived state getters.
  * @typedef {Object} CoraliteGetterContext
- * @property {AbortSignal} signal - AbortSignal to detect stale async operations.
+ * @property {Object} state - Read-only reactive state proxy.
  * @property {HTMLElement} root - The host custom element instance.
  * @property {function(string): HTMLElement|null} refs - Resolves an element marked with a ref identifier.
+ * @property {AbortSignal} signal - AbortSignal to detect stale async operations.
+ */
+
+/**
+ * @typedef {function(CoraliteGetterContext): any} CoraliteGetter
  */
 
 /**
@@ -737,11 +742,12 @@ export class CoraliteElement extends BaseElement {
           }
           const roState = createReadOnlyProxy(this._state, new WeakMap(), tracker)
           const context = {
-            signal: this._getterAbortControllers[key].signal,
+            state: roState,
             root: this,
-            refs: getRef
+            refs: getRef,
+            signal: this._getterAbortControllers[key].signal
           }
-          return getter(roState, context)
+          return getter(context)
         },
         enumerable: true,
         configurable: true
@@ -946,12 +952,14 @@ export class CoraliteElement extends BaseElement {
             if (options.getters && getterKey in options.getters) {
               value = Reflect.get(t, p, receiver)
             } else {
+              const roState = createReadOnlyProxy(self._state)
               const getterContext = {
-                signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal,
+                state: roState,
                 root: self,
-                refs: resolveRef
+                refs: resolveRef,
+                signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal
               }
-              value = getterFn(self._state, getterContext)
+              value = getterFn(getterContext)
             }
           } finally {
             self._collectingDependencies = parentCollecting
@@ -976,12 +984,14 @@ export class CoraliteElement extends BaseElement {
                   if (options.getters && getterKey in options.getters) {
                     Reflect.get(t, p, receiver)
                   } else {
+                    const roState = createReadOnlyProxy(self._state)
                     const getterContext = {
-                      signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal,
+                      state: roState,
                       root: self,
-                      refs: resolveRef
+                      refs: resolveRef,
+                      signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal
                     }
-                    getterFn(self._state, getterContext)
+                    getterFn(getterContext)
                   }
                 } finally {
                   self._collectingDependencies = originalCollector

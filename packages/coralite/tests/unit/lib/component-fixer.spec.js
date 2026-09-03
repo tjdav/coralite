@@ -20,7 +20,7 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
     assert.strictEqual(result.modified, true)
     assert.ok(result.outputCode.includes('{{ userProfileName }}'))
     assert.ok(result.outputCode.includes('getters: {'))
-    assert.ok(result.outputCode.includes("userProfileName: (state) => state.user?.profile?.name ?? ''"))
+    assert.ok(result.outputCode.includes("userProfileName: ({ state }) => state.user?.profile?.name ?? ''"))
     assert.strictEqual(result.fixesApplied.length, 1)
     assert.strictEqual(result.fixesApplied[0].code, 'CORALITE-E201')
 
@@ -118,7 +118,7 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
 
   export default defineComponent({
     getters: {
-      formatted(state) {
+      formatted({ state }) {
         return formatDate(state.date)
       }
     },
@@ -396,7 +396,7 @@ ${templateLines}
         replacement: '{{ valGetter }}',
         getter: {
           name: 'valGetter',
-          code: 'valGetter: (state) => state.val'
+          code: 'valGetter: ({ state }) => state.val'
         }
       }
     }]
@@ -404,7 +404,7 @@ ${templateLines}
     const result = applyComponentFixes(input, precomputedDiagnostics, { filePath: 'primary-path.html' })
     assert.strictEqual(result.modified, true)
     assert.ok(result.outputCode.includes('{{ valGetter }}'))
-    assert.ok(result.outputCode.includes('valGetter: (state) => state.val'))
+    assert.ok(result.outputCode.includes('valGetter: ({ state }) => state.val'))
   })
 
   test('CORALITE-E201: fallback path extracts inline expression from diag.message when diag.fix.expr is absent', () => {
@@ -427,7 +427,7 @@ ${templateLines}
         replacement: '{{ countPlusOne }}',
         getter: {
           name: 'countPlusOne',
-          code: 'countPlusOne: (state) => (state.count + 1)'
+          code: 'countPlusOne: ({ state }) => (state.count + 1)'
         }
       }
     }]
@@ -435,7 +435,7 @@ ${templateLines}
     const result = applyComponentFixes(input, precomputedDiagnostics, { filePath: 'fallback-path.html' })
     assert.strictEqual(result.modified, true)
     assert.ok(result.outputCode.includes('{{ countPlusOne }}'))
-    assert.ok(result.outputCode.includes('countPlusOne: (state) => (state.count + 1)'))
+    assert.ok(result.outputCode.includes('countPlusOne: ({ state }) => (state.count + 1)'))
   })
 
   test('CORALITE-E201: whitespace-only mustache expression {{ }} returns null and skips fix', () => {
@@ -458,7 +458,7 @@ ${templateLines}
         replacement: '{{ derived }}',
         getter: {
           name: 'derived',
-          code: 'derived: (state) => state.derived'
+          code: 'derived: ({ state }) => state.derived'
         }
       }
     }]
@@ -491,7 +491,7 @@ ${templateLines}
         replacement: '{{ fooBar }}',
         getter: {
           name: 'fooBar',
-          code: 'fooBar: (state) => state.foo?.bar'
+          code: 'fooBar: ({ state }) => state.foo?.bar'
         }
       }
     }]

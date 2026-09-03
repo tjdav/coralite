@@ -23,8 +23,8 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const options = {
       componentId: 'test-root-getter',
       getters: {
-        tagName: (state, { root }) => root ? root.tagName.toLowerCase() : null,
-        hasAttr: (state, { root }) => root ? root.hasAttribute('active') : false
+        tagName: ({ root }) => root ? root.tagName.toLowerCase() : null,
+        hasAttr: ({ root }) => root ? root.hasAttribute('active') : false
       }
     }
 
@@ -48,7 +48,7 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const options = {
       componentId: 'test-unconnected-getter',
       getters: {
-        parentRole: (state, { root }) => {
+        parentRole: ({ root }) => {
           const parent = root?.closest?.('main')
           return parent ? 'main-child' : 'standalone'
         }
@@ -74,11 +74,11 @@ describe('Getters Context ({ root, refs, signal })', () => {
         refs: [{ name: 'input', path: [0] }]
       },
       getters: {
-        inputValue: (state, { refs }) => {
+        inputValue: ({ refs }) => {
           const inputEl = refs('input')
           return inputEl ? inputEl.value : null
         },
-        missingRef: (state, { refs }) => {
+        missingRef: ({ refs }) => {
           return refs('nonExistent')
         }
       }
@@ -105,7 +105,7 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const options = {
       componentId: 'test-signal-getter',
       getters: {
-        asyncData: async (state, { signal, root, refs }) => {
+        asyncData: async ({ state, signal, root, refs }) => {
           capturedSignal = signal
           assert.ok(root)
           assert.equal(typeof refs, 'function')
@@ -129,12 +129,12 @@ describe('Getters Context ({ root, refs, signal })', () => {
     assert.equal(capturedSignal.aborted, false)
   })
 
-  it('is 100% backwards compatible with 1-arg getters (state)', () => {
+  it('evaluates getters with single context object parameter ({ state })', () => {
     const options = {
       componentId: 'test-legacy-getter',
       defaultValues: { count: 5 },
       getters: {
-        doubleCount: (state) => state.count * 2
+        doubleCount: ({ state }) => state.count * 2
       }
     }
 
@@ -160,7 +160,7 @@ describe('Getters Context ({ root, refs, signal })', () => {
 
     const options = {
       getters: {
-        computed: (state, { root, refs, signal }) => {
+        computed: ({ state, root, refs, signal }) => {
           assert.equal(root, null)
           assert.equal(refs('anything'), null)
           assert.ok(signal)

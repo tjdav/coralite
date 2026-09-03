@@ -624,7 +624,7 @@ describe('CoraliteElement', () => {
         isTrue: true
       },
       getters: {
-        computedGetter: (state) => state.isTrue ? 'value' : 'another value'
+        computedGetter: ({ state }) => state.isTrue ? 'value' : 'another value'
       },
       hydrationMap: {
         attributes: [

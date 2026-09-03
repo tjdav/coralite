@@ -36,16 +36,16 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(e201s[0].severity, 'error')
     assert.strictEqual(e201s[0].fix.action, 'lift_to_getter')
     assert.strictEqual(e201s[0].fix.getter.name, 'userProfileName')
-    assert.strictEqual(e201s[0].fix.getter.code, "userProfileName: (state) => state.user?.profile?.name ?? ''")
+    assert.strictEqual(e201s[0].fix.getter.code, "userProfileName: ({ state }) => state.user?.profile?.name ?? ''")
     assert.ok(e201s[0].codeframe.includes('user.profile.name'))
 
     // item.price * taxRate
     assert.strictEqual(e201s[1].fix.getter.name, 'itemPriceTimesTaxRate')
-    assert.strictEqual(e201s[1].fix.getter.code, 'itemPriceTimesTaxRate: (state) => (state.item?.price * state.taxRate) ?? 0')
+    assert.strictEqual(e201s[1].fix.getter.code, 'itemPriceTimesTaxRate: ({ state }) => (state.item?.price * state.taxRate) ?? 0')
 
     // items[0]
     assert.strictEqual(e201s[2].fix.getter.name, 'itemsZero')
-    assert.strictEqual(e201s[2].fix.getter.code, "itemsZero: (state) => state.items?.[0] ?? ''")
+    assert.strictEqual(e201s[2].fix.getter.code, "itemsZero: ({ state }) => state.items?.[0] ?? ''")
   })
 
   // 2. Inline Event Listeners (CORALITE-E203)
@@ -139,15 +139,15 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
     // Ternary
     assert.strictEqual(e201s[0].fix.getter.name, 'isActiveOnlineOffline')
-    assert.strictEqual(e201s[0].fix.getter.code, "isActiveOnlineOffline: (state) => state.isActive ? 'Online' : 'Offline'")
+    assert.strictEqual(e201s[0].fix.getter.code, "isActiveOnlineOffline: ({ state }) => state.isActive ? 'Online' : 'Offline'")
 
     // Template Literal
     assert.strictEqual(e201s[1].fix.getter.name, 'iDId')
-    assert.strictEqual(e201s[1].fix.getter.code, "iDId: (state) => `ID: ${state.id ?? ''}`")
+    assert.strictEqual(e201s[1].fix.getter.code, "iDId: ({ state }) => `ID: ${state.id ?? ''}`")
 
     // Comparison
     assert.strictEqual(e201s[2].fix.getter.name, 'countGreaterThanZero')
-    assert.strictEqual(e201s[2].fix.getter.code, 'countGreaterThanZero: (state) => (state.count > 0)')
+    assert.strictEqual(e201s[2].fix.getter.code, 'countGreaterThanZero: ({ state }) => (state.count > 0)')
   })
 
   // 4. Attribute Blocked Types (CORALITE-E101)
@@ -424,7 +424,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
       unusedAttr: { type: String }
     },
     getters: {
-      unusedGetter: (state) => 'unused'
+      unusedGetter: ({ state }) => 'unused'
     },
     async server() {
       return {
@@ -642,7 +642,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
       userAge: { type: Number }
     },
     getters: {
-      isAgeValid: (state) => !state.errors.userAge
+      isAgeValid: ({ state }) => !state.errors.userAge
     }
   })
 </script>
@@ -848,8 +848,8 @@ ${templateLines}
       expanded: Boolean
     },
     getters: {
-      isAccordion: (state) => state.variant === 'accordion',
-      isAriaExpanded: (state) => {
+      isAccordion: ({ state }) => state.variant === 'accordion',
+      isAriaExpanded: ({ state }) => {
         if (!state.isAccordion) return null
         return state.expanded ? 'true' : 'false'
       }
@@ -876,7 +876,7 @@ ${templateLines}
       }
     },
     getters: {
-      unusedGetter: (state) => state.unknown
+      unusedGetter: ({ state }) => state.unknown
     }
   })
 </script>

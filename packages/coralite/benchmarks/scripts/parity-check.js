@@ -51,7 +51,7 @@ async function runParityCheck () {
       username: { type: String, default: 'Anonymous' }
     },
     getters: {
-      cardTitle(state) {
+      cardTitle({ state }) {
         return 'Card for ' + state.username
       }
     }

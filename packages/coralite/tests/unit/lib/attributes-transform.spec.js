@@ -273,7 +273,7 @@ describe('Component Attribute transform Pipeline', () => {
           }
         },
         getters: {
-          roleUpper: (state) => state.userRole ? state.userRole.toUpperCase() : 'NONE'
+          roleUpper: ({ state }) => state.userRole ? state.userRole.toUpperCase() : 'NONE'
         }
       })
       customElements.define(tagName, UndefGetterComp)

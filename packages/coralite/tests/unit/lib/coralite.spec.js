@@ -436,7 +436,7 @@ describe('Bug Fix: Preserving recursive tokens', () => {
         import { defineComponent } from 'coralite'
         export default defineComponent({
           getters: {
-            computedGetter: (state) => state.isTrue ? 'value' : 'another value'
+            computedGetter: ({ state }) => state.isTrue ? 'value' : 'another value'
           },
           async server() {
             return { isTrue: true }

@@ -264,7 +264,7 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
           }
         },
         getters: {
-          isValid: (state) => Object.keys(state.errors).length === 0
+          isValid: ({ state }) => Object.keys(state.errors).length === 0
         }
       }
 
@@ -439,7 +439,7 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
           age: { type: Number }
         },
         getters: {
-          ageErrorMessage: (state) => {
+          ageErrorMessage: ({ state }) => {
             getterEvaluationCount++
             return state.errors.age || 'No error'
           }

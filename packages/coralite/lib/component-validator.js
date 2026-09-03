@@ -278,7 +278,7 @@ function generateGetterCode (getterName, expr) {
     innerCode = `${innerCode} ?? ${fallback}`
   }
 
-  return `${getterName}: (state) => ${innerCode}`
+  return `${getterName}: ({ state }) => ${innerCode}`
 }
 
 function extractIdentifiersFromExpr (expr, targetSet) {

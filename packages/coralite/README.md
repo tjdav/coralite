@@ -192,9 +192,9 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
 
     // GETTERS: Pure, sync derived state mapping to the Dumb Template
     getters: {
-      formatName: (state) => `${state.firstName} ${state.lastName}`.trim(),
-      userMeta: (state) => `Role: ${state.role} | ID: ${state.userId}`,
-      hideWarning: (state) => state.loginCount < 50 // Logic stays out of HTML
+      formatName: ({ state }) => `${state.firstName} ${state.lastName}`.trim(),
+      userMeta: ({ state }) => `Role: ${state.role} | ID: ${state.userId}`,
+      hideWarning: ({ state }) => state.loginCount < 50 // Logic stays out of HTML
     },
 
     // STYLE: Declarative reactive inline CSS and custom properties on host

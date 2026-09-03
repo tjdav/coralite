@@ -11,7 +11,7 @@ const ProductCard = createCoraliteClass({
     promoCode: ''
   },
   getters: {
-    totalPrice (state) {
+    totalPrice ({ state }) {
       return Math.max(0, (state.price * state.quantity) - state.discount).toFixed(2)
     }
   },

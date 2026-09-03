@@ -25,7 +25,7 @@
       }
     },
     getters: {
-      getterVal: (state) => `getter-${state.serverVal}`
+      getterVal: ({ state }) => `getter-${state.serverVal}`
     },
     client (context) {
       const { state, refs } = context

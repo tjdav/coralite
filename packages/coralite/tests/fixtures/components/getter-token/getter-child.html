@@ -10,7 +10,7 @@
       seen: Boolean
     },
     getters: {
-      isSeen: (state) => (state.seen ? 'Seen' : 'Unseen')
+      isSeen: ({ state }) => (state.seen ? 'Seen' : 'Unseen')
     }
   })
 </script>

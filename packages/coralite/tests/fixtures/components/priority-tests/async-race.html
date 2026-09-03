@@ -16,7 +16,7 @@
       }
     },
     getters: {
-      result: async (state, { signal }) => {
+      result: async ({ state, signal }) => {
         if (!state.query) {
           return 'Idle'
         }

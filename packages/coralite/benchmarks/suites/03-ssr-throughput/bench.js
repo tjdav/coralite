@@ -34,7 +34,7 @@ export default defineComponent({
     count: Number
   },
   getters: {
-    formattedCount (state) {
+    formattedCount ({ state }) {
       return '#' + (state.count || 0)
     }
   }

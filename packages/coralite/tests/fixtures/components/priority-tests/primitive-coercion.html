@@ -22,8 +22,8 @@
       }
     },
     getters: {
-      countType: (state) => typeof state.count,
-      activeType: (state) => typeof state.active
+      countType: ({ state }) => typeof state.count,
+      activeType: ({ state }) => typeof state.active
     }
   })
 </script>
