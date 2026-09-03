@@ -6,7 +6,11 @@ import { CoraliteError } from './utils/errors.js'
 import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from './utils/tags.js'
 import {
   RESERVED_DOM_ATTRIBUTES,
-  validateAttributeValue
+  RESERVED_PROPERTY_BLACKLIST,
+  validateAttributeValue,
+  shouldReflectAttribute,
+  inferTypeFromValues,
+  resolveSchema
 } from './utils/attributes.js'
 import {
   findOwnedRefNode
@@ -18,7 +22,8 @@ export {
   inferTypeFromValues,
   executeAttributeValidator,
   validateAttributeValue,
-  coerce
+  coerce,
+  shouldReflectAttribute
 } from './utils/attributes.js'
 
 export {
@@ -275,6 +280,20 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._isDevMode = false
+
+    /**
+     * Recursion guard flag indicating active state-to-host-attribute reflection.
+     * @type {boolean}
+     * @protected
+     */
+    this._isReflectingToAttribute = false
+
+    /**
+     * Recursion guard flag indicating active host-attribute-to-state synchronization.
+     * @type {boolean}
+     * @protected
+     */
+    this._isReflectingFromAttribute = false
   }
 
   /**
@@ -466,36 +485,45 @@ export class CoraliteElement extends BaseElement {
     if (!this._state || oldVal === newVal || name === 'data-cid') {
       return
     }
-    const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
-    const kebabName = camelToKebab(camelName)
-    const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
+    if (this._isReflectingToAttribute) {
+      return
+    }
 
-    if (schema) {
-      const res = validateAttributeValue(newVal === null ? undefined : newVal, schema, camelName, this.componentOptions?.componentId, {
-        instanceId: this._instanceId,
-        graceful: true
-      })
-      if (res.error) {
-        this._state.errors[camelName] = res.error
-        this._state['error_' + camelName] = res.error
-        this._state['error_' + kebabName] = res.error
-        this._state[camelName] = res.value !== undefined ? res.value : newVal
+    this._isReflectingFromAttribute = true
+    try {
+      const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const kebabName = camelToKebab(camelName)
+      const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
+
+      if (schema) {
+        const res = validateAttributeValue(newVal === null ? undefined : newVal, schema, camelName, this.componentOptions?.componentId, {
+          instanceId: this._instanceId,
+          graceful: true
+        })
+        if (res.error) {
+          this._state.errors[camelName] = res.error
+          this._state['error_' + camelName] = res.error
+          this._state['error_' + kebabName] = res.error
+          this._state[camelName] = res.value !== undefined ? res.value : newVal
+        } else {
+          delete this._state.errors[camelName]
+          this._state['error_' + camelName] = ''
+          this._state['error_' + kebabName] = ''
+          if (res.value === undefined) {
+            delete this._state[camelName]
+          } else {
+            this._state[camelName] = res.value
+          }
+        }
       } else {
-        delete this._state.errors[camelName]
-        this._state['error_' + camelName] = ''
-        this._state['error_' + kebabName] = ''
-        if (res.value === undefined) {
+        if (newVal === null) {
           delete this._state[camelName]
         } else {
-          this._state[camelName] = res.value
+          this._state[camelName] = newVal
         }
       }
-    } else {
-      if (newVal === null) {
-        delete this._state[camelName]
-      } else {
-        this._state[camelName] = newVal
-      }
+    } finally {
+      this._isReflectingFromAttribute = false
     }
   }
 
@@ -603,6 +631,7 @@ export class CoraliteElement extends BaseElement {
       for (const [key, schema] of Object.entries(options.attributes)) {
         const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
         const kebabName = camelToKebab(camelName)
+
         if (target[camelName] === undefined) {
           const res = validateAttributeValue(undefined, schema, camelName, options.componentId, {
             instanceId: this._instanceId,
@@ -641,6 +670,27 @@ export class CoraliteElement extends BaseElement {
         element: this,
         options: this.componentOptions
       })
+    }
+
+    if (options.attributes) {
+      for (const key of Object.keys(options.attributes)) {
+        const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+
+        if (!RESERVED_PROPERTY_BLACKLIST.has(camelName) && !(camelName in this)) {
+          Object.defineProperty(this, camelName, {
+            get: () => (this._state ? this._state[camelName] : target[camelName]),
+            set: (val) => {
+              if (this._state) {
+                this._state[camelName] = val
+              } else {
+                target[camelName] = val
+              }
+            },
+            enumerable: true,
+            configurable: true
+          })
+        }
+      }
     }
 
     // Define derived state getters with isolation controllers
@@ -975,6 +1025,17 @@ export class CoraliteElement extends BaseElement {
                 delete self._getterAbortControllers[p]
               }
 
+              if (!self._isReflectingFromAttribute && shouldReflectAttribute(schema) && typeof self.removeAttribute === 'function') {
+                self._isReflectingToAttribute = true
+                try {
+                  if (self.hasAttribute(kebabName)) {
+                    self.removeAttribute(kebabName)
+                  }
+                } finally {
+                  self._isReflectingToAttribute = false
+                }
+              }
+
               if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
                 if (self._slotObservedKeys && !self._slotObservedKeys.has(p)) {
                   self._slotObservedKeys.add(p)
@@ -1001,6 +1062,47 @@ export class CoraliteElement extends BaseElement {
         }
 
         t[p] = v
+
+        if (typeof p === 'string' && options.attributes && !self._isReflectingFromAttribute) {
+          const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+          const kebabName = camelToKebab(camelName)
+          const schema = options.attributes[camelName] || options.attributes[p]
+
+          if (schema && shouldReflectAttribute(schema) && typeof self.setAttribute === 'function') {
+            self._isReflectingToAttribute = true
+            try {
+              const schemaObj = resolveSchema(schema)
+              const targetType = schemaObj.type || (schemaObj.values ? inferTypeFromValues(schemaObj.values) : undefined)
+              const isBoolean = targetType === Boolean || targetType === 'Boolean'
+
+              if (isBoolean) {
+                const isTruthy = Boolean(v) && v !== 'false'
+                if (isTruthy) {
+                  if (!self.hasAttribute(kebabName)) {
+                    self.setAttribute(kebabName, '')
+                  }
+                } else {
+                  if (self.hasAttribute(kebabName)) {
+                    self.removeAttribute(kebabName)
+                  }
+                }
+              } else {
+                if (v === null || v === undefined) {
+                  if (self.hasAttribute(kebabName)) {
+                    self.removeAttribute(kebabName)
+                  }
+                } else {
+                  const strVal = String(v)
+                  if (self.getAttribute(kebabName) !== strVal) {
+                    self.setAttribute(kebabName, strVal)
+                  }
+                }
+              }
+            } finally {
+              self._isReflectingToAttribute = false
+            }
+          }
+        }
 
         if (typeof p === 'string' && self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
           if (self._slotObservedKeys && !self._slotObservedKeys.has(p)) {
@@ -1055,6 +1157,20 @@ export class CoraliteElement extends BaseElement {
         }
 
         if (deleted && oldValue !== undefined) {
+          if (options.attributes && !self._isReflectingFromAttribute) {
+            const schema = options.attributes[camelName] || options.attributes[p]
+            if (schema && shouldReflectAttribute(schema) && typeof self.removeAttribute === 'function') {
+              self._isReflectingToAttribute = true
+              try {
+                if (self.hasAttribute(kebabName)) {
+                  self.removeAttribute(kebabName)
+                }
+              } finally {
+                self._isReflectingToAttribute = false
+              }
+            }
+          }
+
           if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
             if (self._slotObservedKeys && !self._slotObservedKeys.has(p)) {
               self._slotObservedKeys.add(p)

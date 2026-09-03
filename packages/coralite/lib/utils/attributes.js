@@ -17,6 +17,35 @@ export const RESERVED_DOM_ATTRIBUTES = new Set([
 ])
 
 /**
+ * Define reserved DOM method and property blacklist for element property accessors
+ */
+export const RESERVED_PROPERTY_BLACKLIST = new Set([
+  'setAttribute',
+  'getAttribute',
+  'hasAttribute',
+  'removeAttribute',
+  'toggleAttribute',
+  'dispatchEvent',
+  'addEventListener',
+  'removeEventListener',
+  'connectedCallback',
+  'disconnectedCallback',
+  'attributeChangedCallback',
+  'adoptedCallback',
+  'tagName',
+  'nodeName',
+  'nodeType',
+  'ownerDocument',
+  'childNodes',
+  'children',
+  'firstChild',
+  'lastChild',
+  'parentNode',
+  'parentElement',
+  'shadowRoot'
+])
+
+/**
  * Normalizes an error message ensuring it ends with terminal punctuation (.!?).
  * @param {string} message - The error message to normalize.
  * @returns {string} Normalized error message with terminal punctuation.
@@ -361,4 +390,41 @@ export function coerce (value, type) {
   }
 
   return value
+}
+
+/**
+ * Normalizes a raw schema into a standard schema object representation.
+ *
+ * @param {Function | Array<*> | Record<string, any> | null | undefined} schema - The raw schema definition to resolve.
+ * @returns {Record<string, any>} The normalized schema object.
+ */
+export function resolveSchema (schema) {
+  if (typeof schema === 'function') {
+    return { type: schema }
+  }
+
+  if (Array.isArray(schema)) {
+    return { values: schema }
+  }
+
+  return schema || {}
+}
+
+/**
+ * Determines whether an attribute schema should reflect to the host DOM attribute.
+ * Booleans reflect by default unless explicitly disabled; other types require explicit reflect: true.
+ *
+ * @param {Object|Function|Array} schema - The attribute schema definition.
+ * @returns {boolean} True if the attribute should reflect to the host DOM attribute.
+ */
+export function shouldReflectAttribute (schema) {
+  const schemaObj = resolveSchema(schema)
+
+  if (schemaObj.reflect !== undefined) {
+    return Boolean(schemaObj.reflect)
+  }
+
+  const targetType = schemaObj.type || (schemaObj.values ? inferTypeFromValues(schemaObj.values) : undefined)
+
+  return targetType === Boolean || targetType === 'Boolean'
 }

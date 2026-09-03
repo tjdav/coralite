@@ -102,6 +102,13 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   5. **`validate`**: Runs custom synchronous `validate(value)` predicate/function.
   6. **State Application**: Applies the sanitized final value to the component's unified reactive `state`.
 
+* **Hybrid Attribute Reflection Strategy & Automatic Property Accessors**:
+  Coralite establishes an automatic, two-way reactive bridge between host HTML DOM attributes and internal reactive `state`:
+  - **Boolean Attributes Reflect by Default (`reflect: true`)**: Visual and behavioral flags (`disabled: Boolean`, `open: Boolean`) automatically reflect to host HTML attributes as empty string presence attributes (e.g. `setAttribute('disabled', '')`) when truthy, and are removed (`removeAttribute('disabled')`) when falsy. This enables CSS `:host([disabled])` and `:host([open])` selector support out of the box.
+  - **Data Types Do NOT Reflect by Default (`reflect: false`)**: `String`, `Number`, `Array`, and `Object` do not reflect unless explicitly declared via `reflect: true` in the attribute schema. This prevents DOM thrashing, avoids JSON serialization bloat, and preserves native HTML default value semantics (e.g. `form.reset()`).
+  - **Non-Boolean Reflection Rules (`reflect: true`)**: `null` or `undefined` (or property deletion) calls `removeAttribute(kebabName)`. An empty string `''` calls `setAttribute(kebabName, '')`. Any other value calls `setAttribute(kebabName, String(v))`. If schema validation fails, the assigned string value `String(v)` is still reflected to the host attribute for native HTML alignment and DevTools transparency, while `_state.errors` records the error message.
+  - **Automatic Host Property Accessors (`el[camelName]`)**: Defines camelCase property getters and setters directly on the Custom Element instance (`el.disabled`, `el.size`). Property accessors bypass a strict blacklist of core DOM methods/properties (`setAttribute`, `getAttribute`, `hasAttribute`, `removeAttribute`, `dispatchEvent`, `addEventListener`, `removeEventListener`, `connectedCallback`, `disconnectedCallback`, `attributeChangedCallback`, `tagName`, `nodeName`, etc.). Property setters assign directly to `this._state[camelName]`, routing through Coralite's full 6-step validation, coercion, and error-handling pipeline.
+
 * **Attribute Coercion Engine**:
   Below are the exact coercion logic patterns utilized at compile-time (server-side) and run-time (client-side) to normalize raw HTML string attributes into JS values:
 
