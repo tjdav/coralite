@@ -186,6 +186,10 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   - **Circular Dependency Protection**: If a circular dependency chain is detected at runtime (e.g. `A` depends on `B` and `B` depends on `A`), the engine throws a descriptive error: `Circular dependency detected: A → B → A` to prevent infinite reactive evaluation loops.
   - **Async Getter Lifecycle & Trackability**: For asynchronous getters returning a `Promise`, Coralite tracks any state properties read synchronously before the first `await`. Once the `Promise` resolves, Coralite performs an asynchronous dependency sweep to record any properties accessed during the post-resolution handler.
   - **Batched Dirty Checking**: Observers and getter re-evaluations are batched via a microtask queue (`queueMicrotask`). When state properties change, all transitive observer and getter dependencies are marked as dirty, and then flushed and invoked exactly once at the end of the current microtask, eliminating redundant computations and DOM paints (e.g. in a diamond dependency pattern `A ← B, C → D`).
+* **Dynamic HTML Token Rendering (`<c-token>` & `innerHTML`)**:
+  - In Coralite, template content tokens (e.g. `<div>{{ dynamicContent }}</div>`) compile into `<c-token>` wrapper nodes and are reactively hydrated via `element.innerHTML = hydratedValue`.
+  - **Getters Can Return HTML Strings**: A getter can return an HTML template string (e.g., `` `<label for="${state.ref_input}">${state.label}</label>` ``) or an empty string `''`. Coralite will render real, parsed child DOM elements (not escaped text).
+  - **Conditional DOM Element Rendering**: Unlike frameworks requiring structural directives (like `v-if`), an element can be conditionally omitted from the DOM entirely by returning `''` from a getter. When empty, the `<c-token>` container has no child nodes.
 
 #### 4. `style` (Declarative Reactive CSS)
 
@@ -250,6 +254,39 @@ getters: {
   hideBanner: (state) => !state.showBanner
 }
 ```
+
+### 5.3.1 Conditional DOM Nodes vs. Visibility Attributes
+
+Coralite provides two distinct patterns for conditional UI:
+
+1. **Visibility Toggling via Boolean Attribute (`hidden="{{ hideItem }}"`)**:
+   - Best when the element structure should permanently remain in the DOM and only its visual presence toggles.
+   - Uses native HTML `hidden` attribute auto-removal when falsy.
+   ```html
+   <button hidden="{{ hideSubmit }}">Submit</button>
+   ```
+
+2. **Conditional Element Insertion/Omission via HTML Getters (`{{ elementMarkup }}`)**:
+   - Best when an element **must not exist in the DOM at all** when inactive (e.g., an optional `<label for="...">` that would otherwise trigger accessibility violations if left hidden, or optional badges/icons).
+   - The getter returns the HTML markup string or `''` to clear it.
+   ```html
+   <div class="field-header">
+     {{ labelMarkup }}
+   </div>
+   ```
+   ```javascript
+   getters: {
+     labelMarkup: (state) => {
+       if (!state.label) return ''
+       const req = state.required ? '<span class="req">*</span>' : ''
+       return `<label class="label" for="${state.ref_input}">${state.label}${req}</label>`
+     }
+   }
+   ```
+
+3. **Attribute vs. Content Interpolation Rules**:
+   - **Inside Attribute (`attr="{{ getter }}"`)**: Returning `null`, `undefined`, `false`, or `""` (for boolean/ARIA attributes) **removes** the attribute from the element via `removeAttribute()`.
+   - **Inside Element Body (`<div>{{ getter }}</div>`)**: Rendered via `<c-token>` using `innerHTML`. Returning `""` empties the container; returning an HTML string parses and mounts real child DOM nodes.
 
 ### 5.4 Native Web APIs & Event Dispatching
 
