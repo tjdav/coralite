@@ -7,6 +7,9 @@ import { strict as assert } from 'node:assert'
 import {
   BOOLEAN_ATTRIBUTES,
   isAriaAttribute,
+  ARIA_BOOLEAN_STATES,
+  isAriaBooleanState,
+  resolveAriaBooleanState,
   VALID_TAGS,
   RESERVED_ELEMENT_NAMES,
   isValidCustomElementName
@@ -89,6 +92,53 @@ describe('tags.js', () => {
       assert.strictEqual(isAriaAttribute(null), false)
       assert.strictEqual(isAriaAttribute(undefined), false)
       assert.strictEqual(isAriaAttribute(123), false)
+    })
+  })
+
+  describe('ARIA_BOOLEAN_STATES and helpers', () => {
+    it('should export ARIA_BOOLEAN_STATES with the 4 core state attributes', () => {
+      assert.ok(ARIA_BOOLEAN_STATES)
+      assert.strictEqual(ARIA_BOOLEAN_STATES.size, 4)
+      assert.ok(ARIA_BOOLEAN_STATES.has('aria-expanded'))
+      assert.ok(ARIA_BOOLEAN_STATES.has('aria-pressed'))
+      assert.ok(ARIA_BOOLEAN_STATES.has('aria-checked'))
+      assert.ok(ARIA_BOOLEAN_STATES.has('aria-selected'))
+    })
+
+    it('isAriaBooleanState should return true only for the 4 core attributes', () => {
+      assert.strictEqual(isAriaBooleanState('aria-expanded'), true)
+      assert.strictEqual(isAriaBooleanState('ARIA-PRESSED'), true)
+      assert.strictEqual(isAriaBooleanState('aria-checked'), true)
+      assert.strictEqual(isAriaBooleanState('aria-selected'), true)
+
+      assert.strictEqual(isAriaBooleanState('aria-hidden'), false)
+      assert.strictEqual(isAriaBooleanState('aria-disabled'), false)
+      assert.strictEqual(isAriaBooleanState('disabled'), false)
+      assert.strictEqual(isAriaBooleanState(null), false)
+    })
+
+    it('resolveAriaBooleanState should properly format values', () => {
+      // Nullish & empty => null (remove attribute)
+      assert.strictEqual(resolveAriaBooleanState(null), null)
+      assert.strictEqual(resolveAriaBooleanState(undefined), null)
+      assert.strictEqual(resolveAriaBooleanState(''), null)
+      assert.strictEqual(resolveAriaBooleanState('null'), null)
+      assert.strictEqual(resolveAriaBooleanState('undefined'), null)
+
+      // Tri-state mixed
+      assert.strictEqual(resolveAriaBooleanState('mixed'), 'mixed')
+
+      // Falsy => "false"
+      assert.strictEqual(resolveAriaBooleanState(false), 'false')
+      assert.strictEqual(resolveAriaBooleanState('false'), 'false')
+      assert.strictEqual(resolveAriaBooleanState(0), 'false')
+      assert.strictEqual(resolveAriaBooleanState('0'), 'false')
+
+      // Truthy => "true"
+      assert.strictEqual(resolveAriaBooleanState(true), 'true')
+      assert.strictEqual(resolveAriaBooleanState('true'), 'true')
+      assert.strictEqual(resolveAriaBooleanState('yes'), 'true')
+      assert.strictEqual(resolveAriaBooleanState(1), 'true')
     })
   })
 

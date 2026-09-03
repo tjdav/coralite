@@ -3,7 +3,7 @@ import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
 import { CoraliteError } from './utils/errors.js'
-import { BOOLEAN_ATTRIBUTES, isAriaAttribute } from './utils/tags.js'
+import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from './utils/tags.js'
 import {
   RESERVED_DOM_ATTRIBUTES,
   validateAttributeValue
@@ -1448,6 +1448,15 @@ export class CoraliteElement extends BaseElement {
               element.removeAttribute(binding.name)
             } else {
               element.setAttribute(binding.name, '')
+            }
+          } else if (binding.isSingleToken && isAriaBooleanState(lowerName)) {
+            const rawTokenVal = tokenValues[binding.singleTokenKey]
+            const targetVal = resolveAriaBooleanState(rawTokenVal)
+
+            if (targetVal === null) {
+              element.removeAttribute(binding.name)
+            } else if (element.getAttribute(binding.name) !== targetVal) {
+              element.setAttribute(binding.name, targetVal)
             }
           } else if (binding.isSingleToken && isAriaAttribute(lowerName)) {
             const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === 'undefined'

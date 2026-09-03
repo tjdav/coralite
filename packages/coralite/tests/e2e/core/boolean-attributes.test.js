@@ -25,7 +25,7 @@ test.describe('Boolean Attributes', () => {
     await expect(checkbox2).not.toBeChecked()
     await expect(btn2).toBeDisabled()
     await expect(btn2).not.toHaveAttribute('allowpaymentrequest')
-    await expect(btn2).not.toHaveAttribute('aria-expanded')
+    await expect(btn2).toHaveAttribute('aria-expanded', 'false')
     await expect(btn2).not.toHaveAttribute('aria-label')
   })
 
@@ -39,10 +39,10 @@ test.describe('Boolean Attributes', () => {
     await expect(checkbox).toBeChecked()
     await expect(btn1).toHaveAttribute('aria-expanded', 'true')
 
-    // Click toggle button to uncheck and set aria-expanded to false (removed from DOM)
+    // Click toggle button to uncheck and set aria-expanded to false
     await toggleBtn.click()
     await expect(checkbox).not.toBeChecked()
-    await expect(btn1).not.toHaveAttribute('aria-expanded')
+    await expect(btn1).toHaveAttribute('aria-expanded', 'false')
 
     // Click again to check and restore aria-expanded="true"
     await toggleBtn.click()

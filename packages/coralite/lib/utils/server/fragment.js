@@ -3,7 +3,7 @@ import { createCoraliteTextNode } from './dom.js'
 import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle } from '../core.js'
 import { filterReservedAttributes } from '../../renderer.js'
 import { CoraliteError } from '../errors.js'
-import { BOOLEAN_ATTRIBUTES, isAriaAttribute } from '../tags.js'
+import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from '../tags.js'
 
 /**
  * Deeply freezes a target value (object, array) recursively, excluding DOM AST nodes.
@@ -665,6 +665,15 @@ export async function emitFragment ({
               delete nodeCopy.attribs[item.name]
             } else {
               nodeCopy.attribs[item.name] = ''
+            }
+          } else if (isAriaBooleanState(attrLower) && isSingleToken) {
+            const rawVal = componentState[item.tokens[0].name]
+            const targetVal = resolveAriaBooleanState(rawVal)
+
+            if (targetVal === null) {
+              delete nodeCopy.attribs[item.name]
+            } else {
+              nodeCopy.attribs[item.name] = targetVal
             }
           } else if (isAriaAttribute(attrLower) && isSingleToken) {
             const rawVal = componentState[item.tokens[0].name]

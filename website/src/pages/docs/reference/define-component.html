@@ -222,12 +222,17 @@ attributes: {
         <em>Supported 43 Boolean Attributes</em>: <code>allowfullscreen</code>, <code>allowpaymentrequest</code>, <code>async</code>, <code>autofocus</code>, <code>autoplay</code>, <code>checked</code>, <code>compact</code>, <code>controls</code>, <code>credentialless</code>, <code>declare</code>, <code>default</code>, <code>defer</code>, <code>disabled</code>, <code>disablepictureinpicture</code>, <code>disableremoteplayback</code>, <code>formnovalidate</code>, <code>hidden</code>, <code>inert</code>, <code>ismap</code>, <code>itemscope</code>, <code>loop</code>, <code>multiple</code>, <code>muted</code>, <code>nohref</code>, <code>nomodule</code>, <code>noresize</code>, <code>noshade</code>, <code>novalidate</code>, <code>nowrap</code>, <code>open</code>, <code>playsinline</code>, <code>readonly</code>, <code>required</code>, <code>reversed</code>, <code>scoped</code>, <code>seamless</code>, <code>selected</code>, <code>shadowrootclonable</code>, <code>shadowrootdelegatesfocus</code>, <code>shadowrootserializable</code>, <code>truespeed</code>, <code>typemustmatch</code>, and <code>webkitdirectory</code>.
       </li>
       <li>
-        <strong>WAI-ARIA Attributes (<code>aria-*</code> Auto-Removal)</strong>:
-        When an <code>aria-*</code> attribute (e.g. <code>aria-hidden="{{ isHidden }}"</code>, <code>aria-expanded="{{ expanded }}"</code>, <code>aria-label="{{ label }}"</code>, <code>aria-valuenow="{{ progress }}"</code>) is bound with a single template token:
+        <strong>WAI-ARIA Attributes Auto-Removal & State Preservation (<code>aria-*</code>)</strong>:
+        When an <code>aria-*</code> attribute is bound with a single template token:
         <ul>
-          <li>If the value evaluates to <strong>falsy</strong> (<code>false</code>, <code>"false"</code>, <code>null</code>, <code>"null"</code>, <code>undefined</code>, <code>"undefined"</code>, <code>""</code>), the attribute is <strong>completely removed</strong> from the element.</li>
-          <li><strong>Numeric 0 / "0" Preservation</strong>: Numeric <code>0</code> and <code>"0"</code> are valid ARIA values (e.g., <code>aria-valuenow="0"</code>) and do NOT trigger removal. They resolve to <code>"0"</code>.</li>
-          <li>If truthy (or <code>0</code>), the attribute is set to its evaluated string representation (e.g., <code>aria-hidden="true"</code>, <code>aria-label="Search"</code>).</li>
+          <li>
+            <strong>Core ARIA State Attributes (<code>aria-expanded</code>, <code>aria-pressed</code>, <code>aria-checked</code>, <code>aria-selected</code>)</strong>:
+            These 4 core attributes format falsy values (<code>false</code>, <code>"false"</code>, <code>0</code>, <code>"0"</code>) as <code>"false"</code> and preserve <code>"mixed"</code> where applicable. They are <strong>removed</strong> ONLY when bound values evaluate to nullish or empty (<code>null</code>, <code>undefined</code>, <code>""</code>, <code>"null"</code>, <code>"undefined"</code>).
+          </li>
+          <li>
+            <strong>Generic ARIA Attributes</strong>:
+            All other <code>aria-*</code> attributes (e.g., <code>aria-hidden</code>, <code>aria-disabled</code>, <code>aria-label</code>, <code>aria-valuenow</code>) are completely removed when falsy (<code>false</code>, <code>"false"</code>, <code>null</code>, <code>"null"</code>, <code>undefined</code>, <code>"undefined"</code>, <code>""</code>), while preserving numeric <code>0</code> / <code>"0"</code>.
+          </li>
         </ul>
       </li>
       <li>

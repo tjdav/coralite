@@ -5,7 +5,7 @@ import { sanitize } from 'isomorphic-dompurify'
 import { parseHTML } from './parse.js'
 import { isCoraliteNode } from '../types.js'
 import { createCoraliteTextNode, relinkChildren } from './dom.js'
-import { BOOLEAN_ATTRIBUTES, isAriaAttribute } from '../tags.js'
+import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from '../tags.js'
 
 /**
  * @import {
@@ -641,6 +641,13 @@ export function replaceToken ({
         delete node.attribs[attribute]
       } else {
         node.attribs[attribute] = ''
+      }
+    } else if (isAriaBooleanState(attrLower) && isSingleToken) {
+      const targetVal = resolveAriaBooleanState(value)
+      if (targetVal === null) {
+        delete node.attribs[attribute]
+      } else {
+        node.attribs[attribute] = targetVal
       }
     } else if (isAriaAttribute(attrLower) && isSingleToken) {
       // @ts-ignore

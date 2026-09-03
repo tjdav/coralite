@@ -55,6 +55,45 @@ export function isAriaAttribute (name) {
   return typeof name === 'string' && name.toLowerCase().startsWith('aria-')
 }
 
+export const ARIA_BOOLEAN_STATES = new Set([
+  'aria-expanded',
+  'aria-pressed',
+  'aria-checked',
+  'aria-selected'
+])
+
+/**
+ * Checks whether an attribute is a WAI-ARIA state attribute that must output "true" or "false"
+ * rather than being stripped when falsy.
+ * @param {string} name - Attribute name.
+ * @returns {boolean}
+ */
+export function isAriaBooleanState (name) {
+  return typeof name === 'string' && ARIA_BOOLEAN_STATES.has(name.toLowerCase())
+}
+
+/**
+ * Resolves the string value for an ARIA boolean/tri-state attribute.
+ * Returns null if the attribute should be removed.
+ * @param {any} value - Attribute value.
+ * @returns {string|null}
+ */
+export function resolveAriaBooleanState (value) {
+  if (value === null || value === undefined || value === '' || value === 'null' || value === 'undefined') {
+    return null
+  }
+
+  if (value === 'mixed') {
+    return 'mixed'
+  }
+
+  if (value === false || value === 'false' || value === 0 || value === '0') {
+    return 'false'
+  }
+
+  return 'true'
+}
+
 export const VALID_TAGS = {
   a: true,
   abbr: true,

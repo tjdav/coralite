@@ -151,11 +151,13 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
     - If the single-token value resolves to any falsy value (`""`, `"false"`, `"null"`, `"0"`, `"undefined"`, `false`, `null`, `undefined`, `0`), the attribute is **completely removed** from the element (`removeAttribute` in CSR, deleted from `node.attribs` in SSR).
     - If truthy, the attribute is set as an empty string presence attribute (e.g., `disabled=""`).
 
-* **WAI-ARIA Attributes Auto-Removal (`aria-*`)**:
-  - **Overview**: When an `aria-*` attribute (e.g., `aria-hidden`, `aria-expanded`, `aria-label`, `aria-disabled`, `aria-valuenow`, `aria-current`) is bound with a single template token (e.g. `<div aria-hidden="{{ isHidden }}">`):
-    - If the evaluated value is **falsy** (`false`, `"false"`, `null`, `"null"`, `undefined`, `"undefined"`, `""`), the attribute is **completely removed** from the element.
-    - **Preservation of 0**: Numeric `0` and string `"0"` are valid ARIA values (e.g., `aria-valuenow="0"`). They do NOT trigger removal and are set as `"0"`.
-    - If truthy (or `0` / `"0"`), the attribute is set to its evaluated string representation (e.g. `aria-hidden="true"`, `aria-label="Search"`).
+* **WAI-ARIA Attributes Auto-Removal & State Preservation (`aria-*`)**:
+  - **Core ARIA State Attributes (`aria-expanded`, `aria-pressed`, `aria-checked`, `aria-selected`)**:
+    - These 4 core attributes preserve `"false"` or `"true"` output (and `"mixed"` where applicable for `aria-pressed` / `aria-checked`).
+    - When single-token bound values evaluate to falsy (`false`, `"false"`, `0`, `"0"`), they output `"false"`.
+    - They are **removed** ONLY when bound values evaluate to nullish/empty (`null`, `undefined`, `""`, `"null"`, `"undefined"`).
+  - **Generic ARIA Attributes**:
+    - All other `aria-*` attributes (e.g., `aria-hidden`, `aria-disabled`, `aria-label`, `aria-valuenow`) are **completely removed** when falsy (`false`, `"false"`, `null`, `"null"`, `undefined`, `"undefined"`, `""`), preserving numeric `0` / `"0"`.
     - Multi-token / composite bindings (e.g. `aria-label="Prefix {{ label }}"`) retain static text and standard string replacement rules without auto-removal.
 
 
@@ -186,10 +188,6 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   - **Circular Dependency Protection**: If a circular dependency chain is detected at runtime (e.g. `A` depends on `B` and `B` depends on `A`), the engine throws a descriptive error: `Circular dependency detected: A → B → A` to prevent infinite reactive evaluation loops.
   - **Async Getter Lifecycle & Trackability**: For asynchronous getters returning a `Promise`, Coralite tracks any state properties read synchronously before the first `await`. Once the `Promise` resolves, Coralite performs an asynchronous dependency sweep to record any properties accessed during the post-resolution handler.
   - **Batched Dirty Checking**: Observers and getter re-evaluations are batched via a microtask queue (`queueMicrotask`). When state properties change, all transitive observer and getter dependencies are marked as dirty, and then flushed and invoked exactly once at the end of the current microtask, eliminating redundant computations and DOM paints (e.g. in a diamond dependency pattern `A ← B, C → D`).
-* **Dynamic HTML Token Rendering (`<c-token>` & `innerHTML`)**:
-  - In Coralite, template content tokens (e.g. `<div>{{ dynamicContent }}</div>`) compile into `<c-token>` wrapper nodes and are reactively hydrated via `element.innerHTML = hydratedValue`.
-  - **Getters Can Return HTML Strings**: A getter can return an HTML template string (e.g., `` `<label for="${state.ref_input}">${state.label}</label>` ``) or an empty string `''`. Coralite will render real, parsed child DOM elements (not escaped text).
-  - **Conditional DOM Element Rendering**: Unlike frameworks requiring structural directives (like `v-if`), an element can be conditionally omitted from the DOM entirely by returning `''` from a getter. When empty, the `<c-token>` container has no child nodes.
 
 #### 4. `style` (Declarative Reactive CSS)
 
@@ -254,39 +252,6 @@ getters: {
   hideBanner: (state) => !state.showBanner
 }
 ```
-
-### 5.3.1 Conditional DOM Nodes vs. Visibility Attributes
-
-Coralite provides two distinct patterns for conditional UI:
-
-1. **Visibility Toggling via Boolean Attribute (`hidden="{{ hideItem }}"`)**:
-   - Best when the element structure should permanently remain in the DOM and only its visual presence toggles.
-   - Uses native HTML `hidden` attribute auto-removal when falsy.
-   ```html
-   <button hidden="{{ hideSubmit }}">Submit</button>
-   ```
-
-2. **Conditional Element Insertion/Omission via HTML Getters (`{{ elementMarkup }}`)**:
-   - Best when an element **must not exist in the DOM at all** when inactive (e.g., an optional `<label for="...">` that would otherwise trigger accessibility violations if left hidden, or optional badges/icons).
-   - The getter returns the HTML markup string or `''` to clear it.
-   ```html
-   <div class="field-header">
-     {{ labelMarkup }}
-   </div>
-   ```
-   ```javascript
-   getters: {
-     labelMarkup: (state) => {
-       if (!state.label) return ''
-       const req = state.required ? '<span class="req">*</span>' : ''
-       return `<label class="label" for="${state.ref_input}">${state.label}${req}</label>`
-     }
-   }
-   ```
-
-3. **Attribute vs. Content Interpolation Rules**:
-   - **Inside Attribute (`attr="{{ getter }}"`)**: Returning `null`, `undefined`, `false`, or `""` (for boolean/ARIA attributes) **removes** the attribute from the element via `removeAttribute()`.
-   - **Inside Element Body (`<div>{{ getter }}</div>`)**: Rendered via `<c-token>` using `innerHTML`. Returning `""` empties the container; returning an HTML string parses and mounts real child DOM nodes.
 
 ### 5.4 Native Web APIs & Event Dispatching
 
