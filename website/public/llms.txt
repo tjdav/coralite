@@ -76,7 +76,7 @@ export default defineComponent({
 
 ### 5.2 Component Structure: Isolated Blocks
 
-A component definition consists of primary blocks (`attributes`, `server`, `getters`, `style`, `client`, and `slots`):
+A component definition consists of primary blocks (`attributes`, `server`, `getters`, `style`, `client`, `slots`, `provide`, and `consume`):
 
 #### 1. `attributes` (Sync)
 
@@ -354,7 +354,71 @@ Each key in the `slots` object corresponds to a slot name (use `'default'` for u
 * **SSR Graceful Fallback**: During SSR build, `root` is `null`, `refs()` returns `null`, `observe()` returns a no-op disposer, and `signal` is non-aborted. If a slot function accesses browser-only APIs without guard checks, Coralite catches the exception and gracefully falls back to the original slot content.
 * **Scope & Preservation**: Slotted content is evaluated within the parent component's local scope. Coralite maps original Light DOM elements automatically, projecting them synchronously upon connected callbacks for dynamic imperative components.
 
-### 5.7 CSS Scoping (PostCSS) & Dual-Scope Partitioning
+### 5.7 W3C Web Components Context Protocol (`provide` & `consume`)
+
+Coralite provides first-class, standard-aligned support for the **W3C Web Components Community Group Context Protocol** (the same protocol utilized by `@lit/context`). This enables decoupled, hierarchical dependency injection and state sharing across deep component trees without prop drilling.
+
+#### 5.7.1 Provider Definition (`provide`)
+
+Ancestor components declare provided context values or functional providers via the `provide` block in `defineComponent`:
+
+* **Signature**:
+  ```javascript
+  provide: {
+    // 1. Static value provider
+    'api-endpoint': 'https://api.example.com/v1',
+    // 2. Functional reactive provider receiving Unified Context
+    'theme-context': ({ state }) => state.theme,
+    'app-context': ({ state, root, refs, slots, signal }) => ({
+      theme: state.theme,
+      count: state.count
+    })
+  }
+  ```
+* **Unified Context & Dynamic Dependency Tracking**:
+  - Functional providers receive the unified getter context `{ state, root, refs, slots, signal }`.
+  - Coralite automatically tracks which reactive state properties are accessed by functional providers. When those state properties mutate via proxy `set` or `deleteProperty` traps, Coralite re-evaluates the provider function and automatically notifies active subscribers.
+* **Native Protocol Alignment & Custom Events**:
+  - The provider listens for native `context-request` bubbling CustomEvents on its host element.
+  - Supports both standard event property access (`event.context`, `event.callback`, `event.subscribe`) and `event.detail` payload formats (`event.detail.context`, `event.detail.callback`, `event.detail.subscribe`).
+  - Upon matching a provided context, the provider immediately invokes `event.stopImmediatePropagation()`, passes the value and an `unsubscribe` callback to `callback(value, unsubscribe)`, and records active subscriptions if `subscribe: true` was requested.
+* **Late-Upgraded Provider Announcements**:
+  - When a provider mounts (`connectedCallback`), it announces its readiness to the DOM by dispatching a bubbling `context-provider` CustomEvent with `{ element: this }`.
+  - Descendant consumers that connected prior to asynchronous provider module loading automatically detect this announcement and re-request context without timing flakes or race conditions.
+
+#### 5.7.2 Consumer Definition (`consume`)
+
+Descendant components request and consume context from ancestor providers via the `consume` block:
+
+* **Array Shorthand**:
+  ```javascript
+  consume: ['theme-context', 'app-context']
+  ```
+  Unsatisfied contexts default to `null`.
+* **Object Configuration (with Defaults)**:
+  ```javascript
+  consume: {
+    'theme-context': { default: 'light' },
+    'app-context': { default: { theme: 'light', count: 0 } }
+  }
+  ```
+* **Dual-Binding & State Normalization**:
+  - Consumed contexts are bound directly to the component's reactive `state` in both kebab-case (`state['app-context']`) and camelCase (`state.appContext`).
+  - Consumed values are available immediately inside `getters`, `style`, `client()`, and template expressions (e.g. `{{ appContext.theme }}`).
+* **Lifecycle & Auto-Cleanup**:
+  - During `connectedCallback()`, the consumer automatically dispatches a bubbling, composed `context-request` event with `subscribe: true`.
+  - When disconnected (`disconnectedCallback()`), all subscription disposer callbacks are executed automatically to prevent memory leaks.
+* **Dead Code Validation Exemption**:
+  - Keys declared in `consume` are tracked as `definedConsumedKeys` and exempted from `CORALITE-W401` unused-server-property warnings, allowing intermediate consumers to forward context or consume values solely for side effects.
+
+#### 5.7.3 Concurrency-Safe SSR Propagation
+
+Coralite guarantees race-free, concurrency-safe server-side rendering for context providers and consumers:
+* **Threaded Context Frames**: Rather than relying on mutable global stacks, the SSR engine threads immutable `contextFrames` down the AST evaluation tree (`evaluate`, `createComponentElement`, `createComponentTasks`, `_replaceSlots`, and `emitFragment`).
+* **Isolation**: Sibling or concurrently rendering pages and component subtrees never leak provided values to adjacent branches.
+* **Synchronous AST Resolution**: Slotted consumers (`<slot>`) and nested custom elements resolve their consumed values from the nearest ancestor frame during AST evaluation prior to client bundle dispatch.
+
+### 5.8 CSS Scoping (PostCSS) & Dual-Scope Partitioning
 
 Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler automatically encapsulates component CSS inside the `components` cascade layer (`@layer components`) and partitions component CSS into dual native CSS `@scope` rules:
 1. **Standard Component Scope (Donut Hole Preserved)**: `@scope (:where(component-name)) to (slot, :scope [data-cid], :is([is], c-token))` prevents standard component styles from penetrating into nested child components or consumer slotted elements.
@@ -362,7 +426,7 @@ Coralite components are strictly scoped by default, despite rendering in the glo
 
 For older runtimes without native `@scope` support, an automatic fallback using zero-specificity `:where()` host selectors and native CSS nesting is generated.
 
-#### 5.7.1 Cascade Layers (`@layer components`) & Specificity Taming (`:where()`)
+#### 5.8.1 Cascade Layers (`@layer components`) & Specificity Taming (`:where()`)
 * **Zero Specificity Bonus (`:where()`)**: Host custom element selectors are wrapped with `:where(tag-name)` (e.g., `:where(my-card)`), adding zero specificity (`0, 0, 0`). Component internal selectors (like `.title` or `button`) retain their base specificity instead of inflating.
 * **The Cascade Layer Rule**: All component styles are bundled inside `@layer components`. By standard CSS cascade semantics, **unlayered CSS rules take precedence over layered CSS rules**, regardless of selector specificity.
 * **Utility & Page Overrides Without `!important`**: Utility classes (e.g., Tailwind, Bootstrap, custom utility classes like `.hidden` or `.p-4`) or page-level styles override component styles cleanly without specificity battles.
@@ -376,7 +440,7 @@ For older runtimes without native `@scope` support, an automatic fallback using 
 * **Root `c-token` Inertia**: The rule `c-token { display: contents; }` is emitted unlayered at the stylesheet root to ensure reactive DOM markers remain transparent.
 * **Light DOM Slot Projections (`::slotted()`)**: The pseudo-element `::slotted(selector)` is transformed into dual Light DOM branches (`:scope > slot > selector, :scope > selector[slot]`), styling slotted content directly within the component layer under the slotted `@scope` block.
 
-#### 5.7.2 Root Custom Element Styling (`:host` & `:host-context()`)
+#### 5.8.2 Root Custom Element Styling (`:host` & `:host-context()`)
 * **Preferred Method for Root Element**: `:host` and `:host-context()` are the **preferred, canonical method** for modifying and styling the root custom element container itself (e.g., `<my-button>`).
 * **`:host` Transformations**:
   - In `@scope` mode, `:host` transforms to `:scope` (e.g., `:host { display: block; }` $\to$ `:scope { display: block; }`).
@@ -388,11 +452,11 @@ For older runtimes without native `@scope` support, an automatic fallback using 
   - `:host-context(<context>)` transforms to `<context> :scope` / `<context> &` (e.g., `:host-context(.dark) { color: white; }` $\to$ `.dark :scope { color: white; }`).
   - Compound chained rules like `:host-context(.dark):host(.active)` transform to `.dark :scope.active`.
 
-#### 5.7.3 Internal Scoped Classes Within Component (`:host` is NOT Required)
+#### 5.8.3 Internal Scoped Classes Within Component (`:host` is NOT Required)
 * **CRITICAL RULE**: To modify or style a scoped class or element **within the component template** (e.g., `.card`, `.title`, `button`, `.content`), **`:host` is not required**.
 * Standard selectors like `.card { ... }` or `button { ... }` are automatically nested under the component tag name by the compiler (`my-button { .card { ... } }`). You do not need to write `:host .card` or `:host > .card`.
 
-#### 5.7.4 Scoped CSS Example
+#### 5.8.4 Scoped CSS Example
 ```html
 <template id="user-card">
   <div class="header">
@@ -814,13 +878,14 @@ Coralite includes a built-in static AST and template symbol validator (`lib/comp
 | `CORALITE-E102` | Attribute Schema | Mutex violation: `required: true` combined with `default` value. (Action: `strip_default`) |
 | `CORALITE-E103` | Attribute Schema | Async `transform` or `validate` function. (Must be strictly synchronous) |
 | `CORALITE-E104` | Attribute/Server | Collision with reserved context keys (`state`, `observe`, `signal`, `root`, `refs`, `instanceId`, `emit`). |
+| `CORALITE-E106` | Context Protocol | Component `provide` option must be an object, or `consume` option must be an array or object. |
 | `CORALITE-E201` | Template Syntax | Non-identifier expression in `<template>` interpolation (e.g. `{{ count + 1 }}`). (Action: `lift_to_getter`) |
 | `CORALITE-E202` | Ref Resolution | `refs('name')` call referencing missing template `ref`. Injects ref if exactly 1 candidate element exists. (Action: `inject_ref`) |
 | `CORALITE-E203` | CSP Encapsulation | Inline event listener attribute (`onclick="..."`) inside `<template>`. Violates CSP. (Action: remove inline listener) |
 | `CORALITE-E301` | Serialization | Outer static ES import referenced inside `client()` block. Rewrites to dynamic `await import(...)` inside `client()` unless shared with server/getters. (Action: `dynamic_import`) |
 | `CORALITE-E302` | Reactivity Loop | Direct state assignment inside `observe(...)` callback causing infinite reactivity loops. |
 | `CORALITE-E303` | Style Block | Asynchronous getter function in `style: { ... }` block. (Must be strictly synchronous) |
-| `CORALITE-W401` | Dead Code | Unused component getter, server property, or attribute. |
+| `CORALITE-W401` | Dead Code | Unused component getter, server property, or attribute (consumed context keys are exempted). |
 | `CORALITE-W402` | Dead Code | Unused element `ref="..."` declaration. |
 
 ### 14.2 Deterministic AST Auto-Fixer Engine (`--fix` & `--dry-run`)
