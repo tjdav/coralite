@@ -1,6 +1,6 @@
 import { transformNode } from '../../parser.js'
 import { createCoraliteTextNode } from './dom.js'
-import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle } from '../core.js'
+import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle, isContextMap } from '../core.js'
 import { filterReservedAttributes } from '../../renderer.js'
 import { CoraliteError } from '../errors.js'
 import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from '../tags.js'
@@ -98,7 +98,7 @@ export function isLocallyOpsCapable (component, app = null) {
   const scriptStr = typeof component.script === 'string' ? component.script : ''
 
   const hasProvideEntries = (p) => Boolean(
-    p && (p instanceof Map ? p.size > 0 : (Object.keys(p).length > 0 || Object.getOwnPropertySymbols(p).length > 0))
+    p && (isContextMap(p) ? p.size > 0 : (Object.keys(p).length > 0 || Object.getOwnPropertySymbols(p).length > 0))
   )
   const hasProvide = Boolean(
     (sharedFn ? hasProvideEntries(sharedFn.provide) : scriptStr.includes('provide:')) ||

@@ -1,6 +1,6 @@
 import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap } from './utils/core.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap, isContextMap } from './utils/core.js'
 import { findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
 import { CoraliteError } from './utils/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
@@ -261,7 +261,7 @@ ScriptManager.prototype.registerComponent = function ({
   }
 
   const hasProvideEntries = (p) => Boolean(
-    p && (p instanceof Map || Object.prototype.toString.call(p) === '[object Map]' || typeof p.get === 'function' ? p.size > 0 : (Object.keys(p).length > 0 || Object.getOwnPropertySymbols(p).length > 0))
+    p && (isContextMap(p) ? p.size > 0 : (Object.keys(p).length > 0 || Object.getOwnPropertySymbols(p).length > 0))
   )
   if (hasProvideEntries(provide)) {
     if (isNew || override) {

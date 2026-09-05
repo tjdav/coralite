@@ -1,4 +1,4 @@
-import { createReadOnlyProxy } from './utils/core.js'
+import { createReadOnlyProxy, camelToKebab, isContextMap } from './utils/core.js'
 import { processTokenValue } from './parser.js'
 import { CoraliteError, handleError } from './utils/errors.js'
 import {
@@ -8,7 +8,6 @@ import {
 } from './utils/types.js'
 import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
 import { formatComponentCss } from './utils/server/style.js'
-import { camelToKebab } from './utils/core.js'
 import { inferTypeFromValues, validateAttributeValue } from './utils/attributes.js'
 import { prepareAllComponentOps } from './utils/server/fragment.js'
 
@@ -299,8 +298,7 @@ export function createComponentDefinition ({ app }) {
         for (let i = contextFrames.length - 1; i >= 0; i--) {
           const frame = contextFrames[i]
           if (frame) {
-            const isMap = Boolean(frame && (frame instanceof Map || Object.prototype.toString.call(frame) === '[object Map]' || (typeof frame.get === 'function' && typeof frame.has === 'function')))
-            if (isMap) {
+            if (isContextMap(frame)) {
               if (frame.has(key)) {
                 resolvedVal = frame.get(key)
                 break

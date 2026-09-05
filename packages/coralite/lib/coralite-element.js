@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, ContextRequestEvent } from './utils/core.js'
+import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, ContextRequestEvent, isContextMap } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
@@ -969,17 +969,15 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
-    const isMap = (v) => Boolean(v && (v instanceof Map || Object.prototype.toString.call(v) === '[object Map]' || (typeof v.get === 'function' && typeof v.has === 'function')))
-
     const getProvideVal = (p, k) => {
-      if (isMap(p)) {
+      if (isContextMap(p)) {
         return p.get(k)
       }
       return p[k]
     }
 
     const hasProvideKey = (p, k) => {
-      if (isMap(p)) {
+      if (isContextMap(p)) {
         return p.has(k)
       }
       if (typeof k === 'symbol') {

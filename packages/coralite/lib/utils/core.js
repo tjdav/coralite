@@ -953,6 +953,22 @@ export function createContext (key) {
 }
 
 /**
+ * Checks whether a value is a Map or a cross-realm Map-like instance.
+ *
+ * @param {any} v - The value to check.
+ * @returns {boolean} True if the value behaves as a Map.
+ */
+export function isContextMap (v) {
+  return Boolean(
+    v && (
+      v instanceof Map ||
+      Object.prototype.toString.call(v) === '[object Map]' ||
+      (typeof v.get === 'function' && typeof v.has === 'function')
+    )
+  )
+}
+
+/**
  * Recursively validates that an object contains only serializable data.
  * Throws a CoraliteError if a function is encountered.
  *

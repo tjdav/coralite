@@ -13,7 +13,8 @@ import {
   normalizeStyleKey,
   parseInlineStyle,
   formatInlineStyle,
-  createReadOnlyProxy
+  createReadOnlyProxy,
+  isContextMap
 } from './utils/core.js'
 import {
   replaceToken,
@@ -704,8 +705,7 @@ export function createRenderer ({
       const newFrame = new Map()
       const roState = createReadOnlyProxy(componentState)
 
-      const isMap = (v) => Boolean(v && (v instanceof Map || Object.prototype.toString.call(v) === '[object Map]' || (typeof v.get === 'function' && typeof v.has === 'function' && typeof v.entries === 'function')))
-      const entries = isMap(provideObj)
+      const entries = isContextMap(provideObj)
         ? Array.from(provideObj.entries())
         : [
           ...Object.entries(provideObj),
