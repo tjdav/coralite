@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, camelToKebab, isContextMap } from './utils/core.js'
+import { createReadOnlyProxy, hasContextEntries, normalizeConsumerItems, applyConsumedState } from './utils/core.js'
 import { processTokenValue } from './parser.js'
 import { CoraliteError, handleError } from './utils/errors.js'
 import {
@@ -8,6 +8,7 @@ import {
 } from './utils/types.js'
 import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
 import { formatComponentCss } from './utils/server/style.js'
+import { camelToKebab } from './utils/core.js'
 import { inferTypeFromValues, validateAttributeValue } from './utils/attributes.js'
 import { prepareAllComponentOps } from './utils/server/fragment.js'
 
@@ -268,37 +269,16 @@ export function createComponentDefinition ({ app }) {
     // Resolve SSR consumed context values from threaded contextFrames
     if (consume) {
       const contextFrames = context.contextFrames || []
-      let consumerItems = []
-      if (Array.isArray(consume)) {
-        consumerItems = consume.map(k => ({
-          prop: k,
-          key: k,
-          default: null,
-          isArray: true
-        }))
-      } else if (consume && typeof consume === 'object') {
-        consumerItems = Object.entries(consume).map(([prop, val]) => {
-          const isConfig = val && typeof val === 'object' && 'context' in val
-          const key = isConfig ? val.context : val
-          const def = isConfig && 'default' in val ? val.default : null
-          return {
-            prop,
-            key,
-            default: def,
-            isArray: false
-          }
-        })
-      }
+      const consumerItems = normalizeConsumerItems(consume)
 
       for (const item of consumerItems) {
         const key = item.key
-        const prop = item.prop
 
         let resolvedVal = item.default
         for (let i = contextFrames.length - 1; i >= 0; i--) {
           const frame = contextFrames[i]
           if (frame) {
-            if (isContextMap(frame)) {
+            if (frame instanceof Map) {
               if (frame.has(key)) {
                 resolvedVal = frame.get(key)
                 break
@@ -310,13 +290,7 @@ export function createComponentDefinition ({ app }) {
           }
         }
 
-        state[prop] = resolvedVal
-        if (item.isArray && typeof prop === 'string') {
-          const camelProp = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
-          if (camelProp !== prop) {
-            state[camelProp] = resolvedVal
-          }
-        }
+        applyConsumedState(state, item, resolvedVal, false)
       }
     }
 
@@ -577,13 +551,7 @@ export function createComponentDefinition ({ app }) {
     const hasServer = typeof server === 'function'
     const hasStyles = module.styles && module.styles.length > 0
     const hasComponentStyle = style && Object.keys(style).length > 0
-    const hasProvide = Boolean(
-      provide && (
-        provide instanceof Map
-          ? provide.size > 0
-          : (Object.keys(provide).length > 0 || Object.getOwnPropertySymbols(provide).length > 0)
-      )
-    )
+    const hasProvide = hasContextEntries(provide)
     const hasConsume = Boolean(consume)
 
     if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume) {
@@ -663,9 +631,6 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     if (extractedClient) {
       scriptObj.content = extractedClient.content
       scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
-      scriptObj.provideSource = extractedClient.provideSource
-      scriptObj.consumeSource = extractedClient.consumeSource
-      scriptObj.importStatements = extractedClient.importStatements
       extractedComponents = extractedClient.components || []
     }
 

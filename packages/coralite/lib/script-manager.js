@@ -1,7 +1,8 @@
 import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap, isContextMap } from './utils/core.js'
-import { findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
+import { simple as walkJS } from 'acorn-walk'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextEntries, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap } from './utils/core.js'
+import { getAST, findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
 import { CoraliteError } from './utils/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
 import { resolve, parse, dirname, basename } from 'node:path'
@@ -260,10 +261,7 @@ ScriptManager.prototype.registerComponent = function ({
     }
   }
 
-  const hasProvideEntries = (p) => Boolean(
-    p && (isContextMap(p) ? p.size > 0 : (Object.keys(p).length > 0 || Object.getOwnPropertySymbols(p).length > 0))
-  )
-  if (hasProvideEntries(provide)) {
+  if (hasContextEntries(provide)) {
     if (isNew || override) {
       target.provide = provide
     }
@@ -478,11 +476,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
       let componentEntryCode = ''
 
       const scriptContent = sharedFn.script?.content
-      const hasScript = Boolean(
-        (scriptContent && !isEmptyFunction(scriptContent)) ||
-        sharedFn.script?.provideSource ||
-        sharedFn.script?.consumeSource
-      )
+      const hasScript = scriptContent && !isEmptyFunction(scriptContent)
 
       if (hasScript) {
         componentEntryCode += `import * as componentModule_${alias} from "${virtualPrefix}${componentNamespace}${componentId}";\n`
@@ -565,8 +559,8 @@ export default {
   defaultValues: (() => { const defaults = ${defaults}; return defaults; })(),
   slots: (() => { const slots = ${slots}; return slots; })(),
   style: (() => { const style = ${style}; return style; })(),
-  provide: ${hasScript ? `componentModule_${alias}.provide || ` : ''}(() => { const provide = ${provide}; return provide; })(),
-  consume: ${hasScript ? `componentModule_${alias}.consume || ` : ''}(() => { const consume = ${consume}; return consume; })(),
+  provide: (() => { const provide = ${provide}; return provide; })(),
+  consume: (() => { const consume = ${consume}; return consume; })(),
   dependencies: ${dependencies},
   imports: {},
   client: ${hasScript ? `componentModule_${alias}.script` : 'null'},
@@ -639,6 +633,11 @@ export default {
               return null
             }
 
+            // Do not externalize if the path resolves to a virtual module
+            if (args.namespace === 'coralite-virtual') {
+              return null
+            }
+
             // Check for Coralite internal modules first
             if (args.path.startsWith(virtualPrefix) ||
               args.path === 'coralite-runtime' ||
@@ -656,11 +655,6 @@ export default {
               return {
                 path: fileURLToPath(import.meta.resolve('./utils/index.js'))
               }
-            }
-
-            // Do not externalize if the path resolves to a virtual module
-            if (args.namespace === 'coralite-virtual') {
-              return null
             }
 
             // Ignore absolute URLs that are already explicitly defined
@@ -797,36 +791,64 @@ export default {
               const sharedFn = this.sharedFunctions[componentId]
               let contents = ''
 
-              if (sharedFn.script && (sharedFn.script.content || sharedFn.script.provideSource || sharedFn.script.consumeSource)) {
-                const imports = sharedFn.script.importStatements || []
-                if (imports.length > 0) {
-                  contents += imports.join('\n') + '\n\n'
+              if (sharedFn.script && sharedFn.script.content) {
+                const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
+
+                // More robust way to strip 'server' from defineComponent call
+                let strippedContent = sharedFn.script.content
+
+                try {
+                  const ast = getAST(strippedContent)
+                  let dataStart = -1
+                  let dataEnd = -1
+
+                  walkJS(ast, {
+                    CallExpression (node) {
+                      if (node.callee.type === 'Identifier' && node.callee.name === 'defineComponent') {
+                        const firstArg = node.arguments[0]
+                        if (firstArg && firstArg.type === 'ObjectExpression') {
+                          const dataProp = firstArg.properties.find(p => p.type === 'Property' && p.key?.type === 'Identifier' && p.key?.name === 'server')
+                          // @ts-ignore
+                          if (dataProp && dataProp.type === 'Property') {
+                            // @ts-ignore
+                            dataStart = dataProp.start
+                            // @ts-ignore
+                            dataEnd = dataProp.end
+                          }
+                        }
+                      }
+                    }
+                  })
+
+                  if (dataStart !== -1) {
+                    let start = dataStart
+                    let end = dataEnd
+
+                    // Handle comma to avoid syntax errors
+                    const afterContent = strippedContent.slice(end)
+                    const trailingComma = afterContent.match(/^\s*,/)
+                    if (trailingComma) {
+                      end += trailingComma[0].length
+                    } else {
+                      const beforeContent = strippedContent.slice(0, start)
+                      const leadingComma = beforeContent.match(/,\s*$/)
+                      if (leadingComma) {
+                        start -= leadingComma[0].length
+                      }
+                    }
+                    strippedContent = strippedContent.slice(0, start) + strippedContent.slice(end)
+                  }
+                } catch {
+                  // Fallback to regex if AST parsing fails
+                  strippedContent = strippedContent.replace(/server\s*:\s*async\s*function\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* server stripped */')
+                  strippedContent = strippedContent.replace(/async\s*server\s*\([^\)]*\)\s*\{[\s\S]*?\}(?=\s*,|\s*\})/, '/* server stripped */')
                 }
 
-                if (sharedFn.script.content) {
-                  const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
-                  contents += `${padding}export const script = ${sharedFn.script.content};\n`
-                } else {
-                  contents += 'export const script = null;\n'
-                }
-
-                if (sharedFn.script.provideSource) {
-                  contents += `export const provide = ${sharedFn.script.provideSource};\n`
-                } else {
-                  contents += 'export const provide = undefined;\n'
-                }
-                if (sharedFn.script.consumeSource) {
-                  contents += `export const consume = ${sharedFn.script.consumeSource};\n`
-                } else {
-                  contents += 'export const consume = undefined;\n'
-                }
-
-                contents += 'export default script;\n'
+                contents += `${padding}export const script = ${strippedContent};\n`
+                contents += `export default script;\n`
               } else {
-                contents += 'export const script = null;\n'
-                contents += 'export const provide = undefined;\n'
-                contents += 'export const consume = undefined;\n'
-                contents += 'export default null;\n'
+                contents += `export const script = null;\n`
+                contents += `export default null;\n`
               }
 
               contents += `export const state = null;\n`

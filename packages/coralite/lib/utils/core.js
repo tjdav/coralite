@@ -953,10 +953,10 @@ export function createContext (key) {
 }
 
 /**
- * Checks whether a value is a Map or a cross-realm Map-like instance.
+ * Checks whether a value is a Map instance or duck-typed context map across environments.
  *
  * @param {any} v - The value to check.
- * @returns {boolean} True if the value behaves as a Map.
+ * @returns {boolean} True if the value is a Map.
  */
 export function isContextMap (v) {
   return Boolean(
@@ -966,6 +966,98 @@ export function isContextMap (v) {
       (typeof v.get === 'function' && typeof v.has === 'function')
     )
   )
+}
+
+/**
+ * Checks whether a context provide configuration contains any active entries.
+ *
+ * @param {any} p - The provide configuration (Map or Object).
+ * @returns {boolean} True if the provide map or object has entries.
+ */
+export function hasContextEntries (p) {
+  if (!p) {
+    return false
+  }
+  if (isContextMap(p)) {
+    return typeof p.size === 'number' && p.size > 0
+  }
+  return Object.keys(p).length > 0 || Object.getOwnPropertySymbols(p).length > 0
+}
+
+/**
+ * Normalizes a consume declaration into an array of consumer descriptor items.
+ * Strictly differentiates { context, default? } config objects from object tokens.
+ *
+ * @param {string[] | Record<string, any>} consume - The consume declaration.
+ * @returns {Array<{ prop: string, key: any, default: any, isArray: boolean }>}
+ */
+export function normalizeConsumerItems (consume) {
+  if (!consume) {
+    return []
+  }
+  if (Array.isArray(consume)) {
+    return consume.map(k => ({
+      prop: k,
+      key: k,
+      default: null,
+      isArray: true
+    }))
+  }
+  if (typeof consume === 'object') {
+    return Object.entries(consume).map(([prop, val]) => {
+      const isConfig = Boolean(
+        val &&
+        typeof val === 'object' &&
+        'context' in val &&
+        Object.keys(val).every(k => k === 'context' || k === 'default')
+      )
+      const key = isConfig ? val.context : val
+      const def = isConfig && 'default' in val ? val.default : null
+      return {
+        prop,
+        key,
+        default: def,
+        isArray: false
+      }
+    })
+  }
+  return []
+}
+
+/**
+ * Applies a consumed property and its optional camelCase alias to a state target.
+ *
+ * @param {Record<string, any>} target - State target object.
+ * @param {{ prop: string, isArray?: boolean }} item - Consumed descriptor.
+ * @param {any} value - Value to assign.
+ * @param {boolean} [onlyIfAbsent=false] - If true, only assign if property is not already present.
+ */
+export function applyConsumedState (target, item, value, onlyIfAbsent = false) {
+  if (onlyIfAbsent ? !(item.prop in target) : true) {
+    target[item.prop] = value
+  }
+  if (item.isArray && typeof item.prop === 'string') {
+    const camel = kebabToCamel(item.prop)
+    if (camel !== item.prop && (onlyIfAbsent ? !(camel in target) : true)) {
+      target[camel] = value
+    }
+  }
+}
+
+/**
+ * Safely invokes a callback, isolating errors using queueMicrotask.
+ *
+ * @param {Function} fn - Callback function to invoke.
+ * @param {...any} args - Arguments passed to the callback.
+ */
+export function safeInvoke (fn, ...args) {
+  try {
+    return fn(...args)
+  } catch (err) {
+    queueMicrotask(() => {
+      throw err
+    })
+  }
 }
 
 /**
