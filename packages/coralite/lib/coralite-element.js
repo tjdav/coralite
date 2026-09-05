@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, normalizeStyleKey, camelToKebab } from './utils/core.js'
+import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, ContextRequestEvent } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
@@ -396,7 +396,7 @@ export class CoraliteElement extends BaseElement {
 
     /**
      * Context subscription records for provided context keys.
-     * @type {Map<string|symbol, Set<{callback: Function, getValueWithDeps: Function, deps: Set<string>, unsubscribe?: Function, isFunction?: boolean}>>}
+     * @type {Map<string|symbol, Set<{callbackRef: { deref: () => Function|undefined }, getValueWithDeps: Function, deps: Set<string>, unsubscribe?: Function, isFunction?: boolean}>>}
      * @protected
      */
     this._contextSubscriptions = new Map()
@@ -407,6 +407,13 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._contextUnsubscribers = []
+
+    /**
+     * Array of consumer callback references held to prevent premature garbage collection.
+     * @type {Array<Function>}
+     * @protected
+     */
+    this._contextCallbacks = []
   }
 
   /**
@@ -483,6 +490,7 @@ export class CoraliteElement extends BaseElement {
     this._processSlotsOnReady = false
     this._slotHasInternalObservers = new Map()
     this._contextUnsubscribers = []
+    this._contextCallbacks = []
 
     this._setupState()
     if (this.componentOptions?.consume) {
@@ -521,6 +529,10 @@ export class CoraliteElement extends BaseElement {
    * @this {any}
    */
   disconnectedCallback () {
+    if (this._contextSubscriptions) {
+      this._contextSubscriptions.clear()
+    }
+
     if (this._contextUnsubscribers && this._contextUnsubscribers.length > 0) {
       for (const unsub of this._contextUnsubscribers) {
         try {
@@ -531,6 +543,8 @@ export class CoraliteElement extends BaseElement {
       }
       this._contextUnsubscribers = []
     }
+
+    this._contextCallbacks = []
 
     if (this._slotObserver) {
       this._slotObserver.disconnect()
@@ -819,31 +833,36 @@ export class CoraliteElement extends BaseElement {
     if (options.consume) {
       let consumerItems = []
       if (Array.isArray(options.consume)) {
-        consumerItems = options.consume.map(k => {
-          return {
-            key: k,
-            default: null
-          }
-        })
+        consumerItems = options.consume.map(k => ({
+          prop: k,
+          key: k,
+          default: null,
+          isArray: true
+        }))
       } else if (options.consume && typeof options.consume === 'object') {
-        consumerItems = Object.entries(options.consume).map(([k, cfg]) => {
+        consumerItems = Object.entries(options.consume).map(([prop, val]) => {
+          const isConfig = val && typeof val === 'object' && 'context' in val
+          const key = isConfig ? val.context : val
+          const def = isConfig && 'default' in val ? val.default : null
           return {
-            key: k,
-            default: (cfg && typeof cfg === 'object' && 'default' in cfg) ? cfg.default : null
+            prop,
+            key,
+            default: def,
+            isArray: false
           }
         })
       }
 
       for (const item of consumerItems) {
-        const key = item.key
-        const camelProp = typeof key === 'string'
-          ? key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
-          : key
-        if (!(camelProp in target)) {
-          target[camelProp] = item.default
+        const prop = item.prop
+        if (!(prop in target)) {
+          target[prop] = item.default
         }
-        if (typeof key === 'string' && key !== camelProp && !(key in target)) {
-          target[key] = item.default
+        if (item.isArray && typeof prop === 'string') {
+          const camelProp = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+          if (camelProp !== prop && !(camelProp in target)) {
+            target[camelProp] = item.default
+          }
         }
       }
     }
@@ -950,6 +969,27 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
+    const getProvideVal = (p, k) => (p instanceof Map ? p.get(k) : p[k])
+    const hasProvideKey = (p, k) => {
+      if (p instanceof Map) {
+        return p.has(k)
+      }
+      if (typeof k === 'symbol') {
+        return k in p || Object.prototype.hasOwnProperty.call(p, k)
+      }
+      return Object.prototype.hasOwnProperty.call(p, k) || k in p
+    }
+
+    const safeInvoke = (fn, ...args) => {
+      try {
+        fn(...args)
+      } catch (err) {
+        queueMicrotask(() => {
+          throw err
+        })
+      }
+    }
+
     this.addEventListener('context-request', (e) => {
       /** @type {any} */
       const event = e
@@ -961,11 +1001,7 @@ export class CoraliteElement extends BaseElement {
         return
       }
 
-      const isProvided = (typeof key === 'symbol')
-        ? (key in provides || Object.prototype.hasOwnProperty.call(provides, key))
-        : (Object.prototype.hasOwnProperty.call(provides, key) || key in provides)
-
-      if (isProvided) {
+      if (hasProvideKey(provides, key)) {
         event.stopImmediatePropagation()
 
         if (typeof callback === 'function') {
@@ -973,7 +1009,7 @@ export class CoraliteElement extends BaseElement {
             if (!this._state && this.componentOptions) {
               this._setupState()
             }
-            const valOrFn = provides[key]
+            const valOrFn = getProvideVal(provides, key)
             if (typeof valOrFn !== 'function') {
               return {
                 value: valOrFn,
@@ -1027,11 +1063,12 @@ export class CoraliteElement extends BaseElement {
               this._contextSubscriptions.set(key, new Set())
             }
             const subs = this._contextSubscriptions.get(key)
+            const callbackRef = typeof WeakRef !== 'undefined' ? new WeakRef(callback) : { deref: () => callback }
             const subRecord = {
-              callback,
+              callbackRef,
               getValueWithDeps,
               deps: initial.deps,
-              isFunction: typeof provides[key] === 'function'
+              isFunction: typeof getProvideVal(provides, key) === 'function'
             }
             subs.add(subRecord)
             unsubscribe = () => {
@@ -1041,9 +1078,10 @@ export class CoraliteElement extends BaseElement {
               }
             }
             subRecord.unsubscribe = unsubscribe
+            safeInvoke(callback, initial.value, unsubscribe)
+          } else {
+            safeInvoke(callback, initial.value)
           }
-
-          callback(initial.value, unsubscribe)
         }
       }
     })
@@ -1061,61 +1099,89 @@ export class CoraliteElement extends BaseElement {
 
     let consumerItems = []
     if (Array.isArray(consume)) {
-      consumerItems = consume.map(k => {
-        return {
-          key: k,
-          default: null
-        }
-      })
+      consumerItems = consume.map(k => ({
+        prop: k,
+        key: k,
+        default: null,
+        isArray: true
+      }))
     } else if (consume && typeof consume === 'object') {
-      consumerItems = Object.entries(consume).map(([k, cfg]) => {
+      consumerItems = Object.entries(consume).map(([prop, val]) => {
+        const isConfig = val && typeof val === 'object' && 'context' in val
+        const key = isConfig ? val.context : val
+        const def = isConfig && 'default' in val ? val.default : null
         return {
-          key: k,
-          default: (cfg && typeof cfg === 'object' && 'default' in cfg) ? cfg.default : null
+          prop,
+          key,
+          default: def,
+          isArray: false
         }
       })
     }
 
-    for (const item of consumerItems) {
-      const key = item.key
-      const camelProp = typeof key === 'string'
-        ? key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
-        : key
+    if (!this._contextCallbacks) {
+      this._contextCallbacks = []
+    }
 
+    for (const item of consumerItems) {
       let satisfied = false
+
+      const assignState = (val) => {
+        if (!this._state) {
+          return
+        }
+        this._state[item.prop] = val
+        if (item.isArray && typeof item.prop === 'string') {
+          const camel = item.prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+          if (camel !== item.prop) {
+            this._state[camel] = val
+          }
+        }
+      }
+
       const callback = (value, unsubscribe) => {
         satisfied = true
         if (typeof unsubscribe === 'function') {
           this._contextUnsubscribers.push(unsubscribe)
         }
-        if (this._state) {
-          this._state[camelProp] = value
-          if (typeof key === 'string' && key !== camelProp) {
-            this._state[key] = value
-          }
-        }
+        assignState(value)
       }
 
+      this._contextCallbacks.push(callback)
+
       const dispatchReq = () => {
-        const CustomEventCtor = typeof window !== 'undefined' && window.CustomEvent ? window.CustomEvent : CustomEvent
-        const event = new CustomEventCtor('context-request', {
-          bubbles: true,
-          composed: true,
-          detail: {
-            context: key,
+        const ContextRequestEventCtor = typeof ContextRequestEvent !== 'undefined' ? ContextRequestEvent : null
+        let event
+        if (ContextRequestEventCtor) {
+          event = new ContextRequestEventCtor(item.key, callback, true)
+        } else {
+          const CustomEventCtor = typeof window !== 'undefined' && window.CustomEvent ? window.CustomEvent : CustomEvent
+          event = new CustomEventCtor('context-request', {
+            bubbles: true,
+            composed: true,
+            detail: {
+              context: item.key,
+              subscribe: true,
+              callback
+            }
+          })
+          Object.assign(event, {
+            context: item.key,
             subscribe: true,
             callback
-          }
-        })
-        Object.assign(event, {
-          context: key,
-          subscribe: true,
-          callback
-        })
-        this.dispatchEvent(event)
+          })
+        }
+
+        /** @type {any} */
+        const ev = event
+        this.dispatchEvent(ev)
       }
 
       dispatchReq()
+
+      if (!satisfied && item.default !== null && item.default !== undefined) {
+        assignState(item.default)
+      }
 
       if (!satisfied && typeof window !== 'undefined') {
         const onProvider = (e) => {
@@ -1574,13 +1640,23 @@ export class CoraliteElement extends BaseElement {
         if (self._contextSubscriptions && self._contextSubscriptions.size > 0) {
           for (const [key, subs] of self._contextSubscriptions.entries()) {
             for (const sub of Array.from(subs)) {
+              const cb = sub.callbackRef ? sub.callbackRef.deref() : undefined
+              if (!cb) {
+                subs.delete(sub)
+                if (subs.size === 0) {
+                  self._contextSubscriptions.delete(key)
+                }
+                continue
+              }
               if (sub.isFunction && (sub.deps.size === 0 || (typeof p === 'string' && sub.deps.has(p)))) {
                 try {
                   const { value, deps } = sub.getValueWithDeps()
                   sub.deps = deps
-                  sub.callback(value, sub.unsubscribe)
+                  cb(value, sub.unsubscribe)
                 } catch (err) {
-                  console.error(`Coralite Context Error: Failed to notify subscriber for "${typeof key === 'symbol' ? key.toString() : key}":`, err)
+                  queueMicrotask(() => {
+                    throw err
+                  })
                 }
               }
             }
@@ -1647,13 +1723,23 @@ export class CoraliteElement extends BaseElement {
           if (self._contextSubscriptions && self._contextSubscriptions.size > 0) {
             for (const [key, subs] of self._contextSubscriptions.entries()) {
               for (const sub of Array.from(subs)) {
+                const cb = sub.callbackRef ? sub.callbackRef.deref() : undefined
+                if (!cb) {
+                  subs.delete(sub)
+                  if (subs.size === 0) {
+                    self._contextSubscriptions.delete(key)
+                  }
+                  continue
+                }
                 if (sub.isFunction && (sub.deps.size === 0 || (typeof p === 'string' && sub.deps.has(p)))) {
                   try {
                     const { value, deps } = sub.getValueWithDeps()
                     sub.deps = deps
-                    sub.callback(value, sub.unsubscribe)
+                    cb(value, sub.unsubscribe)
                   } catch (err) {
-                    console.error(`Coralite Context Error: Failed to notify subscriber for "${typeof key === 'symbol' ? key.toString() : key}":`, err)
+                    queueMicrotask(() => {
+                      throw err
+                    })
                   }
                 }
               }

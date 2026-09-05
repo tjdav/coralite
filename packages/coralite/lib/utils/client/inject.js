@@ -1,4 +1,4 @@
-import { defineComponent } from '../core.js'
+import { defineComponent, createContext, ContextRequestEvent } from '../core.js'
 import { definePlugin } from '../../plugin.js'
 
 /**
@@ -58,4 +58,4 @@ export function processHTML (html, instanceId) {
   return html
 }
 
-export { defineComponent, definePlugin }
+export { defineComponent, definePlugin, createContext, ContextRequestEvent }

@@ -354,69 +354,87 @@ Each key in the `slots` object corresponds to a slot name (use `'default'` for u
 * **SSR Graceful Fallback**: During SSR build, `root` is `null`, `refs()` returns `null`, `observe()` returns a no-op disposer, and `signal` is non-aborted. If a slot function accesses browser-only APIs without guard checks, Coralite catches the exception and gracefully falls back to the original slot content.
 * **Scope & Preservation**: Slotted content is evaluated within the parent component's local scope. Coralite maps original Light DOM elements automatically, projecting them synchronously upon connected callbacks for dynamic imperative components.
 
-### 5.7 W3C Web Components Context Protocol (`provide` & `consume`)
+### 5.7 W3C Web Components Context Protocol (`provide` & `consume` & `createContext`)
 
-Coralite provides first-class, standard-aligned support for the **W3C Web Components Community Group Context Protocol** (the same protocol utilized by `@lit/context`). This enables decoupled, hierarchical dependency injection and state sharing across deep component trees without prop drilling.
+Coralite provides first-class, standard-aligned support for the **W3C Web Components Community Group Context Protocol** (the same protocol utilized by `@lit/context`), adopting a clean-break strategy. This enables decoupled, hierarchical dependency injection and state sharing across deep component trees without prop drilling.
 
-#### 5.7.1 Provider Definition (`provide`)
+#### 5.7.1 `createContext` Token Helper
 
-Ancestor components declare provided context values or functional providers via the `provide` block in `defineComponent`:
+Coralite exports the `createContext(key)` helper from `'coralite'`:
+* `createContext('theme')` returns `'theme'` as a string key token.
+* `createContext(symbol)` returns the Symbol token as-is.
+* `createContext(objectToken)` returns the Object token as-is (enabling object-reference context matching via strict `===` equality).
+* `createContext()` or `createContext(undefined)` generates and returns a unique `Symbol()`.
+
+#### 5.7.2 Provider Definition (`provide`)
+
+Ancestor components declare provided context values or functional providers via the `provide` block in `defineComponent`. `provide` supports both Object literals `{ [key]: value }` and `Map` instances `new Map([[key, value]])`:
 
 * **Signature**:
   ```javascript
-  provide: {
-    // 1. Static value provider
-    'api-endpoint': 'https://api.example.com/v1',
-    // 2. Functional reactive provider receiving Unified Context
-    'theme-context': ({ state }) => state.theme,
-    'app-context': ({ state, root, refs, slots, signal }) => ({
-      theme: state.theme,
-      count: state.count
-    })
-  }
+  import { defineComponent, createContext } from 'coralite'
+
+  const themeContext = createContext('theme-context')
+
+  export default defineComponent({
+    provide: {
+      // 1. Static value provider
+      'api-endpoint': 'https://api.example.com/v1',
+      // 2. Functional reactive provider receiving Unified Context
+      [themeContext]: ({ state }) => state.theme,
+      'app-context': ({ state, root, refs, slots, signal }) => ({
+        theme: state.theme,
+        count: state.count
+      })
+    }
+    // OR using new Map():
+    // provide: new Map([
+    //   [themeContext, ({ state }) => state.theme]
+    // ])
+  })
   ```
 * **Unified Context & Dynamic Dependency Tracking**:
   - Functional providers receive the unified getter context `{ state, root, refs, slots, signal }`.
   - Coralite automatically tracks which reactive state properties are accessed by functional providers. When those state properties mutate via proxy `set` or `deleteProperty` traps, Coralite re-evaluates the provider function and automatically notifies active subscribers.
 * **Native Protocol Alignment & Custom Events**:
-  - The provider listens for native `context-request` bubbling CustomEvents on its host element.
+  - Context handshakes rely strictly on standard W3C `ContextRequestEvent` (`'context-request'`) CustomEvents bubbling from descendant to ancestor upon connection (`connectedCallback`).
   - Supports both standard event property access (`event.context`, `event.callback`, `event.subscribe`) and `event.detail` payload formats (`event.detail.context`, `event.detail.callback`, `event.detail.subscribe`).
-  - Upon matching a provided context, the provider immediately invokes `event.stopImmediatePropagation()`, passes the value and an `unsubscribe` callback to `callback(value, unsubscribe)`, and records active subscriptions if `subscribe: true` was requested.
-* **Late-Upgraded Provider Announcements**:
-  - When a provider mounts (`connectedCallback`), it announces its readiness to the DOM by dispatching a bubbling `context-provider` CustomEvent with `{ element: this }`.
-  - Descendant consumers that connected prior to asynchronous provider module loading automatically detect this announcement and re-request context without timing flakes or race conditions.
+  - Upon matching a provided context, the provider immediately invokes `event.stopImmediatePropagation()`, computes the value, and executes `callback(value, unsubscribe)` for subscribing consumers (`subscribe: true`), or `callback(value)` for non-subscribing consumers (`subscribe: false`).
+  - Subscriber callbacks are tracked using `WeakRef` references (`new WeakRef(callback)`) and automatically pruned during state notification passes if dereferenced (`deref() === undefined`).
+  - Callback execution is guarded with defensive error isolation (`try { ... } catch (err) { queueMicrotask(() => { throw err }); }`) so throwing consumer callbacks never abort provider reactivity loops or interrupt remaining subscribers.
 
-#### 5.7.2 Consumer Definition (`consume`)
+#### 5.7.3 Consumer Definition (`consume`)
 
 Descendant components request and consume context from ancestor providers via the `consume` block:
 
-* **Array Shorthand**:
+* **Array Shorthand (Dual-Binding)**:
   ```javascript
   consume: ['theme-context', 'app-context']
   ```
-  Unsatisfied contexts default to `null`.
-* **Object Configuration (with Defaults)**:
+  Array shorthand automatically dual-binds kebab-case keys to both `state['theme-context']` and camelCase `state.themeContext` on both client and SSR, allowing safe template expression bindings (`{{ themeContext }}`). Unsatisfied array contexts default to `null`.
+* **Object Configuration Mapping**:
   ```javascript
   consume: {
-    'theme-context': { default: 'light' },
-    'app-context': { default: { theme: 'light', count: 0 } }
+    // 1. Simple key-to-token mapping: localProp: contextToken
+    theme: themeContext,
+    // 2. Full object configuration with fallback default:
+    count: { context: countContext, default: 0 }
   }
   ```
-* **Dual-Binding & State Normalization**:
-  - Consumed contexts are bound directly to the component's reactive `state` in both kebab-case (`state['app-context']`) and camelCase (`state.appContext`).
-  - Consumed values are available immediately inside `getters`, `style`, `client()`, and template expressions (e.g. `{{ appContext.theme }}`).
+  The dictionary key is ALWAYS the component's internal state property name (`state[localProp]`). If an author writes an object with `default` but omits `context`, `CORALITE-E106` raises a compile-time error.
 * **Lifecycle & Auto-Cleanup**:
-  - During `connectedCallback()`, the consumer automatically dispatches a bubbling, composed `context-request` event with `subscribe: true`.
-  - When disconnected (`disconnectedCallback()`), all subscription disposer callbacks are executed automatically to prevent memory leaks.
+  - During `connectedCallback()`, the consumer dispatches a bubbling W3C `ContextRequestEvent('context-request', callback, true)`.
+  - Consumers retain active callback references while attached to prevent premature garbage collection.
+  - When disconnected (`disconnectedCallback()`), all subscription disposer callbacks and callback references are cleaned up automatically to prevent memory leaks.
 * **Dead Code Validation Exemption**:
-  - Keys declared in `consume` are tracked as `definedConsumedKeys` and exempted from `CORALITE-W401` unused-server-property warnings, allowing intermediate consumers to forward context or consume values solely for side effects.
+  - Keys declared in `consume` are tracked as `definedConsumedKeys` and exempted from `CORALITE-W401` unused-server-property warnings.
 
-#### 5.7.3 Concurrency-Safe SSR Propagation
+#### 5.7.4 Concurrency-Safe SSR Propagation
 
 Coralite guarantees race-free, concurrency-safe server-side rendering for context providers and consumers:
-* **Threaded Context Frames**: Rather than relying on mutable global stacks, the SSR engine threads immutable `contextFrames` down the AST evaluation tree (`evaluate`, `createComponentElement`, `createComponentTasks`, `_replaceSlots`, and `emitFragment`).
+* **Threaded Map Context Frames**: Rather than relying on mutable global stacks, the SSR engine threads immutable `Map` `contextFrames` down the AST evaluation tree (`evaluate`, `createComponentElement`, `createComponentTasks`, `_replaceSlots`, and `emitFragment`).
 * **Isolation**: Sibling or concurrently rendering pages and component subtrees never leak provided values to adjacent branches.
-* **Synchronous AST Resolution**: Slotted consumers (`<slot>`) and nested custom elements resolve their consumed values from the nearest ancestor frame during AST evaluation prior to client bundle dispatch.
+* **Synchronous AST Resolution**: Slotted consumers (`<slot>`) and nested custom elements resolve their consumed values from the nearest ancestor frame in reverse order (`for (let i = frames.length - 1; i >= 0; i--)`) during AST evaluation prior to client bundle dispatch.
 
 ### 5.8 CSS Scoping (PostCSS) & Dual-Scope Partitioning
 
@@ -878,7 +896,7 @@ Coralite includes a built-in static AST and template symbol validator (`lib/comp
 | `CORALITE-E102` | Attribute Schema | Mutex violation: `required: true` combined with `default` value. (Action: `strip_default`) |
 | `CORALITE-E103` | Attribute Schema | Async `transform` or `validate` function. (Must be strictly synchronous) |
 | `CORALITE-E104` | Attribute/Server | Collision with reserved context keys (`state`, `observe`, `signal`, `root`, `refs`, `instanceId`, `emit`). |
-| `CORALITE-E106` | Context Protocol | Component `provide` option must be an object, or `consume` option must be an array or object. |
+| `CORALITE-E106` | Context Protocol | Component `provide` option must be an object or new Map(), or `consume` option must be an array or valid object mapping. |
 | `CORALITE-E201` | Template Syntax | Non-identifier expression in `<template>` interpolation (e.g. `{{ count + 1 }}`). (Action: `lift_to_getter`) |
 | `CORALITE-E202` | Ref Resolution | `refs('name')` call referencing missing template `ref`. Injects ref if exactly 1 candidate element exists. (Action: `inject_ref`) |
 | `CORALITE-E203` | CSP Encapsulation | Inline event listener attribute (`onclick="..."`) inside `<template>`. Violates CSP. (Action: remove inline listener) |

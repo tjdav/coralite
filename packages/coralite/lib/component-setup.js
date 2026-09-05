@@ -271,39 +271,52 @@ export function createComponentDefinition ({ app }) {
       const contextFrames = context.contextFrames || []
       let consumerItems = []
       if (Array.isArray(consume)) {
-        consumerItems = consume.map(k => {
-          return {
-            key: k,
-            default: null
-          }
-        })
+        consumerItems = consume.map(k => ({
+          prop: k,
+          key: k,
+          default: null,
+          isArray: true
+        }))
       } else if (consume && typeof consume === 'object') {
-        consumerItems = Object.entries(consume).map(([k, cfg]) => {
+        consumerItems = Object.entries(consume).map(([prop, val]) => {
+          const isConfig = val && typeof val === 'object' && 'context' in val
+          const key = isConfig ? val.context : val
+          const def = isConfig && 'default' in val ? val.default : null
           return {
-            key: k,
-            default: (cfg && typeof cfg === 'object' && 'default' in cfg) ? cfg.default : null
+            prop,
+            key,
+            default: def,
+            isArray: false
           }
         })
       }
 
       for (const item of consumerItems) {
         const key = item.key
-        const camelProp = typeof key === 'string'
-          ? key.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
-          : key
+        const prop = item.prop
 
         let resolvedVal = item.default
         for (let i = contextFrames.length - 1; i >= 0; i--) {
           const frame = contextFrames[i]
-          if (frame && (Object.prototype.hasOwnProperty.call(frame, key) || (typeof key === 'symbol' && key in frame))) {
-            resolvedVal = frame[key]
-            break
+          if (frame) {
+            if (frame instanceof Map) {
+              if (frame.has(key)) {
+                resolvedVal = frame.get(key)
+                break
+              }
+            } else if (Object.prototype.hasOwnProperty.call(frame, key) || (typeof key === 'symbol' && key in frame)) {
+              resolvedVal = frame[key]
+              break
+            }
           }
         }
 
-        state[camelProp] = resolvedVal
-        if (typeof key === 'string' && key !== camelProp) {
-          state[key] = resolvedVal
+        state[prop] = resolvedVal
+        if (item.isArray && typeof prop === 'string') {
+          const camelProp = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
+          if (camelProp !== prop) {
+            state[camelProp] = resolvedVal
+          }
         }
       }
     }
@@ -565,7 +578,13 @@ export function createComponentDefinition ({ app }) {
     const hasServer = typeof server === 'function'
     const hasStyles = module.styles && module.styles.length > 0
     const hasComponentStyle = style && Object.keys(style).length > 0
-    const hasProvide = provide && Object.keys(provide).length > 0
+    const hasProvide = Boolean(
+      provide && (
+        provide instanceof Map
+          ? provide.size > 0
+          : (Object.keys(provide).length > 0 || Object.getOwnPropertySymbols(provide).length > 0)
+      )
+    )
     const hasConsume = Boolean(consume)
 
     if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume) {

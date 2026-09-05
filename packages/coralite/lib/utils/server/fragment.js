@@ -97,9 +97,12 @@ export function isLocallyOpsCapable (component, app = null) {
   const scriptMeta = component.__script__ || (typeof component.script === 'object' ? component.script : {})
   const scriptStr = typeof component.script === 'string' ? component.script : ''
 
+  const hasProvideEntries = (p) => Boolean(
+    p && (p instanceof Map ? p.size > 0 : (Object.keys(p).length > 0 || Object.getOwnPropertySymbols(p).length > 0))
+  )
   const hasProvide = Boolean(
-    (sharedFn ? (sharedFn.provide && Object.keys(sharedFn.provide).length > 0) : scriptStr.includes('provide:')) ||
-    (scriptMeta.provide && Object.keys(scriptMeta.provide).length > 0)
+    (sharedFn ? hasProvideEntries(sharedFn.provide) : scriptStr.includes('provide:')) ||
+    hasProvideEntries(scriptMeta.provide)
   )
   const hasConsume = Boolean(
     (sharedFn ? Boolean(sharedFn.consume) : scriptStr.includes('consume:')) ||

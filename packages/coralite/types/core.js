@@ -305,4 +305,31 @@
  * @property {Object} [source] - The framework source utilities and context.
  */
 
+/**
+ * W3C Web Components Context Protocol Context Identifier
+ * @template [KeyType=unknown]
+ * @template [ValueType=unknown]
+ * @typedef {KeyType & { readonly __context__?: ValueType }} Context
+ */
+
+/**
+ * An unknown context type identifier.
+ * @typedef {Context<unknown, unknown>} UnknownContext
+ */
+
+/**
+ * Extracts the value type from a context token.
+ * @template {UnknownContext} T
+ * @typedef {T extends Context<infer _, infer V> ? V : never} ContextType
+ */
+
+/**
+ * Callback invoked when context is provided.
+ * @template [T=unknown]
+ * @callback ContextCallback
+ * @param {T} value - The provided context value.
+ * @param {(() => void)} [unsubscribe] - Optional unsubscription callback if subscribed.
+ * @returns {void}
+ */
+
 export default {}

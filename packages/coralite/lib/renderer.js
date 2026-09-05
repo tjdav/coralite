@@ -694,26 +694,32 @@ export function createRenderer ({
       null
 
     if (provideObj && typeof provideObj === 'object') {
-      const newFrame = {}
+      const newFrame = new Map()
       const roState = createReadOnlyProxy(componentState)
-      for (const [key, valOrFn] of Object.entries(provideObj)) {
-        if (typeof key === 'string') {
-          if (typeof valOrFn === 'function') {
-            try {
-              const context = {
-                state: roState,
-                root: element || root,
-                refs: () => null,
-                slots: createServerSlotsHelper(element || root),
-                signal: new AbortController().signal
-              }
-              newFrame[key] = valOrFn(context)
-            } catch {
-              newFrame[key] = undefined
+
+      const entries = provideObj instanceof Map
+        ? Array.from(provideObj.entries())
+        : [
+          ...Object.entries(provideObj),
+          ...Object.getOwnPropertySymbols(provideObj).map(sym => [sym, provideObj[sym]])
+        ]
+
+      for (const [key, valOrFn] of entries) {
+        if (typeof valOrFn === 'function') {
+          try {
+            const context = {
+              state: roState,
+              root: element || root,
+              refs: () => null,
+              slots: createServerSlotsHelper(element || root),
+              signal: new AbortController().signal
             }
-          } else {
-            newFrame[key] = valOrFn
+            newFrame.set(key, valOrFn(context))
+          } catch {
+            newFrame.set(key, undefined)
           }
+        } else {
+          newFrame.set(key, valOrFn)
         }
       }
       childContextFrames = [...contextFrames, newFrame]

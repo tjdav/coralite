@@ -5,6 +5,7 @@ import { transform } from 'esbuild'
 import { createRequire } from 'node:module'
 import { extractGlobals } from './utils/server/server.js'
 import { CoraliteError } from './utils/errors.js'
+import { createContext as createContextUtil, ContextRequestEvent } from './utils/core.js'
 
 /**
  * @import { CoraliteModule, CoraliteModuleDefinitions, CoralitePage, CoraliteSession, CoraliteFilePath, CoralitePluginContext } from '../types/index.js'
@@ -64,6 +65,8 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
       coraliteExports += 'export const createCoraliteElement = globalThis.__coralite_create_coralite_element__;\n'
       coraliteExports += 'export const processHTML = globalThis.__coralite_process_html__;\n'
+      coraliteExports += 'export const createContext = globalThis.__coralite_create_context__;\n'
+      coraliteExports += 'export const ContextRequestEvent = globalThis.__coralite_context_request_event__;\n'
 
       return new SourceTextModule(coraliteExports, {
         context: referencingModule.context,
@@ -194,6 +197,8 @@ export async function evaluateDevelopment ({
     __coralite_plugins__: cachedBoundPlugins,
     __coralite_utils__: source.utils,
     __coralite_define_component__: boundDefineComponent,
+    __coralite_create_context__: createContextUtil,
+    __coralite_context_request_event__: ContextRequestEvent,
     __coralite_create_coralite_element__: (tag, options) => {
       if (typeof globalThis.createCoraliteElement === 'function') {
         return globalThis.createCoraliteElement(tag, options)
@@ -366,11 +371,15 @@ export async function evaluateProduction ({
           defineComponent: (options) => defineComponent(options, symmetricalContext),
           createCoraliteElement,
           processHTML,
+          createContext: createContextUtil,
+          ContextRequestEvent,
           default: {
             ...symmetricalContext,
             defineComponent: (options) => defineComponent(options, symmetricalContext),
             createCoraliteElement,
-            processHTML
+            processHTML,
+            createContext: createContextUtil,
+            ContextRequestEvent
           }
         }
       }

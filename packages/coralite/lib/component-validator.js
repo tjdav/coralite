@@ -554,20 +554,25 @@ export function validateComponentSource (sourceCode, filePath = '') {
               }
 
               if (keyName === 'provide') {
-                if (prop.value.type !== 'ObjectExpression') {
+                const isValidProvide = prop.value.type === 'ObjectExpression' || (
+                  prop.value.type === 'NewExpression' &&
+                  prop.value.callee.type === 'Identifier' &&
+                  prop.value.callee.name === 'Map'
+                )
+                if (!isValidProvide) {
                   const targetNode = prop.key || prop
                   diagnostics.push(createDiagnostic({
                     code: 'CORALITE-E106',
                     severity: 'error',
-                    message: "Component 'provide' option must be an object.",
+                    message: "Component 'provide' option must be an object or new Map().",
                     filePath,
                     line: targetNode.loc.start.line + scriptStartLine,
                     column: targetNode.loc.start.column + 1,
                     sourceCode,
-                    cause: "Component 'provide' defines context providers for descendant components and must be an object.",
+                    cause: "Component 'provide' defines context providers for descendant components and must be an object or new Map().",
                     fix: {
                       action: 'convert_to_object',
-                      description: "Change 'provide' to an object of context providers"
+                      description: "Change 'provide' to an object or new Map()"
                     }
                   }))
                 }
@@ -595,6 +600,38 @@ export function validateComponentSource (sourceCode, filePath = '') {
                         definedConsumedKeys.add(camelKey)
                         definedServerProps.add(cKey)
                         definedServerProps.add(camelKey)
+
+                        if (cProp.value.type === 'ObjectExpression') {
+                          let hasDefault = false
+                          let hasContext = false
+                          for (const innerP of cProp.value.properties) {
+                            if (innerP.type === 'Property') {
+                              const innerKey = getPropKeyName(innerP)
+                              if (innerKey === 'default') {
+                                hasDefault = true
+                              }
+                              if (innerKey === 'context') {
+                                hasContext = true
+                              }
+                            }
+                          }
+                          if (hasDefault && !hasContext) {
+                            const targetNode = cProp.key || cProp
+                            diagnostics.push(createDiagnostic({
+                              code: 'CORALITE-E106',
+                              severity: 'error',
+                              message: `Component 'consume' property '${cKey}' is missing 'context'. Use '{ ${cKey}: { context: contextToken, default: ... } }' or '{ ${cKey}: contextToken }'.`,
+                              filePath,
+                              line: targetNode.loc.start.line + scriptStartLine,
+                              column: targetNode.loc.start.column + 1,
+                              sourceCode,
+                              cause: `Component 'consume' property '${cKey}' defines a default value but lacks a 'context' identifier.`,
+                              fix: {
+                                description: `Use '{ ${cKey}: { context: contextToken, default: ... } }' or '{ ${cKey}: contextToken }'`
+                              }
+                            }))
+                          }
+                        }
                       }
                     }
                   }

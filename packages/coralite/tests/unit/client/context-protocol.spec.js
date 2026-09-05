@@ -1,6 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { Window } from 'happy-dom'
+import { createContext, ContextRequestEvent } from '../../../lib/utils/core.js'
 
 describe('W3C Web Components Context Protocol', () => {
   let window
@@ -12,6 +13,7 @@ describe('W3C Web Components Context Protocol', () => {
     document = window.document
     global.window = window
     global.document = document
+    global.Event = window.Event
     global.HTMLElement = window.HTMLElement
     global.CustomEvent = window.CustomEvent
     global.MutationObserver = window.MutationObserver
@@ -25,6 +27,7 @@ describe('W3C Web Components Context Protocol', () => {
   afterEach(() => {
     delete global.window
     delete global.document
+    delete global.Event
     delete global.HTMLElement
     delete global.CustomEvent
     delete global.MutationObserver
@@ -231,19 +234,301 @@ describe('W3C Web Components Context Protocol', () => {
     document.body.appendChild(provider)
 
     let receivedValue = null
-    const event = new CustomEvent('context-request', {
-      bubbles: true,
-      composed: true,
-      detail: {
-        context: 'interop-key',
-        callback: (val) => {
-          receivedValue = val
-        }
-      }
+    const event = new ContextRequestEvent('interop-key', (val) => {
+      receivedValue = val
     })
 
     provider.dispatchEvent(event)
 
     assert.equal(receivedValue, 'interop-val')
+  })
+
+  it('8. createContext Pass-Through & Unique Symbols', () => {
+    const stringKey = createContext('theme')
+    assert.equal(stringKey, 'theme')
+
+    const symKey = Symbol('custom')
+    const passSym = createContext(symKey)
+    assert.equal(passSym, symKey)
+
+    const objKey = { id: 'obj-key' }
+    const passObj = createContext(objKey)
+    assert.equal(passObj, objKey)
+
+    const generatedSym1 = createContext()
+    const generatedSym2 = createContext(undefined)
+    assert.equal(typeof generatedSym1, 'symbol')
+    assert.equal(typeof generatedSym2, 'symbol')
+    assert.notEqual(generatedSym1, generatedSym2)
+  })
+
+  it('9. Map Provider & Object Reference Context Key', () => {
+    const objectToken = createContext({ name: 'user-token' })
+
+    const providerMap = new Map([
+      [objectToken, ({ state }) => state.userName]
+    ])
+
+    const ProviderClass = createCoraliteClass({
+      componentId: 'test-provider-map',
+      defaultValues: { userName: 'Alice' },
+      provide: providerMap
+    })
+
+    const ConsumerClass = createCoraliteClass({
+      componentId: 'test-consumer-map',
+      consume: {
+        userName: objectToken
+      }
+    })
+
+    customElements.define('test-provider-9', ProviderClass)
+    customElements.define('test-consumer-9', ConsumerClass)
+
+    const provider = document.createElement('test-provider-9')
+    const consumer = document.createElement('test-consumer-9')
+
+    provider.appendChild(consumer)
+    document.body.appendChild(provider)
+
+    assert.equal(consumer._state.userName, 'Alice')
+
+    provider._state.userName = 'Bob'
+    assert.equal(consumer._state.userName, 'Bob')
+  })
+
+  it('10. Strict Object Consumer Mapping', () => {
+    const themeToken = createContext('theme-token')
+    const countToken = createContext('count-token')
+
+    const ProviderClass = createCoraliteClass({
+      componentId: 'test-provider-object-consumer',
+      defaultValues: { countVal: 10 },
+      provide: {
+        [themeToken]: 'dark',
+        [countToken]: ({ state }) => state.countVal
+      }
+    })
+
+    const ConsumerClass = createCoraliteClass({
+      componentId: 'test-consumer-object-consumer',
+      consume: {
+        activeTheme: themeToken,
+        activeCount: { context: countToken, default: 0 }
+      }
+    })
+
+    customElements.define('test-provider-10', ProviderClass)
+    customElements.define('test-consumer-10', ConsumerClass)
+
+    const provider = document.createElement('test-provider-10')
+    const consumer = document.createElement('test-consumer-10')
+
+    provider.appendChild(consumer)
+    document.body.appendChild(provider)
+
+    assert.equal(consumer._state.activeTheme, 'dark')
+    assert.equal(consumer._state.activeCount, 10)
+
+    provider._state.countVal = 99
+    assert.equal(consumer._state.activeCount, 99)
+  })
+
+  it('11. Non-Subscribing Consumer (subscribe: false)', () => {
+    const ProviderClass = createCoraliteClass({
+      componentId: 'test-provider-oneshot',
+      defaultValues: { val: 'initial' },
+      provide: {
+        'oneshot-key': ({ state }) => state.val
+      }
+    })
+
+    customElements.define('test-provider-11', ProviderClass)
+
+    const provider = document.createElement('test-provider-11')
+    document.body.appendChild(provider)
+
+    let receivedValue = null
+    let receivedUnsub = 'sentinel'
+
+    const event = new ContextRequestEvent('oneshot-key', (val, unsub) => {
+      receivedValue = val
+      receivedUnsub = unsub
+    }, false)
+
+    provider.dispatchEvent(event)
+
+    assert.equal(receivedValue, 'initial')
+    assert.equal(receivedUnsub, undefined)
+
+    // Verify callback was NOT retained in provider subscriptions
+    assert.equal(provider._contextSubscriptions?.has('oneshot-key'), false)
+  })
+
+  it('12. WeakRef Subscription Pruning on State Mutation', () => {
+    const ProviderClass = createCoraliteClass({
+      componentId: 'test-provider-weakref',
+      defaultValues: { count: 1 },
+      provide: {
+        'weak-key': ({ state }) => state.count
+      }
+    })
+
+    customElements.define('test-provider-12', ProviderClass)
+
+    const provider = document.createElement('test-provider-12')
+    document.body.appendChild(provider)
+
+    let deadCallbackCalled = false
+    let deadCallback = (val) => {
+      deadCallbackCalled = true
+    }
+
+    const event = new ContextRequestEvent('weak-key', deadCallback, true)
+    provider.dispatchEvent(event)
+
+    assert.equal(provider._contextSubscriptions.has('weak-key'), true)
+
+    // The callback was legitimately invoked once at dispatch with the initial value.
+    deadCallbackCalled = false
+
+    // Simulate callback garbage collection by replacing callbackRef with a deref returning undefined
+    const subs = provider._contextSubscriptions.get('weak-key')
+    for (const sub of subs) {
+      sub.callbackRef = { deref: () => undefined }
+    }
+
+    provider._state.count = 2
+
+    assert.equal(deadCallbackCalled, false)
+    assert.equal(provider._contextSubscriptions.has('weak-key'), false)
+  })
+
+  it('13. DisconnectedCallback Lifecycle Teardown', () => {
+    const ProviderClass = createCoraliteClass({
+      componentId: 'test-provider-teardown',
+      provide: {
+        'td-key': 'value'
+      }
+    })
+    const ConsumerClass = createCoraliteClass({
+      componentId: 'test-consumer-teardown',
+      consume: ['td-key']
+    })
+
+    customElements.define('test-provider-13', ProviderClass)
+    customElements.define('test-consumer-13', ConsumerClass)
+
+    const provider = document.createElement('test-provider-13')
+    const consumer = document.createElement('test-consumer-13')
+
+    provider.appendChild(consumer)
+    document.body.appendChild(provider)
+
+    assert.equal(consumer._state.tdKey, 'value')
+
+    // Disconnect consumer
+    provider.removeChild(consumer)
+    assert.equal(consumer._contextUnsubscribers.length, 0)
+    assert.equal(consumer._contextCallbacks.length, 0)
+
+    // Disconnect provider
+    document.body.removeChild(provider)
+    assert.equal(provider._contextSubscriptions.size, 0)
+  })
+
+  it('14. Defensive Consumer Error Isolation', () => {
+    const ProviderClass = createCoraliteClass({
+      componentId: 'test-provider-error-iso',
+      defaultValues: { val: 'a' },
+      provide: {
+        'err-key': ({ state }) => state.val
+      }
+    })
+
+    customElements.define('test-provider-14', ProviderClass)
+
+    const provider = document.createElement('test-provider-14')
+    document.body.appendChild(provider)
+
+    let siblingValue = null
+    const throwingCallback = (val) => {
+      if (val === 'b') {
+        throw new Error('Consumer callback boom!')
+      }
+    }
+    const siblingCallback = (val) => {
+      siblingValue = val
+    }
+
+    const microtaskErrors = []
+    const origQueueMicrotask = global.queueMicrotask
+    global.queueMicrotask = (fn) => {
+      try {
+        fn()
+      } catch (err) {
+        microtaskErrors.push(err)
+      }
+    }
+
+    try {
+      const event1 = new ContextRequestEvent('err-key', throwingCallback, true)
+      const event2 = new ContextRequestEvent('err-key', siblingCallback, true)
+
+      provider.dispatchEvent(event1)
+      provider.dispatchEvent(event2)
+
+      assert.equal(siblingValue, 'a')
+
+      // Mutate state to trigger notification loop where one subscriber throws
+      provider._state.val = 'b'
+
+      assert.equal(siblingValue, 'b')
+      assert.equal(microtaskErrors.length, 1)
+      assert.equal(microtaskErrors[0].message, 'Consumer callback boom!')
+    } finally {
+      global.queueMicrotask = origQueueMicrotask
+    }
+  })
+
+  it('15. Consumer Default Fallback when Unmatched', () => {
+    const ConsumerClass = createCoraliteClass({
+      componentId: 'test-consumer-fallback',
+      consume: {
+        mode: { context: 'unprovided-key', default: 'fallback-mode' }
+      }
+    })
+
+    customElements.define('test-consumer-15', ConsumerClass)
+
+    const consumer = document.createElement('test-consumer-15')
+    document.body.appendChild(consumer)
+
+    assert.equal(consumer._state.mode, 'fallback-mode')
+  })
+
+  it('16. Preserved Dashed Array Shorthand Dual-Binding', () => {
+    const ProviderClass = createCoraliteClass({
+      componentId: 'test-provider-dash',
+      provide: {
+        'user-auth-token': 'jwt-12345'
+      }
+    })
+    const ConsumerClass = createCoraliteClass({
+      componentId: 'test-consumer-dash',
+      consume: ['user-auth-token']
+    })
+
+    customElements.define('test-provider-16', ProviderClass)
+    customElements.define('test-consumer-16', ConsumerClass)
+
+    const provider = document.createElement('test-provider-16')
+    const consumer = document.createElement('test-consumer-16')
+
+    provider.appendChild(consumer)
+    document.body.appendChild(provider)
+
+    assert.equal(consumer._state['user-auth-token'], 'jwt-12345')
+    assert.equal(consumer._state.userAuthToken, 'jwt-12345')
   })
 })

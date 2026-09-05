@@ -904,6 +904,55 @@ export function defineComponent (options) {
 }
 
 /**
+ * An event fired by a context requester to signal it desires a named context.
+ * Conforms to the W3C Web Components Context Protocol.
+ * Dynamically wires its prototype to the active environment's Event class.
+ *
+ * @template [T=unknown]
+ */
+export class ContextRequestEvent {
+  /** @type {any} */
+  context
+  /** @type {Function} */
+  callback
+  /** @type {boolean} */
+  subscribe
+
+  /**
+   * @param {any} context - The requested context identifier.
+   * @param {Function} callback - Callback invoked when context is provided.
+   * @param {boolean} [subscribe=false] - Whether consumer desires continuous updates.
+   */
+  constructor (context, callback, subscribe = false) {
+    /** @type {any} */
+    const EventCtor = (typeof window !== 'undefined' && window.Event) || (typeof globalThis !== 'undefined' && globalThis.Event) || Event
+    if (Object.getPrototypeOf(ContextRequestEvent.prototype) !== EventCtor.prototype) {
+      Object.setPrototypeOf(ContextRequestEvent.prototype, EventCtor.prototype)
+    }
+    /** @type {any} */
+    const event = new EventCtor('context-request', {
+      bubbles: true,
+      composed: true
+    })
+    event.context = context
+    event.callback = callback
+    event.subscribe = Boolean(subscribe)
+    Object.setPrototypeOf(event, ContextRequestEvent.prototype)
+    return event
+  }
+}
+
+/**
+ * Creates a context key token for the W3C Context Protocol.
+ * @template ValueType
+ * @param {any} [key] - Key identifier. If undefined, a unique Symbol is generated.
+ * @returns {any} The context key.
+ */
+export function createContext (key) {
+  return key !== undefined ? key : Symbol()
+}
+
+/**
  * Recursively validates that an object contains only serializable data.
  * Throws a CoraliteError if a function is encountered.
  *
