@@ -5,7 +5,9 @@ const window = new Window()
 // Set up global environment
 global.window = window
 global.document = window.document
+global.Element = window.Element
 global.HTMLElement = window.HTMLElement
+global.ShadowRoot = window.ShadowRoot
 global.customElements = window.customElements
 global.Node = window.Node
 global.Text = window.Text

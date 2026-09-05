@@ -162,31 +162,169 @@ export function generateClientRuntime ({
     const el = document.createElement(tag, options);
     if (componentManifest[tag]) {
       loadComponent(tag).then(() => {
-        if (el.constructor === HTMLElement || el.constructor === HTMLUnknownElement) {
-          if (typeof customElements.upgrade === 'function') {
-            customElements.upgrade(el);
-          }
+        if (typeof customElements !== 'undefined' && typeof customElements.upgrade === 'function') {
+          customElements.upgrade(el);
         }
       });
     }
     return el;
   };
 
+${mode !== 'production' ? `
+  const resolveInstanceId = (node) => {
+    if (!node) return undefined;
+    if (node._instanceId !== undefined) return node._instanceId;
+    if (typeof node.getAttribute === 'function') {
+      const owner = node.getAttribute('data-coralite-owner');
+      if (owner) return owner;
+    }
+    if (typeof node.closest === 'function') {
+      const ownerEl = node.closest('[data-coralite-owner]');
+      if (ownerEl) return ownerEl.getAttribute('data-coralite-owner');
+      const cidEl = node.closest('[data-cid]');
+      if (cidEl) return cidEl.getAttribute('data-cid');
+    }
+    if (node.host) {
+      return resolveInstanceId(node.host);
+    }
+    return undefined;
+  };
+
+  const getCustomElementTags = (html) => {
+    if (typeof html !== 'string') return [];
+    const tags = new Set();
+    const matches = html.matchAll(/<([a-zA-Z0-9-]+)/g);
+    for (const match of matches) {
+      const tag = match[1].toLowerCase();
+      if (componentManifest[tag]) {
+        tags.add(tag);
+      }
+    }
+    return Array.from(tags);
+  };
+
+  const upgradeMatchingElements = (container, tags) => {
+    if (!container || !tags || tags.length === 0) return;
+    const loadPromises = tags.map(tag => loadComponent(tag));
+    Promise.all(loadPromises).then(() => {
+      if (typeof customElements === 'undefined' || typeof customElements.upgrade !== 'function') return;
+      for (const tag of tags) {
+        if (typeof container.matches === 'function' && container.matches(tag)) {
+          customElements.upgrade(container);
+        }
+        if (typeof container.querySelectorAll === 'function') {
+          const matchingEls = container.querySelectorAll(tag);
+          for (let i = 0; i < matchingEls.length; i++) {
+            customElements.upgrade(matchingEls[i]);
+          }
+        }
+      }
+    });
+  };
+
+  const nativeInnerHTMLDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+  const nativeOuterHTMLDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'outerHTML');
+  const nativeInsertAdjacentHTML = Element.prototype.insertAdjacentHTML;
+  const shadowRootInnerHTMLDesc = typeof ShadowRoot !== 'undefined'
+    ? Object.getOwnPropertyDescriptor(ShadowRoot.prototype, 'innerHTML')
+    : null;
   const originalCreateElement = document.createElement;
+
   document.createElement = function (tag, options) {
     const tagName = (typeof tag === 'string') ? tag.toLowerCase() : tag;
     const element = originalCreateElement.call(document, tag, options);
     if (componentManifest[tagName]) {
       loadComponent(tagName).then(() => {
-        if (element.constructor === HTMLElement || element.constructor === HTMLUnknownElement) {
-          if (typeof customElements.upgrade === 'function') {
-            customElements.upgrade(element);
-          }
+        if (typeof customElements !== 'undefined' && typeof customElements.upgrade === 'function') {
+          customElements.upgrade(element);
         }
       });
     }
     return element;
   };
+
+  if (nativeInnerHTMLDesc && nativeInnerHTMLDesc.set) {
+    Object.defineProperty(Element.prototype, 'innerHTML', {
+      configurable: nativeInnerHTMLDesc.configurable,
+      enumerable: nativeInnerHTMLDesc.enumerable,
+      get () {
+        return nativeInnerHTMLDesc.get.call(this);
+      },
+      set (html) {
+        if (typeof html !== 'string' || !html.includes('<')) {
+          return nativeInnerHTMLDesc.set.call(this, html);
+        }
+        const instanceId = resolveInstanceId(this);
+        const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
+        nativeInnerHTMLDesc.set.call(this, processedHtml);
+        const tags = getCustomElementTags(html);
+        upgradeMatchingElements(this, tags);
+      }
+    });
+  }
+
+  if (shadowRootInnerHTMLDesc && shadowRootInnerHTMLDesc.set) {
+    Object.defineProperty(ShadowRoot.prototype, 'innerHTML', {
+      configurable: shadowRootInnerHTMLDesc.configurable,
+      enumerable: shadowRootInnerHTMLDesc.enumerable,
+      get () {
+        return shadowRootInnerHTMLDesc.get.call(this);
+      },
+      set (html) {
+        if (typeof html !== 'string' || !html.includes('<')) {
+          return shadowRootInnerHTMLDesc.set.call(this, html);
+        }
+        const instanceId = resolveInstanceId(this);
+        const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
+        shadowRootInnerHTMLDesc.set.call(this, processedHtml);
+        const tags = getCustomElementTags(html);
+        upgradeMatchingElements(this, tags);
+      }
+    });
+  }
+
+  if (nativeOuterHTMLDesc && nativeOuterHTMLDesc.set) {
+    Object.defineProperty(Element.prototype, 'outerHTML', {
+      configurable: nativeOuterHTMLDesc.configurable,
+      enumerable: nativeOuterHTMLDesc.enumerable,
+      get () {
+        return nativeOuterHTMLDesc.get.call(this);
+      },
+      set (html) {
+        if (typeof html !== 'string' || !html.includes('<')) {
+          return nativeOuterHTMLDesc.set.call(this, html);
+        }
+        const parent = this.parentElement || this.parentNode || (typeof this.getRootNode === 'function' ? this.getRootNode() : null);
+        const instanceId = resolveInstanceId(this);
+        const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
+        nativeOuterHTMLDesc.set.call(this, processedHtml);
+        const tags = getCustomElementTags(html);
+        if (parent) {
+          upgradeMatchingElements(parent, tags);
+        }
+      }
+    });
+  }
+
+  if (typeof nativeInsertAdjacentHTML === 'function') {
+    Element.prototype.insertAdjacentHTML = function (position, html) {
+      if (typeof html !== 'string' || !html.includes('<')) {
+        return nativeInsertAdjacentHTML.call(this, position, html);
+      }
+      const pos = (typeof position === 'string') ? position.toLowerCase() : position;
+      const instanceId = resolveInstanceId(this);
+      const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
+      nativeInsertAdjacentHTML.call(this, position, processedHtml);
+      const tags = getCustomElementTags(html);
+      const container = (pos === 'afterbegin' || pos === 'beforeend')
+        ? this
+        : (this.parentElement || this.parentNode || (typeof this.getRootNode === 'function' ? this.getRootNode() : null));
+      if (container) {
+        upgradeMatchingElements(container, tags);
+      }
+    };
+  }
+` : ''}
 
   // Rewrites HTML strings for imperative custom element insertion and template stamping.
   // Mirrored by fallback in inject.js:processHTML when window.processHTML is unavailable.

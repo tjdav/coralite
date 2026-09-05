@@ -1,6 +1,8 @@
+import '../setup.js'
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import { generateClientRuntime } from '../../../lib/utils/client/runtime.js'
+import serialize from 'serialize-javascript'
 
 function getProcessHTML (mode) {
   const runtimeCode = generateClientRuntime({
@@ -34,8 +36,6 @@ function getProcessHTML (mode) {
   return run(windowMock, componentManifestMock, loadComponentMock)
 }
 
-import serialize from 'serialize-javascript'
-
 describe('generateClientRuntime inlinedStyles initialization', () => {
   it('should initialize window.__coralite_styles_loaded__ Set with realistic serialized inlinedStyles', () => {
     const serializedStyles = serialize(['my-card', 'header-comp'])
@@ -65,6 +65,11 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
       instanceCounters: '{}',
       inlinedStyles: serialize(['other-comp'])
     })
+
+    const origDoc = globalThis.document
+    const origCustomElements = globalThis.customElements
+    const origHTMLElement = globalThis.HTMLElement
+    const origHTMLUnknownElement = globalThis.HTMLUnknownElement
 
     // Mock DOM environment for evaluating loadComponent behavior
     let appendedLinkHref = null
@@ -103,7 +108,6 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
     globalThis.HTMLElement = MockHTMLElement
     globalThis.HTMLUnknownElement = MockHTMLUnknownElement
     globalThis.customElements = { get: () => null, define: () => {} }
-    globalThis.window = globalThis.window || {}
     globalThis.document = mockDocument
 
     // Replace dynamic import statements with mock function calls
@@ -112,7 +116,7 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
         return 'Promise.resolve({ default: { "style-imperative-only": { js: "style-imperative-only.js", css: "style-imperative-only.css" } } })'
       }
       if (path.includes('shared.js')) {
-        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
       }
       return 'Promise.resolve({ default: { componentId: "style-imperative-only" } })'
     })
@@ -135,10 +139,10 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
       assert.strictEqual(appendedLinkHref, '/assets/css/style-imperative-only.css')
       assert.strictEqual(globalThis.window.__coralite_styles_loaded__.has('style-imperative-only'), true)
     } finally {
-      delete globalThis.HTMLElement
-      delete globalThis.HTMLUnknownElement
-      delete globalThis.customElements
-      delete globalThis.document
+      globalThis.HTMLElement = origHTMLElement
+      globalThis.HTMLUnknownElement = origHTMLUnknownElement
+      globalThis.customElements = origCustomElements
+      globalThis.document = origDoc
       delete globalThis.window.__coralite_styles_loaded__
       delete globalThis.window.createCoraliteElement
       delete globalThis.window.processHTML
@@ -220,6 +224,217 @@ describe('client-side processHTML', () => {
       const input3 = '<button ref="comp-0__myBtn">Click</button>'
       const output3 = processHTML(input3, 'comp-0')
       assert.strictEqual(output3, '<button ref="comp-0__myBtn" data-coralite-owner="comp-0">Click</button>')
+    }
+  })
+})
+
+describe('mode-restricted runtime DOM prototype patching', () => {
+  it('should omit prototype patching code and leave native DOM pristine in production mode', () => {
+    const runtimeCode = generateClientRuntime({
+      base: '/',
+      sharedChunkPath: 'shared.js',
+      declarativeTags: [],
+      hydrationData: '{}',
+      mode: 'production'
+    })
+
+    assert.strictEqual(runtimeCode.includes('resolveInstanceId'), false)
+    assert.strictEqual(runtimeCode.includes('upgradeMatchingElements'), false)
+    assert.strictEqual(runtimeCode.includes('Object.defineProperty(Element.prototype, \'innerHTML\''), false)
+    assert.strictEqual(runtimeCode.includes('document.createElement = function'), false)
+
+    // Verify window.createCoraliteElement is defined in runtime string
+    assert.strictEqual(runtimeCode.includes('window.createCoraliteElement ='), true)
+  })
+
+  it('should emit prototype patching code in development and testing mode', () => {
+    for (const mode of ['development', 'testing']) {
+      const runtimeCode = generateClientRuntime({
+        base: '/',
+        sharedChunkPath: 'shared.js',
+        declarativeTags: [],
+        hydrationData: '{}',
+        mode
+      })
+
+      assert.strictEqual(runtimeCode.includes('resolveInstanceId'), true)
+      assert.strictEqual(runtimeCode.includes('upgradeMatchingElements'), true)
+      assert.strictEqual(runtimeCode.includes('Object.defineProperty(Element.prototype, \'innerHTML\''), true)
+      assert.strictEqual(runtimeCode.includes('ShadowRoot.prototype, \'innerHTML\''), true)
+      assert.strictEqual(runtimeCode.includes('Object.defineProperty(Element.prototype, \'outerHTML\''), true)
+      assert.strictEqual(runtimeCode.includes('Element.prototype.insertAdjacentHTML ='), true)
+      assert.strictEqual(runtimeCode.includes('document.createElement = function'), true)
+    }
+  })
+
+  it('should intercept innerHTML, outerHTML, insertAdjacentHTML and createElement in testing/dev mode', async () => {
+    const rawRuntimeCode = generateClientRuntime({
+      base: '/',
+      sharedChunkPath: 'shared.js',
+      declarativeTags: [],
+      hydrationData: '{}',
+      mode: 'testing'
+    })
+
+    let upgradedElements = []
+
+    const mockManifest = {
+      'test-card': { js: 'test-card.js' },
+      'parent-comp': { js: 'parent-comp.js' },
+      'child-comp': { js: 'child-comp.js' }
+    }
+
+    // Save native methods/descriptors prior to running test execution
+    const origCreateElement = document.createElement
+    const origInnerHTMLDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML')
+    const origOuterHTMLDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'outerHTML')
+    const origInsertAdjacentHTML = Element.prototype.insertAdjacentHTML
+    const origUpgrade = customElements.upgrade
+
+    // Mock customElements.upgrade
+    customElements.upgrade = (el) => {
+      upgradedElements.push(el)
+    }
+
+    // Replace dynamic imports in generated runtime
+    const executableCode = rawRuntimeCode.replace(/import\(([^)]+)\)/g, (match, path) => {
+      if (path.includes('manifest.js')) {
+        return `Promise.resolve({ default: ${JSON.stringify(mockManifest)} })`
+      }
+      if (path.includes('shared.js')) {
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+      }
+      const tagMatch = path.match(/([a-zA-Z0-9-]+)\.js/)
+      const tag = tagMatch ? tagMatch[1] : 'test-card'
+      return `Promise.resolve({ default: { componentId: "${tag}" } })`
+    })
+
+    try {
+      const fn = new Function(executableCode)
+      fn()
+
+      await new Promise(r => setTimeout(r, 50))
+
+      // 1. Plain text innerHTML (fast path)
+      const container = document.createElement('div')
+      document.body.appendChild(container)
+      container.innerHTML = 'Just plain text'
+      assert.strictEqual(container.innerHTML, 'Just plain text')
+
+      // 2. innerHTML with custom element tag
+      upgradedElements = []
+      container.innerHTML = '<test-card data-testid="my-card">Hello</test-card>'
+      await new Promise(r => setTimeout(r, 50))
+
+      assert.ok(container.querySelector('test-card'), 'Custom element should be in DOM')
+      assert.ok(upgradedElements.some(el => el.tagName.toLowerCase() === 'test-card'), 'customElements.upgrade should have been called on test-card')
+
+      // 3. Tag deduplication
+      upgradedElements = []
+      container.innerHTML = '<test-card></test-card><test-card></test-card>'
+      await new Promise(r => setTimeout(r, 50))
+      assert.strictEqual(container.querySelectorAll('test-card').length, 2)
+
+      // 4. Detached element mounting
+      upgradedElements = []
+      const detached = document.createElement('div')
+      detached.innerHTML = '<test-card></test-card>'
+      await new Promise(r => setTimeout(r, 50))
+      assert.ok(upgradedElements.some(el => el.tagName.toLowerCase() === 'test-card'))
+
+      // 5. Nested compound components
+      upgradedElements = []
+      container.innerHTML = '<parent-comp><child-comp></child-comp></parent-comp>'
+      await new Promise(r => setTimeout(r, 50))
+      assert.ok(upgradedElements.some(el => el.tagName.toLowerCase() === 'parent-comp'))
+      assert.ok(upgradedElements.some(el => el.tagName.toLowerCase() === 'child-comp'))
+
+      // 6. insertAdjacentHTML
+      upgradedElements = []
+      container.insertAdjacentHTML('beforeend', '<test-card id="adjacent"></test-card>')
+      await new Promise(r => setTimeout(r, 50))
+      assert.ok(container.querySelector('#adjacent'))
+      assert.ok(upgradedElements.some(el => el.id === 'adjacent'))
+
+      // 7. outerHTML
+      upgradedElements = []
+      const targetEl = document.createElement('div')
+      container.appendChild(targetEl)
+      targetEl.outerHTML = '<test-card id="outer-test"></test-card>'
+      await new Promise(r => setTimeout(r, 50))
+      assert.ok(container.querySelector('#outer-test'))
+
+      // 8. document.createElement
+      upgradedElements = []
+      const createdEl = document.createElement('test-card')
+      await new Promise(r => setTimeout(r, 50))
+      assert.ok(upgradedElements.includes(createdEl))
+
+      document.body.removeChild(container)
+    } finally {
+      // Restore native elements
+      document.createElement = origCreateElement
+      if (origInnerHTMLDesc) Object.defineProperty(Element.prototype, 'innerHTML', origInnerHTMLDesc)
+      if (origOuterHTMLDesc) Object.defineProperty(Element.prototype, 'outerHTML', origOuterHTMLDesc)
+      if (origInsertAdjacentHTML) Element.prototype.insertAdjacentHTML = origInsertAdjacentHTML
+      customElements.upgrade = origUpgrade
+    }
+  })
+
+  it('should resolve instanceId across shadowRoot host hierarchy in development/testing mode', async () => {
+    const rawRuntimeCode = generateClientRuntime({
+      base: '/',
+      sharedChunkPath: 'shared.js',
+      declarativeTags: [],
+      hydrationData: '{}',
+      mode: 'testing'
+    })
+
+    const origCreateElement = document.createElement
+    const origInnerHTMLDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML')
+    const origShadowInnerHTMLDesc = typeof ShadowRoot !== 'undefined' ? Object.getOwnPropertyDescriptor(ShadowRoot.prototype, 'innerHTML') : null
+
+    const mockManifest = {
+      'shadow-child': { js: 'shadow-child.js' }
+    }
+
+    const executableCode = rawRuntimeCode.replace(/import\(([^)]+)\)/g, (match, path) => {
+      if (path.includes('manifest.js')) {
+        return `Promise.resolve({ default: ${JSON.stringify(mockManifest)} })`
+      }
+      if (path.includes('shared.js')) {
+        return 'Promise.resolve({ getClientContext: () => ({}), createCoraliteClass: () => class extends HTMLElement {}, globalClientHooks: {}, setupDevTools: () => {}, registerDevToolsComponent: () => {} })'
+      }
+      return 'Promise.resolve({ default: { componentId: "shadow-child" } })'
+    })
+
+    try {
+      const fn = new Function(executableCode)
+      fn()
+
+      await new Promise(r => setTimeout(r, 50))
+
+      const host = document.createElement('div')
+      host.setAttribute('data-coralite-owner', 'host-comp-1')
+      document.body.appendChild(host)
+
+      if (typeof host.attachShadow === 'function') {
+        const shadow = host.attachShadow({ mode: 'open' })
+        shadow.innerHTML = '<shadow-child data-testid="inner-shadow">Shadow Content</shadow-child>'
+        await new Promise(r => setTimeout(r, 50))
+
+        const child = shadow.querySelector('shadow-child')
+        assert.ok(child)
+        assert.strictEqual(child.getAttribute('data-testid'), 'host-comp-1__inner-shadow')
+      }
+
+      document.body.removeChild(host)
+    } finally {
+      document.createElement = origCreateElement
+      if (origInnerHTMLDesc) Object.defineProperty(Element.prototype, 'innerHTML', origInnerHTMLDesc)
+      if (origShadowInnerHTMLDesc && typeof ShadowRoot !== 'undefined') {
+        Object.defineProperty(ShadowRoot.prototype, 'innerHTML', origShadowInnerHTMLDesc)
+      }
     }
   })
 })
