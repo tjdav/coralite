@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke } from './utils/core.js'
+import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
@@ -625,7 +625,7 @@ export class CoraliteElement extends BaseElement {
 
     this._isReflectingFromAttribute = true
     try {
-      const camelName = name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const camelName = kebabToCamel(name)
       const kebabName = camelToKebab(camelName)
       const schema = this.componentOptions.attributes?.[camelName] || this.componentOptions.attributes?.[name]
 
@@ -700,7 +700,7 @@ export class CoraliteElement extends BaseElement {
 
     if (options.attributes) {
       for (const key of Object.keys(options.attributes)) {
-        const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+        const camelName = kebabToCamel(key)
         const kebabName = camelToKebab(camelName)
         target['error_' + camelName] = ''
         target['error_' + kebabName] = ''
@@ -749,7 +749,7 @@ export class CoraliteElement extends BaseElement {
     // Process initial attributes mapping
     for (const attr of this.attributes) {
       const lowerName = attr.name.toLowerCase()
-      const camelName = attr.name.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const camelName = kebabToCamel(attr.name)
       const kebabName = camelToKebab(camelName)
       const schema = options.attributes?.[camelName] || options.attributes?.[attr.name] || options.attributes?.[lowerName]
 
@@ -784,7 +784,7 @@ export class CoraliteElement extends BaseElement {
 
     if (options.attributes) {
       for (const [key, schema] of Object.entries(options.attributes)) {
-        const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+        const camelName = kebabToCamel(key)
         const kebabName = camelToKebab(camelName)
 
         if (target[camelName] === undefined) {
@@ -837,7 +837,7 @@ export class CoraliteElement extends BaseElement {
 
     if (options.attributes) {
       for (const key of Object.keys(options.attributes)) {
-        const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+        const camelName = kebabToCamel(key)
 
         if (!RESERVED_PROPERTY_BLACKLIST.has(camelName) && !(camelName in this)) {
           Object.defineProperty(this, camelName, {
@@ -856,21 +856,7 @@ export class CoraliteElement extends BaseElement {
       }
     }
 
-    const self = this
-    const getRef = (id) => {
-      const refId = self._state ? self._state[`ref_${id}`] : target[`ref_${id}`]
-      if (!refId && typeof refId !== 'string') {
-        return null
-      }
-      if (self.getAttribute && (self.getAttribute('ref') === refId || self.getAttribute('ref') === id)) {
-        return self
-      }
-      let node = self.querySelector ? self.querySelector(`[ref="${refId}"]`) : null
-      if (!node && typeof findOwnedRefNode === 'function') {
-        node = findOwnedRefNode(self, id, refId, self._instanceId)
-      }
-      return node
-    }
+    const getRef = (id) => this._resolveRef(id, target)
 
     // Define derived state getters with isolation controllers
     this._getterAbortControllers = {}
@@ -942,23 +928,12 @@ export class CoraliteElement extends BaseElement {
 
   /**
    * Configures the W3C Context Protocol provider listener on the element instance.
-   * @param {Object.<string|symbol, Function|any>} provides - Context keys and providers.
+   * @param {Map<any, any> | Object.<string|symbol, Function|any>} provides - Context keys and providers.
    * @protected
    */
   _setupContextProvider (provides) {
     if (!provides || typeof provides !== 'object') {
       return
-    }
-
-    const getProvideVal = (p, k) => (p instanceof Map ? p.get(k) : p[k])
-    const hasProvideKey = (p, k) => {
-      if (p instanceof Map) {
-        return p.has(k)
-      }
-      if (typeof k === 'symbol') {
-        return k in p || Object.prototype.hasOwnProperty.call(p, k)
-      }
-      return Object.prototype.hasOwnProperty.call(p, k) || k in p
     }
 
     this.addEventListener('context-request', (e) => {
@@ -972,7 +947,7 @@ export class CoraliteElement extends BaseElement {
         return
       }
 
-      if (hasProvideKey(provides, key)) {
+      if (hasContextValue(provides, key)) {
         event.stopImmediatePropagation()
 
         if (typeof callback === 'function') {
@@ -980,7 +955,7 @@ export class CoraliteElement extends BaseElement {
             if (!this._state && this.componentOptions) {
               this._setupState()
             }
-            const valOrFn = getProvideVal(provides, key)
+            const valOrFn = getContextValue(provides, key)
             if (typeof valOrFn !== 'function') {
               return {
                 value: valOrFn,
@@ -996,20 +971,7 @@ export class CoraliteElement extends BaseElement {
               const context = {
                 state: roState,
                 root: this,
-                refs: (id) => {
-                  const refId = this._state ? this._state[`ref_${id}`] : null
-                  if (!refId && typeof refId !== 'string') {
-                    return null
-                  }
-                  if (this.getAttribute && (this.getAttribute('ref') === refId || this.getAttribute('ref') === id)) {
-                    return this
-                  }
-                  let node = this.querySelector ? this.querySelector(`[ref="${refId}"]`) : null
-                  if (!node && typeof findOwnedRefNode === 'function') {
-                    node = findOwnedRefNode(this, id, refId, this._instanceId)
-                  }
-                  return node
-                },
+                refs: (id) => this._resolveRef(id),
                 slots: createClientSlotsHelper(this),
                 signal: this._abortController?.signal || new AbortController().signal
               }
@@ -1039,7 +1001,7 @@ export class CoraliteElement extends BaseElement {
               callbackRef,
               getValueWithDeps,
               deps: initial.deps,
-              isFunction: typeof getProvideVal(provides, key) === 'function'
+              isFunction: typeof getContextValue(provides, key) === 'function'
             }
             subs.add(subRecord)
             unsubscribe = () => {
@@ -1151,6 +1113,33 @@ export class CoraliteElement extends BaseElement {
   }
 
   /**
+   * Resolves a ref identifier to its target element, checking the host
+   * attribute, the scoped DOM query, and owned ref nodes as fallbacks.
+   *
+   * @param {string} id - The ref identifier.
+   * @param {Object} [fallbackTarget=null] - State target consulted before the
+   * reactive state proxy is initialized.
+   * @returns {HTMLElement|null} The resolved element or null.
+   * @protected
+   */
+  _resolveRef (id, fallbackTarget = null) {
+    const stateTarget = this._state || fallbackTarget
+    const refId = stateTarget ? stateTarget[`ref_${id}`] : null
+    if (!refId && typeof refId !== 'string') {
+      return null
+    }
+    if (this.getAttribute && (this.getAttribute('ref') === refId || this.getAttribute('ref') === id)) {
+      return this
+    }
+    /** @type {any} */
+    let node = this.querySelector ? this.querySelector(`[ref="${refId}"]`) : null
+    if (!node && typeof findOwnedRefNode === 'function') {
+      node = findOwnedRefNode(this, id, refId, this._instanceId)
+    }
+    return node
+  }
+
+  /**
    * Wraps the state target in a reactive Proxy.
    * Intercepts property setters to automatically batch and schedule DOM updates.
    * @param {Object} target - The state dictionary.
@@ -1164,20 +1153,7 @@ export class CoraliteElement extends BaseElement {
       return target
     }
 
-    const resolveRef = getRef || ((id) => {
-      const refId = self._state ? self._state[`ref_${id}`] : target[`ref_${id}`]
-      if (!refId && typeof refId !== 'string') {
-        return null
-      }
-      if (self.getAttribute && (self.getAttribute('ref') === refId || self.getAttribute('ref') === id)) {
-        return self
-      }
-      let node = self.querySelector ? self.querySelector(`[ref="${refId}"]`) : null
-      if (!node && typeof findOwnedRefNode === 'function') {
-        node = findOwnedRefNode(self, id, refId, self._instanceId)
-      }
-      return node
-    })
+    const resolveRef = getRef || ((id) => self._resolveRef(id, target))
 
     const errorsTarget = target.errors || {}
     const errorProxiesMap = new WeakMap()
@@ -1205,7 +1181,7 @@ export class CoraliteElement extends BaseElement {
 
           if (self._collectingDependencies) {
             self._collectingDependencies.add('errors')
-            const camelTop = currentTopKey.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const camelTop = kebabToCamel(currentTopKey)
             const kebabTop = camelToKebab(camelTop)
             self._collectingDependencies.add('error_' + camelTop)
             self._collectingDependencies.add('error_' + kebabTop)
@@ -1228,7 +1204,7 @@ export class CoraliteElement extends BaseElement {
           }
 
           const currentTopKey = topKey || p
-          const camelTop = currentTopKey.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+          const camelTop = kebabToCamel(currentTopKey)
           const kebabTop = camelToKebab(camelTop)
 
           t[p] = v
@@ -1264,7 +1240,7 @@ export class CoraliteElement extends BaseElement {
           const deleted = Reflect.deleteProperty(t, p)
           if (deleted) {
             const currentTopKey = topKey || p
-            const camelTop = currentTopKey.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const camelTop = kebabToCamel(currentTopKey)
             const kebabTop = camelToKebab(camelTop)
 
             const rootVal = errorsTarget[currentTopKey]
@@ -1415,7 +1391,7 @@ export class CoraliteElement extends BaseElement {
 
           for (const key of existingKeys) {
             delete errorsTarget[key]
-            const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const camelName = kebabToCamel(key)
             const kebabName = camelToKebab(camelName)
             target['error_' + camelName] = ''
             target['error_' + kebabName] = ''
@@ -1425,7 +1401,7 @@ export class CoraliteElement extends BaseElement {
             for (const key of Object.keys(v)) {
               const val = v[key]
               errorsTarget[key] = val
-              const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+              const camelName = kebabToCamel(key)
               const kebabName = camelToKebab(camelName)
               target['error_' + camelName] = val
               target['error_' + kebabName] = val
@@ -1434,7 +1410,7 @@ export class CoraliteElement extends BaseElement {
 
           self._markObserverDirty('errors')
           for (const key of affectedKeys) {
-            const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const camelName = kebabToCamel(key)
             const kebabName = camelToKebab(camelName)
             self._markObserverDirty(key)
             self._markObserverDirty('error_' + camelName)
@@ -1445,7 +1421,7 @@ export class CoraliteElement extends BaseElement {
         }
 
         if (typeof p === 'string' && options.attributes) {
-          const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+          const camelName = kebabToCamel(p)
           const kebabName = camelToKebab(camelName)
           const schema = options.attributes[camelName] || options.attributes[p]
           if (schema) {
@@ -1522,7 +1498,7 @@ export class CoraliteElement extends BaseElement {
         t[p] = v
 
         if (typeof p === 'string' && options.attributes && !self._isReflectingFromAttribute) {
-          const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+          const camelName = kebabToCamel(p)
           const kebabName = camelToKebab(camelName)
           const schema = options.attributes[camelName] || options.attributes[p]
 
@@ -1573,7 +1549,7 @@ export class CoraliteElement extends BaseElement {
           if (!p.includes('-') && p === p.toLowerCase()) {
             self._markObserverDirty(p)
           } else {
-            const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+            const camelName = kebabToCamel(p)
             const kebabName = camelToKebab(camelName)
 
             self._markObserverDirty(camelName)
@@ -1593,7 +1569,7 @@ export class CoraliteElement extends BaseElement {
         if (typeof p !== 'string') {
           return Reflect.deleteProperty(t, p)
         }
-        const camelName = p.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+        const camelName = kebabToCamel(p)
         const kebabName = camelToKebab(camelName)
 
         const oldValue = t[p] ?? t[camelName] ?? t[kebabName]
@@ -2513,20 +2489,7 @@ export class CoraliteElement extends BaseElement {
       root: this,
       slots: createClientSlotsHelper(this),
       signal: this._abortController?.signal,
-      refs: (id) => {
-        const refId = this._state[`ref_${id}`]
-        if (!refId && typeof refId !== 'string') {
-          return null
-        }
-        if (this.getAttribute('ref') === refId || this.getAttribute('ref') === id) {
-          return this
-        }
-        let node = this.querySelector(`[ref="${refId}"]`)
-        if (!node) {
-          node = findOwnedRefNode(this, id, refId, this._instanceId)
-        }
-        return node
-      }
+      refs: (id) => this._resolveRef(id)
     }
 
     const slotContextObj = {

@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, hasContextEntries, normalizeConsumerItems, applyConsumedState } from './utils/core.js'
+import { createReadOnlyProxy, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel } from './utils/core.js'
 import { processTokenValue } from './parser.js'
 import { CoraliteError, handleError } from './utils/errors.js'
 import {
@@ -277,16 +277,9 @@ export function createComponentDefinition ({ app }) {
         let resolvedVal = item.default
         for (let i = contextFrames.length - 1; i >= 0; i--) {
           const frame = contextFrames[i]
-          if (frame) {
-            if (frame instanceof Map) {
-              if (frame.has(key)) {
-                resolvedVal = frame.get(key)
-                break
-              }
-            } else if (Object.prototype.hasOwnProperty.call(frame, key) || (typeof key === 'symbol' && key in frame)) {
-              resolvedVal = frame[key]
-              break
-            }
+          if (frame && hasContextValue(frame, key)) {
+            resolvedVal = getContextValue(frame, key)
+            break
           }
         }
 
@@ -295,7 +288,7 @@ export function createComponentDefinition ({ app }) {
     }
 
     for (const key of Object.keys(normalizedAttributes)) {
-      const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const camelName = kebabToCamel(key)
       const kebabName = camelToKebab(camelName)
       state['error_' + camelName] = ''
       state['error_' + kebabName] = ''
@@ -313,7 +306,7 @@ export function createComponentDefinition ({ app }) {
     }
 
     for (const [key, schema] of Object.entries(normalizedAttributes)) {
-      const camelName = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+      const camelName = kebabToCamel(key)
       const kebabName = camelToKebab(camelName)
       const inputVal = state[camelName] !== undefined ? state[camelName] : state[kebabName]
       const res = validateAttributeValue(inputVal, schema, camelName, module.id, {

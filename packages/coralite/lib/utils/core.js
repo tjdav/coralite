@@ -988,6 +988,34 @@ export function hasContextEntries (p) {
 }
 
 /**
+ * Reads a value from a context source (Map or plain object) by strict key identity.
+ *
+ * @param {any} source - Context source: Map instance or plain object.
+ * @param {any} key - Context key token (string, symbol, or object).
+ * @returns {any} The resolved value or undefined when the key is absent.
+ */
+export function getContextValue (source, key) {
+  return isContextMap(source) ? source.get(key) : source[key]
+}
+
+/**
+ * Checks whether a context source (Map or plain object) provides a key under strict identity.
+ *
+ * @param {any} source - Context source: Map instance or plain object.
+ * @param {any} key - Context key token (string, symbol, or object).
+ * @returns {boolean} True if the source provides the key.
+ */
+export function hasContextValue (source, key) {
+  if (isContextMap(source)) {
+    return source.has(key)
+  }
+  if (typeof key === 'symbol') {
+    return key in source || Object.prototype.hasOwnProperty.call(source, key)
+  }
+  return Object.prototype.hasOwnProperty.call(source, key) || key in source
+}
+
+/**
  * Normalizes a consume declaration into an array of consumer descriptor items.
  * Strictly differentiates { context, default? } config objects from object tokens.
  *

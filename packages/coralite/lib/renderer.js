@@ -14,7 +14,8 @@ import {
   parseInlineStyle,
   formatInlineStyle,
   createReadOnlyProxy,
-  isContextMap
+  isContextMap,
+  kebabToCamel
 } from './utils/core.js'
 import {
   replaceToken,
@@ -104,7 +105,7 @@ export function filterReservedAttributes (attribs, declaredAttributes = {}) {
   const result = {}
   for (const [key, value] of Object.entries(attribs)) {
     const lowerKey = key.toLowerCase()
-    const camelKey = key.replace(/-([a-z])/g, (g) => g[1].toUpperCase())
+    const camelKey = kebabToCamel(key)
     const isDeclared = Boolean(declaredAttributes && (declaredAttributes[camelKey] || declaredAttributes[key] || declaredAttributes[lowerKey]))
     if (!RESERVED_DOM_ATTRIBUTES.has(lowerKey) || isDeclared) {
       result[key] = value
