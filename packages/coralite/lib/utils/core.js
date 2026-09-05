@@ -2,9 +2,10 @@ import { CoraliteError } from './errors.js'
 
 /**
  * @import {
- * CoraliteModule,
- * CoraliteComponent,
- * CoraliteComponentResult,
+ *   CoraliteModule,
+ *   CoraliteComponent,
+ *   CoraliteComponentResult,
+ *   CoraliteComponentOptions
  * } from '../../types/index.js'
  */
 
@@ -894,10 +895,12 @@ export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = 
 }
 
 /**
- * Defines a Coralite component.
+ * Defines a Coralite component with full IDE autocomplete and type inference.
  * On the client, this acts as an identity function for type safety and HRM.
- * @param {Object} options - Component options
- * @returns {Object} The component options
+ *
+ * @template {Record<string, any>} [TState=Record<string, any>]
+ * @param {CoraliteComponentOptions<TState>} options - Component options
+ * @returns {CoraliteComponentOptions<TState>} The component options
  */
 export function defineComponent (options) {
   return options

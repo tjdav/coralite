@@ -38,26 +38,7 @@ export {
  *  CoraliteClientPluginAfterComponentRenderCallback,
  *  CoraliteClientPluginBeforeComponentRenderCallback
  * } from '../types/plugin.js'
- */
-
-/**
- * Helper for querying slotted content.
- * @typedef {Object} CoraliteSlotsHelper
- * @property {function(string=): boolean} has - Checks if content was provided for a slot.
- * @property {function(string=): Node[]} get - Returns array of projected nodes for a slot.
- * @property {function(string=): number} count - Returns number of projected nodes for a slot.
- * @property {string[]} names - List of declared slot names.
- * @property {Node[]} default - Projected nodes in the default slot.
- */
-
-/**
- * Context payload provided as the single argument to derived state getters.
- * @typedef {Object} CoraliteGetterContext
- * @property {Object} state - Read-only reactive state proxy.
- * @property {HTMLElement} root - The host custom element instance.
- * @property {function(string): HTMLElement|null} refs - Resolves an element marked with a ref identifier.
- * @property {CoraliteSlotsHelper} slots - Helper for querying slotted content.
- * @property {AbortSignal} signal - AbortSignal to detect stale async operations.
+ * @import { CoraliteSlotsHelper, CoraliteGetterContext } from '../types/index.js'
  */
 
 /**

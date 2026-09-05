@@ -631,6 +631,9 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     if (extractedClient) {
       scriptObj.content = extractedClient.content
       scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
+      scriptObj.provideSource = extractedClient.provideSource
+      scriptObj.consumeSource = extractedClient.consumeSource
+      scriptObj.importStatements = extractedClient.importStatements
       extractedComponents = extractedClient.components || []
     }
 
