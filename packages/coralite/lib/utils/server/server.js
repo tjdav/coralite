@@ -150,6 +150,18 @@ function extractFromHTMLString (html, components) {
 export function findAndExtractScript (code) {
   const ast = getAST(code, true)
 
+  const importStatements = []
+  if (ast && Array.isArray(ast.body)) {
+    for (const node of ast.body) {
+      if (node.type === 'ImportDeclaration') {
+        const sourceVal = typeof node.source?.value === 'string' ? node.source.value : ''
+        if (sourceVal && !sourceVal.startsWith('node:') && sourceVal !== 'fs' && sourceVal !== 'path') {
+          importStatements.push(code.slice(node.start, node.end))
+        }
+      }
+    }
+  }
+
   /** @type {ScriptContent | null} */
   let result = null
   const components = new Set()
@@ -229,6 +241,18 @@ export function findAndExtractScript (code) {
               prop.key && prop.key.type === 'Identifier' &&
               prop.key.name === 'client'
           )
+          const provideProp = firstArg.properties.find(
+            prop => prop.type === 'Property' &&
+              prop.key && prop.key.type === 'Identifier' &&
+              prop.key.name === 'provide'
+          )
+          const consumeProp = firstArg.properties.find(
+            prop => prop.type === 'Property' &&
+              prop.key && prop.key.type === 'Identifier' &&
+              prop.key.name === 'consume'
+          )
+          const provideSource = (provideProp && provideProp.type === 'Property') ? code.slice(provideProp.value.start, provideProp.value.end) : null
+          const consumeSource = (consumeProp && consumeProp.type === 'Property') ? code.slice(consumeProp.value.start, consumeProp.value.end) : null
 
           if (scriptProp && scriptProp.type === 'Property') {
             const { value, method } = scriptProp
@@ -377,7 +401,18 @@ export function findAndExtractScript (code) {
 
             result = {
               content,
-              lineOffset: startLine
+              lineOffset: startLine,
+              provideSource,
+              consumeSource,
+              importStatements
+            }
+          } else if (provideProp || consumeProp) {
+            result = {
+              content: null,
+              lineOffset: 0,
+              provideSource,
+              consumeSource,
+              importStatements
             }
           }
         }

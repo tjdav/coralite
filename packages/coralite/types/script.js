@@ -19,6 +19,9 @@
  * @property {Object} [getters] - Isomorphic getters.
  * @property {Object.<string, ((state: any) => string | number | null | undefined | false) | string | number>} [style] - Reactive style definitions and CSS custom properties.
  * @property {Object} [server] - Hydrated server data.
+ * @property {string | null} [provideSource] - Provide definition source code.
+ * @property {string | null} [consumeSource] - Consume definition source code.
+ * @property {string[]} [importStatements] - Module import statements.
  */
 
 /**

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>W3C Context Protocol Modern Features Test</title>
+</head>
+<body>
+  <div id="container-map-a">
+    <context-map-provider id="map-provider-a" theme="dark" username="Alice">
+      <context-map-consumer id="map-child-1"></context-map-consumer>
+      <vanilla-context-consumer id="vanilla-consumer"></vanilla-context-consumer>
+    </context-map-provider>
+  </div>
+
+  <div id="container-map-b">
+    <context-map-provider id="map-provider-b" theme="light" username="Charlie">
+      <context-map-consumer id="map-child-2"></context-map-consumer>
+    </context-map-provider>
+  </div>
+
+  <div id="container-map-standalone">
+    <context-map-consumer id="map-child-standalone"></context-map-consumer>
+  </div>
+
+  <button id="btn-reparent-map">Reparent Map Child 1</button>
+
+  <script type="module">
+    class VanillaContextConsumer extends HTMLElement {
+      async connectedCallback () {
+        await customElements.whenDefined('context-map-provider')
+        const themeSymbolToken = Symbol.for('coralite.test.theme')
+        const event = window.ContextRequestEvent
+          ? new window.ContextRequestEvent(themeSymbolToken, (val) => {
+              this.textContent = val
+            }, true)
+          : new CustomEvent('context-request', {
+              bubbles: true,
+              composed: true,
+              detail: {
+                context: themeSymbolToken,
+                callback: (val) => {
+                  this.textContent = val
+                },
+                subscribe: true
+              }
+            })
+        this.dispatchEvent(event)
+      }
+    }
+    if (!customElements.get('vanilla-context-consumer')) {
+      customElements.define('vanilla-context-consumer', VanillaContextConsumer)
+    }
+
+    document.getElementById('btn-reparent-map')?.addEventListener('click', () => {
+      const providerB = document.getElementById('map-provider-b')
+      const child1 = document.getElementById('map-child-1')
+      if (providerB && child1) {
+        providerB.appendChild(child1)
+      }
+    })
+  </script>
+</body>
+</html>

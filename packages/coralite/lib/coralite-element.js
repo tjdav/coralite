@@ -969,9 +969,17 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
-    const getProvideVal = (p, k) => (p instanceof Map ? p.get(k) : p[k])
+    const isMap = (v) => Boolean(v && (v instanceof Map || Object.prototype.toString.call(v) === '[object Map]' || (typeof v.get === 'function' && typeof v.has === 'function')))
+
+    const getProvideVal = (p, k) => {
+      if (isMap(p)) {
+        return p.get(k)
+      }
+      return p[k]
+    }
+
     const hasProvideKey = (p, k) => {
-      if (p instanceof Map) {
+      if (isMap(p)) {
         return p.has(k)
       }
       if (typeof k === 'symbol') {

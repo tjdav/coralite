@@ -299,7 +299,8 @@ export function createComponentDefinition ({ app }) {
         for (let i = contextFrames.length - 1; i >= 0; i--) {
           const frame = contextFrames[i]
           if (frame) {
-            if (frame instanceof Map) {
+            const isMap = Boolean(frame && (frame instanceof Map || Object.prototype.toString.call(frame) === '[object Map]' || (typeof frame.get === 'function' && typeof frame.has === 'function')))
+            if (isMap) {
               if (frame.has(key)) {
                 resolvedVal = frame.get(key)
                 break
@@ -664,6 +665,9 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     if (extractedClient) {
       scriptObj.content = extractedClient.content
       scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
+      scriptObj.provideSource = extractedClient.provideSource
+      scriptObj.consumeSource = extractedClient.consumeSource
+      scriptObj.importStatements = extractedClient.importStatements
       extractedComponents = extractedClient.components || []
     }
 

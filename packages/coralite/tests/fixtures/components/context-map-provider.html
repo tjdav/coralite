@@ -1,0 +1,47 @@
+<template id="context-map-provider">
+  <div class="map-provider-box">
+    <button id="btn-toggle-map-theme" ref="btnToggleMapTheme">Toggle Map Theme</button>
+    <button id="btn-change-user" ref="btnChangeUser">Change User</button>
+    <slot></slot>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent, ContextRequestEvent, createContext } from 'coralite'
+  import { themeSymbolToken, userObjectToken, settingStringToken } from './context-tokens.js'
+
+  export default defineComponent({
+    attributes: {
+      theme: { type: String, default: 'dark' },
+      username: { type: String, default: 'Alice' }
+    },
+    provide: new Map([
+      [themeSymbolToken, ({ state }) => state.theme],
+      [userObjectToken, ({ state }) => ({ name: state.username })],
+      [settingStringToken, 'active-setting']
+    ]),
+    client ({ state, refs, root }) {
+      refs('btnToggleMapTheme')?.addEventListener('click', () => {
+        state.theme = state.theme === 'dark' ? 'light' : 'dark'
+      })
+      refs('btnChangeUser')?.addEventListener('click', () => {
+        state.username = state.username === 'Alice' ? 'Bob' : 'Alice'
+      })
+      window.__context_test_tokens__ = {
+        themeSymbolToken,
+        userObjectToken,
+        settingStringToken
+      }
+      window.ContextRequestEvent = ContextRequestEvent
+      window.createContext = createContext
+      root.setAttribute('data-client-ready', 'true')
+    }
+  })
+</script>
+
+<style>
+  .map-provider-box {
+    padding: 10px;
+    border: 2px dashed #0088cc;
+  }
+</style>

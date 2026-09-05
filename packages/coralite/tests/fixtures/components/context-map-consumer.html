@@ -1,0 +1,42 @@
+<template id="context-map-consumer">
+  <div class="map-consumer-box">
+    <span class="map-theme-value">{{ themeDisplay }}</span>
+    <span class="map-user-value">{{ userDisplay }}</span>
+    <span class="map-setting-value">{{ settingDisplay }}</span>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+  import { themeSymbolToken, userObjectToken, settingStringToken } from './context-tokens.js'
+
+  export default defineComponent({
+    consume: {
+      activeTheme: themeSymbolToken,
+      currentUser: {
+        context: userObjectToken,
+        default: { name: 'Guest' }
+      },
+      activeSetting: {
+        context: settingStringToken,
+        default: 'fallback-setting'
+      }
+    },
+    getters: {
+      themeDisplay: ({ state }) => state.activeTheme || 'none',
+      userDisplay: ({ state }) => state.currentUser?.name || 'none',
+      settingDisplay: ({ state }) => state.activeSetting || 'none'
+    },
+    client ({ root }) {
+      root.setAttribute('data-client-ready', 'true')
+    }
+  })
+</script>
+
+<style>
+  .map-consumer-box {
+    padding: 6px;
+    margin: 4px;
+    background: #eef8ff;
+  }
+</style>

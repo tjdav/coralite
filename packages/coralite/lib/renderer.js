@@ -390,6 +390,9 @@ export function createRenderer ({
         if (extractedScript) {
           scriptObj.content = extractedScript.content
           scriptObj.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
+          scriptObj.provideSource = extractedScript.provideSource
+          scriptObj.consumeSource = extractedScript.consumeSource
+          scriptObj.importStatements = extractedScript.importStatements
           extractedComponents = extractedScript.components || []
         }
 
@@ -598,6 +601,9 @@ export function createRenderer ({
         if (extractedScript) {
           scriptResult.__script__.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
           scriptResult.__script__.content = extractedScript.content
+          scriptResult.__script__.provideSource = extractedScript.provideSource
+          scriptResult.__script__.consumeSource = extractedScript.consumeSource
+          scriptResult.__script__.importStatements = extractedScript.importStatements
           if (extractedScript.components) {
             extractedComponents = extractedScript.components
           }
@@ -674,6 +680,7 @@ export function createRenderer ({
             components: mergedComponents
           })
         }
+        evaluatedScriptMeta = scriptResult.__script__
         delete scriptResult.__script__
       }
       componentState = Object.assign(componentState, scriptResult)
@@ -697,7 +704,8 @@ export function createRenderer ({
       const newFrame = new Map()
       const roState = createReadOnlyProxy(componentState)
 
-      const entries = provideObj instanceof Map
+      const isMap = (v) => Boolean(v && (v instanceof Map || Object.prototype.toString.call(v) === '[object Map]' || (typeof v.get === 'function' && typeof v.has === 'function' && typeof v.entries === 'function')))
+      const entries = isMap(provideObj)
         ? Array.from(provideObj.entries())
         : [
           ...Object.entries(provideObj),
