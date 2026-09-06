@@ -1218,10 +1218,7 @@ export class CoraliteElement extends BaseElement {
           target['error_' + camelTop] = flatVal
           target['error_' + kebabTop] = flatVal
 
-          self._markObserverDirty('errors')
-          self._markObserverDirty(currentTopKey)
-          self._markObserverDirty('error_' + camelTop)
-          self._markObserverDirty('error_' + kebabTop)
+          self._markKeysDirty('errors', currentTopKey, 'error_' + camelTop, 'error_' + kebabTop)
           self._scheduleUpdate()
           return true
         },
@@ -1252,10 +1249,7 @@ export class CoraliteElement extends BaseElement {
             target['error_' + camelTop] = flatVal
             target['error_' + kebabTop] = flatVal
 
-            self._markObserverDirty('errors')
-            self._markObserverDirty(currentTopKey)
-            self._markObserverDirty('error_' + camelTop)
-            self._markObserverDirty('error_' + kebabTop)
+            self._markKeysDirty('errors', currentTopKey, 'error_' + camelTop, 'error_' + kebabTop)
             self._scheduleUpdate()
           }
           return deleted
@@ -1408,13 +1402,11 @@ export class CoraliteElement extends BaseElement {
             }
           }
 
-          self._markObserverDirty('errors')
+          self._markKeysDirty('errors')
           for (const key of affectedKeys) {
             const camelName = kebabToCamel(key)
             const kebabName = camelToKebab(camelName)
-            self._markObserverDirty(key)
-            self._markObserverDirty('error_' + camelName)
-            self._markObserverDirty('error_' + kebabName)
+            self._markKeysDirty(key, 'error_' + camelName, 'error_' + kebabName)
           }
           self._scheduleUpdate()
           return true
@@ -1446,39 +1438,10 @@ export class CoraliteElement extends BaseElement {
               t['error_' + camelName] = ''
               t['error_' + kebabName] = ''
 
-              if (self._getterAbortControllers?.[camelName]) {
-                self._getterAbortControllers[camelName].abort()
-                delete self._getterAbortControllers[camelName]
-              }
-              if (self._getterAbortControllers?.[kebabName]) {
-                self._getterAbortControllers[kebabName].abort()
-                delete self._getterAbortControllers[kebabName]
-              }
-              if (self._getterAbortControllers?.[p]) {
-                self._getterAbortControllers[p].abort()
-                delete self._getterAbortControllers[p]
-              }
-
-              if (!self._isReflectingFromAttribute && shouldReflectAttribute(schema) && typeof self.removeAttribute === 'function') {
-                self._isReflectingToAttribute = true
-                try {
-                  if (self.hasAttribute(kebabName)) {
-                    self.removeAttribute(kebabName)
-                  }
-                } finally {
-                  self._isReflectingToAttribute = false
-                }
-              }
-
-              if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
-                if (self._slotObservedKeys && !self._slotObservedKeys.has(p)) {
-                  self._slotObservedKeys.add(p)
-                  self._observeStateKey(p, () => self._processSlots())
-                }
-              }
-              self._markObserverDirty(camelName)
-              self._markObserverDirty(kebabName)
-              self._markObserverDirty(p)
+              self._abortGetterControllers(camelName, kebabName, p)
+              self._reflectAttributeChange(camelName, p, schema, { removed: true })
+              self._observeSlotStateKey(p)
+              self._markKeysDirty(camelName, kebabName, p)
               self._scheduleUpdate()
               return true
             }
@@ -1497,64 +1460,15 @@ export class CoraliteElement extends BaseElement {
 
         t[p] = v
 
-        if (typeof p === 'string' && options.attributes && !self._isReflectingFromAttribute) {
-          const camelName = kebabToCamel(p)
-          const kebabName = camelToKebab(camelName)
-          const schema = options.attributes[camelName] || options.attributes[p]
-
-          if (schema && shouldReflectAttribute(schema) && typeof self.setAttribute === 'function') {
-            self._isReflectingToAttribute = true
-            try {
-              const schemaObj = resolveSchema(schema)
-              const targetType = schemaObj.type || (schemaObj.values ? inferTypeFromValues(schemaObj.values) : undefined)
-              const isBoolean = targetType === Boolean || targetType === 'Boolean'
-
-              if (isBoolean) {
-                const isTruthy = Boolean(v) && v !== 'false'
-                if (isTruthy) {
-                  if (!self.hasAttribute(kebabName)) {
-                    self.setAttribute(kebabName, '')
-                  }
-                } else {
-                  if (self.hasAttribute(kebabName)) {
-                    self.removeAttribute(kebabName)
-                  }
-                }
-              } else {
-                if (v === null || v === undefined) {
-                  if (self.hasAttribute(kebabName)) {
-                    self.removeAttribute(kebabName)
-                  }
-                } else {
-                  const strVal = String(v)
-                  if (self.getAttribute(kebabName) !== strVal) {
-                    self.setAttribute(kebabName, strVal)
-                  }
-                }
-              }
-            } finally {
-              self._isReflectingToAttribute = false
-            }
-          }
-        }
-
-        if (typeof p === 'string' && self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
-          if (self._slotObservedKeys && !self._slotObservedKeys.has(p)) {
-            self._slotObservedKeys.add(p)
-            self._observeStateKey(p, () => self._processSlots())
-          }
-        }
-
         if (typeof p === 'string') {
+          const camelName = kebabToCamel(p)
+          self._reflectAttributeChange(camelName, p, options.attributes?.[camelName] || options.attributes?.[p], { value: v })
+          self._observeSlotStateKey(p)
           if (!p.includes('-') && p === p.toLowerCase()) {
-            self._markObserverDirty(p)
+            self._markKeysDirty(p)
           } else {
-            const camelName = kebabToCamel(p)
             const kebabName = camelToKebab(camelName)
-
-            self._markObserverDirty(camelName)
-            self._markObserverDirty(kebabName)
-            self._markObserverDirty(p)
+            self._markKeysDirty(camelName, kebabName, p)
           }
         }
 
@@ -1574,48 +1488,19 @@ export class CoraliteElement extends BaseElement {
 
         const oldValue = t[p] ?? t[camelName] ?? t[kebabName]
 
-        const deleted1 = Reflect.deleteProperty(t, camelName)
-        const deleted2 = Reflect.deleteProperty(t, kebabName)
-        const deleted3 = Reflect.deleteProperty(t, p)
-        const deleted = deleted1 || deleted2 || deleted3
+        let deleted = false
+        for (const key of [camelName, kebabName, p]) {
+          if (Reflect.deleteProperty(t, key)) {
+            deleted = true
+          }
+        }
 
-        if (self._getterAbortControllers?.[camelName]) {
-          self._getterAbortControllers[camelName].abort()
-          delete self._getterAbortControllers[camelName]
-        }
-        if (self._getterAbortControllers?.[kebabName]) {
-          self._getterAbortControllers[kebabName].abort()
-          delete self._getterAbortControllers[kebabName]
-        }
-        if (self._getterAbortControllers?.[p]) {
-          self._getterAbortControllers[p].abort()
-          delete self._getterAbortControllers[p]
-        }
+        self._abortGetterControllers(camelName, kebabName, p)
 
         if (deleted && oldValue !== undefined) {
-          if (options.attributes && !self._isReflectingFromAttribute) {
-            const schema = options.attributes[camelName] || options.attributes[p]
-            if (schema && shouldReflectAttribute(schema) && typeof self.removeAttribute === 'function') {
-              self._isReflectingToAttribute = true
-              try {
-                if (self.hasAttribute(kebabName)) {
-                  self.removeAttribute(kebabName)
-                }
-              } finally {
-                self._isReflectingToAttribute = false
-              }
-            }
-          }
-
-          if (self.componentOptions?.slots && Object.keys(self.componentOptions.slots).length > 0) {
-            if (self._slotObservedKeys && !self._slotObservedKeys.has(p)) {
-              self._slotObservedKeys.add(p)
-              self._observeStateKey(p, () => self._processSlots())
-            }
-          }
-          self._markObserverDirty(camelName)
-          self._markObserverDirty(kebabName)
-          self._markObserverDirty(p)
+          self._reflectAttributeChange(camelName, p, options.attributes?.[camelName] || options.attributes?.[p], { removed: true })
+          self._observeSlotStateKey(p)
+          self._markKeysDirty(camelName, kebabName, p)
 
           self._notifyContextSubscribers(p)
 
@@ -2156,23 +2041,153 @@ export class CoraliteElement extends BaseElement {
   }
 
   /**
-   *
+   * Aborts and cleans up active getter AbortControllers for the specified property names.
+   * @param {...string} names - Property names to abort.
+   * @protected
    */
-  _markObserverDirty (stateKey) {
+  _abortGetterControllers (...names) {
+    if (!this._getterAbortControllers) {
+      return
+    }
+    for (const name of names) {
+      if (this._getterAbortControllers[name]) {
+        this._getterAbortControllers[name].abort()
+        delete this._getterAbortControllers[name]
+      }
+    }
+  }
+
+  /**
+   * Synchronizes a reactive state property change to its corresponding DOM attribute.
+   * @param {string} camelName - Camel-cased property name.
+   * @param {string} [p] - Raw property key.
+   * @param {object|Function|Array|string} [schema] - Property attribute schema.
+   * @param {object} [options] - Options indicating whether the attribute is removed or its new value.
+   * @param {*} [options.value] - The new value to reflect.
+   * @param {boolean} [options.removed=false] - Whether the property/attribute is removed.
+   * @protected
+   */
+  _reflectAttributeChange (camelName, p, schema, { value, removed = false } = {}) {
+    if (this._isReflectingFromAttribute) {
+      return
+    }
+
+    const kebabName = camelToKebab(camelName || (p ? kebabToCamel(p) : ''))
+    const resolvedSchema = schema ||
+      this.componentOptions?.attributes?.[camelName] ||
+      (p ? this.componentOptions?.attributes?.[p] : undefined) ||
+      (kebabName ? this.componentOptions?.attributes?.[kebabName] : undefined)
+
+    if (!resolvedSchema || !shouldReflectAttribute(resolvedSchema)) {
+      return
+    }
+
+    if (removed) {
+      if (typeof this.removeAttribute === 'function') {
+        this._isReflectingToAttribute = true
+        try {
+          if (this.hasAttribute(kebabName)) {
+            this.removeAttribute(kebabName)
+          }
+        } finally {
+          this._isReflectingToAttribute = false
+        }
+      }
+      return
+    }
+
+    if (typeof this.setAttribute !== 'function') {
+      return
+    }
+
+    this._isReflectingToAttribute = true
+    try {
+      const schemaObj = resolveSchema(resolvedSchema)
+      const targetType = schemaObj.type || (schemaObj.values ? inferTypeFromValues(schemaObj.values) : undefined)
+      const isBoolean = targetType === Boolean || targetType === 'Boolean'
+
+      if (isBoolean) {
+        const isTruthy = Boolean(value) && value !== 'false'
+        if (isTruthy) {
+          if (!this.hasAttribute(kebabName)) {
+            this.setAttribute(kebabName, '')
+          }
+        } else {
+          if (typeof this.removeAttribute === 'function' && this.hasAttribute(kebabName)) {
+            this.removeAttribute(kebabName)
+          }
+        }
+      } else {
+        if (value === null || value === undefined) {
+          if (typeof this.removeAttribute === 'function' && this.hasAttribute(kebabName)) {
+            this.removeAttribute(kebabName)
+          }
+        } else {
+          const strVal = String(value)
+          if (this.getAttribute(kebabName) !== strVal) {
+            this.setAttribute(kebabName, strVal)
+          }
+        }
+      }
+    } finally {
+      this._isReflectingToAttribute = false
+    }
+  }
+
+  /**
+   * Registers dynamic slot re-processing observer for a mutated state property if slotted content exists.
+   * @param {string} prop - State property key.
+   * @protected
+   */
+  _observeSlotStateKey (prop) {
+    if (typeof prop !== 'string') {
+      return
+    }
+
+    if (this.componentOptions?.slots && Object.keys(this.componentOptions.slots).length > 0) {
+      if (this._slotObservedKeys && !this._slotObservedKeys.has(prop)) {
+        this._slotObservedKeys.add(prop)
+        this._observeStateKey(prop, () => this._processSlots())
+      }
+    }
+  }
+
+  /**
+   * Marks observers dirty for multiple state keys and schedules an update if needed.
+   * @param {...string} names - State keys to mark dirty.
+   * @protected
+   */
+  _markKeysDirty (...names) {
     if (!this._subscriberMap) {
       return
     }
 
-    const records = this._subscriberMap.get(stateKey)
-    if (records) {
-      for (const record of records) {
+    let hasDirty = false
+    for (const key of names) {
+      const records = this._subscriberMap.get(key)
+      if (records) {
         if (!this._dirtyObservers) {
           this._dirtyObservers = new Set()
         }
-        this._dirtyObservers.add(record)
+        for (const record of records) {
+          this._dirtyObservers.add(record)
+          hasDirty = true
+        }
       }
+    }
+
+    if (hasDirty) {
       this._scheduleUpdate()
     }
+  }
+
+  /**
+   * Marks observers dirty for a single state key and schedules an update if needed.
+   * @param {string} stateKey - State key to mark dirty.
+   * @protected
+   */
+  _markObserverDirty (stateKey) {
+    this._markKeysDirty(stateKey)
   }
 
   /**
