@@ -9,6 +9,8 @@ import { CoraliteError } from './errors.js'
  * } from '../../types/index.js'
  */
 
+export const NOOP_SIGNAL = new AbortController().signal
+
 const KEBAB_REGEX = /[-|:]([a-z])/g
 
 /**

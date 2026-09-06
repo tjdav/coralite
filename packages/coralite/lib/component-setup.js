@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel } from './utils/core.js'
+import { createReadOnlyProxy, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL } from './utils/core.js'
 import { processTokenValue } from './parser.js'
 import { CoraliteError, handleError } from './utils/errors.js'
 import {
@@ -8,7 +8,6 @@ import {
 } from './utils/types.js'
 import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
 import { formatComponentCss } from './utils/server/style.js'
-import { camelToKebab } from './utils/core.js'
 import { inferTypeFromValues, validateAttributeValue } from './utils/attributes.js'
 import { prepareAllComponentOps } from './utils/server/fragment.js'
 
@@ -217,6 +216,321 @@ export function normalizeAndValidateAttributes (attributes, componentId, filePat
  */
 
 /**
+ * Validates the component style option.
+ *
+ * @param {Object|null|undefined} style - Style configuration object.
+ * @param {Object} module - Component module context.
+ */
+function _validateComponentStyle (style, module) {
+  if (style === undefined || style === null) {
+    return
+  }
+  if (typeof style !== 'object' || Array.isArray(style)) {
+    throw new CoraliteError(`Component "${module.id}" style property must be an object. Received: ${Array.isArray(style) ? 'Array' : typeof style}`, {
+      componentId: module.id,
+      filePath: module.path?.pathname
+    })
+  }
+  for (const [sKey, sVal] of Object.entries(style)) {
+    const valType = typeof sVal
+    if (valType !== 'function' && valType !== 'string' && valType !== 'number') {
+      throw new CoraliteError(`Component "${module.id}" style property "${sKey}" must be a function, string, or number. Received: ${valType}`, {
+        componentId: module.id,
+        filePath: module.path?.pathname
+      })
+    }
+  }
+}
+
+function _resolveContextConsumers (state, consume, contextFrames = []) {
+  if (!consume) {
+    return
+  }
+  const consumerItems = normalizeConsumerItems(consume)
+  for (const item of consumerItems) {
+    const key = item.key
+    let resolvedVal = item.default
+    for (let i = contextFrames.length - 1; i >= 0; i--) {
+      const frame = contextFrames[i]
+      if (frame && hasContextValue(frame, key)) {
+        resolvedVal = getContextValue(frame, key)
+        break
+      }
+    }
+    applyConsumedState(state, item, resolvedVal, false)
+  }
+}
+
+function _validateInitialAttributes (normalizedAttributes, state, app, module) {
+  for (const [key, schema] of Object.entries(normalizedAttributes)) {
+    const camelName = kebabToCamel(key)
+    const kebabName = camelToKebab(camelName)
+    const inputVal = state[camelName] !== undefined ? state[camelName] : state[kebabName]
+    const res = validateAttributeValue(inputVal, schema, camelName, module.id, {
+      filePath: module.path?.pathname,
+      graceful: true
+    })
+    if (res.error) {
+      state.errors[camelName] = res.error
+      state['error_' + camelName] = res.error
+      state['error_' + kebabName] = res.error
+
+      const warnMessage = `Component "${module.id}" attribute "${camelName}" validation failed: ${res.error}`
+      const isSuppressed = app?.options?.suppressValidationWarnings === true || app?.options?.mode === 'production'
+
+      if (app && typeof app.onError === 'function') {
+        app.onError({
+          level: 'WARN',
+          type: 'attribute_validation',
+          message: warnMessage,
+          componentId: module.id
+        })
+      } else if (!isSuppressed) {
+        handleError({
+          onErrorCallback: undefined,
+          data: {
+            level: 'WARN',
+            type: 'attribute_validation',
+            message: warnMessage,
+            componentId: module.id
+          }
+        })
+      }
+    }
+    if (res.value !== undefined) {
+      state[camelName] = res.value
+    } else if (res.error) {
+      state[camelName] = inputVal
+    } else {
+      delete state[camelName]
+    }
+  }
+}
+
+async function _executeServerFunction (server, state, context, initialState, app, module) {
+  let serverToExecute = server
+  if (app?.options?.mode === 'testing' && app.options.testing?.mocks?.components) {
+    const mock = app.options.testing.mocks.components[module.id]
+    if (mock && typeof mock.server === 'function') {
+      serverToExecute = mock.server
+    }
+  }
+
+  if (typeof serverToExecute !== 'function') {
+    return
+  }
+
+  const serverResult = await serverToExecute({
+    ...context,
+    ...initialState
+  })
+
+  if (serverResult) {
+    if (typeof serverResult !== 'object' || Array.isArray(serverResult)) {
+      throw new CoraliteError(`Component "${module.id}" server() function must return an object. Received: ${Array.isArray(serverResult) ? 'Array' : typeof serverResult}`, {
+        componentId: module.id,
+        filePath: module.path?.pathname
+      })
+    }
+
+    state.__script__.server = serverResult
+    Object.assign(state, serverResult)
+    if (state.__script__.defaultValues) {
+      Object.assign(state.__script__.defaultValues, serverResult)
+    }
+  }
+}
+
+async function _executeServerGetters (getters, state, root) {
+  if (!getters) {
+    return
+  }
+  const roState = createReadOnlyProxy(state)
+  const serverSlots = createServerSlotsHelper(root)
+  for (const [key, getter] of Object.entries(getters)) {
+    const serverContext = {
+      state: roState,
+      root: root || null,
+      refs: () => null,
+      slots: serverSlots,
+      signal: NOOP_SIGNAL
+    }
+    const result = getter(serverContext)
+    state[key] = (result && typeof result.then === 'function') ? await result : result
+    if (state.__script__ && state.__script__.state) {
+      state.__script__.state[key] = state[key]
+    }
+  }
+}
+
+async function _processServerSlots (slots, state, root, context, app, module) {
+  if (!slots) {
+    return
+  }
+  for (const name in slots) {
+    if (Object.prototype.hasOwnProperty.call(slots, name)) {
+      const computedSlot = slots[name]
+      const methodKey = `slots_method_${name}`
+      state.__script__.defaultValues[methodKey] = computedSlot
+      const slotContent = []
+      const elementSlots = []
+
+      if (root && 'slots' in root && Array.isArray(root.slots)) {
+        for (let j = 0; j < root.slots.length; j++) {
+          const slot = root.slots[j]
+
+          if (slot.name === name) {
+            slotContent.push(slot.node)
+          } else {
+            elementSlots.push(slot)
+          }
+        }
+      }
+
+      const slotContext = new Proxy({
+        state,
+        root: null,
+        refs: () => null,
+        slots: createServerSlotsHelper(root),
+        observe: () => () => {
+        },
+        emit: () => false,
+        signal: NOOP_SIGNAL,
+        // @ts-ignore
+        instanceId: context.instanceId || module.id,
+        ...context
+      }, {
+        get (target, prop, receiver) {
+          if (typeof prop === 'symbol') {
+            return Reflect.get(target, prop, receiver)
+          }
+          if (Reflect.has(target, prop)) {
+            return Reflect.get(target, prop, receiver)
+          }
+          if (state && prop in state) {
+            return state[prop]
+          }
+          return Reflect.get(target, prop, receiver)
+        },
+        has (target, prop) {
+          return Reflect.has(target, prop) || Boolean(state && prop in state)
+        },
+        ownKeys (target) {
+          const contextKeys = Reflect.ownKeys(target)
+          const stateKeys = state ? Object.keys(state) : []
+          return Array.from(new Set([...contextKeys, ...stateKeys]))
+        },
+        getOwnPropertyDescriptor (target, prop) {
+          if (Reflect.has(target, prop)) {
+            return Reflect.getOwnPropertyDescriptor(target, prop)
+          }
+          if (typeof prop === 'string' && state && prop in state) {
+            return {
+              enumerable: true,
+              configurable: true,
+              value: state[prop]
+            }
+          }
+          return undefined
+        }
+      })
+
+      let result
+      try {
+        result = computedSlot(slotContent, slotContext)
+        result = result && typeof result.then === 'function' ? await result : result
+      } catch {
+        // Gracefully catch browser-only API access or SSR errors, falling back to original slot content
+        result = slotContent
+      }
+
+      if (result === undefined) {
+        result = slotContent
+      }
+
+      if (result === null || result === '' || (Array.isArray(result) && result.length === 0)) {
+        if (root && 'slots' in root && Array.isArray(root.slots)) {
+          root.slots = root.slots.filter(s => s.name !== name)
+        }
+
+        continue
+      }
+
+      if (typeof result === 'string') {
+        const processedResult = await processTokenValue(result, {
+          ...context,
+          state,
+          createComponentElement: app.createComponentElement,
+          noHydration: context.noHydration
+        })
+        if (Array.isArray(processedResult)) {
+          for (let j = 0; j < processedResult.length; j++) {
+            elementSlots.push({
+              name,
+              node: processedResult[j]
+            })
+          }
+        } else {
+          elementSlots.push({
+            name,
+            node: {
+              type: 'text',
+              data: processedResult
+            }
+          })
+        }
+      } else if (Array.isArray(result)) {
+        for (let index = 0; index < result.length; index++) {
+          const node = result[index]
+          if (isCoraliteElement(node) || isCoraliteTextNode(node) || isCoraliteComment(node)) {
+            elementSlots.push({
+              name,
+              node
+            })
+          } else {
+            throw new CoraliteError(`Unexpected slot value in "${module.path.pathname}"`, {
+              componentId: module.id,
+              filePath: module.path.pathname
+            })
+          }
+        }
+      }
+
+      if (root && 'slots' in root && Array.isArray(root.slots)) {
+        root.slots = elementSlots
+      }
+    }
+  }
+}
+
+function _finalizeScriptState (state, options, module) {
+  const { attributes, server, getters, slots, client, style, provide, consume } = options
+  const hasClient = typeof client === 'function'
+  const hasSlots = slots && Object.keys(slots).length > 0
+  const hasGetters = getters && Object.keys(getters).length > 0
+  const hasAttributes = attributes && Object.keys(attributes).length > 0
+  const hasServer = typeof server === 'function'
+  const hasStyles = module.styles && module.styles.length > 0
+  const hasComponentStyle = style && Object.keys(style).length > 0
+  const hasProvide = hasContextEntries(provide)
+  const hasConsume = Boolean(consume)
+
+  if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume) {
+    const args = {}
+    for (const key in state) {
+      if (!Object.hasOwn(state, key) || key === '__script__') {
+        continue
+      }
+
+      args[key] = state[key]
+    }
+    Object.assign(state.__script__.state, args)
+  } else {
+    delete state.__script__
+  }
+}
+
+/**
  * Factory to create the component definition function.
  *
  * @param {Object} dependencies - The dependencies required to create the component definition.
@@ -231,13 +545,12 @@ export function createComponentDefinition ({ app }) {
    * @returns {Promise<Object>}
    */
   return async (options, context) => {
-    const { attributes, server, getters, slots, client, style, provide, consume } = options
+    const { attributes, server, getters, slots, style, provide, consume } = options
     const { state: initialState, module, root } = context
 
     const normalizedAttributes = normalizeAndValidateAttributes(attributes, module.id, module.path?.pathname)
 
     const state = Object.assign({}, initialState)
-    const serializableAttributes = normalizedAttributes
 
     const scriptDefaultValues = {}
     for (const [key, schema] of Object.entries(normalizedAttributes)) {
@@ -246,46 +559,11 @@ export function createComponentDefinition ({ app }) {
       }
     }
 
-    if (style !== undefined && style !== null) {
-      if (typeof style !== 'object' || Array.isArray(style)) {
-        throw new CoraliteError(`Component "${module.id}" style property must be an object. Received: ${Array.isArray(style) ? 'Array' : typeof style}`, {
-          componentId: module.id,
-          filePath: module.path?.pathname
-        })
-      }
-      for (const [sKey, sVal] of Object.entries(style)) {
-        const valType = typeof sVal
-        if (valType !== 'function' && valType !== 'string' && valType !== 'number') {
-          throw new CoraliteError(`Component "${module.id}" style property "${sKey}" must be a function, string, or number. Received: ${valType}`, {
-            componentId: module.id,
-            filePath: module.path?.pathname
-          })
-        }
-      }
-    }
+    _validateComponentStyle(style, module)
 
     state.errors = state.errors || {}
 
-    // Resolve SSR consumed context values from threaded contextFrames
-    if (consume) {
-      const contextFrames = context.contextFrames || []
-      const consumerItems = normalizeConsumerItems(consume)
-
-      for (const item of consumerItems) {
-        const key = item.key
-
-        let resolvedVal = item.default
-        for (let i = contextFrames.length - 1; i >= 0; i--) {
-          const frame = contextFrames[i]
-          if (frame && hasContextValue(frame, key)) {
-            resolvedVal = getContextValue(frame, key)
-            break
-          }
-        }
-
-        applyConsumedState(state, item, resolvedVal, false)
-      }
-    }
+    _resolveContextConsumers(state, consume, context.contextFrames)
 
     for (const key of Object.keys(normalizedAttributes)) {
       const camelName = kebabToCamel(key)
@@ -295,7 +573,7 @@ export function createComponentDefinition ({ app }) {
     }
 
     state.__script__ = {
-      attributes: serializableAttributes,
+      attributes: normalizedAttributes,
       getters: getters || {},
       state: {},
       defaultValues: scriptDefaultValues,
@@ -305,261 +583,12 @@ export function createComponentDefinition ({ app }) {
       consume: consume || null
     }
 
-    for (const [key, schema] of Object.entries(normalizedAttributes)) {
-      const camelName = kebabToCamel(key)
-      const kebabName = camelToKebab(camelName)
-      const inputVal = state[camelName] !== undefined ? state[camelName] : state[kebabName]
-      const res = validateAttributeValue(inputVal, schema, camelName, module.id, {
-        filePath: module.path?.pathname,
-        graceful: true
-      })
-      if (res.error) {
-        state.errors[camelName] = res.error
-        state['error_' + camelName] = res.error
-        state['error_' + kebabName] = res.error
+    _validateInitialAttributes(normalizedAttributes, state, app, module)
+    await _executeServerFunction(server, state, context, initialState, app, module)
+    await _executeServerGetters(getters, state, root)
+    await _processServerSlots(slots, state, root, context, app, module)
 
-        const warnMessage = `Component "${module.id}" attribute "${camelName}" validation failed: ${res.error}`
-        const isSuppressed = app?.options?.suppressValidationWarnings === true || app?.options?.mode === 'production'
-
-        if (app && typeof app.onError === 'function') {
-          app.onError({
-            level: 'WARN',
-            type: 'attribute_validation',
-            message: warnMessage,
-            componentId: module.id
-          })
-        } else if (!isSuppressed) {
-          handleError({
-            onErrorCallback: undefined,
-            data: {
-              level: 'WARN',
-              type: 'attribute_validation',
-              message: warnMessage,
-              componentId: module.id
-            }
-          })
-        }
-      }
-      if (res.value !== undefined) {
-        state[camelName] = res.value
-      } else if (res.error) {
-        state[camelName] = inputVal
-      } else {
-        delete state[camelName]
-      }
-    }
-
-    let serverToExecute = server
-
-    if (app.options.mode === 'testing' && app.options.testing?.mocks?.components) {
-      const mock = app.options.testing.mocks.components[module.id]
-      if (mock && typeof mock.server === 'function') {
-        serverToExecute = mock.server
-      }
-    }
-
-    if (typeof serverToExecute === 'function') {
-      const serverResult = await serverToExecute({
-        ...context,
-        ...initialState
-      })
-
-      if (serverResult) {
-        if (typeof serverResult !== 'object' || Array.isArray(serverResult)) {
-          throw new CoraliteError(`Component "${module.id}" server() function must return an object. Received: ${Array.isArray(serverResult) ? 'Array' : typeof serverResult}`, {
-            componentId: module.id,
-            filePath: module.path?.pathname
-          })
-        }
-
-        state.__script__.server = serverResult
-        Object.assign(state, serverResult)
-        if (state.__script__.defaultValues) {
-          Object.assign(state.__script__.defaultValues, serverResult)
-        }
-      }
-    }
-
-    if (getters) {
-      const roState = createReadOnlyProxy(state)
-      const serverSlots = createServerSlotsHelper(root)
-      for (const [key, getter] of Object.entries(getters)) {
-        const serverContext = {
-          state: roState,
-          root: root || null,
-          refs: () => null,
-          slots: serverSlots,
-          signal: new AbortController().signal
-        }
-        const result = getter(serverContext)
-        state[key] = (result && typeof result.then === 'function') ? await result : result
-        if (state.__script__ && state.__script__.state) {
-          state.__script__.state[key] = state[key]
-        }
-      }
-    }
-
-    if (slots) {
-      for (const name in slots) {
-        if (Object.prototype.hasOwnProperty.call(slots, name)) {
-          const computedSlot = slots[name]
-          const methodKey = `slots_method_${name}`
-          state.__script__.defaultValues[methodKey] = computedSlot
-          const slotContent = []
-          const elementSlots = []
-
-          if (root && 'slots' in root && Array.isArray(root.slots)) {
-            for (let j = 0; j < root.slots.length; j++) {
-              const slot = root.slots[j]
-
-              if (slot.name === name) {
-                slotContent.push(slot.node)
-              } else {
-                elementSlots.push(slot)
-              }
-            }
-          }
-
-          const slotSignal = new AbortController().signal
-          const slotContext = new Proxy({
-            state,
-            root: null,
-            refs: () => null,
-            slots: createServerSlotsHelper(root),
-            observe: () => () => {
-            },
-            emit: () => false,
-            signal: slotSignal,
-            // @ts-ignore
-            instanceId: context.instanceId || module.id,
-            ...context
-          }, {
-            get (target, prop, receiver) {
-              if (typeof prop === 'symbol') {
-                return Reflect.get(target, prop, receiver)
-              }
-              if (Reflect.has(target, prop)) {
-                return Reflect.get(target, prop, receiver)
-              }
-              if (state && prop in state) {
-                return state[prop]
-              }
-              return Reflect.get(target, prop, receiver)
-            },
-            has (target, prop) {
-              return Reflect.has(target, prop) || Boolean(state && prop in state)
-            },
-            ownKeys (target) {
-              const contextKeys = Reflect.ownKeys(target)
-              const stateKeys = state ? Object.keys(state) : []
-              return Array.from(new Set([...contextKeys, ...stateKeys]))
-            },
-            getOwnPropertyDescriptor (target, prop) {
-              if (Reflect.has(target, prop)) {
-                return Reflect.getOwnPropertyDescriptor(target, prop)
-              }
-              if (typeof prop === 'string' && state && prop in state) {
-                return {
-                  enumerable: true,
-                  configurable: true,
-                  value: state[prop]
-                }
-              }
-              return undefined
-            }
-          })
-
-          let result
-          try {
-            result = computedSlot(slotContent, slotContext)
-            result = result && typeof result.then === 'function' ? await result : result
-          } catch {
-            // Gracefully catch browser-only API access or SSR errors, falling back to original slot content
-            result = slotContent
-          }
-
-          if (result === undefined) {
-            result = slotContent
-          }
-
-          if (result === null || result === '' || (Array.isArray(result) && result.length === 0)) {
-            if (root && 'slots' in root && Array.isArray(root.slots)) {
-              root.slots = root.slots.filter(s => s.name !== name)
-            }
-
-            continue
-          }
-
-          if (typeof result === 'string') {
-            const processedResult = await processTokenValue(result, {
-              ...context,
-              state,
-              createComponentElement: app.createComponentElement,
-              noHydration: context.noHydration
-            })
-            if (Array.isArray(processedResult)) {
-              for (let j = 0; j < processedResult.length; j++) {
-                elementSlots.push({
-                  name,
-                  node: processedResult[j]
-                })
-              }
-            } else {
-              elementSlots.push({
-                name,
-                node: {
-                  type: 'text',
-                  data: processedResult
-                }
-              })
-            }
-          } else if (Array.isArray(result)) {
-            for (let index = 0; index < result.length; index++) {
-              const node = result[index]
-              if (isCoraliteElement(node) || isCoraliteTextNode(node) || isCoraliteComment(node)) {
-                elementSlots.push({
-                  name,
-                  node
-                })
-              } else {
-                throw new CoraliteError(`Unexpected slot value in "${module.path.pathname}"`, {
-                  componentId: module.id,
-                  filePath: module.path.pathname
-                })
-              }
-            }
-          }
-
-          if (root && 'slots' in root && Array.isArray(root.slots)) {
-            root.slots = elementSlots
-          }
-        }
-      }
-    }
-
-    const hasClient = typeof client === 'function'
-    const hasSlots = slots && Object.keys(slots).length > 0
-    const hasGetters = getters && Object.keys(getters).length > 0
-    const hasAttributes = attributes && Object.keys(attributes).length > 0
-    const hasServer = typeof server === 'function'
-    const hasStyles = module.styles && module.styles.length > 0
-    const hasComponentStyle = style && Object.keys(style).length > 0
-    const hasProvide = hasContextEntries(provide)
-    const hasConsume = Boolean(consume)
-
-    if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume) {
-      const args = {}
-      for (const key in state) {
-        if (!Object.hasOwn(state, key) || key === '__script__') {
-          continue
-        }
-
-        args[key] = state[key]
-      }
-      Object.assign(state.__script__.state, args)
-    } else {
-      delete state.__script__
-    }
+    _finalizeScriptState(state, options, module)
 
     return state
   }

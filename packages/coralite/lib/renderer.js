@@ -15,7 +15,8 @@ import {
   formatInlineStyle,
   createReadOnlyProxy,
   isContextMap,
-  kebabToCamel
+  kebabToCamel,
+  NOOP_SIGNAL
 } from './utils/core.js'
 import {
   replaceToken,
@@ -721,7 +722,7 @@ export function createRenderer ({
               root: element || root,
               refs: () => null,
               slots: createServerSlotsHelper(element || root),
-              signal: new AbortController().signal
+              signal: NOOP_SIGNAL
             }
             newFrame.set(key, valOrFn(context))
           } catch {
