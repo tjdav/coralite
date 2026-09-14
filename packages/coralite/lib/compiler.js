@@ -4,6 +4,7 @@ import { createContext } from 'node:vm'
 import { transform } from 'esbuild'
 import { createRequire } from 'node:module'
 import { extractGlobals } from './utils/server/server.js'
+import * as serverUtilsBase from './utils/server/index.js'
 import { CoraliteError } from './utils/errors.js'
 import { createContext as createContextUtil, ContextRequestEvent } from './utils/core.js'
 
@@ -50,6 +51,23 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       }
 
       return new SourceTextModule(utilsExports, {
+        context: referencingModule.context,
+        importModuleDynamically
+      })
+    } else if (specifier === 'coralite/utils/server') {
+      const serverUtils = {
+        ...serverUtilsBase,
+        ...(source?.utils || {})
+      }
+      let serverExports = 'const serverUtils = globalThis.__coralite_server_utils__; export default serverUtils;\n'
+
+      for (const key in serverUtils) {
+        if (Object.prototype.hasOwnProperty.call(serverUtils, key) && isValidIdentifier(key)) {
+          serverExports += `export const ${key} = serverUtils["${key}"];\n`
+        }
+      }
+
+      return new SourceTextModule(serverExports, {
         context: referencingModule.context,
         importModuleDynamically
       })
@@ -192,10 +210,16 @@ export async function evaluateDevelopment ({
     ...cachedBoundPlugins
   }
 
+  const serverUtils = {
+    ...serverUtilsBase,
+    ...source.utils
+  }
+
   const contextGlobals = {
     __coralite_context__: symmetricalContext,
     __coralite_plugins__: cachedBoundPlugins,
     __coralite_utils__: source.utils,
+    __coralite_server_utils__: serverUtils,
     __coralite_define_component__: boundDefineComponent,
     __coralite_create_context__: createContextUtil,
     __coralite_context_request_event__: ContextRequestEvent,
@@ -348,11 +372,17 @@ export async function evaluateProduction ({
     ...cachedBoundPlugins
   }
 
+  const serverUtils = {
+    ...serverUtilsBase,
+    ...source.utils
+  }
+
   const customRequire = (id) => {
     const isCoralite = id === 'coralite'
     const isUtils = id === 'coralite/utils'
+    const isServerUtils = id === 'coralite/utils/server'
 
-    if (isCoralite || isUtils) {
+    if (isCoralite || isUtils || isServerUtils) {
       if (isCoralite) {
         const createCoraliteElement = (tag, options) => {
           if (typeof globalThis.createCoraliteElement === 'function') {
@@ -388,6 +418,13 @@ export async function evaluateProduction ({
         return {
           ...source.utils,
           default: source.utils
+        }
+      }
+
+      if (isServerUtils) {
+        return {
+          ...serverUtils,
+          default: serverUtils
         }
       }
     }

@@ -155,7 +155,7 @@ export function findAndExtractScript (code) {
     for (const node of ast.body) {
       if (node.type === 'ImportDeclaration') {
         const sourceVal = typeof node.source?.value === 'string' ? node.source.value : ''
-        if (sourceVal && !sourceVal.startsWith('node:') && sourceVal !== 'fs' && sourceVal !== 'path') {
+        if (sourceVal && !sourceVal.startsWith('node:') && sourceVal !== 'fs' && sourceVal !== 'path' && !sourceVal.startsWith('coralite/utils/server')) {
           importStatements.push(code.slice(node.start, node.end))
         }
       }

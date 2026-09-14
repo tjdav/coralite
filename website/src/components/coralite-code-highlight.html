@@ -13,7 +13,7 @@
 
 <script type="module">
   import { defineComponent } from 'coralite'
-  import { parseHTML } from 'coralite/utils'
+  import { parseHTML } from 'coralite/utils/server'
   import render from 'dom-serializer'
   import code from 'highlight.js'
   import { indent, dedent } from '../utils/format.js'
@@ -35,7 +35,7 @@
 
         for (let j = 0; j < parts.length; j++) {
           const part = parts[j]
-          if (placeholders[part]) {
+          if (part.startsWith('__CORALITE_TAG_') && placeholders[part]) {
             const originalNode = placeholders[part]
             originalNode.parent = node.parent
             result.push(originalNode)
@@ -74,7 +74,7 @@
         }
 
         let fullText = ''
-        const placeholders = {}
+        const placeholders = Object.create(null)
         let placeholderIndex = 0
 
         for (let i = 0; i < content.length; i++) {

@@ -540,7 +540,7 @@ function getPrototypeForType (type) {
  * @returns {any} The enhanced node
  */
 export function enhanceNode (node) {
-  if (!node || node.__coralite_enhanced__) {
+  if (!node || typeof node !== 'object' || node.__coralite_enhanced__) {
     return node
   }
 
@@ -568,7 +568,7 @@ export function relinkChildren (parent) {
 
   for (let i = 0; i < parent.children.length; i++) {
     const child = parent.children[i]
-    if (!child) {
+    if (!child || typeof child !== 'object') {
       continue
     }
 

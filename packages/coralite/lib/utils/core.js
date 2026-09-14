@@ -957,6 +957,8 @@ export function createContext (key) {
   return key !== undefined ? key : Symbol()
 }
 
+const objectToString = Object.prototype.toString
+
 /**
  * Checks whether a value is a Map instance or duck-typed context map across environments.
  *
@@ -967,7 +969,7 @@ export function isContextMap (v) {
   return Boolean(
     v && (
       v instanceof Map ||
-      Object.prototype.toString.call(v) === '[object Map]' ||
+      objectToString.call(v) === '[object Map]' ||
       (typeof v.get === 'function' && typeof v.has === 'function')
     )
   )
