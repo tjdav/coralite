@@ -2876,8 +2876,25 @@ export class CoraliteElement extends BaseElement {
       const slotFn = slots[slotName]
 
       if (slotFn) {
-        if (!slotEl._originalNodes) {
-          slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
+        const isServerComputed = slotEl.hasAttribute('data-coralite-slot-computed')
+        const isFallback = slotEl.hasAttribute('data-coralite-fallback')
+
+        if (!slotEl._slotEvaluated) {
+          if (isServerComputed) {
+            slotEl._slotEvaluated = true
+            if (!slotEl._originalNodes) {
+              if (isFallback) {
+                slotEl._originalNodes = []
+              } else {
+                slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
+              }
+            }
+            return
+          } else {
+            if (!slotEl._originalNodes) {
+              slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
+            }
+          }
         }
 
         if (slotEl._slotEvaluated && this._slotHasInternalObservers?.get(slotName)) {

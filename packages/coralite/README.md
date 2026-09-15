@@ -19,7 +19,7 @@ Coralite stands out by actively fixing the most frustrating pain points of moder
 * **Declarative Reactive Styling (`style`)**
   Define reactive inline styles and CSS Custom Properties (`--*`) directly in component definitions with automatic kebab-case mapping and zero-cost SSR emission.
 * **Reactive Slot Transformations (`slots`)**
-  Intercept and transform slotted children into rich AST structures or reactive DOM projections with built-in fine-grained state observation.
+  Intercept and transform slotted children into rich AST structures or reactive DOM projections with built-in fine-grained state observation and isomorphic input parity.
 * **The "Smart State, Dumb Template" Paradigm**
   Say goodbye to spaghetti code. Templates are strictly declarative—no logic loops, inline expressions, or dot-notation allowed. All UI logic resides in pure, synchronous JavaScript `getters` which map cleanly to native HTML attributes.
 * **O(1) Microtask Reactivity (No Virtual DOM)**
@@ -220,6 +220,15 @@ Coralite components are single-file HTML modules containing a `<template>`, an o
   })
 </script>
 ```
+
+### Computed Slots & Isomorphic DOM Compatibility
+
+Computed slots (`slots: { [name]: (nodes, context) => ... }`) run during both Server-Side Rendering (SSR) and client runtime state updates:
+
+* **First-Class DOM Compatibility on Server**: Coralite equips server-side AST nodes with a full DOM-emulation layer. Properties such as `node.textContent`, `node.nodeType`, `node.childNodes`, `node.getAttribute()`, `node.hasAttribute()`, `node.tagName`, and `node.classList` are fully supported on the server.
+* **Write Standard DOM Code**: Because of this compatibility layer, you do **not** need to branch on server-specific AST properties (like `.data` or `.type`). Writing standard DOM operations like `nodes.map(n => n.textContent).join('')` or checking `node.nodeType === 1` runs 100% isomorphically across both Node.js SSR and the browser.
+* **Hydration Parity**: Server-rendered computed slots are marked with `data-coralite-slot-computed` during SSR. During initial client hydration, Coralite preserves the server-rendered markup without redundant re-evaluation—preventing double transformations on non-idempotent slot functions (e.g. `X!` -> `X!!`) and eliminating Cumulative Layout Shifts (CLS). Pristine inputs are initialized in `slotEl._originalNodes` so subsequent client state mutations re-evaluate against pristine input.
+* **Environment Boundaries**: Slot transformers should avoid browser-only layout APIs (`getBoundingClientRect()`, `offsetWidth`) or DOM event listeners (`addEventListener()`), as these require an active browser rendering engine. Return HTML strings, DOM nodes, or `undefined` (to preserve original slotted content).
 
 ---
 

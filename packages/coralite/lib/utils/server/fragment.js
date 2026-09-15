@@ -1,6 +1,6 @@
 import { transformNode } from '../../parser.js'
 import { createCoraliteTextNode } from './dom.js'
-import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle, hasContextEntries } from '../core.js'
+import { cleanKeys, createReadOnlyProxy, normalizeStyleKey, parseInlineStyle, formatInlineStyle, hasContextEntries, resolveComponentSlots } from '../core.js'
 import { filterReservedAttributes } from '../../renderer.js'
 import { CoraliteError } from '../errors.js'
 import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from '../tags.js'
@@ -83,8 +83,8 @@ export function isLocallyOpsCapable (component, app = null) {
     return false
   }
   const hasDeclaredSlots = Boolean(component.slotElements && Object.keys(component.slotElements).length > 0)
-  const scriptMetaSlots = component.__script__?.slots || component.script?.slots || component.attributes?.slots || {}
-  const hasScriptSlots = Boolean(scriptMetaSlots && Object.keys(scriptMetaSlots).length > 0)
+  const resolvedSlots = resolveComponentSlots(component)
+  const hasScriptSlots = Boolean(resolvedSlots && Object.keys(resolvedSlots).length > 0)
   if (hasDeclaredSlots || hasScriptSlots) {
     return false
   }

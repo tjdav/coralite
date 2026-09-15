@@ -105,11 +105,21 @@
 /** @typedef {CoraliteSlotContextBase & Object.<string, any>} CoraliteSlotContext */
 
 /**
+ * Isomorphic computed slot transformer callback.
+ *
+ * @param {Array<CoraliteAnyNode | Node>} slotNodes - Slotted nodes with isomorphic DOM compatibility (`textContent`, `nodeType`, `childNodes`, `getAttribute()`).
+ *   - **Node.js (SSR)**: Coralite AST nodes enhanced with standard DOM properties and methods.
+ *   - **Browser (Runtime)**: Native DOM `Node` instances.
+ * @param {CoraliteSlotContext} context - Isomorphic slot context object (`{ state, root, refs, slots, signal, instanceId, observe, emit }`).
+ * @param {Object} [legacyState] - @deprecated Destructure `{ state }` from context instead.
+ * @returns {CoraliteAnyNode[] | Node[] | CoraliteAnyNode | Node | string | null | void | Promise<any>}
+ */
+/**
  * @callback CoraliteModuleSlotFunction
- * @param {CoraliteAnyNode[] | any[]} slotNodes - The original slot content nodes.
+ * @param {Array<CoraliteAnyNode | Node>} slotNodes - Slotted nodes with isomorphic DOM compatibility (`textContent`, `nodeType`, `childNodes`, `getAttribute()`).
  * @param {CoraliteSlotContext} context - Component slot context.
- * @param {Object} [legacyState] - @deprecated Accessing state directly via the second argument `(nodes, state)` is deprecated. Destructure `{ state }` from context or use `context.state`.
- * @returns {CoraliteAnyNode[] | CoraliteAnyNode | any[] | any | string | null | void | Promise<any>}
+ * @param {Object} [legacyState] - @deprecated Destructure `{ state }` from context instead.
+ * @returns {CoraliteAnyNode[] | Node[] | CoraliteAnyNode | Node | string | null | void | Promise<any>}
  */
 
 const _moduleExports = {}

@@ -16,6 +16,7 @@ import {
   createReadOnlyProxy,
   isContextMap,
   kebabToCamel,
+  resolveComponentSlots,
   NOOP_SIGNAL
 } from './utils/core.js'
 import {
@@ -228,6 +229,12 @@ export function createRenderer ({
           slot.element.attribs = {}
         }
         slot.element.attribs['data-coralite-owner'] = instanceId
+
+        const componentSlots = resolveComponentSlots(module)
+        const isComputed = Boolean(componentSlots && typeof componentSlots[slotName] === 'function')
+        if (isComputed) {
+          slot.element.attribs['data-coralite-slot-computed'] = ''
+        }
       }
 
       if (!slot.element || !slot.element.parent || !slot.element.parent.children) {

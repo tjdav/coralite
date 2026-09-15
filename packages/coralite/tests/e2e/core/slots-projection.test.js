@@ -12,6 +12,20 @@ test.describe('Slots Projection', () => {
     await expect(fallbackTest).toContainText('Fallback Content')
   })
 
+  test('should match raw HTTP response HTML 1:1 with hydrated DOM content (no double-transformation)', async ({ request, page }) => {
+    // Raw HTTP fetch
+    const response = await request.get('/slots-projection/')
+    const rawHtml = await response.text()
+
+    // Assert raw SSR output on #transform-test is "Transformed: Transform Me"
+    expect(rawHtml).toContain('Transformed: Transform Me')
+    expect(rawHtml).not.toContain('Transformed: Transformed: Transform Me')
+
+    // Post-hydration DOM check
+    const transformTest = page.locator('#transform-test')
+    await expect(transformTest).toContainText('Transformed: Transform Me')
+  })
+
   test('should transform slot content if transformation returns string', async ({ page }) => {
     const transformTest = page.locator('#transform-test')
     await expect(transformTest).toContainText('Transformed: Transform Me')

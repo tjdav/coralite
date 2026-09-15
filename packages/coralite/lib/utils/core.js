@@ -904,6 +904,31 @@ export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = 
  * @param {CoraliteComponentOptions<TState>} options - Component options
  * @returns {CoraliteComponentOptions<TState>} The component options
  */
+/**
+ * Resolves component script-defined slot definitions from a component or module object.
+ * @param {any} component - Component document, module, or result object.
+ * @returns {Record<string, any>} Map of script slot definitions.
+ */
+export function resolveComponentSlots (component) {
+  if (!component || typeof component !== 'object') {
+    return {}
+  }
+  return component.__script__?.slots ||
+    component.script?.slots ||
+    component.result?.script?.slots ||
+    component.result?.slots ||
+    component.attributes?.slots ||
+    {}
+}
+
+/**
+ * Defines a Coralite component with full IDE autocomplete and type inference.
+ * On the client, this acts as an identity function for type safety and HRM.
+ *
+ * @template {Record<string, any>} [TState=Record<string, any>]
+ * @param {CoraliteComponentOptions<TState>} options - Component options
+ * @returns {CoraliteComponentOptions<TState>} The component options
+ */
 export function defineComponent (options) {
   return options
 }
