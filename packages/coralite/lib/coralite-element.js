@@ -119,6 +119,15 @@ function createClientSlotsHelper (element) {
  */
 
 /**
+ * @typedef {HTMLSlotElement & {
+ *   _slotRenderVersion?: symbol | null,
+ *   _originalNodes?: Node[],
+ *   _slotEvaluated?: boolean
+ * }} CoraliteSlotElement
+ */
+
+
+/**
  * @typedef {Object} CoraliteComponentOptions
  * @property {string} componentId - The unique identifier for the component.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
@@ -202,11 +211,11 @@ export class CoraliteElement extends BaseElement {
     this._isUpdatePending = false
 
     /**
-     * A unique Symbol generated per render cycle to prevent async getter race conditions.
+     * A unique Symbol generated per DOM render cycle to prevent async getter race conditions.
      * @type {symbol|null}
      * @protected
      */
-    this._currentRenderVersion = null
+    this._domRenderVersion = null
 
     /**
      * @type {MutationObserver|null}
@@ -588,7 +597,6 @@ export class CoraliteElement extends BaseElement {
 
     const ownSlots = this._getOwnSlots()
     ownSlots.forEach(slotEl => {
-      // @ts-ignore
       slotEl._slotEvaluated = false
     })
 
@@ -1805,9 +1813,9 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
-    // Create a unique lock for this specific render cycle
-    const renderVersion = Symbol()
-    this._currentRenderVersion = renderVersion
+    // Create a unique lock for this specific DOM render cycle
+    const renderVersion = Symbol('dom-render')
+    this._domRenderVersion = renderVersion
 
     // Extract unique tokens to prevent double-reading and accidental aborts
     /** @type {Set<string>} */
@@ -1837,8 +1845,8 @@ export class CoraliteElement extends BaseElement {
 
     // The DOM Mutator Function
     const applyBindings = (tokenValues) => {
-      // Race Condition Lock: Abort if a newer render cycle has already begun
-      if (this._currentRenderVersion !== renderVersion) {
+      // Race Condition Lock: Abort if a newer DOM render cycle has already begun
+      if (this._domRenderVersion !== renderVersion) {
         return
       }
 
@@ -2413,10 +2421,11 @@ export class CoraliteElement extends BaseElement {
   /**
    * Retrieves `<slot>` elements that belong directly to this custom element instance,
    * ignoring `<slot>` elements nested inside child custom elements.
-   * @returns {HTMLSlotElement[]}
+   * @returns {CoraliteSlotElement[]}
    * @private
    */
   _getOwnSlots () {
+    /** @type {CoraliteSlotElement[]} */
     const allSlots = Array.from(this.querySelectorAll('slot'))
     const ownId = this.getAttribute('data-cid') || this._instanceId
 
@@ -2447,13 +2456,14 @@ export class CoraliteElement extends BaseElement {
   /**
    * Applies the returned result of a slot function or observer callback to the slot element.
    * Handles single Nodes, Node arrays, strings, null/empty clears, undefined no-ops, and Promises.
-   * @param {Element} slotEl - The slot DOM element.
+   * @param {CoraliteSlotElement} slotEl - The slot DOM element.
    * @param {any} result - The transformation result.
    * @param {symbol|null} [renderVersion=null] - Optional render cycle lock token.
    * @protected
    */
   _applySlotResult (slotEl, result, renderVersion = null) {
-    if (renderVersion && this._currentRenderVersion !== renderVersion) {
+    const currentSlotVersion = slotEl._slotRenderVersion
+    if (renderVersion && currentSlotVersion && currentSlotVersion !== renderVersion) {
       return
     }
     if (this._abortController?.signal?.aborted) {
@@ -2465,7 +2475,8 @@ export class CoraliteElement extends BaseElement {
     }
 
     if (result && typeof result.then === 'function') {
-      const capturedVersion = renderVersion || this._currentRenderVersion
+      const capturedVersion = renderVersion || Symbol('slot-render-async')
+      slotEl._slotRenderVersion = capturedVersion
       result.then(resolved => {
         this._applySlotResult(slotEl, resolved, capturedVersion)
       }).catch(err => {
@@ -2493,7 +2504,7 @@ export class CoraliteElement extends BaseElement {
   /**
    * Creates a context proxy for slot transformer evaluation.
    * @param {string} slotName - The slot name.
-   * @param {Element} slotEl - The target slot element.
+   * @param {CoraliteSlotElement} slotEl - The target slot element.
    * @returns {Proxy} The context proxy.
    * @private
    */
@@ -2516,8 +2527,10 @@ export class CoraliteElement extends BaseElement {
         this._slotHasInternalObservers.set(slotName, true)
 
         const wrappedCb = (newVal, oldVal) => {
+          const renderVersion = Symbol(`slot-observe-${slotName}`)
+          slotEl._slotRenderVersion = renderVersion
           const res = cb(newVal, oldVal)
-          this._applySlotResult(slotEl, res)
+          this._applySlotResult(slotEl, res, renderVersion)
         }
 
         return this._observeStateKey(key, wrappedCb)
@@ -2584,24 +2597,19 @@ export class CoraliteElement extends BaseElement {
       const slotFn = slots[slotName]
 
       if (slotFn) {
-        // @ts-ignore
         if (!slotEl._originalNodes) {
-          // @ts-ignore
           slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
         }
 
-        // @ts-ignore
         if (slotEl._slotEvaluated && this._slotHasInternalObservers?.get(slotName)) {
           return
         }
 
         const slotContext = this._createSlotContext(slotName, slotEl)
-        const renderVersion = Symbol()
-        this._currentRenderVersion = renderVersion
+        const renderVersion = Symbol(`slot-render-${slotName}`)
+        slotEl._slotRenderVersion = renderVersion
 
-        // @ts-ignore
         const result = slotFn(slotEl._originalNodes, slotContext)
-        // @ts-ignore
         slotEl._slotEvaluated = true
 
         this._applySlotResult(slotEl, result, renderVersion)
