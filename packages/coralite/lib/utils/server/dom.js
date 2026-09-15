@@ -1,3 +1,6 @@
+import { render } from 'dom-serializer'
+import { parseHTML } from './parse.js'
+
 /**
  * @import {
  *  CoraliteElement,
@@ -34,6 +37,9 @@ const PARENT_SYM = Symbol('parent')
 const PREV_SYM = Symbol('prev')
 const NEXT_SYM = Symbol('next')
 const SLOTS_SYM = Symbol('slots')
+const LISTENERS_SYM = Symbol('listeners')
+const STYLE_PROXY_SYM = Symbol('styleProxy')
+const DATASET_PROXY_SYM = Symbol('datasetProxy')
 
 /**
  * Ensures circular properties are non-enumerable to prevent serialization issues.
@@ -49,6 +55,85 @@ function makeCircularPropertiesNonEnumerable (node) {
       }
     }
   }
+}
+
+/**
+ * Converts kebab-case to camelCase string.
+ * @param {string} str - String to convert
+ */
+function kebabToCamel (str) {
+  return str.replace(/-([a-z])/g, (_, letter) => letter.toUpperCase())
+}
+
+/**
+ * Converts camelCase to kebab-case string.
+ * @param {string} str - String to convert
+ */
+function camelToKebab (str) {
+  return str.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)
+}
+
+/**
+ * Parses numeric dimension from inline style or attribute.
+ * @param {string} [styleStr] - Inline style string
+ * @param {string} [prop='width'] - Property name
+ * @returns {number}
+ */
+function parseDimension (styleStr, prop = 'width') {
+  if (!styleStr || typeof styleStr !== 'string') {
+    return 0
+  }
+  const styleMap = parseStyleString(styleStr)
+  const val = styleMap[prop]
+  if (!val) {
+    return 0
+  }
+  const num = parseFloat(val)
+  return isNaN(num) ? 0 : num
+}
+
+/**
+ * Parses an inline style string into a key-value object (kebab-case keys).
+ * @param {string} styleStr - Inline style string
+ * @returns {Record<string, string>}
+ */
+function parseStyleString (styleStr) {
+  /** @type {Record<string, string>} */
+  const result = {}
+  if (!styleStr || typeof styleStr !== 'string') {
+    return result
+  }
+  const declarations = styleStr.split(';')
+  for (let i = 0; i < declarations.length; i++) {
+    const decl = declarations[i].trim()
+    if (!decl) {
+      continue
+    }
+    const colonIdx = decl.indexOf(':')
+    if (colonIdx > -1) {
+      const prop = decl.slice(0, colonIdx).trim().toLowerCase()
+      const val = decl.slice(colonIdx + 1).trim()
+      if (prop && val) {
+        result[prop] = val
+      }
+    }
+  }
+  return result
+}
+
+/**
+ * Serializes a key-value style map back to an inline CSS style string.
+ * @param {Record<string, string>} styleMap - Key-value style map
+ * @returns {string}
+ */
+function serializeStyleMap (styleMap) {
+  const parts = []
+  for (const prop in styleMap) {
+    if (Object.prototype.hasOwnProperty.call(styleMap, prop) && styleMap[prop]) {
+      parts.push(`${prop}: ${styleMap[prop]}`)
+    }
+  }
+  return parts.length ? parts.join('; ') + ';' : ''
 }
 
 /**
@@ -77,6 +162,135 @@ const CoraliteNodePrototype = {
     this.parent = null
     this.next = null
     this.prev = null
+  },
+
+  /**
+   * Adds an event listener to the node.
+   * @param {string} type - Event type
+   * @param {Function|{handleEvent: Function}} listener - Event listener
+   * @param {Object} [options={}] - Event listener options
+   */
+  addEventListener (type, listener, options = {}) {
+    if (typeof listener !== 'function' && (!listener || typeof listener.handleEvent !== 'function')) {
+      return
+    }
+    if (!this[LISTENERS_SYM]) {
+      this[LISTENERS_SYM] = new Map()
+    }
+    if (!this[LISTENERS_SYM].has(type)) {
+      this[LISTENERS_SYM].set(type, new Set())
+    }
+
+    const listenerRecord = {
+      listener,
+      options,
+      once: Boolean(options?.once)
+    }
+
+    if (options?.signal) {
+      if (options.signal.aborted) {
+        return
+      }
+      options.signal.addEventListener('abort', () => {
+        this.removeEventListener(type, listener)
+      }, { once: true })
+    }
+
+    this[LISTENERS_SYM].get(type).add(listenerRecord)
+  },
+
+  /**
+   * Removes an event listener from the node.
+   * @param {string} type - Event type
+   * @param {Function|{handleEvent: Function}} listener - Event listener
+   */
+  removeEventListener (type, listener) {
+    if (!this[LISTENERS_SYM] || !this[LISTENERS_SYM].has(type)) {
+      return
+    }
+    const set = this[LISTENERS_SYM].get(type)
+    for (const record of set) {
+      if (record.listener === listener) {
+        set.delete(record)
+        break
+      }
+    }
+  },
+
+  /**
+   * Dispatches an event to the node and optionally bubbles up ancestor chain.
+   * @param {any} event - Event object to dispatch
+   * @returns {boolean}
+   */
+  dispatchEvent (event) {
+    if (!event || typeof event.type !== 'string') {
+      throw new TypeError('Failed to execute "dispatchEvent": parameter 1 is not of type "Event".')
+    }
+
+    let stopPropagationFlag = false
+    let stopImmediatePropagationFlag = false
+
+    const origStopPropagation = event.stopPropagation
+    const origStopImmediatePropagation = event.stopImmediatePropagation
+
+    event.stopPropagation = function () {
+      stopPropagationFlag = true
+      if (typeof origStopPropagation === 'function') {
+        origStopPropagation.call(event)
+      }
+    }
+
+    event.stopImmediatePropagation = function () {
+      stopPropagationFlag = true
+      stopImmediatePropagationFlag = true
+      if (typeof origStopImmediatePropagation === 'function') {
+        origStopImmediatePropagation.call(event)
+      }
+    }
+
+    Object.defineProperty(event, 'target', {
+      value: this,
+      configurable: true,
+      writable: true
+    })
+
+    let current = this
+    while (current) {
+      Object.defineProperty(event, 'currentTarget', {
+        value: current,
+        configurable: true,
+        writable: true
+      })
+
+      if (current[LISTENERS_SYM] && current[LISTENERS_SYM].has(event.type)) {
+        const records = Array.from(current[LISTENERS_SYM].get(event.type))
+        for (const record of records) {
+          if (record.once) {
+            current[LISTENERS_SYM].get(event.type).delete(record)
+          }
+          try {
+            if (typeof record.listener === 'function') {
+              record.listener.call(current, event)
+            } else if (typeof record.listener?.handleEvent === 'function') {
+              record.listener.handleEvent(event)
+            }
+          } catch (err) {
+            console.error('Unhandled listener error during dispatchEvent:', err)
+          }
+          if (stopImmediatePropagationFlag) {
+            break
+          }
+        }
+      }
+
+      if (stopPropagationFlag || !event.bubbles) {
+        break
+      }
+
+      current = current.parent || current.parentNode || null
+    }
+
+    return !event.defaultPrevented
   }
 }
 
@@ -229,7 +443,8 @@ CoraliteElementPrototype.appendChild = function (node) {
  * @param {...(any)} nodes - The nodes or strings to append
  */
 CoraliteElementPrototype.append = function (...nodes) {
-  for (let node of nodes) {
+  for (let i = 0; i < nodes.length; i++) {
+    let node = nodes[i]
     if (typeof node === 'string') {
       node = createCoraliteTextNode({
         type: 'text',
@@ -238,6 +453,506 @@ CoraliteElementPrototype.append = function (...nodes) {
     }
     this.appendChild(node)
   }
+}
+
+/**
+ * Inserts a set of Node objects or string objects at the beginning of the children of the Element.
+ * @param {...any} nodes - Nodes or strings to prepend
+ */
+CoraliteElementPrototype.prepend = function (...nodes) {
+  if (!this.children) {
+    this.children = []
+  }
+  const preparedNodes = []
+  for (let i = 0; i < nodes.length; i++) {
+    let node = nodes[i]
+    if (typeof node === 'string') {
+      node = createCoraliteTextNode({
+        type: 'text',
+        data: node
+      })
+    } else if (node.parent) {
+      node.remove()
+    }
+    preparedNodes.push(node)
+  }
+  this.children.unshift(...preparedNodes)
+  relinkChildren(this)
+}
+
+/**
+ * Replaces all children of the element with specified nodes or strings.
+ * @param {...any} nodes - Replacement nodes or strings
+ */
+CoraliteElementPrototype.replaceChildren = function (...nodes) {
+  // @ts-ignore
+  const currentChildren = this.childNodes || this.children
+  if (currentChildren) {
+    for (let i = 0; i < currentChildren.length; i++) {
+      const child = currentChildren[i]
+      child.parent = null
+      child.prev = null
+      child.next = null
+    }
+  }
+  this.children = []
+  for (let i = 0; i < nodes.length; i++) {
+    let node = nodes[i]
+    if (typeof node === 'string') {
+      node = createCoraliteTextNode({
+        type: 'text',
+        data: node
+      })
+    }
+    // @ts-ignore
+    this.appendChild(node)
+  }
+}
+
+/**
+ * Replaces the element in its parent with the specified nodes or strings.
+ * @param {...any} nodes - Replacement nodes or strings
+ */
+CoraliteElementPrototype.replaceWith = function (...nodes) {
+  if (!this.parent || !this.parent.children) {
+    return
+  }
+  const parent = this.parent
+  const index = parent.children.indexOf(this)
+  if (index === -1) {
+    return
+  }
+
+  this.remove()
+
+  const preparedNodes = []
+  for (let i = 0; i < nodes.length; i++) {
+    let node = nodes[i]
+    if (typeof node === 'string') {
+      node = createCoraliteTextNode({
+        type: 'text',
+        data: node
+      })
+    } else if (node.parent) {
+      node.remove()
+    }
+    preparedNodes.push(node)
+  }
+
+  parent.children.splice(index, 0, ...preparedNodes)
+  relinkChildren(parent)
+}
+
+/**
+ * Inserts nodes or strings immediately before the element.
+ * @param {...any} nodes - Nodes or strings to insert before
+ */
+CoraliteElementPrototype.before = function (...nodes) {
+  if (!this.parent || !this.parent.children) {
+    return
+  }
+  const parent = this.parent
+  const index = parent.children.indexOf(this)
+  if (index === -1) {
+    return
+  }
+
+  const preparedNodes = []
+  for (let i = 0; i < nodes.length; i++) {
+    let node = nodes[i]
+    if (typeof node === 'string') {
+      node = createCoraliteTextNode({
+        type: 'text',
+        data: node
+      })
+    } else if (node.parent) {
+      node.remove()
+    }
+    preparedNodes.push(node)
+  }
+
+  parent.children.splice(index, 0, ...preparedNodes)
+  relinkChildren(parent)
+}
+
+/**
+ * Inserts nodes or strings immediately after the element.
+ * @param {...any} nodes - Nodes or strings to insert after
+ */
+CoraliteElementPrototype.after = function (...nodes) {
+  if (!this.parent || !this.parent.children) {
+    return
+  }
+  const parent = this.parent
+  const index = parent.children.indexOf(this)
+  if (index === -1) {
+    return
+  }
+
+  const preparedNodes = []
+  for (let i = 0; i < nodes.length; i++) {
+    let node = nodes[i]
+    if (typeof node === 'string') {
+      node = createCoraliteTextNode({
+        type: 'text',
+        data: node
+      })
+    } else if (node.parent) {
+      node.remove()
+    }
+    preparedNodes.push(node)
+  }
+
+  parent.children.splice(index + 1, 0, ...preparedNodes)
+  relinkChildren(parent)
+}
+
+/**
+ * Checks if another node is a descendant of this node.
+ * @param {any} otherNode - Target node to check
+ * @returns {boolean}
+ */
+CoraliteElementPrototype.contains = function (otherNode) {
+  let curr = otherNode
+  while (curr) {
+    if (curr === this) {
+      return true
+    }
+    curr = curr.parent
+  }
+  return false
+}
+
+/**
+ * Creates a clone of the node.
+ * @param {boolean} [deep=false] - Deep clone flag
+ * @returns {CoraliteElement}
+ */
+CoraliteElementPrototype.cloneNode = function (deep = false) {
+  const clonedAttribs = this.attribs ? { ...this.attribs } : {}
+  const cloned = createCoraliteElement({
+    type: this.type || 'tag',
+    name: this.name,
+    attribs: clonedAttribs,
+    children: []
+  })
+
+  if (deep && this.children) {
+    cloned.children = this.children.map(child => {
+      if (typeof child.cloneNode === 'function') {
+        return child.cloneNode(true)
+      }
+      return createCoraliteTextNode({
+        type: 'text',
+        data: child.data || ''
+      })
+    })
+    relinkChildren(cloned)
+  }
+
+  return cloned
+}
+
+/**
+ * Returns bounding client rectangle dimensions.
+ * @returns {{x: number, y: number, top: number, bottom: number, left: number, right: number, width: number, height: number, toJSON: Function}}
+ */
+CoraliteElementPrototype.getBoundingClientRect = function () {
+  const width = this.offsetWidth || 0
+  const height = this.offsetHeight || 0
+  return {
+    x: 0,
+    y: 0,
+    top: 0,
+    bottom: height,
+    left: 0,
+    right: width,
+    width,
+    height,
+    toJSON () {
+      return {
+        x: this.x,
+        y: this.y,
+        top: this.top,
+        bottom: this.bottom,
+        left: this.left,
+        right: this.right,
+        width: this.width,
+        height: this.height
+      }
+    }
+  }
+}
+
+/**
+ * Returns array of client rectangles.
+ * @returns {Array<{x: number, y: number, top: number, bottom: number, left: number, right: number, width: number, height: number, toJSON: Function}>}
+ */
+CoraliteElementPrototype.getClientRects = function () {
+  return [this.getBoundingClientRect()]
+}
+
+CoraliteElementPrototype.scrollIntoView = function () {
+}
+CoraliteElementPrototype.scrollTo = function () {
+}
+CoraliteElementPrototype.scrollBy = function () {
+}
+CoraliteElementPrototype.focus = function () {
+}
+CoraliteElementPrototype.blur = function () {
+}
+
+/**
+ * Helper to match an element against a parsed selector piece.
+ * @param {CoraliteElement} el - Element to match
+ * @param {string} sel - Selector string
+ * @returns {boolean}
+ */
+function matchSingleSelector (el, sel) {
+  if (!el || el.type !== 'tag') {
+    return false
+  }
+  sel = sel.trim()
+  if (!sel || sel === '*') {
+    return true
+  }
+
+  // Handle pseudo-class :not(...)
+  if (sel.startsWith(':not(') && sel.endsWith(')')) {
+    const inner = sel.slice(5, -1).trim()
+    return !matchSingleSelector(el, inner)
+  }
+
+  // Parse compound selector like `h2.title#main[attr=val]`
+  // Tokenize regex matching tags, .class, #id, [attr...]
+  const tokens = sel.match(/([a-zA-Z0-9_\-*]+)|(\.[a-zA-Z0-9_\-]+)|(#[a-zA-Z0-9_\-]+)|(\[[^\]]+\])/g)
+  if (!tokens || tokens.length === 0) {
+    return false
+  }
+
+  for (const token of tokens) {
+    if (token.startsWith('.')) {
+      const className = token.slice(1)
+      // @ts-ignore
+      if (!el.classList || !el.classList.contains(className)) {
+        return false
+      }
+    } else if (token.startsWith('#')) {
+      const id = token.slice(1)
+      if (el.id !== id) {
+        return false
+      }
+    } else if (token.startsWith('[')) {
+      const attrExpr = token.slice(1, -1).trim()
+      if (!attrExpr) {
+        continue
+      }
+      if (attrExpr.includes('^=')) {
+        const [attr, val] = attrExpr.split('^=').map(s => s.trim().replace(/^["']|["']$/g, ''))
+        const actual = el.getAttribute(attr)
+        if (!actual || !actual.startsWith(val)) {
+          return false
+        }
+      } else if (attrExpr.includes('$=')) {
+        const [attr, val] = attrExpr.split('$=').map(s => s.trim().replace(/^["']|["']$/g, ''))
+        const actual = el.getAttribute(attr)
+        if (!actual || !actual.endsWith(val)) {
+          return false
+        }
+      } else if (attrExpr.includes('*=')) {
+        const [attr, val] = attrExpr.split('*=').map(s => s.trim().replace(/^["']|["']$/g, ''))
+        const actual = el.getAttribute(attr)
+        if (!actual || !actual.includes(val)) {
+          return false
+        }
+      } else if (attrExpr.includes('=')) {
+        const [attr, val] = attrExpr.split('=').map(s => s.trim().replace(/^["']|["']$/g, ''))
+        const actual = el.getAttribute(attr)
+        if (actual !== val) {
+          return false
+        }
+      } else {
+        if (!el.hasAttribute(attrExpr)) {
+          return false
+        }
+      }
+    } else {
+      // Tag name match
+      if (token !== '*' && (el.name || '').toLowerCase() !== token.toLowerCase()) {
+        return false
+      }
+    }
+  }
+
+  return true
+}
+
+/**
+ * Tests if element matches a selector chain (e.g. `.container .child`).
+ * @param {CoraliteElement} el - Element to match
+ * @param {string} selector - CSS selector
+ * @returns {boolean}
+ */
+function elementMatches (el, selector) {
+  if (!el || el.type !== 'tag') {
+    return false
+  }
+  const selectorLists = selector.split(',').map(s => s.trim()).filter(Boolean)
+
+  for (const selList of selectorLists) {
+    // Split space-separated descendant selectors
+    const parts = selList.split(/\s+/).filter(Boolean)
+    if (parts.length === 1) {
+      if (matchSingleSelector(el, parts[0])) {
+        return true
+      }
+    } else {
+      // Match from right to left (descendant to ancestor)
+      let currentEl = el
+      let partIdx = parts.length - 1
+      let matched = true
+
+      while (partIdx >= 0) {
+        const targetPart = parts[partIdx]
+        if (partIdx === parts.length - 1) {
+          if (!matchSingleSelector(currentEl, targetPart)) {
+            matched = false
+            break
+          }
+          partIdx--
+        } else {
+          // Find an ancestor that matches targetPart
+          let ancestor = currentEl.parent
+          let foundAncestor = false
+          while (ancestor && ancestor.type === 'tag') {
+            if (matchSingleSelector(ancestor, targetPart)) {
+              foundAncestor = true
+              currentEl = ancestor
+              break
+            }
+            ancestor = ancestor.parent
+          }
+          if (!foundAncestor) {
+            matched = false
+            break
+          }
+          partIdx--
+        }
+      }
+
+      if (matched) {
+        return true
+      }
+    }
+  }
+
+  return false
+}
+
+/**
+ * Checks if element matches the specified selector.
+ * @param {string} selector - CSS selector
+ * @returns {boolean}
+ */
+CoraliteElementPrototype.matches = function (selector) {
+  return elementMatches(this, selector)
+}
+
+/**
+ * Returns the closest ancestor (or self) matching the selector.
+ * @param {string} selector - CSS selector
+ * @returns {CoraliteElement|null}
+ */
+CoraliteElementPrototype.closest = function (selector) {
+  let curr = this
+  while (curr && curr.type === 'tag') {
+    if (curr.matches(selector)) {
+      return curr
+    }
+    curr = curr.parent
+  }
+  return null
+}
+
+/**
+ * Finds first descendant matching selector.
+ * @param {string} selector - CSS selector
+ * @returns {CoraliteElement|null}
+ */
+CoraliteElementPrototype.querySelector = function (selector) {
+  let result = null
+  function walk (node) {
+    if (result || !node.children) {
+      return
+    }
+    for (const child of node.children) {
+      if (child.type === 'tag') {
+        if (child.matches(selector)) {
+          result = child
+          return
+        }
+        walk(child)
+        if (result) {
+          return
+        }
+      }
+    }
+  }
+  walk(this)
+  return result
+}
+
+/**
+ * Finds all descendants matching selector.
+ * @param {string} selector - CSS selector
+ * @returns {CoraliteElement[]}
+ */
+CoraliteElementPrototype.querySelectorAll = function (selector) {
+  const results = []
+  function walk (node) {
+    if (!node.children) {
+      return
+    }
+    for (const child of node.children) {
+      if (child.type === 'tag') {
+        if (child.matches(selector)) {
+          results.push(child)
+        }
+        walk(child)
+      }
+    }
+  }
+  walk(this)
+  return results
+}
+
+/**
+ * Finds element by ID.
+ * @param {string} id - Element ID
+ * @returns {CoraliteElement|null}
+ */
+CoraliteElementPrototype.getElementById = function (id) {
+  return this.querySelector(`#${id}`)
+}
+
+/**
+ * Finds elements by tag name.
+ * @param {string} tag - Tag name
+ * @returns {CoraliteElement[]}
+ */
+CoraliteElementPrototype.getElementsByTagName = function (tag) {
+  return this.querySelectorAll(tag)
+}
+
+/**
+ * Finds elements by class name.
+ * @param {string} cls - Class name
+ * @returns {CoraliteElement[]}
+ */
+CoraliteElementPrototype.getElementsByClassName = function (cls) {
+  const selector = cls.split(/\s+/).filter(Boolean).map(c => `.${c}`).join('')
+  return this.querySelectorAll(selector)
 }
 
 Object.defineProperties(CoraliteElementPrototype, {
@@ -288,6 +1003,121 @@ Object.defineProperties(CoraliteElementPrototype, {
       return (this.children && this.children[this.children.length - 1]) || null
     }
   },
+  childElementCount: {
+    get () {
+      return (this.children || []).filter(child => child && child.nodeType === ELEMENT_NODE).length
+    }
+  },
+  firstElementChild: {
+    get () {
+      return (this.children || []).find(child => child && child.nodeType === ELEMENT_NODE) || null
+    }
+  },
+  lastElementChild: {
+    get () {
+      const kids = (this.children || []).filter(child => child && child.nodeType === ELEMENT_NODE)
+      return kids[kids.length - 1] || null
+    }
+  },
+  nextElementSibling: {
+    get () {
+      let curr = this.next
+      while (curr) {
+        if (curr.nodeType === ELEMENT_NODE) {
+          return curr
+        }
+        curr = curr.next
+      }
+      return null
+    }
+  },
+  previousElementSibling: {
+    get () {
+      let curr = this.prev
+      while (curr) {
+        if (curr.nodeType === ELEMENT_NODE) {
+          return curr
+        }
+        curr = curr.prev
+      }
+      return null
+    }
+  },
+  offsetWidth: {
+    get () {
+      if (this.attribs?.width && !isNaN(Number(this.attribs.width))) {
+        return Number(this.attribs.width)
+      }
+      return parseDimension(this.attribs?.style, 'width') || 0
+    }
+  },
+  offsetHeight: {
+    get () {
+      if (this.attribs?.height && !isNaN(Number(this.attribs.height))) {
+        return Number(this.attribs.height)
+      }
+      return parseDimension(this.attribs?.style, 'height') || 0
+    }
+  },
+  clientWidth: {
+    get () {
+      return this.offsetWidth
+    }
+  },
+  clientHeight: {
+    get () {
+      return this.offsetHeight
+    }
+  },
+  scrollWidth: {
+    get () {
+      return this.offsetWidth
+    }
+  },
+  scrollHeight: {
+    get () {
+      return this.offsetHeight
+    }
+  },
+  clientTop: {
+    get () {
+      return 0
+    }
+  },
+  clientLeft: {
+    get () {
+      return 0
+    }
+  },
+  offsetTop: {
+    get () {
+      return 0
+    }
+  },
+  offsetLeft: {
+    get () {
+      return 0
+    }
+  },
+  scrollTop: {
+    get () {
+      return 0
+    },
+    set () {
+    }
+  },
+  scrollLeft: {
+    get () {
+      return 0
+    },
+    set () {
+    }
+  },
+  offsetParent: {
+    get () {
+      return this.parentElement || null
+    }
+  },
   textContent: {
     get () {
       if (this.children) {
@@ -312,6 +1142,254 @@ Object.defineProperties(CoraliteElementPrototype, {
         next: null
       })
       this.children = [textNode]
+    }
+  },
+  innerHTML: {
+    get () {
+      return render(this.children || [])
+    },
+    set (value) {
+      if (this.children) {
+        for (const child of this.children) {
+          child.parent = null
+          child.prev = null
+          child.next = null
+        }
+      }
+      const parsed = parseHTML(String(value ?? ''))
+      this.children = parsed.root.children || []
+      relinkChildren(this)
+    }
+  },
+  outerHTML: {
+    get () {
+      return render(this)
+    },
+    set (value) {
+      if (!this.parent || !this.parent.children) {
+        return
+      }
+      const parent = this.parent
+      const index = parent.children.indexOf(this)
+      if (index === -1) {
+        return
+      }
+
+      this.remove()
+      const parsed = parseHTML(String(value ?? ''))
+      const newNodes = parsed.root.children || []
+      parent.children.splice(index, 0, ...newNodes)
+      relinkChildren(parent)
+    }
+  },
+  dataset: {
+    get () {
+      if (!this[DATASET_PROXY_SYM]) {
+        const self = this
+        this[DATASET_PROXY_SYM] = new Proxy({}, {
+          get (_, prop) {
+            if (typeof prop !== 'string') {
+              return undefined
+            }
+            const kebab = `data-${camelToKebab(prop)}`
+            return self.getAttribute(kebab) ?? undefined
+          },
+          set (_, prop, value) {
+            if (typeof prop !== 'string') {
+              return false
+            }
+            const kebab = `data-${camelToKebab(prop)}`
+            self.setAttribute(kebab, value)
+            return true
+          },
+          deleteProperty (_, prop) {
+            if (typeof prop !== 'string') {
+              return false
+            }
+            const kebab = `data-${camelToKebab(prop)}`
+            self.removeAttribute(kebab)
+            return true
+          },
+          has (_, prop) {
+            if (typeof prop !== 'string') {
+              return false
+            }
+            const kebab = `data-${camelToKebab(prop)}`
+            return self.hasAttribute(kebab)
+          },
+          ownKeys () {
+            const keys = []
+            if (self.attribs) {
+              for (const attr in self.attribs) {
+                if (attr.startsWith('data-')) {
+                  keys.push(kebabToCamel(attr.slice(5)))
+                }
+              }
+            }
+            return keys
+          },
+          getOwnPropertyDescriptor (_, prop) {
+            if (typeof prop !== 'string') {
+              return undefined
+            }
+            const kebab = `data-${camelToKebab(prop)}`
+            if (self.hasAttribute(kebab)) {
+              return {
+                configurable: true,
+                enumerable: true,
+                writable: true,
+                value: self.getAttribute(kebab)
+              }
+            }
+            return undefined
+          }
+        })
+      }
+      return this[DATASET_PROXY_SYM]
+    }
+  },
+  style: {
+    get () {
+      if (!this[STYLE_PROXY_SYM]) {
+        const self = this
+        const baseStyle = {
+          setProperty (name, value) {
+            const kebab = camelToKebab(name).toLowerCase()
+            const styleMap = parseStyleString(self.attribs?.style)
+            if (value === null || value === undefined || value === '') {
+              delete styleMap[kebab]
+            } else {
+              styleMap[kebab] = String(value)
+            }
+            const serialized = serializeStyleMap(styleMap)
+            if (serialized) {
+              self.setAttribute('style', serialized)
+            } else {
+              self.removeAttribute('style')
+            }
+          },
+          getPropertyValue (name) {
+            const kebab = camelToKebab(name).toLowerCase()
+            const styleMap = parseStyleString(self.attribs?.style)
+            return styleMap[kebab] || ''
+          },
+          removeProperty (name) {
+            const kebab = camelToKebab(name).toLowerCase()
+            const styleMap = parseStyleString(self.attribs?.style)
+            const oldVal = styleMap[kebab] || ''
+            delete styleMap[kebab]
+            const serialized = serializeStyleMap(styleMap)
+            if (serialized) {
+              self.setAttribute('style', serialized)
+            } else {
+              self.removeAttribute('style')
+            }
+            return oldVal
+          }
+        }
+
+        Object.defineProperty(baseStyle, 'cssText', {
+          get () {
+            return self.getAttribute('style') || ''
+          },
+          set (value) {
+            if (value === null || value === undefined || value === '') {
+              self.removeAttribute('style')
+            } else {
+              self.setAttribute('style', String(value))
+            }
+          },
+          enumerable: true,
+          configurable: true
+        })
+
+        this[STYLE_PROXY_SYM] = new Proxy(baseStyle, {
+          get (target, prop) {
+            if (typeof prop !== 'string') {
+              return target[prop]
+            }
+            if (prop in target) {
+              return target[prop]
+            }
+            const kebab = camelToKebab(prop).toLowerCase()
+            const styleMap = parseStyleString(self.attribs?.style)
+            return styleMap[kebab] || ''
+          },
+          set (target, prop, value) {
+            if (typeof prop !== 'string') {
+              return false
+            }
+            if (prop === 'cssText') {
+              target.cssText = value
+              return true
+            }
+            target.setProperty(prop, value)
+            return true
+          },
+          deleteProperty (_, prop) {
+            if (typeof prop !== 'string') {
+              return false
+            }
+            const kebab = camelToKebab(prop).toLowerCase()
+            const styleMap = parseStyleString(self.attribs?.style)
+            delete styleMap[kebab]
+            const serialized = serializeStyleMap(styleMap)
+            if (serialized) {
+              self.setAttribute('style', serialized)
+            } else {
+              self.removeAttribute('style')
+            }
+            return true
+          }
+        })
+      }
+      return this[STYLE_PROXY_SYM]
+    },
+    set (value) {
+      if (typeof value === 'string') {
+        this.setAttribute('style', value)
+      } else if (value === null || value === undefined) {
+        this.removeAttribute('style')
+      }
+    }
+  },
+  value: {
+    get () {
+      if (this.name === 'textarea') {
+        return this.textContent
+      }
+      return this.getAttribute('value') || ''
+    },
+    set (val) {
+      if (this.name === 'textarea') {
+        this.textContent = String(val ?? '')
+      } else {
+        this.setAttribute('value', String(val ?? ''))
+      }
+    }
+  },
+  checked: {
+    get () {
+      return this.hasAttribute('checked')
+    },
+    set (val) {
+      if (val) {
+        this.setAttribute('checked', '')
+      } else {
+        this.removeAttribute('checked')
+      }
+    }
+  },
+  disabled: {
+    get () {
+      return this.hasAttribute('disabled')
+    },
+    set (val) {
+      if (val) {
+        this.setAttribute('disabled', '')
+      } else {
+        this.removeAttribute('disabled')
+      }
     }
   },
   id: {
@@ -421,6 +1499,13 @@ Object.defineProperties(CoraliteTextNodePrototype, {
   }
 })
 
+CoraliteTextNodePrototype.cloneNode = function (_deep = false) {
+  return createCoraliteTextNode({
+    type: 'text',
+    data: this.data || ''
+  })
+}
+
 /**
  * Prototype for Coralite Comment Nodes.
  */
@@ -450,6 +1535,13 @@ Object.defineProperties(CoraliteCommentPrototype, {
   }
 })
 
+CoraliteCommentPrototype.cloneNode = function (_deep = false) {
+  return createCoraliteComment({
+    type: 'comment',
+    data: this.data || ''
+  })
+}
+
 /**
  * Prototype for Coralite Directive Nodes.
  */
@@ -475,6 +1567,12 @@ Object.defineProperties(CoraliteDirectivePrototype, {
  * Prototype for Coralite Component Roots (Document).
  */
 const CoraliteComponentPrototype = Object.create(CoraliteNodePrototype)
+
+CoraliteComponentPrototype.querySelector = CoraliteElementPrototype.querySelector
+CoraliteComponentPrototype.querySelectorAll = CoraliteElementPrototype.querySelectorAll
+CoraliteComponentPrototype.getElementById = CoraliteElementPrototype.getElementById
+CoraliteComponentPrototype.getElementsByTagName = CoraliteElementPrototype.getElementsByTagName
+CoraliteComponentPrototype.getElementsByClassName = CoraliteElementPrototype.getElementsByClassName
 
 Object.defineProperties(CoraliteComponentPrototype, {
   nodeName: {

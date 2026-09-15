@@ -44,6 +44,57 @@
  * @property {string} textContent - The text content of the node and its descendants
  * @property {string} id - The element's ID attribute
  * @property {string} className - The element's class attribute
+ * @property {CoraliteElement[]} children - Child elements only
+ * @property {number} childElementCount - Count of child elements
+ * @property {CoraliteElement|null} firstElementChild - First child element
+ * @property {CoraliteElement|null} lastElementChild - Last child element
+ * @property {CoraliteElement|null} nextElementSibling - Next sibling element
+ * @property {CoraliteElement|null} previousElementSibling - Previous sibling element
+ * @property {number} offsetWidth - Element offset width
+ * @property {number} offsetHeight - Element offset height
+ * @property {number} clientWidth - Element client width
+ * @property {number} clientHeight - Element client height
+ * @property {number} scrollWidth - Element scroll width
+ * @property {number} scrollHeight - Element scroll height
+ * @property {number} clientTop - Element client top
+ * @property {number} clientLeft - Element client left
+ * @property {number} offsetTop - Element offset top
+ * @property {number} offsetLeft - Element offset left
+ * @property {number} scrollTop - Element scroll top
+ * @property {number} scrollLeft - Element scroll left
+ * @property {CoraliteElement|null} offsetParent - Offset parent element
+ * @property {string} innerHTML - HTML string content
+ * @property {string} outerHTML - Outer HTML string content
+ * @property {Record<string, any>} dataset - Dataset object proxy
+ * @property {any} style - Style object proxy
+ * @property {string} value - Form control value
+ * @property {boolean} checked - Form control checked state
+ * @property {boolean} disabled - Form control disabled state
+ * @property {Function} getAttribute - Get attribute value
+ * @property {Function} setAttribute - Set attribute value
+ * @property {Function} hasAttribute - Check attribute existence
+ * @property {Function} removeAttribute - Remove attribute
+ * @property {Function} appendChild - Append child node
+ * @property {Function} append - Append nodes or strings
+ * @property {Function} prepend - Prepend nodes or strings
+ * @property {Function} replaceChildren - Replace children with nodes or strings
+ * @property {Function} replaceWith - Replace node in parent
+ * @property {Function} before - Insert nodes or strings before element
+ * @property {Function} after - Insert nodes or strings after element
+ * @property {Function} contains - Check descendant containment
+ * @property {Function} cloneNode - Clone node
+ * @property {Function} getBoundingClientRect - Get bounding client rect
+ * @property {Function} getClientRects - Get client rects list
+ * @property {Function} addEventListener - Add event listener
+ * @property {Function} removeEventListener - Remove event listener
+ * @property {Function} dispatchEvent - Dispatch event
+ * @property {Function} querySelector - Query single matching descendant element
+ * @property {Function} querySelectorAll - Query all matching descendant elements
+ * @property {Function} getElementById - Get descendant element by ID
+ * @property {Function} getElementsByTagName - Get descendant elements by tag name
+ * @property {Function} getElementsByClassName - Get descendant elements by class name
+ * @property {Function} matches - Test selector match
+ * @property {Function} closest - Find closest matching ancestor
  */
 
 /**

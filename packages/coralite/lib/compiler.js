@@ -215,7 +215,17 @@ export async function evaluateDevelopment ({
     ...source.utils
   }
 
+  const virtualWindow = serverUtilsBase.createVirtualWindow(context)
   const contextGlobals = {
+    window: virtualWindow,
+    document: virtualWindow.document,
+    location: virtualWindow.location,
+    getComputedStyle: virtualWindow.getComputedStyle,
+    matchMedia: virtualWindow.matchMedia,
+    requestAnimationFrame: virtualWindow.requestAnimationFrame,
+    cancelAnimationFrame: virtualWindow.cancelAnimationFrame,
+    CustomEvent: virtualWindow.CustomEvent,
+    Event: virtualWindow.Event,
     __coralite_context__: symmetricalContext,
     __coralite_plugins__: cachedBoundPlugins,
     __coralite_utils__: source.utils,
@@ -227,7 +237,7 @@ export async function evaluateDevelopment ({
       if (typeof globalThis.createCoraliteElement === 'function') {
         return globalThis.createCoraliteElement(tag, options)
       }
-      return globalThis.document.createElement(tag, options)
+      return virtualWindow.document.createElement(tag, options)
     },
     __coralite_process_html__: (html) => {
       if (typeof globalThis.processHTML === 'function') {
@@ -244,6 +254,7 @@ export async function evaluateDevelopment ({
   }
 
   const contextifiedObject = createContext(contextGlobals)
+  contextifiedObject.globalThis = contextifiedObject
   const moduleComponent = getComponent(module.id)
 
   let linker
@@ -445,11 +456,28 @@ export async function evaluateProduction ({
   }
 
   const fn = moduleComponent.result._compiledFunction
+  const virtualWindow = serverUtils.createVirtualWindow(context)
+
+  const origWin = globalThis.window
+  const origDoc = globalThis.document
 
   try {
+    globalThis.window = virtualWindow
+    globalThis.document = virtualWindow.document
     await fn(moduleMock, moduleMock.exports, customRequire, context)
   } catch (error) {
     throw createExecutionError(error, module, moduleComponent, page, contextId)
+  } finally {
+    if (origWin !== undefined) {
+      globalThis.window = origWin
+    } else {
+      delete globalThis.window
+    }
+    if (origDoc !== undefined) {
+      globalThis.document = origDoc
+    } else {
+      delete globalThis.document
+    }
   }
 
   if (moduleMock.exports.default != null) {
