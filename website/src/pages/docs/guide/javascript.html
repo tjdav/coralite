@@ -95,20 +95,35 @@
     <coralite-heading level="3" text="Registering Observers"></coralite-heading>
 
     <p>
-      Inside the <code>client</code> function, you can call <code>observe(key, callback)</code>. The callback is invoked synchronously whenever the state property matching the <code>key</code> is modified and its new value differs from its old value.
+      Inside the <code>client</code> function, you can call <code>observe(key, callback)</code>.
     </p>
+
+    <ul>
+      <li>
+        <strong>Synchronous State Properties:</strong> For primitive or synchronous state properties, the callback is invoked synchronously whenever the state property matching the <code>key</code> is modified and its new value differs from its old value.
+      </li>
+      <li>
+        <strong>Async Getters:</strong> For asynchronous getters (getters returning Promises), the callback fires asynchronously after the Promise resolves, receiving <code>(resolvedNewVal, resolvedOldVal)</code>. Coralite tracks dependencies before and after <code>await</code> boundaries and automatically discards stale in-flight resolutions if newer state changes occur before resolution.
+      </li>
+    </ul>
 
     <coralite-code-highlight language="javascript">
       export default defineComponent({
+        getters: {
+          async searchResults({ state, signal }) {
+            const res = await fetch(`/api/search?q=${state.query}`, { signal })
+            return res.json()
+          }
+        },
         client({ state, observe }) {
-          // Observe pre-defined properties (e.g. from attributes or server)
+          // Observe synchronous properties
           observe('score', (newVal, oldVal) => {
             console.log(`Score changed from ${oldVal} to ${newVal}`)
           })
 
-          // Observe dynamic properties set at runtime
-          observe('status', (newVal) => {
-            console.log(`Status is now: ${newVal}`)
+          // Observe async getters (receives resolved values)
+          observe('searchResults', (results, oldResults) => {
+            console.log('Search results updated:', results)
           })
         }
       })

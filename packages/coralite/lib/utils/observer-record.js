@@ -56,6 +56,13 @@ export class ObserverRecord {
      * @type {boolean}
      */
     this.initialized = false
+
+    /**
+     * Monotonic token tracking active in-flight async getter resolution.
+     * @type {symbol|null}
+     * @protected
+     */
+    this._asyncVersion = null
   }
 
   /**
@@ -65,23 +72,27 @@ export class ObserverRecord {
    * @returns {any} The newly evaluated value of the observed state property.
    */
   updateDependenciesAndValue () {
-    // @ts-ignore
-    const parentCollector = this.element._collectingDependencies
-    // @ts-ignore
-    this.element._activeObserverRecord = this
+    /** @type {any} */
+    const el = this.element
+    const parentCollector = el._collectingDependencies
+    const prevRecord = el._activeObserverRecord
+
+    el._activeObserverRecord = this
     this._nextDependencies.clear()
-    // @ts-ignore
-    this.element._collectingDependencies = this._nextDependencies
+    el._collectingDependencies = this._nextDependencies
 
     let value
     try {
-      // @ts-ignore
-      value = this.element._state[this.key]
+      value = el._state ? el._state[this.key] : undefined
     } finally {
-      // @ts-ignore
-      this.element._activeObserverRecord = parentCollector ? null : this.element._activeObserverRecord
-      // @ts-ignore
-      this.element._collectingDependencies = parentCollector
+      el._activeObserverRecord = prevRecord
+      el._collectingDependencies = parentCollector
+    }
+
+    if (value instanceof Promise) {
+      for (const dep of this.dependencies) {
+        this._nextDependencies.add(dep)
+      }
     }
 
     this.element._updateObserverSubscriptions(this, this._nextDependencies)
@@ -94,8 +105,25 @@ export class ObserverRecord {
    * @returns {void}
    */
   init () {
-    this.lastValue = this.updateDependenciesAndValue()
+    const value = this.updateDependenciesAndValue()
     this.initialized = true
+
+    if (value instanceof Promise) {
+      const version = Symbol('observer-init')
+      this._asyncVersion = version
+      value.then((resolved) => {
+        if (this._asyncVersion === version && this.element.isConnected) {
+          this.lastValue = resolved
+        }
+      }, (err) => {
+        if (err?.name !== 'AbortError') {
+          console.error('Coralite Async Getter Error:', err)
+        }
+      })
+      return
+    }
+
+    this.lastValue = value
   }
 
   /**
@@ -106,19 +134,54 @@ export class ObserverRecord {
    */
   run () {
     const newVal = this.updateDependenciesAndValue()
+
+    if (newVal instanceof Promise) {
+      const version = Symbol('observer-run')
+      this._asyncVersion = version
+      newVal.then(async (resolvedNew) => {
+        if (this._asyncVersion !== version || !this.element.isConnected) {
+          return
+        }
+        let oldVal = this.lastValue
+        if (oldVal instanceof Promise) {
+          oldVal = await oldVal
+        }
+        if (this._asyncVersion !== version || !this.element.isConnected || resolvedNew === oldVal) {
+          return
+        }
+        this.lastValue = resolvedNew
+        this._invokeCallback(resolvedNew, oldVal)
+      }, (err) => {
+        if (err?.name !== 'AbortError') {
+          console.error('Coralite Async Getter Error:', err)
+        }
+      })
+      return
+    }
+
+    this._asyncVersion = null
     const oldVal = this.lastValue
     if (newVal !== oldVal) {
       this.lastValue = newVal
-      // @ts-ignore
-      const wasExecuting = this.element._isExecutingObserver
-      // @ts-ignore
-      this.element._isExecutingObserver = true
-      try {
-        this.callback(newVal, oldVal)
-      } finally {
-        // @ts-ignore
-        this.element._isExecutingObserver = wasExecuting
-      }
+      this._invokeCallback(newVal, oldVal)
+    }
+  }
+
+  /**
+   * Invokes the user callback with re-entry guard.
+   * @param {any} newVal - The new evaluated state property value.
+   * @param {any} oldVal - The previous evaluated state property value.
+   * @private
+   */
+  _invokeCallback (newVal, oldVal) {
+    /** @type {any} */
+    const el = this.element
+    const wasExecuting = el._isExecutingObserver
+    el._isExecutingObserver = true
+    try {
+      this.callback(newVal, oldVal)
+    } finally {
+      el._isExecutingObserver = wasExecuting
     }
   }
 
@@ -127,6 +190,7 @@ export class ObserverRecord {
    * @returns {void}
    */
   cleanup () {
+    this._asyncVersion = null
     this._nextDependencies.clear()
     this.element._updateObserverSubscriptions(this, this._nextDependencies)
   }

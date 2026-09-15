@@ -404,6 +404,27 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._contextCallbacks = []
+
+    /**
+     * Active dependency collector set for state tracking.
+     * @type {Set<string>|null}
+     * @protected
+     */
+    this._collectingDependencies = null
+
+    /**
+     * Currently active ObserverRecord evaluating a getter or observed key.
+     * @type {ObserverRecord|null}
+     * @protected
+     */
+    this._activeObserverRecord = null
+
+    /**
+     * Cache mapping getter keys to their direct dependency Sets for nested getter dependency propagation.
+     * @type {Map<string, Set<string>>|null}
+     * @protected
+     */
+    this._getterDeps = null
   }
 
   /**
@@ -418,6 +439,7 @@ export class CoraliteElement extends BaseElement {
     this._resolutionStack = new Set()
     this._collectingDependencies = null
     this._activeObserverRecord = null
+    this._getterDeps = new Map()
     this._subscriberMap = new Map()
     this._observerRecords = new Set()
     this._dependencyGraph = new Map()
@@ -587,6 +609,11 @@ export class CoraliteElement extends BaseElement {
     if (this._slotObservedKeys) {
       this._slotObservedKeys.clear()
       this._slotObservedKeys = null
+    }
+
+    if (this._getterDeps) {
+      this._getterDeps.clear()
+      this._getterDeps = null
     }
 
     this._dirtyObserversBuffer = null
@@ -868,6 +895,9 @@ export class CoraliteElement extends BaseElement {
 
     // Define derived state getters with isolation controllers
     this._getterAbortControllers = {}
+    if (!this._getterDeps) {
+      this._getterDeps = new Map()
+    }
     for (const [key, getter] of Object.entries(options.getters || {})) {
       Object.defineProperty(target, key, {
         get: () => {
@@ -876,11 +906,28 @@ export class CoraliteElement extends BaseElement {
           }
           this._getterAbortControllers[key] = new AbortController()
 
+          let directDeps = this._getterDeps.get(key)
+          if (!directDeps) {
+            directDeps = new Set()
+            this._getterDeps.set(key, directDeps)
+          }
+
           // Enforce "Dual-Proxy" safety: Getters cannot mutate state
           const tracker = {
             activeCollector: (p) => {
-              if (this._collectingDependencies && typeof p === 'string') {
-                this._collectingDependencies.add(p)
+              if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
+                directDeps.add(p)
+                if (this._collectingDependencies) {
+                  this._collectingDependencies.add(p)
+                }
+                if (this._getterDeps?.has(p)) {
+                  for (const subDep of this._getterDeps.get(p)) {
+                    directDeps.add(subDep)
+                    if (this._collectingDependencies) {
+                      this._collectingDependencies.add(subDep)
+                    }
+                  }
+                }
               }
             }
           }
@@ -1313,16 +1360,45 @@ export class CoraliteElement extends BaseElement {
 
           self._resolutionStack.add(getterKey)
 
-          let directDeps = new Set()
+          if (!self._getterDeps) {
+            self._getterDeps = new Map()
+          }
+          let directDeps = self._getterDeps.get(getterKey)
+          if (!directDeps) {
+            directDeps = new Set()
+            self._getterDeps.set(getterKey, directDeps)
+          }
+          directDeps.clear()
+
           const parentCollecting = self._collectingDependencies
           self._collectingDependencies = directDeps
+
+          const activeRecord = self._activeObserverRecord
 
           let value
           try {
             if (options.getters && getterKey in options.getters) {
               value = Reflect.get(t, p, receiver)
             } else {
-              const roState = createReadOnlyProxy(self._state)
+              const tracker = {
+                activeCollector: (subProp) => {
+                  if (typeof subProp === 'string' && (subProp in target || (options.getters && subProp in options.getters))) {
+                    directDeps.add(subProp)
+                    if (self._collectingDependencies) {
+                      self._collectingDependencies.add(subProp)
+                    }
+                    if (self._getterDeps?.has(subProp)) {
+                      for (const subDep of self._getterDeps.get(subProp)) {
+                        directDeps.add(subDep)
+                        if (self._collectingDependencies) {
+                          self._collectingDependencies.add(subDep)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+              const roState = createReadOnlyProxy(self._state, new WeakMap(), tracker)
               const getterContext = {
                 state: roState,
                 root: self,
@@ -1344,31 +1420,21 @@ export class CoraliteElement extends BaseElement {
           }
 
           // Async Getter Promise Handling
-          if (value instanceof Promise) {
+          if (value instanceof Promise && activeRecord) {
+            const record = activeRecord
+            const deps = directDeps
             value.then(() => {
-              if (self._activeObserverRecord) {
-                const record = self._activeObserverRecord
-                const asyncDeps = new Set()
-                const originalCollector = self._collectingDependencies
-                self._collectingDependencies = asyncDeps
-                try {
-                  if (options.getters && getterKey in options.getters) {
-                    Reflect.get(t, p, receiver)
-                  } else {
-                    const roState = createReadOnlyProxy(self._state)
-                    const getterContext = {
-                      state: roState,
-                      root: self,
-                      refs: resolveRef,
-                      slots: createClientSlotsHelper(self),
-                      signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal
-                    }
-                    getterFn(getterContext)
-                  }
-                } finally {
-                  self._collectingDependencies = originalCollector
-                }
-                self._updateObserverSubscriptions(record, asyncDeps)
+              if (!self._observerRecords || !self._observerRecords.has(record)) {
+                return
+              }
+              const merged = new Set([...record.dependencies, ...deps])
+              if (merged.size === record.dependencies.size && [...merged].every(d => record.dependencies.has(d))) {
+                return
+              }
+              self._updateObserverSubscriptions(record, merged)
+            }, (err) => {
+              if (err?.name !== 'AbortError') {
+                console.error('Coralite Async Getter Error:', err)
               }
             })
           }
@@ -1378,7 +1444,7 @@ export class CoraliteElement extends BaseElement {
 
         const value = Reflect.get(t, p, receiver)
 
-        if (self._collectingDependencies) {
+        if (self._collectingDependencies && typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
           self._collectingDependencies.add(p)
         }
 

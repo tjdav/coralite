@@ -262,13 +262,19 @@ async server(context) {
     <p><strong>Note:</strong> In <a href="./config.html#mode">testing mode</a>, you can override this block for specific components to provide deterministic mock data.</p>
 
     <coralite-heading level="2" text="3. getters (Derived State)"></coralite-heading>
-    <p>Getters are pure functions used to calculate derived data. They are reactive; if an attribute or a data value changes, the getter automatically re-calculates.</p>
+    <p>Getters are functions used to calculate derived data. They are reactive; if an attribute or a data value changes, the getter automatically re-calculates. Getters support both synchronous pure functions and asynchronous functions returning Promises.</p>
 
     <coralite-code-highlight language="javascript">
 getters: {
-    visibleUsers: ({ state }) => state.users.slice(0, state.maxItems)
+    visibleUsers: ({ state }) => state.users.slice(0, state.maxItems),
+    async filteredData: async ({ state, signal }) => {
+        const res = await fetch(`/api/filter?type=${state.filter}`, { signal })
+        return res.json()
+    }
 }
     </coralite-code-highlight>
+
+    <p>When an asynchronous getter is evaluated or observed via <code>observe(key, callback)</code>, Coralite tracks dependencies across <code>await</code> points and delivers resolved values to observers. If state changes while an async getter is in-flight, stale resolutions are automatically discarded to prevent race conditions.</p>
 
     <coralite-heading level="2" text="4. style (Declarative Reactive CSS)"></coralite-heading>
     <p>The <code>style</code> block defines declarative, reactive inline CSS properties and CSS Custom Properties (<code>--*</code>) on the custom element host tag.</p>
