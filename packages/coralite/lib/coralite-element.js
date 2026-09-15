@@ -147,6 +147,10 @@ function createClientSlotsHelper (element) {
 const FallbackElement = class {
 }
 
+const MAX_REACTIVE_CASCADE_DEPTH = 50
+const MAX_FLUSHES_PER_WINDOW = 100
+const FLUSH_WINDOW_MS = 1000
+
 /** @type {typeof HTMLElement} */
 const BaseElement = typeof HTMLElement !== 'undefined' ? HTMLElement : FallbackElement
 
@@ -425,6 +429,41 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._getterDeps = null
+
+    /**
+     * Count of consecutive microtask flushes without settling.
+     * @type {number}
+     * @protected
+     */
+    this._consecutiveFlushCount = 0
+
+    /**
+     * Count of flushes in current sliding window.
+     * @type {number}
+     * @protected
+     */
+    this._flushWindowCount = 0
+
+    /**
+     * Start timestamp of current sliding window.
+     * @type {number}
+     * @protected
+     */
+    this._flushWindowStart = 0
+
+    /**
+     * Flag indicating if a reactive infinite loop was broken by circuit breaker.
+     * @type {boolean}
+     * @protected
+     */
+    this._reactiveLoopBroken = false
+
+    /**
+     * Test hook flag indicating if circuit breaker tripped.
+     * @type {boolean}
+     * @protected
+     */
+    this._cascadeBreakerTripped = false
   }
 
   /**
@@ -447,6 +486,11 @@ export class CoraliteElement extends BaseElement {
     this._slotObservedKeys = new Set()
     this._dirtyObserversBuffer = []
     this._isDevMode = typeof window !== 'undefined' && Boolean(window['__coralite__']) && window['__coralite__'].mode === 'development'
+    this._consecutiveFlushCount = 0
+    this._flushWindowCount = 0
+    this._flushWindowStart = 0
+    this._reactiveLoopBroken = false
+    this._cascadeBreakerTripped = false
 
     if (!this.componentOptions) {
       return
@@ -618,6 +662,9 @@ export class CoraliteElement extends BaseElement {
 
     this._dirtyObserversBuffer = null
     this._isDevMode = false
+    this._consecutiveFlushCount = 0
+    this._flushWindowCount = 0
+    this._reactiveLoopBroken = false
 
     this._slotRuntimeReady = false
     this._processSlotsOnReady = false
@@ -1168,6 +1215,80 @@ export class CoraliteElement extends BaseElement {
   }
 
   /**
+   * Asserts that state mutation inside an observer callback does not create a direct cyclic dependency.
+   * In dev/test: logs warning for any mutation, and throws CoraliteError on direct cycles.
+   * In prod: silently permits non-cyclic cascades, and aborts direct cycles (reporting via console.error and coralite-error event).
+   * @param {string|symbol} p - Property being mutated.
+   * @returns {boolean} True if the mutation is permitted; false if aborted.
+   * @protected
+   */
+  _assertNotObservingStateMutation (p) {
+    if (!this._isExecutingObserver) {
+      return true
+    }
+
+    const strP = typeof p === 'string' ? p : String(p)
+    const activeRecord = this._activeObserverRecord
+
+    const isDirectCycle = activeRecord ? (
+      activeRecord.key === strP ||
+      activeRecord.dependencies.has(strP) ||
+      (typeof p === 'string' && (
+        activeRecord.dependencies.has(kebabToCamel(strP)) ||
+        activeRecord.dependencies.has(camelToKebab(strP))
+      ))
+    ) : true
+
+    const msg = isDirectCycle
+      ? `Cyclic state mutation detected inside an observe() callback. The observer for "${activeRecord?.key || 'unknown'}" mutates "${strP}", which it depends on. This causes an infinite reactivity loop. Use getters for derived state instead.`
+      : `State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead. (mutated property: "${strP}")`
+
+    if (this._isDevMode) {
+      console.warn(msg)
+    }
+
+    if (isDirectCycle) {
+      if (this._isDevMode) {
+        throw new CoraliteError(msg, {
+          componentId: this.componentOptions?.componentId,
+          instanceId: this._instanceId,
+          path: typeof p === 'string' ? p : undefined
+        })
+      }
+
+      const err = new CoraliteError(msg, {
+        componentId: this.componentOptions?.componentId,
+        instanceId: this._instanceId,
+        path: typeof p === 'string' ? p : undefined
+      })
+      console.error('Coralite Observer Error:', err)
+      let CustomEventCtor = null
+      if (typeof window !== 'undefined' && window.CustomEvent) {
+        CustomEventCtor = window.CustomEvent
+      } else if (typeof CustomEvent !== 'undefined') {
+        CustomEventCtor = CustomEvent
+      }
+
+      if (CustomEventCtor && typeof this.dispatchEvent === 'function') {
+        this.dispatchEvent(new CustomEventCtor('coralite-error', {
+          bubbles: true,
+          composed: true,
+          detail: { error: err }
+        }))
+      }
+
+      /** @type {any} */
+      const self = this
+      if (typeof self.emit === 'function') {
+        self.emit('coralite-error', { error: err })
+      }
+      return false
+    }
+
+    return true
+  }
+
+  /**
    * Resolves a ref identifier to its target element, checking the host
    * attribute, the scoped DOM query, and owned ref nodes as fallbacks.
    *
@@ -1253,6 +1374,9 @@ export class CoraliteElement extends BaseElement {
           if (typeof p !== 'string') {
             return Reflect.set(t, p, v)
           }
+          if (!self._assertNotObservingStateMutation(p)) {
+            return true
+          }
           const oldValue = t[p]
           if (oldValue === v) {
             return true
@@ -1281,6 +1405,9 @@ export class CoraliteElement extends BaseElement {
         deleteProperty (t, p) {
           if (typeof p !== 'string') {
             return Reflect.deleteProperty(t, p)
+          }
+          if (!self._assertNotObservingStateMutation(p)) {
+            return true
           }
           const hasProp = Object.prototype.hasOwnProperty.call(t, p)
           const oldValue = t[p]
@@ -1452,6 +1579,13 @@ export class CoraliteElement extends BaseElement {
       },
 
       set (t, p, v) {
+        if (!self._assertNotObservingStateMutation(p)) {
+          return true
+        }
+        if (!self._isExecutingObserver) {
+          self._reactiveLoopBroken = false
+          self._cascadeBreakerTripped = false
+        }
         if (p === 'errors') {
           const existingKeys = Object.keys(errorsTarget)
           const newKeys = (v && typeof v === 'object') ? Object.keys(v) : []
@@ -1528,10 +1662,6 @@ export class CoraliteElement extends BaseElement {
           return true
         }
 
-        if (typeof p === 'string' && self._isDevMode && self._isExecutingObserver) {
-          console.warn('State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.')
-        }
-
         t[p] = v
 
         if (typeof p === 'string') {
@@ -1556,6 +1686,9 @@ export class CoraliteElement extends BaseElement {
       deleteProperty (t, p) {
         if (typeof p !== 'string') {
           return Reflect.deleteProperty(t, p)
+        }
+        if (!self._assertNotObservingStateMutation(p)) {
+          return true
         }
         const camelName = kebabToCamel(p)
         const kebabName = camelToKebab(camelName)
@@ -1762,7 +1895,7 @@ export class CoraliteElement extends BaseElement {
    * @private
    */
   _scheduleUpdate () {
-    if (this._isUpdatePending) {
+    if (this._isUpdatePending || this._reactiveLoopBroken) {
       return
     }
     if (!this._needsDOMUpdate && (!this._dirtyObservers || this._dirtyObservers.size === 0)) {
@@ -1787,15 +1920,95 @@ export class CoraliteElement extends BaseElement {
       if (this._dirtyObservers) {
         this._dirtyObservers.clear()
       }
+      this._consecutiveFlushCount = 0
+      this._flushWindowCount = 0
       return
     }
 
-    if (this._needsDOMUpdate) {
-      this._updateDOM()
+    if (this._reactiveLoopBroken) {
+      return
     }
 
-    if (this._dirtyObservers && this._dirtyObservers.size > 0) {
-      this._flushDirtyObservers()
+    const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
+    if (!this._flushWindowStart || (now - this._flushWindowStart) > FLUSH_WINDOW_MS) {
+      this._flushWindowStart = now
+      this._flushWindowCount = 1
+    } else {
+      this._flushWindowCount++
+    }
+
+    this._consecutiveFlushCount++
+
+    const exceedsDepth = this._consecutiveFlushCount > MAX_REACTIVE_CASCADE_DEPTH
+    const exceedsRate = this._flushWindowCount > MAX_FLUSHES_PER_WINDOW
+
+    if (exceedsDepth || exceedsRate) {
+      this._consecutiveFlushCount = 0
+      this._flushWindowCount = 0
+      this._reactiveLoopBroken = true
+      this._cascadeBreakerTripped = true
+
+      if (this._dirtyObservers) {
+        this._dirtyObservers.clear()
+      }
+
+      if (this._needsDOMUpdate) {
+        try {
+          this._updateDOM()
+        } catch {
+          // ignore render error during emergency latch
+        }
+      }
+
+      const reason = exceedsDepth
+        ? `Maximum reactive cascade depth exceeded (${MAX_REACTIVE_CASCADE_DEPTH}).`
+        : `Maximum reactive flush rate exceeded (${MAX_FLUSHES_PER_WINDOW} flushes in ${FLUSH_WINDOW_MS}ms).`
+
+      const err = new CoraliteError(
+        `${reason} This indicates an infinite reactivity loop where an observer or getter cyclically mutates state. ` +
+        `Ensure observe() callbacks and getters do not mutate state properties they depend on.`,
+        {
+          componentId: this.componentOptions?.componentId,
+          instanceId: this._instanceId
+        }
+      )
+
+      console.error('Coralite Reactive Cascade Error:', err)
+      let CustomEventCtor = null
+      if (typeof window !== 'undefined' && window.CustomEvent) {
+        CustomEventCtor = window.CustomEvent
+      } else if (typeof CustomEvent !== 'undefined') {
+        CustomEventCtor = CustomEvent
+      }
+
+      if (CustomEventCtor && typeof this.dispatchEvent === 'function') {
+        this.dispatchEvent(new CustomEventCtor('coralite-error', {
+          bubbles: true,
+          composed: true,
+          detail: { error: err }
+        }))
+      }
+
+      /** @type {any} */
+      const self = this
+      if (typeof self.emit === 'function') {
+        self.emit('coralite-error', { error: err })
+      }
+      return
+    }
+
+    try {
+      if (this._needsDOMUpdate) {
+        this._updateDOM()
+      }
+
+      if (this._dirtyObservers && this._dirtyObservers.size > 0) {
+        this._flushDirtyObservers()
+      }
+    } finally {
+      if (!this._isUpdatePending) {
+        this._consecutiveFlushCount = 0
+      }
     }
   }
 

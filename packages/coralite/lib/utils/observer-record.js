@@ -177,11 +177,21 @@ export class ObserverRecord {
     /** @type {any} */
     const el = this.element
     const wasExecuting = el._isExecutingObserver
+    const prevRecord = el._activeObserverRecord
     el._isExecutingObserver = true
+    el._activeObserverRecord = this
     try {
-      this.callback(newVal, oldVal)
+      const res = this.callback(newVal, oldVal)
+      if (res && typeof res.catch === 'function') {
+        res.catch((err) => {
+          console.error('Coralite Observer Error:', err)
+        })
+      }
+    } catch (err) {
+      console.error('Coralite Observer Error:', err)
     } finally {
       el._isExecutingObserver = wasExecuting
+      el._activeObserverRecord = prevRecord
     }
   }
 

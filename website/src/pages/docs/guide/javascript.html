@@ -135,11 +135,14 @@
       <li>
         <strong>Avoid Mutating State Inside Observers:</strong> Modifying state properties inside an observer callback can trigger infinite reactivity loops. If you need to compute derived state, always use the <code>getters</code> block of <code>defineComponent</code> instead.
         <p>
-          In development or testing environments, Coralite will log a warning if it detects a state mutation during observer execution:
+          In development or testing environments, Coralite will log a warning if it detects a state mutation during observer execution, and will reject direct cyclic mutations to prevent browser freezes:
         </p>
         <coralite-code-highlight language="text">
-          [Coralite Warning]: State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.
+          [Coralite Warning]: Cyclic state mutation detected inside an observe() callback. The observer for "score" mutates "score", which it depends on. This causes an infinite reactivity loop. Use getters for derived state instead.
         </coralite-code-highlight>
+      </li>
+      <li>
+        <strong>Dual Circuit Breaker:</strong> Coralite includes a dual circuit breaker (50 consecutive flushes or 100 flushes in 1s) to catch indirect loops and unblock the UI thread in production and development environments.
       </li>
       <li>
         <strong>Automatic Lifecycle Cleanup:</strong> You do not need to manually unregister observers. Coralite automatically cleans up all registered observers when the component is disconnected from the DOM to prevent memory leaks.

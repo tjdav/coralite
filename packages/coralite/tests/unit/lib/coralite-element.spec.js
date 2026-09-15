@@ -494,7 +494,7 @@ describe('CoraliteElement', () => {
     })
   })
 
-  it('should output warning when state is mutated from within an observe callback (Infinite Loop Protection)', (t, done) => {
+  it('should output warning and throw in dev mode when state is mutated cyclically from within an observe callback (Infinite Loop Protection)', (t, done) => {
     let warningMsg = null
     const originalWarn = console.warn
     console.warn = (msg) => {
@@ -515,7 +515,7 @@ describe('CoraliteElement', () => {
       },
       client: ({ state, observe }) => {
         observe('score', (newVal) => {
-          state.other = newVal + 1
+          state.score = newVal + 1
         })
       }
     })
@@ -533,7 +533,8 @@ describe('CoraliteElement', () => {
         window.__coralite__.mode = prevMode
 
         assert.ok(warningMsg, 'Should have emitted a warning msg')
-        assert.ok(warningMsg.includes('State mutation detected inside an observe() callback.'))
+        assert.ok(warningMsg.includes('Cyclic state mutation detected inside an observe() callback.'))
+        assert.strictEqual(el._state.score, 20)
         document.body.removeChild(el)
         done()
       })
