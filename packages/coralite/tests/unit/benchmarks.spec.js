@@ -2,6 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert'
 import { buildData, updateData, swapRows } from '../../benchmarks/utils/data-generator.js'
 import { getMemoryUsage, triggerGC } from '../../benchmarks/utils/memory.js'
+import { calculateMedian, calculateStats } from '../../benchmarks/utils/stats.js'
 import { generateMarkdownTable, writeJSONResults, printTerminalResults } from '../../benchmarks/utils/reporter.js'
 import { compareAgainstBaseline } from '../../benchmarks/utils/regression.js'
 import { execFile } from 'node:child_process'
@@ -54,6 +55,42 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
       assert.doesNotThrow(() => {
         triggerGC()
       })
+    })
+  })
+
+  describe('stats.js', () => {
+    it('calculateMedian handles empty and single-element arrays', () => {
+      assert.strictEqual(calculateMedian([]), 0)
+      assert.strictEqual(calculateMedian(null), 0)
+      assert.strictEqual(calculateMedian([42.5]), 42.5)
+    })
+
+    it('calculateMedian does not drop initial item and calculates true median', () => {
+      // 3 items: [10, 20, 30] -> median is 20
+      assert.strictEqual(calculateMedian([30, 10, 20]), 20)
+      // 4 items: [10, 20, 30, 40] -> median is (20 + 30) / 2 = 25
+      assert.strictEqual(calculateMedian([40, 10, 30, 20]), 25)
+      // verify item 1 is not dropped (if dropped, [10, 20] from [10, 20] would become [20])
+      assert.strictEqual(calculateMedian([10, 20]), 15)
+    })
+
+    it('calculateStats computes mean, stddev, p95, min, max, and count accurately', () => {
+      const samples = [10, 20, 30, 40, 50]
+      const stats = calculateStats(samples)
+      assert.strictEqual(stats.count, 5)
+      assert.strictEqual(stats.median, 30)
+      assert.strictEqual(stats.mean, 30)
+      assert.strictEqual(stats.min, 10)
+      assert.strictEqual(stats.max, 50)
+      assert.strictEqual(stats.stddev, 15.81) // sample stddev: sqrt(1000 / 4) = sqrt(250) = 15.8113...
+      assert.strictEqual(stats.p95, 50)
+    })
+
+    it('calculateStats handles empty array safely', () => {
+      const stats = calculateStats([])
+      assert.strictEqual(stats.count, 0)
+      assert.strictEqual(stats.median, 0)
+      assert.strictEqual(stats.stddev, 0)
     })
   })
 

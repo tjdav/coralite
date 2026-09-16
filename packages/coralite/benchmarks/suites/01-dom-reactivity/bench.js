@@ -3,25 +3,14 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import esbuild from 'esbuild'
+import esbuildSvelte from 'esbuild-svelte'
 import polyfillPkg from 'esbuild-plugins-node-modules-polyfill'
 import { launchBenchmarkBrowser } from '../../utils/browser.js'
+import { calculateMedian, calculateStats } from '../../utils/stats.js'
 
 const { nodeModulesPolyfillPlugin } = polyfillPkg
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
-function calculateMedian (numbers) {
-  if (!numbers || numbers.length === 0) {
-    return 0
-  }
-  const sample = numbers.length > 1 ? numbers.slice(1) : numbers
-  const sorted = [...sample].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  if (sorted.length % 2 === 0) {
-    return +((sorted[mid - 1] + sorted[mid]) / 2).toFixed(2)
-  }
-  return +sorted[mid].toFixed(2)
-}
 
 async function createStaticServer (rootDir) {
   const server = http.createServer(async (req, res) => {
@@ -69,7 +58,7 @@ async function createStaticServer (rootDir) {
 
 async function bundleApps (buildDir) {
   await fs.mkdir(buildDir, { recursive: true })
-  const frameworks = ['vanilla', 'coralite', 'react', 'vue']
+  const frameworks = ['vanilla', 'coralite', 'react', 'vue', 'svelte']
 
   for (const fw of frameworks) {
     const fwOutDir = path.join(buildDir, fw)
@@ -78,6 +67,11 @@ async function bundleApps (buildDir) {
     const appSourceDir = path.join(__dirname, 'apps', fw)
     const entryFile = fw === 'react' ? path.join(appSourceDir, 'app.jsx') : path.join(appSourceDir, 'app.js')
 
+    const plugins = [nodeModulesPolyfillPlugin()]
+    if (fw === 'svelte') {
+      plugins.push(esbuildSvelte({ compilerOptions: { runes: true, dev: false } }))
+    }
+
     await esbuild.build({
       entryPoints: [entryFile],
       bundle: true,
@@ -85,7 +79,7 @@ async function bundleApps (buildDir) {
       format: 'esm',
       target: 'esnext',
       platform: 'browser',
-      plugins: [nodeModulesPolyfillPlugin()],
+      plugins,
       outfile: path.join(fwOutDir, 'app.js'),
       define: {
         'process.env.NODE_ENV': '"production"',
@@ -119,7 +113,7 @@ export async function runDomReactivitySuite (options = {}) {
   console.log('Launching benchmark browser...')
   const browser = await launchBenchmarkBrowser()
 
-  const frameworks = ['coralite', 'react', 'vue', 'vanilla']
+  const frameworks = ['coralite', 'svelte', 'react', 'vue', 'vanilla']
   const results = {}
 
   try {
@@ -152,7 +146,6 @@ export async function runDomReactivitySuite (options = {}) {
         pageErrors.length = 0
 
         const duration = await page.evaluate(async (btnSelector) => {
-          const start = performance.now()
           let btn = document.querySelector(btnSelector)
           if (!btn) {
             btn = document.querySelector('coralite-app')?.querySelector(btnSelector)
@@ -163,8 +156,21 @@ export async function runDomReactivitySuite (options = {}) {
           if (!btn) {
             throw new Error(`Target button selector "${btnSelector}" not found in DOM`)
           }
+
+          const start = performance.now()
           btn.click()
-          await new Promise(resolve => requestAnimationFrame(() => setTimeout(resolve, 0)))
+
+          const comp = document.querySelector('coralite-app')
+          if (comp && comp.updateComplete) {
+            await comp.updateComplete
+          } else {
+            await Promise.resolve()
+            await new Promise(resolve => queueMicrotask(resolve))
+          }
+
+          // Force reflow/layout so rendering work is synchronously computed
+          void document.body.offsetHeight
+
           return performance.now() - start
         }, selector)
 
@@ -230,6 +236,8 @@ export async function runDomReactivitySuite (options = {}) {
 
       const cdp = await page.context().newCDPSession(page)
       await cdp.send('HeapProfiler.collectGarbage').catch(() => {})
+      await new Promise(resolve => setTimeout(resolve, 20))
+      await cdp.send('HeapProfiler.collectGarbage').catch(() => {})
 
       let heapBytes = 0
       try {
@@ -243,6 +251,19 @@ export async function runDomReactivitySuite (options = {}) {
 
       await cdp.detach().catch(() => {})
       const heapMB = +(heapBytes / (1024 * 1024)).toFixed(2)
+
+      const opStats = {
+        [createKey]: calculateStats(timings[createKey]),
+        [replaceKey]: calculateStats(timings[replaceKey]),
+        update10th: calculateStats(timings.update10th),
+        swapRows: calculateStats(timings.swapRows),
+        clear: calculateStats(timings.clear)
+      }
+
+      console.log(`  📊 [${fw}] ${createKey}: median=${opStats[createKey].median}ms (stddev=${opStats[createKey].stddev}ms, p95=${opStats[createKey].p95}ms)`)
+      console.log(`  📊 [${fw}] update10th: median=${opStats.update10th.median}ms (stddev=${opStats.update10th.stddev}ms, p95=${opStats.update10th.p95}ms)`)
+      console.log(`  📊 [${fw}] swapRows: median=${opStats.swapRows.median}ms (stddev=${opStats.swapRows.stddev}ms, p95=${opStats.swapRows.p95}ms)`)
+      console.log(`  📊 [${fw}] clear: median=${opStats.clear.median}ms (stddev=${opStats.clear.stddev}ms, p95=${opStats.clear.p95}ms)`)
 
       results[fw] = {
         [createKey]: calculateMedian(timings[createKey]),

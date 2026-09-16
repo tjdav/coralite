@@ -4,25 +4,14 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import zlib from 'node:zlib'
 import esbuild from 'esbuild'
+import esbuildSvelte from 'esbuild-svelte'
 import polyfillPkg from 'esbuild-plugins-node-modules-polyfill'
 import { launchBenchmarkBrowser } from '../../utils/browser.js'
+import { calculateMedian } from '../../utils/stats.js'
 
 const { nodeModulesPolyfillPlugin } = polyfillPkg
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
-function calculateMedian (numbers) {
-  if (!numbers || numbers.length === 0) {
-    return 0
-  }
-  const sample = numbers.length > 1 ? numbers.slice(1) : numbers
-  const sorted = [...sample].sort((a, b) => a - b)
-  const mid = Math.floor(sorted.length / 2)
-  if (sorted.length % 2 === 0) {
-    return +((sorted[mid - 1] + sorted[mid]) / 2).toFixed(2)
-  }
-  return +sorted[mid].toFixed(2)
-}
 
 async function createStaticServer (rootDir) {
   const server = http.createServer(async (req, res) => {
@@ -100,6 +89,11 @@ export async function runBundleHydrationSuite (options = {}) {
       key: 'vue',
       appDir: 'vue',
       entry: 'app.js'
+    },
+    {
+      key: 'svelte',
+      appDir: 'svelte',
+      entry: 'app.js'
     }
   ]
 
@@ -121,6 +115,11 @@ export async function runBundleHydrationSuite (options = {}) {
       const entryFile = path.join(appSourceDir, fw.entry)
       const outFile = path.join(fwOutDir, 'app.js')
 
+      const plugins = [nodeModulesPolyfillPlugin()]
+      if (fw.key === 'svelte') {
+        plugins.push(esbuildSvelte({ compilerOptions: { runes: true, dev: false } }))
+      }
+
       await esbuild.build({
         entryPoints: [entryFile],
         bundle: true,
@@ -128,7 +127,7 @@ export async function runBundleHydrationSuite (options = {}) {
         format: 'esm',
         target: 'esnext',
         platform: 'browser',
-        plugins: [nodeModulesPolyfillPlugin()],
+        plugins,
         outfile: outFile,
         define: {
           'process.env.NODE_ENV': '"production"',

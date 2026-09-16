@@ -62,7 +62,7 @@ node --expose-gc --experimental-vm-modules ./packages/coralite/benchmarks/runner
 | `--check-regression` | - | Check current run against baseline (`baselines/baseline.json`) and exit code 1 on breach | `false` |
 | `--warn-only` | - | Print performance regression warnings without exiting with code 1 | `false` |
 | `--save-baseline` | - | Overwrite `baselines/baseline.json` with current run results | `false` |
-| `--iterations=<n>` | `-i <n>` | Iteration count per browser test | `5` |
+| `--iterations=<n>` | `-i <n>` | Iteration count per browser test | `9` |
 | `--rows=<n>` | `-r <n>` | Row count for DOM reactivity suite | `1000` |
 
 ---

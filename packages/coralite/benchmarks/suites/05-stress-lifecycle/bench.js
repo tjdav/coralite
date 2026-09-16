@@ -478,7 +478,15 @@ async function runMemoryLifecycle () {
   await page.waitForFunction(() => window.__ready === true)
 
   const cdp = await page.context().newCDPSession(page)
-  await cdp.send('HeapProfiler.collectGarbage').catch(() => {})
+
+  const triggerFullGC = async () => {
+    for (let i = 0; i < 3; i++) {
+      await cdp.send('HeapProfiler.collectGarbage').catch(() => {})
+      await new Promise(resolve => setTimeout(resolve, 20))
+    }
+  }
+
+  await triggerFullGC()
 
   const getHeapMB = async () => {
     try {
@@ -496,7 +504,7 @@ async function runMemoryLifecycle () {
     await page.evaluate(() => window.unmount1k())
   }
 
-  await cdp.send('HeapProfiler.collectGarbage').catch(() => {})
+  await triggerFullGC()
   const finalHeapMB = await getHeapMB()
   await cdp.detach().catch(() => {})
   await browser.close()
