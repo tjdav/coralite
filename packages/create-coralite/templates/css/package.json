@@ -11,6 +11,7 @@
     "fix": "coralite-scripts fix"
   },
   "devDependencies": {
+    "coralite": "^1.0.0-rc.2",
     "coralite-scripts": "^1.0.0-rc.2",
     "cross-env": "^10.1.0"
   }
