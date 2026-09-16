@@ -117,7 +117,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     document.body.removeChild(form)
   })
 
-  await t.test('5. Form Reset Callback and onReset Context Hook', () => {
+  await t.test('5. Form Reset Callback and onFormReset Context Hook', () => {
     let resetHookCalled = false
     const ResettableClass = createCoraliteClass({
       componentId: 'c-resettable',
@@ -129,7 +129,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
         }
       },
       client (ctx) {
-        ctx.onReset(() => {
+        ctx.onFormReset(() => {
           resetHookCalled = true
         })
       }
@@ -163,7 +163,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
         }
       },
       client (ctx) {
-        ctx.onDisabled((disabled) => {
+        ctx.onFormDisabled((disabled) => {
           disabledHookValue = disabled
         })
       }
@@ -192,7 +192,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
       formAssociated: true,
       defaultValues: { value: 'initial' },
       client (ctx) {
-        ctx.onRestore((state, mode) => {
+        ctx.onFormRestore((state, mode) => {
           restoredState = state
           restoredMode = mode
         })
@@ -212,13 +212,13 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     document.body.removeChild(el)
   })
 
-  await t.test('8. Live Function Accessors in client() Context', () => {
-    let ctxCopy = null
+  await t.test('8. Live Property Accessors in client() Context', () => {
+    let capturedCtx = null
     const LiveFuncClass = createCoraliteClass({
       componentId: 'c-live-func',
       formAssociated: true,
       client (ctx) {
-        ctxCopy = { ...ctx }
+        capturedCtx = ctx
       }
     })
     const tag = 'c-live-func'
@@ -229,10 +229,11 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     const el = document.createElement(tag)
     form.appendChild(el)
 
-    assert.equal(ctxCopy.form(), form)
-    assert.equal(typeof ctxCopy.validity(), 'object')
-    assert.equal(typeof ctxCopy.checkValidity(), 'boolean')
-    assert.equal(ctxCopy.checkValidity(), true)
+    assert.equal(capturedCtx.form, form)
+    assert.equal(typeof capturedCtx.validity, 'object')
+    assert.equal(capturedCtx.validity.valid, true)
+    assert.equal(typeof capturedCtx.checkValidity(), 'boolean')
+    assert.equal(capturedCtx.checkValidity(), true)
 
     document.body.removeChild(form)
   })
@@ -262,13 +263,13 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     document.body.removeChild(el)
   })
 
-  await t.test('10. Undeclared form attribute string in state vs context form() accessor', () => {
+  await t.test('10. Undeclared form attribute string in state vs context form property', () => {
     let ctxFormRes = null
     const FormAttrClass = createCoraliteClass({
       componentId: 'c-form-attr',
       formAssociated: true,
       client (ctx) {
-        ctxFormRes = ctx.form()
+        ctxFormRes = ctx.form
       }
     })
     const tag = 'c-form-attr'
@@ -397,7 +398,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
       componentId: 'c-reconnect-face',
       formAssociated: true,
       client (ctx) {
-        ctx.onReset(() => {
+        ctx.onFormReset(() => {
           resetCount++
         })
       }
@@ -497,5 +498,53 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     assert.equal(capturedInternals, el._internals)
 
     document.body.removeChild(el)
+  })
+
+  await t.test('17. Context form, validity, validationMessage getters & onForm* hooks', () => {
+    let capturedCtx = null
+    const ContextGetterClass = createCoraliteClass({
+      componentId: 'c-context-getters',
+      formAssociated: true,
+      attributes: {
+        value: {
+          type: String,
+          default: '',
+          validate: (val) => (!val || val.length >= 3) || 'Must be at least 3 characters'
+        }
+      },
+      client (ctx) {
+        capturedCtx = ctx
+      }
+    })
+    const tag = 'c-context-getters'
+    customElements.define(tag, ContextGetterClass)
+
+    const form = document.createElement('form')
+    document.body.appendChild(form)
+    const el = document.createElement(tag)
+    form.appendChild(el)
+
+    // Verify hooks exist
+    assert.equal(typeof capturedCtx.onFormReset, 'function')
+    assert.equal(typeof capturedCtx.onFormDisabled, 'function')
+    assert.equal(typeof capturedCtx.onFormRestore, 'function')
+
+    // Verify form, validity, validationMessage are GETTERS, not function methods
+    assert.equal(typeof capturedCtx.form, 'object')
+    assert.equal(capturedCtx.form, form)
+
+    assert.equal(typeof capturedCtx.validity, 'object')
+    assert.equal(capturedCtx.validity.valid, true)
+
+    assert.equal(typeof capturedCtx.validationMessage, 'string')
+    assert.equal(capturedCtx.validationMessage, '')
+
+    // Mutate state to invalid and verify live getter reflects without function call
+    el._state.value = 'ab'
+    assert.equal(capturedCtx.validity.valid, false)
+    assert.equal(capturedCtx.validity.customError, true)
+    assert.equal(capturedCtx.validationMessage, 'Must be at least 3 characters.')
+
+    document.body.removeChild(form)
   })
 })

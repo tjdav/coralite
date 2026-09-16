@@ -1133,31 +1133,31 @@
           </tr>
           <tr>
             <td><code>validity</code></td>
-            <td><code>() => ValidityState | undefined</code></td>
-            <td>Returns the current <code>ValidityState</code> object.</td>
+            <td><code>ValidityState | undefined</code></td>
+            <td>Live <code>ValidityState</code> getter object reflecting constraint validation.</td>
           </tr>
           <tr>
             <td><code>validationMessage</code></td>
-            <td><code>() => string</code></td>
-            <td>Returns the current localized validation message string.</td>
+            <td><code>string</code></td>
+            <td>Live localized validation message string getter.</td>
           </tr>
           <tr>
             <td><code>form</code></td>
-            <td><code>() => HTMLFormElement | null</code></td>
-            <td>Returns the associated <code>&lt;form&gt;</code> element, resolving either ancestor forms or external forms via <code>form="id"</code>.</td>
+            <td><code>HTMLFormElement | null</code></td>
+            <td>Live getter resolving the associated <code>&lt;form&gt;</code> element (either ancestor form or external form via <code>form="id"</code>).</td>
           </tr>
           <tr>
-            <td><code>onReset</code></td>
+            <td><code>onFormReset</code></td>
             <td><code>(callback: () => void) => () => void</code></td>
             <td>Registers a callback invoked when the enclosing form is reset. Returns a disposer function.</td>
           </tr>
           <tr>
-            <td><code>onDisabled</code></td>
+            <td><code>onFormDisabled</code></td>
             <td><code>(callback: (disabled: boolean) => void) => () => void</code></td>
             <td>Registers a callback invoked when form or ancestor <code>&lt;fieldset disabled&gt;</code> state changes. Returns a disposer function.</td>
           </tr>
           <tr>
-            <td><code>onRestore</code></td>
+            <td><code>onFormRestore</code></td>
             <td><code>(callback: (state: any, mode: 'restore' | 'autocomplete') => void) => () => void</code></td>
             <td>Registers a callback invoked when the browser restores form state or autocomplete occurs. Returns a disposer function.</td>
           </tr>

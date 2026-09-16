@@ -150,12 +150,12 @@
  * @property {(flags?: ValidityStateFlags, message?: string, anchor?: HTMLElement) => void} [setValidity] - Sets the element's validity state and message.
  * @property {() => boolean} [checkValidity] - Checks if the element satisfies its constraints.
  * @property {() => boolean} [reportValidity] - Reports invalid constraints to the user.
- * @property {() => ValidityState|undefined} [validity] - Returns the current ValidityState.
- * @property {() => string} [validationMessage] - Returns the current validation message.
- * @property {() => HTMLFormElement|null} [form] - Returns the associated HTMLFormElement.
- * @property {(callback: () => void) => () => void} [onReset] - Registers a callback invoked on form reset.
- * @property {(callback: (disabled: boolean) => void) => () => void} [onDisabled] - Registers a callback invoked when form/fieldset disabled changes.
- * @property {(callback: (state: any, mode: 'restore' | 'autocomplete') => void) => () => void} [onRestore] - Registers a callback invoked when form state is restored.
+ * @property {ValidityState|undefined} [validity] - The current ValidityState.
+ * @property {string} [validationMessage] - The current validation message.
+ * @property {HTMLFormElement|null} [form] - The associated HTMLFormElement.
+ * @property {(callback: () => void) => () => void} [onFormReset] - Registers a callback invoked on form reset.
+ * @property {(callback: (disabled: boolean) => void) => () => void} [onFormDisabled] - Registers a callback invoked when form/fieldset disabled changes.
+ * @property {(callback: (state: any, mode: 'restore' | 'autocomplete') => void) => () => void} [onFormRestore] - Registers a callback invoked when form state is restored.
  */
 
 /**

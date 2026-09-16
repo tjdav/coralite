@@ -3476,21 +3476,27 @@ export class CoraliteElement extends BaseElement {
       },
       internals: this._internals,
 
-      form: () => self.form,
-      validity: () => self.validity,
-      validationMessage: () => self.validationMessage,
+      get form () {
+        return self.form
+      },
+      get validity () {
+        return self.validity
+      },
+      get validationMessage () {
+        return self.validationMessage
+      },
       checkValidity: () => self.checkValidity(),
       reportValidity: () => self.reportValidity(),
 
-      onReset: (cb) => {
+      onFormReset: (cb) => {
         self._formResetCallbacks.add(cb)
         return () => self._formResetCallbacks.delete(cb)
       },
-      onDisabled: (cb) => {
+      onFormDisabled: (cb) => {
         self._formDisabledCallbacks.add(cb)
         return () => self._formDisabledCallbacks.delete(cb)
       },
-      onRestore: (cb) => {
+      onFormRestore: (cb) => {
         self._formRestoreCallbacks.add(cb)
         return () => self._formRestoreCallbacks.delete(cb)
       }

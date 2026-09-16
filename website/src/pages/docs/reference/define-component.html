@@ -414,31 +414,31 @@ client: ({ state, signal, refs, observe, emit }) => {
       </tr>
       <tr slot="body">
         <td><code>validity</code></td>
-        <td><code>() => ValidityState | undefined</code></td>
-        <td>Returns the current <code>ValidityState</code> object.</td>
+        <td><code>ValidityState | undefined</code></td>
+        <td>Live <code>ValidityState</code> getter object reflecting constraint validation.</td>
       </tr>
       <tr slot="body">
         <td><code>validationMessage</code></td>
-        <td><code>() => string</code></td>
-        <td>Returns the current localized validation message string.</td>
+        <td><code>string</code></td>
+        <td>Live localized validation message string getter.</td>
       </tr>
       <tr slot="body">
         <td><code>form</code></td>
-        <td><code>() => HTMLFormElement | null</code></td>
-        <td>Returns the associated <code>&lt;form&gt;</code> element, resolving either ancestor forms or external forms via <code>form="id"</code>.</td>
+        <td><code>HTMLFormElement | null</code></td>
+        <td>Live getter resolving the associated <code>&lt;form&gt;</code> element (either ancestor form or external form via <code>form="id"</code>).</td>
       </tr>
       <tr slot="body">
-        <td><code>onReset</code></td>
+        <td><code>onFormReset</code></td>
         <td><code>(callback: () => void) => () => void</code></td>
         <td>Registers a callback invoked when the enclosing form is reset. Returns a disposer function.</td>
       </tr>
       <tr slot="body">
-        <td><code>onDisabled</code></td>
+        <td><code>onFormDisabled</code></td>
         <td><code>(callback: (disabled: boolean) => void) => () => void</code></td>
         <td>Registers a callback invoked when form or ancestor <code>&lt;fieldset disabled&gt;</code> state changes. Returns a disposer function.</td>
       </tr>
       <tr slot="body">
-        <td><code>onRestore</code></td>
+        <td><code>onFormRestore</code></td>
         <td><code>(callback: (state: any, mode: 'restore' | 'autocomplete') => void) => () => void</code></td>
         <td>Registers a callback invoked when the browser restores form state or autocomplete occurs. Returns a disposer function.</td>
       </tr>
@@ -501,17 +501,17 @@ export default defineComponent({
     },
     disabled: Boolean
   },
-  client: ({ state, setFormValue, onReset, onDisabled }) => {
+  client: ({ state, setFormValue, onFormReset, onFormDisabled }) => {
     // 1. Form value automatically synchronizes with state.value
     // Calling setFormValue(customVal) manually overrides default serialization if needed.
 
     // 2. Form reset hook: restores initial attribute/default snapshots
-    onReset(() => {
+    onFormReset(() => {
       console.log('Form was reset!')
     })
 
     // 3. Fieldset disabled cascading
-    onDisabled((disabled) => {
+    onFormDisabled((disabled) => {
       console.log('Fieldset disabled state changed to:', disabled)
     })
   }
@@ -550,12 +550,12 @@ export default defineComponent({
       </li>
     </ul>
 
-    <coralite-heading level="3" text="Form Lifecycle Hooks (onReset, onDisabled, onRestore)"></coralite-heading>
+    <coralite-heading level="3" text="Form Lifecycle Hooks (onFormReset, onFormDisabled, onFormRestore)"></coralite-heading>
     <p>Coralite provides high-level reactive hooks in <code>client()</code> to handle native form callbacks gracefully:</p>
     <ul>
-      <li><strong><code>onReset(callback)</code>:</strong> Fires when the enclosing form is reset via <code>&lt;button type="reset"&gt;</code> or <code>form.reset()</code>. Coralite automatically restores <code>state.value</code> and <code>state.checked</code> to their initial attribute/default snapshots, clears <code>state.errors.value</code>, resets validity, and executes all registered <code>onReset</code> listeners.</li>
-      <li><strong><code>onDisabled(callback)</code>:</strong> Fires whenever the component's disabled state changes, including when an ancestor <code>&lt;fieldset disabled&gt;</code> is toggled. Coralite automatically mirrors the disabled status to <code>state.disabled</code>.</li>
-      <li><strong><code>onRestore(callback)</code>:</strong> Fires when the browser restores form state after navigation or during autofill, receiving <code>(state, mode)</code> where mode is <code>'restore'</code> or <code>'autocomplete'</code>.</li>
+      <li><strong><code>onFormReset(callback)</code>:</strong> Fires when the enclosing form is reset via <code>&lt;button type="reset"&gt;</code> or <code>form.reset()</code>. Coralite automatically restores <code>state.value</code> and <code>state.checked</code> to their initial attribute/default snapshots, clears <code>state.errors.value</code>, resets validity, and executes all registered <code>onFormReset</code> listeners.</li>
+      <li><strong><code>onFormDisabled(callback)</code>:</strong> Fires whenever the component's disabled state changes, including when an ancestor <code>&lt;fieldset disabled&gt;</code> is toggled. Coralite automatically mirrors the disabled status to <code>state.disabled</code>.</li>
+      <li><strong><code>onFormRestore(callback)</code>:</strong> Fires when the browser restores form state after navigation or during autofill, receiving <code>(state, mode)</code> where mode is <code>'restore'</code> or <code>'autocomplete'</code>.</li>
     </ul>
 
   </main>

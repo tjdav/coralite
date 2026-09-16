@@ -238,12 +238,12 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   * `setValidity(flags?, message?, anchor?)`: Sets constraint validation flags and message with automatic anchor targeting.
   * `checkValidity()`: Returns boolean indicating whether the element satisfies its validity constraints.
   * `reportValidity()`: Reports invalid constraints to the browser UI.
-  * `validity()`: Returns current `ValidityState` object.
-  * `validationMessage()`: Returns current validation message string.
-  * `form()`: Resolves the associated `HTMLFormElement` instance (via `internals.form`, `form="form-id"` attribute, or closest form ancestor).
-  * `onReset(callback)`: Registers a callback invoked when the parent `<form>` is reset. Returns an unregister disposer.
-  * `onDisabled(callback)`: Registers a callback invoked when the component's disabled state changes via parent `<fieldset disabled>`. Returns an unregister disposer.
-  * `onRestore(callback)`: Registers a callback invoked when form state is restored by the browser (`(state, mode) => void`). Returns an unregister disposer.
+  * `validity`: Live `ValidityState` getter object reflecting constraint validation.
+  * `validationMessage`: Live validation message string getter.
+  * `form`: Live `HTMLFormElement | null` getter resolving the associated form element.
+  * `onFormReset(callback)`: Registers a callback invoked when the parent `<form>` is reset. Returns an unregister disposer.
+  * `onFormDisabled(callback)`: Registers a callback invoked when the component's disabled state changes via parent `<fieldset disabled>`. Returns an unregister disposer.
+  * `onFormRestore(callback)`: Registers a callback invoked when form state is restored by the browser (`(state, mode) => void`). Returns an unregister disposer.
   * `[pluginName | client.name]`: **Namespaced Plugin Context.** Injected context helpers from plugins are isolated under their namespace key (either the plugin `name` or `client.name`). For example, if a plugin has `client.name: 'event'` and defines `context: { bus: ... }`, the component's client block will receive it as `event.bus` (e.g., `client: ({ event }) => { event.bus.emit(...) }`).
 
 * **Usage**: All DOM events, imperative mutations, third-party library initializations, and side-effects live here.
@@ -468,15 +468,15 @@ export default defineComponent({
     },
     disabled: Boolean
   },
-  client: ({ state, internals, setFormValue, onReset, onDisabled }) => {
+  client: ({ state, internals, setFormValue, onFormReset, onFormDisabled }) => {
     // Form value auto-syncs with state.value
     // Form reset restores initial attribute/default values
-    onReset(() => {
+    onFormReset(() => {
       console.log('Form was reset!')
     })
 
     // Fieldset disabled cascading
-    onDisabled((disabled) => {
+    onFormDisabled((disabled) => {
       console.log('Fieldset disabled state:', disabled)
     })
   }
@@ -493,7 +493,7 @@ export default defineComponent({
   - When errors clear, Coralite resets validity to `{}` (valid).
   - Manual overrides via `setValidity(flags, message, anchor)` latch until explicitly cleared or reset.
 * **Host Form Properties**: Form-associated components expose `el.name` (reflects to attribute), `el.type` (returns custom element tag name), `el.form` (resolves parent or external `<form id="...">`), `el.validity`, `el.validationMessage`, `el.checkValidity()`, and `el.reportValidity()` directly on the host custom element instance.
-* **Form Reset & Restore Callbacks**: When the parent form resets, `formResetCallback()` restores `state.value` and `state.checked` to initial attribute/default snapshots, clears `errors.value`, resets `internals`, and fires `onReset` listeners.
+* **Form Reset & Restore Callbacks**: When the parent form resets, `formResetCallback()` restores `state.value` and `state.checked` to initial attribute/default snapshots, clears `errors.value`, resets `internals`, and fires `onFormReset` listeners.
 
 ### 5.9 CSS Scoping (PostCSS) & Dual-Scope Partitioning
 

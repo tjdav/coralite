@@ -281,7 +281,7 @@ client: ({ state, signal, refs, observe, emit }) => {
             },
             disabled: Boolean
           },
-          client: ({ state, refs, signal, onReset, onDisabled }) => {
+          client: ({ state, refs, signal, onFormReset, onFormDisabled }) => {
             const input = refs('inputEl')
 
             // Update state on user input (automatically syncs form submission value & validity)
@@ -290,12 +290,12 @@ client: ({ state, signal, refs, observe, emit }) => {
             }, { signal })
 
             // React to form reset events (state.value automatically reverts to default)
-            onReset(() => {
+            onFormReset(() => {
               console.log('Custom input reset to initial value')
             })
 
             // React to <fieldset disabled> or form-level disabled changes
-            onDisabled((disabled) => {
+            onFormDisabled((disabled) => {
               console.log('Disabled status changed:', disabled)
             })
           }
@@ -307,8 +307,8 @@ client: ({ state, signal, refs, observe, emit }) => {
     <ul>
       <li><strong>Form Value Auto-Sync:</strong> Any mutation to <code>state.value</code> automatically calls <code>internals.setFormValue(value)</code>. Form submissions and <code>new FormData(form)</code> seamlessly pick up the component's value.</li>
       <li><strong>Automatic Validity Bridge:</strong> Attribute schema validation errors on <code>value</code> automatically invoke <code>internals.setValidity()</code> and anchor validation popups to the internal input element.</li>
-      <li><strong>Form Reset Restoration:</strong> Resetting the form automatically restores initial attribute/default snapshots, clears errors, and fires <code>onReset</code>.</li>
-      <li><strong>Fieldset Cascading:</strong> Ancestor <code>&lt;fieldset disabled&gt;</code> state automatically cascades into <code>state.disabled</code> and triggers <code>onDisabled</code>.</li>
+      <li><strong>Form Reset Restoration:</strong> Resetting the form automatically restores initial attribute/default snapshots, clears errors, and fires <code>onFormReset</code>.</li>
+      <li><strong>Fieldset Cascading:</strong> Ancestor <code>&lt;fieldset disabled&gt;</code> state automatically cascades into <code>state.disabled</code> and triggers <code>onFormDisabled</code>.</li>
     </ul>
 
     <p>For complete details on host element properties (such as <code>el.name</code>, <code>el.form</code>, <code>el.validity</code>, and <code>el.checkValidity()</code>), see the <a href="../reference/define-component.html#7-formassociated-form-associated-custom-elements">defineComponent API Reference</a>.</p>
