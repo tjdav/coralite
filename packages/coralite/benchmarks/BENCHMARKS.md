@@ -1,6 +1,6 @@
 # Coralite Performance Benchmarks
 
-Last updated: 2026-08-30T21:01:17.281Z
+Last updated: 2026-09-16T12:35:57.062Z
 
 **Environment:** Node v24.16.0 (linux x64)
 
@@ -28,9 +28,9 @@ Last updated: 2026-08-30T21:01:17.281Z
 
 | Workload | Total Pages | Duration (ms) | Throughput (pages/sec) | Avg Latency (ms) | Peak Heap (MB) |
 | --- | --- | --- | --- | --- | --- |
-| 100_pages | 100 | 99 | 1010.1 | 0.99 | 3.5 |
-| 1000_pages | 1000 | 722.2 | 1384.7 | 0.72 | 16.7 |
-| 10000_pages | 10000 | 5559.2 | 1798.8 | 0.56 | 149.8 |
+| 100_pages | 100 | 109.1 | 916.6 | 1.09 | 3.7 |
+| 1000_pages | 1000 | 668.8 | 1495.2 | 0.67 | 16.4 |
+| 10000_pages | 10000 | 5760 | 1736.1 | 0.58 | 154.4 |
 
 
 ### internal

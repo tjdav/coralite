@@ -639,6 +639,7 @@ program
   .option('-s, --skip-render-attribute <key...>', 'Parse elements but exclude them from final render output', [])
   .option('-d, --dry-run', 'Run in dry-run mode')
   .option('-a, --assets <mapping...>', 'Static assets to copy. Format: pkg:path:dest (or pkg:path)')
+  .option('--concurrency <number>', 'Concurrency limit for page rendering', (val) => parseInt(val, 10))
   .action(async (options) => {
     const pages = options.pages
     const output = options.output
@@ -673,6 +674,12 @@ program
       output,
       assets,
       plugins: []
+    }
+
+    if (options.concurrency !== undefined && !isNaN(options.concurrency)) {
+      coraliteOptions.concurrency = options.concurrency
+    } else if (config && config.concurrency !== undefined) {
+      coraliteOptions.concurrency = config.concurrency
     }
 
     for (let i = 0; i < options.ignoreAttribute.length; i++) {

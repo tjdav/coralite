@@ -13,7 +13,8 @@
  * @property {Object} [styles.processors] - The configuration for style processors like Sass or PostCSS.
  * @property {Options<'async'>} [styles.processors.scss] - Native Dart Sass options
  * @property {Object} [styles.processors.postcss] - The configuration for PostCSS.
- * @property {import('postcss').AcceptedPlugin[]} [styles.processors.postcss.plugins] - Native PostCSS plugins
+ * @property {Object} [build] - Build configuration options.
+ * @property {number} [build.concurrency] - Concurrency limit for page rendering during build.
  * @property {'production' | 'development'} [mode='production'] - Set build mode for the coralite instance.
  * @property {boolean} [incremental=true] - Whether to skip rebuilding unchanged pages and components.
  */

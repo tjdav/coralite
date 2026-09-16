@@ -144,8 +144,27 @@ export function createRenderer ({
   const sealedQueues = new Set()
   const outputFiles = {}
   const sriDigestCache = new Map()
+  const inFlightCss = new Map()
   let globalScriptResult = null
   let siteWideBundlePromise = null
+
+  const _getFormattedCss = async (moduleComponent, module) => {
+    if (moduleComponent.result._processedCss) {
+      return moduleComponent.result._processedCss
+    }
+    const id = module.id
+    let cssPromise = inFlightCss.get(id)
+    if (!cssPromise) {
+      const rawCss = module.styles.join('\n')
+      cssPromise = formatComponentCss(id, rawCss, handleError).finally(() => {
+        inFlightCss.delete(id)
+      })
+      inFlightCss.set(id, cssPromise)
+    }
+    const css = await cssPromise
+    moduleComponent.result._processedCss = css
+    return css
+  }
 
   /**
    * Creates a new rendering session.
@@ -377,9 +396,8 @@ export function createRenderer ({
       const templateAST = moduleComponent.result.template?.children || []
       const templateValues = moduleComponent.result.values || {}
 
-      if (module.styles?.length && !moduleComponent.result._processedCss) {
-        const rawCss = module.styles.join('\n')
-        moduleComponent.result._processedCss = await formatComponentCss(module.id, rawCss, handleError)
+      if (module.styles?.length) {
+        await _getFormattedCss(moduleComponent, module)
       }
       const stylesHTML = moduleComponent.result._processedCss || ''
 
@@ -553,12 +571,9 @@ export function createRenderer ({
 
     if (module.styles.length) {
       const selector = module.id
-      if (!moduleComponent.result._processedCss) {
-        const rawCss = module.styles.join('\n')
-        moduleComponent.result._processedCss = await formatComponentCss(module.id, rawCss, handleError)
-      }
+      const formattedCss = await _getFormattedCss(moduleComponent, module)
       if (!session.styles.has(selector)) {
-        session.styles.set(selector, moduleComponent.result._processedCss)
+        session.styles.set(selector, formattedCss)
       }
     }
 
@@ -1138,780 +1153,778 @@ export function createRenderer ({
     }
   }
 
-  const _generatePages = async function* (activeQueue, buildId, state = {}, buildOptions = {}) {
+  const _renderSinglePage = async (pageItem, buildId, state = {}, buildOptions = {}) => {
     const isProduction = normalizedOptions.mode === 'production'
+    const startTime = performance.now()
+    const originalDocument = pageItem.result
+    let component
+    let pageContext = originalDocument.page
 
-    try {
-      for (let q = 0; q < activeQueue.length; q++) {
-        const pageItem = activeQueue[q]
-        const startTime = performance.now()
-        const originalDocument = pageItem.result
-        let component
-        let pageContext = originalDocument.page
+    if (!originalDocument.root || pageItem.virtual) {
+      let content = pageItem.content
 
-        if (!originalDocument.root || pageItem.virtual) {
-          let content = pageItem.content
-
-          if (content === undefined) {
-            try {
-              content = await getHtmlFile(pageItem.path.pathname)
-            } catch (e) {
-              if (pageItem.virtual) {
-                // If a virtual page is missing content, it's a critical error
-                throw new CoraliteError(`Virtual page missing content: ${pageItem.path.pathname}`, {
-                  pagePath: pageItem.path.pathname
-                })
-              }
-
-              if (pageItem.content !== undefined) {
-                content = pageItem.content
-              } else {
-                throw e
-              }
-            }
-          }
-
-          pageItem.content = content
-
-          const elements = parseHTML(content, normalizedOptions.ignoreByAttribute, normalizedOptions.skipRenderByAttribute, handleError)
-
-          pageContext = {
-            ...originalDocument.page,
-            meta: { ...(originalDocument.page?.meta || {}) }
-          }
-
-          const pageState = {
-            ...originalDocument.state,
-            page: pageContext
-          }
-
-          const mappedContext = await hooks.trigger('onPageSet', {
-            elements,
-            state: pageState,
-            page: pageContext,
-            data: pageItem,
-            app
-          })
-
-          const fullPath = Object.assign({}, mappedContext.data.path, {
-            pages: normalizedOptions.path.pages,
-            components: normalizedOptions.path.components
-          })
-
-          component = {
-            state: { ...mappedContext.state },
-            page: mappedContext.page,
-            path: fullPath,
-            root: mappedContext.elements.root,
-            customElements: mappedContext.elements.customElements,
-            tempElements: mappedContext.elements.tempElements,
-            skipRenderElements: mappedContext.elements.skipRenderElements,
-            ignoreByAttribute: normalizedOptions.ignoreByAttribute || []
-          }
-        } else {
-          component = cloneComponentInstance(originalDocument)
-          component.ignoreByAttribute = component.ignoreByAttribute || normalizedOptions.ignoreByAttribute || []
-          pageContext = component.page
-        }
-
-        Object.assign(component.state, state)
-        const session = _createSession(buildId)
-        session.mode = normalizedOptions.mode
-
-        const mappedSession = await hooks.trigger('onBeforePageRender', {
-          component,
-          state,
-          page: pageContext,
-          session,
-          app
-        })
-
-        const mappedComponent = mappedSession.component
-        const mappedSessionObject = mappedSession.session
-
-        state = mappedSession.state
-        mappedSessionObject.mode = normalizedOptions.mode
-
-        removeElements(mappedComponent.tempElements, false)
-
-        await _processCustomElementsInPage({
-          mappedComponent,
-          originalDocument,
-          state,
-          mappedSessionObject,
-          pageContext
-        })
-
-        // Filter manifest to only include components used on this page (declarative + cascading imperative)
-        const componentsToInclude = new Set()
-
-        const addComponentAndDependencies = (id) => {
-          if (componentsToInclude.has(id)) {
-            return
-          }
-          componentsToInclude.add(id)
-          const sharedFn = scriptManager.sharedFunctions[id]
-          if (sharedFn && sharedFn.components) {
-            const components = sharedFn.components
-            for (let i = 0; i < components.length; i++) {
-              addComponentAndDependencies(components[i])
-            }
-          }
-        }
-
-        // Include all components that were actually rendered on the page (declarative)
-        for (const tag of mappedSessionObject.componentTags) {
-          addComponentAndDependencies(tag)
-        }
-
-        // Include components from any imperative scripts on this page
-        if (mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
-          const scripts = mappedSessionObject.scripts.content[mappedComponent.path.pathname]
-          for (const instanceId in scripts) {
-            const script = scripts[instanceId]
-            addComponentAndDependencies(script.componentId)
-            if (script.components) {
-              const components = script.components
-              for (let i = 0; i < components.length; i++) {
-                addComponentAndDependencies(components[i])
-              }
-            }
-          }
-        }
-
-        // Include components extracted from plugin code
-        for (const module of scriptManager.scriptModules) {
-          const extractedComponents = module.client?._extractedComponents || module._extractedComponents
-          if (extractedComponents) {
-            for (const tag of extractedComponents) {
-              addComponentAndDependencies(tag)
-            }
-          }
-        }
-
-        const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
-        const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
-
-        const cspConfig = normalizedOptions.csp || {}
-        const pageCspMeta = Boolean(pageContext?.meta?.csp === true || pageContext?.meta?.csp === 'true')
-        let pageCspDirectives = pageContext?.meta?.['csp-directives']
-        if (typeof pageCspDirectives === 'string') {
-          try {
-            pageCspDirectives = JSON.parse(pageCspDirectives)
-          } catch {
-            pageCspDirectives = {}
-          }
-        }
-        if (!pageCspDirectives || typeof pageCspDirectives !== 'object' || Array.isArray(pageCspDirectives)) {
-          pageCspDirectives = {}
-        }
-
-        const nonce = resolveNonce({
-          buildOptions,
-          pageContext,
-          session: mappedSessionObject,
-          config: normalizedOptions
-        })
-
-        const isCspActive = cspConfig.enabled === true || (
-          cspConfig.enabled !== false && (
-            nonce !== null ||
-            cspConfig.externalScripts === true ||
-            cspConfig.externalStyles === true ||
-            cspConfig.injectMeta === true ||
-            pageCspMeta === true ||
-            (Boolean(cspConfig.directives) && Object.keys(cspConfig.directives).length > 0) ||
-            Object.keys(pageCspDirectives).length > 0
-          )
-        )
-
-        const hashAlgo = cspConfig.hashAlgorithm || 'sha256'
-        const isExternalScripts = cspConfig.enabled !== false && cspConfig.externalScripts === true
-        const isExternalStyles = cspConfig.enabled !== false && cspConfig.externalStyles === true
-        const scriptHashes = []
-        const styleHashes = []
-
-        // --- Automated Asset Injection & Tag Flush Pass ---
-        const pagePathname = pageItem.path.pathname
-        const rawTagsToFlush = []
-
-        // 1. Collect declarative options.assets with inject
-        if (Array.isArray(normalizedOptions.assets)) {
-          for (const asset of normalizedOptions.assets) {
-            if (asset.inject) {
-              const injectConfig = typeof asset.inject === 'boolean' ? {} : asset.inject
-              let inferredType = injectConfig.type
-              if (!inferredType) {
-                if (asset.dest.endsWith('.js') || asset.dest.endsWith('.mjs') || asset.dest.endsWith('.cjs')) {
-                  inferredType = 'script'
-                } else if (asset.dest.endsWith('.css')) {
-                  inferredType = 'link'
-                }
-              }
-
-              rawTagsToFlush.push({
-                type: inferredType,
-                dest: asset.dest,
-                placement: injectConfig.placement || 'head-end',
-                sri: injectConfig.sri ?? false,
-                pages: injectConfig.pages ?? '*',
-                attributes: injectConfig.attributes || {},
-                rel: injectConfig.rel || (inferredType === 'link' ? 'stylesheet' : undefined),
-                name: injectConfig.name,
-                'http-equiv': injectConfig['http-equiv'],
-                content: injectConfig.content
-              })
-            }
-          }
-        }
-
-        // 2. Collect session._injectedTags
-        if (Array.isArray(mappedSessionObject._injectedTags)) {
-          for (const injectedTag of mappedSessionObject._injectedTags) {
-            rawTagsToFlush.push(injectedTag)
-          }
-        }
-
-        // Scan existing AST for deduplication
-        const existingExternalUrls = new Set()
-        const existingInlineHashes = new Set()
-
-        const scanASTForDuplicates = (container) => {
-          if (!container || !container.children) {
-            return
-          }
-          for (const child of container.children) {
-            if (child.type === 'tag') {
-              if ((child.name === 'script' && child.attribs?.src) || (child.name === 'link' && child.attribs?.href)) {
-                const url = child.attribs.src || child.attribs.href
-                existingExternalUrls.add(url)
-              } else if (child.name === 'script' || child.name === 'style') {
-                const textChild = child.children?.find(c => c.type === 'text')
-                if (textChild && textChild.data) {
-                  existingInlineHashes.add(hash(textChild.data))
-                }
-              }
-              scanASTForDuplicates(child)
-            }
-          }
-        }
-        scanASTForDuplicates(mappedComponent.root)
-
-        // Process and insert tags
-        const pageInjectedAssetHashes = []
-
-        for (const tagOptions of rawTagsToFlush) {
-          const patterns = Array.isArray(tagOptions.pages) ? tagOptions.pages : [tagOptions.pages ?? '*']
-          const universal = patterns.some(p => p === '*')
-          const relPagePath = relative(normalizedOptions.path.pages, pagePathname)
-          const matches = universal || patterns.some(p => picomatch(p)(pagePathname) || picomatch(p)(relPagePath))
-
-          if (!matches) {
-            continue
-          }
-
-          let type = tagOptions.type || 'script'
-          let placement = tagOptions.placement || 'head-end'
-          const attribs = { ...(tagOptions.attributes || {}) }
-
-          let isExternal = false
-          let targetUrl = ''
-
-          if (attribs.src) {
-            targetUrl = attribs.src
-            isExternal = true
-          } else if (attribs.href) {
-            targetUrl = attribs.href
-            isExternal = true
-          } else if (tagOptions.src) {
-            targetUrl = tagOptions.src.startsWith('http://') || tagOptions.src.startsWith('https://') || tagOptions.src.startsWith('/')
-              ? tagOptions.src
-              : `${base}${tagOptions.src}`
-            isExternal = true
-          } else if (tagOptions.dest) {
-            targetUrl = `${base}${tagOptions.dest}`
-            isExternal = true
-          }
-
-          if (isExternal) {
-            if (type === 'script' && !attribs.src) {
-              attribs.src = targetUrl
-            }
-            if (type === 'link' && !attribs.href) {
-              attribs.href = targetUrl
-            }
-          }
-
-          if (type === 'link' && !attribs.rel) {
-            attribs.rel = tagOptions.rel || 'stylesheet'
-          }
-          if (type === 'meta') {
-            if (tagOptions.name && !attribs.name) {
-              attribs.name = tagOptions.name
-            }
-            if (tagOptions['http-equiv'] && !attribs['http-equiv']) {
-              attribs['http-equiv'] = tagOptions['http-equiv']
-            }
-            if (tagOptions.content && !attribs.content) {
-              attribs.content = tagOptions.content
-            }
-          }
-
-          const inlineContent = tagOptions.content
-
-          // Deduplication check
-          if (isExternal) {
-            if (existingExternalUrls.has(targetUrl)) {
-              continue
-            }
-            existingExternalUrls.add(targetUrl)
-          } else if (inlineContent) {
-            const contentHash = hash(inlineContent)
-            if (existingInlineHashes.has(contentHash)) {
-              continue
-            }
-            existingInlineHashes.add(contentHash)
-          }
-
-          // SRI Resolution
-          const sriOption = tagOptions.sri ?? false
-          const explicitIntegrity = attribs.integrity
-
-          if (sriOption && explicitIntegrity) {
-            handleError({
-              level: 'WARN',
-              message: `[Coralite Asset Injection] Conflict on "${tagOptions.dest || targetUrl}": Explicit integrity attribute provided while sri option is enabled. Explicit attribute takes precedence; auto-crossorigin disabled.`
-            })
-          } else if (sriOption) {
-            const algo = typeof sriOption === 'string' ? sriOption : 'sha384'
-            let fileContent = null
-            let assetDestPath = tagOptions.dest
-
-            if (!assetDestPath && targetUrl.startsWith(base)) {
-              assetDestPath = targetUrl.substring(base.length)
-            }
-
-            if (assetDestPath) {
-              const outputDir = normalizedOptions.output || join(normalizedOptions.projectRoot || process.cwd(), 'dist')
-              const fullDiskPath = join(outputDir, assetDestPath)
-
-              try {
-                const fileStat = await stat(fullDiskPath)
-                const cacheKey = `${assetDestPath}:${fileStat.mtimeMs}:${fileStat.size}:${algo}`
-
-                let computedDigest = ''
-                let contentHash = ''
-
-                if (sriDigestCache.has(cacheKey)) {
-                  const cached = sriDigestCache.get(cacheKey)
-                  computedDigest = cached.digest
-                  contentHash = cached.contentHash
-                } else {
-                  fileContent = await readFile(fullDiskPath)
-                  computedDigest = calculateSRIDigest(fileContent, algo)
-                  contentHash = hash(fileContent)
-                  sriDigestCache.set(cacheKey, {
-                    digest: computedDigest,
-                    contentHash
-                  })
-                }
-
-                attribs.integrity = computedDigest
-                if (!attribs.crossorigin) {
-                  attribs.crossorigin = 'anonymous'
-                }
-
-                pageInjectedAssetHashes.push({
-                  dest: assetDestPath,
-                  hash: contentHash
-                })
-              } catch {
-                handleError({
-                  level: 'WARN',
-                  message: `[Coralite Asset Injection] Referenced asset file "${fullDiskPath}" not found on disk. Injection skipped.`
-                })
-                continue
-              }
-            }
-          }
-
-          // CSP Hash contribution / Nonce for inline script/style content
-          if (!isExternal && inlineContent) {
-            if (type === 'script') {
-              if (nonce) {
-                attribs.nonce = nonce
-              } else if (isCspActive) {
-                scriptHashes.push(calculateHash(inlineContent, hashAlgo))
-              }
-            } else if (type === 'style' || (type === 'link' && inlineContent)) {
-              if (nonce) {
-                attribs.nonce = nonce
-              } else if (isCspActive) {
-                styleHashes.push(calculateHash(inlineContent, hashAlgo))
-              }
-            }
-          }
-
-          // Container resolution and placement
-          let container = null
-          let fallbackToRoot = false
-
-          if (placement === 'head-start' || placement === 'head-end') {
-            if (headElement) {
-              container = headElement
-            } else {
-              container = mappedComponent.root
-              fallbackToRoot = true
-            }
-          } else if (placement === 'body-start' || placement === 'body-end') {
-            if (bodyElement && bodyElement !== mappedComponent.root) {
-              container = bodyElement
-            } else {
-              container = mappedComponent.root
-              fallbackToRoot = true
-            }
-          }
-
-          if (fallbackToRoot) {
-            handleError({
-              level: 'WARN',
-              message: `[Coralite Asset Injection] Missing target container for placement "${placement}". Falling back to root element.`
+      if (content === undefined) {
+        try {
+          content = await getHtmlFile(pageItem.path.pathname)
+        } catch (e) {
+          if (pageItem.virtual) {
+            // If a virtual page is missing content, it's a critical error
+            throw new CoraliteError(`Virtual page missing content: ${pageItem.path.pathname}`, {
+              pagePath: pageItem.path.pathname
             })
           }
 
-          const tagElement = createCoraliteElement({
-            type: 'tag',
-            name: type,
-            parent: container,
-            attribs,
-            children: []
-          })
-
-          if (inlineContent && type !== 'meta') {
-            tagElement.children.push(createCoraliteTextNode({
-              type: 'text',
-              data: inlineContent,
-              parent: tagElement
-            }))
-          }
-
-          if (placement === 'head-start' || (fallbackToRoot && placement.endsWith('-start'))) {
-            container.children.unshift(tagElement)
-          } else if (placement === 'body-start') {
-            container.children.unshift(tagElement)
+          if (pageItem.content !== undefined) {
+            content = pageItem.content
           } else {
-            // head-end or body-end (strictly before framework client runtime bootstrap)
-            container.children.push(tagElement)
+            throw e
           }
-        }
-
-        mappedSessionObject._pageInjectedAssetHashes = pageInjectedAssetHashes
-
-        let pageStylePath = null
-        let pageStyleHash = null
-        let pageScriptPath = null
-        let pageScriptHash = null
-        let runtimeChunkPath = null
-
-        /** @type {Record<string, { js: string, css: string | null }>} */
-        const componentHashes = {}
-        if (globalScriptResult?.manifest) {
-          const sortedTags = Array.from(componentsToInclude).sort()
-          for (const tag of sortedTags) {
-            if (globalScriptResult.manifest[tag]) {
-              componentHashes[tag] = globalScriptResult.manifest[tag]
-            }
-          }
-        }
-
-        if (normalizedOptions.externalStyles && normalizedOptions.externalStyles.length > 0) {
-          injectExternalStyles(mappedComponent.root, headElement, normalizedOptions.externalStyles, { nonce: isExternalStyles ? null : nonce })
-        }
-
-        if (isExternalStyles) {
-          if (componentsToInclude.size > 0 || mappedSessionObject.styles.size > 0) {
-            let combinedCss = ''
-
-            if (mappedSessionObject.styles.size > 0) {
-              combinedCss = buildComponentStylesheet(mappedSessionObject.styles)
-            } else if (componentsToInclude.size > 0) {
-              combinedCss = 'c-token { display: contents; }\n'
-            }
-
-            const cssHashVal = hash(combinedCss)
-            const cssFileHash = cssHashVal.slice(0, 8)
-            const relPath = `coralite-inline-${cssFileHash}.css`
-            const fullPath = `assets/css/${relPath}`
-            pageStylePath = fullPath
-            pageStyleHash = cssHashVal
-            outputFiles[fullPath] = {
-              path: fullPath,
-              hashedPath: relPath,
-              text: combinedCss
-            }
-            if (app.trackOutputFile) {
-              app.trackOutputFile(join(normalizedOptions.output || '', fullPath))
-            }
-
-            const linkElement = createCoraliteElement({
-              type: 'tag',
-              name: 'link',
-              parent: headElement || mappedComponent.root,
-              attribs: {
-                rel: 'stylesheet',
-                href: `${base}${fullPath}`
-              },
-              children: []
-            })
-            if (headElement) {
-              headElement.children.push(linkElement)
-            } else {
-              mappedComponent.root.children.unshift(linkElement)
-            }
-          }
-        } else {
-          if (mappedSessionObject.styles.size > 0) {
-            const { content: inlineCss } = injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles, { nonce })
-            if (isCspActive && !nonce && inlineCss) {
-              styleHashes.push(calculateHash(inlineCss, hashAlgo))
-            }
-          }
-
-        }
-
-        if (mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
-          const scripts = mappedSessionObject.scripts.content[mappedComponent.path.pathname]
-          const instances = {}
-          const declarativeTags = new Set()
-          for (const key in scripts) {
-            const script = scripts[key]
-            declarativeTags.add(script.componentId)
-            instances[script.id] = {
-              instanceId: script.id,
-              componentId: script.componentId,
-              page: script.page,
-              state: script.state
-            }
-          }
-
-          const scriptResult = globalScriptResult
-
-          if (!scriptResult || !scriptResult.manifest['coralite-runtime']) {
-            handleError({
-              level: 'ERR',
-              message: 'MANIFEST MISSING coralite-runtime!',
-              error: new Error(JSON.stringify(scriptResult.manifest))
-            })
-          } else {
-            runtimeChunkPath = scriptResult.manifest['coralite-runtime']
-          }
-
-          const { content: readyContent } = injectReadinessScript(mappedComponent.root, headElement, true, normalizedOptions.mode, {
-            nonce,
-            external: isExternalScripts
-          })
-          if (isCspActive && !nonce && readyContent) {
-            scriptHashes.push(calculateHash(readyContent, hashAlgo))
-          }
-
-          const { content: mapContent } = injectImportMap(mappedComponent.root, headElement, scriptResult.importMap, base, { nonce })
-          if (isCspActive && !nonce && mapContent) {
-            scriptHashes.push(calculateHash(mapContent, hashAlgo))
-          }
-
-          const hydrationData = {}
-
-          for (const [id, instance] of Object.entries(instances)) {
-            if (instance.state && Object.keys(instance.state).length > 0) {
-              validateSerializable(instance.state, `component "${instance.componentId}" state`)
-              hydrationData[id] = normalizeObjectFunctions(instance.state, astTransformer)
-            }
-          }
-
-          const inlinedStyles = mappedSessionObject.styles && mappedSessionObject.styles.size > 0
-            ? Array.from(mappedSessionObject.styles.keys())
-            : []
-
-          const scriptContent = generateClientRuntime({
-            base,
-            sharedChunkPath: scriptResult.manifest['coralite-runtime'],
-            declarativeTags: Array.from(declarativeTags),
-            hydrationData: serialize(hydrationData),
-            mode: normalizedOptions.mode,
-            instanceCounters: serialize(mappedSessionObject.instanceCounters || {}),
-            inlinedStyles: serialize(inlinedStyles)
-          })
-
-          if (isExternalScripts) {
-            const fullScriptHash = hash(scriptContent)
-            const shortScriptHash = fullScriptHash.slice(0, 8)
-            const relativePagePath = relative(normalizedOptions.path.pages, pageItem.path.pathname)
-            const pageStem = relativePagePath.replace(/\.html$/, '').replace(/[\/\\]/g, '-') || 'index'
-            const relPath = `pages/${pageStem}-${shortScriptHash}.js`
-            const fullPath = `assets/js/${relPath}`
-            pageScriptPath = fullPath
-            pageScriptHash = fullScriptHash
-            outputFiles[fullPath] = {
-              path: fullPath,
-              hashedPath: relPath,
-              text: scriptContent
-            }
-            if (app.trackOutputFile) {
-              app.trackOutputFile(join(normalizedOptions.output || '', fullPath))
-            }
-
-            const scriptAttribs = {
-              type: 'module',
-              src: `${base}${fullPath}`
-            }
-            if (nonce) {
-              scriptAttribs.nonce = nonce
-            }
-
-            const scriptElement = createCoraliteElement({
-              type: 'tag',
-              name: 'script',
-              parent: bodyElement,
-              attribs: scriptAttribs,
-              children: []
-            })
-            bodyElement.children.push(scriptElement)
-
-            if (isCspActive && !nonce && scriptContent) {
-              scriptHashes.push(calculateHash(scriptContent, hashAlgo))
-            }
-          } else {
-            const scriptAttribs = { type: 'module' }
-            if (nonce) {
-              scriptAttribs.nonce = nonce
-            }
-
-            const scriptElement = createCoraliteElement({
-              type: 'tag',
-              name: 'script',
-              parent: bodyElement,
-              attribs: scriptAttribs,
-              children: []
-            })
-
-            scriptElement.children.push(createCoraliteTextNode({
-              type: 'text',
-              data: scriptContent,
-              parent: scriptElement
-            }))
-            bodyElement.children.push(scriptElement)
-
-            if (isCspActive && !nonce && scriptContent) {
-              scriptHashes.push(calculateHash(scriptContent, hashAlgo))
-            }
-          }
-        } else {
-          const { content: readyContent } = injectReadinessScript(mappedComponent.root, headElement, false, normalizedOptions.mode, {
-            nonce,
-            external: isExternalScripts
-          })
-          if (isCspActive && !nonce && readyContent) {
-            scriptHashes.push(calculateHash(readyContent, hashAlgo))
-          }
-        }
-
-        removeElements(mappedComponent.skipRenderElements, true)
-
-        let cspResult = null
-        if (isCspActive) {
-          const mergedDirectives = {
-            ...(cspConfig.directives || {}),
-            ...(pageCspDirectives || {})
-          }
-          const formattedHeader = formatCSPDirectives(mergedDirectives, {
-            scriptHashes,
-            styleHashes,
-            nonce
-          })
-          if (cspConfig.injectMeta || pageCspMeta) {
-            const metaCspContent = formatCSPDirectives(mergedDirectives, {
-              scriptHashes,
-              styleHashes,
-              nonce,
-              forMeta: true
-            })
-            injectCSPMeta(mappedComponent.root, headElement, metaCspContent, cspConfig.reportOnly)
-          }
-
-          /** @type {'nonce' | 'external' | 'hash'} */
-          let cspMode = 'hash'
-          if (nonce) {
-            cspMode = 'nonce'
-          } else if (isExternalScripts) {
-            cspMode = 'external'
-          }
-
-          cspResult = {
-            mode: cspMode,
-            nonce: nonce || null,
-            scriptHashes: nonce ? [] : scriptHashes,
-            styleHashes: (nonce || isExternalStyles) ? [] : styleHashes,
-            header: formattedHeader,
-            directives: mergedDirectives
-          }
-        }
-
-        const rawHTML = transformNode(mappedComponent.root)
-
-        /** @type {CoraliteBuildResult} */
-        const result = {
-          type: 'page',
-          path: mappedComponent.path,
-          content: rawHTML,
-          duration: performance.now() - startTime,
-          session
-        }
-
-        if (runtimeChunkPath !== null) {
-          result.runtimeChunk = runtimeChunkPath
-        } else {
-          result.runtimeChunk = null
-        }
-
-        if (pageScriptPath) {
-          result.pageScript = pageScriptPath
-          result.pageScriptHash = pageScriptHash
-        }
-
-        if (pageStylePath) {
-          result.pageStyle = pageStylePath
-          result.pageStyleHash = pageStyleHash
-        }
-
-        if (Object.keys(componentHashes).length > 0) {
-          result.componentHashes = componentHashes
-        }
-
-        if (pageInjectedAssetHashes.length > 0) {
-          result.injectedAssets = pageInjectedAssetHashes
-        }
-
-        if (cspResult) {
-          result.csp = cspResult
-          session.csp = cspResult
-        }
-
-        yield result
-
-        if (isProduction) {
-          mappedComponent.root = null; mappedComponent.customElements = null; mappedComponent.tempElements = null; mappedComponent.skipRenderElements = null
-          delete pageItem.content
-        }
-
-        session.state = null; session.styles = null; session.scripts = null
-
-        if (session.source) {
-          session.source.contextInstances = null; session.source = null
         }
       }
-    } finally {
-      renderQueues.delete(buildId)
+
+      pageItem.content = content
+
+      const elements = parseHTML(content, normalizedOptions.ignoreByAttribute, normalizedOptions.skipRenderByAttribute, handleError)
+
+      pageContext = {
+        ...originalDocument.page,
+        meta: { ...(originalDocument.page?.meta || {}) }
+      }
+
+      const pageState = {
+        ...originalDocument.state,
+        page: pageContext
+      }
+
+      const mappedContext = await hooks.trigger('onPageSet', {
+        elements,
+        state: pageState,
+        page: pageContext,
+        data: pageItem,
+        app
+      })
+
+      const fullPath = Object.assign({}, mappedContext.data.path, {
+        pages: normalizedOptions.path.pages,
+        components: normalizedOptions.path.components
+      })
+
+      component = {
+        state: { ...mappedContext.state },
+        page: mappedContext.page,
+        path: fullPath,
+        root: mappedContext.elements.root,
+        customElements: mappedContext.elements.customElements,
+        tempElements: mappedContext.elements.tempElements,
+        skipRenderElements: mappedContext.elements.skipRenderElements,
+        ignoreByAttribute: normalizedOptions.ignoreByAttribute || []
+      }
+    } else {
+      component = cloneComponentInstance(originalDocument)
+      component.ignoreByAttribute = component.ignoreByAttribute || normalizedOptions.ignoreByAttribute || []
+      pageContext = component.page
     }
+
+    const initialPageState = Object.assign({}, originalDocument.state, component.state, state)
+    component.state = initialPageState
+
+    const session = _createSession(buildId)
+    session.mode = normalizedOptions.mode
+
+    const mappedSession = await hooks.trigger('onBeforePageRender', {
+      component,
+      state: initialPageState,
+      page: pageContext,
+      session,
+      app
+    })
+
+    const mappedComponent = mappedSession.component
+    const mappedSessionObject = mappedSession.session
+
+    const activePageState = mappedSession.state
+    mappedSessionObject.mode = normalizedOptions.mode
+
+    removeElements(mappedComponent.tempElements, false)
+
+    await _processCustomElementsInPage({
+      mappedComponent,
+      originalDocument,
+      state: activePageState,
+      mappedSessionObject,
+      pageContext
+    })
+
+    // Filter manifest to only include components used on this page (declarative + cascading imperative)
+    const componentsToInclude = new Set()
+
+    const addComponentAndDependencies = (id) => {
+      if (componentsToInclude.has(id)) {
+        return
+      }
+      componentsToInclude.add(id)
+      const sharedFn = scriptManager.sharedFunctions[id]
+      if (sharedFn && sharedFn.components) {
+        const components = sharedFn.components
+        for (let i = 0; i < components.length; i++) {
+          addComponentAndDependencies(components[i])
+        }
+      }
+    }
+
+    // Include all components that were actually rendered on the page (declarative)
+    for (const tag of mappedSessionObject.componentTags) {
+      addComponentAndDependencies(tag)
+    }
+
+    // Include components from any imperative scripts on this page
+    if (mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
+      const scripts = mappedSessionObject.scripts.content[mappedComponent.path.pathname]
+      for (const instanceId in scripts) {
+        const script = scripts[instanceId]
+        addComponentAndDependencies(script.componentId)
+        if (script.components) {
+          const components = script.components
+          for (let i = 0; i < components.length; i++) {
+            addComponentAndDependencies(components[i])
+          }
+        }
+      }
+    }
+
+    // Include components extracted from plugin code
+    for (const module of scriptManager.scriptModules) {
+      const extractedComponents = module.client?._extractedComponents || module._extractedComponents
+      if (extractedComponents) {
+        for (const tag of extractedComponents) {
+          addComponentAndDependencies(tag)
+        }
+      }
+    }
+
+    const { head: headElement, body: bodyElement } = findHeadAndBody(mappedComponent.root)
+    const base = normalizedOptions.baseURL.endsWith('/') ? normalizedOptions.baseURL : normalizedOptions.baseURL + '/'
+
+    const cspConfig = normalizedOptions.csp || {}
+    const pageCspMeta = Boolean(pageContext?.meta?.csp === true || pageContext?.meta?.csp === 'true')
+    let pageCspDirectives = pageContext?.meta?.['csp-directives']
+    if (typeof pageCspDirectives === 'string') {
+      try {
+        pageCspDirectives = JSON.parse(pageCspDirectives)
+      } catch {
+        pageCspDirectives = {}
+      }
+    }
+    if (!pageCspDirectives || typeof pageCspDirectives !== 'object' || Array.isArray(pageCspDirectives)) {
+      pageCspDirectives = {}
+    }
+
+    const nonce = resolveNonce({
+      buildOptions,
+      pageContext,
+      session: mappedSessionObject,
+      config: normalizedOptions
+    })
+
+    const isCspActive = cspConfig.enabled === true || (
+      cspConfig.enabled !== false && (
+        nonce !== null ||
+        cspConfig.externalScripts === true ||
+        cspConfig.externalStyles === true ||
+        cspConfig.injectMeta === true ||
+        pageCspMeta === true ||
+        (Boolean(cspConfig.directives) && Object.keys(cspConfig.directives).length > 0) ||
+        Object.keys(pageCspDirectives).length > 0
+      )
+    )
+
+    const hashAlgo = cspConfig.hashAlgorithm || 'sha256'
+    const isExternalScripts = cspConfig.enabled !== false && cspConfig.externalScripts === true
+    const isExternalStyles = cspConfig.enabled !== false && cspConfig.externalStyles === true
+    const scriptHashes = []
+    const styleHashes = []
+
+    // --- Automated Asset Injection & Tag Flush Pass ---
+    const pagePathname = pageItem.path.pathname
+    const rawTagsToFlush = []
+
+    // 1. Collect declarative options.assets with inject
+    if (Array.isArray(normalizedOptions.assets)) {
+      for (const asset of normalizedOptions.assets) {
+        if (asset.inject) {
+          const injectConfig = typeof asset.inject === 'boolean' ? {} : asset.inject
+          let inferredType = injectConfig.type
+          if (!inferredType) {
+            if (asset.dest.endsWith('.js') || asset.dest.endsWith('.mjs') || asset.dest.endsWith('.cjs')) {
+              inferredType = 'script'
+            } else if (asset.dest.endsWith('.css')) {
+              inferredType = 'link'
+            }
+          }
+
+          rawTagsToFlush.push({
+            type: inferredType,
+            dest: asset.dest,
+            placement: injectConfig.placement || 'head-end',
+            sri: injectConfig.sri ?? false,
+            pages: injectConfig.pages ?? '*',
+            attributes: injectConfig.attributes || {},
+            rel: injectConfig.rel || (inferredType === 'link' ? 'stylesheet' : undefined),
+            name: injectConfig.name,
+            'http-equiv': injectConfig['http-equiv'],
+            content: injectConfig.content
+          })
+        }
+      }
+    }
+
+    // 2. Collect session._injectedTags
+    if (Array.isArray(mappedSessionObject._injectedTags)) {
+      for (const injectedTag of mappedSessionObject._injectedTags) {
+        rawTagsToFlush.push(injectedTag)
+      }
+    }
+
+    // Scan existing AST for deduplication
+    const existingExternalUrls = new Set()
+    const existingInlineHashes = new Set()
+
+    const scanASTForDuplicates = (container) => {
+      if (!container || !container.children) {
+        return
+      }
+      for (const child of container.children) {
+        if (child.type === 'tag') {
+          if ((child.name === 'script' && child.attribs?.src) || (child.name === 'link' && child.attribs?.href)) {
+            const url = child.attribs.src || child.attribs.href
+            existingExternalUrls.add(url)
+          } else if (child.name === 'script' || child.name === 'style') {
+            const textChild = child.children?.find(c => c.type === 'text')
+            if (textChild && textChild.data) {
+              existingInlineHashes.add(hash(textChild.data))
+            }
+          }
+          scanASTForDuplicates(child)
+        }
+      }
+    }
+    scanASTForDuplicates(mappedComponent.root)
+
+    // Process and insert tags
+    const pageInjectedAssetHashes = []
+
+    for (const tagOptions of rawTagsToFlush) {
+      const patterns = Array.isArray(tagOptions.pages) ? tagOptions.pages : [tagOptions.pages ?? '*']
+      const universal = patterns.some(p => p === '*')
+      const relPagePath = relative(normalizedOptions.path.pages, pagePathname)
+      const matches = universal || patterns.some(p => picomatch(p)(pagePathname) || picomatch(p)(relPagePath))
+
+      if (!matches) {
+        continue
+      }
+
+      let type = tagOptions.type || 'script'
+      let placement = tagOptions.placement || 'head-end'
+      const attribs = { ...(tagOptions.attributes || {}) }
+
+      let isExternal = false
+      let targetUrl = ''
+
+      if (attribs.src) {
+        targetUrl = attribs.src
+        isExternal = true
+      } else if (attribs.href) {
+        targetUrl = attribs.href
+        isExternal = true
+      } else if (tagOptions.src) {
+        targetUrl = tagOptions.src.startsWith('http://') || tagOptions.src.startsWith('https://') || tagOptions.src.startsWith('/')
+          ? tagOptions.src
+          : `${base}${tagOptions.src}`
+        isExternal = true
+      } else if (tagOptions.dest) {
+        targetUrl = `${base}${tagOptions.dest}`
+        isExternal = true
+      }
+
+      if (isExternal) {
+        if (type === 'script' && !attribs.src) {
+          attribs.src = targetUrl
+        }
+        if (type === 'link' && !attribs.href) {
+          attribs.href = targetUrl
+        }
+      }
+
+      if (type === 'link' && !attribs.rel) {
+        attribs.rel = tagOptions.rel || 'stylesheet'
+      }
+      if (type === 'meta') {
+        if (tagOptions.name && !attribs.name) {
+          attribs.name = tagOptions.name
+        }
+        if (tagOptions['http-equiv'] && !attribs['http-equiv']) {
+          attribs['http-equiv'] = tagOptions['http-equiv']
+        }
+        if (tagOptions.content && !attribs.content) {
+          attribs.content = tagOptions.content
+        }
+      }
+
+      const inlineContent = tagOptions.content
+
+      // Deduplication check
+      if (isExternal) {
+        if (existingExternalUrls.has(targetUrl)) {
+          continue
+        }
+        existingExternalUrls.add(targetUrl)
+      } else if (inlineContent) {
+        const contentHash = hash(inlineContent)
+        if (existingInlineHashes.has(contentHash)) {
+          continue
+        }
+        existingInlineHashes.add(contentHash)
+      }
+
+      // SRI Resolution
+      const sriOption = tagOptions.sri ?? false
+      const explicitIntegrity = attribs.integrity
+
+      if (sriOption && explicitIntegrity) {
+        handleError({
+          level: 'WARN',
+          message: `[Coralite Asset Injection] Conflict on "${tagOptions.dest || targetUrl}": Explicit integrity attribute provided while sri option is enabled. Explicit attribute takes precedence; auto-crossorigin disabled.`
+        })
+      } else if (sriOption) {
+        const algo = typeof sriOption === 'string' ? sriOption : 'sha384'
+        let fileContent = null
+        let assetDestPath = tagOptions.dest
+
+        if (!assetDestPath && targetUrl.startsWith(base)) {
+          assetDestPath = targetUrl.substring(base.length)
+        }
+
+        if (assetDestPath) {
+          const outputDir = normalizedOptions.output || join(normalizedOptions.projectRoot || process.cwd(), 'dist')
+          const fullDiskPath = join(outputDir, assetDestPath)
+
+          try {
+            const fileStat = await stat(fullDiskPath)
+            const cacheKey = `${assetDestPath}:${fileStat.mtimeMs}:${fileStat.size}:${algo}`
+
+            let computedDigest = ''
+            let contentHash = ''
+
+            let cachedPromise = sriDigestCache.get(cacheKey)
+            if (!cachedPromise) {
+              cachedPromise = (async () => {
+                fileContent = await readFile(fullDiskPath)
+                const computedDigestVal = calculateSRIDigest(fileContent, algo)
+                const contentHashVal = hash(fileContent)
+                return {
+                  digest: computedDigestVal,
+                  contentHash: contentHashVal
+                }
+              })().catch(err => {
+                sriDigestCache.delete(cacheKey)
+                throw err
+              })
+              sriDigestCache.set(cacheKey, cachedPromise)
+            }
+
+            const cachedResult = await cachedPromise
+            computedDigest = cachedResult.digest
+            contentHash = cachedResult.contentHash
+
+            attribs.integrity = computedDigest
+            if (!attribs.crossorigin) {
+              attribs.crossorigin = 'anonymous'
+            }
+
+            pageInjectedAssetHashes.push({
+              dest: assetDestPath,
+              hash: contentHash
+            })
+          } catch {
+            handleError({
+              level: 'WARN',
+              message: `[Coralite Asset Injection] Referenced asset file "${fullDiskPath}" not found on disk. Injection skipped.`
+            })
+            continue
+          }
+        }
+      }
+
+      // CSP Hash contribution / Nonce for inline script/style content
+      if (!isExternal && inlineContent) {
+        if (type === 'script') {
+          if (nonce) {
+            attribs.nonce = nonce
+          } else if (isCspActive) {
+            scriptHashes.push(calculateHash(inlineContent, hashAlgo))
+          }
+        } else if (type === 'style' || (type === 'link' && inlineContent)) {
+          if (nonce) {
+            attribs.nonce = nonce
+          } else if (isCspActive) {
+            styleHashes.push(calculateHash(inlineContent, hashAlgo))
+          }
+        }
+      }
+
+      // Container resolution and placement
+      let container = null
+      let fallbackToRoot = false
+
+      if (placement === 'head-start' || placement === 'head-end') {
+        if (headElement) {
+          container = headElement
+        } else {
+          container = mappedComponent.root
+          fallbackToRoot = true
+        }
+      } else if (placement === 'body-start' || placement === 'body-end') {
+        if (bodyElement && bodyElement !== mappedComponent.root) {
+          container = bodyElement
+        } else {
+          container = mappedComponent.root
+          fallbackToRoot = true
+        }
+      }
+
+      if (fallbackToRoot) {
+        handleError({
+          level: 'WARN',
+          message: `[Coralite Asset Injection] Missing target container for placement "${placement}". Falling back to root element.`
+        })
+      }
+
+      const tagElement = createCoraliteElement({
+        type: 'tag',
+        name: type,
+        parent: container,
+        attribs,
+        children: []
+      })
+
+      if (inlineContent && type !== 'meta') {
+        tagElement.children.push(createCoraliteTextNode({
+          type: 'text',
+          data: inlineContent,
+          parent: tagElement
+        }))
+      }
+
+      if (placement === 'head-start' || (fallbackToRoot && placement.endsWith('-start'))) {
+        container.children.unshift(tagElement)
+      } else if (placement === 'body-start') {
+        container.children.unshift(tagElement)
+      } else {
+        // head-end or body-end (strictly before framework client runtime bootstrap)
+        container.children.push(tagElement)
+      }
+    }
+
+    mappedSessionObject._pageInjectedAssetHashes = pageInjectedAssetHashes
+
+    let pageStylePath = null
+    let pageStyleHash = null
+    let pageScriptPath = null
+    let pageScriptHash = null
+    let runtimeChunkPath = null
+
+    /** @type {Record<string, { js: string, css: string | null }>} */
+    const componentHashes = {}
+    if (globalScriptResult?.manifest) {
+      const sortedTags = Array.from(componentsToInclude).sort()
+      for (const tag of sortedTags) {
+        if (globalScriptResult.manifest[tag]) {
+          componentHashes[tag] = globalScriptResult.manifest[tag]
+        }
+      }
+    }
+
+    if (normalizedOptions.externalStyles && normalizedOptions.externalStyles.length > 0) {
+      injectExternalStyles(mappedComponent.root, headElement, normalizedOptions.externalStyles, { nonce: isExternalStyles ? null : nonce })
+    }
+
+    if (isExternalStyles) {
+      if (componentsToInclude.size > 0 || mappedSessionObject.styles.size > 0) {
+        let combinedCss = ''
+
+        if (mappedSessionObject.styles.size > 0) {
+          combinedCss = buildComponentStylesheet(mappedSessionObject.styles)
+        } else if (componentsToInclude.size > 0) {
+          combinedCss = 'c-token { display: contents; }\n'
+        }
+
+        const cssHashVal = hash(combinedCss)
+        const cssFileHash = cssHashVal.slice(0, 8)
+        const relPath = `coralite-inline-${cssFileHash}.css`
+        const fullPath = `assets/css/${relPath}`
+        pageStylePath = fullPath
+        pageStyleHash = cssHashVal
+        outputFiles[fullPath] = {
+          path: fullPath,
+          hashedPath: relPath,
+          text: combinedCss
+        }
+        if (app.trackOutputFile) {
+          app.trackOutputFile(join(normalizedOptions.output || '', fullPath))
+        }
+
+        const linkElement = createCoraliteElement({
+          type: 'tag',
+          name: 'link',
+          parent: headElement || mappedComponent.root,
+          attribs: {
+            rel: 'stylesheet',
+            href: `${base}${fullPath}`
+          },
+          children: []
+        })
+        if (headElement) {
+          headElement.children.push(linkElement)
+        } else {
+          mappedComponent.root.children.unshift(linkElement)
+        }
+      }
+    } else {
+      if (mappedSessionObject.styles.size > 0) {
+        const { content: inlineCss } = injectStyles(mappedComponent.root, headElement, mappedSessionObject.styles, { nonce })
+        if (isCspActive && !nonce && inlineCss) {
+          styleHashes.push(calculateHash(inlineCss, hashAlgo))
+        }
+      }
+
+    }
+
+    if (mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
+      const scripts = mappedSessionObject.scripts.content[mappedComponent.path.pathname]
+      const instances = {}
+      const declarativeTags = new Set()
+      for (const key in scripts) {
+        const script = scripts[key]
+        declarativeTags.add(script.componentId)
+        instances[script.id] = {
+          instanceId: script.id,
+          componentId: script.componentId,
+          page: script.page,
+          state: script.state
+        }
+      }
+
+      const scriptResult = globalScriptResult
+
+      if (!scriptResult || !scriptResult.manifest['coralite-runtime']) {
+        handleError({
+          level: 'ERR',
+          message: 'MANIFEST MISSING coralite-runtime!',
+          error: new Error(JSON.stringify(scriptResult.manifest))
+        })
+      } else {
+        runtimeChunkPath = scriptResult.manifest['coralite-runtime']
+      }
+
+      const { content: readyContent } = injectReadinessScript(mappedComponent.root, headElement, true, normalizedOptions.mode, {
+        nonce,
+        external: isExternalScripts
+      })
+      if (isCspActive && !nonce && readyContent) {
+        scriptHashes.push(calculateHash(readyContent, hashAlgo))
+      }
+
+      const { content: mapContent } = injectImportMap(mappedComponent.root, headElement, scriptResult.importMap, base, { nonce })
+      if (isCspActive && !nonce && mapContent) {
+        scriptHashes.push(calculateHash(mapContent, hashAlgo))
+      }
+
+      const hydrationData = {}
+
+      for (const [id, instance] of Object.entries(instances)) {
+        if (instance.state && Object.keys(instance.state).length > 0) {
+          validateSerializable(instance.state, `component "${instance.componentId}" state`)
+          hydrationData[id] = normalizeObjectFunctions(instance.state, astTransformer)
+        }
+      }
+
+      const inlinedStyles = mappedSessionObject.styles && mappedSessionObject.styles.size > 0
+        ? Array.from(mappedSessionObject.styles.keys())
+        : []
+
+      const scriptContent = generateClientRuntime({
+        base,
+        sharedChunkPath: scriptResult.manifest['coralite-runtime'],
+        declarativeTags: Array.from(declarativeTags),
+        hydrationData: serialize(hydrationData),
+        mode: normalizedOptions.mode,
+        instanceCounters: serialize(mappedSessionObject.instanceCounters || {}),
+        inlinedStyles: serialize(inlinedStyles)
+      })
+
+      if (isExternalScripts) {
+        const fullScriptHash = hash(scriptContent)
+        const shortScriptHash = fullScriptHash.slice(0, 8)
+        const relativePagePath = relative(normalizedOptions.path.pages, pageItem.path.pathname)
+        const pageStem = relativePagePath.replace(/\.html$/, '').replace(/[\/\\]/g, '-') || 'index'
+        const relPath = `pages/${pageStem}-${shortScriptHash}.js`
+        const fullPath = `assets/js/${relPath}`
+        pageScriptPath = fullPath
+        pageScriptHash = fullScriptHash
+        outputFiles[fullPath] = {
+          path: fullPath,
+          hashedPath: relPath,
+          text: scriptContent
+        }
+        if (app.trackOutputFile) {
+          app.trackOutputFile(join(normalizedOptions.output || '', fullPath))
+        }
+
+        const scriptAttribs = {
+          type: 'module',
+          src: `${base}${fullPath}`
+        }
+        if (nonce) {
+          scriptAttribs.nonce = nonce
+        }
+
+        const scriptElement = createCoraliteElement({
+          type: 'tag',
+          name: 'script',
+          parent: bodyElement,
+          attribs: scriptAttribs,
+          children: []
+        })
+        bodyElement.children.push(scriptElement)
+
+        if (isCspActive && !nonce && scriptContent) {
+          scriptHashes.push(calculateHash(scriptContent, hashAlgo))
+        }
+      } else {
+        const scriptAttribs = { type: 'module' }
+        if (nonce) {
+          scriptAttribs.nonce = nonce
+        }
+
+        const scriptElement = createCoraliteElement({
+          type: 'tag',
+          name: 'script',
+          parent: bodyElement,
+          attribs: scriptAttribs,
+          children: []
+        })
+
+        scriptElement.children.push(createCoraliteTextNode({
+          type: 'text',
+          data: scriptContent,
+          parent: scriptElement
+        }))
+        bodyElement.children.push(scriptElement)
+
+        if (isCspActive && !nonce && scriptContent) {
+          scriptHashes.push(calculateHash(scriptContent, hashAlgo))
+        }
+      }
+    } else {
+      const { content: readyContent } = injectReadinessScript(mappedComponent.root, headElement, false, normalizedOptions.mode, {
+        nonce,
+        external: isExternalScripts
+      })
+      if (isCspActive && !nonce && readyContent) {
+        scriptHashes.push(calculateHash(readyContent, hashAlgo))
+      }
+    }
+
+    removeElements(mappedComponent.skipRenderElements, true)
+
+    let cspResult = null
+    if (isCspActive) {
+      const mergedDirectives = {
+        ...(cspConfig.directives || {}),
+        ...(pageCspDirectives || {})
+      }
+      const formattedHeader = formatCSPDirectives(mergedDirectives, {
+        scriptHashes,
+        styleHashes,
+        nonce
+      })
+      if (cspConfig.injectMeta || pageCspMeta) {
+        const metaCspContent = formatCSPDirectives(mergedDirectives, {
+          scriptHashes,
+          styleHashes,
+          nonce,
+          forMeta: true
+        })
+        injectCSPMeta(mappedComponent.root, headElement, metaCspContent, cspConfig.reportOnly)
+      }
+
+      /** @type {'nonce' | 'external' | 'hash'} */
+      let cspMode = 'hash'
+      if (nonce) {
+        cspMode = 'nonce'
+      } else if (isExternalScripts) {
+        cspMode = 'external'
+      }
+
+      cspResult = {
+        mode: cspMode,
+        nonce: nonce || null,
+        scriptHashes: nonce ? [] : scriptHashes,
+        styleHashes: (nonce || isExternalStyles) ? [] : styleHashes,
+        header: formattedHeader,
+        directives: mergedDirectives
+      }
+    }
+
+    const rawHTML = transformNode(mappedComponent.root)
+
+    /** @type {CoraliteBuildResult} */
+    const result = {
+      type: 'page',
+      path: mappedComponent.path,
+      content: rawHTML,
+      duration: performance.now() - startTime,
+      session: mappedSessionObject
+    }
+
+    if (runtimeChunkPath !== null) {
+      result.runtimeChunk = runtimeChunkPath
+    } else {
+      result.runtimeChunk = null
+    }
+
+    if (pageScriptPath) {
+      result.pageScript = pageScriptPath
+      result.pageScriptHash = pageScriptHash
+    }
+
+    if (pageStylePath) {
+      result.pageStyle = pageStylePath
+      result.pageStyleHash = pageStyleHash
+    }
+
+    if (Object.keys(componentHashes).length > 0) {
+      result.componentHashes = componentHashes
+    }
+
+    if (pageInjectedAssetHashes.length > 0) {
+      result.injectedAssets = pageInjectedAssetHashes
+    }
+
+    if (cspResult) {
+      result.csp = cspResult
+      mappedSessionObject.csp = cspResult
+    }
+
+    if (isProduction) {
+      mappedComponent.root = null
+      mappedComponent.customElements = null
+      mappedComponent.tempElements = null
+      mappedComponent.skipRenderElements = null
+      delete pageItem.content
+    }
+
+    return result
   }
 
   /**
@@ -2537,99 +2550,130 @@ export function createRenderer ({
       }
     }
 
-    const signal = buildOptions?.signal
-    const maxConcurrent = buildOptions?.maxConcurrent || availableParallelism()
-    const variables = buildOptions?.variables
+    const externalSignal = buildOptions?.signal
+    const internalAbortController = new AbortController()
+
+    if (externalSignal?.aborted) {
+      internalAbortController.abort(externalSignal.reason)
+    }
+
+    let externalAbortHandler = null
+    if (externalSignal) {
+      externalAbortHandler = () => {
+        internalAbortController.abort(externalSignal.reason)
+      }
+      externalSignal.addEventListener('abort', externalAbortHandler, { once: true })
+    }
+
+    const combinedSignal = typeof AbortSignal.any === 'function' && externalSignal
+      ? AbortSignal.any([externalSignal, internalAbortController.signal])
+      : internalAbortController.signal
+
+    let maxConcurrent = Math.min(availableParallelism(), 8)
+    if (typeof buildOptions?.maxConcurrent === 'number' && buildOptions.maxConcurrent > 0) {
+      maxConcurrent = Math.floor(buildOptions.maxConcurrent)
+    } else if (typeof normalizedOptions?.concurrency === 'number' && normalizedOptions.concurrency > 0) {
+      maxConcurrent = Math.floor(normalizedOptions.concurrency)
+    }
+
     const limit = pLimit(maxConcurrent)
-    const executing = new Set()
-    const results = []
+    const variables = buildOptions?.variables
+    const results = new Array(pagesToRender.length)
+    let allWorkerTasks = null
     let buildError = null
 
     try {
       // Phase 3: The Render Engine
-      for await (const result of _generatePages(pagesToRender, buildId, variables, buildOptions)) {
-        if (signal?.aborted) {
-          throw signal.reason
-        }
-        if (executing.size >= limit.concurrency) {
-          await Promise.race(executing)
-        }
-        const task = limit(async () => {
-          if (signal?.aborted) {
-            throw signal.reason
+      if (combinedSignal.aborted) {
+        throw combinedSignal.reason
+      }
+
+      allWorkerTasks = pagesToRender.map((pageItem, q) => {
+        return limit(async () => {
+          if (combinedSignal.aborted) {
+            throw combinedSignal.reason
           }
-          // Note: additionalPages from onAfterPageRender are now ignored/warned if added via addRenderQueue
+
+          const pageResult = await _renderSinglePage(pageItem, buildId, variables, buildOptions)
+
+          if (combinedSignal.aborted) {
+            throw combinedSignal.reason
+          }
+
           await hooks.triggerAggregate('onAfterPageRender', {
-            result,
-            session: result.session,
+            result: pageResult,
+            session: pageResult.session,
             app
           })
 
-          const pagePath = result.path.pathname
+          const pagePath = pageResult.path.pathname
           const targetMeta = newManifest.physical[pagePath] || newManifest.virtual[pagePath]
           if (targetMeta) {
-            if (result.injectedAssets) {
-              targetMeta.injectedAssets = result.injectedAssets
+            if (pageResult.injectedAssets) {
+              targetMeta.injectedAssets = pageResult.injectedAssets
             }
-            if (result.runtimeChunk !== undefined) {
-              targetMeta.runtimeChunk = result.runtimeChunk
+            if (pageResult.runtimeChunk !== undefined) {
+              targetMeta.runtimeChunk = pageResult.runtimeChunk
             }
-            if (result.pageScript) {
-              targetMeta.pageScript = result.pageScript
+            if (pageResult.pageScript) {
+              targetMeta.pageScript = pageResult.pageScript
             }
-            if (result.pageScriptHash) {
-              targetMeta.pageScriptHash = result.pageScriptHash
+            if (pageResult.pageScriptHash) {
+              targetMeta.pageScriptHash = pageResult.pageScriptHash
             }
-            if (result.pageStyle) {
-              targetMeta.pageStyle = result.pageStyle
+            if (pageResult.pageStyle) {
+              targetMeta.pageStyle = pageResult.pageStyle
             }
-            if (result.pageStyleHash) {
-              targetMeta.pageStyleHash = result.pageStyleHash
+            if (pageResult.pageStyleHash) {
+              targetMeta.pageStyleHash = pageResult.pageStyleHash
             }
-            if (result.componentHashes) {
-              targetMeta.componentHashes = result.componentHashes
+            if (pageResult.componentHashes) {
+              targetMeta.componentHashes = pageResult.componentHashes
             }
           }
 
-          const items = [result]
-          const finalResults = []
-          for (const item of items) {
-            if (typeof buildCallback === 'function') {
-              const transformed = await buildCallback(item)
-              if (transformed) {
-                finalResults.push(transformed)
-              }
+          let finalResult = pageResult
+          if (typeof buildCallback === 'function') {
+            const transformed = await buildCallback(pageResult)
+            if (transformed) {
+              finalResult = transformed
             } else {
-              finalResults.push(item)
+              finalResult = null
             }
           }
-          return finalResults
+
+          // Session Teardown
+          const session = pageResult.session
+          if (session) {
+            session.state = null
+            session.styles = null
+            session.scripts = null
+            if (session.source) {
+              session.source.contextInstances = null
+              session.source = null
+            }
+          }
+
+          results[q] = finalResult
+        }).catch(err => {
+          internalAbortController.abort(err)
+          throw err
         })
-        executing.add(task)
-        task.then((callbackResults) => {
-          if (callbackResults?.length) {
-            results.push(...callbackResults)
-          } executing.delete(task)
-        })
-          .catch((err) => {
-            executing.delete(task); handleError({
-              level: 'ERR',
-              message: err.message,
-              error: err
-            })
-          })
-      }
-      await Promise.all(executing)
+      })
+
+      await Promise.all(allWorkerTasks)
+
+      const finalRenderedResults = results.filter(Boolean)
 
       // Combine with skipped pages
       for (const skipped of skippedPages) {
         if (typeof buildCallback === 'function') {
           const transformed = await buildCallback(skipped)
           if (transformed) {
-            results.push(transformed)
+            finalRenderedResults.push(transformed)
           }
         } else {
-          results.push(skipped)
+          finalRenderedResults.push(skipped)
         }
       }
 
@@ -2647,10 +2691,12 @@ export function createRenderer ({
         })
       }
 
-      return results
+      return finalRenderedResults
     } catch (error) {
-      await Promise.allSettled(executing)
-      if (error.name === 'AbortError') {
+      if (allWorkerTasks) {
+        await Promise.allSettled(allWorkerTasks)
+      }
+      if (error.name === 'AbortError' || combinedSignal.aborted) {
         handleError({
           level: 'WARN',
           message: 'Build cancelled by user.'
@@ -2659,9 +2705,12 @@ export function createRenderer ({
       buildError = error instanceof Error ? error : new CoraliteError(`Build failed: ${error.message}`, { cause: error })
       throw buildError
     } finally {
+      if (externalSignal && externalAbortHandler) {
+        externalSignal.removeEventListener('abort', externalAbortHandler)
+      }
       const duration = performance.now() - startTime
       await hooks.trigger('onAfterBuild', {
-        results,
+        results: results.filter(Boolean),
         error: buildError,
         duration,
         app
@@ -2684,6 +2733,8 @@ export function createRenderer ({
   const clearCache = async (structural = false) => {
     globalScriptResult = null
     siteWideBundlePromise = null
+    sriDigestCache.clear()
+    inFlightCss.clear()
 
     if (structural) {
       await scriptManager.disposeContext()

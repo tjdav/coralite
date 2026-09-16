@@ -70,6 +70,7 @@ export async function buildCommand (config, options, logger = null) {
     components: config.components,
     pages: config.pages,
     plugins: Array.isArray(config.plugins) ? config.plugins : [],
+    concurrency: config.build?.concurrency ?? config.concurrency,
     assets: config.assets,
     csp: config.csp,
     incremental,

@@ -65,7 +65,9 @@ export default definePlugin({
     },
     async onAfterBuild ({ app }) {
       try {
-        const content = JSON.stringify(searchIndex)
+        const uniqueEntries = Array.from(new Map(searchIndex.map(item => [item.url, item])).values())
+        uniqueEntries.sort((a, b) => a.url.localeCompare(b.url))
+        const content = JSON.stringify(uniqueEntries, null, 2)
 
         await app.writeFile('search-index.json', content)
       } catch (err) {

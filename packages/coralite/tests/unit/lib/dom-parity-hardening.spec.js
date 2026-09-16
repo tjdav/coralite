@@ -20,7 +20,7 @@ describe('Server-Client DOM Parity Hardening', () => {
 
       const moduleMock = {
         id: 'test-mod',
-        script: 'module.exports.default = function({ isServer, isClient, window, document }) { return { isServer, isClient, hasWin: !!window, hasDoc: !!document }; }',
+        script: 'const { isServer, isClient, window, document } = require("coralite"); module.exports.default = { isServer, isClient, hasWin: !!window, hasDoc: !!document };',
         lineOffset: 0
       }
 
