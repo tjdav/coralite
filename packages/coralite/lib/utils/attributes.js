@@ -42,7 +42,11 @@ export const RESERVED_PROPERTY_BLACKLIST = new Set([
   'lastChild',
   'parentNode',
   'parentElement',
-  'shadowRoot'
+  'shadowRoot',
+  'formResetCallback',
+  'formDisabledCallback',
+  'formAssociatedCallback',
+  'formStateRestoreCallback'
 ])
 
 /**

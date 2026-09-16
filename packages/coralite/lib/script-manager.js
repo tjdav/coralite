@@ -176,6 +176,7 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
  * @param {Object} [options.style={}] - Reactive style definitions.
  * @param {Object} [options.provide={}] - Provided context definitions.
  * @param {Array|Object|null} [options.consume=null] - Consumed context keys.
+ * @param {boolean} [options.formAssociated=false] - Whether the element is a form-associated custom element.
  * @param {boolean} [options.override=false] - Whether to override existing component definition.
  */
 ScriptManager.prototype.registerComponent = function ({
@@ -191,6 +192,7 @@ ScriptManager.prototype.registerComponent = function ({
   style = {},
   provide = {},
   consume = null,
+  formAssociated = false,
   override = false
 }) {
   // Initialize base object if it's the first time we are seeing this ID
@@ -269,6 +271,12 @@ ScriptManager.prototype.registerComponent = function ({
   if (consume) {
     if (isNew || override) {
       target.consume = consume
+    }
+  }
+
+  if (formAssociated !== undefined) {
+    if (isNew || override) {
+      target.formAssociated = Boolean(formAssociated)
     }
   }
 
@@ -564,6 +572,7 @@ export default {
   style: (() => { const style = ${style}; return style; })(),
   provide: ${hasScript ? `componentModule_${alias}.provide || ` : ''}(() => { const provide = ${provide}; return provide; })(),
   consume: ${hasScript ? `componentModule_${alias}.consume || ` : ''}(() => { const consume = ${consume}; return consume; })(),
+  formAssociated: ${Boolean(sharedFn.formAssociated || sharedFn.script?.formAssociated)},
   dependencies: ${dependencies},
   imports: {},
   client: ${hasScript ? `componentModule_${alias}.script` : 'null'},

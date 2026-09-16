@@ -545,8 +545,42 @@ export function createComponentDefinition ({ app }) {
    * @returns {Promise<Object>}
    */
   return async (options, context) => {
-    const { attributes, server, getters, slots, style, provide, consume } = options
+    const { attributes, server, getters, slots, style, provide, consume, formAssociated } = options || {}
     const { state: initialState, module, root } = context
+
+    if (formAssociated !== undefined && typeof formAssociated !== 'boolean') {
+      throw new CoraliteError(`Component "${module.id}": option "formAssociated" must be a boolean. Received: ${typeof formAssociated}`, {
+        componentId: module.id,
+        filePath: module.path?.pathname
+      })
+    }
+
+    if (options && typeof options === 'object') {
+      const allowedKeys = new Set([
+        'attributes',
+        'server',
+        'client',
+        'getters',
+        'slots',
+        'style',
+        'provide',
+        'consume',
+        'formAssociated'
+      ])
+      for (const key of Object.keys(options)) {
+        if (!allowedKeys.has(key)) {
+          handleError({
+            onErrorCallback: app?.onError,
+            data: {
+              level: 'WARN',
+              type: 'unknown_option',
+              message: `Component "${module.id}" specifies unknown option "${key}". Valid options are: ${Array.from(allowedKeys).join(', ')}.`,
+              componentId: module.id
+            }
+          })
+        }
+      }
+    }
 
     const normalizedAttributes = normalizeAndValidateAttributes(attributes, module.id, module.path?.pathname)
 
@@ -580,7 +614,8 @@ export function createComponentDefinition ({ app }) {
       slots: slots || {},
       style: style || {},
       provide: provide || {},
-      consume: consume || null
+      consume: consume || null,
+      formAssociated: Boolean(formAssociated)
     }
 
     _validateInitialAttributes(normalizedAttributes, state, app, module)
@@ -630,7 +665,8 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     slots: {},
     defaultValues: {},
     getters: {},
-    style: {}
+    style: {},
+    formAssociated: false
   }
 
   const scriptObj = {
@@ -747,6 +783,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     style: scriptMeta.style,
     provide: scriptMeta.provide,
     consume: scriptMeta.consume,
+    formAssociated: Boolean(scriptMeta.formAssociated),
     override: true
   })
 }

@@ -145,6 +145,17 @@
  * @property {AbortSignal} signal - Lifecycle abort signal aborted on disconnectedCallback.
  * @property {(propertyName: string, callback: (newValue: any, oldValue: any) => void) => (() => void)} observe - Explicit state observation API returning a disposer.
  * @property {(eventName: string, detail?: any, options?: CustomEventInit) => boolean} emit - Dispatches a bubbling, composed CustomEvent from the component's root element.
+ * @property {ElementInternals|null} [internals] - The element's ElementInternals instance if formAssociated.
+ * @property {(value: any, state?: any) => void} [setFormValue] - Sets the element's form submission value and state.
+ * @property {(flags?: ValidityStateFlags, message?: string, anchor?: HTMLElement) => void} [setValidity] - Sets the element's validity state and message.
+ * @property {() => boolean} [checkValidity] - Checks if the element satisfies its constraints.
+ * @property {() => boolean} [reportValidity] - Reports invalid constraints to the user.
+ * @property {() => ValidityState|undefined} [validity] - Returns the current ValidityState.
+ * @property {() => string} [validationMessage] - Returns the current validation message.
+ * @property {() => HTMLFormElement|null} [form] - Returns the associated HTMLFormElement.
+ * @property {(callback: () => void) => () => void} [onReset] - Registers a callback invoked on form reset.
+ * @property {(callback: (disabled: boolean) => void) => () => void} [onDisabled] - Registers a callback invoked when form/fieldset disabled changes.
+ * @property {(callback: (state: any, mode: 'restore' | 'autocomplete') => void) => () => void} [onRestore] - Registers a callback invoked when form state is restored.
  */
 
 /**
@@ -179,6 +190,7 @@
  * @property {string[] | Record<string, any>} [consume] - W3C context consumer declaration.
  * @property {Record<string, CoraliteComputedSlotFunction<TState> | CoraliteModuleSlotFunction>} [slots] - Reactive slot builders or slot transform functions.
  * @property {Record<string, ((state: TState) => any) | string | number>} [style] - Reactive style definitions and CSS custom properties.
+ * @property {boolean} [formAssociated] - Enables Form-Associated Custom Element (FACE) behavior.
  */
 
 export default {}

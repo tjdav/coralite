@@ -130,6 +130,7 @@ function createClientSlotsHelper (element) {
 /**
  * @typedef {Object} CoraliteComponentOptions
  * @property {string} componentId - The unique identifier for the component.
+ * @property {boolean} [formAssociated] - Whether element is form-associated custom element.
  * @property {string} [templateHTML] - The raw HTML string for imperative mounting.
  * @property {Object} [defaultValues] - The initial state values extracted from the server data block.
  * @property {Object} [attributes] - Schema for coercing HTML attributes into typed primitives.
@@ -160,12 +161,28 @@ const BaseElement = typeof HTMLElement !== 'undefined' ? HTMLElement : FallbackE
  * @augments BaseElement
  */
 export class CoraliteElement extends BaseElement {
+  static formAssociated = false
+
   /**
    * Initializes a new instance of the CoraliteElement.
    * Sets up internal state trackers, binding collections, and hook registries.
    */
   constructor () {
     super()
+
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (ctor.formAssociated && typeof this.attachInternals === 'function') {
+      this._internals = this.attachInternals()
+    } else {
+      this._internals = null
+    }
+
+    this._formResetCallbacks = new Set()
+    this._formDisabledCallbacks = new Set()
+    this._formRestoreCallbacks = new Set()
+    this._manualValiditySet = false
     /**
      * Controls native teardown of event listeners and async fetches upon disconnection.
      * @type {AbortController|null}
@@ -488,6 +505,281 @@ export class CoraliteElement extends BaseElement {
   }
 
   /**
+   * Native Form-Associated Custom Element callback when parent <fieldset disabled> state changes.
+   * @param {boolean} disabled - Whether the fieldset container is disabled.
+   */
+  formDisabledCallback (disabled) {
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (!ctor.formAssociated) {
+      return
+    }
+
+    if (this._state) {
+      this._state.disabled = disabled
+    } else {
+      this._pendingDisabled = disabled
+    }
+
+    if (this._formDisabledCallbacks) {
+      for (const cb of this._formDisabledCallbacks) {
+        cb(disabled)
+      }
+    }
+  }
+
+  /**
+   * Native Form-Associated Custom Element callback when associated <form> changes.
+   * @param {Element|null} form - The associated parent form element.
+   */
+  formAssociatedCallback (form) {
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (!ctor.formAssociated) {
+      return
+    }
+
+    this._form = form
+  }
+
+  /**
+   * Clears error state for a specific key across camelCase and kebab-case variants.
+   * @param {string} key - State key to clear errors for.
+   * @protected
+   */
+  _clearErrorFor (key) {
+    if (!this._state) {
+      return
+    }
+    const camelKey = kebabToCamel(key)
+    const kebabKey = camelToKebab(camelKey)
+    if (this._state.errors) {
+      delete this._state.errors[camelKey]
+      delete this._state.errors[kebabKey]
+    }
+    this._state[`error_${camelKey}`] = ''
+    this._state[`error_${kebabKey}`] = ''
+  }
+
+  /**
+   * Native Form-Associated Custom Element callback when parent <form> is reset.
+   */
+  formResetCallback () {
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (!ctor.formAssociated) {
+      return
+    }
+
+    this._manualValiditySet = false
+
+    if (this._state) {
+      if ('value' in this._state || this._initialFormValue !== null) {
+        this._state.value = this._initialFormValue
+      }
+      if ('checked' in this._state) {
+        this._state.checked = this._initialChecked
+      }
+      this._clearErrorFor('value')
+    }
+
+    if (this._internals && typeof this._internals.setFormValue === 'function') {
+      this._internals.setFormValue(this._initialFormValue)
+    }
+
+    if (this._internals && typeof this._internals.setValidity === 'function') {
+      this._internals.setValidity({})
+    }
+
+    if (this._formResetCallbacks) {
+      for (const cb of this._formResetCallbacks) {
+        cb()
+      }
+    }
+  }
+
+  /**
+   * Native Form-Associated Custom Element callback when state is restored by browser.
+   * @param {string|File|FormData|null} state - Restored form value or entry.
+   * @param {string} mode - Restoration mode ('restore' or 'autocomplete').
+   */
+  formStateRestoreCallback (state, mode) {
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (!ctor.formAssociated) {
+      return
+    }
+
+    if (this._state && typeof state === 'string') {
+      this._state.value = state
+    }
+
+    if (this._internals && typeof this._internals.setFormValue === 'function') {
+      this._internals.setFormValue(state)
+    }
+
+    if (this._formRestoreCallbacks) {
+      for (const cb of this._formRestoreCallbacks) {
+        cb(state, mode)
+      }
+    }
+  }
+
+  /**
+   * Retrieves the form control name.
+   * @returns {string|undefined} The name attribute value for form-associated elements, or undefined.
+   */
+  get name () {
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (ctor.formAssociated) {
+      return this.getAttribute('name') ?? ''
+    }
+    return undefined
+  }
+
+  /**
+   * Sets the form control name attribute.
+   * @param {string} val - Name value.
+   */
+  set name (val) {
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (ctor.formAssociated) {
+      this.setAttribute('name', val)
+    } else {
+      Object.defineProperty(this, 'name', {
+        value: val,
+        writable: true,
+        configurable: true,
+        enumerable: true
+      })
+    }
+  }
+
+  /**
+   * Retrieves the element tag type name.
+   * @returns {string|undefined} Local tag name for form-associated elements, or undefined.
+   */
+  get type () {
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (ctor.formAssociated) {
+      return this.localName
+    }
+    return undefined
+  }
+
+  /**
+   * Retrieves associated parent form element.
+   * @returns {Element|null} The parent form element.
+   */
+  get form () {
+    if (this._internals && this._internals.form) {
+      return this._internals.form
+    }
+    if (this._form) {
+      return this._form
+    }
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (ctor.formAssociated) {
+      const formAttr = this.getAttribute('form')
+      if (formAttr && this.ownerDocument) {
+        const targetForm = this.ownerDocument.getElementById(formAttr)
+        if (targetForm && targetForm.tagName && targetForm.tagName.toLowerCase() === 'form') {
+          return targetForm
+        }
+      }
+      return this.closest ? (this.closest('form') ?? null) : null
+    }
+    return null
+  }
+
+  /**
+   * Retrieves validity state object from ElementInternals.
+   * @returns {Object|undefined} ValidityState object.
+   */
+  get validity () {
+    return this._internals ? this._internals.validity : undefined
+  }
+
+  /**
+   * Retrieves validation message string from ElementInternals.
+   * @returns {string} Validation message string.
+   */
+  get validationMessage () {
+    return this._internals ? this._internals.validationMessage : ''
+  }
+
+  /**
+   * Retrieves willValidate flag from ElementInternals.
+   * @returns {boolean} Whether element will be validated on form submit.
+   */
+  get willValidate () {
+    return this._internals ? this._internals.willValidate : false
+  }
+
+  /**
+   * Checks form validity.
+   * @returns {boolean} True if valid.
+   */
+  checkValidity () {
+    return this._internals && typeof this._internals.checkValidity === 'function'
+      ? this._internals.checkValidity()
+      : true
+  }
+
+  /**
+   * Reports form validity to the user agent.
+   * @returns {boolean} True if valid.
+   */
+  reportValidity () {
+    return this._internals && typeof this._internals.reportValidity === 'function'
+      ? this._internals.reportValidity()
+      : true
+  }
+
+  /**
+   * Retrieves associated label elements from ElementInternals.
+   * @returns {Object|null} Label node list.
+   */
+  get labels () {
+    return this._internals ? this._internals.labels : null
+  }
+
+  /**
+   * Synchronizes state.errors.value to ElementInternals setValidity().
+   * @protected
+   */
+  _syncValidityFromErrors () {
+    /** @type {typeof CoraliteElement} */
+    // @ts-ignore
+    const ctor = this.constructor
+    if (!ctor.formAssociated || !this._internals || this._manualValiditySet) {
+      return
+    }
+
+    const valueError = this._state?.errors?.value
+    if (valueError) {
+      /** @type {HTMLElement|null} */
+      const targetAnchor = this.querySelector('input, textarea, select')
+      const anchor = targetAnchor || this
+      this._internals.setValidity({ customError: true }, valueError, anchor)
+    } else {
+      this._internals.setValidity({})
+    }
+  }
+
+  /**
    * Invoked natively when the element is added to the document.
    * Handles the architectural split between Declarative (SSR) and Imperative (JS) components.
    * Orchestrates template injection, instance ID generation, and state/binding setup.
@@ -743,6 +1035,16 @@ export class CoraliteElement extends BaseElement {
       this._getterDeps = null
     }
 
+    if (this._formResetCallbacks) {
+      this._formResetCallbacks.clear()
+    }
+    if (this._formDisabledCallbacks) {
+      this._formDisabledCallbacks.clear()
+    }
+    if (this._formRestoreCallbacks) {
+      this._formRestoreCallbacks.clear()
+    }
+
     this._dirtyObserversBuffer = null
     this._isDevMode = false
     this._consecutiveFlushCount = 0
@@ -892,6 +1194,23 @@ export class CoraliteElement extends BaseElement {
       }
     }
 
+    this._initialFormValue = target.value !== undefined
+      ? target.value
+      : (this.getAttribute('value') ?? options.attributes?.value?.default ?? options.defaultValues?.value ?? null)
+
+    this._initialChecked = target.checked !== undefined
+      ? target.checked
+      : (this.hasAttribute('checked') || Boolean(options.attributes?.checked?.default) || Boolean(options.defaultValues?.checked))
+
+    if (this._pendingDisabled !== undefined) {
+      target.disabled = this._pendingDisabled
+      this._pendingDisabled = undefined
+    }
+
+    if (this._internals && typeof this._internals.setFormValue === 'function' && target.value !== undefined) {
+      this._internals.setFormValue(target.value)
+    }
+
     // Process initial attributes mapping
     for (const attr of this.attributes) {
       const lowerName = attr.name.toLowerCase()
@@ -985,7 +1304,7 @@ export class CoraliteElement extends BaseElement {
       for (const key of Object.keys(options.attributes)) {
         const camelName = kebabToCamel(key)
 
-        if (!RESERVED_PROPERTY_BLACKLIST.has(camelName) && !(camelName in this)) {
+        if (!RESERVED_PROPERTY_BLACKLIST.has(camelName) && (!(camelName in this) || camelName === 'name' || camelName === 'type')) {
           Object.defineProperty(this, camelName, {
             get: () => (this._state ? this._state[camelName] : target[camelName]),
             set: (val) => {
@@ -1059,6 +1378,7 @@ export class CoraliteElement extends BaseElement {
 
     this._state = this._createReactiveProxy(target, getRef)
     this._registerSlotStateObserver()
+    this._syncValidityFromErrors()
 
   }
 
@@ -1475,6 +1795,7 @@ export class CoraliteElement extends BaseElement {
           target['error_' + kebabTop] = flatVal
 
           self._markKeysDirty('errors', currentTopKey, 'error_' + camelTop, 'error_' + kebabTop)
+          self._syncValidityFromErrors()
           self._scheduleUpdate()
           return true
         },
@@ -1509,6 +1830,7 @@ export class CoraliteElement extends BaseElement {
             target['error_' + kebabTop] = flatVal
 
             self._markKeysDirty('errors', currentTopKey, 'error_' + camelTop, 'error_' + kebabTop)
+            self._syncValidityFromErrors()
             self._scheduleUpdate()
           }
           return deleted
@@ -1693,6 +2015,7 @@ export class CoraliteElement extends BaseElement {
             const kebabName = camelToKebab(camelName)
             self._markKeysDirty(key, 'error_' + camelName, 'error_' + kebabName)
           }
+          self._syncValidityFromErrors()
           self._scheduleUpdate()
           return true
         }
@@ -1750,6 +2073,20 @@ export class CoraliteElement extends BaseElement {
           } else {
             const kebabName = camelToKebab(camelName)
             self._markKeysDirty(camelName, kebabName, p)
+          }
+        }
+
+        /** @type {typeof CoraliteElement} */
+        // @ts-ignore
+        const ctor = self.constructor
+        if (ctor.formAssociated && self._internals) {
+          if (p === 'value') {
+            if (typeof self._internals.setFormValue === 'function') {
+              if (typeof v === 'string' || v === null || v === undefined || (typeof File !== 'undefined' && v instanceof File) || (typeof FormData !== 'undefined' && v instanceof FormData)) {
+                self._internals.setFormValue(v ?? null)
+              }
+            }
+            self._syncValidityFromErrors()
           }
         }
 
@@ -3047,6 +3384,12 @@ export class CoraliteElement extends BaseElement {
       }, { once: true })
     }
 
+    // @ts-ignore
+    const isDevOrTest = typeof import.meta.env !== 'undefined'
+      // @ts-ignore
+      ? import.meta.env.MODE !== 'production'
+      : true
+
     const observe = (key, callback) => {
       self._observeStateKey(key, callback)
     }
@@ -3107,7 +3450,50 @@ export class CoraliteElement extends BaseElement {
       observe,
       emit,
       isServer: false,
-      isClient: true
+      isClient: true,
+
+      setFormValue: (value, state) => {
+        /** @type {typeof CoraliteElement} */
+        // @ts-ignore
+        const ctor = self.constructor
+        if (self._internals && typeof self._internals.setFormValue === 'function') {
+          self._internals.setFormValue(value, state)
+        } else if (isDevOrTest && !ctor.formAssociated) {
+          console.warn(`Coralite Warning: setFormValue() called on component "${self.componentOptions?.componentId}", but "formAssociated: true" is not configured.`)
+        }
+      },
+      setValidity: (flags = {}, message = '', anchor) => {
+        /** @type {typeof CoraliteElement} */
+        // @ts-ignore
+        const ctor = self.constructor
+        const hasError = Object.values(flags).some(Boolean)
+        self._manualValiditySet = hasError
+        if (self._internals && typeof self._internals.setValidity === 'function') {
+          self._internals.setValidity(flags, message, anchor)
+        } else if (isDevOrTest && !ctor.formAssociated) {
+          console.warn(`Coralite Warning: setValidity() called on component "${self.componentOptions?.componentId}", but "formAssociated: true" is not configured.`)
+        }
+      },
+      internals: this._internals,
+
+      form: () => self.form,
+      validity: () => self.validity,
+      validationMessage: () => self.validationMessage,
+      checkValidity: () => self.checkValidity(),
+      reportValidity: () => self.reportValidity(),
+
+      onReset: (cb) => {
+        self._formResetCallbacks.add(cb)
+        return () => self._formResetCallbacks.delete(cb)
+      },
+      onDisabled: (cb) => {
+        self._formDisabledCallbacks.add(cb)
+        return () => self._formDisabledCallbacks.delete(cb)
+      },
+      onRestore: (cb) => {
+        self._formRestoreCallbacks.add(cb)
+        return () => self._formRestoreCallbacks.delete(cb)
+      }
     }
 
     if (typeof this._clientContextGetter === 'function') {
@@ -3129,12 +3515,6 @@ export class CoraliteElement extends BaseElement {
       this._processSlotsOnReady = false
       this._processSlots()
     }
-
-    // @ts-ignore
-    const isDevOrTest = typeof import.meta.env !== 'undefined'
-      // @ts-ignore
-      ? import.meta.env.MODE !== 'production'
-      : true
 
     if (isDevOrTest) {
       const options = this.componentOptions
@@ -3318,7 +3698,10 @@ export class CoraliteElement extends BaseElement {
  * @returns {typeof CoraliteElement} A new CoraliteElement subclass.
  */
 export function createCoraliteClass (options, contextGetter = null, hooks = {}, hydrationData = null) {
+  const isFormAssociated = Boolean(options.formAssociated)
+
   return class extends CoraliteElement {
+    static formAssociated = isFormAssociated
     /**
      * The attributes to observe for changes.
      * @returns {string[]} Array of attribute names.

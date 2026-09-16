@@ -451,8 +451,10 @@ export function createRenderer ({
         defaultValues,
         styles: stylesHTML,
         slots: scriptObj.slots,
+        style: scriptMeta.style,
         provide: scriptMeta.provide,
-        consume: scriptMeta.consume
+        consume: scriptMeta.consume,
+        formAssociated: Boolean(scriptMeta.formAssociated)
       })
 
       if (nestedComponents.length > 0) {
@@ -665,8 +667,10 @@ export function createRenderer ({
           defaultValues: componentDefaultValues,
           styles: stylesHTML,
           slots: scriptResult.__script__.slots || {},
+          style: scriptResult.__script__.style || {},
           provide: scriptResult.__script__.provide || {},
-          consume: scriptResult.__script__.consume || null
+          consume: scriptResult.__script__.consume || null,
+          formAssociated: Boolean(scriptResult.__script__.formAssociated)
         })
 
         if (mergedComponents.length > 0) {
