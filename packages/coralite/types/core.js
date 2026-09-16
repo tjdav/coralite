@@ -169,6 +169,8 @@
  * @property {AbortSignal} [signal] - An AbortSignal to cancel the build operation.
  * @property {Object.<string, any>} [variables] - Local variables for the page
  * @property {boolean} [incremental] - Override configuration setting for skipping unchanged builds.
+ * @property {boolean} [failOnError=true] - Whether to throw CoraliteBuildError if any page rendering fails.
+ * @property {boolean} [continueOnError] - Alias for failOnError: false.
  * @property {(info: CoraliteComponentBuildInfo) => void | Promise<void>} [onComponentBuild] - Optional callback function for handling component build reporting.
  */
 
@@ -187,7 +189,8 @@
  * @property {string} [pageStyle] - The external page style path.
  * @property {string} [pageStyleHash] - The page style content hash.
  * @property {Record<string, { js: string, css: string | null }>} [componentHashes] - Hashes for components included on this page.
- * @property {'skipped'} [status] - Optional status if the build was skipped via ISR.
+ * @property {'skipped' | 'failed'} [status] - Optional status if the build was skipped via ISR or failed.
+ * @property {Error} [error] - Error diagnostic if rendering failed.
  */
 
 /**

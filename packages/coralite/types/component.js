@@ -179,6 +179,19 @@
  */
 
 /**
+ * Error boundary callback for handling SSR component failures.
+ * @template {Record<string, any>} [TState=Record<string, any>]
+ * @callback CoraliteComponentErrorBoundary
+ * @param {Object} context
+ * @param {Error} context.error - The error thrown during rendering.
+ * @param {TState} context.state - Component state at failure.
+ * @param {any} [context.element] - Custom element AST node.
+ * @param {any} [context.page] - Page metadata.
+ * @param {any} [context.root] - Root AST element.
+ * @returns {string | { template?: string, state?: Partial<TState> } | void} Fallback UI.
+ */
+
+/**
  * Options for defineComponent.
  *
  * @template {Record<string, any>} [TState=Record<string, any>]
@@ -192,6 +205,7 @@
  * @property {Record<string, CoraliteComputedSlotFunction<TState> | CoraliteModuleSlotFunction>} [slots] - Reactive slot builders or slot transform functions.
  * @property {Record<string, ((state: TState) => any) | string | number>} [style] - Reactive style definitions and CSS custom properties.
  * @property {boolean} [formAssociated] - Enables Form-Associated Custom Element (FACE) behavior.
+ * @property {CoraliteComponentErrorBoundary<TState>} [onError] - Error boundary hook for rendering fallback UI during SSR in production.
  */
 
 export default {}

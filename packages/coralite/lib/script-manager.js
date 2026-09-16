@@ -177,6 +177,7 @@ ScriptManager.prototype.addContextProp = async function (name, method) {
  * @param {Object} [options.provide={}] - Provided context definitions.
  * @param {Array|Object|null} [options.consume=null] - Consumed context keys.
  * @param {boolean} [options.formAssociated=false] - Whether the element is a form-associated custom element.
+ * @param {Function|null} [options.onError=null] - Error boundary hook callback.
  * @param {boolean} [options.override=false] - Whether to override existing component definition.
  */
 ScriptManager.prototype.registerComponent = function ({
@@ -193,6 +194,7 @@ ScriptManager.prototype.registerComponent = function ({
   provide = {},
   consume = null,
   formAssociated = false,
+  onError = null,
   override = false
 }) {
   // Initialize base object if it's the first time we are seeing this ID
@@ -277,6 +279,12 @@ ScriptManager.prototype.registerComponent = function ({
   if (formAssociated !== undefined) {
     if (isNew || override) {
       target.formAssociated = Boolean(formAssociated)
+    }
+  }
+
+  if (typeof onError === 'function') {
+    if (isNew || override) {
+      target.onError = onError
     }
   }
 

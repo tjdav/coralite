@@ -504,7 +504,7 @@ async function _processServerSlots (slots, state, root, context, app, module) {
 }
 
 function _finalizeScriptState (state, options, module) {
-  const { attributes, server, getters, slots, client, style, provide, consume } = options
+  const { attributes, server, getters, slots, client, style, provide, consume, onError } = options
   const hasClient = typeof client === 'function'
   const hasSlots = slots && Object.keys(slots).length > 0
   const hasGetters = getters && Object.keys(getters).length > 0
@@ -514,8 +514,9 @@ function _finalizeScriptState (state, options, module) {
   const hasComponentStyle = style && Object.keys(style).length > 0
   const hasProvide = hasContextEntries(provide)
   const hasConsume = Boolean(consume)
+  const hasOnError = typeof onError === 'function'
 
-  if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume) {
+  if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume || hasOnError) {
     const args = {}
     for (const key in state) {
       if (!Object.hasOwn(state, key) || key === '__script__') {
@@ -545,11 +546,18 @@ export function createComponentDefinition ({ app }) {
    * @returns {Promise<Object>}
    */
   return async (options, context) => {
-    const { attributes, server, getters, slots, style, provide, consume, formAssociated } = options || {}
+    const { attributes, server, getters, slots, style, provide, consume, formAssociated, onError } = options || {}
     const { state: initialState, module, root } = context
 
     if (formAssociated !== undefined && typeof formAssociated !== 'boolean') {
       throw new CoraliteError(`Component "${module.id}": option "formAssociated" must be a boolean. Received: ${typeof formAssociated}`, {
+        componentId: module.id,
+        filePath: module.path?.pathname
+      })
+    }
+
+    if (onError !== undefined && typeof onError !== 'function') {
+      throw new CoraliteError(`Component "${module.id}": option "onError" must be a function. Received: ${typeof onError}`, {
         componentId: module.id,
         filePath: module.path?.pathname
       })
@@ -565,7 +573,8 @@ export function createComponentDefinition ({ app }) {
         'style',
         'provide',
         'consume',
-        'formAssociated'
+        'formAssociated',
+        'onError'
       ])
       for (const key of Object.keys(options)) {
         if (!allowedKeys.has(key)) {
@@ -615,7 +624,8 @@ export function createComponentDefinition ({ app }) {
       style: style || {},
       provide: provide || {},
       consume: consume || null,
-      formAssociated: Boolean(formAssociated)
+      formAssociated: Boolean(formAssociated),
+      onError: typeof onError === 'function' ? onError : null
     }
 
     _validateInitialAttributes(normalizedAttributes, state, app, module)
@@ -754,6 +764,15 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
           /* ignore */
         }
       }
+
+      const extractedOnError = extractComponentProperty(component.script, 'onError')
+      if (extractedOnError) {
+        try {
+          scriptObj.onError = new Function(`return ${extractedOnError.content}`)()
+        } catch {
+          /* ignore */
+        }
+      }
     }
   }
 
@@ -784,6 +803,7 @@ async function _safeRegister (component, scriptManager, scriptResultMeta = null,
     provide: scriptMeta.provide,
     consume: scriptMeta.consume,
     formAssociated: Boolean(scriptMeta.formAssociated),
+    onError: scriptMeta.onError || scriptObj.onError || null,
     override: true
   })
 }

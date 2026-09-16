@@ -382,56 +382,65 @@ export async function createCoralite ({
       }
       const outputDir = app.options.output
       const results = []
+      let buildError = null
 
-      await app.build(savePath, saveOptions, async (result) => {
-        // @ts-ignore
-        const relativeDir = relative(app.options.path.pages, result.path.dirname)
-        const outDir = join(outputDir, relativeDir)
-        const outFile = join(outDir, result.path.filename)
+      try {
+        await app.build(savePath, saveOptions, async (result) => {
+          if (result.status === 'skipped' || result.status === 'failed') {
+            return undefined
+          }
 
-        if (result.status === 'skipped') {
-          return undefined
-        }
-
-        if (!createdDir[outDir]) {
-          await mkdir(outDir, { recursive: true }); createdDir[outDir] = true
-        }
-
-        await writeFile(outFile, result.content, { signal })
-
-        results.push({
-          path: outFile,
-          duration: result.duration
-        })
-
-        return undefined
-      })
-
-      if (renderer.outputFiles) {
-        const assetsJsDir = join(outputDir, 'assets', 'js')
-        const assetsCssDir = join(outputDir, 'assets', 'css')
-
-        const assetWrites = Object.values(renderer.outputFiles).map(async (file) => {
-          const isCSS = file.path.endsWith('.css')
-          const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
-          const outFile = join(baseAssetsDir, file.hashedPath)
-          const outDir = dirname(outFile)
+          // @ts-ignore
+          const relativeDir = relative(app.options.path.pages, result.path.dirname)
+          const outDir = join(outputDir, relativeDir)
+          const outFile = join(outDir, result.path.filename)
 
           if (!createdDir[outDir]) {
             await mkdir(outDir, { recursive: true }); createdDir[outDir] = true
           }
 
-          await writeFile(outFile, file.text, { signal })
+          await writeFile(outFile, result.content, { signal })
 
           results.push({
             path: outFile,
-            duration: 0
+            duration: result.duration
           })
+
+          return undefined
         })
-        await Promise.all(assetWrites)
+      } catch (err) {
+        buildError = err
+      } finally {
+        if (renderer.outputFiles) {
+          const assetsJsDir = join(outputDir, 'assets', 'js')
+          const assetsCssDir = join(outputDir, 'assets', 'css')
+
+          const assetWrites = Object.values(renderer.outputFiles).map(async (file) => {
+            const isCSS = file.path.endsWith('.css')
+            const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
+            const outFile = join(baseAssetsDir, file.hashedPath)
+            const outDir = dirname(outFile)
+
+            if (!createdDir[outDir]) {
+              await mkdir(outDir, { recursive: true }); createdDir[outDir] = true
+            }
+
+            await writeFile(outFile, file.text, { signal })
+
+            results.push({
+              path: outFile,
+              duration: 0
+            })
+          })
+          await Promise.all(assetWrites)
+        }
+
+        await app.clearCache(true)
       }
 
-      await app.clearCache(true)
+      if (buildError) {
+        throw buildError
+      }
 
       return results
     },

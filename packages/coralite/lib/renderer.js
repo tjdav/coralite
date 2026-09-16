@@ -48,7 +48,7 @@ import { stat } from 'node:fs/promises'
 import { generateClientRuntime } from './utils/client/runtime.js'
 import { formatComponentCss, buildComponentStylesheet } from './utils/server/style.js'
 import { transformNode } from './parser.js'
-import { CoraliteError } from './utils/errors.js'
+import { CoraliteError, CoraliteBuildError } from './utils/errors.js'
 import { RESERVED_DOM_ATTRIBUTES } from './utils/attributes.js'
 import { checkFileChange, hash } from './utils/server/manifest.js'
 import {
@@ -454,7 +454,8 @@ export function createRenderer ({
         style: scriptMeta.style,
         provide: scriptMeta.provide,
         consume: scriptMeta.consume,
-        formAssociated: Boolean(scriptMeta.formAssociated)
+        formAssociated: Boolean(scriptMeta.formAssociated),
+        onError: scriptMeta.onError || null
       })
 
       if (nestedComponents.length > 0) {
@@ -492,551 +493,599 @@ export function createRenderer ({
       contextId = session.generateId(componentId)
     }
 
-    const hasAstMutatingHooks = hooks.hasComponentRenderHooks ? hooks.hasComponentRenderHooks() : false
-
-    if (moduleComponent.result.__opsCapable && !hasAstMutatingHooks && !noHydration) {
-      session._fragFast = (session._fragFast || 0) + 1
-      return emitFragment({
-        id,
-        moduleComponent,
-        state,
-        element,
-        page,
-        root,
-        contextId,
-        index,
-        session,
-        noHydration,
-        evaluate,
-        createComponentElement,
-        hooks,
-        app,
-        contextFrames
-      })
-    }
-
-    session._fragLegacy = (session._fragLegacy || 0) + 1
-    const instanceId = contextId
     let componentState = { ...state }
-    if (head) {
-      // @ts-ignore
-      if (element && element.attribs) {
-        const declaredAttrs = moduleComponent.result?.script?.attributes || moduleComponent.result?.attributes || {}
-        // @ts-ignore
-        componentState = Object.assign(componentState, filterReservedAttributes(element.attribs, declaredAttrs))
-      }
-      componentState = cleanKeys(componentState)
-    }
-
-    const module = cloneModuleInstance(moduleComponent.result)
-
-    const mappedComponentContext = await hooks.trigger('onBeforeComponentRender', {
-      state: componentState,
-      componentId: module.id,
-      instanceId,
-      template: module.template,
-      refs: module.values.refs,
-      textNodes: module.values.textNodes,
-      attributes: module.values.attributes,
-      page,
-      element,
-      session,
-      app
-    })
-    componentState = mappedComponentContext.state
-
-    if (module.values && module.values.refs) {
-      for (let i = 0; i < module.values.refs.length; i++) {
-        const ref = module.values.refs[i]
-        const uniqueRefValue = `${instanceId}__${ref.name}`
-
-        if (ref.element && ref.element.attribs) {
-          ref.element.attribs.ref = uniqueRefValue
-          ref.element.attribs['data-coralite-owner'] = instanceId
-        }
-
-        componentState[`ref_${ref.name}`] = uniqueRefValue
-      }
-    }
-    const result = module.template
-
-    if (module.styles.length) {
-      const selector = module.id
-      const formattedCss = await _getFormattedCss(moduleComponent, module)
-      if (!session.styles.has(selector)) {
-        session.styles.set(selector, formattedCss)
-      }
-    }
-
-    let evaluatedStyle = null
     let evaluatedScriptMeta = null
-    if (module.script) {
-      let scriptResult = {}
-      try {
-        const evaluationState = { ...componentState }
-        const pluginContext = {
-          state: evaluationState,
-          page,
-          root: element || root,
-          module,
-          id: contextId,
-          session,
-          noHydration
-        }
 
-        const boundPlugins = await hooks.bind(source.plugins, pluginContext)
-        Object.assign(pluginContext, boundPlugins)
+    try {
+      const hasAstMutatingHooks = hooks.hasComponentRenderHooks ? hooks.hasComponentRenderHooks() : false
 
-        scriptResult = await evaluate({
-          module,
+      if (moduleComponent.result.__opsCapable && !hasAstMutatingHooks && !noHydration) {
+        session._fragFast = (session._fragFast || 0) + 1
+        return await emitFragment({
+          id,
+          moduleComponent,
+          state,
           element,
-          state: evaluationState,
           page,
-          root: element || root,
+          root,
           contextId,
+          index,
           session,
           noHydration,
-          mode: app.options.mode,
+          evaluate,
+          createComponentElement,
+          hooks,
+          app,
           contextFrames
         })
-      } catch (error) {
-        throw createExecutionError(error, module, moduleComponent, page, contextId)
       }
 
-      if (scriptResult && scriptResult.__script__ != null) {
-        evaluatedScriptMeta = scriptResult.__script__
-        /** @type {any} */
-        const scriptMetaAny = scriptResult.__script__
-        evaluatedStyle = scriptMetaAny.style
-        if (!moduleComponent.result._extractedScript) {
-          moduleComponent.result._extractedScript = findAndExtractScript(module.script)
-        }
-        const extractedScript = moduleComponent.result._extractedScript
-
-        let extractedComponents = []
-        if (extractedScript) {
-          scriptResult.__script__.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
-          scriptResult.__script__.content = extractedScript.content
-          scriptResult.__script__.provideSource = extractedScript.provideSource
-          scriptResult.__script__.consumeSource = extractedScript.consumeSource
-          scriptResult.__script__.importStatements = extractedScript.importStatements
-          if (extractedScript.components) {
-            extractedComponents = extractedScript.components
-          }
-        } else {
-          scriptResult.__script__.lineOffset = module.lineOffset || 0
-          scriptResult.__script__.content = 'function(){}'
-        }
-
-        const stylesHTML = moduleComponent.result._processedCss || ''
-        const templateAST = moduleComponent.result.template.children
-        const templateValues = moduleComponent.result.values
-        const componentTokens = {}
-
-        const attributes = module.values.attributes
-        for (let i = 0; i < attributes.length; i++) {
-          const tokens = attributes[i].tokens
-          for (let j = 0; j < tokens.length; j++) {
-            componentTokens[tokens[j].name] = true
-          }
-        }
-
-        const textNodes = module.values.textNodes
-        for (let i = 0; i < textNodes.length; i++) {
-          const tokens = textNodes[i].tokens
-          for (let j = 0; j < tokens.length; j++) {
-            componentTokens[tokens[j].name] = true
-          }
-        }
-
-        const componentDefaultValues = scriptResult.__script__.defaultValues || {}
-
-        const declarativeComponents = (module.customElements || []).map(el => el.name)
-        const mergedComponents = Array.from(new Set([...declarativeComponents, ...extractedComponents]))
-        if (scriptResult.__script__) {
-          scriptResult.__script__.components = mergedComponents
-        }
-
-        scriptManager.registerComponent({
-          id: module.id,
-          getters: scriptResult.__script__.getters,
-          script: scriptResult.__script__,
-          filePath: moduleComponent.path.pathname,
-          templateAST,
-          templateValues,
-          defaultValues: componentDefaultValues,
-          styles: stylesHTML,
-          slots: scriptResult.__script__.slots || {},
-          style: scriptResult.__script__.style || {},
-          provide: scriptResult.__script__.provide || {},
-          consume: scriptResult.__script__.consume || null,
-          formAssociated: Boolean(scriptResult.__script__.formAssociated)
-        })
-
-        if (mergedComponents.length > 0) {
-          const inheritedState = { ...state }
-          // @ts-ignore
-          delete inheritedState.__script__
-          await _processDependentComponents({
-            componentIds: mergedComponents,
-            session,
-            page,
-            root,
-            state: inheritedState
-          })
-        }
-
-        if (!scriptResult.__script__.state) {
-          scriptResult.__script__.state = {}
-        }
-        if (!noHydration) {
-          session.scripts.add(page.file.pathname, {
-            id: contextId,
-            componentId: module.id,
-            page,
-            state: scriptResult.__script__.state,
-            components: mergedComponents
-          })
-        }
-        evaluatedScriptMeta = scriptResult.__script__
-        delete scriptResult.__script__
-      }
-      componentState = Object.assign(componentState, scriptResult)
-    }
-
-    session.state[contextId] = componentState
-
-    // Evaluate provided context values and build immutable childContextFrames for SSR
-    let childContextFrames = contextFrames
-    const sharedFn = scriptManager.sharedFunctions?.[module.id]
-    const scriptMeta = moduleComponent.result?.script || {}
-    /** @type {any} */
-    const moduleScript = module.script
-    const provideObj = (evaluatedScriptMeta && evaluatedScriptMeta.provide) ||
-      (sharedFn && sharedFn.provide) ||
-      scriptMeta.provide ||
-      (moduleScript && typeof moduleScript === 'object' ? moduleScript.provide : null) ||
-      null
-
-    if (provideObj && typeof provideObj === 'object') {
-      const newFrame = new Map()
-      const roState = createReadOnlyProxy(componentState)
-
-      const entries = isContextMap(provideObj)
-        ? Array.from(provideObj.entries())
-        : [
-          ...Object.entries(provideObj),
-          ...Object.getOwnPropertySymbols(provideObj).map(sym => [sym, provideObj[sym]])
-        ]
-
-      for (const [key, valOrFn] of entries) {
-        if (typeof valOrFn === 'function') {
-          try {
-            const context = {
-              state: roState,
-              root: element || root,
-              refs: () => null,
-              slots: createServerSlotsHelper(element || root),
-              signal: NOOP_SIGNAL
-            }
-            newFrame.set(key, valOrFn(context))
-          } catch {
-            newFrame.set(key, undefined)
-          }
-        } else {
-          newFrame.set(key, valOrFn)
-        }
-      }
-      childContextFrames = [...contextFrames, newFrame]
-    }
-
-    const attributes = module.values.attributes
-    for (let i = 0; i < attributes.length; i++) {
-      const item = attributes[i]
-      const tokens = item.tokens
-      for (let j = 0; j < tokens.length; j++) {
-        const token = tokens[j]
-        let value = componentState[token.name]
-        if (value == null) {
-          value = ''
-        }
-        replaceToken({
-          type: 'attribute',
-          node: item.element,
-          attribute: item.name,
-          content: token.content,
-          value
-        })
-      }
-    }
-
-    const textNodes = module.values.textNodes
-    for (let i = 0; i < textNodes.length; i++) {
-      const item = textNodes[i]
-      const tokens = item.tokens
-      for (let j = 0; j < tokens.length; j++) {
-        const token = tokens[j]
-        let value = componentState[token.name]
-        if (value == null) {
-          value = ''
-        }
-        replaceToken({
-          type: 'textNode',
-          node: item.textNode,
-          content: token.content,
-          value
-        })
-      }
-    }
-
-    const customElements = module.customElements
-    for (let i = 0; i < customElements.length; i++) {
-      const customElement = customElements[i]
-
-      if (customElement.children && customElement.children.length && !customElement.slots.length) {
-        const children = customElement.children
-
-        for (let j = 0; j < children.length; j++) {
-          const node = children[j]
-          const slotElement = {
-            name: 'default',
-            node
-          }
-          if (isCoraliteElement(node) && node.attribs.slot) {
-            slotElement.name = node.attribs.slot
-          }
-          customElement.slots.push(slotElement)
-        }
-      }
-    }
-
-    const createComponentTasks = []
-    for (let i = 0; i < customElements.length; i++) {
-      const customElement = customElements[i]
-
-      let parent = customElement.parent
-      let shouldSkip = false
-      while (parent) {
-        if ('slots' in parent && Array.isArray(parent.slots)) {
-          shouldSkip = true
-          break
-        }
+      session._fragLegacy = (session._fragLegacy || 0) + 1
+      const instanceId = contextId
+      if (head) {
         // @ts-ignore
-        parent = parent.parent
-      }
-      if (shouldSkip) {
-        continue
-      }
-
-      const childContextId = session.generateId(customElement.name)
-      const currentProperties = session.state[childContextId] || {}
-
-      let childState = { ...state }
-      if (typeof customElement.attribs === 'object') {
-        const childModuleComponent = app.components.getItem(customElement.name)
-        let declaredAttrs = {}
-        if (childModuleComponent && childModuleComponent.result) {
-          declaredAttrs = childModuleComponent.result.script?.attributes || childModuleComponent.result.attributes || {}
+        if (element && element.attribs) {
+          const declaredAttrs = moduleComponent.result?.script?.attributes || moduleComponent.result?.attributes || {}
+          // @ts-ignore
+          componentState = Object.assign(componentState, filterReservedAttributes(element.attribs, declaredAttrs))
         }
-        const attribValues = filterReservedAttributes(cleanKeys(customElement.attribs), declaredAttrs)
-        childState = {
-          ...childState,
-          ...currentProperties,
-          ...attribValues
-        }
-      } else {
-        childState = {
-          ...childState,
-          ...currentProperties
-        }
+        componentState = cleanKeys(componentState)
       }
 
-      session.state[childContextId] = childState
-      const childNoHydration = noHydration || (customElement.attribs && 'no-hydration' in customElement.attribs)
+      const module = cloneModuleInstance(moduleComponent.result)
 
-      createComponentTasks.push(createComponentElement({
-        id: customElement.name,
-        state: childState,
-        element: customElement,
+      const mappedComponentContext = await hooks.trigger('onBeforeComponentRender', {
+        state: componentState,
+        componentId: module.id,
+        instanceId,
+        template: module.template,
+        refs: module.values.refs,
+        textNodes: module.values.textNodes,
+        attributes: module.values.attributes,
         page,
-        root,
-        contextId: childContextId,
-        index,
+        element,
         session,
-        noHydration: childNoHydration,
-        head: false,
-        contextFrames: childContextFrames
-      }).then(childComponentElement => ({
-        childComponentElement,
-        customElement,
-        childContextId,
-        noHydration: childNoHydration
-      })))
-    }
+        app
+      })
+      componentState = mappedComponentContext.state
 
-    const results = await Promise.all(createComponentTasks)
+      if (module.values && module.values.refs) {
+        for (let i = 0; i < module.values.refs.length; i++) {
+          const ref = module.values.refs[i]
+          const uniqueRefValue = `${instanceId}__${ref.name}`
 
-    for (let i = 0; i < results.length; i++) {
-      const { childComponentElement, customElement, childContextId, noHydration: childNoHydration } = results[i]
+          if (ref.element && ref.element.attribs) {
+            ref.element.attribs.ref = uniqueRefValue
+            ref.element.attribs['data-coralite-owner'] = instanceId
+          }
 
-      if (childComponentElement && typeof childComponentElement === 'object') {
-        let children = []
+          componentState[`ref_${ref.name}`] = uniqueRefValue
+        }
+      }
+      const result = module.template
 
-        if (Array.isArray(childComponentElement)) {
-          children = childComponentElement
-        } else if ('children' in childComponentElement && Array.isArray(childComponentElement.children)) {
-          children = childComponentElement.children
+      if (module.styles.length) {
+        const selector = module.id
+        const formattedCss = await _getFormattedCss(moduleComponent, module)
+        if (!session.styles.has(selector)) {
+          session.styles.set(selector, formattedCss)
+        }
+      }
+
+      let evaluatedStyle = null
+      if (module.script) {
+        let scriptResult = {}
+        try {
+          const evaluationState = { ...componentState }
+          const pluginContext = {
+            state: evaluationState,
+            page,
+            root: element || root,
+            module,
+            id: contextId,
+            session,
+            noHydration
+          }
+
+          const boundPlugins = await hooks.bind(source.plugins, pluginContext)
+          Object.assign(pluginContext, boundPlugins)
+
+          scriptResult = await evaluate({
+            module,
+            element,
+            state: evaluationState,
+            page,
+            root: element || root,
+            contextId,
+            session,
+            noHydration,
+            mode: app.options.mode,
+            contextFrames
+          })
+        } catch (error) {
+          throw createExecutionError(error, module, moduleComponent, page, contextId)
         }
 
-        if (childNoHydration) {
-          const parent = customElement.parent
+        if (scriptResult && scriptResult.__script__ != null) {
+          evaluatedScriptMeta = scriptResult.__script__
+          /** @type {any} */
+          const scriptMetaAny = scriptResult.__script__
+          evaluatedStyle = scriptMetaAny.style
+          if (!moduleComponent.result._extractedScript) {
+            moduleComponent.result._extractedScript = findAndExtractScript(module.script)
+          }
+          const extractedScript = moduleComponent.result._extractedScript
 
-          if (parent && parent.children && Array.isArray(parent.children)) {
-            const idx = parent.children.indexOf(customElement)
-            if (idx !== -1) {
-              parent.children.splice(idx, 1, ...children)
-              relinkChildren(parent)
+          let extractedComponents = []
+          if (extractedScript) {
+            scriptResult.__script__.lineOffset = (module.lineOffset || 0) + extractedScript.lineOffset
+            scriptResult.__script__.content = extractedScript.content
+            scriptResult.__script__.provideSource = extractedScript.provideSource
+            scriptResult.__script__.consumeSource = extractedScript.consumeSource
+            scriptResult.__script__.importStatements = extractedScript.importStatements
+            if (extractedScript.components) {
+              extractedComponents = extractedScript.components
+            }
+          } else {
+            scriptResult.__script__.lineOffset = module.lineOffset || 0
+            scriptResult.__script__.content = 'function(){}'
+          }
+
+          const stylesHTML = moduleComponent.result._processedCss || ''
+          const templateAST = moduleComponent.result.template.children
+          const templateValues = moduleComponent.result.values
+          const componentTokens = {}
+
+          const attributes = module.values.attributes
+          for (let i = 0; i < attributes.length; i++) {
+            const tokens = attributes[i].tokens
+            for (let j = 0; j < tokens.length; j++) {
+              componentTokens[tokens[j].name] = true
             }
           }
-        } else {
-          customElement.children = children
-          relinkChildren(customElement)
 
-          if (!customElement.attribs) {
-            customElement.attribs = {}
+          const textNodes = module.values.textNodes
+          for (let i = 0; i < textNodes.length; i++) {
+            const tokens = textNodes[i].tokens
+            for (let j = 0; j < tokens.length; j++) {
+              componentTokens[tokens[j].name] = true
+            }
           }
 
-          customElement.attribs['data-cid'] = childContextId
-          customElement.attribs['data-coralite-initial'] = ''
-          session.componentTags.add(customElement.name)
+          const componentDefaultValues = scriptResult.__script__.defaultValues || {}
+
+          const declarativeComponents = (module.customElements || []).map(el => el.name)
+          const mergedComponents = Array.from(new Set([...declarativeComponents, ...extractedComponents]))
+          if (scriptResult.__script__) {
+            scriptResult.__script__.components = mergedComponents
+          }
+
+          scriptManager.registerComponent({
+            id: module.id,
+            getters: scriptResult.__script__.getters,
+            script: scriptResult.__script__,
+            filePath: moduleComponent.path.pathname,
+            templateAST,
+            templateValues,
+            defaultValues: componentDefaultValues,
+            styles: stylesHTML,
+            slots: scriptResult.__script__.slots || {},
+            style: scriptResult.__script__.style || {},
+            provide: scriptResult.__script__.provide || {},
+            consume: scriptResult.__script__.consume || null,
+            formAssociated: Boolean(scriptResult.__script__.formAssociated),
+            onError: scriptResult.__script__.onError || null
+          })
+
+          if (mergedComponents.length > 0) {
+            const inheritedState = { ...state }
+            // @ts-ignore
+            delete inheritedState.__script__
+            await _processDependentComponents({
+              componentIds: mergedComponents,
+              session,
+              page,
+              root,
+              state: inheritedState
+            })
+          }
+
+          if (!scriptResult.__script__.state) {
+            scriptResult.__script__.state = {}
+          }
+          if (!noHydration) {
+            session.scripts.add(page.file.pathname, {
+              id: contextId,
+              componentId: module.id,
+              page,
+              state: scriptResult.__script__.state,
+              components: mergedComponents
+            })
+          }
+          evaluatedScriptMeta = scriptResult.__script__
+          delete scriptResult.__script__
         }
+        componentState = Object.assign(componentState, scriptResult)
       }
-    }
 
-    await _replaceSlots({
-      id,
-      instanceId,
-      element,
-      module,
-      state: componentState,
-      page,
-      root,
-      index,
-      session,
-      noHydration,
-      contextFrames: childContextFrames
-    })
+      session.state[contextId] = componentState
 
-    // Evaluate host component reactive styles
-    const hostScriptMeta = moduleComponent.result?.script || {}
-    /** @type {any} */
-    const hostModuleScript = module.script
-    const componentStyleObj = evaluatedStyle || hostScriptMeta.style || (hostModuleScript && typeof hostModuleScript === 'object' ? hostModuleScript.style : null) || {}
-    if (componentStyleObj && typeof componentStyleObj === 'object' && Object.keys(componentStyleObj).length > 0) {
-      const computedStylesMap = new Map()
+      // Evaluate provided context values and build immutable childContextFrames for SSR
+      let childContextFrames = contextFrames
+      const sharedFn = scriptManager.sharedFunctions?.[module.id]
+      const scriptMeta = moduleComponent.result?.script || {}
       /** @type {any} */
-      const elementNode = element
+      const moduleScript = module.script
+      const provideObj = (evaluatedScriptMeta && evaluatedScriptMeta.provide) ||
+        (sharedFn && sharedFn.provide) ||
+        scriptMeta.provide ||
+        (moduleScript && typeof moduleScript === 'object' ? moduleScript.provide : null) ||
+        null
 
-      // 1. Pre-existing static inline style attribute on host element tag
-      if (elementNode && elementNode.attribs && elementNode.attribs.style) {
-        const parsed = parseInlineStyle(elementNode.attribs.style)
-        for (const [k, v] of parsed.entries()) {
-          computedStylesMap.set(k, v)
+      if (provideObj && typeof provideObj === 'object') {
+        const newFrame = new Map()
+        const roState = createReadOnlyProxy(componentState)
+
+        const entries = isContextMap(provideObj)
+          ? Array.from(provideObj.entries())
+          : [
+            ...Object.entries(provideObj),
+            ...Object.getOwnPropertySymbols(provideObj).map(sym => [sym, provideObj[sym]])
+          ]
+
+        for (const [key, valOrFn] of entries) {
+          if (typeof valOrFn === 'function') {
+            try {
+              const context = {
+                state: roState,
+                root: element || root,
+                refs: () => null,
+                slots: createServerSlotsHelper(element || root),
+                signal: NOOP_SIGNAL
+              }
+              newFrame.set(key, valOrFn(context))
+            } catch {
+              newFrame.set(key, undefined)
+            }
+          } else {
+            newFrame.set(key, valOrFn)
+          }
+        }
+        childContextFrames = [...contextFrames, newFrame]
+      }
+
+      const attributes = module.values.attributes
+      for (let i = 0; i < attributes.length; i++) {
+        const item = attributes[i]
+        const tokens = item.tokens
+        for (let j = 0; j < tokens.length; j++) {
+          const token = tokens[j]
+          let value = componentState[token.name]
+          if (value == null) {
+            value = ''
+          }
+          replaceToken({
+            type: 'attribute',
+            node: item.element,
+            attribute: item.name,
+            content: token.content,
+            value
+          })
         }
       }
 
-      // 2. Component style properties (overriding tag style on collision)
-      const roState = createReadOnlyProxy(componentState)
-      for (const [key, valOrFn] of Object.entries(componentStyleObj)) {
-        const normKey = normalizeStyleKey(key)
-        if (!normKey) {
+      const textNodes = module.values.textNodes
+      for (let i = 0; i < textNodes.length; i++) {
+        const item = textNodes[i]
+        const tokens = item.tokens
+        for (let j = 0; j < tokens.length; j++) {
+          const token = tokens[j]
+          let value = componentState[token.name]
+          if (value == null) {
+            value = ''
+          }
+          replaceToken({
+            type: 'textNode',
+            node: item.textNode,
+            content: token.content,
+            value
+          })
+        }
+      }
+
+      const customElements = module.customElements
+      for (let i = 0; i < customElements.length; i++) {
+        const customElement = customElements[i]
+
+        if (customElement.children && customElement.children.length && !customElement.slots.length) {
+          const children = customElement.children
+
+          for (let j = 0; j < children.length; j++) {
+            const node = children[j]
+            const slotElement = {
+              name: 'default',
+              node
+            }
+            if (isCoraliteElement(node) && node.attribs.slot) {
+              slotElement.name = node.attribs.slot
+            }
+            customElement.slots.push(slotElement)
+          }
+        }
+      }
+
+      const createComponentTasks = []
+      for (let i = 0; i < customElements.length; i++) {
+        const customElement = customElements[i]
+
+        let parent = customElement.parent
+        let shouldSkip = false
+        while (parent) {
+          if ('slots' in parent && Array.isArray(parent.slots)) {
+            shouldSkip = true
+            break
+          }
+          // @ts-ignore
+          parent = parent.parent
+        }
+        if (shouldSkip) {
           continue
         }
 
-        let val
-        if (typeof valOrFn === 'function') {
-          try {
-            val = valOrFn(roState)
-          } catch (err) {
-            if (err instanceof CoraliteError) {
-              throw err
-            }
-            throw new CoraliteError(
-              `Component "${module.id}" style getter for "${key}" failed: ${err.message}`,
-              {
-                componentId: module.id,
-                filePath: module.path?.pathname,
-                cause: err
-              }
-            )
+        const childContextId = session.generateId(customElement.name)
+        const currentProperties = session.state[childContextId] || {}
+
+        let childState = { ...state }
+        if (typeof customElement.attribs === 'object') {
+          const childModuleComponent = app.components.getItem(customElement.name)
+          let declaredAttrs = {}
+          if (childModuleComponent && childModuleComponent.result) {
+            declaredAttrs = childModuleComponent.result.script?.attributes || childModuleComponent.result.attributes || {}
+          }
+          const attribValues = filterReservedAttributes(cleanKeys(customElement.attribs), declaredAttrs)
+          childState = {
+            ...childState,
+            ...currentProperties,
+            ...attribValues
           }
         } else {
-          val = valOrFn
-        }
-
-        if (val && typeof val.then === 'function') {
-          throw new CoraliteError(`Component "${module.id}" style property "${key}" getter must be synchronous. Use getters or server() for asynchronous operations.`, {
-            componentId: module.id
-          })
-        }
-
-        if (val !== null && val !== undefined && val !== false && val !== '') {
-          computedStylesMap.set(normKey, String(val))
-        } else {
-          computedStylesMap.delete(normKey)
-        }
-      }
-
-      if (elementNode) {
-        const formatted = formatInlineStyle(computedStylesMap)
-        if (formatted) {
-          if (!elementNode.attribs) {
-            elementNode.attribs = {}
+          childState = {
+            ...childState,
+            ...currentProperties
           }
-          elementNode.attribs.style = formatted
-        } else if (elementNode.attribs && elementNode.attribs.style !== undefined) {
-          delete elementNode.attribs.style
         }
+
+        session.state[childContextId] = childState
+        const childNoHydration = noHydration || (customElement.attribs && 'no-hydration' in customElement.attribs)
+
+        createComponentTasks.push(createComponentElement({
+          id: customElement.name,
+          state: childState,
+          element: customElement,
+          page,
+          root,
+          contextId: childContextId,
+          index,
+          session,
+          noHydration: childNoHydration,
+          head: false,
+          contextFrames: childContextFrames
+        }).then(childComponentElement => ({
+          childComponentElement,
+          customElement,
+          childContextId,
+          noHydration: childNoHydration
+        })))
       }
-    }
 
-    if (noHydration) {
-      const stack = [...result.children]
+      const results = await Promise.all(createComponentTasks)
 
-      while (stack.length > 0) {
-        const node = stack.pop()
-        if (node.type === 'tag') {
-          if (node.name === 'c-token') {
-            const parent = node.parent
-            if (parent && parent.children) {
-              const idx = parent.children.indexOf(node)
+      for (let i = 0; i < results.length; i++) {
+        const { childComponentElement, customElement, childContextId, noHydration: childNoHydration } = results[i]
+        const isChildNoHydration = childNoHydration || Boolean(customElement.attribs && 'no-hydration' in customElement.attribs)
+
+        if (childComponentElement && typeof childComponentElement === 'object') {
+          let children = []
+
+          if (Array.isArray(childComponentElement)) {
+            children = childComponentElement
+          } else if ('children' in childComponentElement && Array.isArray(childComponentElement.children)) {
+            children = childComponentElement.children
+          }
+
+          if (isChildNoHydration) {
+            const parent = customElement.parent
+
+            if (parent && parent.children && Array.isArray(parent.children)) {
+              const idx = parent.children.indexOf(customElement)
               if (idx !== -1) {
-                parent.children.splice(idx, 1, ...node.children)
+                parent.children.splice(idx, 1, ...children)
                 relinkChildren(parent)
               }
             }
           } else {
-            stack.push(...(node.children || []))
+            customElement.children = children
+            relinkChildren(customElement)
+
+            if (!customElement.attribs) {
+              customElement.attribs = {}
+            }
+
+            customElement.attribs['data-cid'] = childContextId
+            customElement.attribs['data-coralite-initial'] = ''
+            session.componentTags.add(customElement.name)
           }
         }
       }
+
+      await _replaceSlots({
+        id,
+        instanceId,
+        element,
+        module,
+        state: componentState,
+        page,
+        root,
+        index,
+        session,
+        noHydration,
+        contextFrames: childContextFrames
+      })
+
+      // Evaluate host component reactive styles
+      const hostScriptMeta = moduleComponent.result?.script || {}
+      /** @type {any} */
+      const hostModuleScript = module.script
+      const componentStyleObj = evaluatedStyle || hostScriptMeta.style || (hostModuleScript && typeof hostModuleScript === 'object' ? hostModuleScript.style : null) || {}
+      if (componentStyleObj && typeof componentStyleObj === 'object' && Object.keys(componentStyleObj).length > 0) {
+        const computedStylesMap = new Map()
+        /** @type {any} */
+        const elementNode = element
+
+        // 1. Pre-existing static inline style attribute on host element tag
+        if (elementNode && elementNode.attribs && elementNode.attribs.style) {
+          const parsed = parseInlineStyle(elementNode.attribs.style)
+          for (const [k, v] of parsed.entries()) {
+            computedStylesMap.set(k, v)
+          }
+        }
+
+        // 2. Component style properties (overriding tag style on collision)
+        const roState = createReadOnlyProxy(componentState)
+        for (const [key, valOrFn] of Object.entries(componentStyleObj)) {
+          const normKey = normalizeStyleKey(key)
+          if (!normKey) {
+            continue
+          }
+
+          let val
+          if (typeof valOrFn === 'function') {
+            try {
+              val = valOrFn(roState)
+            } catch (err) {
+              if (err instanceof CoraliteError) {
+                throw err
+              }
+              throw new CoraliteError(
+                `Component "${module.id}" style getter for "${key}" failed: ${err.message}`,
+                {
+                  componentId: module.id,
+                  filePath: module.path?.pathname,
+                  cause: err
+                }
+              )
+            }
+          } else {
+            val = valOrFn
+          }
+
+          if (val && typeof val.then === 'function') {
+            throw new CoraliteError(`Component "${module.id}" style property "${key}" getter must be synchronous. Use getters or server() for asynchronous operations.`, {
+              componentId: module.id
+            })
+          }
+
+          if (val !== null && val !== undefined && val !== false && val !== '') {
+            computedStylesMap.set(normKey, String(val))
+          } else {
+            computedStylesMap.delete(normKey)
+          }
+        }
+
+        if (elementNode) {
+          const formatted = formatInlineStyle(computedStylesMap)
+          if (formatted) {
+            if (!elementNode.attribs) {
+              elementNode.attribs = {}
+            }
+            elementNode.attribs.style = formatted
+          } else if (elementNode.attribs && elementNode.attribs.style !== undefined) {
+            delete elementNode.attribs.style
+          }
+        }
+      }
+
+      if (noHydration) {
+        const stack = [...result.children]
+
+        while (stack.length > 0) {
+          const node = stack.pop()
+          if (node.type === 'tag') {
+            if (node.name === 'c-token') {
+              const parent = node.parent
+              if (parent && parent.children) {
+                const idx = parent.children.indexOf(node)
+                if (idx !== -1) {
+                  parent.children.splice(idx, 1, ...node.children)
+                  relinkChildren(parent)
+                }
+              }
+            } else {
+              stack.push(...(node.children || []))
+            }
+          }
+        }
+      }
+
+      const mappedAfterContext = await hooks.trigger('onAfterComponentRender', {
+        result,
+        state: componentState,
+        componentId: module.id,
+        instanceId,
+        refs: module.values.refs,
+        textNodes: module.values.textNodes,
+        attributes: module.values.attributes,
+        page,
+        element,
+        session,
+        app
+      })
+
+      return mappedAfterContext.result
+    } catch (error) {
+      const sharedFn = scriptManager.sharedFunctions[id]
+      const onErrorHook = (sharedFn && sharedFn.onError) ||
+        evaluatedScriptMeta?.onError ||
+        moduleComponent.result.__script__?.onError ||
+        moduleComponent.result.script?.onError
+
+      if (app.options.mode === 'production' && typeof onErrorHook === 'function') {
+        const fallbackRes = await onErrorHook({
+          error,
+          state: componentState,
+          element,
+          page,
+          root
+        })
+
+        let fallbackTemplate = ''
+        if (typeof fallbackRes === 'string') {
+          fallbackTemplate = fallbackRes
+        } else if (fallbackRes && typeof fallbackRes === 'object') {
+          if (fallbackRes.state && typeof fallbackRes.state === 'object') {
+            Object.assign(componentState, fallbackRes.state)
+          }
+          if (typeof fallbackRes.template === 'string') {
+            fallbackTemplate = fallbackRes.template
+          }
+        }
+
+        const interpolatedTemplate = fallbackTemplate.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, prop) => {
+          return componentState[prop] != null ? String(componentState[prop]) : ''
+        })
+
+        const fallbackParsed = parseHTML(interpolatedTemplate, normalizedOptions.ignoreByAttribute, normalizedOptions.skipRenderByAttribute, handleError)
+
+        if (element && isCoraliteElement(element)) {
+          delete element.attribs['data-cid']
+          element.attribs['no-hydration'] = ''
+        }
+
+        return fallbackParsed.root.children
+      }
+
+      throw error
     }
-
-    const mappedAfterContext = await hooks.trigger('onAfterComponentRender', {
-      result,
-      state: componentState,
-      componentId: module.id,
-      instanceId,
-      refs: module.values.refs,
-      textNodes: module.values.textNodes,
-      attributes: module.values.attributes,
-      page,
-      element,
-      session,
-      app
-    })
-
-    return mappedAfterContext.result
   }
 
   const _processCustomElementsInPage = async ({ mappedComponent, originalDocument, state, mappedSessionObject, pageContext }) => {
@@ -1105,8 +1154,9 @@ export function createRenderer ({
     const results = await Promise.all(tasks)
 
     for (const { componentElement, customElement, contextId, noHydration } of results) {
+      const isComponentNoHydration = noHydration || Boolean(customElement.attribs && 'no-hydration' in customElement.attribs)
       if (componentElement) {
-        if (noHydration) {
+        if (isComponentNoHydration) {
           const parent = customElement.parent
           if (parent && parent.children) {
             const elementIndex = parent.children.indexOf(customElement)
@@ -2375,10 +2425,12 @@ export function createRenderer ({
         shouldRebuild = true
       }
 
+      const wasFailedInManifest = Boolean(manifest.failed && Array.isArray(manifest.failed) && manifest.failed.includes(pageItem.path.pathname))
+
       if (pageItem.virtual) {
         const existingVirtualMeta = manifest.virtual ? manifest.virtual[pageItem.path.pathname] : null
         if (!shouldRebuild) {
-          shouldRebuild = await checkPageAssetsAndManifest(existingVirtualMeta)
+          shouldRebuild = wasFailedInManifest || await checkPageAssetsAndManifest(existingVirtualMeta)
         }
 
         const shouldRebuildVirtual = !isIncremental || shouldRebuild || pageItem.volatile || !existingVirtualMeta || String(existingVirtualMeta.cacheKey) !== String(pageItem.cacheKey) || normalizedOptions.mode === 'development'
@@ -2450,7 +2502,7 @@ export function createRenderer ({
 
         const existingPageMeta = manifest.physical[pageItem.path.pathname]
         if (!shouldRebuild) {
-          shouldRebuild = await checkPageAssetsAndManifest(existingPageMeta)
+          shouldRebuild = wasFailedInManifest || await checkPageAssetsAndManifest(existingPageMeta)
         }
 
         if (!isIncremental || changed || shouldRebuild || normalizedOptions.mode === 'development') {
@@ -2564,6 +2616,7 @@ export function createRenderer ({
     const limit = pLimit(maxConcurrent)
     const variables = buildOptions?.variables
     const results = new Array(pagesToRender.length)
+    const failedPages = []
     let allWorkerTasks = null
     let buildError = null
 
@@ -2579,7 +2632,49 @@ export function createRenderer ({
             throw combinedSignal.reason
           }
 
-          const pageResult = await _renderSinglePage(pageItem, buildId, variables, buildOptions)
+          let pageResult
+          try {
+            pageResult = await _renderSinglePage(pageItem, buildId, variables, buildOptions)
+          } catch (err) {
+            if (combinedSignal.aborted) {
+              throw combinedSignal.reason
+            }
+            const diagnosticError = createExecutionError(err, null, null, pageItem, null)
+            try {
+              handleError({
+                level: 'WARN',
+                message: `[Page Build Failed] ${pageItem.path.pathname}: ${diagnosticError.message}`,
+                error: diagnosticError,
+                pagePath: pageItem.path.pathname
+              })
+            } catch {
+              /* ignore handler throw to preserve fault isolation */
+            }
+
+            /** @type {CoraliteBuildResult} */
+            const failedResult = {
+              type: 'page',
+              // @ts-ignore
+              path: {
+                ...pageItem.path,
+                pages: normalizedOptions.path.pages,
+                components: normalizedOptions.path.components
+              },
+              status: 'failed',
+              error: diagnosticError
+            }
+            failedPages.push(failedResult)
+            results[q] = failedResult
+
+            if (typeof buildCallback === 'function') {
+              try {
+                await buildCallback(failedResult)
+              } catch {
+                /* ignore callback errors on failed page */
+              }
+            }
+            return
+          }
 
           if (combinedSignal.aborted) {
             throw combinedSignal.reason
@@ -2641,7 +2736,9 @@ export function createRenderer ({
 
           results[q] = finalResult
         }).catch(err => {
-          internalAbortController.abort(err)
+          if (combinedSignal.aborted) {
+            throw combinedSignal.reason
+          }
           throw err
         })
       })
@@ -2666,6 +2763,7 @@ export function createRenderer ({
       try {
         await mkdir(cacheDir, { recursive: true })
         newManifest.components = globalScriptResult?.manifest || {}
+        newManifest.failed = failedPages.map(p => p.path.pathname)
         const tempManifestPath = `${manifestPath}.tmp`
         await writeFile(tempManifestPath, JSON.stringify(newManifest, null, 2))
         await rename(tempManifestPath, manifestPath)
@@ -2674,6 +2772,16 @@ export function createRenderer ({
           level: 'WARN',
           message: `Failed to write manifest: ${e.message}`
         })
+      }
+
+      const shouldFailOnError = buildOptions.failOnError ?? (buildOptions.continueOnError !== undefined ? !buildOptions.continueOnError : true)
+
+      if (failedPages.length > 0 && shouldFailOnError) {
+        const summary = failedPages.map(p => `  - ${p.path.pathname}: ${p.error?.message || p.error}`).join('\n')
+        buildError = new CoraliteBuildError(`Build completed with ${failedPages.length} failed page(s):\n${summary}`, {
+          failedPages
+        })
+        throw buildError
       }
 
       return finalRenderedResults

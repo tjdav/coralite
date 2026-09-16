@@ -184,6 +184,17 @@ attributes: {
 }
     </coralite-code-highlight>
 
+    <coralite-heading level="4" text="6. OnError (Component Error Boundary)"></coralite-heading>
+    <p>The <code>onError</code> block provides component-level fault isolation for production rendering. If server data fetching, derived getters, or slot processing throws an error during SSR, <code>onError</code> catches the failure and renders fallback UI with <code>noHydration: true</code> and stripped <code>data-cid</code> hydration tokens.</p>
+    <coralite-code-highlight language="javascript">
+onError({ error, state }) {
+  return {
+    template: '<div class="fallback"><p>{{ message }}</p></div>',
+    state: { message: 'Content temporarily unavailable' }
+  }
+}
+    </coralite-code-highlight>
+
     <coralite-heading level="4" text="2. Server (Server-Side Logic)"></coralite-heading>
     <p>The <code>server</code> block runs strictly on the server during build-time. It's the place for database queries or API calls. See the <a href="./ssr.html#the-server-block">SSR Guide</a> for more details.</p>
     <coralite-code-highlight language="javascript">

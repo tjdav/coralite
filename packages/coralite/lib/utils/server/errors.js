@@ -39,7 +39,7 @@ export function createExecutionError (error, module, moduleComponent, page, inst
         column = parseInt(match[3], 10)
 
 
-        if (stackFile === 'node:internal/vm/module') {
+        if (stackFile === 'node:internal/vm/module' && moduleComponent) {
           stackFile = moduleComponent.path.pathname
           line = undefined
           column = undefined
@@ -50,7 +50,7 @@ export function createExecutionError (error, module, moduleComponent, page, inst
   }
 
   // Attempt to recover location for SyntaxErrors or Linking errors that lost it
-  if (isSyntaxError || isImportError) {
+  if ((isSyntaxError || isImportError) && moduleComponent) {
     stackFile = moduleComponent.path.pathname
     try {
       // Re-parse to find syntax error location if missing
@@ -104,9 +104,9 @@ export function createExecutionError (error, module, moduleComponent, page, inst
 
   return new CoraliteError(error.message, {
     cause: error,
-    componentId: module.id,
-    filePath: moduleComponent.path.pathname,
-    pagePath: page?.file?.pathname,
+    componentId: module?.id,
+    filePath: moduleComponent?.path?.pathname || page?.file?.pathname || page?.url?.pathname,
+    pagePath: page?.file?.pathname || page?.url?.pathname,
     instanceId,
     line,
     column,

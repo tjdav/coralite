@@ -77,6 +77,11 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
         <td><code>string[] | Record&lt;string, any&gt;</code></td>
         <td>W3C context consumer declaration subscribing to context provided by an ancestor.</td>
       </tr>
+      <tr slot="body">
+        <td><code>onError</code></td>
+        <td><code>(context: { error: Error, state: Record&lt;string, any&gt;, element?: any, page?: any, root?: any }) => string | { template?: string, state?: Record&lt;string, any&gt; } | void</code></td>
+        <td>Component-level error boundary hook invoked on SSR rendering failures in production mode.</td>
+      </tr>
     </coralite-table>
 
     <coralite-heading level="2" text="1. attributes"></coralite-heading>
@@ -562,6 +567,20 @@ export default defineComponent({
       <li><strong><code>onFormDisabled(callback)</code>:</strong> Fires whenever the component's disabled state changes, including when an ancestor <code>&lt;fieldset disabled&gt;</code> is toggled. Coralite automatically mirrors the disabled status to <code>state.disabled</code>.</li>
       <li><strong><code>onFormRestore(callback)</code>:</strong> Fires when the browser restores form state after navigation or during autofill, receiving <code>(state, mode)</code> where mode is <code>'restore'</code> or <code>'autocomplete'</code>.</li>
     </ul>
+
+    <coralite-heading level="2" text="8. onError (Component Error Boundary)"></coralite-heading>
+    <p>The <code>onError</code> block provides component-level fault isolation for production rendering. If component script evaluation, getter computation, slot rendering, or template processing throws an error during SSR in <code>mode: 'production'</code>, Coralite invokes <code>onError</code> to render fallback UI gracefully without destroying the host page.</p>
+
+    <coralite-code-highlight language="javascript">
+onError({ error, state, element, page, root }) {
+    return {
+        template: '<div class="component-fallback"><p>{{ message }}</p></div>',
+        state: { message: 'Content temporarily unavailable' }
+    }
+}
+    </coralite-code-highlight>
+
+    <p>When an object with <code>{ template, state }</code> is returned, the provided <code>state</code> properties are shallow-merged into the component state prior to parsing the fallback template string. Fallback HTML renders with <code>noHydration: true</code> and stripped <code>data-cid</code> hydration markers so browser clients do not attempt to hydrate failed SSR components. In development and testing modes (or if <code>onError</code> itself throws), errors bubble up to preserve immediate developer visibility and test assertion contracts.</p>
 
   </main>
   <coralite-footer></coralite-footer>

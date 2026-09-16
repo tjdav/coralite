@@ -21,7 +21,8 @@ When generating code or answering questions about Coralite, you MUST adhere to t
 
 ## 3. System Architecture
 * **Rendering**: Strictly Server-Side Rendered (SSR) with deterministic ID generation (`my-component-0`). No heavy client-side AST rendering.
-* **Incremental Builds**: The production build system (`coralite-scripts build`) is incremental by default (`incremental: true`). It tracks changes via `.coralite/manifest.json` and only re-renders pages and components that have changed or are missing from the output directory. Incremental change detection can be disabled globally via `incremental: false` in `coralite.config.js` or per-run using the `coralite-scripts build --no-incremental` CLI flag. It performs a stale file cleanup at the end of the build to ensure the output directory remains synchronized with the project source.
+* **Incremental Builds**: The production build system (`coralite-scripts build`) is incremental by default (`incremental: true`). It tracks changes via `.coralite/manifest.json` and only re-renders pages and components that have changed or are missing from the output directory. Incremental change detection can be disabled globally via `incremental: false` in `coralite.config.js` or per-run using the `coralite-scripts build --no-incremental` CLI flag. It performs a stale file cleanup at the end of the build to ensure the output directory remains synchronized with the project source. Previously failed page paths are recorded in `manifest.failed` and forced to re-render on subsequent incremental builds until they succeed.
+* **Page-Level Fault Isolation & Asset Integrity**: During multi-page builds (`coralite.build()`), page rendering errors on individual pages are isolated to that page (`status: 'failed'`). Remaining sibling pages continue rendering to completion and `manifest.json` is written atomically (recording `manifest.failed`). At the conclusion of the build, `coralite.build()` throws a specialized `CoraliteBuildError` (containing `failedPages`) by default (`failOnError: true`). Passing `failOnError: false` (or `continueOnError: true`) suppresses the throw and returns the full result array. In `coralite.save()`, asset bundle writing (`outputFiles`) and `clearCache(true)` execute inside a `finally` block before re-throwing `CoraliteBuildError`, guaranteeing that saved HTML files never point to missing asset bundles.
 * **Architecture**: Coralite utilizes a hybrid model where components are either fully declarative (SSR-only) or true imperative Web Components. Imperative components lazily loaded via JavaScript use native HTML template stamping (`this.innerHTML = templateHTML`) with Light DOM projection, entirely eliminating the need for client-side HTML parsers.
 * **API Paradigm**: Coralite uses a "Flat Options" API. All logic is defined within isolated blocks: `attributes`, `server`, `getters`, `style`, `client`, and `slots`.
 * **State Equation**: `Attributes + ServerState + Getters = State`. The template only sees this unified reactive proxy.
@@ -76,7 +77,7 @@ export default defineComponent({
 
 ### 5.2 Component Structure: Isolated Blocks
 
-A component definition consists of primary blocks (`attributes`, `server`, `getters`, `style`, `client`, `slots`, `provide`, `consume`, and `formAssociated`):
+A component definition consists of primary blocks (`attributes`, `server`, `getters`, `style`, `client`, `slots`, `provide`, `consume`, `formAssociated`, and `onError`):
 
 #### 1. `attributes` (Sync)
 
@@ -254,6 +255,23 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
 #### 6. `slots` (Reactive Element Builders)
 
 * **Purpose**: Allows components to intercept, transform, and reactively build content projected into component `<slot>` elements (detailed in §5.6).
+
+#### 7. `onError({ error, state, element, page, root })` (Component Error Boundary)
+
+* **Purpose**: Component-level error boundary hook for handling SSR component rendering failures in production mode.
+* **Signature & Behavior**:
+  ```javascript
+  onError({ error, state, element, page, root }) {
+    return {
+      template: '<div class="component-fallback"><p>{{ message }}</p></div>',
+      state: { message: 'Content temporarily unavailable' }
+    }
+  }
+  ```
+  - Receives `{ error, state, element, page, root }`.
+  - Returns an HTML template string or an object `{ template: string, state?: object }`. If `{ template, state }` is returned, the provided `state` is shallow-merged into the component's state before parsing.
+  - **Hydration Marker Stripping**: Renders fallback UI with `noHydration: true`, removing `data-cid` hydration tokens so clients do not attempt to hydrate failed SSR components.
+  - **Dev/Test Visibility**: In `mode: 'development'` and `mode: 'testing'`, errors re-throw to preserve immediate developer visibility and test assertion contracts.
 
 ### 5.3 The Isomorphic Lifecycle Flow
 
@@ -929,9 +947,9 @@ During initialization, a collection registers callback hooks to handle document 
 *   `getItem(id)`: Retrieves a document by its ID or pathname.
 *   `getListByPath(dirname)`: Retrieves documents under a specific directory.
 
-## 13. Error Handling (CoraliteError)
+## 13. Error Handling (CoraliteError & CoraliteBuildError)
 
-Coralite implements `CoraliteError` to encapsulate context about errors encountered during AST compilation, page rendering, or plugin execution.
+Coralite implements `CoraliteError` and `CoraliteBuildError` to encapsulate context about errors encountered during AST compilation, page rendering, multi-page builds, or plugin execution.
 
 ### 13.1 CoraliteError Context Properties
 Every `CoraliteError` exposes detailed diagnostic metadata:
@@ -944,6 +962,12 @@ Every `CoraliteError` exposes detailed diagnostic metadata:
 *   `column` (number): The column number in the source file.
 *   `stackFile` (string): The file name extracted from the stack trace.
 *   Cause (Error): The original error instance (if wrapped).
+
+### 13.2 CoraliteBuildError Subclass
+When a multi-page build completes with page rendering failures, `coralite.build()` throws a specialized `CoraliteBuildError` (subclass of `CoraliteError`):
+*   `name`: `'CoraliteBuildError'`.
+*   `failedPages`: Array of failed `CoraliteBuildResult` items (containing `status: 'failed'` and attached `error` diagnostic).
+*   `message`: Formatted human-readable summary listing every failing page and its root cause.
 
 ## 14. Component Validation & Self-Healing AST Auto-Fixer (`coralite validate-components`)
 

@@ -41,6 +41,23 @@ export class CoraliteError extends Error {
 }
 
 /**
+ * Error subclass thrown when a multi-page build completes with page rendering failures.
+ */
+export class CoraliteBuildError extends CoraliteError {
+  /**
+   * @param {string} message - The error message summarizing failed pages.
+   * @param {Object} [options]
+   * @param {Array<import('../../types/index.js').CoraliteBuildResult>} [options.failedPages] - List of failed page build results.
+   * @param {Error} [options.cause] - Root cause error.
+   */
+  constructor (message, { failedPages = [], cause } = {}) {
+    super(message, { cause })
+    this.name = 'CoraliteBuildError'
+    this.failedPages = failedPages
+  }
+}
+
+/**
  * Default error handler.
  * @param {CoraliteErrorData} data - The data object containing error details.
  */

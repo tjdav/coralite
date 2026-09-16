@@ -153,7 +153,7 @@ describe('Concurrent Page Generation', () => {
     assert.equal(results.length, 10)
   })
 
-  it('handles fail-fast cancellation cleanly without unhandled rejections', async () => {
+  it('handles page rendering failures cleanly with CoraliteBuildError without unhandled rejections', async () => {
     let unhandledRejections = 0
     const rejectionHandler = () => { unhandledRejections++ }
     process.on('unhandledRejection', rejectionHandler)
@@ -183,7 +183,11 @@ describe('Concurrent Page Generation', () => {
         await coralite.build()
       },
       (err) => {
-        return err.message.includes('Simulated worker rendering failure on page 3')
+        return err.name === 'CoraliteBuildError' &&
+          err.failedPages &&
+          err.failedPages.length === 1 &&
+          err.failedPages[0].path.pathname.includes('page-03.html') &&
+          err.message.includes('Simulated worker rendering failure on page 3')
       }
     )
 
@@ -191,7 +195,7 @@ describe('Concurrent Page Generation', () => {
     await new Promise(resolve => setTimeout(resolve, 100))
 
     process.removeListener('unhandledRejection', rejectionHandler)
-    assert.equal(unhandledRejections, 0, 'Unhandled rejections were emitted during fail-fast abort')
+    assert.equal(unhandledRejections, 0, 'Unhandled rejections were emitted during page failure')
   })
 
   it('session integrity: session properties are intact during onAfterPageRender and cleaned up after', async () => {

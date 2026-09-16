@@ -33,6 +33,7 @@
         <li><a href="#coralitemoduleproperty">CoraliteStateDefinition</a></li>
         <li><a href="#coraliteerrordata">CoraliteErrorData</a></li>
         <li><a href="#coraliteonerror">CoraliteOnError</a></li>
+        <li><a href="#coralitebuilderror">CoraliteBuildError</a></li>
       </ul>
       <p><a href="#document-and-result-types">Document and Result Types</a></p>
       <ul>
@@ -593,6 +594,16 @@
             <td><code>duration</code></td>
             <td><code>number</code> (optional)</td>
             <td>Time taken to render the page in milliseconds.</td>
+          </tr>
+          <tr>
+            <td><code>status</code></td>
+            <td><code>'skipped'</code> | <code>'failed'</code> (optional)</td>
+            <td>Optional status if the build was skipped via ISR or failed.</td>
+          </tr>
+          <tr>
+            <td><code>error</code></td>
+            <td><code>Error</code> (optional)</td>
+            <td>Error diagnostic if rendering failed.</td>
           </tr>
           <tr>
             <td><code>csp</code></td>
