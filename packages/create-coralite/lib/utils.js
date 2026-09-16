@@ -86,8 +86,12 @@ export function copyDir (srcDir, destDir) {
  * @returns {boolean} True if the directory is empty or contains only a .git directory
  */
 export function isEmpty (path) {
-  const files = readdirSync(path)
-  return files.length === 0 || (files.length === 1 && files[0] === '.git')
+  try {
+    const files = readdirSync(path)
+    return files.length === 0 || (files.length === 1 && files[0] === '.git')
+  } catch {
+    return true
+  }
 }
 
 /**

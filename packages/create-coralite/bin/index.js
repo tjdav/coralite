@@ -89,7 +89,7 @@ async function createProject () {
   }
 
   // handle directory if exist and not empty
-  if (existsSync(target) && isEmpty(target)) {
+  if (existsSync(target) && !isEmpty(target)) {
     let message = `Target directory "${target}"`
 
     if (target === '.') {
