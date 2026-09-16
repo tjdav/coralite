@@ -464,6 +464,27 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._cascadeBreakerTripped = false
+
+    /**
+     * Flag indicating whether the client() controller script has been executed.
+     * @type {boolean}
+     * @protected
+     */
+    this._hasRunClient = false
+
+    /**
+     * Flag indicating whether the component lifecycle was torn down on genuine detachment.
+     * @type {boolean}
+     * @protected
+     */
+    this._wasTornDown = false
+
+    /**
+     * Flag indicating a pending disconnection awaiting deferred teardown evaluation.
+     * @type {boolean}
+     * @protected
+     */
+    this._pendingDisconnect = false
   }
 
   /**
@@ -472,25 +493,29 @@ export class CoraliteElement extends BaseElement {
    * Orchestrates template injection, instance ID generation, and state/binding setup.
    */
   connectedCallback () {
-    this._abortController = new AbortController()
-    this._observers = new Map()
+    this._pendingDisconnect = false
     this._isExecutingObserver = false
     this._resolutionStack = new Set()
     this._collectingDependencies = null
     this._activeObserverRecord = null
-    this._getterDeps = new Map()
-    this._subscriberMap = new Map()
-    this._observerRecords = new Set()
-    this._dependencyGraph = new Map()
-    this._dirtyObservers = new Set()
-    this._slotObservedKeys = new Set()
-    this._dirtyObserversBuffer = []
-    this._isDevMode = typeof window !== 'undefined' && Boolean(window['__coralite__']) && window['__coralite__'].mode === 'development'
     this._consecutiveFlushCount = 0
     this._flushWindowCount = 0
     this._flushWindowStart = 0
     this._reactiveLoopBroken = false
     this._cascadeBreakerTripped = false
+    this._isDevMode = typeof window !== 'undefined' && Boolean(window['__coralite__']) && window['__coralite__'].mode === 'development'
+
+    if (!this._abortController || this._abortController.signal.aborted) {
+      this._abortController = new AbortController()
+      this._observers = new Map()
+      this._getterDeps = new Map()
+      this._subscriberMap = new Map()
+      this._observerRecords = new Set()
+      this._dependencyGraph = new Map()
+      this._dirtyObservers = new Set()
+      this._slotObservedKeys = new Set()
+      this._dirtyObserversBuffer = []
+    }
 
     if (!this.componentOptions) {
       return
@@ -613,6 +638,64 @@ export class CoraliteElement extends BaseElement {
       this._refsKeysDirty = true
     }
 
+    const ownSlots = this._getOwnSlots()
+    ownSlots.forEach(slotEl => {
+      slotEl._slotEvaluated = false
+    })
+
+    if (this.componentOptions) {
+      for (const hook of this._hooks.onDisconnected) {
+        hook({
+          state: this._state,
+          instanceId: this._instanceId,
+          componentId: this.componentOptions.componentId,
+          element: this,
+          options: this.componentOptions
+        })
+      }
+    }
+
+    this._pendingDisconnect = true
+
+    queueMicrotask(() => {
+      if (this._pendingDisconnect && !this.isConnected) {
+        this._teardownLifecycle()
+      }
+    })
+  }
+
+  /**
+   * Performs destructive teardown of observers, event controllers, context subscriptions,
+   * and signal controllers when an element is genuinely detached from the DOM across task turns.
+   * @protected
+   */
+  _teardownLifecycle () {
+    this._wasTornDown = true
+
+    if (this._contextSubscriptions) {
+      this._contextSubscriptions.clear()
+    }
+
+    if (this._contextUnsubscribers && this._contextUnsubscribers.length > 0) {
+      for (const unsub of this._contextUnsubscribers) {
+        try {
+          unsub()
+        } catch {
+          /* ignore */
+        }
+      }
+      this._contextUnsubscribers = []
+    }
+
+    this._contextCallbacks = []
+
+    if (this._getterAbortControllers) {
+      for (const ctrl of Object.values(this._getterAbortControllers)) {
+        ctrl?.abort()
+      }
+      this._getterAbortControllers = {}
+    }
+
     if (this._abortController) {
       this._abortController.abort()
     }
@@ -665,28 +748,8 @@ export class CoraliteElement extends BaseElement {
     this._consecutiveFlushCount = 0
     this._flushWindowCount = 0
     this._reactiveLoopBroken = false
-
     this._slotRuntimeReady = false
     this._processSlotsOnReady = false
-
-    const ownSlots = this._getOwnSlots()
-    ownSlots.forEach(slotEl => {
-      slotEl._slotEvaluated = false
-    })
-
-    if (!this.componentOptions) {
-      return
-    }
-
-    for (const hook of this._hooks.onDisconnected) {
-      hook({
-        state: this._state,
-        instanceId: this._instanceId,
-        componentId: this.componentOptions.componentId,
-        element: this,
-        options: this.componentOptions
-      })
-    }
   }
 
   /**
@@ -752,6 +815,7 @@ export class CoraliteElement extends BaseElement {
    */
   _setupState () {
     if (this._state) {
+      this._registerSlotStateObserver()
       return
     }
 
@@ -1131,6 +1195,19 @@ export class CoraliteElement extends BaseElement {
     if (!consume) {
       return
     }
+
+    if (this._contextUnsubscribers && this._contextUnsubscribers.length > 0) {
+      for (const unsub of this._contextUnsubscribers) {
+        try {
+          unsub()
+        } catch {
+          /* ignore */
+        }
+      }
+      this._contextUnsubscribers = []
+    }
+
+    this._contextCallbacks = []
 
     const consumerItems = normalizeConsumerItems(consume)
 
@@ -2268,7 +2345,7 @@ export class CoraliteElement extends BaseElement {
           record.cleanup()
           this._observerRecords.delete(record)
         }
-      })
+      }, { once: true })
     }
 
     return () => {
@@ -2514,9 +2591,12 @@ export class CoraliteElement extends BaseElement {
 
     if (this._state && typeof this._state === 'object') {
       Object.keys(this._state).forEach(key => {
-        this._observeStateKey(key, () => {
-          this._processSlots()
-        })
+        if (this._slotObservedKeys && !this._slotObservedKeys.has(key)) {
+          this._slotObservedKeys.add(key)
+          this._observeStateKey(key, () => {
+            this._processSlots()
+          })
+        }
       })
     }
   }
@@ -2749,6 +2829,10 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
+    if (slotEl.hasAttribute('data-coralite-slot-computed')) {
+      slotEl.removeAttribute('data-coralite-slot-computed')
+    }
+
     if (result === undefined) {
       return
     }
@@ -2891,12 +2975,17 @@ export class CoraliteElement extends BaseElement {
                 slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
               }
             }
+            slotEl.removeAttribute('data-coralite-slot-computed')
             return
           } else {
             if (!slotEl._originalNodes) {
               slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
             }
           }
+        }
+
+        if (slotEl.hasAttribute('data-coralite-slot-computed')) {
+          slotEl.removeAttribute('data-coralite-slot-computed')
         }
 
         if (slotEl._slotEvaluated && this._slotHasInternalObservers?.get(slotName)) {
@@ -2927,32 +3016,36 @@ export class CoraliteElement extends BaseElement {
 
     const signal = this._abortController.signal
 
-    // Hook up AbortSignal to nuke/cleanup observers to prevent memory leaks
-    signal.addEventListener('abort', () => {
-      if (self._observers) {
-        self._observers.clear()
-        self._observers = null
-      }
-      if (self._observerRecords) {
-        for (const record of self._observerRecords) {
-          record.cleanup()
+    if (!this._hasInitAbortListener || signal !== this._lastInitSignal) {
+      this._lastInitSignal = signal
+      this._hasInitAbortListener = true
+      signal.addEventListener('abort', () => {
+        this._hasInitAbortListener = false
+        if (self._observers) {
+          self._observers.clear()
+          self._observers = null
         }
-        self._observerRecords.clear()
-        self._observerRecords = null
-      }
-      if (self._subscriberMap) {
-        self._subscriberMap.clear()
-        self._subscriberMap = null
-      }
-      if (self._dependencyGraph) {
-        self._dependencyGraph.clear()
-        self._dependencyGraph = null
-      }
-      if (self._dirtyObservers) {
-        self._dirtyObservers.clear()
-        self._dirtyObservers = null
-      }
-    })
+        if (self._observerRecords) {
+          for (const record of self._observerRecords) {
+            record.cleanup()
+          }
+          self._observerRecords.clear()
+          self._observerRecords = null
+        }
+        if (self._subscriberMap) {
+          self._subscriberMap.clear()
+          self._subscriberMap = null
+        }
+        if (self._dependencyGraph) {
+          self._dependencyGraph.clear()
+          self._dependencyGraph = null
+        }
+        if (self._dirtyObservers) {
+          self._dirtyObservers.clear()
+          self._dirtyObservers = null
+        }
+      }, { once: true })
+    }
 
     const observe = (key, callback) => {
       self._observeStateKey(key, callback)
@@ -3153,7 +3246,10 @@ export class CoraliteElement extends BaseElement {
       }
     }
 
-    if (this.componentOptions.client) {
+    const shouldRunClient = Boolean(this.componentOptions.client) && (!this._hasRunClient || this._wasTornDown)
+    if (shouldRunClient) {
+      this._hasRunClient = true
+      this._wasTornDown = false
       try {
         await this.componentOptions.client(localContext)
       } catch (error) {

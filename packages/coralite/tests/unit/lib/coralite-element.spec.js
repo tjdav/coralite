@@ -1807,5 +1807,390 @@ describe('CoraliteElement', () => {
       })
     })
   })
+
+  describe('Reconnection, Reparenting & Slot Reactivity ([LFC-01])', () => {
+    it('1. Reconnection Re-hooks Slot Observers and preserves slot reactivity', (t, done) => {
+      const tag = 'reconnect-slot-' + Math.random().toString(36).substring(2, 9)
+      const SlotComp = createCoraliteClass({
+        componentId: 'reconnect-slot',
+        templateHTML: '<div><slot name="computed"></slot></div>',
+        defaultValues: { val: 'Initial' },
+        slots: {
+          computed (nodes, { state }) {
+            return `<span class="val">${state.val}</span>`
+          }
+        }
+      })
+      customElements.define(tag, SlotComp)
+
+      const el = document.createElement(tag)
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        const slotEl = el.querySelector('slot[name="computed"]')
+        assert.strictEqual(slotEl.querySelector('.val').textContent, 'Initial')
+
+        // Detach element across tasks
+        document.body.removeChild(el)
+
+        setTimeout(() => {
+          // Re-attach element
+          document.body.appendChild(el)
+
+          queueMicrotask(() => {
+            // Mutate state after reconnection
+            el._state.val = 'Reconnected'
+
+            queueMicrotask(() => {
+              assert.strictEqual(slotEl.querySelector('.val').textContent, 'Reconnected', 'Computed slot must update after reconnection')
+              document.body.removeChild(el)
+              done()
+            })
+          })
+        }, 10)
+      })
+    })
+
+    it('2. Drag-and-Drop / Reparenting (same task turn) does not re-run client() or duplicate state', (t, done) => {
+      let clientRunCount = 0
+      let clickHandledCount = 0
+
+      const tag = 'reparent-comp-' + Math.random().toString(36).substring(2, 9)
+      const ReparentComp = createCoraliteClass({
+        componentId: 'reparent-comp',
+        templateHTML: '<div><button id="btn">Click</button></div>',
+        defaultValues: { items: [] },
+        client: ({ state, root, signal }) => {
+          clientRunCount++
+          state.items.push('item-' + clientRunCount)
+          const btn = root.querySelector('#btn')
+          btn.addEventListener('click', () => {
+            clickHandledCount++
+          }, { signal })
+        }
+      })
+      customElements.define(tag, ReparentComp)
+
+      const container1 = document.createElement('div')
+      const container2 = document.createElement('div')
+      document.body.appendChild(container1)
+      document.body.appendChild(container2)
+
+      const el = document.createElement(tag)
+      container1.appendChild(el)
+
+      queueMicrotask(() => {
+        assert.strictEqual(clientRunCount, 1)
+        assert.deepEqual(el._state.items, ['item-1'])
+
+        // Synchronous same-task reparent move
+        container1.removeChild(el)
+        container2.appendChild(el)
+
+        queueMicrotask(() => {
+          assert.strictEqual(clientRunCount, 1, 'client() should not re-run on same-task reparent move')
+          assert.deepEqual(el._state.items, ['item-1'], 'State items must not be duplicated')
+
+          // Test that signal-attached listener still functions
+          const btn = el.querySelector('#btn')
+          btn.click()
+          assert.strictEqual(clickHandledCount, 1, 'Event listener bound with { signal } must remain active')
+
+          document.body.removeChild(container1)
+          document.body.removeChild(container2)
+          done()
+        })
+      })
+    })
+
+    it('3. Context Migration on Reparenting cleans up old unsubscribers and receives new context', (t, done) => {
+      const tag = 'ctx-consumer-' + Math.random().toString(36).substring(2, 9)
+      const ConsumerComp = createCoraliteClass({
+        componentId: 'ctx-consumer',
+        templateHTML: '<div><span id="theme-display">{{ theme }}</span></div>',
+        consume: { theme: { context: 'theme', default: 'light' } },
+        hydrationMap: {
+          texts: [{ path: [0, 0], template: '{{ theme }}' }]
+        }
+      })
+      customElements.define(tag, ConsumerComp)
+
+      const provider1 = document.createElement('div')
+      let provider1Theme = 'dark'
+      provider1.addEventListener('context-request', (e) => {
+        const key = e.context || e.detail?.context
+        const cb = e.callback || e.detail?.callback
+        if (key === 'theme' && typeof cb === 'function') {
+          cb(provider1Theme)
+        }
+      })
+
+      const provider2 = document.createElement('div')
+      let provider2Theme = 'blue'
+      provider2.addEventListener('context-request', (e) => {
+        const key = e.context || e.detail?.context
+        const cb = e.callback || e.detail?.callback
+        if (key === 'theme' && typeof cb === 'function') {
+          cb(provider2Theme)
+        }
+      })
+
+      document.body.appendChild(provider1)
+      document.body.appendChild(provider2)
+
+      const el = document.createElement(tag)
+      provider1.appendChild(el)
+
+      queueMicrotask(() => {
+        assert.strictEqual(el._state.theme, 'dark')
+
+        // Move to provider2
+        provider1.removeChild(el)
+        provider2.appendChild(el)
+
+        queueMicrotask(() => {
+          assert.strictEqual(el._state.theme, 'blue')
+          assert.strictEqual(el._contextCallbacks.length, 1, 'contextCallbacks should not accumulate duplicates')
+
+          document.body.removeChild(provider1)
+          document.body.removeChild(provider2)
+          done()
+        })
+      })
+    })
+
+    it('4. Active Getter Aborts on True Disconnect (cross-task)', (t, done) => {
+      let getterSignal = null
+      const tag = 'getter-abort-' + Math.random().toString(36).substring(2, 9)
+      const GetterAbortComp = createCoraliteClass({
+        componentId: 'getter-abort',
+        templateHTML: '<div></div>',
+        getters: {
+          asyncData ({ signal }) {
+            getterSignal = signal
+            return new Promise(() => {}) // pending promise
+          }
+        }
+      })
+      customElements.define(tag, GetterAbortComp)
+
+      const el = document.createElement(tag)
+      document.body.appendChild(el)
+
+      // Trigger getter access
+      const dummy = el._state.asyncData
+
+      queueMicrotask(() => {
+        assert.ok(getterSignal)
+        assert.strictEqual(getterSignal.aborted, false)
+
+        // Detach element across task turns
+        document.body.removeChild(el)
+
+        setTimeout(() => {
+          assert.strictEqual(getterSignal.aborted, true, 'Getter AbortController signal must be aborted on true disconnect')
+          done()
+        }, 10)
+      })
+    })
+
+    it('5. Synchronous Offline State Mutation before attach reflects immediately upon attach', (t, done) => {
+      const tag = 'offline-mutate-' + Math.random().toString(36).substring(2, 9)
+      const OfflineComp = createCoraliteClass({
+        componentId: 'offline-mutate',
+        templateHTML: '<div><span id="num">{{ count }}</span></div>',
+        defaultValues: { count: 0 },
+        hydrationMap: {
+          texts: [{ path: [0, 0], template: '{{ count }}' }]
+        }
+      })
+      customElements.define(tag, OfflineComp)
+
+      const el = document.createElement(tag)
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        assert.strictEqual(el.querySelector('#num').textContent, '0')
+
+        // Synchronously detach, mutate state, and re-attach in same call turn
+        document.body.removeChild(el)
+        el._state.count = 42
+        document.body.appendChild(el)
+
+        queueMicrotask(() => {
+          assert.strictEqual(el.querySelector('#num').textContent, '42')
+          document.body.removeChild(el)
+          done()
+        })
+      })
+    })
+
+    it('6. Slot Observed Keys Deduplication prevents duplicate registrations', (t, done) => {
+      const tag = 'dedup-slot-' + Math.random().toString(36).substring(2, 9)
+      const DedupComp = createCoraliteClass({
+        componentId: 'dedup-slot',
+        templateHTML: '<div><slot name="foo"></slot></div>',
+        defaultValues: { a: 1, b: 2 },
+        slots: {
+          foo (nodes, { state }) {
+            return `<span>${state.a} - ${state.b}</span>`
+          }
+        }
+      })
+      customElements.define(tag, DedupComp)
+
+      const el = document.createElement(tag)
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        const expectedKeysCount = Object.keys(el._state).length
+        assert.strictEqual(el._slotObservedKeys.size, expectedKeysCount)
+        const initialRecordCount = el._observerRecords.size
+
+        // Mutate property 'a'
+        el._state.a = 10
+
+        queueMicrotask(() => {
+          assert.strictEqual(el._slotObservedKeys.size, expectedKeysCount)
+          assert.strictEqual(el._observerRecords.size, initialRecordCount, 'ObserverRecords size must not increase on property mutation')
+
+          document.body.removeChild(el)
+          done()
+        })
+      })
+    })
+
+    it('7. Stability Across Repeated Reparent Cycles (5 reparent moves)', (t, done) => {
+      let clientRunCount = 0
+      const tag = 'repeat-reparent-' + Math.random().toString(36).substring(2, 9)
+      const RepeatComp = createCoraliteClass({
+        componentId: 'repeat-reparent',
+        templateHTML: '<div><slot name="bar"></slot></div>',
+        defaultValues: { x: 10 },
+        slots: {
+          bar (nodes, { state }) {
+            return `<span>${state.x}</span>`
+          }
+        },
+        client: () => {
+          clientRunCount++
+        }
+      })
+      customElements.define(tag, RepeatComp)
+
+      const c1 = document.createElement('div')
+      const c2 = document.createElement('div')
+      document.body.appendChild(c1)
+      document.body.appendChild(c2)
+
+      const el = document.createElement(tag)
+      c1.appendChild(el)
+
+      queueMicrotask(() => {
+        const initialObserverCount = el._observerRecords.size
+        const initialSlotKeyCount = el._slotObservedKeys.size
+
+        // Move 5 times synchronously across containers
+        for (let i = 0; i < 5; i++) {
+          const target = i % 2 === 0 ? c2 : c1
+          const parent = el.parentElement
+          parent.removeChild(el)
+          target.appendChild(el)
+        }
+
+        queueMicrotask(() => {
+          assert.strictEqual(clientRunCount, 1, 'client() must run strictly once across repeated reparents')
+          assert.strictEqual(el._observerRecords.size, initialObserverCount)
+          assert.strictEqual(el._slotObservedKeys.size, initialSlotKeyCount)
+          assert.strictEqual(el._abortController.signal.aborted, false)
+
+          document.body.removeChild(c1)
+          document.body.removeChild(c2)
+          done()
+        })
+      })
+    })
+
+    it('8. Lifecycle Revival Semantics (Cross-Task Detach & Reconnect)', (t, done) => {
+      let clientRunCount = 0
+      let listenerFiredCount = 0
+
+      const tag = 'revival-comp-' + Math.random().toString(36).substring(2, 9)
+      const RevivalComp = createCoraliteClass({
+        componentId: 'revival-comp',
+        templateHTML: '<div><button id="revive-btn">Revive</button></div>',
+        client: ({ root, signal }) => {
+          clientRunCount++
+          const btn = root.querySelector('#revive-btn')
+          btn.addEventListener('click', () => {
+            listenerFiredCount++
+          }, { signal })
+        }
+      })
+      customElements.define(tag, RevivalComp)
+
+      const el = document.createElement(tag)
+      document.body.appendChild(el)
+
+      queueMicrotask(() => {
+        assert.strictEqual(clientRunCount, 1)
+
+        // Detach element across task turns
+        document.body.removeChild(el)
+
+        setTimeout(() => {
+          assert.strictEqual(el._wasTornDown, true)
+          assert.strictEqual(el._abortController.signal.aborted, true)
+
+          // Re-attach element to DOM
+          document.body.appendChild(el)
+
+          queueMicrotask(() => {
+            assert.strictEqual(clientRunCount, 2, 'client() should re-run to revive component after cross-task detach')
+            assert.strictEqual(el._wasTornDown, false)
+            assert.strictEqual(el._abortController.signal.aborted, false)
+
+            const btn = el.querySelector('#revive-btn')
+            btn.click()
+            assert.strictEqual(listenerFiredCount, 1, 'Revived listener should fire')
+
+            document.body.removeChild(el)
+            done()
+          })
+        }, 10)
+      })
+    })
+
+    it('9. Async Slot Result SSR Flag Stripping (data-coralite-slot-computed)', (t, done) => {
+      const tag = 'async-ssr-slot-' + Math.random().toString(36).substring(2, 9)
+      const AsyncSSRComp = createCoraliteClass({
+        componentId: 'async-ssr-slot',
+        templateHTML: '<div><slot name="async" data-coralite-slot-computed="true"><span>Initial</span></slot></div>',
+        slots: {
+          async () {
+            return new Promise(resolve => {
+              setTimeout(() => {
+                resolve('<span class="resolved">Async Content</span>')
+              }, 10)
+            })
+          }
+        }
+      })
+      customElements.define(tag, AsyncSSRComp)
+
+      const el = document.createElement(tag)
+      document.body.appendChild(el)
+
+      const slotEl = el.querySelector('slot[name="async"]')
+
+      setTimeout(() => {
+        assert.strictEqual(slotEl.hasAttribute('data-coralite-slot-computed'), false, 'data-coralite-slot-computed attribute must be stripped after async slot resolution')
+        assert.strictEqual(slotEl.querySelector('.resolved').textContent, 'Async Content')
+
+        document.body.removeChild(el)
+        done()
+      }, 50)
+    })
+  })
 })
 
