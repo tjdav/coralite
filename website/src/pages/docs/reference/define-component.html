@@ -62,6 +62,21 @@ function defineComponent(options: DefineComponentOptions): PluginDefinition
         <td><code>Record&lt;string, CoraliteModuleSlotFunction&gt;</code></td>
         <td>Functions for processing and transforming slot content.</td>
       </tr>
+      <tr slot="body">
+        <td><code>formAssociated</code></td>
+        <td><code>boolean</code></td>
+        <td>Opt-in flag enabling Form-Associated Custom Elements (FACE). Attaches <code>ElementInternals</code> and integrates with standard HTML forms.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>provide</code></td>
+        <td><code>Map&lt;any, any&gt; | Record&lt;string | symbol, any&gt;</code></td>
+        <td>W3C context provider map or object providing context down the DOM tree.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>consume</code></td>
+        <td><code>string[] | Record&lt;string, any&gt;</code></td>
+        <td>W3C context consumer declaration subscribing to context provided by an ancestor.</td>
+      </tr>
     </coralite-table>
 
     <coralite-heading level="2" text="1. attributes"></coralite-heading>
@@ -367,6 +382,66 @@ client: ({ state, signal, refs, observe, emit }) => {
         <td><code>(name: string, detail?: any, options?: CustomEventInit) => boolean</code></td>
         <td>Helper function to dispatch custom DOM events from the host element. Defaults to <code>{ bubbles: true, composed: true, cancelable: false }</code>. Returns <code>true</code> if event was not cancelled via <code>preventDefault()</code>.</td>
       </tr>
+      <tr slot="body">
+        <td><code>errors</code></td>
+        <td><code>Record&lt;string, string&gt;</code></td>
+        <td>Reactive dictionary mapping attribute names to validation error messages.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>internals</code></td>
+        <td><code>ElementInternals | null</code></td>
+        <td>The native <code>ElementInternals</code> instance attached when <code>formAssociated: true</code> is configured (<code>null</code> otherwise).</td>
+      </tr>
+      <tr slot="body">
+        <td><code>setFormValue</code></td>
+        <td><code>(value: any, state?: any) => void</code></td>
+        <td>Sets the custom element's form submission value and state. Automatically synchronizes with <code>state.value</code>.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>setValidity</code></td>
+        <td><code>(flags?: ValidityStateFlags, message?: string, anchor?: HTMLElement) => void</code></td>
+        <td>Sets the custom element's validity flags, validation message, and focus anchor element.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>checkValidity</code></td>
+        <td><code>() => boolean</code></td>
+        <td>Checks if the element satisfies constraint validation without triggering browser UI popups.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>reportValidity</code></td>
+        <td><code>() => boolean</code></td>
+        <td>Checks constraint validation and displays browser validation bubble if invalid.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>validity</code></td>
+        <td><code>() => ValidityState | undefined</code></td>
+        <td>Returns the current <code>ValidityState</code> object.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>validationMessage</code></td>
+        <td><code>() => string</code></td>
+        <td>Returns the current localized validation message string.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>form</code></td>
+        <td><code>() => HTMLFormElement | null</code></td>
+        <td>Returns the associated <code>&lt;form&gt;</code> element, resolving either ancestor forms or external forms via <code>form="id"</code>.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onReset</code></td>
+        <td><code>(callback: () => void) => () => void</code></td>
+        <td>Registers a callback invoked when the enclosing form is reset. Returns a disposer function.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onDisabled</code></td>
+        <td><code>(callback: (disabled: boolean) => void) => () => void</code></td>
+        <td>Registers a callback invoked when form or ancestor <code>&lt;fieldset disabled&gt;</code> state changes. Returns a disposer function.</td>
+      </tr>
+      <tr slot="body">
+        <td><code>onRestore</code></td>
+        <td><code>(callback: (state: any, mode: 'restore' | 'autocomplete') => void) => () => void</code></td>
+        <td>Registers a callback invoked when the browser restores form state or autocomplete occurs. Returns a disposer function.</td>
+      </tr>
     </coralite-table>
 
     <coralite-heading level="2" text="6. slots"></coralite-heading>
@@ -408,6 +483,80 @@ slots: {
     }
 }
     </coralite-code-highlight>
+
+    <coralite-heading level="2" text="7. formAssociated (Form-Associated Custom Elements)"></coralite-heading>
+    <p>Coralite provides first-class, standard-aligned support for native Web Component <strong>Form-Associated Custom Elements (FACE)</strong>. By configuring <code>formAssociated: true</code> in <code>defineComponent</code>, your custom element integrates directly with standard HTML <code>&lt;form&gt;</code> submission, <code>FormData</code> extraction, constraint validation, form reset cycles, and <code>&lt;fieldset disabled&gt;</code> cascading with zero third-party dependencies.</p>
+
+    <coralite-code-highlight language="javascript">
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  formAssociated: true, // Enables FACE lifecycle and attachInternals()
+  attributes: {
+    name: String,
+    value: {
+      type: String,
+      default: '',
+      validate: (val) => (!val || val.length >= 3) || 'Value must be at least 3 characters'
+    },
+    disabled: Boolean
+  },
+  client: ({ state, setFormValue, onReset, onDisabled }) => {
+    // 1. Form value automatically synchronizes with state.value
+    // Calling setFormValue(customVal) manually overrides default serialization if needed.
+
+    // 2. Form reset hook: restores initial attribute/default snapshots
+    onReset(() => {
+      console.log('Form was reset!')
+    })
+
+    // 3. Fieldset disabled cascading
+    onDisabled((disabled) => {
+      console.log('Fieldset disabled state changed to:', disabled)
+    })
+  }
+})
+    </coralite-code-highlight>
+
+    <coralite-heading level="3" text="Opt-in Policy & Zero Platform Pollution"></coralite-heading>
+    <p>FACE behavior is strictly opt-in to avoid prototype pollution and runtime overhead on standard components:</p>
+    <ul>
+      <li><strong>Opt-In Enforcement:</strong> When <code>formAssociated: true</code> is specified, the compiler sets <code>static formAssociated = true</code> on the generated custom element class, and Coralite invokes <code>this.attachInternals()</code> during element construction.</li>
+      <li><strong>Clean Standalone Components:</strong> If <code>formAssociated: true</code> is omitted or false, <code>attachInternals()</code> is never called, <code>internals</code> is <code>null</code>, and <code>el.name</code> / <code>el.type</code> remain standard element properties. Calling <code>setFormValue()</code> or <code>setValidity()</code> on a non-form component emits a dev-mode warning.</li>
+    </ul>
+
+    <coralite-heading level="3" text="Automatic Value Sync & Schema-to-Validity Bridge"></coralite-heading>
+    <p>Coralite eliminates boilerplate when wiring up custom form controls by automatically synchronizing component state with native form APIs:</p>
+    <ul>
+      <li><strong>Automatic <code>setFormValue</code> Sync:</strong> Writes to <code>state.value</code> automatically update the element's form submission value via <code>internals.setFormValue(value)</code>. Calling <code>setFormValue(customValue, customState)</code> in <code>client()</code> provides an explicit manual override.</li>
+      <li><strong>Schema-to-Validity Bridge:</strong> Attribute schema validation on <code>state.value</code> automatically bridges into native <code>ElementInternals.setValidity()</code>:
+        <ul>
+          <li>When <code>attributes.value.validate(val)</code> returns an error string (or <code>false</code>), Coralite automatically calls <code>internals.setValidity({ customError: true }, message, anchor)</code>, pointing to the internal <code>&lt;input&gt;</code>, <code>&lt;textarea&gt;</code>, or <code>&lt;select&gt;</code> if present in the component.</li>
+          <li>When errors clear, Coralite automatically resets validity to <code>{}</code> (valid).</li>
+          <li>Explicit calls to <code>setValidity(flags, message, anchor)</code> in <code>client()</code> latch manually until cleared or reset.</li>
+        </ul>
+      </li>
+      <li><strong>Host Element Form Properties:</strong> Form-associated components expose standard DOM properties directly on the host custom element:
+        <ul>
+          <li><code>el.name</code>: Reflects to/from the <code>name</code> attribute.</li>
+          <li><code>el.type</code>: Returns the custom element's tag name.</li>
+          <li><code>el.form</code>: Resolves the associated <code>&lt;form&gt;</code> element (either ancestor form or external form matched by <code>form="id"</code>).</li>
+          <li><code>el.validity</code>: Returns the current <code>ValidityState</code>.</li>
+          <li><code>el.validationMessage</code>: Returns the active validation message.</li>
+          <li><code>el.willValidate</code>: Indicates if the element participates in constraint validation.</li>
+          <li><code>el.checkValidity()</code> &amp; <code>el.reportValidity()</code>: Executes constraint validation.</li>
+          <li><code>el.labels</code>: Returns a <code>NodeList</code> of associated <code>&lt;label&gt;</code> elements.</li>
+        </ul>
+      </li>
+    </ul>
+
+    <coralite-heading level="3" text="Form Lifecycle Hooks (onReset, onDisabled, onRestore)"></coralite-heading>
+    <p>Coralite provides high-level reactive hooks in <code>client()</code> to handle native form callbacks gracefully:</p>
+    <ul>
+      <li><strong><code>onReset(callback)</code>:</strong> Fires when the enclosing form is reset via <code>&lt;button type="reset"&gt;</code> or <code>form.reset()</code>. Coralite automatically restores <code>state.value</code> and <code>state.checked</code> to their initial attribute/default snapshots, clears <code>state.errors.value</code>, resets validity, and executes all registered <code>onReset</code> listeners.</li>
+      <li><strong><code>onDisabled(callback)</code>:</strong> Fires whenever the component's disabled state changes, including when an ancestor <code>&lt;fieldset disabled&gt;</code> is toggled. Coralite automatically mirrors the disabled status to <code>state.disabled</code>.</li>
+      <li><strong><code>onRestore(callback)</code>:</strong> Fires when the browser restores form state after navigation or during autofill, receiving <code>(state, mode)</code> where mode is <code>'restore'</code> or <code>'autocomplete'</code>.</li>
+    </ul>
 
   </main>
   <coralite-footer></coralite-footer>

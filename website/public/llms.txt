@@ -76,7 +76,7 @@ export default defineComponent({
 
 ### 5.2 Component Structure: Isolated Blocks
 
-A component definition consists of primary blocks (`attributes`, `server`, `getters`, `style`, `client`, `slots`, `provide`, and `consume`):
+A component definition consists of primary blocks (`attributes`, `server`, `getters`, `style`, `client`, `slots`, `provide`, `consume`, and `formAssociated`):
 
 #### 1. `attributes` (Sync)
 
@@ -233,6 +233,17 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   * `instanceId`: A unique identifier string for this specific component instance.
   * `observe`: A function `observe(key, callback)` to execute explicit side-effects on state changes. Receives `(newValue, oldValue)`. Returns a disposer function (`() => void`) to stop observing. Automatically cleaned up when disconnected.
   * `emit`: Helper function `emit(name, detail?, options?)` to dispatch custom DOM events from the host element (`root`). Defaults to `{ bubbles: true, composed: true, cancelable: false }`. Returns boolean indicating whether `preventDefault()` was called.
+  * `internals`: The native `ElementInternals` instance attached to the host element when `formAssociated: true` is configured (or `null`).
+  * `setFormValue(value, state?)`: Helper to submit values through the native form submission pipeline.
+  * `setValidity(flags?, message?, anchor?)`: Sets constraint validation flags and message with automatic anchor targeting.
+  * `checkValidity()`: Returns boolean indicating whether the element satisfies its validity constraints.
+  * `reportValidity()`: Reports invalid constraints to the browser UI.
+  * `validity()`: Returns current `ValidityState` object.
+  * `validationMessage()`: Returns current validation message string.
+  * `form()`: Resolves the associated `HTMLFormElement` instance (via `internals.form`, `form="form-id"` attribute, or closest form ancestor).
+  * `onReset(callback)`: Registers a callback invoked when the parent `<form>` is reset. Returns an unregister disposer.
+  * `onDisabled(callback)`: Registers a callback invoked when the component's disabled state changes via parent `<fieldset disabled>`. Returns an unregister disposer.
+  * `onRestore(callback)`: Registers a callback invoked when form state is restored by the browser (`(state, mode) => void`). Returns an unregister disposer.
   * `[pluginName | client.name]`: **Namespaced Plugin Context.** Injected context helpers from plugins are isolated under their namespace key (either the plugin `name` or `client.name`). For example, if a plugin has `client.name: 'event'` and defines `context: { bus: ... }`, the component's client block will receive it as `event.bus` (e.g., `client: ({ event }) => { event.bus.emit(...) }`).
 
 * **Usage**: All DOM events, imperative mutations, third-party library initializations, and side-effects live here.
@@ -436,7 +447,55 @@ Coralite guarantees race-free, concurrency-safe server-side rendering for contex
 * **Isolation**: Sibling or concurrently rendering pages and component subtrees never leak provided values to adjacent branches.
 * **Synchronous AST Resolution**: Slotted consumers (`<slot>`) and nested custom elements resolve their consumed values from the nearest ancestor frame in reverse order (`for (let i = frames.length - 1; i >= 0; i--)`) during AST evaluation prior to client bundle dispatch.
 
-### 5.8 CSS Scoping (PostCSS) & Dual-Scope Partitioning
+### 5.8 Form-Associated Custom Elements (FACE & formAssociated: true)
+
+Coralite provides first-class, standard-aligned support for the native Web Component **Form-Associated Custom Elements (FACE)** specification. This enables custom elements to seamlessly integrate with standard HTML `<form>` submission, `new FormData(form)`, constraint validation, form reset cycles, and `<fieldset disabled>` cascading with zero third-party dependencies.
+
+#### 5.8.1 Opt-in Configuration (`formAssociated: true`)
+FACE behavior is strictly opt-in to prevent prototype pollution or overhead on standard components:
+
+```javascript
+import { defineComponent } from 'coralite'
+
+export default defineComponent({
+  formAssociated: true, // Enables FACE lifecycle and attachInternals()
+  attributes: {
+    name: String,
+    value: {
+      type: String,
+      default: '',
+      validate: (val) => (!val || val.length < 3) ? 'Value must be at least 3 characters' : true
+    },
+    disabled: Boolean
+  },
+  client: ({ state, internals, setFormValue, onReset, onDisabled }) => {
+    // Form value auto-syncs with state.value
+    // Form reset restores initial attribute/default values
+    onReset(() => {
+      console.log('Form was reset!')
+    })
+
+    // Fieldset disabled cascading
+    onDisabled((disabled) => {
+      console.log('Fieldset disabled state:', disabled)
+    })
+  }
+})
+```
+
+* **Zero Prototype Pollution**: If `formAssociated: true` is omitted (or false), the component behaves as a standard Web Component: `this.attachInternals()` is never called, `_internals` remains `null`, and `el.name` / `el.type` remain standard element properties. Calling `setFormValue()` or `setValidity()` on a non-form component emits a dev-mode warning.
+* **Pipeline Propagation**: The `formAssociated: true` option propagates through the entire compilation pipeline directly into the exported client module, configuring `static formAssociated = true` on the generated custom element class.
+
+#### 5.8.2 Form Value & Schema Validation Bridge
+* **Automatic `setFormValue` Syncing**: Writes to `state.value` automatically invoke `internals.setFormValue(value)`. Calling `setFormValue(customVal)` in `client()` provides explicit manual override.
+* **Schema-to-Validity Bridge**: Schema validation on `state.value` automatically synchronizes to `internals.setValidity()`:
+  - If a validation error is returned by attribute `validate(val)`, Coralite sets `{ customError: true }`, binds the custom validation message, and anchors to the internal `<input>`, `<textarea>`, or `<select>` if present.
+  - When errors clear, Coralite resets validity to `{}` (valid).
+  - Manual overrides via `setValidity(flags, message, anchor)` latch until explicitly cleared or reset.
+* **Host Form Properties**: Form-associated components expose `el.name` (reflects to attribute), `el.type` (returns custom element tag name), `el.form` (resolves parent or external `<form id="...">`), `el.validity`, `el.validationMessage`, `el.checkValidity()`, and `el.reportValidity()` directly on the host custom element instance.
+* **Form Reset & Restore Callbacks**: When the parent form resets, `formResetCallback()` restores `state.value` and `state.checked` to initial attribute/default snapshots, clears `errors.value`, resets `internals`, and fires `onReset` listeners.
+
+### 5.9 CSS Scoping (PostCSS) & Dual-Scope Partitioning
 
 Coralite components are strictly scoped by default, despite rendering in the global Light DOM. The compiler automatically encapsulates component CSS inside the `components` cascade layer (`@layer components`) and partitions component CSS into dual native CSS `@scope` rules:
 1. **Standard Component Scope (Donut Hole Preserved)**: `@scope (:where(component-name)) to (slot, :scope [data-cid], :is([is], c-token))` prevents standard component styles from penetrating into nested child components or consumer slotted elements.
@@ -444,7 +503,7 @@ Coralite components are strictly scoped by default, despite rendering in the glo
 
 For older runtimes without native `@scope` support, an automatic fallback using zero-specificity `:where()` host selectors and native CSS nesting is generated.
 
-#### 5.8.1 Cascade Layers (`@layer components`) & Specificity Taming (`:where()`)
+#### 5.9.1 Cascade Layers (`@layer components`) & Specificity Taming (`:where()`)
 * **Zero Specificity Bonus (`:where()`)**: Host custom element selectors are wrapped with `:where(tag-name)` (e.g., `:where(my-card)`), adding zero specificity (`0, 0, 0`). Component internal selectors (like `.title` or `button`) retain their base specificity instead of inflating.
 * **The Cascade Layer Rule**: All component styles are bundled inside `@layer components`. By standard CSS cascade semantics, **unlayered CSS rules take precedence over layered CSS rules**, regardless of selector specificity.
 * **Utility & Page Overrides Without `!important`**: Utility classes (e.g., Tailwind, Bootstrap, custom utility classes like `.hidden` or `.p-4`) or page-level styles override component styles cleanly without specificity battles.
@@ -458,7 +517,7 @@ For older runtimes without native `@scope` support, an automatic fallback using 
 * **Root `c-token` Inertia**: The rule `c-token { display: contents; }` is emitted unlayered at the stylesheet root to ensure reactive DOM markers remain transparent.
 * **Light DOM Slot Projections (`::slotted()`)**: The pseudo-element `::slotted(selector)` is transformed into dual Light DOM branches (`:scope > slot > selector, :scope > selector[slot]`), styling slotted content directly within the component layer under the slotted `@scope` block.
 
-#### 5.8.2 Root Custom Element Styling (`:host` & `:host-context()`)
+#### 5.9.2 Root Custom Element Styling (`:host` & `:host-context()`)
 * **Preferred Method for Root Element**: `:host` and `:host-context()` are the **preferred, canonical method** for modifying and styling the root custom element container itself (e.g., `<my-button>`).
 * **`:host` Transformations**:
   - In `@scope` mode, `:host` transforms to `:scope` (e.g., `:host { display: block; }` $\to$ `:scope { display: block; }`).
@@ -470,11 +529,11 @@ For older runtimes without native `@scope` support, an automatic fallback using 
   - `:host-context(<context>)` transforms to `<context> :scope` / `<context> &` (e.g., `:host-context(.dark) { color: white; }` $\to$ `.dark :scope { color: white; }`).
   - Compound chained rules like `:host-context(.dark):host(.active)` transform to `.dark :scope.active`.
 
-#### 5.8.3 Internal Scoped Classes Within Component (`:host` is NOT Required)
+#### 5.9.3 Internal Scoped Classes Within Component (`:host` is NOT Required)
 * **CRITICAL RULE**: To modify or style a scoped class or element **within the component template** (e.g., `.card`, `.title`, `button`, `.content`), **`:host` is not required**.
 * Standard selectors like `.card { ... }` or `button { ... }` are automatically nested under the component tag name by the compiler (`my-button { .card { ... } }`). You do not need to write `:host .card` or `:host > .card`.
 
-#### 5.8.4 Scoped CSS Example
+#### 5.9.4 Scoped CSS Example
 ```html
 <template id="user-card">
   <div class="header">

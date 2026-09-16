@@ -246,6 +246,73 @@ client: ({ state, signal, refs, observe, emit }) => {
 }
     </coralite-code-highlight>
 
+    <coralite-heading level="3" text="Form-Associated Custom Elements (FACE)"></coralite-heading>
+
+    <p>Web Components often need to participate in native HTML forms—submitting values in <code>FormData</code>, participating in constraint validation, resetting on form reset, and responding when disabled by a parent <code>&lt;fieldset disabled&gt;</code>. Coralite makes this effortless with first-class, standard-aligned <strong>Form-Associated Custom Elements</strong> support.</p>
+
+    <p>To enable form association, set <code>formAssociated: true</code> in <code>defineComponent</code>:</p>
+
+    <coralite-code-html>
+      <template id="custom-text-input">
+        <label class="field">
+          <span class="label-text">{{ label }}</span>
+          <input ref="inputEl" type="text" value="{{ value }}" placeholder="{{ placeholder }}" disabled="{{ disabled }}">
+          <span class="error-msg">{{ error_value }}</span>
+        </label>
+      </template>
+
+      <script type="module">
+        import { defineComponent } from 'coralite'
+
+        export default defineComponent({
+          // Enables native ElementInternals & form participation
+          formAssociated: true,
+          attributes: {
+            name: String,
+            label: String,
+            placeholder: {
+              type: String,
+              default: ''
+            },
+            value: {
+              type: String,
+              default: '',
+              validate: (val) => (!val || val.length >= 2) || 'Must be at least 2 characters'
+            },
+            disabled: Boolean
+          },
+          client: ({ state, refs, signal, onReset, onDisabled }) => {
+            const input = refs('inputEl')
+
+            // Update state on user input (automatically syncs form submission value & validity)
+            input.addEventListener('input', (e) => {
+              state.value = e.target.value
+            }, { signal })
+
+            // React to form reset events (state.value automatically reverts to default)
+            onReset(() => {
+              console.log('Custom input reset to initial value')
+            })
+
+            // React to <fieldset disabled> or form-level disabled changes
+            onDisabled((disabled) => {
+              console.log('Disabled status changed:', disabled)
+            })
+          }
+        })
+      </script>
+    </coralite-code-html>
+
+    <p>When <code>formAssociated: true</code> is active:</p>
+    <ul>
+      <li><strong>Form Value Auto-Sync:</strong> Any mutation to <code>state.value</code> automatically calls <code>internals.setFormValue(value)</code>. Form submissions and <code>new FormData(form)</code> seamlessly pick up the component's value.</li>
+      <li><strong>Automatic Validity Bridge:</strong> Attribute schema validation errors on <code>value</code> automatically invoke <code>internals.setValidity()</code> and anchor validation popups to the internal input element.</li>
+      <li><strong>Form Reset Restoration:</strong> Resetting the form automatically restores initial attribute/default snapshots, clears errors, and fires <code>onReset</code>.</li>
+      <li><strong>Fieldset Cascading:</strong> Ancestor <code>&lt;fieldset disabled&gt;</code> state automatically cascades into <code>state.disabled</code> and triggers <code>onDisabled</code>.</li>
+    </ul>
+
+    <p>For complete details on host element properties (such as <code>el.name</code>, <code>el.form</code>, <code>el.validity</code>, and <code>el.checkValidity()</code>), see the <a href="../reference/define-component.html#7-formassociated-form-associated-custom-elements">defineComponent API Reference</a>.</p>
+
     <coralite-heading level="3" text="The Flow of State"></coralite-heading>
 
     <p>It helps to visualize the component pillars as different input streams feeding into a single, unified <strong>State Proxy</strong>. Whether data comes from the server, an HTML attribute, or a client-side mutation, it all ends up in the same place.</p>

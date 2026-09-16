@@ -1096,6 +1096,71 @@
             <td><code>(key: string, callback: (newVal: any, oldVal: any) => void) => void</code></td>
             <td>Registers a callback to execute explicit side-effects on state changes. Automatically cleaned up when the component is disconnected.</td>
           </tr>
+          <tr>
+            <td><code>emit</code></td>
+            <td><code>(name: string, detail?: any, options?: CustomEventInit) => boolean</code></td>
+            <td>Helper function to dispatch custom DOM events from the host element.</td>
+          </tr>
+          <tr>
+            <td><code>errors</code></td>
+            <td><code>Record&lt;string, string&gt;</code></td>
+            <td>Reactive dictionary mapping camelCase attribute names to validation error messages.</td>
+          </tr>
+          <tr>
+            <td><code>internals</code></td>
+            <td><code>ElementInternals | null</code></td>
+            <td>The native <code>ElementInternals</code> instance attached when <code>formAssociated: true</code> is configured (<code>null</code> otherwise).</td>
+          </tr>
+          <tr>
+            <td><code>setFormValue</code></td>
+            <td><code>(value: any, state?: any) => void</code></td>
+            <td>Sets the custom element's form submission value and state. Automatically synchronizes with <code>state.value</code>.</td>
+          </tr>
+          <tr>
+            <td><code>setValidity</code></td>
+            <td><code>(flags?: ValidityStateFlags, message?: string, anchor?: HTMLElement) => void</code></td>
+            <td>Sets the custom element's validity flags, validation message, and focus anchor element.</td>
+          </tr>
+          <tr>
+            <td><code>checkValidity</code></td>
+            <td><code>() => boolean</code></td>
+            <td>Checks if the element satisfies constraint validation without triggering browser UI popups.</td>
+          </tr>
+          <tr>
+            <td><code>reportValidity</code></td>
+            <td><code>() => boolean</code></td>
+            <td>Checks constraint validation and displays browser validation bubble if invalid.</td>
+          </tr>
+          <tr>
+            <td><code>validity</code></td>
+            <td><code>() => ValidityState | undefined</code></td>
+            <td>Returns the current <code>ValidityState</code> object.</td>
+          </tr>
+          <tr>
+            <td><code>validationMessage</code></td>
+            <td><code>() => string</code></td>
+            <td>Returns the current localized validation message string.</td>
+          </tr>
+          <tr>
+            <td><code>form</code></td>
+            <td><code>() => HTMLFormElement | null</code></td>
+            <td>Returns the associated <code>&lt;form&gt;</code> element, resolving either ancestor forms or external forms via <code>form="id"</code>.</td>
+          </tr>
+          <tr>
+            <td><code>onReset</code></td>
+            <td><code>(callback: () => void) => () => void</code></td>
+            <td>Registers a callback invoked when the enclosing form is reset. Returns a disposer function.</td>
+          </tr>
+          <tr>
+            <td><code>onDisabled</code></td>
+            <td><code>(callback: (disabled: boolean) => void) => () => void</code></td>
+            <td>Registers a callback invoked when form or ancestor <code>&lt;fieldset disabled&gt;</code> state changes. Returns a disposer function.</td>
+          </tr>
+          <tr>
+            <td><code>onRestore</code></td>
+            <td><code>(callback: (state: any, mode: 'restore' | 'autocomplete') => void) => () => void</code></td>
+            <td>Registers a callback invoked when the browser restores form state or autocomplete occurs. Returns a disposer function.</td>
+          </tr>
         </tbody>
       </table>
     </div>
