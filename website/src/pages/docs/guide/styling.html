@@ -64,7 +64,7 @@
     </p>
 
     <coralite-code-highlight language="css">
-c-token { display: contents; }
+slot, c-token { display: contents; }
 
 @layer components {
   @supports (@scope) {
@@ -167,7 +167,7 @@ c-token { display: contents; }
     <coralite-heading level="3" text="4. Root Tokens & Slot Projections"></coralite-heading>
 
     <ul>
-      <li><strong>Root <code>c-token</code>:</strong> The rule <code>c-token { display: contents; }</code> is emitted outside the component layer at the root of the stylesheet. This ensures reactive attribute and slot placeholders remain layout-transparent and inert across all layers.</li>
+      <li><strong>Root <code>slot, c-token</code> Inertia:</strong> The rule <code>slot, c-token { display: contents; }</code> is emitted outside the component layer at the root of the stylesheet. This ensures reactive DOM markers and light DOM slots remain layout-transparent and inert across all layers.</li>
       <li><strong>Light DOM Slot Projections (<code>::slotted()</code>):</strong> When you style slotted content using <code>::slotted(selector)</code>, Coralite transforms the selector into dual Light DOM branches (<code>:scope > slot > selector, :scope > selector[slot]</code>), keeping slot styles encapsulated within the <code>components</code> layer.</li>
     </ul>
 

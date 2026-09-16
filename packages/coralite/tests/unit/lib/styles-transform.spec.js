@@ -82,8 +82,8 @@ test('Style Transformation Logic', async (t) => {
     ])
 
     const cssContent = buildComponentStylesheet(stylesMap)
-    assert.ok(cssContent.startsWith('c-token { display: contents; }\n'))
-    assert.equal(cssContent, 'c-token { display: contents; }\n@layer components {\n.card { padding: 1rem; }\n}\n')
+    assert.ok(cssContent.startsWith('slot, c-token { display: contents; }\n'))
+    assert.equal(cssContent, 'slot, c-token { display: contents; }\n@layer components {\n.card { padding: 1rem; }\n}\n')
   })
 
   await t.test('transformCss converts :host to :scope in scope mode', async () => {
@@ -320,7 +320,7 @@ test('Style Transformation Logic', async (t) => {
     const { content } = injectStyles(root, head, stylesMap)
 
     // Verify c-token is preserved at top
-    assert.ok(content.startsWith('c-token { display: contents; }\n'))
+    assert.ok(content.startsWith('slot, c-token { display: contents; }\n'))
 
     // Verify @layer components wrapping
     assert.match(content, /@layer components \{\s*@supports\s+\(@scope\)\s*\{/)
@@ -333,5 +333,15 @@ test('Style Transformation Logic', async (t) => {
 
     assert.ok(result.includes(':scope [data-cid]'), 'CSS should use descendant-relative :scope [data-cid]')
     assert.doesNotMatch(result, /to\s*\([^)]*,\s*\[data-cid\s*\]/, 'CSS should not contain bare [data-cid] limit without :scope prefix')
+  })
+
+  await t.test('Light DOM 2.0: buildComponentStylesheet prefixes slot, c-token { display: contents; } outside @layer components', () => {
+    const stylesMap = new Map([
+      ['flex-container', '.grid { display: grid; }']
+    ])
+
+    const cssContent = buildComponentStylesheet(stylesMap)
+    assert.ok(cssContent.startsWith('slot, c-token { display: contents; }\n'), 'Stylesheet root must start with slot, c-token { display: contents; }')
+    assert.ok(cssContent.includes('@layer components {\n.grid { display: grid; }\n}\n'), 'Component CSS must be wrapped inside @layer components')
   })
 })

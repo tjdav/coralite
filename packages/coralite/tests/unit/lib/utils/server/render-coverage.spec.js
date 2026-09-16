@@ -83,7 +83,7 @@ describe('render.js Coverage Gaps', () => {
       injectStyles(root, head, styles)
       assert.strictEqual(head.children.length, 1)
       assert.strictEqual(head.children[0].name, 'style')
-      assert.ok(head.children[0].children[0].data.includes('c-token { display: contents; }'))
+      assert.ok(head.children[0].children[0].data.includes('slot, c-token { display: contents; }'))
       assert.ok(head.children[0].children[0].data.includes('color: red'))
     })
   })

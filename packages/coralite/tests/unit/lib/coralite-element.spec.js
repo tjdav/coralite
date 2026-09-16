@@ -2161,6 +2161,46 @@ describe('CoraliteElement', () => {
       })
     })
 
+    it('10. Light DOM 2.0 Batching Sanity Check: MutationObserver processes synchronous appends in a single microtask batch', (t, done) => {
+      const tag = 'batch-recon-' + Math.random().toString(36).substring(2, 9)
+      const BatchComp = createCoraliteClass({
+        componentId: 'batch-recon',
+        templateHTML: '<div><slot></slot></div>'
+      })
+      customElements.define(tag, BatchComp)
+
+      const comp = document.createElement(tag)
+      document.body.appendChild(comp)
+
+      let reconcileCalls = 0
+      const origReconcile = comp._reconcileLightDOM
+      comp._reconcileLightDOM = function (...args) {
+        reconcileCalls++
+        return origReconcile.apply(this, args)
+      }
+
+      // Synchronous burst of element appends
+      const el1 = document.createElement('div')
+      el1.textContent = 'One'
+      const el2 = document.createElement('div')
+      el2.textContent = 'Two'
+      const el3 = document.createElement('div')
+      el3.textContent = 'Three'
+
+      comp.appendChild(el1)
+      comp.appendChild(el2)
+      comp.appendChild(el3)
+
+      queueMicrotask(() => {
+        assert.strictEqual(reconcileCalls, 1, 'MutationObserver batching should deliver synchronous appends in a single microtask batch')
+        const slot = comp.querySelector('slot')
+        assert.strictEqual(slot.children.length, 3)
+
+        document.body.removeChild(comp)
+        done()
+      })
+    })
+
     it('9. Async Slot Result SSR Flag Stripping (data-coralite-slot-computed)', (t, done) => {
       const tag = 'async-ssr-slot-' + Math.random().toString(36).substring(2, 9)
       const AsyncSSRComp = createCoraliteClass({

@@ -1637,7 +1637,7 @@ export function createRenderer ({
         if (mappedSessionObject.styles.size > 0) {
           combinedCss = buildComponentStylesheet(mappedSessionObject.styles)
         } else if (componentsToInclude.size > 0) {
-          combinedCss = 'c-token { display: contents; }\n'
+          combinedCss = 'slot, c-token { display: contents; }\n'
         }
 
         const cssHashVal = hash(combinedCss)

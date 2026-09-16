@@ -520,7 +520,7 @@ export function buildComponentStylesheet (styles) {
     return ''
   }
 
-  let cssContent = 'c-token { display: contents; }\n'
+  let cssContent = 'slot, c-token { display: contents; }\n'
   for (const [, css] of styles) {
     cssContent += `@layer components {\n${css}\n}\n`
   }

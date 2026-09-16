@@ -514,7 +514,7 @@ For older runtimes without native `@scope` support, an automatic fallback using 
   - `reset` and `base`: Provide base defaults that components override.
   - `components`: Automatically hosts all Coralite component styles.
   - `utilities`: Overrides component styles with zero friction.
-* **Root `c-token` Inertia**: The rule `c-token { display: contents; }` is emitted unlayered at the stylesheet root to ensure reactive DOM markers remain transparent.
+* **Root `slot, c-token` Inertia**: The rule `slot, c-token { display: contents; }` is emitted unlayered at the stylesheet root to ensure reactive DOM markers and light DOM slots remain layout-transparent and inert.
 * **Light DOM Slot Projections (`::slotted()`)**: The pseudo-element `::slotted(selector)` is transformed into dual Light DOM branches (`:scope > slot > selector, :scope > selector[slot]`), styling slotted content directly within the component layer under the slotted `@scope` block.
 
 #### 5.9.2 Root Custom Element Styling (`:host` & `:host-context()`)
