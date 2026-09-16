@@ -11,6 +11,9 @@ import { CoraliteError } from './errors.js'
 
 export const NOOP_SIGNAL = new AbortController().signal
 
+export const isServer = typeof window === 'undefined'
+export const isClient = typeof window !== 'undefined'
+
 const KEBAB_REGEX = /[-|:]([a-z])/g
 
 /**
@@ -425,6 +428,15 @@ export function cloneNode (nodeMap, node, parent) {
 
   // Copy all own enumerable properties
   Object.assign(newNode, node)
+
+  // Defensively sanitize symbol proxy caches on cloned node
+  const syms = Object.getOwnPropertySymbols(newNode)
+  for (let i = 0; i < syms.length; i++) {
+    const description = syms[i].description
+    if (description === 'styleProxy' || description === 'datasetProxy' || description === 'listeners') {
+      delete newNode[syms[i]]
+    }
+  }
 
   if (parent) {
     newNode.parent = parent

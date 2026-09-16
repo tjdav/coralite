@@ -29,12 +29,98 @@ export class CoraliteDocument {
     })
     this.nodeType = 9
     this.nodeName = '#document'
+    /** @type {Map<string, Set<{listener: Function, options?: any}>>} */
+    this._listeners = new Map()
+  }
+
+  /**
+   * Document title getter/setter bound to page metadata context.
+   * @returns {string}
+   */
+  get title () {
+    return this.context.page?.meta?.title || ''
+  }
+
+  /**
+   * Sets document title.
+   * @param {string} val - Title string
+   */
+  set title (val) {
+    if (this.context.page) {
+      if (!this.context.page.meta) {
+        this.context.page.meta = {}
+      }
+      this.context.page.meta.title = String(val ?? '')
+    }
+  }
+
+  /**
+   * Adds an event listener to the document.
+   * @param {string} type - Event type
+   * @param {Function} listener - Listener callback
+   * @param {Object} [options] - Listener options
+   */
+  addEventListener (type, listener, options) {
+    if (typeof listener !== 'function') {
+      return
+    }
+    if (!this._listeners.has(type)) {
+      this._listeners.set(type, new Set())
+    }
+    this._listeners.get(type).add({
+      listener,
+      options
+    })
+  }
+
+  /**
+   * Removes an event listener from the document.
+   * @param {string} type - Event type
+   * @param {Function} listener - Listener callback
+   */
+  removeEventListener (type, listener) {
+    if (!this._listeners.has(type)) {
+      return
+    }
+    const set = this._listeners.get(type)
+    for (const item of set) {
+      if (item.listener === listener) {
+        set.delete(item)
+        break
+      }
+    }
+  }
+
+  /**
+   * Dispatches an event on the document.
+   * @param {any} event - Event to dispatch
+   * @returns {boolean}
+   */
+  dispatchEvent (event) {
+    if (!event || typeof event.type !== 'string') {
+      return false
+    }
+    if (!this._listeners.has(event.type)) {
+      return true
+    }
+    const set = Array.from(this._listeners.get(event.type))
+    for (const item of set) {
+      try {
+        item.listener.call(this, event)
+      } catch (err) {
+        queueMicrotask(() => {
+          throw err
+        })
+      }
+    }
+    return !event.defaultPrevented
   }
 
   /**
    * Creates a new element with the specified tag name.
    * @param {string} tagName - Tag name
    * @param {Record<string, any>} [_options] - Element options
+   * @returns {import('../../../types/index.js').CoraliteElement}
    */
   createElement (tagName, _options) {
     return createCoraliteElement({
@@ -124,14 +210,67 @@ export class CoraliteDocument {
  */
 export function createVirtualWindow (context = {}) {
   const document = new CoraliteDocument(context)
+
+  const pathname = context.page?.url?.pathname || context.page?.route || '/'
+  const href = context.page?.url?.href || `http://localhost${pathname}`
+  const search = context.page?.url?.search || ''
+  const hash = context.page?.url?.hash || ''
+  const origin = context.page?.url?.origin || 'http://localhost'
+
+  /** @type {Map<string, Set<{listener: Function, options?: any}>>} */
+  const winListeners = new Map()
+
   const win = {
     document,
     location: {
-      href: context.page?.route || '/',
-      pathname: context.page?.route || '/',
-      search: '',
-      hash: '',
-      origin: 'http://localhost'
+      href,
+      pathname,
+      search,
+      hash,
+      origin
+    },
+    addEventListener (type, listener, options) {
+      if (typeof listener !== 'function') {
+        return
+      }
+      if (!winListeners.has(type)) {
+        winListeners.set(type, new Set())
+      }
+      winListeners.get(type).add({
+        listener,
+        options
+      })
+    },
+    removeEventListener (type, listener) {
+      if (!winListeners.has(type)) {
+        return
+      }
+      const set = winListeners.get(type)
+      for (const item of set) {
+        if (item.listener === listener) {
+          set.delete(item)
+          break
+        }
+      }
+    },
+    dispatchEvent (event) {
+      if (!event || typeof event.type !== 'string') {
+        return false
+      }
+      if (!winListeners.has(event.type)) {
+        return true
+      }
+      const set = Array.from(winListeners.get(event.type))
+      for (const item of set) {
+        try {
+          item.listener.call(win, event)
+        } catch (err) {
+          queueMicrotask(() => {
+            throw err
+          })
+        }
+      }
+      return !event.defaultPrevented
     },
     getComputedStyle (element) {
       return element?.style || {}

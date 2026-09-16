@@ -100,6 +100,8 @@
  * @property {HTMLElement|null} root - Host element on client, null during SSR build.
  * @property {(name: string) => HTMLElement|null} refs - Refs lookup function (returns null on SSR).
  * @property {string} instanceId - Unique instance identifier.
+ * @property {boolean} isServer - True during SSR, false on client.
+ * @property {boolean} isClient - False during SSR, true on client.
  */
 
 /** @typedef {CoraliteSlotContextBase & Object.<string, any>} CoraliteSlotContext */

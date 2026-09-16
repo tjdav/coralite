@@ -2794,7 +2794,9 @@ export class CoraliteElement extends BaseElement {
       root: this,
       slots: createClientSlotsHelper(this),
       signal: this._abortController?.signal,
-      refs: (id) => this._resolveRef(id)
+      refs: (id) => this._resolveRef(id),
+      isServer: false,
+      isClient: true
     }
 
     const slotContextObj = {
@@ -3010,7 +3012,9 @@ export class CoraliteElement extends BaseElement {
         return node
       },
       observe,
-      emit
+      emit,
+      isServer: false,
+      isClient: true
     }
 
     if (typeof this._clientContextGetter === 'function') {

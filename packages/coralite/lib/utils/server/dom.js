@@ -1,5 +1,6 @@
 import { render } from 'dom-serializer'
 import { parseHTML } from './parse.js'
+import { CoraliteError } from '../errors.js'
 
 /**
  * @import {
@@ -175,7 +176,12 @@ const CoraliteNodePrototype = {
       return
     }
     if (!this[LISTENERS_SYM]) {
-      this[LISTENERS_SYM] = new Map()
+      Object.defineProperty(this, LISTENERS_SYM, {
+        value: new Map(),
+        enumerable: false,
+        configurable: true,
+        writable: true
+      })
     }
     if (!this[LISTENERS_SYM].has(type)) {
       this[LISTENERS_SYM].set(type, new Set())
@@ -254,40 +260,50 @@ const CoraliteNodePrototype = {
       writable: true
     })
 
-    let current = this
-    while (current) {
+    try {
+      let current = this
+      while (current) {
+        Object.defineProperty(event, 'currentTarget', {
+          value: current,
+          configurable: true,
+          writable: true
+        })
+
+        if (current[LISTENERS_SYM] && current[LISTENERS_SYM].has(event.type)) {
+          const records = Array.from(current[LISTENERS_SYM].get(event.type))
+          for (const record of records) {
+            if (record.once) {
+              current[LISTENERS_SYM].get(event.type).delete(record)
+            }
+            try {
+              if (typeof record.listener === 'function') {
+                record.listener.call(current, event)
+              } else if (typeof record.listener?.handleEvent === 'function') {
+                record.listener.handleEvent(event)
+              }
+            } catch (err) {
+              queueMicrotask(() => {
+                throw err
+              })
+            }
+            if (stopImmediatePropagationFlag) {
+              break
+            }
+          }
+        }
+
+        if (stopPropagationFlag || !event.bubbles) {
+          break
+        }
+
+        current = current.parent || current.parentNode || null
+      }
+    } finally {
       Object.defineProperty(event, 'currentTarget', {
-        value: current,
+        value: null,
         configurable: true,
         writable: true
       })
-
-      if (current[LISTENERS_SYM] && current[LISTENERS_SYM].has(event.type)) {
-        const records = Array.from(current[LISTENERS_SYM].get(event.type))
-        for (const record of records) {
-          if (record.once) {
-            current[LISTENERS_SYM].get(event.type).delete(record)
-          }
-          try {
-            if (typeof record.listener === 'function') {
-              record.listener.call(current, event)
-            } else if (typeof record.listener?.handleEvent === 'function') {
-              record.listener.handleEvent(event)
-            }
-          } catch (err) {
-            console.error('Unhandled listener error during dispatchEvent:', err)
-          }
-          if (stopImmediatePropagationFlag) {
-            break
-          }
-        }
-      }
-
-      if (stopPropagationFlag || !event.bubbles) {
-        break
-      }
-
-      current = current.parent || current.parentNode || null
     }
 
     return !event.defaultPrevented
@@ -789,6 +805,50 @@ function matchSingleSelector (el, sel) {
 }
 
 /**
+ * Validates a selector for unsupported combinators or pseudo-classes.
+ * @param {string} selector - CSS selector
+ */
+function validateSelector (selector) {
+  if (typeof selector !== 'string') {
+    return
+  }
+  const sanitized = selector
+    .replace(/\[[^\]]*\]/g, '')
+    .replace(/"[^"]*"/g, '')
+    .replace(/'[^']*'/g, '')
+
+  if (/[>+~]/.test(sanitized)) {
+    throw new CoraliteError(
+      `Unsupported CSS selector "${selector}" in server DOM query. Server selector queries currently support tags, classes, IDs, attribute selectors, and descendant combinators.`,
+      { componentId: 'server-dom' }
+    )
+  }
+
+  let pseudoCheck = sanitized
+  while (pseudoCheck.includes(':not(')) {
+    const start = pseudoCheck.indexOf(':not(')
+    let depth = 1
+    let idx = start + 5
+    while (idx < pseudoCheck.length && depth > 0) {
+      if (pseudoCheck[idx] === '(') {
+        depth++
+      } else if (pseudoCheck[idx] === ')') {
+        depth--
+      }
+      idx++
+    }
+    pseudoCheck = pseudoCheck.slice(0, start) + pseudoCheck.slice(idx)
+  }
+
+  if (/:[a-zA-Z-]+/.test(pseudoCheck)) {
+    throw new CoraliteError(
+      `Unsupported CSS selector "${selector}" in server DOM query. Server selector queries currently support tags, classes, IDs, attribute selectors, and descendant combinators.`,
+      { componentId: 'server-dom' }
+    )
+  }
+}
+
+/**
  * Tests if element matches a selector chain (e.g. `.container .child`).
  * @param {CoraliteElement} el - Element to match
  * @param {string} selector - CSS selector
@@ -798,6 +858,7 @@ function elementMatches (el, selector) {
   if (!el || el.type !== 'tag') {
     return false
   }
+  validateSelector(selector)
   const selectorLists = selector.split(',').map(s => s.trim()).filter(Boolean)
 
   for (const selList of selectorLists) {
@@ -933,7 +994,26 @@ CoraliteElementPrototype.querySelectorAll = function (selector) {
  * @returns {CoraliteElement|null}
  */
 CoraliteElementPrototype.getElementById = function (id) {
-  return this.querySelector(`#${id}`)
+  let result = null
+  function walk (node) {
+    if (result || !node.children) {
+      return
+    }
+    for (const child of node.children) {
+      if (child.type === 'tag') {
+        if ((child.attribs && child.attribs.id === id) || child.id === id) {
+          result = child
+          return
+        }
+        walk(child)
+        if (result) {
+          return
+        }
+      }
+    }
+  }
+  walk(this)
+  return result
 }
 
 /**
@@ -1186,7 +1266,7 @@ Object.defineProperties(CoraliteElementPrototype, {
     get () {
       if (!this[DATASET_PROXY_SYM]) {
         const self = this
-        this[DATASET_PROXY_SYM] = new Proxy({}, {
+        const datasetProxy = new Proxy({}, {
           get (_, prop) {
             if (typeof prop !== 'string') {
               return undefined
@@ -1243,6 +1323,12 @@ Object.defineProperties(CoraliteElementPrototype, {
             }
             return undefined
           }
+        })
+        Object.defineProperty(this, DATASET_PROXY_SYM, {
+          value: datasetProxy,
+          enumerable: false,
+          configurable: true,
+          writable: true
         })
       }
       return this[DATASET_PROXY_SYM]
@@ -1303,7 +1389,7 @@ Object.defineProperties(CoraliteElementPrototype, {
           configurable: true
         })
 
-        this[STYLE_PROXY_SYM] = new Proxy(baseStyle, {
+        const styleProxy = new Proxy(baseStyle, {
           get (target, prop) {
             if (typeof prop !== 'string') {
               return target[prop]
@@ -1341,6 +1427,12 @@ Object.defineProperties(CoraliteElementPrototype, {
             }
             return true
           }
+        })
+        Object.defineProperty(this, STYLE_PROXY_SYM, {
+          value: styleProxy,
+          enumerable: false,
+          configurable: true,
+          writable: true
         })
       }
       return this[STYLE_PROXY_SYM]

@@ -189,8 +189,19 @@ export async function evaluateDevelopment ({
     session,
     app,
     noHydration,
-    contextFrames
+    contextFrames,
+    isServer: true,
+    isClient: false
   }
+
+  const serverUtils = {
+    ...serverUtilsBase,
+    ...source.utils
+  }
+
+  const virtualWindow = serverUtilsBase.createVirtualWindow(context)
+  context.window = virtualWindow
+  context.document = virtualWindow.document
 
   const cachedBoundPlugins = await bindPlugins(source.plugins, context)
 
@@ -210,22 +221,7 @@ export async function evaluateDevelopment ({
     ...cachedBoundPlugins
   }
 
-  const serverUtils = {
-    ...serverUtilsBase,
-    ...source.utils
-  }
-
-  const virtualWindow = serverUtilsBase.createVirtualWindow(context)
   const contextGlobals = {
-    window: virtualWindow,
-    document: virtualWindow.document,
-    location: virtualWindow.location,
-    getComputedStyle: virtualWindow.getComputedStyle,
-    matchMedia: virtualWindow.matchMedia,
-    requestAnimationFrame: virtualWindow.requestAnimationFrame,
-    cancelAnimationFrame: virtualWindow.cancelAnimationFrame,
-    CustomEvent: virtualWindow.CustomEvent,
-    Event: virtualWindow.Event,
     __coralite_context__: symmetricalContext,
     __coralite_plugins__: cachedBoundPlugins,
     __coralite_utils__: source.utils,
@@ -353,7 +349,9 @@ export async function evaluateProduction ({
     session,
     app,
     noHydration,
-    contextFrames
+    contextFrames,
+    isServer: true,
+    isClient: false
   }
 
   session.source.currentSourceContextId = contextId
@@ -376,16 +374,21 @@ export async function evaluateProduction ({
   }
 
   const fileRequire = createRequire(resolve(moduleComponent.path.pathname))
+
+  const serverUtils = {
+    ...serverUtilsBase,
+    ...source.utils
+  }
+
+  const virtualWindow = serverUtilsBase.createVirtualWindow(context)
+  context.window = virtualWindow
+  context.document = virtualWindow.document
+
   const cachedBoundPlugins = await bindPlugins(source.plugins, context)
 
   const symmetricalContext = {
     ...context,
     ...cachedBoundPlugins
-  }
-
-  const serverUtils = {
-    ...serverUtilsBase,
-    ...source.utils
   }
 
   const customRequire = (id) => {
@@ -399,7 +402,7 @@ export async function evaluateProduction ({
           if (typeof globalThis.createCoraliteElement === 'function') {
             return globalThis.createCoraliteElement(tag, options)
           }
-          return globalThis.document.createElement(tag, options)
+          return virtualWindow.document.createElement(tag, options)
         }
         const processHTML = (html) => {
           if (typeof globalThis.processHTML === 'function') {
@@ -456,28 +459,11 @@ export async function evaluateProduction ({
   }
 
   const fn = moduleComponent.result._compiledFunction
-  const virtualWindow = serverUtils.createVirtualWindow(context)
-
-  const origWin = globalThis.window
-  const origDoc = globalThis.document
 
   try {
-    globalThis.window = virtualWindow
-    globalThis.document = virtualWindow.document
-    await fn(moduleMock, moduleMock.exports, customRequire, context)
+    await fn(moduleMock, moduleMock.exports, customRequire, symmetricalContext)
   } catch (error) {
     throw createExecutionError(error, module, moduleComponent, page, contextId)
-  } finally {
-    if (origWin !== undefined) {
-      globalThis.window = origWin
-    } else {
-      delete globalThis.window
-    }
-    if (origDoc !== undefined) {
-      globalThis.document = origDoc
-    } else {
-      delete globalThis.document
-    }
   }
 
   if (moduleMock.exports.default != null) {

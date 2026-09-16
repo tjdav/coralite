@@ -44,7 +44,7 @@
  * @property {string} textContent - The text content of the node and its descendants
  * @property {string} id - The element's ID attribute
  * @property {string} className - The element's class attribute
- * @property {CoraliteElement[]} children - Child elements only
+ * @property {CoraliteAnyNode[]} children - In AST storage, `children` contains all child nodes (equivalent to `childNodes`). Use `childElementCount`, `firstElementChild`, and `lastElementChild` to inspect/filter element nodes specifically.
  * @property {number} childElementCount - Count of child elements
  * @property {CoraliteElement|null} firstElementChild - First child element
  * @property {CoraliteElement|null} lastElementChild - Last child element
