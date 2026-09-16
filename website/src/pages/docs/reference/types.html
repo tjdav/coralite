@@ -1102,6 +1102,11 @@
             <td>Helper function to dispatch custom DOM events from the host element.</td>
           </tr>
           <tr>
+            <td><code>updateComplete</code></td>
+            <td><code>Promise&lt;boolean&gt;</code></td>
+            <td>Resolves when the element has completed its current update cycle and flushed DOM changes and observers. Resolves immediately if idle; resolves to <code>false</code> if aborted, disconnected, or if the cascade breaker trips.</td>
+          </tr>
+          <tr>
             <td><code>errors</code></td>
             <td><code>Record&lt;string, string&gt;</code></td>
             <td>Reactive dictionary mapping camelCase attribute names to validation error messages.</td>

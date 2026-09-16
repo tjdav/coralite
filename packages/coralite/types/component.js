@@ -150,6 +150,7 @@
  * @property {(flags?: ValidityStateFlags, message?: string, anchor?: HTMLElement) => void} [setValidity] - Sets the element's validity state and message.
  * @property {() => boolean} [checkValidity] - Checks if the element satisfies its constraints.
  * @property {() => boolean} [reportValidity] - Reports invalid constraints to the user.
+ * @property {Promise<boolean>} updateComplete - Resolves when the element has completed its current update cycle and flushed all DOM changes.
  * @property {ValidityState|undefined} [validity] - The current ValidityState.
  * @property {string} [validationMessage] - The current validation message.
  * @property {HTMLFormElement|null} [form] - The associated HTMLFormElement.

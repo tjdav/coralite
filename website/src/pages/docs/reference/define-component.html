@@ -383,6 +383,11 @@ client: ({ state, signal, refs, observe, emit }) => {
         <td>Helper function to dispatch custom DOM events from the host element. Defaults to <code>{ bubbles: true, composed: true, cancelable: false }</code>. Returns <code>true</code> if event was not cancelled via <code>preventDefault()</code>.</td>
       </tr>
       <tr slot="body">
+        <td><code>updateComplete</code></td>
+        <td><code>Promise&lt;boolean&gt;</code></td>
+        <td>A read-only <code>Promise&lt;boolean&gt;</code> that resolves when the element completes its current update cycle and flushes DOM changes and observers. Resolves immediately if idle; resolves to <code>false</code> if aborted, disconnected, or if the reactive cascade breaker trips.</td>
+      </tr>
+      <tr slot="body">
         <td><code>errors</code></td>
         <td><code>Record&lt;string, string&gt;</code></td>
         <td>Reactive dictionary mapping attribute names to validation error messages.</td>

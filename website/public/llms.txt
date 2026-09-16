@@ -233,6 +233,7 @@ A component definition consists of primary blocks (`attributes`, `server`, `gett
   * `instanceId`: A unique identifier string for this specific component instance.
   * `observe`: A function `observe(key, callback)` to execute explicit side-effects on state changes. Receives `(newValue, oldValue)`. Returns a disposer function (`() => void`) to stop observing. Automatically cleaned up when disconnected.
   * `emit`: Helper function `emit(name, detail?, options?)` to dispatch custom DOM events from the host element (`root`). Defaults to `{ bubbles: true, composed: true, cancelable: false }`. Returns boolean indicating whether `preventDefault()` was called.
+  * `updateComplete`: A read-only `Promise<boolean>` property that resolves when the element has completed its current update cycle and flushed all DOM changes and observers. Resolves immediately to `Promise.resolve(true)` if idle. Resolves to `true` on successful completion, or `false` if aborted, disconnected, or if the reactive cascade breaker trips.
   * `internals`: The native `ElementInternals` instance attached to the host element when `formAssociated: true` is configured (or `null`).
   * `setFormValue(value, state?)`: Helper to submit values through the native form submission pipeline.
   * `setValidity(flags?, message?, anchor?)`: Sets constraint validation flags and message with automatic anchor targeting.
@@ -818,7 +819,7 @@ For a robust E2E environment, users are encouraged to use `mode: 'testing'` excl
   * **Targeting Strategies (Strict vs. Flexible Assertions)**: Because Coralite uses deterministic AST rendering, component instance IDs (like `my-component-0`) are highly predictable. Choose your selector strategy based on the test's goal:
     * **Default to Exact Match (Strict Structure):** For standard assertions, you MUST default to exact, fully-qualified test IDs using standard locators (e.g., `page.getByTestId('my-component-0__button-0')`). This implicitly acts as a strict structural assertion, catching regressions if component render order changes unexpectedly.
     * **Fallback to Suffix Matching (Dynamic Contexts):** Only use CSS attribute suffix matchers (e.g., `page.locator('[data-testid$="__button-0"]')`) when targeting components rendered inside dynamic loops (e.g., lists), when the component's position in the document tree is intentionally variable, or if exact structural order is irrelevant to the specific test.
-* **Readiness**: Await `window.__coralite__.lifecycle.hydrated` after navigation.
+* **Readiness & Render Synchronization**: Await `window.__coralite__.lifecycle.hydrated` after navigation. For element-level reactivity synchronization, `await el.updateComplete` provides a deterministic signal replacing arbitrary `setTimeout` sleeps.
 * **Velocity Engine**: Animations, transitions, and smooth scrolling are globally disabled in `testing` mode to eliminate race conditions and speed up tests.
 * **Glass Box Assertions & DevTools**: Decouples global discovery on `window.__coralite__` from component introspection on `element[Symbol.for('coralite.testing')]` (or `window.__coralite__.getComponent(element)`), providing safe, GC-friendly diagnostics:
   * **Global Diagnostics (`window.__coralite__`)**: A read-only, non-enumerable frozen namespace exposing:

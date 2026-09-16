@@ -46,7 +46,8 @@ export const RESERVED_PROPERTY_BLACKLIST = new Set([
   'formResetCallback',
   'formDisabledCallback',
   'formAssociatedCallback',
-  'formStateRestoreCallback'
+  'formStateRestoreCallback',
+  'updateComplete'
 ])
 
 /**

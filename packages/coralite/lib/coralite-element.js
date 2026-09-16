@@ -232,6 +232,20 @@ export class CoraliteElement extends BaseElement {
     this._isUpdatePending = false
 
     /**
+     * Flag indicating whether the reactive batch is currently executing DOM updates or observers.
+     * @type {boolean}
+     * @protected
+     */
+    this._isFlushing = false
+
+    /**
+     * Pending resolver callbacks waiting for the current reactive batch to settle.
+     * @type {Array<Function>|null}
+     * @protected
+     */
+    this._updateCompleteResolvers = null
+
+    /**
      * A unique Symbol generated per DOM render cycle to prevent async getter race conditions.
      * @type {symbol|null}
      * @protected
@@ -757,6 +771,38 @@ export class CoraliteElement extends BaseElement {
   }
 
   /**
+   * Resolves when the element has completed its current update cycle and flushed DOM mutations.
+   * If no update is pending or in-flight, returns an immediately resolved Promise.
+   * @returns {Promise<boolean>} Resolves to true when updates complete, or false if aborted/disconnected.
+   */
+  get updateComplete () {
+    if (!this._isUpdatePending && !this._isFlushing) {
+      return Promise.resolve(true)
+    }
+    return new Promise(resolve => {
+      if (!this._updateCompleteResolvers) {
+        this._updateCompleteResolvers = []
+      }
+      this._updateCompleteResolvers.push(resolve)
+    })
+  }
+
+  /**
+   * Drains all pending updateComplete resolvers with the given completion status.
+   * @param {boolean} [value=true] - Whether updates completed successfully.
+   * @private
+   */
+  _resolveUpdateComplete (value = true) {
+    if (this._updateCompleteResolvers && this._updateCompleteResolvers.length > 0) {
+      const resolvers = this._updateCompleteResolvers
+      this._updateCompleteResolvers = null
+      for (let i = 0; i < resolvers.length; i++) {
+        resolvers[i](value)
+      }
+    }
+  }
+
+  /**
    * Synchronizes state.errors.value to ElementInternals setValidity().
    * @protected
    */
@@ -963,6 +1009,11 @@ export class CoraliteElement extends BaseElement {
    */
   _teardownLifecycle () {
     this._wasTornDown = true
+
+    this._resolveUpdateComplete(false)
+    this._updateCompleteResolvers = null
+    this._isUpdatePending = false
+    this._isFlushing = false
 
     if (this._contextSubscriptions) {
       this._contextSubscriptions.clear()
@@ -2328,100 +2379,114 @@ export class CoraliteElement extends BaseElement {
    * @private
    */
   _flushBatch () {
+    this._isFlushing = true
     this._isUpdatePending = false
 
-    if (!this.isConnected) {
-      if (this._dirtyObservers) {
-        this._dirtyObservers.clear()
-      }
-      this._consecutiveFlushCount = 0
-      this._flushWindowCount = 0
-      return
-    }
-
-    if (this._reactiveLoopBroken) {
-      return
-    }
-
-    const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
-    if (!this._flushWindowStart || (now - this._flushWindowStart) > FLUSH_WINDOW_MS) {
-      this._flushWindowStart = now
-      this._flushWindowCount = 1
-    } else {
-      this._flushWindowCount++
-    }
-
-    this._consecutiveFlushCount++
-
-    const exceedsDepth = this._consecutiveFlushCount > MAX_REACTIVE_CASCADE_DEPTH
-    const exceedsRate = this._flushWindowCount > MAX_FLUSHES_PER_WINDOW
-
-    if (exceedsDepth || exceedsRate) {
-      this._consecutiveFlushCount = 0
-      this._flushWindowCount = 0
-      this._reactiveLoopBroken = true
-      this._cascadeBreakerTripped = true
-
-      if (this._dirtyObservers) {
-        this._dirtyObservers.clear()
-      }
-
-      if (this._needsDOMUpdate) {
-        try {
-          this._updateDOM()
-        } catch {
-          // ignore render error during emergency latch
-        }
-      }
-
-      const reason = exceedsDepth
-        ? `Maximum reactive cascade depth exceeded (${MAX_REACTIVE_CASCADE_DEPTH}).`
-        : `Maximum reactive flush rate exceeded (${MAX_FLUSHES_PER_WINDOW} flushes in ${FLUSH_WINDOW_MS}ms).`
-
-      const err = new CoraliteError(
-        `${reason} This indicates an infinite reactivity loop where an observer or getter cyclically mutates state. ` +
-        `Ensure observe() callbacks and getters do not mutate state properties they depend on.`,
-        {
-          componentId: this.componentOptions?.componentId,
-          instanceId: this._instanceId
-        }
-      )
-
-      console.error('Coralite Reactive Cascade Error:', err)
-      let CustomEventCtor = null
-      if (typeof window !== 'undefined' && window.CustomEvent) {
-        CustomEventCtor = window.CustomEvent
-      } else if (typeof CustomEvent !== 'undefined') {
-        CustomEventCtor = CustomEvent
-      }
-
-      if (CustomEventCtor && typeof this.dispatchEvent === 'function') {
-        this.dispatchEvent(new CustomEventCtor('coralite-error', {
-          bubbles: true,
-          composed: true,
-          detail: { error: err }
-        }))
-      }
-
-      /** @type {any} */
-      const self = this
-      if (typeof self.emit === 'function') {
-        self.emit('coralite-error', { error: err })
-      }
-      return
-    }
-
+    let aborted = false
     try {
-      if (this._needsDOMUpdate) {
-        this._updateDOM()
+      if (!this.isConnected) {
+        if (this._dirtyObservers) {
+          this._dirtyObservers.clear()
+        }
+        this._consecutiveFlushCount = 0
+        this._flushWindowCount = 0
+        aborted = true
+        return
       }
 
-      if (this._dirtyObservers && this._dirtyObservers.size > 0) {
-        this._flushDirtyObservers()
+      if (this._reactiveLoopBroken) {
+        return
       }
-    } finally {
-      if (!this._isUpdatePending) {
+
+      const now = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()
+      if (!this._flushWindowStart || (now - this._flushWindowStart) > FLUSH_WINDOW_MS) {
+        this._flushWindowStart = now
+        this._flushWindowCount = 1
+      } else {
+        this._flushWindowCount++
+      }
+
+      this._consecutiveFlushCount++
+
+      const exceedsDepth = this._consecutiveFlushCount > MAX_REACTIVE_CASCADE_DEPTH
+      const exceedsRate = this._flushWindowCount > MAX_FLUSHES_PER_WINDOW
+
+      if (exceedsDepth || exceedsRate) {
         this._consecutiveFlushCount = 0
+        this._flushWindowCount = 0
+        this._reactiveLoopBroken = true
+        this._cascadeBreakerTripped = true
+
+        if (this._dirtyObservers) {
+          this._dirtyObservers.clear()
+        }
+
+        if (this._needsDOMUpdate) {
+          try {
+            this._updateDOM()
+          } catch {
+            // ignore render error during emergency latch
+          }
+        }
+
+        const reason = exceedsDepth
+          ? `Maximum reactive cascade depth exceeded (${MAX_REACTIVE_CASCADE_DEPTH}).`
+          : `Maximum reactive flush rate exceeded (${MAX_FLUSHES_PER_WINDOW} flushes in ${FLUSH_WINDOW_MS}ms).`
+
+        const err = new CoraliteError(
+          `${reason} This indicates an infinite reactivity loop where an observer or getter cyclically mutates state. ` +
+          `Ensure observe() callbacks and getters do not mutate state properties they depend on.`,
+          {
+            componentId: this.componentOptions?.componentId,
+            instanceId: this._instanceId
+          }
+        )
+
+        console.error('Coralite Reactive Cascade Error:', err)
+        let CustomEventCtor = null
+        if (typeof window !== 'undefined' && window.CustomEvent) {
+          CustomEventCtor = window.CustomEvent
+        } else if (typeof CustomEvent !== 'undefined') {
+          CustomEventCtor = CustomEvent
+        }
+
+        if (CustomEventCtor && typeof this.dispatchEvent === 'function') {
+          this.dispatchEvent(new CustomEventCtor('coralite-error', {
+            bubbles: true,
+            composed: true,
+            detail: { error: err }
+          }))
+        }
+
+        /** @type {any} */
+        const self = this
+        if (typeof self.emit === 'function') {
+          self.emit('coralite-error', { error: err })
+        }
+        aborted = true
+        return
+      }
+
+      try {
+        if (this._needsDOMUpdate) {
+          this._updateDOM()
+        }
+
+        if (this._dirtyObservers && this._dirtyObservers.size > 0) {
+          this._flushDirtyObservers()
+        }
+      } finally {
+        if (!this._isUpdatePending) {
+          this._consecutiveFlushCount = 0
+        }
+      }
+    } catch (err) {
+      aborted = true
+      throw err
+    } finally {
+      this._isFlushing = false
+      if (!this._isUpdatePending) {
+        this._resolveUpdateComplete(!aborted)
       }
     }
   }
@@ -3484,6 +3549,9 @@ export class CoraliteElement extends BaseElement {
       },
       get validationMessage () {
         return self.validationMessage
+      },
+      get updateComplete () {
+        return self.updateComplete
       },
       checkValidity: () => self.checkValidity(),
       reportValidity: () => self.reportValidity(),

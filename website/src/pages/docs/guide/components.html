@@ -235,14 +235,15 @@ slots: {
     </coralite-code-html>
 
     <coralite-heading level="4" text="6. Client (Client Controller)"></coralite-heading>
-    <p>The <code>client</code> block is where interactivity lives. It runs in the browser and has full read/write access to state, as well as access to element references (`refs`), state observation (`observe`), and custom event dispatching (`emit`).</p>
+    <p>The <code>client</code> block is where interactivity lives. It runs in the browser and has full read/write access to state, as well as access to element references (`refs`), state observation (`observe`), custom event dispatching (`emit`), and render completion synchronization (`updateComplete`).</p>
     <coralite-code-highlight language="javascript">
-client: ({ state, signal, refs, observe, emit }) => {
+client: async ({ state, signal, refs, observe, emit, updateComplete }) => {
   // 'my-btn' matches the ref="my-btn" in the template above
   const btn = refs('my-btn');
   
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     state.count++; // Mutating state triggers a re-render!
+    await updateComplete; // Deterministically await DOM and observer flush!
     emit('count-changed', { count: state.count }); // Dispatch custom event to parent
   }, { signal });
 }
