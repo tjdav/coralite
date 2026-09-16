@@ -23,7 +23,8 @@
     "types": ["node"]
   },
   "include": [
-    "lib/index.js"
+    "lib/index.js",
+    "lib/utils/client/index.js"
   ],
   "exclude": [
     "tests",
