@@ -72,27 +72,15 @@ import { createServerSlotsHelper } from './component-setup.js'
  *  ComponentElementOptions,
  *  HTMLData
  * } from '../types/index.js'
- */
-
-/**
- * @import { InstanceContext } from '../types/script.js'
  * @import { ScriptManager } from './script-manager.js'
  */
 
-/**
- * Factory for the rendering pipeline.
- *
- * @param {Object} dependencies - The dependencies required to create the renderer.
- * @param {CoraliteInstance} dependencies.app - The global Coralite app instance.
- * @param {ScriptManager} dependencies.scriptManager - The script manager for handling client-side scripts.
- * @param {Object} dependencies.source - The framework source utilities and context.
- * @param {Function} dependencies.evaluate - The function used to evaluate component scripts.
- * @param {CoraliteOnError} dependencies.handleError - The callback for handling errors during rendering.
- * @param {Object} dependencies.hooks - The collection of bound plugin hooks.
- * @param {any} dependencies.options - The normalized configuration options for the framework.
- * @param {Function} dependencies.createExecutionError - The factory function for creating detailed execution errors.
- * @returns {Object}
- */
+const createManifestOutputFile = (manifest) => ({
+  path: 'assets/js/manifest.js',
+  hashedPath: 'manifest.js',
+  text: `export default ${JSON.stringify(manifest)};`
+})
+
 /**
  * Filters out reserved DOM attributes unless explicitly declared in the component's attributes schema.
  *
@@ -145,6 +133,7 @@ export function createRenderer ({
   const outputFiles = {}
   const sriDigestCache = new Map()
   const inFlightCss = new Map()
+  let activeBuilds = 0
   let globalScriptResult = null
   let siteWideBundlePromise = null
 
@@ -1497,7 +1486,6 @@ export function createRenderer ({
         })
       } else if (sriOption) {
         const algo = typeof sriOption === 'string' ? sriOption : 'sha384'
-        let fileContent = null
         let assetDestPath = tagOptions.dest
 
         if (!assetDestPath && targetUrl.startsWith(base)) {
@@ -1510,40 +1498,30 @@ export function createRenderer ({
 
           try {
             const fileStat = await stat(fullDiskPath)
-            const cacheKey = `${assetDestPath}:${fileStat.mtimeMs}:${fileStat.size}:${algo}`
+            const sriCacheKey = `${assetDestPath}:${algo}`
+            const cached = sriDigestCache.get(sriCacheKey)
 
-            let computedDigest = ''
-            let contentHash = ''
-
-            let cachedPromise = sriDigestCache.get(cacheKey)
-            if (!cachedPromise) {
-              cachedPromise = (async () => {
-                fileContent = await readFile(fullDiskPath)
-                const computedDigestVal = calculateSRIDigest(fileContent, algo)
-                const contentHashVal = hash(fileContent)
-                return {
-                  digest: computedDigestVal,
-                  contentHash: contentHashVal
-                }
-              })().catch(err => {
-                sriDigestCache.delete(cacheKey)
-                throw err
+            if (!cached || cached.mtimeMs !== fileStat.mtimeMs || cached.size !== fileStat.size) {
+              const fileContent = await readFile(fullDiskPath)
+              const computedDigestVal = calculateSRIDigest(fileContent, algo)
+              const contentHashVal = hash(fileContent)
+              sriDigestCache.set(sriCacheKey, {
+                mtimeMs: fileStat.mtimeMs,
+                size: fileStat.size,
+                digest: computedDigestVal,
+                contentHash: contentHashVal
               })
-              sriDigestCache.set(cacheKey, cachedPromise)
             }
 
-            const cachedResult = await cachedPromise
-            computedDigest = cachedResult.digest
-            contentHash = cachedResult.contentHash
-
-            attribs.integrity = computedDigest
+            const cachedResult = sriDigestCache.get(sriCacheKey)
+            attribs.integrity = cachedResult.digest
             if (!attribs.crossorigin) {
               attribs.crossorigin = 'anonymous'
             }
 
             pageInjectedAssetHashes.push({
               dest: assetDestPath,
-              hash: contentHash
+              hash: cachedResult.contentHash
             })
           } catch {
             handleError({
@@ -2027,6 +2005,13 @@ export function createRenderer ({
       buildOptions = {}
     }
 
+    if (activeBuilds === 0) {
+      for (const key in outputFiles) {
+        delete outputFiles[key]
+      }
+    }
+    activeBuilds++
+
     const isIncremental = buildOptions.incremental ?? normalizedOptions.incremental ?? true
 
     // Phase 0: Manifest Loading
@@ -2069,12 +2054,7 @@ export function createRenderer ({
       Object.assign(outputFiles, globalScriptResult.outputFiles)
 
       if (globalScriptResult.manifest) {
-        const manifestJS = `export default ${JSON.stringify(globalScriptResult.manifest)};`
-        outputFiles['manifest.js'] = {
-          path: 'assets/js/manifest.js',
-          hashedPath: 'manifest.js',
-          text: manifestJS
-        }
+        outputFiles['manifest.js'] = createManifestOutputFile(globalScriptResult.manifest)
 
         const newComponentManifest = globalScriptResult.manifest
         const oldComponentManifest = manifest.components
@@ -2136,12 +2116,7 @@ export function createRenderer ({
             Object.assign(outputFiles, result.outputFiles)
 
             if (result.manifest) {
-              const manifestJS = `export default ${JSON.stringify(result.manifest)};`
-              outputFiles['manifest.js'] = {
-                path: 'assets/js/manifest.js',
-                hashedPath: 'manifest.js',
-                text: manifestJS
-              }
+              outputFiles['manifest.js'] = createManifestOutputFile(result.manifest)
             }
           }
           return result
@@ -2149,6 +2124,12 @@ export function createRenderer ({
         siteWideBundlePromise = bundlePromise
       }
       await siteWideBundlePromise
+      if (globalScriptResult?.outputFiles) {
+        Object.assign(outputFiles, globalScriptResult.outputFiles)
+        if (globalScriptResult.manifest && !outputFiles['manifest.js']) {
+          outputFiles['manifest.js'] = createManifestOutputFile(globalScriptResult.manifest)
+        }
+      }
     }
 
     if (buildPath) {
@@ -2705,6 +2686,7 @@ export function createRenderer ({
       buildError = error instanceof Error ? error : new CoraliteError(`Build failed: ${error.message}`, { cause: error })
       throw buildError
     } finally {
+      activeBuilds = Math.max(0, activeBuilds - 1)
       if (externalSignal && externalAbortHandler) {
         externalSignal.removeEventListener('abort', externalAbortHandler)
       }

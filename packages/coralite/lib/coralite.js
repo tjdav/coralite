@@ -430,12 +430,18 @@ export async function createCoralite ({
         })
         await Promise.all(assetWrites)
       }
-      await renderer.clearCache(true)
+
+      await app.clearCache(true)
+
       return results
     },
 
     addRenderQueue: renderer.addRenderQueue,
-    clearCache: renderer.clearCache,
+    clearCache: async (structural = false) => {
+      trackedOutputFiles.clear()
+
+      return renderer.clearCache(structural)
+    },
 
     _triggerPluginAggregateHook: _triggerPluginAggregateHookLocal,
     _triggerPluginHook: _triggerPluginHookLocal,
