@@ -693,10 +693,14 @@ export class CoraliteElement extends BaseElement {
     const kebabKey = camelToKebab(camelKey)
     if (this._state.errors) {
       delete this._state.errors[camelKey]
-      delete this._state.errors[kebabKey]
+      if (camelKey !== kebabKey) {
+        delete this._state.errors[kebabKey]
+      }
     }
     this._state[`error_${camelKey}`] = ''
-    this._state[`error_${kebabKey}`] = ''
+    if (camelKey !== kebabKey) {
+      this._state[`error_${kebabKey}`] = ''
+    }
   }
 
   /**
@@ -2233,9 +2237,16 @@ export class CoraliteElement extends BaseElement {
           return true
         }
 
-        if (typeof p === 'string' && options.attributes) {
-          const camelName = kebabToCamel(p)
-          const kebabName = camelToKebab(camelName)
+        const isStrProp = typeof p === 'string'
+        let camelName = null
+        let kebabName = null
+
+        if (isStrProp) {
+          camelName = kebabToCamel(p)
+        }
+
+        if (isStrProp && options.attributes) {
+          kebabName = camelToKebab(camelName)
           const schema = options.attributes[camelName] || options.attributes[p]
           if (schema) {
             const res = validateAttributeValue(v, schema, camelName, options.componentId, {
@@ -2260,7 +2271,7 @@ export class CoraliteElement extends BaseElement {
               t['error_' + kebabName] = ''
 
               self._abortGetterControllers(camelName, kebabName, p)
-              self._reflectAttributeChange(camelName, p, schema, { removed: true })
+              self._reflectAttributeChange(camelName, p, schema, { removed: true }, kebabName)
               self._observeSlotStateKey(p)
               self._markKeysDirty(camelName, kebabName, p)
               self._scheduleUpdate()
@@ -2277,14 +2288,15 @@ export class CoraliteElement extends BaseElement {
 
         t[p] = v
 
-        if (typeof p === 'string') {
-          const camelName = kebabToCamel(p)
-          self._reflectAttributeChange(camelName, p, options.attributes?.[camelName] || options.attributes?.[p], { value: v })
+        if (isStrProp) {
+          if (!kebabName) {
+            kebabName = camelToKebab(camelName)
+          }
+          self._reflectAttributeChange(camelName, p, options.attributes?.[camelName] || options.attributes?.[p], { value: v }, kebabName)
           self._observeSlotStateKey(p)
           if (!p.includes('-') && p === p.toLowerCase()) {
             self._markKeysDirty(p)
           } else {
-            const kebabName = camelToKebab(camelName)
             self._markKeysDirty(camelName, kebabName, p)
           }
         }
@@ -3201,12 +3213,12 @@ export class CoraliteElement extends BaseElement {
    * @param {boolean} [options.removed=false] - Whether the property/attribute is removed.
    * @protected
    */
-  _reflectAttributeChange (camelName, p, schema, { value, removed = false } = {}) {
+  _reflectAttributeChange (camelName, p, schema, { value, removed = false } = {}, precomputedKebabName = null) {
     if (this._isReflectingFromAttribute) {
       return
     }
 
-    const kebabName = camelToKebab(camelName || (p ? kebabToCamel(p) : ''))
+    const kebabName = precomputedKebabName || camelToKebab(camelName || (p ? kebabToCamel(p) : ''))
     const resolvedSchema = schema ||
       this.componentOptions?.attributes?.[camelName] ||
       (p ? this.componentOptions?.attributes?.[p] : undefined) ||

@@ -16,6 +16,13 @@ export const isServer = typeof window === 'undefined'
 export const isClient = typeof window !== 'undefined'
 
 const KEBAB_REGEX = /[-|:]([a-z])/g
+const CAMEL_REGEX = /([a-z0-9])([A-Z])/g
+const MAX_STRING_CACHE_SIZE = 1000
+
+/** @type {Map<string, string>} */
+const kebabToCamelCache = new Map()
+/** @type {Map<string, string>} */
+const camelToKebabCache = new Map()
 
 /**
  * Converts a kebab-case string to camelCase
@@ -23,10 +30,22 @@ const KEBAB_REGEX = /[-|:]([a-z])/g
  * @returns {string} - The camelCase version of the string
  */
 export function kebabToCamel (str) {
-  // replace each dash followed by a letter with the uppercase version of the letter
-  return str.replace(KEBAB_REGEX, function (match, letter) {
+  if (typeof str !== 'string' || str.length === 0) {
+    return ''
+  }
+  const cached = kebabToCamelCache.get(str)
+  if (cached !== undefined) {
+    return cached
+  }
+  const result = str.replace(KEBAB_REGEX, function (match, letter) {
     return letter.toUpperCase()
   })
+  if (kebabToCamelCache.size >= MAX_STRING_CACHE_SIZE) {
+    const oldestKey = kebabToCamelCache.keys().next().value
+    kebabToCamelCache.delete(oldestKey)
+  }
+  kebabToCamelCache.set(str, result)
+  return result
 }
 
 /**
@@ -35,7 +54,28 @@ export function kebabToCamel (str) {
  * @returns {string} - The kebab-case version of the string
  */
 export function camelToKebab (str) {
-  return str.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+  if (typeof str !== 'string' || str.length === 0) {
+    return ''
+  }
+  const cached = camelToKebabCache.get(str)
+  if (cached !== undefined) {
+    return cached
+  }
+  const result = str.replace(CAMEL_REGEX, '$1-$2').toLowerCase()
+  if (camelToKebabCache.size >= MAX_STRING_CACHE_SIZE) {
+    const oldestKey = camelToKebabCache.keys().next().value
+    camelToKebabCache.delete(oldestKey)
+  }
+  camelToKebabCache.set(str, result)
+  return result
+}
+
+/**
+ * Clears conversion cache maps for test environment resets
+ */
+export function _clearStringConversionCaches () {
+  kebabToCamelCache.clear()
+  camelToKebabCache.clear()
 }
 
 /**
