@@ -58,11 +58,18 @@ export class ObserverRecord {
     this.initialized = false
 
     /**
-     * Monotonic token tracking active in-flight async getter resolution.
-     * @type {symbol|null}
-     * @protected
+     * Monotonic async resolution counter generator.
+     * @type {number}
+     * @private
      */
-    this._asyncVersion = null
+    this._asyncVersionCounter = 0
+
+    /**
+     * Monotonic token tracking active in-flight async getter resolution lock.
+     * @type {number}
+     * @private
+     */
+    this._asyncVersion = 0
   }
 
   /**
@@ -109,7 +116,7 @@ export class ObserverRecord {
     this.initialized = true
 
     if (value instanceof Promise) {
-      const version = Symbol('observer-init')
+      const version = ++this._asyncVersionCounter
       this._asyncVersion = version
       value.then((resolved) => {
         if (this._asyncVersion === version && this.element.isConnected) {
@@ -136,7 +143,7 @@ export class ObserverRecord {
     const newVal = this.updateDependenciesAndValue()
 
     if (newVal instanceof Promise) {
-      const version = Symbol('observer-run')
+      const version = ++this._asyncVersionCounter
       this._asyncVersion = version
       newVal.then(async (resolvedNew) => {
         if (this._asyncVersion !== version || !this.element.isConnected) {
@@ -159,7 +166,7 @@ export class ObserverRecord {
       return
     }
 
-    this._asyncVersion = null
+    this._asyncVersion = 0
     const oldVal = this.lastValue
     if (newVal !== oldVal) {
       this.lastValue = newVal
@@ -200,7 +207,7 @@ export class ObserverRecord {
    * @returns {void}
    */
   cleanup () {
-    this._asyncVersion = null
+    this._asyncVersion = 0
     this._nextDependencies.clear()
     this.element._updateObserverSubscriptions(this, this._nextDependencies)
   }

@@ -120,7 +120,7 @@ function createClientSlotsHelper (element) {
 
 /**
  * @typedef {HTMLSlotElement & {
- *   _slotRenderVersion?: symbol | null,
+ *   _slotRenderVersion?: number | null,
  *   _originalNodes?: Node[],
  *   _slotEvaluated?: boolean
  * }} CoraliteSlotElement
@@ -342,11 +342,25 @@ export class CoraliteElement extends BaseElement {
     this._updateCompleteResolvers = null
 
     /**
-     * A unique Symbol generated per DOM render cycle to prevent async getter race conditions.
-     * @type {symbol|null}
+     * Monotonic render cycle counter generator.
+     * @type {number}
+     * @private
+     */
+    this._renderVersionCounter = 0
+
+    /**
+     * Active DOM render cycle version lock.
+     * @type {number}
      * @protected
      */
-    this._domRenderVersion = null
+    this._domRenderVersion = 0
+
+    /**
+     * Monotonic slot evaluation counter generator.
+     * @type {number}
+     * @private
+     */
+    this._slotRenderVersionCounter = 0
 
     /**
      * @type {MutationObserver|null}
@@ -1135,7 +1149,7 @@ export class CoraliteElement extends BaseElement {
    */
   _teardownLifecycle () {
     this._wasTornDown = true
-
+    this._domRenderVersion = 0
     this._resolveUpdateComplete(false)
     this._updateCompleteResolvers = null
     this._isUpdatePending = false
@@ -2911,7 +2925,7 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
-    const renderVersion = Symbol('dom-render')
+    const renderVersion = ++this._renderVersionCounter
     this._domRenderVersion = renderVersion
 
     // Reuse pre-computed requiredTokens and evaluatedTokens container
@@ -3634,7 +3648,7 @@ export class CoraliteElement extends BaseElement {
    * Handles single Nodes, Node arrays, strings, null/empty clears, undefined no-ops, and Promises.
    * @param {CoraliteSlotElement} slotEl - The slot DOM element.
    * @param {any} result - The transformation result.
-   * @param {symbol|null} [renderVersion=null] - Optional render cycle lock token.
+   * @param {number|null} [renderVersion=null] - Optional render cycle lock token.
    * @protected
    */
   _applySlotResult (slotEl, result, renderVersion = null) {
@@ -3655,7 +3669,7 @@ export class CoraliteElement extends BaseElement {
     }
 
     if (result && typeof result.then === 'function') {
-      const capturedVersion = renderVersion || Symbol('slot-render-async')
+      const capturedVersion = renderVersion || ++this._slotRenderVersionCounter
       slotEl._slotRenderVersion = capturedVersion
       result.then(resolved => {
         this._applySlotResult(slotEl, resolved, capturedVersion)
@@ -3709,7 +3723,7 @@ export class CoraliteElement extends BaseElement {
         this._slotHasInternalObservers.set(slotName, true)
 
         const wrappedCb = (newVal, oldVal) => {
-          const renderVersion = Symbol(`slot-observe-${slotName}`)
+          const renderVersion = ++this._slotRenderVersionCounter
           slotEl._slotRenderVersion = renderVersion
           const res = cb(newVal, oldVal)
           this._applySlotResult(slotEl, res, renderVersion)
@@ -3810,7 +3824,7 @@ export class CoraliteElement extends BaseElement {
         }
 
         const slotContext = this._createSlotContext(slotName, slotEl)
-        const renderVersion = Symbol(`slot-render-${slotName}`)
+        const renderVersion = ++this._slotRenderVersionCounter
         slotEl._slotRenderVersion = renderVersion
 
         const result = slotFn(slotEl._originalNodes, slotContext)
