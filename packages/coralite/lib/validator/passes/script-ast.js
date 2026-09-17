@@ -2,8 +2,10 @@ import { parse as parseJS } from 'acorn'
 import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import { kebabToCamel } from '../../utils/core.js'
 import {
+  ALLOWED_COMPONENT_CONFIG_KEYS,
   TOP_LEVEL_CONFIG_KEYS,
-  getPropKeyName
+  getPropKeyName,
+  createDiagnostic
 } from '../helpers.js'
 
 /**
@@ -46,28 +48,36 @@ export function parseScriptAST (context) {
       if (!blockNode) {
         return
       }
+
+      if (blockNode.type === 'Identifier') {
+        const idName = blockNode.name
+        if (topLevelImports.has(idName) && topLevelImports.get(idName) !== 'local') {
+          usedTopLevelImportsOutsideClient.add(idName)
+        }
+        return
+      }
+
       walkAncestorJS(blockNode, {
         Identifier (idNode, ancestors) {
           const idName = idNode.name
           if (topLevelImports.has(idName) && topLevelImports.get(idName) !== 'local') {
             const parent = ancestors.length > 1 ? ancestors[ancestors.length - 2] : null
-            if (!parent) {
-              return
-            }
-            if (parent.type === 'MemberExpression' && parent.property === idNode && !parent.computed) {
-              return
-            }
-            if (parent.type === 'Property' && parent.key === idNode && !parent.computed && !parent.shorthand) {
-              return
-            }
-            if ((parent.type === 'BreakStatement' || parent.type === 'ContinueStatement' || parent.type === 'LabeledStatement') && parent.label === idNode) {
-              return
-            }
-            if (parent.type === 'MetaProperty') {
-              return
-            }
-            if (parent.type === 'ImportSpecifier' || parent.type === 'ImportDefaultSpecifier' || parent.type === 'ImportNamespaceSpecifier') {
-              return
+            if (parent) {
+              if (parent.type === 'MemberExpression' && parent.property === idNode && !parent.computed) {
+                return
+              }
+              if (parent.type === 'Property' && parent.key === idNode && !parent.computed && !parent.shorthand) {
+                return
+              }
+              if ((parent.type === 'BreakStatement' || parent.type === 'ContinueStatement' || parent.type === 'LabeledStatement') && parent.label === idNode) {
+                return
+              }
+              if (parent.type === 'MetaProperty') {
+                return
+              }
+              if (parent.type === 'ImportSpecifier' || parent.type === 'ImportDefaultSpecifier' || parent.type === 'ImportNamespaceSpecifier') {
+                return
+              }
             }
 
             usedTopLevelImportsOutsideClient.add(idName)
@@ -174,6 +184,66 @@ export function parseScriptAST (context) {
             }
 
             context.configProps.set(keyName, prop)
+
+            if (!ALLOWED_COMPONENT_CONFIG_KEYS.has(keyName)) {
+              const targetNode = prop.key || prop
+              const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
+              const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
+              let message = `Component specifies unknown option '${keyName}'. Valid options are: ${Array.from(ALLOWED_COMPONENT_CONFIG_KEYS).join(', ')}.`
+              let cause = `Unknown property '${keyName}' found in defineComponent configuration.`
+              if (keyName === 'state') {
+                message = "Component specifies deprecated top-level 'state'. Declare reactive state via 'attributes' schema or initialize in async server() block."
+                cause = "Top-level 'state' is deprecated in Coralite."
+              }
+              context.diagnostics.push(createDiagnostic({
+                code: 'CORALITE-E107',
+                severity: 'error',
+                message,
+                filePath: context.filePath,
+                line,
+                column,
+                sourceCode: context.sourceCode,
+                cause
+              }))
+            }
+
+            if (keyName === 'formAssociated') {
+              if (!prop.value || prop.value.type !== 'Literal' || typeof prop.value.value !== 'boolean') {
+                const targetNode = prop.value || prop
+                const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
+                const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
+                context.diagnostics.push(createDiagnostic({
+                  code: 'CORALITE-E107',
+                  severity: 'error',
+                  message: "Component option 'formAssociated' must be a boolean.",
+                  filePath: context.filePath,
+                  line,
+                  column,
+                  sourceCode: context.sourceCode,
+                  cause: "'formAssociated' option must be a boolean literal (true or false)."
+                }))
+              }
+            }
+
+            if (keyName === 'onError') {
+              const val = prop.value
+              const isValidFn = val && (val.type === 'FunctionExpression' || val.type === 'ArrowFunctionExpression' || val.type === 'Identifier')
+              if (!isValidFn) {
+                const targetNode = prop.value || prop
+                const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
+                const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
+                context.diagnostics.push(createDiagnostic({
+                  code: 'CORALITE-E107',
+                  severity: 'error',
+                  message: "Component option 'onError' must be a function.",
+                  filePath: context.filePath,
+                  line,
+                  column,
+                  sourceCode: context.sourceCode,
+                  cause: "'onError' error boundary option must be a function."
+                }))
+              }
+            }
 
             if (TOP_LEVEL_CONFIG_KEYS.has(keyName)) {
               collectTopLevelImportsOutsideClient(prop.value)

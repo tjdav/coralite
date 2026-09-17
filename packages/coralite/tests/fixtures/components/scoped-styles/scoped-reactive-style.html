@@ -18,8 +18,11 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    state: {
-      isHighlighted: false
+    attributes: {
+      isHighlighted: {
+        type: Boolean,
+        default: false
+      }
     },
     style: {
       '--dynamic-bg': (state) => state.isHighlighted ? 'rgb(255, 230, 150)' : 'rgb(240, 240, 240)',

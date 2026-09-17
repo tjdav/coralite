@@ -31,7 +31,8 @@ export function analyzeFunctionBlock (
   paramIdx,
   isSlotFn,
   isServerFn,
-  context
+  context,
+  isStyleFn = false
 ) {
   if (!fnNode || !fnNode.body) {
     return
@@ -97,8 +98,28 @@ export function analyzeFunctionBlock (
   if (fnNode.params && fnNode.params.length > paramIdx) {
     const targetParam = fnNode.params[paramIdx]
     if (targetParam.type === 'Identifier') {
-      if (isGetterFn) {
+      if (isStyleFn) {
         stateVars.add(targetParam.name)
+      } else if (isGetterFn) {
+        if (targetParam.name === 'state') {
+          diagnostics.push(createDiagnostic({
+            code: 'CORALITE-E105',
+            severity: 'error',
+            message: 'Getter function parameter receives CoraliteGetterContext ({ state, root, refs, slots, signal }). Destructure { state } or context parameter instead of (state).',
+            filePath,
+            line: targetParam.loc ? targetParam.loc.start.line + scriptStartLine : 1,
+            column: targetParam.loc ? targetParam.loc.start.column + 1 : 1,
+            sourceCode,
+            cause: 'Getter functions in Coralite receive context ({ state, root, refs, slots, signal }) instead of state directly.',
+            fix: {
+              action: 'rewrite_getter_context',
+              description: 'Rewrite getter parameter to destructured ({ state })'
+            }
+          }))
+          stateVars.add('state')
+        } else {
+          contextVars.add(targetParam.name)
+        }
       } else if (isSlotFn) {
         contextVars.add(targetParam.name)
         stateVars.add(targetParam.name)
@@ -115,8 +136,36 @@ export function analyzeFunctionBlock (
         }
       }
     } else if (targetParam.type === 'ObjectPattern') {
-      if (isGetterFn) {
+      if (isStyleFn) {
         extractDestructuredKeys(targetParam, targetStateSet)
+      } else if (isGetterFn) {
+        for (const p of targetParam.properties || []) {
+          if (p.type === 'Property') {
+            const keyName = getPropKeyName(p)
+            if (keyName === 'state') {
+              processStateProperty(p)
+            } else if (keyName === 'refs') {
+              if (p.value.type === 'Identifier') {
+                refsVars.add(p.value.name)
+              } else if (p.value.type === 'ObjectPattern') {
+                extractDestructuredKeys(p.value, null, refsVars)
+                for (const refProp of p.value.properties || []) {
+                  const rName = getPropKeyName(refProp)
+                  if (rName) {
+                    targetRefsMap.set(rName, {
+                      line: refProp.loc.start.line + scriptStartLine,
+                      column: refProp.loc.start.column + 1
+                    })
+                  }
+                }
+              }
+            } else if (keyName === 'root' || keyName === 'slots' || keyName === 'signal') {
+              // Recognized context properties
+            } else if (keyName) {
+              targetStateSet.add(keyName)
+            }
+          }
+        }
       } else {
         for (const p of targetParam.properties || []) {
           if (p.type === 'Property') {

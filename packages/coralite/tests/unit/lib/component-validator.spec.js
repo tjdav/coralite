@@ -331,6 +331,61 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(e301s[0].fix.isSharedWithOtherBlocks, true)
   })
 
+  test('CORALITE-E301: tracks isSharedWithOtherBlocks when root identifier is used in onError: handler', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  import { errorHandler } from './errors.js'
+
+  export default defineComponent({
+    onError: errorHandler,
+    client() {
+      errorHandler()
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e301-onerror.html')
+    const e301s = result.diagnostics.filter(d => d.code === 'CORALITE-E301')
+    assert.strictEqual(e301s.length, 1)
+    assert.strictEqual(e301s[0].fix.action, 'dynamic_import')
+    assert.strictEqual(e301s[0].fix.isSharedWithOtherBlocks, true)
+  })
+
+  test('CORALITE-E301: tracks isSharedWithOtherBlocks when import is used in attributes validator', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  import { validator } from './validators.js'
+
+  export default defineComponent({
+    attributes: {
+      count: {
+        type: Number,
+        validate: validator
+      }
+    },
+    client() {
+      validator(10)
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e301-attr-validate.html')
+    const e301s = result.diagnostics.filter(d => d.code === 'CORALITE-E301')
+    assert.strictEqual(e301s.length, 1)
+    assert.strictEqual(e301s[0].fix.action, 'dynamic_import')
+    assert.strictEqual(e301s[0].fix.isSharedWithOtherBlocks, true)
+  })
+
   test('Template Scoping: ignores mustache expressions and event handlers outside <template>', () => {
     const code = `
 <!-- {{ item.price * taxRate }} -->
@@ -594,7 +649,103 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.strictEqual(w204s.length, 0)
   })
 
-  // 15. CORALITE-E105 Diagnostic Rule Test
+  // 15. CORALITE-E105 & CORALITE-E107 Diagnostic Rule Tests
+  test('CORALITE-E107: emits error on unknown component options, deprecated top-level state, non-boolean formAssociated, and non-function onError', () => {
+    const code = `
+<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    state: { count: 0 },
+    unknownOption: 123,
+    formAssociated: 'yes',
+    onError: 'not-a-function'
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-e107.html')
+    assert.strictEqual(result.valid, false)
+
+    const e107s = result.diagnostics.filter(d => d.code === 'CORALITE-E107')
+    assert.strictEqual(e107s.length, 4)
+
+    const stateDiag = e107s.find(d => d.message.includes("deprecated top-level 'state'"))
+    assert.ok(stateDiag)
+
+    const unknownDiag = e107s.find(d => d.message.includes("unknown option 'unknownOption'"))
+    assert.ok(unknownDiag)
+
+    const formDiag = e107s.find(d => d.message.includes("'formAssociated' must be a boolean"))
+    assert.ok(formDiag)
+
+    const errDiag = e107s.find(d => d.message.includes("'onError' must be a function"))
+    assert.ok(errDiag)
+  })
+
+  test('CORALITE-E105: emits diagnostic for undestructured (state) => ... getter signature, but permits modern destructured context, context parameter, style getters, and single-param slot functions', () => {
+    const code = `
+<template>
+  <div>{{ legacyGetter }} - {{ modernGetter }} - {{ nestedGetter }} - {{ ctxGetter }}</div>
+  <slot name="default"></slot>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: {
+      user: { type: Object },
+      count: { type: Number }
+    },
+    getters: {
+      legacyGetter: (state) => state.count * 2,
+      modernGetter: ({ state }) => state.count * 2,
+      nestedGetter: ({ state: { count } }) => count * 2,
+      ctxGetter: (context) => context.state.count * 2
+    },
+    style: {
+      color: (state) => state.count > 0 ? 'red' : 'blue'
+    },
+    slots: {
+      default (context) {
+        return context.state.count > 0 ? 'Active' : 'Empty'
+      }
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-getter-context.html')
+
+    const e105s = result.diagnostics.filter(d => d.code === 'CORALITE-E105')
+    assert.strictEqual(e105s.length, 1)
+    assert.strictEqual(e105s[0].fix.action, 'rewrite_getter_context')
+    assert.ok(e105s[0].message.includes('CoraliteGetterContext'))
+  })
+
+  test('CORALITE-E105: permits destructuring nested objects like { refs: { button } } without throwing', () => {
+    const code = `
+<template>
+  <button ref="button">Click</button>
+  <div>{{ buttonText }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    getters: {
+      buttonText: ({ refs: { button } }) => button ? 'Ready' : 'Pending'
+    }
+  })
+</script>
+`
+    const result = validateComponentSource(code, 'test-getter-nested-refs.html')
+    assert.strictEqual(result.valid, true)
+    const e105s = result.diagnostics.filter(d => d.code === 'CORALITE-E105')
+    assert.strictEqual(e105s.length, 0)
+  })
+
   test('CORALITE-E105: emits diagnostic when context.attributes is accessed in server() or client()', () => {
     const code = `
 <template>
@@ -944,6 +1095,35 @@ ${templateLines}
     `
     const result = validateComponentSource(componentSource, 'Card.html')
     assert.deepEqual(result.defined.slots, ['header', 'default'])
+  })
+
+  test('slots: single-argument and two-argument slot functions track state and suppress CORALITE-W401', () => {
+    const componentSource = `
+      <template>
+        <slot name="computedSlot"></slot>
+        <slot name="moduleSlot"></slot>
+      </template>
+      <script>
+        import { defineComponent } from 'coralite'
+        export default defineComponent({
+          attributes: {
+            computedTitle: { type: String },
+            moduleTitle: { type: String }
+          },
+          slots: {
+            computedSlot (context) {
+              return context.state.computedTitle
+            },
+            moduleSlot (nodes, context) {
+              return context.state.moduleTitle
+            }
+          }
+        })
+      </script>
+    `
+    const result = validateComponentSource(componentSource, 'SlotTracking.html')
+    const w401s = result.diagnostics.filter(d => d.code === 'CORALITE-W401')
+    assert.strictEqual(w401s.length, 0, 'Both attributes should be tracked by slot functions and not flagged as unused')
   })
 
   // 23. validateComponentsDir Async Directory Validation

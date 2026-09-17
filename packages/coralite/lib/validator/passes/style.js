@@ -58,7 +58,7 @@ export function validateStyle (context) {
       fnVal &&
       (fnVal.type === 'FunctionExpression' || fnVal.type === 'ArrowFunctionExpression')
     ) {
-      analyzeFunctionBlock(fnVal, stateReads, refsCalls, true, false, 0, false, false, context)
+      analyzeFunctionBlock(fnVal, stateReads, refsCalls, false, false, 0, false, false, context, true)
     }
   }
 }

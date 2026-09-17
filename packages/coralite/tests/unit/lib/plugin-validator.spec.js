@@ -94,7 +94,7 @@ describe('plugin-validator.js', () => {
           },
           client: {
             context: (pluginContext) => (instanceContext) => ({ bar: 2 }),
-            onConnected () { console.log('connected') }
+            onBeforeComponentRender () { console.log('render') }
           }
         })
       `
@@ -172,7 +172,7 @@ describe('plugin-validator.js', () => {
         export default definePlugin({
           name: 'leaky-plugin',
           client: {
-            onConnected () {
+            onBeforeComponentRender () {
               const data = fs.readFileSync('test')
             }
           }
@@ -191,7 +191,7 @@ describe('plugin-validator.js', () => {
         export default definePlugin({
           name: 'leaky-context-plugin',
           client: {
-            onConnected () {
+            onBeforeComponentRender () {
               const val = helperFn(10)
             }
           }
@@ -217,19 +217,115 @@ describe('plugin-validator.js', () => {
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P302'))
     })
 
-    it('CORALITE-P303: should flag invalid client hook signature', () => {
+    it('CORALITE-P303: should flag invalid client hook signature or unsupported hook', () => {
       const source = `
         import { definePlugin } from 'coralite'
         export default definePlugin({
           name: 'bad-client-hook-plugin',
           client: {
-            onConnected: 123
+            onBeforeComponentRender: 123
           }
         })
       `
       const result = validatePluginSource(source, 'test.js')
       assert.equal(result.valid, false)
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P303'))
+    })
+
+    it('CORALITE-P303: should flag unsupported onConnected client hook', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'unsupported-client-hook-plugin',
+          client: {
+            onConnected () {}
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P303' && d.message.includes('onConnected')))
+    })
+
+    it('CORALITE-P202: should recognize all 12 server lifecycle hooks without error', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'all-server-hooks-plugin',
+          server: {
+            onBeforeBuild () {},
+            onAfterBuild () {},
+            onPageSet () {},
+            onPageUpdate () {},
+            onPageDelete () {},
+            onComponentSet () {},
+            onComponentUpdate () {},
+            onComponentDelete () {},
+            onBeforePageRender () {},
+            onAfterPageRender () {},
+            onBeforeComponentRender () {},
+            onAfterComponentRender () {}
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'all-hooks.js')
+      assert.equal(result.valid, true)
+      assert.equal(result.diagnostics.length, 0)
+    })
+
+    it('CORALITE-P201: local shadowing in context() fails currying when shadowed by non-function', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        const handler = () => ({})
+        export default definePlugin({
+          name: 'shadowed-context-plugin',
+          server: {
+            context () {
+              const handler = { notAFunction: true }
+              return handler
+            }
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'shadowed.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P201'))
+    })
+
+    it('CORALITE-P201: expression-bodied arrow returning handler identifier passes currying check', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        const handler = (inst) => ({})
+        export default definePlugin({
+          name: 'expression-bodied-plugin',
+          server: {
+            context: () => handler
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'expr-bodied.js')
+      assert.equal(result.valid, true)
+      assert.ok(!result.diagnostics.some(d => d.code === 'CORALITE-P201'))
+    })
+
+    it('CORALITE-P201: nested helper function return is ignored in currying check', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'nested-helper-plugin',
+          server: {
+            context () {
+              function helper () {
+                return () => {}
+              }
+              return { notCurried: true }
+            }
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'nested-helper.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P201'))
     })
 
     it('CORALITE-P401: should warn when plugin source does not call definePlugin', () => {
@@ -307,6 +403,43 @@ describe('plugin-validator.js', () => {
       const result = validatePluginObject(plugin, 'bad-plugin.js')
       assert.equal(result.valid, false)
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P202'))
+    })
+
+    it('CORALITE-P303: should flag unsupported onConnected client hook in validatePluginObject', () => {
+      const plugin = {
+        name: 'bad-client-plugin',
+        client: {
+          onConnected () {}
+        }
+      }
+      const result = validatePluginObject(plugin, 'bad-client.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P303' && d.message.includes('onConnected')))
+    })
+
+    it('CORALITE-P303: should flag unknown client property or hook in validatePluginObject', () => {
+      const plugin = {
+        name: 'unknown-client-plugin',
+        client: {
+          someUnknownHook () {}
+        }
+      }
+      const result = validatePluginObject(plugin, 'unknown-client.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P303' && d.message.includes('someUnknownHook')))
+    })
+
+    it('CORALITE-P202: should flag unknown server property or hook in validatePluginObject', () => {
+      const plugin = {
+        name: 'unknown-server-plugin',
+        server: {
+          // @ts-ignore
+          invalidServerKey: 123
+        }
+      }
+      const result = validatePluginObject(plugin, 'unknown-server.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P202' && d.message.includes('invalidServerKey')))
     })
   })
 

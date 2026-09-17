@@ -452,6 +452,93 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
         ranges: true
       })
 
+      // 2.0 CORALITE-E105 (Rewrite getter (state) context to ({ state }))
+      const e105GetterDiagnostics = diagnostics.filter(d => d.code === 'CORALITE-E105' && d.fix?.action === 'rewrite_getter_context')
+      if (e105GetterDiagnostics.length > 0) {
+        const getterReplacements = []
+
+        walkAncestorJS(ast, {
+          CallExpression (node) {
+            if (
+              node.callee.type === 'Identifier' &&
+              node.callee.name === 'defineComponent' &&
+              node.arguments.length > 0 &&
+              node.arguments[0].type === 'ObjectExpression'
+            ) {
+              const configObj = node.arguments[0]
+              const gettersProp = configObj.properties.find(p => getPropKeyName(p) === 'getters')
+
+              if (gettersProp && gettersProp.type === 'Property' && gettersProp.value.type === 'ObjectExpression') {
+                for (const prop of gettersProp.value.properties) {
+                  if (prop.type !== 'Property') {
+                    continue
+                  }
+                  const fnVal = prop.value
+                  if (fnVal && (fnVal.type === 'FunctionExpression' || fnVal.type === 'ArrowFunctionExpression')) {
+                    if (fnVal.params && fnVal.params.length > 0) {
+                      const p0 = fnVal.params[0]
+                      if (p0.type === 'Identifier' && p0.name === 'state' && p0.range) {
+                        const [pStart, pEnd] = p0.range
+                        let isBareArrow = false
+                        if (fnVal.type === 'ArrowFunctionExpression') {
+                          const prefix = scriptContent.slice(fnVal.range[0], pStart)
+                          if (!prefix.includes('(')) {
+                            isBareArrow = true
+                          }
+                        }
+
+                        if (isBareArrow) {
+                          getterReplacements.push({
+                            start: pStart,
+                            end: pEnd,
+                            replacement: '({ state })',
+                            description: "Rewrite getter parameter 'state' to destructured '({ state })'"
+                          })
+                        } else {
+                          getterReplacements.push({
+                            start: pStart,
+                            end: pEnd,
+                            replacement: '{ state }',
+                            description: "Rewrite getter parameter 'state' to destructured '{ state }'"
+                          })
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        })
+
+        if (getterReplacements.length > 0) {
+          getterReplacements.sort((a, b) => b.start - a.start)
+          let candidateScript = scriptContent
+          for (const rep of getterReplacements) {
+            candidateScript = candidateScript.slice(0, rep.start) + rep.replacement + candidateScript.slice(rep.end)
+          }
+
+          try {
+            const nextAst = parseJS(candidateScript, {
+              ecmaVersion: 'latest',
+              sourceType: 'module',
+              locations: true,
+              ranges: true
+            })
+            ast = nextAst
+            scriptContent = candidateScript
+            for (const rep of getterReplacements) {
+              fixesApplied.push({
+                code: 'CORALITE-E105',
+                description: rep.description
+              })
+            }
+          } catch {
+            // Failed to re-parse candidate script; discard broken rewrite
+          }
+        }
+      }
+
       // 2.0 CORALITE-E105 (Rewrite context.attributes to context.state)
       const e105Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-E105' && d.fix?.action === 'rewrite_context_attributes')
       if (e105Diagnostics.length > 0) {

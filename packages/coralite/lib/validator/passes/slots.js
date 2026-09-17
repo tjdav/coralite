@@ -27,7 +27,8 @@ export function validateSlots (context) {
       slotProp.value.type === 'FunctionExpression' ||
       slotProp.value.type === 'ArrowFunctionExpression'
     ) {
-      analyzeFunctionBlock(slotProp.value, stateReads, refsCalls, false, false, 1, true, false, context)
+      const paramIdx = (slotProp.value.params && slotProp.value.params.length > 1) ? 1 : 0
+      analyzeFunctionBlock(slotProp.value, stateReads, refsCalls, false, false, paramIdx, true, false, context)
     }
   }
 }

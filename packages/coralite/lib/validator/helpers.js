@@ -7,7 +7,29 @@ export const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'roo
 export const RESERVED_IDENTIFIERS = new Set(['undefined', 'null', 'true', 'false', 'NaN'])
 export const ARITHMETIC_OPERATORS = new Set(['+', '-', '*', '/', '%'])
 export const COMPARISON_OPERATORS = new Set(['>', '<', '>=', '<=', '==', '===', '!=', '!=='])
-export const TOP_LEVEL_CONFIG_KEYS = new Set(['server', 'getters', 'slots', 'style', 'provide', 'consume'])
+export const ALLOWED_COMPONENT_CONFIG_KEYS = new Set([
+  'attributes',
+  'server',
+  'client',
+  'getters',
+  'slots',
+  'style',
+  'provide',
+  'consume',
+  'formAssociated',
+  'onError'
+])
+export const TOP_LEVEL_CONFIG_KEYS = new Set([
+  'attributes',
+  'server',
+  'getters',
+  'slots',
+  'style',
+  'provide',
+  'consume',
+  'formAssociated',
+  'onError'
+])
 export const INTERACTIVE_TAGS = new Set(['button', 'input', 'form', 'a', 'select', 'textarea'])
 
 export const NUMBER_WORDS = {
@@ -122,7 +144,7 @@ export function extractDestructuredKeys (patternNode, targetSet, localBindingNam
   for (const prop of patternNode.properties || []) {
     if (prop.type === 'Property') {
       const keyName = getPropKeyName(prop)
-      if (keyName) {
+      if (keyName && targetSet) {
         targetSet.add(keyName)
       }
       if (localBindingNames) {

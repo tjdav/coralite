@@ -2960,7 +2960,28 @@ export class CoraliteElement extends BaseElement {
 
       if (this._bindings.length > 6 && changedKeys && changedKeys.size > 0 && tokenMap) {
         const dirtyIndices = new Set()
-        for (const key of changedKeys) {
+        const allDirtyKeys = new Set(changedKeys)
+
+        if (this._getterDeps) {
+          for (const [getterKey, deps] of this._getterDeps) {
+            for (const key of changedKeys) {
+              if (deps.has(key)) {
+                allDirtyKeys.add(getterKey)
+                break
+              }
+            }
+          }
+        }
+
+        if (this.componentOptions.getters) {
+          for (const getterKey of Object.keys(this.componentOptions.getters)) {
+            if (!this._getterDeps || !this._getterDeps.has(getterKey)) {
+              allDirtyKeys.add(getterKey)
+            }
+          }
+        }
+
+        for (const key of allDirtyKeys) {
           const indices = tokenMap[key]
           if (indices) {
             for (let k = 0; k < indices.length; k++) {
@@ -3319,7 +3340,7 @@ export class CoraliteElement extends BaseElement {
    */
   _markKeysDirty (...names) {
     // Track changed keys before subscriber guard for style and binding checks
-    if (this._styleDeps) {
+    if (this._styleDeps || this._tokenBindings) {
       if (!this._changedStateKeys) {
         this._changedStateKeys = new Set()
       }

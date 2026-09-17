@@ -1,54 +1,14 @@
 import { parse as parseJS } from 'acorn'
-import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
-import { validatePluginSource } from './plugin-validator.js'
+import { ancestor as walkAncestorJS } from 'acorn-walk'
+import { validatePluginSource, isTwoPhaseCurried } from './plugin-validator.js'
 import { generateColorizedDiff } from './component-fixer.js'
-
-export { generateColorizedDiff }
+import { getPropKeyName } from './validator/helpers.js'
 
 /**
  * @import { CoraliteDiagnostic } from '../types/index.js'
  */
 
-function getPropKeyName (propNode) {
-  if (!propNode || propNode.type !== 'Property') {
-    return null
-  }
-  if (!propNode.computed) {
-    if (propNode.key.type === 'Identifier') {
-      return propNode.key.name
-    }
-    if (propNode.key.type === 'Literal') {
-      return String(propNode.key.value)
-    }
-  } else if (propNode.key.type === 'Literal') {
-    return String(propNode.key.value)
-  }
-  return null
-}
-
-function isTwoPhaseCurried (fnNode) {
-  if (!fnNode || (fnNode.type !== 'FunctionExpression' && fnNode.type !== 'ArrowFunctionExpression')) {
-    return false
-  }
-
-  if (fnNode.body.type === 'FunctionExpression' || fnNode.body.type === 'ArrowFunctionExpression') {
-    return true
-  }
-
-  if (fnNode.body.type === 'BlockStatement') {
-    let returnsFunction = false
-    walkJS(fnNode.body, {
-      ReturnStatement (retNode) {
-        if (retNode.argument && (retNode.argument.type === 'FunctionExpression' || retNode.argument.type === 'ArrowFunctionExpression')) {
-          returnsFunction = true
-        }
-      }
-    })
-    return returnsFunction
-  }
-
-  return false
-}
+export { generateColorizedDiff }
 
 /**
  * Applies deterministic AST auto-fixes for Two-Phase context currying (CORALITE-P201)
@@ -103,7 +63,7 @@ export function applyPluginFixes (sourceCode, diagnostics = null, options = {}) 
             const valNode = node.value
             if (
               (valNode.type === 'ArrowFunctionExpression' || valNode.type === 'FunctionExpression') &&
-              !isTwoPhaseCurried(valNode)
+              !isTwoPhaseCurried(valNode, ast)
             ) {
               const paramName = (valNode.params && valNode.params.length > 0 && valNode.params[0].type === 'Identifier')
                 ? valNode.params[0].name

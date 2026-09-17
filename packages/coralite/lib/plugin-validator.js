@@ -24,13 +24,33 @@ const SERVER_HOOK_NAMES = new Set([
   'onPageDelete',
   'onComponentSet',
   'onComponentUpdate',
-  'onComponentDelete'
-])
-const CLIENT_HOOK_NAMES = new Set([
-  'onConnected',
-  'onDisconnected',
+  'onComponentDelete',
+  'onBeforePageRender',
+  'onAfterPageRender',
   'onBeforeComponentRender',
   'onAfterComponentRender'
+])
+const CLIENT_HOOK_NAMES = new Set([
+  'onBeforeComponentRender',
+  'onAfterComponentRender',
+  'onDisconnected'
+])
+const ALLOWED_SERVER_KEYS = new Set([
+  'name',
+  'config',
+  'context',
+  'components',
+  'rootDir',
+  'filePath',
+  ...SERVER_HOOK_NAMES
+])
+const ALLOWED_CLIENT_KEYS = new Set([
+  'name',
+  'rootDir',
+  'filePath',
+  'context',
+  'config',
+  ...CLIENT_HOOK_NAMES
 ])
 const SERVER_ONLY_MODULES = new Set([
   'fs',
@@ -462,32 +482,132 @@ function isSerializable (val, seen = new Set()) {
 }
 
 /**
- * Helper to test if a context function node is Two-Phase curried (returns a inner function).
+ * Helper to test if a context function node is Two-Phase curried (returns an inner function).
+ * Correctly respects lexical scope, local shadowing, and excludes returns from nested helper functions.
  *
  * @param {Object} fnNode - AST node of context function
+ * @param {Object|null} [ast=null] - Full module AST for resolving module-level declarations
  * @returns {boolean} True if function returns another function
  */
-function isTwoPhaseCurried (fnNode) {
+export function isTwoPhaseCurried (fnNode, ast = null) {
   if (!fnNode || (fnNode.type !== 'FunctionExpression' && fnNode.type !== 'ArrowFunctionExpression')) {
     return false
   }
 
-  // Expression body: context: (ctx) => (inst) => { ... }
-  if (fnNode.body.type === 'FunctionExpression' || fnNode.body.type === 'ArrowFunctionExpression') {
-    return true
-  }
+  // 1. Collect direct return expressions of fnNode
+  const returnExprs = []
 
-  // Block body: context: (ctx) => { return (inst) => { ... } }
-  if (fnNode.body.type === 'BlockStatement') {
-    let returnsFunction = false
-    walkJS(fnNode.body, {
-      ReturnStatement (retNode) {
-        if (retNode.argument && (retNode.argument.type === 'FunctionExpression' || retNode.argument.type === 'ArrowFunctionExpression')) {
-          returnsFunction = true
+  // Expression body: context: (ctx) => (inst) => { ... } or context: (ctx) => handler
+  if (fnNode.body.type !== 'BlockStatement') {
+    returnExprs.push(fnNode.body)
+  } else {
+    // Block body: collect only ReturnStatements whose nearest enclosing function is fnNode
+    walkAncestorJS(fnNode.body, {
+      ReturnStatement (retNode, ancestors) {
+        // ancestors: [fnNode.body, ..., retNode]
+        for (let i = ancestors.length - 2; i >= 0; i--) {
+          const node = ancestors[i]
+          if (
+            node.type === 'FunctionDeclaration' ||
+            node.type === 'FunctionExpression' ||
+            node.type === 'ArrowFunctionExpression'
+          ) {
+            // Belongs to a nested helper function inside fnNode, ignore
+            return
+          }
+        }
+        if (retNode.argument) {
+          returnExprs.push(retNode.argument)
         }
       }
     })
-    return returnsFunction
+  }
+
+  if (returnExprs.length === 0) {
+    return false
+  }
+
+  const isIdentifierFunction = (identName) => {
+    // Scope A: Local scope in fnNode (params and block body)
+    let declaredLocally = false
+    let isLocalFn = false
+
+    for (const param of fnNode.params || []) {
+      if (param.type === 'Identifier' && param.name === identName) {
+        declaredLocally = true
+      }
+    }
+
+    if (fnNode.body && fnNode.body.type === 'BlockStatement') {
+      for (const stmt of fnNode.body.body || []) {
+        if (stmt.type === 'FunctionDeclaration' && stmt.id && stmt.id.name === identName) {
+          declaredLocally = true
+          isLocalFn = true
+          break
+        }
+        if (stmt.type === 'VariableDeclaration') {
+          for (const decl of stmt.declarations || []) {
+            if (decl.id && decl.id.type === 'Identifier' && decl.id.name === identName) {
+              declaredLocally = true
+              if (decl.init && (decl.init.type === 'FunctionExpression' || decl.init.type === 'ArrowFunctionExpression')) {
+                isLocalFn = true
+              }
+              break
+            }
+          }
+        }
+      }
+    }
+
+    if (declaredLocally) {
+      return isLocalFn
+    }
+
+    // Scope B: Module/Program scope in ast
+    if (ast && ast.type === 'Program' && Array.isArray(ast.body)) {
+      for (const stmt of ast.body) {
+        if (stmt.type === 'FunctionDeclaration' && stmt.id && stmt.id.name === identName) {
+          return true
+        }
+        if (stmt.type === 'VariableDeclaration') {
+          for (const decl of stmt.declarations || []) {
+            if (decl.id && decl.id.type === 'Identifier' && decl.id.name === identName) {
+              if (decl.init && (decl.init.type === 'FunctionExpression' || decl.init.type === 'ArrowFunctionExpression')) {
+                return true
+              }
+            }
+          }
+        }
+        if (stmt.type === 'ExportNamedDeclaration' && stmt.declaration) {
+          const d = stmt.declaration
+          if (d.type === 'FunctionDeclaration' && d.id && d.id.name === identName) {
+            return true
+          }
+          if (d.type === 'VariableDeclaration') {
+            for (const decl of d.declarations || []) {
+              if (decl.id && decl.id.type === 'Identifier' && decl.id.name === identName) {
+                if (decl.init && (decl.init.type === 'FunctionExpression' || decl.init.type === 'ArrowFunctionExpression')) {
+                  return true
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    return false
+  }
+
+  for (const expr of returnExprs) {
+    if (expr.type === 'FunctionExpression' || expr.type === 'ArrowFunctionExpression') {
+      return true
+    }
+    if (expr.type === 'Identifier') {
+      if (isIdentifierFunction(expr.name)) {
+        return true
+      }
+    }
   }
 
   return false
@@ -649,7 +769,17 @@ export function validatePluginSource (sourceCode, filePath = '') {
         const line = sp.loc ? sp.loc.start.line : undefined
         const column = sp.loc ? sp.loc.start.column + 1 : undefined
 
-        if (keyName && SERVER_HOOK_NAMES.has(keyName)) {
+        if (keyName && !ALLOWED_SERVER_KEYS.has(keyName)) {
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P202',
+            legacyCode: 'INVALID_HOOK_TYPE',
+            severity: 'error',
+            message: `Unknown server property or hook 'server.${keyName}'. Valid hooks are: ${Array.from(SERVER_HOOK_NAMES).join(', ')}.`,
+            line,
+            column,
+            cause: `Property 'server.${keyName}' is not a recognized server plugin property or hook.`
+          })
+        } else if (keyName && SERVER_HOOK_NAMES.has(keyName)) {
           if (sp.value && sp.value.type !== 'FunctionExpression' && sp.value.type !== 'ArrowFunctionExpression') {
             addIssueAndDiagnostic({
               code: 'CORALITE-P202',
@@ -678,7 +808,7 @@ export function validatePluginSource (sourceCode, filePath = '') {
                 description: 'Wrap context into Two-Phase curried function'
               }
             })
-          } else if (sp.value && !isTwoPhaseCurried(sp.value)) {
+          } else if (sp.value && !isTwoPhaseCurried(sp.value, ast)) {
             addIssueAndDiagnostic({
               code: 'CORALITE-P201',
               legacyCode: 'INVALID_CONTEXT_TYPE',
@@ -710,7 +840,27 @@ export function validatePluginSource (sourceCode, filePath = '') {
         const line = cp.loc ? cp.loc.start.line : undefined
         const column = cp.loc ? cp.loc.start.column + 1 : undefined
 
-        if (keyName && CLIENT_HOOK_NAMES.has(keyName)) {
+        if (keyName === 'onConnected') {
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P303',
+            legacyCode: 'INVALID_HOOK_TYPE',
+            severity: 'error',
+            message: "Client hook 'client.onConnected' is not supported by the Coralite runtime. Use 'onBeforeComponentRender' or 'onAfterComponentRender'.",
+            line,
+            column,
+            cause: 'client.onConnected hook is deprecated and unsupported.'
+          })
+        } else if (keyName && !ALLOWED_CLIENT_KEYS.has(keyName)) {
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P303',
+            legacyCode: 'INVALID_HOOK_TYPE',
+            severity: 'error',
+            message: `Unknown client property or hook 'client.${keyName}'. Valid hooks are: onBeforeComponentRender, onAfterComponentRender, onDisconnected.`,
+            line,
+            column,
+            cause: `Property 'client.${keyName}' is not a recognized client plugin property or hook.`
+          })
+        } else if (keyName && CLIENT_HOOK_NAMES.has(keyName)) {
           if (cp.value && cp.value.type !== 'FunctionExpression' && cp.value.type !== 'ArrowFunctionExpression') {
             addIssueAndDiagnostic({
               code: 'CORALITE-P303',
@@ -760,7 +910,7 @@ export function validatePluginSource (sourceCode, filePath = '') {
                 description: 'Wrap context into Two-Phase curried function'
               }
             })
-          } else if (cp.value && !isTwoPhaseCurried(cp.value)) {
+          } else if (cp.value && !isTwoPhaseCurried(cp.value, ast)) {
             addIssueAndDiagnostic({
               code: 'CORALITE-P201',
               legacyCode: 'INVALID_CONTEXT_TYPE',
@@ -998,6 +1148,18 @@ export function validatePluginObject (plugin, filePath = '') {
         cause: '"server" property must be an object.'
       })
     } else {
+      for (const key of Object.keys(plugin.server)) {
+        if (!ALLOWED_SERVER_KEYS.has(key)) {
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P202',
+            legacyCode: 'INVALID_HOOK_TYPE',
+            severity: 'error',
+            message: `Unknown server property or hook 'server.${key}'. Valid hooks are: ${Array.from(SERVER_HOOK_NAMES).join(', ')}.`,
+            cause: `Property 'server.${key}' is not a recognized server plugin property or hook.`
+          })
+        }
+      }
+
       if (plugin.server.context !== undefined && typeof plugin.server.context !== 'function') {
         addIssueAndDiagnostic({
           code: 'CORALITE-P201',
@@ -1046,6 +1208,26 @@ export function validatePluginObject (plugin, filePath = '') {
         cause: '"client" property must be an object.'
       })
     } else {
+      for (const key of Object.keys(plugin.client)) {
+        if (key === 'onConnected') {
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P303',
+            legacyCode: 'INVALID_HOOK_TYPE',
+            severity: 'error',
+            message: "Client hook 'client.onConnected' is not supported by the Coralite runtime. Use 'onBeforeComponentRender' or 'onAfterComponentRender'.",
+            cause: 'client.onConnected hook is deprecated and unsupported.'
+          })
+        } else if (!ALLOWED_CLIENT_KEYS.has(key)) {
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P303',
+            legacyCode: 'INVALID_HOOK_TYPE',
+            severity: 'error',
+            message: `Unknown client property or hook 'client.${key}'. Valid hooks are: ${Array.from(CLIENT_HOOK_NAMES).join(', ')}.`,
+            cause: `Property 'client.${key}' is not a recognized client plugin property or hook.`
+          })
+        }
+      }
+
       if (plugin.client.context !== undefined && typeof plugin.client.context !== 'function') {
         addIssueAndDiagnostic({
           code: 'CORALITE-P201',

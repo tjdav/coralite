@@ -322,6 +322,83 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
     assert.strictEqual(postW204s.length, 0)
   })
 
+  test('CORALITE-E105: rewrites getter parameter (state) => ... and state => ... to ({ state }) => ...', () => {
+    const input = `<template>
+  <div>{{ doubleCount }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    getters: {
+      doubleCount: (state) => state.count * 2
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'test-e105-getter-fix.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('doubleCount: ({ state }) => state.count * 2'))
+
+    const postValidation = validateComponentSource(result.outputCode, 'test-e105-getter-fix.html')
+    const postE105s = postValidation.diagnostics.filter(d => d.code === 'CORALITE-E105')
+    assert.strictEqual(postE105s.length, 0)
+  })
+
+  test('CORALITE-E105: rewrites bare arrow, whitespace, comments, and method shorthand in getters', () => {
+    const input = `<template>
+  <div>{{ bare }} - {{ spaced }} - {{ commented }} - {{ methodSh }}</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    getters: {
+      bare: state => state.count * 2,
+      spaced: (  state  ) => state.count * 2,
+      commented: ( /* state param */ state ) => state.count * 2,
+      methodSh (  state  ) {
+        return state.count * 2
+      }
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'test-e105-variants.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('bare: ({ state }) => state.count * 2'))
+    assert.ok(result.outputCode.includes('spaced: (  { state }  ) => state.count * 2'))
+    assert.ok(result.outputCode.includes('commented: ( /* state param */ { state } ) => state.count * 2'))
+    assert.ok(result.outputCode.includes('methodSh (  { state }  ) {'))
+
+    const postValidation = validateComponentSource(result.outputCode, 'test-e105-variants.html')
+    const postE105s = postValidation.diagnostics.filter(d => d.code === 'CORALITE-E105')
+    assert.strictEqual(postE105s.length, 0)
+  })
+
+  test('CORALITE-E301: preserves static import when referenced in onError: handler and rewrites client usage', () => {
+    const input = `<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  import { handler } from './handler.js'
+
+  export default defineComponent({
+    onError: handler,
+    client() {
+      handler()
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'test-onerror-preserve.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes("import { handler } from './handler.js'"))
+    assert.ok(result.outputCode.includes("const { handler } = await import('./handler.js')"))
+  })
+
   test('CORALITE-E105: rewrites context.attributes to context.state and destructured { attributes } to { state }', () => {
     const input = `<template>
   <div>Lang</div>
