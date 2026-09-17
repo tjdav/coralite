@@ -52,21 +52,83 @@ export function validateComponentSource (sourceCode, filePath = '') {
 }
 
 /**
- * Scans a directory recursively for component files (.html / .js) and validates usage.
+ * Validates a component file on disk statically.
  *
- * @param {string} componentsDir - Path to components directory
+ * @param {string} filePath - Path to component file
+ * @returns {Promise<CoraliteComponentValidationResult>} Validation result
+ */
+export async function validateComponentFile (filePath) {
+  const absPath = resolve(filePath)
+
+  try {
+    await access(absPath)
+  } catch {
+    throw new Error(`Component file not found: ${absPath}`)
+  }
+
+  const st = await stat(absPath)
+  if (st.isDirectory()) {
+    throw new Error(`Expected a file but found directory: ${absPath}`)
+  }
+
+  const content = await readFile(absPath, 'utf8')
+  const relPath = relative(process.cwd(), absPath)
+
+  return validateComponentSource(content, relPath)
+}
+
+/**
+ * Scans a directory recursively for component files (.html / .js) and validates usage.
+ * If passed a file path, delegates to validateComponentFile and returns a 1-entry report.
+ *
+ * @param {string} componentsDir - Path to components directory or file
  * @param {Object} [options={}] - Options like coverage flag
  * @returns {Promise<CoraliteComponentDirectoryValidationReport>} Aggregated directory validation report
  */
 export async function validateComponentsDir (componentsDir, options = {}) {
   const absoluteDir = resolve(componentsDir)
-  const results = []
 
   try {
     await access(absoluteDir)
   } catch {
     throw new Error(`Components directory not found: ${absoluteDir}`)
   }
+
+  const targetStat = await stat(absoluteDir)
+  if (targetStat.isFile()) {
+    const result = await validateComponentFile(absoluteDir)
+    const errs = (result.diagnostics || []).filter(d => d.severity === 'error').length
+    const warns = (result.diagnostics || []).filter(d => d.severity === 'warning').length
+    const fixables = (result.diagnostics || []).filter(d => Boolean(d.fix)).length
+    const totalDefined = result.metrics?.totalDefined || 0
+    const totalUnused = result.metrics?.totalUnused || 0
+    const overallCoveragePercentage = totalDefined > 0
+      ? Math.round(((totalDefined - totalUnused) / totalDefined) * 100)
+      : 100
+
+    return {
+      components: [result],
+      summary: {
+        totalComponents: 1,
+        validComponents: result.valid ? 1 : 0,
+        errorCount: errs,
+        warningCount: warns,
+        fixableCount: fixables,
+        usageCoveragePercentage: overallCoveragePercentage
+      },
+      metrics: {
+        totalComponents: 1,
+        validComponents: result.valid ? 1 : 0,
+        totalDefined,
+        totalUnused,
+        totalErrors: errs,
+        overallCoveragePercentage,
+        coverageReportEnabled: !!options.coverage
+      }
+    }
+  }
+
+  const results = []
 
   const scanDir = async (dir) => {
     const entries = await readdir(dir)
@@ -153,7 +215,9 @@ export function formatComponentValidationReport (report, options = {}) {
 
 // Backwards compatibility aliases
 export const analyseComponentSource = validateComponentSource
+export const analyseComponentFile = validateComponentFile
 export const analyseComponentsDir = validateComponentsDir
 export const formatComponentAnalysis = formatComponentValidationReport
 export const analyzeComponentSource = validateComponentSource
+export const analyzeComponentFile = validateComponentFile
 export const analyzeComponentsDir = validateComponentsDir

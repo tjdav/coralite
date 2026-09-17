@@ -5,9 +5,12 @@ import { mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   validateComponentSource,
+  validateComponentFile,
   validateComponentsDir,
   formatComponentValidationReport,
   analyseComponentSource,
+  analyseComponentFile,
+  analyzeComponentFile,
   formatComponentAnalysis
 } from '../../../lib/component-validator.js'
 
@@ -1264,6 +1267,78 @@ ${templateLines}
       const w402s = result.diagnostics.filter(d => d.code === 'CORALITE-W402')
       assert.strictEqual(w402s.length, 1)
       assert.ok(w402s[0].message.includes('targetBtn'))
+    })
+  })
+
+  // 25. validateComponentFile & Single-File Component Validation
+  describe('validateComponentFile & Single-File Component Validation', () => {
+    test('validateComponentFile validates single component file on disk', async () => {
+      const tmpDir = join(tmpdir(), `coralite-file-val-test-${Date.now()}`)
+      mkdirSync(tmpDir, { recursive: true })
+      const compFile = join(tmpDir, 'Card.html')
+
+      writeFileSync(compFile, '<template><div>{{ title }}</div></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { title: String } })</script>')
+
+      const result = await validateComponentFile(compFile)
+      assert.strictEqual(result.valid, true)
+      assert.strictEqual(result.defined.attributes.length, 1)
+      assert.strictEqual(result.defined.attributes[0], 'title')
+
+      rmSync(tmpDir, { recursive: true, force: true })
+    })
+
+    test('validateComponentFile throws when file does not exist', async () => {
+      const missingPath = join(tmpdir(), `nonexistent-component-${Date.now()}.html`)
+      await assert.rejects(
+        async () => {
+          await validateComponentFile(missingPath)
+        },
+        (err) => {
+          assert.ok(err instanceof Error)
+          assert.ok(err.message.includes('Component file not found'))
+          return true
+        }
+      )
+    })
+
+    test('validateComponentFile throws when target path is a directory', async () => {
+      const tmpDir = join(tmpdir(), `coralite-dir-test-${Date.now()}`)
+      mkdirSync(tmpDir, { recursive: true })
+
+      await assert.rejects(
+        async () => {
+          await validateComponentFile(tmpDir)
+        },
+        (err) => {
+          assert.ok(err instanceof Error)
+          assert.ok(err.message.includes('Expected a file but found directory'))
+          return true
+        }
+      )
+
+      rmSync(tmpDir, { recursive: true, force: true })
+    })
+
+    test('supports validateComponentFile aliases (analyseComponentFile, analyzeComponentFile)', () => {
+      assert.strictEqual(analyseComponentFile, validateComponentFile)
+      assert.strictEqual(analyzeComponentFile, validateComponentFile)
+    })
+
+    test('validateComponentsDir delegates file target to validateComponentFile and wraps report', async () => {
+      const tmpDir = join(tmpdir(), `coralite-dir-file-test-${Date.now()}`)
+      mkdirSync(tmpDir, { recursive: true })
+      const compFile = join(tmpDir, 'Button.html')
+
+      writeFileSync(compFile, '<template><button>{{ label }}</button></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { label: String } })</script>')
+
+      const report = await validateComponentsDir(compFile)
+      assert.strictEqual(report.summary.totalComponents, 1)
+      assert.strictEqual(report.summary.validComponents, 1)
+      assert.strictEqual(report.summary.errorCount, 0)
+      assert.strictEqual(report.components.length, 1)
+      assert.strictEqual(report.components[0].valid, true)
+
+      rmSync(tmpDir, { recursive: true, force: true })
     })
   })
 })
