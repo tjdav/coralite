@@ -4,7 +4,7 @@ import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextE
 import { findAndExtractImperativeComponents, astTransformer } from './utils/server/server.js'
 import { CoraliteError } from './utils/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
-import { resolve, parse, dirname, basename } from 'node:path'
+import { resolve, parse, dirname, basename, isAbsolute } from 'node:path'
 import { nodeModulesPolyfillPlugin } from 'esbuild-plugins-node-modules-polyfill'
 import render from 'dom-serializer'
 
@@ -105,7 +105,18 @@ ScriptManager.prototype.use = async function (plugin) {
       || typeof client.onBeforeComponentRender === 'function'
       || typeof client.onAfterComponentRender === 'function'
       || typeof client.onDisconnected === 'function') {
-      this.scriptModules.push(plugin)
+      /** @type {any} */
+      const pluginObj = plugin
+      const moduleRecord = {
+        ...plugin,
+        context: pluginObj.context || client.context,
+        onBeforeComponentRender: pluginObj.onBeforeComponentRender || client.onBeforeComponentRender,
+        onAfterComponentRender: pluginObj.onAfterComponentRender || client.onAfterComponentRender,
+        onDisconnected: pluginObj.onDisconnected || client.onDisconnected,
+        rootDir: pluginObj.rootDir || client.rootDir,
+        filePath: pluginObj.filePath || client.filePath
+      }
+      this.scriptModules.push(moduleRecord)
 
       if (client.context) {
         const contextStr = serialize(client.context)
@@ -240,7 +251,7 @@ ScriptManager.prototype.registerComponent = function ({
   }
 
   if (filePath) {
-    if (isNew || override) {
+    if (isNew || override || !target.filePath || target.filePath.startsWith('/component-')) {
       target.filePath = resolve(filePath)
     }
   }
@@ -606,6 +617,23 @@ export default {
     virtualEntryPoints[key] = `${virtualPrefix}${key}`
   }
 
+  // Build lookup maps for physical paths vs virtual module identifiers
+  const filePathToComponentId = new Map()
+  for (const [id, sharedFn] of Object.entries(this.sharedFunctions)) {
+    if (sharedFn && sharedFn.filePath && !sharedFn.filePath.startsWith('/component-')) {
+      filePathToComponentId.set(sharedFn.filePath, id)
+    }
+  }
+
+  const filePathToModuleIndex = new Map()
+  for (let i = 0; i < this.scriptModules.length; i++) {
+    const mod = this.scriptModules[i]
+    const pluginFilePath = mod?.filePath || mod?.client?.filePath
+    if (pluginFilePath && !pluginFilePath.startsWith('/component-')) {
+      filePathToModuleIndex.set(pluginFilePath, i)
+    }
+  }
+
   const injectPath = fileURLToPath(import.meta.resolve('./utils/client/inject.js'))
 
   // Build and bundle
@@ -702,33 +730,111 @@ export default {
         name: 'coralite-virtual-modules',
         setup: (pluginBuild) => {
           pluginBuild.onResolve({ filter: new RegExp(`^${virtualPrefix}`) }, args => {
+            const rawPath = args.path.replace(new RegExp(`^${virtualPrefix}`), '')
+
+            if (rawPath.startsWith(componentNamespace)) {
+              const componentId = rawPath.replace(componentNamespace, '')
+              const sharedFn = this.sharedFunctions[componentId]
+              if (sharedFn && sharedFn.filePath && !sharedFn.filePath.startsWith('/component-')) {
+                return {
+                  path: sharedFn.filePath,
+                  pluginData: {
+                    isCoraliteComponent: true,
+                    componentId
+                  }
+                }
+              }
+            }
+
+            if (rawPath.startsWith(moduleNamespace)) {
+              const index = parseInt(rawPath.replace(moduleNamespace, ''), 10)
+              const module = this.scriptModules[index]
+              const pluginFilePath = module?.filePath || module?.client?.filePath
+              if (pluginFilePath && !pluginFilePath.startsWith('/component-')) {
+                return {
+                  path: pluginFilePath,
+                  pluginData: {
+                    isScriptModule: true,
+                    moduleIndex: index
+                  }
+                }
+              }
+            }
+
             return {
-              path: args.path,
+              path: rawPath,
               namespace: 'coralite-virtual'
             }
           })
 
+          // Scoped onLoad for physical file namespace
           pluginBuild.onLoad({
             filter: /.*/,
-            namespace: 'coralite-virtual'
+            namespace: 'file'
           }, args => {
-            const path = args.path.replace(virtualPrefix, '')
+            // Returning undefined falls through to esbuild's default file loader (esbuild plugin contract).
+            // This ensures standard source files and node_modules are loaded normally from disk.
+            if (!args.pluginData?.isCoraliteComponent && !args.pluginData?.isScriptModule) {
+              return undefined
+            }
 
-            const virtualContent = this.virtualModules.get(path)
-            if (virtualContent) {
+            if (args.pluginData?.isCoraliteComponent) {
+              const componentId = args.pluginData.componentId
+              const sharedFn = this.sharedFunctions[componentId]
+              if (!sharedFn) {
+                return undefined
+              }
+
+              let contents = ''
+              if (sharedFn.script && (sharedFn.script.content || sharedFn.script.provideSource || sharedFn.script.consumeSource)) {
+                const imports = sharedFn.script.importStatements || []
+                if (imports.length > 0) {
+                  contents += imports.join('\n') + '\n\n'
+                }
+
+                if (sharedFn.script.content) {
+                  const padding = '\n'.repeat(Math.max(0, sharedFn.script.lineOffset || 0))
+                  contents += `${padding}export const script = ${sharedFn.script.content};\n`
+                } else {
+                  contents += 'export const script = null;\n'
+                }
+
+                if (sharedFn.script.provideSource) {
+                  contents += `export const provide = ${sharedFn.script.provideSource};\n`
+                } else {
+                  contents += 'export const provide = undefined;\n'
+                }
+                if (sharedFn.script.consumeSource) {
+                  contents += `export const consume = ${sharedFn.script.consumeSource};\n`
+                } else {
+                  contents += 'export const consume = undefined;\n'
+                }
+
+                contents += 'export default script;\n'
+              } else {
+                contents += 'export const script = null;\n'
+                contents += 'export const provide = undefined;\n'
+                contents += 'export const consume = undefined;\n'
+                contents += 'export default null;\n'
+              }
+
+              contents += 'export const state = null;\n'
+
               return {
-                contents: virtualContent,
+                contents,
                 loader: 'js',
-                resolveDir: process.cwd()
+                resolveDir: sharedFn.filePath ? dirname(sharedFn.filePath) : process.cwd()
               }
             }
 
-            if (path.startsWith(moduleNamespace)) {
-              const index = parseInt(path.replace(moduleNamespace, ''), 10)
-              const module = this.scriptModules[index]
-              let contents = ''
+            if (args.pluginData?.isScriptModule) {
+              const moduleIndex = args.pluginData.moduleIndex
+              const module = this.scriptModules[moduleIndex]
+              if (!module) {
+                return undefined
+              }
 
-              // Generate config object
+              let contents = ''
               const configContent = module.config
                 ? `const pluginConfig = ${serialize(module.config)};`
                 : 'const pluginConfig = {};'
@@ -744,7 +850,6 @@ export default {
               const disconnectedFn = module.onDisconnected ? normalizeFunction(module.onDisconnected) : 'null'
               contents += `export const onDisconnected = ${disconnectedFn};\n`
 
-              // Generate client context state
               contents += 'export const clientContextProps = {\n'
               if (module.context) {
                 const clientName = module.client?.name || module.name
@@ -761,39 +866,130 @@ export default {
                 contents += `    const fn = ${fn};\n`
                 contents += `    const pluginConfig = ${configStr};\n`
                 contents += `    const pluginContext = new Proxy(globalContext, {
-                          get (target, prop) {
-                            if (prop === 'config') return pluginConfig;
-                            if (prop in target) return target[prop];
-                            return undefined;
-                          },
-                          set (target, prop, value) {
-                            return Reflect.set(target, prop, value);
+                            get (target, prop) {
+                              if (prop === 'config') return pluginConfig;
+                              if (prop in target) return target[prop];
+                              return undefined;
+                            },
+                            set (target, prop, value) {
+                              return Reflect.set(target, prop, value);
+                            }
+                          });
+                          let phase2;
+                          try {
+                             phase2 = await fn(pluginContext);
+                          } catch (e) {
+                             if (typeof window !== 'undefined' && window.__coralite__?.onError) {
+                               window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1: ' + e?.message, error: e });
+                             } else {
+                               console.error('Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1:', e);
+                             }
+                             throw e;
                           }
-                        });
-                        let phase2;
-                        try {
-                           phase2 = await fn(pluginContext);
-                        } catch (e) {
-                           if (typeof window !== 'undefined' && window.__coralite__?.onError) {
-                             window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1: ' + e?.message, error: e });
-                           } else {
-                             console.error('Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1:', e);
-                           }
-                           throw e;
-                        }
 
-                        if (typeof phase2 !== 'function') {
-                          throw new Error('Coralite Plugin Error: The "context" function of client plugin ' + ${safeClientName} + ' must return a function for the second phase (instance context). Received: ' + typeof phase2);
-                        }
-                        return phase2;
-                      },\n`
+                          if (typeof phase2 !== 'function') {
+                            throw new Error('Coralite Plugin Error: The "context" function of client plugin ' + ${safeClientName} + ' must return a function for the second phase (instance context). Received: ' + typeof phase2);
+                          }
+                          return phase2;
+                        },\n`
               }
               contents += '};\n'
 
               return {
                 contents,
                 loader: 'js',
-                resolveDir: module.rootDir || (module.filePath ? dirname(module.filePath) : process.cwd())
+                resolveDir: module.filePath ? dirname(module.filePath) : (module.rootDir || process.cwd())
+              }
+            }
+
+            return undefined
+          })
+
+          // Virtual namespace onLoad for synthetic/virtual modules
+          pluginBuild.onLoad({
+            filter: /.*/,
+            namespace: 'coralite-virtual'
+          }, args => {
+            const path = args.path.replace(new RegExp(`^${virtualPrefix}`), '')
+
+            const virtualContent = this.virtualModules.get(path)
+            if (virtualContent) {
+              return {
+                contents: virtualContent,
+                loader: 'js',
+                resolveDir: process.cwd()
+              }
+            }
+
+            if (path.startsWith(moduleNamespace)) {
+              const index = parseInt(path.replace(moduleNamespace, ''), 10)
+              const module = this.scriptModules[index]
+              let contents = ''
+
+              const configContent = module.config
+                ? `const pluginConfig = ${serialize(module.config)};`
+                : 'const pluginConfig = {};'
+
+              contents += configContent + '\n'
+
+              const beforeFn = module.onBeforeComponentRender ? normalizeFunction(module.onBeforeComponentRender) : 'null'
+              contents += `export const onBeforeComponentRender = ${beforeFn};\n`
+
+              const afterFn = module.onAfterComponentRender ? normalizeFunction(module.onAfterComponentRender) : 'null'
+              contents += `export const onAfterComponentRender = ${afterFn};\n`
+
+              const disconnectedFn = module.onDisconnected ? normalizeFunction(module.onDisconnected) : 'null'
+              contents += `export const onDisconnected = ${disconnectedFn};\n`
+
+              contents += 'export const clientContextProps = {\n'
+              if (module.context) {
+                const clientName = module.client?.name || module.name
+                if (['id', 'state', 'page', 'root', 'signal'].includes(clientName)) {
+                  throw new CoraliteError(`Reserved context key '${clientName}' cannot be used in plugin context.`)
+                }
+
+                const fn = normalizeFunction(module.context)
+                const clientConfig = module.client?.config || module.config || {}
+                const configStr = serialize(clientConfig)
+                const safeClientName = JSON.stringify(clientName)
+
+                contents += `  ${safeClientName}: async (globalContext) => {\n`
+                contents += `    const fn = ${fn};\n`
+                contents += `    const pluginConfig = ${configStr};\n`
+                contents += `    const pluginContext = new Proxy(globalContext, {
+                            get (target, prop) {
+                              if (prop === 'config') return pluginConfig;
+                              if (prop in target) return target[prop];
+                              return undefined;
+                            },
+                            set (target, prop, value) {
+                              return Reflect.set(target, prop, value);
+                            }
+                          });
+                          let phase2;
+                          try {
+                             phase2 = await fn(pluginContext);
+                          } catch (e) {
+                             if (typeof window !== 'undefined' && window.__coralite__?.onError) {
+                               window.__coralite__.onError({ level: 'ERR', message: 'Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1: ' + e?.message, error: e });
+                             } else {
+                               console.error('Coralite Plugin Error: Failed to initialize client context for plugin ' + ${safeClientName} + ' phase 1:', e);
+                             }
+                             throw e;
+                          }
+
+                          if (typeof phase2 !== 'function') {
+                            throw new Error('Coralite Plugin Error: The "context" function of client plugin ' + ${safeClientName} + ' must return a function for the second phase (instance context). Received: ' + typeof phase2);
+                          }
+                          return phase2;
+                        },\n`
+              }
+              contents += '};\n'
+
+              return {
+                contents,
+                loader: 'js',
+                resolveDir: module.filePath ? dirname(module.filePath) : (module.rootDir || process.cwd())
               }
             }
 
@@ -845,7 +1041,7 @@ export default {
                 contents += 'export default null;\n'
               }
 
-              contents += `export const state = null;\n`
+              contents += 'export const state = null;\n'
 
               return {
                 contents,
@@ -859,14 +1055,82 @@ export default {
     ]
   }
 
-  let result
-  if (mode === 'development') {
-    if (!this.context) {
-      this.context = await context(esbuildOptions)
+  const sanitizeError = (err) => {
+    if (!err) {
+      return err
     }
-    result = await this.context.rebuild()
-  } else {
-    result = await build(esbuildOptions)
+
+    const virtualToPhysical = new Map()
+    for (const [id, sharedFn] of Object.entries(this.sharedFunctions)) {
+      if (sharedFn && sharedFn.filePath && !sharedFn.filePath.startsWith('/component-')) {
+        virtualToPhysical.set(`${virtualPrefix}${componentNamespace}${id}`, sharedFn.filePath)
+        virtualToPhysical.set(`${componentNamespace}${id}`, sharedFn.filePath)
+      }
+    }
+    for (let i = 0; i < this.scriptModules.length; i++) {
+      const mod = this.scriptModules[i]
+      const p = mod?.filePath || mod?.client?.filePath
+      if (p && !p.startsWith('/component-')) {
+        virtualToPhysical.set(`${virtualPrefix}${moduleNamespace}${i}`, p)
+        virtualToPhysical.set(`${moduleNamespace}${i}`, p)
+      }
+    }
+
+    if (Array.isArray(err.errors)) {
+      for (const errorItem of err.errors) {
+        if (errorItem.location) {
+          let locFile = errorItem.location.file || ''
+          if (locFile.startsWith(virtualPrefix)) {
+            locFile = locFile.slice(virtualPrefix.length)
+          }
+          if (virtualToPhysical.has(locFile)) {
+            errorItem.location.file = virtualToPhysical.get(locFile)
+            errorItem.location.namespace = 'file'
+          } else if (locFile.startsWith(componentNamespace)) {
+            const cid = locFile.replace(componentNamespace, '')
+            if (this.sharedFunctions[cid]?.filePath && !this.sharedFunctions[cid].filePath.startsWith('/component-')) {
+              errorItem.location.file = this.sharedFunctions[cid].filePath
+              errorItem.location.namespace = 'file'
+            }
+          } else if (locFile.startsWith(moduleNamespace)) {
+            const idx = parseInt(locFile.replace(moduleNamespace, ''), 10)
+            const p = this.scriptModules[idx]?.filePath || this.scriptModules[idx]?.client?.filePath
+            if (p && !p.startsWith('/component-')) {
+              errorItem.location.file = p
+              errorItem.location.namespace = 'file'
+            }
+          } else if (isAbsolute(locFile)) {
+            errorItem.location.file = locFile
+            errorItem.location.namespace = 'file'
+          }
+        }
+      }
+    }
+
+    if (typeof err.message === 'string') {
+      let cleanedMessage = err.message.replaceAll(`${virtualPrefix}${virtualPrefix}`, virtualPrefix)
+      for (const [virt, phys] of virtualToPhysical.entries()) {
+        cleanedMessage = cleanedMessage.replaceAll(virt, phys)
+      }
+      cleanedMessage = cleanedMessage.replace(/coralite-virtual:(?=\/|[a-zA-Z]:[\\\/])/g, '')
+      err.message = cleanedMessage
+    }
+
+    return err
+  }
+
+  let result
+  try {
+    if (mode === 'development') {
+      if (!this.context) {
+        this.context = await context(esbuildOptions)
+      }
+      result = await this.context.rebuild()
+    } else {
+      result = await build(esbuildOptions)
+    }
+  } catch (err) {
+    throw sanitizeError(err)
   }
 
   const manifest = {}
@@ -879,11 +1143,14 @@ export default {
         }
 
         const entryPoint = meta.entryPoint
-        const cleanEntry = entryPoint.includes(':') ? entryPoint.split(':').pop() : entryPoint
+        const cleanEntry = entryPoint.startsWith(virtualPrefix)
+          ? entryPoint.slice(virtualPrefix.length)
+          : entryPoint
 
-        // STRIP THE EXTENSION (Fixes E2E Bootstrapper Timeout)
         let tagName = cleanEntry
-        if (!this.virtualModules.has(cleanEntry)) {
+        if (filePathToComponentId.has(cleanEntry)) {
+          tagName = filePathToComponentId.get(cleanEntry)
+        } else if (!this.virtualModules.has(cleanEntry)) {
           tagName = parse(cleanEntry).name
         }
 

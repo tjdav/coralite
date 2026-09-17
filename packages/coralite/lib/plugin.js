@@ -3,6 +3,7 @@
  */
 
 import { basename, dirname } from 'path'
+import { fileURLToPath } from 'node:url'
 import { CoraliteError } from './utils/errors.js'
 
 /**
@@ -113,24 +114,48 @@ function processComponents (path) {
  */
 export function definePlugin ({
   name,
+  rootDir,
+  filePath,
   server,
   client
 }) {
   validateNonEmptyString(name, 'name')
 
+  const selfFile = fileURLToPath(import.meta.url)
   let callerDir
-  if (client != null && client.rootDir == null) {
+  let callerFile
+  if ((client != null || server != null) && (!rootDir || !filePath || !client?.rootDir || !client?.filePath)) {
     const stack = new Error().stack
     if (stack) {
-      const callerLine = stack.split('\n')[2]
-      if (callerLine) {
-        const match = callerLine.match(/file:\/\/(.+?):/)
+      const lines = stack.split('\n')
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i]
+        if (!line) {
+          continue
+        }
+        const match = line.match(/(file:\/\/[^\s:)]+|(?:[a-zA-Z]:[\\\/]|\/)[^\s:)]+):(?:\d+)(?::\d+)?/)
         if (match) {
-          callerDir = dirname(match[1])
+          let candidate = match[1]
+          if (candidate.startsWith('file://')) {
+            candidate = fileURLToPath(candidate)
+          }
+          if (
+            candidate !== selfFile &&
+            !candidate.startsWith('node:') &&
+            !candidate.includes('/node_modules/') &&
+            !candidate.includes('\\node_modules\\')
+          ) {
+            callerFile = candidate
+            callerDir = dirname(candidate)
+            break
+          }
         }
       }
     }
   }
+
+  const resolvedRootDir = rootDir || client?.rootDir || callerDir
+  const resolvedFilePath = filePath || client?.filePath || callerFile
 
   // Validate server plugin if provided
   if (server != null) {
@@ -191,14 +216,17 @@ export function definePlugin ({
       )
     }
 
-    // append rootDir
-    client.rootDir = client.rootDir || callerDir
+    // append rootDir & filePath
+    client.rootDir = client.rootDir || resolvedRootDir
+    client.filePath = client.filePath || resolvedFilePath
     client.name = client.name || name
   }
 
   // Create the plugin object with all configured state
   return {
     name,
+    rootDir: resolvedRootDir,
+    filePath: resolvedFilePath,
     server,
     client
   }

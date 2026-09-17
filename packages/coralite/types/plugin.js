@@ -312,6 +312,8 @@
 /**
  * @typedef {Object} CoralitePlugin
  * @property {string} name - Unique identifier/name of the plugin
+ * @property {string} [rootDir] - Absolute path to the plugin root directory
+ * @property {string} [filePath] - Absolute path to the plugin source file
  * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
  */
@@ -319,6 +321,8 @@
 /**
  * @typedef {Object} CoralitePluginInstance
  * @property {string} name - Unique identifier/name of the plugin
+ * @property {string} [rootDir] - Absolute path to the plugin root directory
+ * @property {string} [filePath] - Absolute path to the plugin source file
  * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
  */

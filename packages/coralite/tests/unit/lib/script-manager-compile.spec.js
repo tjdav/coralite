@@ -285,6 +285,98 @@ describe('ScriptManager Compilation', () => {
 
       assert.ok(compiledRuntime.includes('plugin "with" quotes'), 'Escaped key should be in compiled runtime')
     })
+
+    it('Physical Source File Mapping in Esbuild Error Reporting: Component Errors', async () => {
+      const { resolve } = await import('node:path')
+      const dummyComponentFile = resolve(process.cwd(), 'src/components/chat/atoll-chat-view.html')
+      sm.registerComponent({
+        id: 'atoll-chat-view',
+        filePath: dummyComponentFile,
+        script: {
+          lineOffset: 5,
+          content: 'async () => { const { getParsedAvatar } = await import("../../utils/nonexistent-avatar.js"); }'
+        }
+      })
+
+      try {
+        await sm.compileComponents('production')
+        assert.fail('Compilation should have failed due to missing relative import')
+      } catch (err) {
+        assert.ok(err, 'An error should be thrown')
+        assert.ok(!err.message.includes('coralite-virtual:'), `Error message must not contain any virtual namespace prefix: ${err.message}`)
+        assert.ok(err.message.includes('atoll-chat-view.html'), `Error message should reference physical component file: ${err.message}`)
+
+        assert.ok(Array.isArray(err.errors) && err.errors.length > 0, 'Error errors array must not be empty')
+        const loc = err.errors[0].location
+        assert.ok(loc.file.includes('atoll-chat-view.html'), `Location file should reference physical component: ${loc.file}`)
+        assert.ok(loc.namespace === 'file' || loc.namespace === '', `Expected file namespace, got: ${loc.namespace}`)
+      }
+    })
+
+    it('Physical Source File Mapping in Esbuild Error Reporting: Plugin Errors', async () => {
+      const { resolve } = await import('node:path')
+      const dummyPluginFile = resolve(process.cwd(), 'src/plugins/biometric-plugin.js')
+      await sm.use({
+        name: 'biometric-plugin',
+        filePath: dummyPluginFile,
+        rootDir: resolve(process.cwd(), 'src/plugins'),
+        client: {
+          context: () => async () => {
+            const { adapter } = await import('./nonexistent-adapter.js')
+          }
+        }
+      })
+
+      try {
+        await sm.compileComponents('production')
+        assert.fail('Compilation should have failed due to missing relative import in plugin')
+      } catch (err) {
+        assert.ok(err, 'An error should be thrown')
+        assert.ok(!err.message.includes('coralite-virtual:'), `Error message must not contain any virtual namespace prefix: ${err.message}`)
+        assert.ok(err.message.includes('biometric-plugin.js'), `Error message should reference physical plugin file: ${err.message}`)
+
+        assert.ok(Array.isArray(err.errors) && err.errors.length > 0, 'Error errors array must not be empty')
+        const loc = err.errors[0].location
+        assert.ok(loc.file.includes('biometric-plugin.js'), `Location file should reference physical plugin file: ${loc.file}`)
+        assert.ok(loc.namespace === 'file' || loc.namespace === '', `Expected file namespace, got: ${loc.namespace}`)
+      }
+    })
+
+    it('Plugin resolveDir Precedence: resolves relative imports against filePath directory rather than rootDir', async () => {
+      const fs = await import('node:fs/promises')
+      const { tmpdir } = await import('node:os')
+      const { join } = await import('node:path')
+      const tmpDir = await fs.mkdtemp(join(tmpdir(), 'coralite-resolve-test-'))
+      try {
+        const rootDir = join(tmpDir, 'plugins')
+        const subDir = join(rootDir, 'sub')
+        await fs.mkdir(subDir, { recursive: true })
+        await fs.writeFile(join(subDir, 'helper.js'), 'export const val = 42;')
+        const pluginFile = join(subDir, 'plugin.js')
+
+        await sm.use({
+          name: 'resolve-dir-precedence-plugin',
+          filePath: pluginFile,
+          rootDir,
+          client: {
+            context: () => async () => {
+              const { val } = await import('./helper.js')
+              return { val }
+            }
+          }
+        })
+
+        sm.registerComponent({
+          id: 'resolve-test-comp',
+          script: { content: '() => {}' }
+        })
+
+        const res = await sm.compileComponents('production')
+        assert.ok(res, 'Compilation should succeed when relative import resolves against filePath directory')
+      } finally {
+        await fs.rm(tmpDir, { recursive: true, force: true })
+      }
+    })
   })
 
   describe('Async Helpers', () => {

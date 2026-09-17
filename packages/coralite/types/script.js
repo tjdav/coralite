@@ -59,6 +59,7 @@
  * @typedef {Object} ScriptPlugin
  * @property {string} [name] - The name of the plugin
  * @property {string} [rootDir] - The root directory of the plugin
+ * @property {string} [filePath] - The source file path of the plugin
  * @property {Object.<string, any>} [config] - Plugin configuration
  * @property {CoraliteClientPluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Called before component is rendered
  * @property {CoraliteClientPluginAfterComponentRenderCallback} [onAfterComponentRender] - Called after component is rendered
