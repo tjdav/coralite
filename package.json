@@ -54,7 +54,7 @@
     "typescript": "^5.9.3"
   },
   "engines": {
-    "node": ">=20.19.0"
+    "node": ">=22.0.0"
   },
   "simple-git-hooks": {
     "pre-commit": "pnpm exec tsc --noEmit && pnpm exec lint-staged --concurrent false"
