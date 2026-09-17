@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.0-rc.3
+
+> Comparing `coralite-scripts-v1.0.0-rc.2` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- implement concurrent page rendering in build pipeline (renderer) ([10e8b52](https://codeberg.org/tjdavid/coralite/commit/10e8b52eae93d1aed557bccd951ee929cf3caed8))
+
+### 🧹 Chores
+
+- update Node.js engine requirements across packages ([5c2c714](https://codeberg.org/tjdavid/coralite/commit/5c2c714ab11c7a6756ec0ab12a36291b9bf72b3c))
+- bump minimum required Node.js version to 22.0.0 (deps) ([d4405ad](https://codeberg.org/tjdavid/coralite/commit/d4405adadd20eff63c6a93b057a3eee3b075c79a))
+
+
 ## v1.0.0-rc.2
 
 > Comparing `coralite-scripts-v1.0.0-rc.1` to `HEAD`
