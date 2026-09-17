@@ -1,5 +1,27 @@
 # Changelog
 
+## v1.0.0-rc.3
+
+> Comparing `create-coralite-v1.0.0-rc.2` to `HEAD`
+
+**Summary:** 6 commits
+
+### 🐛 Bug Fixes
+
+- declare coralite devDependency in scaffolding templates (create-coralite) ([52f6725](https://codeberg.org/tjdavid/coralite/commit/52f6725c3c227faa889495d0047737ebfe919429))
+- invert isEmpty check and harden error handling (create-coralite) ([e30b88f](https://codeberg.org/tjdavid/coralite/commit/e30b88f623fe9b82efaa37cdb9a174dfd420de03))
+
+### 🧹 Chores
+
+- update Node.js engine requirements across packages ([5c2c714](https://codeberg.org/tjdavid/coralite/commit/5c2c714ab11c7a6756ec0ab12a36291b9bf72b3c))
+- bump minimum required Node.js version to 22.0.0 (deps) ([d4405ad](https://codeberg.org/tjdavid/coralite/commit/d4405adadd20eff63c6a93b057a3eee3b075c79a))
+
+### 🔨 Other Changes
+
+- release(coralite-scripts): version 1.0.0-rc.3 ([f00726f](https://codeberg.org/tjdavid/coralite/commit/f00726fd2c62a076b71c92553051559bcf66e70f))
+- release(coralite): version 1.0.0-rc.3 ([247d15d](https://codeberg.org/tjdavid/coralite/commit/247d15dbac37db6e9dcdf823b156b538e2b51fb9))
+
+
 ## v1.0.0-rc.2
 
 > Comparing `create-coralite-v1.0.0-rc.1` to `HEAD`
