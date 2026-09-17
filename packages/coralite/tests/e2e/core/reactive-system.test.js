@@ -97,14 +97,15 @@ test.describe('Reactive System - Observe Context & Side-effects', () => {
     // Give a short timeout for logs to flush
     await page.waitForTimeout(50)
 
-    const expectedWarning = 'State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.'
+    const warningFragment = 'State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead.'
+    const matchingWarnings = warnings.filter(w => w.includes(warningFragment))
 
     if (mode === 'development') {
-      expect(warnings).toContain(expectedWarning)
+      expect(matchingWarnings.length).toBeGreaterThan(0)
     } else if (mode === 'production') {
-      expect(warnings).not.toContain(expectedWarning)
+      expect(matchingWarnings.length).toBe(0)
     } else if (mode === 'testing') {
-      expect(warnings).toContain(expectedWarning)
+      expect(matchingWarnings.length).toBeGreaterThan(0)
     }
   })
 })

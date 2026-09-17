@@ -389,6 +389,37 @@ describe('CoraliteElement', () => {
     })
   })
 
+  it('should observe dynamic properties not defined in defaultValues', (t, done) => {
+    let observed = null
+    const dynamicTagName = 'dynamic-obs-comp-' + Math.random().toString(36).substring(2, 9)
+    const DynamicElement = createCoraliteClass({
+      componentId: 'dynamic-obs-comp',
+      defaultValues: {
+        score: 10
+      },
+      client: ({ state, observe }) => {
+        observe('dynamicProp', (newVal) => {
+          observed = newVal
+        })
+        queueMicrotask(() => {
+          state.dynamicProp = 'active'
+        })
+      }
+    })
+    customElements.define(dynamicTagName, DynamicElement)
+
+    const el = document.createElement(dynamicTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      queueMicrotask(() => {
+        assert.strictEqual(observed, 'active')
+        document.body.removeChild(el)
+        done()
+      })
+    })
+  })
+
   it('should inject observe function into client context and invoke callback on property changes', (t, done) => {
     let calledWith = []
     const observeTagName = 'observe-comp-' + Math.random().toString(36).substring(2, 9)

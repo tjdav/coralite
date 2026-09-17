@@ -3156,6 +3156,10 @@ export class CoraliteElement extends BaseElement {
     this._observerRecords.add(record)
     record.init()
 
+    if (record.dependencies.size === 0 && typeof key === 'string') {
+      this._updateObserverSubscriptions(record, new Set([key]))
+    }
+
     if (this._abortController && this._abortController.signal) {
       this._abortController.signal.addEventListener('abort', () => {
         if (this._observerRecords && this._observerRecords.has(record)) {
@@ -3483,12 +3487,21 @@ export class CoraliteElement extends BaseElement {
     if (this._slotObserver) {
       this._slotObserver.disconnect()
     }
-    this._slotObserver = new MutationObserver(() => {
+    this._slotObserver = new MutationObserver((mutations) => {
       this._reconcileLightDOM()
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          /** @type {any} */
+          const elNode = node
+          if (elNode && elNode.nodeType === 1 && typeof elNode._reconcileLightDOM === 'function') {
+            elNode._reconcileLightDOM()
+          }
+        }
+      }
     })
     this._slotObserver.observe(this, {
       childList: true,
-      subtree: false
+      subtree: true
     })
   }
 
@@ -3614,7 +3627,8 @@ export class CoraliteElement extends BaseElement {
     }
 
     const map = this.componentOptions?.hydrationMap
-    if (map?.slots && Array.isArray(map.slots)) {
+
+    if (map?.slots && Array.isArray(map.slots) && map.slots.length > 0) {
       /** @type {any[]} */
       const slots = []
       let allFound = true
