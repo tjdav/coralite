@@ -1,5 +1,76 @@
 # Changelog
 
+## v1.0.0-rc.3
+
+> Comparing `coralite-v1.0.0-rc.2` to `HEAD`
+
+**Summary:** 46 commits
+
+### ✨ Features
+
+- validate components by file name or directory ([7510a97](https://codeberg.org/tjdavid/coralite/commit/7510a973c8ef5180a793f27c9a82f1f573d5aaa7))
+- align verification scripts & AST validator with API contracts (validator) ([a721c19](https://codeberg.org/tjdavid/coralite/commit/a721c19751835e124835f3f773ad95aca068bb14))
+- SSR page-level fault isolation and component error boundaries ([bdade81](https://codeberg.org/tjdavid/coralite/commit/bdade813097eda6e425558231c2daf0c038ae3c9))
+- implement updateComplete render completion contract ([db19e06](https://codeberg.org/tjdavid/coralite/commit/db19e06227d445f6462032fa9926e5214d7917cf))
+- evolve Light DOM 2.0 slot layout inertia (styles) ([276720a](https://codeberg.org/tjdavid/coralite/commit/276720aa02adc18f49cd484fcf81d40ad7957b5d))
+- add Form-Associated Custom Elements (FACE) support (coralite) ([3bd54b0](https://codeberg.org/tjdavid/coralite/commit/3bd54b094ba4aae0959eb5e8df8ad0c7426a659a))
+- implement concurrent page rendering in build pipeline (renderer) ([10e8b52](https://codeberg.org/tjdavid/coralite/commit/10e8b52eae93d1aed557bccd951ee929cf3caed8))
+- complete server-client DOM and runtime parity (server) ([0469634](https://codeberg.org/tjdavid/coralite/commit/0469634ce8732224c17fca7499e42a5bb85a4426))
+- establish coralite/utils/server subpath and harden DOM prototype against pollution (utils) ([30fd614](https://codeberg.org/tjdavid/coralite/commit/30fd614100e2d558aeab2925dbca86670f1602f2))
+- enrich defineComponent with JSDoc generics and harden client module bundler imports (types) ([02c0602](https://codeberg.org/tjdavid/coralite/commit/02c0602459168dfe2e3905ed5217c1b94ffadd84))
+- achieve 100% W3C Context Protocol spec compliance (context) ([9d0fb67](https://codeberg.org/tjdavid/coralite/commit/9d0fb67658b7b8e63c3541a6c6aa5b98b205128f))
+- restrict DOM prototype patching to dev/test modes (client-runtime) ([1d7852b](https://codeberg.org/tjdavid/coralite/commit/1d7852bf14fac1b4a8bb8e147e7b57f0461aef55))
+- implement W3C Web Components Context Protocol (provide / consume) (core) ([7aaf297](https://codeberg.org/tjdavid/coralite/commit/7aaf2972a6b9b6994afe27b9c6ed1f3e68d23ddb))
+- add slots helper to client() and getters context ([ab75d0e](https://codeberg.org/tjdavid/coralite/commit/ab75d0e9592ddf7896ce3f4bf80534c8325b08d6))
+- expand getters context to include root and refs ([d67faec](https://codeberg.org/tjdavid/coralite/commit/d67faecd0287a45969d340a4bdb1e74f599433f6))
+- implement hybrid attribute reflection strategy and host property accessors (core) ([ba232db](https://codeberg.org/tjdavid/coralite/commit/ba232db53a0d4eb50ef6263844d66a7579b44393))
+
+### 🐛 Bug Fixes
+
+- dynamic key observation, and slot reconciliation (core) ([0740b4f](https://codeberg.org/tjdavid/coralite/commit/0740b4fe9b14858e188c7a32e36ff2c363b630c3))
+- map virtual modules to physical source files in esbuild error reporting (script-manager) ([c766a27](https://codeberg.org/tjdavid/coralite/commit/c766a27bff593c995f42714df667de6598e6156b))
+- calibrate benchmark harness integrity and regression gate (benchmarks) ([1167bd7](https://codeberg.org/tjdavid/coralite/commit/1167bd720355104f2b6cf24ff402ac3ce0a84d91))
+- prevent unbounded heap accumulation in outputFiles and SRI cache (renderer) ([90b8d64](https://codeberg.org/tjdavid/coralite/commit/90b8d6496eff592a00eddfb63b249edf2de6f139))
+- fix reconnection slot observers & reparenting lifecycle (coralite-element) ([069c5d7](https://codeberg.org/tjdavid/coralite/commit/069c5d739b08800876197a8e68c5d86f6540442a))
+- emit type declarations for coralite/utils/client subpath (coralite) ([f8724fa](https://codeberg.org/tjdavid/coralite/commit/f8724faa150fd854525f0029a67d9f4417628bb2))
+- harden server-client DOM parity and environment contracts (dom) ([1be3e6d](https://codeberg.org/tjdavid/coralite/commit/1be3e6d4f7935126a65f0dc4ceeea8a7ccebae87))
+- eliminate client double-transformation on computed slot hydration (slots) ([d03b7a5](https://codeberg.org/tjdavid/coralite/commit/d03b7a5ee641a9bcda8fa3fcad14468d2d1052b5))
+- harden observer reactivity loop protection (runtime) ([1e7c9da](https://codeberg.org/tjdavid/coralite/commit/1e7c9da553286be45162cf3903c6da90f6022590))
+- eliminate dead async getter dependency tracking in _createReactiveProxy and ObserverRecord (coralite) ([09d0df9](https://codeberg.org/tjdavid/coralite/commit/09d0df952110af1a6012135f4a5ed8406cdf89a0))
+- decouple shared render version locks (coralite-element) ([573bdd5](https://codeberg.org/tjdavid/coralite/commit/573bdd5b6351b4a4d7973853b8b7c6a5873b00fe))
+- preserve and format core ARIA state attributes (aria) ([0ef6720](https://codeberg.org/tjdavid/coralite/commit/0ef6720e2b7185443415504bf09c76475eee8524))
+- fix npmjs authentication and package publishing (release) ([e9db57a](https://codeberg.org/tjdavid/coralite/commit/e9db57a6e7fcd8c35f5cfca2fa57d7ed1670260d))
+
+### ⚡ Performance Improvements
+
+- replace per-render and per-slot Symbol versions with integer counters (runtime) ([92d6e82](https://codeberg.org/tjdavid/coralite/commit/92d6e82698eab32d99e5a39026556d86c553fb85))
+- memoize kebabToCamel and camelToKebab string conversions ([9d1f57d](https://codeberg.org/tjdavid/coralite/commit/9d1f57d1817419d9b6f63717fd1b0466e38644a7))
+- eliminate per-evaluation slots proxy and getter context allocations ([9f2c144](https://codeberg.org/tjdavid/coralite/commit/9f2c1449395d947e4a51c31ecb5e81062c5ce8f9))
+- precalculate template metadata and optimize DOM updates (hydration) ([a0b6510](https://codeberg.org/tjdavid/coralite/commit/a0b6510285f3053d77cc17eebf916ea31e10921e))
+
+### ♻️ Code Refactoring
+
+- canonicalize FACE context API to onForm* hooks & live getters (coralite) ([c3bfdb2](https://codeberg.org/tjdavid/coralite/commit/c3bfdb2c15cb7058c2ab0689760176eb48d21d29))
+- decompose createComponentDefinition into private helpers (coralite) ([01f06d7](https://codeberg.org/tjdavid/coralite/commit/01f06d7202a0b86395bdbf39a0d6817f476784e4))
+- deduplicate _createReactiveProxy internal machinery (runtime) ([d001a54](https://codeberg.org/tjdavid/coralite/commit/d001a5435dc82c237a11387e7c9341e00a429d14))
+- decompose validateComponentSource into modular passes (validator) ([ddc3d41](https://codeberg.org/tjdavid/coralite/commit/ddc3d41092103c19eca73233acdefa0d07d6bbf2))
+- dry context value accessors and deduplicate ref and kebab helpers (context) ([adf9684](https://codeberg.org/tjdavid/coralite/commit/adf968479ed38240a78a3fa5aaf8730878d712c1))
+- consolidate W3C Context Protocol helpers across SSR, script manager, and client runtime ([af517f3](https://codeberg.org/tjdavid/coralite/commit/af517f372141e4812b0b6502733aa2e83170cdaa))
+- dry isContextMap helper and harmonize hasProvideEntries (context) ([abb192b](https://codeberg.org/tjdavid/coralite/commit/abb192bf1ec4f7313e928a7e9d8b0bbdd8b54f00))
+- unify getters to single context argument ({ state, root, refs, signal }) (core) ([bb650b0](https://codeberg.org/tjdavid/coralite/commit/bb650b0521f28f7a6b753b93e5643023ec9a4cbc))
+
+### ✅ Tests
+
+- add comprehensive E2E test coverage and bundler alignment for W3C Context Protocol (context) ([692b861](https://codeberg.org/tjdavid/coralite/commit/692b861c15533032eade1d3cb11640b6d16e69f8))
+
+### 🧹 Chores
+
+- Make coralite.js executable ([f248b02](https://codeberg.org/tjdavid/coralite/commit/f248b024a893b728d4ec57f7632a4e8c813f53c3))
+- update Node.js engine requirements across packages ([5c2c714](https://codeberg.org/tjdavid/coralite/commit/5c2c714ab11c7a6756ec0ab12a36291b9bf72b3c))
+- bump minimum required Node.js version to 22.0.0 (deps) ([d4405ad](https://codeberg.org/tjdavid/coralite/commit/d4405adadd20eff63c6a93b057a3eee3b075c79a))
+- Update Coralite performance metrics and results (benchmarks) ([b98d612](https://codeberg.org/tjdavid/coralite/commit/b98d61249ec8b8d43b900c6fc3eb76cceccae8cf))
+
+
 ## v1.0.0-rc.2
 
 > Comparing `coralite-v1.0.0-rc.1` to `HEAD`
