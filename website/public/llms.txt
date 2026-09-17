@@ -1,7 +1,6 @@
 # Coralite v1.0.0-rc.2 — Machine-Readable LLM Developer Reference
 
-> **Metadata**: Coralite Framework v1.0.0-rc.2 | Node.js Floor: `>=22.22.2` (ESM native, `--experimental-vm-modules`, `--experimental-import-meta-resolve`)
-> **Canonical Source Notice**: `website/public/llms.txt` is the definitive single source of truth for Coralite LLM directives. It is packaged as `llms.txt` in the published `coralite` npm distribution (`packages/coralite/package.json`) and synchronized during release workflows.
+> **Metadata**: Coralite Framework v1.0.0-rc.2 | Node.js Floor: `>=22.22.2` (ESM native)
 
 ---
 
@@ -23,7 +22,7 @@
   - [§6.8 `onError` (SSR Component Error Boundaries)](#68-onerror-ssr-component-error-boundaries)
   - [§6.9 W3C Context Protocol (`provide`, `consume`, `createContext`)](#69-w3c-context-protocol-provide-consume-createcontext)
   - [§6.10 Form-Associated Custom Elements (`formAssociated: true`)](#610-form-associated-custom-elements-formassociated-true)
-  - [§6.11 CSS Scoping, Specificity Taming (`@layer`, `:where()`) & `:host`](#611-css-scoping-specificity-taming-layer-where-host)
+  - [§6.11 CSS Scoping, Specificity Taming (`@layer`, `:where()`), Slot Transparency & `::slotted()`](#611-css-scoping-specificity-taming-layer-where-slot-transparency-slotted)
 - [§7. Framework Extensibility (`definePlugin`)](#7-framework-extensibility-defineplugin)
   - [§7.1 Plugin Schema & Physical Source Error Mapping (`rootDir`, `filePath`)](#71-plugin-schema-physical-source-error-mapping-rootdir-filepath)
   - [§7.2 Context Resolver System (Static vs. Two-Phase Instance Context)](#72-context-resolver-system-static-vs-two-phase-instance-context)
@@ -42,7 +41,7 @@
 - [§17. Content Security Policy (CSP Level 2/3)](#17-content-security-policy-csp-level-23)
 - [§18. Page Auditing & Encapsulation](#18-page-auditing-encapsulation)
 - [§19. CLI & Tooling Ecosystem](#19-cli-tooling-ecosystem)
-- [§20. Performance Architecture & Benchmarking](#20-performance-architecture-benchmarking)
+- [§20. Application Performance Architecture & Optimization](#20-application-performance-architecture-optimization)
 
 ---
 
@@ -52,20 +51,26 @@ When generating code or providing instructions for Coralite applications, you MU
 
 1. **MUST use `defineComponent`**: Never generate vanilla Web Component classes (`class extends HTMLElement`) or call `customElements.define()` manually for components. Always export `defineComponent({ ... })` from `'coralite'`.
 2. **MUST author components in `.html`**: Component definitions are strictly HTML files (`.html`) containing `<template id="tag-name">`, optional `<style>`, and optional `<script type="module">`. Never create `.js` or `.jsx` component files.
-3. **MUST respect the Serialization Boundary**: The `server()` block runs strictly in Node.js during build/SSR and is stripped from browser client bundles. The `client()` block runs in the browser and cannot capture outer module-scope variables or imports from the server context. Bridge data from server to client through `server()` return values.
-4. **MUST obey the "Smart State, Dumb Template" rule**: Coralite templates strictly permit flat key interpolations (`{{ propertyName }}`). Never write expressions (`{{ a + b }}`), function calls (`{{ format(val) }}`), or negations (`{{ !isActive }}`) inside template curlies. All logic must be lifted to getters.
-5. **MUST use `refs()` or native DOM methods in `client()`**: Use `const el = refs('myRef')` or native DOM queries on `root` inside the `client()` lifecycle block. Never parse raw HTML strings with dangerous `innerHTML` hacks or bypass Coralite's ref system.
-6. **MUST write static plain-text `data-testid` attributes**: Author static test IDs (e.g., `<button data-testid="submit-btn">`). Never attempt dynamic bindings with template curlies (`data-testid="{{ ref_id }}"`). Coralite auto-prefixes test IDs during build.
-7. **MUST keep `style` getters synchronous**: Property getters in the `style` block `(state) => string | number | null | undefined | false` must be strictly synchronous.
-8. **MUST destructure getter unified context**: Getters receive a single unified context object `({ state, root, refs, slots, signal })`. You MUST destructure the parameters. Without destructuring, writing `(state) => state.prop` binds `state` to the context object itself, causing `state.prop` to evaluate to `undefined`.
-9. **SHOULD use Two-Phase resolvers for instance-dependent plugin context**: Use `(pluginContext) => (instanceContext) => ({ ... })` when plugin context depends on component instance state. Static context objects remain fully supported for global static utilities.
-10. **SHOULD configure explicit `rootDir` and `filePath` in plugins**: Providing `rootDir` and `filePath` in `definePlugin({ ... })` guarantees esbuild maps compiler diagnostics directly to physical source files on disk across monorepos, symlinks, and dynamic imports.
+3. **MUST respect the Serialization Boundary**: The `server()` block runs strictly in Node.js during build/SSR and is stripped from browser client bundles. The `client()` block runs in the browser and cannot capture outer module-scope variables or imports from the server context. Bridge data through `server()` return values.
+4. **MUST obey the "Smart State, Dumb Template" rule**: Coralite templates strictly permit flat identifier interpolations (`{{ propertyName }}`). Never write expressions (`{{ a + b }}`), function calls (`{{ format(val) }}`), or negations (`{{ !isActive }}`) inside template curlies. All logic must be lifted to getters.
+5. **NEVER use inline event handlers in templates (`CORALITE-E203`)**: Attributes like `onclick="..."` or `onsubmit="..."` in `<template>` violate CSP and trigger `CORALITE-E203`. All wiring must be done via `refs()` in `client()`.
+6. **MUST pass `{ signal }` to all event listeners**: The lifecycle `signal` in `client({ signal })` is aborted on element disconnection. Passing `{ signal }` to `addEventListener` (on `root`, `refs()`, `window`, `document`, or parent forms) guarantees automatic cleanup with zero memory leaks.
+7. **MUST use `emit()` instead of `root.dispatchEvent`**: `emit(name, detail, options)` automatically defaults to `{ bubbles: true, composed: true }`, essential for custom element boundary crossing.
+8. **NEVER write manual `Object.defineProperty(root, ...)`**: Coralite automatically synthesizes live camelCase getters/setters on the host element for all declared attributes. Setting `host.value = 'abc'` automatically updates reactive `state.value`.
+9. **NEVER mutate state inside `observe()` (`CORALITE-E302`)**: Mutating observed state inside its own observer causes infinite reactive loops and triggers diagnostic `CORALITE-E302`. `observe()` is strictly for external DOM synchronization or side-effects.
+10. **NEVER put test-specific attributes in `attributes` schema**: Schema pollution (`testId: String`, `bodyTestid: String`) leaks into public APIs and production bundles. Query via semantic roles, static `data-testid` in templates, or scoped host queries.
+11. **MUST write static plain-text `data-testid` attributes**: Author static test IDs (e.g., `<button data-testid="submit-btn">`). Never attempt dynamic bindings with template curlies (`data-testid="{{ ref_id }}"`). Coralite auto-prefixes test IDs during build.
+12. **MUST destructure getter unified context**: Getters receive a single unified context object `({ state, root, refs, slots, signal })`. You MUST destructure the parameters. Without destructuring, writing `(state) => state.prop` binds `state` to the context object itself, causing `state.prop` to evaluate to `undefined`.
+13. **MUST keep `style` getters synchronous**: Style property getters `(state) => ...` receive `state` directly (NOT a context object) and must be strictly synchronous.
+14. **MUST handle accessible names without empty labels**: Never render empty `<label for="...">`. Use dynamic templates or accessible name fallback chains (`computedAriaLabel`). Elements with `role="button"` or `role="tab"` must never contain nested interactive elements (`<button>`, `<a>`, `<input>`).
+15. **SHOULD use Two-Phase resolvers for instance-dependent plugin context**: Use `(pluginContext) => (instanceContext) => ({ ... })` when plugin context depends on component instance state.
+16. **SHOULD configure explicit `rootDir` and `filePath` in plugins**: Providing `rootDir` and `filePath: fileURLToPath(import.meta.url)` in `definePlugin({ ... })` guarantees esbuild maps compiler diagnostics directly to physical source files on disk.
 
 ---
 
 ## 1. The Golden Optimal App
 
-Copy-pasteable reference setup featuring a dynamic component, page consumer, and configuration file.
+Copy-pasteable reference setup featuring an interactive component, a Form-Associated Custom Element (FACE), a page consumer, and a production configuration file.
 
 ### `src/components/counter-card.html`
 ```html
@@ -107,6 +112,25 @@ Copy-pasteable reference setup featuring a dynamic component, page consumer, and
   .count-value {
     font-size: 1.5rem;
     font-weight: 700;
+    color: var(--counter-color, #3b82f6);
+  }
+
+  .actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  button {
+    cursor: pointer;
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    border: 1px solid #94a3b8;
+    background: #f1f5f9;
+  }
+
+  button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 </style>
 
@@ -119,7 +143,7 @@ Copy-pasteable reference setup featuring a dynamic component, page consumer, and
       min: { type: Number, default: 0 }
     },
 
-    server: async () => {
+    server({ state }) {
       return {
         count: 0
       }
@@ -131,7 +155,7 @@ Copy-pasteable reference setup featuring a dynamic component, page consumer, and
     },
 
     style: {
-      '--counter-color': ({ state }) => (state.count > 5 ? '#22c55e' : '#3b82f6')
+      '--counter-color': (state) => (state.count > 5 ? '#22c55e' : '#3b82f6')
     },
 
     onError({ error, state }) {
@@ -145,13 +169,13 @@ Copy-pasteable reference setup featuring a dynamic component, page consumer, and
       refs('decrementBtn').addEventListener('click', () => {
         if (state.count > state.min) {
           state.count -= state.step
-          emit('count-change', { count: state.count })
+          emit('change', { count: state.count })
         }
       }, { signal })
 
       refs('incrementBtn').addEventListener('click', () => {
         state.count += state.step
-        emit('count-change', { count: state.count })
+        emit('change', { count: state.count })
       }, { signal })
 
       observe('count', (newVal) => {
@@ -166,24 +190,169 @@ Copy-pasteable reference setup featuring a dynamic component, page consumer, and
 </script>
 ```
 
+### `src/components/custom-input.html`
+```html
+<template id="custom-input">
+  <div class="input-wrapper">
+    <label for="{{ ref_input }}"><slot></slot></label>
+    <input
+      id="{{ ref_input }}"
+      ref="input"
+      type="text"
+      name="{{ name }}"
+      value="{{ value }}"
+      disabled="{{ disabled }}"
+      placeholder="{{ placeholder }}"
+      aria-invalid="{{ hasError }}"
+    >
+  </div>
+</template>
+
+<style>
+  :host {
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #334155;
+  }
+
+  input {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+  }
+
+  input:focus {
+    outline: 2px solid #3b82f6;
+    outline-offset: 1px;
+  }
+
+  input:disabled {
+    background-color: #f1f5f9;
+    cursor: not-allowed;
+  }
+</style>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    formAssociated: true,
+
+    attributes: {
+      name: { type: String, default: '' },
+      value: { type: String, default: '' },
+      placeholder: { type: String, default: '' },
+      required: { type: Boolean, default: false },
+      disabled: { type: Boolean, default: false }
+    },
+
+    server({ state }) {
+      return {}
+    },
+
+    getters: {
+      hasError: ({ state }) => Boolean(state.required && !state.value)
+    },
+
+    client({ state, signal, refs, emit, observe, setFormValue, setValidity, onFormReset, onFormDisabled, onFormRestore }) {
+      const inputEl = refs('input')
+
+      // 1. Initial form synchronization
+      if (setFormValue) {
+        setFormValue(state.value)
+      }
+      if (setValidity) {
+        setValidity(
+          state.required && !state.value ? { valueMissing: true } : {},
+          state.required && !state.value ? 'This field is required.' : '',
+          inputEl
+        )
+      }
+
+      // 2. Reactive form synchronization on state change
+      observe('value', (val) => {
+        if (setFormValue) setFormValue(val)
+        if (setValidity) {
+          setValidity(
+            state.required && !val ? { valueMissing: true } : {},
+            state.required && !val ? 'This field is required.' : '',
+            inputEl
+          )
+        }
+      })
+
+      // 3. User input binding with lifecycle signal
+      inputEl.addEventListener('input', (e) => {
+        state.value = e.target.value
+        emit('change', { value: state.value })
+      }, { signal })
+
+      // 4. Comprehensive FACE lifecycle callbacks
+      if (onFormReset) {
+        onFormReset(() => {
+          state.value = ''
+          inputEl.value = ''
+        })
+      }
+
+      if (onFormDisabled) {
+        onFormDisabled((disabled) => {
+          state.disabled = disabled
+          inputEl.disabled = disabled
+        })
+      }
+
+      if (onFormRestore) {
+        onFormRestore((restoredValue) => {
+          state.value = restoredValue || ''
+          inputEl.value = state.value
+        })
+      }
+    }
+  })
+</script>
+```
+
 ### `src/pages/index.html`
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Coralite Optimal App</title>
 </head>
 <body>
   <main>
-    <h1>Counter Demo</h1>
+    <h1>Coralite Demo</h1>
+
+    <!-- Dynamic Counter Custom Element -->
     <counter-card step="2" min="0" data-testid="active-counter">
       <span slot="label">Active Counter (Step 2)</span>
     </counter-card>
 
-    <counter-card noHydration step="1">
+    <!-- Static SSR-rendered Counter (kebab-case no-hydration strips client scripts) -->
+    <counter-card no-hydration step="1">
       <span slot="label">Static Rendered Counter</span>
     </counter-card>
+
+    <!-- Native Form with Form-Associated Custom Element -->
+    <form id="profile-form">
+      <custom-input name="username" required>Username</custom-input>
+      <button type="submit">Submit Profile</button>
+    </form>
   </main>
 </body>
 </html>
@@ -309,7 +478,7 @@ export default defineComponent({
   getters?: Record<string, (context: CoraliteGetterContext) => any>,
   style?: Record<string, ((state: any) => string | number | null | undefined | false) | string | number>,
   client?: (context: CoraliteClientContext) => void | Promise<void>,
-  slots?: Record<string, (nodes: Node[], context: CoraliteSlotContext) => any>,
+  slots?: Record<string, CoraliteComputedSlotFunction | CoraliteModuleSlotFunction>,
   provide?: Record<string | symbol, any> | Map<any, any>,
   consume?: string[] | Record<string, any>,
   formAssociated?: boolean,
@@ -317,28 +486,39 @@ export default defineComponent({
 })
 ```
 
+- Note: `slots` supports both single-argument computed slot functions `(context: CoraliteSlotContext) => any` and two-argument node transform functions `(nodes: Node[], context: CoraliteSlotContext) => any`.
+
 ### 6.2 `attributes` (Coercion Pipeline, Validation & ARIA Rules)
 
 Attributes declare, coerce, and validate host HTML attributes into reactive component state.
 
-#### Allowed Types & Syntax
+#### Automatic Host Property Accessors
+Every attribute declared in `attributes` automatically synthesizes live camelCase getters/setters on the host element (`host.value = 'abc'` automatically updates reactive `state.value`). Never define manual accessors with `Object.defineProperty(root, ...)`.
+
+#### Allowed Types & Reflection Semantics
 - **Allowed Constructors**: `String`, `Number`, `Boolean`.
 - **Blocked Constructors**: `Array` and `Object` constructors throw a `CoraliteError`. Use `server()` or contexts for complex objects.
+- **Reflection**:
+  - `Boolean` reflects presence automatically (`attr=""` when truthy, removed when falsy).
+  - `String` and `Number` do NOT reflect by default; specify `reflect: true` to reflect attribute changes back to the host element.
+- **43 Native Boolean Attributes**: Single-token bindings (`disabled="{{ isDisabled }}"`, `open="{{ isOpen }}"`, `hidden="{{ isHidden }}"`) automatically evaluate truthiness against native HTML boolean attributes (rendered as `attr=""` if truthy, removed completely if falsy).
 - **Shorthands**:
   - `isChecked: Boolean`
   - `status: ['active', 'inactive', 'pending']` (short for string enum values)
 - **Full Schema**:
-  ```javascript
-  attributes: {
-    count: {
-      type: Number,
-      default: 0,
-      required: false,
-      transform: (val) => Math.max(0, val),
-      validate: (val) => (val >= 0 ? true : 'Count must be non-negative')
-    }
+
+```javascript
+attributes: {
+  count: {
+    type: Number,
+    default: 0,
+    required: false,
+    reflect: true,
+    transform: (val) => Math.max(0, val),
+    validate: (val) => (val >= 0 ? true : 'Count must be non-negative')
   }
-  ```
+}
+```
 
 #### The 6-Step Attribute Execution Lifecycle Pipeline
 1. **`required` Check**: Missing required attributes throw `CoraliteError`. `required: true` cannot be combined with `default`.
@@ -356,25 +536,30 @@ Attributes declare, coerce, and validate host HTML attributes into reactive comp
 
 Executed exclusively on the server during SSR. Returns an object merged into component state.
 
+#### Verbatim TypeScript Type Signature (`CoraliteServerContext`)
 ```typescript
 type CoraliteServerContext<TState = Record<string, any>> = {
   state: TState,
-  page?: CoralitePage,
   root?: HTMLElement | null,
-  module?: CoraliteModuleDefinitions,
-  id?: string,
   session?: CoraliteSession,
-  app?: any,
-  noHydration?: boolean,
+  page?: CoralitePage,
   signal?: AbortSignal,
   slots?: Record<string, any>,
   refs?: (id: string) => any
 }
 ```
 
+#### Runtime Context Extensions
+At runtime during SSR, the context object passed to `server()` is intersected with `& TState & Record<string, any>` and augmented with engine runtime properties:
+- `id`: Unique instance identifier string.
+- `module`: Module definition object.
+- `app`: Application instance.
+- `noHydration`: Boolean indicating if hydration is stripped.
+- Injected server plugin context properties.
+
 ### 6.4 `getters` (Unified Context Mechanics)
 
-Isomorphic derived state computed from state and element context.
+Isomorphic derived state computed synchronously from state and element context. Getters must be pure functions without side-effects, state mutations, or event dispatching.
 
 #### Verbatim TypeScript Type Signature (`CoraliteGetterContext`)
 ```typescript
@@ -397,18 +582,22 @@ getters: {
   // CORRECT: Destructured context
   fullName: ({ state }) => `${state.firstName} ${state.lastName}`,
   hasIcon: ({ slots }) => slots.has('icon'),
+  iconCount: ({ slots }) => slots.count('icon'),
   inputLength: ({ refs }) => refs('field')?.value.length ?? 0
 }
 ```
 
 ### 6.5 `style` (Synchronous Reactive Host Styles & CSS Vars)
 
-Maps CSS properties and CSS variables (`--*`) to static values or synchronous getter functions `(state) => string | number | null | undefined | false`.
+Maps CSS properties and CSS custom properties (`--*`) to static values or synchronous getter functions `(state: TState) => string | number | null | undefined | false`.
+
+**Important**: Style functions receive `(state)` directly as their first argument, NOT a context object.
 
 ```javascript
 style: {
   display: (state) => (state.hidden ? 'none' : 'block'),
   '--theme-accent': (state) => state.color,
+  '--counter-color': (state) => (state.count > 5 ? '#22c55e' : '#3b82f6'),
   opacity: (state) => state.opacity // numeric 0 is preserved as valid CSS
 }
 ```
@@ -448,8 +637,9 @@ type CoraliteClientContext<TState = Record<string, any>> = {
 ```
 
 - **`updateComplete`**: Resolves when current reactive update cycles settle. Returns `Promise.resolve(true)` immediately when idle.
-- **`observe(key, cb)`**: Registers explicit state change listener returning a disposer function. Automatically cleaned up when disconnected.
+- **`observe(key, cb)`**: Registers explicit state change listener returning a disposer function. Automatically cleaned up when disconnected. Never mutate observed state inside `observe()`.
 - **`emit(name, detail?, options?)`**: Dispatches a bubbling, composed `CustomEvent` from `root`.
+- **`signal`**: AbortSignal aborted on element disconnection. Always pass `{ signal }` to `addEventListener`.
 
 ### 6.7 `slots` (Reactive Element Builders)
 
@@ -462,7 +652,12 @@ type CoraliteSlotBuilderContext<TState = Record<string, any>> = {
   state: TState,
   root: HTMLElement | null,
   refs: (id: string) => HTMLElement | null,
-  signal: AbortSignal
+  signal: AbortSignal,
+  observe: (key: string, callback: (val: any) => void) => () => void,
+  instanceId: string,
+  isServer: boolean,
+  isClient: boolean,
+  slots: Record<string, any>
 }
 ```
 
@@ -496,19 +691,23 @@ onError({ error, state, element, page, root }) {
 
 Aligns with the standard W3C Web ComponentsCG Context Protocol for tree-based dependency injection.
 
-```javascript
+// Ancestor Provider Component (provider-card.html)
 import { defineComponent, createContext } from 'coralite'
 
 export const themeContext = createContext('theme')
 
-// Ancestor Provider Component
 export default defineComponent({
   provide: {
     [themeContext]: ({ state }) => state.theme
   }
 })
+```
 
-// Descendant Consumer Component
+```javascript
+// Descendant Consumer Component (consumer-badge.html)
+import { defineComponent } from 'coralite'
+import { themeContext } from './theme.js'
+
 export default defineComponent({
   consume: {
     currentTheme: themeContext
@@ -533,7 +732,15 @@ export default defineComponent({
       validate: (val) => (val.length >= 3 ? true : 'Minimum 3 characters required')
     }
   },
-  client: ({ state, setFormValue, onFormReset }) => {
+  client: ({ state, signal, refs, setFormValue, setValidity, onFormReset, observe }) => {
+    const input = refs('input')
+    setFormValue(state.value)
+
+    observe('value', (val) => {
+      setFormValue(val)
+      setValidity(val ? {} : { valueMissing: true }, val ? '' : 'Required', input)
+    })
+
     onFormReset(() => {
       state.value = ''
     })
@@ -541,11 +748,13 @@ export default defineComponent({
 })
 ```
 
-### 6.11 CSS Scoping, Specificity Taming (`@layer`, `:where()`) & `:host`
+### 6.11 CSS Scoping, Specificity Taming (`@layer`, `:where()`), Slot Transparency & `::slotted()`
 
+- **Light DOM Architecture**: Coralite components render in Light DOM, not Shadow DOM. Encapsulation is achieved via CSS Scoping, PostCSS processing, and `@layer components`.
 - **Cascade Layer**: Component CSS is wrapped inside `@layer components`. Unlayered utility classes override component styles naturally.
-- **Host Styling**: Use `:host` or `:host-context(.dark)` to style the host element. Host selectors are wrapped in `:where(tag-name)` to add zero specificity.
-- **Internal Selectors**: Selectors targeting internal elements (`.btn`, `h2`) do NOT require `:host`. They are automatically scoped.
+- **Host Styling**: Use `:host` or `:host-context(.dark)` to style the host element. Host selectors are wrapped in `:where(tag-name)` to add zero specificity. Writing `:host .child` is redundant; write `.child` directly.
+- **Slot Layout Transparency (`display: contents`)**: Coralite injects `slot, c-token { display: contents; }` outside `@layer components`, allowing projected slotted children to participate directly in parent Flexbox/Grid layouts without extra box wrapping.
+- **`::slotted(selector)` Transformation**: Coralite's compiler transforms `::slotted(selector)` into Light DOM scoped selectors (`& > slot > selector` and `& > selector[slot]`).
 
 ---
 
@@ -557,11 +766,12 @@ Plugins extend Coralite across server build pipelines and browser client runtime
 
 ```javascript
 import { definePlugin } from 'coralite'
+import { fileURLToPath } from 'node:url'
 
 export default definePlugin({
   name: 'analytics-plugin',
   rootDir: process.cwd(),
-  filePath: import.meta.url,
+  filePath: fileURLToPath(import.meta.url),
 
   server: {
     context: (pluginContext) => (instanceContext) => ({
@@ -580,7 +790,7 @@ export default definePlugin({
 
 #### Physical Path Resolution Precedence
 esbuild error mapping resolves plugin paths using precedence:
-1. Explicit `rootDir` and `filePath` options.
+1. Explicit `rootDir` and `filePath` options (must be filesystem path, e.g. via `fileURLToPath`).
 2. `client.rootDir` and `client.filePath` properties.
 3. Caller stack-derived file paths (skipping Node internals and `node_modules`).
 
@@ -674,9 +884,9 @@ export default defineConfig({
 ## 11. Automated Testing & E2E
 
 ### Testing Mode Target (`mode: 'testing'`)
-- Disables CSS animations and smooth scrolling.
-- Generates static build output with testing telemetry intact.
-- Rebuilds cache when `testing.mocks` configuration changes.
+- **Velocity Engine**: Coralite's testing plugin automatically suppresses animations, transitions, and smooth scrolling (`*, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }`) to guarantee instantaneous test execution and deterministic visual snapshots.
+- **Three-Tier Prototype Patching**: In `development` and `testing` modes, Coralite patches `Element.prototype.innerHTML`, `outerHTML`, and `document.createElement` to automatically import chunks and upgrade custom elements injected via test fixtures (`mountComponent`) or DevTools console. In production builds, zero prototype patching code is emitted.
+- **Settlement**: Wait on `await el.updateComplete` before assertions to ensure all reactive renders and observers have completely settled.
 
 ### Selector Strategy & `data-testid` Rules
 - **Rule**: Write static plain-text `data-testid` attributes (e.g. `<button data-testid="submit-btn">`).
@@ -704,8 +914,19 @@ Wrap inputs in `<label>` elements and generate unique `id` and `for` attributes 
 </template>
 ```
 
-### FormData Aggregation
-Listen for `change` events on parent `<form>` elements and aggregate values using `new FormData(form)`.
+### Accessibility & Keyboard Navigation Best Practices
+- **Accessible Names**: Never render an empty `<label for="...">`. If label text is optional, compute label markup dynamically or provide an accessible name fallback:
+
+```javascript
+getters: {
+  computedAriaLabel: ({ state }) => {
+    if (state.label) return null
+    return state.ariaLabel || state.placeholder || 'Default Label'
+  }
+}
+```
+- **No Nested Interactive Elements**: Custom elements with `role="button"` or `role="tab"` must never contain interactive children (`<button>`, `<a href>`, `<input>`).
+- **Keyboard Handling**: Custom buttons must support `tabindex="0"` (or `-1` when disabled) and listen for `keydown` events handling `Enter` and `Space` with `event.preventDefault()`.
 
 ---
 
@@ -732,17 +953,45 @@ Coralite maintains structured collections `app.pages` and `app.components`.
 Audit component files using `coralite validate-components`:
 
 ```bash
-node bin/coralite.js validate-components -c src/components --coverage --strict
+npx coralite validate-components -c src/components --coverage --strict
 ```
 
-### Key Diagnostic Rules
-- `CORALITE-E101`: Non-primitive Array/Object constructor in attribute schema.
-- `CORALITE-E102`: Mutex violation (`required: true` combined with `default`).
-- `CORALITE-E103`: Asynchronous `transform` or `validate` function.
-- `CORALITE-E201`: Multi-line or non-identifier template expression. (Auto-fixer lifts to getter).
-- `CORALITE-E202`: Missing `ref` declaration referenced by `refs('name')`. (Auto-fixer injects `ref`).
-- `CORALITE-E301`: Outer static import referenced in `client()`. (Auto-fixer rewrites to dynamic `await import(...)`).
-- `CORALITE-W401`: Unused getter, server property, or attribute.
+### Diagnostic Severity Model
+Diagnostics emitted by the AST validator follow a three-level severity model:
+- `error`: Fatal syntax, schema, or reactivity rule violation. Fails validation.
+- `warning`: Unused symbols, dead CSS, or redundant checks.
+- `info`: Informational suggestion.
+
+### Rule Categories & Verified Diagnostic Codes
+- **Attribute Schema**:
+  - `CORALITE-E101`: Non-primitive `Array` or `Object` constructor in attribute schema.
+  - `CORALITE-E102`: Mutex violation (`required: true` combined with `default`).
+  - `CORALITE-E103`: Asynchronous `transform` or `validate` function.
+  - `CORALITE-E104`: Attribute name collides with reserved context or slot key.
+  - `CORALITE-E105`: Getter context parameter misuse (non-destructured `(state) => ...`).
+  - `CORALITE-E106`: Invalid `provide` or `consume` configuration schema.
+- **Template Syntax**:
+  - `CORALITE-E201`: Complex, arithmetic, or non-identifier template expression (e.g. `{{ a + b }}`). (Auto-fixer lifts expression to derived getter).
+  - `CORALITE-E202`: Missing `ref` declaration referenced by `refs('name')`. (Auto-fixer injects `ref` on matching element).
+  - `CORALITE-E203`: Inline event listener attribute (`onclick`, `onsubmit`) in `<template>`.
+  - `CORALITE-W204`: Redundant existence check on template ref (e.g. `if (btn)`).
+- **Client & Reactivity Boundaries**:
+  - `CORALITE-E301`: Outer static module import referenced in `client()`. (Auto-fixer rewrites to dynamic `await import(...)`).
+  - `CORALITE-E302`: Reactive state mutation detected inside `observe()` callback.
+  - `CORALITE-E303`: Asynchronous getter function in `style` block.
+- **Dead Code & Coverage**:
+  - `CORALITE-W401`: Unused getter, server property, or declared attribute.
+  - `CORALITE-W402`: Dead CSS selectors or unused element `ref="..."` declaration.
+
+### CLI Flags & Pragmas
+- **CLI Options**:
+  - `--strict`: Treats warnings as errors (exits with code 1 on warnings).
+  - `--coverage`: Calculates component symbol usage coverage percentage.
+  - `--fix`: Automatically applies AST remediations (e.g., lifting template expressions to getters).
+  - `--dry-run`: Previews auto-fixes without writing changes to disk.
+- **Ignore Pragmas**:
+  - `<!-- coralite-ignore symbol1, symbol2 -->` / `/* coralite-ignore symbol1 */`: Ignores unused warnings for specific symbols.
+  - `coralite-ignore-unused` / `@coralite-ignore-unused`: Suppresses all unused symbol warnings for the entire component.
 
 ---
 
@@ -803,23 +1052,41 @@ Audit page files using `coralite validate-pages` (or `coralite check --pages`):
 
 ---
 
-## 20. Performance Architecture & Benchmarking
+## 20. Application Performance Architecture & Optimization
 
-Coralite benchmark suites are maintained under `benchmarks/` and executed via `benchmarks/runner.js`.
+When building applications with Coralite, follow these architectural principles to achieve optimal runtime speed, minimal bundle sizes, and rapid time-to-interactive (TTI):
 
-### The 5 Benchmark Suites
-1. **`01-dom-reactivity`** (`dom-reactivity`, `dom`): Measures DOM mutation throughput and CDP heap usage.
-2. **`02-bundle-hydration`** (`bundle-hydration`, `bundle`, `hydration`): Measures JS payload sizes (raw & gzip KB), hydration duration, and TTI across Coralite, React 19, and Vue 3.
-3. **`03-ssr-throughput`** (`ssr-throughput`, `ssr`): Measures pages/sec throughput across 100, 1,000, and 10,000 page workloads.
-4. **`04-internal`** (`internal`): Micro-benchmarks for token interpolation, lazy proxies, and AST creation using `mitata`.
-5. **`05-stress-lifecycle`** (`stress-lifecycle`, `stress`, `lifecycle`): Measures rapid component attach/detach/reparent lifecycle stress performance.
+### 20.1 Zero-JS Static Components
+Components without a `<script type="module">` block or `client` lifecycle function emit **0 bytes of client JavaScript**. The template is evaluated entirely during SSR, and only the resulting HTML markup and scoped CSS are delivered to the browser. Whenever an element only requires data interpolation or layout presentation (such as cards, headers, badges, footers, and article wrappers), author it as a static component.
 
-### Official Commands & Runner Flags
-```bash
-pnpm bench                      # Run full benchmark suite
-pnpm bench:ci                   # Run CI regression checks
-pnpm bench:save-baseline        # Save current benchmark results as baseline
+### 20.2 Selective Hydration via `no-hydration`
+If an interactive component is placed on a page where its client-side interactivity is unnecessary (e.g. read-only previews, landing page showcases, or print views), add the kebab-case `no-hydration` attribute to the host element:
+
+```html
+<counter-card no-hydration step="1">
+  <span slot="label">Static Counter</span>
+</counter-card>
 ```
 
-- **CLI Flags**: `--suite=<name>` (`-s`), `--json`, `--save-baseline`, `--check-regression`, `--warn-only`, `--iterations=<n>`, `--rows=<n>`.
-- Raw benchmark results are recorded in `benchmarks/results/latest.json` and documented in `BENCHMARKS.md`.
+The Coralite compiler strips client hydration scripts and state hydration markers for that element instance, eliminating browser parsing and execution overhead.
+
+### 20.3 Lean `client()` Lifecycle
+Keep the browser `client()` function minimal and focused strictly on DOM event listeners, external API wiring, and DOM side-effects.
+- Push state transformations into isomorphic `getters` rather than calculating inside `client()`.
+- Use synchronous CSS variables and style getters in the `style` block to drive visual state changes via CSS rather than mutating element classes or styles imperatively in JavaScript.
+
+### 20.4 Synchronous `getters` vs. Imperative `observe()`
+- **Use `getters` for derived state**: Getters are pure, cached, and automatically re-evaluated during render cycles without manual bookkeeping.
+- **Reserve `observe()` for external side-effects**: Only use `observe(propertyName, callback)` when synchronizing with external non-reactive subsystems (e.g. canvas rendering, WebGL, third-party chart libraries, imperative scrolling, or native form integration).
+- **Never mutate state inside `observe()`**: Doing so triggers reactive cascades and diagnostic `CORALITE-E302`.
+
+### 20.5 Coalesced Updates & Settlement via `updateComplete`
+Coralite automatically batches reactive state mutations within a microtask cycle. Avoid dispatching rapid DOM queries or measuring layouts immediately after mutating state. Instead, await the `updateComplete` promise:
+
+```javascript
+state.count += 1
+await updateComplete
+// DOM is guaranteed to be updated and settled
+```
+
+Never rely on arbitrary `setTimeout` or `requestAnimationFrame` for DOM synchronization.
