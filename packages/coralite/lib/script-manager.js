@@ -513,11 +513,13 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
 
 
       const templateHTML = serialize(cleanedAST ? render(cleanedAST, { decodeEntities: false }) : '')
-      const templateValues = serialize(cleanValues(sharedFn.templateValues, nodeMap) || {
-        attributes: [],
-        textNodes: [],
-        refs: []
-      })
+      const templateValues = mode === 'production'
+        ? 'null'
+        : serialize(cleanValues(sharedFn.templateValues, nodeMap) || {
+          attributes: [],
+          textNodes: [],
+          refs: []
+        })
       const styles = JSON.stringify(sharedFn.styles || '')
 
       let normalizedDefaults = sharedFn.defaultValues || {}

@@ -1,9 +1,9 @@
-import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue } from './utils/core.js'
+import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue, parseTemplateSegments, classifyAttribute } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
 import { CoraliteError } from './utils/errors.js'
-import { BOOLEAN_ATTRIBUTES, isAriaAttribute, isAriaBooleanState, resolveAriaBooleanState } from './utils/tags.js'
+import { resolveAriaBooleanState } from './utils/tags.js'
 import {
   RESERVED_DOM_ATTRIBUTES,
   RESERVED_PROPERTY_BLACKLIST,
@@ -152,6 +152,21 @@ const MAX_REACTIVE_CASCADE_DEPTH = 50
 const MAX_FLUSHES_PER_WINDOW = 100
 const FLUSH_WINDOW_MS = 1000
 
+/**
+ * O(1) liveness check for a DOM node.
+ * @param {Node|null} node - The DOM node to check.
+ * @returns {boolean}
+ */
+function isNodeConnected (node) {
+  if (!node) {
+    return false
+  }
+  if (typeof node.isConnected === 'boolean') {
+    return node.isConnected
+  }
+  return typeof document !== 'undefined' && document.body ? document.body.contains(node) : false
+}
+
 /** @type {typeof HTMLElement} */
 const BaseElement = typeof HTMLElement !== 'undefined' ? HTMLElement : FallbackElement
 
@@ -218,11 +233,92 @@ export class CoraliteElement extends BaseElement {
     this._state = null
 
     /**
+     * Instance-cached read-only view of `_state`. Created lazily by
+     * `_getReadOnlyState()` so that repeated getter/style/context evaluations
+     * do not re-allocate a handler closure, `Proxy` and `WeakMap` per call.
+     * @type {Object|null}
+     * @protected
+     */
+    this._roState = null
+
+    /**
+     * Stable dependency tracker for reactive `style` getters. Created once and
+     * reused across evaluations; it writes into `_styleDeps` live so the
+     * dependency-gated render path stays accurate without per-render
+     * tracker/proxy allocation.
+     * @type {{ activeCollector: (prop: string) => void }|null}
+     * @protected
+     */
+    this._styleTracker = null
+
+    /**
+     * Instance-cached tracked read-only view of `_state` used by reactive
+     * `style` getters. Shares the stable `_styleTracker`, so repeated style
+     * evaluations allocate nothing.
+     * @type {Object|null}
+     * @protected
+     */
+    this._roStateStyle = null
+
+    /**
+     * Per-component-getter caches for tracked read-only proxies, keyed by the
+     * derived state key. Each entry is `{ proxies: WeakMap, roState: Object }`.
+     * @type {Map<string, {proxies: WeakMap, roState: Object}>|null}
+     * @protected
+     */
+    this._roStateTracked = null
+
+    /**
+     * State keys the reactive `style` getters read, collected on the first style
+     * evaluation so later render passes can skip evaluation when none changed.
+     * @type {Set<string>|null}
+     * @protected
+     */
+    this._styleDeps = null
+
+    /**
+     * Raw changed state keys accumulated by `_markKeysDirty` between style
+     * evaluations. Consumed (and cleared) by `_applyStyles`.
+     * @type {Set<string>|null}
+     * @protected
+     */
+    this._changedStateKeys = null
+
+    /**
+     * Whether reactive styles have been applied at least once successfully.
+     * @type {boolean}
+     * @protected
+     */
+    this._stylesEvaluated = false
+
+    /**
+     * Unique template token keys across all bindings, pre-computed in
+     * `_setupBindings` (static for the lifetime of the binding set).
+     * @type {string[]}
+     * @protected
+     */
+    this._requiredTokens = []
+
+    /**
      * The collection of DOM nodes mapped to template tokens and attributes.
-     * @type {Array<{type: string, node: Node, path?: number[], template?: string, name?: string, tokens?: string[], isSingleToken?: boolean, singleTokenKey?: string}>}
+     * @type {Array<{type: string, node: Node, path?: number[], template?: string, name?: string, tokens?: string[], isSingleToken?: boolean, singleTokenKey?: string, segments?: Array<[number, string]> | null, attrKind?: number}>}
      * @protected
      */
     this._bindings = []
+
+    /**
+     * Cached own slots resolved from hydrationMap.slots or querySelector.
+     * @type {CoraliteSlotElement[]|null}
+     * @private
+     */
+    this._cachedOwnSlots = null
+
+    /**
+     * Inverted token-to-binding-indices map from hydration map.
+     * @type {Record<string, number[]>|null}
+     * @private
+     */
+    this._tokenBindings = null
 
     /**
      * Flag to prevent multiple synchronous state mutations from triggering multiple DOM paints.
@@ -1086,6 +1182,21 @@ export class CoraliteElement extends BaseElement {
       this._getterDeps = null
     }
 
+    if (this._roStateTracked) {
+      this._roStateTracked.clear()
+      this._roStateTracked = null
+    }
+    this._roState = null
+    this._styleTracker = null
+    this._roStateStyle = null
+    this._styleDeps = null
+    this._changedStateKeys = null
+    this._stylesEvaluated = false
+    this._requiredTokens = []
+    this._evaluatedTokens = {}
+    this._cachedOwnSlots = null
+    this._tokenBindings = null
+
     if (this._formResetCallbacks) {
       this._formResetCallbacks.clear()
     }
@@ -1412,7 +1523,7 @@ export class CoraliteElement extends BaseElement {
               }
             }
           }
-          const roState = createReadOnlyProxy(this._state, new WeakMap(), tracker)
+          const roState = this._getTrackedReadOnlyState(key, tracker)
           const context = {
             state: roState,
             root: this,
@@ -1504,7 +1615,7 @@ export class CoraliteElement extends BaseElement {
             const prevCollector = this._collectingDependencies
             this._collectingDependencies = deps
             try {
-              const roState = createReadOnlyProxy(this._state)
+              const roState = this._getReadOnlyState()
               const context = {
                 state: roState,
                 root: this,
@@ -1975,7 +2086,7 @@ export class CoraliteElement extends BaseElement {
                   }
                 }
               }
-              const roState = createReadOnlyProxy(self._state, new WeakMap(), tracker)
+              const roState = self._getTrackedReadOnlyState(getterKey, tracker)
               const getterContext = {
                 state: roState,
                 root: self,
@@ -2295,61 +2406,74 @@ export class CoraliteElement extends BaseElement {
    */
   _setupBindings () {
     this._bindings = []
+    this._requiredTokens = []
+    this._evaluatedTokens = {}
+    this._cachedOwnSlots = null
+
     const map = this.componentOptions.hydrationMap
     if (!map) {
       return
     }
 
-    const extractTokens = (template) => {
-      const tokens = []
-      template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
-        tokens.push(key)
-        return ''
-      })
-      const trimmed = template.trim()
-      const isSingleToken = tokens.length === 1 && (trimmed === `{{${tokens[0]}}}` || trimmed === `{{ ${tokens[0]} }}`)
-      return {
-        tokens,
-        isSingleToken,
-        singleTokenKey: tokens[0]
-      }
-    }
+    this._tokenBindings = map.tokenBindings || null
 
     if (map.texts) {
-      for (const item of map.texts) {
+      for (let i = 0; i < map.texts.length; i++) {
+        const item = map.texts[i]
         const node = this.getNodeByPath(item.path)
         if (node) {
-          const { tokens, isSingleToken, singleTokenKey } = extractTokens(item.template)
+          const parsed = item.tokens !== undefined ? item : parseTemplateSegments(item.template)
           this._bindings.push({
             type: item.type || 'text',
             node,
             path: item.path,
             template: item.template,
-            tokens,
-            isSingleToken,
-            singleTokenKey
+            tokens: parsed.tokens,
+            isSingleToken: parsed.isSingleToken,
+            singleTokenKey: parsed.singleTokenKey,
+            segments: parsed.segments
           })
         }
       }
     }
 
     if (map.attributes) {
-      for (const item of map.attributes) {
+      for (let i = 0; i < map.attributes.length; i++) {
+        const item = map.attributes[i]
         const node = this.getNodeByPath(item.path)
         if (node) {
-          const { tokens, isSingleToken, singleTokenKey } = extractTokens(item.template)
+          const parsed = item.tokens !== undefined ? item : parseTemplateSegments(item.template)
+          const attrKind = item.attrKind !== undefined ? item.attrKind : classifyAttribute(item.name, parsed.isSingleToken)
           this._bindings.push({
             type: 'attribute',
             node,
             path: item.path,
             name: item.name,
             template: item.template,
-            tokens,
-            isSingleToken,
-            singleTokenKey
+            tokens: parsed.tokens,
+            isSingleToken: parsed.isSingleToken,
+            singleTokenKey: parsed.singleTokenKey,
+            segments: parsed.segments,
+            attrKind
           })
         }
       }
+    }
+
+    if (map.requiredTokens && Array.isArray(map.requiredTokens)) {
+      this._requiredTokens = map.requiredTokens
+    } else if (this._bindings.length > 0) {
+      const seen = new Set()
+      for (let i = 0; i < this._bindings.length; i++) {
+        const bindingTokens = this._bindings[i].tokens
+        if (!bindingTokens) {
+          continue
+        }
+        for (let j = 0; j < bindingTokens.length; j++) {
+          seen.add(bindingTokens[j])
+        }
+      }
+      this._requiredTokens = Array.from(seen)
     }
   }
 
@@ -2495,74 +2619,203 @@ export class CoraliteElement extends BaseElement {
    * Evaluates reactive style definitions and sets/removes CSS property declarations on the host element.
    * @private
    */
+  /**
+   * Returns an instance-cached read-only proxy of the reactive state.
+   * Avoids re-allocating a `WeakMap`, handler closure and `Proxy` on every
+   * style/context evaluation.
+   * @returns {Object|null} The read-only state view, or `null` before state init.
+   * @protected
+   */
+  _getReadOnlyState () {
+    if (!this._state) {
+      return null
+    }
+    if (!this._roState) {
+      this._roState = createReadOnlyProxy(this._state)
+    }
+    return this._roState
+  }
+
+  /**
+   * Returns an instance-cached read-only proxy of reactive state bound to a dependency tracker.
+   * @param {string} key - The derived state key the tracker belongs to.
+   * @param {Object} tracker - Dependency tracker exposing `activeCollector`.
+   * @returns {Object|null} The tracked read-only state view.
+   * @protected
+   */
+  _getTrackedReadOnlyState (key, tracker) {
+    if (!this._state) {
+      return null
+    }
+    if (!this._roStateTracked) {
+      this._roStateTracked = new Map()
+    }
+
+    let entry = this._roStateTracked.get(key)
+    if (!entry) {
+      const proxies = new WeakMap()
+      entry = {
+        proxies,
+        roState: createReadOnlyProxy(this._state, proxies, tracker)
+      }
+      this._roStateTracked.set(key, entry)
+    }
+
+    return entry.roState
+  }
+
+  /**
+   * Returns an instance-cached tracked read-only view of reactive state for style getters.
+   * @returns {Object|null} The style-tracked read-only state view.
+   * @protected
+   */
+  _getStyleReadOnlyState () {
+    if (!this._state) {
+      return null
+    }
+    if (!this._styleDeps) {
+      this._styleDeps = new Set()
+    }
+    if (!this._styleTracker) {
+      const self = this
+      this._styleTracker = {
+        activeCollector: (prop) => {
+          if (typeof prop === 'string' && self._styleDeps) {
+            self._styleDeps.add(prop)
+          }
+        }
+      }
+    }
+    if (!this._roStateStyle) {
+      this._roStateStyle = createReadOnlyProxy(this._state, new WeakMap(), this._styleTracker)
+    }
+    return this._roStateStyle
+  }
+
+  /**
+   * Applies reactive styles only when a style dependency has changed.
+   * @protected
+   */
+  _applyStylesIfDirty () {
+    if (!this.componentOptions?.style) {
+      if (this._changedStateKeys) {
+        this._changedStateKeys.clear()
+      }
+      return
+    }
+
+    if (this._stylesEvaluated) {
+      const changedKeys = this._changedStateKeys
+      if (!changedKeys || changedKeys.size === 0) {
+        return
+      }
+
+      let intersect = false
+      for (const dep of this._styleDeps) {
+        if (changedKeys.has(dep)) {
+          intersect = true
+          break
+        }
+      }
+
+      if (!intersect) {
+        changedKeys.clear()
+        return
+      }
+    }
+
+    this._applyStyles()
+  }
+
+  /**
+   * @private
+   */
   _applyStyles () {
     const styleObj = this.componentOptions?.style
     if (!styleObj || typeof styleObj !== 'object') {
       return
     }
 
-    const roState = createReadOnlyProxy(this._state)
+    const roState = this._getReadOnlyState()
     /** @type {Array<{ normKey: string, val: any }>} */
     const evaluatedProps = []
 
-    // Phase 1: Evaluation & Validation
-    for (const [key, valOrFn] of Object.entries(styleObj)) {
-      const normKey = normalizeStyleKey(key)
-      if (!normKey) {
-        continue
-      }
+    // Track style dependencies for subsequent render passes
+    if (!this._styleDeps) {
+      this._styleDeps = new Set()
+    }
+    const styleDeps = this._styleDeps
+    styleDeps.clear()
 
-      let val
-      if (typeof valOrFn === 'function') {
-        try {
-          val = valOrFn(roState)
-        } catch (err) {
-          if (err instanceof CoraliteError) {
-            throw err
-          }
-          throw new CoraliteError(
-            `Component "${this.componentOptions?.componentId || 'unknown'}" style getter for "${key}" failed: ${err.message}`,
-            {
-              componentId: this.componentOptions?.componentId,
-              instanceId: this._instanceId,
-              cause: err
-            }
-          )
+    const prevCollector = this._collectingDependencies
+    const trackedRoState = this._getStyleReadOnlyState() || roState
+    this._collectingDependencies = styleDeps
+
+    try {
+      // Phase 1: Evaluation & Validation
+      for (const [key, valOrFn] of Object.entries(styleObj)) {
+        const normKey = normalizeStyleKey(key)
+        if (!normKey) {
+          continue
         }
-      } else {
-        val = valOrFn
-      }
 
-      /** @type {any} */
-      const asyncCheckVal = val
-      if (asyncCheckVal && typeof asyncCheckVal.then === 'function') {
-        throw new CoraliteError(`Component "${this.componentOptions?.componentId || 'unknown'}" style property "${key}" getter must be synchronous. Use getters or server() for asynchronous operations.`, {
-          componentId: this.componentOptions?.componentId,
-          instanceId: this._instanceId
+        let val
+        if (typeof valOrFn === 'function') {
+          try {
+            val = valOrFn(trackedRoState || roState)
+          } catch (err) {
+            if (err instanceof CoraliteError) {
+              throw err
+            }
+            throw new CoraliteError(
+              `Component "${this.componentOptions?.componentId || 'unknown'}" style getter for "${key}" failed: ${err.message}`,
+              {
+                componentId: this.componentOptions?.componentId,
+                instanceId: this._instanceId,
+                cause: err
+              }
+            )
+          }
+        } else {
+          val = valOrFn
+        }
+
+        /** @type {any} */
+        const asyncCheckVal = val
+        if (asyncCheckVal && typeof asyncCheckVal.then === 'function') {
+          throw new CoraliteError(`Component "${this.componentOptions?.componentId || 'unknown'}" style property "${key}" getter must be synchronous. Use getters or server() for asynchronous operations.`, {
+            componentId: this.componentOptions?.componentId,
+            instanceId: this._instanceId
+          })
+        }
+
+        evaluatedProps.push({
+          normKey,
+          val
         })
       }
 
-      evaluatedProps.push({
-        normKey,
-        val
-      })
+      // Phase 2: Application
+      for (const { normKey, val } of evaluatedProps) {
+        if (val !== null && val !== undefined && val !== false && val !== '') {
+          this.style.setProperty(normKey, String(val))
+        } else {
+          this.style.removeProperty(normKey)
+        }
+      }
+    } finally {
+      this._collectingDependencies = prevCollector
     }
 
-    // Phase 2: Application
-    for (const { normKey, val } of evaluatedProps) {
-      if (val !== null && val !== undefined && val !== false && val !== '') {
-        this.style.setProperty(normKey, String(val))
-      } else {
-        this.style.removeProperty(normKey)
-      }
+    this._stylesEvaluated = true
+    if (this._changedStateKeys) {
+      this._changedStateKeys.clear()
     }
   }
 
   /**
    * Performs the physical DOM update and resolves template tokens.
-   * **Async Safety:** Implements a Symbol-based locking mechanism (`renderVersion`)
-   * to guarantee that if state mutates while an async getter is pending, the stale
-   * Promise will be discarded, preventing DOM race conditions.
+   * Uses Symbol-based locking (`renderVersion`) to discard stale async renders.
    * @this {any}
    * @private
    */
@@ -2571,26 +2824,19 @@ export class CoraliteElement extends BaseElement {
       return
     }
 
-    // Create a unique lock for this specific DOM render cycle
     const renderVersion = Symbol('dom-render')
     this._domRenderVersion = renderVersion
 
-    // Extract unique tokens to prevent double-reading and accidental aborts
-    /** @type {Set<string>} */
-    const requiredTokens = new Set()
-    for (const binding of this._bindings) {
-      if (binding.tokens) {
-        for (let i = 0; i < binding.tokens.length; i++) {
-          requiredTokens.add(binding.tokens[i])
-        }
-      }
+    // Reuse pre-computed requiredTokens and evaluatedTokens container
+    const requiredTokens = this._requiredTokens || []
+    let evaluatedTokens = this._evaluatedTokens
+    if (!evaluatedTokens) {
+      evaluatedTokens = this._evaluatedTokens = {}
     }
-
-    const evaluatedTokens = {}
     let hasPromise = false
 
-    // Evaluate getters exactly once per render cycle
-    for (const key of requiredTokens) {
+    for (let i = 0; i < requiredTokens.length; i++) {
+      const key = requiredTokens[i]
       let val = this._state[key]
       if (typeof val === 'function') {
         val = val(this._state)
@@ -2601,17 +2847,41 @@ export class CoraliteElement extends BaseElement {
       }
     }
 
-    // The DOM Mutator Function
     const applyBindings = (tokenValues) => {
-      // Race Condition Lock: Abort if a newer DOM render cycle has already begun
       if (this._domRenderVersion !== renderVersion) {
         return
       }
 
-      for (const binding of this._bindings) {
+      // Selectively update only bindings affected by changed state keys
+      let targetBindings = this._bindings
+      const changedKeys = this._changedStateKeys
+      const tokenMap = this._tokenBindings
+
+      if (changedKeys && changedKeys.size > 0 && tokenMap) {
+        const dirtyIndices = new Set()
+        for (const key of changedKeys) {
+          const indices = tokenMap[key]
+          if (indices) {
+            for (let k = 0; k < indices.length; k++) {
+              dirtyIndices.add(indices[k])
+            }
+          }
+        }
+        if (dirtyIndices.size > 0) {
+          const selective = []
+          for (const idx of dirtyIndices) {
+            if (this._bindings[idx]) {
+              selective.push(this._bindings[idx])
+            }
+          }
+          targetBindings = selective
+        }
+      }
+
+      for (let i = 0; i < targetBindings.length; i++) {
+        const binding = targetBindings[i]
         let node = binding.node
-        const isConnected = node && typeof document !== 'undefined' && document.body && document.body.contains(node)
-        if (binding.path && (!node || !isConnected)) {
+        if (binding.path && (!node || !isNodeConnected(node))) {
           const resolved = this.getNodeByPath(binding.path)
           if (resolved) {
             binding.node = resolved
@@ -2619,16 +2889,27 @@ export class CoraliteElement extends BaseElement {
           }
         }
 
-        // Defensive null guard inside _updateDOM
         if (!node) {
           continue
         }
 
-        const hydratedValue = binding.isSingleToken
-          ? String(tokenValues[binding.singleTokenKey] ?? '')
-          : binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
-            return tokenValues[key] ?? ''
-          })
+        let hydratedValue
+        if (binding.isSingleToken) {
+          hydratedValue = String(tokenValues[binding.singleTokenKey] ?? '')
+        } else {
+          const segments = binding.segments
+          if (segments) {
+            hydratedValue = ''
+            for (let s = 0; s < segments.length; s++) {
+              const segment = segments[s]
+              hydratedValue += segment[0] === 0 ? segment[1] : (tokenValues[segment[1]] ?? '')
+            }
+          } else {
+            hydratedValue = binding.template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
+              return tokenValues[key] ?? ''
+            })
+          }
+        }
 
         if (binding.type === 'text') {
           if (node.textContent !== hydratedValue) {
@@ -2647,41 +2928,50 @@ export class CoraliteElement extends BaseElement {
           // @ts-ignore
           const element = node
 
-          const lowerName = binding.name ? binding.name.toLowerCase() : ''
-          if (BOOLEAN_ATTRIBUTES.has(lowerName)) {
-            const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === '0' || hydratedValue === 'undefined'
-            if (isFalsy) {
-              element.removeAttribute(binding.name)
-            } else {
-              element.setAttribute(binding.name, '')
+          const kind = binding.attrKind !== undefined ? binding.attrKind : classifyAttribute(binding.name, binding.isSingleToken)
+          switch (kind) {
+            case 1: {
+              const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === '0' || hydratedValue === 'undefined'
+              if (isFalsy) {
+                element.removeAttribute(binding.name)
+              } else {
+                element.setAttribute(binding.name, '')
+              }
+              break
             }
-          } else if (binding.isSingleToken && isAriaBooleanState(lowerName)) {
-            const rawTokenVal = tokenValues[binding.singleTokenKey]
-            const targetVal = resolveAriaBooleanState(rawTokenVal)
+            case 2: {
+              const rawTokenVal = tokenValues[binding.singleTokenKey]
+              const targetVal = resolveAriaBooleanState(rawTokenVal)
 
-            if (targetVal === null) {
-              element.removeAttribute(binding.name)
-            } else if (element.getAttribute(binding.name) !== targetVal) {
-              element.setAttribute(binding.name, targetVal)
+              if (targetVal === null) {
+                element.removeAttribute(binding.name)
+              } else if (element.getAttribute(binding.name) !== targetVal) {
+                element.setAttribute(binding.name, targetVal)
+              }
+              break
             }
-          } else if (binding.isSingleToken && isAriaAttribute(lowerName)) {
-            const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === 'undefined'
-            if (isFalsy) {
-              element.removeAttribute(binding.name)
-            } else {
+            case 3: {
+              const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === 'undefined'
+              if (isFalsy) {
+                element.removeAttribute(binding.name)
+              } else {
+                if (element.getAttribute(binding.name) !== hydratedValue) {
+                  element.setAttribute(binding.name, hydratedValue)
+                }
+              }
+              break
+            }
+            default: {
               if (element.getAttribute(binding.name) !== hydratedValue) {
                 element.setAttribute(binding.name, hydratedValue)
               }
-            }
-          } else {
-            if (element.getAttribute(binding.name) !== hydratedValue) {
-              element.setAttribute(binding.name, hydratedValue)
+              break
             }
           }
         }
       }
 
-      this._applyStyles()
+      this._applyStylesIfDirty()
 
       if (this.componentOptions.slots && Object.keys(this.componentOptions.slots).length > 0) {
         this._processSlots()
@@ -2707,14 +2997,17 @@ export class CoraliteElement extends BaseElement {
 
     // Await Promises or Apply Synchronously
     if (hasPromise) {
-      const keys = Object.keys(evaluatedTokens)
-      const promises = keys.map(k => Promise.resolve(evaluatedTokens[k]))
+      const keys = requiredTokens
+      const promises = []
+      for (let i = 0; i < keys.length; i++) {
+        promises.push(Promise.resolve(evaluatedTokens[keys[i]]))
+      }
 
       Promise.all(promises).then(resolvedValues => {
         const resolvedMap = {}
-        keys.forEach((k, i) => {
-          resolvedMap[k] = resolvedValues[i]
-        })
+        for (let i = 0; i < keys.length; i++) {
+          resolvedMap[keys[i]] = resolvedValues[i]
+        }
         applyBindings(resolvedMap)
       }).catch(e => {
         if (e.name !== 'AbortError') {
@@ -2924,11 +3217,20 @@ export class CoraliteElement extends BaseElement {
    * @protected
    */
   _markKeysDirty (...names) {
+    // Track changed keys before subscriber guard for style and binding checks
+    if (this._styleDeps) {
+      if (!this._changedStateKeys) {
+        this._changedStateKeys = new Set()
+      }
+      for (let i = 0; i < names.length; i++) {
+        this._changedStateKeys.add(names[i])
+      }
+    }
+
     if (!this._subscriberMap) {
       return
     }
 
-    let hasDirty = false
     for (const key of names) {
       const records = this._subscriberMap.get(key)
       if (records) {
@@ -2937,12 +3239,11 @@ export class CoraliteElement extends BaseElement {
         }
         for (const record of records) {
           this._dirtyObservers.add(record)
-          hasDirty = true
         }
       }
     }
 
-    if (hasDirty) {
+    if (this._dirtyObservers && this._dirtyObservers.size > 0) {
       this._scheduleUpdate()
     }
   }
@@ -3186,11 +3487,35 @@ export class CoraliteElement extends BaseElement {
    * @private
    */
   _getOwnSlots () {
+    if (this._cachedOwnSlots !== null) {
+      return this._cachedOwnSlots
+    }
+
+    const map = this.componentOptions?.hydrationMap
+    if (map?.slots && Array.isArray(map.slots)) {
+      /** @type {any[]} */
+      const slots = []
+      let allFound = true
+      for (let i = 0; i < map.slots.length; i++) {
+        const node = this.getNodeByPath(map.slots[i].path)
+        if (node && node.nodeName === 'SLOT') {
+          slots.push(node)
+        } else {
+          allFound = false
+          break
+        }
+      }
+      if (allFound) {
+        this._cachedOwnSlots = slots
+        return slots
+      }
+    }
+
     /** @type {CoraliteSlotElement[]} */
     const allSlots = Array.from(this.querySelectorAll('slot'))
     const ownId = this.getAttribute('data-cid') || this._instanceId
 
-    return allSlots.filter(slotEl => {
+    const ownSlots = allSlots.filter(slotEl => {
       if (slotEl.hasAttribute('data-coralite-owner')) {
         return slotEl.getAttribute('data-coralite-owner') === ownId
       }
@@ -3207,6 +3532,9 @@ export class CoraliteElement extends BaseElement {
 
       return host === this
     })
+
+    this._cachedOwnSlots = ownSlots
+    return ownSlots
   }
 
   /**

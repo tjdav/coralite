@@ -1,4 +1,5 @@
 import { CoraliteError } from './errors.js'
+import { BOOLEAN_ATTRIBUTES, isAriaBooleanState, isAriaAttribute } from './tags.js'
 
 /**
  * @import {
@@ -605,7 +606,106 @@ export function getNodePath (node, root) {
 }
 
 /**
- * Generates a hydration map for the client.
+ * Character-by-character template parser that extracts tokens and segments
+ * without regex overhead or size limits.
+ *
+ * @param {string} template - The template string to parse.
+ * @returns {{ tokens: string[], isSingleToken: boolean, singleTokenKey: string | undefined, segments: Array<[number, string]> | null }}
+ */
+export function parseTemplateSegments (template) {
+  if (!template || typeof template !== 'string') {
+    return {
+      tokens: [],
+      isSingleToken: false,
+      singleTokenKey: undefined,
+      segments: null
+    }
+  }
+
+  const tokens = []
+  /** @type {Array<[number, string]>} */
+  const segments = []
+  let cursor = 0
+  let i = 0
+  const len = template.length
+
+  while (i < len) {
+    if (template[i] === '{' && template[i + 1] === '{') {
+      const openStart = i
+      const contentStart = i + 2
+      let closeStart = -1
+
+      for (let j = contentStart; j < len - 1; j++) {
+        if (template[j] === '}' && template[j + 1] === '}') {
+          closeStart = j
+          break
+        }
+      }
+
+      if (closeStart !== -1) {
+        if (openStart > cursor) {
+          segments.push([0, template.slice(cursor, openStart)])
+        }
+
+        const tokenContent = template.slice(contentStart, closeStart).trim()
+        tokens.push(tokenContent)
+        segments.push([1, tokenContent])
+
+        cursor = closeStart + 2
+        i = cursor
+        continue
+      }
+    }
+    i++
+  }
+
+  if (cursor < len) {
+    segments.push([0, template.slice(cursor)])
+  }
+
+  const trimmed = template.trim()
+  const isSingleToken = tokens.length === 1 && (trimmed === `{{${tokens[0]}}}` || trimmed === `{{ ${tokens[0]} }}`)
+
+  return {
+    tokens,
+    isSingleToken,
+    singleTokenKey: tokens[0],
+    segments: isSingleToken || tokens.length === 0 ? null : segments
+  }
+}
+
+/**
+ * Classifies an attribute name into a numeric enum for optimized runtime handling:
+ * 0 = standard
+ * 1 = boolean
+ * 2 = aria-boolean
+ * 3 = aria-string
+ * @param {string} name - Attribute name
+ * @param {boolean} [isSingleToken=false] - Whether the binding contains exactly one token
+ * @returns {number}
+ */
+export function classifyAttribute (name, isSingleToken = false) {
+  if (!name || typeof name !== 'string') {
+    return 0
+  }
+  const lower = name.toLowerCase()
+  if (BOOLEAN_ATTRIBUTES.has(lower)) {
+    return 1
+  }
+  if (isSingleToken) {
+    if (isAriaBooleanState(lower)) {
+      return 2
+    }
+    if (isAriaAttribute(lower)) {
+      return 3
+    }
+  }
+  return 0
+}
+
+/**
+ * Generates an AST path map for dynamic text nodes, attributes, and refs.
+ *
  * @param {Array<Object>} templateNodes - The component's template nodes.
  * @param {Object} templateValues - The component's template values.
  * @returns {Object} The hydration map.
@@ -614,7 +714,10 @@ export function generateHydrationMap (templateNodes, templateValues) {
   const map = {
     texts: [],
     attributes: [],
-    refs: []
+    refs: [],
+    slots: [],
+    requiredTokens: [],
+    tokenBindings: {}
   }
 
   if (!templateNodes || !templateValues) {
@@ -622,17 +725,42 @@ export function generateHydrationMap (templateNodes, templateValues) {
   }
 
   const root = templateNodes.length > 0 ? templateNodes[0].parent : { children: templateNodes }
+  const allTokensSet = new Set()
+  const tokenBindings = {}
+
+  const registerTokenBinding = (token, bindingIndex) => {
+    allTokensSet.add(token)
+    if (!tokenBindings[token]) {
+      tokenBindings[token] = []
+    }
+    if (!tokenBindings[token].includes(bindingIndex)) {
+      tokenBindings[token].push(bindingIndex)
+    }
+  }
+
+  let bindingCounter = 0
 
   if (templateValues.textNodes) {
     for (const item of templateValues.textNodes) {
       if (item.textNode) {
         const isHtml = item.type === 'html'
         const targetNode = isHtml ? item.textNode.parent : item.textNode
+        const template = item.textNode.data
+        const parsed = parseTemplateSegments(template)
+
+        const currentIndex = bindingCounter++
+        for (const token of parsed.tokens) {
+          registerTokenBinding(token, currentIndex)
+        }
 
         map.texts.push({
           path: getNodePath(targetNode, root),
-          template: item.textNode.data,
-          type: isHtml ? 'html' : 'text'
+          template,
+          type: isHtml ? 'html' : 'text',
+          tokens: parsed.tokens,
+          isSingleToken: parsed.isSingleToken,
+          singleTokenKey: parsed.singleTokenKey,
+          segments: parsed.segments
         })
       }
     }
@@ -642,10 +770,23 @@ export function generateHydrationMap (templateNodes, templateValues) {
     for (const item of templateValues.attributes) {
       if (item.element && item.element.attribs) {
         const originalValue = item.element.attribs[item.name]
+        const parsed = parseTemplateSegments(originalValue)
+        const attrKind = classifyAttribute(item.name, parsed.isSingleToken)
+
+        const currentIndex = bindingCounter++
+        for (const token of parsed.tokens) {
+          registerTokenBinding(token, currentIndex)
+        }
+
         map.attributes.push({
           path: getNodePath(item.element, root),
           name: item.name,
-          template: originalValue
+          template: originalValue,
+          tokens: parsed.tokens,
+          isSingleToken: parsed.isSingleToken,
+          singleTokenKey: parsed.singleTokenKey,
+          segments: parsed.segments,
+          attrKind
         })
       }
     }
@@ -661,6 +802,31 @@ export function generateHydrationMap (templateNodes, templateValues) {
       }
     }
   }
+
+  // Collect direct <slot> elements (excluding slots inside nested custom elements)
+  const collectSlots = (nodes) => {
+    if (!nodes || !Array.isArray(nodes)) {
+      return
+    }
+    for (const node of nodes) {
+      if (node.type === 'tag') {
+        if (node.name === 'slot') {
+          map.slots.push({
+            name: node.attribs?.name || 'default',
+            path: getNodePath(node, root)
+          })
+        } else if (!node.name || !node.name.includes('-')) {
+          if (node.children) {
+            collectSlots(node.children)
+          }
+        }
+      }
+    }
+  }
+  collectSlots(templateNodes)
+
+  map.requiredTokens = Array.from(allTokensSet)
+  map.tokenBindings = tokenBindings
 
   return map
 }
@@ -864,34 +1030,39 @@ export function createReactiveProxy (target, onChange, proxies = new WeakMap()) 
 
 /**
  * Creates a read-only proxy that throws on mutation attempts.
+ * Optimized for hot-path state reads inside getters, styles, and context.
+ *
  * @param {Object} target - The object to proxy.
  * @param {WeakMap} [proxies=new WeakMap()] - Cache for existing proxies.
  * @param {Object|null} [tracker=null] - Optional dependency tracker.
  * @returns {Proxy} The read-only proxy.
  */
 export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = null) {
-  if (proxies.has(target)) {
-    return proxies.get(target)
+  const cached = proxies.get(target)
+  if (cached !== undefined) {
+    return cached
   }
 
   const isArray = Array.isArray(target)
+  const hasTracker = tracker !== null
 
   const handler = {
-    get (target, property, receiver) {
-      const value = Reflect.get(target, property, receiver)
+    get (target, property) {
+      const value = target[property]
 
-      if (tracker && tracker.activeCollector && typeof property === 'string') {
+      if (hasTracker && tracker.activeCollector && typeof property === 'string') {
         tracker.activeCollector(property)
       }
 
-      if (isArray) {
+      if (isArray || value === null || typeof value !== 'object') {
         return value
       }
 
-      if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
-        return createReadOnlyProxy(value, proxies, tracker)
+      if (value.nodeType !== undefined) {
+        return value
       }
-      return value
+
+      return createReadOnlyProxy(value, proxies, tracker)
     },
     set () {
       throw new CoraliteError('Cannot mutate state inside a getter. State is read-only here.')

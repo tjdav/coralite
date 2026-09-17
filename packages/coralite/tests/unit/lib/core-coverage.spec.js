@@ -282,7 +282,10 @@ describe('core.js Coverage Gaps', () => {
       assert.deepStrictEqual(generateHydrationMap(null, null), {
         texts: [],
         attributes: [],
-        refs: []
+        refs: [],
+        slots: [],
+        requiredTokens: [],
+        tokenBindings: {}
       })
     })
 
