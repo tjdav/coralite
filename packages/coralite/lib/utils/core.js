@@ -1,5 +1,5 @@
 import { CoraliteError } from './errors.js'
-import { BOOLEAN_ATTRIBUTES, isAriaBooleanState, isAriaAttribute } from './tags.js'
+import { classifyAttribute } from './tags.js'
 
 /**
  * @import {
@@ -674,34 +674,7 @@ export function parseTemplateSegments (template) {
   }
 }
 
-/**
- * Classifies an attribute name into a numeric enum for optimized runtime handling:
- * 0 = standard
- * 1 = boolean
- * 2 = aria-boolean
- * 3 = aria-string
- * @param {string} name - Attribute name
- * @param {boolean} [isSingleToken=false] - Whether the binding contains exactly one token
- * @returns {number}
- */
-export function classifyAttribute (name, isSingleToken = false) {
-  if (!name || typeof name !== 'string') {
-    return 0
-  }
-  const lower = name.toLowerCase()
-  if (BOOLEAN_ATTRIBUTES.has(lower)) {
-    return 1
-  }
-  if (isSingleToken) {
-    if (isAriaBooleanState(lower)) {
-      return 2
-    }
-    if (isAriaAttribute(lower)) {
-      return 3
-    }
-  }
-  return 0
-}
+export { classifyAttribute }
 
 /**
  * Generates an AST path map for dynamic text nodes, attributes, and refs.

@@ -1,6 +1,6 @@
 # Coralite Performance Benchmarks
 
-Last updated: 2026-09-17T07:14:18.303Z
+Last updated: 2026-09-17T08:28:55.056Z
 
 **Environment:** Node v24.16.0 (linux x64)
 
@@ -8,70 +8,70 @@ Last updated: 2026-09-17T07:14:18.303Z
 
 | Framework | create1k | replace1k | update10th | swapRows | clear | heapMB |
 | --- | --- | --- | --- | --- | --- | --- |
-| coralite | 31.3 | 37.2 | 9.7 | 2.8 | 3.1 | 1.56 |
-| svelte | 36.3 | 42.4 | 10.6 | 3.3 | 3.1 | 3.72 |
-| react | 33.7 | 43.1 | 11.6 | 34.6 | 8.8 | 3.6 |
-| vue | 36.9 | 40.7 | 11.8 | 4.4 | 4 | 3.12 |
-| vanilla | 35.1 | 31.9 | 8.3 | 2.2 | 2.8 | 1.38 |
+| coralite | 31 | 40.9 | 9.3 | 2.7 | 3.1 | 1.56 |
+| svelte | 36.1 | 42.8 | 10.7 | 3.3 | 3.5 | 3.72 |
+| react | 34.7 | 44.3 | 12.6 | 35.9 | 7.3 | 3.6 |
+| vue | 37 | 39.9 | 10.6 | 4.7 | 4.1 | 3.12 |
+| vanilla | 35.8 | 31.8 | 8.5 | 2 | 2.8 | 1.38 |
 
 
 ### bundle-hydration
 
 | Framework | Raw JS (KB) | Gzip JS (KB) | Hydration (ms) | TTI (ms) |
 | --- | --- | --- | --- | --- |
-| coraliteDynamic | 63.6 | 17 | 2.2 | 60.69 |
+| coraliteDynamic | 63.9 | 17 | 2.2 | 61.02 |
 | coraliteStatic | 0 | 0 | 0 | 0 |
-| react | 190.3 | 59.4 | 0.8 | 78.63 |
-| vue | 76.7 | 30.7 | 3.7 | 62.39 |
-| svelte | 48.1 | 18.2 | 1.8 | 61.22 |
+| react | 190.3 | 59.4 | 0.8 | 78.72 |
+| vue | 76.7 | 30.7 | 3.7 | 76.56 |
+| svelte | 48.1 | 18.2 | 1.8 | 73.64 |
 
 
 ### ssrThroughput
 
 | Workload | Total Pages | Duration (ms) | Throughput (pages/sec) | Avg Latency (ms) | Peak Heap (MB) |
 | --- | --- | --- | --- | --- | --- |
-| 100_pages | 100 | 167.6 | 596.7 | 1.68 | 5.5 |
-| 1000_pages | 1000 | 656.7 | 1522.8 | 0.66 | 14 |
-| 10000_pages | 10000 | 5683 | 1759.6 | 0.57 | 154.3 |
+| 100_pages | 100 | 106.1 | 942.5 | 1.06 | 3.3 |
+| 1000_pages | 1000 | 705.9 | 1416.6 | 0.71 | 16.3 |
+| 10000_pages | 10000 | 5859 | 1706.8 | 0.59 | 154.2 |
 
 
 ### internal
 
 | Benchmark | Ops/Sec | Avg Latency (ns) | Speedup |
 | --- | --- | --- | --- |
-| Coralite Token Replace (textNode) | 6513976 | 153.5 | 1 |
-| Native String.prototype.replace (regex) | 13335381 | 75 | 2.05 |
-| Coralite Token Replace (attribute) | 10854246 | 92.1 | 1.67 |
-| Coralite Read-Only Proxy (Deep Read) | 4273154 | 234 | 1 |
-| Standard Flat Object Read (Deep Read) | 2312099115 | 0.4 | 541.08 |
-| Eager Recursive Proxy (Deep Read) | 5711660 | 175.1 | 1.34 |
-| Optimized Object.setPrototypeOf AST Element Creation | 1060290 | 943.1 | 1 |
-| Legacy Object.defineProperties AST Element Creation | 1000011 | 1000 | 0.94 |
+| Coralite Token Replace (textNode) | 6594081 | 151.7 | 1 |
+| Native String.prototype.replace (regex) | 11719941 | 85.3 | 1.78 |
+| Coralite Token Replace (attribute) | 10103917 | 99 | 1.53 |
+| Coralite Read-Only Proxy (Deep Read) | 4052618 | 246.8 | 1 |
+| Standard Flat Object Read (Deep Read) | 2285187230 | 0.4 | 563.88 |
+| Eager Recursive Proxy (Deep Read) | 5581561 | 179.2 | 1.38 |
+| Optimized Object.setPrototypeOf AST Element Creation | 1071327 | 933.4 | 1 |
+| Legacy Object.defineProperties AST Element Creation | 943564 | 1059.8 | 0.88 |
 
 
 ### Stress & Lifecycle: Selective Hydration & Island Scaling
 
 | Framework | Raw JS (KB) | Gzip JS (KB) | Hydration (ms) |
 | --- | --- | --- | --- |
-| coralite-selective | 62.9 | 16.7 | 0.1 |
-| coralite-dynamic | 62.9 | 16.7 | 0 |
+| coralite-selective | 63.2 | 16.7 | 0 |
+| coralite-dynamic | 63.2 | 16.7 | 0 |
 | react | 189.5 | 59.1 | 0.8 |
-| vue | 76 | 30.4 | 4.8 |
-| svelte | 49.6 | 18.7 | 2.1 |
+| vue | 76 | 30.4 | 4.9 |
+| svelte | 49.6 | 18.7 | 2.5 |
 
 
 ### Stress & Lifecycle: High-Frequency State Streaming (100 updates/sec)
 
 | Total Updates | Avg Batch Latency (ms) | Dropped Frames | Peak CPU Time (ms) |
 | --- | --- | --- | --- |
-| 300 | 0.022 | 145 | 3026.1 |
+| 300 | 0.039 | 103 | 3036.8 |
 
 
 ### Stress & Lifecycle: Mount/Unmount Memory Retention
 
 | Cycles | Components / Cycle | Initial Heap (MB) | Final Heap (MB) | Net Retention (MB) | Status |
 | --- | --- | --- | --- | --- | --- |
-| 50 | 1000 | 1.08 | 1.35 | 0.27 | ✅ Passed (<0.5 MB) |
+| 50 | 1000 | 1.08 | 1.36 | 0.28 | ✅ Passed (<0.5 MB) |
 
 ## Reproduction Instructions
 

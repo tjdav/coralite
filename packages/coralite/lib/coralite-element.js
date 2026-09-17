@@ -1,9 +1,9 @@
-import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue, parseTemplateSegments, classifyAttribute } from './utils/core.js'
+import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
 import { ObserverRecord } from './utils/observer-record.js'
 import { CoraliteError } from './utils/errors.js'
-import { resolveAriaBooleanState } from './utils/tags.js'
+import { classifyAttribute, resolveAriaBooleanState } from './utils/tags.js'
 import {
   RESERVED_DOM_ATTRIBUTES,
   RESERVED_PROPERTY_BLACKLIST,
@@ -612,6 +612,32 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._pendingDisconnect = false
+
+    /**
+     * Cached slots helper proxy for getter evaluations and script contexts.
+     * @type {CoraliteSlotsHelper|null}
+     * @private
+     */
+    this._slotsHelper = null
+
+    /**
+     * Cached context objects per getter key to avoid per-read allocation.
+     * @type {Map<string, Object>|null}
+     * @private
+     */
+    this._getterContexts = null
+  }
+
+  /**
+   * Lazily returns an instance-cached slots helper proxy.
+   * @returns {CoraliteSlotsHelper}
+   * @private
+   */
+  _getSlotsHelper () {
+    if (!this._slotsHelper) {
+      this._slotsHelper = createClientSlotsHelper(this)
+    }
+    return this._slotsHelper
   }
 
   /**
@@ -1182,6 +1208,12 @@ export class CoraliteElement extends BaseElement {
       this._getterDeps = null
     }
 
+    if (this._getterContexts) {
+      this._getterContexts.clear()
+      this._getterContexts = null
+    }
+    this._slotsHelper = null
+
     if (this._roStateTracked) {
       this._roStateTracked.clear()
       this._roStateTracked = null
@@ -1504,33 +1536,42 @@ export class CoraliteElement extends BaseElement {
             this._getterDeps.set(key, directDeps)
           }
 
-          // Enforce "Dual-Proxy" safety: Getters cannot mutate state
-          const tracker = {
-            activeCollector: (p) => {
-              if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
-                directDeps.add(p)
-                if (this._collectingDependencies) {
-                  this._collectingDependencies.add(p)
-                }
-                if (this._getterDeps?.has(p)) {
-                  for (const subDep of this._getterDeps.get(p)) {
-                    directDeps.add(subDep)
-                    if (this._collectingDependencies) {
-                      this._collectingDependencies.add(subDep)
+          if (!this._getterContexts) {
+            this._getterContexts = new Map()
+          }
+
+          let context = this._getterContexts.get(key)
+          if (!context) {
+            const tracker = {
+              activeCollector: (p) => {
+                if (typeof p === 'string' && (p in target || (options.getters && p in options.getters))) {
+                  directDeps.add(p)
+                  if (this._collectingDependencies) {
+                    this._collectingDependencies.add(p)
+                  }
+                  if (this._getterDeps?.has(p)) {
+                    for (const subDep of this._getterDeps.get(p)) {
+                      directDeps.add(subDep)
+                      if (this._collectingDependencies) {
+                        this._collectingDependencies.add(subDep)
+                      }
                     }
                   }
                 }
               }
             }
+            const roState = this._getTrackedReadOnlyState(key, tracker)
+            context = {
+              state: roState,
+              root: this,
+              refs: getRef,
+              slots: this._getSlotsHelper(),
+              signal: null
+            }
+            this._getterContexts.set(key, context)
           }
-          const roState = this._getTrackedReadOnlyState(key, tracker)
-          const context = {
-            state: roState,
-            root: this,
-            refs: getRef,
-            slots: createClientSlotsHelper(this),
-            signal: this._getterAbortControllers[key].signal
-          }
+
+          context.signal = this._getterAbortControllers[key].signal
           return getter(context)
         },
         enumerable: true,
@@ -1620,7 +1661,7 @@ export class CoraliteElement extends BaseElement {
                 state: roState,
                 root: this,
                 refs: (id) => this._resolveRef(id),
-                slots: createClientSlotsHelper(this),
+                slots: this._getSlotsHelper(),
                 signal: this._abortController?.signal || new AbortController().signal
               }
               const value = valOrFn(context)
@@ -2068,32 +2109,42 @@ export class CoraliteElement extends BaseElement {
             if (options.getters && getterKey in options.getters) {
               value = Reflect.get(t, p, receiver)
             } else {
-              const tracker = {
-                activeCollector: (subProp) => {
-                  if (typeof subProp === 'string' && (subProp in target || (options.getters && subProp in options.getters))) {
-                    directDeps.add(subProp)
-                    if (self._collectingDependencies) {
-                      self._collectingDependencies.add(subProp)
-                    }
-                    if (self._getterDeps?.has(subProp)) {
-                      for (const subDep of self._getterDeps.get(subProp)) {
-                        directDeps.add(subDep)
-                        if (self._collectingDependencies) {
-                          self._collectingDependencies.add(subDep)
+              if (!self._getterContexts) {
+                self._getterContexts = new Map()
+              }
+
+              let getterContext = self._getterContexts.get(getterKey)
+              if (!getterContext) {
+                const tracker = {
+                  activeCollector: (subProp) => {
+                    if (typeof subProp === 'string' && (subProp in target || (options.getters && subProp in options.getters))) {
+                      directDeps.add(subProp)
+                      if (self._collectingDependencies) {
+                        self._collectingDependencies.add(subProp)
+                      }
+                      if (self._getterDeps?.has(subProp)) {
+                        for (const subDep of self._getterDeps.get(subProp)) {
+                          directDeps.add(subDep)
+                          if (self._collectingDependencies) {
+                            self._collectingDependencies.add(subDep)
+                          }
                         }
                       }
                     }
                   }
                 }
+                const roState = self._getTrackedReadOnlyState(getterKey, tracker)
+                getterContext = {
+                  state: roState,
+                  root: self,
+                  refs: resolveRef,
+                  slots: self._getSlotsHelper(),
+                  signal: null
+                }
+                self._getterContexts.set(getterKey, getterContext)
               }
-              const roState = self._getTrackedReadOnlyState(getterKey, tracker)
-              const getterContext = {
-                state: roState,
-                root: self,
-                refs: resolveRef,
-                slots: createClientSlotsHelper(self),
-                signal: self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal
-              }
+
+              getterContext.signal = self._getterAbortControllers?.[getterKey]?.signal || new AbortController().signal
               value = getterFn(getterContext)
             }
           } finally {
@@ -2417,12 +2468,36 @@ export class CoraliteElement extends BaseElement {
 
     this._tokenBindings = map.tokenBindings || null
 
+    const fallbackParse = (template) => {
+      if (!template || typeof template !== 'string') {
+        return {
+          tokens: [],
+          isSingleToken: false,
+          singleTokenKey: undefined,
+          segments: null
+        }
+      }
+      const tokens = []
+      template.replace(/\{\{\s*(.+?)\s*\}\}/g, (_, key) => {
+        tokens.push(key)
+        return ''
+      })
+      const trimmed = template.trim()
+      const isSingleToken = tokens.length === 1 && (trimmed === `{{${tokens[0]}}}` || trimmed === `{{ ${tokens[0]} }}`)
+      return {
+        tokens,
+        isSingleToken,
+        singleTokenKey: tokens[0],
+        segments: null
+      }
+    }
+
     if (map.texts) {
       for (let i = 0; i < map.texts.length; i++) {
         const item = map.texts[i]
         const node = this.getNodeByPath(item.path)
         if (node) {
-          const parsed = item.tokens !== undefined ? item : parseTemplateSegments(item.template)
+          const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
           this._bindings.push({
             type: item.type || 'text',
             node,
@@ -2442,7 +2517,7 @@ export class CoraliteElement extends BaseElement {
         const item = map.attributes[i]
         const node = this.getNodeByPath(item.path)
         if (node) {
-          const parsed = item.tokens !== undefined ? item : parseTemplateSegments(item.template)
+          const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
           const attrKind = item.attrKind !== undefined ? item.attrKind : classifyAttribute(item.name, parsed.isSingleToken)
           this._bindings.push({
             type: 'attribute',
@@ -2857,7 +2932,7 @@ export class CoraliteElement extends BaseElement {
       const changedKeys = this._changedStateKeys
       const tokenMap = this._tokenBindings
 
-      if (changedKeys && changedKeys.size > 0 && tokenMap) {
+      if (this._bindings.length > 6 && changedKeys && changedKeys.size > 0 && tokenMap) {
         const dirtyIndices = new Set()
         for (const key of changedKeys) {
           const indices = tokenMap[key]
@@ -2928,7 +3003,7 @@ export class CoraliteElement extends BaseElement {
           // @ts-ignore
           const element = node
 
-          const kind = binding.attrKind !== undefined ? binding.attrKind : classifyAttribute(binding.name, binding.isSingleToken)
+          const kind = binding.attrKind || 0
           switch (kind) {
             case 1: {
               const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === '0' || hydratedValue === 'undefined'
@@ -3606,7 +3681,7 @@ export class CoraliteElement extends BaseElement {
       instanceId: this._instanceId,
       state: this._state,
       root: this,
-      slots: createClientSlotsHelper(this),
+      slots: this._getSlotsHelper(),
       signal: this._abortController?.signal,
       refs: (id) => this._resolveRef(id),
       isServer: false,
@@ -3820,7 +3895,7 @@ export class CoraliteElement extends BaseElement {
       state: this._state,
       errors: this._state.errors,
       root: this,
-      slots: createClientSlotsHelper(this),
+      slots: this._getSlotsHelper(),
       signal: this._abortController.signal,
       refs (id) {
         const refId = self._state[`ref_${id}`]

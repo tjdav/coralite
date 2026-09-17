@@ -94,6 +94,35 @@ export function resolveAriaBooleanState (value) {
   return 'true'
 }
 
+/**
+ * Classifies an attribute name into an integer kind:
+ * 0 = standard
+ * 1 = boolean
+ * 2 = aria-boolean
+ * 3 = aria-string
+ * @param {string} name - Attribute name
+ * @param {boolean} [isSingleToken=false] - Whether the binding contains exactly one token
+ * @returns {number}
+ */
+export function classifyAttribute (name, isSingleToken = false) {
+  if (!name || typeof name !== 'string') {
+    return 0
+  }
+  const lower = name.toLowerCase()
+  if (BOOLEAN_ATTRIBUTES.has(lower)) {
+    return 1
+  }
+  if (isSingleToken) {
+    if (isAriaBooleanState(lower)) {
+      return 2
+    }
+    if (isAriaAttribute(lower)) {
+      return 3
+    }
+  }
+  return 0
+}
+
 export const VALID_TAGS = {
   a: true,
   abbr: true,
