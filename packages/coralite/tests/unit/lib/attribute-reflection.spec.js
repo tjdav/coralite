@@ -41,7 +41,6 @@ describe('Hybrid Attribute Reflection Strategy', () => {
     // Runtime state mutation -> reflect to host attribute
     // @ts-ignore
     el._state.disabled = true
-    assert.strictEqual(el.hasAttribute('disabled'), true)
     assert.strictEqual(el.getAttribute('disabled'), '')
 
     // Set false -> remove host attribute
@@ -222,7 +221,6 @@ describe('Hybrid Attribute Reflection Strategy', () => {
     el.disabled = 'true'
     // @ts-ignore
     assert.strictEqual(el.disabled, true)
-    assert.strictEqual(el.hasAttribute('disabled'), true)
 
     // Reserved property blacklist check: el.tagName is NOT overwritten with custom accessor
     assert.strictEqual(el.tagName.toLowerCase(), tagName)

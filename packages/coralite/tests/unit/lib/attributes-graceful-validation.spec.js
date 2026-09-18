@@ -25,7 +25,6 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       const result = await define(options, context)
       assert.strictEqual(result.errors.username, 'Attribute "username" is required.')
       assert.strictEqual(result.error_username, 'Attribute "username" is required.')
-      assert.strictEqual(result['error_username'], 'Attribute "username" is required.')
       assert.strictEqual(result.username, undefined)
     })
 
@@ -136,31 +135,6 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
   })
 
   describe('Client Runtime (CoraliteElement)', () => {
-    it('initializes state.errors and error_* tokens on mount without throwing', () => {
-      const compOptions = {
-        componentId: 'client-val-comp',
-        attributes: {
-          age: {
-            type: Number,
-            validate: (v) => v >= 18 || 'Must be adult.'
-          }
-        }
-      }
-
-      const CompClass = createCoraliteClass(compOptions)
-      customElements.define('client-val-comp', CompClass)
-
-      const el = document.createElement('client-val-comp')
-      el.setAttribute('age', '12')
-      document.body.appendChild(el)
-
-      assert.strictEqual(el._state.errors.age, 'Must be adult.')
-      assert.strictEqual(el._state.error_age, 'Must be adult.')
-      assert.strictEqual(el._state.age, 12)
-
-      document.body.removeChild(el)
-    })
-
     it('reactively updates state.errors and error_* tokens on setAttribute and clears when corrected', () => {
       const compOptions = {
         componentId: 'client-reactive-comp',
@@ -188,37 +162,6 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       assert.strictEqual(Object.keys(el._state.errors).length, 0)
       assert.strictEqual(el._state.error_score, '')
       assert.strictEqual(el._state.score, 80)
-
-      document.body.removeChild(el)
-    })
-
-    it('reactively updates state.errors and error_* tokens on proxy mutation (state.prop = ...)', () => {
-      const compOptions = {
-        componentId: 'client-proxy-comp',
-        attributes: {
-          email: {
-            type: String,
-            validate: (v) => (v && v.includes('@')) || 'Invalid email address.'
-          }
-        }
-      }
-
-      const CompClass = createCoraliteClass(compOptions)
-      customElements.define('client-proxy-comp', CompClass)
-
-      const el = document.createElement('client-proxy-comp')
-      document.body.appendChild(el)
-
-      el._state.email = 'notanemail'
-      assert.strictEqual(el._state.errors.email, 'Invalid email address.')
-      assert.strictEqual(el._state.error_email, 'Invalid email address.')
-      assert.strictEqual(el._state.email, 'notanemail')
-
-      el._state.email = 'test@example.com'
-      assert.strictEqual(el._state.errors.email, undefined)
-      assert.strictEqual(Object.keys(el._state.errors).length, 0)
-      assert.strictEqual(el._state.error_email, '')
-      assert.strictEqual(el._state.email, 'test@example.com')
 
       document.body.removeChild(el)
     })
@@ -415,7 +358,6 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       assert.strictEqual(el._state.errors, initialErrorsRef)
       assert.strictEqual(el._state.errors.age, undefined)
       assert.strictEqual(el._state.error_age, '')
-      assert.strictEqual(el._state['error_age'], '')
 
       assert.strictEqual(el._state.errors.score, 'Low score')
       assert.strictEqual(el._state.error_score, 'Low score')

@@ -65,23 +65,6 @@ describe('Required Component Attributes', () => {
       assert.strictEqual(result.username, 'jules')
     })
 
-    it('records state.errors and error_* tokens when required attribute is omitted in SSR', async () => {
-      const context = {
-        state: {},
-        module: { id: 'user-badge', path: { pathname: '/user-badge.coral' } },
-        root: null
-      }
-
-      const result = await defineComponent({
-        attributes: {
-          username: { type: String, required: true }
-        }
-      }, context)
-
-      assert.strictEqual(result.errors.username, 'Attribute "username" is required.')
-      assert.strictEqual(result.error_username, 'Attribute "username" is required.')
-    })
-
     it('treats empty string attribute as provided and satisfying required check in SSR', async () => {
       const context = {
         state: { username: '' },

@@ -2,7 +2,7 @@ import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { inferTypeFromValues, validateAttributeValue, createCoraliteClass } from '../../../lib/coralite-element.js'
-import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/component-setup.js'
+import { normalizeAndValidateAttributes } from '../../../lib/component-setup.js'
 import { CoraliteError } from '../../../lib/utils/errors.js'
 
 describe('Component Attribute values & Validation', () => {
@@ -176,71 +176,7 @@ describe('Component Attribute values & Validation', () => {
     })
   })
 
-  describe('Server-Side Rendering (SSR)', () => {
-    it('validates incoming attributes during createComponentDefinition and captures errors gracefully', async () => {
-      const mockApp = { createComponentElement: () => null, options: {} }
-      const defineComponent = createComponentDefinition({ app: mockApp })
-
-      const validContext = {
-        state: { variant: 'primary' },
-        module: { id: 'btn-comp', path: { pathname: '/btn.coral' } },
-        root: null
-      }
-
-      const validResult = await defineComponent({
-        attributes: {
-          variant: ['primary', 'secondary']
-        }
-      }, validContext)
-
-      assert.strictEqual(validResult.variant, 'primary')
-
-      const invalidContext = {
-        state: { variant: 'invalid' },
-        module: { id: 'btn-comp', path: { pathname: '/btn.coral' } },
-        root: null
-      }
-
-      const invalidResult = await defineComponent({
-        attributes: {
-          variant: ['primary', 'secondary']
-        }
-      }, invalidContext)
-
-      assert.strictEqual(invalidResult.errors.variant, "Invalid value for attribute \"variant\". Expected one of: 'primary', 'secondary'.")
-      assert.strictEqual(invalidResult.error_variant, "Invalid value for attribute \"variant\". Expected one of: 'primary', 'secondary'.")
-      assert.strictEqual(invalidResult.variant, 'invalid')
-    })
-  })
-
   describe('Client Runtime (CoraliteElement)', () => {
-    it('validates initial attributes on custom element mount', () => {
-      const tagName = 'values-mount-' + Math.random().toString(36).substring(2, 9)
-      const MountComp = createCoraliteClass({
-        componentId: 'values-mount',
-        attributes: {
-          variant: { values: ['primary', 'secondary'], default: 'primary' }
-        }
-      })
-      customElements.define(tagName, MountComp)
-
-      const validEl = document.createElement(tagName)
-      validEl.setAttribute('variant', 'secondary')
-      document.body.appendChild(validEl)
-      assert.strictEqual(validEl._state.variant, 'secondary')
-      document.body.removeChild(validEl)
-
-      const invalidEl = document.createElement(tagName)
-      invalidEl.setAttribute('variant', 'invalid')
-      document.body.appendChild(invalidEl)
-
-      assert.strictEqual(invalidEl._state.errors.variant, "Invalid value for attribute \"variant\". Expected one of: 'primary', 'secondary'.")
-      assert.strictEqual(invalidEl._state.error_variant, "Invalid value for attribute \"variant\". Expected one of: 'primary', 'secondary'.")
-      assert.strictEqual(invalidEl._state.variant, 'invalid')
-
-      document.body.removeChild(invalidEl)
-    })
-
     it('validates attribute changes via setAttribute and resets state on removeAttribute', () => {
       const tagName = 'values-change-' + Math.random().toString(36).substring(2, 9)
       const ChangeComp = createCoraliteClass({

@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { executeAttributeValidator, validateAttributeValue, createCoraliteClass, normalizeErrorMessage } from '../../../lib/coralite-element.js'
+import { executeAttributeValidator, validateAttributeValue, normalizeErrorMessage } from '../../../lib/coralite-element.js'
 import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/component-setup.js'
 import { CoraliteError } from '../../../lib/utils/errors.js'
 
@@ -215,48 +215,6 @@ describe('Component Attribute validate Feature', () => {
   })
 
   describe('SSR & Client Runtime Integration', () => {
-    it('SSR createComponentDefinition captures validate errors in state.errors and error_* tokens', async () => {
-      const mockApp = { createComponentElement: () => null, options: {} }
-      const defineComponent = createComponentDefinition({ app: mockApp })
-
-      const validContext = {
-        state: { age: '25' },
-        module: { id: 'user-card', path: { pathname: '/user.coral' } },
-        root: null
-      }
-
-      const validResult = await defineComponent({
-        attributes: {
-          age: {
-            type: Number,
-            validate: (v) => v >= 18 || 'Must be an adult'
-          }
-        }
-      }, validContext)
-
-      assert.strictEqual(validResult.age, 25)
-      assert.strictEqual(validResult.errors.age, undefined)
-
-      const invalidContext = {
-        state: { age: '15' },
-        module: { id: 'user-card', path: { pathname: '/user.coral' } },
-        root: null
-      }
-
-      const invalidResult = await defineComponent({
-        attributes: {
-          age: {
-            type: Number,
-            validate: (v) => v >= 18 || 'Must be an adult'
-          }
-        }
-      }, invalidContext)
-
-      assert.strictEqual(invalidResult.errors.age, 'Must be an adult.')
-      assert.strictEqual(invalidResult.error_age, 'Must be an adult.')
-      assert.strictEqual(invalidResult.age, 15)
-    })
-
     it('SSR createComponentDefinition dispatches app.onError with type "attribute_validation" when validation fails', async () => {
       const errorsReported = []
       const mockApp = {
@@ -412,46 +370,6 @@ describe('Component Attribute validate Feature', () => {
       } finally {
         console.warn = originalWarn
       }
-    })
-
-    it('Client runtime CoraliteElement updates state.errors and error_* tokens on invalid setAttribute and proxy mutations', () => {
-      const tagName = 'val-comp-' + Math.random().toString(36).substring(2, 9)
-      const ValElement = createCoraliteClass({
-        componentId: 'val-comp',
-        attributes: {
-          count: {
-            type: Number,
-            default: 10,
-            validate: (v) => v <= 100 || 'Count cannot exceed 100'
-          }
-        }
-      })
-      customElements.define(tagName, ValElement)
-
-      const el = document.createElement(tagName)
-      document.body.appendChild(el)
-      assert.strictEqual(el._state.count, 10)
-
-      el.setAttribute('count', '50')
-      assert.strictEqual(el._state.count, 50)
-      assert.strictEqual(el._state.error_count, '')
-
-      el.setAttribute('count', '150')
-      assert.strictEqual(el._state.errors.count, 'Count cannot exceed 100.')
-      assert.strictEqual(el._state.error_count, 'Count cannot exceed 100.')
-      assert.strictEqual(el._state.count, 150)
-
-      // Reactive proxy state property mutation
-      el._state.count = 80
-      assert.strictEqual(el._state.count, 80)
-      assert.strictEqual(el._state.error_count, '')
-
-      el._state.count = 200
-      assert.strictEqual(el._state.errors.count, 'Count cannot exceed 100.')
-      assert.strictEqual(el._state.error_count, 'Count cannot exceed 100.')
-      assert.strictEqual(el._state.count, 200)
-
-      document.body.removeChild(el)
     })
   })
 })

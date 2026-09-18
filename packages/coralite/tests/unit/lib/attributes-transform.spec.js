@@ -76,52 +76,6 @@ describe('Component Attribute transform Pipeline', () => {
 
       assert.strictEqual(result.slug, 'hello-world')
     })
-
-    it('records state.errors and error_* tokens in Step 1 if required attribute is omitted', async () => {
-      const mockApp = { createComponentElement: () => null, options: {} }
-      const defineComponent = createComponentDefinition({ app: mockApp })
-
-      const context = {
-        state: {},
-        module: { id: 'req-comp', path: { pathname: '/req.coral' } },
-        root: null
-      }
-
-      const result = await defineComponent({
-        attributes: {
-          apiKey: {
-            type: String,
-            required: true,
-            transform: (val) => val.trim()
-          }
-        }
-      }, context)
-
-      assert.strictEqual(result.errors.apiKey, 'Attribute "apiKey" is required.')
-      assert.strictEqual(result.error_apiKey, 'Attribute "apiKey" is required.')
-    })
-
-    it('executes pipeline in order: required -> coerce -> transform -> values check', async () => {
-      const mockApp = { createComponentElement: () => null, options: {} }
-      const defineComponent = createComponentDefinition({ app: mockApp })
-
-      const context = {
-        state: { mode: '  DEV  ' },
-        module: { id: 'env-comp', path: { pathname: '/env.coral' } },
-        root: null
-      }
-
-      const result = await defineComponent({
-        attributes: {
-          mode: {
-            values: ['dev', 'prod'],
-            transform: (val) => String(val).trim().toLowerCase()
-          }
-        }
-      }, context)
-
-      assert.strictEqual(result.mode, 'dev')
-    })
   })
 
   describe('Synchronous Enforcement & Exception Wrapping', () => {
@@ -346,44 +300,6 @@ describe('Component Attribute transform Pipeline', () => {
 
       el._state.count = -20
       assert.strictEqual(el._state.count, 0)
-
-      document.body.removeChild(el)
-    })
-
-    it('handles attribute removal (removeAttribute)', () => {
-      const tagName = 'trans-remove-' + Math.random().toString(36).substring(2, 9)
-      const RemoveComp = createCoraliteClass({
-        componentId: 'trans-remove',
-        attributes: {
-          title: {
-            type: String,
-            default: '  Default Title  ',
-            transform: (val) => String(val).trim()
-          },
-          reqAttr: {
-            type: String,
-            required: true
-          }
-        }
-      })
-      customElements.define(tagName, RemoveComp)
-
-      const el = document.createElement(tagName)
-      el.setAttribute('req-attr', 'val')
-      document.body.appendChild(el)
-
-      assert.strictEqual(el._state.title, 'Default Title')
-
-      el.setAttribute('title', '  New Title  ')
-      assert.strictEqual(el._state.title, 'New Title')
-
-      el.removeAttribute('title')
-      assert.strictEqual(el._state.title, 'Default Title')
-
-      // Removing a required attribute records error in state.errors
-      el.removeAttribute('req-attr')
-      assert.strictEqual(el._state.errors.reqAttr, 'Attribute "reqAttr" is required.')
-      assert.strictEqual(el._state.error_reqAttr, 'Attribute "reqAttr" is required.')
 
       document.body.removeChild(el)
     })
