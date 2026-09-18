@@ -174,6 +174,18 @@ describe('Component Attribute values & Validation', () => {
         return true
       })
     })
+
+    it('blocks { type: Object } schema objects on attributes', () => {
+      assert.throws(() => {
+        normalizeAndValidateAttributes({
+          data: { type: Object }
+        }, 'my-btn')
+      }, (err) => {
+        assert.ok(err instanceof CoraliteError)
+        assert.ok(err.message.includes('Object and Array types are blocked'))
+        return true
+      })
+    })
   })
 
   describe('Client Runtime (CoraliteElement)', () => {

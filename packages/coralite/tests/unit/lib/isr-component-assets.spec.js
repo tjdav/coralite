@@ -143,4 +143,44 @@ describe('ISR Component Assets, Migration & Self-Healing', () => {
     assert.strictEqual(results2.length, 1)
     assert.strictEqual(results2[0].status, 'skipped', 'Modifying unused component should not force rebuild of page index.html')
   })
+
+  it('re-renders physical pages when a referenced component file changes', async () => {
+    await project.writePage('index.html', '<phys-comp></phys-comp>')
+    await project.writeComponent('phys-comp.html', `
+      <template id="phys-comp"><div>Version 1</div></template>
+      <script type="module">
+        import { defineComponent } from 'coralite';
+        export default defineComponent({
+          async server() { return { data: "V1" } }
+        });
+      </script>
+    `)
+
+    const coralite = await project.createCoralite({ output: undefined })
+
+    // Build 1: physical page renders and records its component dependency hashes
+    const results1 = await coralite.build()
+    assert.strictEqual(results1.length, 1)
+    assert.strictEqual(results1[0].status, undefined)
+
+    // Build 2: unchanged -> skipped
+    const results2 = await coralite.build()
+    assert.strictEqual(results2.length, 1)
+    assert.strictEqual(results2[0].status, 'skipped', 'Unchanged physical page should be skipped')
+
+    // Build 3: mutate the referenced component file -> physical page must rebuild
+    await project.writeComponent('phys-comp.html', `
+      <template id="phys-comp"><div>Version 2 Updated</div></template>
+      <script type="module">
+        import { defineComponent } from 'coralite';
+        export default defineComponent({
+          async server() { return { data: "V2" } }
+        });
+      </script>
+    `)
+
+    const results3 = await coralite.build()
+    assert.strictEqual(results3.length, 1)
+    assert.strictEqual(results3[0].status, undefined, 'Physical page must re-render when its component file changes')
+  })
 })

@@ -295,4 +295,37 @@ describe('emit Helper in Client Context', () => {
     assert.ok(collisions[0].message.includes("Attribute 'emit' collides with reserved slot context key"))
     assert.ok(collisions[1].message.includes("Server property 'emit' collides with reserved slot context key"))
   })
+
+  it('should honor composed: false override in options', (t, done) => {
+    let clientEmit = null
+    const tagName = 'emit-composed-comp-' + Math.random().toString(36).substring(2, 9)
+
+    const EmitElement = createCoraliteClass({
+      componentId: 'emit-composed-comp',
+      client: ({ emit }) => {
+        clientEmit = emit
+      }
+    })
+    customElements.define(tagName, EmitElement)
+
+    const el = document.createElement(tagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      let receivedEvent = null
+      el.addEventListener('non-composed', (e) => {
+        receivedEvent = e
+      })
+
+      const res = clientEmit('non-composed', { payload: 'data' }, { composed: false })
+
+      assert.strictEqual(res, true)
+      assert.ok(receivedEvent)
+      assert.strictEqual(receivedEvent.composed, false)
+      assert.deepEqual(receivedEvent.detail, { payload: 'data' })
+
+      document.body.removeChild(el)
+      done()
+    })
+  })
 })

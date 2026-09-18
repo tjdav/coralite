@@ -104,6 +104,7 @@ describe('Component Attribute validate Feature', () => {
       assert.strictEqual(normalizeErrorMessage('  trimmed whitespace   '), 'trimmed whitespace.')
       assert.strictEqual(normalizeErrorMessage(''), '')
       assert.strictEqual(normalizeErrorMessage(null), '')
+      assert.strictEqual(normalizeErrorMessage(42), '')
     })
 
     it('formats error messages consistently across validate returned strings and thrown errors (punctuation matrix)', () => {

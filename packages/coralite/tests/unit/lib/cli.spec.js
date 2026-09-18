@@ -205,4 +205,58 @@ export default {
       assert.match(fixedCode, /definePlugin/)
     })
   })
+
+  describe('coralite build', () => {
+    test('builds pages into the output directory and exits cleanly', () => {
+      const compDir = join(tmpDir, 'components')
+      const pageDir = join(tmpDir, 'pages')
+      mkdirSync(compDir, { recursive: true })
+      mkdirSync(pageDir, { recursive: true })
+      writeFileSync(join(compDir, 'hello-card.html'), `
+<template id="hello-card">
+  <div>Hello {{ title }}</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    getters: {
+      title: () => 'World'
+    }
+  })
+</script>
+`)
+      writeFileSync(join(pageDir, 'index.html'), '<!DOCTYPE html><html><body><hello-card></hello-card></body></html>')
+
+      runCli('build -c components -p pages -o dist', { cwd: tmpDir, stdio: 'pipe' })
+
+      const outFile = join(tmpDir, 'dist', 'index.html')
+      assert.strictEqual(existsSync(outFile), true)
+      const content = readFileSync(outFile, 'utf8')
+      assert.ok(content.includes('>Hello <c-token>World</c-token><'))
+    })
+  })
+
+  describe('coralite validate-components', () => {
+    test('validates a valid component and reports success', () => {
+      const compDir = join(tmpDir, 'components')
+      mkdirSync(compDir, { recursive: true })
+      writeFileSync(join(compDir, 'ok-card.html'), `
+<template id="ok-card">
+  <div>{{ title }}</div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    getters: {
+      title: () => 'Hello World'
+    }
+  })
+</script>
+`)
+
+      const output = runCli('validate-components -c components', { cwd: tmpDir }).toString()
+      assert.match(output, /ok-card/)
+      assert.match(output, /VALID|valid/i)
+    })
+  })
 })

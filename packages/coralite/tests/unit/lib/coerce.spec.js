@@ -13,13 +13,25 @@ describe('coerce', () => {
     assert.strictEqual(coerce('123', Number), 123)
     assert.strictEqual(coerce('123', 'Number'), 123)
     assert.strictEqual(coerce('abc', Number), null)
+    assert.strictEqual(coerce('   ', Number), null)
+    assert.strictEqual(coerce(Number.NaN, Number), null)
   })
 
   it('should coerce to Boolean', () => {
     assert.strictEqual(coerce('', Boolean), true)
     assert.strictEqual(coerce('true', Boolean), true)
     assert.strictEqual(coerce('false', Boolean), false)
+    assert.strictEqual(coerce(null, Boolean), false)
+    assert.strictEqual(coerce('null', Boolean), false)
     assert.strictEqual(coerce('anything', 'Boolean'), 'anything')
+  })
+
+  it('should reject template tokens for non-String targets', () => {
+    assert.strictEqual(coerce('{{ title }}', Number), null)
+    // Boolean has its own string passthrough above the token guard,
+    // so token strings survive there but are blocked for Number.
+    assert.strictEqual(coerce('{{ flag }}', Boolean), '{{ flag }}')
+    assert.strictEqual(coerce('{{ title }}', String), '{{ title }}')
   })
 
   it('should coerce to String', () => {

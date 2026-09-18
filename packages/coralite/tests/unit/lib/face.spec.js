@@ -490,22 +490,41 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     assert.equal(typeof capturedCtx.form, 'object')
     assert.equal(capturedCtx.form, form)
 
-    assert.equal(typeof capturedCtx.validity, 'object')
-    assert.equal(capturedCtx.validity.valid, true)
+    document.body.removeChild(form)
+  })
 
-    // checkValidity() is a live method reflecting the current validity state
-    assert.equal(typeof capturedCtx.checkValidity(), 'boolean')
-    assert.equal(capturedCtx.checkValidity(), true)
+  await t.test('16. formAssociatedCallback & native validity passthrough', () => {
+    const FormAssocClass = createCoraliteClass({
+      componentId: 'c-form-assoc-native',
+      formAssociated: true
+    })
+    const tag = 'c-form-assoc-native'
+    customElements.define(tag, FormAssocClass)
 
-    assert.equal(typeof capturedCtx.validationMessage, 'string')
-    assert.equal(capturedCtx.validationMessage, '')
+    const form = document.createElement('form')
+    document.body.appendChild(form)
+    const el = document.createElement(tag)
+    form.appendChild(el)
 
-    // Mutate state to invalid and verify live getter reflects without function call
-    el._state.value = 'ab'
-    assert.equal(capturedCtx.validity.valid, false)
-    assert.equal(capturedCtx.validity.customError, true)
-    assert.equal(capturedCtx.validationMessage, 'Must be at least 3 characters.')
+    const otherForm = document.createElement('form')
+    document.body.appendChild(otherForm)
+    el.formAssociatedCallback(otherForm)
+    assert.equal(el._form, otherForm)
+
+    assert.equal(typeof el.reportValidity, 'function')
+    assert.equal(el.reportValidity(), true)
+    assert.equal(el.willValidate, true)
+    assert.equal(el.labels, el._internals.labels)
+
+    el._internals.setValidity({ customError: true }, 'native invalid')
+    assert.equal(el.checkValidity(), false)
+    assert.equal(el.reportValidity(), false)
+    assert.equal(el.validationMessage, 'native invalid')
+
+    el._internals.setValidity({})
+    assert.equal(el.checkValidity(), true)
 
     document.body.removeChild(form)
+    document.body.removeChild(otherForm)
   })
 })
