@@ -756,4 +756,26 @@ ${templateLines}
     assert.ok(duration < 2000, `Execution took ${duration.toFixed(2)}ms (expected < 2000ms)`)
     assert.strictEqual(result.modified, false)
   })
+
+  test('CORALITE-W402: preserves template refs when queried dynamically via template literals', () => {
+    const input = `<template>
+  <button ref="avatarImage">Avatar</button>
+  <div ref="panelBox">Panel</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ root }) {
+      const name = 'avatarImage'
+      const btn = root.querySelector(\`[ref="\${name}"]\`)
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'dynamic-ref-fix.html' })
+    assert.strictEqual(result.modified, false)
+    assert.ok(result.outputCode.includes('ref="avatarImage"'))
+    assert.ok(result.outputCode.includes('ref="panelBox"'))
+  })
 })

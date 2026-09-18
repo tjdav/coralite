@@ -130,6 +130,43 @@ export function getNodePropName (propNode, isComputed = false) {
 }
 
 /**
+ * Extracts string value from either a Literal or a TemplateLiteral AST node.
+ * For single-quasi static template literals or simple expressions, returns string value.
+ *
+ * @param {object} node - AST node
+ * @returns {string|null} String value or null
+ */
+export function getStringOrTemplateValue (node) {
+  if (!node) {
+    return null
+  }
+  if (node.type === 'Literal' && typeof node.value === 'string') {
+    return node.value
+  }
+  if (node.type === 'TemplateLiteral') {
+    const quasis = node.quasis || []
+    const expressions = node.expressions || []
+    if (quasis.length === 1 && expressions.length === 0) {
+      return quasis[0].value ? (quasis[0].value.cooked ?? quasis[0].value.raw) : ''
+    }
+    if (quasis.length === 2 && expressions.length === 1) {
+      const q0 = quasis[0].value ? (quasis[0].value.cooked ?? quasis[0].value.raw) : ''
+      const q1 = quasis[1].value ? (quasis[1].value.cooked ?? quasis[1].value.raw) : ''
+      const expr = expressions[0]
+      if (!q0 && !q1) {
+        if (expr.type === 'Identifier') {
+          return expr.name
+        }
+        if (expr.type === 'Literal' && typeof expr.value === 'string') {
+          return expr.value
+        }
+      }
+    }
+  }
+  return null
+}
+
+/**
  * Recursively extracts destructured property keys and local binding names from an ObjectPattern AST node.
  *
  * @param {object} patternNode - ObjectPattern AST node
@@ -377,15 +414,18 @@ export function isRefUsedInSelector (refName, stringPool, cleanCss) {
   const variants = [refName, kebabToCamel(refName), camelToKebab(refName)]
   const uniqueVariants = Array.from(new Set(variants))
   const escapedVariants = uniqueVariants.map(v => v.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'))
+
   const selectorPattern = new RegExp(`(?<![\\w-])ref\\s*[$*~^]?=\\s*["']?\\b(?:${escapedVariants.join('|')})\\b["']?`, 'i')
+  const interpolatedPattern = new RegExp(`(?<![\\w-])ref\\s*[$*~^]?=\\s*["']?\\$?\\{\\s*(?:${escapedVariants.join('|')})\\s*\\}["']?`, 'i')
+  const dynamicRefPattern = /(?<![\w-])ref\s*[$*~^]?=\s*["']?(?:\$\{|\{)/i
 
   for (const str of stringPool) {
-    if (selectorPattern.test(str)) {
+    if (selectorPattern.test(str) || interpolatedPattern.test(str) || dynamicRefPattern.test(str)) {
       return true
     }
   }
 
-  if (selectorPattern.test(cleanCss)) {
+  if (selectorPattern.test(cleanCss) || interpolatedPattern.test(cleanCss)) {
     return true
   }
 

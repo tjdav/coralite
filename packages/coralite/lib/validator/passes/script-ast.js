@@ -5,6 +5,7 @@ import {
   ALLOWED_COMPONENT_CONFIG_KEYS,
   TOP_LEVEL_CONFIG_KEYS,
   getPropKeyName,
+  getNodePropName,
   createDiagnostic
 } from '../helpers.js'
 
@@ -127,10 +128,53 @@ export function parseScriptAST (context) {
           }
         },
         TemplateLiteral (tplNode) {
-          for (const elem of tplNode.quasis || []) {
+          const quasis = tplNode.quasis || []
+          const expressions = tplNode.expressions || []
+
+          for (const elem of quasis) {
             if (elem.value && elem.value.raw) {
               scriptStringPool.push(elem.value.raw)
             }
+          }
+
+          let reconstructed = ''
+          let rawReconstructed = ''
+          for (let i = 0; i < quasis.length; i++) {
+            const elem = quasis[i]
+            const qVal = (elem.value && (elem.value.cooked ?? elem.value.raw)) || ''
+            const qRaw = (elem.value && elem.value.raw) || ''
+            reconstructed += qVal
+            rawReconstructed += qRaw
+            if (i < expressions.length) {
+              const expr = expressions[i]
+              if (expr.type === 'Identifier') {
+                reconstructed += expr.name
+                rawReconstructed += `\${${expr.name}}`
+                scriptStringPool.push(expr.name)
+              } else if (expr.type === 'Literal' && expr.value !== undefined) {
+                reconstructed += String(expr.value)
+                rawReconstructed += `\${${String(expr.value)}}`
+                if (typeof expr.value === 'string') {
+                  scriptStringPool.push(expr.value)
+                }
+              } else if (expr.type === 'MemberExpression') {
+                const pName = getNodePropName(expr.property, expr.computed)
+                if (pName) {
+                  reconstructed += pName
+                  scriptStringPool.push(pName)
+                }
+                rawReconstructed += '${...}'
+              } else {
+                rawReconstructed += '${...}'
+              }
+            }
+          }
+
+          if (reconstructed) {
+            scriptStringPool.push(reconstructed)
+          }
+          if (rawReconstructed && rawReconstructed !== reconstructed) {
+            scriptStringPool.push(rawReconstructed)
           }
         }
       })

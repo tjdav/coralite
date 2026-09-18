@@ -1374,4 +1374,184 @@ ${templateLines}
       rmSync(tmpDir, { recursive: true, force: true })
     })
   })
+
+  // 27. Template Literals Bypassing Ref Selector Fallback
+  describe('Template Literals Bypassing Ref Selector Fallback', () => {
+    test('recognizes dynamic and interpolated ref selectors in template literals', () => {
+      // 1. Template literal query selector with expression identifier matching ref name
+      const code1 = `<template><img ref="avatarImage" src="avatar.png"></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      const avatarImage = 'avatarImage'
+      const img = root.querySelector(\`[ref="\${avatarImage}"]\`)
+    }
+  })
+</script>`
+      const res1 = validateComponentSource(code1, 'tpl-ident.html')
+      assert.strictEqual(res1.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
+
+      // 2. Template literal query selector with string literal inside expression
+      const code2 = `<template><img ref="avatarImage" src="avatar.png"></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      const img = root.querySelector(\`[ref="\${'avatarImage'}"]\`)
+    }
+  })
+</script>`
+      const res2 = validateComponentSource(code2, 'tpl-string-lit.html')
+      assert.strictEqual(res2.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
+
+      // 3. Template literal query selector with dynamic identifier
+      const code3 = `<template><img ref="avatarImage" src="avatar.png"></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      const name = 'avatarImage'
+      const img = root.querySelector(\`[ref="\${name}"]\`)
+    }
+  })
+</script>`
+      const res3 = validateComponentSource(code3, 'tpl-dynamic.html')
+      assert.strictEqual(res3.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
+
+      // 4. Template literal query selector without $ (e.g. {avatarImage})
+      const code4 = `<template><img ref="avatarImage" src="avatar.png"></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      const avatarImage = 'avatarImage'
+      const img = root.querySelector(\`[ref="{avatarImage}"]\`)
+    }
+  })
+</script>`
+      const res4 = validateComponentSource(code4, 'tpl-no-dollar.html')
+      assert.strictEqual(res4.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
+
+      // 5. Static template literal query selector
+      const code5 = `<template><img ref="avatarImage" src="avatar.png"></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      const img = root.querySelector(\`[ref="avatarImage"]\`)
+    }
+  })
+</script>`
+      const res5 = validateComponentSource(code5, 'tpl-static.html')
+      assert.strictEqual(res5.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
+
+      // 6. refs(`myBtn`) using ES6 template literal
+      const code6 = `<template><button ref="myBtn">Click</button></template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ refs }) => {
+      const btn = refs(\`myBtn\`)
+    }
+  })
+</script>`
+      const res6 = validateComponentSource(code6, 'tpl-refs-call.html')
+      assert.strictEqual(res6.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
+
+      // 7. Multi-attribute selectors with template literals
+      const code7 = `<template>
+  <button ref="btn">Action</button>
+  <button ref="panel">Panel</button>
+</template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      const btn = 'btn'
+      const b1 = root.querySelector(\`button.active[ref="\${btn}"]\`)
+      const b2 = root.querySelector(\`[ref="\${btn}"][aria-expanded="true"]\`)
+    }
+  })
+</script>`
+      const res7 = validateComponentSource(code7, 'tpl-multi-attr.html')
+      assert.strictEqual(res7.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
+    })
+
+    test('negative tests: warns CORALITE-W402 for non-ref attribute interpolations, non-matching static refs, ID/class template literals, and comments', () => {
+      // 1. Unrelated attribute interpolations (data-ref, data-reference, href, preference)
+      const code1 = `<template>
+  <button ref="targetBtn">Click</button>
+</template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      const name = 'targetBtn'
+      root.querySelector(\`[data-ref="\${name}"]\`)
+      root.querySelector(\`[data-reference="\${name}"]\`)
+      root.querySelector(\`[href="\${name}"]\`)
+      root.querySelector(\`[preference="\${name}"]\`)
+    }
+  })
+</script>`
+      const res1 = validateComponentSource(code1, 'neg-unrelated-attrs.html')
+      const w402s1 = res1.diagnostics.filter(d => d.code === 'CORALITE-W402')
+      assert.strictEqual(w402s1.length, 1)
+      assert.ok(w402s1[0].message.includes('targetBtn'))
+
+      // 2. Non-matching static ref in template literal
+      const code2 = `<template>
+  <button ref="btnA">Button A</button>
+</template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      root.querySelector(\`[ref="btnB"]\`)
+    }
+  })
+</script>`
+      const res2 = validateComponentSource(code2, 'neg-nonmatching-static.html')
+      const w402s2 = res2.diagnostics.filter(d => d.code === 'CORALITE-W402')
+      assert.strictEqual(w402s2.length, 1)
+      assert.ok(w402s2[0].message.includes('btnA'))
+
+      // 3. Template literals without ref= (#${name} or .${name})
+      const code3 = `<template>
+  <button ref="btnA">Button A</button>
+</template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      const name = 'btnA'
+      root.querySelector(\`#\${name}\`)
+      root.querySelector(\`.\${name}\`)
+    }
+  })
+</script>`
+      const res3 = validateComponentSource(code3, 'neg-id-class-tpl.html')
+      const w402s3 = res3.diagnostics.filter(d => d.code === 'CORALITE-W402')
+      assert.strictEqual(w402s3.length, 1)
+      assert.ok(w402s3[0].message.includes('btnA'))
+
+      // 4. Commented-out queries
+      const code4 = `<template>
+  <button ref="btnA">Button A</button>
+</template>
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client: ({ root }) => {
+      // root.querySelector(\`[ref="\${name}"]\`)
+    }
+  })
+</script>`
+      const res4 = validateComponentSource(code4, 'neg-commented.html')
+      const w402s4 = res4.diagnostics.filter(d => d.code === 'CORALITE-W402')
+      assert.strictEqual(w402s4.length, 1)
+      assert.ok(w402s4[0].message.includes('btnA'))
+    })
+  })
 })

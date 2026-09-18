@@ -5,6 +5,7 @@ import {
   getPropKeyName,
   getNodePropName,
   extractDestructuredKeys,
+  getStringOrTemplateValue,
   createDiagnostic
 } from './helpers.js'
 
@@ -429,8 +430,9 @@ export function analyzeFunctionBlock (
 
       if (isRefCall && callNode.arguments.length > 0) {
         const arg0 = callNode.arguments[0]
-        if (arg0.type === 'Literal' && typeof arg0.value === 'string') {
-          targetRefsMap.set(arg0.value, {
+        const refVal = getStringOrTemplateValue(arg0)
+        if (refVal) {
+          targetRefsMap.set(refVal, {
             line: callNode.loc.start.line + scriptStartLine,
             column: callNode.loc.start.column + 1
           })
@@ -444,12 +446,14 @@ export function analyzeFunctionBlock (
 
       if (isObserveCall && callNode.arguments.length > 0) {
         const targetArg = callNode.arguments[0]
-        if (targetArg.type === 'Literal' && typeof targetArg.value === 'string') {
-          targetStateSet.add(targetArg.value)
+        const obsVal = getStringOrTemplateValue(targetArg)
+        if (obsVal) {
+          targetStateSet.add(obsVal)
         } else if (targetArg.type === 'ArrayExpression') {
           for (const el of targetArg.elements) {
-            if (el && el.type === 'Literal' && typeof el.value === 'string') {
-              targetStateSet.add(el.value)
+            const elVal = getStringOrTemplateValue(el)
+            if (elVal) {
+              targetStateSet.add(elVal)
             }
           }
         }

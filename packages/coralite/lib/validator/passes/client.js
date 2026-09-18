@@ -2,6 +2,7 @@ import { simple as walkJS, ancestor as walkAncestorJS } from 'acorn-walk'
 import {
   getPropKeyName,
   getNodePropName,
+  getStringOrTemplateValue,
   createDiagnostic
 } from '../helpers.js'
 import { analyzeFunctionBlock } from '../function-analyzer.js'
@@ -186,9 +187,7 @@ export function validateClientBlock (context) {
           }
           if (isRefsCall && dNode.init.arguments.length > 0) {
             const arg0 = dNode.init.arguments[0]
-            if (arg0.type === 'Literal' && typeof arg0.value === 'string') {
-              refName = arg0.value
-            }
+            refName = getStringOrTemplateValue(arg0)
           }
         } else if (dNode.init.type === 'MemberExpression') {
           if (dNode.init.object.type === 'Identifier' && dNode.init.object.name === 'refs') {
@@ -243,9 +242,7 @@ export function validateClientBlock (context) {
         }
         if (isRefsCall && testNode.arguments.length > 0) {
           const arg0 = testNode.arguments[0]
-          if (arg0.type === 'Literal' && typeof arg0.value === 'string') {
-            return arg0.value
-          }
+          return getStringOrTemplateValue(arg0)
         }
       } else if (testNode.type === 'MemberExpression') {
         if (testNode.object.type === 'Identifier' && testNode.object.name === 'refs') {
