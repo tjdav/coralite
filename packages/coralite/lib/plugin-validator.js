@@ -4,7 +4,7 @@ import { readFile, readdir, stat, access } from 'node:fs/promises'
 import { join, resolve, extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import kleur from 'kleur'
-import { buildCodeframe } from './utils/diagnostics.js'
+import { buildCodeframe, normalizeErrorCodes, matchesErrorCode } from './utils/diagnostics.js'
 
 /**
  * @import {
@@ -1484,46 +1484,130 @@ export async function validatePluginsDir (pluginsDir) {
  * @param {CoralitePluginDirectoryValidationReport} report - Directory report
  * @param {Object} [options={}] - Output options
  * @param {string} [options.format='console'] - Format: 'console' or 'json'
+ * @param {string|string[]} [options.errorCode] - Error code(s) to filter by
+ * @param {string|string[]} [options.errorCodes] - Alias for errorCode
+ * @param {'all'|'failed'|'passed'} [options.status] - Status filter
+ * @param {boolean} [options.onlyFailed] - Display only failed files
  * @returns {string} Formatted output string
  */
 export function formatPluginValidationReport (report, options = {}) {
   const format = options.format || 'console'
+  const targetCodesSet = normalizeErrorCodes(options.errorCode || options.errorCodes)
+  const isFilterActive = Boolean(targetCodesSet || options.status || options.onlyFailed)
+  let effectiveStatus = options.status
+  if (!effectiveStatus) {
+    if (options.onlyFailed || targetCodesSet) {
+      effectiveStatus = 'failed'
+    } else {
+      effectiveStatus = 'all'
+    }
+  }
+
+  const rawPlugins = report?.plugins || []
+  const filteredPlugins = []
+
+  let totalErrors = 0
+  let totalWarnings = 0
+  let validPluginsCount = 0
+
+  for (const plugin of rawPlugins) {
+    const allDiags = plugin.diagnostics || []
+    const diagnostics = targetCodesSet ? allDiags.filter(d => matchesErrorCode(d.code, targetCodesSet)) : allDiags
+
+    const allIssues = plugin.issues || []
+    const issues = targetCodesSet ? allIssues.filter(i => matchesErrorCode(i.code, targetCodesSet)) : allIssues
+
+    const errorsCount = issues.filter(i => i.type === 'error').length
+    const warningsCount = issues.filter(i => i.type === 'warning').length
+    const isPluginValid = errorsCount === 0 && warningsCount === 0
+
+    if (effectiveStatus === 'failed' && isPluginValid) {
+      continue
+    }
+    if (effectiveStatus === 'passed' && !isPluginValid) {
+      continue
+    }
+
+    totalErrors += errorsCount
+    totalWarnings += warningsCount
+    if (isPluginValid) {
+      validPluginsCount++
+    }
+
+    filteredPlugins.push({
+      ...plugin,
+      valid: isPluginValid,
+      issues,
+      diagnostics,
+      metrics: {
+        errors: errorsCount,
+        warnings: warningsCount
+      }
+    })
+  }
+
+  const totalPlugins = filteredPlugins.length
 
   if (format === 'json') {
-    return JSON.stringify(report, null, 2) + '\n'
+    const jsonReport = {
+      ...(isFilterActive ? {
+        filter: {
+          ...(targetCodesSet ? { errorCodes: Array.from(targetCodesSet) } : {}),
+          status: effectiveStatus
+        }
+      } : {}),
+      plugins: filteredPlugins,
+      summary: {
+        totalPlugins,
+        validPlugins: validPluginsCount,
+        errorCount: totalErrors,
+        warningCount: totalWarnings
+      },
+      metrics: {
+        totalPlugins,
+        validPlugins: validPluginsCount,
+        totalErrors,
+        totalWarnings
+      }
+    }
+    return JSON.stringify(jsonReport, null, 2) + '\n'
   }
 
   let out = '\n' + kleur.bold().cyan('🪸 Coralite Plugin Validation Report') + '\n'
   out += kleur.gray('─'.repeat(60)) + '\n\n'
 
-  for (const plugin of report.plugins) {
-    const status = plugin.valid
-      ? kleur.green().bold('✔ VALID')
-      : kleur.red().bold('✖ INVALID')
+  if (targetCodesSet && totalPlugins === 0) {
+    out += kleur.green().bold(`✔ No issues matching error code(s): ${Array.from(targetCodesSet).join(', ')}\n\n`)
+  } else {
+    for (const plugin of filteredPlugins) {
+      const status = plugin.valid
+        ? kleur.green().bold('✔ VALID')
+        : kleur.red().bold('✖ INVALID')
 
-    out += `${kleur.bold(plugin.filePath)} (${kleur.bold(plugin.pluginName)}) ─ ${status}\n`
+      out += `${kleur.bold(plugin.filePath)} (${kleur.bold(plugin.pluginName)}) ─ ${status}\n`
 
-    if (plugin.issues.length === 0) {
-      out += `  ${kleur.green('✔ Plugin contract, hooks, and isomorphic boundaries are valid.')}\n\n`
-    } else {
-      for (const issue of plugin.issues) {
-        const prefix = issue.type === 'error'
-          ? kleur.red('  ✖ [ERROR]')
-          : kleur.yellow('  ⚠ [WARN]')
-        const loc = issue.line ? kleur.gray(` (line ${issue.line})`) : ''
-        out += `${prefix} ${issue.message}${loc}\n`
+      if (plugin.issues.length === 0) {
+        out += `  ${kleur.green('✔ Plugin contract, hooks, and isomorphic boundaries are valid.')}\n\n`
+      } else {
+        for (const issue of plugin.issues) {
+          const prefix = issue.type === 'error'
+            ? kleur.red('  ✖ [ERROR]')
+            : kleur.yellow('  ⚠ [WARN]')
+          const loc = issue.line ? kleur.gray(` (line ${issue.line})`) : ''
+          out += `${prefix} ${issue.message}${loc}\n`
+        }
+        out += '\n'
       }
-      out += '\n'
     }
   }
 
   out += kleur.gray('─'.repeat(60)) + '\n'
-  const summaryColor = report.metrics.totalErrors === 0 ? kleur.green().bold : kleur.red().bold
+  const summaryColor = totalErrors === 0 ? kleur.green().bold : kleur.red().bold
 
   out += summaryColor(
-    `Summary: ${report.metrics.totalPlugins} plugin(s) validated | ` +
-    `Valid: ${report.metrics.validPlugins}/${report.metrics.totalPlugins} | ` +
-    `Errors: ${report.metrics.totalErrors} | Warnings: ${report.metrics.totalWarnings}`
+    `Summary: ${totalPlugins} plugin(s) validated | ` +
+    `Valid: ${validPluginsCount}/${totalPlugins} | ` +
+    `Errors: ${totalErrors} | Warnings: ${totalWarnings}`
   ) + '\n\n'
 
   return out

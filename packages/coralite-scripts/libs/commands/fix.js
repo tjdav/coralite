@@ -6,7 +6,9 @@ import {
   validateComponentsDir,
   applyComponentFixes,
   validatePluginSource,
-  applyPluginFixes
+  applyPluginFixes,
+  normalizeErrorCodes,
+  matchesErrorCode
 } from 'coralite'
 import { checkCommand } from './check.js'
 
@@ -79,6 +81,8 @@ export async function fixCommand (config, options = {}, logger = null) {
     }
   }
 
+  const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
+
   const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components', 'components'], config, cwd)
   const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins', 'plugins'], config, cwd)
 
@@ -97,8 +101,11 @@ export async function fixCommand (config, options = {}, logger = null) {
           return
         }
 
+        const rawDiagnostics = compRes.diagnostics || []
+        const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
         const rawCode = await readFile(compRes.filePath, 'utf8')
-        const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
+        const fixResult = applyComponentFixes(rawCode, diagnostics, {
           filePath: compRes.filePath,
           dryRun: Boolean(options.dryRun)
         })
@@ -145,7 +152,10 @@ export async function fixCommand (config, options = {}, logger = null) {
       pluginFiles.map(async (pFile) => {
         const rawCode = await readFile(pFile, 'utf8')
         const pResult = validatePluginSource(rawCode, pFile)
-        const fixResult = applyPluginFixes(rawCode, pResult.diagnostics || [], {
+        const rawDiagnostics = pResult.diagnostics || []
+        const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
+        const fixResult = applyPluginFixes(rawCode, diagnostics, {
           filePath: pFile,
           dryRun: Boolean(options.dryRun)
         })

@@ -257,4 +257,151 @@ describe('check and fix commands', () => {
 
     assert.ok(fixRes.stdout.includes('No fixable issues found') || fixRes.stdout.includes('Coralite Workspace Check Report'))
   })
+
+  it('10. check --error-code CORALITE-E201 filters output and exits 1 when matching error exists', async () => {
+    // Valid component
+    await project.writeComponent('valid-card.html', `
+<template><div>{{ title }}</div></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { title: { type: String, default: 'Card' } } })
+</script>
+`)
+    // Component with CORALITE-E201
+    await project.writeComponent('counter-btn.html', `
+<template><button>{{ count + 1 }}</button></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
+</script>
+`)
+
+    const res = await project.runCheck(['--error-code', 'CORALITE-E201'])
+    assert.strictEqual(res.exitCode, 1)
+    assert.strictEqual(res.result.hasFailures, true)
+    // Valid component should be suppressed by default when filtering by error code
+    assert.strictEqual(res.stdout.includes('valid-card.html'), false)
+    assert.ok(res.stdout.includes('counter-btn.html'))
+  })
+
+  it('11. check --error-code CORALITE-E102 exits 0 when no matching issue exists for that code', async () => {
+    // Project only has CORALITE-E201
+    await project.writeComponent('counter-btn.html', `
+<template><button>{{ count + 1 }}</button></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
+</script>
+`)
+
+    const res = await project.runCheck(['--error-code', 'CORALITE-E102'])
+    assert.strictEqual(res.exitCode, 0)
+    assert.strictEqual(res.result.hasFailures, false)
+    assert.ok(res.stdout.includes('No issues matching error code(s)'))
+  })
+
+  it('12. check -e E201 normalizes shorthand code to match CORALITE-E201', async () => {
+    await project.writeComponent('counter-btn.html', `
+<template><button>{{ count + 1 }}</button></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
+</script>
+`)
+
+    const res = await project.runCheck(['-e', 'E201'])
+    assert.strictEqual(res.exitCode, 1)
+    assert.ok(res.stdout.includes('counter-btn.html'))
+  })
+
+  it('13. check --status failed / --only-failed suppresses valid components from report', async () => {
+    await project.writeComponent('valid-card.html', `
+<template><div>{{ title }}</div></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { title: { type: String, default: 'Card' } } })
+</script>
+`)
+    await project.writeComponent('counter-btn.html', `
+<template><button>{{ count + 1 }}</button></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
+</script>
+`)
+
+    const res = await project.runCheck(['--only-failed'])
+    assert.strictEqual(res.exitCode, 1)
+    assert.strictEqual(res.stdout.includes('valid-card.html'), false)
+    assert.ok(res.stdout.includes('counter-btn.html'))
+  })
+
+  it('14. check --status passed displays only valid components', async () => {
+    await project.writeComponent('valid-card.html', `
+<template><div>{{ title }}</div></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { title: { type: String, default: 'Card' } } })
+</script>
+`)
+    await project.writeComponent('counter-btn.html', `
+<template><button>{{ count + 1 }}</button></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
+</script>
+`)
+
+    const res = await project.runCheck(['--status', 'passed'])
+    assert.strictEqual(res.stdout.includes('valid-card.html'), true)
+    assert.strictEqual(res.stdout.includes('counter-btn.html'), false)
+  })
+
+  it('15. check --format json --error-code CORALITE-E201 attaches filter metadata to root JSON', async () => {
+    await project.writeComponent('counter-btn.html', `
+<template><button>{{ count + 1 }}</button></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
+</script>
+`)
+
+    const res = await project.runCheck(['--format', 'json', '-e', 'CORALITE-E201'])
+    const json = JSON.parse(res.stdout)
+    assert.ok(json.filter)
+    assert.deepStrictEqual(json.filter.errorCodes, ['CORALITE-E201'])
+    assert.strictEqual(json.filter.status, 'failed')
+  })
+
+  it('16. fix --error-code CORALITE-E201 targets only specified error code', async () => {
+    const exprCode = `
+<template><button>{{ count + 1 }}</button></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
+</script>
+`
+    const compFile = await project.writeComponent('counter-btn.html', exprCode)
+
+    const res = await project.runFix(['-e', 'CORALITE-E201'])
+    assert.strictEqual(res.result.totalFixesCount, 1)
+
+    const fixedContent = await readFile(compFile, 'utf8')
+    assert.notStrictEqual(fixedContent, exprCode)
+  })
+
+  it('17. fix --dry-run --error-code CORALITE-E201 previews diffs for specified error code only', async () => {
+    const exprCode = `
+<template><button>{{ count + 1 }}</button></template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
+</script>
+`
+    await project.writeComponent('counter-btn.html', exprCode)
+
+    const res = await project.runFix(['--dry-run', '-e', 'E201'])
+    assert.ok(res.stdout.includes('Dry-run complete'))
+    assert.strictEqual(res.result.totalFixesCount, 1)
+  })
 })

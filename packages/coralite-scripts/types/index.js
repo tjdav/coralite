@@ -37,6 +37,9 @@
  * @property {string} [plugins] - Path to plugin file or directory
  * @property {string} [pages] - Path to pages directory
  * @property {'console' | 'json'} [format='console'] - Output format
+ * @property {string|string[]} [errorCode] - Error code(s) to filter by
+ * @property {'all' | 'failed' | 'passed'} [status='all'] - Filter by status
+ * @property {boolean} [onlyFailed=false] - Display only failed files
  * @property {boolean} [strict=false] - Fail with non-zero exit code if warnings or unused tokens exist
  * @property {boolean} [coverage=false] - Include component test coverage metrics
  * @property {string} [cwd] - Working directory path override
@@ -47,6 +50,9 @@
  * @property {string} [components] - Path to components directory
  * @property {string} [plugins] - Path to plugin file or directory
  * @property {string} [pages] - Path to pages directory
+ * @property {string|string[]} [errorCode] - Error code(s) to filter by
+ * @property {'all' | 'failed' | 'passed'} [status='all'] - Filter by status
+ * @property {boolean} [onlyFailed=false] - Display only failed files
  * @property {boolean} [dryRun=false] - Preview changes without writing to disk
  * @property {string} [cwd] - Working directory path override
  */

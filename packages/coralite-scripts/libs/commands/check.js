@@ -8,7 +8,8 @@ import {
   validatePluginsDir,
   formatPluginValidationReport,
   validatePagesDir,
-  formatPageValidationReport
+  formatPageValidationReport,
+  normalizeErrorCodes
 } from 'coralite'
 
 /**
@@ -103,6 +104,17 @@ export async function checkCommand (config, options = {}, logger = null) {
     }
   }
 
+  const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
+  let effectiveStatus = options.status
+  if (!effectiveStatus) {
+    if (options.onlyFailed || targetCodesSet) {
+      effectiveStatus = 'failed'
+    } else {
+      effectiveStatus = 'all'
+    }
+  }
+  const isFilterActive = Boolean(targetCodesSet || options.status || options.onlyFailed)
+
   let compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components', 'components'], config, cwd)
   const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins', 'plugins'], config, cwd)
   const pageDir = resolvePath(options.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'], config, cwd)
@@ -168,25 +180,52 @@ export async function checkCommand (config, options = {}, logger = null) {
     })
   }
 
-  const totalFiles = (compReport?.summary?.totalComponents ?? 0) +
-                     (pluginReport?.metrics?.totalPlugins ?? 0) +
-                     (pageReport?.summary?.totalPages ?? 0)
+  let filteredCompReport = compReport
+  if (compReport && isFilterActive) {
+    filteredCompReport = JSON.parse(formatComponentValidationReport(compReport, {
+      format: 'json',
+      errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+      status: effectiveStatus
+    }))
+  }
 
-  const validFiles = (compReport?.summary?.validComponents ?? 0) +
-                     (pluginReport?.metrics?.validPlugins ?? 0) +
-                     (pageReport?.summary?.validPages ?? 0)
+  let filteredPluginReport = pluginReport
+  if (pluginReport && isFilterActive) {
+    filteredPluginReport = JSON.parse(formatPluginValidationReport(pluginReport, {
+      format: 'json',
+      errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+      status: effectiveStatus
+    }))
+  }
 
-  const errorCount = (compReport?.summary?.errorCount ?? 0) +
-                     (pluginReport?.metrics?.totalErrors ?? 0) +
-                     (pageReport?.summary?.errorCount ?? 0)
+  let filteredPageReport = pageReport
+  if (pageReport && isFilterActive) {
+    filteredPageReport = JSON.parse(formatPageValidationReport(pageReport, {
+      format: 'json',
+      errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+      status: effectiveStatus
+    }))
+  }
 
-  const warningCount = (compReport?.summary?.warningCount ?? 0) +
-                       (pluginReport?.metrics?.totalWarnings ?? 0) +
-                       (pageReport?.summary?.warningCount ?? 0)
+  const totalFiles = (filteredCompReport?.components?.length ?? 0) +
+                     (filteredPluginReport?.plugins?.length ?? 0) +
+                     (filteredPageReport?.pages?.length ?? 0)
 
-  const fixableCount = (compReport?.summary?.fixableCount ?? 0) +
-                       calculatePluginFixableCount(pluginReport) +
-                       (pageReport?.summary?.fixableCount ?? 0)
+  const validFiles = (filteredCompReport?.summary?.validComponents ?? 0) +
+                     (filteredPluginReport?.summary?.validPlugins ?? filteredPluginReport?.metrics?.validPlugins ?? 0) +
+                     (filteredPageReport?.summary?.validPages ?? 0)
+
+  const errorCount = (filteredCompReport?.summary?.errorCount ?? 0) +
+                     (filteredPluginReport?.summary?.errorCount ?? filteredPluginReport?.metrics?.totalErrors ?? 0) +
+                     (filteredPageReport?.summary?.errorCount ?? 0)
+
+  const warningCount = (filteredCompReport?.summary?.warningCount ?? 0) +
+                       (filteredPluginReport?.summary?.warningCount ?? filteredPluginReport?.metrics?.totalWarnings ?? 0) +
+                       (filteredPageReport?.summary?.warningCount ?? 0)
+
+  const fixableCount = (filteredCompReport?.summary?.fixableCount ?? 0) +
+                       calculatePluginFixableCount(filteredPluginReport) +
+                       (filteredPageReport?.summary?.fixableCount ?? 0)
 
   let totalUnused = 0
   if (compReport?.metrics?.totalUnused !== undefined) {
@@ -203,9 +242,15 @@ export async function checkCommand (config, options = {}, logger = null) {
 
   if (options.format === 'json') {
     const jsonOutput = {
-      components: compReport,
-      plugins: pluginReport,
-      pages: pageReport,
+      ...(isFilterActive ? {
+        filter: {
+          ...(targetCodesSet ? { errorCodes: Array.from(targetCodesSet) } : {}),
+          status: effectiveStatus
+        }
+      } : {}),
+      components: filteredCompReport,
+      plugins: filteredPluginReport,
+      pages: filteredPageReport,
       summary: {
         totalFiles,
         validFiles,
@@ -221,22 +266,36 @@ export async function checkCommand (config, options = {}, logger = null) {
     let out = '\n' + colours.bold().cyan('🪸 Coralite Workspace Check Report') + '\n'
     out += colours.gray('─'.repeat(60)) + '\n\n'
 
-    if (compReport) {
-      out += colours.bold().blue('🪸 Components') + '\n'
-      out += formatComponentValidationReport(compReport, {
-        format: 'console',
-        coverage: options.coverage
-      })
-    }
+    if (targetCodesSet && totalFiles === 0) {
+      out += colours.green().bold(`✔ No issues matching error code(s): ${Array.from(targetCodesSet).join(', ')}\n\n`)
+    } else {
+      if (compReport) {
+        out += colours.bold().blue('🪸 Components') + '\n'
+        out += formatComponentValidationReport(compReport, {
+          format: 'console',
+          coverage: options.coverage,
+          errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+          status: effectiveStatus
+        })
+      }
 
-    if (pluginReport) {
-      out += colours.bold().magenta('🔌 Plugins') + '\n'
-      out += formatPluginValidationReport(pluginReport, { format: 'console' })
-    }
+      if (pluginReport) {
+        out += colours.bold().magenta('🔌 Plugins') + '\n'
+        out += formatPluginValidationReport(pluginReport, {
+          format: 'console',
+          errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+          status: effectiveStatus
+        })
+      }
 
-    if (pageReport) {
-      out += colours.bold().yellow('📄 Pages') + '\n'
-      out += formatPageValidationReport(pageReport, { format: 'console' })
+      if (pageReport) {
+        out += colours.bold().yellow('📄 Pages') + '\n'
+        out += formatPageValidationReport(pageReport, {
+          format: 'console',
+          errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+          status: effectiveStatus
+        })
+      }
     }
 
     out += colours.gray('─'.repeat(60)) + '\n'
@@ -269,9 +328,9 @@ export async function checkCommand (config, options = {}, logger = null) {
   }
 
   const reports = {
-    components: compReport,
-    plugins: pluginReport,
-    pages: pageReport
+    components: filteredCompReport,
+    plugins: filteredPluginReport,
+    pages: filteredPageReport
   }
 
   return {

@@ -127,6 +127,9 @@ program
   .option('-p, --plugins <path>', 'Path to plugin file or directory')
   .option('--pages <path>', 'Path to pages directory')
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
+  .option('-e, --error-code <codes...>', 'Filter output by error code (e.g. CORALITE-E201 or E201)')
+  .option('--status <status>', 'Filter output by status: "failed", "passed", or "all"')
+  .option('--only-failed', 'Display only failed files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if warnings or unused code exist', false)
   .option('--coverage', 'Include component test execution coverage metrics', false)
   .action(async (options) => {
@@ -150,6 +153,9 @@ program
   .option('-c, --components <path>', 'Path to components directory')
   .option('-p, --plugins <path>', 'Path to plugin file or directory')
   .option('--pages <path>', 'Path to pages directory')
+  .option('-e, --error-code <codes...>', 'Only apply auto-fixes for specified error code(s)')
+  .option('--status <status>', 'Filter post-fix output by status: "failed", "passed", or "all"')
+  .option('--only-failed', 'Display only failed files in post-fix output', false)
   .option('--dry-run', 'Preview changes that would be made without writing to disk', false)
   .action(async (options) => {
     try {

@@ -5,7 +5,7 @@ import { readFile, readdir, stat, access } from 'node:fs/promises'
 import { join, extname, relative, resolve, basename } from 'node:path'
 import kleur from 'kleur'
 import { camelToKebab, stripHtmlComments } from './utils/core.js'
-import { createDiagnostic, formatDiagnosticTerminal } from './utils/diagnostics.js'
+import { createDiagnostic, formatDiagnosticTerminal, normalizeErrorCodes, matchesErrorCode } from './utils/diagnostics.js'
 
 /**
  * @import {
@@ -651,44 +651,121 @@ export async function validatePagesDir (pagesDir, options = {}) {
  *
  * @param {Object} report - Directory validation report
  * @param {Object} [options={}] - Formatting options
+ * @param {string} [options.format='console'] - Format: 'console' or 'json'
+ * @param {string|string[]} [options.errorCode] - Error code(s) to filter by
+ * @param {string|string[]} [options.errorCodes] - Alias for errorCode
+ * @param {'all'|'failed'|'passed'} [options.status] - Status filter
+ * @param {boolean} [options.onlyFailed] - Display only failed files
  * @returns {string} Formatted output
  */
 export function formatPageValidationReport (report, options = {}) {
   const format = options.format || 'console'
+  const targetCodesSet = normalizeErrorCodes(options.errorCode || options.errorCodes)
+  const isFilterActive = Boolean(targetCodesSet || options.status || options.onlyFailed)
+  let effectiveStatus = options.status
+  if (!effectiveStatus) {
+    if (options.onlyFailed || targetCodesSet) {
+      effectiveStatus = 'failed'
+    } else {
+      effectiveStatus = 'all'
+    }
+  }
+
+  const rawPages = report?.pages || []
+  const filteredPages = []
+
+  let totalErrors = 0
+  let totalWarnings = 0
+  let fixableCount = 0
+  let validPagesCount = 0
+
+  for (const page of rawPages) {
+    const allDiags = page.diagnostics || []
+    const diagnostics = targetCodesSet ? allDiags.filter(d => matchesErrorCode(d.code, targetCodesSet)) : allDiags
+
+    const pageErrors = diagnostics.filter(d => d.severity === 'error').length
+    const pageWarnings = diagnostics.filter(d => d.severity === 'warning').length
+    const pageFixable = diagnostics.filter(d => Boolean(d.fix && d.fix.action)).length
+    const isPageValid = pageErrors === 0 && pageWarnings === 0
+
+    if (effectiveStatus === 'failed' && isPageValid) {
+      continue
+    }
+    if (effectiveStatus === 'passed' && !isPageValid) {
+      continue
+    }
+
+    totalErrors += pageErrors
+    totalWarnings += pageWarnings
+    fixableCount += pageFixable
+    if (isPageValid) {
+      validPagesCount++
+    }
+
+    filteredPages.push({
+      ...page,
+      valid: isPageValid,
+      diagnostics,
+      metrics: {
+        totalErrors: pageErrors,
+        totalWarnings: pageWarnings
+      }
+    })
+  }
+
+  const totalPages = filteredPages.length
 
   if (format === 'json') {
-    return JSON.stringify(report, null, 2) + '\n'
+    const jsonReport = {
+      ...(isFilterActive ? {
+        filter: {
+          ...(targetCodesSet ? { errorCodes: Array.from(targetCodesSet) } : {}),
+          status: effectiveStatus
+        }
+      } : {}),
+      pages: filteredPages,
+      summary: {
+        totalPages,
+        validPages: validPagesCount,
+        errorCount: totalErrors,
+        warningCount: totalWarnings,
+        fixableCount
+      },
+      metrics: {
+        totalPages,
+        validPages: validPagesCount,
+        totalErrors,
+        totalWarnings
+      }
+    }
+    return JSON.stringify(jsonReport, null, 2) + '\n'
   }
 
   let out = '\n' + kleur.bold().cyan('📄 Coralite Page Validation Report') + '\n'
   out += kleur.gray('─'.repeat(60)) + '\n\n'
 
-  const pages = report?.pages || []
-  for (const page of pages) {
-    const diagnostics = page.diagnostics || []
-    const status = page.valid ? kleur.green().bold('✔ VALID') : kleur.red().bold('✖ INVALID')
-    out += `${kleur.bold(page.filePath)} ─ ${status}\n`
+  if (targetCodesSet && totalPages === 0) {
+    out += kleur.green().bold(`✔ No issues matching error code(s): ${Array.from(targetCodesSet).join(', ')}\n\n`)
+  } else {
+    for (const page of filteredPages) {
+      const diagnostics = page.diagnostics || []
+      const status = page.valid ? kleur.green().bold('✔ VALID') : kleur.red().bold('✖ INVALID')
+      out += `${kleur.bold(page.filePath)} ─ ${status}\n`
 
-    if (diagnostics.length === 0) {
-      out += `  ${kleur.green('✔')} All custom elements, attributes, and script encapsulation are valid.\n\n`
-    } else {
-      for (const diag of diagnostics) {
-        out += `${formatDiagnosticTerminal(diag)}\n`
+      if (diagnostics.length === 0) {
+        out += `  ${kleur.green('✔')} All custom elements, attributes, and script encapsulation are valid.\n\n`
+      } else {
+        for (const diag of diagnostics) {
+          out += `${formatDiagnosticTerminal(diag)}\n`
+        }
+        out += '\n'
       }
-      out += '\n'
     }
   }
 
   out += kleur.gray('─'.repeat(60)) + '\n'
-  const summary = report?.summary || {}
-  const totalPages = summary.totalPages ?? pages.length
-  const validPages = summary.validPages ?? pages.filter(p => p.valid).length
-  const errorCount = summary.errorCount ?? 0
-  const warningCount = summary.warningCount ?? 0
-  const fixableCount = summary.fixableCount ?? 0
-
-  const summaryColor = errorCount === 0 ? kleur.green().bold : kleur.red().bold
-  let summaryLine = `Summary: ${totalPages} page(s) validated | ${validPages} valid | ${errorCount} error(s) | ${warningCount} warning(s)`
+  const summaryColor = totalErrors === 0 ? kleur.green().bold : kleur.red().bold
+  let summaryLine = `Summary: ${totalPages} page(s) validated | ${validPagesCount} valid | ${totalErrors} error(s) | ${totalWarnings} warning(s)`
   if (fixableCount > 0) {
     summaryLine += ` | ${fixableCount} fixable with --fix`
   }

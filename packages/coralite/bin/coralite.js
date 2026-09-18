@@ -13,6 +13,7 @@ import { applyComponentFixes } from '#lib/component-fixer.js'
 import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/plugin-validator.js'
 import { applyPluginFixes } from '#lib/plugin-fixer.js'
 import { validatePagesDir, formatPageValidationReport } from '#lib/page-validator.js'
+import { normalizeErrorCodes, matchesErrorCode } from '#lib/utils/diagnostics.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -61,9 +62,22 @@ program
   .option('-p, --plugins <path>', 'Path to plugin file or directory')
   .option('--pages <path>', 'Path to pages directory')
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
+  .option('-e, --error-code <codes...>', 'Filter diagnostics by error code (e.g. CORALITE-E201 or E201)')
+  .option('--status <status>', 'Filter by status: "failed", "passed", or "all"')
+  .option('--only-failed', 'Only display files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if warnings or unused code exist', false)
   .option('--coverage', 'Include component test execution coverage metrics', false)
   .action(async (options) => {
+    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
+    let effectiveStatus = options.status
+    if (!effectiveStatus) {
+      if (options.onlyFailed || targetCodesSet) {
+        effectiveStatus = 'failed'
+      } else {
+        effectiveStatus = 'all'
+      }
+    }
+    const isFilterActive = Boolean(targetCodesSet || options.status || options.onlyFailed)
     let compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
     const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
     const pageDir = resolvePath(options.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'])
@@ -121,25 +135,53 @@ program
         })
       }
 
-      const totalFiles = (compReport?.summary?.totalComponents ?? 0) +
-                         (pluginReport?.metrics?.totalPlugins ?? 0) +
-                         (pageReport?.summary?.totalPages ?? 0)
+      // Filter reports if filter options are active
+      let filteredCompReport = compReport
+      if (compReport && isFilterActive) {
+        filteredCompReport = JSON.parse(formatComponentValidationReport(compReport, {
+          format: 'json',
+          errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+          status: effectiveStatus
+        }))
+      }
 
-      const validFiles = (compReport?.summary?.validComponents ?? 0) +
-                         (pluginReport?.metrics?.validPlugins ?? 0) +
-                         (pageReport?.summary?.validPages ?? 0)
+      let filteredPluginReport = pluginReport
+      if (pluginReport && isFilterActive) {
+        filteredPluginReport = JSON.parse(formatPluginValidationReport(pluginReport, {
+          format: 'json',
+          errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+          status: effectiveStatus
+        }))
+      }
 
-      const errorCount = (compReport?.summary?.errorCount ?? 0) +
-                         (pluginReport?.metrics?.totalErrors ?? 0) +
-                         (pageReport?.summary?.errorCount ?? 0)
+      let filteredPageReport = pageReport
+      if (pageReport && isFilterActive) {
+        filteredPageReport = JSON.parse(formatPageValidationReport(pageReport, {
+          format: 'json',
+          errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+          status: effectiveStatus
+        }))
+      }
 
-      const warningCount = (compReport?.summary?.warningCount ?? 0) +
-                           (pluginReport?.metrics?.totalWarnings ?? 0) +
-                           (pageReport?.summary?.warningCount ?? 0)
+      const totalFiles = (filteredCompReport?.components?.length ?? 0) +
+                         (filteredPluginReport?.plugins?.length ?? 0) +
+                         (filteredPageReport?.pages?.length ?? 0)
 
-      const fixableCount = (compReport?.summary?.fixableCount ?? 0) +
-                           (pluginReport ? (pluginReport.plugins || []).reduce((acc, p) => acc + (p.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length, 0) : 0) +
-                           (pageReport?.summary?.fixableCount ?? 0)
+      const validFiles = (filteredCompReport?.summary?.validComponents ?? 0) +
+                         (filteredPluginReport?.summary?.validPlugins ?? filteredPluginReport?.metrics?.validPlugins ?? 0) +
+                         (filteredPageReport?.summary?.validPages ?? 0)
+
+      const errorCount = (filteredCompReport?.summary?.errorCount ?? 0) +
+                         (filteredPluginReport?.summary?.errorCount ?? filteredPluginReport?.metrics?.totalErrors ?? 0) +
+                         (filteredPageReport?.summary?.errorCount ?? 0)
+
+      const warningCount = (filteredCompReport?.summary?.warningCount ?? 0) +
+                           (filteredPluginReport?.summary?.warningCount ?? filteredPluginReport?.metrics?.totalWarnings ?? 0) +
+                           (filteredPageReport?.summary?.warningCount ?? 0)
+
+      const fixableCount = (filteredCompReport?.summary?.fixableCount ?? 0) +
+                           (filteredPluginReport ? (filteredPluginReport.plugins || []).reduce((acc, p) => acc + (p.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length, 0) : 0) +
+                           (filteredPageReport?.summary?.fixableCount ?? 0)
 
       let totalUnused = 0
       if (compReport?.metrics?.totalUnused !== undefined) {
@@ -155,9 +197,15 @@ program
 
       if (options.format === 'json') {
         const jsonOutput = {
-          components: compReport,
-          plugins: pluginReport,
-          pages: pageReport,
+          ...(isFilterActive ? {
+            filter: {
+              ...(targetCodesSet ? { errorCodes: Array.from(targetCodesSet) } : {}),
+              status: effectiveStatus
+            }
+          } : {}),
+          components: filteredCompReport,
+          plugins: filteredPluginReport,
+          pages: filteredPageReport,
           summary: {
             totalFiles,
             validFiles,
@@ -174,22 +222,32 @@ program
 
         let validatedDomainsCount = 0
 
-        if (compReport && (compReport.summary?.totalComponents ?? 0) > 0) {
+        if (compReport) {
           validatedDomainsCount++
           process.stdout.write(formatComponentValidationReport(compReport, {
             format: 'console',
-            coverage: options.coverage
+            coverage: options.coverage,
+            errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+            status: effectiveStatus
           }))
         }
 
-        if (pluginReport && (pluginReport.metrics?.totalPlugins ?? 0) > 0) {
+        if (pluginReport) {
           validatedDomainsCount++
-          process.stdout.write(formatPluginValidationReport(pluginReport, { format: 'console' }))
+          process.stdout.write(formatPluginValidationReport(pluginReport, {
+            format: 'console',
+            errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+            status: effectiveStatus
+          }))
         }
 
-        if (pageReport && (pageReport.summary?.totalPages ?? 0) > 0) {
+        if (pageReport) {
           validatedDomainsCount++
-          process.stdout.write(formatPageValidationReport(pageReport, { format: 'console' }))
+          process.stdout.write(formatPageValidationReport(pageReport, {
+            format: 'console',
+            errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+            status: effectiveStatus
+          }))
         }
 
         process.stdout.write(kleur.gray('─'.repeat(60)) + '\n')
@@ -218,10 +276,15 @@ program
   .option('-c, --components <path>', 'Path to component file or directory')
   .option('-p, --plugins <path>', 'Path to plugin file or directory')
   .option('--pages <path>', 'Path to pages directory')
+  .option('-e, --error-code <codes...>', 'Only apply auto-fixes for specified error code(s)')
+  .option('--status <status>', 'Filter post-fix output by status: "failed", "passed", or "all"')
+  .option('--only-failed', 'Display only failed files in post-fix output', false)
   .option('--dry-run', 'Preview changes that would be made without writing to disk', false)
   .action(async (options) => {
     const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
     const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
+
+    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
 
     try {
       let totalFixesCount = 0
@@ -237,8 +300,11 @@ program
               return
             }
 
+            const rawDiagnostics = compRes.diagnostics || []
+            const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
             const rawCode = await readFile(compRes.filePath, 'utf8')
-            const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
+            const fixResult = applyComponentFixes(rawCode, diagnostics, {
               filePath: compRes.filePath,
               dryRun: options.dryRun
             })
@@ -280,7 +346,10 @@ program
           pluginFiles.map(async (pFile) => {
             const rawCode = await readFile(pFile, 'utf8')
             const pResult = validatePluginSource(rawCode, pFile)
-            const fixResult = applyPluginFixes(rawCode, pResult.diagnostics || [], {
+            const rawDiagnostics = pResult.diagnostics || []
+            const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
+            const fixResult = applyPluginFixes(rawCode, diagnostics, {
               filePath: pFile,
               dryRun: options.dryRun
             })
@@ -325,6 +394,16 @@ program
         }
         if (options.pages) {
           checkArgs.push('--pages', options.pages)
+        }
+        if (options.errorCode) {
+          const codes = Array.isArray(options.errorCode) ? options.errorCode : [options.errorCode]
+          checkArgs.push('-e', ...codes)
+        }
+        if (options.status) {
+          checkArgs.push('--status', options.status)
+        }
+        if (options.onlyFailed) {
+          checkArgs.push('--only-failed')
         }
         await program.parseAsync(['node', 'coralite', 'check', ...checkArgs])
       }
@@ -407,11 +486,23 @@ program
   .option('-c, --components <path>', 'Path to component file or directory')
   .option('--coverage', 'Include test execution coverage metrics', false)
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
+  .option('-e, --error-code <codes...>', 'Filter diagnostics by error code (e.g. CORALITE-E201 or E201)')
+  .option('--status <status>', 'Filter by status: "failed", "passed", or "all"')
+  .option('--only-failed', 'Only display files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if unused code or warnings exist', false)
   .option('--fix', 'Automatically fix safe component issues', false)
   .option('--dry-run', 'Preview changes that would be made by --fix without writing to disk', false)
   .action(async (options) => {
     const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components']) || '.'
+    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
+    let effectiveStatus = options.status
+    if (!effectiveStatus) {
+      if (options.onlyFailed || targetCodesSet) {
+        effectiveStatus = 'failed'
+      } else {
+        effectiveStatus = 'all'
+      }
+    }
 
     try {
       let initialReport = await validateComponentsDir(compDir, { coverage: options.coverage })
@@ -425,8 +516,11 @@ program
             if (!compRes.filePath) {
               return
             }
+            const rawDiagnostics = compRes.diagnostics || []
+            const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
             const rawCode = await readFile(compRes.filePath, 'utf8')
-            const fixResult = applyComponentFixes(rawCode, compRes.diagnostics || [], {
+            const fixResult = applyComponentFixes(rawCode, diagnostics, {
               filePath: compRes.filePath,
               dryRun: options.dryRun
             })
@@ -463,11 +557,33 @@ program
 
       const formatted = formatComponentValidationReport(initialReport, {
         format: options.format,
-        coverage: options.coverage
+        coverage: options.coverage,
+        errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+        status: effectiveStatus
       })
       process.stdout.write(formatted)
 
-      const hasFailures = (initialReport.metrics.totalErrors && initialReport.metrics.totalErrors > 0) || (options.strict && initialReport.metrics.totalUnused > 0)
+      // Calculate failures based on filtered view if filter options specified
+      let errorCount = initialReport.metrics.totalErrors
+      let warningCount = initialReport.summary?.warningCount ?? 0
+      if (targetCodesSet) {
+        errorCount = 0
+        warningCount = 0
+        for (const comp of initialReport.components || []) {
+          for (const d of comp.diagnostics || []) {
+            if (matchesErrorCode(d.code, targetCodesSet)) {
+              if (d.severity === 'error') {
+                errorCount++
+              }
+              if (d.severity === 'warning') {
+                warningCount++
+              }
+            }
+          }
+        }
+      }
+
+      const hasFailures = (errorCount > 0) || (options.strict && (warningCount > 0 || initialReport.metrics.totalUnused > 0))
       if (hasFailures) {
         process.exit(1)
       }
@@ -484,10 +600,22 @@ program
   .option('-c, --components <path>', 'Path to component file or directory')
   .option('--pages <path>', 'Path to pages directory')
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
+  .option('-e, --error-code <codes...>', 'Filter diagnostics by error code (e.g. CORALITE-PAGE-101)')
+  .option('--status <status>', 'Filter by status: "failed", "passed", or "all"')
+  .option('--only-failed', 'Only display files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if validation warnings are found', false)
   .action(async (options) => {
     const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
     const pageDir = resolvePath(options.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages']) || '.'
+    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
+    let effectiveStatus = options.status
+    if (!effectiveStatus) {
+      if (options.onlyFailed || targetCodesSet) {
+        effectiveStatus = 'failed'
+      } else {
+        effectiveStatus = 'all'
+      }
+    }
 
     try {
       let knownComponents = new Map()
@@ -515,10 +643,33 @@ program
         skipRenderByAttribute: config?.skipRenderByAttribute,
         ignoreTags: config?.ignoreTags
       })
-      const formatted = formatPageValidationReport(pageReport, { format: options.format })
+      const formatted = formatPageValidationReport(pageReport, {
+        format: options.format,
+        errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+        status: effectiveStatus
+      })
       process.stdout.write(formatted)
 
-      const hasFailures = pageReport.summary.errorCount > 0 || (options.strict && pageReport.summary.warningCount > 0)
+      let errorCount = pageReport.summary.errorCount
+      let warningCount = pageReport.summary.warningCount
+      if (targetCodesSet) {
+        errorCount = 0
+        warningCount = 0
+        for (const page of pageReport.pages || []) {
+          for (const d of page.diagnostics || []) {
+            if (matchesErrorCode(d.code, targetCodesSet)) {
+              if (d.severity === 'error') {
+                errorCount++
+              }
+              if (d.severity === 'warning') {
+                warningCount++
+              }
+            }
+          }
+        }
+      }
+
+      const hasFailures = errorCount > 0 || (options.strict && warningCount > 0)
       if (hasFailures) {
         process.exit(1)
       }
@@ -534,11 +685,23 @@ program
   .description('Validate Coralite plugin contracts, lifecycle hooks, and isomorphic boundaries')
   .option('-p, --plugins <path>', 'Path to plugin file or directory')
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
+  .option('-e, --error-code <codes...>', 'Filter diagnostics by error code (e.g. CORALITE-P401 or P401)')
+  .option('--status <status>', 'Filter by status: "failed", "passed", or "all"')
+  .option('--only-failed', 'Only display files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if validation errors are found', false)
   .option('--fix', 'Automatically fix safe plugin contract issues', false)
   .option('--dry-run', 'Preview changes that would be made by --fix without writing to disk', false)
   .action(async (options) => {
     const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins']) || '.'
+    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
+    let effectiveStatus = options.status
+    if (!effectiveStatus) {
+      if (options.onlyFailed || targetCodesSet) {
+        effectiveStatus = 'failed'
+      } else {
+        effectiveStatus = 'all'
+      }
+    }
 
     try {
       let report
@@ -566,8 +729,11 @@ program
             if (!pRes.filePath) {
               return
             }
+            const rawDiagnostics = pRes.diagnostics || []
+            const diagnostics = targetCodesSet ? rawDiagnostics.filter(d => matchesErrorCode(d.code, targetCodesSet)) : rawDiagnostics
+
             const rawCode = await readFile(pRes.filePath, 'utf8')
-            const fixResult = applyPluginFixes(rawCode, pRes.diagnostics || [], {
+            const fixResult = applyPluginFixes(rawCode, diagnostics, {
               filePath: pRes.filePath,
               dryRun: options.dryRun
             })
@@ -615,10 +781,33 @@ program
         }
       }
 
-      const formatted = formatPluginValidationReport(report, { format: options.format })
+      const formatted = formatPluginValidationReport(report, {
+        format: options.format,
+        errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
+        status: effectiveStatus
+      })
       process.stdout.write(formatted)
 
-      const hasFailures = report.metrics.totalErrors > 0 || (options.strict && report.metrics.totalWarnings > 0)
+      let errorCount = report.metrics.totalErrors
+      let warningCount = report.metrics.totalWarnings
+      if (targetCodesSet) {
+        errorCount = 0
+        warningCount = 0
+        for (const p of report.plugins || []) {
+          for (const d of p.diagnostics || []) {
+            if (matchesErrorCode(d.code, targetCodesSet)) {
+              if (d.severity === 'error') {
+                errorCount++
+              }
+              if (d.severity === 'warning') {
+                warningCount++
+              }
+            }
+          }
+        }
+      }
+
+      const hasFailures = errorCount > 0 || (options.strict && warningCount > 0)
       if (hasFailures) {
         process.exit(1)
       }

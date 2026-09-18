@@ -180,11 +180,28 @@ export async function createCLIProject () {
         return undefined
       }
 
+      const getMultiArg = (flag, shortFlag) => {
+        const result = []
+        for (let i = 0; i < args.length; i++) {
+          if (args[i] === flag || (shortFlag && args[i] === shortFlag)) {
+            let j = i + 1
+            while (j < args.length && !args[j].startsWith('-')) {
+              result.push(args[j])
+              j++
+            }
+          }
+        }
+        return result.length > 0 ? result : undefined
+      }
+
       const options = {
         components: getArg('--components', '-c'),
         plugins: getArg('--plugins', '-p'),
         pages: getArg('--pages'),
         format: getArg('--format') || 'console',
+        errorCode: getMultiArg('--error-code', '-e') || getMultiArg('--code'),
+        status: getArg('--status'),
+        onlyFailed: args.includes('--only-failed'),
         strict: args.includes('--strict'),
         coverage: args.includes('--coverage'),
         cwd: testDir
@@ -230,10 +247,27 @@ export async function createCLIProject () {
         return undefined
       }
 
+      const getMultiArg = (flag, shortFlag) => {
+        const result = []
+        for (let i = 0; i < args.length; i++) {
+          if (args[i] === flag || (shortFlag && args[i] === shortFlag)) {
+            let j = i + 1
+            while (j < args.length && !args[j].startsWith('-')) {
+              result.push(args[j])
+              j++
+            }
+          }
+        }
+        return result.length > 0 ? result : undefined
+      }
+
       const options = {
         components: getArg('--components', '-c'),
         plugins: getArg('--plugins', '-p'),
         pages: getArg('--pages'),
+        errorCode: getMultiArg('--error-code', '-e') || getMultiArg('--code'),
+        status: getArg('--status'),
+        onlyFailed: args.includes('--only-failed'),
         dryRun: args.includes('--dry-run'),
         cwd: testDir
       }

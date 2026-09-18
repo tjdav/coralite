@@ -22,6 +22,58 @@ const TAG_SYNONYMS = {
 }
 
 /**
+ * Normalizes input error code(s) into a Set of uppercase strings.
+ * Supports strings, arrays, and comma-separated codes.
+ *
+ * @param {string|string[]|Set<string>|null} input - Raw error code input
+ * @returns {Set<string>|null} Normalized Set of error codes or null
+ */
+export function normalizeErrorCodes (input) {
+  if (!input) {
+    return null
+  }
+  let list = []
+  if (Array.isArray(input)) {
+    list = input
+  } else if (input instanceof Set) {
+    list = Array.from(input)
+  } else {
+    list = [input]
+  }
+
+  const result = new Set()
+  for (const item of list) {
+    if (typeof item === 'string') {
+      const parts = item.split(',').map(s => s.trim()).filter(Boolean)
+      for (const part of parts) {
+        result.add(part.toUpperCase())
+      }
+    }
+  }
+  return result.size > 0 ? result : null
+}
+
+/**
+ * Tests whether a diagnostic error code matches a target Set of error codes.
+ * Supports case-insensitive matching and optional "CORALITE-" prefix omission.
+ *
+ * @param {string} [diagCode] - Diagnostic code to test
+ * @param {Set<string>|null} [targetCodesSet] - Target normalized error code set
+ * @returns {boolean} True if matched or if no target filter is set
+ */
+export function matchesErrorCode (diagCode, targetCodesSet) {
+  if (!targetCodesSet || targetCodesSet.size === 0) {
+    return true
+  }
+  if (!diagCode || typeof diagCode !== 'string') {
+    return false
+  }
+  const normDiag = diagCode.toUpperCase().trim()
+  const altDiag = normDiag.startsWith('CORALITE-') ? normDiag.slice(9) : `CORALITE-${normDiag}`
+  return targetCodesSet.has(normDiag) || targetCodesSet.has(altDiag)
+}
+
+/**
  * Extracts an inline template expression from a diagnostic message in linear O(n) time.
  * @param {string} [message] - Diagnostic message string
  * @returns {string|null} Extracted raw expression or null if not found
@@ -323,74 +375,111 @@ export function formatDiagnosticTerminal (diagnostic) {
  * @param {import('../../types/component-validator.js').CoraliteComponentDirectoryValidationReport} report - The directory validation report
  * @param {Object} [options={}] - Formatting options
  * @param {'json'|'console'} [options.format='console'] - Output format (json or console)
+ * @param {string|string[]} [options.errorCode] - Error code(s) to filter by
+ * @param {string|string[]} [options.errorCodes] - Alias for errorCode
+ * @param {'all'|'failed'|'passed'} [options.status] - Status filter
+ * @param {boolean} [options.onlyFailed] - Display only failed files
+ * @param {boolean} [options.coverage] - Include coverage metrics
  * @returns {string} Formatted report output
  */
 export function formatValidationReport (report, options = {}) {
-  if (options.format === 'json') {
-    return JSON.stringify(report, null, 2)
+  const targetCodesSet = normalizeErrorCodes(options.errorCode || options.errorCodes)
+  const isFilterActive = Boolean(targetCodesSet || options.status || options.onlyFailed)
+  let effectiveStatus = options.status
+  if (!effectiveStatus) {
+    if (options.onlyFailed || targetCodesSet) {
+      effectiveStatus = 'failed'
+    } else {
+      effectiveStatus = 'all'
+    }
   }
 
-  let output = '\n' + kleur.bold().cyan('🪸 Coralite Component Code & Schema Diagnostics') + '\n'
-  output += kleur.gray('─'.repeat(60)) + '\n\n'
-
-  const components = report?.components || []
-  let totalComponents = report?.summary?.totalComponents
-  let validComponents = report?.summary?.validComponents
-  let errorCount = report?.summary?.errorCount
-  let warningCount = report?.summary?.warningCount
-  let fixableCount = report?.summary?.fixableCount
+  const rawComponents = report?.components || []
+  const filteredComponents = []
 
   let computedErrorCount = 0
   let computedWarningCount = 0
   let computedFixableCount = 0
   let computedValidComponents = 0
 
-  for (const comp of components) {
-    const diagnostics = comp.diagnostics || []
+  for (const comp of rawComponents) {
+    const allDiags = comp.diagnostics || []
+    const diagnostics = targetCodesSet ? allDiags.filter(d => matchesErrorCode(d.code, targetCodesSet)) : allDiags
+
     const compErrors = diagnostics.filter(d => d.severity === 'error').length
     const compWarnings = diagnostics.filter(d => d.severity === 'warning').length
     const compFixable = diagnostics.filter(d => Boolean(d.fix && d.fix.action)).length
+    const isCompValid = compErrors === 0 && compWarnings === 0
+
+    // Filter by status
+    if (effectiveStatus === 'failed' && isCompValid) {
+      continue
+    }
+    if (effectiveStatus === 'passed' && !isCompValid) {
+      continue
+    }
 
     computedErrorCount += compErrors
     computedWarningCount += compWarnings
     computedFixableCount += compFixable
-
-    const isCompValid = comp.valid !== false && compErrors === 0 && compWarnings === 0
     if (isCompValid) {
       computedValidComponents++
     }
 
-    if (diagnostics.length > 0) {
-      output += `${kleur.bold(comp.filePath)}\n`
-      for (const diag of diagnostics) {
-        output += `${formatDiagnosticTerminal(diag)}\n`
+    filteredComponents.push({
+      ...comp,
+      valid: isCompValid,
+      diagnostics
+    })
+  }
+
+  const totalComponents = filteredComponents.length
+
+  if (options.format === 'json') {
+    const jsonReport = {
+      ...(isFilterActive ? {
+        filter: {
+          ...(targetCodesSet ? { errorCodes: Array.from(targetCodesSet) } : {}),
+          status: effectiveStatus
+        }
+      } : {}),
+      components: filteredComponents,
+      summary: {
+        totalComponents,
+        validComponents: computedValidComponents,
+        errorCount: computedErrorCount,
+        warningCount: computedWarningCount,
+        fixableCount: computedFixableCount,
+        ...(report?.summary?.usageCoveragePercentage !== undefined ? { usageCoveragePercentage: report.summary.usageCoveragePercentage } : {})
       }
-      output += '\n'
-    } else {
-      output += `${kleur.bold(comp.filePath)} ─ ${kleur.green().bold('✔ VALID')}\n`
-      output += `  ${kleur.green('✔')} All symbols and template syntax valid.\n\n`
+    }
+    return JSON.stringify(jsonReport, null, 2)
+  }
+
+  let output = '\n' + kleur.bold().cyan('🪸 Coralite Component Code & Schema Diagnostics') + '\n'
+  output += kleur.gray('─'.repeat(60)) + '\n\n'
+
+  if (targetCodesSet && totalComponents === 0) {
+    output += kleur.green().bold(`✔ No issues matching error code(s): ${Array.from(targetCodesSet).join(', ')}\n\n`)
+  } else {
+    for (const comp of filteredComponents) {
+      const diagnostics = comp.diagnostics || []
+      if (diagnostics.length > 0) {
+        output += `${kleur.bold(comp.filePath)}\n`
+        for (const diag of diagnostics) {
+          output += `${formatDiagnosticTerminal(diag)}\n`
+        }
+        output += '\n'
+      } else {
+        output += `${kleur.bold(comp.filePath)} ─ ${kleur.green().bold('✔ VALID')}\n`
+        output += `  ${kleur.green('✔')} All symbols and template syntax valid.\n\n`
+      }
     }
   }
 
-  if (totalComponents === undefined) {
-    totalComponents = components.length
-  }
-  if (validComponents === undefined) {
-    validComponents = computedValidComponents
-  }
-  if (errorCount === undefined) {
-    errorCount = computedErrorCount
-  }
-  if (warningCount === undefined) {
-    warningCount = computedWarningCount
-  }
-  if (fixableCount === undefined) {
-    fixableCount = computedFixableCount
-  }
-
   output += kleur.gray('─'.repeat(60)) + '\n'
-  const summaryText = `Summary: ${totalComponents} component(s) validated | ${validComponents} valid | ${errorCount} error(s) | ${warningCount} warning(s) | ${fixableCount} fixable with --fix`
-  const summaryColor = errorCount === 0 ? kleur.green().bold : kleur.red().bold
+  const summaryText = `Summary: ${totalComponents} component(s) validated | ${computedValidComponents} valid | ${computedErrorCount} error(s) | ${computedWarningCount} warning(s) | ${computedFixableCount} fixable with --fix`
+  const summaryColor = computedErrorCount === 0 ? kleur.green().bold : kleur.red().bold
 
   output += summaryColor(summaryText) + '\n'
 
