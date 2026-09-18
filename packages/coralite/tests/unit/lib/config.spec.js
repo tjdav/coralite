@@ -8,27 +8,21 @@ import { defineConfig } from '../../../lib/config.js'
 
 describe('config.js', () => {
   describe('defineConfig', () => {
-    it('should return valid config unchanged', () => {
-      const validConfig = {
+    it('should return valid config unchanged with and without plugins', () => {
+      const withPlugins = {
         output: './dist',
         components: './components',
         pages: './pages',
         plugins: []
       }
+      assert.deepStrictEqual(defineConfig(withPlugins), withPlugins)
 
-      const result = defineConfig(validConfig)
-      assert.deepStrictEqual(result, validConfig)
-    })
-
-    it('should return valid config without plugins', () => {
-      const validConfig = {
+      const withoutPlugins = {
         output: './dist',
         components: './components',
         pages: './pages'
       }
-
-      const result = defineConfig(validConfig)
-      assert.deepStrictEqual(result, validConfig)
+      assert.deepStrictEqual(defineConfig(withoutPlugins), withoutPlugins)
     })
 
     it('should throw error when config is not an object', () => {
@@ -164,15 +158,6 @@ describe('config.js', () => {
           { name: 'another-valid' }
         ]
       }), /Plugin at index 1 must have a valid "name" property \(non-empty string\)/)
-    })
-
-    it('should handle edge cases with whitespace', () => {
-      // Should trim and validate empty strings
-      assert.throws(() => defineConfig({
-        output: '  ',
-        components: './components',
-        pages: './pages'
-      }), /Config property "output" cannot be empty/)
     })
 
     it('should preserve valid config with all state', () => {

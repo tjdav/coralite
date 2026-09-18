@@ -407,4 +407,42 @@ describe('ScriptManager Compilation', () => {
       assert.ok(compiledScript.includes('globalContext'))
     })
   })
+
+  describe('provideSource and consumeSource emission', () => {
+    it('should compile provideSource and consumeSource into the component chunk', async () => {
+      const sm = new ScriptManager()
+
+      sm.registerComponent({
+        id: 'provider',
+        script: {
+          content: '() => {}',
+          provideSource: '() => ({ value: 42 })',
+          consumeSource: '() => ({ fallback: true })'
+        }
+      })
+
+      const result = await sm.compileComponents('development')
+      const chunkHash = result.manifest['provider'].js || result.manifest['provider']
+      const chunk = result.outputFiles[chunkHash].text
+
+      assert.ok(chunk.includes('42'), 'provideSource should be compiled into the chunk')
+      assert.ok(chunk.includes('fallback'), 'consumeSource should be compiled into the chunk')
+    })
+
+    it('should emit provide/consume placeholders when only content is supplied', async () => {
+      const sm = new ScriptManager()
+
+      sm.registerComponent({
+        id: 'plain',
+        script: { content: '() => {}' }
+      })
+
+      const result = await sm.compileComponents('development')
+      const chunkHash = result.manifest['plain'].js || result.manifest['plain']
+      const chunk = result.outputFiles[chunkHash].text
+
+      assert.ok(chunk.includes('provide'))
+      assert.ok(chunk.includes('consume'))
+    })
+  })
 })

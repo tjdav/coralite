@@ -389,51 +389,24 @@ describe('CoraliteElement', () => {
     })
   })
 
-  it('should observe dynamic properties not defined in defaultValues', (t, done) => {
-    let observed = null
-    const dynamicTagName = 'dynamic-obs-comp-' + Math.random().toString(36).substring(2, 9)
-    const DynamicElement = createCoraliteClass({
-      componentId: 'dynamic-obs-comp',
-      defaultValues: {
-        score: 10
-      },
-      client: ({ state, observe }) => {
-        observe('dynamicProp', (newVal) => {
-          observed = newVal
-        })
-        queueMicrotask(() => {
-          state.dynamicProp = 'active'
-        })
-      }
-    })
-    customElements.define(dynamicTagName, DynamicElement)
-
-    const el = document.createElement(dynamicTagName)
-    document.body.appendChild(el)
-
-    queueMicrotask(() => {
-      queueMicrotask(() => {
-        assert.strictEqual(observed, 'active')
-        document.body.removeChild(el)
-        done()
-      })
-    })
-  })
-
-  it('should inject observe function into client context and invoke callback on property changes', (t, done) => {
-    let calledWith = []
+  it('should inject observe into client context and invoke callbacks for declared and dynamic property changes', (t, done) => {
+    let declaredCalledWith = null
+    let observedDynamic = null
     const observeTagName = 'observe-comp-' + Math.random().toString(36).substring(2, 9)
     const ObserveElement = createCoraliteClass({
       componentId: 'observe-comp',
       defaultValues: {
         score: 10
       },
-      client: ({ observe }) => {
+      client: ({ state, observe }) => {
         observe('score', (newVal, oldVal) => {
-          calledWith.push({
-            newVal,
-            oldVal
-          })
+          declaredCalledWith = { newVal, oldVal }
+        })
+        observe('dynamicProp', (newVal) => {
+          observedDynamic = newVal
+        })
+        queueMicrotask(() => {
+          state.dynamicProp = 'active'
         })
       }
     })
@@ -443,17 +416,22 @@ describe('CoraliteElement', () => {
     document.body.appendChild(el)
 
     queueMicrotask(() => {
-      // Mutate state
-      // @ts-ignore
-      el._state.score = 25
-
       queueMicrotask(() => {
-        assert.deepEqual(calledWith, [{
-          newVal: 25,
-          oldVal: 10
-        }])
-        document.body.removeChild(el)
-        done()
+        // Undeclared (dynamic) property is observed and delivered
+        assert.strictEqual(observedDynamic, 'active')
+
+        // Declared property mutation delivers newVal/oldVal to the callback
+        // @ts-ignore
+        el._state.score = 25
+
+        queueMicrotask(() => {
+          assert.deepEqual(declaredCalledWith, {
+            newVal: 25,
+            oldVal: 10
+          })
+          document.body.removeChild(el)
+          done()
+        })
       })
     })
   })
@@ -940,6 +918,10 @@ describe('CoraliteElement', () => {
       assert.ok(innerEl[Symbol.for('coralite.testing')].refs.btnElement)
       assert.strictEqual(innerEl[Symbol.for('coralite.testing')].refs.btnElement.textContent, 'Inner Button')
 
+      // Each resolved ref is owner-tagged to its own component instance (no crosstalk)
+      assert.strictEqual(el[Symbol.for('coralite.testing')].refs.btnElement.getAttribute('data-coralite-owner'), el._instanceId)
+      assert.strictEqual(innerEl[Symbol.for('coralite.testing')].refs.btnElement.getAttribute('data-coralite-owner'), innerEl._instanceId)
+
       document.body.removeChild(el)
       done()
     })
@@ -1297,7 +1279,8 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('should handle async slot functions and discard stale promise resolutions during rapid mutations', (t, done) => {
+    it('should handle async slot functions, discarding stale resolutions during rapid mutations and stripping data-coralite-slot-computed', async () => {
+      // Case 1: rapid mutations must discard stale promise resolutions
       const asyncSlotTag = 'async-slot-' + Math.random().toString(36).substring(2, 9)
 
       const AsyncSlotElement = createCoraliteClass({
@@ -1327,14 +1310,41 @@ describe('CoraliteElement', () => {
       // @ts-ignore
       el._state.step = 2
 
-      setTimeout(() => {
-        const stepEl = el.querySelector('.step')
-        assert.ok(stepEl)
-        assert.strictEqual(stepEl.textContent, 'Step 2')
+      await new Promise(resolve => setTimeout(resolve, 100))
 
-        document.body.removeChild(el)
-        done()
-      }, 100)
+      const stepEl = el.querySelector('.step')
+      assert.ok(stepEl)
+      assert.strictEqual(stepEl.textContent, 'Step 2')
+
+      document.body.removeChild(el)
+
+      // Case 2: the SSR computed flag must be stripped once the async slot resolves
+      const ssrSlotTag = 'async-ssr-slot-' + Math.random().toString(36).substring(2, 9)
+      const AsyncSSRSlotElement = createCoraliteClass({
+        componentId: 'async-ssr-slot',
+        templateHTML: '<div><slot name="async" data-coralite-slot-computed="true"><span>Initial</span></slot></div>',
+        slots: {
+          async () {
+            return new Promise(resolve => {
+              setTimeout(() => {
+                resolve('<span class="resolved">Async Content</span>')
+              }, 10)
+            })
+          }
+        }
+      })
+      customElements.define(ssrSlotTag, AsyncSSRSlotElement)
+
+      const ssrEl = document.createElement(ssrSlotTag)
+      document.body.appendChild(ssrEl)
+      const ssrSlotEl = ssrEl.querySelector('slot[name="async"]')
+
+      await new Promise(resolve => setTimeout(resolve, 50))
+
+      assert.strictEqual(ssrSlotEl.hasAttribute('data-coralite-slot-computed'), false, 'data-coralite-slot-computed attribute must be stripped after async slot resolution')
+      assert.strictEqual(ssrSlotEl.querySelector('.resolved').textContent, 'Async Content')
+
+      document.body.removeChild(ssrEl)
     })
   })
 
@@ -1499,37 +1509,6 @@ describe('CoraliteElement', () => {
 
         btn.click()
         assert.strictEqual(clicked, true)
-
-        document.body.removeChild(comp)
-        done()
-      })
-    })
-
-    it('should be idempotent and not churn or double-fold on subsequent reconcile passes', (t, done) => {
-      const idempotenceTag = 'idempotence-comp-' + Math.random().toString(36).substring(2, 9)
-      const IdempotenceComp = createCoraliteClass({
-        componentId: 'idempotence-comp',
-        templateHTML: '<div><slot></slot></div>'
-      })
-      customElements.define(idempotenceTag, IdempotenceComp)
-
-      const comp = document.createElement(idempotenceTag)
-      document.body.appendChild(comp)
-
-      const child = document.createElement('div')
-      child.textContent = 'Unique Child'
-      comp.appendChild(child)
-
-      queueMicrotask(() => {
-        const slot = comp.querySelector('slot')
-        assert.strictEqual(slot.children.length, 1)
-
-        // Trigger manual reconciliation pass
-        // @ts-ignore
-        comp._reconcileLightDOM()
-
-        assert.strictEqual(slot.children.length, 1)
-        assert.strictEqual(slot.children[0], child)
 
         document.body.removeChild(comp)
         done()
@@ -1840,101 +1819,7 @@ describe('CoraliteElement', () => {
   })
 
   describe('Reconnection, Reparenting & Slot Reactivity ([LFC-01])', () => {
-    it('1. Reconnection Re-hooks Slot Observers and preserves slot reactivity', (t, done) => {
-      const tag = 'reconnect-slot-' + Math.random().toString(36).substring(2, 9)
-      const SlotComp = createCoraliteClass({
-        componentId: 'reconnect-slot',
-        templateHTML: '<div><slot name="computed"></slot></div>',
-        defaultValues: { val: 'Initial' },
-        slots: {
-          computed (nodes, { state }) {
-            return `<span class="val">${state.val}</span>`
-          }
-        }
-      })
-      customElements.define(tag, SlotComp)
-
-      const el = document.createElement(tag)
-      document.body.appendChild(el)
-
-      queueMicrotask(() => {
-        const slotEl = el.querySelector('slot[name="computed"]')
-        assert.strictEqual(slotEl.querySelector('.val').textContent, 'Initial')
-
-        // Detach element across tasks
-        document.body.removeChild(el)
-
-        setTimeout(() => {
-          // Re-attach element
-          document.body.appendChild(el)
-
-          queueMicrotask(() => {
-            // Mutate state after reconnection
-            el._state.val = 'Reconnected'
-
-            queueMicrotask(() => {
-              assert.strictEqual(slotEl.querySelector('.val').textContent, 'Reconnected', 'Computed slot must update after reconnection')
-              document.body.removeChild(el)
-              done()
-            })
-          })
-        }, 10)
-      })
-    })
-
-    it('2. Drag-and-Drop / Reparenting (same task turn) does not re-run client() or duplicate state', (t, done) => {
-      let clientRunCount = 0
-      let clickHandledCount = 0
-
-      const tag = 'reparent-comp-' + Math.random().toString(36).substring(2, 9)
-      const ReparentComp = createCoraliteClass({
-        componentId: 'reparent-comp',
-        templateHTML: '<div><button id="btn">Click</button></div>',
-        defaultValues: { items: [] },
-        client: ({ state, root, signal }) => {
-          clientRunCount++
-          state.items.push('item-' + clientRunCount)
-          const btn = root.querySelector('#btn')
-          btn.addEventListener('click', () => {
-            clickHandledCount++
-          }, { signal })
-        }
-      })
-      customElements.define(tag, ReparentComp)
-
-      const container1 = document.createElement('div')
-      const container2 = document.createElement('div')
-      document.body.appendChild(container1)
-      document.body.appendChild(container2)
-
-      const el = document.createElement(tag)
-      container1.appendChild(el)
-
-      queueMicrotask(() => {
-        assert.strictEqual(clientRunCount, 1)
-        assert.deepEqual(el._state.items, ['item-1'])
-
-        // Synchronous same-task reparent move
-        container1.removeChild(el)
-        container2.appendChild(el)
-
-        queueMicrotask(() => {
-          assert.strictEqual(clientRunCount, 1, 'client() should not re-run on same-task reparent move')
-          assert.deepEqual(el._state.items, ['item-1'], 'State items must not be duplicated')
-
-          // Test that signal-attached listener still functions
-          const btn = el.querySelector('#btn')
-          btn.click()
-          assert.strictEqual(clickHandledCount, 1, 'Event listener bound with { signal } must remain active')
-
-          document.body.removeChild(container1)
-          document.body.removeChild(container2)
-          done()
-        })
-      })
-    })
-
-    it('3. Context Migration on Reparenting cleans up old unsubscribers and receives new context', (t, done) => {
+    it('1. Context Migration on Reparenting cleans up old unsubscribers and receives new context', (t, done) => {
       const tag = 'ctx-consumer-' + Math.random().toString(36).substring(2, 9)
       const ConsumerComp = createCoraliteClass({
         componentId: 'ctx-consumer',
@@ -1990,7 +1875,7 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('4. Active Getter Aborts on True Disconnect (cross-task)', (t, done) => {
+    it('2. Active Getter Aborts on True Disconnect (cross-task)', (t, done) => {
       let getterSignal = null
       const tag = 'getter-abort-' + Math.random().toString(36).substring(2, 9)
       const GetterAbortComp = createCoraliteClass({
@@ -2025,7 +1910,7 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('5. Synchronous Offline State Mutation before attach reflects immediately upon attach', (t, done) => {
+    it('3. Synchronous Offline State Mutation before attach reflects immediately upon attach', (t, done) => {
       const tag = 'offline-mutate-' + Math.random().toString(36).substring(2, 9)
       const OfflineComp = createCoraliteClass({
         componentId: 'offline-mutate',
@@ -2056,7 +1941,7 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('6. Slot Observed Keys Deduplication prevents duplicate registrations', (t, done) => {
+    it('4. Slot Observed Keys Deduplication prevents duplicate registrations', (t, done) => {
       const tag = 'dedup-slot-' + Math.random().toString(36).substring(2, 9)
       const DedupComp = createCoraliteClass({
         componentId: 'dedup-slot',
@@ -2091,20 +1976,26 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('7. Stability Across Repeated Reparent Cycles (5 reparent moves)', (t, done) => {
+    it('5. Repeated same-task reparent cycles do not re-run client(), duplicate state, or drop signal listeners', (t, done) => {
       let clientRunCount = 0
+      let clickHandledCount = 0
       const tag = 'repeat-reparent-' + Math.random().toString(36).substring(2, 9)
       const RepeatComp = createCoraliteClass({
         componentId: 'repeat-reparent',
-        templateHTML: '<div><slot name="bar"></slot></div>',
-        defaultValues: { x: 10 },
+        templateHTML: '<div><button id="btn">Click</button><slot name="bar"></slot></div>',
+        defaultValues: { x: 10, items: [] },
         slots: {
           bar (nodes, { state }) {
             return `<span>${state.x}</span>`
           }
         },
-        client: () => {
+        client: ({ state, root, signal }) => {
           clientRunCount++
+          state.items.push('item-' + clientRunCount)
+          const btn = root.querySelector('#btn')
+          btn.addEventListener('click', () => {
+            clickHandledCount++
+          }, { signal })
         }
       })
       customElements.define(tag, RepeatComp)
@@ -2120,6 +2011,8 @@ describe('CoraliteElement', () => {
       queueMicrotask(() => {
         const initialObserverCount = el._observerRecords.size
         const initialSlotKeyCount = el._slotObservedKeys.size
+        assert.strictEqual(clientRunCount, 1)
+        assert.deepEqual(el._state.items, ['item-1'])
 
         // Move 5 times synchronously across containers
         for (let i = 0; i < 5; i++) {
@@ -2131,9 +2024,15 @@ describe('CoraliteElement', () => {
 
         queueMicrotask(() => {
           assert.strictEqual(clientRunCount, 1, 'client() must run strictly once across repeated reparents')
+          assert.deepEqual(el._state.items, ['item-1'], 'State items must not be duplicated')
           assert.strictEqual(el._observerRecords.size, initialObserverCount)
           assert.strictEqual(el._slotObservedKeys.size, initialSlotKeyCount)
           assert.strictEqual(el._abortController.signal.aborted, false)
+
+          // Signal-attached listener must remain active across reparents
+          const btn = el.querySelector('#btn')
+          btn.click()
+          assert.strictEqual(clickHandledCount, 1, 'Event listener bound with { signal } must remain active')
 
           document.body.removeChild(c1)
           document.body.removeChild(c2)
@@ -2142,14 +2041,20 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('8. Lifecycle Revival Semantics (Cross-Task Detach & Reconnect)', (t, done) => {
+    it('6. Lifecycle Revival: cross-task detach tears down, reconnect re-runs client() and re-hooks computed slot observers', (t, done) => {
       let clientRunCount = 0
       let listenerFiredCount = 0
 
       const tag = 'revival-comp-' + Math.random().toString(36).substring(2, 9)
       const RevivalComp = createCoraliteClass({
         componentId: 'revival-comp',
-        templateHTML: '<div><button id="revive-btn">Revive</button></div>',
+        templateHTML: '<div><button id="revive-btn">Revive</button><slot name="computed"></slot></div>',
+        defaultValues: { val: 'Initial' },
+        slots: {
+          computed (nodes, { state }) {
+            return `<span class="val">${state.val}</span>`
+          }
+        },
         client: ({ root, signal }) => {
           clientRunCount++
           const btn = root.querySelector('#revive-btn')
@@ -2164,12 +2069,15 @@ describe('CoraliteElement', () => {
       document.body.appendChild(el)
 
       queueMicrotask(() => {
+        const slotEl = el.querySelector('slot[name="computed"]')
         assert.strictEqual(clientRunCount, 1)
+        assert.strictEqual(slotEl.querySelector('.val').textContent, 'Initial')
 
         // Detach element across task turns
         document.body.removeChild(el)
 
         setTimeout(() => {
+          // Teardown assertions
           assert.strictEqual(el._wasTornDown, true)
           assert.strictEqual(el._abortController.signal.aborted, true)
 
@@ -2177,6 +2085,7 @@ describe('CoraliteElement', () => {
           document.body.appendChild(el)
 
           queueMicrotask(() => {
+            // Revival assertions
             assert.strictEqual(clientRunCount, 2, 'client() should re-run to revive component after cross-task detach')
             assert.strictEqual(el._wasTornDown, false)
             assert.strictEqual(el._abortController.signal.aborted, false)
@@ -2185,14 +2094,20 @@ describe('CoraliteElement', () => {
             btn.click()
             assert.strictEqual(listenerFiredCount, 1, 'Revived listener should fire')
 
-            document.body.removeChild(el)
-            done()
+            // Computed slot reactivity must be re-hooked after reconnection
+            el._state.val = 'Reconnected'
+
+            queueMicrotask(() => {
+              assert.strictEqual(slotEl.querySelector('.val').textContent, 'Reconnected', 'Computed slot must update after reconnection')
+              document.body.removeChild(el)
+              done()
+            })
           })
         }, 10)
       })
     })
 
-    it('10. Light DOM 2.0 Batching Sanity Check: MutationObserver processes synchronous appends in a single microtask batch', (t, done) => {
+    it('7. Light DOM reconciliation batches observer-driven appends and stays idempotent on manual passes', (t, done) => {
       const tag = 'batch-recon-' + Math.random().toString(36).substring(2, 9)
       const BatchComp = createCoraliteClass({
         componentId: 'batch-recon',
@@ -2227,40 +2142,14 @@ describe('CoraliteElement', () => {
         const slot = comp.querySelector('slot')
         assert.strictEqual(slot.children.length, 3)
 
+        // A manual reconciliation pass must be idempotent (no churn/double-fold)
+        comp._reconcileLightDOM()
+        assert.strictEqual(slot.children.length, 3)
+        assert.strictEqual(slot.children[0], el1)
+
         document.body.removeChild(comp)
         done()
       })
-    })
-
-    it('9. Async Slot Result SSR Flag Stripping (data-coralite-slot-computed)', (t, done) => {
-      const tag = 'async-ssr-slot-' + Math.random().toString(36).substring(2, 9)
-      const AsyncSSRComp = createCoraliteClass({
-        componentId: 'async-ssr-slot',
-        templateHTML: '<div><slot name="async" data-coralite-slot-computed="true"><span>Initial</span></slot></div>',
-        slots: {
-          async () {
-            return new Promise(resolve => {
-              setTimeout(() => {
-                resolve('<span class="resolved">Async Content</span>')
-              }, 10)
-            })
-          }
-        }
-      })
-      customElements.define(tag, AsyncSSRComp)
-
-      const el = document.createElement(tag)
-      document.body.appendChild(el)
-
-      const slotEl = el.querySelector('slot[name="async"]')
-
-      setTimeout(() => {
-        assert.strictEqual(slotEl.hasAttribute('data-coralite-slot-computed'), false, 'data-coralite-slot-computed attribute must be stripped after async slot resolution')
-        assert.strictEqual(slotEl.querySelector('.resolved').textContent, 'Async Content')
-
-        document.body.removeChild(el)
-        done()
-      }, 50)
     })
   })
 })

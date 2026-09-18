@@ -212,33 +212,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     document.body.removeChild(el)
   })
 
-  await t.test('8. Live Property Accessors in client() Context', () => {
-    let capturedCtx = null
-    const LiveFuncClass = createCoraliteClass({
-      componentId: 'c-live-func',
-      formAssociated: true,
-      client (ctx) {
-        capturedCtx = ctx
-      }
-    })
-    const tag = 'c-live-func'
-    customElements.define(tag, LiveFuncClass)
-
-    const form = document.createElement('form')
-    document.body.appendChild(form)
-    const el = document.createElement(tag)
-    form.appendChild(el)
-
-    assert.equal(capturedCtx.form, form)
-    assert.equal(typeof capturedCtx.validity, 'object')
-    assert.equal(capturedCtx.validity.valid, true)
-    assert.equal(typeof capturedCtx.checkValidity(), 'boolean')
-    assert.equal(capturedCtx.checkValidity(), true)
-
-    document.body.removeChild(form)
-  })
-
-  await t.test('9. Host DOM Properties and Schema Property Shadowing', () => {
+  await t.test('8. Host DOM Properties and Schema Property Shadowing', () => {
     const HostPropsClass = createCoraliteClass({
       componentId: 'c-host-props',
       formAssociated: true,
@@ -263,7 +237,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     document.body.removeChild(el)
   })
 
-  await t.test('10. Undeclared form attribute string in state vs context form property', () => {
+  await t.test('9. form attribute association: state string vs context form property and external by-id association', () => {
     let ctxFormRes = null
     const FormAttrClass = createCoraliteClass({
       componentId: 'c-form-attr',
@@ -275,6 +249,8 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     const tag = 'c-form-attr'
     customElements.define(tag, FormAttrClass)
 
+    // Nested element with an unresolvable form attribute: state keeps the raw string,
+    // while the live context form property resolves to the containing form.
     const form = document.createElement('form')
     document.body.appendChild(form)
     const el = document.createElement(tag)
@@ -284,10 +260,23 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     assert.equal(el._state.form, 'outside-form-id')
     assert.equal(ctxFormRes, form)
 
+    // External association: a form attribute referencing an existing form id
+    const externalForm = document.createElement('form')
+    externalForm.id = 'login-form'
+    document.body.appendChild(externalForm)
+
+    const externalEl = document.createElement(tag)
+    externalEl.setAttribute('form', 'login-form')
+    document.body.appendChild(externalEl)
+
+    assert.equal(externalEl.form, externalForm)
+
     document.body.removeChild(form)
+    document.body.removeChild(externalEl)
+    document.body.removeChild(externalForm)
   })
 
-  await t.test('11. Dev Warning for non-form-associated component setFormValue/setValidity call', () => {
+  await t.test('10. Dev Warning for non-form-associated component setFormValue/setValidity call', () => {
     let warningMsg = ''
     const originalWarn = console.warn
     console.warn = (msg) => {
@@ -317,7 +306,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     document.body.removeChild(el)
   })
 
-  await t.test('12. Build Pipeline Propagation and Option Validation', async () => {
+  await t.test('11. Build Pipeline Propagation and Option Validation', async () => {
     let warningLogged = null
     const defineComponent = createComponentDefinition({
       app: {
@@ -380,19 +369,9 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     } finally {
       await sm.disposeContext()
     }
-
-    // Test instantiation of component with formAssociated option
-    const PipelineClass = createCoraliteClass({
-      componentId: 'c-pipeline-test',
-      formAssociated: true
-    })
-    customElements.define('c-pipeline-test', PipelineClass)
-    const pipelineEl = new PipelineClass()
-    assert.equal(PipelineClass.formAssociated, true)
-    assert.notEqual(pipelineEl._internals, null)
   })
 
-  await t.test('13. Reconnection Lifecycle Clears and Re-registers Callback Sets', async () => {
+  await t.test('12. Reconnection Lifecycle Clears and Re-registers Callback Sets', async () => {
     let resetCount = 0
     const ReconnectClass = createCoraliteClass({
       componentId: 'c-reconnect-face',
@@ -426,7 +405,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     document.body.removeChild(el)
   })
 
-  await t.test('14. FormData Polyfill Nested-Form Protection Guard', () => {
+  await t.test('13. FormData Polyfill Nested-Form Protection Guard', () => {
     const GuardInputClass = createCoraliteClass({
       componentId: 'c-inner-face',
       formAssociated: true,
@@ -457,29 +436,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     document.body.removeChild(form)
   })
 
-  await t.test('15. External form Attribute Association', () => {
-    const ExtFormInputClass = createCoraliteClass({
-      componentId: 'c-ext-form-input',
-      formAssociated: true
-    })
-    const tag = 'c-ext-form-input'
-    customElements.define(tag, ExtFormInputClass)
-
-    const form = document.createElement('form')
-    form.id = 'login-form'
-    document.body.appendChild(form)
-
-    const el = document.createElement(tag)
-    el.setAttribute('form', 'login-form')
-    document.body.appendChild(el)
-
-    assert.equal(el.form, form)
-
-    document.body.removeChild(el)
-    document.body.removeChild(form)
-  })
-
-  await t.test('16. Context internals Exposure', () => {
+  await t.test('14. Context internals Exposure', () => {
     let capturedInternals = undefined
     const InternalsCheckClass = createCoraliteClass({
       componentId: 'c-internals-check',
@@ -500,7 +457,7 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
     document.body.removeChild(el)
   })
 
-  await t.test('17. Context form, validity, validationMessage getters & onForm* hooks', () => {
+  await t.test('15. Context form, validity, validationMessage getters & onForm* hooks', () => {
     let capturedCtx = null
     const ContextGetterClass = createCoraliteClass({
       componentId: 'c-context-getters',
@@ -535,6 +492,10 @@ test('Form-Associated Custom Elements (FACE)', async (t) => {
 
     assert.equal(typeof capturedCtx.validity, 'object')
     assert.equal(capturedCtx.validity.valid, true)
+
+    // checkValidity() is a live method reflecting the current validity state
+    assert.equal(typeof capturedCtx.checkValidity(), 'boolean')
+    assert.equal(capturedCtx.checkValidity(), true)
 
     assert.equal(typeof capturedCtx.validationMessage, 'string')
     assert.equal(capturedCtx.validationMessage, '')

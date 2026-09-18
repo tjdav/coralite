@@ -10,7 +10,7 @@ describe('updateComplete Contract', () => {
     tagName = 'comp-uc-' + Math.random().toString(36).substring(2, 9)
   })
 
-  it('1. Idle Element Fast-Path: returns immediately resolved Promise.resolve(true)', async () => {
+  it('1. Idle & Elided Element Fast-Path: returns immediately resolved Promise.resolve(true)', async () => {
     const Comp = createCoraliteClass({
       componentId: 'idle-comp',
       templateHTML: '<div><span id="text">{{ msg }}</span></div>',
@@ -29,6 +29,27 @@ describe('updateComplete Contract', () => {
     assert.strictEqual(el._updateCompleteResolvers, null)
 
     document.body.removeChild(el)
+
+    // Elided update: a mutation with no bindings or dirty observers must not schedule an update
+    const elidedTagName = 'elided-uc-' + Math.random().toString(36).substring(2, 9)
+    const ElidedComp = createCoraliteClass({
+      componentId: 'elided-uc',
+      templateHTML: '<div>Static</div>',
+      defaultValues: { unrendered: 'foo' }
+    })
+    customElements.define(elidedTagName, ElidedComp)
+
+    const elided = document.createElement(elidedTagName)
+    document.body.appendChild(elided)
+
+    // _scheduleUpdate returns early, so el._isUpdatePending stays false
+    elided._state.unrendered = 'bar'
+    assert.strictEqual(elided._isUpdatePending, false)
+
+    const elidedRes = await elided.updateComplete
+    assert.strictEqual(elidedRes, true)
+
+    document.body.removeChild(elided)
   })
 
   it('2. Behavioral Single State Mutation: resolves true when DOM is updated', async () => {
@@ -188,30 +209,7 @@ describe('updateComplete Contract', () => {
     document.body.removeChild(el)
   })
 
-  it('7. Elided Update (No Bindings / No Dirty Observers): resolves true immediately', async () => {
-    const Comp = createCoraliteClass({
-      componentId: 'elided-uc',
-      templateHTML: '<div>Static</div>',
-      defaultValues: { unrendered: 'foo' }
-    })
-    customElements.define(tagName, Comp)
-
-    const el = document.createElement(tagName)
-    document.body.appendChild(el)
-
-    // Mutate property with no bindings or dirty observers
-    el._state.unrendered = 'bar'
-
-    // _scheduleUpdate returns early, el._isUpdatePending is false
-    assert.strictEqual(el._isUpdatePending, false)
-
-    const res = await el.updateComplete
-    assert.strictEqual(res, true)
-
-    document.body.removeChild(el)
-  })
-
-  it('8. Disconnection Safety: pending resolvers resolve false upon element removal', async () => {
+  it('7. Disconnection Safety: pending resolvers resolve false upon element removal', async () => {
     const Comp = createCoraliteClass({
       componentId: 'disconnect-uc',
       templateHTML: '<div><span id="txt">{{ val }}</span></div>',
@@ -236,7 +234,7 @@ describe('updateComplete Contract', () => {
     assert.strictEqual(el._updateCompleteResolvers, null)
   })
 
-  it('9. Cascade Breaker Safety: resolves false when infinite reactivity loop trips breaker', async () => {
+  it('8. Cascade Breaker Safety: resolves false when infinite reactivity loop trips breaker', async () => {
     const prevMode = window.__coralite__?.mode
     window.__coralite__ = window.__coralite__ || {}
     window.__coralite__.mode = 'production' // avoid throw in dev mode to test circuit breaker return
@@ -281,7 +279,7 @@ describe('updateComplete Contract', () => {
     document.body.removeChild(el)
   })
 
-  it('10. Client Context Exposure: updateComplete is accessible and awaitable inside client controller', async () => {
+  it('9. Client Context Exposure: updateComplete is accessible and awaitable inside client controller', async () => {
     let clientAwaitedResult = null
 
     const Comp = createCoraliteClass({
@@ -309,7 +307,7 @@ describe('updateComplete Contract', () => {
     document.body.removeChild(el)
   })
 
-  it('11. Async Getter Boundary Pinning: updateComplete resolves true on current flush end without hanging or blocking on pending async getter Promises', async () => {
+  it('10. Async Getter Boundary Pinning: updateComplete resolves true on current flush end without hanging or blocking on pending async getter Promises', async () => {
     let getterPromiseResolve
     const asyncGetterPromise = new Promise(resolve => {
       getterPromiseResolve = resolve

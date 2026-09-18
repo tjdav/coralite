@@ -15,6 +15,24 @@ describe('CoraliteCollection', () => {
   /** @type {CoraliteCollection} */
   let collection
 
+  /**
+   * Builds a page fixture rooted in the current temporary test directory.
+   * @param {Partial<HTMLData>} [overrides]
+   * @returns {HTMLData}
+   */
+  function makeItem (overrides = {}) {
+    return {
+      type: 'page',
+      content: '<h1>Test</h1>',
+      path: {
+        pathname: path.join(testDir, 'test.html'),
+        dirname: testDir,
+        filename: 'test.html'
+      },
+      ...overrides
+    }
+  }
+
   beforeEach(async () => {
     // Create a temporary directory for testing
     testDir = await mkdtemp(path.join(tmpdir(), 'coralite-test-'))
@@ -40,16 +58,7 @@ describe('CoraliteCollection', () => {
 
   describe('setItem', () => {
     it('should add a new item to the collection', async () => {
-      /** @type {HTMLData} */
-      const item = {
-        type: 'page',
-        content: '<h1>Test</h1>',
-        path: {
-          pathname: path.join(testDir, 'test.html'),
-          dirname: testDir,
-          filename: 'test.html'
-        }
-      }
+      const item = makeItem()
 
       const result = await collection.setItem(item)
 
@@ -80,16 +89,7 @@ describe('CoraliteCollection', () => {
         }
       })
 
-      /** @type {HTMLData} */
-      const item = {
-        type: 'page',
-        content: '<h1>Test</h1>',
-        path: {
-          pathname: path.join(testDir, 'test.html'),
-          dirname: testDir,
-          filename: 'test.html'
-        }
-      }
+      const item = makeItem()
 
       const result = await collectionWithHook.setItem(item)
 
@@ -110,16 +110,7 @@ describe('CoraliteCollection', () => {
         onSet: async () => false
       })
 
-      /** @type {HTMLData} */
-      const item = {
-        type: 'page',
-        content: '<h1>Test</h1>',
-        path: {
-          pathname: path.join(testDir, 'test.html'),
-          dirname: testDir,
-          filename: 'test.html'
-        }
-      }
+      const item = makeItem()
 
       const result = await collectionWithHook.setItem(item)
 
@@ -127,58 +118,33 @@ describe('CoraliteCollection', () => {
       assert.strictEqual(collectionWithHook.list.length, 0)
     })
 
-    it('should update existing item instead of adding duplicate', async () => {
-      /** @type {HTMLData} */
-      const item = {
-        type: 'page',
-        content: '<h1>Test</h1>',
-        path: {
-          pathname: path.join(testDir, 'test.html'),
-          dirname: testDir,
-          filename: 'test.html'
-        }
-      }
-
-      await collection.setItem(item)
-      const initialLength = collection.list.length
-
-      // Try to add same item again
-      const updatedItem = {
-        ...item,
-        content: '<h1>Updated</h1>'
-      }
-      await collection.setItem(updatedItem)
-
-      assert.strictEqual(collection.list.length, initialLength)
-      assert.strictEqual(
-        collection.collection[item.path.pathname].content,
-        '<h1>Updated</h1>'
-      )
-    })
-
-    it('should prevent duplicate entries in lists', async () => {
-      /** @type {HTMLData} */
-      const item = {
-        type: 'page',
-        content: '<h1>Test</h1>',
-        path: {
-          pathname: path.join(testDir, 'test.html'),
-          dirname: testDir,
-          filename: 'test.html'
-        }
-      }
+    it('should update an existing item in place and prevent duplicate list entries', async () => {
+      const item = makeItem()
 
       await collection.setItem(item)
       const initialListLength = collection.list.length
       const initialPathListLength = collection.listByPath[testDir].length
 
-      // Try to add the same item again
+      // Re-adding the same item must not duplicate list entries
       await collection.setItem(item)
 
       assert.strictEqual(collection.list.length, initialListLength)
       assert.strictEqual(
         collection.listByPath[testDir].length,
         initialPathListLength
+      )
+
+      // Re-adding an updated item updates the stored item in place
+      const updatedItem = {
+        ...item,
+        content: '<h1>Updated</h1>'
+      }
+      await collection.setItem(updatedItem)
+
+      assert.strictEqual(collection.list.length, initialListLength)
+      assert.strictEqual(
+        collection.collection[item.path.pathname].content,
+        '<h1>Updated</h1>'
       )
     })
 

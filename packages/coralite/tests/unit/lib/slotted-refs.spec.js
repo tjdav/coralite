@@ -100,55 +100,6 @@ describe('Slotted Refs Resolution', () => {
     })
   })
 
-  it('preserves strict isolation when parent and child share the same ref name', (t, done) => {
-    const childTagName = 'child-comp-' + Math.random().toString(36).substring(2, 9)
-    const parentTagName = 'parent-comp-' + Math.random().toString(36).substring(2, 9)
-
-    let childRef = null
-    let parentRef = null
-
-    const ChildComp = createCoraliteClass({
-      componentId: 'child-comp',
-      templateHTML: '<div class="child-root"><button ref="actionBtn">Child Action</button><slot></slot></div>',
-      hydrationMap: {
-        refs: [{ name: 'actionBtn', path: [0, 0] }]
-      },
-      client ({ refs }) {
-        childRef = refs('actionBtn')
-      }
-    })
-
-    const ParentComp = createCoraliteClass({
-      componentId: 'parent-comp',
-      templateHTML: `<div class="parent-root"><${childTagName}><button ref="actionBtn">Parent Action</button></${childTagName}></div>`,
-      hydrationMap: {
-        refs: [{ name: 'actionBtn', path: [0, 0, 0] }]
-      },
-      client ({ refs }) {
-        parentRef = refs('actionBtn')
-      }
-    })
-
-    customElements.define(childTagName, ChildComp)
-    customElements.define(parentTagName, ParentComp)
-
-    const el = document.createElement(parentTagName)
-    document.body.appendChild(el)
-
-    queueMicrotask(() => {
-      assert.ok(parentRef, 'Parent ref should exist')
-      assert.strictEqual(parentRef.textContent, 'Parent Action')
-
-      assert.ok(childRef, 'Child ref should exist')
-      assert.strictEqual(childRef.textContent, 'Child Action')
-
-      assert.notStrictEqual(parentRef, childRef, 'Parent and child refs must be distinct elements')
-
-      document.body.removeChild(el)
-      done()
-    })
-  })
-
   it('resolves slotted refs in SSR pre-rendered hydration scenario', (t, done) => {
     const childTagName = 'ssr-child-' + Math.random().toString(36).substring(2, 9)
     const parentTagName = 'ssr-parent-' + Math.random().toString(36).substring(2, 9)

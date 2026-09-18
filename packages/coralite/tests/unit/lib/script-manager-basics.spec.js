@@ -276,4 +276,63 @@ describe('ScriptManager Basics', () => {
       assert.strictEqual(registered.script, script)
     })
   })
+
+  describe('disposeContext', () => {
+    it('should be a no-op before compiling and reset the cached context afterwards', async () => {
+      const sm = new ScriptManager()
+
+      await sm.disposeContext()
+      assert.strictEqual(sm.context, null)
+
+      sm.registerComponent({
+        id: 'c1',
+        script: { content: '() => {}' }
+      })
+      await sm.compileComponents('development')
+      assert.ok(sm.context, 'Context should be cached after compiling')
+
+      await sm.disposeContext()
+      assert.strictEqual(sm.context, null)
+
+      // Idempotent: a second dispose must not throw
+      await sm.disposeContext()
+      assert.strictEqual(sm.context, null)
+    })
+  })
+
+  describe('registerComponent merge semantics', () => {
+    it('should merge unique script components when registering without override', () => {
+      const sm = new ScriptManager()
+
+      sm.registerComponent({
+        id: 'c1',
+        script: { content: '() => 1', components: ['a', 'b'] }
+      })
+      sm.registerComponent({
+        id: 'c1',
+        script: { content: '() => 2', components: ['b', 'c'] }
+      })
+
+      assert.deepStrictEqual(sm.sharedFunctions.c1.components, ['a', 'b', 'c'])
+      // The original script is retained when override is not set
+      assert.strictEqual(sm.sharedFunctions.c1.script.content, '() => 1')
+    })
+
+    it('should replace script components when override is true', () => {
+      const sm = new ScriptManager()
+
+      sm.registerComponent({
+        id: 'c1',
+        script: { content: '() => 1', components: ['a', 'b'] }
+      })
+      sm.registerComponent({
+        id: 'c1',
+        script: { content: '() => 2', components: ['c'] },
+        override: true
+      })
+
+      assert.deepStrictEqual(sm.sharedFunctions.c1.components, ['c'])
+      assert.strictEqual(sm.sharedFunctions.c1.script.content, '() => 2')
+    })
+  })
 })

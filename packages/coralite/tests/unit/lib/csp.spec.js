@@ -67,6 +67,42 @@ describe('CSP Utilities & Config Validation', () => {
     it('should return null when no nonce found', () => {
       assert.equal(resolveNonce({}), null)
     })
+
+    it('should respect source precedence when multiple nonces are present', () => {
+      assert.equal(resolveNonce({
+        buildOptions: { nonce: 'b-123' },
+        pageContext: { meta: { nonce: 'p-123' } },
+        session: { nonce: 's-123' },
+        config: { csp: { nonce: 'c-123' } }
+      }), 'b-123')
+
+      assert.equal(resolveNonce({
+        pageContext: { meta: { nonce: 'p-123' } },
+        session: { nonce: 's-123' },
+        config: { csp: { nonce: 'c-123' } }
+      }), 'p-123')
+
+      assert.equal(resolveNonce({
+        session: { nonce: 's-123' },
+        config: { csp: { nonce: 'c-123' } }
+      }), 's-123')
+    })
+
+    it('should skip throwing nonce functions and continue to the next source', () => {
+      assert.equal(resolveNonce({
+        buildOptions: {
+          nonce: () => {
+            throw new Error('boom')
+          }
+        },
+        session: { nonce: 's-123' }
+      }), 's-123')
+    })
+
+    it('should skip whitespace-only nonces and trim resolved values', () => {
+      assert.equal(resolveNonce({ buildOptions: { nonce: '   ' }, session: { nonce: 's-123' } }), 's-123')
+      assert.equal(resolveNonce({ session: { nonce: '  s-123  ' } }), 's-123')
+    })
   })
 
   describe('formatCSPDirectives', () => {
@@ -110,6 +146,31 @@ describe('CSP Utilities & Config Validation', () => {
       assert.ok(!metaResult.includes('report-to'))
       assert.ok(!metaResult.includes('sandbox'))
     })
+
+    it('should deduplicate hashes and nonces already present in directives', () => {
+      const result = formatCSPDirectives(
+        { 'script-src': ["'self'", "'strict-dynamic'", "'nonce-abc'"] },
+        { nonce: 'abc' }
+      )
+      const scriptSrc = result.split('; ').find(d => d.startsWith('script-src '))
+      assert.equal(scriptSrc.split(' ').filter(s => s === "'nonce-abc'").length, 1)
+      assert.equal(scriptSrc.split(' ').filter(s => s === "'strict-dynamic'").length, 1)
+    })
+
+    it('should coerce string directive values to arrays and preserve user sources alongside a nonce', () => {
+      const result = formatCSPDirectives(
+        { 'img-src': 'https://cdn.example.com', 'script-src': ["'unsafe-inline'"] },
+        { nonce: 'n1' }
+      )
+      assert.ok(result.includes('img-src https://cdn.example.com'))
+      assert.ok(result.includes("script-src 'unsafe-inline' 'strict-dynamic' 'nonce-n1'"))
+    })
+
+    it('should filter out directives with empty source lists', () => {
+      const result = formatCSPDirectives({ 'img-src': [], 'default-src': ["'self'"] })
+      assert.ok(!result.includes('img-src'))
+      assert.ok(result.includes("default-src 'self'"))
+    })
   })
 
   describe('injectCSPMeta', () => {
@@ -134,6 +195,23 @@ describe('CSP Utilities & Config Validation', () => {
 
       injectCSPMeta(root, head, '   ', false)
       assert.equal(head.children.length, 0)
+    })
+
+    it('should use the Report-Only http-equiv when reportOnly is true', () => {
+      const root = createCoraliteElement({ type: 'tag', name: 'html', attribs: {}, children: [] })
+      const head = createCoraliteElement({ type: 'tag', name: 'head', parent: root, attribs: {}, children: [] })
+      root.children.push(head)
+
+      injectCSPMeta(root, head, "script-src 'self'", true)
+      assert.equal(head.children[0].attribs['http-equiv'], 'Content-Security-Policy-Report-Only')
+    })
+
+    it('should fall back to the root when head is null', () => {
+      const root = createCoraliteElement({ type: 'tag', name: 'html', attribs: {}, children: [] })
+
+      injectCSPMeta(root, null, "script-src 'self'", false)
+      assert.equal(root.children[0].name, 'meta')
+      assert.equal(root.children[0].attribs['http-equiv'], 'Content-Security-Policy')
     })
   })
 

@@ -158,6 +158,49 @@ describe('Component Attribute validate Feature', () => {
     })
   })
 
+  describe('Graceful Result Shape', () => {
+    it('should return the { value, error, transformed } shape instead of throwing', () => {
+      const schema = {
+        type: Number,
+        required: true,
+        transform: (val) => val * 2
+      }
+
+      const failure = validateAttributeValue(undefined, schema, 'level', 'shape-comp', { graceful: true })
+      assert.deepEqual(failure, {
+        value: undefined,
+        error: 'Attribute "level" is required.'
+      })
+
+      const success = validateAttributeValue('21', schema, 'level', 'shape-comp', { graceful: true })
+      assert.deepEqual(success, {
+        value: 42,
+        error: null
+      })
+    })
+
+    it('should flag transformed when the transform drops the value to undefined', () => {
+      const schema = {
+        type: Number,
+        transform: () => undefined
+      }
+
+      const result = validateAttributeValue('21', schema, 'level', 'shape-comp', { graceful: true })
+      assert.deepEqual(result, {
+        value: undefined,
+        transformed: true,
+        error: null
+      })
+    })
+
+    it('should throw instead of returning a result object without graceful', () => {
+      assert.throws(
+        () => validateAttributeValue(undefined, { type: Number, required: true }, 'level', 'strict-comp'),
+        CoraliteError
+      )
+    })
+  })
+
   describe('Pipeline Coordination & Omission Handling', () => {
     it('executes in strict sequence: required -> coerce -> transform -> values -> validate', () => {
       const executionOrder = []
