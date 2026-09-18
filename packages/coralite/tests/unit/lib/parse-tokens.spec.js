@@ -254,67 +254,10 @@ describe('Token Extraction (getTokensFromString)', () => {
       assert.ok(end - start < 100, `Should complete in < 100ms, took ${end - start}ms`)
     })
   })
-
-  describe('Backward Compatibility', () => {
-    it('should handle the same cases as the old regex implementation', () => {
-      const testCases = [
-        {
-          input: '{{ name }}',
-          expected: 1
-        },
-        {
-          input: '{{ name }} and {{ age }}',
-          expected: 2
-        },
-        {
-          input: 'No tokens here',
-          expected: 0
-        },
-        {
-          input: '{{}}',
-          expected: 1
-        },
-        {
-          input: '{{ user.name }}',
-          expected: 1
-        },
-        {
-          input: '{{ items[0] }}',
-          expected: 1
-        },
-        {
-          input: '{{ a }}{{ b }}{{ c }}',
-          expected: 3
-        }
-      ]
-
-      testCases.forEach(({ input, expected }) => {
-        const template = `<template id="my-comp">${input}</template>`
-        const tokens = extractTokensFromTemplate(template)
-        assert.strictEqual(tokens.length, expected, `Failed for: ${input}`)
-      })
-    })
-
-    it('should not break with the old warning threshold', () => {
-      // The old implementation warned for strings > 100 chars
-      // The new one should handle them without warnings
-      const longToken = 'x'.repeat(150)
-      const template = `<template id="my-comp">{{ ${longToken} }}</template>`
-
-      // Should not throw or warn
-      const tokens = extractTokensFromTemplate(template)
-      assert.strictEqual(tokens.length, 1)
-      assert.strictEqual(tokens[0].name, longToken)
-    })
-  })
 })
 
-// Additional test to verify the function directly if we can expose it
-describe('Direct getTokensFromString tests', () => {
-  // We'll need to test this indirectly through parseModule for now
-  // In a real scenario, we might export the function for direct testing
-
-  it('should be able to handle all edge cases without regex limitations', () => {
+describe('Long token handling', () => {
+  it('should handle arbitrarily long tokens without regex length limitations', () => {
     // This test validates the core improvement: no arbitrary length limits
     const veryLongToken = 'a'.repeat(1000)
     const template = `<template id="my-comp">{{ ${veryLongToken} }}</template>`

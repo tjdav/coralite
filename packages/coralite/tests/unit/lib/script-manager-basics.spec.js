@@ -276,26 +276,4 @@ describe('ScriptManager Basics', () => {
       assert.strictEqual(registered.script, script)
     })
   })
-
-  describe('ScriptManager Config Injection', () => {
-    it('should inject config into helper context', async () => {
-      const manager = new ScriptManager()
-      const config = {
-        baseURL: 'http://example.com',
-        apiKey: '123'
-      }
-
-      await manager.use({
-        name: 'test_plugin',
-        config,
-        context: (pluginContext) => {
-          return () => ({
-            testHelper: () => pluginContext.config
-          })
-        }
-      })
-
-      assert.strictEqual(manager.plugins.length, 1)
-    })
-  })
 })

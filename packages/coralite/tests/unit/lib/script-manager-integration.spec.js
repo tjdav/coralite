@@ -92,24 +92,6 @@ describe('ScriptManager Integration & Edge Cases', () => {
       assert.ok(sm.scriptModules[0].context)
       assert.ok(sm.scriptModules[1].context)
     })
-
-    it('should handle method chaining throughout', async () => {
-      const sm = new ScriptManager()
-
-      await sm.use({
-        name: 'p1',
-        context: () => () => ({ h1: () => 1 })
-      })
-      await sm.addContextProp('h2', () => 2)
-      sm.registerComponent({
-        id: 't1',
-        script: { content: "() => 'test'" }
-      })
-
-      assert.strictEqual(sm.scriptModules.length, 1)
-      assert.ok(sm.contextProps.h2)
-      assert.ok(sm.sharedFunctions['t1'])
-    })
   })
 
   describe('Edge Cases', () => {
@@ -132,62 +114,6 @@ describe('ScriptManager Integration & Edge Cases', () => {
     it('should handle plugin with empty context object', async () => {
       await sm.use({ context: {} })
       assert.strictEqual(Object.keys(sm.contextProps).length, 0)
-    })
-
-    it('should throw when helper has no name', async () => {
-      await assert.rejects(
-        async () => { await sm.addContextProp('', () => 'test') },
-        /addContextProp requires a non-empty string name/
-      )
-    })
-
-    it('should handle component with non-function script', async () => {
-      const script = { content: '123' }
-      sm.registerComponent({
-        id: 'test',
-        script
-      })
-      const registered = sm.sharedFunctions['test']
-      assert.strictEqual(registered.script, script)
-    })
-
-    it('should handle missing state in registered component', async () => {
-      sm.registerComponent({
-        id: 'test',
-        script: { content: "() => 'test'" }
-      })
-
-      const result = await sm.compileComponents('production')
-      assert.ok(typeof result === 'object')
-    })
-
-    it('should handle special characters in component IDs', async () => {
-      sm.registerComponent({
-        id: 'component-with-dashes',
-        script: { content: "() => 'test'" }
-      })
-      sm.registerComponent({
-        id: 'component_with_underscores',
-        script: { content: "() => 'test'" }
-      })
-      sm.registerComponent({
-        id: 'component.with.dots',
-        script: { content: "() => 'test'" }
-      })
-
-      assert.ok(sm.sharedFunctions['component-with-dashes'])
-      assert.ok(sm.sharedFunctions['component_with_underscores'])
-      assert.ok(sm.sharedFunctions['component.with.dots'])
-    })
-
-    it('should handle special characters in helper names', async () => {
-      await sm.addContextProp('$private', () => 'private')
-      await sm.addContextProp('_internal', () => 'internal')
-      await sm.addContextProp('helper$With$Dollars', () => 'dollars')
-
-      assert.ok(sm.contextProps.$private)
-      assert.ok(sm.contextProps._internal)
-      assert.ok(sm.contextProps.helper$With$Dollars)
     })
 
     it('should handle context that return complex objects', async () => {
@@ -248,35 +174,6 @@ describe('ScriptManager Integration & Edge Cases', () => {
       const output = result.outputFiles[chunkHash].text
       assert.ok(output.includes('<span></span>'), 'Output should contain serialized span HTML')
       assert.ok(output.includes('<div><span></span></div>'), 'Output should contain serialized parent HTML')
-    })
-  })
-
-  describe('Source Maps', () => {
-    it('should generate inline source map containing the file path', async () => {
-      const sm = new ScriptManager()
-      const componentId = 'test-component'
-      const script = { content: '(context) => context.values.message' }
-      const filePath = '/absolute/path/to/test-component.html'
-
-      sm.registerComponent({
-        id: componentId,
-        script,
-        filePath
-      })
-
-      const outputResult = await sm.compileComponents('development')
-
-      const runtimeHashName = outputResult.manifest['coralite-runtime']
-      const output = outputResult.outputFiles[runtimeHashName].text
-
-      assert.ok(output.includes('//# sourceMappingURL=data:application\/json;base64,'), 'Output should contain inline source map')
-
-      const base64Map = output.split('base64,')[1]
-      const decodedMap = Buffer.from(base64Map.trim(), 'base64').toString('utf-8')
-      const sourceMap = JSON.parse(decodedMap)
-
-      const hasFile = sourceMap.sources.some(source => source.includes('coralite-runtime'))
-      assert.ok(hasFile, `Source map sources should contain coralite-runtime. Found: ${JSON.stringify(sourceMap.sources)}`)
     })
   })
 

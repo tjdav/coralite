@@ -3,6 +3,7 @@ import { strict as assert } from 'node:assert'
 import path from 'node:path'
 import { writeFile, readFile, rm } from 'node:fs/promises'
 import { createTestProject } from '../utils/project.js'
+import { virtualPagePlugin } from '../utils/virtual-page-plugin.js'
 
 describe('ISR Component Assets, Migration & Self-Healing', () => {
   let project
@@ -78,28 +79,6 @@ describe('ISR Component Assets, Migration & Self-Healing', () => {
     assert.strictEqual(results3[0].status, 'skipped')
   })
 
-  it('re-renders pages with client controllers when runtime chunk changes, while pure SSR pages remain skipped', async () => {
-    await project.writePage('pure-ssr.html', '<h1>Pure SSR Page</h1>')
-    await project.writePage('interactive.html', '<dynamic-comp></dynamic-comp>')
-    await project.writeComponent('dynamic-comp.html', `
-      <template id="dynamic-comp"><div>Interactive</div></template>
-      <script type="module">
-        import { defineComponent } from 'coralite';
-        export default defineComponent({ client() {} });
-      </script>
-    `)
-
-    const coralite = await project.createCoralite({ output: undefined })
-
-    const results1 = await coralite.build()
-    assert.strictEqual(results1.length, 2)
-
-    // Second build without changes
-    const results2 = await coralite.build()
-    assert.strictEqual(results2.find(r => r.path.pathname.endsWith('pure-ssr.html')).status, 'skipped')
-    assert.strictEqual(results2.find(r => r.path.pathname.endsWith('interactive.html')).status, 'skipped')
-  })
-
   it('virtual pages track componentHashes, carry them forward on skip, and re-render on component hash mismatch', async () => {
     await project.writeComponent('v-comp.html', `
       <template id="v-comp"><div>Version 1</div></template>
@@ -111,18 +90,10 @@ describe('ISR Component Assets, Migration & Self-Healing', () => {
       </script>
     `)
 
-    const plugin = {
-      name: 'v-page-plugin',
-      server: {
-        onBeforeBuild: async ({ app, buildId }) => {
-          await app.addRenderQueue({
-            pathname: 'virtual-index.html',
-            content: '<v-comp></v-comp>',
-            cacheKey: 'static-key'
-          }, buildId)
-        }
-      }
-    }
+    const plugin = virtualPagePlugin('virtual-index.html', {
+      content: '<v-comp></v-comp>',
+      cacheKey: 'static-key'
+    })
 
     const coralite = await project.createCoralite({
       plugins: [plugin],

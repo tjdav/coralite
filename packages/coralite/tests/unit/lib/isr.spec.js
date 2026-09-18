@@ -1,8 +1,9 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import path from 'node:path'
-import { writeFile, readFile } from 'node:fs/promises'
+import { writeFile, readFile, mkdir } from 'node:fs/promises'
 import { createTestProject } from '../utils/project.js'
+import { virtualPagePlugin } from '../utils/virtual-page-plugin.js'
 
 describe('Incremental Static Regeneration (ISR)', () => {
   let project
@@ -19,18 +20,27 @@ describe('Incremental Static Regeneration (ISR)', () => {
 
   it('should skip rendering unchanged files on subsequent builds', async () => {
     await project.writePage('index.html', '<h1>Home</h1>')
+    await project.writePage('interactive.html', '<dynamic-comp></dynamic-comp>')
+    await project.writeComponent('dynamic-comp.html', `
+      <template id="dynamic-comp"><div>Interactive</div></template>
+      <script type="module">
+        import { defineComponent } from 'coralite';
+        export default defineComponent({ client() {} });
+      </script>
+    `)
 
     // Create coralite without output dir to only test manifest logic
     const coralite = await project.createCoralite({ output: undefined })
 
     const results1 = await coralite.build()
-    assert.strictEqual(results1.length, 1)
+    assert.strictEqual(results1.length, 2)
     assert.strictEqual(results1[0].status, undefined)
 
     // Second build without changes
     const results2 = await coralite.build()
-    assert.strictEqual(results2.length, 1)
-    assert.strictEqual(results2[0].status, 'skipped')
+    assert.strictEqual(results2.length, 2)
+    assert.strictEqual(results2.find(r => r.path.pathname.endsWith('pure-ssr.html') || r.path.pathname.endsWith('index.html')).status, 'skipped')
+    assert.strictEqual(results2.find(r => r.path.pathname.endsWith('interactive.html')).status, 'skipped', 'Pages with client controllers should also be skipped when unchanged')
   })
 
   it('should rebuild when a file content changes', async () => {
@@ -68,21 +78,10 @@ describe('Incremental Static Regeneration (ISR)', () => {
   })
 
   it('should handle virtual pages with cacheKey', async () => {
-    const plugin = {
-      name: 'virtual-page-plugin',
-      server: {
-        onBeforeBuild: async ({
-          app,
-          buildId
-        }) => {
-          await app.addRenderQueue({
-            pathname: 'virtual.html',
-            content: '<h1>Virtual</h1>',
-            cacheKey: 'v1'
-          }, buildId)
-        }
-      }
-    }
+    const plugin = virtualPagePlugin('virtual.html', {
+      content: '<h1>Virtual</h1>',
+      cacheKey: 'v1'
+    })
 
     const coralite = await project.createCoralite({
       plugins: [plugin],
@@ -101,22 +100,8 @@ describe('Incremental Static Regeneration (ISR)', () => {
   })
 
   it('should rebuild virtual pages when cacheKey changes', async () => {
-    let cacheKey = 'v1'
-    const plugin = {
-      name: 'virtual-page-plugin',
-      server: {
-        onBeforeBuild: async ({
-          app,
-          buildId
-        }) => {
-          await app.addRenderQueue({
-            pathname: 'virtual.html',
-            content: '<h1>Virtual</h1>',
-            cacheKey
-          }, buildId)
-        }
-      }
-    }
+    const options = { content: '<h1>Virtual</h1>', cacheKey: 'v1' }
+    const plugin = virtualPagePlugin('virtual.html', options)
 
     const coralite = await project.createCoralite({
       plugins: [plugin]
@@ -125,29 +110,18 @@ describe('Incremental Static Regeneration (ISR)', () => {
     await coralite.build()
 
     // Change cacheKey
-    cacheKey = 'v2'
+    options.cacheKey = 'v2'
     const results = await coralite.build()
     const virtualResult = results.find(r => r.path.pathname === 'virtual.html')
     assert.strictEqual(virtualResult.status, undefined)
   })
 
   it('should always rebuild volatile virtual pages', async () => {
-    const plugin = {
-      name: 'volatile-page-plugin',
-      server: {
-        onBeforeBuild: async ({
-          app,
-          buildId
-        }) => {
-          await app.addRenderQueue({
-            pathname: 'volatile.html',
-            content: '<h1>Volatile</h1>',
-            cacheKey: 'constant',
-            volatile: true
-          }, buildId)
-        }
-      }
-    }
+    const plugin = virtualPagePlugin('volatile.html', {
+      content: '<h1>Volatile</h1>',
+      cacheKey: 'constant',
+      volatile: true
+    })
 
     const coralite = await project.createCoralite({
       plugins: [plugin]
@@ -293,5 +267,65 @@ describe('Incremental Static Regeneration (ISR)', () => {
     // Second build passing { incremental: false } to build() should NOT skip
     const results2 = await coralite.build(null, { incremental: false })
     assert.strictEqual(results2[0].status, undefined)
+  })
+})
+
+
+describe('ISR asset invalidation', () => {
+  let project
+
+  beforeEach(async () => {
+    project = await createTestProject()
+    await mkdir(path.join(project.outputDir, 'assets/js'), { recursive: true })
+    await writeFile(path.join(project.outputDir, 'assets/js/vendor.js'), 'console.log("v1");')
+    await project.writePage('index.html', '<!DOCTYPE html><html><head></head><body><h1>Hello ISR</h1></body></html>')
+  })
+
+  afterEach(async () => {
+    await project.cleanup()
+  })
+
+  it('changing injected asset forces page rebuild in incremental mode across 3 phases', async () => {
+    // The asset source points INTO the output dir (simulating a bundler emitting
+    // assets next to the rendered pages)
+    const config = {
+      mode: 'production',
+      incremental: true,
+      assets: [{
+        dest: 'assets/js/vendor.js',
+        src: path.join(project.outputDir, 'assets/js/vendor.js'),
+        inject: {
+          sri: true
+        }
+      }]
+    }
+
+    // 1st build (render)
+    const app1 = await project.createCoralite(config)
+    const results1 = await app1.save()
+    assert.ok(results1.some(r => r.path.endsWith('index.html')))
+
+    // Read saved manifest inside isolated tmpDir
+    const manifestPath = path.join(project.testDir, '.coralite/manifest.json')
+    const manifest1 = JSON.parse(await readFile(manifestPath, 'utf8'))
+    const indexKey = Object.keys(manifest1.physical).find(k => k.endsWith('index.html'))
+    assert.ok(indexKey)
+    assert.ok(manifest1.physical[indexKey].injectedAssets)
+
+    // 2nd build (unchanged asset) -> page should be skipped and retain injectedAssets in manifest
+    const app2 = await project.createCoralite(config)
+    const results2 = await app2.build()
+    assert.equal(results2[0].status, 'skipped')
+
+    const manifest2 = JSON.parse(await readFile(manifestPath, 'utf8'))
+    assert.ok(manifest2.physical[indexKey].injectedAssets, 'skipped page must carry forward injectedAssets')
+
+    // Modify vendor.js
+    await writeFile(path.join(project.outputDir, 'assets/js/vendor.js'), 'console.log("v2 modified");')
+
+    // 3rd build (changed asset) -> page should rebuild
+    const app3 = await project.createCoralite(config)
+    const results3 = await app3.build()
+    assert.equal(results3[0].status, undefined)
   })
 })

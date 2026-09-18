@@ -1,6 +1,7 @@
 import { describe, test, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
 import { createTestProject } from '../utils/project.js'
+import { ScriptManager } from '../../../lib/script-manager.js'
 
 describe('Source Map Generation', () => {
   let project
@@ -166,5 +167,29 @@ export default defineComponent({
         }
       }
     }
+  })
+
+  test('ScriptManager runtime chunk contains an inline sourcemap with runtime sources', async () => {
+    const sm = new ScriptManager()
+    sm.registerComponent({
+      id: 'test-component',
+      script: { content: '(context) => context.values.message' },
+      filePath: '/absolute/path/to/test-component.html'
+    })
+
+    const outputResult = await sm.compileComponents('development')
+
+    const runtimeHashName = outputResult.manifest['coralite-runtime']
+    const output = outputResult.outputFiles[runtimeHashName].text
+
+    assert.ok(output.includes('//# sourceMappingURL=data:application/json;base64,'), 'Output should contain inline source map')
+
+    const base64Map = output.split('base64,')[1]
+    const decodedMap = JSON.parse(Buffer.from(base64Map.trim(), 'base64').toString('utf-8'))
+
+    const hasFile = decodedMap.sources.some(source => source.includes('coralite-runtime'))
+    assert.ok(hasFile, `Source map sources should contain coralite-runtime. Found: ${JSON.stringify(decodedMap.sources)}`)
+
+    await sm.disposeContext()
   })
 })
