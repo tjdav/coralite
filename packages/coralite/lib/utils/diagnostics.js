@@ -22,6 +22,39 @@ const TAG_SYNONYMS = {
 }
 
 /**
+ * Calculates 1-based line, column, and 0-based index of a substring in source code.
+ *
+ * @param {string} source - Full source code string
+ * @param {string} substring - Substring to locate
+ * @param {number} [searchFrom=0] - Offset index to begin search from
+ * @returns {{ line: number, column: number, index: number }} Location object
+ */
+export function getLocForSubstring (source, substring, searchFrom = 0) {
+  const index = source.indexOf(substring, searchFrom)
+  if (index === -1) {
+    return {
+      line: 1,
+      column: 1,
+      index: 0
+    }
+  }
+  let line = 1
+  let lastNewLine = -1
+  for (let i = 0; i < index; i++) {
+    if (source[i] === '\n') {
+      line++
+      lastNewLine = i
+    }
+  }
+  const column = index - lastNewLine
+  return {
+    line,
+    column,
+    index
+  }
+}
+
+/**
  * Normalizes input error code(s) into a Set of uppercase strings.
  * Supports strings, arrays, and comma-separated codes.
  *

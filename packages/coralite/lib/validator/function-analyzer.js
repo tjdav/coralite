@@ -5,7 +5,6 @@ import {
   getPropKeyName,
   getNodePropName,
   extractDestructuredKeys,
-  getStringOrTemplateValue,
   createDiagnostic
 } from './helpers.js'
 
@@ -430,7 +429,12 @@ export function analyzeFunctionBlock (
 
       if (isRefCall && callNode.arguments.length > 0) {
         const arg0 = callNode.arguments[0]
-        const refVal = getStringOrTemplateValue(arg0)
+        let refVal = null
+        if (arg0.type === 'Literal' && typeof arg0.value === 'string') {
+          refVal = arg0.value
+        } else if (arg0.type === 'TemplateLiteral' && arg0.quasis && arg0.quasis.length === 1) {
+          refVal = arg0.quasis[0].value.cooked ?? arg0.quasis[0].value.raw
+        }
         if (refVal) {
           targetRefsMap.set(refVal, {
             line: callNode.loc.start.line + scriptStartLine,
@@ -446,14 +450,24 @@ export function analyzeFunctionBlock (
 
       if (isObserveCall && callNode.arguments.length > 0) {
         const targetArg = callNode.arguments[0]
-        const obsVal = getStringOrTemplateValue(targetArg)
-        if (obsVal) {
-          targetStateSet.add(obsVal)
+        if (targetArg.type === 'Literal' && typeof targetArg.value === 'string') {
+          targetStateSet.add(targetArg.value)
+        } else if (targetArg.type === 'TemplateLiteral' && targetArg.quasis && targetArg.quasis.length === 1) {
+          const val = targetArg.quasis[0].value.cooked ?? targetArg.quasis[0].value.raw
+          if (val) {
+            targetStateSet.add(val)
+          }
         } else if (targetArg.type === 'ArrayExpression') {
           for (const el of targetArg.elements) {
-            const elVal = getStringOrTemplateValue(el)
-            if (elVal) {
-              targetStateSet.add(elVal)
+            if (el) {
+              if (el.type === 'Literal' && typeof el.value === 'string') {
+                targetStateSet.add(el.value)
+              } else if (el.type === 'TemplateLiteral' && el.quasis && el.quasis.length === 1) {
+                const val = el.quasis[0].value.cooked ?? el.quasis[0].value.raw
+                if (val) {
+                  targetStateSet.add(val)
+                }
+              }
             }
           }
         }

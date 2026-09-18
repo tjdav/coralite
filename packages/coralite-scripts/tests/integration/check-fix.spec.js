@@ -18,7 +18,7 @@ describe('check and fix commands', () => {
 
   it('1. check validates clean project and passes with 0 exit code', async () => {
     await project.writeComponent('card-element.html', `
-<template>
+<template id="card-element">
   <div class="card">
     <h2>{{ title }}</h2>
   </div>
@@ -52,7 +52,7 @@ describe('check and fix commands', () => {
   it('2. check detects invalid component expressions and invalid page attributes', async () => {
     // Expression in template: CORALITE-E201
     await project.writeComponent('counter-btn.html', `
-<template>
+<template id="counter-btn">
   <button>{{ count + 1 }}</button>
 </template>
 <script type="module">
@@ -73,7 +73,7 @@ describe('check and fix commands', () => {
 
   it('3. check --format json returns valid JSON output matching summary schema', async () => {
     await project.writeComponent('card-element.html', `
-<template>
+<template id="card-element">
   <div>{{ title }}</div>
 </template>
 <script type="module">
@@ -97,7 +97,7 @@ describe('check and fix commands', () => {
   it('4. check --strict exits non-zero when warnings exist', async () => {
     // Define an unused attribute to trigger warning
     await project.writeComponent('warn-comp.html', `
-<template>
+<template id="warn-comp">
   <div>Hello</div>
 </template>
 <script type="module">
@@ -119,7 +119,7 @@ describe('check and fix commands', () => {
 
   it('5. fix --dry-run prints unified diffs without modifying files on disk', async () => {
     const originalCode = `
-<template>
+<template id="counter-btn">
   <button>{{ count + 1 }}</button>
 </template>
 <script type="module">
@@ -143,7 +143,7 @@ describe('check and fix commands', () => {
 
   it('6. fix updates disk files and repairs component template expressions', async () => {
     const originalCode = `
-<template>
+<template id="counter-btn">
   <button>{{ count + 1 }}</button>
 </template>
 <script type="module">
@@ -165,7 +165,7 @@ describe('check and fix commands', () => {
 
   it('7. configuration fallback resolves components, pages, and plugins from coralite.config.js', async () => {
     await project.writeComponent('my-item.html', `
-<template>
+<template id="my-item">
   <div>Item</div>
 </template>
 <script type="module">
@@ -193,7 +193,7 @@ describe('check and fix commands', () => {
     `)
 
     await project.writeComponent('my-item.html', `
-<template>
+<template id="my-item">
   <div>Item</div>
 </template>
 <script type="module">
@@ -229,7 +229,7 @@ describe('check and fix commands', () => {
     `)
 
     await project.writeComponent('card-element.html', `
-<template>
+<template id="card-element">
   <div>{{ title }}</div>
 </template>
 <script type="module">
@@ -261,7 +261,7 @@ describe('check and fix commands', () => {
   it('10. check --error-code CORALITE-E201 filters output and exits 1 when matching error exists', async () => {
     // Valid component
     await project.writeComponent('valid-card.html', `
-<template><div>{{ title }}</div></template>
+<template id="valid-card"><div>{{ title }}</div></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { title: { type: String, default: 'Card' } } })
@@ -269,7 +269,7 @@ describe('check and fix commands', () => {
 `)
     // Component with CORALITE-E201
     await project.writeComponent('counter-btn.html', `
-<template><button>{{ count + 1 }}</button></template>
+<template id="counter-btn"><button>{{ count + 1 }}</button></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
@@ -287,7 +287,7 @@ describe('check and fix commands', () => {
   it('11. check --error-code CORALITE-E102 exits 0 when no matching issue exists for that code', async () => {
     // Project only has CORALITE-E201
     await project.writeComponent('counter-btn.html', `
-<template><button>{{ count + 1 }}</button></template>
+<template id="counter-btn"><button>{{ count + 1 }}</button></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
@@ -302,7 +302,7 @@ describe('check and fix commands', () => {
 
   it('12. check -e E201 normalizes shorthand code to match CORALITE-E201', async () => {
     await project.writeComponent('counter-btn.html', `
-<template><button>{{ count + 1 }}</button></template>
+<template id="counter-btn"><button>{{ count + 1 }}</button></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
@@ -316,14 +316,14 @@ describe('check and fix commands', () => {
 
   it('13. check --status failed / --only-failed suppresses valid components from report', async () => {
     await project.writeComponent('valid-card.html', `
-<template><div>{{ title }}</div></template>
+<template id="valid-card"><div>{{ title }}</div></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { title: { type: String, default: 'Card' } } })
 </script>
 `)
     await project.writeComponent('counter-btn.html', `
-<template><button>{{ count + 1 }}</button></template>
+<template id="counter-btn"><button>{{ count + 1 }}</button></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
@@ -338,14 +338,14 @@ describe('check and fix commands', () => {
 
   it('14. check --status passed displays only valid components', async () => {
     await project.writeComponent('valid-card.html', `
-<template><div>{{ title }}</div></template>
+<template id="valid-card"><div>{{ title }}</div></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { title: { type: String, default: 'Card' } } })
 </script>
 `)
     await project.writeComponent('counter-btn.html', `
-<template><button>{{ count + 1 }}</button></template>
+<template id="counter-btn"><button>{{ count + 1 }}</button></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
@@ -359,7 +359,7 @@ describe('check and fix commands', () => {
 
   it('15. check --format json --error-code CORALITE-E201 attaches filter metadata to root JSON', async () => {
     await project.writeComponent('counter-btn.html', `
-<template><button>{{ count + 1 }}</button></template>
+<template id="counter-btn"><button>{{ count + 1 }}</button></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
@@ -375,7 +375,7 @@ describe('check and fix commands', () => {
 
   it('16. fix --error-code CORALITE-E201 targets only specified error code', async () => {
     const exprCode = `
-<template><button>{{ count + 1 }}</button></template>
+<template id="counter-btn"><button>{{ count + 1 }}</button></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })
@@ -392,7 +392,7 @@ describe('check and fix commands', () => {
 
   it('17. fix --dry-run --error-code CORALITE-E201 previews diffs for specified error code only', async () => {
     const exprCode = `
-<template><button>{{ count + 1 }}</button></template>
+<template id="counter-btn"><button>{{ count + 1 }}</button></template>
 <script type="module">
   import { defineComponent } from 'coralite'
   export default defineComponent({ attributes: { count: { type: Number, default: 0 } } })

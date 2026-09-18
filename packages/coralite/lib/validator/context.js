@@ -28,6 +28,7 @@ export function createValidationContext (sourceCode, filePath = '') {
     scriptContent,
     styleContent: '',
     scriptStartLine,
+    templateId: null,
     scriptStringPool: [],
     templateTokens: new Set(),
     templateRefs: new Map(),

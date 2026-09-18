@@ -1,7 +1,8 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
 import { camelToKebab, kebabToCamel } from '../utils/core.js'
-import { buildCodeframe } from '../utils/diagnostics.js'
+import { buildCodeframe, getLocForSubstring } from '../utils/diagnostics.js'
+export { getLocForSubstring } from '../utils/diagnostics.js'
 
 export const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'slots', 'instanceId', 'emit'])
 export const RESERVED_IDENTIFIERS = new Set(['undefined', 'null', 'true', 'false', 'NaN'])
@@ -45,38 +46,6 @@ export const NUMBER_WORDS = {
   9: 'Nine'
 }
 
-/**
- * Calculates 1-based line, column, and 0-based index of a substring in source code.
- *
- * @param {string} source - Full source code string
- * @param {string} substring - Substring to locate
- * @param {number} [searchFrom=0] - Offset index to begin search from
- * @returns {{ line: number, column: number, index: number }} Location object
- */
-export function getLocForSubstring (source, substring, searchFrom = 0) {
-  const index = source.indexOf(substring, searchFrom)
-  if (index === -1) {
-    return {
-      line: 1,
-      column: 1,
-      index: 0
-    }
-  }
-  let line = 1
-  let lastNewLine = -1
-  for (let i = 0; i < index; i++) {
-    if (source[i] === '\n') {
-      line++
-      lastNewLine = i
-    }
-  }
-  const column = index - lastNewLine
-  return {
-    line,
-    column,
-    index
-  }
-}
 
 /**
  * Extracts property key name from an object property AST node or method definition node.
@@ -125,43 +94,6 @@ export function getNodePropName (propNode, isComputed = false) {
     }
   } else if (propNode.type === 'Literal' && typeof propNode.value === 'string') {
     return propNode.value
-  }
-  return null
-}
-
-/**
- * Extracts string value from either a Literal or a TemplateLiteral AST node.
- * For single-quasi static template literals or simple expressions, returns string value.
- *
- * @param {object} node - AST node
- * @returns {string|null} String value or null
- */
-export function getStringOrTemplateValue (node) {
-  if (!node) {
-    return null
-  }
-  if (node.type === 'Literal' && typeof node.value === 'string') {
-    return node.value
-  }
-  if (node.type === 'TemplateLiteral') {
-    const quasis = node.quasis || []
-    const expressions = node.expressions || []
-    if (quasis.length === 1 && expressions.length === 0) {
-      return quasis[0].value ? (quasis[0].value.cooked ?? quasis[0].value.raw) : ''
-    }
-    if (quasis.length === 2 && expressions.length === 1) {
-      const q0 = quasis[0].value ? (quasis[0].value.cooked ?? quasis[0].value.raw) : ''
-      const q1 = quasis[1].value ? (quasis[1].value.cooked ?? quasis[1].value.raw) : ''
-      const expr = expressions[0]
-      if (!q0 && !q1) {
-        if (expr.type === 'Identifier') {
-          return expr.name
-        }
-        if (expr.type === 'Literal' && typeof expr.value === 'string') {
-          return expr.value
-        }
-      }
-    }
   }
   return null
 }
@@ -414,18 +346,16 @@ export function isRefUsedInSelector (refName, stringPool, cleanCss) {
   const variants = [refName, kebabToCamel(refName), camelToKebab(refName)]
   const uniqueVariants = Array.from(new Set(variants))
   const escapedVariants = uniqueVariants.map(v => v.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&'))
-
-  const selectorPattern = new RegExp(`(?<![\\w-])ref\\s*[$*~^]?=\\s*["']?\\b(?:${escapedVariants.join('|')})\\b["']?`, 'i')
-  const interpolatedPattern = new RegExp(`(?<![\\w-])ref\\s*[$*~^]?=\\s*["']?\\$?\\{\\s*(?:${escapedVariants.join('|')})\\s*\\}["']?`, 'i')
-  const dynamicRefPattern = /(?<![\w-])ref\s*[$*~^]?=\s*["']?(?:\$\{|\{)/i
+  const selectorPattern = new RegExp(`(?<![\\w-])ref\\s*[$*~^|]?=\\s*["']?\\b(?:${escapedVariants.join('|')})\\b["']?`, 'i')
+  const dynamicPattern = /ref\s*[$*~^|]?=\s*["']?(?:\$\{|\{)/i
 
   for (const str of stringPool) {
-    if (selectorPattern.test(str) || interpolatedPattern.test(str) || dynamicRefPattern.test(str)) {
+    if (selectorPattern.test(str) || dynamicPattern.test(str)) {
       return true
     }
   }
 
-  if (selectorPattern.test(cleanCss) || interpolatedPattern.test(cleanCss)) {
+  if (selectorPattern.test(cleanCss) || dynamicPattern.test(cleanCss)) {
     return true
   }
 

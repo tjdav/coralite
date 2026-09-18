@@ -1,4 +1,5 @@
 import { Parser } from 'htmlparser2'
+import { isValidCustomElementName } from '../../utils/tags.js'
 import {
   getLocForSubstring,
   extractIdentifiersFromExpr,
@@ -112,15 +113,48 @@ export function validateTemplate (context) {
     let parsedScriptContent = ''
     context.styleContent = ''
 
+    let hasTemplateTag = false
+
     const parser = new Parser(
       {
         onopentag (name, attribs) {
           const lowerName = name.toLowerCase()
           if (currentSection === null) {
             if (lowerName === 'template') {
+              hasTemplateTag = true
               currentSection = 'template'
               templateDepth = 1
               templateSearchOffset = sourceCode.indexOf('<template')
+
+              const rawId = attribs?.id ? String(attribs.id).trim() : null
+              if (!rawId) {
+                const loc = getLocForSubstring(sourceCode, '<template', templateSearchOffset)
+                diagnostics.push(createDiagnostic({
+                  code: 'CORALITE-E204',
+                  severity: 'error',
+                  message: 'Missing required "id" attribute on <template>. Component custom element tag name must be defined by the template id.',
+                  filePath,
+                  line: loc.line,
+                  column: loc.column,
+                  sourceCode,
+                  cause: 'Coralite components require an id attribute on the <template> tag to define their custom element tag name.'
+                }))
+              } else if (!isValidCustomElementName(rawId)) {
+                const loc = getLocForSubstring(sourceCode, rawId, templateSearchOffset)
+                diagnostics.push(createDiagnostic({
+                  code: 'CORALITE-E204',
+                  severity: 'error',
+                  message: `Invalid template id "${rawId}". Component tag name must be a valid custom element name (contain a hyphen and match WHATWG custom element specification).`,
+                  filePath,
+                  line: loc.line,
+                  column: loc.column,
+                  sourceCode,
+                  cause: `The template id "${rawId}" is not a valid custom element tag name according to the WHATWG custom element specification.`
+                }))
+              } else {
+                context.templateId = rawId
+              }
+
               checkAttribs(attribs, templateSearchOffset)
             } else if (lowerName === 'script') {
               currentSection = 'script'
@@ -174,6 +208,19 @@ export function validateTemplate (context) {
 
     parser.write(sourceCode)
     parser.end()
+
+    if (!hasTemplateTag) {
+      diagnostics.push(createDiagnostic({
+        code: 'CORALITE-E204',
+        severity: 'error',
+        message: 'Missing <template> tag in component. Coralite components must define a <template id="..."> element.',
+        filePath,
+        line: 1,
+        column: 1,
+        sourceCode,
+        cause: 'Coralite component files must contain a <template id="..."> tag to define the component markup and custom element tag name.'
+      }))
+    }
 
     if (parsedScriptContent) {
       context.scriptContent = parsedScriptContent

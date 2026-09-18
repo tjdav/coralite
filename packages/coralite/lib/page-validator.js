@@ -1,16 +1,19 @@
 import { Parser } from 'htmlparser2'
 import { parse as parseJS } from 'acorn'
 import { ancestor as walkAncestorJS } from 'acorn-walk'
-import { readFile, readdir, stat, access } from 'node:fs/promises'
-import { join, extname, relative, resolve, basename } from 'node:path'
+import { readFile, access } from 'node:fs/promises'
+import { relative, resolve } from 'node:path'
 import kleur from 'kleur'
 import { camelToKebab, stripHtmlComments } from './utils/core.js'
-import { createDiagnostic, formatDiagnosticTerminal, normalizeErrorCodes, matchesErrorCode } from './utils/diagnostics.js'
+import { createDiagnostic, formatDiagnosticTerminal, normalizeErrorCodes, matchesErrorCode, getLocForSubstring } from './utils/diagnostics.js'
+import { discoverHtmlFiles } from './utils/server/html.js'
+import { getIgnoreAttributeMap, findAttributesToIgnore } from './utils/server/parse.js'
 
 /**
  * @import {
  *   CoraliteDiagnostic,
- *   CoraliteValidationSummary
+ *   CoraliteValidationSummary,
+ *   Attribute
  * } from '../types/index.js'
  */
 
@@ -79,38 +82,6 @@ function findClosestTag (unknownTag, knownTags) {
   return closest
 }
 
-/**
- * Locates line and column numbers of a substring in source code.
- *
- * @param {string} source - Source code
- * @param {string} substring - Substring to search
- * @param {number} [searchFrom=0] - Offset index
- * @returns {{ line: number, column: number, index: number }} Location object
- */
-function getLocForSubstring (source, substring, searchFrom = 0) {
-  const index = source.indexOf(substring, searchFrom)
-  if (index === -1) {
-    return {
-      line: 1,
-      column: 1,
-      index: 0
-    }
-  }
-  let line = 1
-  let lastNewLine = -1
-  for (let i = 0; i < index; i++) {
-    if (source[i] === '\n') {
-      line++
-      lastNewLine = i
-    }
-  }
-  const column = index - lastNewLine
-  return {
-    line,
-    column,
-    index
-  }
-}
 
 /**
  * Validates a page HTML document source code against known component schemas and encapsulation rules.
@@ -119,6 +90,7 @@ function getLocForSubstring (source, substring, searchFrom = 0) {
  * @param {Object} [options={}] - Validation options
  * @param {string} [options.filePath=''] - File path for diagnostics
  * @param {Map<string, Object>|Record<string, Object>} [options.knownComponents] - Map or object of registered component definitions
+ * @param {Array<string|Attribute>|Set<string>|string} [options.ignoreByAttribute] - Attributes that bypass custom element tag checks
  * @param {string[]|Set<string>|string} [options.ignoreAttributes] - Attributes that bypass custom element tag checks
  * @param {string[]|Set<string>|string} [options.skipRenderByAttribute] - Alias for ignoreAttributes
  * @param {string[]|Set<string>|string} [options.ignoreTags] - Custom element tags to skip validation for
@@ -145,26 +117,13 @@ export function validatePageSource (sourceCode, options = {}) {
     }
   }
 
-  // Normalize ignoreAttributes
-  const ignoreAttrs = new Set()
-  const addIgnoreList = (list) => {
-    if (!list) {
-      return
-    }
-    let items = [list]
-    if (Array.isArray(list)) {
-      items = list
-    } else if (list instanceof Set) {
-      items = Array.from(list)
-    }
-    for (const item of items) {
-      if (typeof item === 'string') {
-        ignoreAttrs.add(item.toLowerCase().trim())
-      }
-    }
+  let rawIgnoreConfig = options.ignoreByAttribute || options.ignoreAttributes || options.skipRenderByAttribute
+  if (typeof rawIgnoreConfig === 'string') {
+    rawIgnoreConfig = [rawIgnoreConfig]
+  } else if (rawIgnoreConfig instanceof Set) {
+    rawIgnoreConfig = Array.from(rawIgnoreConfig)
   }
-  addIgnoreList(options.ignoreAttributes)
-  addIgnoreList(options.skipRenderByAttribute)
+  const ignoreAttributeMap = getIgnoreAttributeMap(/** @type {any} */ (rawIgnoreConfig))
 
   // Normalize ignoreTags
   const ignoreTags = new Set()
@@ -186,6 +145,44 @@ export function validatePageSource (sourceCode, options = {}) {
   }
   addIgnoreTags(options.ignoreTags)
 
+  // Pre-pass: scan inline <script> blocks for customElements.define calls
+  const scriptRegex = /<script[\s\S]*?>([\s\S]*?)<\/script>/gi
+  let scriptMatch
+  while ((scriptMatch = scriptRegex.exec(cleanSourceCode)) !== null) {
+    const code = scriptMatch[1]
+    if (code && code.trim()) {
+      try {
+        const ast = parseJS(code, {
+          ecmaVersion: 'latest',
+          sourceType: 'module'
+        })
+        walkAncestorJS(ast, {
+          CallExpression (node) {
+            if (
+              node.callee &&
+              node.callee.type === 'MemberExpression' &&
+              node.callee.object &&
+              node.callee.object.type === 'Identifier' &&
+              node.callee.object.name === 'customElements' &&
+              node.callee.property &&
+              node.callee.property.type === 'Identifier' &&
+              node.callee.property.name === 'define' &&
+              node.arguments.length > 0
+            ) {
+              const arg0 = node.arguments[0]
+              if (arg0 && arg0.type === 'Literal' && typeof arg0.value === 'string') {
+                const definedTag = camelToKebab(arg0.value.toLowerCase().trim())
+                knownMap.set(definedTag, { attributes: {}, slots: [] })
+              }
+            }
+          }
+        })
+      } catch {
+        // Ignore syntax errors in pre-pass
+      }
+    }
+  }
+
   let currentSection = null
   let scriptContent = ''
   let scriptSearchOffset = 0
@@ -206,11 +203,12 @@ export function validatePageSource (sourceCode, options = {}) {
 
         let isCustomElementPushedToInert = false
 
+        const hasIgnoredAttr = ignoreAttributeMap && attribs ? findAttributesToIgnore(ignoreAttributeMap, attribs) : false
+
         if (inertStack.length > 0) {
           // Inside an inert subtree: skip custom element (CORALITE-PAGE-101) and required attribute (CORALITE-PAGE-102) validation
         } else if (tagName.includes('-')) {
           const normTag = camelToKebab(tagName)
-          const hasIgnoredAttr = Object.keys(attribs || {}).some(a => ignoreAttrs.has(a.toLowerCase()))
 
           if (ignoreTags.has(normTag) || ignoreTags.has(tagName)) {
             // Skip custom element check
@@ -284,7 +282,6 @@ export function validatePageSource (sourceCode, options = {}) {
 
         if (!isCustomElementPushedToInert) {
           const isStandardInertTag = INERT_TAGS.has(tagName)
-          const hasIgnoredAttr = Object.keys(attribs || {}).some(a => ignoreAttrs.has(a.toLowerCase()))
           if (isStandardInertTag || hasIgnoredAttr) {
             const reason = hasIgnoredAttr ? 'ignored-attr' : 'inert-tag'
             inertStack.push({
@@ -415,6 +412,25 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
     },
 
     CallExpression (node) {
+        // Detect inline customElements.define('tag-name', ...)
+        if (
+          node.callee &&
+          node.callee.type === 'MemberExpression' &&
+          node.callee.object &&
+          node.callee.object.type === 'Identifier' &&
+          node.callee.object.name === 'customElements' &&
+          node.callee.property &&
+          node.callee.property.type === 'Identifier' &&
+          node.callee.property.name === 'define' &&
+          node.arguments.length > 0
+        ) {
+          const arg0 = node.arguments[0]
+          if (arg0 && arg0.type === 'Literal' && typeof arg0.value === 'string') {
+            const definedTag = camelToKebab(arg0.value.toLowerCase().trim())
+            knownMap.set(definedTag, { attributes: {}, slots: [] })
+          }
+        }
+
       const calleeStr = getCalleeName(node.callee)
 
       // 1. Compound descendant selector check
@@ -584,28 +600,18 @@ export async function validatePagesDir (pagesDir, options = {}) {
     throw new Error(`Pages directory not found: ${absoluteDir}`)
   }
 
-  const scanDir = async (dir) => {
-    const entries = await readdir(dir)
-    await Promise.all(entries.map(async (entry) => {
-      const fullPath = join(dir, entry)
-      const st = await stat(fullPath)
-
-      if (st.isDirectory()) {
-        await scanDir(fullPath)
-      } else if (st.isFile() && extname(entry) === '.html') {
-        const content = await readFile(fullPath, 'utf8')
-        const relPath = relative(process.cwd(), fullPath)
-        const result = validatePageSource(content, {
-          ...options,
-          filePath: relPath
-        })
-        result.pageName = basename(entry, '.html')
-        results.push(result)
-      }
-    }))
+  for await (const file of discoverHtmlFiles({ path: absoluteDir, recursive: true, type: 'page' })) {
+    const fullPath = file.path.pathname
+    const content = file.content ?? await readFile(fullPath, 'utf8')
+    const relPath = relative(process.cwd(), fullPath)
+    const result = validatePageSource(content, {
+      ...options,
+      filePath: relPath
+    })
+    const relativeToPagesDir = relative(absoluteDir, fullPath)
+    result.pageName = relativeToPagesDir.replace(/\.html$/i, '')
+    results.push(result)
   }
-
-  await scanDir(absoluteDir)
 
   results.sort((a, b) => (a.filePath || '').localeCompare(b.filePath || ''))
 

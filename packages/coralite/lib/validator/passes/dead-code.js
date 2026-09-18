@@ -369,8 +369,10 @@ export function collectDeadCode (context) {
   return {
     filePath,
     valid,
+    componentTag: context.templateId || null,
     diagnostics,
     defined: {
+      templateId: context.templateId || null,
       getters: Array.from(definedGetters),
       serverProps: Array.from(definedServerProps),
       attributes: Array.from(definedAttributes),

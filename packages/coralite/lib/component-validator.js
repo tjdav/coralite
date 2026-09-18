@@ -1,5 +1,6 @@
-import { readFile, readdir, stat, access } from 'node:fs/promises'
-import { join, extname, relative, resolve } from 'node:path'
+import { readFile, stat, access } from 'node:fs/promises'
+import { relative, resolve } from 'node:path'
+import { discoverHtmlFiles } from './utils/server/html.js'
 import { formatValidationReport } from './utils/diagnostics.js'
 import {
   createValidationContext,
@@ -130,26 +131,13 @@ export async function validateComponentsDir (componentsDir, options = {}) {
 
   const results = []
 
-  const scanDir = async (dir) => {
-    const entries = await readdir(dir)
-    await Promise.all(entries.map(async (entry) => {
-      const fullPath = join(dir, entry)
-      const st = await stat(fullPath)
-
-      if (st.isDirectory()) {
-        await scanDir(fullPath)
-      } else if (st.isFile() && (extname(entry) === '.html' || extname(entry) === '.js')) {
-        const content = await readFile(fullPath, 'utf8')
-        if (content.includes('defineComponent') || content.includes('<template')) {
-          const relPath = relative(process.cwd(), fullPath)
-          const result = validateComponentSource(content, relPath)
-          results.push(result)
-        }
-      }
-    }))
+  for await (const file of discoverHtmlFiles({ path: absoluteDir, recursive: true, type: 'component' })) {
+    const fullPath = file.path.pathname
+    const content = file.content ?? await readFile(fullPath, 'utf8')
+    const relPath = relative(process.cwd(), fullPath)
+    const result = validateComponentSource(content, relPath)
+    results.push(result)
   }
-
-  await scanDir(absoluteDir)
 
   results.sort((a, b) => (a.filePath || '').localeCompare(b.filePath || ''))
 

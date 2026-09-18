@@ -607,7 +607,7 @@ export function createTextNode (data, parent) {
  * @param {Object<string, string>} attributes - The HTML attribute object to be parsed by the parser
  * @returns {boolean}
  */
-function findAttributesToIgnore (ignoreByAttribute, attributes) {
+export function findAttributesToIgnore (ignoreByAttribute, attributes) {
   if (Array.isArray(ignoreByAttribute)) {
     for (let i = 0; i < ignoreByAttribute.length; i++) {
       const item = ignoreByAttribute[i]
@@ -651,7 +651,7 @@ function findAttributesToIgnore (ignoreByAttribute, attributes) {
  * @param {Array<string | Attribute> | Map<string, Array<string | null>>} ignoreByAttribute - The ignore configurations
  * @returns {Map<string, Array<string | null>>} The generated map
  */
-function getIgnoreAttributeMap (ignoreByAttribute) {
+export function getIgnoreAttributeMap (ignoreByAttribute) {
   if (!ignoreByAttribute) {
     return
   }

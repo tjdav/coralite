@@ -15,10 +15,76 @@ import {
 } from '../../../lib/component-validator.js'
 
 describe('Component Validator Diagnostics & AST Analysis', () => {
+  // 0. Component Tag Validation (CORALITE-E204)
+  test('CORALITE-E204: detects missing template tag, missing template id, or invalid custom element name id', () => {
+    // Missing template tag
+    const codeNoTpl = `
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const resNoTpl = validateComponentSource(codeNoTpl, 'no-template.html')
+    const e204NoTpl = resNoTpl.diagnostics.find(d => d.code === 'CORALITE-E204')
+    assert.ok(e204NoTpl)
+    assert.strictEqual(e204NoTpl.severity, 'error')
+    assert.ok(e204NoTpl.message.includes('Missing <template> tag'))
+
+    // Bare template tag (missing id)
+    const codeBare = `
+<template>
+  <div>Content</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const resBare = validateComponentSource(codeBare, 'bare-template.html')
+    const e204Bare = resBare.diagnostics.find(d => d.code === 'CORALITE-E204')
+    assert.ok(e204Bare)
+    assert.strictEqual(e204Bare.severity, 'error')
+    assert.ok(e204Bare.message.includes('Missing required "id" attribute on <template>'))
+
+    // Invalid custom element name (e.g. no hyphen)
+    const codeInvalid = `
+<template id="card">
+  <div>Content</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const resInvalid = validateComponentSource(codeInvalid, 'invalid-template.html')
+    const e204Invalid = resInvalid.diagnostics.find(d => d.code === 'CORALITE-E204')
+    assert.ok(e204Invalid)
+    assert.strictEqual(e204Invalid.severity, 'error')
+    assert.ok(e204Invalid.message.includes('Invalid template id "card"'))
+
+    // Valid template tag
+    const codeValid = `
+<template id="user-card">
+  <div>Content</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>
+`
+    const resValid = validateComponentSource(codeValid, 'valid-template.html')
+    const e204Valid = resValid.diagnostics.find(d => d.code === 'CORALITE-E204')
+    assert.strictEqual(e204Valid, undefined)
+    assert.strictEqual(resValid.componentTag, 'user-card')
+  })
+
   // 1. Template Expression Parsing (CORALITE-E201)
   test('CORALITE-E201: detects non-pure identifier mustache expressions in template and derives getter + defensive code', () => {
     const code = `
-<template>
+<template id="test-e201">
   <div>{{ user.profile.name }}</div>
   <div>{{ item.price * taxRate }}</div>
   <div>{{ items[0] }}</div>
@@ -54,7 +120,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 2. Inline Event Listeners (CORALITE-E203)
   test('CORALITE-E203: detects inline event listener attributes in template', () => {
     const code = `
-<template>
+<template id="test-e203">
   <button onclick="handleClick()">Click</button>
 </template>
 
@@ -77,7 +143,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   test('CORALITE-E202: detects called refs missing from template and checks candidate matching', () => {
     // Case 1: Exactly 1 matching candidate tag
     const code1 = `
-<template>
+<template id="test-e202-single">
   <button id="submit">Submit</button>
   <div>Text</div>
 </template>
@@ -101,7 +167,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
     // Case 2: Ambiguous multiple candidate tags
     const code2 = `
-<template>
+<template id="test-e202-multi">
   <button>One</button>
   <button>Two</button>
 </template>
@@ -125,7 +191,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
   test('CORALITE-E201: handles complex template expressions (ternary, template literal, comparison)', () => {
     const code = `
-<template>
+<template id="test-e201-complex">
   <div>{{ isActive ? 'Online' : 'Offline' }}</div>
   <div>{{ \`ID: \${id}\` }}</div>
   <div>{{ count > 0 }}</div>
@@ -156,7 +222,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 4. Attribute Blocked Types (CORALITE-E101)
   test('CORALITE-E101: detects blocked attribute types Array and Object', () => {
     const code = `
-<template>
+<template id="test-e101">
   <div>Test</div>
 </template>
 
@@ -183,7 +249,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 5. Attribute Mutex (CORALITE-E102)
   test('CORALITE-E102: detects attribute defining both required: true and default', () => {
     const code = `
-<template>
+<template id="test-e102">
   <div>Test</div>
 </template>
 
@@ -208,7 +274,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 6. Async Attribute Validate/Transform (CORALITE-E103)
   test('CORALITE-E103: detects async validate or transform functions in attribute schema', () => {
     const code = `
-<template>
+<template id="test-e103">
   <div>Test</div>
 </template>
 
@@ -235,7 +301,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 7. Reserved Context Collision (CORALITE-E104)
   test('CORALITE-E104: detects attributes or server properties colliding with reserved context keys', () => {
     const code = `
-<template>
+<template id="test-e104">
   <div>Test</div>
 </template>
 
@@ -264,7 +330,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 8. Serialization Boundary Leaks (CORALITE-E301)
   test('CORALITE-E301: detects top-level imports and local variables referenced inside client() block with deduplication', () => {
     const code = `
-<template>
+<template id="test-e301">
   <div>Test</div>
 </template>
 
@@ -308,7 +374,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
   test('CORALITE-E301: tracks isSharedWithOtherBlocks when import is used in server()/getters/slots/style', () => {
     const code = `
-<template>
+<template id="test-e301-shared">
   <div>Test</div>
 </template>
 
@@ -336,7 +402,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
   test('CORALITE-E301: tracks isSharedWithOtherBlocks when root identifier is used in onError: handler', () => {
     const code = `
-<template>
+<template id="test-e301-onerror">
   <div>Test</div>
 </template>
 
@@ -361,7 +427,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
   test('CORALITE-E301: tracks isSharedWithOtherBlocks when import is used in attributes validator', () => {
     const code = `
-<template>
+<template id="test-e301-attr-validate">
   <div>Test</div>
 </template>
 
@@ -393,7 +459,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     const code = `
 <!-- {{ item.price * taxRate }} -->
 <!-- <button onclick="handleClick()">Outside</button> -->
-<template>
+<template id="test-template-scoping">
   <div>{{ title }}</div>
 </template>
 
@@ -417,7 +483,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 9. Reactivity Loops in observe() (CORALITE-E302)
   test('CORALITE-E302: detects state assignment and update expressions inside observe() callback', () => {
     const code = `
-<template>
+<template id="test-e302">
   <div>Test</div>
 </template>
 
@@ -447,7 +513,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 10. Async Style Getters (CORALITE-E303)
   test('CORALITE-E303: detects async functions inside style block', () => {
     const code = `
-<template>
+<template id="test-e303">
   <div>Test</div>
 </template>
 
@@ -471,7 +537,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 11. Unused Symbols Warnings (CORALITE-W401)
   test('CORALITE-W401: emits warning for unused getters, serverProps, and attributes', () => {
     const code = `
-<template>
+<template id="test-w401">
   <div>Test</div>
 </template>
 
@@ -503,7 +569,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 12. Unused Element Ref Warning (CORALITE-W402)
   test('CORALITE-W402: emits warning for element ref defined in template but never accessed', () => {
     const code = `
-<template>
+<template id="test-w402">
   <div ref="unused-box">Box</div>
 </template>
 
@@ -524,7 +590,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   test('evaluates result.valid based on errorCount === 0 && totalUnused === 0', () => {
     // Valid component: 0 errors, 0 unused
     const validCode = `
-<template>
+<template id="valid-comp">
   <div>{{ title }}</div>
 </template>
 
@@ -542,7 +608,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
     // Invalid component due to unused attribute
     const unusedCode = `
-<template>
+<template id="unused-comp">
   <div>Hello</div>
 </template>
 
@@ -560,7 +626,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
     // Invalid component due to error diagnostic
     const errorCode = `
-<template>
+<template id="error-comp">
   <button onclick="doAction()">Click</button>
 </template>
 
@@ -576,7 +642,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 14. AST Ref Determinism Verification (CORALITE-W204)
   test('CORALITE-W204: emits warning for top-level if (btn) and if (refs("btn")) existence checks', () => {
     const code1 = `
-<template>
+<template id="w204-1">
   <button ref="submit-btn">Submit</button>
 </template>
 
@@ -600,7 +666,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
     assert.ok(w204s1[0].message.includes('Redundant existence check on ref "submit-btn"'))
 
     const code2 = `
-<template>
+<template id="w204-2">
   <button ref="submit-btn">Submit</button>
 </template>
 
@@ -624,7 +690,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
   test('CORALITE-W204: does NOT emit warning inside observe(), async callbacks, or direct access', () => {
     const code = `
-<template>
+<template id="w204-nested">
   <div ref="panel">Panel</div>
   <button ref="btn">Button</button>
 </template>
@@ -655,7 +721,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 15. CORALITE-E105 & CORALITE-E107 Diagnostic Rule Tests
   test('CORALITE-E107: emits error on unknown component options, deprecated top-level state, non-boolean formAssociated, and non-function onError', () => {
     const code = `
-<template>
+<template id="test-e107">
   <div>Test</div>
 </template>
 
@@ -690,7 +756,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
   test('CORALITE-E105: emits diagnostic for undestructured (state) => ... getter signature, but permits modern destructured context, context parameter, style getters, and single-param slot functions', () => {
     const code = `
-<template>
+<template id="test-getter-context">
   <div>{{ legacyGetter }} - {{ modernGetter }} - {{ nestedGetter }} - {{ ctxGetter }}</div>
   <slot name="default"></slot>
 </template>
@@ -729,7 +795,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
   test('CORALITE-E105: permits destructuring nested objects like { refs: { button } } without throwing', () => {
     const code = `
-<template>
+<template id="test-getter-nested-refs">
   <button ref="button">Click</button>
   <div>{{ buttonText }}</div>
 </template>
@@ -751,7 +817,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
 
   test('CORALITE-E105: emits diagnostic when context.attributes is accessed in server() or client()', () => {
     const code = `
-<template>
+<template id="test-e105">
   <div>Test</div>
 </template>
 
@@ -785,7 +851,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 16. state.errors.<prop> Attribute Usage Tracking Test
   test('state.errors.<prop>: components consuming attributes solely via state.errors.myProp achieve 100% usage coverage', () => {
     const code = `
-<template>
+<template id="test-errors-usage">
   <div>{{ isAgeValid }}</div>
 </template>
 
@@ -810,7 +876,7 @@ describe('Component Validator Diagnostics & AST Analysis', () => {
   // 17. Single-File HTML Script Offset Accuracy
   test('Single-File HTML Script Offset Accuracy: reports file-relative line coordinates and codeframe previews', () => {
     const templateLines = Array.from({ length: 50 }, (_, i) => `  <div>Template line ${i + 1}</div>`).join('\n')
-    const code = `<template>
+    const code = `<template id="offset-test">
 ${templateLines}
   <button ref="my-btn">Click</button>
 </template>
@@ -839,7 +905,7 @@ ${templateLines}
   test('Precision Ref Selectors: recognizes ref selectors in JS strings, template literals, and <style>', () => {
     // 1. DOM Event Delegation (closest)
     const code1 = `
-<template><button ref="btnApply">Apply</button></template>
+<template id="test-selector-closest"><button ref="btnApply">Apply</button></template>
 <script>
   import { defineComponent } from 'coralite'
   export default defineComponent({
@@ -857,7 +923,7 @@ ${templateLines}
 
     // 2. Query Selector (querySelector)
     const code2 = `
-<template><img ref="avatarImage" src="avatar.png"></template>
+<template id="test-selector-query"><img ref="avatarImage" src="avatar.png"></template>
 <script>
   import { defineComponent } from 'coralite'
   export default defineComponent({
@@ -873,7 +939,7 @@ ${templateLines}
 
     // 3. Module-level CSS-in-JS Selector Constant
     const code3 = `
-<template><div ref="container"></div></template>
+<template id="test-selector-const"><div ref="container"></div></template>
 <script>
   import { defineComponent } from 'coralite'
   const CONTAINER_SEL = '[ref="container"]'
@@ -886,7 +952,7 @@ ${templateLines}
 
     // 4. <style> Ref Selector
     const code4 = `
-<template><div ref="banner"></div></template>
+<template id="test-selector-style"><div ref="banner"></div></template>
 <style>[ref="banner"] { display: block; }</style>
 <script>
   import { defineComponent } from 'coralite'
@@ -898,7 +964,7 @@ ${templateLines}
     assert.strictEqual(w402s4.length, 0)
 
     // 5. Object Map Keys (subItemBtns pattern)
-    const code5 = `<template>
+    const code5 = `<template id="test-lookup-map">
   <button ref="btnMusic">Music</button>
   <button ref="btnPictures">Pictures</button>
   <button ref="btnVideo">Video</button>
@@ -929,7 +995,7 @@ ${templateLines}
   test('Precision Ref Selectors: continues to warn CORALITE-W402 for non-ref selectors, comments, and invalid accesses', () => {
     // 1. Coincidental getElementById / data-ref
     const code1 = `
-<template><button ref="btnApply">Apply</button></template>
+<template id="test-neg-getelem"><button ref="btnApply">Apply</button></template>
 <script>
   import { defineComponent } from 'coralite'
   export default defineComponent({
@@ -946,7 +1012,7 @@ ${templateLines}
 
     // 2. Plain CSS Class / ID (no ref=)
     const code2 = `
-<template><button ref="btnApply">Apply</button></template>
+<template id="test-neg-plaincss"><button ref="btnApply">Apply</button></template>
 <style>.btnApply { color: red; } #btnApply { color: blue; }</style>
 <script>
   import { defineComponent } from 'coralite'
@@ -959,7 +1025,7 @@ ${templateLines}
 
     // 3. Comment Mention Only
     const code3 = `
-<template><button ref="btnApply">Apply</button></template>
+<template id="test-neg-comments"><button ref="btnApply">Apply</button></template>
 <style>/* [ref="btnApply"] */</style>
 <script>
   // [ref="btnApply"]
@@ -973,7 +1039,7 @@ ${templateLines}
 
     // 4. Invalid Property Access refs.btnApply
     const code4 = `
-<template><button ref="btnApply">Apply</button></template>
+<template id="test-neg-refs-member"><button ref="btnApply">Apply</button></template>
 <script>
   import { defineComponent } from 'coralite'
   export default defineComponent({
@@ -991,7 +1057,7 @@ ${templateLines}
   // 20. Inter-Getter Dependencies & Observer Tracking & Coordinates
   test('should recognize inter-getter state dependencies and suppress CORALITE-W401', () => {
     const componentSource = `
-<template>
+<template id="test-inter-getter">
   <div aria-expanded="{{ isAriaExpanded }}">Header</div>
 </template>
 <script type="module">
@@ -1018,7 +1084,7 @@ ${templateLines}
 
   test('should report accurate line and column numbers for unused getters and server properties', () => {
     const componentSource = `
-<template>
+<template id="test-coords">
   <div>Simple Component</div>
 </template>
 <script type="module">
@@ -1051,7 +1117,7 @@ ${templateLines}
 
   test('should recognize properties observed via observe() and suppress CORALITE-W401', () => {
     const componentSource = `
-<template>
+<template id="test-observer">
   <div>Observer Component</div>
 </template>
 <script type="module">
@@ -1082,7 +1148,7 @@ ${templateLines}
   // 22. defined.slots metadata extraction
   test('records defined slot names in result.defined.slots', () => {
     const componentSource = `
-      <template>
+      <template id="card-comp">
         <slot name="header"></slot>
         <slot name="default"></slot>
       </template>
@@ -1102,7 +1168,7 @@ ${templateLines}
 
   test('slots: single-argument and two-argument slot functions track state and suppress CORALITE-W401', () => {
     const componentSource = `
-      <template>
+      <template id="slot-tracking">
         <slot name="computedSlot"></slot>
         <slot name="moduleSlot"></slot>
       </template>
@@ -1137,8 +1203,8 @@ ${templateLines}
     const comp1 = join(tmpDir, 'Card.html')
     const comp2 = join(tmpDir, 'Button.html')
 
-    writeFileSync(comp1, '<template><div>{{ title }}</div></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { title: String } })</script>')
-    writeFileSync(comp2, '<template><button>{{ label }}</button></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { label: String } })</script>')
+    writeFileSync(comp1, '<template id="card-comp"><div>{{ title }}</div></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { title: String } })</script>')
+    writeFileSync(comp2, '<template id="btn-comp"><button>{{ label }}</button></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { label: String } })</script>')
 
     const report = await validateComponentsDir(tmpDir)
     assert.strictEqual(report.summary.totalComponents, 2)
@@ -1280,13 +1346,13 @@ ${templateLines}
     const compBoth = join(tmpDir, 'UnusedBoth.html')
 
     // Component with CORALITE-W401 (unused getter) -> fixableCount: 0
-    writeFileSync(compGetter, `<template><div>Text</div></template><script>import { defineComponent } from 'coralite'; export default defineComponent({ getters: { unusedG: ({ state }) => 'dead' } })</script>`)
+    writeFileSync(compGetter, `<template id="unused-getter"><div>Text</div></template><script>import { defineComponent } from 'coralite'; export default defineComponent({ getters: { unusedG: ({ state }) => 'dead' } })</script>`)
 
     // Component with CORALITE-W402 (unused ref) -> fixableCount: 1
-    writeFileSync(compRef, `<template><button ref="unused-btn">Click</button></template><script>import { defineComponent } from 'coralite'; export default defineComponent({})</script>`)
+    writeFileSync(compRef, `<template id="unused-ref"><button ref="unused-btn">Click</button></template><script>import { defineComponent } from 'coralite'; export default defineComponent({})</script>`)
 
     // Component with both -> fixableCount: 1 (only W402 is fixable)
-    writeFileSync(compBoth, `<template><button ref="unused-btn">Click</button></template><script>import { defineComponent } from 'coralite'; export default defineComponent({ getters: { unusedG: ({ state }) => 'dead' } })</script>`)
+    writeFileSync(compBoth, `<template id="unused-both"><button ref="unused-btn">Click</button></template><script>import { defineComponent } from 'coralite'; export default defineComponent({ getters: { unusedG: ({ state }) => 'dead' } })</script>`)
 
     const reportGetter = await validateComponentsDir(compGetter)
     assert.strictEqual(reportGetter.summary.fixableCount, 0)
@@ -1310,7 +1376,7 @@ ${templateLines}
       mkdirSync(tmpDir, { recursive: true })
       const compFile = join(tmpDir, 'Card.html')
 
-      writeFileSync(compFile, '<template><div>{{ title }}</div></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { title: String } })</script>')
+      writeFileSync(compFile, '<template id="card-comp"><div>{{ title }}</div></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { title: String } })</script>')
 
       const result = await validateComponentFile(compFile)
       assert.strictEqual(result.valid, true)
@@ -1362,7 +1428,7 @@ ${templateLines}
       mkdirSync(tmpDir, { recursive: true })
       const compFile = join(tmpDir, 'Button.html')
 
-      writeFileSync(compFile, '<template><button>{{ label }}</button></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { label: String } })</script>')
+      writeFileSync(compFile, '<template id="btn-comp"><button>{{ label }}</button></template><script>import { defineComponent } from "coralite"; export default defineComponent({ attributes: { label: String } })</script>')
 
       const report = await validateComponentsDir(compFile)
       assert.strictEqual(report.summary.totalComponents, 1)
@@ -1372,186 +1438,6 @@ ${templateLines}
       assert.strictEqual(report.components[0].valid, true)
 
       rmSync(tmpDir, { recursive: true, force: true })
-    })
-  })
-
-  // 27. Template Literals Bypassing Ref Selector Fallback
-  describe('Template Literals Bypassing Ref Selector Fallback', () => {
-    test('recognizes dynamic and interpolated ref selectors in template literals', () => {
-      // 1. Template literal query selector with expression identifier matching ref name
-      const code1 = `<template><img ref="avatarImage" src="avatar.png"></template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      const avatarImage = 'avatarImage'
-      const img = root.querySelector(\`[ref="\${avatarImage}"]\`)
-    }
-  })
-</script>`
-      const res1 = validateComponentSource(code1, 'tpl-ident.html')
-      assert.strictEqual(res1.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
-
-      // 2. Template literal query selector with string literal inside expression
-      const code2 = `<template><img ref="avatarImage" src="avatar.png"></template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      const img = root.querySelector(\`[ref="\${'avatarImage'}"]\`)
-    }
-  })
-</script>`
-      const res2 = validateComponentSource(code2, 'tpl-string-lit.html')
-      assert.strictEqual(res2.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
-
-      // 3. Template literal query selector with dynamic identifier
-      const code3 = `<template><img ref="avatarImage" src="avatar.png"></template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      const name = 'avatarImage'
-      const img = root.querySelector(\`[ref="\${name}"]\`)
-    }
-  })
-</script>`
-      const res3 = validateComponentSource(code3, 'tpl-dynamic.html')
-      assert.strictEqual(res3.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
-
-      // 4. Template literal query selector without $ (e.g. {avatarImage})
-      const code4 = `<template><img ref="avatarImage" src="avatar.png"></template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      const avatarImage = 'avatarImage'
-      const img = root.querySelector(\`[ref="{avatarImage}"]\`)
-    }
-  })
-</script>`
-      const res4 = validateComponentSource(code4, 'tpl-no-dollar.html')
-      assert.strictEqual(res4.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
-
-      // 5. Static template literal query selector
-      const code5 = `<template><img ref="avatarImage" src="avatar.png"></template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      const img = root.querySelector(\`[ref="avatarImage"]\`)
-    }
-  })
-</script>`
-      const res5 = validateComponentSource(code5, 'tpl-static.html')
-      assert.strictEqual(res5.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
-
-      // 6. refs(`myBtn`) using ES6 template literal
-      const code6 = `<template><button ref="myBtn">Click</button></template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ refs }) => {
-      const btn = refs(\`myBtn\`)
-    }
-  })
-</script>`
-      const res6 = validateComponentSource(code6, 'tpl-refs-call.html')
-      assert.strictEqual(res6.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
-
-      // 7. Multi-attribute selectors with template literals
-      const code7 = `<template>
-  <button ref="btn">Action</button>
-  <button ref="panel">Panel</button>
-</template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      const btn = 'btn'
-      const b1 = root.querySelector(\`button.active[ref="\${btn}"]\`)
-      const b2 = root.querySelector(\`[ref="\${btn}"][aria-expanded="true"]\`)
-    }
-  })
-</script>`
-      const res7 = validateComponentSource(code7, 'tpl-multi-attr.html')
-      assert.strictEqual(res7.diagnostics.filter(d => d.code === 'CORALITE-W402').length, 0)
-    })
-
-    test('negative tests: warns CORALITE-W402 for non-ref attribute interpolations, non-matching static refs, ID/class template literals, and comments', () => {
-      // 1. Unrelated attribute interpolations (data-ref, data-reference, href, preference)
-      const code1 = `<template>
-  <button ref="targetBtn">Click</button>
-</template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      const name = 'targetBtn'
-      root.querySelector(\`[data-ref="\${name}"]\`)
-      root.querySelector(\`[data-reference="\${name}"]\`)
-      root.querySelector(\`[href="\${name}"]\`)
-      root.querySelector(\`[preference="\${name}"]\`)
-    }
-  })
-</script>`
-      const res1 = validateComponentSource(code1, 'neg-unrelated-attrs.html')
-      const w402s1 = res1.diagnostics.filter(d => d.code === 'CORALITE-W402')
-      assert.strictEqual(w402s1.length, 1)
-      assert.ok(w402s1[0].message.includes('targetBtn'))
-
-      // 2. Non-matching static ref in template literal
-      const code2 = `<template>
-  <button ref="btnA">Button A</button>
-</template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      root.querySelector(\`[ref="btnB"]\`)
-    }
-  })
-</script>`
-      const res2 = validateComponentSource(code2, 'neg-nonmatching-static.html')
-      const w402s2 = res2.diagnostics.filter(d => d.code === 'CORALITE-W402')
-      assert.strictEqual(w402s2.length, 1)
-      assert.ok(w402s2[0].message.includes('btnA'))
-
-      // 3. Template literals without ref= (#${name} or .${name})
-      const code3 = `<template>
-  <button ref="btnA">Button A</button>
-</template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      const name = 'btnA'
-      root.querySelector(\`#\${name}\`)
-      root.querySelector(\`.\${name}\`)
-    }
-  })
-</script>`
-      const res3 = validateComponentSource(code3, 'neg-id-class-tpl.html')
-      const w402s3 = res3.diagnostics.filter(d => d.code === 'CORALITE-W402')
-      assert.strictEqual(w402s3.length, 1)
-      assert.ok(w402s3[0].message.includes('btnA'))
-
-      // 4. Commented-out queries
-      const code4 = `<template>
-  <button ref="btnA">Button A</button>
-</template>
-<script>
-  import { defineComponent } from 'coralite'
-  export default defineComponent({
-    client: ({ root }) => {
-      // root.querySelector(\`[ref="\${name}"]\`)
-    }
-  })
-</script>`
-      const res4 = validateComponentSource(code4, 'neg-commented.html')
-      const w402s4 = res4.diagnostics.filter(d => d.code === 'CORALITE-W402')
-      assert.strictEqual(w402s4.length, 1)
-      assert.ok(w402s4[0].message.includes('btnA'))
     })
   })
 })
