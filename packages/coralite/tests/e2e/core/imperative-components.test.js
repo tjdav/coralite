@@ -1,4 +1,4 @@
-import { waitForHydration, isProduction } from '../helpers.js'
+import { waitForHydration } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Imperative Components - Basic Creation', () => {
@@ -16,20 +16,14 @@ test.describe('Imperative Components - Basic Creation', () => {
     await expect(dataDisplay).toHaveText('A,B,C')
   })
 
-  test('should prefix data-testid inside imperatively created child element', async ({ page }, testInfo) => {
-    if (isProduction(testInfo)) {
-      // In production, all data-testid attributes should be stripped
-      await expect(page.locator('[data-testid]')).toHaveCount(0)
-    } else {
-      // In non-production, the child component should have its data-testid attributes prefixed with its instance ID.
-      const childTitle = page.getByTestId(/imperative-child-\d+__title/)
-      await expect(childTitle).toBeVisible()
-      await expect(childTitle).toHaveText('Imperative Mount')
+  test('should preserve data-testid inside imperatively created child element', async ({ page }) => {
+    const childTitle = page.getByTestId('title')
+    await expect(childTitle).toBeVisible()
+    await expect(childTitle).toHaveText('Imperative Mount')
 
-      const childDisplay = page.getByTestId(/imperative-child-\d+__dataDisplay/)
-      await expect(childDisplay).toBeVisible()
-      await expect(childDisplay).toHaveText('A,B,C')
-    }
+    const childDisplay = page.getByTestId('dataDisplay')
+    await expect(childDisplay).toBeVisible()
+    await expect(childDisplay).toHaveText('A,B,C')
   })
 })
 

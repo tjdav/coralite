@@ -1791,7 +1791,8 @@ export function createRenderer ({
         hydrationData: serialize(hydrationData),
         mode: normalizedOptions.mode,
         instanceCounters: serialize(mappedSessionObject.instanceCounters || {}),
-        inlinedStyles: serialize(inlinedStyles)
+        inlinedStyles: serialize(inlinedStyles),
+        preserveTestId: Boolean(normalizedOptions.preserveTestId || process.env.CORALITE_PRESERVE_TESTID === 'true')
       })
 
       if (isExternalScripts) {

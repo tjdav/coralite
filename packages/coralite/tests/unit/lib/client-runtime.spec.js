@@ -151,24 +151,19 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
 })
 
 describe('client-side processHTML', () => {
-  it('should prefix data-testid in development and testing mode', () => {
+  it('should preserve authored data-testid without prefixing in development and testing mode', () => {
     for (const mode of ['development', 'testing']) {
       const processHTML = getProcessHTML(mode)
 
       // Test with instance ID (imperative component scope)
       const input1 = '<div class="item" data-testid="my-item">Hello</div>'
       const output1 = processHTML(input1, 'comp-0')
-      assert.strictEqual(output1, '<div class="item" data-testid="comp-0__my-item">Hello</div>')
+      assert.strictEqual(output1, '<div class="item" data-testid="my-item">Hello</div>')
 
-      // Test with no instance ID (no prefixing should occur since no prefix exists)
+      // Test with no instance ID
       const input2 = '<button data-testid="btn">Click</button>'
       const output2 = processHTML(input2, '')
       assert.strictEqual(output2, '<button data-testid="btn">Click</button>')
-
-      // Test element with existing prefix (should not double-prefix)
-      const input3 = '<div data-testid="comp-0__my-item">Hello</div>'
-      const output3 = processHTML(input3, 'comp-0')
-      assert.strictEqual(output3, '<div data-testid="comp-0__my-item">Hello</div>')
     }
   })
 
@@ -381,7 +376,7 @@ describe('mode-restricted runtime DOM prototype patching', () => {
     }
   })
 
-  it('should resolve instanceId across shadowRoot host hierarchy in development/testing mode', async () => {
+  it('should preserve data-testid verbatim across shadowRoot host hierarchy in development/testing mode', async () => {
     const rawRuntimeCode = generateClientRuntime({
       base: '/',
       sharedChunkPath: 'shared.js',
@@ -425,7 +420,7 @@ describe('mode-restricted runtime DOM prototype patching', () => {
 
         const child = shadow.querySelector('shadow-child')
         assert.ok(child)
-        assert.strictEqual(child.getAttribute('data-testid'), 'host-comp-1__inner-shadow')
+        assert.strictEqual(child.getAttribute('data-testid'), 'inner-shadow')
       }
 
       document.body.removeChild(host)

@@ -1,4 +1,4 @@
-import { waitForHydration, isProduction } from '../helpers.js'
+import { waitForHydration } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Boolean Attributes', () => {
@@ -33,7 +33,7 @@ test.describe('Boolean Attributes', () => {
     const comp = page.locator('boolean-attr-component').nth(0)
     const checkbox = comp.locator('input[type="checkbox"]')
     const btn1 = comp.locator('button').first()
-    const toggleBtn = comp.locator('button').nth(1)
+    const toggleBtn = comp.getByTestId('toggle-btn')
 
     // Initially checked and aria-expanded="true"
     await expect(checkbox).toBeChecked()
@@ -50,22 +50,12 @@ test.describe('Boolean Attributes', () => {
     await expect(btn1).toHaveAttribute('aria-expanded', 'true')
   })
 
-  test('should handle ref and data-testid on the same element', async ({ page }, testInfo) => {
+  test('should handle ref and data-testid on the same element', async ({ page }) => {
     const comp = page.locator('boolean-attr-component').first()
+    const toggleBtn = comp.getByTestId('toggle-btn')
 
-    // We expect the button to have the correct ref attribute prefixed in all modes
-    const button = comp.locator('button').nth(1)
-
-    if (isProduction(testInfo)) {
-      // In production, data-testid must be stripped, but ref must exist and be prefixed
-      await expect(button).toHaveAttribute('ref', /boolean-attr-component-\d+__toggle-btn/)
-      await expect(button).not.toHaveAttribute('data-testid')
-    } else {
-      // In non-production, both ref and data-testid must exist and be prefixed
-      await expect(button).toHaveAttribute('ref', /boolean-attr-component-\d+__toggle-btn/)
-
-      const testIdButton = page.getByTestId(/boolean-attr-component-\d+__toggle-btn/).first()
-      await expect(testIdButton).toBeVisible()
-    }
+    await expect(toggleBtn).toBeVisible()
+    await expect(toggleBtn).toHaveAttribute('ref', /boolean-attr-component-\d+__toggle-btn/)
+    await expect(toggleBtn).toHaveAttribute('data-testid', 'toggle-btn')
   })
 })

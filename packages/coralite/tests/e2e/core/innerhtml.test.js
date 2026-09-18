@@ -7,7 +7,7 @@ test.describe('InnerHTML Components', () => {
     await waitForHydration(page)
   })
 
-  test('should create components via innerHTML, outerHTML and insertAdjacentHTML', async ({ page }, testInfo) => {
+  test('should create components via innerHTML, outerHTML and insertAdjacentHTML', async ({ page }) => {
     const children = page.locator('innerhtml-child')
     await expect(children).toHaveCount(3)
 
@@ -23,16 +23,9 @@ test.describe('InnerHTML Components', () => {
     await expect(child3).toHaveAttribute('data-cid')
     await expect(child3.locator('h2')).toHaveText('AdjacentHTML Mount')
 
-    if (isProduction(testInfo)) {
-      // In production, data-testid should be stripped completely
-      await expect(page.locator('[data-testid="plain-inner"]')).toHaveCount(0)
-      await expect(page.locator('[data-testid$="plain-inner"]')).toHaveCount(0)
-    } else {
-      // In non-production, the innerHTML's data-testid must be prefixed with the parent instance ID
-      const plainInner = page.getByTestId(/innerhtml-parent-\d+__plain-inner/)
-      await expect(plainInner).toBeVisible()
-      await expect(plainInner).toHaveText('Plain Inner')
-    }
+    const plainInner = page.getByTestId('plain-inner')
+    await expect(plainInner).toBeVisible()
+    await expect(plainInner).toHaveText('Plain Inner')
   })
 
   test('should support uncompiled innerHTML mounting outside component client() definition', async ({ page }, testInfo) => {

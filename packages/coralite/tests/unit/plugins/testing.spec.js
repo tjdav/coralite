@@ -1,13 +1,32 @@
 import { describe, it } from 'node:test'
-import assert from 'node:assert'
-import { testingPlugin } from '../../../plugins/testing.js'
+import { strict as assert } from 'node:assert'
+import { testingPlugin, createTestingPlugin } from '../../../plugins/testing.js'
+
+// Each spec file runs in its own process, so mutating this env var here is parallel-safe.
+function withEnv (name, value, fn) {
+  const original = process.env[name]
+  process.env[name] = value
+  try {
+    fn()
+  } finally {
+    if (original === undefined) {
+      delete process.env[name]
+    } else {
+      process.env[name] = original
+    }
+  }
+}
+
+function tagNode (attribs = {}, children = []) {
+  return { type: 'tag', name: 'div', attribs: { ...attribs }, children }
+}
 
 describe('testingPlugin', () => {
   const appDev = { options: { mode: 'development' } }
   const appTest = { options: { mode: 'testing' } }
   const appProd = { options: { mode: 'production' } }
 
-  it('should prefix data-testid on component render in development and testing', () => {
+  it('should preserve authored data-testid without prefixing in development and testing', () => {
     for (const app of [appDev, appTest]) {
       const template = {
         children: [
@@ -27,11 +46,11 @@ describe('testingPlugin', () => {
         app
       })
 
-      assert.strictEqual(template.children[0].attribs['data-testid'], 'comp-0__my-div')
+      assert.strictEqual(template.children[0].attribs['data-testid'], 'my-div')
     }
   })
 
-  it('should prefix data-testid with page__ on page set in development and testing', () => {
+  it('should preserve authored data-testid on page set without prefixing', () => {
     for (const app of [appDev, appTest]) {
       const elements = {
         root: {
@@ -52,11 +71,11 @@ describe('testingPlugin', () => {
         app
       })
 
-      assert.strictEqual(elements.root.children[0].attribs['data-testid'], 'page__page-div')
+      assert.strictEqual(elements.root.children[0].attribs['data-testid'], 'page-div')
     }
   })
 
-  it('should strip data-testid in production', () => {
+  it('should strip data-testid in production by default', () => {
     const elements = {
       root: {
         children: [
@@ -77,6 +96,47 @@ describe('testingPlugin', () => {
     })
 
     assert.strictEqual(elements.root.children[0].attribs['data-testid'], undefined)
+  })
+
+  it('should preserve data-testid in production mode when CORALITE_PRESERVE_TESTID is true', () => {
+    withEnv('CORALITE_PRESERVE_TESTID', 'true', () => {
+      const elements = {
+        root: {
+          children: [tagNode({ 'data-testid': 'page-div' })]
+        }
+      }
+
+      testingPlugin.server.onPageSet({
+        elements,
+        app: appProd
+      })
+
+      assert.strictEqual(elements.root.children[0].attribs['data-testid'], 'page-div')
+    })
+  })
+
+  it('should preserve data-testid in production mode when preserveTestId: true is configured', () => {
+    const customPlugin = createTestingPlugin({ preserveTestId: true })
+    const elements = {
+      root: {
+        children: [
+          {
+            type: 'tag',
+            name: 'div',
+            attribs: {
+              'data-testid': 'page-div'
+            }
+          }
+        ]
+      }
+    }
+
+    customPlugin.server.onPageSet({
+      elements,
+      app: appProd
+    })
+
+    assert.strictEqual(elements.root.children[0].attribs['data-testid'], 'page-div')
   })
 
   it('should strip deprecated test attribute in all modes', () => {
@@ -118,7 +178,7 @@ describe('testingPlugin', () => {
     assert.strictEqual(elements.root.children[0].attribs.test, undefined)
   })
 
-  it('should add deterministic testids to interactive elements in development and testing', () => {
+  it('should not auto-inject positional auto-IDs on untagged interactive elements', () => {
     for (const app of [appDev, appTest]) {
       const template = {
         children: [
@@ -141,12 +201,12 @@ describe('testingPlugin', () => {
         app
       })
 
-      assert.strictEqual(template.children[0].attribs['data-testid'], 'comp-0__button-0')
-      assert.strictEqual(template.children[1].attribs['data-testid'], 'comp-0__a-0')
+      assert.strictEqual(template.children[0].attribs['data-testid'], undefined)
+      assert.strictEqual(template.children[1].attribs['data-testid'], undefined)
     }
   })
 
-  it('should handle dynamic tokens in data-testid', () => {
+  it('should handle dynamic tokens in data-testid verbatim', () => {
     for (const app of [appDev, appTest]) {
       const template = {
         children: [
@@ -159,30 +219,14 @@ describe('testingPlugin', () => {
           }
         ]
       }
-      const attributes = [
-        {
-          name: 'data-testid',
-          element: template.children[0],
-          tokens: [
-            {
-              name: 'id',
-              content: '{{ id }}'
-            }
-          ]
-        }
-      ]
 
       testingPlugin.server.onBeforeComponentRender({
         instanceId: 'comp-0',
         template,
-        attributes,
         app
       })
 
-      // Token name should NOT be prefixed (instruction violation fix)
-      assert.strictEqual(attributes[0].tokens[0].name, 'id')
-      // Attribute value in AST should be prefixed
-      assert.strictEqual(template.children[0].attribs['data-testid'], 'comp-0__btn-{{ id }}')
+      assert.strictEqual(template.children[0].attribs['data-testid'], 'btn-{{ id }}')
     }
   })
 
@@ -240,7 +284,7 @@ describe('testingPlugin', () => {
     assert.strictEqual(resultArray[0].attribs['data-testid'], undefined)
   })
 
-  it('should strip test attributes onComponentSet and onComponentUpdate in production mode', () => {
+  it('should strip test attributes onComponentSet and onComponentUpdate in production mode by default', () => {
     const component = {
       template: {
         children: [
@@ -260,7 +304,6 @@ describe('testingPlugin', () => {
       }
     }
 
-    // Test onComponentSet with component property
     testingPlugin.server.onComponentSet({
       component,
       app: appProd
@@ -271,7 +314,6 @@ describe('testingPlugin', () => {
     assert.strictEqual(component.values.attributes.length, 1)
     assert.strictEqual(component.values.attributes[0].name, 'class')
 
-    // Test onComponentUpdate with module fallback property
     const module = {
       template: {
         children: [
@@ -298,30 +340,74 @@ describe('testingPlugin', () => {
     assert.strictEqual(module.values.attributes.length, 0)
   })
 
-  it('should preserve test attributes onComponentSet in development mode', () => {
-    const component = {
-      template: {
-        children: [
-          {
-            type: 'tag',
-            name: 'button',
-            attribs: { 'data-testid': 'action-btn' }
-          }
-        ]
-      },
-      values: {
-        attributes: [
-          { name: 'data-testid', value: 'action-btn' }
-        ]
+  it('should preserve data-testid onComponentSet in production mode when CORALITE_PRESERVE_TESTID is true', () => {
+    withEnv('CORALITE_PRESERVE_TESTID', 'true', () => {
+      const component = {
+        template: {
+          children: [
+            {
+              type: 'tag',
+              name: 'button',
+              attribs: { 'data-testid': 'action-btn', test: 'legacy-btn' }
+            }
+          ]
+        },
+        values: {
+          attributes: [
+            { name: 'data-testid', value: 'action-btn' },
+            { name: 'test', value: 'legacy-btn' },
+            { name: 'class', value: 'btn-primary' }
+          ]
+        }
       }
-    }
 
-    testingPlugin.server.onComponentSet({
-      component,
-      app: appDev
+      testingPlugin.server.onComponentSet({
+        component,
+        app: appProd
+      })
+
+      assert.strictEqual(component.template.children[0].attribs['data-testid'], 'action-btn')
+      assert.strictEqual(component.template.children[0].attribs.test, undefined)
+      assert.strictEqual(component.values.attributes.length, 2)
+      assert.strictEqual(component.values.attributes[0].name, 'data-testid')
+      assert.strictEqual(component.values.attributes[1].name, 'class')
     })
+  })
 
-    assert.strictEqual(component.template.children[0].attribs['data-testid'], 'action-btn')
-    assert.strictEqual(component.values.attributes.length, 1)
+  it('should preserve data-testid in production mode when app.options.preserveTestId is true', () => {
+    const cases = [
+      {
+        hook: 'onPageSet',
+        args: () => ({ elements: { root: { children: [tagNode({ 'data-testid': 'page-div' })] } } }),
+        check: (args) => assert.strictEqual(args.elements.root.children[0].attribs['data-testid'], 'page-div')
+      },
+      {
+        hook: 'onBeforeComponentRender',
+        args: () => ({ template: { children: [tagNode({ 'data-testid': 'my-div' })] } }),
+        check: (args) => assert.strictEqual(args.template.children[0].attribs['data-testid'], 'my-div')
+      },
+      {
+        hook: 'onComponentSet',
+        args: () => ({
+          component: {
+            template: { children: [tagNode({ 'data-testid': 'action-btn' })] },
+            values: { attributes: [{ name: 'data-testid', value: 'action-btn' }] }
+          }
+        }),
+        check: (args) => {
+          assert.strictEqual(args.component.template.children[0].attribs['data-testid'], 'action-btn')
+          assert.strictEqual(args.component.values.attributes.length, 1)
+        }
+      }
+    ]
+
+    for (const { hook, args, check } of cases) {
+      const hookArgs = args()
+      testingPlugin.server[hook]({
+        ...hookArgs,
+        app: { options: { mode: 'production', preserveTestId: true } }
+      })
+      check(hookArgs)
+    }
   })
 })

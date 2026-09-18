@@ -155,6 +155,7 @@
  * @property {(info: CoraliteComponentBuildInfo) => void | Promise<void>} [onComponentBuild] - Optional callback function for handling component build reporting.
  * @property {string[]} [externalStyles] - Global styles to inject into every page
  * @property {'production' | 'development' | 'testing'} [mode='production'] - Build mode: "production", "development", or "testing"
+ * @property {boolean} [preserveTestId] - Whether to preserve data-testid in production.
  * @property {CoraliteTestingConfig} [testing] - Configuration for testing mode.
  * @property {CoraliteCSPConfig} [csp] - Configuration for Content Security Policy.
  * @property {boolean} [suppressValidationWarnings] - Whether to suppress attribute validation warning messages.

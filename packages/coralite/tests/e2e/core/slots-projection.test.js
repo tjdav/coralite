@@ -1,4 +1,4 @@
-import { waitForHydration, isProduction } from '../helpers.js'
+import { waitForHydration } from '../helpers.js'
 import { test, expect } from '@playwright/test'
 
 test.describe('Slots Projection', () => {
@@ -40,16 +40,14 @@ test.describe('Slots Projection', () => {
     await expect(btn).toHaveText('Clicked')
   })
 
-  test('should successfully resolve nested refs within slot projections of custom components', async ({ page }, testInfo) => {
+  test('should successfully resolve nested refs within slot projections of custom components', async ({ page }) => {
     page.on('console', msg => console.log('BROWSER LOG:', msg.text()))
     page.on('pageerror', err => console.log('BROWSER EXCEPTION:', err.message))
-    
-    const isProd = isProduction(testInfo)
 
     const container = page.locator('#slot-nested-test')
-    const input = isProd ? container.locator('input') : page.getByTestId(/slot-test-container-\d+__search-bar/)
-    const button = isProd ? container.locator('button') : page.getByTestId(/slot-test-container-\d+__cancel-button/)
-    const status = isProd ? container.locator('.test-container > div').last() : page.getByTestId(/slot-test-container-\d+__status-output/)
+    const input = container.getByTestId('search-bar')
+    const button = container.getByTestId('cancel-button')
+    const status = container.getByTestId('status-output')
 
     // Confirm initial state is rendered and hydrated
     await expect(status).toHaveText('Idle')

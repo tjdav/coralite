@@ -1,6 +1,6 @@
-# Coralite v1.0.0-rc.2 — Machine-Readable LLM Developer Reference
+# Coralite v1.0.0-rc.3 — Machine-Readable LLM Developer Reference
 
-> **Metadata**: Coralite Framework v1.0.0-rc.2 | Node.js Floor: `>=22.22.2` (ESM native)
+> **Metadata**: Coralite Framework v1.0.0-rc.3 | Node.js Floor: `>=22.22.2` (ESM native)
 
 ---
 
@@ -59,7 +59,7 @@ When generating code or providing instructions for Coralite applications, you MU
 8. **NEVER write manual `Object.defineProperty(root, ...)`**: Coralite automatically synthesizes live camelCase getters/setters on the host element for all declared attributes. Setting `host.value = 'abc'` automatically updates reactive `state.value`.
 9. **NEVER mutate state inside `observe()` (`CORALITE-E302`)**: Mutating observed state inside its own observer causes infinite reactive loops and triggers diagnostic `CORALITE-E302`. `observe()` is strictly for external DOM synchronization or side-effects.
 10. **NEVER put test-specific attributes in `attributes` schema**: Schema pollution (`testId: String`, `bodyTestid: String`) leaks into public APIs and production bundles. Query via semantic roles, static `data-testid` in templates, or scoped host queries.
-11. **MUST write static plain-text `data-testid` attributes**: Author static test IDs (e.g., `<button data-testid="submit-btn">`). Never attempt dynamic bindings with template curlies (`data-testid="{{ ref_id }}"`). Coralite auto-prefixes test IDs during build.
+11. **MUST write static plain-text `data-testid` attributes**: Author static test IDs (e.g., `<button data-testid="submit-btn">`). Never attempt dynamic bindings with template curlies (`data-testid="{{ ref_id }}"`). Authored test IDs are preserved verbatim as authored across development, testing, and E2E production test builds (`CORALITE_PRESERVE_TESTID=true`), and scoped via Playwright locator chaining (`comp.getByTestId('submit-btn')`).
 12. **MUST destructure getter unified context**: Getters receive a single unified context object `({ state, root, refs, slots, signal })`. You MUST destructure the parameters. Without destructuring, writing `(state) => state.prop` binds `state` to the context object itself, causing `state.prop` to evaluate to `undefined`.
 13. **MUST keep `style` getters synchronous**: Style property getters `(state) => ...` receive `state` directly (NOT a context object) and must be strictly synchronous.
 14. **MUST handle accessible names without empty labels**: Never render empty `<label for="...">`. Use dynamic templates or accessible name fallback chains (`computedAriaLabel`). Elements with `role="button"` or `role="tab"` must never contain nested interactive elements (`<button>`, `<a>`, `<input>`).
@@ -691,6 +691,7 @@ onError({ error, state, element, page, root }) {
 
 Aligns with the standard W3C Web ComponentsCG Context Protocol for tree-based dependency injection.
 
+```javascript
 // Ancestor Provider Component (provider-card.html)
 import { defineComponent, createContext } from 'coralite'
 
@@ -889,9 +890,11 @@ export default defineConfig({
 - **Settlement**: Wait on `await el.updateComplete` before assertions to ensure all reactive renders and observers have completely settled.
 
 ### Selector Strategy & `data-testid` Rules
-- **Rule**: Write static plain-text `data-testid` attributes (e.g. `<button data-testid="submit-btn">`).
-- **Forbidden**: Never write dynamic expression test IDs (`data-testid="{{ ref_id }}"`).
-- **Prefixing**: Coralite automatically prefixes test IDs with instance identifiers during build (`my-component-0__submit-btn`).
+- **Canonical Playwright Testing Pattern**: Locate the host component element first using Playwright's locator (`const comp = page.locator('counter-card').first()`), then query internal elements using Playwright's native locator chaining (`await comp.getByTestId('increment-btn').click()`) or accessible role locators (`comp.getByRole('button', { name: 'Submit' })`).
+- **Authored `data-testid` Preserved Verbatim**: `<button data-testid="submit-btn">` renders verbatim as `<button data-testid="submit-btn">` without dynamic instance prefixing (`comp-0__`).
+- **No `ref` Duplication or Positional Auto-IDs**: `ref` attributes are used exclusively for component internal script access (`refs(...)`) and are never copied to `data-testid`. Untagged elements should be queried via accessible role locators.
+- **Production Retention (`CORALITE_PRESERVE_TESTID=true`)**: `testingPlugin` preserves `data-testid` in production builds when `CORALITE_PRESERVE_TESTID=true` or `preserveTestId: true` is configured. In public customer builds (without `CORALITE_PRESERVE_TESTID`), `data-testid` attributes are stripped for zero HTML overhead.
+- **Forbidden**: Never write dynamic expression test IDs (`data-testid="{{ ref_id }}"`), brittle chained CSS tag names, or regex prefix matchers (`/comp-\d+__btn/`).
 
 ### DevTools Introspection
 ```javascript

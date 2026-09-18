@@ -1,6 +1,20 @@
 export * from './utils/mode-utils.js'
 
 /**
+ * Helper to get a component locator and scoped test ID locator.
+ * @param {import('@playwright/test').Page | import('@playwright/test').Locator} scope
+ * @param {string} tagName
+ * @param {number} [index=0]
+ */
+export function getComponent (scope, tagName, index = 0) {
+  const host = scope.locator(tagName).nth(index)
+  return {
+    host,
+    getByTestId: (id) => host.getByTestId(id)
+  }
+}
+
+/**
  * Waits for the Coralite hydration process to complete.
  * Supports both development/testing modes (using window.__coralite__) and production mode (using data-coralite-ready).
  *

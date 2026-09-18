@@ -49,7 +49,7 @@
     "build:lib": "node esbuild.config.js",
     "build:types": "tsc",
     "build:html:dev": "node --experimental-vm-modules ./tests/scripts/build-html.js --mode development --outDir .coralite-dev",
-    "build:html:prod": "node --experimental-vm-modules ./tests/scripts/build-html.js --mode production --outDir .coralite-prod",
+    "build:html:prod": "CORALITE_PRESERVE_TESTID=true node --experimental-vm-modules ./tests/scripts/build-html.js --mode production --outDir .coralite-prod",
     "build:html:testing": "node --experimental-vm-modules ./tests/scripts/build-testing.js",
     "bench": "node --conditions=development --expose-gc --experimental-vm-modules ./benchmarks/runner.js",
     "bench:ci": "node --conditions=development --expose-gc --experimental-vm-modules ./benchmarks/ci.js",

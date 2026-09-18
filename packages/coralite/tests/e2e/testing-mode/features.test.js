@@ -6,17 +6,16 @@ test.describe('Testing Mode Features', () => {
     await page.goto('/')
     await waitForHydration(page)
 
-    // testingPlugin auto-injects data-testid for components and interactive elements
-    const data = page.getByTestId('mocking-test-0__data')
+    const comp = page.locator('mocking-test').first()
+    const data = comp.getByTestId('data')
     await expect(data).toHaveText('MOCKED DATA')
   })
 
-  test('should support data-testid for elements with test attribute', async ({ page }) => {
+  test('should support data-testid for elements with testid attribute', async ({ page }) => {
     await page.goto('/')
     await waitForHydration(page)
 
-    // button has data-testid="test-btn", so data-testid should be "page__test-btn" (since it's in the page)
-    const btn = page.getByTestId('page__test-btn')
+    const btn = page.getByTestId('test-btn')
     await expect(btn).toBeVisible()
     await expect(btn).toHaveText('Click Me')
   })

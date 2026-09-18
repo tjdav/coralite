@@ -13,6 +13,7 @@
  * @param {string} [options.mode='production'] - Build mode.
  * @param {string} [options.instanceCounters='{}'] - Serialized instance counters map.
  * @param {string} [options.inlinedStyles='[]'] - Serialized inlined styles array.
+ * @param {boolean} [options.preserveTestId=false] - Whether to preserve data-testid in production.
  * @returns {string} The generated JavaScript runtime.
  */
 export function generateClientRuntime ({
@@ -22,8 +23,11 @@ export function generateClientRuntime ({
   hydrationData = '{}',
   mode = 'production',
   instanceCounters = '{}',
-  inlinedStyles = '[]'
+  inlinedStyles = '[]',
+  preserveTestId = false
 }) {
+  const shouldStripTestId = mode === 'production' && !preserveTestId && process.env.CORALITE_PRESERVE_TESTID !== 'true'
+
   return `
 (async () => {
   const [
@@ -332,48 +336,35 @@ ${mode !== 'production' ? `
   window.processHTML = (html, instanceId) => {
     if (typeof html !== 'string') return html;
 
-    const mode = '${mode}';
-    const isDevOrTest = mode === 'development' || mode === 'testing';
-    const isProduction = mode === 'production';
+    const shouldStripTestId = ${shouldStripTestId};
 
-    if (isDevOrTest || isProduction) {
-      html = html.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
-        let newAttrs = attrs;
+    html = html.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
+      let newAttrs = attrs;
 
-        // Strip deprecated 'test' attribute
-        newAttrs = newAttrs.replace(/\\s+test\\s*=\\s*(['"]).*?\\1/g, '');
+      // Strip deprecated 'test' attribute
+      newAttrs = newAttrs.replace(/\\s+test\\s*=\\s*(['"]).*?\\1/g, '');
 
-        // Handle data-testid
-        const testIdRegex = /\\s+data-testid\\s*=\\s*(['"])(.*?)\\1/g;
-        if (isProduction) {
-          newAttrs = newAttrs.replace(testIdRegex, '');
-        } else if (isDevOrTest) {
-          const prefix = instanceId ? instanceId + '__' : '';
-          if (prefix) {
-            newAttrs = newAttrs.replace(testIdRegex, (attrMatch, quote, testValue) => {
-              if (testValue.startsWith(prefix)) return attrMatch;
-              return ' data-testid="' + prefix + testValue + '"';
-            });
+      // Handle data-testid
+      if (shouldStripTestId) {
+        newAttrs = newAttrs.replace(/\\s+data-testid\\s*=\\s*(['"]).*?\\1/g, '');
+      }
+
+      // Handle ref & data-coralite-owner
+      if (instanceId) {
+        const prefix = instanceId + '__';
+        const refRegex = /\\s+ref\\s*=\\s*(['"])(.*?)\\1/g;
+        newAttrs = newAttrs.replace(refRegex, (attrMatch, quote, refValue) => {
+          const prefixedRef = refValue.startsWith(prefix) ? refValue : prefix + refValue;
+          let ownerAttr = '';
+          if (!newAttrs.includes('data-coralite-owner=')) {
+            ownerAttr = ' data-coralite-owner="' + instanceId + '"';
           }
-        }
+          return ' ref="' + prefixedRef + '"' + ownerAttr;
+        });
+      }
 
-        // Handle ref & data-coralite-owner
-        if (instanceId) {
-          const prefix = instanceId + '__';
-          const refRegex = /\\s+ref\\s*=\\s*(['"])(.*?)\\1/g;
-          newAttrs = newAttrs.replace(refRegex, (attrMatch, quote, refValue) => {
-            const prefixedRef = refValue.startsWith(prefix) ? refValue : prefix + refValue;
-            let ownerAttr = '';
-            if (!newAttrs.includes('data-coralite-owner=')) {
-              ownerAttr = ' data-coralite-owner="' + instanceId + '"';
-            }
-            return ' ref="' + prefixedRef + '"' + ownerAttr;
-          });
-        }
-
-        return '<' + tagName + newAttrs + '>';
-      });
-    }
+      return '<' + tagName + newAttrs + '>';
+    });
 
     const matches = html.matchAll(/<([a-zA-Z0-9-]+)/g);
     for (const match of matches) {
