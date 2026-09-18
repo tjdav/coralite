@@ -7,13 +7,12 @@ import { join } from 'node:path'
 import { existsSync, mkdirSync, statSync, readdirSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import pkg from '../package.json' with { type: 'json' }
-import { createCoralite } from '#lib'
+import { createCoralite, normalizeErrorCodes, matchesErrorCode } from '#lib'
 import { validateComponentsDir, formatComponentValidationReport } from '#lib/component-validator.js'
 import { applyComponentFixes } from '#lib/component-fixer.js'
 import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/plugin-validator.js'
 import { applyPluginFixes } from '#lib/plugin-fixer.js'
 import { validatePagesDir, formatPageValidationReport } from '#lib/page-validator.js'
-import { normalizeErrorCodes, matchesErrorCode } from '#lib/utils/diagnostics.js'
 import {
   promptCheckOptions,
   promptFixOptions,
