@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { writeFile } from 'node:fs/promises'
+import { writeFile, utimes } from 'node:fs/promises'
 import { join } from 'node:path'
 import { hash, hashFile, checkFileChange, initHasher } from '../../../../../lib/utils/server/manifest.js'
 import { createTestProject } from '../../../utils/project.js'
@@ -58,5 +58,27 @@ describe('Manifest Utils', () => {
     const { changed: changed4, metadata: meta4 } = await checkFileChange(filePath, meta3_forced)
     assert.strictEqual(changed4, true, 'Should detect change when hash changes even if size is same')
     assert.notStrictEqual(meta3.hash, meta4.hash)
+  })
+
+  it('should report no change when only mtime changed', async () => {
+    const filePath = join(project.testDir, 'mtime.txt')
+    await writeFile(filePath, 'hello')
+
+    const first = await checkFileChange(filePath)
+    assert.strictEqual(first.changed, true)
+
+    // Update mtime but keep content the same
+    const future = new Date(Date.now() + 2000)
+    await utimes(filePath, future, future)
+
+    const second = await checkFileChange(filePath, first.metadata)
+    assert.strictEqual(second.changed, false)
+    assert.notStrictEqual(second.metadata.mtime, first.metadata.mtime)
+    assert.strictEqual(second.metadata.hash, first.metadata.hash)
+  })
+
+  it('should handle concurrent initHasher calls', async () => {
+    // already initialized in beforeEach; concurrent calls must be safe
+    await Promise.all([initHasher(), initHasher()])
   })
 })

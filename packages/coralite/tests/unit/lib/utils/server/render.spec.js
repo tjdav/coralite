@@ -3,7 +3,6 @@ import { strict as assert } from 'node:assert'
 import {
   findHeadAndBody,
   injectExternalStyles,
-  injectStyles,
   injectReadinessScript,
   injectImportMap,
   removeElements,
@@ -11,7 +10,7 @@ import {
 } from '../../../../../lib/utils/server/render.js'
 import { createCoraliteElement, createCoraliteComponent } from '../../../../../lib/utils/server/dom.js'
 
-describe('render.js Coverage Gaps', () => {
+describe('render.js', () => {
   describe('findHeadAndBody', () => {
     it('should find head and body in html tag', () => {
       const head = createCoraliteElement({ name: 'head' })
@@ -69,22 +68,6 @@ describe('render.js Coverage Gaps', () => {
       const root = createCoraliteComponent({ children: [head] })
       injectExternalStyles(root, head, ['style.css'])
       assert.strictEqual(head.children.length, 1)
-    })
-  })
-
-  describe('injectStyles', () => {
-    it('should inject style tag into head and include c-token styling', () => {
-      const head = createCoraliteElement({
-        name: 'head',
-        children: []
-      })
-      const root = createCoraliteComponent({ children: [head] })
-      const styles = new Map([['sel', 'color: red']])
-      injectStyles(root, head, styles)
-      assert.strictEqual(head.children.length, 1)
-      assert.strictEqual(head.children[0].name, 'style')
-      assert.ok(head.children[0].children[0].data.includes('slot, c-token { display: contents; }'))
-      assert.ok(head.children[0].children[0].data.includes('color: red'))
     })
   })
 

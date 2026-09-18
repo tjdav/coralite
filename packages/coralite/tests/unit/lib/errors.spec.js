@@ -74,6 +74,25 @@ describe('errors.js', () => {
       assert.strictEqual(call.arguments[0].filePath, 'file-1')
     })
 
+    it('should prefer provided data values over CoraliteError metadata', (t) => {
+      const onErrorCallback = t.mock.fn()
+      const coraliteError = new CoraliteError('fail', { componentId: 'comp-1' })
+      const data = {
+        level: 'ERR',
+        message: 'fail',
+        error: coraliteError,
+        componentId: 'override'
+      }
+
+      handleError({
+        onErrorCallback,
+        data
+      })
+
+      assert.strictEqual(onErrorCallback.mock.callCount(), 1)
+      assert.strictEqual(onErrorCallback.mock.calls[0].arguments[0].componentId, 'override')
+    })
+
     it('should use defaultOnError if no callback is provided', () => {
       const data = {
         level: 'LOG',
@@ -125,6 +144,18 @@ describe('errors.js', () => {
       })
       assert.strictEqual(logMock.mock.callCount(), 1)
       assert.strictEqual(logMock.mock.calls[0].arguments[0], 'Info message')
+    })
+
+    it('should log to console for unknown levels', (t) => {
+      const logMock = t.mock.method(console, 'log', () => {})
+
+      defaultOnError({
+        level: 'INFO',
+        message: 'hello'
+      })
+
+      assert.strictEqual(logMock.mock.callCount(), 1)
+      assert.strictEqual(logMock.mock.calls[0].arguments[0], 'hello')
     })
   })
 })

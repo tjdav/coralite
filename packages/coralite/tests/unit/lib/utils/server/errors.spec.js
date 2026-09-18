@@ -79,4 +79,55 @@ describe('utils/server/errors.js', () => {
       assert.ok(duration < 100)
     })
   })
+
+  describe('createExecutionError stack variants', () => {
+    const module = {
+      id: 'test',
+      script: '',
+      lineOffset: 0
+    }
+    const moduleComponent = { path: { pathname: '/test.html' } }
+
+    it('should handle stack trace with bare path (no parentheses)', () => {
+      const error = new Error('fail')
+      error.stack = 'Error: fail\n    at /path/to/file.js:42:10'
+
+      const result = createExecutionError(error, module, moduleComponent, null, 'inst')
+      assert.strictEqual(result.stackFile, '/path/to/file.js')
+      assert.strictEqual(result.line, 42)
+      assert.strictEqual(result.column, 10)
+    })
+
+    it('should handle node:internal/vm/module stack trace', () => {
+      const error = new Error('fail')
+      error.stack = 'Error: fail\n    at (node:internal/vm/module:1:2)'
+
+      const result = createExecutionError(error, { ...module, script: '' }, { path: { pathname: '/real/path.html' } }, null, 'inst')
+      assert.strictEqual(result.stackFile, '/real/path.html')
+      assert.strictEqual(result.line, undefined)
+    })
+
+    it('should handle SyntaxError and recover position via re-parse', () => {
+      const script = 'const x ='
+      const error = new SyntaxError('Unexpected token')
+      error.stack = ''
+
+      const result = createExecutionError(error, { ...module, script, lineOffset: 10 }, moduleComponent, null, 'inst')
+      assert.strictEqual(result.line, 11)
+      assert.strictEqual(result.column, 10)
+    })
+
+    it('should handle errors with lineNumber property (non-standard)', () => {
+      const error = new SyntaxError('fail')
+      error.stack = ''
+      // @ts-ignore
+      error.lineNumber = 2
+      // @ts-ignore
+      error.columnNumber = 3
+
+      const result = createExecutionError(error, { ...module, lineOffset: 5 }, moduleComponent, null, 'inst')
+      assert.strictEqual(result.line, 7)
+      assert.strictEqual(result.column, 3)
+    })
+  })
 })

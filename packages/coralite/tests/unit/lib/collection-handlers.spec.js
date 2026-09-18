@@ -2,7 +2,7 @@ import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { createPageHandlers } from '../../../lib/collection-handlers.js'
 
-describe('collection-handlers.js Coverage Gaps', () => {
+describe('collection-handlers.js', () => {
   const mockApp = {
     options: {
       path: {

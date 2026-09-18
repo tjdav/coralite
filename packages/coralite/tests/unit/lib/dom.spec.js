@@ -4,7 +4,10 @@ import {
   createCoraliteElement,
   createCoraliteTextNode,
   createCoraliteComment,
-  createCoraliteComponent
+  createCoraliteComponent,
+  createCoraliteDirective,
+  enhanceNode,
+  relinkChildren
 } from '../../../lib/utils/server/dom.js'
 
 describe('createCoraliteElement', () => {
@@ -214,6 +217,82 @@ describe('createCoraliteElement', () => {
     cl.toggle('d')
     assert.equal(element.className, 'a c')
   })
+
+  it('should handle parentElement setter', () => {
+    const el = createCoraliteElement({ name: 'div' })
+    const parent = createCoraliteElement({ name: 'span' })
+    el.parentElement = parent
+    assert.equal(el.parent, parent)
+    assert.equal(el.parentElement, parent)
+  })
+
+  it('should treat nodeValue as a no-op for elements', () => {
+    const el = createCoraliteElement({ name: 'div' })
+    assert.equal(el.nodeValue, null)
+    el.nodeValue = 'test'
+    assert.equal(el.nodeValue, null)
+  })
+
+  it('should handle attributes setter', () => {
+    const el = createCoraliteElement({ name: 'div' })
+    const attribs = { id: 'test' }
+    el.attributes = attribs
+    assert.equal(el.attribs, attribs)
+  })
+
+  it('should handle childNodes getter/setter', () => {
+    const el = createCoraliteElement({ name: 'div' })
+    const children = [createCoraliteTextNode({ data: 'hi' })]
+    el.childNodes = children
+    assert.equal(el.children, children)
+    assert.deepEqual(el.childNodes, children)
+  })
+
+  it('should handle firstChild and lastChild', () => {
+    const el = createCoraliteElement({ name: 'div' })
+    assert.equal(el.firstChild, null)
+    assert.equal(el.lastChild, null)
+
+    const child1 = createCoraliteTextNode({ data: '1' })
+    const child2 = createCoraliteTextNode({ data: '2' })
+    el.appendChild(child1)
+    el.appendChild(child2)
+
+    assert.equal(el.firstChild, child1)
+    assert.equal(el.lastChild, child2)
+  })
+
+  it('should handle textContent with no children', () => {
+    const el = createCoraliteElement({ name: 'div' })
+    el.children = null
+    assert.equal(el.textContent, '')
+  })
+
+  it('should default id and className to empty strings', () => {
+    const el = createCoraliteElement({ name: 'div' })
+    assert.equal(el.id, '')
+    assert.equal(el.className, '')
+  })
+
+  it('should support classList toggle with force argument', () => {
+    const el = createCoraliteElement({ name: 'div' })
+    el.classList.toggle('a', true)
+    assert.equal(el.className, 'a')
+    el.classList.toggle('a', true)
+    assert.equal(el.className, 'a')
+    el.classList.toggle('a', false)
+    assert.equal(el.className, '')
+    el.classList.toggle('a', false)
+    assert.equal(el.className, '')
+  })
+
+  it('should expose classList.value', () => {
+    const el = createCoraliteElement({
+      name: 'div',
+      attribs: { class: 'a b' }
+    })
+    assert.equal(el.classList.value, 'a b')
+  })
 })
 
 describe('createCoraliteTextNode', () => {
@@ -233,6 +312,14 @@ describe('createCoraliteTextNode', () => {
     assert.equal(coraliteNode.textContent, 'hello')
     assert.equal(coraliteNode.attributes, undefined)
   })
+
+  it('should support nodeValue and textContent setters', () => {
+    const text = createCoraliteTextNode({ data: 'old' })
+    text.nodeValue = 'new1'
+    assert.equal(text.data, 'new1')
+    text.textContent = 'new2'
+    assert.equal(text.data, 'new2')
+  })
 })
 
 describe('createCoraliteComment', () => {
@@ -251,6 +338,14 @@ describe('createCoraliteComment', () => {
     assert.equal(coraliteNode.nodeValue, 'my comment')
     assert.equal(coraliteNode.textContent, 'my comment')
   })
+
+  it('should support nodeValue and textContent setters', () => {
+    const comment = createCoraliteComment({ data: 'old' })
+    comment.nodeValue = 'new1'
+    assert.equal(comment.data, 'new1')
+    comment.textContent = 'new2'
+    assert.equal(comment.data, 'new2')
+  })
 })
 
 describe('createCoraliteComponent', () => {
@@ -266,6 +361,18 @@ describe('createCoraliteComponent', () => {
     assert.equal(coraliteNode.nodeType, 9)
     assert.equal(coraliteNode.nodeValue, null)
     assert.deepEqual(coraliteNode.childNodes, [])
+  })
+
+  it('should support childNodes, firstChild, lastChild and textContent', () => {
+    const root = createCoraliteComponent({ children: [] })
+    assert.equal(root.firstChild, null)
+    assert.equal(root.lastChild, null)
+    assert.equal(root.textContent, null)
+
+    const child = createCoraliteElement({ name: 'html' })
+    root.childNodes = [child]
+    assert.equal(root.firstChild, child)
+    assert.equal(root.lastChild, child)
   })
 })
 
@@ -302,5 +409,61 @@ describe('Sibling Traversal (Common)', () => {
 
     assert.equal(child3.nextSibling, null)
     assert.equal(child3.previousSibling, child2)
+  })
+})
+
+describe('createCoraliteDirective', () => {
+  it('should enhance a directive node', () => {
+    const directive = createCoraliteDirective({
+      name: '!DOCTYPE',
+      data: 'html'
+    })
+    assert.equal(directive.nodeName, '!DOCTYPE')
+    assert.equal(directive.nodeValue, 'html')
+    directive.nodeValue = 'HTML'
+    assert.equal(directive.data, 'HTML')
+  })
+})
+
+describe('relinkChildren and enhanceNode', () => {
+  it('should relink plain AST children', () => {
+    const parent = {
+      type: 'tag',
+      name: 'div',
+      children: [
+        {
+          type: 'text',
+          data: '1'
+        },
+        {
+          type: 'tag',
+          name: 'span',
+          children: [{
+            type: 'text',
+            data: '2'
+          }]
+        }
+      ]
+    }
+    relinkChildren(parent)
+
+    assert.ok(parent.children[0].__coralite_enhanced__)
+    assert.equal(parent.children[0].parent, parent)
+    assert.equal(parent.children[0].next, parent.children[1])
+
+    assert.ok(parent.children[1].children[0].__coralite_enhanced__)
+    assert.equal(parent.children[1].children[0].parent, parent.children[1])
+  })
+
+  it('should skip enhancing already enhanced nodes', () => {
+    const node = createCoraliteElement({ name: 'div' })
+    const protoBefore = Object.getPrototypeOf(node)
+    enhanceNode(node)
+    assert.equal(Object.getPrototypeOf(node), protoBefore)
+  })
+
+  it('should apply default prototype for unknown types', () => {
+    const node = enhanceNode({ type: 'unknown' })
+    assert.equal(node.nodeType, 1)
   })
 })

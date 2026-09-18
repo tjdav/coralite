@@ -17,7 +17,7 @@ import {
 } from '../../../lib/utils/core.js'
 import { CoraliteError } from '../../../lib/utils/errors.js'
 
-describe('core.js Coverage Gaps', () => {
+describe('utils/core.js', () => {
   describe('indexOfCI', () => {
     it('returns -1 for invalid or missing inputs', () => {
       assert.strictEqual(indexOfCI(null, 'needle'), -1)

@@ -3,7 +3,7 @@ import { strict as assert } from 'node:assert'
 import { processTokenValue } from '../../../lib/parser.js'
 import { createCoraliteTextNode } from '../../../lib/utils/server/dom.js'
 
-describe('parser.js Coverage Gaps', () => {
+describe('parser.js', () => {
   describe('processTokenValue', () => {
     it('should return non-string values as-is', async () => {
       assert.strictEqual(await processTokenValue(123, {}), 123)

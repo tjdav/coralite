@@ -4,7 +4,7 @@
 
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { getHtmlFiles, getHtmlFile, getHtmlFileSync } from '../../../lib/utils/server/html.js'
+import { getHtmlFiles, getHtmlFile, getHtmlFileSync, discoverHtmlFiles } from '../../../lib/utils/server/html.js'
 import path from 'node:path'
 import { mkdtemp, writeFile, rm, mkdir } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -86,6 +86,16 @@ describe('html.js', () => {
           { message: 'Unexpected filename extension ".txt"' }
         )
       }
+    })
+
+    it('should throw error for non-HTML file extension in getHtmlFileSync', async () => {
+      const txtFilePath = path.join(testDir, 'test.txt')
+      await writeFile(txtFilePath, 'Some text content')
+
+      assert.throws(
+        () => getHtmlFileSync(txtFilePath),
+        { message: 'Unexpected filename extension ".txt"' }
+      )
     })
 
     it('should throw error for HTML file with uppercase extension', async () => {
@@ -783,6 +793,78 @@ describe('html.js', () => {
         assert.strictEqual(rootList[0].content, '<h1>Root</h1>')
         assert.strictEqual(subList[0].content, '<h1>Nested</h1>')
       })
+    })
+  })
+
+  describe('discoverHtmlFiles and discoverOnly', () => {
+    let testDir
+
+    beforeEach(async () => {
+      testDir = await mkdtemp(path.join(tmpdir(), 'coralite-discover-'))
+    })
+
+    afterEach(async () => {
+      await rm(testDir, {
+        recursive: true,
+        force: true
+      })
+    })
+
+    it('should skip reading content with discoverOnly', async () => {
+      await writeFile(path.join(testDir, 'test.html'), 'content')
+      const collection = await getHtmlFiles({
+        path: testDir,
+        type: 'page',
+        discoverOnly: true
+      })
+      const item = collection.getItem('test.html')
+      assert.strictEqual(item.content, undefined)
+    })
+
+    it('should yield files', async () => {
+      await writeFile(path.join(testDir, 'test.html'), 'content')
+      const generator = discoverHtmlFiles({
+        path: testDir,
+        type: 'page'
+      })
+      const results = []
+      for await (const file of generator) {
+        results.push(file)
+      }
+      assert.strictEqual(results.length, 1)
+      assert.strictEqual(results[0].path.filename, 'test.html')
+    })
+
+    it('should skip hidden files in generator', async () => {
+      await writeFile(path.join(testDir, '.hidden.html'), 'hidden')
+      const generator = discoverHtmlFiles({
+        path: testDir,
+        type: 'page'
+      })
+      const results = []
+      for await (const file of generator) {
+        results.push(file)
+      }
+      assert.strictEqual(results.length, 0)
+    })
+
+    it('should handle exclusions and recursion in generator', async () => {
+      await mkdir(path.join(testDir, 'sub'))
+      await writeFile(path.join(testDir, 'sub', 'test.html'), 'content')
+      await mkdir(path.join(testDir, 'ex'))
+      await writeFile(path.join(testDir, 'ex', 'test.html'), 'content')
+
+      const generator = discoverHtmlFiles({
+        path: testDir,
+        type: 'page',
+        recursive: true,
+        exclude: ['ex']
+      })
+      const results = []
+      for await (const file of generator) {
+        results.push(file)
+      }
+      assert.strictEqual(results.length, 1)
     })
   })
 })
