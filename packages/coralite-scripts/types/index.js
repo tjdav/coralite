@@ -42,6 +42,9 @@
  * @property {boolean} [onlyFailed=false] - Display only failed files
  * @property {boolean} [strict=false] - Fail with non-zero exit code if warnings or unused tokens exist
  * @property {boolean} [coverage=false] - Include component test coverage metrics
+ * @property {boolean} [interactive=false] - Run in interactive prompt mode
+ * @property {boolean} [noInteractive=false] - Force non-interactive execution
+ * @property {string[]} [domains] - Active domain selection
  * @property {string} [cwd] - Working directory path override
  */
 
@@ -54,6 +57,9 @@
  * @property {'all' | 'failed' | 'passed'} [status='all'] - Filter by status
  * @property {boolean} [onlyFailed=false] - Display only failed files
  * @property {boolean} [dryRun=false] - Preview changes without writing to disk
+ * @property {boolean} [interactive=false] - Run in interactive prompt mode
+ * @property {boolean} [noInteractive=false] - Force non-interactive execution
+ * @property {string[]} [domains] - Active domain selection
  * @property {string} [cwd] - Working directory path override
  */
 

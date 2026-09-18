@@ -11,6 +11,12 @@ import { buildCommand } from '../libs/commands/build.js'
 import { checkCommand } from '../libs/commands/check.js'
 import { fixCommand } from '../libs/commands/fix.js'
 import { parseAssetMapping, mergeAssets } from '../libs/assets.js'
+import {
+  promptCheckOptions,
+  promptFixOptions,
+  confirmApplyFixes
+} from '../libs/interactive.js'
+import { existsSync } from 'node:fs'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -128,14 +134,52 @@ program
   .option('--pages <path>', 'Path to pages directory')
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('-e, --error-code <codes...>', 'Filter output by error code (e.g. CORALITE-E201 or E201)')
+  .option('--code <codes...>', 'Alias for --error-code')
   .option('--status <status>', 'Filter output by status: "failed", "passed", or "all"')
   .option('--only-failed', 'Display only failed files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if warnings or unused code exist', false)
   .option('--coverage', 'Include component test execution coverage metrics', false)
-  .action(async (options) => {
+  .option('-i, --interactive', 'Run in interactive prompt mode', false)
+  .option('--no-interactive', 'Force non-interactive execution')
+  .action(async (options, cmd) => {
     try {
+      const isTTY = Boolean(process.stdout.isTTY)
+      const isCI = Boolean(process.env.CI)
+
+      const hasExplicitTargetFlags =
+        cmd.getOptionValueSource('components') === 'cli' ||
+        cmd.getOptionValueSource('plugins') === 'cli' ||
+        cmd.getOptionValueSource('pages') === 'cli' ||
+        cmd.getOptionValueSource('errorCode') === 'cli' ||
+        cmd.getOptionValueSource('code') === 'cli' ||
+        cmd.getOptionValueSource('status') === 'cli' ||
+        cmd.getOptionValueSource('onlyFailed') === 'cli' ||
+        cmd.getOptionValueSource('strict') === 'cli' ||
+        cmd.getOptionValueSource('coverage') === 'cli' ||
+        cmd.getOptionValueSource('format') === 'cli'
+
+      const shouldPrompt =
+        (options.interactive || (isTTY && !isCI && !hasExplicitTargetFlags)) &&
+        !options.noInteractive
+
+      let checkOpts = { ...options }
+
+      if (shouldPrompt) {
+        const cwd = process.cwd()
+        const promptRes = await promptCheckOptions({
+          cwd,
+          hasComponents: existsSync(join(cwd, 'src/components')) || existsSync(join(cwd, 'components')) || existsSync(join(cwd, 'tests/fixtures/components')),
+          hasPages: existsSync(join(cwd, 'src/pages')) || existsSync(join(cwd, 'pages')) || existsSync(join(cwd, 'tests/fixtures/pages')),
+          hasPlugins: existsSync(join(cwd, 'src/plugins')) || existsSync(join(cwd, 'plugins')) || existsSync(join(cwd, 'tests/fixtures/plugins'))
+        })
+        checkOpts = {
+          ...checkOpts,
+          ...promptRes
+        }
+      }
+
       const config = await loadConfig(process.cwd(), { silent: true })
-      const res = await checkCommand(config, options)
+      const res = await checkCommand(config, checkOpts)
 
       if (res.hasFailures) {
         process.exit(1)
@@ -154,13 +198,68 @@ program
   .option('-p, --plugins <path>', 'Path to plugin file or directory')
   .option('--pages <path>', 'Path to pages directory')
   .option('-e, --error-code <codes...>', 'Only apply auto-fixes for specified error code(s)')
+  .option('--code <codes...>', 'Alias for --error-code')
   .option('--status <status>', 'Filter post-fix output by status: "failed", "passed", or "all"')
   .option('--only-failed', 'Display only failed files in post-fix output', false)
   .option('--dry-run', 'Preview changes that would be made without writing to disk', false)
-  .action(async (options) => {
+  .option('-i, --interactive', 'Run in interactive prompt mode', false)
+  .option('--no-interactive', 'Force non-interactive execution')
+  .action(async (options, cmd) => {
     try {
+      const isTTY = Boolean(process.stdout.isTTY)
+      const isCI = Boolean(process.env.CI)
+
+      const hasExplicitTargetFlags =
+        cmd.getOptionValueSource('components') === 'cli' ||
+        cmd.getOptionValueSource('plugins') === 'cli' ||
+        cmd.getOptionValueSource('pages') === 'cli' ||
+        cmd.getOptionValueSource('errorCode') === 'cli' ||
+        cmd.getOptionValueSource('code') === 'cli' ||
+        cmd.getOptionValueSource('status') === 'cli' ||
+        cmd.getOptionValueSource('onlyFailed') === 'cli' ||
+        cmd.getOptionValueSource('dryRun') === 'cli'
+
+      const shouldPrompt =
+        (options.interactive || (isTTY && !isCI && !hasExplicitTargetFlags)) &&
+        !options.noInteractive
+
+      let fixOpts = { ...options }
+      let wasInteractiveDryRun = false
+
+      if (shouldPrompt) {
+        const cwd = process.cwd()
+        const promptRes = await promptFixOptions({
+          cwd,
+          hasComponents: existsSync(join(cwd, 'src/components')) || existsSync(join(cwd, 'components')) || existsSync(join(cwd, 'tests/fixtures/components')),
+          hasPlugins: existsSync(join(cwd, 'src/plugins')) || existsSync(join(cwd, 'plugins')) || existsSync(join(cwd, 'tests/fixtures/plugins'))
+        })
+        fixOpts = {
+          ...fixOpts,
+          ...promptRes
+        }
+        if (fixOpts.dryRun) {
+          wasInteractiveDryRun = true
+        }
+      }
+
       const config = await loadConfig(process.cwd(), { silent: true })
-      const res = await fixCommand(config, options)
+      const res = await fixCommand(config, fixOpts)
+
+      if (wasInteractiveDryRun && res.totalFixesCount > 0) {
+        const confirmApply = await confirmApplyFixes()
+        if (confirmApply) {
+          const writeOpts = {
+            ...fixOpts,
+            dryRun: false
+          }
+          const writeRes = await fixCommand(config, writeOpts)
+          if (writeRes.hasFailures) {
+            process.exit(1)
+          }
+          return
+        }
+      }
+
       if (res.hasFailures) {
         process.exit(1)
       }

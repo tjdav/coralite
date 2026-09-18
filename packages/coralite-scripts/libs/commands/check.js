@@ -23,7 +23,11 @@ import {
  * @returns {string|null} Resolved path or null.
  */
 function resolvePath (explicitPath, configProp, defaultCandidates, config = null, cwd = process.cwd()) {
-  if (explicitPath) {
+  if (typeof explicitPath === 'boolean' && !explicitPath) {
+    return null
+  }
+
+  if (typeof explicitPath === 'string') {
     return explicitPath
   }
 
@@ -115,9 +119,25 @@ export async function checkCommand (config, options = {}, logger = null) {
   }
   const isFilterActive = Boolean(targetCodesSet || options.status || options.onlyFailed)
 
-  let compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components', 'components'], config, cwd)
-  const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins', 'plugins'], config, cwd)
-  const pageDir = resolvePath(options.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'], config, cwd)
+  let compOpt = options.components
+  let pluginOpt = options.plugins
+  let pageOpt = options.pages
+
+  if (Array.isArray(options.domains)) {
+    if (!options.domains.includes('components') && !options.components) {
+      compOpt = false
+    }
+    if (!options.domains.includes('plugins') && !options.plugins) {
+      pluginOpt = false
+    }
+    if (!options.domains.includes('pages') && !options.pages) {
+      pageOpt = false
+    }
+  }
+
+  let compDir = resolvePath(compOpt, 'components', ['src/components', 'tests/fixtures/components', 'components'], config, cwd)
+  const pluginTarget = resolvePath(pluginOpt, 'plugins', ['src/plugins', 'tests/fixtures/plugins', 'plugins'], config, cwd)
+  const pageDir = resolvePath(pageOpt, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'], config, cwd)
 
   if (!compDir && !pluginTarget && !pageDir && !options.components && !options.plugins && !options.pages) {
     compDir = '.'

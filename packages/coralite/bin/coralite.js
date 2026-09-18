@@ -14,6 +14,12 @@ import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPlu
 import { applyPluginFixes } from '#lib/plugin-fixer.js'
 import { validatePagesDir, formatPageValidationReport } from '#lib/page-validator.js'
 import { normalizeErrorCodes, matchesErrorCode } from '#lib/utils/diagnostics.js'
+import {
+  promptCheckOptions,
+  promptFixOptions,
+  promptSingleDomainOptions,
+  confirmApplyFixes
+} from '#lib/interactive.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -63,24 +69,79 @@ program
   .option('--pages <path>', 'Path to pages directory')
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('-e, --error-code <codes...>', 'Filter diagnostics by error code (e.g. CORALITE-E201 or E201)')
+  .option('--code <codes...>', 'Alias for --error-code')
   .option('--status <status>', 'Filter by status: "failed", "passed", or "all"')
   .option('--only-failed', 'Only display files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if warnings or unused code exist', false)
   .option('--coverage', 'Include component test execution coverage metrics', false)
-  .action(async (options) => {
-    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
-    let effectiveStatus = options.status
+  .option('-i, --interactive', 'Run in interactive prompt mode', false)
+  .option('--no-interactive', 'Force non-interactive execution')
+  .action(async (options, cmd) => {
+    const isTTY = Boolean(process.stdout.isTTY)
+    const isCI = Boolean(process.env.CI)
+
+    const hasExplicitTargetFlags =
+      cmd.getOptionValueSource('components') === 'cli' ||
+      cmd.getOptionValueSource('plugins') === 'cli' ||
+      cmd.getOptionValueSource('pages') === 'cli' ||
+      cmd.getOptionValueSource('errorCode') === 'cli' ||
+      cmd.getOptionValueSource('code') === 'cli' ||
+      cmd.getOptionValueSource('status') === 'cli' ||
+      cmd.getOptionValueSource('onlyFailed') === 'cli' ||
+      cmd.getOptionValueSource('strict') === 'cli' ||
+      cmd.getOptionValueSource('coverage') === 'cli' ||
+      cmd.getOptionValueSource('format') === 'cli'
+
+    const shouldPrompt =
+      (options.interactive || (isTTY && !isCI && !hasExplicitTargetFlags)) &&
+      !options.noInteractive
+
+    let runOpts = { ...options }
+
+    if (shouldPrompt) {
+      const cwd = process.cwd()
+      const promptRes = await promptCheckOptions({
+        cwd,
+        hasComponents: existsSync(join(cwd, 'src/components')) || existsSync(join(cwd, 'components')) || existsSync(join(cwd, 'tests/fixtures/components')),
+        hasPages: existsSync(join(cwd, 'src/pages')) || existsSync(join(cwd, 'pages')) || existsSync(join(cwd, 'tests/fixtures/pages')),
+        hasPlugins: existsSync(join(cwd, 'src/plugins')) || existsSync(join(cwd, 'plugins')) || existsSync(join(cwd, 'tests/fixtures/plugins'))
+      })
+      runOpts = {
+        ...runOpts,
+        ...promptRes
+      }
+    }
+
+    const targetCodesSet = normalizeErrorCodes(runOpts.errorCode || runOpts.code || runOpts.errorCodes)
+    let effectiveStatus = runOpts.status
     if (!effectiveStatus) {
-      if (options.onlyFailed || targetCodesSet) {
+      if (runOpts.onlyFailed || targetCodesSet) {
         effectiveStatus = 'failed'
       } else {
         effectiveStatus = 'all'
       }
     }
-    const isFilterActive = Boolean(targetCodesSet || options.status || options.onlyFailed)
-    let compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
-    const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
-    const pageDir = resolvePath(options.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'])
+    const isFilterActive = Boolean(targetCodesSet || runOpts.status || runOpts.onlyFailed)
+
+    let compOpt = runOpts.components
+    let pluginOpt = runOpts.plugins
+    let pageOpt = runOpts.pages
+
+    if (Array.isArray(runOpts.domains)) {
+      if (!runOpts.domains.includes('components') && !runOpts.components) {
+        compOpt = false
+      }
+      if (!runOpts.domains.includes('plugins') && !runOpts.plugins) {
+        pluginOpt = false
+      }
+      if (!runOpts.domains.includes('pages') && !runOpts.pages) {
+        pageOpt = false
+      }
+    }
+
+    let compDir = resolvePath(compOpt, 'components', ['src/components', 'tests/fixtures/components'])
+    const pluginTarget = resolvePath(pluginOpt, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
+    const pageDir = resolvePath(pageOpt, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages'])
 
     if (!compDir && !pluginTarget && !pageDir && !options.components && !options.plugins && !options.pages) {
       compDir = '.'
@@ -277,16 +338,67 @@ program
   .option('-p, --plugins <path>', 'Path to plugin file or directory')
   .option('--pages <path>', 'Path to pages directory')
   .option('-e, --error-code <codes...>', 'Only apply auto-fixes for specified error code(s)')
+  .option('--code <codes...>', 'Alias for --error-code')
   .option('--status <status>', 'Filter post-fix output by status: "failed", "passed", or "all"')
   .option('--only-failed', 'Display only failed files in post-fix output', false)
   .option('--dry-run', 'Preview changes that would be made without writing to disk', false)
-  .action(async (options) => {
-    const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
-    const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
+  .option('-i, --interactive', 'Run in interactive prompt mode', false)
+  .option('--no-interactive', 'Force non-interactive execution')
+  .action(async (options, cmd) => {
+    const isTTY = Boolean(process.stdout.isTTY)
+    const isCI = Boolean(process.env.CI)
 
-    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
+    const hasExplicitTargetFlags =
+      cmd.getOptionValueSource('components') === 'cli' ||
+      cmd.getOptionValueSource('plugins') === 'cli' ||
+      cmd.getOptionValueSource('pages') === 'cli' ||
+      cmd.getOptionValueSource('errorCode') === 'cli' ||
+      cmd.getOptionValueSource('code') === 'cli' ||
+      cmd.getOptionValueSource('status') === 'cli' ||
+      cmd.getOptionValueSource('onlyFailed') === 'cli' ||
+      cmd.getOptionValueSource('dryRun') === 'cli'
 
-    try {
+    const shouldPrompt =
+      (options.interactive || (isTTY && !isCI && !hasExplicitTargetFlags)) &&
+      !options.noInteractive
+
+    let runOpts = { ...options }
+    let wasInteractiveDryRun = false
+
+    if (shouldPrompt) {
+      const cwd = process.cwd()
+      const promptRes = await promptFixOptions({
+        cwd,
+        hasComponents: existsSync(join(cwd, 'src/components')) || existsSync(join(cwd, 'components')) || existsSync(join(cwd, 'tests/fixtures/components')),
+        hasPlugins: existsSync(join(cwd, 'src/plugins')) || existsSync(join(cwd, 'plugins')) || existsSync(join(cwd, 'tests/fixtures/plugins'))
+      })
+      runOpts = {
+        ...runOpts,
+        ...promptRes
+      }
+      if (runOpts.dryRun) {
+        wasInteractiveDryRun = true
+      }
+    }
+
+    const runFixPass = async (opts) => {
+      let compOpt = opts.components
+      let pluginOpt = opts.plugins
+
+      if (Array.isArray(opts.domains)) {
+        if (!opts.domains.includes('components') && !opts.components) {
+          compOpt = false
+        }
+        if (!opts.domains.includes('plugins') && !opts.plugins) {
+          pluginOpt = false
+        }
+      }
+
+      const compDir = resolvePath(compOpt, 'components', ['src/components', 'tests/fixtures/components'])
+      const pluginTarget = resolvePath(pluginOpt, 'plugins', ['src/plugins', 'tests/fixtures/plugins'])
+
+      const targetCodesSet = normalizeErrorCodes(opts.errorCode || opts.code || opts.errorCodes)
+
       let totalFixesCount = 0
       const modifiedFiles = []
 
@@ -306,14 +418,14 @@ program
             const rawCode = await readFile(compRes.filePath, 'utf8')
             const fixResult = applyComponentFixes(rawCode, diagnostics, {
               filePath: compRes.filePath,
-              dryRun: options.dryRun
+              dryRun: opts.dryRun
             })
 
             if (fixResult.modified) {
               totalFixesCount += fixResult.fixesApplied.length
               modifiedFiles.push(compRes.filePath)
 
-              if (options.dryRun) {
+              if (opts.dryRun) {
                 process.stdout.write(fixResult.diff + '\n')
               } else {
                 await writeFile(compRes.filePath, fixResult.outputCode, 'utf8')
@@ -351,13 +463,13 @@ program
 
             const fixResult = applyPluginFixes(rawCode, diagnostics, {
               filePath: pFile,
-              dryRun: options.dryRun
+              dryRun: opts.dryRun
             })
 
             if (fixResult.modified) {
               totalFixesCount += fixResult.fixesApplied.length
               modifiedFiles.push(pFile)
-              if (options.dryRun) {
+              if (opts.dryRun) {
                 process.stdout.write(fixResult.diff + '\n')
               } else {
                 await writeFile(pFile, fixResult.outputCode, 'utf8')
@@ -367,17 +479,66 @@ program
         )
       }
 
-      if (options.dryRun) {
+      return {
+        totalFixesCount,
+        modifiedFiles
+      }
+    }
+
+    try {
+      const fixRes = await runFixPass(runOpts)
+
+      if (runOpts.dryRun) {
         process.stdout.write(
           kleur.bold().cyan(
-            `Dry-run complete: ${totalFixesCount} fix(es) would be applied across ${modifiedFiles.length} file(s). No files modified on disk.\n\n`
+            `Dry-run complete: ${fixRes.totalFixesCount} fix(es) would be applied across ${fixRes.modifiedFiles.length} file(s). No files modified on disk.\n\n`
           )
         )
+
+        if (wasInteractiveDryRun && fixRes.totalFixesCount > 0) {
+          const confirmApply = await confirmApplyFixes()
+          if (confirmApply) {
+            const applyOpts = {
+              ...runOpts,
+              dryRun: false
+            }
+            const applyRes = await runFixPass(applyOpts)
+            process.stdout.write(
+              kleur.bold().green(
+                `✔ Auto-fixed ${applyRes.totalFixesCount} issue(s) across ${applyRes.modifiedFiles.length} file(s).\n\n`
+              )
+            )
+
+            // Re-run check to output post-fix status
+            const checkArgs = []
+            if (applyOpts.components) {
+              checkArgs.push('-c', applyOpts.components)
+            }
+            if (applyOpts.plugins) {
+              checkArgs.push('-p', applyOpts.plugins)
+            }
+            if (applyOpts.pages) {
+              checkArgs.push('--pages', applyOpts.pages)
+            }
+            if (applyOpts.errorCode) {
+              const codes = Array.isArray(applyOpts.errorCode) ? applyOpts.errorCode : [applyOpts.errorCode]
+              checkArgs.push('-e', ...codes)
+            }
+            if (applyOpts.status) {
+              checkArgs.push('--status', applyOpts.status)
+            }
+            if (applyOpts.onlyFailed) {
+              checkArgs.push('--only-failed')
+            }
+            checkArgs.push('--no-interactive')
+            await program.parseAsync(['node', 'coralite', 'check', ...checkArgs])
+          }
+        }
       } else {
-        if (modifiedFiles.length > 0) {
+        if (fixRes.modifiedFiles.length > 0) {
           process.stdout.write(
             kleur.bold().green(
-              `✔ Auto-fixed ${totalFixesCount} issue(s) across ${modifiedFiles.length} file(s).\n\n`
+              `✔ Auto-fixed ${fixRes.totalFixesCount} issue(s) across ${fixRes.modifiedFiles.length} file(s).\n\n`
             )
           )
         } else {
@@ -386,25 +547,26 @@ program
 
         // Re-run check to output post-fix status
         const checkArgs = []
-        if (options.components) {
-          checkArgs.push('-c', options.components)
+        if (runOpts.components) {
+          checkArgs.push('-c', runOpts.components)
         }
-        if (options.plugins) {
-          checkArgs.push('-p', options.plugins)
+        if (runOpts.plugins) {
+          checkArgs.push('-p', runOpts.plugins)
         }
-        if (options.pages) {
-          checkArgs.push('--pages', options.pages)
+        if (runOpts.pages) {
+          checkArgs.push('--pages', runOpts.pages)
         }
-        if (options.errorCode) {
-          const codes = Array.isArray(options.errorCode) ? options.errorCode : [options.errorCode]
+        if (runOpts.errorCode) {
+          const codes = Array.isArray(runOpts.errorCode) ? runOpts.errorCode : [runOpts.errorCode]
           checkArgs.push('-e', ...codes)
         }
-        if (options.status) {
-          checkArgs.push('--status', options.status)
+        if (runOpts.status) {
+          checkArgs.push('--status', runOpts.status)
         }
-        if (options.onlyFailed) {
+        if (runOpts.onlyFailed) {
           checkArgs.push('--only-failed')
         }
+        checkArgs.push('--no-interactive')
         await program.parseAsync(['node', 'coralite', 'check', ...checkArgs])
       }
     } catch (err) {
@@ -487,17 +649,49 @@ program
   .option('--coverage', 'Include test execution coverage metrics', false)
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('-e, --error-code <codes...>', 'Filter diagnostics by error code (e.g. CORALITE-E201 or E201)')
+  .option('--code <codes...>', 'Alias for --error-code')
   .option('--status <status>', 'Filter by status: "failed", "passed", or "all"')
   .option('--only-failed', 'Only display files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if unused code or warnings exist', false)
   .option('--fix', 'Automatically fix safe component issues', false)
   .option('--dry-run', 'Preview changes that would be made by --fix without writing to disk', false)
-  .action(async (options) => {
-    const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components']) || '.'
-    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
-    let effectiveStatus = options.status
+  .option('-i, --interactive', 'Run in interactive prompt mode', false)
+  .option('--no-interactive', 'Force non-interactive execution')
+  .action(async (options, cmd) => {
+    const isTTY = Boolean(process.stdout.isTTY)
+    const isCI = Boolean(process.env.CI)
+
+    const hasExplicitTargetFlags =
+      cmd.getOptionValueSource('components') === 'cli' ||
+      cmd.getOptionValueSource('errorCode') === 'cli' ||
+      cmd.getOptionValueSource('code') === 'cli' ||
+      cmd.getOptionValueSource('status') === 'cli' ||
+      cmd.getOptionValueSource('onlyFailed') === 'cli' ||
+      cmd.getOptionValueSource('strict') === 'cli' ||
+      cmd.getOptionValueSource('coverage') === 'cli' ||
+      cmd.getOptionValueSource('fix') === 'cli' ||
+      cmd.getOptionValueSource('dryRun') === 'cli' ||
+      cmd.getOptionValueSource('format') === 'cli'
+
+    const shouldPrompt =
+      (options.interactive || (isTTY && !isCI && !hasExplicitTargetFlags)) &&
+      !options.noInteractive
+
+    let runOpts = { ...options }
+
+    if (shouldPrompt) {
+      const promptRes = await promptSingleDomainOptions('components', { allowFix: true })
+      runOpts = {
+        ...runOpts,
+        ...promptRes
+      }
+    }
+
+    const compDir = resolvePath(runOpts.components, 'components', ['src/components', 'tests/fixtures/components']) || '.'
+    const targetCodesSet = normalizeErrorCodes(runOpts.errorCode || runOpts.code || runOpts.errorCodes)
+    let effectiveStatus = runOpts.status
     if (!effectiveStatus) {
-      if (options.onlyFailed || targetCodesSet) {
+      if (runOpts.onlyFailed || targetCodesSet) {
         effectiveStatus = 'failed'
       } else {
         effectiveStatus = 'all'
@@ -505,9 +699,9 @@ program
     }
 
     try {
-      let initialReport = await validateComponentsDir(compDir, { coverage: options.coverage })
+      let initialReport = await validateComponentsDir(compDir, { coverage: runOpts.coverage })
 
-      if (options.fix || options.dryRun) {
+      if (runOpts.fix || runOpts.dryRun) {
         let totalFixesCount = 0
         const modifiedFiles = []
 
@@ -522,14 +716,14 @@ program
             const rawCode = await readFile(compRes.filePath, 'utf8')
             const fixResult = applyComponentFixes(rawCode, diagnostics, {
               filePath: compRes.filePath,
-              dryRun: options.dryRun
+              dryRun: runOpts.dryRun
             })
 
             if (fixResult.modified) {
               totalFixesCount += fixResult.fixesApplied.length
               modifiedFiles.push(compRes.filePath)
 
-              if (options.dryRun) {
+              if (runOpts.dryRun) {
                 process.stdout.write(fixResult.diff + '\n')
               } else {
                 await writeFile(compRes.filePath, fixResult.outputCode, 'utf8')
@@ -538,7 +732,7 @@ program
           })
         )
 
-        if (options.dryRun) {
+        if (runOpts.dryRun) {
           process.stdout.write(
             kleur.bold().cyan(
               `Dry-run complete: ${totalFixesCount} fix(es) would be applied across ${modifiedFiles.length} file(s). No files modified on disk.\n\n`
@@ -551,13 +745,13 @@ program
             )
           )
           // Re-run validation so final report reflects post-fix state
-          initialReport = await validateComponentsDir(compDir, { coverage: options.coverage })
+          initialReport = await validateComponentsDir(compDir, { coverage: runOpts.coverage })
         }
       }
 
       const formatted = formatComponentValidationReport(initialReport, {
-        format: options.format,
-        coverage: options.coverage,
+        format: runOpts.format,
+        coverage: runOpts.coverage,
         errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
         status: effectiveStatus
       })
@@ -583,7 +777,7 @@ program
         }
       }
 
-      const hasFailures = (errorCount > 0) || (options.strict && (warningCount > 0 || initialReport.metrics.totalUnused > 0))
+      const hasFailures = (errorCount > 0) || (runOpts.strict && (warningCount > 0 || initialReport.metrics.totalUnused > 0))
       if (hasFailures) {
         process.exit(1)
       }
@@ -601,16 +795,46 @@ program
   .option('--pages <path>', 'Path to pages directory')
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('-e, --error-code <codes...>', 'Filter diagnostics by error code (e.g. CORALITE-PAGE-101)')
+  .option('--code <codes...>', 'Alias for --error-code')
   .option('--status <status>', 'Filter by status: "failed", "passed", or "all"')
   .option('--only-failed', 'Only display files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if validation warnings are found', false)
-  .action(async (options) => {
-    const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components'])
-    const pageDir = resolvePath(options.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages']) || '.'
-    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
-    let effectiveStatus = options.status
+  .option('-i, --interactive', 'Run in interactive prompt mode', false)
+  .option('--no-interactive', 'Force non-interactive execution')
+  .action(async (options, cmd) => {
+    const isTTY = Boolean(process.stdout.isTTY)
+    const isCI = Boolean(process.env.CI)
+
+    const hasExplicitTargetFlags =
+      cmd.getOptionValueSource('components') === 'cli' ||
+      cmd.getOptionValueSource('pages') === 'cli' ||
+      cmd.getOptionValueSource('errorCode') === 'cli' ||
+      cmd.getOptionValueSource('code') === 'cli' ||
+      cmd.getOptionValueSource('status') === 'cli' ||
+      cmd.getOptionValueSource('onlyFailed') === 'cli' ||
+      cmd.getOptionValueSource('strict') === 'cli' ||
+      cmd.getOptionValueSource('format') === 'cli'
+
+    const shouldPrompt =
+      (options.interactive || (isTTY && !isCI && !hasExplicitTargetFlags)) &&
+      !options.noInteractive
+
+    let runOpts = { ...options }
+
+    if (shouldPrompt) {
+      const promptRes = await promptSingleDomainOptions('pages', { allowFix: false })
+      runOpts = {
+        ...runOpts,
+        ...promptRes
+      }
+    }
+
+    const compDir = resolvePath(runOpts.components, 'components', ['src/components', 'tests/fixtures/components'])
+    const pageDir = resolvePath(runOpts.pages, 'pages', ['src/pages', 'tests/fixtures/pages', 'pages']) || '.'
+    const targetCodesSet = normalizeErrorCodes(runOpts.errorCode || runOpts.code || runOpts.errorCodes)
+    let effectiveStatus = runOpts.status
     if (!effectiveStatus) {
-      if (options.onlyFailed || targetCodesSet) {
+      if (runOpts.onlyFailed || targetCodesSet) {
         effectiveStatus = 'failed'
       } else {
         effectiveStatus = 'all'
@@ -644,7 +868,7 @@ program
         ignoreTags: config?.ignoreTags
       })
       const formatted = formatPageValidationReport(pageReport, {
-        format: options.format,
+        format: runOpts.format,
         errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
         status: effectiveStatus
       })
@@ -669,7 +893,7 @@ program
         }
       }
 
-      const hasFailures = errorCount > 0 || (options.strict && warningCount > 0)
+      const hasFailures = errorCount > 0 || (runOpts.strict && warningCount > 0)
       if (hasFailures) {
         process.exit(1)
       }
@@ -686,17 +910,48 @@ program
   .option('-p, --plugins <path>', 'Path to plugin file or directory')
   .option('--format <format>', 'Output format: "console" or "json"', 'console')
   .option('-e, --error-code <codes...>', 'Filter diagnostics by error code (e.g. CORALITE-P401 or P401)')
+  .option('--code <codes...>', 'Alias for --error-code')
   .option('--status <status>', 'Filter by status: "failed", "passed", or "all"')
   .option('--only-failed', 'Only display files with errors or warnings', false)
   .option('--strict', 'Fail with non-zero exit code if validation errors are found', false)
   .option('--fix', 'Automatically fix safe plugin contract issues', false)
   .option('--dry-run', 'Preview changes that would be made by --fix without writing to disk', false)
-  .action(async (options) => {
-    const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins']) || '.'
-    const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
-    let effectiveStatus = options.status
+  .option('-i, --interactive', 'Run in interactive prompt mode', false)
+  .option('--no-interactive', 'Force non-interactive execution')
+  .action(async (options, cmd) => {
+    const isTTY = Boolean(process.stdout.isTTY)
+    const isCI = Boolean(process.env.CI)
+
+    const hasExplicitTargetFlags =
+      cmd.getOptionValueSource('plugins') === 'cli' ||
+      cmd.getOptionValueSource('errorCode') === 'cli' ||
+      cmd.getOptionValueSource('code') === 'cli' ||
+      cmd.getOptionValueSource('status') === 'cli' ||
+      cmd.getOptionValueSource('onlyFailed') === 'cli' ||
+      cmd.getOptionValueSource('strict') === 'cli' ||
+      cmd.getOptionValueSource('fix') === 'cli' ||
+      cmd.getOptionValueSource('dryRun') === 'cli' ||
+      cmd.getOptionValueSource('format') === 'cli'
+
+    const shouldPrompt =
+      (options.interactive || (isTTY && !isCI && !hasExplicitTargetFlags)) &&
+      !options.noInteractive
+
+    let runOpts = { ...options }
+
+    if (shouldPrompt) {
+      const promptRes = await promptSingleDomainOptions('plugins', { allowFix: true })
+      runOpts = {
+        ...runOpts,
+        ...promptRes
+      }
+    }
+
+    const pluginTarget = resolvePath(runOpts.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins']) || '.'
+    const targetCodesSet = normalizeErrorCodes(runOpts.errorCode || runOpts.code || runOpts.errorCodes)
+    let effectiveStatus = runOpts.status
     if (!effectiveStatus) {
-      if (options.onlyFailed || targetCodesSet) {
+      if (runOpts.onlyFailed || targetCodesSet) {
         effectiveStatus = 'failed'
       } else {
         effectiveStatus = 'all'
@@ -720,7 +975,7 @@ program
         report = await validatePluginsDir(pluginTarget)
       }
 
-      if (options.fix || options.dryRun) {
+      if (runOpts.fix || runOpts.dryRun) {
         let totalFixesCount = 0
         const modifiedFiles = []
 
@@ -735,14 +990,14 @@ program
             const rawCode = await readFile(pRes.filePath, 'utf8')
             const fixResult = applyPluginFixes(rawCode, diagnostics, {
               filePath: pRes.filePath,
-              dryRun: options.dryRun
+              dryRun: runOpts.dryRun
             })
 
             if (fixResult.modified) {
               totalFixesCount += fixResult.fixesApplied.length
               modifiedFiles.push(pRes.filePath)
 
-              if (options.dryRun) {
+              if (runOpts.dryRun) {
                 process.stdout.write(fixResult.diff + '\n')
               } else {
                 await writeFile(pRes.filePath, fixResult.outputCode, 'utf8')
@@ -751,7 +1006,7 @@ program
           })
         )
 
-        if (options.dryRun) {
+        if (runOpts.dryRun) {
           process.stdout.write(
             kleur.bold().cyan(
               `Dry-run complete: ${totalFixesCount} fix(es) would be applied across ${modifiedFiles.length} file(s). No files modified on disk.\n\n`
@@ -782,7 +1037,7 @@ program
       }
 
       const formatted = formatPluginValidationReport(report, {
-        format: options.format,
+        format: runOpts.format,
         errorCode: targetCodesSet ? Array.from(targetCodesSet) : undefined,
         status: effectiveStatus
       })
@@ -807,7 +1062,7 @@ program
         }
       }
 
-      const hasFailures = errorCount > 0 || (options.strict && warningCount > 0)
+      const hasFailures = errorCount > 0 || (runOpts.strict && warningCount > 0)
       if (hasFailures) {
         process.exit(1)
       }

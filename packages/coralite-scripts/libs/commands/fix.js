@@ -23,7 +23,11 @@ import { checkCommand } from './check.js'
  * @returns {string|null} Resolved path or null.
  */
 function resolvePath (explicitPath, configProp, defaultCandidates, config = null, cwd = process.cwd()) {
-  if (explicitPath) {
+  if (typeof explicitPath === 'boolean' && !explicitPath) {
+    return null
+  }
+
+  if (typeof explicitPath === 'string') {
     return explicitPath
   }
 
@@ -83,8 +87,20 @@ export async function fixCommand (config, options = {}, logger = null) {
 
   const targetCodesSet = normalizeErrorCodes(options.errorCode || options.code || options.errorCodes)
 
-  const compDir = resolvePath(options.components, 'components', ['src/components', 'tests/fixtures/components', 'components'], config, cwd)
-  const pluginTarget = resolvePath(options.plugins, 'plugins', ['src/plugins', 'tests/fixtures/plugins', 'plugins'], config, cwd)
+  let compOpt = options.components
+  let pluginOpt = options.plugins
+
+  if (Array.isArray(options.domains)) {
+    if (!options.domains.includes('components') && !options.components) {
+      compOpt = false
+    }
+    if (!options.domains.includes('plugins') && !options.plugins) {
+      pluginOpt = false
+    }
+  }
+
+  const compDir = resolvePath(compOpt, 'components', ['src/components', 'tests/fixtures/components', 'components'], config, cwd)
+  const pluginTarget = resolvePath(pluginOpt, 'plugins', ['src/plugins', 'tests/fixtures/plugins', 'plugins'], config, cwd)
 
   let totalFixesCount = 0
   const modifiedFiles = []
