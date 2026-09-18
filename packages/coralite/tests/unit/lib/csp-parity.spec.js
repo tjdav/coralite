@@ -3,12 +3,13 @@ import assert from 'node:assert'
 import createCoralite from '../../../lib/coralite.js'
 import { calculateHash } from '../../../lib/utils/server/csp.js'
 import { join } from 'node:path'
-import { mkdir, writeFile, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 
-const tmpDir = join(process.cwd(), 'tests', 'unit', 'fixtures', 'csp-parity-tmp')
+let tmpDir
 
 async function setupTestProject () {
-  await rm(tmpDir, { recursive: true, force: true })
+  tmpDir = await mkdtemp(join(tmpdir(), 'coralite-csp-'))
   await mkdir(join(tmpDir, 'pages'), { recursive: true })
   await mkdir(join(tmpDir, 'components'), { recursive: true })
 
@@ -255,6 +256,72 @@ describe('CSP Renderer Modes & Parity', () => {
       assert.ok(!metaContent.includes('frame-ancestors'))
       assert.ok(!metaContent.includes('report-uri'))
       assert.ok(!metaContent.includes('sandbox'))
+    } finally {
+      await cleanupTestProject()
+    }
+  })
+
+  it('Page Meta CSP Directives (JSON string) are parsed and merged', async () => {
+    await setupTestProject()
+    try {
+      await writeFile(
+        join(tmpDir, 'pages', 'meta-page.html'),
+        `<!DOCTYPE html>
+<html>
+  <head>
+    <title>Meta Test</title>
+    <meta name="csp" content="true">
+    <meta name="csp-directives" content='{"script-src":["self","unsafe-eval"]}'>
+  </head>
+  <body><x-counter></x-counter></body>
+</html>`
+      )
+
+      const app = await createCoralite({
+        components: join(tmpDir, 'components'),
+        pages: join(tmpDir, 'pages'),
+        csp: {
+          enabled: true,
+          injectMeta: true,
+          directives: {
+            'default-src': ["'self'"]
+          }
+        },
+        mode: 'production',
+        incremental: false
+      })
+
+      const results = await app.build('meta-page.html', { incremental: false })
+      const result = results[0]
+      assert.ok(result.csp)
+      assert.ok(result.csp.header.includes("default-src 'self'"))
+      assert.ok(result.csp.directives['script-src'].includes('unsafe-eval'))
+      assert.ok(result.csp.header.includes('unsafe-eval'))
+    } finally {
+      await cleanupTestProject()
+    }
+  })
+
+  it('csp.enabled === false overrides and disables externalScripts and externalStyles', async () => {
+    await setupTestProject()
+    try {
+      const app = await createCoralite({
+        components: join(tmpDir, 'components'),
+        pages: join(tmpDir, 'pages'),
+        csp: {
+          enabled: false,
+          externalScripts: true,
+          externalStyles: true
+        },
+        mode: 'production',
+        incremental: false
+      })
+
+      const results = await app.build('index.html', { incremental: false })
+      const result = results[0]
+      assert.strictEqual(result.csp, undefined)
+      assert.ok(!result.content.includes('/assets/js/pages/'))
+      assert.ok(!result.content.includes('/assets/css/coralite-inline-'))
     } finally {
       await cleanupTestProject()
     }

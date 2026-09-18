@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { calculateHash, resolveNonce, formatCSPDirectives, injectCSPMeta } from '../../../lib/utils/server/csp.js'
+import { calculateHash, calculateSRIDigest, resolveNonce, formatCSPDirectives, injectCSPMeta } from '../../../lib/utils/server/csp.js'
+import { CoraliteError } from '../../../lib/utils/errors.js'
 import { createCoraliteElement } from '../../../lib/utils/server/dom.js'
 import { defineConfig } from '../../../lib/config.js'
 
@@ -11,23 +12,40 @@ describe('CSP Utilities & Config Validation', () => {
       const hash = calculateHash(content, 'sha256')
       assert.match(hash, /^'sha256-[A-Za-z0-9+/=]+'$/)
     })
+  })
 
-    it('should support sha384 and sha512', () => {
-      const content = 'console.log("hello");'
-      const hash384 = calculateHash(content, 'sha384')
-      const hash512 = calculateHash(content, 'sha512')
-      assert.match(hash384, /^'sha384-[A-Za-z0-9+/=]+'$/)
-      assert.match(hash512, /^'sha512-[A-Za-z0-9+/=]+'$/)
+  describe('calculateSRIDigest and calculateHash algorithm matrix', () => {
+    for (const algo of ['sha256', 'sha384', 'sha512']) {
+      it(`should support ${algo} for calculateHash and calculateSRIDigest`, () => {
+        assert.match(calculateHash('test content', algo), new RegExp(`^'${algo}-[A-Za-z0-9+/=]+'$`))
+        assert.match(calculateSRIDigest('test content', algo), new RegExp(`^${algo}-[A-Za-z0-9+/=]+$`))
+      })
+    }
+
+    it('should calculate sha384 digest by default for string content', () => {
+      assert.match(calculateSRIDigest('console.log("hello world");'), /^sha384-[A-Za-z0-9+/=]+$/)
     })
 
-    it('should throw error on invalid algorithm', () => {
+    it('should calculate digest for Buffer content (calculateSRIDigest only)', () => {
+      assert.match(calculateSRIDigest(Buffer.from('body { color: red; }', 'utf8'), 'sha256'), /^sha256-[A-Za-z0-9+/=]+$/)
+    })
+
+    it('should throw on unsupported algorithm', () => {
+      assert.throws(() => {
+        // @ts-ignore
+        calculateSRIDigest('content', 'md5')
+      }, (err) => err instanceof CoraliteError && err.message.includes('Invalid SRI hash algorithm'))
+
       assert.throws(() => {
         // @ts-ignore
         calculateHash('test', 'md5')
       }, /Invalid CSP hash algorithm/)
     })
 
-    it('should return empty string for non-string content', () => {
+    it('should return empty string for non-string / non-Buffer content', () => {
+      assert.equal(calculateSRIDigest(null), '')
+      assert.equal(calculateSRIDigest(undefined), '')
+      assert.equal(calculateSRIDigest(123), '')
       // @ts-ignore
       assert.equal(calculateHash(null), '')
     })

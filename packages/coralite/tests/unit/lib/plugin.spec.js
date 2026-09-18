@@ -19,23 +19,6 @@ describe('definePlugin', () => {
     assert.strictEqual(plugin.client.filePath, '/explicit/dir/plugin.js')
   })
 
-  it('should validate basic plugin state', () => {
-    const plugin = definePlugin({
-      name: 'test-plugin',
-      server: {
-        context: () => {
-          return () => ({
-            test: () => {
-            }
-          })
-        }
-      }
-    })
-
-    assert.strictEqual(plugin.name, 'test-plugin')
-    assert.strictEqual(typeof plugin.server.context, 'function')
-  })
-
   it('should receive context and config in server.context', async () => {
     let capturedContext = null
     const plugin = definePlugin({

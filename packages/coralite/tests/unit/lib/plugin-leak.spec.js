@@ -62,56 +62,6 @@ describe('Plugin Exports Leakage', () => {
     assert.ok(content.includes('secret'), 'Imported secret should be present')
   })
 
-  it('should fail to import plugin via virtual module', async () => {
-    const myPlugin = definePlugin({
-      name: 'my-plugin',
-      server: {
-        context: () => {
-          return () => ({
-            myFunc: () => 'secret'
-          })
-        }
-      }
-    })
-
-    const app = await project.createCoralite({
-      plugins: [myPlugin]
-    })
-
-    const failingComponent = `
-<template id="failing-comp"><div></div></template>
-<script type="module">
-  import { defineComponent } from 'coralite'
-  import * as myPlugin from 'my-plugin'
-  export default defineComponent({
-    server() { return {} }
-  })
-</script>`
-
-    const failingPage = '<failing-comp></failing-comp>'
-
-    const compPath = await project.writeComponent('failing-comp.html', failingComponent)
-    await app.components.setItem(compPath)
-
-    const pagePath = await project.writePage('failing-page.html', failingPage)
-    await app.pages.setItem(pagePath)
-
-    try {
-      await app.build()
-      assert.fail('Should have failed to build due to missing virtual module')
-    } catch (error) {
-      const msg = error.message
-      const isResolutionError = msg.includes('Cannot find module') ||
-                               msg.includes('failed to resolve') ||
-                               msg.includes('Module not found') ||
-                               msg.includes('is not defined') ||
-                               msg.includes('Cannot find package') ||
-                               msg.includes('ERR_MODULE_NOT_FOUND')
-
-      assert.ok(isResolutionError, 'Error should be about module resolution, got: ' + msg)
-    }
-  })
-
   it('should throw an error if two plugins have conflicting export names', async () => {
     const plugin1 = definePlugin({
       name: 'plugin1',

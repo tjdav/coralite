@@ -65,4 +65,36 @@ describe('Module Resolution', () => {
     assert.ok(results.length > 0)
     assert.match(results[0].content, /Hello from Dummy Package/)
   })
+
+  it('should fail the build when a component imports an unresolvable package', async () => {
+    await project.writeComponent('missing-import.html', `
+      <template id="missing-import"><div></div></template>
+      <script type="module">
+        import { defineComponent } from 'coralite'
+        import * as missing from 'my-plugin'
+        export default defineComponent({
+          server() { return {} }
+        })
+      </script>
+    `)
+    await project.writePage('missing-page.html', '<missing-import></missing-import>')
+
+    const coralite = await project.createCoralite({
+      mode: 'development'
+    })
+
+    await assert.rejects(
+      () => coralite.build(),
+      (error) => {
+        const msg = error.message
+        return msg.includes('Cannot find module') ||
+               msg.includes('failed to resolve') ||
+               msg.includes('Module not found') ||
+               msg.includes('is not defined') ||
+               msg.includes('Cannot find package') ||
+               msg.includes('ERR_MODULE_NOT_FOUND')
+      },
+      'Error should be about module resolution'
+    )
+  })
 })
