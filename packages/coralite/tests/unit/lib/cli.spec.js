@@ -1,12 +1,13 @@
 import { test, describe, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } from 'node:fs'
+import { mkdirSync, writeFileSync, mkdtempSync, rmSync, existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const cliBin = join(fileURLToPath(import.meta.url), '../../../../bin/coralite.js')
-const tmpDir = join(fileURLToPath(import.meta.url), '../../../../.tmp-cli-test')
+let tmpDir
 
 function runCli (args, options = {}) {
   return execSync(`node --conditions=development "${cliBin}" ${args}`, options)
@@ -14,16 +15,11 @@ function runCli (args, options = {}) {
 
 describe('CLI Integration Tests (coralite.js)', () => {
   beforeEach(() => {
-    if (existsSync(tmpDir)) {
-      rmSync(tmpDir, { recursive: true, force: true })
-    }
-    mkdirSync(tmpDir, { recursive: true })
+    tmpDir = mkdtempSync(join(tmpdir(), 'coralite-cli-test-'))
   })
 
   afterEach(() => {
-    if (existsSync(tmpDir)) {
-      rmSync(tmpDir, { recursive: true, force: true })
-    }
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
   describe('coralite init-agent', () => {

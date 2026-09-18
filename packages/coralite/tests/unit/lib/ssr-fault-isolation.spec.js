@@ -1,17 +1,22 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { join } from 'node:path'
-import { mkdir, writeFile, readFile, rm, readdir } from 'node:fs/promises'
+import { mkdir, mkdtemp, writeFile, readFile, rm, readdir } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
 import { createCoralite, CoraliteBuildError } from '#lib'
 
-const TEST_DIR = join(process.cwd(), 'tests', 'fixtures', 'ssr-fault-isolation-test')
-const COMPONENTS_DIR = join(TEST_DIR, 'components')
-const PAGES_DIR = join(TEST_DIR, 'pages')
-const OUTPUT_DIR = join(TEST_DIR, 'dist')
+let TEST_DIR
+let COMPONENTS_DIR
+let PAGES_DIR
+let OUTPUT_DIR
 
 describe('SSR Page-Level Fault Isolation & Component Error Boundaries', () => {
   beforeEach(async () => {
-    await rm(TEST_DIR, { recursive: true, force: true })
+    TEST_DIR = await mkdtemp(join(tmpdir(), 'coralite-ssr-fault-'))
+    COMPONENTS_DIR = join(TEST_DIR, 'components')
+    PAGES_DIR = join(TEST_DIR, 'pages')
+    OUTPUT_DIR = join(TEST_DIR, 'dist')
+
     await mkdir(COMPONENTS_DIR, { recursive: true })
     await mkdir(PAGES_DIR, { recursive: true })
     await mkdir(OUTPUT_DIR, { recursive: true })

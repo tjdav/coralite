@@ -1,13 +1,22 @@
 import assert from 'node:assert/strict'
-import { test, describe } from 'node:test'
+import { test, describe, beforeEach, afterEach } from 'node:test'
 import { defineConfig } from '../../../lib/config.js'
 import { createCoralite } from '../../../lib/coralite.js'
 import { CoraliteError } from '../../../lib/utils/errors.js'
-import { rm, readFile, mkdir } from 'node:fs/promises'
+import { rm, readFile, mkdir, mkdtemp } from 'node:fs/promises'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 
 describe('Config Asset Validation & registerAsset', () => {
-  const tmpDir = join(process.cwd(), 'tests/fixtures/.tmp-config-assets')
+  let tmpDir
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), 'coralite-config-assets-'))
+  })
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true })
+  })
 
   test('validates assets schema in defineConfig', () => {
     assert.throws(() => {
@@ -117,8 +126,6 @@ describe('Config Asset Validation & registerAsset', () => {
     const written = await readFile(fullPath, 'utf8')
     assert.equal(written, 'console.log("registered");')
     assert.ok(app.options.assets.some(a => a.dest === 'assets/custom.js'))
-
-    await rm(tmpDir, { recursive: true, force: true })
   })
 
   test('app.registerAsset respects user config precedence on dest collision', async () => {
@@ -149,6 +156,5 @@ describe('Config Asset Validation & registerAsset', () => {
     })
 
     assert.ok(warningLogged)
-    await rm(tmpDir, { recursive: true, force: true })
   })
 })

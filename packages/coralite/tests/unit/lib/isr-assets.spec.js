@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict'
 import { test, describe, beforeEach, afterEach } from 'node:test'
 import { createCoralite } from '../../../lib/coralite.js'
-import { rm, mkdir, writeFile, readFile } from 'node:fs/promises'
+import { rm, mkdir, mkdtemp, writeFile, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 
 describe('ISR Assets Tracking & Manifest Invalidation', () => {
-  const tmpDir = join(process.cwd(), 'tests/fixtures/.tmp-isr-assets')
+  let tmpDir
 
   beforeEach(async () => {
-    await mkdir(tmpDir, { recursive: true })
+    tmpDir = await mkdtemp(join(tmpdir(), 'coralite-isr-assets-'))
     await mkdir(join(tmpDir, 'pages'), { recursive: true })
     await mkdir(join(tmpDir, 'components'), { recursive: true })
-    await mkdir(join(tmpDir, 'dist'), { recursive: true })
     await mkdir(join(tmpDir, 'dist/assets/js'), { recursive: true })
 
     await writeFile(join(tmpDir, 'pages/index.html'), '<!DOCTYPE html><html><head></head><body><h1>Hello ISR</h1></body></html>')

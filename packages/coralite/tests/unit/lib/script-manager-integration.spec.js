@@ -1,8 +1,9 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { ScriptManager as OriginalScriptManager } from '../../../lib/script-manager.js'
-import fs from 'node:fs'
-import path from 'node:path'
+import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 const activeManagers = []
 class ScriptManager extends OriginalScriptManager {
@@ -280,56 +281,57 @@ describe('ScriptManager Integration & Edge Cases', () => {
   })
 
   describe('Plugin Package Resolution', () => {
-    it('should not externalize imports matching plugin names', async () => {
+    it('should bundle plugin dependency imports instead of externalizing them', async (t) => {
+      const tmpDir = await mkdtemp(join(tmpdir(), 'coralite-plugin-pkg-'))
+      const dummyPath = join(tmpDir, 'node_modules', 'dummy_plugin_pkg')
+
+      t.after(async () => {
+        await rm(tmpDir, {
+          recursive: true,
+          force: true
+        })
+      })
+
+      await mkdir(dummyPath, { recursive: true })
+      await writeFile(join(dummyPath, 'package.json'), JSON.stringify({
+        name: 'dummy_plugin_pkg',
+        type: 'module',
+        main: 'index.js'
+      }))
+      await writeFile(join(dummyPath, 'index.js'), 'export default "dummy"')
+
       const sm = new ScriptManager()
 
-      // Create a dummy package in the project's node_modules for both Node.js loader and esbuild to find
-      const dummyPath = path.resolve('node_modules', 'dummy_plugin_pkg')
-
-      try {
-        if (fs.existsSync(dummyPath)) {
-          fs.rmSync(dummyPath, {
-            recursive: true,
-            force: true
+      // rootDir points esbuild's module resolution at the isolated tmp node_modules
+      await sm.use({
+        name: 'dummy_plugin_pkg',
+        rootDir: tmpDir,
+        context: async () => {
+          const { default: dummy } = await import('dummy_plugin_pkg')
+          return () => ({
+            test: () => dummy
           })
         }
-        fs.mkdirSync(dummyPath, { recursive: true })
-        fs.writeFileSync(path.resolve(dummyPath, 'package.json'), JSON.stringify({
-          name: 'dummy_plugin_pkg',
-          type: 'module',
-          main: 'index.js'
-        }))
-        fs.writeFileSync(path.resolve(dummyPath, 'index.js'), 'export default "dummy"')
+      })
 
-        await sm.use({
-          name: 'dummy_plugin_pkg',
-          context: async () => {
-            const { default: dummy } = await import('dummy_plugin_pkg')
-            return () => ({
-              test: () => dummy
-            })
-          }
-        })
+      sm.registerComponent({
+        id: 'test',
+        script: { content: '() => {}' }
+      })
 
-        sm.registerComponent({
-          id: 'test',
-          script: { content: '() => {}' }
-        })
+      const result = await sm.compileComponents('development')
 
-        const result = await sm.compileComponents('development')
+      // The plugin dependency must be resolved and bundled into an emitted chunk,
+      // never left as a bare external specifier in the runtime output
+      const chunkEntry = Object.entries(result.outputFiles).find(([file]) => file.startsWith('dummy_plugin_pkg'))
+      assert.ok(chunkEntry, 'Plugin dependency should be bundled into an emitted chunk')
+      assert.ok(chunkEntry[1].text.includes('"dummy"'), 'Bundled dependency chunk should inline its export')
 
-        const runtime = result.manifest['coralite-runtime']
-        const content = result.outputFiles[runtime].text
+      const runtime = result.manifest['coralite-runtime']
+      const content = result.outputFiles[runtime].text
 
-        assert.ok(!content.includes('import("dummy-plugin-pkg")'), 'Should have bundled or transformed the import, not left it as a bare specifier')
-      } finally {
-        if (fs.existsSync(dummyPath)) {
-          fs.rmSync(dummyPath, {
-            recursive: true,
-            force: true
-          })
-        }
-      }
+      assert.ok(!content.includes('import("dummy_plugin_pkg")'), 'Runtime should not reference the dependency as a bare external specifier')
+      assert.ok(content.includes('./dummy_plugin_pkg-'), 'Runtime should dynamically import the bundled dependency chunk relatively')
     })
   })
 })

@@ -1,10 +1,10 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { buildData, updateData, swapRows } from '../../benchmarks/utils/data-generator.js'
-import { getMemoryUsage, triggerGC } from '../../benchmarks/utils/memory.js'
-import { calculateMedian, calculateStats } from '../../benchmarks/utils/stats.js'
-import { generateMarkdownTable, writeJSONResults, printTerminalResults } from '../../benchmarks/utils/reporter.js'
-import { compareAgainstBaseline } from '../../benchmarks/utils/regression.js'
+import { buildData, updateData, swapRows } from './utils/data-generator.js'
+import { getMemoryUsage, triggerGC } from './utils/memory.js'
+import { calculateMedian, calculateStats } from './utils/stats.js'
+import { generateMarkdownTable, writeJSONResults, printTerminalResults } from './utils/reporter.js'
+import { compareAgainstBaseline } from './utils/regression.js'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import fs from 'node:fs'
@@ -310,7 +310,7 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
 
   describe('runner.js CLI suite validation', () => {
     it('exits with status 1 and prints error when invalid suite is provided', async () => {
-      const runnerPath = path.resolve(import.meta.dirname, '../../benchmarks/runner.js')
+      const runnerPath = path.resolve(import.meta.dirname, './runner.js')
       await assert.rejects(
         execFileAsync(process.execPath, ['--conditions=development', '--experimental-vm-modules', '--experimental-import-meta-resolve', runnerPath, '--suite=invalid-suite-name']),
         (err) => {
@@ -323,7 +323,7 @@ describe('Benchmark Suite Utilities Smoke Tests', () => {
     })
 
     it('prints help message and exits 0 when --help is passed', async () => {
-      const runnerPath = path.resolve(import.meta.dirname, '../../benchmarks/runner.js')
+      const runnerPath = path.resolve(import.meta.dirname, './runner.js')
       const { stdout } = await execFileAsync(process.execPath, ['--conditions=development', '--experimental-vm-modules', '--experimental-import-meta-resolve', runnerPath, '--help'])
       assert.ok(stdout.includes('Coralite Benchmark Runner CLI'))
       assert.ok(stdout.includes('--check-regression'))

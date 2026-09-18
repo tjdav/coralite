@@ -234,15 +234,25 @@ describe('outputFiles & Asset Cache Memory Management', () => {
       ]
     })
 
+    const { calculateSRIDigest } = await import('../../../lib/utils/server/csp.js')
+
     for (let i = 0; i < 5; i++) {
-      await writeFile(assetPath, `console.log(${i})`)
+      const content = `console.log(${i})`
+      await writeFile(assetPath, content)
       const now = new Date(Date.now() + i * 1000)
       const { utimes } = await import('node:fs/promises')
       await utimes(assetPath, now, now)
-      await app.build('sri-page.html')
+      const results = await app.build('sri-page.html')
+
+      const page = results.find(r => r.path.filename === 'sri-page.html')
+      assert.ok(page, 'sri-page.html should be rendered')
+      const expectedDigest = calculateSRIDigest(Buffer.from(content), 'sha384')
+      assert.ok(
+        page.content.includes(`integrity="${expectedDigest}"`),
+        `Rendered integrity attribute must match the current asset content (iteration ${i})`
+      )
     }
 
-    assert.ok(true, 'SRI cache update executed without error')
     await app.clearCache(true)
   })
 })
