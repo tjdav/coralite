@@ -1270,7 +1270,40 @@ ${templateLines}
     })
   })
 
-  // 25. validateComponentFile & Single-File Component Validation
+  // 25. fixableCount Calculation & Filter Tests
+  test('fixableCount correctly counts only actionable diagnostics with fix.action', async () => {
+    const tmpDir = join(tmpdir(), `coralite-fixable-count-test-${Date.now()}`)
+    mkdirSync(tmpDir, { recursive: true })
+
+    const compGetter = join(tmpDir, 'UnusedGetter.html')
+    const compRef = join(tmpDir, 'UnusedRef.html')
+    const compBoth = join(tmpDir, 'UnusedBoth.html')
+
+    // Component with CORALITE-W401 (unused getter) -> fixableCount: 0
+    writeFileSync(compGetter, `<template><div>Text</div></template><script>import { defineComponent } from 'coralite'; export default defineComponent({ getters: { unusedG: ({ state }) => 'dead' } })</script>`)
+
+    // Component with CORALITE-W402 (unused ref) -> fixableCount: 1
+    writeFileSync(compRef, `<template><button ref="unused-btn">Click</button></template><script>import { defineComponent } from 'coralite'; export default defineComponent({})</script>`)
+
+    // Component with both -> fixableCount: 1 (only W402 is fixable)
+    writeFileSync(compBoth, `<template><button ref="unused-btn">Click</button></template><script>import { defineComponent } from 'coralite'; export default defineComponent({ getters: { unusedG: ({ state }) => 'dead' } })</script>`)
+
+    const reportGetter = await validateComponentsDir(compGetter)
+    assert.strictEqual(reportGetter.summary.fixableCount, 0)
+
+    const reportRef = await validateComponentsDir(compRef)
+    assert.strictEqual(reportRef.summary.fixableCount, 1)
+
+    const reportBoth = await validateComponentsDir(compBoth)
+    assert.strictEqual(reportBoth.summary.fixableCount, 1)
+
+    const reportDir = await validateComponentsDir(tmpDir)
+    assert.strictEqual(reportDir.summary.fixableCount, 2)
+
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  // 26. validateComponentFile & Single-File Component Validation
   describe('validateComponentFile & Single-File Component Validation', () => {
     test('validateComponentFile validates single component file on disk', async () => {
       const tmpDir = join(tmpdir(), `coralite-file-val-test-${Date.now()}`)

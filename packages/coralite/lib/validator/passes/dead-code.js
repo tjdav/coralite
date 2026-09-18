@@ -79,10 +79,7 @@ export function collectDeadCode (context) {
         line: loc.line,
         column: loc.column,
         sourceCode,
-        cause: `Unreferenced getter '${getter}'.`,
-        fix: {
-          description: 'Remove unused getter/serverProp/attribute'
-        }
+        cause: `Unreferenced getter '${getter}'.`
       }))
     }
   }
@@ -111,10 +108,7 @@ export function collectDeadCode (context) {
         line: loc.line,
         column: loc.column,
         sourceCode,
-        cause: `Unreferenced server property '${prop}'.`,
-        fix: {
-          description: 'Remove unused getter/serverProp/attribute'
-        }
+        cause: `Unreferenced server property '${prop}'.`
       }))
     }
   }
@@ -147,10 +141,7 @@ export function collectDeadCode (context) {
         line: loc.line,
         column: loc.column,
         sourceCode,
-        cause: `Unreferenced attribute '${attr}'.`,
-        fix: {
-          description: 'Remove unused getter/serverProp/attribute'
-        }
+        cause: `Unreferenced attribute '${attr}'.`
       }))
     }
   }
@@ -199,7 +190,9 @@ export function collectDeadCode (context) {
         sourceCode,
         cause: `Unused ref="${ref}" attribute in template.`,
         fix: {
-          description: 'Remove unused ref attribute'
+          action: 'remove_unused_ref',
+          refName: ref,
+          description: `Remove unused ref="${ref}" attribute`
         }
       }))
     }

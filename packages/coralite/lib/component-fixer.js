@@ -219,7 +219,7 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
   let code = sourceCode
   const fixesApplied = []
 
-  const fixableDiagnostics = diagnostics.filter(d => Boolean(d.fix))
+  const fixableDiagnostics = diagnostics.filter(d => Boolean(d.fix && d.fix.action))
 
   if (fixableDiagnostics.length === 0) {
     return {
@@ -370,6 +370,52 @@ export function applyComponentFixes (sourceCode, diagnostics = null, options = {
               description: diag.fix.description || `Add ref="${strippedRef}" to matching <${candidateTag}> element`
             })
             break
+          }
+        }
+      }
+    }
+  }
+
+  // 1.4 CORALITE-W402 (Unused Ref Attribute Removal)
+  const w402Diagnostics = diagnostics.filter(d => d.code === 'CORALITE-W402' && d.fix?.action === 'remove_unused_ref')
+  if (w402Diagnostics.length > 0) {
+    const templateBlock = extractTemplateBlock(code)
+    if (templateBlock) {
+      let templateContent = templateBlock.content
+      const templateStart = templateBlock.start
+      let templateModified = false
+
+      for (const diag of w402Diagnostics) {
+        const refName = diag.fix?.refName || (diag.message.match(/Element ref '([^']+)'/) || [])[1]
+        if (refName) {
+          const escapedRef = refName.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+          const refRegex = new RegExp(`\\s+ref=(?:"${escapedRef}"|'${escapedRef}'|${escapedRef})(?=[\\s>/])`, 'gi')
+          if (refRegex.test(templateContent)) {
+            templateContent = templateContent.replace(refRegex, '')
+            templateModified = true
+            fixesApplied.push({
+              code: 'CORALITE-W402',
+              description: diag.fix.description || `Remove unused ref="${refName}" attribute`
+            })
+          }
+        }
+      }
+
+      if (templateModified) {
+        code = code.slice(0, templateStart) + templateContent + code.slice(templateBlock.end)
+      }
+    } else if (indexOfCI(code, '<template') === -1) {
+      for (const diag of w402Diagnostics) {
+        const refName = diag.fix?.refName || (diag.message.match(/Element ref '([^']+)'/) || [])[1]
+        if (refName) {
+          const escapedRef = refName.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+          const refRegex = new RegExp(`\\s+ref=(?:"${escapedRef}"|'${escapedRef}'|${escapedRef})(?=[\\s>/])`, 'gi')
+          if (refRegex.test(code)) {
+            code = code.replace(refRegex, '')
+            fixesApplied.push({
+              code: 'CORALITE-W402',
+              description: diag.fix.description || `Remove unused ref="${refName}" attribute`
+            })
           }
         }
       }

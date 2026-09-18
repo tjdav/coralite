@@ -99,7 +99,7 @@ export async function validateComponentsDir (componentsDir, options = {}) {
     const result = await validateComponentFile(absoluteDir)
     const errs = (result.diagnostics || []).filter(d => d.severity === 'error').length
     const warns = (result.diagnostics || []).filter(d => d.severity === 'warning').length
-    const fixables = (result.diagnostics || []).filter(d => Boolean(d.fix)).length
+    const fixables = (result.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length
     const totalDefined = result.metrics?.totalDefined || 0
     const totalUnused = result.metrics?.totalUnused || 0
     const overallCoveragePercentage = totalDefined > 0
@@ -165,7 +165,7 @@ export async function validateComponentsDir (componentsDir, options = {}) {
     totalUnused += res.metrics?.totalUnused || 0
     const errs = (res.diagnostics || []).filter(d => d.severity === 'error').length
     const warns = (res.diagnostics || []).filter(d => d.severity === 'warning').length
-    const fixables = (res.diagnostics || []).filter(d => Boolean(d.fix)).length
+    const fixables = (res.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length
 
     errorCount += errs
     warningCount += warns

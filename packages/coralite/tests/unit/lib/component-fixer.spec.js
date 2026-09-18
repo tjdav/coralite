@@ -195,6 +195,7 @@ describe('Component Fixer Engine (applyComponentFixes)', () => {
   import { defineComponent } from 'coralite'
   export default defineComponent({
     client({ refs }) {
+      const existing = refs('existing-ref')
       const btn = refs('action-btn')
     }
   })
@@ -636,6 +637,104 @@ ${templateLines}
     assert.strictEqual(result.modified, true)
     assert.ok(result.outputCode.includes('<template-item>Not a template block</template-item>'))
     assert.ok(result.outputCode.includes('<button ref="valid-btn" id="valid">Valid</button>'))
+  })
+
+  test('CORALITE-W402: strips unused ref attribute from template elements (double-quoted, single-quoted, unquoted)', () => {
+    const input = `<template>
+  <button ref="unused-btn" class="active">Click</button>
+  <input ref='unused-input' type="text">
+  <div ref=unused-div id="box">Box</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'unused-refs.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(!result.outputCode.includes('ref="unused-btn"'))
+    assert.ok(!result.outputCode.includes("ref='unused-input'"))
+    assert.ok(!result.outputCode.includes('ref=unused-div'))
+    assert.ok(result.outputCode.includes('<button class="active">Click</button>'))
+    assert.ok(result.outputCode.includes('<input type="text">'))
+    assert.ok(result.outputCode.includes('<div id="box">Box</div>'))
+
+    const postValidation = validateComponentSource(result.outputCode, 'unused-refs.html')
+    const postW402s = postValidation.diagnostics.filter(d => d.code === 'CORALITE-W402')
+    assert.strictEqual(postW402s.length, 0)
+  })
+
+  test('CORALITE-W402: preserves used refs while removing unused refs in the same template', () => {
+    const input = `<template>
+  <button ref="used-btn">Action</button>
+  <button ref="unused-btn">Cancel</button>
+  <input ref="unused-input" type="text">
+  <input ref="used-input" type="text">
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    client({ refs }) {
+      const btn = refs('used-btn')
+      const inp = refs('used-input')
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'mixed-refs.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(result.outputCode.includes('ref="used-btn"'))
+    assert.ok(result.outputCode.includes('ref="used-input"'))
+    assert.ok(!result.outputCode.includes('ref="unused-btn"'))
+    assert.ok(!result.outputCode.includes('ref="unused-input"'))
+  })
+
+  test('CORALITE-W402: multi-line indented ref attribute cleanup', () => {
+    const input = `<template>
+  <button
+    ref="unused-btn"
+    class="active"
+    type="button">
+    Submit
+  </button>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({})
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'multiline-ref.html' })
+    assert.strictEqual(result.modified, true)
+    assert.ok(!result.outputCode.includes('ref="unused-btn"'))
+    assert.ok(result.outputCode.includes('class="active"'))
+  })
+
+  test('CORALITE-W401: leaves unused getters, serverProps, and attributes intact during auto-fix', () => {
+    const input = `<template>
+  <div>Test</div>
+</template>
+
+<script>
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    attributes: { unusedAttr: { type: String } },
+    getters: {
+      unusedGetter: ({ state }) => state.unusedAttr
+    },
+    async server() {
+      const unusedProp = 'data'
+      return { unusedProp }
+    }
+  })
+</script>`
+
+    const result = applyComponentFixes(input, null, { filePath: 'w401-intact.html' })
+    assert.strictEqual(result.modified, false)
+    assert.strictEqual(result.fixesApplied.length, 0)
+    assert.strictEqual(result.outputCode, input)
   })
 
   test('ReDoS canary: processes 20,000+ unclosed <template tags in under 2000ms', () => {

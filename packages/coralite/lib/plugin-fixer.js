@@ -30,7 +30,7 @@ export function applyPluginFixes (sourceCode, diagnostics = null, options = {}) 
   let code = sourceCode
   const fixesApplied = []
 
-  const fixableDiagnostics = diagnostics.filter(d => Boolean(d.fix))
+  const fixableDiagnostics = diagnostics.filter(d => Boolean(d.fix && d.fix.action))
 
   if (fixableDiagnostics.length === 0) {
     return {

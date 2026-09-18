@@ -40,11 +40,12 @@
 /**
  * @typedef {Object} CoraliteDiagnosticFix
  * @property {string} description - Human-readable fix explanation
- * @property {'lift_to_getter' | 'dynamic_import' | 'inject_ref' | 'remove_attribute' | 'strip_default' | 'wrap_two_phase_context' | 'wrap_define_plugin' | 'add_required_attribute' | 'unwrap_ref_guard' | 'rewrite_context_attributes' | 'rewrite_getter_context'} [action] - Programmatic fix action type
+ * @property {'lift_to_getter' | 'dynamic_import' | 'inject_ref' | 'remove_attribute' | 'strip_default' | 'wrap_two_phase_context' | 'wrap_define_plugin' | 'add_required_attribute' | 'unwrap_ref_guard' | 'rewrite_context_attributes' | 'rewrite_getter_context' | 'remove_unused_ref'} [action] - Programmatic fix action type
  * @property {string} [expr] - Raw inline template expression to lift
  * @property {string} [replacement] - Replacement string snippet
  * @property {CoraliteDiagnosticGetter} [getter] - Getter definition if lifting to getter
  * @property {boolean} [isSharedWithOtherBlocks] - Whether import is also used outside client()
+ * @property {string} [refName] - Name of element ref to inject or remove
  */
 
 /**
