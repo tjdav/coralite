@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { Window } from 'happy-dom'
+import { assertSameNodes } from '../helpers.js'
 
 let window
 let document
@@ -101,7 +102,7 @@ test('Computed Slots Hydration & Input Parity', async (t) => {
 
     // Initial hydration bypass check
     assert.equal(slotEl.textContent, 'Computed Fallback')
-    assert.deepEqual(slotEl._originalNodes, [])
+    assertSameNodes(slotEl._originalNodes, [])
 
     // Trigger reactive mutation to force slot re-evaluation
     host._state.count++
@@ -208,7 +209,7 @@ test('Computed Slots Hydration & Input Parity', async (t) => {
     document.body.appendChild(host)
 
     // Verify initial hydration bypass and originalNodes isolation
-    assert.deepEqual(headerSlot._originalNodes, [])
+    assertSameNodes(headerSlot._originalNodes, [])
     assert.equal(headerSlot.textContent, 'Default Header')
     assert.equal(bodySlot.textContent, 'Main Content')
 

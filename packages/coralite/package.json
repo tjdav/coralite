@@ -32,9 +32,9 @@
   "scripts": {
     "lint:format": "eslint --cache --fix .",
     "lint": "eslint --cache .",
-    "test:unit": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --test \"./tests/unit/**/*.spec.js\"",
-    "test:unit:watch": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --test --watch \"./tests/unit/**/*.spec.js\"",
-    "test:unit:coverage": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --experimental-test-coverage --test \"./tests/unit/**/*.spec.js\"",
+    "test:unit": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --test --test-timeout=30000 --test-concurrency=4 --max-old-space-size=2048 \"./tests/unit/**/*.spec.js\"",
+    "test:unit:watch": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --test --test-timeout=30000 --test-concurrency=4 --max-old-space-size=2048 --watch \"./tests/unit/**/*.spec.js\"",
+    "test:unit:coverage": "node --conditions=development --experimental-vm-modules --experimental-import-meta-resolve --experimental-test-coverage --test --test-timeout=30000 --test-concurrency=4 --max-old-space-size=2048 \"./tests/unit/**/*.spec.js\"",
     "test:component:coverage": "node --conditions=development bin/coralite.js validate-components --coverage -c tests/fixtures/components",
     "test:e2e": "pnpm build && pnpm clean:e2e && pnpm build:html:dev && pnpm build:html:prod && pnpm build:html:testing && playwright test",
     "test:e2e:report": "playwright show-report",

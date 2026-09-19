@@ -2,6 +2,7 @@ import '../setup.js'
 import { describe, it, beforeEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { assertSame } from '../helpers.js'
 
 describe('CoraliteElement', () => {
   let MyElement
@@ -309,11 +310,11 @@ describe('CoraliteElement', () => {
         const slot = comp.querySelector('slot[name="actions"]')
         assert.ok(slot)
         assert.strictEqual(slot._originalNodes.length, 1)
-        assert.strictEqual(slot._originalNodes[0], btn)
+        assertSame(slot._originalNodes[0], btn)
 
         const wrapperEl = slot.querySelector('.actions-wrapper')
         assert.ok(wrapperEl)
-        assert.strictEqual(wrapperEl.firstElementChild, btn)
+        assertSame(wrapperEl.firstElementChild, btn)
 
         btn.click()
         assert.strictEqual(clicked, true)
@@ -1417,7 +1418,7 @@ describe('CoraliteElement', () => {
         const defaultSlot = card.querySelector('slot:not([name])')
 
         assert.strictEqual(titleSlot.children.length, 1)
-        assert.strictEqual(titleSlot.children[0], badge)
+        assertSame(titleSlot.children[0], badge)
         assert.strictEqual(badge.getAttribute('data-coralite-slot-index'), '0')
 
         assert.ok(defaultSlot.textContent.includes('Hello World'))
@@ -1448,16 +1449,16 @@ describe('CoraliteElement', () => {
 
       queueMicrotask(() => {
         assert.strictEqual(slot.hasAttribute('data-coralite-fallback'), false)
-        assert.strictEqual(slot.querySelector('.fallback'), null)
+        assertSame(slot.querySelector('.fallback'), null)
         assert.strictEqual(slot.children.length, 1)
-        assert.strictEqual(slot.children[0], child)
+        assertSame(slot.children[0], child)
 
         document.body.removeChild(box)
         done()
       })
     })
 
-    it('should batch computed slot updates, maintain _originalNodes with un-transformed clones, and run slot transform once', (t, done) => {
+    it('should batch computed slot updates, maintain _originalNodes with un-transformed live nodes, and run slot transform once', (t, done) => {
       let transformCallCount = 0
       const computedTag = 'computed-recon-' + Math.random().toString(36).substring(2, 9)
 
@@ -1502,8 +1503,8 @@ describe('CoraliteElement', () => {
         // Assert transform ran and _originalNodes preserved original live node references
         assert.ok(transformCallCount >= 1)
         assert.strictEqual(slot._originalNodes.length, 2)
-        assert.strictEqual(slot._originalNodes[0], item1)
-        assert.strictEqual(slot._originalNodes[1], item2)
+        assertSame(slot._originalNodes[0], item1)
+        assertSame(slot._originalNodes[1], item2)
         assert.strictEqual(slot._originalNodes[0].tagName, 'SPAN')
         assert.strictEqual(slot._originalNodes[0].textContent, 'Item 1')
 
@@ -1516,7 +1517,7 @@ describe('CoraliteElement', () => {
         queueMicrotask(() => {
           assert.strictEqual(slot.children.length, 3)
           assert.strictEqual(slot._originalNodes.length, 3)
-          assert.strictEqual(slot._originalNodes[2], item3)
+          assertSame(slot._originalNodes[2], item3)
           assert.strictEqual(slot._originalNodes[2].textContent, 'Item 3')
 
           document.body.removeChild(comp)
@@ -1552,8 +1553,8 @@ describe('CoraliteElement', () => {
       queueMicrotask(() => {
         const slot = comp.querySelector('slot[name="action"]')
         assert.strictEqual(slot.children.length, 1)
-        assert.strictEqual(slot.children[0], btn)
-        assert.strictEqual(btn.parentElement, slot)
+        assertSame(slot.children[0], btn)
+        assertSame(btn.parentElement, slot)
 
         btn.click()
         assert.strictEqual(clicked, true)
@@ -1587,7 +1588,7 @@ describe('CoraliteElement', () => {
       queueMicrotask(() => {
         const slot = comp.querySelector('slot')
         assert.strictEqual(slot.children.length, 1)
-        assert.strictEqual(slot.children[0], child)
+        assertSame(slot.children[0], child)
 
         document.body.removeChild(comp)
         done()
@@ -1613,7 +1614,7 @@ describe('CoraliteElement', () => {
       queueMicrotask(() => {
         const slot = comp.querySelector('slot')
         assert.strictEqual(slot.children.length, 0)
-        assert.strictEqual(stray.parentElement, comp)
+        assertSame(stray.parentElement, comp)
 
         document.body.removeChild(comp)
         done()
@@ -1674,7 +1675,7 @@ describe('CoraliteElement', () => {
         assert.ok(forwardedSlot.hasAttribute('data-coralite-slot-index'), 'Forwarded slot should receive data-coralite-slot-index')
 
         assert.strictEqual(forwardedSlot.children.length, 1)
-        assert.strictEqual(forwardedSlot.children[0], heading)
+        assertSame(forwardedSlot.children[0], heading)
         assert.strictEqual(heading.textContent, 'User Title')
 
         document.body.removeChild(parentEl)
@@ -1711,7 +1712,7 @@ describe('CoraliteElement', () => {
         const fwdSlot = innerSlot.querySelector('slot:not([name])')
 
         assert.ok(fwdSlot, 'Forwarded default slot should be inside inner default slot')
-        assert.strictEqual(fwdSlot.children[0], paragraph)
+        assertSame(fwdSlot.children[0], paragraph)
         assert.strictEqual(paragraph.textContent, 'Default Body Text')
 
         document.body.removeChild(outerEl)
@@ -1781,7 +1782,7 @@ describe('CoraliteElement', () => {
       queueMicrotask(() => {
         const childSlot = parentEl.querySelector('slot[data-coralite-fallback], slot:not([name])')
         assert.strictEqual(childSlot.hasAttribute('data-coralite-fallback'), false, 'data-coralite-fallback attribute should be cleared when parent forwards slot')
-        assert.strictEqual(childSlot.querySelector('.fb'), null, 'Child fallback content should be removed')
+        assertSame(childSlot.querySelector('.fb'), null, 'Child fallback content should be removed')
 
         document.body.removeChild(parentEl)
         done()
@@ -2193,7 +2194,7 @@ describe('CoraliteElement', () => {
         // A manual reconciliation pass must be idempotent (no churn/double-fold)
         comp._reconcileLightDOM()
         assert.strictEqual(slot.children.length, 3)
-        assert.strictEqual(slot.children[0], el1)
+        assertSame(slot.children[0], el1)
 
         document.body.removeChild(comp)
         done()

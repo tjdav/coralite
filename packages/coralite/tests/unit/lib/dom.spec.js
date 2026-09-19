@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
+import { assertSame, assertSameNodes } from '../helpers.js'
 import {
   createCoraliteElement,
   createCoraliteTextNode,
@@ -27,10 +28,10 @@ describe('createCoraliteElement', () => {
     assert.equal(coraliteNode.nodeType, 1)
     assert.equal(coraliteNode.id, 'test')
     assert.equal(coraliteNode.attributes, node.attribs)
-    assert.deepEqual(coraliteNode.childNodes, [])
-    assert.equal(coraliteNode.parentNode, null)
-    assert.equal(coraliteNode.previousSibling, null)
-    assert.equal(coraliteNode.nextSibling, null)
+    assertSameNodes(coraliteNode.childNodes, [])
+    assertSame(coraliteNode.parentNode, null)
+    assertSame(coraliteNode.previousSibling, null)
+    assertSame(coraliteNode.nextSibling, null)
     assert.equal(coraliteNode.nodeValue, null)
   })
 
@@ -75,12 +76,12 @@ describe('createCoraliteElement', () => {
     assert.equal(element.children.length, 1)
     assert.equal(element.children[0].type, 'text')
     assert.equal(element.children[0].data, 'world')
-    assert.equal(element.children[0].parent, element)
+    assertSame(element.children[0].parent, element)
     assert.equal(element.children[0].nodeType, 3)
 
     // Test detachment
     const oldText = text
-    assert.equal(oldText.parent, null)
+    assertSame(oldText.parent, null)
   })
 
   it('should support attribute methods', () => {
@@ -114,16 +115,16 @@ describe('createCoraliteElement', () => {
 
     parent.appendChild(child1)
     assert.equal(parent.children.length, 1)
-    assert.equal(child1.parent, parent)
-    assert.equal(child1.prev, null)
-    assert.equal(child1.next, null)
+    assertSame(child1.parent, parent)
+    assertSame(child1.prev, null)
+    assertSame(child1.next, null)
 
     parent.appendChild(child2)
     assert.equal(parent.children.length, 2)
-    assert.equal(child2.parent, parent)
-    assert.equal(child2.prev, child1)
-    assert.equal(child1.next, child2)
-    assert.equal(child2.next, null)
+    assertSame(child2.parent, parent)
+    assertSame(child2.prev, child1)
+    assertSame(child1.next, child2)
+    assertSame(child2.next, null)
 
     // Test moving a node
     const otherParent = createCoraliteElement({
@@ -132,11 +133,11 @@ describe('createCoraliteElement', () => {
     })
     otherParent.appendChild(child1)
     assert.equal(parent.children.length, 1)
-    assert.equal(parent.children[0], child2)
-    assert.equal(child2.prev, null)
-    assert.equal(child1.parent, otherParent)
-    assert.equal(child1.prev, null)
-    assert.equal(child1.next, null)
+    assertSame(parent.children[0], child2)
+    assertSame(child2.prev, null)
+    assertSame(child1.parent, otherParent)
+    assertSame(child1.prev, null)
+    assertSame(child1.next, null)
   })
 
   it('should support append with strings and nodes', () => {
@@ -151,11 +152,11 @@ describe('createCoraliteElement', () => {
 
     parent.append(child1, ' world')
     assert.equal(parent.children.length, 2)
-    assert.equal(parent.children[0], child1)
+    assertSame(parent.children[0], child1)
     assert.equal(parent.children[1].type, 'text')
     assert.equal(parent.children[1].data, ' world')
-    assert.equal(parent.children[1].prev, child1)
-    assert.equal(child1.next, parent.children[1])
+    assertSame(parent.children[1].prev, child1)
+    assertSame(child1.next, parent.children[1])
   })
 
   it('should support remove and maintain AST integrity', () => {
@@ -182,13 +183,13 @@ describe('createCoraliteElement', () => {
 
     child2.remove()
     assert.equal(parent.children.length, 2)
-    assert.equal(parent.children[0], child1)
-    assert.equal(parent.children[1], child3)
-    assert.equal(child1.next, child3)
-    assert.equal(child3.prev, child1)
-    assert.equal(child2.parent, null)
-    assert.equal(child2.prev, null)
-    assert.equal(child2.next, null)
+    assertSame(parent.children[0], child1)
+    assertSame(parent.children[1], child3)
+    assertSame(child1.next, child3)
+    assertSame(child3.prev, child1)
+    assertSame(child2.parent, null)
+    assertSame(child2.prev, null)
+    assertSame(child2.next, null)
   })
 
   it('should support classList with memoization', () => {
@@ -222,8 +223,8 @@ describe('createCoraliteElement', () => {
     const el = createCoraliteElement({ name: 'div' })
     const parent = createCoraliteElement({ name: 'span' })
     el.parentElement = parent
-    assert.equal(el.parent, parent)
-    assert.equal(el.parentElement, parent)
+    assertSame(el.parent, parent)
+    assertSame(el.parentElement, parent)
   })
 
   it('should treat nodeValue as a no-op for elements', () => {
@@ -244,22 +245,22 @@ describe('createCoraliteElement', () => {
     const el = createCoraliteElement({ name: 'div' })
     const children = [createCoraliteTextNode({ data: 'hi' })]
     el.childNodes = children
-    assert.equal(el.children, children)
-    assert.deepEqual(el.childNodes, children)
+    assertSameNodes(el.children, children)
+    assertSameNodes(el.childNodes, children)
   })
 
   it('should handle firstChild and lastChild', () => {
     const el = createCoraliteElement({ name: 'div' })
-    assert.equal(el.firstChild, null)
-    assert.equal(el.lastChild, null)
+    assertSame(el.firstChild, null)
+    assertSame(el.lastChild, null)
 
     const child1 = createCoraliteTextNode({ data: '1' })
     const child2 = createCoraliteTextNode({ data: '2' })
     el.appendChild(child1)
     el.appendChild(child2)
 
-    assert.equal(el.firstChild, child1)
-    assert.equal(el.lastChild, child2)
+    assertSame(el.firstChild, child1)
+    assertSame(el.lastChild, child2)
   })
 
   it('should handle textContent with no children', () => {
@@ -360,19 +361,19 @@ describe('createCoraliteComponent', () => {
     assert.equal(coraliteNode.nodeName, '#document')
     assert.equal(coraliteNode.nodeType, 9)
     assert.equal(coraliteNode.nodeValue, null)
-    assert.deepEqual(coraliteNode.childNodes, [])
+    assertSameNodes(coraliteNode.childNodes, [])
   })
 
   it('should support childNodes, firstChild, lastChild and textContent', () => {
     const root = createCoraliteComponent({ children: [] })
-    assert.equal(root.firstChild, null)
-    assert.equal(root.lastChild, null)
+    assertSame(root.firstChild, null)
+    assertSame(root.lastChild, null)
     assert.equal(root.textContent, null)
 
     const child = createCoraliteElement({ name: 'html' })
     root.childNodes = [child]
-    assert.equal(root.firstChild, child)
-    assert.equal(root.lastChild, child)
+    assertSame(root.firstChild, child)
+    assertSame(root.lastChild, child)
   })
 })
 
@@ -401,14 +402,14 @@ describe('Sibling Traversal (Common)', () => {
     parent.appendChild(child2)
     parent.appendChild(child3)
 
-    assert.equal(child1.nextSibling, child2)
-    assert.equal(child1.previousSibling, null)
+    assertSame(child1.nextSibling, child2)
+    assertSame(child1.previousSibling, null)
 
-    assert.equal(child2.nextSibling, child3)
-    assert.equal(child2.previousSibling, child1)
+    assertSame(child2.nextSibling, child3)
+    assertSame(child2.previousSibling, child1)
 
-    assert.equal(child3.nextSibling, null)
-    assert.equal(child3.previousSibling, child2)
+    assertSame(child3.nextSibling, null)
+    assertSame(child3.previousSibling, child2)
   })
 })
 
@@ -448,18 +449,18 @@ describe('relinkChildren and enhanceNode', () => {
     relinkChildren(parent)
 
     assert.ok(parent.children[0].__coralite_enhanced__)
-    assert.equal(parent.children[0].parent, parent)
-    assert.equal(parent.children[0].next, parent.children[1])
+    assertSame(parent.children[0].parent, parent)
+    assertSame(parent.children[0].next, parent.children[1])
 
     assert.ok(parent.children[1].children[0].__coralite_enhanced__)
-    assert.equal(parent.children[1].children[0].parent, parent.children[1])
+    assertSame(parent.children[1].children[0].parent, parent.children[1])
   })
 
   it('should skip enhancing already enhanced nodes', () => {
     const node = createCoraliteElement({ name: 'div' })
     const protoBefore = Object.getPrototypeOf(node)
     enhanceNode(node)
-    assert.equal(Object.getPrototypeOf(node), protoBefore)
+    assertSame(Object.getPrototypeOf(node), protoBefore)
   })
 
   it('should apply default prototype for unknown types', () => {

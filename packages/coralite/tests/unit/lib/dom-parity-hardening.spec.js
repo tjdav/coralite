@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { createCoraliteElement, createVirtualWindow } from '../../../lib/utils/server/index.js'
 import { cloneNode, isServer, isClient } from '../../../lib/utils/core.js'
 import { evaluateProduction } from '../../../lib/compiler.js'
+import { assertSame } from '../helpers.js'
 
 describe('Server-Client DOM Parity Hardening', () => {
   describe('Export Contract (isServer / isClient)', () => {
@@ -96,7 +97,7 @@ describe('Server-Client DOM Parity Hardening', () => {
       const child = createCoraliteElement({ type: 'tag', name: 'span', attribs: { id: 'a.b.c' } })
       parent.appendChild(child)
 
-      assert.equal(parent.getElementById('a.b.c'), child)
+      assertSame(parent.getElementById('a.b.c'), child)
     })
 
     it('throws CoraliteError on unsupported combinators or pseudo-classes in server queries', () => {
@@ -115,8 +116,8 @@ describe('Server-Client DOM Parity Hardening', () => {
       const child = createCoraliteElement({ type: 'tag', name: 'span', attribs: { id: 'sub', 'data-active': 'true' } })
       parent.appendChild(child)
 
-      assert.equal(parent.querySelector('span#sub[data-active=true]'), child)
-      assert.equal(parent.querySelector('.container span'), child)
+      assertSame(parent.querySelector('span#sub[data-active=true]'), child)
+      assertSame(parent.querySelector('.container span'), child)
     })
   })
 

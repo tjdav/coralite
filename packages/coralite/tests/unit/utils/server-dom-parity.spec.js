@@ -1,11 +1,9 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import { assertSame } from '../helpers.js'
 import {
   createCoraliteElement,
   createCoraliteTextNode,
-  createCoraliteComment,
-  createCoraliteComponent,
-  relinkChildren,
   parseHTML,
   CoraliteDocument,
   createVirtualWindow
@@ -93,8 +91,8 @@ test('Server DOM Parity - Pillar 2: EventTarget Interface & Propagation', async 
     let count = 0
     const handler = (evt) => {
       count++
-      assert.equal(evt.target, el)
-      assert.equal(evt.currentTarget, el)
+      assertSame(evt.target, el)
+      assertSame(evt.currentTarget, el)
     }
 
     el.addEventListener('click', handler)

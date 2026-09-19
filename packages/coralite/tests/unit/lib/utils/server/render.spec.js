@@ -9,6 +9,7 @@ import {
   resolvePageQueue
 } from '../../../../../lib/utils/server/render.js'
 import { createCoraliteElement, createCoraliteComponent } from '../../../../../lib/utils/server/dom.js'
+import { assertSame } from '../../../helpers.js'
 
 describe('render.js', () => {
   describe('findHeadAndBody', () => {
@@ -30,7 +31,7 @@ describe('render.js', () => {
       const root = createCoraliteComponent({ children: [] })
       const result = findHeadAndBody(root)
       assert.strictEqual(result.head, null)
-      assert.strictEqual(result.body, root)
+      assertSame(result.body, root)
     })
   })
 

@@ -1,6 +1,7 @@
 import { createReadOnlyProxy, normalizeStyleKey, camelToKebab, kebabToCamel, ContextRequestEvent, normalizeConsumerItems, applyConsumedState, safeInvoke, getContextValue, hasContextValue } from './utils/core.js'
 import { processHTML } from './utils/client/inject.js'
 import { recordDevToolsEvent } from './utils/client/devtools.js'
+import { isDevRuntime } from './utils/dev-mode.js'
 import { ObserverRecord } from './utils/observer-record.js'
 import { CoraliteError } from './utils/errors.js'
 import { classifyAttribute, resolveAriaBooleanState } from './utils/tags.js'
@@ -509,11 +510,11 @@ export class CoraliteElement extends BaseElement {
     this._dirtyObserversBuffer = null
 
     /**
-     * Cached flag indicating whether Coralite client runtime is running in development mode.
+     * Flag indicating whether a stale slot cache warning has already been logged for this instance.
      * @type {boolean}
-     * @protected
+     * @private
      */
-    this._isDevMode = false
+    this._staleSlotCacheWarned = false
 
     /**
      * Recursion guard flag indicating active state-to-host-attribute reflection.
@@ -981,7 +982,6 @@ export class CoraliteElement extends BaseElement {
     this._flushWindowStart = 0
     this._reactiveLoopBroken = false
     this._cascadeBreakerTripped = false
-    this._isDevMode = typeof window !== 'undefined' && Boolean(window['__coralite__']) && window['__coralite__'].mode === 'development'
 
     if (!this._abortController || this._abortController.signal.aborted) {
       this._abortController = new AbortController()
@@ -1258,7 +1258,7 @@ export class CoraliteElement extends BaseElement {
     }
 
     this._dirtyObserversBuffer = null
-    this._isDevMode = false
+    this._staleSlotCacheWarned = false
     this._consecutiveFlushCount = 0
     this._flushWindowCount = 0
     this._reactiveLoopBroken = false
@@ -1834,6 +1834,8 @@ export class CoraliteElement extends BaseElement {
 
   /**
    * Asserts that state mutation inside an observer callback does not create a direct cyclic dependency.
+   * Dev/test detection honours the live runtime mode (`window.__coralite__.mode`) with a
+   * `process.env.NODE_ENV` fallback, see {@link isDevRuntime}.
    * In dev/test: logs warning for any mutation, and throws CoraliteError on direct cycles.
    * In prod: silently permits non-cyclic cascades, and aborts direct cycles (reporting via console.error and coralite-error event).
    * @param {string|symbol} p - Property being mutated.
@@ -1861,12 +1863,14 @@ export class CoraliteElement extends BaseElement {
       ? `Cyclic state mutation detected inside an observe() callback. The observer for "${activeRecord?.key || 'unknown'}" mutates "${strP}", which it depends on. This causes an infinite reactivity loop. Use getters for derived state instead.`
       : `State mutation detected inside an observe() callback. This can cause infinite reactivity loops. Use getters for derived state instead. (mutated property: "${strP}")`
 
-    if (this._isDevMode) {
+    const isDev = isDevRuntime()
+
+    if (isDev) {
       console.warn(msg)
     }
 
     if (isDirectCycle) {
-      if (this._isDevMode) {
+      if (isDev) {
         throw new CoraliteError(msg, {
           componentId: this.componentOptions?.componentId,
           instanceId: this._instanceId,
@@ -1879,7 +1883,9 @@ export class CoraliteElement extends BaseElement {
         instanceId: this._instanceId,
         path: typeof p === 'string' ? p : undefined
       })
+
       console.error('Coralite Observer Error:', err)
+
       let CustomEventCtor = null
       if (typeof window !== 'undefined' && window.CustomEvent) {
         CustomEventCtor = window.CustomEvent
@@ -3565,7 +3571,12 @@ export class CoraliteElement extends BaseElement {
             targetSlot._originalNodes = []
             targetSlot._hasProjectedLightNodes = true
           }
-          targetSlot._originalNodes.push(node.cloneNode(true))
+          // Store the live node reference by identity so computed slot functions
+          // receive the authored nodes (with listeners and bindings intact) and
+          // repeated reconciliations stay idempotent.
+          if (!targetSlot._originalNodes.includes(node)) {
+            targetSlot._originalNodes.push(node)
+          }
 
           const hasFallbackAttr = targetSlot.hasAttribute('data-coralite-fallback')
           const hasProjectedChildren = Array.from(targetSlot.childNodes).some(child => {
@@ -3627,12 +3638,12 @@ export class CoraliteElement extends BaseElement {
         return this._cachedOwnSlots
       }
 
-      const isDevOrTest = process.env.NODE_ENV !== 'production' || this._isDevMode
-      if (isDevOrTest) {
+      this._cachedOwnSlots = null
+
+      if (isDevRuntime() && !this._staleSlotCacheWarned) {
+        this._staleSlotCacheWarned = true
         console.warn(`[Coralite] Stale slot cache detected for component "${this.componentOptions?.componentId || this.tagName?.toLowerCase() || 'unknown'}". One or more previously cached <slot> elements have been disconnected from the DOM.`)
       }
-
-      this._cachedOwnSlots = null
     }
 
     const map = this.componentOptions?.hydrationMap
@@ -3847,14 +3858,14 @@ export class CoraliteElement extends BaseElement {
               if (isFallback) {
                 slotEl._originalNodes = []
               } else {
-                slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
+                slotEl._originalNodes = Array.from(slotEl.childNodes)
               }
             }
             slotEl.removeAttribute('data-coralite-slot-computed')
             return
           } else {
             if (!slotEl._originalNodes) {
-              slotEl._originalNodes = Array.from(slotEl.childNodes).map(n => n.cloneNode(true))
+              slotEl._originalNodes = Array.from(slotEl.childNodes)
             }
           }
         }
@@ -3921,8 +3932,6 @@ export class CoraliteElement extends BaseElement {
         }
       }, { once: true })
     }
-
-    const isDevOrTest = process.env.NODE_ENV !== 'production'
 
     const observe = (key, callback) => {
       self._observeStateKey(key, callback)
@@ -3992,7 +4001,7 @@ export class CoraliteElement extends BaseElement {
         const ctor = self.constructor
         if (self._internals && typeof self._internals.setFormValue === 'function') {
           self._internals.setFormValue(value, state)
-        } else if (isDevOrTest && !ctor.formAssociated) {
+        } else if (isDevRuntime() && !ctor.formAssociated) {
           console.warn(`Coralite Warning: setFormValue() called on component "${self.componentOptions?.componentId}", but "formAssociated: true" is not configured.`)
         }
       },
@@ -4004,7 +4013,7 @@ export class CoraliteElement extends BaseElement {
         self._manualValiditySet = hasError
         if (self._internals && typeof self._internals.setValidity === 'function') {
           self._internals.setValidity(flags, message, anchor)
-        } else if (isDevOrTest && !ctor.formAssociated) {
+        } else if (isDevRuntime() && !ctor.formAssociated) {
           console.warn(`Coralite Warning: setValidity() called on component "${self.componentOptions?.componentId}", but "formAssociated: true" is not configured.`)
         }
       },
@@ -4059,7 +4068,7 @@ export class CoraliteElement extends BaseElement {
       this._processSlots()
     }
 
-    if (isDevOrTest) {
+    if (isDevRuntime()) {
       const options = this.componentOptions
       const declaredRefKeys = new Set()
 
@@ -4177,7 +4186,7 @@ export class CoraliteElement extends BaseElement {
         await this.componentOptions.client(localContext)
       } catch (error) {
         console.error(`Coralite Error: Component "${this.componentOptions.componentId}" script failed:`, error)
-        if (isDevOrTest) {
+        if (isDevRuntime()) {
           const fatalError = new Error(`Coralite Component Error: Component "${this.componentOptions.componentId}" (${this._instanceId}) client() block failed: ${error.message}`)
           fatalError.stack = error.stack
 
@@ -4268,9 +4277,7 @@ export function createCoraliteClass (options, contextGetter = null, hooks = {}, 
       const originalDispatchEvent = this.dispatchEvent
       this.dispatchEvent = function (event) {
         // @ts-ignore
-        const isDevOrTest = process.env.NODE_ENV !== 'production'
-
-        if (isDevOrTest && event instanceof CustomEvent) {
+        if (isDevRuntime() && event instanceof CustomEvent) {
           recordDevToolsEvent({
             name: event.type,
             detail: event.detail,

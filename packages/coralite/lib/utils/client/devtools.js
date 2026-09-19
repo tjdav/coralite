@@ -1,4 +1,6 @@
 // Module-scoped private registry (Garbage-collection safe)
+import { isDevRuntime } from '../dev-mode.js'
+
 const registeredComponents = new Set()
 const eventLog = []
 const MAX_EVENTS = 100
@@ -7,9 +9,7 @@ const MAX_EVENTS = 100
  *
  */
 export function registerDevToolsComponent (id) {
-  const isDevOrTest = process.env.NODE_ENV !== 'production'
-
-  if (isDevOrTest) {
+  if (isDevRuntime()) {
     registeredComponents.add(id)
   }
 }
@@ -18,9 +18,7 @@ export function registerDevToolsComponent (id) {
  *
  */
 export function recordDevToolsEvent (event) {
-  const isDevOrTest = process.env.NODE_ENV !== 'production'
-
-  if (isDevOrTest) {
+  if (isDevRuntime()) {
     if (eventLog.length >= MAX_EVENTS) {
       eventLog.shift()
     }
@@ -32,9 +30,7 @@ export function recordDevToolsEvent (event) {
  *
  */
 export function setupDevTools () {
-  const isDevOrTest = process.env.NODE_ENV !== 'production'
-
-  if (isDevOrTest) {
+  if (isDevRuntime()) {
     if (typeof window === 'undefined' || (window['__coralite__'] && window['__coralite__'].getRegisteredComponents)) {
       return
     }

@@ -1,6 +1,7 @@
 import { describe, it, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { Window } from 'happy-dom'
+import { assertSame } from '../helpers.js'
 
 const window = new Window()
 globalThis.window = window
@@ -161,8 +162,8 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const options = {
       getters: {
         computed: ({ state, root, refs, signal }) => {
-          assert.equal(root, null)
-          assert.equal(refs('anything'), null)
+          assertSame(root, null)
+          assertSame(refs('anything'), null)
           assert.ok(signal)
           return state.value * 3
         }

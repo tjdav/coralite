@@ -1,5 +1,6 @@
 import { describe, it, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
+import { assertSame } from '../helpers.js'
 import { Window } from 'happy-dom'
 
 const window = new Window()
@@ -457,7 +458,7 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
       // Initial call populates _cachedOwnSlots
       const initialSlots = el._getOwnSlots()
       assert.equal(initialSlots.length, 1)
-      assert.equal(el._cachedOwnSlots, initialSlots)
+      assertSame(el._cachedOwnSlots, initialSlots)
 
       // Simulate wiping host content or detaching the slot
       el.innerHTML = ''
@@ -477,7 +478,7 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
       el._cachedOwnSlots = null
       const recachedSlots = el._getOwnSlots()
       assert.equal(recachedSlots.length, 1)
-      assert.equal(el._cachedOwnSlots, recachedSlots)
+      assertSame(el._cachedOwnSlots, recachedSlots)
 
       el.innerHTML = ''
       assert.equal(recachedSlots[0].isConnected, false)
@@ -490,7 +491,7 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
       el.appendChild(child)
       el._reconcileLightDOM()
 
-      assert.equal(child.parentNode, el)
+      assertSame(child.parentNode, el)
     } finally {
       console.warn = originalWarn
     }
