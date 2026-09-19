@@ -60,6 +60,41 @@ function resolvePath (explicitPath, configProp, defaultCandidates) {
   return null
 }
 
+/**
+ * Aggregates summary statistics across heterogeneous domain validation reports.
+ *
+ * @param {Array<Object|null|undefined>} reports - Array of domain reports (components, plugins, pages)
+ * @returns {{ totalFiles: number, validFiles: number, errorCount: number, warningCount: number, fixableCount: number }} Aggregated summary totals
+ */
+function aggregateReportSummaries (reports) {
+  const totals = {
+    totalFiles: 0,
+    validFiles: 0,
+    errorCount: 0,
+    warningCount: 0,
+    fixableCount: 0
+  }
+
+  for (const report of reports) {
+    if (!report) {
+      continue
+    }
+
+    const items = report.components || report.plugins || report.pages || []
+    const summary = report.summary || report.metrics || {}
+
+    totals.totalFiles += items.length
+    totals.validFiles += summary.validComponents || summary.validPlugins || summary.validPages || 0
+    totals.errorCount += summary.errorCount || summary.totalErrors || 0
+    totals.warningCount += summary.warningCount || summary.totalWarnings || 0
+    totals.fixableCount += summary.fixableCount ??
+      items.reduce((acc, item) => acc + (item.diagnostics || []).filter(d => Boolean(d.fix?.action)).length, 0)
+  }
+
+  return totals
+}
+
+
 program
   .command('check')
   .description('Run unified validation pass across Components, Plugins, and Pages')
@@ -158,6 +193,13 @@ program
           const result = await validatePluginFile(pluginTarget)
           pluginReport = {
             plugins: [result],
+            summary: {
+              totalPlugins: 1,
+              validPlugins: result.valid ? 1 : 0,
+              errorCount: result.metrics.errors,
+              warningCount: result.metrics.warnings,
+              fixableCount: (result.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length
+            },
             metrics: {
               totalPlugins: 1,
               validPlugins: result.valid ? 1 : 0,
@@ -178,7 +220,7 @@ program
             const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
             if (name) {
               knownComponents.set(name, {
-                attributes: c.defined ? c.defined.attributes.reduce((acc, curr) => ({
+                attributes: c.defined?.attributes ? c.defined.attributes.reduce((acc, curr) => ({
                   ...acc,
                   [curr]: {}
                 }), {}) : {},
@@ -244,25 +286,13 @@ program
         }))
       }
 
-      const totalFiles = (filteredCompReport?.components?.length ?? 0) +
-                         (filteredPluginReport?.plugins?.length ?? 0) +
-                         (filteredPageReport?.pages?.length ?? 0)
-
-      const validFiles = (filteredCompReport?.summary?.validComponents ?? 0) +
-                         (filteredPluginReport?.summary?.validPlugins ?? filteredPluginReport?.metrics?.validPlugins ?? 0) +
-                         (filteredPageReport?.summary?.validPages ?? 0)
-
-      const errorCount = (filteredCompReport?.summary?.errorCount ?? 0) +
-                         (filteredPluginReport?.summary?.errorCount ?? filteredPluginReport?.metrics?.totalErrors ?? 0) +
-                         (filteredPageReport?.summary?.errorCount ?? 0)
-
-      const warningCount = (filteredCompReport?.summary?.warningCount ?? 0) +
-                           (filteredPluginReport?.summary?.warningCount ?? filteredPluginReport?.metrics?.totalWarnings ?? 0) +
-                           (filteredPageReport?.summary?.warningCount ?? 0)
-
-      const fixableCount = (filteredCompReport?.summary?.fixableCount ?? 0) +
-                           (filteredPluginReport ? (filteredPluginReport.plugins || []).reduce((acc, p) => acc + (p.diagnostics || []).filter(d => Boolean(d.fix && d.fix.action)).length, 0) : 0) +
-                           (filteredPageReport?.summary?.fixableCount ?? 0)
+      const {
+        totalFiles,
+        validFiles,
+        errorCount,
+        warningCount,
+        fixableCount
+      } = aggregateReportSummaries([filteredCompReport, filteredPluginReport, filteredPageReport])
 
       let totalUnused = 0
       if (compReport?.metrics?.totalUnused !== undefined) {
@@ -870,7 +900,7 @@ program
             const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
             if (name) {
               knownComponents.set(name, {
-                attributes: c.defined ? c.defined.attributes.reduce((acc, curr) => ({
+                attributes: c.defined?.attributes ? c.defined.attributes.reduce((acc, curr) => ({
                   ...acc,
                   [curr]: {}
                 }), {}) : {},

@@ -13,10 +13,15 @@
     "noImplicitAny": false,
     "allowSyntheticDefaultImports": true,
     "types": ["node"],
+    "customConditions": ["development"],
     "paths": {
       "coralite": ["./packages/coralite/lib/index.js"],
       "coralite/types": ["./packages/coralite/types/index.js"],
-      "#lib": ["./packages/coralite/lib/index.js"]
+      "coralite/*": ["./packages/coralite/lib/*"],
+      "#lib": ["./packages/coralite/lib/index.js"],
+      "#lib/*": ["./packages/coralite/lib/*"],
+      "#plugins": ["./packages/coralite/plugins/index.js"],
+      "#plugins/*": ["./packages/coralite/plugins/*"]
     }
   },
   "include": ["packages/**/*", "scripts/**/*", "website/**/*"],
