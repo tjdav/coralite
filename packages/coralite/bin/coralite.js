@@ -175,8 +175,8 @@ program
         let knownComponents = new Map()
         if (compReport && compReport.components) {
           for (const c of compReport.components) {
-            const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
-            if (name) {
+            if (c.filePath) {
+              const name = c.filePath.split('/').pop().replace(/\.(html|js)$/, '')
               knownComponents.set(name, {
                 attributes: c.defined ? c.defined.attributes.reduce((acc, curr) => ({
                   ...acc,
@@ -184,20 +184,6 @@ program
                 }), {}) : {},
                 slots: c.defined?.slots || []
               })
-            }
-          }
-        }
-        if (config?.plugins && Array.isArray(config.plugins)) {
-          for (const plugin of config.plugins) {
-            if (plugin?.components) {
-              const pComps = Array.isArray(plugin.components) ? plugin.components : [plugin.components]
-              for (const pComp of pComps) {
-                if (typeof pComp === 'string') {
-                  knownComponents.set(pComp.toLowerCase(), { attributes: {}, slots: [] })
-                } else if (pComp && typeof pComp === 'object' && pComp.tag) {
-                  knownComponents.set(pComp.tag.toLowerCase(), { attributes: {}, slots: [] })
-                }
-              }
             }
           }
         }
@@ -860,8 +846,8 @@ program
         const compReport = await validateComponentsDir(compDir)
         if (compReport && compReport.components) {
           for (const c of compReport.components) {
-            const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
-            if (name) {
+            if (c.filePath) {
+              const name = c.filePath.split('/').pop().replace(/\.(html|js)$/, '')
               knownComponents.set(name, {
                 attributes: c.defined ? c.defined.attributes.reduce((acc, curr) => ({
                   ...acc,
@@ -869,20 +855,6 @@ program
                 }), {}) : {},
                 slots: c.defined?.slots || []
               })
-            }
-          }
-        }
-      }
-      if (config?.plugins && Array.isArray(config.plugins)) {
-        for (const plugin of config.plugins) {
-          if (plugin?.components) {
-            const pComps = Array.isArray(plugin.components) ? plugin.components : [plugin.components]
-            for (const pComp of pComps) {
-              if (typeof pComp === 'string') {
-                knownComponents.set(pComp.toLowerCase(), { attributes: {}, slots: [] })
-              } else if (pComp && typeof pComp === 'object' && pComp.tag) {
-                knownComponents.set(pComp.tag.toLowerCase(), { attributes: {}, slots: [] })
-              }
             }
           }
         }

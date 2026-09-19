@@ -56,6 +56,12 @@ function CoraliteCollection (options = { rootDir: '' }) {
   this.collection = Object.create(null)
 
   /**
+   * Internal WeakMap mapping document objects to their current index in this.list.
+   * @type {WeakMap<CoraliteCollectionItem, number>}
+   */
+  this._itemIndex = new WeakMap()
+
+  /**
    * Callback triggered when setting a new item
    * @type {CoraliteCollectionEventSet | undefined}
    */
@@ -134,14 +140,11 @@ CoraliteCollection.prototype.setItem = async function (value) {
       this.listByPath[dirname] = []
     }
 
-    // add to both directory-specific and general lists
-    // check if already added to avoid duplicates
-    if (!this.listByPath[dirname].includes(documentValue)) {
-      this.listByPath[dirname].push(documentValue)
-    }
-    if (!this.list.includes(documentValue)) {
-      this.list.push(documentValue)
-    }
+    // add to directory-specific and general lists directly
+    // unique insertion is already guaranteed by this.collection[pathname] guard above
+    this.listByPath[dirname].push(documentValue)
+    this.list.push(documentValue)
+    this._itemIndex.set(documentValue, this.list.length - 1)
   } else {
     return await this.updateItem(value)
   }
@@ -184,15 +187,10 @@ CoraliteCollection.prototype.deleteItem = async function (value) {
     return
   }
 
-  if (!valuesByPath) {
-    // directory list doesn't exist, but we still need to clean up collection
-    // This can happen if the item was stored under a different ID
-    for (const key in this.collection) {
-      if (this.collection[key] === originalValue) {
-        delete this.collection[key]
-      }
-    }
-    return
+  // Resolve actual dirname from the document object if deleting by custom ID string
+  if (originalValue.path?.dirname && dirname !== originalValue.path.dirname) {
+    dirname = originalValue.path.dirname
+    valuesByPath = this.listByPath[dirname]
   }
 
   if (typeof this._onDelete === 'function') {
@@ -207,20 +205,36 @@ CoraliteCollection.prototype.deleteItem = async function (value) {
     }
   }
 
-  // find and remove the document from the list and by-path grouping
-  const listIndex = this.list.indexOf(originalValue)
-  const pathIndex = valuesByPath.indexOf(originalValue)
-
+  // list deletion via swap-with-last
+  const listIndex = this._itemIndex.get(originalValue) ?? -1
   if (listIndex !== -1) {
-    this.list.splice(listIndex, 1)
-  }
-  if (pathIndex !== -1) {
-    valuesByPath.splice(pathIndex, 1)
+    const lastIdx = this.list.length - 1
+    if (listIndex !== lastIdx) {
+      const lastItem = this.list[lastIdx]
+      this.list[listIndex] = lastItem
+      this._itemIndex.set(lastItem, listIndex)
+    }
+    this.list.pop()
+    this._itemIndex.delete(originalValue)
+  } else {
+    // Fallback if item was inserted before WeakMap initialized or mutated externally
+    const fallbackIdx = this.list.indexOf(originalValue)
+    if (fallbackIdx !== -1) {
+      this.list.splice(fallbackIdx, 1)
+    }
   }
 
-  // clean up empty directory arrays
-  if (valuesByPath.length === 0) {
-    delete this.listByPath[dirname]
+  // Remove from by-path grouping (per-directory arrays are small
+  if (valuesByPath) {
+    const pathIndex = valuesByPath.indexOf(originalValue)
+    if (pathIndex !== -1) {
+      valuesByPath.splice(pathIndex, 1)
+    }
+
+    // clean up empty directory arrays
+    if (valuesByPath.length === 0) {
+      delete this.listByPath[dirname]
+    }
   }
 }
 

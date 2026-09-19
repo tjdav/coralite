@@ -15,24 +15,6 @@ describe('CoraliteCollection', () => {
   /** @type {CoraliteCollection} */
   let collection
 
-  /**
-   * Builds a page fixture rooted in the current temporary test directory.
-   * @param {Partial<HTMLData>} [overrides]
-   * @returns {HTMLData}
-   */
-  function makeItem (overrides = {}) {
-    return {
-      type: 'page',
-      content: '<h1>Test</h1>',
-      path: {
-        pathname: path.join(testDir, 'test.html'),
-        dirname: testDir,
-        filename: 'test.html'
-      },
-      ...overrides
-    }
-  }
-
   beforeEach(async () => {
     // Create a temporary directory for testing
     testDir = await mkdtemp(path.join(tmpdir(), 'coralite-test-'))
@@ -58,7 +40,16 @@ describe('CoraliteCollection', () => {
 
   describe('setItem', () => {
     it('should add a new item to the collection', async () => {
-      const item = makeItem()
+      /** @type {HTMLData} */
+      const item = {
+        type: 'page',
+        content: '<h1>Test</h1>',
+        path: {
+          pathname: path.join(testDir, 'test.html'),
+          dirname: testDir,
+          filename: 'test.html'
+        }
+      }
 
       const result = await collection.setItem(item)
 
@@ -89,7 +80,16 @@ describe('CoraliteCollection', () => {
         }
       })
 
-      const item = makeItem()
+      /** @type {HTMLData} */
+      const item = {
+        type: 'page',
+        content: '<h1>Test</h1>',
+        path: {
+          pathname: path.join(testDir, 'test.html'),
+          dirname: testDir,
+          filename: 'test.html'
+        }
+      }
 
       const result = await collectionWithHook.setItem(item)
 
@@ -110,7 +110,16 @@ describe('CoraliteCollection', () => {
         onSet: async () => false
       })
 
-      const item = makeItem()
+      /** @type {HTMLData} */
+      const item = {
+        type: 'page',
+        content: '<h1>Test</h1>',
+        path: {
+          pathname: path.join(testDir, 'test.html'),
+          dirname: testDir,
+          filename: 'test.html'
+        }
+      }
 
       const result = await collectionWithHook.setItem(item)
 
@@ -118,33 +127,58 @@ describe('CoraliteCollection', () => {
       assert.strictEqual(collectionWithHook.list.length, 0)
     })
 
-    it('should update an existing item in place and prevent duplicate list entries', async () => {
-      const item = makeItem()
+    it('should update existing item instead of adding duplicate', async () => {
+      /** @type {HTMLData} */
+      const item = {
+        type: 'page',
+        content: '<h1>Test</h1>',
+        path: {
+          pathname: path.join(testDir, 'test.html'),
+          dirname: testDir,
+          filename: 'test.html'
+        }
+      }
 
       await collection.setItem(item)
-      const initialListLength = collection.list.length
-      const initialPathListLength = collection.listByPath[testDir].length
+      const initialLength = collection.list.length
 
-      // Re-adding the same item must not duplicate list entries
-      await collection.setItem(item)
-
-      assert.strictEqual(collection.list.length, initialListLength)
-      assert.strictEqual(
-        collection.listByPath[testDir].length,
-        initialPathListLength
-      )
-
-      // Re-adding an updated item updates the stored item in place
+      // Try to add same item again
       const updatedItem = {
         ...item,
         content: '<h1>Updated</h1>'
       }
       await collection.setItem(updatedItem)
 
-      assert.strictEqual(collection.list.length, initialListLength)
+      assert.strictEqual(collection.list.length, initialLength)
       assert.strictEqual(
         collection.collection[item.path.pathname].content,
         '<h1>Updated</h1>'
+      )
+    })
+
+    it('should prevent duplicate entries in lists', async () => {
+      /** @type {HTMLData} */
+      const item = {
+        type: 'page',
+        content: '<h1>Test</h1>',
+        path: {
+          pathname: path.join(testDir, 'test.html'),
+          dirname: testDir,
+          filename: 'test.html'
+        }
+      }
+
+      await collection.setItem(item)
+      const initialListLength = collection.list.length
+      const initialPathListLength = collection.listByPath[testDir].length
+
+      // Try to add the same item again
+      await collection.setItem(item)
+
+      assert.strictEqual(collection.list.length, initialListLength)
+      assert.strictEqual(
+        collection.listByPath[testDir].length,
+        initialPathListLength
       )
     })
 
@@ -433,6 +467,75 @@ describe('CoraliteCollection', () => {
       await assert.rejects(() => collection.deleteItem({}), {
         message: 'Valid pathname must be provided'
       })
+    })
+
+    it('should handle deletion from middle, start, and end using swap-with-last', async () => {
+      /** @type {HTMLData[]} */
+      const items = Array.from({ length: 5 }, (_, i) => ({
+        type: 'page',
+        content: `<h1>Page ${i}</h1>`,
+        path: {
+          pathname: path.join(testDir, `page_${i}.html`),
+          dirname: testDir,
+          filename: `page_${i}.html`
+        }
+      }))
+
+      for (const item of items) {
+        await collection.setItem(item)
+      }
+
+      assert.strictEqual(collection.list.length, 5)
+
+      // Delete item at index 2 (middle) -> item 4 swapped into index 2
+      await collection.deleteItem(items[2])
+      assert.strictEqual(collection.list.length, 4)
+      assert.strictEqual(collection.list.includes(items[2]), false)
+      assert.strictEqual(collection.list[2], items[4])
+
+      // Delete item at index 0 (start) -> item 3 swapped into index 0
+      await collection.deleteItem(items[0])
+      assert.strictEqual(collection.list.length, 3)
+      assert.strictEqual(collection.list.includes(items[0]), false)
+      assert.strictEqual(collection.list[0], items[3])
+
+      // Delete item at end
+      const lastItem = collection.list[collection.list.length - 1]
+      await collection.deleteItem(lastItem)
+      assert.strictEqual(collection.list.length, 2)
+      assert.strictEqual(collection.list.includes(lastItem), false)
+    })
+
+    it('should delete by custom string ID and resolve dirname correctly', async () => {
+      const collectionWithHook = new CoraliteCollection({
+        rootDir: testDir,
+        onSet: async () => ({
+          value: 'result',
+          id: 'custom-tag-name'
+        })
+      })
+
+      /** @type {HTMLData} */
+      const item = {
+        type: 'page',
+        content: '<h1>Custom ID Test</h1>',
+        path: {
+          pathname: path.join(testDir, 'custom.html'),
+          dirname: testDir,
+          filename: 'custom.html'
+        }
+      }
+
+      await collectionWithHook.setItem(item)
+      assert.ok(collectionWithHook.collection['custom-tag-name'])
+      assert.ok(collectionWithHook.listByPath[testDir])
+
+      await collectionWithHook.deleteItem('custom-tag-name')
+
+      assert.strictEqual(collectionWithHook.collection['custom-tag-name'], undefined)
+      assert.strictEqual(collectionWithHook.collection[item.path.pathname], undefined)
+      assert.strictEqual(collectionWithHook.list.length, 0)
+      assert.strictEqual(collectionWithHook.listByPath[testDir], undefined)
     })
   })
 
