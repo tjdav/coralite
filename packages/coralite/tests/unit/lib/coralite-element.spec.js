@@ -278,6 +278,51 @@ describe('CoraliteElement', () => {
     })
   })
 
+  it('should preserve live node identity and event listeners when computed slot transformer wraps nodes', (t, done) => {
+      const wrapperTag = 'wrapper-comp-' + Math.random().toString(36).substring(2, 9)
+      const WrapperComp = createCoraliteClass({
+        componentId: 'wrapper-comp',
+        templateHTML: '<div><slot name="actions"></slot></div>',
+        slots: {
+          actions (nodes) {
+            const wrapper = document.createElement('div')
+            wrapper.className = 'actions-wrapper'
+            wrapper.replaceChildren(...nodes)
+            return wrapper
+          }
+        }
+      })
+      customElements.define(wrapperTag, WrapperComp)
+
+      const comp = document.createElement(wrapperTag)
+      document.body.appendChild(comp)
+
+      const btn = document.createElement('button')
+      btn.setAttribute('slot', 'actions')
+      btn.textContent = 'Save Action'
+      let clicked = false
+      btn.addEventListener('click', () => { clicked = true })
+
+      comp.appendChild(btn)
+
+      queueMicrotask(() => {
+        const slot = comp.querySelector('slot[name="actions"]')
+        assert.ok(slot)
+        assert.strictEqual(slot._originalNodes.length, 1)
+        assert.strictEqual(slot._originalNodes[0], btn)
+
+        const wrapperEl = slot.querySelector('.actions-wrapper')
+        assert.ok(wrapperEl)
+        assert.strictEqual(wrapperEl.firstElementChild, btn)
+
+        btn.click()
+        assert.strictEqual(clicked, true)
+
+        document.body.removeChild(comp)
+        done()
+      })
+    })
+
   it('should auto-remove single-token aria-* attributes on falsy values, preserve 0 and "0", and handle truthy values', (t, done) => {
     const ariaTagName = 'aria-comp-' + Math.random().toString(36).substring(2, 9)
     const AriaElement = createCoraliteClass({
@@ -936,8 +981,8 @@ describe('CoraliteElement', () => {
       templateHTML: '<div><slot></slot></div>',
       slots: {
         default (nodes) {
-          // Clone the nodes to simulate slot transformation that causes reference disconnection
-          return nodes.map(n => n.cloneNode(true))
+          // Return live projected nodes to preserve owner component binding references
+          return nodes
         }
       }
     })
@@ -1425,7 +1470,7 @@ describe('CoraliteElement', () => {
             return originalNodes.map(node => {
               const wrapper = document.createElement('li')
               wrapper.className = 'item-wrapper'
-              wrapper.appendChild(node.cloneNode(true))
+              wrapper.appendChild(node)
               return wrapper
             })
           }
@@ -1454,9 +1499,11 @@ describe('CoraliteElement', () => {
         assert.strictEqual(slot.children[0].textContent, 'Item 1')
         assert.strictEqual(slot.children[1].textContent, 'Item 2')
 
-        // Assert transform ran and _originalNodes preserved original untransformed nodes
+        // Assert transform ran and _originalNodes preserved original live node references
         assert.ok(transformCallCount >= 1)
         assert.strictEqual(slot._originalNodes.length, 2)
+        assert.strictEqual(slot._originalNodes[0], item1)
+        assert.strictEqual(slot._originalNodes[1], item2)
         assert.strictEqual(slot._originalNodes[0].tagName, 'SPAN')
         assert.strictEqual(slot._originalNodes[0].textContent, 'Item 1')
 
@@ -1469,6 +1516,7 @@ describe('CoraliteElement', () => {
         queueMicrotask(() => {
           assert.strictEqual(slot.children.length, 3)
           assert.strictEqual(slot._originalNodes.length, 3)
+          assert.strictEqual(slot._originalNodes[2], item3)
           assert.strictEqual(slot._originalNodes[2].textContent, 'Item 3')
 
           document.body.removeChild(comp)

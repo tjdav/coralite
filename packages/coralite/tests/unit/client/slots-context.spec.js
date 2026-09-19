@@ -469,6 +469,21 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
       assert.equal(warnings.length, 1)
       assert.ok(warnings[0].includes('Stale slot cache detected for component "test-stale-own-slots"'))
 
+      // Second stale detection on the same instance must not warn again (warn-once guard)
+      const recachedSlot = document.createElement('slot')
+      el.appendChild(recachedSlot)
+      // The invalidated cache is now an empty array, which is treated as valid
+      // until explicitly cleared, so reset it to re-exercise the stale path
+      el._cachedOwnSlots = null
+      const recachedSlots = el._getOwnSlots()
+      assert.equal(recachedSlots.length, 1)
+      assert.equal(el._cachedOwnSlots, recachedSlots)
+
+      el.innerHTML = ''
+      assert.equal(recachedSlots[0].isConnected, false)
+      el._getOwnSlots()
+      assert.equal(warnings.length, 1)
+
       // Adding new child node now stays as direct child instead of appending to detached slot
       const child = document.createElement('p')
       child.textContent = 'Fallback child'

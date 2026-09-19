@@ -657,6 +657,7 @@ export default {
       global: 'window',
       __dirname: '""',
       __filename: '""',
+      'process.env.NODE_ENV': JSON.stringify(mode),
       'import.meta.env.MODE': JSON.stringify(mode),
       'import.meta.env': JSON.stringify({ MODE: mode })
     },
