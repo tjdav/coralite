@@ -6,6 +6,7 @@
  * @property {string[]} refs - Element ref names in template
  * @property {string[]} [imports] - Top level imported symbols
  * @property {string[]} [slots] - Defined slot names
+ * @property {string | null} [templateId] - Template definition id derived from the component root template element
  */
 
 /**
@@ -74,6 +75,7 @@
 /**
  * @typedef {Object} CoraliteComponentValidationResult
  * @property {string} filePath - Path to component file
+ * @property {string | null} [componentTag] - Component tag derived from templateId, or null if not a template component
  * @property {boolean} valid - Whether component is valid without errors or warnings
  * @property {CoraliteDiagnostic[]} diagnostics - Structured diagnostic errors, warnings, and fixes
  * @property {ComponentValidationDefinedSymbols} defined - Defined symbols in component
