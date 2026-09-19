@@ -3913,11 +3913,7 @@ export class CoraliteElement extends BaseElement {
       }, { once: true })
     }
 
-    // @ts-ignore
-    const isDevOrTest = typeof import.meta.env !== 'undefined'
-      // @ts-ignore
-      ? import.meta.env.MODE !== 'production'
-      : true
+    const isDevOrTest = process.env.NODE_ENV !== 'production'
 
     const observe = (key, callback) => {
       self._observeStateKey(key, callback)
@@ -4263,10 +4259,7 @@ export function createCoraliteClass (options, contextGetter = null, hooks = {}, 
       const originalDispatchEvent = this.dispatchEvent
       this.dispatchEvent = function (event) {
         // @ts-ignore
-        const isDevOrTest = typeof import.meta.env !== 'undefined'
-          // @ts-ignore
-          ? import.meta.env.MODE !== 'production'
-          : true
+        const isDevOrTest = process.env.NODE_ENV !== 'production'
 
         if (isDevOrTest && event instanceof CustomEvent) {
           recordDevToolsEvent({

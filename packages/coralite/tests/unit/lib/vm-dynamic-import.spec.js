@@ -90,4 +90,64 @@ describe('VM Dynamic Import', () => {
     assert.ok(results.length > 0)
     assert.match(results[0].content, /Success/)
   })
+
+  it('should support top-level import with attributes in component script (development mode)', async () => {
+    await writeFile(join(project.componentsDir, 'data.json'), JSON.stringify({ message: 'JSON with attribute works' }))
+
+    await project.writeComponent('my-component.html', `
+      <template id="my-component">
+        <div>{{ message }}</div>
+      </template>
+      <script type="module">
+        import { defineComponent } from 'coralite'
+        import data from './data.json' with { type: 'json' }
+
+        export default defineComponent({
+          getters: {
+            message: () => data.message
+          }
+        })
+      </script>
+    `)
+
+    const coralite = await project.createCoralite({
+      mode: 'development'
+    })
+
+    const results = await coralite.build()
+    assert.ok(results.length > 0)
+    assert.match(results[0].content, /JSON with attribute works/)
+  })
+
+  it('should handle dynamic import with options passed as a variable', async () => {
+    await writeFile(join(project.componentsDir, 'dynamic.json'), JSON.stringify({ message: 'Dynamic import with variable options' }))
+
+    await project.writeComponent('my-component.html', `
+      <template id="my-component">
+        <div>{{ message }}</div>
+      </template>
+      <script type="module">
+        import { defineComponent } from 'coralite'
+
+        export default defineComponent({
+          getters: {
+            message: async () => {
+              const importOptions = { with: { type: 'json' } }
+              const mod = await import('./dynamic.json', importOptions)
+              return mod.default.message
+            }
+          }
+        })
+      </script>
+    `)
+
+    const coralite = await project.createCoralite({
+      mode: 'development'
+    })
+
+    const results = await coralite.build()
+    assert.ok(results.length > 0)
+    assert.match(results[0].content, /Dynamic import with variable options/)
+  })
 })
+

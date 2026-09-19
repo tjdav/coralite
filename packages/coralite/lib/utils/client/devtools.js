@@ -7,11 +7,7 @@ const MAX_EVENTS = 100
  *
  */
 export function registerDevToolsComponent (id) {
-  // @ts-ignore
-  const isDevOrTest = typeof import.meta.env !== 'undefined'
-    // @ts-ignore
-    ? import.meta.env.MODE !== 'production'
-    : true
+  const isDevOrTest = process.env.NODE_ENV !== 'production'
 
   if (isDevOrTest) {
     registeredComponents.add(id)
@@ -22,11 +18,7 @@ export function registerDevToolsComponent (id) {
  *
  */
 export function recordDevToolsEvent (event) {
-  // @ts-ignore
-  const isDevOrTest = typeof import.meta.env !== 'undefined'
-    // @ts-ignore
-    ? import.meta.env.MODE !== 'production'
-    : true
+  const isDevOrTest = process.env.NODE_ENV !== 'production'
 
   if (isDevOrTest) {
     if (eventLog.length >= MAX_EVENTS) {
@@ -40,11 +32,7 @@ export function recordDevToolsEvent (event) {
  *
  */
 export function setupDevTools () {
-  // @ts-ignore
-  const isDevOrTest = typeof import.meta.env !== 'undefined'
-    // @ts-ignore
-    ? import.meta.env.MODE !== 'production'
-    : true
+  const isDevOrTest = process.env.NODE_ENV !== 'production'
 
   if (isDevOrTest) {
     if (typeof window === 'undefined' || (window['__coralite__'] && window['__coralite__'].getRegisteredComponents)) {

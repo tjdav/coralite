@@ -100,11 +100,14 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
 
     try {
       let module
-      if (extra.attributes && Object.keys(extra.attributes).length > 0) {
-        module = await import(specifier, { with: extra.attributes })
+      const attributes = extra?.attributes || extra
+
+      if (attributes && Object.keys(attributes).length > 0) {
+        module = await import(specifier, { with: attributes })
       } else {
         module = await import(specifier)
       }
+
       let exportModule = ''
 
       for (const key in module) {

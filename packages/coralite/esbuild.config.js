@@ -39,6 +39,9 @@ export const buildOptions = {
     '#lib': './lib/index.js',
     '#plugins': './plugins/index.js'
   },
+  logOverride: {
+    'unsupported-dynamic-import': 'silent'
+  },
   define: {
     'import.meta.env.MODE': 'import.meta.env.MODE',
     'import.meta.env': 'import.meta.env'
