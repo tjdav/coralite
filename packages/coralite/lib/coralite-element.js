@@ -3623,7 +3623,16 @@ export class CoraliteElement extends BaseElement {
    */
   _getOwnSlots () {
     if (this._cachedOwnSlots !== null) {
-      return this._cachedOwnSlots
+      if (this._cachedOwnSlots.every(s => s && s.isConnected)) {
+        return this._cachedOwnSlots
+      }
+
+      const isDevOrTest = process.env.NODE_ENV !== 'production' || this._isDevMode
+      if (isDevOrTest) {
+        console.warn(`[Coralite] Stale slot cache detected for component "${this.componentOptions?.componentId || this.tagName?.toLowerCase() || 'unknown'}". One or more previously cached <slot> elements have been disconnected from the DOM.`)
+      }
+
+      this._cachedOwnSlots = null
     }
 
     const map = this.componentOptions?.hydrationMap

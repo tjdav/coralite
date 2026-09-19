@@ -431,4 +431,53 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
     assert.equal(capturedSlots.count('default'), 1)
     assert.equal(capturedSlots.get('default')[0], child2)
   })
+
+  it('invalidates stale own-slot cache and emits dev/test console.warn when cached slot is detached', () => {
+    const warnings = []
+    const originalWarn = console.warn
+    console.warn = (...args) => {
+      warnings.push(args.join(' '))
+    }
+
+    try {
+      const options = {
+        componentId: 'test-stale-own-slots',
+        templateHTML: '<div class="wrapper"><slot></slot></div>'
+      }
+
+      const ElementClass = createCoraliteClass(options)
+      const testTag = 'test-stale-own-slots'
+      if (!customElements.get(testTag)) {
+        customElements.define(testTag, ElementClass)
+      }
+
+      const el = document.createElement(testTag)
+      document.body.appendChild(el)
+
+      // Initial call populates _cachedOwnSlots
+      const initialSlots = el._getOwnSlots()
+      assert.equal(initialSlots.length, 1)
+      assert.equal(el._cachedOwnSlots, initialSlots)
+
+      // Simulate wiping host content or detaching the slot
+      el.innerHTML = ''
+      assert.equal(initialSlots[0].isConnected, false)
+
+      // Next call to _getOwnSlots should detect stale cache, warn, and re-evaluate
+      const updatedSlots = el._getOwnSlots()
+      assert.equal(updatedSlots.length, 0)
+      assert.equal(warnings.length, 1)
+      assert.ok(warnings[0].includes('Stale slot cache detected for component "test-stale-own-slots"'))
+
+      // Adding new child node now stays as direct child instead of appending to detached slot
+      const child = document.createElement('p')
+      child.textContent = 'Fallback child'
+      el.appendChild(child)
+      el._reconcileLightDOM()
+
+      assert.equal(child.parentNode, el)
+    } finally {
+      console.warn = originalWarn
+    }
+  })
 })
