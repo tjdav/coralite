@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.0.0-rc.4
+
+> Comparing `coralite-scripts-v1.0.0-rc.3` to `HEAD`
+
+**Summary:** 3 commits
+
+### ✨ Features
+
+- add interactive prompts and error code filtering for check and fix (cli) ([dddeade](https://codeberg.org/tjdavid/coralite/commit/dddeadef919d7355c114d4afc47fec0ac8579ca2))
+- add error code and status filtering to check and fix commands (cli) ([063e032](https://codeberg.org/tjdavid/coralite/commit/063e032711a3876da5f62345627f8bc00962eed9))
+
+### ♻️ Code Refactoring
+
+- align Coralite shortcuts and architectural contracts ([6a8a9dc](https://codeberg.org/tjdavid/coralite/commit/6a8a9dca2c3ef6cfb307699a51bf0b5bd25f8a5b))
+
+
 ## v1.0.0-rc.3
 
 > Comparing `coralite-scripts-v1.0.0-rc.2` to `HEAD`
