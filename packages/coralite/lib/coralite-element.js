@@ -11,7 +11,8 @@ import {
   validateAttributeValue,
   shouldReflectAttribute,
   inferTypeFromValues,
-  resolveSchema
+  resolveSchema,
+  isBooleanCustomAttribute
 } from './utils/attributes.js'
 import {
   findOwnedRefNode
@@ -24,7 +25,8 @@ export {
   executeAttributeValidator,
   validateAttributeValue,
   coerce,
-  shouldReflectAttribute
+  shouldReflectAttribute,
+  isBooleanCustomAttribute
 } from './utils/attributes.js'
 
 export {
@@ -3056,7 +3058,10 @@ export class CoraliteElement extends BaseElement {
           // @ts-ignore
           const element = node
 
-          const kind = binding.attrKind || 0
+          let kind = binding.attrKind || 0
+          if (kind === 0 && isBooleanCustomAttribute(element, binding.name)) {
+            kind = 1
+          }
           switch (kind) {
             case 1: {
               const isFalsy = hydratedValue === '' || hydratedValue === 'false' || hydratedValue === 'null' || hydratedValue === '0' || hydratedValue === 'undefined'

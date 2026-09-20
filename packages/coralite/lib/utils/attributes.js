@@ -1,4 +1,5 @@
 import { CoraliteError } from './errors.js'
+import { kebabToCamel } from './core.js'
 
 /**
  * Reserved DOM attributes used internally by Coralite or standard HTML semantics.
@@ -432,4 +433,24 @@ export function shouldReflectAttribute (schema) {
   const targetType = schemaObj.type || (schemaObj.values ? inferTypeFromValues(schemaObj.values) : undefined)
 
   return targetType === Boolean || targetType === 'Boolean'
+}
+
+/**
+ * Checks if a given attribute on an element is defined as a boolean type in its component schema.
+ *
+ * @param {Element|Object} element - The target DOM element.
+ * @param {string} attrName - The attribute name.
+ * @returns {boolean} True if the custom attribute is declared as a boolean type.
+ */
+export function isBooleanCustomAttribute (element, attrName) {
+  const attrs = element?.componentOptions?.attributes
+  if (!attrs || !attrName || typeof attrName !== 'string') {
+    return false
+  }
+  const camel = kebabToCamel(attrName.toLowerCase())
+  const schema = attrs[camel] ?? attrs[attrName] ?? attrs[attrName.toLowerCase()]
+  if (!schema) {
+    return false
+  }
+  return schema === Boolean || schema?.type === Boolean || schema?.type === 'Boolean'
 }
