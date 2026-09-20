@@ -131,7 +131,11 @@ export async function validateComponentsDir (componentsDir, options = {}) {
 
   const results = []
 
-  for await (const file of discoverHtmlFiles({ path: absoluteDir, recursive: true, type: 'component' })) {
+  for await (const file of discoverHtmlFiles({
+    path: absoluteDir,
+    recursive: true,
+    type: 'component'
+  })) {
     const fullPath = file.path.pathname
     const content = file.content ?? await readFile(fullPath, 'utf8')
     const relPath = relative(process.cwd(), fullPath)

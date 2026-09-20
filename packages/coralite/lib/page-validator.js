@@ -123,7 +123,7 @@ export function validatePageSource (sourceCode, options = {}) {
   } else if (rawIgnoreConfig instanceof Set) {
     rawIgnoreConfig = Array.from(rawIgnoreConfig)
   }
-  const ignoreAttributeMap = getIgnoreAttributeMap(/** @type {any} */ (rawIgnoreConfig))
+  const ignoreAttributeMap = getIgnoreAttributeMap(rawIgnoreConfig)
 
   // Normalize ignoreTags
   const ignoreTags = new Set()
@@ -172,7 +172,10 @@ export function validatePageSource (sourceCode, options = {}) {
               const arg0 = node.arguments[0]
               if (arg0 && arg0.type === 'Literal' && typeof arg0.value === 'string') {
                 const definedTag = camelToKebab(arg0.value.toLowerCase().trim())
-                knownMap.set(definedTag, { attributes: {}, slots: [] })
+                knownMap.set(definedTag, {
+                  attributes: {},
+                  slots: []
+                })
               }
             }
           }
@@ -412,9 +415,9 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
     },
 
     CallExpression (node) {
-        // Detect inline customElements.define('tag-name', ...)
-        if (
-          node.callee &&
+      // Detect inline customElements.define('tag-name', ...)
+      if (
+        node.callee &&
           node.callee.type === 'MemberExpression' &&
           node.callee.object &&
           node.callee.object.type === 'Identifier' &&
@@ -423,13 +426,16 @@ function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnosti
           node.callee.property.type === 'Identifier' &&
           node.callee.property.name === 'define' &&
           node.arguments.length > 0
-        ) {
-          const arg0 = node.arguments[0]
-          if (arg0 && arg0.type === 'Literal' && typeof arg0.value === 'string') {
-            const definedTag = camelToKebab(arg0.value.toLowerCase().trim())
-            knownMap.set(definedTag, { attributes: {}, slots: [] })
-          }
+      ) {
+        const arg0 = node.arguments[0]
+        if (arg0 && arg0.type === 'Literal' && typeof arg0.value === 'string') {
+          const definedTag = camelToKebab(arg0.value.toLowerCase().trim())
+          knownMap.set(definedTag, {
+            attributes: {},
+            slots: []
+          })
         }
+      }
 
       const calleeStr = getCalleeName(node.callee)
 
@@ -600,7 +606,11 @@ export async function validatePagesDir (pagesDir, options = {}) {
     throw new Error(`Pages directory not found: ${absoluteDir}`)
   }
 
-  for await (const file of discoverHtmlFiles({ path: absoluteDir, recursive: true, type: 'page' })) {
+  for await (const file of discoverHtmlFiles({
+    path: absoluteDir,
+    recursive: true,
+    type: 'page'
+  })) {
     const fullPath = file.path.pathname
     const content = file.content ?? await readFile(fullPath, 'utf8')
     const relPath = relative(process.cwd(), fullPath)

@@ -37,7 +37,10 @@ function traverseAndAddTestId (children, { mode = 'production', preserveTestId =
     }
 
     if (node.children?.length > 0) {
-      traverseAndAddTestId(node.children, { mode, preserveTestId })
+      traverseAndAddTestId(node.children, {
+        mode,
+        preserveTestId
+      })
     }
   }
 }
@@ -57,7 +60,10 @@ function stripTestAttributesFromComponent (component, { mode = 'production', pre
   const shouldStrip = mode === 'production' && !preserveTestId && process.env.CORALITE_PRESERVE_TESTID !== 'true'
 
   if (component.template && component.template.children) {
-    traverseAndAddTestId(component.template.children, { mode, preserveTestId })
+    traverseAndAddTestId(component.template.children, {
+      mode,
+      preserveTestId
+    })
   }
 
   if (component.values && component.values.attributes) {
@@ -71,7 +77,7 @@ function stripTestAttributesFromComponent (component, { mode = 'production', pre
 
 /**
  * Creates a configured testing plugin instance.
- * @param {Object} [pluginOptions]
+ * @param {Object} [pluginOptions] -
  * @param {boolean} [pluginOptions.preserveTestId] - Whether to preserve data-testid in production.
  */
 export function createTestingPlugin (pluginOptions = {}) {
@@ -84,7 +90,10 @@ export function createTestingPlugin (pluginOptions = {}) {
       onComponentSet ({ component, module, app }) {
         const mode = app?.options?.mode || 'production'
         const preserveTestId = pluginOptions.preserveTestId || app?.options?.preserveTestId
-        stripTestAttributesFromComponent(component || module, { mode, preserveTestId })
+        stripTestAttributesFromComponent(component || module, {
+          mode,
+          preserveTestId
+        })
       },
       /**
        * @param {CoralitePluginComponentContext} context
@@ -92,7 +101,10 @@ export function createTestingPlugin (pluginOptions = {}) {
       onComponentUpdate ({ component, module, app }) {
         const mode = app?.options?.mode || 'production'
         const preserveTestId = pluginOptions.preserveTestId || app?.options?.preserveTestId
-        stripTestAttributesFromComponent(component || module, { mode, preserveTestId })
+        stripTestAttributesFromComponent(component || module, {
+          mode,
+          preserveTestId
+        })
       },
       onBeforeBuild ({ app }) {
         if (app?.options?.mode !== 'testing') {
@@ -116,7 +128,10 @@ export function createTestingPlugin (pluginOptions = {}) {
         const preserveTestId = pluginOptions.preserveTestId || app?.options?.preserveTestId
 
         if (template && 'children' in template && template.children) {
-          traverseAndAddTestId(template.children, { mode, preserveTestId })
+          traverseAndAddTestId(template.children, {
+            mode,
+            preserveTestId
+          })
         }
       },
       /**
@@ -133,7 +148,10 @@ export function createTestingPlugin (pluginOptions = {}) {
           nodes = result.children
         }
 
-        traverseAndAddTestId(nodes, { mode, preserveTestId })
+        traverseAndAddTestId(nodes, {
+          mode,
+          preserveTestId
+        })
       },
       /**
        * @param {CoralitePluginPageSetContext} context
@@ -143,7 +161,10 @@ export function createTestingPlugin (pluginOptions = {}) {
         const preserveTestId = pluginOptions.preserveTestId || app?.options?.preserveTestId
 
         if (elements?.root?.children) {
-          traverseAndAddTestId(elements.root.children, { mode, preserveTestId })
+          traverseAndAddTestId(elements.root.children, {
+            mode,
+            preserveTestId
+          })
         }
       }
     }
@@ -154,6 +175,9 @@ export function createTestingPlugin (pluginOptions = {}) {
 
 const defaultTestingPluginInstance = createTestingPlugin()
 
+/**
+ *
+ */
 function testingPluginFactory (options) {
   if (options && typeof options === 'object') {
     return createTestingPlugin(options)
@@ -162,11 +186,36 @@ function testingPluginFactory (options) {
 }
 
 Object.defineProperties(testingPluginFactory, {
-  name: { value: 'testing', configurable: true, enumerable: true, writable: true },
-  server: { value: defaultTestingPluginInstance.server, configurable: true, enumerable: true, writable: true },
-  client: { value: defaultTestingPluginInstance.client, configurable: true, enumerable: true, writable: true },
-  rootDir: { value: defaultTestingPluginInstance.rootDir, configurable: true, enumerable: true, writable: true },
-  filePath: { value: defaultTestingPluginInstance.filePath, configurable: true, enumerable: true, writable: true }
+  name: {
+    value: 'testing',
+    configurable: true,
+    enumerable: true,
+    writable: true
+  },
+  server: {
+    value: defaultTestingPluginInstance.server,
+    configurable: true,
+    enumerable: true,
+    writable: true
+  },
+  client: {
+    value: defaultTestingPluginInstance.client,
+    configurable: true,
+    enumerable: true,
+    writable: true
+  },
+  rootDir: {
+    value: defaultTestingPluginInstance.rootDir,
+    configurable: true,
+    enumerable: true,
+    writable: true
+  },
+  filePath: {
+    value: defaultTestingPluginInstance.filePath,
+    configurable: true,
+    enumerable: true,
+    writable: true
+  }
 })
 
 export const testingPlugin = testingPluginFactory

@@ -1,8 +1,7 @@
 import { parse as parseJS } from 'acorn'
 import { simple as walkJS } from 'acorn-walk'
 import { camelToKebab, kebabToCamel } from '../utils/core.js'
-import { buildCodeframe, getLocForSubstring } from '../utils/diagnostics.js'
-export { getLocForSubstring } from '../utils/diagnostics.js'
+import { buildCodeframe } from '../utils/diagnostics.js'
 
 export const RESERVED_CONTEXT_KEYS = new Set(['state', 'observe', 'signal', 'root', 'refs', 'slots', 'instanceId', 'emit'])
 export const RESERVED_IDENTIFIERS = new Set(['undefined', 'null', 'true', 'false', 'NaN'])
