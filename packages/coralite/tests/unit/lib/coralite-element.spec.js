@@ -1868,7 +1868,7 @@ describe('CoraliteElement', () => {
   })
 
   describe('Reconnection, Reparenting & Slot Reactivity ([LFC-01])', () => {
-    it('1. Context Migration on Reparenting cleans up old unsubscribers and receives new context', (t, done) => {
+    it('Context Migration on Reparenting cleans up old unsubscribers and receives new context', (t, done) => {
       const tag = 'ctx-consumer-' + Math.random().toString(36).substring(2, 9)
       const ConsumerComp = createCoraliteClass({
         componentId: 'ctx-consumer',
@@ -1924,7 +1924,7 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('2. Active Getter Aborts on True Disconnect (cross-task)', (t, done) => {
+    it('Active Getter Aborts on True Disconnect (cross-task)', (t, done) => {
       let getterSignal = null
       const tag = 'getter-abort-' + Math.random().toString(36).substring(2, 9)
       const GetterAbortComp = createCoraliteClass({
@@ -1959,7 +1959,7 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('3. Synchronous Offline State Mutation before attach reflects immediately upon attach', (t, done) => {
+    it('Synchronous Offline State Mutation before attach reflects immediately upon attach', (t, done) => {
       const tag = 'offline-mutate-' + Math.random().toString(36).substring(2, 9)
       const OfflineComp = createCoraliteClass({
         componentId: 'offline-mutate',
@@ -1990,7 +1990,7 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('4. Slot Observed Keys Deduplication prevents duplicate registrations', (t, done) => {
+    it('Slot Observed Keys Deduplication prevents duplicate registrations', (t, done) => {
       const tag = 'dedup-slot-' + Math.random().toString(36).substring(2, 9)
       const DedupComp = createCoraliteClass({
         componentId: 'dedup-slot',
@@ -2025,7 +2025,7 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('5. Repeated same-task reparent cycles do not re-run client(), duplicate state, or drop signal listeners', (t, done) => {
+    it('Repeated same-task reparent cycles do not re-run client(), duplicate state, or drop signal listeners', (t, done) => {
       let clientRunCount = 0
       let clickHandledCount = 0
       const tag = 'repeat-reparent-' + Math.random().toString(36).substring(2, 9)
@@ -2090,7 +2090,7 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('6. Lifecycle Revival: cross-task detach tears down, reconnect re-runs client() and re-hooks computed slot observers', (t, done) => {
+    it('Lifecycle Revival: cross-task detach tears down, reconnect re-runs client() and re-hooks computed slot observers', (t, done) => {
       let clientRunCount = 0
       let listenerFiredCount = 0
 
@@ -2156,7 +2156,7 @@ describe('CoraliteElement', () => {
       })
     })
 
-    it('7. Light DOM reconciliation batches observer-driven appends and stays idempotent on manual passes', (t, done) => {
+    it('Light DOM reconciliation batches observer-driven appends and stays idempotent on manual passes', (t, done) => {
       const tag = 'batch-recon-' + Math.random().toString(36).substring(2, 9)
       const BatchComp = createCoraliteClass({
         componentId: 'batch-recon',
@@ -2198,6 +2198,84 @@ describe('CoraliteElement', () => {
 
         document.body.removeChild(comp)
         done()
+      })
+    })
+
+    it('Nested slotted component binding updates propagate correctly when parent state changes', (t, done) => {
+      const iconTag = 'atoll-icon-' + Math.random().toString(36).substring(2, 9)
+      const buttonTag = 'atoll-button-' + Math.random().toString(36).substring(2, 9)
+      const parentTag = 'nav-sidebar-' + Math.random().toString(36).substring(2, 9)
+
+      const IconComp = createCoraliteClass({
+        componentId: 'atoll-icon',
+        attributes: {
+          active: { type: Boolean },
+          name: { type: String }
+        },
+        templateHTML: '<i>icon</i>'
+      })
+      customElements.define(iconTag, IconComp)
+
+      const ButtonComp = createCoraliteClass({
+        componentId: 'atoll-button',
+        templateHTML: '<button><span>btn</span><slot></slot></button>',
+        slots: {
+          default: (nodes) => {
+            return nodes.map(n => {
+              if (n.nodeType === 1) {
+                const wrapper = document.createElement('span')
+                wrapper.className = 'atoll-btn-leading'
+                wrapper.appendChild(n)
+                return wrapper
+              }
+              return n
+            })
+          }
+        }
+      })
+      customElements.define(buttonTag, ButtonComp)
+
+      const ParentComp = createCoraliteClass({
+        componentId: 'nav-sidebar',
+        defaultValues: {
+          isMusicActiveBool: false
+        },
+        templateHTML: `<div class="nav"><${buttonTag}><${iconTag} name="music" active="{{ isMusicActiveBool }}" data-coralite-slot-index="3"></${iconTag}></${buttonTag}></div>`,
+        hydrationMap: {
+          attributes: [
+            {
+              path: [0, 0, 3],
+              name: 'active',
+              template: '{{ isMusicActiveBool }}',
+              attrKind: 1
+            }
+          ]
+        }
+      })
+      customElements.define(parentTag, ParentComp)
+
+      const parentEl = document.createElement(parentTag)
+      document.body.appendChild(parentEl)
+
+      queueMicrotask(() => {
+        const iconEl = parentEl.querySelector(iconTag)
+        assert.ok(iconEl, 'Child icon component should exist in DOM')
+        assert.strictEqual(iconEl.hasAttribute('active'), false, 'Initial active attribute should be false (removed)')
+
+        // Update parent state
+        parentEl._state.isMusicActiveBool = true
+
+        queueMicrotask(() => {
+          assert.strictEqual(iconEl.hasAttribute('active'), true, 'Active attribute should be set after parent state update')
+
+          parentEl._state.isMusicActiveBool = false
+
+          queueMicrotask(() => {
+            assert.strictEqual(iconEl.hasAttribute('active'), false, 'Active attribute should be removed when parent state reverts')
+            document.body.removeChild(parentEl)
+            done()
+          })
+        })
       })
     })
   })

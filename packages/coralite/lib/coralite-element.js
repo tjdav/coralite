@@ -2458,14 +2458,52 @@ export class CoraliteElement extends BaseElement {
             continue
           }
 
-          for (let j = 0; j < slot.childNodes.length; j++) {
-            lightChildren.push(slot.childNodes[j])
+          const slotNodes = (slot._originalNodes && slot._originalNodes.length > 0)
+            ? slot._originalNodes
+            : slot.childNodes
+
+          for (let j = 0; j < slotNodes.length; j++) {
+            lightChildren.push(slotNodes[j])
           }
         }
 
         if (lightChildren.length > 0) {
-          node = lightChildren[index]
-          continue
+          let matchedLightNode = null
+
+          // Search lightChildren and their descendants for data-coralite-slot-index match first
+          for (const lc of lightChildren) {
+            if (lc && lc.nodeType === 1) {
+              if (lc.getAttribute('data-coralite-slot-index') === String(index)) {
+                matchedLightNode = lc
+                break
+              }
+              if (lc.querySelector) {
+                const inner = lc.querySelector(`[data-coralite-slot-index="${index}"]`)
+                if (inner) {
+                  matchedLightNode = inner
+                  break
+                }
+              }
+            }
+          }
+
+          if (matchedLightNode) {
+            node = matchedLightNode
+            continue
+          }
+
+          // Direct array index lookup
+          if (index < lightChildren.length) {
+            node = lightChildren[index]
+            continue
+          }
+
+          // Fallback to element-only lightChildren index lookup
+          const elementLightChildren = lightChildren.filter(n => n && n.nodeType === 1)
+          if (index < elementLightChildren.length) {
+            node = elementLightChildren[index]
+            continue
+          }
         }
 
         // Fallback to light DOM child node traversal ONLY for non-Coralite / foreign custom element boundaries
@@ -2474,6 +2512,31 @@ export class CoraliteElement extends BaseElement {
           // @ts-ignore
           node = node.childNodes[index]
           continue
+        }
+
+        if (node._templateRoots && node._templateRoots.size > 0) {
+          let lightIdx = 0
+          let lightNode = null
+          const cn = node.childNodes
+          for (let ci = 0; ci < cn.length; ci++) {
+            const child = cn[ci]
+
+            if (node._templateRoots.has(child)) {
+              continue
+            }
+
+            if (lightIdx === index) {
+              lightNode = child
+              break
+            }
+
+            lightIdx++
+          }
+          if (lightNode) {
+            // @ts-ignore
+            node = lightNode
+            continue
+          }
         }
 
         return null
@@ -3562,7 +3625,21 @@ export class CoraliteElement extends BaseElement {
 
         if (isElement) {
           if (!elementNode.hasAttribute('data-coralite-slot-index')) {
-            elementNode.setAttribute('data-coralite-slot-index', String(this._nextSlotIndex++))
+            let lightIndex = 0
+            for (let ci = 0; ci < this.childNodes.length; ci++) {
+              const cn = this.childNodes[ci]
+              if (cn === elementNode) {
+                break
+              }
+              if (this._templateRoots && this._templateRoots.has(cn)) {
+                continue
+              }
+              lightIndex++
+            }
+            elementNode.setAttribute('data-coralite-slot-index', String(lightIndex))
+            if (lightIndex >= this._nextSlotIndex) {
+              this._nextSlotIndex = lightIndex + 1
+            }
           }
         }
 
