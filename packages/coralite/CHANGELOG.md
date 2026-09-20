@@ -1,5 +1,56 @@
 # Changelog
 
+## v1.0.0-rc.4
+
+> Comparing `coralite-v1.0.0-rc.3` to `HEAD`
+
+**Summary:** 23 commits
+
+### ✨ Features
+
+- preserve authored data-testid verbatim and modernize E2E tests (testing) ([d45a3b9](https://codeberg.org/tjdavid/coralite/commit/d45a3b9340866690f17688f889de103de85e01fd))
+- add interactive prompts and error code filtering for check and fix (cli) ([dddeade](https://codeberg.org/tjdavid/coralite/commit/dddeadef919d7355c114d4afc47fec0ac8579ca2))
+- add error code and status filtering to check and fix commands (cli) ([063e032](https://codeberg.org/tjdavid/coralite/commit/063e032711a3876da5f62345627f8bc00962eed9))
+
+### 🐛 Bug Fixes
+
+- boolean custom attributes receive boolean binding semantics ([0f140f3](https://codeberg.org/tjdavid/coralite/commit/0f140f3593f0e37bbab8084dcb8d4509feda600c))
+- stop DOM-node assertion OOM loop and bound the unit runner (tests) ([bdcb7b7](https://codeberg.org/tjdavid/coralite/commit/bdcb7b727260bf17524ba4ca387847282e30511c))
+- store live node references in computed slot _originalNodes (element) ([cd88f58](https://codeberg.org/tjdavid/coralite/commit/cd88f584be8ea4170c100fa6d9003b805106e6e6))
+- validate and invalidate stale own-slot cache in _getOwnSlots() ([2926bc5](https://codeberg.org/tjdavid/coralite/commit/2926bc5e187ee880119f6c53f69ceab424a247bc))
+- support dynamic import attributes in module linker and silence esbuild warning (compiler) ([3ed7cd3](https://codeberg.org/tjdavid/coralite/commit/3ed7cd304fc122bd4b4a0d0390af7d569ba11991))
+- component discovery in coralite validator ([66f7744](https://codeberg.org/tjdavid/coralite/commit/66f77441618d42616ba3f3509961b2831a633363))
+- prevent template literals from bypassing ref selector fallback (validator) ([9d3e562](https://codeberg.org/tjdavid/coralite/commit/9d3e562e71f62256fbbe70486a878208d5061446))
+- resolve CORALITE-W401 & CORALITE-W402 fixable discrepancy in component fixer ([f00b9d6](https://codeberg.org/tjdavid/coralite/commit/f00b9d6acaece3e6addaecbb65b7f8faa9a9a59f))
+
+### ⚡ Performance Improvements
+
+- optimize setItem and deleteItem performance (collection) ([5f0ecb2](https://codeberg.org/tjdavid/coralite/commit/5f0ecb24b1ff1cdecf5d98cec7f0590c3af4dc7c))
+
+### 🎨 Styles
+
+- fix linting and formatting errors ([6b9d471](https://codeberg.org/tjdavid/coralite/commit/6b9d4714edf2500df84bacb29b10f83eb9236919))
+
+### ♻️ Code Refactoring
+
+- simplify report summary aggregation and configure dev type resolution (cli) ([d1c4e52](https://codeberg.org/tjdavid/coralite/commit/d1c4e52c9f861c76e4b85e16185feec87025f1d5))
+- align Coralite shortcuts and architectural contracts ([6a8a9dc](https://codeberg.org/tjdavid/coralite/commit/6a8a9dca2c3ef6cfb307699a51bf0b5bd25f8a5b))
+
+### ✅ Tests
+
+- backfill high-value coverage gaps (FACE, CLI, SRI, CSP, attributes) (coralite) ([0297c01](https://codeberg.org/tjdavid/coralite/commit/0297c01c89e3a0acec77e3e537e368a60df2ff20))
+- consolidate core element specs and backfill CSP/ScriptManager/attribute coverage gaps (coralite) ([a751891](https://codeberg.org/tjdavid/coralite/commit/a751891505c129a85d04fef12a397bb5a6661688))
+- consolidate script-manager, parse, and ISR specs (coralite) ([5e57f67](https://codeberg.org/tjdavid/coralite/commit/5e57f6714fdbe0e06475aaa137bc088bceee4612))
+- deduplicate attributes validation tests across spec files (coralite) ([2000a1d](https://codeberg.org/tjdavid/coralite/commit/2000a1df8b68a344e8dc6441d5c63f9ec756ab84))
+- consolidate plugin and CSP specs — remove mirrored/duplicate tests (coralite) ([dc6efc1](https://codeberg.org/tjdavid/coralite/commit/dc6efc12f7a235d3925dea8704e86624c282ec97))
+- fix test hygiene — isolate tmp dirs, remove node_modules pollution, relocate benchmark specs (coralite) ([134d798](https://codeberg.org/tjdavid/coralite/commit/134d798ddd509c76e96c2693633dff0757bbcbf6))
+- consolidate -coverage spec files into primary specs (coralite) ([ce14ea4](https://codeberg.org/tjdavid/coralite/commit/ce14ea4d1148de9be6a01cc9e029cd253b23a9d9))
+
+### 📦 Build System
+
+- transition build:lib to esbuild.config.js and update CLI imports (coralite) ([12dff41](https://codeberg.org/tjdavid/coralite/commit/12dff41548c5e3892a10f8a21e088af28d2fbbb8))
+
+
 ## v1.0.0-rc.3
 
 > Comparing `coralite-v1.0.0-rc.2` to `HEAD`
