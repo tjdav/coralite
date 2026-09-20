@@ -256,7 +256,11 @@ attributes: {
         </ul>
       </li>
       <li>
-        <strong>Standard Custom Attributes</strong>: Standard custom or unreserved attributes (e.g. <code>is-active="{{ isActive }}"</code>) are evaluated as string values (e.g., <code>is-active="false"</code>).
+        <strong>Boolean Custom Attributes</strong>:
+        When a custom element attribute is declared as a boolean type in its target component schema (via <code>Boolean</code>, <code>{ type: Boolean }</code>, or <code>{ type: 'Boolean' }</code>, e.g. <code>&lt;atoll-button loading="{{ isCreating }}"&gt;</code> where <code>loading: Boolean</code>), template bindings automatically evaluate with boolean presence semantics. Falsy values (<code>false</code>, <code>"false"</code>, <code>null</code>, <code>undefined</code>, <code>""</code>, <code>0</code>) cause the attribute to be <strong>completely removed</strong> from the DOM element, while truthy values render as an empty string presence attribute (e.g. <code>loading=""</code>).
+      </li>
+      <li>
+        <strong>Standard Non-Boolean Custom Attributes</strong>: Standard custom or unreserved non-boolean attributes (e.g. <code>title="{{ label }}"</code>) are evaluated as string values (e.g., <code>title="false"</code>).
       </li>
     </ul>
 

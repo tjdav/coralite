@@ -501,7 +501,7 @@ Every attribute declared in `attributes` automatically synthesizes live camelCas
 - **Reflection**:
   - `Boolean` reflects presence automatically (`attr=""` when truthy, removed when falsy).
   - `String` and `Number` do NOT reflect by default; specify `reflect: true` to reflect attribute changes back to the host element.
-- **43 Native Boolean Attributes**: Single-token bindings (`disabled="{{ isDisabled }}"`, `open="{{ isOpen }}"`, `hidden="{{ isHidden }}"`) automatically evaluate truthiness against native HTML boolean attributes (rendered as `attr=""` if truthy, removed completely if falsy).
+- **Native & Custom Boolean Attributes**: Single-token bindings on 43 native HTML boolean attributes (`disabled="{{ isDisabled }}"`, `open="{{ isOpen }}"`) or custom attributes declared as boolean in their target component schema (`loading: Boolean` / `{ type: Boolean }`, e.g. `loading="{{ isCreating }}"`) automatically evaluate truthiness as boolean presence attributes (rendered as `attr=""` if truthy, removed completely if falsy).
 - **Shorthands**:
   - `isChecked: Boolean`
   - `status: ['active', 'inactive', 'pending']` (short for string enum values)
