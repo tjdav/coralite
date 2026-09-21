@@ -1,14 +1,138 @@
 ---
 description: Rules and architectural invariants for Coralite HTML modules and components
-globs: src/components/**/*.html, components/**/*.html
+globs: src/components/**/*.html, components/**/*.html, src/pages/**/*.html, pages/**/*.html
 alwaysApply: false
 ---
 
-# Coralite Component Invariants
+# Coralite Component Rules
 
-When editing or creating Coralite components:
+## Component File Structure
 
-1. **Dumb Templates**: `<template>` blocks MUST contain flat `{{ token }}` placeholders only. No expressions or inline events.
-2. **Derived State**: All computed values belong in synchronous `getters: { ... }`. Context parameter must be destructured: `({ state }) => ...`.
-3. **Serialization Boundary**: Inside `client()`, do NOT reference top-level imports or outer-scope variables. `client()` is stringified and shipped to the browser.
-4. **Primitive Attributes**: Component attributes strictly support `String`, `Number`, and `Boolean`.
+Every Coralite component is a single `.html` file with this structure:
+
+```html
+<template id="my-component">
+  <!-- Flat {{ token }} placeholders only -->
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    attributes: { ... },
+    state: { ... },
+    getters: { ... },
+    slots: { ... },       // optional - transform slot content
+    server({ state }) { ... },
+    client({ state, refs, signal, emit, observe, slots, root }) { ... },
+    style: { ... }
+  })
+</script>
+
+<style>
+  /* :host-scoped styles */
+</style>
+```
+
+## Template Rules (<template>)
+
+- **Flat tokens only**: `{{ propertyName }}` — no expressions, no function calls
+- **No inline events**: Never use `onclick`, `onsubmit`, `@click`, etc.
+- **No conditionals/loops**: No `{{#if}}`, `{{#each}}`, `v-for`, `*ngFor`
+- **No dot notation**: `{{ user.name }}` is forbidden — flatten state or use getters
+- **Compute in getters**: Move all derived values to `getters: { ... }`
+
+## Script Section Rules
+
+### `attributes`
+- Only `String`, `Number`, `Boolean` — never `Object` or `Array`
+- Use `default` for optional values, `required: true` for mandatory
+
+### `state`
+- Declare reactive state properties with initial values
+- This becomes the single source of truth for the component
+
+### `getters`
+- Pure derived/computed values
+- **MUST destructure context**: `({ state }) => ...` not `(state) => ...`
+- Synchronous only — no async/await, no Promises
+- Receive context: `{ state, root, refs, slots, signal }`
+
+### `server({ state })`
+- Runs during SSR/build time only (Node.js)
+- Stripped from browser bundles
+- Must return an object to hydrate client state
+- Can use Node.js imports and server-only packages
+
+### `client({ state, refs, signal, emit, observe, slots, root })`
+- Runs in browser only
+- **Serialization boundary**: Cannot access module-scope variables or top-level imports
+- Use dynamic `await import()` for browser dependencies
+- Bind events with `{ signal }` for automatic cleanup:
+  ```js
+  refs('btn').addEventListener('click', handler, { signal })
+  ```
+- Use `emit(name, detail)` for custom events (not `dispatchEvent`)
+- Use `observe(key, callback)` to watch state changes for external sync
+- `slots` provides access to slot content helpers
+- `root` is the component element itself
+
+### `slots` (optional)
+- Transform slot content at build/server time
+- Receives `(content, state)` parameters
+- Return processed content array or null to skip
+
+```js
+slots: {
+  default (content) {
+    // Transform default slot content
+    return content.filter(node => node.type !== 'text' || node.data.trim())
+  }
+}
+```
+
+### `style` (dynamic styles)
+- Functions receive `state` directly: `(state) => ...`
+- Synchronous only — no async functions
+- Return string, number, or nullish
+
+## Style Section Rules
+
+- Use `:host` to target the component root
+- Use `:host-context(.dark)` for theme variations
+- Slotted content participates in parent layouts (`display: contents` injected)
+- `::slotted()` selectors are auto-scoped by compiler
+
+## Event Handling
+
+1. Add `ref="name"` to template elements
+2. Access via `refs('name')` in client
+3. Bind with signal: `el.addEventListener('event', fn, { signal })`
+4. Emit events with `emit('event-name', detail)`
+
+## Observing State Changes
+
+Use `observe(key, callback)` to sync with external systems (WebGL, imperative DOM, forms):
+
+```js
+client({ state, observe, signal }) {
+  observe('count', (newValue) => {
+    // Sync with external system - DO NOT mutate state here
+    externalSystem.update(newValue)
+  })
+}
+```
+
+**IMPORTANT**: Never mutate reactive state inside `observe()` callback — this causes infinite loops.
+
+## Common Mistakes to Avoid
+
+| Mistake | Correct Pattern |
+|---------|----------------|
+| `{{ count + 1 }}` in template | Getter: `incremented: ({ state }) => state.count + 1` |
+| `onclick="handle()"` in template | `ref="btn"` + bind in `client()` |
+| `(state) => state.value` in getter | `({ state }) => state.value` |
+| Import at top, use in `client()` | `await import('...')` inside `client()` |
+| `root.dispatchEvent(...)` | `emit('name', detail)` |
+| Async function in `style` | Synchronous function only |
+| Mutating state in `observe()` | Mutate in event handlers only |
