@@ -3488,7 +3488,7 @@ export class CoraliteElement extends BaseElement {
     })
     this._slotObserver.observe(this, {
       childList: true,
-      subtree: true
+      subtree: false
     })
   }
 
