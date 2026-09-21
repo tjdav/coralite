@@ -9,7 +9,7 @@ const templatesDir = path.resolve(__dirname, '../../templates')
 
 describe('create-coralite template package declarations', () => {
   const templates = readdirSync(templatesDir, { withFileTypes: true })
-    .filter(dirent => dirent.isDirectory())
+    .filter(dirent => dirent.isDirectory() && dirent.name !== 'agent')
     .map(dirent => dirent.name)
 
   it('has valid template directories', () => {

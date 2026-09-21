@@ -1,0 +1,14 @@
+---
+description: Rules and architectural invariants for Coralite HTML modules and components
+globs: src/components/**/*.html, components/**/*.html
+alwaysApply: false
+---
+
+# Coralite Component Invariants
+
+When editing or creating Coralite components:
+
+1. **Dumb Templates**: `<template>` blocks MUST contain flat `{{ token }}` placeholders only. No expressions or inline events.
+2. **Derived State**: All computed values belong in synchronous `getters: { ... }`. Context parameter must be destructured: `({ state }) => ...`.
+3. **Serialization Boundary**: Inside `client()`, do NOT reference top-level imports or outer-scope variables. `client()` is stringified and shipped to the browser.
+4. **Primitive Attributes**: Component attributes strictly support `String`, `Number`, and `Boolean`.

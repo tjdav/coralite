@@ -16,6 +16,10 @@ import {
   isValidPackageName,
   toValidPackageName
 } from '../lib/utils.js'
+import {
+  generateAgentRules,
+  AgentTargetError
+} from '../lib/agent-generator.js'
 
 const program = new Command()
 
@@ -35,6 +39,33 @@ program
       'css',
       'scss'
     ]).default('')
+  )
+
+program
+  .addOption(
+    new Option('--agent', 'inject AI assistant rules into the current directory and exit')
+  )
+
+program
+  .addOption(
+    new Option('--target <name>', 'agent rule target(s) when scaffolding AI rules')
+      .default('all')
+  )
+
+program
+  .addOption(
+    new Option('--force', 'overwrite existing agent rule files')
+      .default(false)
+  )
+
+program
+  .addOption(
+    new Option('--ai', 'force-include AI assistant rules during project creation')
+  )
+
+program
+  .addOption(
+    new Option('--no-ai', 'skip AI assistant rules during project creation')
   )
 
 program.parse()
@@ -66,6 +97,31 @@ async function createProject () {
   let template = argTemplate
   const pkgInfo = extractPackageInfoFromUserAgent(process.env.npm_config_user_agent)
 
+  if (options.agent) {
+    try {
+      const result = generateAgentRules({
+        cwd,
+        target: options.target,
+        force: options.force
+      })
+
+      if (result.written.length === 0 && result.skipped.length > 0) {
+        console.log(
+          `\nNo files written. Re-run with --force to overwrite the ${result.skipped.length} existing file(s).`
+        )
+      } else {
+        const noun = result.written.length === 1 ? 'file' : 'files'
+        console.log(`\n✓ Agent rules added (${result.written.length} ${noun}).`)
+      }
+      return
+    } catch (err) {
+      if (err instanceof AgentTargetError) {
+        console.error(`\n✗ ${err.message}`)
+        process.exit(1)
+      }
+      throw err
+    }
+  }
   // get project name and target directory
   if (target) {
     target = formatTargetDir(options.output)
@@ -159,6 +215,27 @@ async function createProject () {
     template = selectedTemplate
   }
 
+  // Resolution precedence: explicit --ai/--no-ai > interactive prompt > default true
+  let includeAi
+  if (options.ai === true) {
+    includeAi = true
+  } else if (options.ai === false) {
+    includeAi = false
+  } else if (!process.stdout.isTTY || !process.stdin.isTTY) {
+    includeAi = true
+  } else {
+    const aiChoice = await prompts.confirm({
+      message: 'Setup AI assistant guidelines (Cursor, Claude Code, Copilot)?',
+      initialValue: true
+    })
+
+    if (prompts.isCancel(aiChoice)) {
+      return cancelPrompt()
+    }
+
+    includeAi = aiChoice
+  }
+
   const root = path.resolve(cwd, target)
   fs.mkdirSync(root, { recursive: true })
 
@@ -192,6 +269,18 @@ async function createProject () {
   )
   pkg.name = packageName
   write('package.json', JSON.stringify(pkg, null, 2) + '\n')
+
+  if (includeAi) {
+    const { written } = generateAgentRules({
+      cwd: root,
+      target: options.target,
+      force: true
+    })
+
+    if (written.length > 0) {
+      console.log(`\n✓ Added AI assistant rules (${written.length} files).`)
+    }
+  }
 
   // show success message
   let doneMessage = ''
