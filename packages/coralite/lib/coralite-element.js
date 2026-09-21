@@ -154,6 +154,7 @@ const FallbackElement = class {
 const MAX_REACTIVE_CASCADE_DEPTH = 50
 const MAX_FLUSHES_PER_WINDOW = 100
 const FLUSH_WINDOW_MS = 1000
+const MAX_PENDING_BINDING_RETRIES = 8
 
 /**
  * O(1) liveness check for a DOM node.
@@ -426,6 +427,13 @@ export class CoraliteElement extends BaseElement {
      * @protected
      */
     this._nextSlotIndex = 0
+
+    /**
+     * Remaining follow-up renders for unresolved binding paths.
+     * @type {number}
+     * @protected
+     */
+    this._pendingBindingRetries = 0
 
     /**
      * Per-instance MutationObserver for dynamic Light DOM slot reconciliation.
@@ -2382,6 +2390,7 @@ export class CoraliteElement extends BaseElement {
   /**
    * Traverses the DOM tree using an AST-generated path index array.
    * Allows O(1) element lookups without relying on querySelectors or classes.
+   * Component boundaries resolve by compiler-stamped slot index; everything else traverses positionally.
    * @param {number[]} path - Array of childNode indices (e.g., `[0, 1, 2]`).
    * @returns {Node|null} The physical DOM node, or null if traversal fails.
    */
@@ -2391,155 +2400,33 @@ export class CoraliteElement extends BaseElement {
       if (!node) {
         return null
       }
-      if (node !== this && node.tagName && node.tagName.includes('-')) {
-        // 1. Try to find the physical projected child by data-coralite-slot-index first
+      // Only real Coralite components own a slot-index space; plain and foreign elements do not.
+      const isComponentBoundary = node !== this && Boolean(node.componentOptions || node._instanceId)
+      if (isComponentBoundary) {
         const candidates = node.querySelectorAll(`[data-coralite-slot-index="${index}"]`)
         let foundNode = null
         for (const cand of candidates) {
-          let parentComponent = cand.parentElement
-          while (parentComponent && parentComponent !== node) {
-            if (parentComponent.tagName && parentComponent.tagName.includes('-')) {
+          // Reject candidates owned by a deeper Coralite component boundary.
+          /** @type {any} */
+          let parent = cand.parentElement
+          while (parent && parent !== node) {
+            const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId)
+            if (isDeeperBoundary) {
               break
             }
-            parentComponent = parentComponent.parentElement
+            parent = parent.parentElement
           }
-          if (parentComponent === node) {
+          if (parent === node) {
             foundNode = cand
             break
           }
         }
-        if (foundNode) {
-          // @ts-ignore
-          node = foundNode
-          continue
+        if (!foundNode) {
+          return null
         }
-
-        // 2. Fallback to original slots traversal, with fallback-skipping added
-        const slots = []
-        const traverse = (current) => {
-          if (!current) {
-            return
-          }
-          if (current !== node && current.tagName && current.tagName.includes('-')) {
-            return
-          }
-          if (current.tagName === 'SLOT') {
-            slots.push(current)
-            return
-          }
-          const children = current.childNodes || []
-          for (let i = 0; i < children.length; i++) {
-            traverse(children[i])
-          }
-        }
-        traverse(node)
-
-        const lightChildren = []
-        for (let i = 0; i < slots.length; i++) {
-          const slot = slots[i]
-          let isFallback = slot.hasAttribute('data-coralite-fallback')
-          if (!isFallback && node.componentOptions?.slots && Object.keys(node.componentOptions.slots).length > 0) {
-            let hasElements = false
-            let hasSlotIndex = false
-            for (let j = 0; j < slot.childNodes.length; j++) {
-              const child = slot.childNodes[j]
-              if (child.nodeType === 1) {
-                hasElements = true
-                if (child.hasAttribute('data-coralite-slot-index') || child.querySelector('[data-coralite-slot-index]')) {
-                  hasSlotIndex = true
-                }
-              }
-            }
-            if (hasElements && !hasSlotIndex) {
-              isFallback = true
-            }
-          }
-          if (isFallback) {
-            continue
-          }
-
-          const slotNodes = (slot._originalNodes && slot._originalNodes.length > 0)
-            ? slot._originalNodes
-            : slot.childNodes
-
-          for (let j = 0; j < slotNodes.length; j++) {
-            lightChildren.push(slotNodes[j])
-          }
-        }
-
-        if (lightChildren.length > 0) {
-          let matchedLightNode = null
-
-          // Search lightChildren and their descendants for data-coralite-slot-index match first
-          for (const lc of lightChildren) {
-            if (lc && lc.nodeType === 1) {
-              if (lc.getAttribute('data-coralite-slot-index') === String(index)) {
-                matchedLightNode = lc
-                break
-              }
-              if (lc.querySelector) {
-                const inner = lc.querySelector(`[data-coralite-slot-index="${index}"]`)
-                if (inner) {
-                  matchedLightNode = inner
-                  break
-                }
-              }
-            }
-          }
-
-          if (matchedLightNode) {
-            node = matchedLightNode
-            continue
-          }
-
-          // Direct array index lookup
-          if (index < lightChildren.length) {
-            node = lightChildren[index]
-            continue
-          }
-
-          // Fallback to element-only lightChildren index lookup
-          const elementLightChildren = lightChildren.filter(n => n && n.nodeType === 1)
-          if (index < elementLightChildren.length) {
-            node = elementLightChildren[index]
-            continue
-          }
-        }
-
-        // Fallback to light DOM child node traversal ONLY for non-Coralite / foreign custom element boundaries
-        const isForeignElement = node && !node.componentOptions && !node._instanceId
-        if (isForeignElement && node.childNodes && index < node.childNodes.length) {
-          // @ts-ignore
-          node = node.childNodes[index]
-          continue
-        }
-
-        if (node._templateRoots && node._templateRoots.size > 0) {
-          let lightIdx = 0
-          let lightNode = null
-          const cn = node.childNodes
-          for (let ci = 0; ci < cn.length; ci++) {
-            const child = cn[ci]
-
-            if (node._templateRoots.has(child)) {
-              continue
-            }
-
-            if (lightIdx === index) {
-              lightNode = child
-              break
-            }
-
-            lightIdx++
-          }
-          if (lightNode) {
-            // @ts-ignore
-            node = lightNode
-            continue
-          }
-        }
-
-        return null
+        // @ts-ignore
+        node = foundNode
+        continue
       }
       // @ts-ignore
       node = node.childNodes[index]
@@ -2557,6 +2444,7 @@ export class CoraliteElement extends BaseElement {
     this._requiredTokens = []
     this._evaluatedTokens = {}
     this._cachedOwnSlots = null
+    this._pendingBindingRetries = 0
 
     const map = this.componentOptions.hydrationMap
     if (!map) {
@@ -2593,42 +2481,39 @@ export class CoraliteElement extends BaseElement {
       for (let i = 0; i < map.texts.length; i++) {
         const item = map.texts[i]
         const node = this.getNodeByPath(item.path)
-        if (node) {
-          const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
-          this._bindings.push({
-            type: item.type || 'text',
-            node,
-            path: item.path,
-            template: item.template,
-            tokens: parsed.tokens,
-            isSingleToken: parsed.isSingleToken,
-            singleTokenKey: parsed.singleTokenKey,
-            segments: parsed.segments
-          })
-        }
+        const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
+        this._bindings.push({
+          type: item.type || 'text',
+          node,
+          path: item.path,
+          template: item.template,
+          tokens: parsed.tokens,
+          isSingleToken: parsed.isSingleToken,
+          singleTokenKey: parsed.singleTokenKey,
+          segments: parsed.segments
+        })
       }
     }
 
     if (map.attributes) {
       for (let i = 0; i < map.attributes.length; i++) {
         const item = map.attributes[i]
+        // See the note above: unresolved paths stay pending and are retried by _updateDOM().
         const node = this.getNodeByPath(item.path)
-        if (node) {
-          const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
-          const attrKind = item.attrKind !== undefined ? item.attrKind : classifyAttribute(item.name, parsed.isSingleToken)
-          this._bindings.push({
-            type: 'attribute',
-            node,
-            path: item.path,
-            name: item.name,
-            template: item.template,
-            tokens: parsed.tokens,
-            isSingleToken: parsed.isSingleToken,
-            singleTokenKey: parsed.singleTokenKey,
-            segments: parsed.segments,
-            attrKind
-          })
-        }
+        const parsed = item.tokens !== undefined ? item : fallbackParse(item.template)
+        const attrKind = item.attrKind !== undefined ? item.attrKind : classifyAttribute(item.name, parsed.isSingleToken)
+        this._bindings.push({
+          type: 'attribute',
+          node,
+          path: item.path,
+          name: item.name,
+          template: item.template,
+          tokens: parsed.tokens,
+          isSingleToken: parsed.isSingleToken,
+          singleTokenKey: parsed.singleTokenKey,
+          segments: parsed.segments,
+          attrKind
+        })
       }
     }
 
@@ -3071,6 +2956,8 @@ export class CoraliteElement extends BaseElement {
         }
       }
 
+      let unresolvedBindings = 0
+
       for (let i = 0; i < targetBindings.length; i++) {
         const binding = targetBindings[i]
         let node = binding.node
@@ -3083,6 +2970,7 @@ export class CoraliteElement extends BaseElement {
         }
 
         if (!node) {
+          unresolvedBindings++
           continue
         }
 
@@ -3165,6 +3053,12 @@ export class CoraliteElement extends BaseElement {
             }
           }
         }
+      }
+
+      if (unresolvedBindings > 0 && this._pendingBindingRetries < MAX_PENDING_BINDING_RETRIES) {
+        this._pendingBindingRetries++
+        this._needsDOMUpdate = true
+        this._scheduleUpdate()
       }
 
       this._applyStylesIfDirty()
@@ -3417,6 +3311,9 @@ export class CoraliteElement extends BaseElement {
    * @protected
    */
   _markKeysDirty (...names) {
+    // A state change gives unresolved binding paths another chance to resolve.
+    this._pendingBindingRetries = 0
+
     // Track changed keys before subscriber guard for style and binding checks
     if (this._styleDeps || this._tokenBindings) {
       if (!this._changedStateKeys) {
@@ -3626,16 +3523,18 @@ export class CoraliteElement extends BaseElement {
         if (isElement) {
           if (!elementNode.hasAttribute('data-coralite-slot-index')) {
             let lightIndex = 0
-            for (let ci = 0; ci < this.childNodes.length; ci++) {
-              const cn = this.childNodes[ci]
+            for (let ci = 0; ci < candidates.length; ci++) {
+              const cn = candidates[ci]
               if (cn === elementNode) {
                 break
               }
-              if (this._templateRoots && this._templateRoots.has(cn)) {
-                continue
-              }
               lightIndex++
             }
+
+            if (lightIndex < this._nextSlotIndex) {
+              lightIndex = this._nextSlotIndex
+            }
+
             elementNode.setAttribute('data-coralite-slot-index', String(lightIndex))
             if (lightIndex >= this._nextSlotIndex) {
               this._nextSlotIndex = lightIndex + 1

@@ -695,9 +695,7 @@ describe('CoraliteElement', () => {
       'child-token-0': { isTrue: true },
       'child-comp-0': { name: 'value' }
     })
-
-    // Set the SSR-rendered HTML first before defining elements, matching real-world deferred hydration
-    document.body.innerHTML = `<${tokenTagName} data-cid="child-token-0" data-coralite-initial><${parentTagName} data-cid="parent-comp-0" data-coralite-initial><div><slot><${childTagName} name="value" data-cid="child-comp-0" data-coralite-initial><div>Child</div></${childTagName}></slot></div></${parentTagName}></${tokenTagName}>`
+    document.body.innerHTML = `<${tokenTagName} data-cid="child-token-0" data-coralite-initial><${parentTagName} data-cid="parent-comp-0" data-coralite-initial><div><slot><${childTagName} name="value" data-cid="child-comp-0" data-coralite-slot-index="0" data-coralite-initial><div>Child</div></${childTagName}></slot></div></${parentTagName}></${tokenTagName}>`
 
     // Upgrade/define custom elements now
     customElements.define(parentTagName, ParentElement)
@@ -722,6 +720,143 @@ describe('CoraliteElement', () => {
         document.body.removeChild(el)
         done()
       })
+    })
+  })
+
+  describe('Nested Slotted Component Binding Paths', () => {
+    /**
+     * Builds the nav-sidebar -> atoll-button -> atoll-icon hierarchy used by the nested
+     * binding tests.
+     *
+     * `serverStamped` mirrors compiler output: renderer.js stamps `data-coralite-slot-index`
+     * on every slotted child it emits, numbering *all* children (text nodes included). When
+     * false the tree is runtime-built instead and the runtime has to stamp those indices
+     * itself, which is only resolvable if it numbers nodes exactly like the compiler does.
+     * @param {boolean} serverStamped - Whether slotted children arrive pre-stamped.
+     * @returns {{ parentEl: any, iconTag: string }} Fixture handles.
+     */
+    const buildNestedFixture = (serverStamped) => {
+      const suffix = Math.random().toString(36).substring(2, 9)
+      const iconTag = 'atoll-icon-' + suffix
+      const buttonTag = 'atoll-button-' + suffix
+      const parentTag = 'nav-sidebar-' + suffix
+      const stamp = (value) => (serverStamped ? ` data-coralite-slot-index="${value}"` : '')
+
+      const IconComp = createCoraliteClass({
+        componentId: 'atoll-icon',
+        attributes: {
+          active: { type: Boolean },
+          name: { type: String }
+        },
+        templateHTML: '<i>icon</i>'
+      })
+      customElements.define(iconTag, IconComp)
+
+      const ButtonComp = createCoraliteClass({
+        componentId: 'atoll-button',
+        templateHTML: '<button><span>btn</span><slot></slot></button>'
+      })
+      customElements.define(buttonTag, ButtonComp)
+
+      const ParentComp = createCoraliteClass({
+        componentId: 'nav-sidebar',
+        defaultValues: { isMusicActiveBool: true },
+        // Text nodes sit between the icons, so the compiler's numbering puts the icons on 1 and 3
+        // (not 0 and 1) - the same shape as real output in website/dist. The binding path below
+        // therefore addresses index 3, through the atoll-button component boundary.
+        templateHTML: `<div class="nav"><${buttonTag}>Some Text <${iconTag} name="home"${stamp(1)}></${iconTag}> Intervening Text <${iconTag} name="music"${stamp(3)}></${iconTag}></${buttonTag}></div>`,
+        hydrationMap: {
+          attributes: [
+            {
+              path: [0, 0, 3],
+              name: 'active',
+              template: '{{ isMusicActiveBool }}',
+              attrKind: 1
+            }
+          ]
+        }
+      })
+      customElements.define(parentTag, ParentComp)
+
+      const parentEl = document.createElement(parentTag)
+      document.body.appendChild(parentEl)
+
+      return { parentEl, iconTag }
+    }
+
+    /**
+     * Asserts the full binding cycle: index parity, path resolution, first-paint application
+     * and both state transitions. Failures are reported through `done(err)` so a broken
+     * assertion fails immediately instead of hanging until the test timeout.
+     * @param {Function} done - node:test callback.
+     * @param {{ parentEl: any, iconTag: string }} fixture - Handles from buildNestedFixture.
+     * @returns {void}
+     */
+    const assertBindingCycle = (done, { parentEl, iconTag }) => {
+      setTimeout(() => {
+        try {
+          const icons = parentEl.querySelectorAll(iconTag)
+          assert.strictEqual(icons.length, 2, 'Both slotted icon components should be rendered')
+          const homeIcon = icons[0]
+          const musicIcon = icons[1]
+
+          assert.strictEqual(homeIcon.getAttribute('data-coralite-slot-index'), '1', 'First icon should carry compiler index 1 (one preceding text node)')
+          assert.strictEqual(musicIcon.getAttribute('data-coralite-slot-index'), '3', 'Second icon should carry compiler index 3 (two preceding text nodes)')
+          assertSame(parentEl.getNodeByPath([0, 0, 3]), musicIcon, 'Path [0,0,3] should resolve the second slotted icon through the component boundary')
+          assert.strictEqual(musicIcon.hasAttribute('active'), true, 'Bound attribute should be applied on first paint')
+          assert.strictEqual(homeIcon.hasAttribute('active'), false, 'The non-bound slotted icon must stay untouched')
+
+          // @ts-ignore
+          parentEl._state.isMusicActiveBool = false
+
+          queueMicrotask(() => {
+            try {
+              assert.strictEqual(musicIcon.hasAttribute('active'), false, 'Attribute should be removed when state turns false')
+
+              // @ts-ignore
+              parentEl._state.isMusicActiveBool = true
+
+              queueMicrotask(() => {
+                try {
+                  assert.strictEqual(musicIcon.hasAttribute('active'), true, 'Attribute should be re-applied when state turns true')
+                  document.body.removeChild(parentEl)
+                  done()
+                } catch (err) {
+                  done(err)
+                }
+              })
+            } catch (err) {
+              done(err)
+            }
+          })
+        } catch (err) {
+          done(err)
+        }
+      }, 0)
+    }
+
+    it('resolves nested slotted binding paths when slotted children carry compiler-stamped indices', (t, done) => {
+      assertBindingCycle(done, buildNestedFixture(true))
+    })
+
+    it('stamps compiler-parity indices for runtime-built trees and resolves nested binding paths lazily', (t, done) => {
+      assertBindingCycle(done, buildNestedFixture(false))
+    })
+
+    it('returns null when a Coralite component boundary has no matching slot index', (t, done) => {
+      const { parentEl } = buildNestedFixture(true)
+
+      setTimeout(() => {
+        try {
+          // Index 2 is the text node between the icons: text nodes cannot carry
+          // `data-coralite-slot-index`, so the index is not addressable.
+          assert.strictEqual(parentEl.getNodeByPath([0, 0, 2]), null, 'Unstamped slot indices must not resolve')
+          document.body.removeChild(parentEl)
+          done()
+        } catch (err) {
+          done(err)
+        }
+      }, 0)
     })
   })
 
@@ -1056,9 +1191,7 @@ describe('CoraliteElement', () => {
       assert.ok(refs, 'Refs object should exist')
       assert.ok(refs.foreignBtn, 'Foreign boundary ref should be resolved via getNodeByPath')
       assert.strictEqual(refs.foreignBtn.textContent, 'Click')
-
-      // Direct assertion of the traversal fallback
-      assert.strictEqual(el.getNodeByPath([0, 0, 0]), refs.foreignBtn)
+      assertSame(el.getNodeByPath([0, 0, 0]), refs.foreignBtn, 'Foreign boundary node should resolve by positional traversal')
 
       document.body.removeChild(el)
       done()
@@ -2198,84 +2331,6 @@ describe('CoraliteElement', () => {
 
         document.body.removeChild(comp)
         done()
-      })
-    })
-
-    it('Nested slotted component binding updates propagate correctly when parent state changes', (t, done) => {
-      const iconTag = 'atoll-icon-' + Math.random().toString(36).substring(2, 9)
-      const buttonTag = 'atoll-button-' + Math.random().toString(36).substring(2, 9)
-      const parentTag = 'nav-sidebar-' + Math.random().toString(36).substring(2, 9)
-
-      const IconComp = createCoraliteClass({
-        componentId: 'atoll-icon',
-        attributes: {
-          active: { type: Boolean },
-          name: { type: String }
-        },
-        templateHTML: '<i>icon</i>'
-      })
-      customElements.define(iconTag, IconComp)
-
-      const ButtonComp = createCoraliteClass({
-        componentId: 'atoll-button',
-        templateHTML: '<button><span>btn</span><slot></slot></button>',
-        slots: {
-          default: (nodes) => {
-            return nodes.map(n => {
-              if (n.nodeType === 1) {
-                const wrapper = document.createElement('span')
-                wrapper.className = 'atoll-btn-leading'
-                wrapper.appendChild(n)
-                return wrapper
-              }
-              return n
-            })
-          }
-        }
-      })
-      customElements.define(buttonTag, ButtonComp)
-
-      const ParentComp = createCoraliteClass({
-        componentId: 'nav-sidebar',
-        defaultValues: {
-          isMusicActiveBool: false
-        },
-        templateHTML: `<div class="nav"><${buttonTag}><${iconTag} name="music" active="{{ isMusicActiveBool }}" data-coralite-slot-index="3"></${iconTag}></${buttonTag}></div>`,
-        hydrationMap: {
-          attributes: [
-            {
-              path: [0, 0, 3],
-              name: 'active',
-              template: '{{ isMusicActiveBool }}',
-              attrKind: 1
-            }
-          ]
-        }
-      })
-      customElements.define(parentTag, ParentComp)
-
-      const parentEl = document.createElement(parentTag)
-      document.body.appendChild(parentEl)
-
-      queueMicrotask(() => {
-        const iconEl = parentEl.querySelector(iconTag)
-        assert.ok(iconEl, 'Child icon component should exist in DOM')
-        assert.strictEqual(iconEl.hasAttribute('active'), false, 'Initial active attribute should be false (removed)')
-
-        // Update parent state
-        parentEl._state.isMusicActiveBool = true
-
-        queueMicrotask(() => {
-          assert.strictEqual(iconEl.hasAttribute('active'), true, 'Active attribute should be set after parent state update')
-
-          parentEl._state.isMusicActiveBool = false
-
-          queueMicrotask(() => {
-            assert.strictEqual(iconEl.hasAttribute('active'), false, 'Active attribute should be removed when parent state reverts')
-            document.body.removeChild(parentEl)
-            done()
-          })
-        })
       })
     })
   })
