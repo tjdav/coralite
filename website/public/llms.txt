@@ -501,6 +501,9 @@ Every attribute declared in `attributes` automatically synthesizes live camelCas
 - **Reflection**:
   - `Boolean` reflects presence automatically (`attr=""` when truthy, removed when falsy).
   - `String` and `Number` do NOT reflect by default; specify `reflect: true` to reflect attribute changes back to the host element.
+- **Nullish Attribute Omission (`default: null`)**:
+  - When an attribute schema specifies `default: null` (e.g. `pattern: { type: String, default: null }` or `{ type: 'string', default: null }`) and no attribute value is supplied on the host element, state evaluates to `null` and Coralite automatically omits the attribute from rendered DOM nodes (preventing invalid empty attributes like `<input pattern="">`).
+  - When explicit string values (including explicit empty strings like `alt=""` or `placeholder=""`) are supplied, Coralite preserves the empty attribute value on DOM elements.
 - **Native & Custom Boolean Attributes**: Single-token bindings on 43 native HTML boolean attributes (`disabled="{{ isDisabled }}"`, `open="{{ isOpen }}"`) or custom attributes declared as boolean in their target component schema (`loading: Boolean` / `{ type: Boolean }`, e.g. `loading="{{ isCreating }}"`) automatically evaluate truthiness as boolean presence attributes (rendered as `attr=""` if truthy, removed completely if falsy).
 - **Shorthands**:
   - `isChecked: Boolean`
