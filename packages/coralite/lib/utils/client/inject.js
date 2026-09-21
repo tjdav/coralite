@@ -19,6 +19,94 @@ export function createCoraliteElement (tag, options) {
 }
 
 /**
+ * Strips unresolved {{ token }} syntax from HTML attribute values before
+ * the browser parses them. Pure-token attributes are removed entirely;
+ * mixed attributes retain their static content.
+ *
+ * Token matching follows the strict template grammar from parseTemplateSegments:
+ * {{ opens, first }} closes, no nested brace tracking.
+ *
+ * @param {string} html - Raw HTML string.
+ * @returns {string} Sanitized HTML string.
+ */
+function sanitizeTokenAttributes (html) {
+  if (!html || !html.includes('{{')) {
+    return html
+  }
+
+  const TOKEN_TEST = /\{\{[\s\S]*?\}\}/
+  const TOKEN_GLOBAL = /\{\{[\s\S]*?\}\}/g
+
+  /**
+   * Protect raw-text element INNER CONTENT and HTML comments.
+   * The opening tag (including its attributes) is left exposed so
+   * attributes like <script src="{{ url }}"> are still sanitized.
+   */
+  const placeholders = []
+
+  // Protect inner content of raw-text elements.
+  // Captures: opening tag (kept), inner content (replaced), closing tag (kept).
+  const rawInnerRegex =
+    /(<(?:script|style|textarea|title)\b[^>]*>)([\s\S]*?)(<\/(?:script|style|textarea|title)>)/gi
+  let protectedHtml = html.replace(rawInnerRegex, (_, open, inner, close) => {
+    const id = `\x00CORALITE_RAW_${placeholders.length}\x00`
+    placeholders.push(inner)
+    return open + id + close
+  })
+
+  // Protect HTML comments.
+  protectedHtml = protectedHtml.replace(/<!--[\s\S]*?-->/g, (match) => {
+    const id = `\x00CORALITE_RAW_${placeholders.length}\x00`
+    placeholders.push(match)
+    return id
+  })
+
+  // Sanitize attribute values inside each opening tag
+  const TAG_RE =
+    /<([a-zA-Z][\w:-]*)((?:\s+[^\s"'>/=]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'>]+))?)*)\s*(\/?)>/gs
+
+  const ATTR_RE =
+    /(\s+[^\s"'>/=]+)\s*=\s*(?:(['"])([\s\S]*?)\2|([^\s"'>]+))/g
+
+  protectedHtml = protectedHtml.replace(TAG_RE, (fullTag, tagName, attrs, slash) => {
+    if (!TOKEN_TEST.test(attrs)) {
+      return fullTag
+    }
+
+    const sanitizedAttrs = attrs.replace(
+      ATTR_RE,
+      (attrMatch, nameWithWhitespace, quote, quotedValue, unquotedValue) => {
+        const attrValue = quote ? quotedValue : unquotedValue
+        if (!TOKEN_TEST.test(attrValue)) {
+          return attrMatch
+        }
+
+        const stripped = attrValue.replace(TOKEN_GLOBAL, '').trim()
+
+        // Pure-token → remove the attribute entirely
+        if (stripped === '') {
+          return ''
+        }
+
+        // Mixed → keep static content, re-quoting if needed
+        if (quote) {
+          return `${nameWithWhitespace}=${quote}${stripped}${quote}`
+        }
+        return /\s/.test(stripped)
+          ? `${nameWithWhitespace}="${stripped}"`
+          : `${nameWithWhitespace}=${stripped}`
+      }
+    )
+
+    const trailingSlash = slash ? ' /' : ''
+    return `<${tagName}${sanitizedAttrs}${trailingSlash}>`
+  })
+
+  // Restore protected content
+  return protectedHtml.replace(/\x00CORALITE_RAW_(\d+)\x00/g, (_, i) => placeholders[i])
+}
+
+/**
  * Processes an HTML string for custom elements.
  * Fallback implementation mirroring runtime.js:processHTML when window.processHTML is unavailable (e.g. unit test runner).
  * Note: Tag matching uses /<([a-zA-Z0-9-]+)([^>]*)>/g assuming well-formed attributes without raw '>' in attribute values.
@@ -37,6 +125,8 @@ export function processHTML (html, instanceId) {
   if (typeof html !== 'string') {
     return html
   }
+
+  html = sanitizeTokenAttributes(html)
 
   if (instanceId) {
     const prefix = instanceId + '__'

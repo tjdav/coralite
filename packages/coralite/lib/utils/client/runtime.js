@@ -336,6 +336,42 @@ ${mode !== 'production' ? `
   window.processHTML = (html, instanceId) => {
     if (typeof html !== 'string') return html;
 
+    // Sanitize unresolved {{ token }} syntax from attribute values.
+    // Strict template grammar: {{ opens, first }} closes.
+    const _sanitize = (h) => {
+      if (!h || !h.includes('{{')) return h;
+      const TT = /\\{\\{[\\s\\S]*?\\}\\}/;
+      const TG = /\\{\\{[\\s\\S]*?\\}\\}/g;
+      const ph = [];
+      const rawInnerRe = /(<(?:script|style|textarea|title)\\b[^>]*>)([\\s\\S]*?)(<\\/(?:script|style|textarea|title)>)/gi;
+      let out = h.replace(rawInnerRe, (_, open, inner, close) => {
+        const id = '\\x00CR' + ph.length + '\\x00';
+        ph.push(inner);
+        return open + id + close;
+      });
+      out = out.replace(/<!--[\\s\\S]*?-->/g, (m) => {
+        const id = '\\x00CR' + ph.length + '\\x00';
+        ph.push(m);
+        return id;
+      });
+      const tagRe = /<([a-zA-Z][\\w:-]*)((?:\\s+[^\\s"'>/=]+(?:\\s*=\\s*(?:"[^"]*"|'[^']*'|[^\\s"'>]+))?)*)\\s*(\\/?)>/gs;
+      const attrRe = /(\\s+[^\\s"'>/=]+)\\s*=\\s*(?:(['"])([\\s\\S]*?)\\2|([^\\s"'>]+))/g;
+      out = out.replace(tagRe, (ft, tn, attrs, sl) => {
+        if (!TT.test(attrs)) return ft;
+        const sa = attrs.replace(attrRe, (am, nw, q, qv, uv) => {
+          const v = q ? qv : uv;
+          if (!TT.test(v)) return am;
+          const s = v.replace(TG, '').trim();
+          if (s === '') return '';
+          if (q) return nw + '=' + q + s + q;
+          return /\\s/.test(s) ? nw + '="' + s + '"' : nw + '=' + s;
+        });
+        return '<' + tn + sa + (sl ? ' /' : '') + '>';
+      });
+      return out.replace(/\\x00CR(\\d+)\\x00/g, (_, i) => ph[i]);
+    };
+    html = _sanitize(html);
+
     const shouldStripTestId = ${shouldStripTestId};
 
     html = html.replace(/<([a-zA-Z0-9-]+)([^>]*)>/g, (match, tagName, attrs) => {
