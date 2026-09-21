@@ -3046,9 +3046,22 @@ export class CoraliteElement extends BaseElement {
               break
             }
             default: {
-              if (element.getAttribute(binding.name) !== hydratedValue) {
+              let isNullish = false
+              if (binding.isSingleToken) {
+                const rawVal = tokenValues[binding.singleTokenKey]
+                isNullish = rawVal === null || rawVal === undefined
+              } else {
+                isNullish = hydratedValue === 'null' || hydratedValue === 'undefined'
+              }
+
+              if (isNullish) {
+                if (element.hasAttribute(binding.name)) {
+                  element.removeAttribute(binding.name)
+                }
+              } else if (element.getAttribute(binding.name) !== hydratedValue) {
                 element.setAttribute(binding.name, hydratedValue)
               }
+
               break
             }
           }

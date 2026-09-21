@@ -126,6 +126,78 @@ describe('CoraliteElement', () => {
     assert.strictEqual(called, true)
   })
 
+  it('should omit standard string attributes from DOM nodes when default is null and keep explicit empty string attributes', (t, done) => {
+    const patternTagName = 'pattern-comp-' + Math.random().toString(36).substring(2, 9)
+    const PatternElement = createCoraliteClass({
+      componentId: 'pattern-comp',
+      defaultValues: {
+        pattern: null,
+        placeholder: ''
+      },
+      attributes: {
+        pattern: {
+          type: String,
+          default: null
+        },
+        placeholder: {
+          type: String,
+          default: ''
+        }
+      },
+      templateHTML: '<form><input id="inp" pattern="{{ pattern }}" placeholder="{{ placeholder }}" /></form>',
+      hydrationMap: {
+        attributes: [
+          {
+            path: [0, 0],
+            name: 'pattern',
+            template: '{{ pattern }}'
+          },
+          {
+            path: [0, 0],
+            name: 'placeholder',
+            template: '{{ placeholder }}'
+          }
+        ]
+      }
+    })
+    customElements.define(patternTagName, PatternElement)
+
+    const el = document.createElement(patternTagName)
+    document.body.appendChild(el)
+
+    queueMicrotask(() => {
+      const inputEl = el.querySelector('#inp')
+      assert.ok(inputEl)
+      assert.strictEqual(inputEl.hasAttribute('pattern'), false, 'pattern attribute should be omitted when default is null and attribute is not present')
+      assert.strictEqual(inputEl.getAttribute('placeholder'), '', 'placeholder attribute should be preserved as empty string when default is empty string')
+
+      // Mutate state to non-empty string
+      // @ts-ignore
+      el._state.pattern = '^[0-9]+$'
+      // @ts-ignore
+      el._state.placeholder = 'Enter digits'
+
+      queueMicrotask(() => {
+        assert.strictEqual(inputEl.getAttribute('pattern'), '^[0-9]+$')
+        assert.strictEqual(inputEl.getAttribute('placeholder'), 'Enter digits')
+
+        // Revert back to null / empty string
+        // @ts-ignore
+        el._state.pattern = null
+        // @ts-ignore
+        el._state.placeholder = ''
+
+        queueMicrotask(() => {
+          assert.strictEqual(inputEl.hasAttribute('pattern'), false, 'pattern attribute should be removed when reset to null')
+          assert.strictEqual(inputEl.getAttribute('placeholder'), '', 'placeholder attribute should be set to empty string when reset to empty string')
+
+          document.body.removeChild(el)
+          done()
+        })
+      })
+    })
+  })
+
   it('should support shorthand and longhand attribute types and default values', () => {
     const attrTagName = 'attr-comp-' + Math.random().toString(36).substring(2, 9)
     const AttrElement = createCoraliteClass({
