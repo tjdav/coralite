@@ -1,5 +1,25 @@
 # Changelog
 
+## v1.0.0-rc.5
+
+> Comparing `coralite-v1.0.0-rc.4` to `HEAD`
+
+**Summary:** 7 commits
+
+### ✨ Features
+
+- sanitize raw template token attributes before HTML parsing ([960e702](https://codeberg.org/tjdavid/coralite/commit/960e70272d9f34afb53df29848ff9da26089e499))
+- omit empty attribute bindings from DOM nodes ([9d1f633](https://codeberg.org/tjdavid/coralite/commit/9d1f6338df37c2ea7ebaa7cf1fa8d286dab3b18c))
+
+### 🐛 Bug Fixes
+
+- allow positional traversal fallback for foreign element boundaries in getNodeByPath (coralite-element) ([7a34079](https://codeberg.org/tjdavid/coralite/commit/7a34079ec119db8705576c86034b7a2bda5dfb50))
+- prevent performance degradation during bulk element creation (coralite) ([557649e](https://codeberg.org/tjdavid/coralite/commit/557649e71bdfe8d938d3d2010dcb82daff2aacab))
+- identify component boundaries via data-cid in getNodeByPath (runtime) ([03b1d0b](https://codeberg.org/tjdavid/coralite/commit/03b1d0b4c149bc6b2f5fef0c09f2787fb201d2b8))
+- resolve nested slotted component binding paths in getNodeByPath (coralite) ([5ed78ea](https://codeberg.org/tjdavid/coralite/commit/5ed78ea05227328c89c23d96451375ad3f009f9f))
+- resolve nested slotted component binding paths in getNodeByPath (coralite) ([b7a0e45](https://codeberg.org/tjdavid/coralite/commit/b7a0e4587ddf88ce399f5e9bf219842560124de2))
+
+
 ## v1.0.0-rc.4
 
 > Comparing `coralite-v1.0.0-rc.3` to `HEAD`
