@@ -2400,8 +2400,10 @@ export class CoraliteElement extends BaseElement {
       if (!node) {
         return null
       }
+
       // Only real Coralite components own a slot-index space; plain and foreign elements do not.
-      const isComponentBoundary = node !== this && Boolean(node.componentOptions || node._instanceId)
+      const isComponentBoundary = node !== this && Boolean(node.componentOptions || node._instanceId || (node.hasAttribute && node.hasAttribute('data-cid')))
+
       if (isComponentBoundary) {
         const candidates = node.querySelectorAll(`[data-coralite-slot-index="${index}"]`)
         let foundNode = null
@@ -2410,7 +2412,8 @@ export class CoraliteElement extends BaseElement {
           /** @type {any} */
           let parent = cand.parentElement
           while (parent && parent !== node) {
-            const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId)
+            const isDeeperBoundary = Boolean(parent.componentOptions || parent._instanceId || (parent.hasAttribute && parent.hasAttribute('data-cid')))
+
             if (isDeeperBoundary) {
               break
             }
