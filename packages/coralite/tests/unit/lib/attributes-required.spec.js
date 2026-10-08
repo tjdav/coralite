@@ -1,16 +1,20 @@
 import '../setup.js'
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert'
-import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/component-setup.js'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
-import { CoraliteError } from '../../../lib/utils/errors.js'
+import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/server/component/setup.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
+import { CoraliteError } from '../../../lib/shared/errors.js'
 
 describe('Required Component Attributes', () => {
   describe('Definition & Schema Validation', () => {
     it('throws error if required: true and default are both specified on primitive type attribute', () => {
       assert.throws(() => {
         normalizeAndValidateAttributes({
-          title: { type: String, required: true, default: 'Hello' }
+          title: {
+            type: String,
+            required: true,
+            default: 'Hello'
+          }
         }, 'test-comp')
       }, (err) => {
         return err instanceof CoraliteError && err.message === 'Component "test-comp" attribute "title" cannot be marked as required and define a default value.'
@@ -20,7 +24,11 @@ describe('Required Component Attributes', () => {
     it('throws error if required: true and default are both specified on values-constrained attribute', () => {
       assert.throws(() => {
         normalizeAndValidateAttributes({
-          status: { values: ['active', 'inactive'], required: true, default: 'active' }
+          status: {
+            values: ['active', 'inactive'],
+            required: true,
+            default: 'active'
+          }
         }, 'test-comp')
       }, (err) => {
         return err instanceof CoraliteError && err.message === 'Component "test-comp" attribute "status" cannot be marked as required and define a default value.'
@@ -29,8 +37,14 @@ describe('Required Component Attributes', () => {
 
     it('normalizes required: true property correctly', () => {
       const normalized = normalizeAndValidateAttributes({
-        title: { type: String, required: true },
-        status: { values: ['active', 'inactive'], required: true },
+        title: {
+          type: String,
+          required: true
+        },
+        status: {
+          values: ['active', 'inactive'],
+          required: true
+        },
         optional: { type: String }
       }, 'test-comp')
 
@@ -45,20 +59,29 @@ describe('Required Component Attributes', () => {
     let defineComponent
 
     beforeEach(() => {
-      mockApp = { createComponentElement: () => null, options: {} }
+      mockApp = {
+        createComponentElement: () => null,
+        options: {}
+      }
       defineComponent = createComponentDefinition({ app: mockApp })
     })
 
     it('initializes state successfully when required attribute is provided during SSR', async () => {
       const context = {
         state: { username: 'jules' },
-        module: { id: 'user-badge', path: { pathname: '/user-badge.coral' } },
+        module: {
+          id: 'user-badge',
+          path: { pathname: '/user-badge.coral' }
+        },
         root: null
       }
 
       const result = await defineComponent({
         attributes: {
-          username: { type: String, required: true }
+          username: {
+            type: String,
+            required: true
+          }
         }
       }, context)
 
@@ -68,13 +91,19 @@ describe('Required Component Attributes', () => {
     it('treats empty string attribute as provided and satisfying required check in SSR', async () => {
       const context = {
         state: { username: '' },
-        module: { id: 'user-badge', path: { pathname: '/user-badge.coral' } },
+        module: {
+          id: 'user-badge',
+          path: { pathname: '/user-badge.coral' }
+        },
         root: null
       }
 
       const result = await defineComponent({
         attributes: {
-          username: { type: String, required: true }
+          username: {
+            type: String,
+            required: true
+          }
         }
       }, context)
 
@@ -90,11 +119,21 @@ describe('Required Component Attributes', () => {
       ElementClass = createCoraliteClass({
         componentId: 'my-card',
         attributes: {
-          title: { type: String, required: true },
-          badge: { values: ['new', 'sale'], required: true },
+          title: {
+            type: String,
+            required: true
+          },
+          badge: {
+            values: ['new', 'sale'],
+            required: true
+          },
           subtitle: { type: String }
         },
-        defaultValues: { title: undefined, badge: undefined, subtitle: undefined },
+        defaultValues: {
+          title: undefined,
+          badge: undefined,
+          subtitle: undefined
+        },
         templateHTML: '<div><h1>{{ title }}</h1><span>{{ badge }}</span></div>'
       })
       if (!customElements.get('my-card')) {

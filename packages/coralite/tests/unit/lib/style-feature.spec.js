@@ -13,10 +13,10 @@ globalThis.Node = window.Node
 globalThis.customElements = window.customElements
 
 const { createTestProject } = await import('../utils/project.js')
-const { createCoraliteClass } = await import('../../../lib/coralite-element.js')
-const { validateComponentSource } = await import('../../../lib/component-validator.js')
-const { createComponentDefinition } = await import('../../../lib/component-setup.js')
-const { CoraliteError } = await import('../../../lib/utils/errors.js')
+const { createCoraliteClass } = await import('../../../lib/client/element.js')
+const { validateComponentSource } = await import('../../../lib/server/component/validator.js')
+const { createComponentDefinition } = await import('../../../lib/server/component/setup.js')
+const { CoraliteError } = await import('../../../lib/shared/errors.js')
 
 describe('Component Reactive style Feature', () => {
   beforeEach(() => {
@@ -110,8 +110,8 @@ describe('Component Reactive style Feature', () => {
           count: 5
         },
         style: {
-          '--badge-bg': (state) => state.active ? 'green' : 'gray',
-          opacity: (state) => state.active ? 1 : 0,
+          '--badge-bg': (state) => (state.active ? 'green' : 'gray'),
+          opacity: (state) => (state.active ? 1 : 0),
           zIndex: (state) => state.count
         }
       }
@@ -148,10 +148,10 @@ describe('Component Reactive style Feature', () => {
           val: 'initial'
         },
         style: {
-          display: (state) => state.val === 'none' ? false : 'block',
-          color: (state) => state.val === 'clear' ? null : 'black',
-          borderColor: (state) => state.val === 'clear' ? undefined : 'red',
-          borderWidth: (state) => state.val === 'clear' ? '' : '1px'
+          display: (state) => (state.val === 'none' ? false : 'block'),
+          color: (state) => (state.val === 'clear' ? null : 'black'),
+          borderColor: (state) => (state.val === 'clear' ? undefined : 'red'),
+          borderWidth: (state) => (state.val === 'clear' ? '' : '1px')
         }
       }
 

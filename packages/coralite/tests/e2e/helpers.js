@@ -31,7 +31,7 @@ export async function waitForHydration (page) {
     }
     const elements = Array.from(document.querySelectorAll('[data-cid]'))
       .filter(el => el.tagName.includes('-'))
-    
+
     await Promise.all(elements.map(el => {
       const tag = el.tagName.toLowerCase()
       return Promise.race([
@@ -41,7 +41,7 @@ export async function waitForHydration (page) {
     }))
 
     await new Promise(resolve => setTimeout(resolve, 50))
-    
+
     return true
   })
 }

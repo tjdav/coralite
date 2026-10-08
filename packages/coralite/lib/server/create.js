@@ -1,0 +1,584 @@
+import { getHtmlFile, getHtmlFiles, discoverHtmlFiles } from './utils/html.js'
+import { parseHTML, parseModule } from './utils/parse.js'
+import { ScriptManager } from './script-manager.js'
+import { metadataPlugin, staticAssetPlugin, testingPlugin } from '#plugins'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname, join, normalize, relative } from 'node:path'
+import { CoraliteError, handleError, defaultOnError } from '../shared/errors.js'
+import { createExecutionError } from './utils/errors.js'
+import { transformNode } from './parser/html.js'
+import { evaluate } from './compiler.js'
+import {
+  triggerPluginAggregateHook,
+  triggerPluginHook,
+  bindPlugins
+} from './hooks.js'
+import CoraliteCollection from './collection/index.js'
+
+// Refactored helper imports
+import { createComponentDefinition, registerBaseComponent, prepareAllComponentOps } from './component/setup.js'
+import { setupPlugins } from './plugin/setup.js'
+import { createPageHandlers } from './collection/handlers.js'
+import { createRenderer } from './renderer.js'
+import { initHasher } from './utils/manifest.js'
+
+/**
+ * @import {
+ *  CoraliteConfig,
+ *  CoraliteInstance,
+ *  CoraliteBuildOptions,
+ *  CoraliteSaveResult
+ * } from '../../types/index.js'
+ */
+
+/**
+ * Factory function to create and initialize a Coralite instance.
+ *
+ * @param {CoraliteConfig} options - The configuration options for the Coralite instance.
+ * @returns {Promise<CoraliteInstance>} A fully initialized Coralite instance.
+ */
+export async function createCoralite ({
+  components,
+  pages,
+  plugins: userPlugins,
+  concurrency,
+  assets,
+  externalStyles,
+  baseURL = '/',
+  projectRoot = process.cwd(),
+  ignoreByAttribute,
+  skipRenderByAttribute,
+  onError,
+  onComponentBuild,
+  mode = 'production',
+  output,
+  testing,
+  incremental = true,
+  csp
+}) {
+  if (onError !== undefined && typeof onError !== 'function') {
+    throw new CoraliteError('createCoralite requires "onError" option to be a function if provided')
+  }
+
+  const resolvedOnError = onError || defaultOnError
+
+  // Validate required parameters
+  if (!components || typeof components !== 'string') {
+    handleError({
+      onErrorCallback: resolvedOnError,
+      data: {
+        level: 'ERR',
+        message: 'createCoralite requires "components" option to be defined as a string'
+      }
+    })
+  }
+
+  if (!pages || typeof pages !== 'string') {
+    handleError({
+      onErrorCallback: resolvedOnError,
+      data: {
+        level: 'ERR',
+        message: 'createCoralite requires "pages" option to be defined as a string'
+      }
+    })
+  }
+
+  const path = {
+    components: normalize(components),
+    pages: normalize(pages)
+  }
+
+  const normalizedOptions = {
+    components,
+    pages,
+    plugins: Array.isArray(userPlugins) ? [...userPlugins] : [],
+    concurrency: typeof concurrency === 'number' && concurrency > 0 ? Math.floor(concurrency) : undefined,
+    assets,
+    externalStyles,
+    baseURL,
+    projectRoot: normalize(projectRoot),
+    ignoreByAttribute,
+    skipRenderByAttribute,
+    mode,
+    path,
+    output: output ? normalize(output) : undefined,
+    onComponentBuild,
+    testing,
+    incremental,
+    csp
+  }
+
+  const trackedOutputFiles = new Set()
+
+  /** @type {CoraliteInstance} */
+  // @ts-ignore
+  const app = {
+    options: normalizedOptions,
+    onError: (data) => handleError({
+      onErrorCallback: resolvedOnError,
+      data
+    }),
+    pages: null,
+    components: null,
+    build: null,
+    save: null,
+    transform: transformNode,
+    trackOutputFile (path) {
+      trackedOutputFiles.add(normalize(path))
+    },
+    getTrackedOutputFiles () {
+      return Array.from(trackedOutputFiles)
+    },
+    async writeFile (dest, content, writeOptions = {}) {
+      if (!app.options.output) {
+        throw new Error('app.writeFile requires "output" to be configured')
+      }
+
+      const fullPath = join(app.options.output, dest)
+      await mkdir(dirname(fullPath), { recursive: true })
+      await writeFile(fullPath, content, writeOptions)
+      app.trackOutputFile(fullPath)
+
+      return fullPath
+    },
+    async registerAsset (assetOptions) {
+      if (!assetOptions || typeof assetOptions !== 'object' || !assetOptions.dest) {
+        throw new Error('registerAsset requires an options object with a "dest" property.')
+      }
+
+      const userAssets = app.options.assets || []
+      const existingUserAsset = userAssets.find(a => a.dest === assetOptions.dest)
+      if (existingUserAsset) {
+        handleError({
+          onErrorCallback: resolvedOnError,
+          data: {
+            level: 'WARN',
+            message: `Asset destination collision for "${assetOptions.dest}": user config asset takes precedence over plugin asset.`
+          }
+        })
+        return join(app.options.output || process.cwd(), assetOptions.dest)
+      }
+
+      if (assetOptions.content !== undefined) {
+        const fullPath = await app.writeFile(assetOptions.dest, assetOptions.content)
+        if (assetOptions.inject) {
+          app.options.assets = app.options.assets || []
+          app.options.assets.push(assetOptions)
+        }
+        return fullPath
+      }
+
+      const plugin = staticAssetPlugin([assetOptions])
+      await plugin.server.onBeforeBuild({
+        app,
+        options: app.options,
+        buildId: 'register-asset',
+        addRenderQueue: (item) => app.addRenderQueue(item, 'register-asset')
+      })
+
+      if (assetOptions.inject) {
+        app.options.assets = app.options.assets || []
+        app.options.assets.push(assetOptions)
+      }
+
+      const outputDir = app.options.output || join(app.options.projectRoot || process.cwd(), 'dist')
+      const fullPath = join(outputDir, assetOptions.dest)
+      app.trackOutputFile(fullPath)
+      return fullPath
+    },
+    addRenderQueue: null,
+    getPagePathsUsingCustomElement: null,
+    createComponentElement: null,
+    _dependencyGraph: {
+      pageCustomElements: {},
+      directPageComponents: {}
+    },
+    _refreshDependencyGraph: () => {
+      const { pageCustomElements, directPageComponents } = app._dependencyGraph
+      // Clear existing graph
+      for (const tag in pageCustomElements) {
+        delete pageCustomElements[tag]
+      }
+
+      const resolveDependencies = (pagePath, directComponents) => {
+        const visited = new Set()
+        const allDependencies = new Set()
+
+        const walk = (tags) => {
+          for (const tag of tags) {
+            if (visited.has(tag)) {
+              continue
+            }
+            visited.add(tag)
+            allDependencies.add(tag)
+
+            const sharedFn = scriptManager.sharedFunctions[tag]
+            if (sharedFn && sharedFn.components?.length) {
+              walk(sharedFn.components)
+            }
+          }
+        }
+
+        walk(directComponents)
+
+        for (const tag of allDependencies) {
+          if (!pageCustomElements[tag]) {
+            pageCustomElements[tag] = new Set()
+          }
+          pageCustomElements[tag].add(pagePath)
+        }
+      }
+
+      for (const [pagePath, directComponents] of Object.entries(directPageComponents)) {
+        resolveDependencies(pagePath, directComponents)
+      }
+    },
+    _clearDependencies: () => {
+      app._dependencyGraph.pageCustomElements = {}
+      app._dependencyGraph.directPageComponents = {}
+    }
+  }
+
+  // State
+  const plugins = {
+    components: [],
+    hooks: {
+      onPageSet: [],
+      onPageUpdate: [],
+      onPageDelete: [],
+      onComponentSet: [],
+      onComponentUpdate: [],
+      onComponentDelete: [],
+      onBeforePageRender: [],
+      onAfterPageRender: [],
+      onBeforeComponentRender: [],
+      onAfterComponentRender: [],
+      onBeforeBuild: [],
+      onAfterBuild: []
+    }
+  }
+  const scriptManager = new ScriptManager(normalizedOptions)
+  // @ts-ignore
+  const serverGlobalContext = { app }
+
+  const _handleErrorLocal = (data) => handleError({
+    onErrorCallback: resolvedOnError,
+    data
+  })
+
+  const source = {
+    utils: {
+      parseHTML: (string, ignore = normalizedOptions.ignoreByAttribute, skip = normalizedOptions.skipRenderByAttribute) => parseHTML(string, ignore, skip, _handleErrorLocal),
+      parseModule: (string, opts) => parseModule(string, {
+        ignoreByAttribute: normalizedOptions.ignoreByAttribute,
+        skipRenderByAttribute: normalizedOptions.skipRenderByAttribute,
+        onError: _handleErrorLocal,
+        ...opts
+      }),
+      getHtmlFiles,
+      getHtmlFile
+    },
+    plugins: {}
+  }
+
+  // @ts-ignore
+  app.source = source
+
+  // Helper to register a component via its ID
+  const getComponent = (id) => app.components.getItem(id)
+
+  const _triggerPluginHookLocal = (name, initialData) => triggerPluginHook({
+    app,
+    hooks: plugins.hooks,
+    serverGlobalContext,
+    name,
+    initialData
+  })
+
+  const _triggerPluginAggregateHookLocal = (name, contextData) => triggerPluginAggregateHook({
+    app,
+    hooks: plugins.hooks,
+    serverGlobalContext,
+    name,
+    contextData
+  })
+
+  const _bindPluginsLocal = (pluginFactories, instanceContext) => bindPlugins({
+    pluginFactories,
+    instanceContext,
+    app
+  })
+
+  const CORE_PLUGIN_NAMES = new Set(['testing', 'metadata', 'staticAsset', 'static-assets'])
+  const hasCustomComponentRenderHooks = Array.isArray(userPlugins) && userPlugins.some(p => {
+    const name = p?.name || p?.server?.name
+    if (CORE_PLUGIN_NAMES.has(name)) {
+      return false
+    }
+    return Boolean(p?.server?.onBeforeComponentRender || p?.server?.onAfterComponentRender)
+  })
+
+  const _defineComponent = createComponentDefinition({ app })
+
+  const _evaluateLocal = (options) => evaluate({
+    ...options,
+    app,
+    source,
+    bindPlugins: _bindPluginsLocal,
+    defineComponent: _defineComponent,
+    createExecutionError,
+    getComponent
+  })
+
+  // Instantiate the isolated rendering engine
+  const renderer = createRenderer({
+    app,
+    scriptManager,
+    source,
+    evaluate: _evaluateLocal,
+    handleError: _handleErrorLocal,
+    hooks: {
+      trigger: _triggerPluginHookLocal,
+      triggerAggregate: _triggerPluginAggregateHookLocal,
+      bind: _bindPluginsLocal,
+      hasComponentRenderHooks: () => {
+        if (normalizedOptions.mode === 'development' || normalizedOptions.mode === 'testing') {
+          return (
+            (plugins.hooks.onBeforeComponentRender && plugins.hooks.onBeforeComponentRender.length > 0) ||
+            (plugins.hooks.onAfterComponentRender && plugins.hooks.onAfterComponentRender.length > 0)
+          )
+        }
+        return hasCustomComponentRenderHooks
+      }
+    },
+    options: normalizedOptions,
+    createExecutionError
+  })
+
+  Object.assign(app, {
+    get outputFiles () {
+      return renderer.outputFiles
+    },
+    createComponentElement: renderer.createComponentElement,
+    build: renderer.build,
+    /**
+     * Executes a full build and saves the generated pages to the configured output directory.
+     *
+     * @param {string | string[]} [savePath] - The target path or directory to build.
+     * @param {CoraliteBuildOptions} [saveOptions={}] - Additional configuration for the save process.
+     * @returns {Promise<CoraliteSaveResult[]>} A promise resolving to an array of all saved file results.
+     */
+    save: async (savePath, saveOptions = {}) => {
+      const signal = saveOptions?.signal
+      const createdDir = {}
+      if (!app.options.output) {
+        handleError({
+          onErrorCallback: resolvedOnError,
+          data: {
+            level: 'ERR',
+            message: 'Coralite instance must be configured with an "output" option to use save()'
+          }
+        })
+      }
+      const outputDir = app.options.output
+      const results = []
+      let buildError = null
+
+      try {
+        await app.build(savePath, saveOptions, async (result) => {
+          if (result.status === 'skipped' || result.status === 'failed') {
+            return undefined
+          }
+
+          // @ts-ignore
+          const relativeDir = relative(app.options.path.pages, result.path.dirname)
+          const outDir = join(outputDir, relativeDir)
+          const outFile = join(outDir, result.path.filename)
+
+          if (!createdDir[outDir]) {
+            await mkdir(outDir, { recursive: true }); createdDir[outDir] = true
+          }
+
+          await writeFile(outFile, result.content, { signal })
+
+          results.push({
+            path: outFile,
+            duration: result.duration
+          })
+
+          return undefined
+        })
+      } catch (err) {
+        buildError = err
+      } finally {
+        if (renderer.outputFiles) {
+          const assetsJsDir = join(outputDir, 'assets', 'js')
+          const assetsCssDir = join(outputDir, 'assets', 'css')
+
+          const assetWrites = Object.values(renderer.outputFiles).map(async (file) => {
+            const isCSS = file.path.endsWith('.css')
+            const baseAssetsDir = isCSS ? assetsCssDir : assetsJsDir
+            const outFile = join(baseAssetsDir, file.hashedPath)
+            const outDir = dirname(outFile)
+
+            if (!createdDir[outDir]) {
+              await mkdir(outDir, { recursive: true }); createdDir[outDir] = true
+            }
+
+            await writeFile(outFile, file.text, { signal })
+
+            results.push({
+              path: outFile,
+              duration: 0
+            })
+          })
+          await Promise.all(assetWrites)
+        }
+
+        await app.clearCache(true)
+      }
+
+      if (buildError) {
+        throw buildError
+      }
+
+      return results
+    },
+
+    addRenderQueue: renderer.addRenderQueue,
+    clearCache: async (structural = false) => {
+      trackedOutputFiles.clear()
+
+      return renderer.clearCache(structural)
+    },
+
+    _triggerPluginAggregateHook: _triggerPluginAggregateHookLocal,
+    _triggerPluginHook: _triggerPluginHookLocal,
+    /**
+     * Retrieves all page paths that utilize a specific custom element.
+     *
+     * @param {string} targetPath - The path or ID of the custom element (component) to search for.
+     * @returns {string[]} An array of page pathnames that include the specified component.
+     */
+    getPagePathsUsingCustomElement: (targetPath) => {
+      // @ts-ignore
+      if (targetPath.startsWith(app.options.path.components)) {
+        // @ts-ignore
+        targetPath = targetPath.substring(app.options.path.components.length + 1)
+      }
+      const item = app.components.getItem(targetPath)
+      const results = []
+      if (item) {
+        const id = item.result.id
+        const pce = app._dependencyGraph.pageCustomElements[id]
+        if (pce) {
+          pce.forEach(p => results.push(p))
+        }
+      } else {
+        // Fallback to searching by tag name directly if targetPath is an ID
+        const pce = app._dependencyGraph.pageCustomElements[targetPath]
+        if (pce) {
+          pce.forEach(p => results.push(p))
+        }
+      }
+      return results
+    }
+  })
+
+  // --- Initialization ---
+
+  // Pre-initialization: load core plugins
+  app.options.plugins.unshift(testingPlugin)
+  app.options.plugins.unshift(metadataPlugin)
+  if (assets) {
+    app.options.plugins.unshift(staticAssetPlugin(assets))
+  }
+
+  if (externalStyles && output) {
+    for (let i = 0; i < externalStyles.length; i++) {
+      const style = externalStyles[i]
+      if (style.startsWith('/')) {
+        app.trackOutputFile(join(output, style))
+      }
+    }
+  }
+
+  await Promise.all([
+    initHasher(),
+    setupPlugins({
+      app,
+      // @ts-ignore
+      serverGlobalContext,
+      plugins,
+      scriptManager,
+      source
+    })
+  ])
+
+  const handlers = createPageHandlers({
+    app,
+    triggerHook: _triggerPluginHookLocal,
+    handleError: _handleErrorLocal,
+    evaluate: _evaluateLocal,
+    scriptManager,
+    createSession: renderer.createSession
+  })
+
+  app.components = await getHtmlFiles({
+    path: app.options.components,
+    recursive: true,
+    type: 'component',
+    onFileSet: handlers.onComponentSet,
+    onFileUpdate: handlers.onComponentUpdate,
+    onFileDelete: handlers.onComponentDelete
+  })
+
+  await Promise.all(plugins.components.map(c => app.components.setItem(c)))
+
+  // Perform base evaluation for all discovered components
+  for (const component of app.components.list) {
+    await registerBaseComponent({
+      component: component.result,
+      evaluate: _evaluateLocal,
+      scriptManager,
+      createSession: renderer.createSession,
+      mode: app.options.mode,
+      onError: _handleErrorLocal,
+      app
+    })
+  }
+
+  // Compile fragment ops and capability flags in a single pass after all components are registered
+  prepareAllComponentOps(app)
+
+  app.pages = new CoraliteCollection({
+    rootDir: app.options.pages,
+    onSet: handlers.onPageSet,
+    onUpdate: handlers.onPageUpdate,
+    onDelete: handlers.onPageDelete
+  })
+
+  if (app.options.mode === 'production' || app.options.mode === 'testing') {
+    for await (const file of discoverHtmlFiles({
+      path: app.options.pages,
+      recursive: true,
+      type: 'page',
+      discoverOnly: false
+    })) {
+      await app.pages.setItem(file)
+    }
+  } else {
+    await getHtmlFiles({
+      path: app.options.pages,
+      recursive: true,
+      type: 'page',
+      discoverOnly: false,
+      // @ts-ignore
+      collection: app.pages
+    })
+  }
+
+  return app
+}
+
+export default createCoralite

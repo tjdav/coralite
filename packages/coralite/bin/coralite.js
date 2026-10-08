@@ -214,7 +214,7 @@ program
 
       let pageReport = null
       if (pageDir && existsSync(pageDir)) {
-        let knownComponents = new Map()
+        const knownComponents = new Map()
         if (compReport && compReport.components) {
           for (const c of compReport.components) {
             const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
@@ -487,7 +487,7 @@ program
 
       // Fix Plugins
       if (pluginTarget && existsSync(pluginTarget)) {
-        let pluginFiles = []
+        const pluginFiles = []
         if (statSync(pluginTarget).isFile()) {
           pluginFiles.push(pluginTarget)
         } else {
@@ -892,7 +892,7 @@ program
     }
 
     try {
-      let knownComponents = new Map()
+      const knownComponents = new Map()
       if (compDir && existsSync(compDir)) {
         const compReport = await validateComponentsDir(compDir)
         if (compReport && compReport.components) {

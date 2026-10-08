@@ -14,7 +14,10 @@ export function virtualPagePlugin (pathname, options = {}) {
     name: 'virtual-page-plugin',
     server: {
       onBeforeBuild: async ({ app, buildId }) => {
-        const item = { pathname, content: options.content }
+        const item = {
+          pathname,
+          content: options.content
+        }
         if (options.cacheKey !== undefined) {
           item.cacheKey = options.cacheKey
         }

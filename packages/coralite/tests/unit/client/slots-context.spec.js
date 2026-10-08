@@ -12,8 +12,8 @@ globalThis.MutationObserver = window.MutationObserver
 globalThis.Node = window.Node
 globalThis.customElements = window.customElements
 
-const { createCoraliteClass } = await import('../../../lib/coralite-element.js')
-const { createComponentDefinition } = await import('../../../lib/component-setup.js')
+const { createCoraliteClass } = await import('../../../lib/client/element.js')
+const { createComponentDefinition } = await import('../../../lib/server/component/setup.js')
 
 describe('Isomorphic slots Helper Context ({ slots })', () => {
   beforeEach(() => {
@@ -184,15 +184,36 @@ describe('Isomorphic slots Helper Context ({ slots })', () => {
     const defineComp = createComponentDefinition({ app: { options: {} } })
     const mockRoot = {
       slots: [
-        { name: 'default', node: { type: 'element', name: 'p' } },
-        { name: 'default', node: { type: 'comment', data: 'comment' } },
-        { name: 'default', node: { type: 'text', data: '   ' } }
+        {
+          name: 'default',
+          node: {
+            type: 'element',
+            name: 'p'
+          }
+        },
+        {
+          name: 'default',
+          node: {
+            type: 'comment',
+            data: 'comment'
+          }
+        },
+        {
+          name: 'default',
+          node: {
+            type: 'text',
+            data: '   '
+          }
+        }
       ]
     }
 
     const context = {
       state: {},
-      module: { id: 'ssr-slots-component', path: { pathname: '/ssr.html' } },
+      module: {
+        id: 'ssr-slots-component',
+        path: { pathname: '/ssr.html' }
+      },
       root: mockRoot
     }
 

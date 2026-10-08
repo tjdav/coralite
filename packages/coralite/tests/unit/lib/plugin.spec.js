@@ -35,7 +35,7 @@ describe('definePlugin', () => {
       }
     })
 
-    const { setupPlugins } = await import('../../../lib/plugin-setup.js')
+    const { setupPlugins } = await import('../../../lib/server/plugin/setup.js')
     const app = { options: { plugins: [plugin] } }
     const serverGlobalContext = { global: true }
     const source = { plugins: {} }

@@ -1,10 +1,10 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
-import { createComponentDefinition } from '../../../lib/component-setup.js'
-import { validateComponentSource } from '../../../lib/component-validator.js'
-import { CoraliteError } from '../../../lib/utils/errors.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
+import { createComponentDefinition } from '../../../lib/server/component/setup.js'
+import { validateComponentSource } from '../../../lib/server/component/validator.js'
+import { CoraliteError } from '../../../lib/shared/errors.js'
 
 describe('emit Helper in Client Context', () => {
   it('should dispatch CustomEvent with default bubbles: true and composed: true', (t, done) => {
@@ -98,7 +98,10 @@ describe('emit Helper in Client Context', () => {
         receivedEvent = e
       })
 
-      clientEmit('non-bubbling', { payload: 'data' }, { bubbles: false, cancelable: true })
+      clientEmit('non-bubbling', { payload: 'data' }, {
+        bubbles: false,
+        cancelable: true
+      })
 
       assert.ok(receivedEvent)
       assert.strictEqual(receivedEvent.bubbles, false)
@@ -130,8 +133,12 @@ describe('emit Helper in Client Context', () => {
       let event1 = null
       let event2 = null
 
-      el.addEventListener('evt1', (e) => { event1 = e })
-      el.addEventListener('evt2', (e) => { event2 = e })
+      el.addEventListener('evt1', (e) => {
+        event1 = e
+      })
+      el.addEventListener('evt2', (e) => {
+        event2 = e
+      })
 
       // 1. Explicit 2nd arg takes precedence over options.detail
       clientEmit('evt1', { primary: true }, { detail: { fallback: true } })
@@ -213,7 +220,11 @@ describe('emit Helper in Client Context', () => {
   it('should provide emit in client-side slot context and emit: () => false stub in SSR slotContext', async () => {
     // 1. Test SSR stub in component-setup
     let ssrEmitResult = null
-    const fakeApp = { options: { mode: 'testing' }, createComponentElement: () => {} }
+    const fakeApp = {
+      options: { mode: 'testing' },
+      createComponentElement: () => {
+      }
+    }
     const defineComp = createComponentDefinition({ app: fakeApp })
 
     const options = {
@@ -226,8 +237,14 @@ describe('emit Helper in Client Context', () => {
       }
     }
 
-    const mockModule = { id: 'ssr-comp', path: { pathname: '/ssr-comp.html' } }
-    await defineComp(options, { module: mockModule, state: {} })
+    const mockModule = {
+      id: 'ssr-comp',
+      path: { pathname: '/ssr-comp.html' }
+    }
+    await defineComp(options, {
+      module: mockModule,
+      state: {}
+    })
 
     assert.strictEqual(ssrEmitResult, false)
 

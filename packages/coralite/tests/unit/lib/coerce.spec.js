@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { coerce } from '../../../lib/coralite-element.js'
+import { coerce } from '../../../lib/client/element.js'
 
 describe('coerce', () => {
   it('should handle null and undefined', () => {

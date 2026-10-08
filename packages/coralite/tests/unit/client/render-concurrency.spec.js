@@ -11,7 +11,7 @@ globalThis.MutationObserver = window.MutationObserver
 globalThis.Node = window.Node
 globalThis.customElements = window.customElements
 
-const { createCoraliteClass } = await import('../../../lib/coralite-element.js')
+const { createCoraliteClass } = await import('../../../lib/client/element.js')
 
 describe('Render Concurrency & Lock Isolation (BUG-01)', () => {
   beforeEach(() => {
@@ -165,7 +165,9 @@ describe('Render Concurrency & Lock Isolation (BUG-01)', () => {
       slots: {
         header: (nodes, { observe }) => {
           observe('count', (val) => {
-            if (val === 0) return 'Initial Slot'
+            if (val === 0) {
+              return 'Initial Slot'
+            }
             // val 1 takes 50ms, val 2 takes 10ms
             const delay = val === 1 ? 50 : 10
             return new Promise(resolve => {
