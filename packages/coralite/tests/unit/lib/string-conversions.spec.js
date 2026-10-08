@@ -1,6 +1,6 @@
 import { describe, it, beforeEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { kebabToCamel, camelToKebab, _clearStringConversionCaches } from '../../../lib/utils/core.js'
+import { kebabToCamel, camelToKebab, _clearStringConversionCaches } from '../../../lib/shared/core.js'
 
 describe('Memoized String Conversions (kebabToCamel & camelToKebab)', () => {
   beforeEach(() => {

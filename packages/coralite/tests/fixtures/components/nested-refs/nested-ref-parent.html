@@ -38,7 +38,8 @@
       const hostTags = ['nested-shell', 'nested-section', 'nested-list', 'nested-list-item']
       for (const tag of hostTags) {
         if (!customElements.get(tag)) {
-          customElements.define(tag, class extends HTMLElement {})
+          customElements.define(tag, class extends HTMLElement {
+          })
         }
       }
 

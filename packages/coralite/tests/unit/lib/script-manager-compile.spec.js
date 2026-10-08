@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { ScriptManager as OriginalScriptManager } from '../../../lib/script-manager.js'
+import { ScriptManager as OriginalScriptManager } from '../../../lib/server/script-manager.js'
 
 const activeManagers = []
 class ScriptManager extends OriginalScriptManager {
@@ -78,15 +78,24 @@ describe('ScriptManager Compilation', () => {
     it('should throw CoraliteError if name is invalid or empty', async () => {
       const sm = new ScriptManager()
       await assert.rejects(
-        async () => { await sm.addContextProp('', () => {}) },
+        async () => {
+          await sm.addContextProp('', () => {
+          })
+        },
         /addContextProp requires a non-empty string name/
       )
       await assert.rejects(
-        async () => { await sm.addContextProp('   ', () => {}) },
+        async () => {
+          await sm.addContextProp('   ', () => {
+          })
+        },
         /addContextProp requires a non-empty string name/
       )
       await assert.rejects(
-        async () => { await sm.addContextProp(null, () => {}) },
+        async () => {
+          await sm.addContextProp(null, () => {
+          })
+        },
         /addContextProp requires a non-empty string name/
       )
     })
@@ -374,7 +383,10 @@ describe('ScriptManager Compilation', () => {
         const res = await sm.compileComponents('production')
         assert.ok(res, 'Compilation should succeed when relative import resolves against filePath directory')
       } finally {
-        await fs.rm(tmpDir, { recursive: true, force: true })
+        await fs.rm(tmpDir, {
+          recursive: true,
+          force: true
+        })
       }
     })
   })

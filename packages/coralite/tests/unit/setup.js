@@ -126,7 +126,9 @@ if (OriginalFormData) {
         const customElements = form.querySelectorAll('*')
         for (let i = 0; i < customElements.length; i++) {
           const el = customElements[i]
-          if (el.closest && el.closest('form') !== form) continue
+          if (el.closest && el.closest('form') !== form) {
+            continue
+          }
           if (el.constructor.formAssociated && el._internals && el._internals._formValue !== null && el.name) {
             this.append(el.name, el._internals._formValue)
           }

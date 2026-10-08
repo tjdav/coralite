@@ -1,7 +1,7 @@
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
-import { applyComponentFixes, generateColorizedDiff } from '../../../lib/component-fixer.js'
-import { validateComponentSource } from '../../../lib/component-validator.js'
+import { applyComponentFixes, generateColorizedDiff } from '../../../lib/server/component/fixer.js'
+import { validateComponentSource } from '../../../lib/server/component/validator.js'
 
 describe('Component Fixer Engine (applyComponentFixes)', () => {
   test('CORALITE-E201: lifts template expression to getter and injects into getters block', () => {

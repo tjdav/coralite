@@ -11,10 +11,10 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    async server() {
+    async server () {
       return {}
     },
-    client({ state, refs, observe }) {
+    client ({ state, refs, observe }) {
       const loadDataBtn = refs('loadDataBtn')
       const statusDisplay = loadDataBtn.parentElement.querySelector('.async-status-display')
       const resultDisplay = loadDataBtn.parentElement.querySelector('.async-result-display')
@@ -26,7 +26,9 @@
 
       // Derived getter that depends on async data
       state.derivedResult = () => {
-        if (!state.asyncData) return 'No data'
+        if (!state.asyncData) {
+          return 'No data'
+        }
         return `Processed: ${state.asyncData.value * 2}`
       }
 

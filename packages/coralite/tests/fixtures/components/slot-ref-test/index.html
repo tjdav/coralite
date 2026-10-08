@@ -11,10 +11,10 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    async server() {
+    async server () {
       return {}
     },
-    client({ state, refs, observe }) {
+    client ({ state, refs, observe }) {
       const checkRefBtn = refs('checkRefBtn')
       const display = checkRefBtn.parentElement.querySelector('.ref-check-display')
 

@@ -193,7 +193,10 @@ test.describe('W3C Web Components Context Protocol (Modern: Map, Symbol, Object,
       }, false)
 
       child1.dispatchEvent(event)
-      return { receivedValue, unsubscribeCalled }
+      return {
+        receivedValue,
+        unsubscribeCalled
+      }
     })
 
     expect(result.receivedValue).toBe('dark')

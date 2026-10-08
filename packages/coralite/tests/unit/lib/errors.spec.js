@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { CoraliteError, handleError, defaultOnError } from '../../../lib/utils/errors.js'
+import { CoraliteError, handleError, defaultOnError } from '../../../lib/shared/errors.js'
 
 describe('errors.js', () => {
   describe('CoraliteError', () => {
@@ -147,7 +147,8 @@ describe('errors.js', () => {
     })
 
     it('should log to console for unknown levels', (t) => {
-      const logMock = t.mock.method(console, 'log', () => {})
+      const logMock = t.mock.method(console, 'log', () => {
+      })
 
       defaultOnError({
         level: 'INFO',
