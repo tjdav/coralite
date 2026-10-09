@@ -11,7 +11,14 @@ import {
   AgentTargetError
 } from '../../lib/agent-generator.js'
 
-const silentLogger = { log () {}, warn () {}, error () {} }
+const silentLogger = {
+  log () {
+  },
+  warn () {
+  },
+  error () {
+  }
+}
 const mkTmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'coralite-agent-'))
 
 describe('normalizeTargets', () => {
@@ -36,14 +43,24 @@ describe('normalizeTargets', () => {
 
 describe('generateAgentRules', () => {
   let root
-  before(() => { root = mkTmp() })
-  after(() => { fs.rmSync(root, { recursive: true, force: true }) })
+  before(() => {
+    root = mkTmp()
+  })
+  after(() => {
+    fs.rmSync(root, {
+      recursive: true,
+      force: true
+    })
+  })
 
   test('writes all four files by default', () => {
     const cwd = path.join(root, 'all')
     fs.mkdirSync(cwd, { recursive: true })
 
-    const result = generateAgentRules({ cwd, logger: silentLogger })
+    const result = generateAgentRules({
+      cwd,
+      logger: silentLogger
+    })
 
     assert.deepEqual(result.written.sort(), [
       path.join('.cursor', 'rules', 'coralite.mdc'),
@@ -61,7 +78,11 @@ describe('generateAgentRules', () => {
     const cwd = path.join(root, 'nested')
     fs.mkdirSync(cwd, { recursive: true })
 
-    generateAgentRules({ cwd, target: 'cursor', logger: silentLogger })
+    generateAgentRules({
+      cwd,
+      target: 'cursor',
+      logger: silentLogger
+    })
 
     assert.ok(fs.existsSync(path.join(cwd, '.cursor', 'rules', 'coralite.mdc')))
   })
@@ -70,7 +91,11 @@ describe('generateAgentRules', () => {
     const cwd = path.join(root, 'cursor-only')
     fs.mkdirSync(cwd, { recursive: true })
 
-    const result = generateAgentRules({ cwd, target: 'cursor', logger: silentLogger })
+    const result = generateAgentRules({
+      cwd,
+      target: 'cursor',
+      logger: silentLogger
+    })
 
     assert.deepEqual(result.written, [path.join('.cursor', 'rules', 'coralite.mdc')])
     assert.equal(fs.existsSync(path.join(cwd, 'AGENTS.md')), false)
@@ -83,7 +108,11 @@ describe('generateAgentRules', () => {
     fs.mkdirSync(cwd, { recursive: true })
     fs.writeFileSync(path.join(cwd, 'AGENTS.md'), 'USER CONTENT', 'utf8')
 
-    const result = generateAgentRules({ cwd, target: 'agents-md', logger: silentLogger })
+    const result = generateAgentRules({
+      cwd,
+      target: 'agents-md',
+      logger: silentLogger
+    })
 
     assert.deepEqual(result.written, [])
     assert.deepEqual(result.skipped, ['AGENTS.md'])
@@ -96,7 +125,10 @@ describe('generateAgentRules', () => {
     fs.writeFileSync(path.join(cwd, 'AGENTS.md'), 'USER CONTENT', 'utf8')
 
     const result = generateAgentRules({
-      cwd, target: 'agents-md', force: true, logger: silentLogger
+      cwd,
+      target: 'agents-md',
+      force: true,
+      logger: silentLogger
     })
 
     assert.deepEqual(result.written, ['AGENTS.md'])
@@ -109,7 +141,11 @@ describe('generateAgentRules', () => {
     const cwd = path.join(root, 'interp')
     fs.mkdirSync(cwd, { recursive: true })
 
-    generateAgentRules({ cwd, target: 'agents-md', logger: silentLogger })
+    generateAgentRules({
+      cwd,
+      target: 'agents-md',
+      logger: silentLogger
+    })
 
     const content = fs.readFileSync(path.join(cwd, 'AGENTS.md'), 'utf8')
     assert.equal(/\{\{\s*version\s*\}\}/.test(content), false)
@@ -120,7 +156,10 @@ describe('generateAgentRules', () => {
     fs.mkdirSync(cwd, { recursive: true })
 
     generateAgentRules({
-      cwd, target: 'agents-md', vars: { version: '9.9.9-test' }, logger: silentLogger
+      cwd,
+      target: 'agents-md',
+      vars: { version: '9.9.9-test' },
+      logger: silentLogger
     })
 
     assert.match(fs.readFileSync(path.join(cwd, 'AGENTS.md'), 'utf8'), /9\.9\.9-test/)
@@ -130,7 +169,11 @@ describe('generateAgentRules', () => {
     const cwd = path.join(root, 'frontmatter')
     fs.mkdirSync(cwd, { recursive: true })
 
-    generateAgentRules({ cwd, target: 'cursor', logger: silentLogger })
+    generateAgentRules({
+      cwd,
+      target: 'cursor',
+      logger: silentLogger
+    })
 
     const content = fs.readFileSync(
       path.join(cwd, '.cursor', 'rules', 'coralite.mdc'), 'utf8'
@@ -145,9 +188,17 @@ describe('generateAgentRules', () => {
     const cwd = path.join(root, 'idempotent')
     fs.mkdirSync(cwd, { recursive: true })
 
-    generateAgentRules({ cwd, force: true, logger: silentLogger })
+    generateAgentRules({
+      cwd,
+      force: true,
+      logger: silentLogger
+    })
     const first = fs.readFileSync(path.join(cwd, 'AGENTS.md'), 'utf8')
-    generateAgentRules({ cwd, force: true, logger: silentLogger })
+    generateAgentRules({
+      cwd,
+      force: true,
+      logger: silentLogger
+    })
     const second = fs.readFileSync(path.join(cwd, 'AGENTS.md'), 'utf8')
 
     assert.equal(first, second)

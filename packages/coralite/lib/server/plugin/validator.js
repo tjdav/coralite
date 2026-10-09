@@ -5,6 +5,7 @@ import { join, resolve, extname } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import kleur from 'kleur'
 import { buildCodeframe, normalizeErrorCodes, matchesErrorCode } from '../../shared/diagnostics.js'
+import { validatePluginConfigBlocks, SUPPORTED_CONFIG_TYPES } from '../../shared/plugin-config-schema.js'
 
 /**
  * @import {
@@ -756,9 +757,148 @@ export function validatePluginSource (sourceCode, filePath = '') {
       }
     }
 
+    // Uniqueness (CORALITE-P203) and Schema shape (CORALITE-P206) AST inspection
+    const configBlocks = []
+    /** @type {(p: any) => boolean} */
+    const isConfigProp = (p) => p.key && (p.key.name === 'config' || p.key.value === 'config')
+    const topConfigProp = properties.find(isConfigProp)
+    if (topConfigProp && topConfigProp.value && topConfigProp.value.type === 'ObjectExpression') {
+      configBlocks.push({
+        name: 'config',
+        node: topConfigProp.value
+      })
+    }
+
     /** @type {(p: any) => boolean} */
     const isServerProp = (p) => p.key && (p.key.name === 'server' || p.key.value === 'server')
     const serverProp = properties.find(isServerProp)
+    if (serverProp && serverProp.value && serverProp.value.type === 'ObjectExpression') {
+      const serverConfigProp = (serverProp.value.properties || []).find(isConfigProp)
+      if (serverConfigProp && serverConfigProp.value && serverConfigProp.value.type === 'ObjectExpression') {
+        configBlocks.push({
+          name: 'server.config',
+          node: serverConfigProp.value
+        })
+      }
+    }
+
+    /** @type {(p: any) => boolean} */
+    const isClientProp = (p) => p.key && (p.key.name === 'client' || p.key.value === 'client')
+    const clientProp = properties.find(isClientProp)
+    if (clientProp && clientProp.value && clientProp.value.type === 'ObjectExpression') {
+      const clientConfigProp = (clientProp.value.properties || []).find(isConfigProp)
+      if (clientConfigProp && clientConfigProp.value && clientConfigProp.value.type === 'ObjectExpression') {
+        configBlocks.push({
+          name: 'client.config',
+          node: clientConfigProp.value
+        })
+      }
+    }
+
+    const seenConfigKeys = new Map()
+    for (const block of configBlocks) {
+      for (const p of block.node.properties || []) {
+        if (p.type === 'Property') {
+          const keyName = p.key ? (p.key.name || p.key.value) : null
+          if (keyName) {
+            const line = p.loc ? p.loc.start.line : undefined
+            const column = p.loc ? p.loc.start.column + 1 : undefined
+
+            if (seenConfigKeys.has(keyName)) {
+              const prevBlock = seenConfigKeys.get(keyName)
+              addIssueAndDiagnostic({
+                code: 'CORALITE-P203',
+                legacyCode: 'DUPLICATE_CONFIG_KEY',
+                severity: 'error',
+                message: `Config key "${keyName}" declared in more than one block ("${prevBlock}" and "${block.name}")`,
+                line,
+                column,
+                cause: `Config key "${keyName}" cannot be declared in multiple config blocks.`
+              })
+            } else {
+              seenConfigKeys.set(keyName, block.name)
+            }
+
+            // Validate schema shape (CORALITE-P206)
+            const val = p.value
+            if (val) {
+              let isValidShape = true
+              let shapeErrorMsg = ''
+
+              if (val.type === 'Identifier') {
+                if (!SUPPORTED_CONFIG_TYPES.has(val.name)) {
+                  isValidShape = false
+                  shapeErrorMsg = `Unknown schema type constructor "${val.name}" for key "${keyName}"`
+                }
+              } else if (val.type === 'ArrayExpression') {
+                // Shorthand enum array form
+              } else if (val.type === 'ObjectExpression') {
+                const schemaProps = val.properties || []
+                /** @type {(sp: any) => boolean} */
+                const isTypeProp = (sp) => sp.key && (sp.key.name === 'type' || sp.key.value === 'type')
+                const typeP = schemaProps.find(isTypeProp)
+
+                /** @type {(sp: any) => boolean} */
+                const isValuesProp = (sp) => sp.key && (sp.key.name === 'values' || sp.key.value === 'values')
+                const valuesP = schemaProps.find(isValuesProp)
+
+                /** @type {(sp: any) => boolean} */
+                const isDefaultProp = (sp) => sp.key && (sp.key.name === 'default' || sp.key.value === 'default')
+                const defaultP = schemaProps.find(isDefaultProp)
+
+                const hasSchemaKeys = schemaProps.some((sp) => {
+                  const k = sp.key ? (sp.key.name || sp.key.value) : null
+                  return ['type', 'values', 'default', 'required', 'transform', 'validate'].includes(k)
+                })
+
+                if (typeP) {
+                  let typeName = null
+                  if (typeP.value.type === 'Identifier') {
+                    typeName = typeP.value.name
+                  } else if (typeP.value.type === 'Literal') {
+                    typeName = String(typeP.value.value)
+                  }
+
+                  if (!typeName || !SUPPORTED_CONFIG_TYPES.has(typeName)) {
+                    isValidShape = false
+                    shapeErrorMsg = `Unknown or unsupported type "${typeName}" for config key "${keyName}"`
+                  }
+
+                  if (defaultP && ['String', 'Number', 'Boolean'].includes(typeName)) {
+                    const dt = defaultP.value ? defaultP.value.type : ''
+                    if (dt === 'ObjectExpression' || dt === 'ArrayExpression' || dt === 'FunctionExpression' || dt === 'ArrowFunctionExpression') {
+                      isValidShape = false
+                      shapeErrorMsg = `Primitive type "${typeName}" cannot have a non-primitive default value for key "${keyName}"`
+                    }
+                  }
+                } else if (valuesP) {
+                  if (valuesP.value.type !== 'ArrayExpression') {
+                    isValidShape = false
+                    shapeErrorMsg = `Property "values" must be an array for key "${keyName}"`
+                  }
+                } else if (hasSchemaKeys) {
+                  isValidShape = false
+                  shapeErrorMsg = `Missing required "type" property in schema object for config key "${keyName}"`
+                }
+              }
+
+              if (!isValidShape) {
+                addIssueAndDiagnostic({
+                  code: 'CORALITE-P206',
+                  legacyCode: 'INVALID_CONFIG_SCHEMA',
+                  severity: 'error',
+                  message: `Invalid schema shape for config key "${keyName}": ${shapeErrorMsg}`,
+                  line,
+                  column,
+                  cause: `Config schema declaration for "${keyName}" has an invalid shape or unsupported type.`
+                })
+              }
+            }
+          }
+        }
+      }
+    }
+
     if (serverProp && serverProp.value && serverProp.value.type === 'ObjectExpression') {
       const serverProps = serverProp.value.properties || []
 
@@ -827,9 +967,6 @@ export function validatePluginSource (sourceCode, filePath = '') {
       }
     }
 
-    /** @type {(p: any) => boolean} */
-    const isClientProp = (p) => p.key && (p.key.name === 'client' || p.key.value === 'client')
-    const clientProp = properties.find(isClientProp)
     if (clientProp && clientProp.value && clientProp.value.type === 'ObjectExpression') {
       const clientProps = clientProp.value.properties || []
 
@@ -1138,6 +1275,36 @@ export function validatePluginObject (plugin, filePath = '') {
     })
   }
 
+  // Schema blocks uniqueness & shape validation (CORALITE-P203, CORALITE-P206)
+  try {
+    validatePluginConfigBlocks({
+      pluginName,
+      config: plugin.config,
+      serverConfig: plugin.server?.config,
+      clientConfig: plugin.client?.config
+    })
+  } catch (err) {
+    if (err.code === 'CORALITE-P203') {
+      addIssueAndDiagnostic({
+        code: 'CORALITE-P203',
+        legacyCode: 'DUPLICATE_CONFIG_KEY',
+        severity: 'error',
+        message: err.message,
+        cause: 'Config keys must be declared in exactly one config block.'
+      })
+    } else if (err.code === 'CORALITE-P206') {
+      addIssueAndDiagnostic({
+        code: 'CORALITE-P206',
+        legacyCode: 'INVALID_CONFIG_SCHEMA',
+        severity: 'error',
+        message: err.message,
+        cause: 'Plugin config schema declaration is malformed or invalid.'
+      })
+    } else {
+      throw err
+    }
+  }
+
   if (plugin.server !== undefined && plugin.server !== null) {
     if (typeof plugin.server !== 'object') {
       addIssueAndDiagnostic({
@@ -1222,7 +1389,7 @@ export function validatePluginObject (plugin, filePath = '') {
             code: 'CORALITE-P303',
             legacyCode: 'INVALID_HOOK_TYPE',
             severity: 'error',
-            message: `Unknown client property or hook 'client.${key}'. Valid hooks are: ${Array.from(CLIENT_HOOK_NAMES).join(', ')}.`,
+            message: `Unknown client property or hook 'client.${key}'. Valid hooks are: onBeforeComponentRender, onAfterComponentRender, onDisconnected.`,
             cause: `Property 'client.${key}' is not a recognized client plugin property or hook.`
           })
         }

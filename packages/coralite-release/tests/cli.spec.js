@@ -131,7 +131,10 @@ describe('coralite-release CLI & versioning logic', () => {
 
   describe('CLI options & help', () => {
     it('displays help output containing updated options and release types', () => {
-      const output = execFileSync('node', [releaseBin, '--help'], { cwd: repoRoot, encoding: 'utf8' })
+      const output = execFileSync('node', [releaseBin, '--help'], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      })
       assert.match(output, /rc/)
       assert.match(output, /preminor/)
       assert.match(output, /--allow-any-branch/)
@@ -164,7 +167,10 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.ok(createCoraliteIdx > -1)
       assert.ok(coraliteIdx < createCoraliteIdx)
 
-      const gitDiff = execFileSync('git', ['diff', 'packages/coralite/package.json'], { cwd: repoRoot, encoding: 'utf8' })
+      const gitDiff = execFileSync('git', ['diff', 'packages/coralite/package.json'], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      })
       assert.strictEqual(gitDiff.trim(), '')
     })
 
@@ -181,7 +187,10 @@ describe('coralite-release CLI & versioning logic', () => {
       assert.match(output, /coralite-plugin-scripts:/)
       assert.match(output, /create-coralite-plugin:/)
 
-      const gitDiff = execFileSync('git', ['diff', '--', 'packages/*/package.json', 'packages/*/templates/*/package.json'], { cwd: repoRoot, encoding: 'utf8' })
+      const gitDiff = execFileSync('git', ['diff', '--', 'packages/*/package.json', 'packages/*/templates/*/package.json'], {
+        cwd: repoRoot,
+        encoding: 'utf8'
+      })
       assert.strictEqual(gitDiff.trim(), '')
     })
   })

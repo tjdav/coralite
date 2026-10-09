@@ -21,7 +21,10 @@ describe('utils unit tests', () => {
 
   afterEach(() => {
     if (fs.existsSync(tmpDir)) {
-      fs.rmSync(tmpDir, { recursive: true, force: true })
+      fs.rmSync(tmpDir, {
+        recursive: true,
+        force: true
+      })
     }
   })
 
@@ -116,7 +119,10 @@ describe('utils unit tests', () => {
   describe('extractPackageInfoFromUserAgent', () => {
     test('extracts package manager name and version', () => {
       const info = extractPackageInfoFromUserAgent('pnpm/9.0.0 npm/? node/v20.19.0 linux x64')
-      assert.deepEqual(info, { name: 'pnpm', version: '9.0.0' })
+      assert.deepEqual(info, {
+        name: 'pnpm',
+        version: '9.0.0'
+      })
     })
 
     test('returns undefined for empty or missing user agent', () => {

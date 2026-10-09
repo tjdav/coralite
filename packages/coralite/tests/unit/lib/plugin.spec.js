@@ -91,9 +91,79 @@ describe('definePlugin', () => {
     assert.ok(plugin.client.rootDir)
   })
 
+  it('should accept all three config blocks (config, server.config, client.config) without throwing', () => {
+    const plugin = definePlugin({
+      name: 'router',
+
+      config: {
+        base: {
+          type: String,
+          default: '/'
+        },
+        mode: {
+          type: String,
+          values: ['history', 'hash'],
+          default: 'history'
+        }
+      },
+
+      server: {
+        config: {
+          apiKey: {
+            type: String,
+            required: true
+          }
+        }
+      },
+
+      client: {
+        config: {
+          prefetch: {
+            type: Boolean,
+            default: true
+          }
+        }
+      }
+    })
+
+    assert.strictEqual(plugin.name, 'router')
+    assert.ok(plugin.config.base)
+    assert.ok(plugin.server.config.apiKey)
+    assert.ok(plugin.client.config.prefetch)
+  })
+
+  it('should throw CORALITE-P203 when same key is declared in config and server.config', () => {
+    assert.throws(
+      () => definePlugin({
+        name: 'dup-plugin',
+        config: {
+          apiKey: String
+        },
+        server: {
+          config: {
+            apiKey: String
+          }
+        }
+      }),
+      /CORALITE-P203/
+    )
+  })
+
+  it('should throw CORALITE-P206 for invalid schema shape with unknown type', () => {
+    assert.throws(
+      () => definePlugin({
+        name: 'bad-schema-plugin',
+        config: {
+          base: { type: 'foo' }
+        }
+      }),
+      /CORALITE-P206/
+    )
+  })
+
   it('should correctly parse simulated caller stack formats', async () => {
     const { fileURLToPath } = await import('node:url')
-    const selfFile = fileURLToPath(import.meta.resolve('../../../lib/plugin.js'))
+    const selfFile = fileURLToPath(import.meta.resolve('../../../lib/server/plugin/define.js'))
     const origError = Error
 
     try {
@@ -210,4 +280,3 @@ describe('definePlugin argument validation', () => {
     }), /"client.config" must be an object/)
   })
 })
-

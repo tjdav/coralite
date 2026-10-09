@@ -62,23 +62,33 @@ describe('coralite-publish utility functions', () => {
     const tmpDir = resolve(__dirname, '.tmp-pkg-test')
 
     it('passes when all declared package files exist', () => {
-      if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true })
+      if (!existsSync(tmpDir)) {
+        mkdirSync(tmpDir, { recursive: true })
+      }
       writeFileSync(resolve(tmpDir, 'dist.txt'), 'content')
       mkdirSync(resolve(tmpDir, 'bin'), { recursive: true })
 
       assert.equal(verifyPackageFiles(tmpDir, ['dist.txt', 'bin']), true)
 
-      rmSync(tmpDir, { recursive: true, force: true })
+      rmSync(tmpDir, {
+        recursive: true,
+        force: true
+      })
     })
 
     it('throws when declared package files are missing', () => {
-      if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true })
+      if (!existsSync(tmpDir)) {
+        mkdirSync(tmpDir, { recursive: true })
+      }
 
       assert.throws(() => {
         verifyPackageFiles(tmpDir, ['nonexistent-file.js'])
       }, /Pre-flight assertion failed: Missing expected package files\/directories: nonexistent-file.js/)
 
-      rmSync(tmpDir, { recursive: true, force: true })
+      rmSync(tmpDir, {
+        recursive: true,
+        force: true
+      })
     })
 
     it('passes cleanly for empty or non-array file lists', () => {
@@ -91,7 +101,10 @@ describe('coralite-publish utility functions', () => {
     it('executes dry-run for coralite package, copying llms.txt and cleaning up after', () => {
       const output = execSync(
         'node --experimental-vm-modules packages/coralite-release/bin/publish.js --package coralite --dry-run --skip-build',
-        { cwd: rootDir, encoding: 'utf8' }
+        {
+          cwd: rootDir,
+          encoding: 'utf8'
+        }
       )
 
       assert.match(output, /✔ Copied website\/public\/llms.txt/)
@@ -105,7 +118,10 @@ describe('coralite-publish utility functions', () => {
     it('executes dry-run with tag-ref for prerelease tag resolution', () => {
       const output = execSync(
         'node --experimental-vm-modules packages/coralite-release/bin/publish.js --tag-ref coralite-scripts-v1.0.0-rc.3 --dry-run --registry codeberg --skip-build',
-        { cwd: rootDir, encoding: 'utf8' }
+        {
+          cwd: rootDir,
+          encoding: 'utf8'
+        }
       )
 
       assert.match(output, /\[DRY RUN\] Would publish coralite-scripts@1.0.0-rc.3 to codeberg with tag "rc"/)

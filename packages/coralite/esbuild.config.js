@@ -3,35 +3,142 @@ import esbuild from 'esbuild'
 /** @type {import('esbuild').BuildOptions} */
 export const buildOptions = {
   entryPoints: [
-    // Core runtime & elements
-    './lib/index.js',
-    './lib/coralite-element.js',
-    './lib/plugin.js',
-    './lib/interactive.js',
+    // Core runtime
+    {
+      in: './lib/index.js',
+      out: 'lib/index'
+    },
+    {
+      in: './lib/client/element.js',
+      out: 'lib/coralite-element'
+    },
+    {
+      in: './lib/client/element.js',
+      out: 'lib/client/element'
+    },
+    {
+      in: './lib/client/element.js',
+      out: 'client/element'
+    },
+    {
+      in: './lib/server/plugin/define.js',
+      out: 'lib/plugin'
+    },
+    {
+      in: './lib/server/interactive.js',
+      out: 'lib/interactive'
+    },
 
     // Validators & AST Fixers
-    './lib/component-validator.js',
-    './lib/component-fixer.js',
-    './lib/plugin-validator.js',
-    './lib/plugin-fixer.js',
-    './lib/page-validator.js',
+    {
+      in: './lib/server/component/validator.js',
+      out: 'lib/component-validator'
+    },
+    {
+      in: './lib/server/component/fixer.js',
+      out: 'lib/component-fixer'
+    },
+    {
+      in: './lib/server/plugin/validator.js',
+      out: 'lib/plugin-validator'
+    },
+    {
+      in: './lib/server/plugin/fixer.js',
+      out: 'lib/plugin-fixer'
+    },
+    {
+      in: './lib/server/page/validator.js',
+      out: 'lib/page-validator'
+    },
 
-    // Utilities & Shared Helpers
-    './lib/utils/core.js',
-    './lib/utils/attributes.js',
-    './lib/utils/diagnostics.js',
-    './lib/utils/index.js',
-    './lib/utils/server/index.js',
-    './lib/utils/client/index.js',
-    './lib/utils/client/dom.js',
-    './lib/utils/client/inject.js',
-    './lib/utils/client/devtools.js'
+    // Shared & Client Utilities
+    {
+      in: './lib/shared/core.js',
+      out: 'lib/utils/core'
+    },
+    {
+      in: './lib/shared/attributes.js',
+      out: 'lib/utils/attributes'
+    },
+    {
+      in: './lib/shared/diagnostics.js',
+      out: 'lib/utils/diagnostics'
+    },
+    {
+      in: './lib/shared/index.js',
+      out: 'lib/shared/index'
+    },
+    {
+      in: './lib/shared/core.js',
+      out: 'lib/shared/core'
+    },
+    {
+      in: './lib/shared/attributes.js',
+      out: 'lib/shared/attributes'
+    },
+    {
+      in: './lib/shared/diagnostics.js',
+      out: 'lib/shared/diagnostics'
+    },
+    {
+      in: './lib/utils/index.js',
+      out: 'lib/utils/index'
+    },
+    {
+      in: './lib/utils/server/index.js',
+      out: 'lib/utils/server/index'
+    },
+    {
+      in: './lib/utils/client/index.js',
+      out: 'lib/utils/client/index'
+    },
+    {
+      in: './lib/client/utils/dom.js',
+      out: 'lib/utils/client/dom'
+    },
+    {
+      in: './lib/client/utils/inject.js',
+      out: 'lib/utils/client/inject'
+    },
+    {
+      in: './lib/client/utils/devtools.js',
+      out: 'lib/utils/client/devtools'
+    },
+    {
+      in: './lib/client/utils/dom.js',
+      out: 'lib/client/utils/dom'
+    },
+    {
+      in: './lib/client/utils/inject.js',
+      out: 'lib/client/utils/inject'
+    },
+    {
+      in: './lib/client/utils/devtools.js',
+      out: 'lib/client/utils/devtools'
+    },
+    {
+      in: './lib/client/utils/index.js',
+      out: 'lib/client/utils/index'
+    },
+
+    // Root-relative aliases for runtime import.meta.resolve
+    {
+      in: './lib/client/utils/inject.js',
+      out: 'client/utils/inject'
+    },
+    {
+      in: './lib/client/utils/devtools.js',
+      out: 'client/utils/devtools'
+    },
+    {
+      in: './lib/shared/index.js',
+      out: 'shared/index'
+    }
   ],
   bundle: true,
   target: 'esnext',
   format: 'esm',
-  outdir: 'dist/lib',
-  outbase: './lib',
+  outdir: 'dist',
   platform: 'node',
   sourcemap: true,
   packages: 'external',

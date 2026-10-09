@@ -15,7 +15,10 @@ function runCLI (args, options = {}) {
       [binPath, ...args],
       {
         cwd: options.cwd || process.cwd(),
-        env: { ...process.env, ...options.env }
+        env: {
+          ...process.env,
+          ...options.env
+        }
       },
       (error, stdout, stderr) => {
         resolve({
@@ -45,7 +48,10 @@ describe('CLI integration tests', () => {
 
   afterEach(() => {
     if (fs.existsSync(tmpDir)) {
-      fs.rmSync(tmpDir, { recursive: true, force: true })
+      fs.rmSync(tmpDir, {
+        recursive: true,
+        force: true
+      })
     }
   })
 

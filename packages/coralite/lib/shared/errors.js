@@ -1,4 +1,3 @@
-
 /**
  * @import { CoraliteErrorData } from '../../types/index.js'
  */
@@ -10,6 +9,7 @@ export class CoraliteError extends Error {
   /**
    * @param {string} message - The error message.
    * @param {Object} [options] - Additional options for the error.
+   * @param {string} [options.code] - Diagnostic error code.
    * @param {string} [options.componentId] - The ID of the component where the error occurred.
    * @param {string} [options.filePath] - The path to the file where the error occurred.
    * @param {string} [options.instanceId] - The unique ID of the component instance.
@@ -24,6 +24,7 @@ export class CoraliteError extends Error {
     super(message, options)
     this.name = 'CoraliteError'
     this.isCoraliteError = true
+    this.code = options.code
     this.componentId = options.componentId
     this.filePath = options.filePath
     this.instanceId = options.instanceId
