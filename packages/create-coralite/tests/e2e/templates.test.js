@@ -79,8 +79,12 @@ for (const templateName of templates) {
         }
       })
 
-      serverProcess.stdout?.on('data', chunk => { serverLogs += chunk.toString() })
-      serverProcess.stderr?.on('data', chunk => { serverLogs += chunk.toString() })
+      serverProcess.stdout?.on('data', chunk => {
+        serverLogs += chunk.toString()
+      })
+      serverProcess.stderr?.on('data', chunk => {
+        serverLogs += chunk.toString()
+      })
 
       // Wait for server to respond
       const serverUrl = `http://localhost:${port}`
@@ -108,7 +112,10 @@ for (const templateName of templates) {
         serverProcess.kill('SIGKILL')
       }
       if (tempDir && existsSync(tempDir)) {
-        await rm(tempDir, { recursive: true, force: true })
+        await rm(tempDir, {
+          recursive: true,
+          force: true
+        })
       }
       await new Promise(r => setTimeout(r, 1000))
     })
@@ -147,7 +154,7 @@ for (const templateName of templates) {
       await expect(countBtn).toHaveText(/Count is 0/)
 
       // Wait for counter component custom element definition and async client lifecycle
-      await page.waitForFunction(() => !!customElements.get('coralite-counter'))
+      await page.waitForFunction(() => Boolean(customElements.get('coralite-counter')))
       await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 200)))
 
       // Click count button

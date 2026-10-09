@@ -95,7 +95,7 @@ export async function createCLIProject () {
       }
 
       const assetsIndex = args.indexOf('--assets') !== -1 ? args.indexOf('--assets') : args.indexOf('-a')
-      let cliAssetsStrings = []
+      const cliAssetsStrings = []
       if (assetsIndex !== -1) {
         for (let i = assetsIndex + 1; i < args.length; i++) {
           if (args[i].startsWith('-')) {
@@ -175,8 +175,12 @@ export async function createCLIProject () {
     runCheck: async (args = []) => {
       const getArg = (flag, shortFlag) => {
         let idx = args.indexOf(flag)
-        if (idx === -1 && shortFlag) idx = args.indexOf(shortFlag)
-        if (idx !== -1 && idx + 1 < args.length) return args[idx + 1]
+        if (idx === -1 && shortFlag) {
+          idx = args.indexOf(shortFlag)
+        }
+        if (idx !== -1 && idx + 1 < args.length) {
+          return args[idx + 1]
+        }
         return undefined
       }
 
@@ -211,8 +215,12 @@ export async function createCLIProject () {
       let stderr = ''
 
       const logger = {
-        write: (msg) => { stdout += msg },
-        log: (msg) => { stdout += msg + '\n' }
+        write: (msg) => {
+          stdout += msg
+        },
+        log: (msg) => {
+          stdout += msg + '\n'
+        }
       }
 
       const originalCwd = process.cwd()
@@ -242,8 +250,12 @@ export async function createCLIProject () {
     runFix: async (args = []) => {
       const getArg = (flag, shortFlag) => {
         let idx = args.indexOf(flag)
-        if (idx === -1 && shortFlag) idx = args.indexOf(shortFlag)
-        if (idx !== -1 && idx + 1 < args.length) return args[idx + 1]
+        if (idx === -1 && shortFlag) {
+          idx = args.indexOf(shortFlag)
+        }
+        if (idx !== -1 && idx + 1 < args.length) {
+          return args[idx + 1]
+        }
         return undefined
       }
 
@@ -276,8 +288,12 @@ export async function createCLIProject () {
       let stderr = ''
 
       const logger = {
-        write: (msg) => { stdout += msg },
-        log: (msg) => { stdout += msg + '\n' }
+        write: (msg) => {
+          stdout += msg
+        },
+        log: (msg) => {
+          stdout += msg + '\n'
+        }
       }
 
       const originalCwd = process.cwd()

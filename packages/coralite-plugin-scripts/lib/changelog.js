@@ -36,7 +36,7 @@ export async function changelog (options = {}) {
 
     // Get all tags
     const tags = await git.tags()
-    let sortedTags = tags.all
+    const sortedTags = tags.all
       .filter(tag => {
         const cleaned = tag.replace(/^v/, '')
         return Boolean(semver.valid(cleaned))

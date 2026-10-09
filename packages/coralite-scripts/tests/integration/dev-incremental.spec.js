@@ -1,7 +1,7 @@
 import { describe, it, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 // @ts-ignore
-import { ScriptManager as OriginalScriptManager } from '../../../coralite/lib/script-manager.js'
+import { ScriptManager as OriginalScriptManager } from '../../../coralite/lib/server/script-manager.js'
 
 const activeManagers = []
 class ScriptManager extends OriginalScriptManager {

@@ -18,7 +18,7 @@ describe('plugin-validator.js', () => {
     it('should detect free outer-scope references in functions when moduleBindings is provided', () => {
       const outerHelper = () => {
       }
-      function sampleFn (ctx) {
+      function sampleFn (_ctx) {
         const local = 123
         console.log(local)
         // @ts-ignore
@@ -170,23 +170,39 @@ describe('plugin-validator.js', () => {
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P202'))
     })
 
-    it('CORALITE-P203: should flag server-only module referenced in client block', () => {
+    it('CORALITE-P203: should flag duplicate config key in multiple config blocks in validatePluginSource', () => {
       const source = `
         import { definePlugin } from 'coralite'
-        import fs from 'node:fs'
-
         export default definePlugin({
-          name: 'leaky-plugin',
-          client: {
-            onBeforeComponentRender () {
-              const data = fs.readFileSync('test')
+          name: 'dup-config-plugin',
+          config: {
+            apiKey: String
+          },
+          server: {
+            config: {
+              apiKey: String
             }
           }
         })
       `
-      const result = validatePluginSource(source, 'test.js')
+      const result = validatePluginSource(source, 'dup-config.js')
       assert.equal(result.valid, false)
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P203'))
+    })
+
+    it('CORALITE-P206: should flag unknown schema type in validatePluginSource', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'bad-schema-plugin',
+          config: {
+            mode: { type: 'foo' }
+          }
+        })
+      `
+      const result = validatePluginSource(source, 'bad-schema.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P206'))
     })
 
     it('CORALITE-P301: should flag outer-scope variable reference in client block', () => {
@@ -364,6 +380,35 @@ describe('plugin-validator.js', () => {
       const result = validatePluginObject(plugin, 'my-plugin.js')
       assert.equal(result.valid, true)
       assert.equal(result.metrics.errors, 0)
+    })
+
+    it('CORALITE-P203: should flag duplicate config keys in validatePluginObject', () => {
+      const plugin = {
+        name: 'dup-plugin',
+        config: {
+          token: String
+        },
+        client: {
+          config: {
+            token: String
+          }
+        }
+      }
+      const result = validatePluginObject(plugin, 'dup-plugin.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P203'))
+    })
+
+    it('CORALITE-P206: should flag invalid schema shape in validatePluginObject', () => {
+      const plugin = {
+        name: 'bad-schema-plugin',
+        config: {
+          mode: { type: 'invalidType' }
+        }
+      }
+      const result = validatePluginObject(plugin, 'bad-schema-plugin.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P206'))
     })
 
     it('should skip closure leak checks in validatePluginObject when module AST is absent', () => {

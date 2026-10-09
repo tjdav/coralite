@@ -94,7 +94,7 @@ try {
   console.log(`Packed: ${tarballPath}`)
 
   // Special handling for dependencies
-  let extraTarballs = []
+  const extraTarballs = []
   if (targetPackageName === 'coralite-scripts') {
     console.log('Building and Packing dependency: coralite...')
     const coraliteRoot = resolve(PACKAGES_DIR, 'coralite')

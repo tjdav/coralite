@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { createCoralite } from '#lib/coralite.js'
+import { createCoralite } from '#lib'
 
 describe('outputFiles & Asset Cache Memory Management', () => {
   let testDir

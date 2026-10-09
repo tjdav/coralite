@@ -554,7 +554,7 @@ async function server (config, options, runMode = 'dev') {
           pageCache.clear()
 
           isCompiling = true
-          let dash = colours.gray(' ─ ')
+          const dash = colours.gray(' ─ ')
 
           // Process all pending changes
           const changes = Array.from(pendingChanges)
