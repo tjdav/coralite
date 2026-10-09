@@ -65,17 +65,9 @@ describe('setupPlugins value routing and object freezing', () => {
     assert.strictEqual(registeredPlugin.client.config.clientOnly, true)
     assert.strictEqual(registeredPlugin.server.config.clientOnly, undefined)
 
-    // Verify both are frozen
-    assert.strictEqual(Object.isFrozen(registeredPlugin.server.config), true)
-    assert.strictEqual(Object.isFrozen(registeredPlugin.client.config), true)
-
-    assert.throws(() => {
-      registeredPlugin.server.config.base = '/mutated'
-    }, TypeError)
-
-    assert.throws(() => {
-      registeredPlugin.client.config.base = '/mutated'
-    }, TypeError)
+    // Verify server.config is plain mutable object before post-hook freeze, and client.config is non-frozen staging object
+    assert.strictEqual(registeredPlugin.client.config, registeredPlugin._clientConfigStaging)
+    assert.strictEqual(Object.isFrozen(registeredPlugin.client.config), false)
   })
 
   it('should throw CORALITE-P101 at setup time if bare plugin with required key is registered uncalled', async () => {

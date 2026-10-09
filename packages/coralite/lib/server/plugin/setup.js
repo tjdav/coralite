@@ -66,20 +66,35 @@ export async function setupPlugins ({
       clientConfig = plugin.client?.config || {}
     }
 
+    const clientConfigStaging = {
+      ...sharedConfig,
+      ...clientConfig
+    }
+    plugin._clientConfigStaging = clientConfigStaging
+
     if (plugin.server) {
-      plugin.server.name = plugin.server.name || plugin.name
-      plugin.server.config = Object.freeze({
+      if (typeof plugin.server === 'object') {
+        try {
+          plugin.server.name = plugin.server.name || plugin.name
+        } catch {
+          // ignore non-writable property
+        }
+      }
+      plugin.server.config = {
         ...sharedConfig,
         ...serverConfig
-      })
+      }
     }
 
     if (plugin.client) {
-      plugin.client.name = plugin.client.name || plugin.name
-      plugin.client.config = Object.freeze({
-        ...sharedConfig,
-        ...clientConfig
-      })
+      if (typeof plugin.client === 'object') {
+        try {
+          plugin.client.name = plugin.client.name || plugin.name
+        } catch {
+          // ignore non-writable property
+        }
+      }
+      plugin.client.config = clientConfigStaging
     }
 
     if (plugin.server) {
@@ -167,7 +182,77 @@ export async function setupPlugins ({
       if (plugin.server.onBeforeBuild) {
         addPluginHook(plugins.hooks, 'onBeforeBuild', async (ctx) => {
           const hookContext = Object.create(ctx)
-          hookContext.config = plugin.server.config || {}
+
+          const clientConfigSchema = plugin._normalizedSchemas?.clientConfig || plugin.client?.config || {}
+          const serverConfigSchema = plugin._normalizedSchemas?.serverConfig || plugin.server?.config || {}
+
+          const serverConfigTarget = plugin.server.config || {}
+
+          const clientConfigProxy = new Proxy(clientConfigStaging, {
+            get (target, prop) {
+              return Reflect.get(target, prop)
+            },
+            set (target, prop, value) {
+              if (!Object.hasOwn(clientConfigSchema, prop)) {
+                throw new CoraliteError(
+                  `[CORALITE-P207] Late-bound write to key "${String(prop)}" failed: key must be declared in client.config schema.`,
+                  { code: 'CORALITE-P207' }
+                )
+              }
+
+              return Reflect.set(target, prop, value)
+            }
+          })
+
+          const buildHookConfigProxy = new Proxy(serverConfigTarget, {
+            get (target, prop) {
+              if (prop === 'clientConfig') {
+                return clientConfigProxy
+              }
+              return Reflect.get(target, prop)
+            },
+            has (target, prop) {
+              if (prop === 'clientConfig') {
+                return true
+              }
+              return Reflect.has(target, prop)
+            },
+            ownKeys (target) {
+              return Array.from(new Set([...Reflect.ownKeys(target), 'clientConfig']))
+            },
+            getOwnPropertyDescriptor (target, prop) {
+              if (prop === 'clientConfig') {
+                return {
+                  enumerable: true,
+                  configurable: true,
+                  writable: false,
+                  value: clientConfigProxy
+                }
+              }
+              return Reflect.getOwnPropertyDescriptor(target, prop)
+            },
+            set (target, prop, value) {
+              if (prop === 'clientConfig') {
+                throw new CoraliteError(
+                  '[CORALITE-P207] Cannot reassign clientConfig object in build hook context. Assign individual keys directly to config.clientConfig.<key>.',
+                  { code: 'CORALITE-P207' }
+                )
+              }
+
+              const decl = serverConfigSchema[prop]
+              if (!decl || !decl.lateBound) {
+                throw new CoraliteError(
+                  `[CORALITE-P208] Cannot write to server config key "${String(prop)}" during build hook without "lateBound: true" in server config schema.`,
+                  { code: 'CORALITE-P208' }
+                )
+              }
+
+              return Reflect.set(target, prop, value)
+            }
+          })
+
+          hookContext.config = buildHookConfigProxy
+
           const res = await plugin.server.onBeforeBuild(hookContext)
           if (res && typeof res === 'object') {
             Object.assign(serverGlobalContext, res)

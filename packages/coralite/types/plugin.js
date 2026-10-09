@@ -314,8 +314,13 @@
  * @property {string} name - Unique identifier/name of the plugin
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file
+ * @property {any} [config] - Top-level shared config
  * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
+ * @property {boolean} [_isConfiguredInstance] - True if created via plugin callable
+ * @property {any} [_valuesByBlock] - Partitioned values by block
+ * @property {any} [_normalizedSchemas] - Normalized config schemas map
+ * @property {any} [_clientConfigStaging] - Staging object for late-bound client config
  */
 
 /**
@@ -323,8 +328,13 @@
  * @property {string} name - Unique identifier/name of the plugin
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file
+ * @property {any} [config] - Top-level shared config
  * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
+ * @property {boolean} [_isConfiguredInstance] - True if created via plugin callable
+ * @property {any} [_valuesByBlock] - Partitioned values by block
+ * @property {any} [_normalizedSchemas] - Normalized config schemas map
+ * @property {any} [_clientConfigStaging] - Staging object for late-bound client config
  */
 
 /**

@@ -848,7 +848,7 @@ export function validatePluginSource (sourceCode, filePath = '') {
 
                 const hasSchemaKeys = schemaProps.some((sp) => {
                   const k = sp.key ? (sp.key.name || sp.key.value) : null
-                  return ['type', 'values', 'default', 'required', 'transform', 'validate'].includes(k)
+                  return ['type', 'values', 'default', 'required', 'lateBound', 'transform', 'validate'].includes(k)
                 })
 
                 if (typeP) {

@@ -58,6 +58,7 @@ import {
 import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './utils/dom.js'
 import { emitFragment, prepareAllComponentOps } from './utils/fragment.js'
 import { createServerSlotsHelper } from './component/setup.js'
+import { validateLateBoundValues } from '../shared/plugin-config-schema.js'
 
 /**
  * @import {
@@ -2210,7 +2211,10 @@ export function createRenderer ({
         addRenderQueue: (value) => addRenderQueue(value, buildId)
       })
     } catch (errorHook) {
-      const error = new CoraliteError(`Error in onBeforeBuild hook: ${errorHook.message}`, { cause: errorHook })
+      const error = new CoraliteError(`Error in onBeforeBuild hook: ${errorHook.message}`, {
+        code: errorHook.code,
+        cause: errorHook
+      })
       handleError({
         level: 'ERR',
         message: error.message,
@@ -2220,6 +2224,49 @@ export function createRenderer ({
     }
 
     buildOptions = mappedBeforeBuild.options || buildOptions
+
+    // Post-hook re-validation and freezing of client and server configs
+    const pluginsToProcess = app.options.plugins || []
+    for (const plugin of pluginsToProcess) {
+      if (plugin._normalizedSchemas) {
+        const sharedConfig = plugin._valuesByBlock?.config || {}
+
+        if (plugin.client) {
+          const clientSchema = plugin._normalizedSchemas.clientConfig || {}
+          const staging = plugin._clientConfigStaging || {}
+          const clientValues = {}
+          for (const key of Object.keys(clientSchema)) {
+            clientValues[key] = staging[key]
+          }
+          const validatedClient = validateLateBoundValues(clientSchema, clientValues)
+          plugin.client.config = Object.freeze({
+            ...sharedConfig,
+            ...validatedClient
+          })
+        }
+
+        if (plugin.server) {
+          const serverSchema = plugin._normalizedSchemas.serverConfig || {}
+          const serverTarget = plugin.server.config || {}
+          const serverValues = {}
+          for (const key of Object.keys(serverSchema)) {
+            serverValues[key] = serverTarget[key]
+          }
+          const validatedServer = validateLateBoundValues(serverSchema, serverValues)
+          plugin.server.config = Object.freeze({
+            ...sharedConfig,
+            ...validatedServer
+          })
+        }
+      } else {
+        if (plugin.client && !Object.isFrozen(plugin.client.config)) {
+          plugin.client.config = Object.freeze({ ...(plugin.client.config || {}) })
+        }
+        if (plugin.server && !Object.isFrozen(plugin.server.config)) {
+          plugin.server.config = Object.freeze({ ...(plugin.server.config || {}) })
+        }
+      }
+    }
 
     // @ts-ignore
     const resolvedQueue = resolvePageQueue(app.pages, buildPath)

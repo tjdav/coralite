@@ -145,6 +145,7 @@ export function normalizeAndValidateConfigSchemaKey (key, decl, blockName = 'con
       type: typeName,
       ...(decl.default !== undefined ? { default: decl.default } : {}),
       ...(decl.required !== undefined ? { required: Boolean(decl.required) } : {}),
+      ...(decl.lateBound !== undefined ? { lateBound: Boolean(decl.lateBound) } : {}),
       ...(decl.values !== undefined ? { values: decl.values } : {}),
       ...(decl.transform !== undefined ? { transform: decl.transform } : {}),
       ...(decl.validate !== undefined ? { validate: decl.validate } : {})
@@ -329,7 +330,8 @@ export function validateValues (normalizedSchemas, values = {}) {
             )
           }
         } else if (expectedType === 'Object') {
-          if (typeof val !== 'object' || val === null || Array.isArray(val)) {
+          if (typeof val !== 'function' && (typeof val !== 'object' || val === null || Array.isArray(val))) {
+            /** @type {string} */
             let actual = typeof val
             if (val === null) {
               actual = 'null'
@@ -410,4 +412,145 @@ export function validateValues (normalizedSchemas, values = {}) {
     name: values.name,
     valuesByBlock
   }
+}
+
+/**
+ * Validates late-bound config values (e.g. from clientConfig staging or server lateBound writes)
+ * against schema declarations after build hooks fire.
+ * Re-validates types/enums/validations, applies defaults for missing keys, and returns normalized object.
+ *
+ * @param {Object} schema - Normalized or raw block schema declarations
+ * @param {Object} values - Staging or late-bound values object
+ * @returns {Object} Validated and defaulted values object
+ * @throws {CoraliteError} CORALITE-P207 for unknown keys or invalid values, CORALITE-P101 for missing required keys
+ */
+export function validateLateBoundValues (schema = {}, values = {}) {
+  if (values === null || typeof values !== 'object' || Array.isArray(values)) {
+    throw new CoraliteError(
+      '[CORALITE-P207] Late-bound config values must be a plain object.',
+      { code: 'CORALITE-P207' }
+    )
+  }
+
+  // Check for unknown keys in values against schema
+  for (const key of Object.keys(values)) {
+    if (!Object.hasOwn(schema, key)) {
+      throw new CoraliteError(
+        `[CORALITE-P207] Unknown late-bound config key "${key}".`,
+        { code: 'CORALITE-P207' }
+      )
+    }
+  }
+
+  const result = {}
+
+  for (const [key, rawDecl] of Object.entries(schema)) {
+    const decl = normalizeAndValidateConfigSchemaKey(key, rawDecl)
+    const hasValue = Object.hasOwn(values, key) && values[key] !== undefined
+    let val
+
+    if (hasValue) {
+      val = values[key]
+
+      // 1. Validate type
+      const expectedType = decl.type
+      if (expectedType === 'String') {
+        if (typeof val !== 'string') {
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected String, received ${typeof val}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      } else if (expectedType === 'Number') {
+        if (typeof val !== 'number' || Number.isNaN(val)) {
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected Number, received ${typeof val}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      } else if (expectedType === 'Boolean') {
+        if (typeof val !== 'boolean') {
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected Boolean, received ${typeof val}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      } else if (expectedType === 'Object') {
+        if (typeof val !== 'function' && (typeof val !== 'object' || val === null || Array.isArray(val))) {
+          /** @type {string} */
+          let actual = typeof val
+          if (val === null) {
+            actual = 'null'
+          } else if (Array.isArray(val)) {
+            actual = 'Array'
+          }
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected Object, received ${actual}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      } else if (expectedType === 'Array') {
+        if (!Array.isArray(val)) {
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected Array, received ${typeof val}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      }
+
+      // 2. Validate values enum if present
+      if (Array.isArray(decl.values)) {
+        if (!decl.values.includes(val)) {
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": value must be one of [${decl.values.join(', ')}], received ${JSON.stringify(val)}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      }
+
+      // 3. Validate custom validate function if present
+      if (typeof decl.validate === 'function') {
+        try {
+          const isValid = decl.validate(val)
+          if (isValid === false) {
+            throw new CoraliteError(
+              `[CORALITE-P207] Invalid config value for "${key}": custom validation failed.`,
+              { code: 'CORALITE-P207' }
+            )
+          }
+        } catch (err) {
+          if (err instanceof CoraliteError && err.code === 'CORALITE-P207') {
+            throw err
+          }
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": ${err.message}`,
+            {
+              code: 'CORALITE-P207',
+              cause: err
+            }
+          )
+        }
+      }
+
+      // 4. Transform value if present
+      if (typeof decl.transform === 'function') {
+        val = decl.transform(val)
+      }
+    } else {
+      if ('default' in decl && decl.default !== undefined) {
+        val = decl.default
+      } else if (decl.required) {
+        throw new CoraliteError(
+          `[CORALITE-P101] Missing required plugin config key "${key}".`,
+          { code: 'CORALITE-P101' }
+        )
+      } else {
+        val = undefined
+      }
+    }
+
+    result[key] = val
+  }
+
+  return result
 }
