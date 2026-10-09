@@ -1,11 +1,65 @@
 import { addPluginHook } from '../hooks.js'
 import { CoraliteError, handleError } from '../../shared/errors.js'
-import { validateValues } from '../../shared/plugin-config-schema.js'
+import { validatePluginConfigBlocks, validateValues } from '../../shared/plugin-config-schema.js'
 
 /**
  * @import { CoraliteInstance, CoralitePluginContext } from '../../../types/index.js'
  * @import { ScriptManager } from '../script-manager.js'
  */
+
+/**
+ * Creates a server hook config view proxy that exposes read-only server.config
+ * and a mutable staging object for client.config.
+ *
+ * @param {Object} serverConfig - Read-only server config object
+ * @param {Object} clientConfigStaging - Mutable staging object for client config
+ * @param {Set<string>} declaredClientKeys - Set of keys declared in client.config or shared config schemas
+ * @returns {Proxy} Config proxy
+ */
+function createServerHookConfig (serverConfig, clientConfigStaging, declaredClientKeys) {
+  const clientConfigProxy = new Proxy(clientConfigStaging || {}, {
+    get (target, prop) {
+      if (typeof prop === 'symbol') {
+        return Reflect.get(target, prop)
+      }
+      return target[prop]
+    },
+    set (target, prop, value) {
+      if (typeof prop === 'symbol') {
+        return Reflect.set(target, prop, value)
+      }
+      if (!declaredClientKeys || !declaredClientKeys.has(prop)) {
+        throw new CoraliteError(
+          `[CORALITE-P207] Unknown plugin config key "${String(prop)}". Key must be declared in client.config or config schema.`,
+          { code: 'CORALITE-P207' }
+        )
+      }
+      target[prop] = value
+      return true
+    }
+  })
+
+  return new Proxy(serverConfig || {}, {
+    get (target, prop) {
+      if (prop === 'clientConfig') {
+        return clientConfigProxy
+      }
+      return target[prop]
+    },
+    set (target, prop, value) {
+      if (prop === 'clientConfig') {
+        throw new CoraliteError(
+          '[CORALITE-P209] Cannot reassign config.clientConfig. Write to config.clientConfig.<key> instead.',
+          { code: 'CORALITE-P209' }
+        )
+      }
+      throw new CoraliteError(
+        `[CORALITE-P209] Cannot write to server config property "${String(prop)}". Server config is read-only after registration.`,
+        { code: 'CORALITE-P209' }
+      )
+    }
+  })
+}
 
 /**
  * Logic for initializing plugins.
@@ -50,21 +104,42 @@ export async function setupPlugins ({
     let sharedConfig = {}
     let serverConfig = {}
     let clientConfig = {}
+    let normalizedSchemas = plugin._normalizedSchemas
 
     if (plugin._isConfiguredInstance) {
       sharedConfig = plugin._valuesByBlock.config || {}
       serverConfig = plugin._valuesByBlock.serverConfig || {}
       clientConfig = plugin._valuesByBlock.clientConfig || {}
-    } else if (plugin._normalizedSchemas) {
-      const { valuesByBlock } = validateValues(plugin._normalizedSchemas, {})
+    } else if (normalizedSchemas) {
+      const { valuesByBlock } = validateValues(normalizedSchemas, {})
       sharedConfig = valuesByBlock.config || {}
       serverConfig = valuesByBlock.serverConfig || {}
       clientConfig = valuesByBlock.clientConfig || {}
     } else {
-      sharedConfig = plugin.config || {}
-      serverConfig = plugin.server?.config || {}
-      clientConfig = plugin.client?.config || {}
+      normalizedSchemas = validatePluginConfigBlocks({
+        pluginName: plugin.name,
+        config: plugin.config,
+        serverConfig: plugin.server?.config,
+        clientConfig: plugin.client?.config
+      })
+      const { valuesByBlock } = validateValues(normalizedSchemas, {})
+      sharedConfig = valuesByBlock.config || {}
+      serverConfig = valuesByBlock.serverConfig || {}
+      clientConfig = valuesByBlock.clientConfig || {}
     }
+
+    plugin._normalizedSchemas = normalizedSchemas
+
+    const clientConfigStaging = {
+      ...sharedConfig,
+      ...clientConfig
+    }
+    plugin._clientConfigStaging = clientConfigStaging
+
+    const declaredClientKeys = new Set([
+      ...Object.keys(normalizedSchemas?.config || {}),
+      ...Object.keys(normalizedSchemas?.clientConfig || {})
+    ])
 
     if (plugin.server) {
       plugin.server.name = plugin.server.name || plugin.name
@@ -76,14 +151,12 @@ export async function setupPlugins ({
 
     if (plugin.client) {
       plugin.client.name = plugin.client.name || plugin.name
-      plugin.client.config = Object.freeze({
-        ...sharedConfig,
-        ...clientConfig
-      })
+      plugin.client.config = clientConfigStaging
     }
 
     if (plugin.server) {
       const serverName = plugin.server.name || plugin.name
+      const hookConfig = createServerHookConfig(plugin.server.config, clientConfigStaging, declaredClientKeys)
 
       if (plugin.server.context) {
         /** @type {any} */
@@ -93,7 +166,7 @@ export async function setupPlugins ({
         }, {
           get (target, prop) {
             if (prop === 'config') {
-              return plugin.server.config || {}
+              return hookConfig
             }
             if (prop in target) {
               return target[prop]
@@ -130,7 +203,7 @@ export async function setupPlugins ({
       }
       const wrapHook = (hook) => (ctx) => {
         const hookContext = Object.create(ctx)
-        hookContext.config = plugin.server.config || {}
+        hookContext.config = hookConfig
         return hook(hookContext)
       }
 
@@ -167,7 +240,7 @@ export async function setupPlugins ({
       if (plugin.server.onBeforeBuild) {
         addPluginHook(plugins.hooks, 'onBeforeBuild', async (ctx) => {
           const hookContext = Object.create(ctx)
-          hookContext.config = plugin.server.config || {}
+          hookContext.config = hookConfig
           const res = await plugin.server.onBeforeBuild(hookContext)
           if (res && typeof res === 'object') {
             Object.assign(serverGlobalContext, res)

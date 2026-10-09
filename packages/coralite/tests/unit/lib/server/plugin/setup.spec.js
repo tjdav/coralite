@@ -65,16 +65,12 @@ describe('setupPlugins value routing and object freezing', () => {
     assert.strictEqual(registeredPlugin.client.config.clientOnly, true)
     assert.strictEqual(registeredPlugin.server.config.clientOnly, undefined)
 
-    // Verify both are frozen
+    // Verify server.config is frozen at setup time, client.config remains mutable staging during build
     assert.strictEqual(Object.isFrozen(registeredPlugin.server.config), true)
-    assert.strictEqual(Object.isFrozen(registeredPlugin.client.config), true)
+    assert.strictEqual(Object.isFrozen(registeredPlugin.client.config), false)
 
     assert.throws(() => {
       registeredPlugin.server.config.base = '/mutated'
-    }, TypeError)
-
-    assert.throws(() => {
-      registeredPlugin.client.config.base = '/mutated'
     }, TypeError)
   })
 

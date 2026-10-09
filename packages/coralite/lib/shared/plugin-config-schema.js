@@ -329,8 +329,8 @@ export function validateValues (normalizedSchemas, values = {}) {
             )
           }
         } else if (expectedType === 'Object') {
-          if (typeof val !== 'object' || val === null || Array.isArray(val)) {
-            let actual = typeof val
+          if ((typeof val !== 'object' && typeof val !== 'function') || val === null || Array.isArray(val)) {
+            let actual = String(typeof val)
             if (val === null) {
               actual = 'null'
             } else if (Array.isArray(val)) {
@@ -410,4 +410,131 @@ export function validateValues (normalizedSchemas, values = {}) {
     name: values.name,
     valuesByBlock
   }
+}
+
+/**
+ * Re-validates late-bound client config staging object after build hooks,
+ * applying defaults, running validations and transforms, and freezing the output.
+ *
+ * @param {Object} normalizedSchemas - Output from validatePluginConfigBlocks
+ * @param {Object} staging - Mutable staging object from build hooks
+ * @returns {Object} Frozen validated client config object
+ * @throws {CoraliteError} CORALITE-P101 for missing required keys, CORALITE-P207 for invalid values
+ */
+export function validateLateBoundClientConfig (normalizedSchemas, staging = {}) {
+  const { config = {}, clientConfig = {} } = normalizedSchemas || {}
+
+  const mergedSchema = {
+    ...config,
+    ...clientConfig
+  }
+
+  const result = {}
+
+  for (const [key, decl] of Object.entries(mergedSchema)) {
+    const hasValue = Object.hasOwn(staging, key) && staging[key] !== undefined
+    let val
+
+    if (hasValue) {
+      val = staging[key]
+
+      // 1. Validate type
+      const expectedType = decl.type
+      if (expectedType === 'String') {
+        if (typeof val !== 'string') {
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected String, received ${typeof val}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      } else if (expectedType === 'Number') {
+        if (typeof val !== 'number' || Number.isNaN(val)) {
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected Number, received ${typeof val}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      } else if (expectedType === 'Boolean') {
+        if (typeof val !== 'boolean') {
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected Boolean, received ${typeof val}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      } else if (expectedType === 'Object') {
+        if ((typeof val !== 'object' && typeof val !== 'function') || val === null || Array.isArray(val)) {
+          let actual = String(typeof val)
+          if (val === null) {
+            actual = 'null'
+          } else if (Array.isArray(val)) {
+            actual = 'Array'
+          }
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected Object, received ${actual}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      } else if (expectedType === 'Array') {
+        if (!Array.isArray(val)) {
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": expected Array, received ${typeof val}.`,
+            { code: 'CORALITE-P207' }
+          )
+        }
+      }
+
+      // 2. Validate values enum
+      if (Array.isArray(decl.values) && !decl.values.includes(val)) {
+        throw new CoraliteError(
+          `[CORALITE-P207] Invalid config value for "${key}": value must be one of [${decl.values.join(', ')}], received ${JSON.stringify(val)}.`,
+          { code: 'CORALITE-P207' }
+        )
+      }
+
+      // 3. Custom validate function
+      if (typeof decl.validate === 'function') {
+        try {
+          const isValid = decl.validate(val)
+          if (isValid === false) {
+            throw new CoraliteError(
+              `[CORALITE-P207] Invalid config value for "${key}": custom validation failed.`,
+              { code: 'CORALITE-P207' }
+            )
+          }
+        } catch (err) {
+          if (err instanceof CoraliteError && err.code === 'CORALITE-P207') {
+            throw err
+          }
+          throw new CoraliteError(
+            `[CORALITE-P207] Invalid config value for "${key}": ${err.message}`,
+            {
+              code: 'CORALITE-P207',
+              cause: err
+            }
+          )
+        }
+      }
+
+      // 4. Transform handler
+      if (typeof decl.transform === 'function') {
+        val = decl.transform(val)
+      }
+    } else {
+      // Key not provided or undefined
+      if ('default' in decl && decl.default !== undefined) {
+        val = decl.default
+      } else if (decl.required) {
+        throw new CoraliteError(
+          `[CORALITE-P101] Missing required plugin config key "${key}".`,
+          { code: 'CORALITE-P101' }
+        )
+      } else {
+        val = undefined
+      }
+    }
+
+    result[key] = val
+  }
+
+  return Object.freeze(result)
 }
