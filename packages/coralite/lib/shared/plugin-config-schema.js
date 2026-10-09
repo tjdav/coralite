@@ -5,15 +5,25 @@ export const SUPPORTED_CONFIG_TYPES = new Set(['String', 'Number', 'Boolean', 'O
 
 /**
  * Returns normalized type string for standard constructor or constructor string name.
- * @param {any} decl
+ * @param {any} decl - Declaration or constructor function
  * @returns {string|null}
  */
 function getTypeName (decl) {
-  if (decl === String || decl === 'String') return 'String'
-  if (decl === Number || decl === 'Number') return 'Number'
-  if (decl === Boolean || decl === 'Boolean') return 'Boolean'
-  if (decl === Object || decl === 'Object') return 'Object'
-  if (decl === Array || decl === 'Array') return 'Array'
+  if (decl === String || decl === 'String') {
+    return 'String'
+  }
+  if (decl === Number || decl === 'Number') {
+    return 'Number'
+  }
+  if (decl === Boolean || decl === 'Boolean') {
+    return 'Boolean'
+  }
+  if (decl === Object || decl === 'Object') {
+    return 'Object'
+  }
+  if (decl === Array || decl === 'Array') {
+    return 'Array'
+  }
   return null
 }
 
@@ -51,7 +61,12 @@ export function normalizeAndValidateConfigSchemaKey (key, decl, blockName = 'con
 
   // 3. Full object form or plain object default value
   if (typeof decl === 'object' && decl !== null) {
-    const hasSchemaKeys = 'type' in decl || 'values' in decl || 'default' in decl || 'required' in decl || 'transform' in decl || 'validate' in decl
+    const hasSchemaKeys = Object.hasOwn(decl, 'type') ||
+      Object.hasOwn(decl, 'values') ||
+      Object.hasOwn(decl, 'default') ||
+      Object.hasOwn(decl, 'required') ||
+      Object.hasOwn(decl, 'transform') ||
+      Object.hasOwn(decl, 'validate')
 
     if (!hasSchemaKeys) {
       // Plain object value without schema keys -> treat as { type: 'Object', default: decl }
@@ -138,16 +153,28 @@ export function normalizeAndValidateConfigSchemaKey (key, decl, blockName = 'con
 
   // 4. Primitive or plain default values (string, number, boolean, function)
   if (typeof decl === 'string') {
-    return { type: 'String', default: decl }
+    return {
+      type: 'String',
+      default: decl
+    }
   }
   if (typeof decl === 'number') {
-    return { type: 'Number', default: decl }
+    return {
+      type: 'Number',
+      default: decl
+    }
   }
   if (typeof decl === 'boolean') {
-    return { type: 'Boolean', default: decl }
+    return {
+      type: 'Boolean',
+      default: decl
+    }
   }
   if (typeof decl === 'function') {
-    return { type: 'Object', default: decl }
+    return {
+      type: 'Object',
+      default: decl
+    }
   }
 
   throw new CoraliteError(
@@ -210,4 +237,177 @@ export function validatePluginConfigBlocks ({ pluginName = 'plugin', config, ser
   validateBlock(clientConfig, 'client.config', normalized.clientConfig)
 
   return normalized
+}
+
+/**
+ * Validates config values against normalized schemas at call time or setup time.
+ *
+ * @param {Object} normalizedSchemas - Output from validatePluginConfigBlocks
+ * @param {Object} [values={}] - Values passed to plugin callable
+ * @returns {Object} Partitioned values { name, valuesByBlock: { config, serverConfig, clientConfig } }
+ * @throws {CoraliteError} CORALITE-P101 for missing required keys, CORALITE-P207 for unknown keys or invalid values
+ */
+export function validateValues (normalizedSchemas, values = {}) {
+  if (values === null || typeof values !== 'object' || Array.isArray(values)) {
+    throw new CoraliteError(
+      '[CORALITE-P207] Plugin config values must be a plain object.',
+      { code: 'CORALITE-P207' }
+    )
+  }
+
+  const { config = {}, serverConfig = {}, clientConfig = {} } = normalizedSchemas || {}
+
+  const allDeclaredKeys = new Set([
+    ...Object.keys(config),
+    ...Object.keys(serverConfig),
+    ...Object.keys(clientConfig)
+  ])
+
+  // Check for unknown keys
+  for (const key of Object.keys(values)) {
+    if (key === 'name') {
+      continue
+    }
+    if (!allDeclaredKeys.has(key)) {
+      throw new CoraliteError(
+        `[CORALITE-P207] Unknown plugin config key "${key}".`,
+        { code: 'CORALITE-P207' }
+      )
+    }
+  }
+
+  const valuesByBlock = {
+    config: {},
+    serverConfig: {},
+    clientConfig: {}
+  }
+
+  const blocks = [
+    {
+      name: 'config',
+      schema: config
+    },
+    {
+      name: 'serverConfig',
+      schema: serverConfig
+    },
+    {
+      name: 'clientConfig',
+      schema: clientConfig
+    }
+  ]
+
+  for (const { name: blockName, schema } of blocks) {
+    for (const [key, decl] of Object.entries(schema)) {
+      const hasValue = Object.hasOwn(values, key)
+      let val
+
+      if (hasValue) {
+        val = values[key]
+
+        // 1. Validate type
+        const expectedType = decl.type
+        if (expectedType === 'String') {
+          if (typeof val !== 'string') {
+            throw new CoraliteError(
+              `[CORALITE-P207] Invalid config value for "${key}": expected String, received ${typeof val}.`,
+              { code: 'CORALITE-P207' }
+            )
+          }
+        } else if (expectedType === 'Number') {
+          if (typeof val !== 'number' || Number.isNaN(val)) {
+            throw new CoraliteError(
+              `[CORALITE-P207] Invalid config value for "${key}": expected Number, received ${typeof val}.`,
+              { code: 'CORALITE-P207' }
+            )
+          }
+        } else if (expectedType === 'Boolean') {
+          if (typeof val !== 'boolean') {
+            throw new CoraliteError(
+              `[CORALITE-P207] Invalid config value for "${key}": expected Boolean, received ${typeof val}.`,
+              { code: 'CORALITE-P207' }
+            )
+          }
+        } else if (expectedType === 'Object') {
+          if (typeof val !== 'object' || val === null || Array.isArray(val)) {
+            let actual = typeof val
+            if (val === null) {
+              actual = 'null'
+            } else if (Array.isArray(val)) {
+              actual = 'Array'
+            }
+            throw new CoraliteError(
+              `[CORALITE-P207] Invalid config value for "${key}": expected Object, received ${actual}.`,
+              { code: 'CORALITE-P207' }
+            )
+          }
+        } else if (expectedType === 'Array') {
+          if (!Array.isArray(val)) {
+            throw new CoraliteError(
+              `[CORALITE-P207] Invalid config value for "${key}": expected Array, received ${typeof val}.`,
+              { code: 'CORALITE-P207' }
+            )
+          }
+        }
+
+        // 2. Validate values enum if present
+        if (Array.isArray(decl.values)) {
+          if (!decl.values.includes(val)) {
+            throw new CoraliteError(
+              `[CORALITE-P207] Invalid config value for "${key}": value must be one of [${decl.values.join(', ')}], received ${JSON.stringify(val)}.`,
+              { code: 'CORALITE-P207' }
+            )
+          }
+        }
+
+        // 3. Validate custom validate function if present
+        if (typeof decl.validate === 'function') {
+          try {
+            const isValid = decl.validate(val)
+            if (isValid === false) {
+              throw new CoraliteError(
+                `[CORALITE-P207] Invalid config value for "${key}": custom validation failed.`,
+                { code: 'CORALITE-P207' }
+              )
+            }
+          } catch (err) {
+            if (err instanceof CoraliteError && err.code === 'CORALITE-P207') {
+              throw err
+            }
+            throw new CoraliteError(
+              `[CORALITE-P207] Invalid config value for "${key}": ${err.message}`,
+              {
+                code: 'CORALITE-P207',
+                cause: err
+              }
+            )
+          }
+        }
+
+        // 4. Transform value if present
+        if (typeof decl.transform === 'function') {
+          val = decl.transform(val)
+        }
+      } else {
+        // Key not provided
+        if ('default' in decl && decl.default !== undefined) {
+          val = decl.default
+        } else if (decl.required) {
+          throw new CoraliteError(
+            `[CORALITE-P101] Missing required plugin config key "${key}".`,
+            { code: 'CORALITE-P101' }
+          )
+        } else {
+          val = undefined
+        }
+      }
+
+      valuesByBlock[blockName][key] = val
+    }
+  }
+
+  return {
+    name: values.name,
+    valuesByBlock
+  }
 }

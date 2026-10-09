@@ -1,5 +1,6 @@
 import { addPluginHook } from '../hooks.js'
 import { CoraliteError, handleError } from '../../shared/errors.js'
+import { validateValues } from '../../shared/plugin-config-schema.js'
 
 /**
  * @import { CoraliteInstance, CoralitePluginContext } from '../../../types/index.js'
@@ -46,6 +47,41 @@ export async function setupPlugins ({
   }
 
   for (const plugin of pluginsToInit) {
+    let sharedConfig = {}
+    let serverConfig = {}
+    let clientConfig = {}
+
+    if (plugin._isConfiguredInstance) {
+      sharedConfig = plugin._valuesByBlock.config || {}
+      serverConfig = plugin._valuesByBlock.serverConfig || {}
+      clientConfig = plugin._valuesByBlock.clientConfig || {}
+    } else if (plugin._normalizedSchemas) {
+      const { valuesByBlock } = validateValues(plugin._normalizedSchemas, {})
+      sharedConfig = valuesByBlock.config || {}
+      serverConfig = valuesByBlock.serverConfig || {}
+      clientConfig = valuesByBlock.clientConfig || {}
+    } else {
+      sharedConfig = plugin.config || {}
+      serverConfig = plugin.server?.config || {}
+      clientConfig = plugin.client?.config || {}
+    }
+
+    if (plugin.server) {
+      plugin.server.name = plugin.server.name || plugin.name
+      plugin.server.config = Object.freeze({
+        ...sharedConfig,
+        ...serverConfig
+      })
+    }
+
+    if (plugin.client) {
+      plugin.client.name = plugin.client.name || plugin.name
+      plugin.client.config = Object.freeze({
+        ...sharedConfig,
+        ...clientConfig
+      })
+    }
+
     if (plugin.server) {
       const serverName = plugin.server.name || plugin.name
 

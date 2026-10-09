@@ -21,7 +21,7 @@ describe('Plugin Serialization Boundary Verification', () => {
     })
 
     const scriptManager = new ScriptManager()
-    await scriptManager.use(cleanPlugin)
+    await scriptManager.use(cleanPlugin.client)
     assert.equal(scriptManager.scriptModules.length, 1)
   })
 })
