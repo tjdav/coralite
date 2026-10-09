@@ -124,10 +124,10 @@ export function createPageHandlers ({
       app
     })
 
-    newValue.result = mappedContext.elements
-    newValue = mappedContext.newValue
+    const finalValue = mappedContext.newValue
+    finalValue.result = mappedContext.elements
 
-    const elements = parseHTML(newValue.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
+    const elements = parseHTML(finalValue.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)
     const directPageComponents = app._dependencyGraph.directPageComponents
 
     if (directPageComponents) {

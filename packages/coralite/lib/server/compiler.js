@@ -38,7 +38,9 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
     const SourceTextModule = SourceTextModuleCache
     const originalSpecifier = specifier
 
-    if (specifier == 'coralite/utils') {
+    let resolvedSpecifier = specifier
+
+    if (specifier === 'coralite/utils') {
       const utils = source.utils
       let utilsExports = ''
 
@@ -92,10 +94,10 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       })
     } else if (specifier.startsWith('.')) {
       // handle relative path
-      specifier = pathToFileURL(resolve(path.dirname, specifier)).href
+      resolvedSpecifier = pathToFileURL(resolve(path.dirname, specifier)).href
     } else {
       // handle modules
-      specifier = import.meta.resolve(specifier, componentFileURL)
+      resolvedSpecifier = import.meta.resolve(specifier, componentFileURL)
     }
 
     try {
@@ -103,9 +105,9 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       const attributes = extra?.attributes || extra
 
       if (attributes && Object.keys(attributes).length > 0) {
-        module = await import(specifier, { with: attributes })
+        module = await import(resolvedSpecifier, { with: attributes })
       } else {
-        module = await import(specifier)
+        module = await import(resolvedSpecifier)
       }
 
       let exportModule = ''
@@ -131,7 +133,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
     } catch (error) {
       throw new CoraliteError(error.message, {
         cause: error,
-        filePath: specifier
+        filePath: resolvedSpecifier
       })
     }
   }
@@ -256,6 +258,7 @@ export async function evaluateDevelopment ({
   contextifiedObject.globalThis = contextifiedObject
   const moduleComponent = getComponent(module.id)
 
+  // eslint-disable-next-line prefer-const -- linker is assigned below to resolve circular reference with importModuleDynamically
   let linker
 
   const importModuleDynamically = async (specifier, referencingModule, extra) => {
@@ -295,9 +298,9 @@ export async function evaluateDevelopment ({
   }
 
   // @ts-ignore
-  if (script.namespace.default != null) {
+  if (script.namespace.default !== null && script.namespace.default !== undefined) {
     // @ts-ignore
-    return await script.namespace.default
+    return script.namespace.default
   }
 
   throw new CoraliteError(`Module "${module.id}" has no default export`, {
@@ -469,7 +472,7 @@ export async function evaluateProduction ({
     throw createExecutionError(error, module, moduleComponent, page, contextId)
   }
 
-  if (moduleMock.exports.default != null) {
+  if (moduleMock.exports.default !== null && moduleMock.exports.default !== undefined) {
     return moduleMock.exports.default
   }
 

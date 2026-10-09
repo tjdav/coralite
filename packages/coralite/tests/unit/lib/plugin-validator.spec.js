@@ -18,7 +18,7 @@ describe('plugin-validator.js', () => {
     it('should detect free outer-scope references in functions when moduleBindings is provided', () => {
       const outerHelper = () => {
       }
-      function sampleFn (ctx) {
+      function sampleFn (_ctx) {
         const local = 123
         console.log(local)
         // @ts-ignore

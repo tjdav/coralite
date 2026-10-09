@@ -384,7 +384,8 @@ test('Server DOM Parity - Pillar 4: Core DOM Tree & Manipulation APIs', async (t
     root.appendChild(text2)
     root.appendChild(child2)
 
-    assert.equal(root.children.length, 4) // childNodes contain all nodes
+    // childNodes contain all nodes
+    assert.equal(root.children.length, 4)
     assert.equal(root.childElementCount, 2)
     assert.equal(root.firstElementChild.id, 'c1')
     assert.equal(root.lastElementChild.id, 'c2')

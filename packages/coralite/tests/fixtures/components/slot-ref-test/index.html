@@ -14,7 +14,7 @@
     async server () {
       return {}
     },
-    client ({ state, refs, observe }) {
+    client ({ refs }) {
       const checkRefBtn = refs('checkRefBtn')
       const display = checkRefBtn.parentElement.querySelector('.ref-check-display')
 

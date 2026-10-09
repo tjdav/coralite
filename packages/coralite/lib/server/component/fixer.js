@@ -210,16 +210,17 @@ export function generateColorizedDiff (oldCode, newCode, filePath = '') {
  */
 export function applyComponentFixes (sourceCode, diagnostics = null, options = {}) {
   const filePath = options.filePath || ''
+  let activeDiagnostics = diagnostics
 
-  if (!diagnostics) {
+  if (!activeDiagnostics) {
     const report = validateComponentSource(sourceCode, filePath)
-    diagnostics = report.diagnostics
+    activeDiagnostics = report.diagnostics
   }
 
   let code = sourceCode
   const fixesApplied = []
 
-  const fixableDiagnostics = diagnostics.filter(d => Boolean(d.fix && d.fix.action))
+  const fixableDiagnostics = activeDiagnostics.filter(d => Boolean(d.fix && d.fix.action))
 
   if (fixableDiagnostics.length === 0) {
     return {
