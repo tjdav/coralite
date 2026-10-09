@@ -314,8 +314,13 @@
  * @property {string} name - Unique identifier/name of the plugin
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file
+ * @property {Record<string, any>} [config] - Top-level shared configuration schema/values
  * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
+ * @property {boolean} [_isConfiguredInstance] - Internal flag
+ * @property {any} [_valuesByBlock] - Internal normalized values by block
+ * @property {any} [_normalizedSchemas] - Internal normalized schemas
+ * @property {any} [_clientConfigStaging] - Internal staging object for late-bound client config
  */
 
 /**
@@ -323,8 +328,13 @@
  * @property {string} name - Unique identifier/name of the plugin
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file
+ * @property {Record<string, any>} [config] - Top-level shared configuration schema/values
  * @property {CoralitePluginServer} [server] - Server-side plugin configuration
  * @property {ScriptPlugin} [client] - Client-side plugin configuration
+ * @property {boolean} [_isConfiguredInstance] - Internal flag
+ * @property {any} [_valuesByBlock] - Internal normalized values by block
+ * @property {any} [_normalizedSchemas] - Internal normalized schemas
+ * @property {any} [_clientConfigStaging] - Internal staging object for late-bound client config
  */
 
 /**

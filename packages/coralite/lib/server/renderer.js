@@ -58,6 +58,7 @@ import {
 import { createCoraliteElement, createCoraliteTextNode, relinkChildren } from './utils/dom.js'
 import { emitFragment, prepareAllComponentOps } from './utils/fragment.js'
 import { createServerSlotsHelper } from './component/setup.js'
+import { validateLateBoundClientConfig } from '../shared/plugin-config-schema.js'
 
 /**
  * @import {
@@ -2210,7 +2211,9 @@ export function createRenderer ({
         addRenderQueue: (value) => addRenderQueue(value, buildId)
       })
     } catch (errorHook) {
-      const error = new CoraliteError(`Error in onBeforeBuild hook: ${errorHook.message}`, { cause: errorHook })
+      const error = errorHook instanceof CoraliteError
+        ? errorHook
+        : new CoraliteError(`Error in onBeforeBuild hook: ${errorHook.message}`, { cause: errorHook })
       handleError({
         level: 'ERR',
         message: error.message,
@@ -2220,6 +2223,20 @@ export function createRenderer ({
     }
 
     buildOptions = mappedBeforeBuild.options || buildOptions
+
+    if (Array.isArray(app.options.plugins)) {
+      for (const plugin of app.options.plugins) {
+        if (plugin && (plugin.client || plugin._clientConfigStaging)) {
+          const frozenConfig = validateLateBoundClientConfig(
+            plugin._normalizedSchemas,
+            plugin._clientConfigStaging || {}
+          )
+          if (plugin.client) {
+            plugin.client.config = frozenConfig
+          }
+        }
+      }
+    }
 
     // @ts-ignore
     const resolvedQueue = resolvePageQueue(app.pages, buildPath)
