@@ -5,7 +5,7 @@
 import { basename, dirname } from 'path'
 import { fileURLToPath } from 'node:url'
 import { CoraliteError } from '../../shared/errors.js'
-import { validatePluginConfigBlocks } from '../../shared/plugin-config-schema.js'
+import { validatePluginConfigBlocks, validateValues } from '../../shared/plugin-config-schema.js'
 
 /**
  * Validates that a value is a non-empty string
@@ -201,20 +201,78 @@ export function definePlugin ({
   }
 
   // Perform schema shape and key uniqueness validation
-  validatePluginConfigBlocks({
+  const normalizedSchemas = validatePluginConfigBlocks({
     pluginName: name,
     config,
     serverConfig: resolvedServer?.config,
     clientConfig: client?.config
   })
 
-  // Create the plugin object with all configured state
-  return {
-    name,
-    rootDir: resolvedRootDir,
-    filePath: resolvedFilePath,
-    ...(config !== undefined ? { config } : {}),
-    server: resolvedServer,
-    client
+  /**
+   * Plugin callable form: when invoked with values, returns a configured plugin instance.
+   *
+   * @param {Record<string, any>} [userValues={}] - Config values to pass to plugin instance
+   * @returns {CoralitePlugin & { _isConfiguredInstance: boolean, _valuesByBlock: any, _normalizedSchemas: any }}
+   */
+  const pluginCallable = function (userValues = {}) {
+    if (userValues === null || typeof userValues !== 'object' || Array.isArray(userValues)) {
+      throw new CoraliteError(
+        '[CORALITE-P207] Plugin config values must be a plain object.',
+        { code: 'CORALITE-P207' }
+      )
+    }
+
+    const { name: nameOverride, valuesByBlock } = validateValues(normalizedSchemas, userValues)
+    const instanceName = nameOverride || name
+
+    const instanceServer = resolvedServer
+      ? {
+        ...resolvedServer,
+        name: instanceName,
+        config: { ...valuesByBlock.serverConfig }
+      }
+      : undefined
+
+    const instanceClient = client
+      ? {
+        ...client,
+        name: instanceName,
+        config: { ...valuesByBlock.clientConfig }
+      }
+      : undefined
+
+    return {
+      name: instanceName,
+      rootDir: resolvedRootDir,
+      filePath: resolvedFilePath,
+      config: valuesByBlock.config,
+      server: instanceServer,
+      client: instanceClient,
+      _normalizedSchemas: normalizedSchemas,
+      _valuesByBlock: valuesByBlock,
+      _isConfiguredInstance: true
+    }
   }
+
+  Object.defineProperty(pluginCallable, 'name', {
+    value: name,
+    writable: true,
+    configurable: true
+  })
+
+  pluginCallable.rootDir = resolvedRootDir
+  pluginCallable.filePath = resolvedFilePath
+  if (config !== undefined) {
+    pluginCallable.config = config
+  }
+  if (resolvedServer !== undefined) {
+    pluginCallable.server = resolvedServer
+  }
+  if (client !== undefined) {
+    pluginCallable.client = client
+  }
+  pluginCallable._normalizedSchemas = normalizedSchemas
+  pluginCallable._isPluginCallable = true
+
+  return pluginCallable
 }
