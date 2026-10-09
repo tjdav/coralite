@@ -436,8 +436,8 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     });
   }\n`)
 
-  const coraliteElementPath = fileURLToPath(import.meta.resolve('./coralite-element.js'))
-  const devToolsPath = fileURLToPath(import.meta.resolve('./utils/client/devtools.js'))
+  const coraliteElementPath = fileURLToPath(import.meta.resolve('../client/element.js'))
+  const devToolsPath = fileURLToPath(import.meta.resolve('../client/utils/devtools.js'))
 
   entryCodeParts.push(`const globalClientHooks = {
     onBeforeComponentRender: [${this.scriptModules.map((_, i) => `onBeforeComponentRender_${i}`).join(', ')}].filter(Boolean),
@@ -634,7 +634,7 @@ export default {
     }
   }
 
-  const injectPath = fileURLToPath(import.meta.resolve('./utils/client/inject.js'))
+  const injectPath = fileURLToPath(import.meta.resolve('../client/utils/inject.js'))
 
   // Build and bundle
   /** @type {import('esbuild').BuildOptions} */
@@ -699,7 +699,7 @@ export default {
 
             if (args.path === 'coralite/utils') {
               return {
-                path: fileURLToPath(import.meta.resolve('./utils/index.js'))
+                path: fileURLToPath(import.meta.resolve('../shared/index.js'))
               }
             }
 

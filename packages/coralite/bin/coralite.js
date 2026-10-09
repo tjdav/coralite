@@ -8,17 +8,17 @@ import { existsSync, mkdirSync, statSync, readdirSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import pkg from '../package.json' with { type: 'json' }
 import { createCoralite, normalizeErrorCodes, matchesErrorCode } from '#lib'
-import { validateComponentsDir, formatComponentValidationReport } from '#lib/component-validator.js'
-import { applyComponentFixes } from '#lib/component-fixer.js'
-import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/plugin-validator.js'
-import { applyPluginFixes } from '#lib/plugin-fixer.js'
-import { validatePagesDir, formatPageValidationReport } from '#lib/page-validator.js'
+import { validateComponentsDir, formatComponentValidationReport } from '#lib/server/component/validator.js'
+import { applyComponentFixes } from '#lib/server/component/fixer.js'
+import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/server/plugin/validator.js'
+import { applyPluginFixes } from '#lib/server/plugin/fixer.js'
+import { validatePagesDir, formatPageValidationReport } from '#lib/server/page/validator.js'
 import {
   promptCheckOptions,
   promptFixOptions,
   promptSingleDomainOptions,
   confirmApplyFixes
-} from '#lib/interactive.js'
+} from '#lib/server/interactive.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -1170,9 +1170,9 @@ program
           console.error('Invalid format. Expected pkg:path:dest or pkg:path')
           process.exit(1)
         }
-        const [pkg, path, dest] = parts
+        const [assetPkg, path, dest] = parts
         assets.push({
-          pkg,
+          pkg: assetPkg,
           path,
           dest: dest || path
         })
