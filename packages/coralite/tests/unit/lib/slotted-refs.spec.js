@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
 import { createTestProject } from '../utils/project.js'
 
 describe('Slotted Refs Resolution', () => {
@@ -26,8 +26,14 @@ describe('Slotted Refs Resolution', () => {
       templateHTML: `<div class="parent-root"><${childTagName} ref="modal"><div slot="actions"><button ref="confirmBtn" type="button">Confirm</button></div></${childTagName}></div>`,
       hydrationMap: {
         refs: [
-          { name: 'modal', path: [0, 0] },
-          { name: 'confirmBtn', path: [0, 0, 0, 0] }
+          {
+            name: 'modal',
+            path: [0, 0]
+          },
+          {
+            name: 'confirmBtn',
+            path: [0, 0, 0, 0]
+          }
         ]
       },
       client ({ refs }) {
@@ -115,7 +121,10 @@ describe('Slotted Refs Resolution', () => {
       componentId: 'ssr-parent',
       templateHTML: `<div><${childTagName}><button ref="saveBtn" slot="custom">Save</button></${childTagName}></div>`,
       hydrationMap: {
-        refs: [{ name: 'saveBtn', path: [0, 0, 0] }]
+        refs: [{
+          name: 'saveBtn',
+          path: [0, 0, 0]
+        }]
       },
       client ({ refs }) {
         parentRef = refs('saveBtn')
@@ -172,7 +181,10 @@ describe('Slotted Refs Resolution', () => {
       componentId: 'deep-grand',
       templateHTML: `<div><${midTagName}><button ref="deepBtn">Deep Button</button></${midTagName}></div>`,
       hydrationMap: {
-        refs: [{ name: 'deepBtn', path: [0, 0, 0] }]
+        refs: [{
+          name: 'deepBtn',
+          path: [0, 0, 0]
+        }]
       },
       client ({ refs }) {
         grandRef = refs('deepBtn')

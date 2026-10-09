@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { generateClientRuntime } from '../../../lib/utils/client/runtime.js'
+import { generateClientRuntime } from '../../../lib/client/utils/runtime.js'
 import serialize from 'serialize-javascript'
 
 function getProcessHTML (mode) {
@@ -81,7 +81,7 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
         }
         return null
       },
-      querySelector (selector) {
+      querySelector (_selector) {
         return null
       },
       head: {
@@ -92,22 +92,33 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
         }
       },
       createElement (tag) {
-        return { tag, rel: '', href: '' }
+        return {
+          tag,
+          rel: '',
+          href: ''
+        }
       },
       querySelectorAll () {
         return []
       },
       documentElement: {
-        setAttribute () {}
+        setAttribute () {
+        }
       }
     }
 
-    class MockHTMLElement {}
-    class MockHTMLUnknownElement {}
+    class MockHTMLElement {
+    }
+    class MockHTMLUnknownElement {
+    }
 
     globalThis.HTMLElement = MockHTMLElement
     globalThis.HTMLUnknownElement = MockHTMLUnknownElement
-    globalThis.customElements = { get: () => null, define: () => {} }
+    globalThis.customElements = {
+      get: () => null,
+      define: () => {
+      }
+    }
     globalThis.document = mockDocument
 
     // Replace dynamic import statements with mock function calls
@@ -369,9 +380,15 @@ describe('mode-restricted runtime DOM prototype patching', () => {
     } finally {
       // Restore native elements
       document.createElement = origCreateElement
-      if (origInnerHTMLDesc) Object.defineProperty(Element.prototype, 'innerHTML', origInnerHTMLDesc)
-      if (origOuterHTMLDesc) Object.defineProperty(Element.prototype, 'outerHTML', origOuterHTMLDesc)
-      if (origInsertAdjacentHTML) Element.prototype.insertAdjacentHTML = origInsertAdjacentHTML
+      if (origInnerHTMLDesc) {
+        Object.defineProperty(Element.prototype, 'innerHTML', origInnerHTMLDesc)
+      }
+      if (origOuterHTMLDesc) {
+        Object.defineProperty(Element.prototype, 'outerHTML', origOuterHTMLDesc)
+      }
+      if (origInsertAdjacentHTML) {
+        Element.prototype.insertAdjacentHTML = origInsertAdjacentHTML
+      }
       customElements.upgrade = origUpgrade
     }
   })
@@ -426,7 +443,9 @@ describe('mode-restricted runtime DOM prototype patching', () => {
       document.body.removeChild(host)
     } finally {
       document.createElement = origCreateElement
-      if (origInnerHTMLDesc) Object.defineProperty(Element.prototype, 'innerHTML', origInnerHTMLDesc)
+      if (origInnerHTMLDesc) {
+        Object.defineProperty(Element.prototype, 'innerHTML', origInnerHTMLDesc)
+      }
       if (origShadowInnerHTMLDesc && typeof ShadowRoot !== 'undefined') {
         Object.defineProperty(ShadowRoot.prototype, 'innerHTML', origShadowInnerHTMLDesc)
       }

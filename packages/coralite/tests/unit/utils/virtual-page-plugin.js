@@ -6,7 +6,7 @@
  * tests may mutate the options object between builds to simulate changes.
  *
  * @param {string} pathname - Pathname of the virtual page (e.g. 'virtual.html')
- * @param {{ content?: string, cacheKey?: string, volatile?: boolean }} [options]
+ * @param {{ content?: string, cacheKey?: string, volatile?: boolean }} [options] - Plugin configuration options object.
  * @returns {{ name: string, server: { onBeforeBuild: Function } }} Coralite plugin
  */
 export function virtualPagePlugin (pathname, options = {}) {
@@ -14,7 +14,10 @@ export function virtualPagePlugin (pathname, options = {}) {
     name: 'virtual-page-plugin',
     server: {
       onBeforeBuild: async ({ app, buildId }) => {
-        const item = { pathname, content: options.content }
+        const item = {
+          pathname,
+          content: options.content
+        }
         if (options.cacheKey !== undefined) {
           item.cacheKey = options.cacheKey
         }

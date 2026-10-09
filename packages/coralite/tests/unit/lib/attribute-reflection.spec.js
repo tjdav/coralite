@@ -1,8 +1,8 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/coralite-element.js'
-import { shouldReflectAttribute } from '../../../lib/utils/attributes.js'
+import { createCoraliteClass } from '../../../lib/client/element.js'
+import { shouldReflectAttribute } from '../../../lib/shared/attributes.js'
 
 describe('Hybrid Attribute Reflection Strategy', () => {
   it('shouldReflectAttribute utility logic', () => {
@@ -10,14 +10,23 @@ describe('Hybrid Attribute Reflection Strategy', () => {
     assert.strictEqual(shouldReflectAttribute({ type: Boolean }), true)
     assert.strictEqual(shouldReflectAttribute({ type: 'Boolean' }), true)
     assert.strictEqual(shouldReflectAttribute({ values: [true, false] }), true)
-    assert.strictEqual(shouldReflectAttribute({ type: Boolean, reflect: false }), false)
+    assert.strictEqual(shouldReflectAttribute({
+      type: Boolean,
+      reflect: false
+    }), false)
 
     assert.strictEqual(shouldReflectAttribute(String), false)
     assert.strictEqual(shouldReflectAttribute(Number), false)
     assert.strictEqual(shouldReflectAttribute({ type: String }), false)
     assert.strictEqual(shouldReflectAttribute({ values: ['a', 'b'] }), false)
-    assert.strictEqual(shouldReflectAttribute({ type: String, reflect: true }), true)
-    assert.strictEqual(shouldReflectAttribute({ type: Number, reflect: true }), true)
+    assert.strictEqual(shouldReflectAttribute({
+      type: String,
+      reflect: true
+    }), true)
+    assert.strictEqual(shouldReflectAttribute({
+      type: Number,
+      reflect: true
+    }), true)
   })
 
   it('1. Boolean Default Reflection (reflect: true default)', (t, done) => {
@@ -194,7 +203,8 @@ describe('Hybrid Attribute Reflection Strategy', () => {
           reflect: true
         },
         disabled: Boolean,
-        tagName: String // Reserved DOM property name
+        // Reserved DOM property name
+        tagName: String
       }
     })
     customElements.define(tagName, Comp)
@@ -231,7 +241,7 @@ describe('Hybrid Attribute Reflection Strategy', () => {
 
   it('6. Bidirectional Loop Prevention', (t, done) => {
     const tagName = 'loop-prevent-' + Math.random().toString(36).substring(2, 9)
-    let stateMutations = 0
+    const _stateMutations = 0
 
     const Comp = createCoraliteClass({
       componentId: 'loop-prevent',

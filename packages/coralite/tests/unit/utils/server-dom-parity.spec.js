@@ -14,7 +14,10 @@ test('Server DOM Parity - Pillar 1: Layout, Geometry & CSSOM Stubs', async (t) =
     const el = createCoraliteElement({
       type: 'tag',
       name: 'div',
-      attribs: { width: '150', height: '300' },
+      attribs: {
+        width: '150',
+        height: '300'
+      },
       children: []
     })
 
@@ -74,7 +77,12 @@ test('Server DOM Parity - Pillar 1: Layout, Geometry & CSSOM Stubs', async (t) =
   })
 
   await t.test('scrolling and focus no-op methods do not throw', () => {
-    const el = createCoraliteElement({ type: 'tag', name: 'button', attribs: {}, children: [] })
+    const el = createCoraliteElement({
+      type: 'tag',
+      name: 'button',
+      attribs: {},
+      children: []
+    })
     assert.doesNotThrow(() => {
       el.scrollIntoView()
       el.scrollTo(0, 0)
@@ -87,7 +95,12 @@ test('Server DOM Parity - Pillar 1: Layout, Geometry & CSSOM Stubs', async (t) =
 
 test('Server DOM Parity - Pillar 2: EventTarget Interface & Propagation', async (t) => {
   await t.test('addEventListener, removeEventListener, and single target dispatchEvent', () => {
-    const el = createCoraliteElement({ type: 'tag', name: 'div', attribs: {}, children: [] })
+    const el = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: {},
+      children: []
+    })
     let count = 0
     const handler = (evt) => {
       count++
@@ -106,14 +119,23 @@ test('Server DOM Parity - Pillar 2: EventTarget Interface & Propagation', async 
   })
 
   await t.test('options.once and options.signal options', () => {
-    const el = createCoraliteElement({ type: 'tag', name: 'div', attribs: {}, children: [] })
+    const el = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: {},
+      children: []
+    })
     let onceCount = 0
     let signalCount = 0
 
-    el.addEventListener('custom', () => { onceCount++ }, { once: true })
+    el.addEventListener('custom', () => {
+      onceCount++
+    }, { once: true })
 
     const controller = new AbortController()
-    el.addEventListener('custom', () => { signalCount++ }, { signal: controller.signal })
+    el.addEventListener('custom', () => {
+      signalCount++
+    }, { signal: controller.signal })
 
     el.dispatchEvent({ type: 'custom' })
     assert.equal(onceCount, 1)
@@ -131,8 +153,18 @@ test('Server DOM Parity - Pillar 2: EventTarget Interface & Propagation', async 
   })
 
   await t.test('event bubbling up ancestor hierarchy when bubbles === true', () => {
-    const parent = createCoraliteElement({ type: 'tag', name: 'div', attribs: { id: 'parent' }, children: [] })
-    const child = createCoraliteElement({ type: 'tag', name: 'button', attribs: { id: 'child' }, children: [] })
+    const parent = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: { id: 'parent' },
+      children: []
+    })
+    const child = createCoraliteElement({
+      type: 'tag',
+      name: 'button',
+      attribs: { id: 'child' },
+      children: []
+    })
     parent.appendChild(child)
 
     const order = []
@@ -143,27 +175,47 @@ test('Server DOM Parity - Pillar 2: EventTarget Interface & Propagation', async 
       order.push(`child:${e.currentTarget.id}`)
     })
 
-    child.dispatchEvent({ type: 'submit', bubbles: true })
+    child.dispatchEvent({
+      type: 'submit',
+      bubbles: true
+    })
     assert.deepEqual(order, ['child:child', 'parent:parent'])
   })
 
   await t.test('stopPropagation and stopImmediatePropagation', () => {
-    const parent = createCoraliteElement({ type: 'tag', name: 'div', attribs: {}, children: [] })
-    const child = createCoraliteElement({ type: 'tag', name: 'span', attribs: {}, children: [] })
+    const parent = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: {},
+      children: []
+    })
+    const child = createCoraliteElement({
+      type: 'tag',
+      name: 'span',
+      attribs: {},
+      children: []
+    })
     parent.appendChild(child)
 
     let parentFired = false
     let childFirstFired = false
     let childSecondFired = false
 
-    parent.addEventListener('test', () => { parentFired = true })
+    parent.addEventListener('test', () => {
+      parentFired = true
+    })
     child.addEventListener('test', (e) => {
       childFirstFired = true
       e.stopImmediatePropagation()
     })
-    child.addEventListener('test', () => { childSecondFired = true })
+    child.addEventListener('test', () => {
+      childSecondFired = true
+    })
 
-    child.dispatchEvent({ type: 'test', bubbles: true })
+    child.dispatchEvent({
+      type: 'test',
+      bubbles: true
+    })
 
     assert.equal(childFirstFired, true)
     assert.equal(childSecondFired, false)
@@ -213,7 +265,12 @@ test('Server DOM Parity - Pillar 3: Globals (window & document)', async (t) => {
 
 test('Server DOM Parity - Pillar 4: Core DOM Tree & Manipulation APIs', async (t) => {
   await t.test('innerHTML getter and setter AST synchronization', () => {
-    const el = createCoraliteElement({ type: 'tag', name: 'div', attribs: {}, children: [] })
+    const el = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: {},
+      children: []
+    })
     el.innerHTML = '<p class="lead">Isomorphic <span>Content</span></p>'
 
     assert.equal(el.children.length, 1)
@@ -229,8 +286,18 @@ test('Server DOM Parity - Pillar 4: Core DOM Tree & Manipulation APIs', async (t
   })
 
   await t.test('outerHTML getter and setter AST synchronization', () => {
-    const parent = createCoraliteElement({ type: 'tag', name: 'div', attribs: { id: 'container' }, children: [] })
-    const oldChild = createCoraliteElement({ type: 'tag', name: 'span', attribs: { id: 'target' }, children: [] })
+    const parent = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: { id: 'container' },
+      children: []
+    })
+    const oldChild = createCoraliteElement({
+      type: 'tag',
+      name: 'span',
+      attribs: { id: 'target' },
+      children: []
+    })
     parent.appendChild(oldChild)
 
     assert.equal(oldChild.outerHTML, '<span id="target"></span>')
@@ -244,7 +311,12 @@ test('Server DOM Parity - Pillar 4: Core DOM Tree & Manipulation APIs', async (t
   })
 
   await t.test('dataset 2-way camelCase proxy', () => {
-    const el = createCoraliteElement({ type: 'tag', name: 'div', attribs: { 'data-user-id': '42' }, children: [] })
+    const el = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: { 'data-user-id': '42' },
+      children: []
+    })
 
     assert.equal(el.dataset.userId, '42')
 
@@ -257,7 +329,12 @@ test('Server DOM Parity - Pillar 4: Core DOM Tree & Manipulation APIs', async (t
   })
 
   await t.test('style object 2-way proxy with setProperty/getPropertyValue/removeProperty/cssText', () => {
-    const el = createCoraliteElement({ type: 'tag', name: 'div', attribs: { style: 'color: red; margin-top: 10px;' }, children: [] })
+    const el = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: { style: 'color: red; margin-top: 10px;' },
+      children: []
+    })
 
     assert.equal(el.style.color, 'red')
     assert.equal(el.style.marginTop, '10px')
@@ -275,18 +352,40 @@ test('Server DOM Parity - Pillar 4: Core DOM Tree & Manipulation APIs', async (t
   })
 
   await t.test('element-only child and sibling traversal', () => {
-    const root = createCoraliteElement({ type: 'tag', name: 'div', attribs: {}, children: [] })
-    const text1 = createCoraliteTextNode({ type: 'text', data: 'Head text' })
-    const child1 = createCoraliteElement({ type: 'tag', name: 'h1', attribs: { id: 'c1' }, children: [] })
-    const text2 = createCoraliteTextNode({ type: 'text', data: 'Middle text' })
-    const child2 = createCoraliteElement({ type: 'tag', name: 'p', attribs: { id: 'c2' }, children: [] })
+    const root = createCoraliteElement({
+      type: 'tag',
+      name: 'div',
+      attribs: {},
+      children: []
+    })
+    const text1 = createCoraliteTextNode({
+      type: 'text',
+      data: 'Head text'
+    })
+    const child1 = createCoraliteElement({
+      type: 'tag',
+      name: 'h1',
+      attribs: { id: 'c1' },
+      children: []
+    })
+    const text2 = createCoraliteTextNode({
+      type: 'text',
+      data: 'Middle text'
+    })
+    const child2 = createCoraliteElement({
+      type: 'tag',
+      name: 'p',
+      attribs: { id: 'c2' },
+      children: []
+    })
 
     root.appendChild(text1)
     root.appendChild(child1)
     root.appendChild(text2)
     root.appendChild(child2)
 
-    assert.equal(root.children.length, 4) // childNodes contain all nodes
+    // childNodes contain all nodes
+    assert.equal(root.children.length, 4)
     assert.equal(root.childElementCount, 2)
     assert.equal(root.firstElementChild.id, 'c1')
     assert.equal(root.lastElementChild.id, 'c2')
@@ -296,31 +395,66 @@ test('Server DOM Parity - Pillar 4: Core DOM Tree & Manipulation APIs', async (t
   })
 
   await t.test('replaceChildren, replaceWith, before, after, prepend, contains, cloneNode', () => {
-    const parent = createCoraliteElement({ type: 'tag', name: 'ul', attribs: {}, children: [] })
-    const li1 = createCoraliteElement({ type: 'tag', name: 'li', attribs: { id: 'l1' }, children: [] })
-    const li2 = createCoraliteElement({ type: 'tag', name: 'li', attribs: { id: 'l2' }, children: [] })
+    const parent = createCoraliteElement({
+      type: 'tag',
+      name: 'ul',
+      attribs: {},
+      children: []
+    })
+    const li1 = createCoraliteElement({
+      type: 'tag',
+      name: 'li',
+      attribs: { id: 'l1' },
+      children: []
+    })
+    const li2 = createCoraliteElement({
+      type: 'tag',
+      name: 'li',
+      attribs: { id: 'l2' },
+      children: []
+    })
     parent.appendChild(li1)
     parent.appendChild(li2)
 
     // prepend
-    parent.prepend('First String', createCoraliteElement({ type: 'tag', name: 'li', attribs: { id: 'l0' }, children: [] }))
+    parent.prepend('First String', createCoraliteElement({
+      type: 'tag',
+      name: 'li',
+      attribs: { id: 'l0' },
+      children: []
+    }))
     assert.equal(parent.firstElementChild.id, 'l0')
 
     // contains
     assert.equal(parent.contains(li2), true)
 
     // before / after
-    const extra = createCoraliteElement({ type: 'tag', name: 'li', attribs: { id: 'l1.5' }, children: [] })
+    const extra = createCoraliteElement({
+      type: 'tag',
+      name: 'li',
+      attribs: { id: 'l1.5' },
+      children: []
+    })
     li1.after(extra)
     assert.equal(li1.nextElementSibling.id, 'l1.5')
 
     // replaceWith
-    const replacement = createCoraliteElement({ type: 'tag', name: 'li', attribs: { id: 'replaced' }, children: [] })
+    const replacement = createCoraliteElement({
+      type: 'tag',
+      name: 'li',
+      attribs: { id: 'replaced' },
+      children: []
+    })
     extra.replaceWith(replacement)
     assert.equal(li1.nextElementSibling.id, 'replaced')
 
     // replaceChildren
-    parent.replaceChildren(createCoraliteElement({ type: 'tag', name: 'li', attribs: { id: 'only' }, children: [] }))
+    parent.replaceChildren(createCoraliteElement({
+      type: 'tag',
+      name: 'li',
+      attribs: { id: 'only' },
+      children: []
+    }))
     assert.equal(parent.childElementCount, 1)
     assert.equal(parent.firstElementChild.id, 'only')
 
@@ -332,7 +466,15 @@ test('Server DOM Parity - Pillar 4: Core DOM Tree & Manipulation APIs', async (t
   })
 
   await t.test('form control properties (value, checked, disabled)', () => {
-    const input = createCoraliteElement({ type: 'tag', name: 'input', attribs: { type: 'checkbox', value: 'on' }, children: [] })
+    const input = createCoraliteElement({
+      type: 'tag',
+      name: 'input',
+      attribs: {
+        type: 'checkbox',
+        value: 'on'
+      },
+      children: []
+    })
     assert.equal(input.value, 'on')
     assert.equal(input.checked, false)
     assert.equal(input.disabled, false)

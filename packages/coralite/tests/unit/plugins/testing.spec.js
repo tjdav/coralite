@@ -18,7 +18,12 @@ function withEnv (name, value, fn) {
 }
 
 function tagNode (attribs = {}, children = []) {
-  return { type: 'tag', name: 'div', attribs: { ...attribs }, children }
+  return {
+    type: 'tag',
+    name: 'div',
+    attribs: { ...attribs },
+    children
+  }
 }
 
 describe('testingPlugin', () => {
@@ -247,7 +252,10 @@ describe('testingPlugin', () => {
         {
           type: 'tag',
           name: 'div',
-          attribs: { 'data-testid': 'stray-id', test: 'old-test' },
+          attribs: {
+            'data-testid': 'stray-id',
+            test: 'old-test'
+          },
           children: [
             {
               type: 'tag',
@@ -291,15 +299,27 @@ describe('testingPlugin', () => {
           {
             type: 'tag',
             name: 'button',
-            attribs: { 'data-testid': 'action-btn', test: 'legacy-btn' }
+            attribs: {
+              'data-testid': 'action-btn',
+              test: 'legacy-btn'
+            }
           }
         ]
       },
       values: {
         attributes: [
-          { name: 'data-testid', value: 'action-btn' },
-          { name: 'test', value: 'legacy-btn' },
-          { name: 'class', value: 'btn-primary' }
+          {
+            name: 'data-testid',
+            value: 'action-btn'
+          },
+          {
+            name: 'test',
+            value: 'legacy-btn'
+          },
+          {
+            name: 'class',
+            value: 'btn-primary'
+          }
         ]
       }
     }
@@ -326,7 +346,10 @@ describe('testingPlugin', () => {
       },
       values: {
         attributes: [
-          { name: 'data-testid', value: 'card-container' }
+          {
+            name: 'data-testid',
+            value: 'card-container'
+          }
         ]
       }
     }
@@ -348,15 +371,27 @@ describe('testingPlugin', () => {
             {
               type: 'tag',
               name: 'button',
-              attribs: { 'data-testid': 'action-btn', test: 'legacy-btn' }
+              attribs: {
+                'data-testid': 'action-btn',
+                test: 'legacy-btn'
+              }
             }
           ]
         },
         values: {
           attributes: [
-            { name: 'data-testid', value: 'action-btn' },
-            { name: 'test', value: 'legacy-btn' },
-            { name: 'class', value: 'btn-primary' }
+            {
+              name: 'data-testid',
+              value: 'action-btn'
+            },
+            {
+              name: 'test',
+              value: 'legacy-btn'
+            },
+            {
+              name: 'class',
+              value: 'btn-primary'
+            }
           ]
         }
       }
@@ -391,7 +426,12 @@ describe('testingPlugin', () => {
         args: () => ({
           component: {
             template: { children: [tagNode({ 'data-testid': 'action-btn' })] },
-            values: { attributes: [{ name: 'data-testid', value: 'action-btn' }] }
+            values: {
+              attributes: [{
+                name: 'data-testid',
+                value: 'action-btn'
+              }]
+            }
           }
         }),
         check: (args) => {
@@ -405,7 +445,12 @@ describe('testingPlugin', () => {
       const hookArgs = args()
       testingPlugin.server[hook]({
         ...hookArgs,
-        app: { options: { mode: 'production', preserveTestId: true } }
+        app: {
+          options: {
+            mode: 'production',
+            preserveTestId: true
+          }
+        }
       })
       check(hookArgs)
     }

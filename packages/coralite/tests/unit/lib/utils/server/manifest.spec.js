@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { writeFile, utimes } from 'node:fs/promises'
 import { join } from 'node:path'
-import { hash, hashFile, checkFileChange, initHasher } from '../../../../../lib/utils/server/manifest.js'
+import { hash, hashFile, checkFileChange, initHasher } from '../../../../../lib/server/utils/manifest.js'
 import { createTestProject } from '../../../utils/project.js'
 
 describe('Manifest Utils', () => {

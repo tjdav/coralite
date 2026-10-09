@@ -31,19 +31,19 @@
         const themeSymbolToken = Symbol.for('coralite.test.theme')
         const event = window.ContextRequestEvent
           ? new window.ContextRequestEvent(themeSymbolToken, (val) => {
-              this.textContent = val
-            }, true)
+            this.textContent = val
+          }, true)
           : new CustomEvent('context-request', {
-              bubbles: true,
-              composed: true,
-              detail: {
-                context: themeSymbolToken,
-                callback: (val) => {
-                  this.textContent = val
-                },
-                subscribe: true
-              }
-            })
+            bubbles: true,
+            composed: true,
+            detail: {
+              context: themeSymbolToken,
+              callback: (val) => {
+                this.textContent = val
+              },
+              subscribe: true
+            }
+          })
         this.dispatchEvent(event)
       }
     }

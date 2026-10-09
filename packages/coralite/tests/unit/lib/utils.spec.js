@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import { normalizeFunction } from '#lib'
-import { extractGlobals } from '../../../lib/utils/server/server.js'
+import { extractGlobals } from '../../../lib/server/utils/server.js'
 
 describe('normalizeFunction', () => {
   describe('Arrow Functions - should return as-is', () => {
@@ -257,7 +257,7 @@ describe('normalizeFunction', () => {
       const obj = {
         async method () {
           const fn = async (x) => x * 2
-          return await fn(5)
+          return fn(5)
         }
       }
       const result = normalizeFunction(obj.method)

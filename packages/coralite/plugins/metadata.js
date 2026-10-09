@@ -1,5 +1,5 @@
-import { definePlugin } from '../lib/plugin.js'
-import { parseHTML } from '../lib/utils/server/parse.js'
+import { definePlugin } from '../lib/server/plugin/define.js'
+import { parseHTML } from '../lib/server/utils/parse.js'
 
 /**
  * @import { ParseHTMLResult } from '../types/index.js'

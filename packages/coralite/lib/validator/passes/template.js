@@ -1,6 +1,6 @@
 import { Parser } from 'htmlparser2'
-import { isValidCustomElementName } from '../../utils/tags.js'
-import { getLocForSubstring } from '../../utils/diagnostics.js'
+import { isValidCustomElementName } from '../../shared/tags.js'
+import { getLocForSubstring } from '../../shared/diagnostics.js'
 import {
   extractIdentifiersFromExpr,
   deriveGetterName,

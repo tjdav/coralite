@@ -2,9 +2,9 @@ export * from './utils/mode-utils.js'
 
 /**
  * Helper to get a component locator and scoped test ID locator.
- * @param {import('@playwright/test').Page | import('@playwright/test').Locator} scope
- * @param {string} tagName
- * @param {number} [index=0]
+ * @param {import('@playwright/test').Page | import('@playwright/test').Locator} scope - Search scope locator or page.
+ * @param {string} tagName - Custom element tag name.
+ * @param {number} [index=0] - Component instance index.
  */
 export function getComponent (scope, tagName, index = 0) {
   const host = scope.locator(tagName).nth(index)
@@ -31,7 +31,7 @@ export async function waitForHydration (page) {
     }
     const elements = Array.from(document.querySelectorAll('[data-cid]'))
       .filter(el => el.tagName.includes('-'))
-    
+
     await Promise.all(elements.map(el => {
       const tag = el.tagName.toLowerCase()
       return Promise.race([
@@ -41,7 +41,7 @@ export async function waitForHydration (page) {
     }))
 
     await new Promise(resolve => setTimeout(resolve, 50))
-    
+
     return true
   })
 }

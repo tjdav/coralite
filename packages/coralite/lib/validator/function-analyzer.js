@@ -1,5 +1,5 @@
 import { simple as walkJS } from 'acorn-walk'
-import { camelToKebab, kebabToCamel } from '../utils/core.js'
+import { camelToKebab, kebabToCamel } from '../shared/core.js'
 import {
   RESERVED_CONTEXT_KEYS,
   getPropKeyName,

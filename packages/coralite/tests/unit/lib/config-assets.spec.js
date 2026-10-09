@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict'
 import { test, describe, beforeEach, afterEach } from 'node:test'
-import { defineConfig } from '../../../lib/config.js'
-import { createCoralite } from '../../../lib/coralite.js'
-import { CoraliteError } from '../../../lib/utils/errors.js'
+import { defineConfig } from '../../../lib/server/config.js'
+import { createCoralite } from '../../../lib/server/create.js'
 import { rm, readFile, mkdir, mkdtemp } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
@@ -15,7 +14,10 @@ describe('Config Asset Validation & registerAsset', () => {
   })
 
   afterEach(async () => {
-    await rm(tmpDir, { recursive: true, force: true })
+    await rm(tmpDir, {
+      recursive: true,
+      force: true
+    })
   })
 
   test('validates assets schema in defineConfig', () => {

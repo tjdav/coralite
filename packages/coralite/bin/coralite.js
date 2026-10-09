@@ -8,17 +8,17 @@ import { existsSync, mkdirSync, statSync, readdirSync } from 'node:fs'
 import { readFile, writeFile } from 'node:fs/promises'
 import pkg from '../package.json' with { type: 'json' }
 import { createCoralite, normalizeErrorCodes, matchesErrorCode } from '#lib'
-import { validateComponentsDir, formatComponentValidationReport } from '#lib/component-validator.js'
-import { applyComponentFixes } from '#lib/component-fixer.js'
-import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/plugin-validator.js'
-import { applyPluginFixes } from '#lib/plugin-fixer.js'
-import { validatePagesDir, formatPageValidationReport } from '#lib/page-validator.js'
+import { validateComponentsDir, formatComponentValidationReport } from '#lib/server/component/validator.js'
+import { applyComponentFixes } from '#lib/server/component/fixer.js'
+import { validatePluginSource, validatePluginFile, validatePluginsDir, formatPluginValidationReport } from '#lib/server/plugin/validator.js'
+import { applyPluginFixes } from '#lib/server/plugin/fixer.js'
+import { validatePagesDir, formatPageValidationReport } from '#lib/server/page/validator.js'
 import {
   promptCheckOptions,
   promptFixOptions,
   promptSingleDomainOptions,
   confirmApplyFixes
-} from '#lib/interactive.js'
+} from '#lib/server/interactive.js'
 
 // remove all Node warnings before doing anything else
 process.removeAllListeners('warning')
@@ -214,7 +214,7 @@ program
 
       let pageReport = null
       if (pageDir && existsSync(pageDir)) {
-        let knownComponents = new Map()
+        const knownComponents = new Map()
         if (compReport && compReport.components) {
           for (const c of compReport.components) {
             const name = c.componentTag || c.defined?.templateId || (c.filePath ? c.filePath.split('/').pop().replace(/\.(html|js)$/, '') : null)
@@ -487,7 +487,7 @@ program
 
       // Fix Plugins
       if (pluginTarget && existsSync(pluginTarget)) {
-        let pluginFiles = []
+        const pluginFiles = []
         if (statSync(pluginTarget).isFile()) {
           pluginFiles.push(pluginTarget)
         } else {
@@ -892,7 +892,7 @@ program
     }
 
     try {
-      let knownComponents = new Map()
+      const knownComponents = new Map()
       if (compDir && existsSync(compDir)) {
         const compReport = await validateComponentsDir(compDir)
         if (compReport && compReport.components) {
@@ -1170,9 +1170,9 @@ program
           console.error('Invalid format. Expected pkg:path:dest or pkg:path')
           process.exit(1)
         }
-        const [pkg, path, dest] = parts
+        const [assetPkg, path, dest] = parts
         assets.push({
-          pkg,
+          pkg: assetPkg,
           path,
           dest: dest || path
         })

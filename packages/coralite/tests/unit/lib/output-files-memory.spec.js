@@ -23,7 +23,10 @@ describe('outputFiles & Asset Cache Memory Management', () => {
   })
 
   afterEach(async () => {
-    await rm(testDir, { recursive: true, force: true })
+    await rm(testDir, {
+      recursive: true,
+      force: true
+    })
   })
 
   it('purges outputFiles across rebuilds in testing/production mode', async () => {
@@ -53,7 +56,10 @@ describe('outputFiles & Asset Cache Memory Management', () => {
       components: componentsDir,
       output: distDir,
       mode: 'testing',
-      csp: { enabled: true, externalScripts: true }
+      csp: {
+        enabled: true,
+        externalScripts: true
+      }
     })
 
     // Build Page A
@@ -102,7 +108,10 @@ describe('outputFiles & Asset Cache Memory Management', () => {
       components: componentsDir,
       output: distDir,
       mode: 'development',
-      csp: { enabled: true, externalScripts: true }
+      csp: {
+        enabled: true,
+        externalScripts: true
+      }
     })
 
     await app.build('index.html')
@@ -135,7 +144,10 @@ describe('outputFiles & Asset Cache Memory Management', () => {
       components: componentsDir,
       output: distDir,
       mode: 'testing',
-      csp: { enabled: true, externalScripts: true }
+      csp: {
+        enabled: true,
+        externalScripts: true
+      }
     })
 
     for (let i = 0; i < 10; i++) {
@@ -166,7 +178,10 @@ describe('outputFiles & Asset Cache Memory Management', () => {
       components: componentsDir,
       output: distDir,
       mode: 'production',
-      csp: { enabled: true, externalScripts: true }
+      csp: {
+        enabled: true,
+        externalScripts: true
+      }
     })
 
     await app.writeFile('test.txt', 'hello')
@@ -200,7 +215,10 @@ describe('outputFiles & Asset Cache Memory Management', () => {
       components: componentsDir,
       output: distDir,
       mode: 'testing',
-      csp: { enabled: true, externalScripts: true }
+      csp: {
+        enabled: true,
+        externalScripts: true
+      }
     })
 
     const p1 = app.build('page1.html')
@@ -229,17 +247,20 @@ describe('outputFiles & Asset Cache Memory Management', () => {
         {
           src: assetPath,
           dest: 'custom.js',
-          inject: { sri: 'sha384', placement: 'head-end' }
+          inject: {
+            sri: 'sha384',
+            placement: 'head-end'
+          }
         }
       ]
     })
 
-    const { calculateSRIDigest } = await import('../../../lib/utils/server/csp.js')
+    const { calculateSRIDigest } = await import('../../../lib/server/utils/csp.js')
 
     for (let i = 0; i < 5; i++) {
       const content = `console.log(${i})`
       await writeFile(assetPath, content)
-      const now = new Date(Date.now() + i * 1000)
+      const now = new Date(Date.now() + (i * 1000))
       const { utimes } = await import('node:fs/promises')
       await utimes(assetPath, now, now)
       const results = await app.build('sri-page.html')

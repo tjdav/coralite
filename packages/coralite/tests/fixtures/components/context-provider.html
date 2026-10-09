@@ -11,8 +11,14 @@
 
   export default defineComponent({
     attributes: {
-      theme: { type: String, default: 'light' },
-      count: { type: Number, default: 0 }
+      theme: {
+        type: String,
+        default: 'light'
+      },
+      count: {
+        type: Number,
+        default: 0
+      }
     },
     provide: {
       'app-context': ({ state }) => ({

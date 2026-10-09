@@ -12,8 +12,8 @@ globalThis.MutationObserver = window.MutationObserver
 globalThis.Node = window.Node
 globalThis.customElements = window.customElements
 
-const { createCoraliteClass } = await import('../../../lib/coralite-element.js')
-const { createComponentDefinition } = await import('../../../lib/component-setup.js')
+const { createCoraliteClass } = await import('../../../lib/client/element.js')
+const { createComponentDefinition } = await import('../../../lib/server/component/setup.js')
 
 describe('Getters Context ({ root, refs, signal })', () => {
   beforeEach(() => {
@@ -24,8 +24,8 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const options = {
       componentId: 'test-root-getter',
       getters: {
-        tagName: ({ root }) => root ? root.tagName.toLowerCase() : null,
-        hasAttr: ({ root }) => root ? root.hasAttribute('active') : false
+        tagName: ({ root }) => (root ? root.tagName.toLowerCase() : null),
+        hasAttr: ({ root }) => (root ? root.hasAttribute('active') : false)
       }
     }
 
@@ -72,7 +72,10 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const options = {
       componentId: 'test-refs-getter',
       hydrationMap: {
-        refs: [{ name: 'input', path: [0] }]
+        refs: [{
+          name: 'input',
+          path: [0]
+        }]
       },
       getters: {
         inputValue: ({ refs }) => {
@@ -106,7 +109,7 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const options = {
       componentId: 'test-signal-getter',
       getters: {
-        asyncData: async ({ state, signal, root, refs }) => {
+        asyncData: async ({ _state, signal, root, refs }) => {
           capturedSignal = signal
           assert.ok(root)
           assert.equal(typeof refs, 'function')
@@ -155,7 +158,10 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const defineComp = createComponentDefinition({ app: { options: {} } })
     const context = {
       state: { value: 10 },
-      module: { id: 'ssr-component', path: { pathname: '/ssr.html' } },
+      module: {
+        id: 'ssr-component',
+        path: { pathname: '/ssr.html' }
+      },
       root: null
     }
 

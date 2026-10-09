@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { validateSerializable } from '../../../../lib/utils/core.js'
+import { validateSerializable } from '../../../../lib/shared/core.js'
 
 describe('validateSerializable', () => {
   it('should not throw for primitives', () => {

@@ -1,4 +1,4 @@
-import { getLocForSubstring } from '../utils/diagnostics.js'
+import { getLocForSubstring } from '../shared/diagnostics.js'
 /**
  * Creates and initializes a shared ValidationContext object for component validation passes.
  *
