@@ -58,9 +58,7 @@ export async function getHtmlFiles ({
     onDelete: onFileDelete
   })
 
-  if (!limit) {
-    limit = pLimit(availableParallelism())
-  }
+  const activeLimit = limit || pLimit(availableParallelism())
 
   const entries = await readdir(path, { withFileTypes: true })
   const tasks = []
@@ -103,11 +101,11 @@ export async function getHtmlFiles ({
         onFileUpdate,
         onFileDelete,
         collection: resultCollection,
-        limit,
+        limit: activeLimit,
         rootPath
       }))
     } else if (entry.isFile() && extname(entry.name).toLowerCase() === '.html') {
-      tasks.push(limit(async () => {
+      tasks.push(activeLimit(async () => {
         const content = discoverOnly ? undefined : await readFile(pathname, { encoding: 'utf8' })
 
         await resultCollection.setItem({

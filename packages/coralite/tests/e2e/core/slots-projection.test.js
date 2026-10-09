@@ -151,13 +151,16 @@ test.describe('Nested Refs through Foreign Custom Elements', () => {
     await expect(status).toHaveText('Light')
 
     // Independent control: top-level ref is live -> component hydrated
-    await toggle.click() // Light -> Dark
+    // Light -> Dark
+    await toggle.click()
     await expect(status).toHaveText('Dark')
 
     // THE regression: deep ref must be live. Pre-fix refs('btnChangeTheme') was null,
     // so no listener was attached (or client() threw).
-    await toggle.click() // Dark -> Light
-    await themeBtn.click() // Light -> Dark, only if the deep listener exists
+    // Dark -> Light
+    await toggle.click()
+    // Light -> Dark, only if the deep listener exists
+    await themeBtn.click()
     await expect(status).toHaveText('Dark')
 
     // The resolved deep ref received the framework-unique ref attribute

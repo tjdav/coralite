@@ -203,7 +203,8 @@ describe('Hybrid Attribute Reflection Strategy', () => {
           reflect: true
         },
         disabled: Boolean,
-        tagName: String // Reserved DOM property name
+        // Reserved DOM property name
+        tagName: String
       }
     })
     customElements.define(tagName, Comp)
@@ -240,7 +241,7 @@ describe('Hybrid Attribute Reflection Strategy', () => {
 
   it('6. Bidirectional Loop Prevention', (t, done) => {
     const tagName = 'loop-prevent-' + Math.random().toString(36).substring(2, 9)
-    let stateMutations = 0
+    const _stateMutations = 0
 
     const Comp = createCoraliteClass({
       componentId: 'loop-prevent',

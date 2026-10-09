@@ -72,11 +72,11 @@ if (typeof window.HTMLElement.prototype.attachInternals !== 'function') {
       return true
     }
 
-    setFormValue (value, state) {
+    setFormValue (value, _state) {
       this._formValue = value
     }
 
-    setValidity (flags = {}, message = '', anchor) {
+    setValidity (flags = {}, message = '', _anchor) {
       const hasError = Object.values(flags).some(Boolean)
       this._validity = {
         valid: !hasError,

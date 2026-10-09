@@ -729,20 +729,20 @@ function matchSingleSelector (el, sel) {
   if (!el || el.type !== 'tag') {
     return false
   }
-  sel = sel.trim()
-  if (!sel || sel === '*') {
+  const cleanSel = sel.trim()
+  if (!cleanSel || cleanSel === '*') {
     return true
   }
 
   // Handle pseudo-class :not(...)
-  if (sel.startsWith(':not(') && sel.endsWith(')')) {
-    const inner = sel.slice(5, -1).trim()
+  if (cleanSel.startsWith(':not(') && cleanSel.endsWith(')')) {
+    const inner = cleanSel.slice(5, -1).trim()
     return !matchSingleSelector(el, inner)
   }
 
   // Parse compound selector like `h2.title#main[attr=val]`
   // Tokenize regex matching tags, .class, #id, [attr...]
-  const tokens = sel.match(/([a-zA-Z0-9_\-*]+)|(\.[a-zA-Z0-9_\-]+)|(#[a-zA-Z0-9_\-]+)|(\[[^\]]+\])/g)
+  const tokens = cleanSel.match(/([a-zA-Z0-9_\-*]+)|(\.[a-zA-Z0-9_\-]+)|(#[a-zA-Z0-9_\-]+)|(\[[^\]]+\])/g)
   if (!tokens || tokens.length === 0) {
     return false
   }

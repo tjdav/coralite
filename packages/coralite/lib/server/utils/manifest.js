@@ -78,14 +78,14 @@ export async function checkFileChange (filepath, previousMetadata = {}) {
     }
   }
 
-  const hash = await hashFile(filepath)
+  const currentHash = await hashFile(filepath)
   const metadata = {
     mtime,
     size,
-    hash
+    hash: currentHash
   }
 
-  if (previousMetadata.hash === hash) {
+  if (previousMetadata.hash === currentHash) {
     // mtime changed but hash is same, still return changed: false to optimize
     // but update metadata for next time (to keep mtime/size in sync)
     return {

@@ -2307,7 +2307,13 @@ export class CoraliteElement extends BaseElement {
               self._scheduleUpdate()
               return true
             }
-            v = res.value !== undefined ? res.value : v
+            const resolvedVal = res.value !== undefined ? res.value : v
+            const oldValue = t[p]
+            if (oldValue === resolvedVal) {
+              return true
+            }
+            t[p] = resolvedVal
+            return true
           }
         }
 
