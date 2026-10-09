@@ -12,9 +12,9 @@ export function dedent (text) {
     const line = lines[i]
     if (line.trim()) {
       const match = line.match(/^ */)
-      const indent = match ? match[0].length : 0
-      if (indent < minIndent) {
-        minIndent = indent
+      const currentIndent = match ? match[0].length : 0
+      if (currentIndent < minIndent) {
+        minIndent = currentIndent
       }
     }
   }
@@ -30,7 +30,7 @@ export function dedent (text) {
       newValue = currentValue.substring(minIndent)
     }
 
-    return previousValue = previousValue + newValue + '\n'
+    return previousValue + newValue + '\n'
   }, '')
 }
 

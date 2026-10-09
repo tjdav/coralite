@@ -1,6 +1,6 @@
 import { definePlugin } from 'coralite'
 
-let searchIndex = []
+const searchIndex = []
 
 function extractText (node) {
   let text = ''
