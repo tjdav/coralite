@@ -38,7 +38,7 @@ describe('Render Concurrency & Lock Isolation (BUG-01)', () => {
         }
       },
       slots: {
-        header: (_nodes) => {
+        header: (nodes) => {
           const div = document.createElement('div')
           div.className = 'header-content'
           div.textContent = 'Slotted Header'

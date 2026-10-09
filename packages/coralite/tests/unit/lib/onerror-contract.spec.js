@@ -9,8 +9,8 @@ import { handleError, CoraliteError } from '../../../lib/shared/errors.js'
 /**
  * Asserts that invoking `invoke` with any invalid onError value rejects/throws a
  * CoraliteError carrying the expected message.
- * @param {(value: any) => any} invoke - Function to invoke with value.
- * @param {string} expectedMessage - Expected error message string.
+ * @param {(value: any) => any} invoke
+ * @param {string} expectedMessage
  */
 async function assertRejectsInvalidOnError (invoke, expectedMessage) {
   for (const value of ['invalid', 123, {}, true, null]) {
@@ -45,8 +45,7 @@ describe('onError Contract & Strict Validation', () => {
       let threw = false
       try {
         await createCoralite({
-          // Invalid components parameter to trigger handleError
-          components: 123,
+          components: 123, // Invalid components parameter to trigger handleError
           pages: './pages'
         })
       } catch (err) {

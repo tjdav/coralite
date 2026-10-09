@@ -221,7 +221,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const Comp = createCoraliteClass({
       componentId: 't1-async',
       defaultValues: { x: 1 },
-      client ({ observe }) {
+      client ({ state, observe }) {
         observe('x', async () => {
           throw new Error('Async observer failure')
         })
@@ -382,7 +382,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const Comp = createCoraliteClass({
       componentId: 'sibling-obs',
       defaultValues: { score: 10 },
-      client ({ observe }) {
+      client ({ state, observe }) {
         observe('score', () => {
           throw new Error('First observer fault')
         })

@@ -96,7 +96,7 @@ test.describe('DevTools & Testing API (Development / Testing Modes)', () => {
   })
 
   test('should log custom events in a bounded ring-buffer via getEvents()', async ({ page }) => {
-    await page.evaluate(() => {
+    const beforeEventsCount = await page.evaluate(() => {
       return window.__coralite__.getEvents().length
     })
 

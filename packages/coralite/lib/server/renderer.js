@@ -479,15 +479,19 @@ export function createRenderer ({
    * @param {ComponentElementOptions} options - Configuration and context for the component instance.
    * @returns {Promise<CoraliteAnyNode | CoraliteAnyNode[] | void>} The rendered AST node(s) for the component.
    */
-  const createComponentElement = async ({ id, state = {}, element, page, root, contextId: inputContextId, index, session: inputSession, noHydration, head = true, contextFrames = [] }) => {
-    const session = inputSession || _createSession()
+  const createComponentElement = async ({ id, state = {}, element, page, root, contextId, index, session, noHydration, head = true, contextFrames = [] }) => {
+    if (!session) {
+      session = _createSession()
+    }
     const moduleComponent = app.components.getItem(id)
     if (!moduleComponent || !moduleComponent.result) {
       return
     }
 
     const componentId = moduleComponent.result.id
-    const contextId = inputContextId || session.generateId(componentId)
+    if (!contextId) {
+      contextId = session.generateId(componentId)
+    }
 
     let componentState = { ...state }
     let evaluatedScriptMeta = null
@@ -602,7 +606,7 @@ export function createRenderer ({
           throw createExecutionError(error, module, moduleComponent, page, contextId)
         }
 
-        if (scriptResult && scriptResult.__script__ !== null && scriptResult.__script__ !== undefined) {
+        if (scriptResult && scriptResult.__script__ != null) {
           evaluatedScriptMeta = scriptResult.__script__
           /** @type {any} */
           const scriptMetaAny = scriptResult.__script__
@@ -757,7 +761,7 @@ export function createRenderer ({
         for (let j = 0; j < tokens.length; j++) {
           const token = tokens[j]
           let value = componentState[token.name]
-          if (value === null || value === undefined) {
+          if (value == null) {
             value = ''
           }
           replaceToken({
@@ -777,7 +781,7 @@ export function createRenderer ({
         for (let j = 0; j < tokens.length; j++) {
           const token = tokens[j]
           let value = componentState[token.name]
-          if (value === null || value === undefined) {
+          if (value == null) {
             value = ''
           }
           replaceToken({
@@ -1067,7 +1071,7 @@ export function createRenderer ({
         }
 
         const interpolatedTemplate = fallbackTemplate.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, prop) => {
-          return componentState[prop] !== null && componentState[prop] !== undefined ? String(componentState[prop]) : ''
+          return componentState[prop] != null ? String(componentState[prop]) : ''
         })
 
         const fallbackParsed = parseHTML(interpolatedTemplate, normalizedOptions.ignoreByAttribute, normalizedOptions.skipRenderByAttribute, handleError)

@@ -366,9 +366,8 @@ export function normalizeObjectFunctions (target, transform = null, seen = new W
         const normalizedString = normalizeFunction(target[key])
         const originalFunction = target[key]
 
-        const wrapper = function (...args) {
-          // eslint-disable-next-line no-invalid-this -- Wrapper preserves receiver context when invoked as method
-          return originalFunction.apply(this, args)
+        const wrapper = function () {
+          return originalFunction.apply(this, arguments)
         }
         wrapper.toString = () => normalizedString
         obj[key] = wrapper
@@ -992,8 +991,8 @@ export function createReactiveProxy (target, onChange, proxies = new WeakMap()) 
   const isArray = Array.isArray(target)
 
   const handler = {
-    get (targetObj, property, receiver) {
-      const value = Reflect.get(targetObj, property, receiver)
+    get (target, property, receiver) {
+      const value = Reflect.get(target, property, receiver)
       if (isArray) {
         return value
       }
@@ -1003,33 +1002,33 @@ export function createReactiveProxy (target, onChange, proxies = new WeakMap()) 
       }
       return value
     },
-    set (targetObj, property, value, receiver) {
-      const oldValue = targetObj[property]
-      if (oldValue === value && property in targetObj) {
+    set (target, property, value, receiver) {
+      const oldValue = target[property]
+      if (oldValue === value && property in target) {
         return true
       }
 
-      const result = Reflect.set(targetObj, property, value, receiver)
+      const result = Reflect.set(target, property, value, receiver)
       if (result) {
         onChange({
           property,
           value,
           oldValue,
-          target: targetObj
+          target
         })
       }
       return result
     },
-    deleteProperty (targetObj, property) {
-      const hadProperty = Object.prototype.hasOwnProperty.call(targetObj, property)
-      const oldValue = targetObj[property]
-      const result = Reflect.deleteProperty(targetObj, property)
+    deleteProperty (target, property) {
+      const hadProperty = Object.prototype.hasOwnProperty.call(target, property)
+      const oldValue = target[property]
+      const result = Reflect.deleteProperty(target, property)
       if (result && hadProperty) {
         onChange({
           property,
           value: undefined,
           oldValue,
-          target: targetObj,
+          target,
           deleted: true
         })
       }
@@ -1061,8 +1060,8 @@ export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = 
   const hasTracker = tracker !== null
 
   const handler = {
-    get (targetObj, property) {
-      const value = targetObj[property]
+    get (target, property) {
+      const value = target[property]
 
       if (hasTracker && tracker.activeCollector && typeof property === 'string') {
         tracker.activeCollector(property)

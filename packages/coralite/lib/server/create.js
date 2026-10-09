@@ -123,8 +123,8 @@ export async function createCoralite ({
     build: null,
     save: null,
     transform: transformNode,
-    trackOutputFile (filePath) {
-      trackedOutputFiles.add(normalize(filePath))
+    trackOutputFile (path) {
+      trackedOutputFiles.add(normalize(path))
     },
     getTrackedOutputFiles () {
       return Array.from(trackedOutputFiles)
@@ -461,13 +461,12 @@ export async function createCoralite ({
      * @returns {string[]} An array of page pathnames that include the specified component.
      */
     getPagePathsUsingCustomElement: (targetPath) => {
-      let resolvedTargetPath = targetPath
       // @ts-ignore
-      if (resolvedTargetPath.startsWith(app.options.path.components)) {
+      if (targetPath.startsWith(app.options.path.components)) {
         // @ts-ignore
-        resolvedTargetPath = resolvedTargetPath.substring(app.options.path.components.length + 1)
+        targetPath = targetPath.substring(app.options.path.components.length + 1)
       }
-      const item = app.components.getItem(resolvedTargetPath)
+      const item = app.components.getItem(targetPath)
       const results = []
       if (item) {
         const id = item.result.id

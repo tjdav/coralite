@@ -21,11 +21,10 @@ export { generateColorizedDiff }
  */
 export function applyPluginFixes (sourceCode, diagnostics = null, options = {}) {
   const filePath = options.filePath || ''
-  let activeDiagnostics = diagnostics
 
-  if (!activeDiagnostics) {
+  if (!diagnostics) {
     const report = validatePluginSource(sourceCode, filePath)
-    activeDiagnostics = report.diagnostics
+    diagnostics = report.diagnostics
   }
 
   let code = sourceCode

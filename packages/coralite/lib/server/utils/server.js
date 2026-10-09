@@ -301,38 +301,38 @@ export function findAndExtractScript (code) {
             // Get source slice
             let source = code.slice(value.start, value.end)
             walkAncestorJS(value, {
-              AssignmentExpression (assignNode, ancestorsInClient) {
+              AssignmentExpression (node, ancestorsInClient) {
                 if (
-                  assignNode.left.type === 'MemberExpression' &&
-                  assignNode.left.property.type === 'Identifier' &&
-                  (assignNode.left.property.name === 'innerHTML' || assignNode.left.property.name === 'outerHTML')
+                  node.left.type === 'MemberExpression' &&
+                  node.left.property.type === 'Identifier' &&
+                  (node.left.property.name === 'innerHTML' || node.left.property.name === 'outerHTML')
                 ) {
-                  findHTMLComponents(assignNode.right, [...ancestors, ...ancestorsInClient])
+                  findHTMLComponents(node.right, [...ancestors, ...ancestorsInClient])
                   replacements.push({
-                    start: assignNode.right.start - value.start,
-                    end: assignNode.right.start - value.start,
+                    start: node.right.start - value.start,
+                    end: node.right.start - value.start,
                     replacement: 'processHTML('
                   })
                   replacements.push({
-                    start: assignNode.right.end - value.start,
-                    end: assignNode.right.end - value.start,
+                    start: node.right.end - value.start,
+                    end: node.right.end - value.start,
                     replacement: `, ${instanceIdVar})`
                   })
                 }
               },
-              CallExpression (callNode, ancestorsInClient) {
+              CallExpression (node, ancestorsInClient) {
                 const combinedAncestors = [...ancestors, ...ancestorsInClient]
                 if (
-                  callNode.callee &&
-                  callNode.callee.type === 'MemberExpression' &&
-                  callNode.callee.object &&
-                  callNode.callee.object.type === 'Identifier' &&
-                  callNode.callee.object.name === 'document' &&
-                  callNode.callee.property &&
-                  callNode.callee.property.type === 'Identifier' &&
-                  callNode.callee.property.name === 'createElement'
+                  node.callee &&
+                  node.callee.type === 'MemberExpression' &&
+                  node.callee.object &&
+                  node.callee.object.type === 'Identifier' &&
+                  node.callee.object.name === 'document' &&
+                  node.callee.property &&
+                  node.callee.property.type === 'Identifier' &&
+                  node.callee.property.name === 'createElement'
                 ) {
-                  const arg = callNode.arguments[0]
+                  const arg = node.arguments[0]
                   if (arg) {
                     const values = resolveStringValues(arg, combinedAncestors)
                     let isCustom = false
@@ -694,7 +694,7 @@ export function replaceToken ({
         node.attribs[attribute] = String(value)
       }
     } else {
-      const strVal = value === null || value === undefined ? '' : String(value)
+      const strVal = value == null ? '' : String(value)
       if (node.attribs[attribute] !== undefined) {
         node.attribs[attribute] = node.attribs[attribute].replace(content, strVal)
       }

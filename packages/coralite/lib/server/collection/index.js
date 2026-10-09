@@ -87,21 +87,20 @@ function CoraliteCollection (options = { rootDir: '' }) {
  * @returns {Promise<CoraliteCollectionItem>} The modified document
  */
 CoraliteCollection.prototype.setItem = async function (value) {
-  let targetValue = value
-  if (typeof targetValue === 'string') {
-    targetValue = await this._loadByPath(targetValue)
+  if (typeof value === 'string') {
+    value = await this._loadByPath(value)
   }
 
-  if (!targetValue || !targetValue.path) {
+  if (!value || !value.path) {
     throw new CoraliteError('Valid HTMLData object must be provided')
   }
 
-  const pathname = targetValue.path.pathname
-  const dirname = targetValue.path.dirname
+  const pathname = value.path.pathname
+  const dirname = value.path.dirname
   const originalValue = this.collection[pathname]
 
   /** @type {CoraliteCollectionItem} */
-  const documentValue = targetValue
+  const documentValue = value
 
   if (!originalValue) {
     // handle pre-set hook if defined
@@ -147,7 +146,7 @@ CoraliteCollection.prototype.setItem = async function (value) {
     this.list.push(documentValue)
     this._itemIndex.set(documentValue, this.list.length - 1)
   } else {
-    return this.updateItem(value)
+    return await this.updateItem(value)
   }
 
   return documentValue
@@ -246,25 +245,24 @@ CoraliteCollection.prototype.deleteItem = async function (value) {
  * @throws {Error} If invalid input is provided
  */
 CoraliteCollection.prototype.updateItem = async function (value) {
-  let targetValue = value
-  if (typeof targetValue === 'string') {
-    targetValue = await this._loadByPath(targetValue)
+  if (typeof value === 'string') {
+    value = await this._loadByPath(value)
   }
 
-  if (!targetValue || !targetValue.path) {
+  if (!value || !value.path) {
     throw new CoraliteError('Valid HTMLData object must be provided')
   }
 
-  const pathname = targetValue.path.pathname
+  const pathname = value.path.pathname
   const originalValue = this.collection[pathname]
 
   if (!originalValue) {
     // if the document does not exist, add it using the set method
-    return this.setItem(targetValue)
+    return await this.setItem(value)
   }
 
   if (typeof this._onUpdate === 'function') {
-    const result = await this._onUpdate(targetValue, originalValue)
+    const result = await this._onUpdate(value, originalValue)
 
     // abort update
     if (!result) {
@@ -290,34 +288,34 @@ CoraliteCollection.prototype.updateItem = async function (value) {
   }
 
   // update core state
-  if (targetValue.content !== undefined) {
-    originalValue.content = targetValue.content
+  if (value.content !== undefined) {
+    originalValue.content = value.content
   }
 
   // update path information if it changed
-  if (targetValue.path && targetValue.path !== originalValue.path) {
-    originalValue.path = targetValue.path
+  if (value.path && value.path !== originalValue.path) {
+    originalValue.path = value.path
   }
 
   // update type if explicitly set
-  if (targetValue.type) {
-    originalValue.type = targetValue.type
+  if (value.type) {
+    originalValue.type = value.type
   }
 
   // update any additional state
-  if (targetValue.state !== undefined) {
-    originalValue.state = targetValue.state
+  if (value.state !== undefined) {
+    originalValue.state = value.state
   }
 
   // update ISR related fields
-  if (targetValue.cacheKey !== undefined) {
-    originalValue.cacheKey = targetValue.cacheKey
+  if (value.cacheKey !== undefined) {
+    originalValue.cacheKey = value.cacheKey
   }
-  if (targetValue.volatile !== undefined) {
-    originalValue.volatile = targetValue.volatile
+  if (value.volatile !== undefined) {
+    originalValue.volatile = value.volatile
   }
-  if (targetValue.virtual !== undefined) {
-    originalValue.virtual = targetValue.virtual
+  if (value.virtual !== undefined) {
+    originalValue.virtual = value.virtual
   }
 
   if (originalValue.result && typeof originalValue.result === 'object') {
@@ -333,12 +331,11 @@ CoraliteCollection.prototype.updateItem = async function (value) {
  * @returns {CoraliteCollectionItem | undefined} The found item or undefined
  */
 CoraliteCollection.prototype.getItem = function (id) {
-  let targetId = id
-  if (!this.collection[targetId] && targetId.endsWith('html')) {
-    targetId = path.join(this.rootDir, targetId)
+  if (!this.collection[id] && id.endsWith('html')) {
+    id = path.join(this.rootDir, id)
   }
 
-  return this.collection[targetId]
+  return this.collection[id]
 }
 
 /**
@@ -362,30 +359,29 @@ CoraliteCollection.prototype.getListByPath = function (dirname) {
  * @throws {Error} If the file cannot be found at either the provided path or within the root directory
  */
 CoraliteCollection.prototype._loadByPath = async function (filepath) {
-  let targetPath = filepath
   try {
-    await access(targetPath)
+    await access(filepath)
   } catch {
     try {
-      targetPath = path.join(this.rootDir, filepath)
+      filepath = path.join(this.rootDir, filepath)
 
-      await access(targetPath)
+      await access(filepath)
     } catch {
-      throw new CoraliteError('Could not find collection item: ' + targetPath, {
-        filePath: targetPath
+      throw new CoraliteError('Could not find collection item: ' + filepath, {
+        filePath: filepath
       })
     }
   }
 
-  const content = await getHtmlFile(targetPath)
+  const content = await getHtmlFile(filepath)
 
   return {
     type: 'page',
     content,
     path: {
-      pathname: targetPath,
-      dirname: path.dirname(targetPath),
-      filename: path.basename(targetPath)
+      pathname: filepath,
+      dirname: path.dirname(filepath),
+      filename: path.basename(filepath)
     }
   }
 }

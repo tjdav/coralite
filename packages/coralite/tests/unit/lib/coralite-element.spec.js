@@ -762,8 +762,7 @@ describe('CoraliteElement', () => {
       hydrationMap: {
         attributes: [
           {
-            // path to child-comp inside parent-comp in the pristine template
-            path: [0, 0],
+            path: [0, 0], // path to child-comp inside parent-comp in the pristine template
             name: 'name',
             template: '{{ computedGetter }}'
           }
@@ -1019,7 +1018,7 @@ describe('CoraliteElement', () => {
     const ChildElement = createCoraliteClass({
       componentId: childTag,
       slots: {
-        default (_nodes) {
+        default (nodes) {
           return '<span class="child-slot">Child Slot Content</span>'
         }
       }
@@ -1028,7 +1027,7 @@ describe('CoraliteElement', () => {
     const ParentElement = createCoraliteClass({
       componentId: parentTag,
       slots: {
-        default (_nodes) {
+        default (nodes) {
           return '<div class="parent-slot">Parent Slot Content</div>'
         }
       }
@@ -2171,7 +2170,7 @@ describe('CoraliteElement', () => {
           asyncData ({ signal }) {
             getterSignal = signal
             return new Promise(() => {
-            })
+            }) // pending promise
           }
         }
       })
@@ -2181,7 +2180,7 @@ describe('CoraliteElement', () => {
       document.body.appendChild(el)
 
       // Trigger getter access
-      el._state.asyncData
+      const dummy = el._state.asyncData
 
       queueMicrotask(() => {
         assert.ok(getterSignal)

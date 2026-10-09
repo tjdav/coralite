@@ -331,7 +331,7 @@ describe('ScriptManager Compilation', () => {
         rootDir: resolve(process.cwd(), 'src/plugins'),
         client: {
           context: () => async () => {
-            await import('./nonexistent-adapter.js')
+            const { adapter } = await import('./nonexistent-adapter.js')
           }
         }
       })

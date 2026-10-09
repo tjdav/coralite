@@ -386,7 +386,7 @@ describe('W3C Web Components Context Protocol', () => {
     document.body.appendChild(provider)
 
     let deadCallbackCalled = false
-    const deadCallback = (_val) => {
+    const deadCallback = (val) => {
       deadCallbackCalled = true
     }
 
