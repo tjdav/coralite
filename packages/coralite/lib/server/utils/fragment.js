@@ -568,7 +568,7 @@ export async function emitFragment ({
       mode: app.options.mode
     })
 
-    if (scriptResult && scriptResult.__script__ !== null && scriptResult.__script__ !== undefined) {
+    if (scriptResult && scriptResult.__script__ != null) {
       const scriptMetaAny = scriptResult.__script__
       evaluatedStyle = scriptMetaAny.style
 
@@ -662,7 +662,7 @@ export async function emitFragment ({
         resultStr += op.s
       } else if (op.t === 'text') {
         const val = componentState[op.name]
-        resultStr += (val !== null && val !== undefined ? String(val) : '')
+        resultStr += (val != null ? String(val) : '')
       } else if (op.t === 'elem') {
         // Shallow copy element and update attributes
         const nodeCopy = {
@@ -709,7 +709,7 @@ export async function emitFragment ({
             let attrVal = nodeCopy.attribs[item.name] || ''
             for (const token of item.tokens) {
               let val = componentState[token.name]
-              if (val === null || val === undefined) {
+              if (val == null) {
                 val = ''
               }
               attrVal = attrVal.replace(token.content, String(val))
@@ -750,7 +750,7 @@ export async function emitFragment ({
           let attrVal = hostNodeAttribs[item.name] || ''
           for (const token of item.tokens) {
             let val = componentState[token.name]
-            if (val === null || val === undefined) {
+            if (val == null) {
               val = ''
             }
             attrVal = attrVal.replace(token.content, String(val))

@@ -264,8 +264,7 @@ describe('updateComplete Contract', () => {
   it('8. Cascade Breaker Safety: resolves false when infinite reactivity loop trips breaker', async () => {
     const prevMode = window.__coralite__?.mode
     window.__coralite__ = window.__coralite__ || {}
-    // avoid throw in dev mode to test circuit breaker return
-    window.__coralite__.mode = 'production'
+    window.__coralite__.mode = 'production' // avoid throw in dev mode to test circuit breaker return
 
     let cascadeErrorEmitted = false
 

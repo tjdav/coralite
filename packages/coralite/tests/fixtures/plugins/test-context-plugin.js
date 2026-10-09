@@ -27,14 +27,13 @@ export const testContextPlugin = definePlugin({
 
       return {
         testHelper: function (element) {
-          let targetEl = element
-          if (typeof targetEl === 'string') {
-            targetEl = document.querySelector(targetEl)
+          if (typeof element === 'string') {
+            element = document.querySelector(element)
           }
-          if (targetEl) {
-            targetEl.textContent = `Global: ${pluginContext.config?.globalValue}, InstanceId: ${localContext.instanceId}, Signal: ${localContext.signal instanceof AbortSignal}`
+          if (element) {
+            element.textContent = `Global: ${pluginContext.config?.globalValue}, InstanceId: ${localContext.instanceId}, Signal: ${localContext.signal instanceof AbortSignal}`
           }
-          return targetEl
+          return element
         }
       }
     }

@@ -124,7 +124,7 @@ export function definePlugin ({
   const selfFile = fileURLToPath(import.meta.url)
   let callerDir
   let callerFile
-  if (((client !== null && client !== undefined) || (server !== null && server !== undefined)) && (!rootDir || !filePath || !client?.rootDir || !client?.filePath)) {
+  if ((client != null || server != null) && (!rootDir || !filePath || !client?.rootDir || !client?.filePath)) {
     const stack = new Error().stack
     if (stack) {
       const lines = stack.split('\n')
@@ -157,36 +157,35 @@ export function definePlugin ({
   const resolvedRootDir = rootDir || client?.rootDir || callerDir
   const resolvedFilePath = filePath || client?.filePath || callerFile
 
-  let resolvedServer = server
   // Validate server plugin if provided
-  if (resolvedServer !== null && resolvedServer !== undefined) {
-    if (typeof resolvedServer !== 'object') {
+  if (server != null) {
+    if (typeof server !== 'object') {
       throw new CoraliteError(
-        `Coralite plugin validation failed: "server" must be an object, received ${typeof resolvedServer}`
+        `Coralite plugin validation failed: "server" must be an object, received ${typeof server}`
       )
     }
 
-    resolvedServer = { ...resolvedServer }
-    resolvedServer.name = resolvedServer.name || name
+    server = { ...server }
+    server.name = server.name || name
 
-    if (resolvedServer.context !== null && resolvedServer.context !== undefined && typeof resolvedServer.context !== 'function') {
+    if (server.context != null && typeof server.context !== 'function') {
       throw new CoraliteError(
-        `Coralite plugin validation failed: "server.context" must be a function, received ${typeof resolvedServer.context}`
+        `Coralite plugin validation failed: "server.context" must be a function, received ${typeof server.context}`
       )
     }
 
     // Process component files with error handling
-    if (resolvedServer.components) {
-      validateStringArray(resolvedServer.components, 'server.components')
+    if (server.components) {
+      validateStringArray(server.components, 'server.components')
 
       const componentHTMLData = []
       try {
         // Process all components
-        for (const path of resolvedServer.components) {
+        for (const path of server.components) {
           componentHTMLData.push(processComponents(path))
         }
         // @ts-ignore
-        resolvedServer.components = componentHTMLData
+        server.components = componentHTMLData
       } catch (error) {
         // Enhance error message with plugin context
         throw new CoraliteError(
@@ -198,20 +197,20 @@ export function definePlugin ({
   }
 
   // Validate client plugin if provided
-  if (client !== null && client !== undefined) {
+  if (client != null) {
     if (typeof client !== 'object') {
       throw new CoraliteError(
         `Coralite plugin validation failed: "client" must be an object, received ${typeof client}`
       )
     }
 
-    if (client.context !== null && client.context !== undefined && typeof client.context !== 'function') {
+    if (client.context != null && typeof client.context !== 'function') {
       throw new CoraliteError(
         `Coralite plugin validation failed: "client.context" must be a function, received ${typeof client.context}`
       )
     }
 
-    if (client.config !== null && client.config !== undefined && typeof client.config !== 'object') {
+    if (client.config != null && typeof client.config !== 'object') {
       throw new CoraliteError(
         `Coralite plugin validation failed: "client.config" must be an object, received ${typeof client.config}`
       )
@@ -228,7 +227,7 @@ export function definePlugin ({
     name,
     rootDir: resolvedRootDir,
     filePath: resolvedFilePath,
-    server: resolvedServer,
+    server,
     client
   }
 }

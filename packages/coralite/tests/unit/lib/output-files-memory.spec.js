@@ -260,7 +260,7 @@ describe('outputFiles & Asset Cache Memory Management', () => {
     for (let i = 0; i < 5; i++) {
       const content = `console.log(${i})`
       await writeFile(assetPath, content)
-      const now = new Date(Date.now() + (i * 1000))
+      const now = new Date(Date.now() + i * 1000)
       const { utimes } = await import('node:fs/promises')
       await utimes(assetPath, now, now)
       const results = await app.build('sri-page.html')

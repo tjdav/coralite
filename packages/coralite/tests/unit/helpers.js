@@ -86,14 +86,14 @@ export function assertNotSame (actual, expected, message) {
  * Asserts that a node collection matches another node collection by order and
  * identity, reporting mismatches with index-level detail instead of dumping the
  * whole DOM graph.
- * @param {any} actual - Observed nodes.
- * @param {any} expected - Expected nodes.
+ * @param {ArrayLike<unknown>|Iterable<unknown>} actual - Observed nodes.
+ * @param {ArrayLike<unknown>|Iterable<unknown>} expected - Expected nodes.
  * @param {string} [message] - Optional failure message.
  * @returns {void}
  */
 export function assertSameNodes (actual, expected, message) {
-  const actualNodes = Array.from(actual)
-  const expectedNodes = Array.from(expected)
+  const actualNodes = Array.from(/** @type {Iterable<unknown>} */ (actual))
+  const expectedNodes = Array.from(/** @type {Iterable<unknown>} */ (expected))
   const prefix = message ? `${message}: ` : ''
 
   if (actualNodes.length !== expectedNodes.length) {
