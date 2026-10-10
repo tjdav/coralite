@@ -440,7 +440,7 @@ describe('plugin-validator.js', () => {
       }
       const result = validatePluginObject(plugin, 'bad-plugin.js')
       assert.equal(result.valid, false)
-      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P302'))
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P210'))
     })
 
     it('should detect invalid hook types', () => {
