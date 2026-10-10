@@ -1,0 +1,25 @@
+<template id="module-scope-consumer">
+  <p class="probe-output">{{ probe }}</p>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  const MODULE_CONST = 'preserved'
+  const MODULE_FN = () => 'preserved'
+
+  export default defineComponent({
+    getters: {
+      probe: ({ state }) => {
+        try { return `getter:${MODULE_CONST}:${MODULE_FN()}` }
+        catch (e) { return `getter:ERR:${e.message}` }
+      }
+    },
+    client({ state }) {
+      let clientResult
+      try { clientResult = `client:${MODULE_CONST}:${MODULE_FN()}` }
+      catch (e) { clientResult = `client:ERR:${e.message}` }
+      console.log('[module-scope][client]', clientResult)
+    }
+  })
+</script>

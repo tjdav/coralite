@@ -1,0 +1,19 @@
+<template id="onerror-probe">
+  <div class="onerror-container">
+    <slot></slot>
+  </div>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    server(ctx) {
+      throw new Error('Simulated server error for onError probe')
+    },
+    onError(ctx) {
+      console.log('[onError-keys]', Object.keys(ctx))
+      return '<div>fallback</div>'
+    }
+  })
+</script>

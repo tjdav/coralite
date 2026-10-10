@@ -204,6 +204,16 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/app:
+    dependencies:
+      coralite:
+        specifier: workspace:*
+        version: link:../coralite
+    devDependencies:
+      coralite-scripts:
+        specifier: workspace:*
+        version: link:../coralite-scripts
+
   packages/coralite:
     dependencies:
       '@clack/prompts':

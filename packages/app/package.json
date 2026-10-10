@@ -1,0 +1,14 @@
+{
+  "name": "@atoll/app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "coralite-scripts build"
+  },
+  "devDependencies": {
+    "coralite-scripts": "workspace:*"
+  },
+  "dependencies": {
+    "coralite": "workspace:*"
+  }
+}
