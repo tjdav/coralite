@@ -46,7 +46,7 @@ function createServerHookConfig (serverConfig, clientConfigStaging, declaredClie
       }
       return target[prop]
     },
-    set (target, prop, value) {
+    set (target, prop, _value) {
       if (prop === 'clientConfig') {
         throw new CoraliteError(
           '[CORALITE-P209] Cannot reassign config.clientConfig. Write to config.clientConfig.<key> instead.',
@@ -102,11 +102,67 @@ export async function setupPlugins ({
 
   const currentMode = app.options.mode
 
-  for (const plugin of pluginsToInit) {
+  const activePlugins = pluginsToInit.filter(plugin => {
     if (plugin.modes !== undefined && Array.isArray(plugin.modes) && !plugin.modes.includes(currentMode)) {
-      continue
+      return false
     }
+    return true
+  })
 
+  const activeMap = new Map()
+  for (const plugin of activePlugins) {
+    activeMap.set(plugin.name, plugin)
+  }
+
+  // Check for unknown dependencies
+  for (const plugin of activePlugins) {
+    if (plugin.depends !== undefined && Array.isArray(plugin.depends)) {
+      for (const depName of plugin.depends) {
+        if (!activeMap.has(depName)) {
+          throw new CoraliteError(
+            `[CORALITE-P205] Plugin "${plugin.name}" depends on unknown or unregistered plugin "${depName}".`,
+            { code: 'CORALITE-P205' }
+          )
+        }
+      }
+    }
+  }
+
+  // Topological sort with cycle detection
+  const sortedPlugins = []
+  const visitState = new Map()
+
+  function visit (plugin, path = []) {
+    const pluginName = plugin.name
+    const st = visitState.get(pluginName) || 0
+    if (st === 1) {
+      const cyclePath = [...path, pluginName].join(' -> ')
+      throw new CoraliteError(
+        `[CORALITE-P205] Plugin dependency cycle detected: ${cyclePath}`,
+        { code: 'CORALITE-P205' }
+      )
+    }
+    if (st === 0) {
+      visitState.set(pluginName, 1)
+      const deps = plugin.depends || []
+      for (const depName of deps) {
+        const depPlugin = activeMap.get(depName)
+        if (depPlugin) {
+          visit(depPlugin, [...path, pluginName])
+        }
+      }
+      visitState.set(pluginName, 2)
+      sortedPlugins.push(plugin)
+    }
+  }
+
+  for (const plugin of activePlugins) {
+    if ((visitState.get(plugin.name) || 0) === 0) {
+      visit(plugin)
+    }
+  }
+
+  for (const plugin of sortedPlugins) {
     let sharedConfig = {}
     let serverConfig = {}
     let clientConfig = {}

@@ -90,9 +90,21 @@ describe('setupPlugins value routing and object freezing', () => {
       }
     })
 
-    const app = { options: { mode: 'production', plugins: [plugin()] } }
-    const plugins = { components: [], hooks: {} }
-    const scriptManager = { use: () => { clientUsed = true } }
+    const app = {
+      options: {
+        mode: 'production',
+        plugins: [plugin()]
+      }
+    }
+    const plugins = {
+      components: [],
+      hooks: {}
+    }
+    const scriptManager = {
+      use: () => {
+        clientUsed = true
+      }
+    }
 
     await setupPlugins({
       app,
@@ -125,9 +137,21 @@ describe('setupPlugins value routing and object freezing', () => {
       }
     })
 
-    const app = { options: { mode: 'production', plugins: [plugin()] } }
-    const plugins = { components: [], hooks: {} }
-    const scriptManager = { use: () => { clientUsed = true } }
+    const app = {
+      options: {
+        mode: 'production',
+        plugins: [plugin()]
+      }
+    }
+    const plugins = {
+      components: [],
+      hooks: {}
+    }
+    const scriptManager = {
+      use: () => {
+        clientUsed = true
+      }
+    }
 
     await setupPlugins({
       app,
@@ -159,9 +183,21 @@ describe('setupPlugins value routing and object freezing', () => {
       }
     })
 
-    const app = { options: { mode: 'testing', plugins: [plugin()] } }
-    const plugins = { components: [], hooks: {} }
-    const scriptManager = { use: () => { clientUsed = true } }
+    const app = {
+      options: {
+        mode: 'testing',
+        plugins: [plugin()]
+      }
+    }
+    const plugins = {
+      components: [],
+      hooks: {}
+    }
+    const scriptManager = {
+      use: () => {
+        clientUsed = true
+      }
+    }
 
     await setupPlugins({
       app,
@@ -189,34 +225,70 @@ describe('setupPlugins value routing and object freezing', () => {
     })
 
     // Development mode -> registers
-    const appDev = { options: { mode: 'development', plugins: [plugin()] } }
+    const appDev = {
+      options: {
+        mode: 'development',
+        plugins: [plugin()]
+      }
+    }
     await setupPlugins({
       app: appDev,
       serverGlobalContext: {},
-      plugins: { components: [], hooks: {} },
-      scriptManager: { use: () => { clientUsedCount++ } },
+      plugins: {
+        components: [],
+        hooks: {}
+      },
+      scriptManager: {
+        use: () => {
+          clientUsedCount++
+        }
+      },
       source: { plugins: {} }
     })
     assert.strictEqual(clientUsedCount, 1)
 
     // Testing mode -> registers
-    const appTesting = { options: { mode: 'testing', plugins: [plugin()] } }
+    const appTesting = {
+      options: {
+        mode: 'testing',
+        plugins: [plugin()]
+      }
+    }
     await setupPlugins({
       app: appTesting,
       serverGlobalContext: {},
-      plugins: { components: [], hooks: {} },
-      scriptManager: { use: () => { clientUsedCount++ } },
+      plugins: {
+        components: [],
+        hooks: {}
+      },
+      scriptManager: {
+        use: () => {
+          clientUsedCount++
+        }
+      },
       source: { plugins: {} }
     })
     assert.strictEqual(clientUsedCount, 2)
 
     // Production mode -> skipped
-    const appProd = { options: { mode: 'production', plugins: [plugin()] } }
+    const appProd = {
+      options: {
+        mode: 'production',
+        plugins: [plugin()]
+      }
+    }
     await setupPlugins({
       app: appProd,
       serverGlobalContext: {},
-      plugins: { components: [], hooks: {} },
-      scriptManager: { use: () => { clientUsedCount++ } },
+      plugins: {
+        components: [],
+        hooks: {}
+      },
+      scriptManager: {
+        use: () => {
+          clientUsedCount++
+        }
+      },
       source: { plugins: {} }
     })
     assert.strictEqual(clientUsedCount, 2)

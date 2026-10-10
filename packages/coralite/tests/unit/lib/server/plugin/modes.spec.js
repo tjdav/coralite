@@ -23,7 +23,10 @@ describe('End-to-end plugin mode gating (modes.spec.js)', () => {
     }
 
     const app = createMockApp('testing', [pluginInstance])
-    const plugins = { components: [], hooks: {} }
+    const plugins = {
+      components: [],
+      hooks: {}
+    }
     const scriptManager = {
       use: () => {
         clientUsed = true
@@ -54,7 +57,10 @@ describe('End-to-end plugin mode gating (modes.spec.js)', () => {
     }
 
     const app = createMockApp('production', [pluginInstance])
-    const plugins = { components: [], hooks: {} }
+    const plugins = {
+      components: [],
+      hooks: {}
+    }
     const scriptManager = {
       use: () => {
         clientUsed = true
@@ -84,7 +90,10 @@ describe('End-to-end plugin mode gating (modes.spec.js)', () => {
     }
 
     const app = createMockApp('development', [pluginInstance])
-    const plugins = { components: [], hooks: {} }
+    const plugins = {
+      components: [],
+      hooks: {}
+    }
     const scriptManager = {
       use: () => {
         clientUsed = true

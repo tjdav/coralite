@@ -76,7 +76,10 @@ describe('definePlugin specification and backward compatibility', () => {
 
     it('should throw CORALITE-P204 if modes is empty array', () => {
       assert.throws(
-        () => definePlugin({ name: 'bad-modes', modes: [] }),
+        () => definePlugin({
+          name: 'bad-modes',
+          modes: []
+        }),
         (err) => {
           assert.strictEqual(err.code, 'CORALITE-P204')
           return true
@@ -87,7 +90,10 @@ describe('definePlugin specification and backward compatibility', () => {
     it('should throw CORALITE-P204 if modes is a non-array value', () => {
       assert.throws(
         // @ts-ignore
-        () => definePlugin({ name: 'bad-modes', modes: 'testing' }),
+        () => definePlugin({
+          name: 'bad-modes',
+          modes: 'testing'
+        }),
         (err) => {
           assert.strictEqual(err.code, 'CORALITE-P204')
           return true
@@ -97,10 +103,82 @@ describe('definePlugin specification and backward compatibility', () => {
 
     it('should throw CORALITE-P204 if modes contains an unknown mode name', () => {
       assert.throws(
-        () => definePlugin({ name: 'bad-modes', modes: ['testing', 'staging'] }),
+        () => definePlugin({
+          name: 'bad-modes',
+          modes: ['testing', 'staging']
+        }),
         (err) => {
           assert.strictEqual(err.code, 'CORALITE-P204')
           assert.match(err.message, /staging/)
+          return true
+        }
+      )
+    })
+  })
+
+  describe('depends validation', () => {
+    it('should accept valid depends array and attach depends to callable and instance', () => {
+      const plugin = definePlugin({
+        name: 'dependent-plugin',
+        depends: ['storage', 'i18n']
+      })
+
+      assert.deepStrictEqual(plugin.depends, ['storage', 'i18n'])
+      const instance = plugin()
+      assert.deepStrictEqual(instance.depends, ['storage', 'i18n'])
+    })
+
+    it('should throw CORALITE-P205 if depends is not an array', () => {
+      assert.throws(
+        // @ts-ignore
+        () => definePlugin({
+          name: 'bad-depends',
+          depends: 'storage'
+        }),
+        (err) => {
+          assert.strictEqual(err.code, 'CORALITE-P205')
+          return true
+        }
+      )
+    })
+
+    it('should throw CORALITE-P205 if depends contains non-string elements', () => {
+      assert.throws(
+        // @ts-ignore
+        () => definePlugin({
+          name: 'bad-depends',
+          depends: ['storage', 123]
+        }),
+        (err) => {
+          assert.strictEqual(err.code, 'CORALITE-P205')
+          return true
+        }
+      )
+    })
+  })
+
+  describe('client.init validation', () => {
+    it('should accept valid client.init function', () => {
+      const plugin = definePlugin({
+        name: 'init-plugin',
+        client: {
+          init () {
+          }
+        }
+      })
+
+      assert.strictEqual(typeof plugin.client.init, 'function')
+    })
+
+    it('should throw error if client.init is defined and not a function', () => {
+      assert.throws(
+        // @ts-ignore
+        () => definePlugin({
+          name: 'bad-init',
+          client: { init: 'not-a-fn' }
+        }),
+        (err) => {
+          assert.match(err.message, /client\.init.*must be a function/)
           return true
         }
       )

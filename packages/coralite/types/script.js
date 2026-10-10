@@ -56,11 +56,26 @@
  */
 
 /**
+ * @typedef {Object} CoraliteClientInitContext
+ * @property {any} config - Serialized plugin client config
+ * @property {any} runtime - Coralite client runtime
+ * @property {any} app - Coralite client app context
+ * @property {(fn: () => void) => void} onCleanup - Cleanup registration function
+ */
+
+/**
+ * @callback CoraliteClientInitCallback
+ * @param {CoraliteClientInitContext} context
+ * @returns {Promise<void>|void}
+ */
+
+/**
  * @typedef {Object} ScriptPlugin
  * @property {string} [name] - The name of the plugin
  * @property {string} [rootDir] - The root directory of the plugin
  * @property {string} [filePath] - The source file path of the plugin
  * @property {Object.<string, any>} [config] - Plugin configuration
+ * @property {CoraliteClientInitCallback} [init] - Boot initialization hook
  * @property {CoraliteClientPluginBeforeComponentRenderCallback} [onBeforeComponentRender] - Called before component is rendered
  * @property {CoraliteClientPluginAfterComponentRenderCallback} [onAfterComponentRender] - Called after component is rendered
  * @property {CoraliteClientPluginDisconnectedCallback} [onDisconnected] - Called when component is removed from the DOM

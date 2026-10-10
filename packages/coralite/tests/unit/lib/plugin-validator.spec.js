@@ -139,6 +139,32 @@ describe('plugin-validator.js', () => {
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P204'))
     })
 
+    it('CORALITE-P205: should flag non-array depends in plugin source', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'bad-depends-plugin',
+          depends: 'storage'
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P205'))
+    })
+
+    it('CORALITE-P205: should flag non-string depends entries in plugin source', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'bad-depends-entries-plugin',
+          depends: ['storage', 123]
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P205'))
+    })
+
     it('CORALITE-P204: should flag empty modes array in plugin source', () => {
       const source = `
         import { definePlugin } from 'coralite'
@@ -150,6 +176,28 @@ describe('plugin-validator.js', () => {
       const result = validatePluginSource(source, 'test.js')
       assert.equal(result.valid, false)
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P204'))
+    })
+
+    it('CORALITE-P205: should flag non-array depends in validatePluginObject', () => {
+      const plugin = {
+        name: 'bad-depends-obj',
+        // @ts-ignore
+        depends: 'storage'
+      }
+      const result = validatePluginObject(plugin, 'bad-depends.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P205'))
+    })
+
+    it('CORALITE-P205: should flag non-string depends entries in validatePluginObject', () => {
+      const plugin = {
+        name: 'bad-depends-entries-obj',
+        // @ts-ignore
+        depends: ['storage', 123]
+      }
+      const result = validatePluginObject(plugin, 'bad-depends-entries.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P205'))
     })
 
     it('CORALITE-P204: should flag non-array modes in plugin source', () => {

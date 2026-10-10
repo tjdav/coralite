@@ -35,7 +35,8 @@ const SERVER_HOOK_NAMES = new Set([
 const CLIENT_HOOK_NAMES = new Set([
   'onBeforeComponentRender',
   'onAfterComponentRender',
-  'onDisconnected'
+  'onDisconnected',
+  'init'
 ])
 const ALLOWED_SERVER_KEYS = new Set([
   'name',
@@ -758,6 +759,44 @@ export function validatePluginSource (sourceCode, filePath = '') {
       }
     }
 
+    // Depends validation (CORALITE-P205)
+    /** @type {(p: any) => boolean} */
+    const isDependsProp = (p) => p.key && (p.key.name === 'depends' || p.key.value === 'depends')
+    const dependsProp = properties.find(isDependsProp)
+    if (dependsProp) {
+      const line = dependsProp.loc ? dependsProp.loc.start.line : undefined
+      const column = dependsProp.loc ? dependsProp.loc.start.column + 1 : undefined
+
+      if (!dependsProp.value || dependsProp.value.type !== 'ArrayExpression') {
+        addIssueAndDiagnostic({
+          code: 'CORALITE-P205',
+          legacyCode: 'INVALID_DEPENDS_DECLARATION',
+          severity: 'error',
+          message: 'Plugin "depends" property must be an array of plugin names',
+          line,
+          column,
+          cause: 'Plugin "depends" property is not an array literal.'
+        })
+      } else {
+        const elements = dependsProp.value.elements || []
+        for (const el of elements) {
+          if (!el || el.type !== 'Literal' || typeof el.value !== 'string' || el.value.trim().length === 0) {
+            const elLine = el && el.loc ? el.loc.start.line : line
+            const elCol = el && el.loc ? el.loc.start.column + 1 : column
+            addIssueAndDiagnostic({
+              code: 'CORALITE-P205',
+              legacyCode: 'INVALID_DEPENDS_DECLARATION',
+              severity: 'error',
+              message: 'Plugin "depends" entries must be non-empty strings',
+              line: elLine,
+              column: elCol,
+              cause: 'Plugin "depends" entry is not a non-empty string.'
+            })
+          }
+        }
+      }
+    }
+
     // Modes validation (CORALITE-P204)
     /** @type {(p: any) => boolean} */
     const isModesProp = (p) => p.key && (p.key.name === 'modes' || p.key.value === 'modes')
@@ -1325,6 +1364,31 @@ export function validatePluginObject (plugin, filePath = '') {
       message: `Plugin name "${plugin.name}" is a reserved core plugin name`,
       cause: `Plugin name "${plugin.name}" is a reserved core plugin name.`
     })
+  }
+
+  // Depends validation (CORALITE-P205)
+  if (plugin.depends !== undefined) {
+    if (!Array.isArray(plugin.depends)) {
+      addIssueAndDiagnostic({
+        code: 'CORALITE-P205',
+        legacyCode: 'INVALID_DEPENDS_DECLARATION',
+        severity: 'error',
+        message: 'Plugin "depends" property must be an array of plugin names',
+        cause: 'Plugin "depends" property is not an array.'
+      })
+    } else {
+      for (const dep of plugin.depends) {
+        if (typeof dep !== 'string' || dep.trim().length === 0) {
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P205',
+            legacyCode: 'INVALID_DEPENDS_DECLARATION',
+            severity: 'error',
+            message: 'Plugin "depends" entries must be non-empty strings',
+            cause: 'Plugin "depends" entry is not a non-empty string.'
+          })
+        }
+      }
+    }
   }
 
   // Modes validation (CORALITE-P204)

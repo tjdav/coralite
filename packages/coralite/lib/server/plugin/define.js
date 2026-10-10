@@ -35,6 +35,31 @@ function validateModes (modes) {
 }
 
 /**
+ * Validates plugin depends declaration
+ * @param {*} depends - Depends value to validate
+ * @throws {CoraliteError} If depends is invalid
+ */
+function validateDepends (depends) {
+  if (depends === undefined) {
+    return
+  }
+  if (!Array.isArray(depends)) {
+    throw new CoraliteError(
+      '[CORALITE-P205] Plugin "depends" property must be an array of plugin names.',
+      { code: 'CORALITE-P205' }
+    )
+  }
+  for (const dep of depends) {
+    if (typeof dep !== 'string' || dep.trim().length === 0) {
+      throw new CoraliteError(
+        '[CORALITE-P205] Plugin "depends" entries must be non-empty strings.',
+        { code: 'CORALITE-P205' }
+      )
+    }
+  }
+}
+
+/**
  * Validates that a value is a non-empty string
  * @param {*} value - Value to validate
  * @param {string} paramName - Parameter name for error messages
@@ -105,6 +130,7 @@ function processComponents (path) {
  */
 export function definePlugin ({
   name,
+  depends,
   modes,
   rootDir,
   filePath,
@@ -113,6 +139,7 @@ export function definePlugin ({
   client
 }) {
   validateNonEmptyString(name, 'name')
+  validateDepends(depends)
   validateModes(modes)
 
   if (config !== undefined && (typeof config !== 'object' || config === null)) {
@@ -217,6 +244,12 @@ export function definePlugin ({
       )
     }
 
+    if (client.init !== undefined && typeof client.init !== 'function') {
+      throw new CoraliteError(
+        `Coralite plugin validation failed: "client.init" must be a function, received ${typeof client.init}`
+      )
+    }
+
     if (client.config !== undefined && (typeof client.config !== 'object' || client.config === null)) {
       throw new CoraliteError(
         `Coralite plugin validation failed: "client.config" must be an object, received ${typeof client.config}`
@@ -272,6 +305,7 @@ export function definePlugin ({
 
     return {
       name: instanceName,
+      ...(depends !== undefined ? { depends } : {}),
       ...(modes !== undefined ? { modes } : {}),
       rootDir: resolvedRootDir,
       filePath: resolvedFilePath,
@@ -292,6 +326,9 @@ export function definePlugin ({
 
   pluginCallable.rootDir = resolvedRootDir
   pluginCallable.filePath = resolvedFilePath
+  if (depends !== undefined) {
+    pluginCallable.depends = depends
+  }
   if (modes !== undefined) {
     pluginCallable.modes = modes
   }
