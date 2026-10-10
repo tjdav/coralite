@@ -35,24 +35,24 @@ function validateModes (modes) {
 }
 
 /**
- * Validates plugin depends declaration
- * @param {*} depends - Depends value to validate
- * @throws {CoraliteError} If depends is invalid
+ * Validates plugin dependencies declaration
+ * @param {*} dependencies - Dependencies value to validate
+ * @throws {CoraliteError} If dependencies is invalid
  */
-function validateDepends (depends) {
-  if (depends === undefined) {
+function validateDependencies (dependencies) {
+  if (dependencies === undefined) {
     return
   }
-  if (!Array.isArray(depends)) {
+  if (!Array.isArray(dependencies)) {
     throw new CoraliteError(
-      '[CORALITE-P205] Plugin "depends" property must be an array of plugin names.',
+      '[CORALITE-P205] Plugin "dependencies" property must be an array of plugin names.',
       { code: 'CORALITE-P205' }
     )
   }
-  for (const dep of depends) {
+  for (const dep of dependencies) {
     if (typeof dep !== 'string' || dep.trim().length === 0) {
       throw new CoraliteError(
-        '[CORALITE-P205] Plugin "depends" entries must be non-empty strings.',
+        '[CORALITE-P205] Plugin "dependencies" entries must be non-empty strings.',
         { code: 'CORALITE-P205' }
       )
     }
@@ -130,6 +130,7 @@ function processComponents (path) {
  */
 export function definePlugin ({
   name,
+  dependencies,
   depends,
   modes,
   rootDir,
@@ -139,7 +140,13 @@ export function definePlugin ({
   client
 }) {
   validateNonEmptyString(name, 'name')
-  validateDepends(depends)
+  if (depends !== undefined) {
+    throw new CoraliteError(
+      '[CORALITE-P206] The "depends" property is unsupported. Use "dependencies" instead.',
+      { code: 'CORALITE-P206' }
+    )
+  }
+  validateDependencies(dependencies)
   validateModes(modes)
 
   if (config !== undefined && (typeof config !== 'object' || config === null)) {
@@ -305,7 +312,7 @@ export function definePlugin ({
 
     return {
       name: instanceName,
-      ...(depends !== undefined ? { depends } : {}),
+      ...(dependencies !== undefined ? { dependencies } : {}),
       ...(modes !== undefined ? { modes } : {}),
       rootDir: resolvedRootDir,
       filePath: resolvedFilePath,
@@ -326,8 +333,8 @@ export function definePlugin ({
 
   pluginCallable.rootDir = resolvedRootDir
   pluginCallable.filePath = resolvedFilePath
-  if (depends !== undefined) {
-    pluginCallable.depends = depends
+  if (dependencies !== undefined) {
+    pluginCallable.dependencies = dependencies
   }
   if (modes !== undefined) {
     pluginCallable.modes = modes

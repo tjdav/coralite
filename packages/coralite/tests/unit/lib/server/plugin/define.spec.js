@@ -116,24 +116,24 @@ describe('definePlugin specification and backward compatibility', () => {
     })
   })
 
-  describe('depends validation', () => {
-    it('should accept valid depends array and attach depends to callable and instance', () => {
+  describe('dependencies validation', () => {
+    it('should accept valid dependencies array and attach dependencies to callable and instance', () => {
       const plugin = definePlugin({
         name: 'dependent-plugin',
-        depends: ['storage', 'i18n']
+        dependencies: ['storage', 'i18n']
       })
 
-      assert.deepStrictEqual(plugin.depends, ['storage', 'i18n'])
+      assert.deepStrictEqual(plugin.dependencies, ['storage', 'i18n'])
       const instance = plugin()
-      assert.deepStrictEqual(instance.depends, ['storage', 'i18n'])
+      assert.deepStrictEqual(instance.dependencies, ['storage', 'i18n'])
     })
 
-    it('should throw CORALITE-P205 if depends is not an array', () => {
+    it('should throw CORALITE-P205 if dependencies is not an array', () => {
       assert.throws(
         // @ts-ignore
         () => definePlugin({
-          name: 'bad-depends',
-          depends: 'storage'
+          name: 'bad-dependencies',
+          dependencies: 'storage'
         }),
         (err) => {
           assert.strictEqual(err.code, 'CORALITE-P205')
@@ -142,15 +142,30 @@ describe('definePlugin specification and backward compatibility', () => {
       )
     })
 
-    it('should throw CORALITE-P205 if depends contains non-string elements', () => {
+    it('should throw CORALITE-P205 if dependencies contains non-string elements', () => {
       assert.throws(
         // @ts-ignore
         () => definePlugin({
-          name: 'bad-depends',
-          depends: ['storage', 123]
+          name: 'bad-dependencies',
+          dependencies: ['storage', 123]
         }),
         (err) => {
           assert.strictEqual(err.code, 'CORALITE-P205')
+          return true
+        }
+      )
+    })
+
+    it('should throw CORALITE-P206 if legacy depends property is passed', () => {
+      assert.throws(
+        // @ts-ignore
+        () => definePlugin({
+          name: 'legacy-depends-plugin',
+          depends: ['storage']
+        }),
+        (err) => {
+          assert.strictEqual(err.code, 'CORALITE-P206')
+          assert.match(err.message, /depends.*unsupported.*dependencies/i)
           return true
         }
       )

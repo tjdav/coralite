@@ -2,7 +2,7 @@ import { definePlugin } from 'coralite'
 
 export default definePlugin({
   name: 'dependent-plugin',
-  depends: ['init-plugin'],
+  dependencies: ['init-plugin'],
   client: {
     init () {
       if (typeof window !== 'undefined') {

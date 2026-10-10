@@ -116,8 +116,8 @@ export async function setupPlugins ({
 
   // Check for unknown dependencies
   for (const plugin of activePlugins) {
-    if (plugin.depends !== undefined && Array.isArray(plugin.depends)) {
-      for (const depName of plugin.depends) {
+    if (plugin.dependencies !== undefined && Array.isArray(plugin.dependencies)) {
+      for (const depName of plugin.dependencies) {
         if (!activeMap.has(depName)) {
           throw new CoraliteError(
             `[CORALITE-P205] Plugin "${plugin.name}" depends on unknown or unregistered plugin "${depName}".`,
@@ -144,7 +144,7 @@ export async function setupPlugins ({
     }
     if (st === 0) {
       visitState.set(pluginName, 1)
-      const deps = plugin.depends || []
+      const deps = plugin.dependencies || []
       for (const depName of deps) {
         const depPlugin = activeMap.get(depName)
         if (depPlugin) {
