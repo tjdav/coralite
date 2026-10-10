@@ -3,8 +3,8 @@ import { strict as assert } from 'node:assert'
 import { definePlugin } from '../../../../../lib/server/plugin/define.js'
 import { setupPlugins } from '../../../../../lib/server/plugin/setup.js'
 
-describe('plugin depends field and topological sorting in setupPlugins', () => {
-  it('should topologically sort plugins by depends', async () => {
+describe('plugin dependencies field and topological sorting in setupPlugins', () => {
+  it('should topologically sort plugins by dependencies', async () => {
     const pluginA = definePlugin({
       name: 'plugin-a',
       client: {
@@ -15,7 +15,7 @@ describe('plugin depends field and topological sorting in setupPlugins', () => {
 
     const pluginB = definePlugin({
       name: 'plugin-b',
-      depends: ['plugin-a'],
+      dependencies: ['plugin-a'],
       client: {
         init () {
         }
@@ -49,10 +49,10 @@ describe('plugin depends field and topological sorting in setupPlugins', () => {
     assert.deepStrictEqual(registeredOrder, ['plugin-a', 'plugin-b'])
   })
 
-  it('should throw CORALITE-P205 if depends references an unknown plugin', async () => {
+  it('should throw CORALITE-P205 if dependencies references an unknown plugin', async () => {
     const pluginB = definePlugin({
       name: 'plugin-b',
-      depends: ['non-existent-plugin']
+      dependencies: ['non-existent-plugin']
     })
 
     const app = {
@@ -89,12 +89,12 @@ describe('plugin depends field and topological sorting in setupPlugins', () => {
   it('should throw CORALITE-P205 if dependency graph contains a cycle', async () => {
     const pluginA = definePlugin({
       name: 'plugin-a',
-      depends: ['plugin-b']
+      dependencies: ['plugin-b']
     })
 
     const pluginB = definePlugin({
       name: 'plugin-b',
-      depends: ['plugin-a']
+      dependencies: ['plugin-a']
     })
 
     const app = {
@@ -136,7 +136,7 @@ describe('plugin depends field and topological sorting in setupPlugins', () => {
 
     const pluginB = definePlugin({
       name: 'plugin-b',
-      depends: ['testing-plugin-a']
+      dependencies: ['testing-plugin-a']
     })
 
     // Mode is production, so testing-plugin-a is skipped

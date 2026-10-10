@@ -312,7 +312,8 @@
 /**
  * @typedef {Object} CoralitePlugin
  * @property {string} name - Unique identifier/name of the plugin
- * @property {string[]} [depends] - List of dependency plugin names
+ * @property {string[]} [dependencies] - List of dependency plugin names
+ * @property {string[]} [depends] - Legacy unsupported depends property
  * @property {Array<'development' | 'testing' | 'production'>} [modes] - List of build modes in which the plugin is active
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file
@@ -328,7 +329,7 @@
 /**
  * @typedef {Object} CoralitePluginInstance
  * @property {string} name - Unique identifier/name of the plugin
- * @property {string[]} [depends] - List of dependency plugin names
+ * @property {string[]} [dependencies] - List of dependency plugin names
  * @property {Array<'development' | 'testing' | 'production'>} [modes] - List of build modes in which the plugin is active
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file

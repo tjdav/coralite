@@ -139,12 +139,12 @@ describe('plugin-validator.js', () => {
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P204'))
     })
 
-    it('CORALITE-P205: should flag non-array depends in plugin source', () => {
+    it('CORALITE-P205: should flag non-array dependencies in plugin source', () => {
       const source = `
         import { definePlugin } from 'coralite'
         export default definePlugin({
-          name: 'bad-depends-plugin',
-          depends: 'storage'
+          name: 'bad-dependencies-plugin',
+          dependencies: 'storage'
         })
       `
       const result = validatePluginSource(source, 'test.js')
@@ -152,17 +152,30 @@ describe('plugin-validator.js', () => {
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P205'))
     })
 
-    it('CORALITE-P205: should flag non-string depends entries in plugin source', () => {
+    it('CORALITE-P205: should flag non-string dependencies entries in plugin source', () => {
       const source = `
         import { definePlugin } from 'coralite'
         export default definePlugin({
-          name: 'bad-depends-entries-plugin',
-          depends: ['storage', 123]
+          name: 'bad-dependencies-entries-plugin',
+          dependencies: ['storage', 123]
         })
       `
       const result = validatePluginSource(source, 'test.js')
       assert.equal(result.valid, false)
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P205'))
+    })
+
+    it('CORALITE-P206: should flag unsupported depends property in plugin source', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'legacy-depends-plugin',
+          depends: ['storage']
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P206' && d.message.includes('unsupported')))
     })
 
     it('CORALITE-P204: should flag empty modes array in plugin source', () => {
@@ -178,26 +191,37 @@ describe('plugin-validator.js', () => {
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P204'))
     })
 
-    it('CORALITE-P205: should flag non-array depends in validatePluginObject', () => {
+    it('CORALITE-P205: should flag non-array dependencies in validatePluginObject', () => {
       const plugin = {
-        name: 'bad-depends-obj',
+        name: 'bad-dependencies-obj',
         // @ts-ignore
-        depends: 'storage'
+        dependencies: 'storage'
       }
-      const result = validatePluginObject(plugin, 'bad-depends.js')
+      const result = validatePluginObject(plugin, 'bad-dependencies.js')
       assert.equal(result.valid, false)
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P205'))
     })
 
-    it('CORALITE-P205: should flag non-string depends entries in validatePluginObject', () => {
+    it('CORALITE-P205: should flag non-string dependencies entries in validatePluginObject', () => {
       const plugin = {
-        name: 'bad-depends-entries-obj',
+        name: 'bad-dependencies-entries-obj',
         // @ts-ignore
-        depends: ['storage', 123]
+        dependencies: ['storage', 123]
       }
-      const result = validatePluginObject(plugin, 'bad-depends-entries.js')
+      const result = validatePluginObject(plugin, 'bad-dependencies-entries.js')
       assert.equal(result.valid, false)
       assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P205'))
+    })
+
+    it('CORALITE-P206: should flag unsupported depends property in validatePluginObject', () => {
+      const plugin = {
+        name: 'legacy-depends-obj',
+        // @ts-ignore
+        depends: ['storage']
+      }
+      const result = validatePluginObject(plugin, 'legacy-depends.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P206' && d.message.includes('unsupported')))
     })
 
     it('CORALITE-P204: should flag non-array modes in plugin source', () => {

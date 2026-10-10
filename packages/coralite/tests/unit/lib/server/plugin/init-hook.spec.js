@@ -50,7 +50,7 @@ describe('client.init hook bundling and execution', () => {
 
     const pluginB = definePlugin({
       name: 'dependent-plugin',
-      depends: ['analytics'],
+      dependencies: ['analytics'],
       client: {
         init () {
         }
