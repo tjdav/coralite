@@ -126,6 +126,45 @@ describe('plugin-validator.js', () => {
       assert.ok(diag.cause)
     })
 
+    it('CORALITE-P204: should flag invalid modes declaration in plugin source', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'invalid-modes-plugin',
+          modes: ['testing', 'invalid-mode']
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P204'))
+    })
+
+    it('CORALITE-P204: should flag empty modes array in plugin source', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'empty-modes-plugin',
+          modes: []
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P204'))
+    })
+
+    it('CORALITE-P204: should flag non-array modes in plugin source', () => {
+      const source = `
+        import { definePlugin } from 'coralite'
+        export default definePlugin({
+          name: 'non-array-modes-plugin',
+          modes: 'testing'
+        })
+      `
+      const result = validatePluginSource(source, 'test.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P204'))
+    })
+
     it('CORALITE-P102: should warn on reserved plugin names', () => {
       const source = `
         import { definePlugin } from 'coralite'
@@ -380,6 +419,26 @@ describe('plugin-validator.js', () => {
       const result = validatePluginObject(plugin, 'my-plugin.js')
       assert.equal(result.valid, true)
       assert.equal(result.metrics.errors, 0)
+    })
+
+    it('CORALITE-P204: should flag invalid modes in validatePluginObject', () => {
+      const plugin = {
+        name: 'invalid-modes-obj',
+        modes: ['testing', 'invalid-mode']
+      }
+      const result = validatePluginObject(plugin, 'invalid-modes.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P204'))
+    })
+
+    it('CORALITE-P204: should flag empty modes array in validatePluginObject', () => {
+      const plugin = {
+        name: 'empty-modes-obj',
+        modes: []
+      }
+      const result = validatePluginObject(plugin, 'empty-modes.js')
+      assert.equal(result.valid, false)
+      assert.ok(result.diagnostics.some(d => d.code === 'CORALITE-P204'))
     })
 
     it('CORALITE-P203: should flag duplicate config keys in validatePluginObject', () => {

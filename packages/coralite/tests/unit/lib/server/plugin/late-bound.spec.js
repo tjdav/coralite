@@ -30,7 +30,8 @@ function createMockApp (pluginsList = []) {
       pageCustomElements: {},
       directPageComponents: {}
     },
-    _refreshDependencyGraph: () => {}
+    _refreshDependencyGraph: () => {
+    }
   }
 }
 
@@ -55,7 +56,11 @@ function createHooksHelper (app, serverGlobalContext, pluginHooksObj) {
       })
     },
     async bind (pluginFactories, instanceContext) {
-      return bindPlugins({ pluginFactories, instanceContext, app })
+      return bindPlugins({
+        pluginFactories,
+        instanceContext,
+        app
+      })
     },
     hasComponentRenderHooks () {
       return false
@@ -92,8 +97,14 @@ describe('Late-bound client.config values', () => {
       name: 'router',
       client: {
         config: {
-          prefetch: { type: Boolean, default: true },
-          routes: { type: Array, default: [] }
+          prefetch: {
+            type: Boolean,
+            default: true
+          },
+          routes: {
+            type: Array,
+            default: []
+          }
         }
       },
       server: {
@@ -111,8 +122,12 @@ describe('Late-bound client.config values', () => {
     const hooksManager = createHooksHelper(app, serverGlobalContext, rawHooksObj)
 
     const scriptManager = {
-      use: () => {},
-      compileComponents: async () => ({ outputFiles: {}, manifest: {} }),
+      use: () => {
+      },
+      compileComponents: async () => ({
+        outputFiles: {},
+        manifest: {}
+      }),
       sharedFunctions: {},
       scriptModules: []
     }
@@ -120,7 +135,10 @@ describe('Late-bound client.config values', () => {
     await setupPlugins({
       app,
       serverGlobalContext,
-      plugins: { components: [], hooks: rawHooksObj },
+      plugins: {
+        components: [],
+        hooks: rawHooksObj
+      },
       scriptManager,
       source: { plugins: {} }
     })
@@ -133,7 +151,8 @@ describe('Late-bound client.config values', () => {
       scriptManager,
       source: { plugins: {} },
       evaluate: async () => ({}),
-      handleError: () => {},
+      handleError: () => {
+      },
       hooks: hooksManager,
       options: app.options,
       createExecutionError: (err) => err
@@ -157,7 +176,10 @@ describe('Late-bound client.config values', () => {
       name: 'test-plugin',
       client: {
         config: {
-          allowedKey: { type: String, default: 'ok' }
+          allowedKey: {
+            type: String,
+            default: 'ok'
+          }
         }
       },
       server: {
@@ -174,8 +196,12 @@ describe('Late-bound client.config values', () => {
     const hooksManager = createHooksHelper(app, serverGlobalContext, rawHooksObj)
 
     const scriptManager = {
-      use: () => {},
-      compileComponents: async () => ({ outputFiles: {}, manifest: {} }),
+      use: () => {
+      },
+      compileComponents: async () => ({
+        outputFiles: {},
+        manifest: {}
+      }),
       sharedFunctions: {},
       scriptModules: []
     }
@@ -183,7 +209,10 @@ describe('Late-bound client.config values', () => {
     await setupPlugins({
       app,
       serverGlobalContext,
-      plugins: { components: [], hooks: rawHooksObj },
+      plugins: {
+        components: [],
+        hooks: rawHooksObj
+      },
       scriptManager,
       source: { plugins: {} }
     })
@@ -193,7 +222,8 @@ describe('Late-bound client.config values', () => {
       scriptManager,
       source: { plugins: {} },
       evaluate: async () => ({}),
-      handleError: () => {},
+      handleError: () => {
+      },
       hooks: hooksManager,
       options: app.options,
       createExecutionError: (err) => err
@@ -215,7 +245,10 @@ describe('Late-bound client.config values', () => {
       name: 'test-plugin',
       server: {
         config: {
-          serverVal: { type: String, default: 'initial' }
+          serverVal: {
+            type: String,
+            default: 'initial'
+          }
         },
         onBeforeBuild ({ config }) {
           config.serverVal = 'mutated'
@@ -230,8 +263,12 @@ describe('Late-bound client.config values', () => {
     const hooksManager = createHooksHelper(app, serverGlobalContext, rawHooksObj)
 
     const scriptManager = {
-      use: () => {},
-      compileComponents: async () => ({ outputFiles: {}, manifest: {} }),
+      use: () => {
+      },
+      compileComponents: async () => ({
+        outputFiles: {},
+        manifest: {}
+      }),
       sharedFunctions: {},
       scriptModules: []
     }
@@ -239,7 +276,10 @@ describe('Late-bound client.config values', () => {
     await setupPlugins({
       app,
       serverGlobalContext,
-      plugins: { components: [], hooks: rawHooksObj },
+      plugins: {
+        components: [],
+        hooks: rawHooksObj
+      },
       scriptManager,
       source: { plugins: {} }
     })
@@ -249,7 +289,8 @@ describe('Late-bound client.config values', () => {
       scriptManager,
       source: { plugins: {} },
       evaluate: async () => ({}),
-      handleError: () => {},
+      handleError: () => {
+      },
       hooks: hooksManager,
       options: app.options,
       createExecutionError: (err) => err
@@ -273,7 +314,10 @@ describe('Late-bound client.config values', () => {
       name: 'test-plugin',
       server: {
         config: {
-          title: { type: String, default: 'Site' }
+          title: {
+            type: String,
+            default: 'Site'
+          }
         },
         onBeforeBuild ({ config }) {
           serverConfigFrozenDuringHook = Object.isFrozen(config)
@@ -288,8 +332,12 @@ describe('Late-bound client.config values', () => {
     const hooksManager = createHooksHelper(app, serverGlobalContext, rawHooksObj)
 
     const scriptManager = {
-      use: () => {},
-      compileComponents: async () => ({ outputFiles: {}, manifest: {} }),
+      use: () => {
+      },
+      compileComponents: async () => ({
+        outputFiles: {},
+        manifest: {}
+      }),
       sharedFunctions: {},
       scriptModules: []
     }
@@ -297,7 +345,10 @@ describe('Late-bound client.config values', () => {
     await setupPlugins({
       app,
       serverGlobalContext,
-      plugins: { components: [], hooks: rawHooksObj },
+      plugins: {
+        components: [],
+        hooks: rawHooksObj
+      },
       scriptManager,
       source: { plugins: {} }
     })
@@ -310,7 +361,8 @@ describe('Late-bound client.config values', () => {
       scriptManager,
       source: { plugins: {} },
       evaluate: async () => ({}),
-      handleError: () => {},
+      handleError: () => {
+      },
       hooks: hooksManager,
       options: app.options,
       createExecutionError: (err) => err
@@ -330,7 +382,10 @@ describe('Late-bound client.config values', () => {
       name: 'simple',
       client: {
         config: {
-          version: { type: String, default: '1.0' }
+          version: {
+            type: String,
+            default: '1.0'
+          }
         }
       }
     })
@@ -342,8 +397,12 @@ describe('Late-bound client.config values', () => {
     const hooksManager = createHooksHelper(app, serverGlobalContext, rawHooksObj)
 
     const scriptManager = {
-      use: () => {},
-      compileComponents: async () => ({ outputFiles: {}, manifest: {} }),
+      use: () => {
+      },
+      compileComponents: async () => ({
+        outputFiles: {},
+        manifest: {}
+      }),
       sharedFunctions: {},
       scriptModules: []
     }
@@ -351,7 +410,10 @@ describe('Late-bound client.config values', () => {
     await setupPlugins({
       app,
       serverGlobalContext,
-      plugins: { components: [], hooks: rawHooksObj },
+      plugins: {
+        components: [],
+        hooks: rawHooksObj
+      },
       scriptManager,
       source: { plugins: {} }
     })
@@ -364,7 +426,8 @@ describe('Late-bound client.config values', () => {
       scriptManager,
       source: { plugins: {} },
       evaluate: async () => ({}),
-      handleError: () => {},
+      handleError: () => {
+      },
       hooks: hooksManager,
       options: app.options,
       createExecutionError: (err) => err

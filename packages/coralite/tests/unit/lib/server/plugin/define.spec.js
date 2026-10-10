@@ -61,4 +61,49 @@ describe('definePlugin specification and backward compatibility', () => {
     assert.strictEqual(instance.server.config.host, '0.0.0.0')
     assert.strictEqual(instance.server.config.port, 8080)
   })
+
+  describe('modes validation', () => {
+    it('should accept valid modes array and attach modes to callable and instance', () => {
+      const plugin = definePlugin({
+        name: 'mode-gated',
+        modes: ['testing', 'development']
+      })
+
+      assert.deepStrictEqual(plugin.modes, ['testing', 'development'])
+      const instance = plugin()
+      assert.deepStrictEqual(instance.modes, ['testing', 'development'])
+    })
+
+    it('should throw CORALITE-P204 if modes is empty array', () => {
+      assert.throws(
+        () => definePlugin({ name: 'bad-modes', modes: [] }),
+        (err) => {
+          assert.strictEqual(err.code, 'CORALITE-P204')
+          return true
+        }
+      )
+    })
+
+    it('should throw CORALITE-P204 if modes is a non-array value', () => {
+      assert.throws(
+        // @ts-ignore
+        () => definePlugin({ name: 'bad-modes', modes: 'testing' }),
+        (err) => {
+          assert.strictEqual(err.code, 'CORALITE-P204')
+          return true
+        }
+      )
+    })
+
+    it('should throw CORALITE-P204 if modes contains an unknown mode name', () => {
+      assert.throws(
+        () => definePlugin({ name: 'bad-modes', modes: ['testing', 'staging'] }),
+        (err) => {
+          assert.strictEqual(err.code, 'CORALITE-P204')
+          assert.match(err.message, /staging/)
+          return true
+        }
+      )
+    })
+  })
 })

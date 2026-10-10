@@ -17,6 +17,7 @@ import { validatePluginConfigBlocks, SUPPORTED_CONFIG_TYPES } from '../../shared
  */
 
 const RESERVED_PLUGIN_NAMES = new Set(['testing', 'metadata', 'static-assets'])
+const VALID_PLUGIN_MODES = new Set(['development', 'testing', 'production'])
 const SERVER_HOOK_NAMES = new Set([
   'onBeforeBuild',
   'onAfterBuild',
@@ -757,6 +758,57 @@ export function validatePluginSource (sourceCode, filePath = '') {
       }
     }
 
+    // Modes validation (CORALITE-P204)
+    /** @type {(p: any) => boolean} */
+    const isModesProp = (p) => p.key && (p.key.name === 'modes' || p.key.value === 'modes')
+    const modesProp = properties.find(isModesProp)
+    if (modesProp) {
+      const line = modesProp.loc ? modesProp.loc.start.line : undefined
+      const column = modesProp.loc ? modesProp.loc.start.column + 1 : undefined
+
+      if (!modesProp.value || modesProp.value.type !== 'ArrayExpression') {
+        addIssueAndDiagnostic({
+          code: 'CORALITE-P204',
+          legacyCode: 'INVALID_MODES_DECLARATION',
+          severity: 'error',
+          message: 'Plugin "modes" property must be a non-empty array of valid mode names',
+          line,
+          column,
+          cause: 'Plugin "modes" property is not an array literal.'
+        })
+      } else {
+        const elements = modesProp.value.elements || []
+        if (elements.length === 0) {
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P204',
+            legacyCode: 'INVALID_MODES_DECLARATION',
+            severity: 'error',
+            message: 'Plugin "modes" property array cannot be empty',
+            line,
+            column,
+            cause: 'Plugin "modes" property is an empty array.'
+          })
+        } else {
+          for (const el of elements) {
+            if (!el || el.type !== 'Literal' || typeof el.value !== 'string' || !VALID_PLUGIN_MODES.has(el.value)) {
+              const elLine = el && el.loc ? el.loc.start.line : line
+              const elCol = el && el.loc ? el.loc.start.column + 1 : column
+              const valStr = el && el.type === 'Literal' ? String(el.value) : 'non-string'
+              addIssueAndDiagnostic({
+                code: 'CORALITE-P204',
+                legacyCode: 'INVALID_MODES_DECLARATION',
+                severity: 'error',
+                message: `Invalid mode name "${valStr}" in plugin "modes" declaration. Valid modes are: 'development', 'testing', 'production'`,
+                line: elLine,
+                column: elCol,
+                cause: `Mode name "${valStr}" is not one of the allowed modes: 'development', 'testing', 'production'.`
+              })
+            }
+          }
+        }
+      }
+    }
+
     // Uniqueness (CORALITE-P203) and Schema shape (CORALITE-P206) AST inspection
     const configBlocks = []
     /** @type {(p: any) => boolean} */
@@ -1273,6 +1325,31 @@ export function validatePluginObject (plugin, filePath = '') {
       message: `Plugin name "${plugin.name}" is a reserved core plugin name`,
       cause: `Plugin name "${plugin.name}" is a reserved core plugin name.`
     })
+  }
+
+  // Modes validation (CORALITE-P204)
+  if (plugin.modes !== undefined) {
+    if (!Array.isArray(plugin.modes) || plugin.modes.length === 0) {
+      addIssueAndDiagnostic({
+        code: 'CORALITE-P204',
+        legacyCode: 'INVALID_MODES_DECLARATION',
+        severity: 'error',
+        message: 'Plugin "modes" property must be a non-empty array of valid mode names',
+        cause: 'Plugin "modes" property is empty or not an array.'
+      })
+    } else {
+      for (const mode of plugin.modes) {
+        if (typeof mode !== 'string' || !VALID_PLUGIN_MODES.has(mode)) {
+          addIssueAndDiagnostic({
+            code: 'CORALITE-P204',
+            legacyCode: 'INVALID_MODES_DECLARATION',
+            severity: 'error',
+            message: `Invalid mode name "${String(mode)}" in plugin "modes" declaration. Valid modes are: 'development', 'testing', 'production'`,
+            cause: `Mode name "${String(mode)}" is not one of the allowed modes: 'development', 'testing', 'production'.`
+          })
+        }
+      }
+    }
   }
 
   // Schema blocks uniqueness & shape validation (CORALITE-P203, CORALITE-P206)

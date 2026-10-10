@@ -312,6 +312,7 @@
 /**
  * @typedef {Object} CoralitePlugin
  * @property {string} name - Unique identifier/name of the plugin
+ * @property {Array<'development' | 'testing' | 'production'>} [modes] - List of build modes in which the plugin is active
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file
  * @property {Record<string, any>} [config] - Top-level shared configuration schema/values
@@ -326,6 +327,7 @@
 /**
  * @typedef {Object} CoralitePluginInstance
  * @property {string} name - Unique identifier/name of the plugin
+ * @property {Array<'development' | 'testing' | 'production'>} [modes] - List of build modes in which the plugin is active
  * @property {string} [rootDir] - Absolute path to the plugin root directory
  * @property {string} [filePath] - Absolute path to the plugin source file
  * @property {Record<string, any>} [config] - Top-level shared configuration schema/values

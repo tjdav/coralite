@@ -74,6 +74,154 @@ describe('setupPlugins value routing and object freezing', () => {
     }, TypeError)
   })
 
+  it('should register plugin with no modes key in all modes', async () => {
+    let hookFired = false
+    let clientUsed = false
+
+    const plugin = definePlugin({
+      name: 'all-modes-plugin',
+      server: {
+        onBeforeBuild () {
+          hookFired = true
+        }
+      },
+      client: {
+        context: () => () => ({})
+      }
+    })
+
+    const app = { options: { mode: 'production', plugins: [plugin()] } }
+    const plugins = { components: [], hooks: {} }
+    const scriptManager = { use: () => { clientUsed = true } }
+
+    await setupPlugins({
+      app,
+      serverGlobalContext: {},
+      plugins,
+      scriptManager,
+      source: { plugins: {} }
+    })
+
+    assert.ok(plugins.hooks.onBeforeBuild)
+    await plugins.hooks.onBeforeBuild[0]({})
+    assert.strictEqual(hookFired, true)
+    assert.strictEqual(clientUsed, true)
+  })
+
+  it('should skip plugin registration when mode does not match plugin modes', async () => {
+    let hookFired = false
+    let clientUsed = false
+
+    const plugin = definePlugin({
+      name: 'testing-only-plugin',
+      modes: ['testing'],
+      server: {
+        onBeforeBuild () {
+          hookFired = true
+        }
+      },
+      client: {
+        context: () => () => ({})
+      }
+    })
+
+    const app = { options: { mode: 'production', plugins: [plugin()] } }
+    const plugins = { components: [], hooks: {} }
+    const scriptManager = { use: () => { clientUsed = true } }
+
+    await setupPlugins({
+      app,
+      serverGlobalContext: {},
+      plugins,
+      scriptManager,
+      source: { plugins: {} }
+    })
+
+    assert.strictEqual(plugins.hooks.onBeforeBuild, undefined)
+    assert.strictEqual(hookFired, false)
+    assert.strictEqual(clientUsed, false)
+  })
+
+  it('should register plugin when current mode matches plugin modes', async () => {
+    let hookFired = false
+    let clientUsed = false
+
+    const plugin = definePlugin({
+      name: 'testing-only-plugin',
+      modes: ['testing'],
+      server: {
+        onBeforeBuild () {
+          hookFired = true
+        }
+      },
+      client: {
+        context: () => () => ({})
+      }
+    })
+
+    const app = { options: { mode: 'testing', plugins: [plugin()] } }
+    const plugins = { components: [], hooks: {} }
+    const scriptManager = { use: () => { clientUsed = true } }
+
+    await setupPlugins({
+      app,
+      serverGlobalContext: {},
+      plugins,
+      scriptManager,
+      source: { plugins: {} }
+    })
+
+    assert.ok(plugins.hooks.onBeforeBuild)
+    await plugins.hooks.onBeforeBuild[0]({})
+    assert.strictEqual(hookFired, true)
+    assert.strictEqual(clientUsed, true)
+  })
+
+  it('should register plugin with multiple modes in all matching modes and skip in non-matching', async () => {
+    let clientUsedCount = 0
+
+    const plugin = definePlugin({
+      name: 'dev-and-testing-plugin',
+      modes: ['development', 'testing'],
+      client: {
+        context: () => () => ({})
+      }
+    })
+
+    // Development mode -> registers
+    const appDev = { options: { mode: 'development', plugins: [plugin()] } }
+    await setupPlugins({
+      app: appDev,
+      serverGlobalContext: {},
+      plugins: { components: [], hooks: {} },
+      scriptManager: { use: () => { clientUsedCount++ } },
+      source: { plugins: {} }
+    })
+    assert.strictEqual(clientUsedCount, 1)
+
+    // Testing mode -> registers
+    const appTesting = { options: { mode: 'testing', plugins: [plugin()] } }
+    await setupPlugins({
+      app: appTesting,
+      serverGlobalContext: {},
+      plugins: { components: [], hooks: {} },
+      scriptManager: { use: () => { clientUsedCount++ } },
+      source: { plugins: {} }
+    })
+    assert.strictEqual(clientUsedCount, 2)
+
+    // Production mode -> skipped
+    const appProd = { options: { mode: 'production', plugins: [plugin()] } }
+    await setupPlugins({
+      app: appProd,
+      serverGlobalContext: {},
+      plugins: { components: [], hooks: {} },
+      scriptManager: { use: () => { clientUsedCount++ } },
+      source: { plugins: {} }
+    })
+    assert.strictEqual(clientUsedCount, 2)
+  })
+
   it('should throw CORALITE-P101 at setup time if bare plugin with required key is registered uncalled', async () => {
     const plugin = definePlugin({
       name: 'auth',

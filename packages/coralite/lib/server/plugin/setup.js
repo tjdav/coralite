@@ -100,7 +100,13 @@ export async function setupPlugins ({
     }
   }
 
+  const currentMode = app.options.mode
+
   for (const plugin of pluginsToInit) {
+    if (plugin.modes !== undefined && Array.isArray(plugin.modes) && !plugin.modes.includes(currentMode)) {
+      continue
+    }
+
     let sharedConfig = {}
     let serverConfig = {}
     let clientConfig = {}
