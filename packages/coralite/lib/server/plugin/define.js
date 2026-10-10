@@ -7,6 +7,33 @@ import { fileURLToPath } from 'node:url'
 import { CoraliteError } from '../../shared/errors.js'
 import { validatePluginConfigBlocks, validateValues } from '../../shared/plugin-config-schema.js'
 
+const VALID_MODES = new Set(['development', 'testing', 'production'])
+
+/**
+ * Validates plugin modes declaration
+ * @param {*} modes - Modes value to validate
+ * @throws {CoraliteError} If modes is invalid
+ */
+function validateModes (modes) {
+  if (modes === undefined) {
+    return
+  }
+  if (!Array.isArray(modes) || modes.length === 0) {
+    throw new CoraliteError(
+      '[CORALITE-P204] Plugin "modes" must be a non-empty array of valid mode names (\'development\', \'testing\', \'production\').',
+      { code: 'CORALITE-P204' }
+    )
+  }
+  for (const mode of modes) {
+    if (typeof mode !== 'string' || !VALID_MODES.has(mode)) {
+      throw new CoraliteError(
+        `[CORALITE-P204] Invalid mode name "${mode}" in plugin "modes" declaration. Valid modes are: 'development', 'testing', 'production'.`,
+        { code: 'CORALITE-P204' }
+      )
+    }
+  }
+}
+
 /**
  * Validates that a value is a non-empty string
  * @param {*} value - Value to validate
@@ -78,6 +105,7 @@ function processComponents (path) {
  */
 export function definePlugin ({
   name,
+  modes,
   rootDir,
   filePath,
   config,
@@ -85,6 +113,7 @@ export function definePlugin ({
   client
 }) {
   validateNonEmptyString(name, 'name')
+  validateModes(modes)
 
   if (config !== undefined && (typeof config !== 'object' || config === null)) {
     throw new CoraliteError(
@@ -243,6 +272,7 @@ export function definePlugin ({
 
     return {
       name: instanceName,
+      ...(modes !== undefined ? { modes } : {}),
       rootDir: resolvedRootDir,
       filePath: resolvedFilePath,
       config: valuesByBlock.config,
@@ -262,6 +292,9 @@ export function definePlugin ({
 
   pluginCallable.rootDir = resolvedRootDir
   pluginCallable.filePath = resolvedFilePath
+  if (modes !== undefined) {
+    pluginCallable.modes = modes
+  }
   if (config !== undefined) {
     pluginCallable.config = config
   }

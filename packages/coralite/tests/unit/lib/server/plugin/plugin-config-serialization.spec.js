@@ -6,15 +6,43 @@ import { definePlugin } from '../../../../../lib/server/plugin/define.js'
 
 describe('plugin-config-serialization.spec.js', () => {
   const initPlugin = async (sm, plugin) => {
-    const app = { options: { mode: 'development', plugins: [plugin] } }
+    const app = {
+      options: {
+        mode: 'development',
+        plugins: [plugin]
+      }
+    }
     const source = { plugins: {} }
-    await setupPlugins({ app, serverGlobalContext: {}, plugins: { hooks: {}, components: [] }, scriptManager: sm, source })
+    await setupPlugins({
+      app,
+      serverGlobalContext: {},
+      plugins: {
+        hooks: {},
+        components: []
+      },
+      scriptManager: sm,
+      source
+    })
   }
 
   const initPlugins = async (sm, plugins) => {
-    const app = { options: { mode: 'development', plugins } }
+    const app = {
+      options: {
+        mode: 'development',
+        plugins
+      }
+    }
     const source = { plugins: {} }
-    await setupPlugins({ app, serverGlobalContext: {}, plugins: { hooks: {}, components: [] }, scriptManager: sm, source })
+    await setupPlugins({
+      app,
+      serverGlobalContext: {},
+      plugins: {
+        hooks: {},
+        components: []
+      },
+      scriptManager: sm,
+      source
+    })
   }
 
   it('should serialize frozen client.config into the runtime bundle and pass to Phase 1 resolver', async () => {
@@ -23,7 +51,10 @@ describe('plugin-config-serialization.spec.js', () => {
       const plugin = definePlugin({
         name: 'router',
         client: {
-          config: { base: '/', mode: 'history' },
+          config: {
+            base: '/',
+            mode: 'history'
+          },
           context: (pluginContext) => {
             const cfg = pluginContext.config
             return (_instanceContext) => {
@@ -57,7 +88,8 @@ describe('plugin-config-serialization.spec.js', () => {
         name: 'bad-plugin',
         client: {
           config: {
-            fn: () => {}
+            fn: () => {
+            }
           },
           context: (pluginContext) => () => ({})
         }

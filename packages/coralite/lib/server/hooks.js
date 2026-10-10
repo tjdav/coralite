@@ -13,9 +13,10 @@ export function addPluginHook (hooks, name, callback) {
     throw new CoraliteError(`Plugin hook "${name}" must be a function`)
   }
 
-  if (hooks[name]) {
-    hooks[name].push(callback)
+  if (!hooks[name]) {
+    hooks[name] = []
   }
+  hooks[name].push(callback)
 }
 
 /**

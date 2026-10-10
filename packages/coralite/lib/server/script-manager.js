@@ -346,7 +346,10 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     } catch (err) {
       throw new CoraliteError(
         `[CORALITE-P210] Non-serializable value in client.config for plugin "${pluginName}": ${err.message}`,
-        { code: 'CORALITE-P210', cause: err }
+        {
+          code: 'CORALITE-P210',
+          cause: err
+        }
       )
     }
     clientPluginConfigs[pluginName] = rawConfig
