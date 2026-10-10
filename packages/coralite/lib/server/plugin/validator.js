@@ -1412,7 +1412,7 @@ export function validatePluginObject (plugin, filePath = '') {
       if (plugin.client.config !== undefined) {
         if (!isSerializable(plugin.client.config)) {
           addIssueAndDiagnostic({
-            code: 'CORALITE-P302',
+            code: 'CORALITE-P210',
             legacyCode: 'NON_SERIALIZABLE_CLIENT_CONFIG',
             severity: 'error',
             message: '"client.config" must be a plain serializable object (no functions or circular references)',

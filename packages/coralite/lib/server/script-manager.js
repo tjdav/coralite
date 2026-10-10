@@ -1,6 +1,6 @@
 import { build, context } from 'esbuild'
 import serialize from 'serialize-javascript'
-import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextEntries, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap } from '../shared/core.js'
+import { normalizeFunction, normalizeObjectFunctions, hasObjectKeys, hasContextEntries, mergeUniqueObjects, cleanAST, cleanValues, generateHydrationMap, validateSerializable } from '../shared/core.js'
 import { findAndExtractImperativeComponents, astTransformer } from './utils/server.js'
 import { CoraliteError } from '../shared/errors.js'
 import { pathToFileURL, fileURLToPath } from 'node:url'
@@ -109,6 +109,7 @@ ScriptManager.prototype.use = async function (plugin) {
       const pluginObj = plugin
       const moduleRecord = {
         ...plugin,
+        client: pluginObj.client || plugin,
         context: pluginObj.context || client.context,
         onBeforeComponentRender: pluginObj.onBeforeComponentRender || client.onBeforeComponentRender,
         onAfterComponentRender: pluginObj.onAfterComponentRender || client.onAfterComponentRender,
@@ -334,10 +335,29 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
   const cssNamespace = 'coralite-css:'
   const virtualPrefix = 'coralite-virtual:'
 
+  // Collect and validate client.config for each registered script module
+  const clientPluginConfigs = {}
+  for (let i = 0; i < this.scriptModules.length; i++) {
+    const module = this.scriptModules[i]
+    const pluginName = module.client?.name || module.name || `plugin-${i}`
+    const rawConfig = module.client?.config !== undefined ? module.client.config : (module.config !== undefined ? module.config : {})
+    try {
+      validateSerializable(rawConfig, `plugin "${pluginName}" client.config`)
+    } catch (err) {
+      throw new CoraliteError(
+        `[CORALITE-P210] Non-serializable value in client.config for plugin "${pluginName}": ${err.message}`,
+        { code: 'CORALITE-P210', cause: err }
+      )
+    }
+    clientPluginConfigs[pluginName] = rawConfig
+  }
+
   // Generate ESM imports for each script module
   for (let i = 0; i < this.scriptModules.length; i++) {
     entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i} } from "${virtualPrefix}${moduleNamespace}${i}";\n`)
   }
+
+  entryCodeParts.push(`const clientPluginConfigs = ${serialize(clientPluginConfigs)};\n`)
 
   // Setup client context state
   const contextParts = [
@@ -447,7 +467,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
 
   entryCodeParts.push(`import { createCoraliteClass } from ${JSON.stringify(coraliteElementPath)};\n`)
   entryCodeParts.push(`import { setupDevTools, registerDevToolsComponent } from ${JSON.stringify(devToolsPath)};\n`)
-  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent };\n')
+  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, clientPluginConfigs };\n')
 
   this.virtualModules.clear()
   this.virtualModules.set('coralite-runtime', entryCodeParts.join('').trimEnd())
@@ -836,9 +856,8 @@ export default {
               }
 
               let contents = ''
-              const configContent = module.config
-                ? `const pluginConfig = ${serialize(module.config)};`
-                : 'const pluginConfig = {};'
+              const rawClientConfig = module.client?.config !== undefined ? module.client.config : (module.config !== undefined ? module.config : {})
+              const configContent = `const pluginConfig = Object.freeze(${serialize(rawClientConfig)});`
 
               contents += configContent + '\n'
 
@@ -859,13 +878,10 @@ export default {
                 }
 
                 const fn = normalizeFunction(module.context)
-                const clientConfig = module.client?.config || module.config || {}
-                const configStr = serialize(clientConfig)
                 const safeClientName = JSON.stringify(clientName)
 
                 contents += `  ${safeClientName}: async (globalContext) => {\n`
                 contents += `    const fn = ${fn};\n`
-                contents += `    const pluginConfig = ${configStr};\n`
                 contents += `    const pluginContext = new Proxy(globalContext, {
                             get (target, prop) {
                               if (prop === 'config') return pluginConfig;
@@ -927,9 +943,8 @@ export default {
               const module = this.scriptModules[index]
               let contents = ''
 
-              const configContent = module.config
-                ? `const pluginConfig = ${serialize(module.config)};`
-                : 'const pluginConfig = {};'
+              const rawClientConfig = module.client?.config !== undefined ? module.client.config : (module.config !== undefined ? module.config : {})
+              const configContent = `const pluginConfig = Object.freeze(${serialize(rawClientConfig)});`
 
               contents += configContent + '\n'
 
@@ -950,13 +965,10 @@ export default {
                 }
 
                 const fn = normalizeFunction(module.context)
-                const clientConfig = module.client?.config || module.config || {}
-                const configStr = serialize(clientConfig)
                 const safeClientName = JSON.stringify(clientName)
 
                 contents += `  ${safeClientName}: async (globalContext) => {\n`
                 contents += `    const fn = ${fn};\n`
-                contents += `    const pluginConfig = ${configStr};\n`
                 contents += `    const pluginContext = new Proxy(globalContext, {
                             get (target, prop) {
                               if (prop === 'config') return pluginConfig;

@@ -11,7 +11,6 @@ export const configTypesPlugin = definePlugin({
     config: {
       regex: /test-regex/g,
       date: new Date('2024-01-01T00:00:00.000Z'),
-      func: (a, b) => a + b,
       map: new Map([['key', 'value']]),
       set: new Set([1, 2, 3])
     },
