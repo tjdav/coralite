@@ -31,12 +31,16 @@ export function generateClientRuntime ({
   return `
 (async () => {
   const [
-    { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent },
+    { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, initPlugins },
     { default: componentManifest }
   ] = await Promise.all([
     import('${base}assets/js/${sharedChunkPath}'),
     import('${base}assets/js/manifest.js')
   ]);
+
+  if (typeof initPlugins === 'function') {
+    await initPlugins();
+  }
 
   window.__coralite_instanceCounters = window.__coralite_instanceCounters || ${instanceCounters};
   const hydrationData = ${hydrationData};

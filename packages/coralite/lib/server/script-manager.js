@@ -102,6 +102,7 @@ ScriptManager.prototype.use = async function (plugin) {
     const client = plugin.client || plugin
 
     if (client.context
+      || client.init
       || typeof client.onBeforeComponentRender === 'function'
       || typeof client.onAfterComponentRender === 'function'
       || typeof client.onDisconnected === 'function') {
@@ -111,6 +112,7 @@ ScriptManager.prototype.use = async function (plugin) {
         ...plugin,
         client: pluginObj.client || plugin,
         context: pluginObj.context || client.context,
+        init: pluginObj.init || client.init,
         onBeforeComponentRender: pluginObj.onBeforeComponentRender || client.onBeforeComponentRender,
         onAfterComponentRender: pluginObj.onAfterComponentRender || client.onAfterComponentRender,
         onDisconnected: pluginObj.onDisconnected || client.onDisconnected,
@@ -357,7 +359,7 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
 
   // Generate ESM imports for each script module
   for (let i = 0; i < this.scriptModules.length; i++) {
-    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i} } from "${virtualPrefix}${moduleNamespace}${i}";\n`)
+    entryCodeParts.push(`import { clientContextProps as clientContextProps_${i}, onBeforeComponentRender as onBeforeComponentRender_${i}, onAfterComponentRender as onAfterComponentRender_${i}, onDisconnected as onDisconnected_${i}, init as init_${i} } from "${virtualPrefix}${moduleNamespace}${i}";\n`)
   }
 
   entryCodeParts.push(`const clientPluginConfigs = ${serialize(clientPluginConfigs)};\n`)
@@ -468,9 +470,60 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
     onDisconnected: [${this.scriptModules.map((_, i) => `onDisconnected_${i}`).join(', ')}].filter(Boolean)
   };\n`)
 
+  entryCodeParts.push(`const initPlugins = async () => {
+    const plugins = [
+      ${this.scriptModules.map((m, i) => `{ name: ${JSON.stringify(m.client?.name || m.name || `plugin-${i}`)}, init: init_${i}, config: clientPluginConfigs[${JSON.stringify(m.client?.name || m.name || `plugin-${i}`)}] || {} }`).join(',\n')}
+    ];
+    const cleanupFns = [];
+    const onCleanup = (fn) => {
+      if (typeof fn === 'function') {
+        cleanupFns.push(fn);
+      }
+    };
+
+    for (const p of plugins) {
+      if (typeof p.init === 'function') {
+        try {
+          const runtime = (typeof window !== 'undefined' && window.__coralite__) || {};
+          const app = (typeof window !== 'undefined' && (window.__coralite__?.app || window.__coralite__)) || {};
+          await p.init({
+            config: p.config || {},
+            runtime,
+            app,
+            onCleanup
+          });
+        } catch (error) {
+          console.error('Coralite Plugin Error: Plugin "' + p.name + '" init failed:', error);
+          if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+            let event;
+            if (typeof CustomEvent === 'function') {
+              event = new CustomEvent('coralite:plugin-init-error', { detail: { pluginName: p.name, error } });
+            } else {
+              event = new Event('coralite:plugin-init-error');
+              event.detail = { pluginName: p.name, error };
+            }
+            window.dispatchEvent(event);
+          }
+        }
+      }
+    }
+
+    if (cleanupFns.length > 0 && typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        for (const fn of cleanupFns) {
+          try {
+            fn();
+          } catch (e) {
+            console.error('Coralite Plugin Error during cleanup:', e);
+          }
+        }
+      });
+    }
+  };\n`)
+
   entryCodeParts.push(`import { createCoraliteClass } from ${JSON.stringify(coraliteElementPath)};\n`)
   entryCodeParts.push(`import { setupDevTools, registerDevToolsComponent } from ${JSON.stringify(devToolsPath)};\n`)
-  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, clientPluginConfigs };\n')
+  entryCodeParts.push('\nexport { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, clientPluginConfigs, initPlugins };\n')
 
   this.virtualModules.clear()
   this.virtualModules.set('coralite-runtime', entryCodeParts.join('').trimEnd())
@@ -873,6 +926,9 @@ export default {
               const disconnectedFn = module.onDisconnected ? normalizeFunction(module.onDisconnected) : 'null'
               contents += `export const onDisconnected = ${disconnectedFn};\n`
 
+              const initFn = module.init ? normalizeFunction(module.init) : 'null'
+              contents += `export const init = ${initFn};\n`
+
               contents += 'export const clientContextProps = {\n'
               if (module.context) {
                 const clientName = module.client?.name || module.name
@@ -959,6 +1015,9 @@ export default {
 
               const disconnectedFn = module.onDisconnected ? normalizeFunction(module.onDisconnected) : 'null'
               contents += `export const onDisconnected = ${disconnectedFn};\n`
+
+              const initFn = module.init ? normalizeFunction(module.init) : 'null'
+              contents += `export const init = ${initFn};\n`
 
               contents += 'export const clientContextProps = {\n'
               if (module.context) {
