@@ -17,6 +17,7 @@
       }
     },
     client ({ state, refs, signal }) {
+      const textSpan = refs('textSpan')
       const btn = refs('btnChange')
       btn.addEventListener('click', () => {
         state.actionText = 'Save'

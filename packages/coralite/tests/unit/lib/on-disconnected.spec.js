@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import '../setup.js'
-import { CoraliteElement } from '../../../lib/client/element.js'
+import { CoraliteElement } from '../../../lib/coralite-element.js'
 
 describe('CoraliteElement onDisconnected hook', () => {
   it('should trigger onDisconnected hooks when the element is removed from the DOM', async () => {

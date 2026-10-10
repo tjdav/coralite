@@ -1,4 +1,4 @@
-import { definePlugin } from '../lib/server/plugin/define.js'
+import { definePlugin } from '../lib/plugin.js'
 import { createRequire } from 'node:module'
 import { dirname, join, parse, isAbsolute } from 'node:path'
 import { existsSync } from 'node:fs'

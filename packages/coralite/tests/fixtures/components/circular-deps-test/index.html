@@ -11,10 +11,10 @@
   import { defineComponent } from 'coralite'
 
   export default defineComponent({
-    async server () {
+    async server() {
       return {}
     },
-    client ({ state, refs }) {
+    client({ state, refs }) {
       const setupCircularBtn = refs('setupCircularBtn')
       const statusDisplay = setupCircularBtn.parentElement.querySelector('.status-display')
 

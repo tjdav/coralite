@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it, beforeEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/client/element.js'
+import { createCoraliteClass } from '../../../lib/coralite-element.js'
 
 describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
   beforeEach(() => {
@@ -15,15 +15,8 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const origWarn = console.warn
     const origErr = console.error
 
-    console.warn = (msg) => {
-      warningEmitted = msg
-    }
-    console.error = (msg, err) => {
-      errorLogged = {
-        msg,
-        err
-      }
-    }
+    console.warn = (msg) => { warningEmitted = msg }
+    console.error = (msg, err) => { errorLogged = { msg, err } }
 
     const tag = 't1-dev-' + Math.random().toString(36).substring(2, 9)
     const Comp = createCoraliteClass({
@@ -75,15 +68,8 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const origWarn = console.warn
     const origErr = console.error
 
-    console.warn = (msg) => {
-      warningEmitted = msg
-    }
-    console.error = (msg, err) => {
-      errorLogged = {
-        msg,
-        err
-      }
-    }
+    console.warn = (msg) => { warningEmitted = msg }
+    console.error = (msg, err) => { errorLogged = { msg, err } }
 
     const tag = 't1-prod-' + Math.random().toString(36).substring(2, 9)
     const Comp = createCoraliteClass({
@@ -211,17 +197,12 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const tag = 't1-async-' + Math.random().toString(36).substring(2, 9)
     let errorLogged = null
     const origErr = console.error
-    console.error = (msg, err) => {
-      errorLogged = {
-        msg,
-        err
-      }
-    }
+    console.error = (msg, err) => { errorLogged = { msg, err } }
 
     const Comp = createCoraliteClass({
       componentId: 't1-async',
       defaultValues: { x: 1 },
-      client ({ observe }) {
+      client ({ state, observe }) {
         observe('x', async () => {
           throw new Error('Async observer failure')
         })
@@ -255,25 +236,16 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const origErr = console.error
     console.error = (msg, err) => {
       if (msg === 'Coralite Reactive Cascade Error:') {
-        cascadeErrorLogged = {
-          msg,
-          err
-        }
+        cascadeErrorLogged = { msg, err }
       }
     }
 
     const Comp = createCoraliteClass({
       componentId: 't2-depth',
       templateHTML: '<div id="val">{{ a }}</div>',
-      defaultValues: {
-        a: 1,
-        b: 1
-      },
+      defaultValues: { a: 1, b: 1 },
       hydrationMap: {
-        texts: [{
-          path: [0, 0],
-          template: '{{ a }}'
-        }]
+        texts: [{ path: [0, 0], template: '{{ a }}' }]
       },
       client ({ state, observe }) {
         // Indirect loop: a -> b -> a
@@ -334,10 +306,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const origErr = console.error
     console.error = (msg, err) => {
       if (msg === 'Coralite Reactive Cascade Error:') {
-        cascadeErrorLogged = {
-          msg,
-          err
-        }
+        cascadeErrorLogged = { msg, err }
       }
     }
 
@@ -382,7 +351,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const Comp = createCoraliteClass({
       componentId: 'sibling-obs',
       defaultValues: { score: 10 },
-      client ({ observe }) {
+      client ({ state, observe }) {
         observe('score', () => {
           throw new Error('First observer fault')
         })

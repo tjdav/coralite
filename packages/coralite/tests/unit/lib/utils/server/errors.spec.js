@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createExecutionError } from '../../../../../lib/server/utils/errors.js'
+import { createExecutionError } from '../../../../../lib/utils/server/errors.js'
 
 describe('utils/server/errors.js', () => {
   describe('createExecutionError', () => {
@@ -102,10 +102,7 @@ describe('utils/server/errors.js', () => {
       const error = new Error('fail')
       error.stack = 'Error: fail\n    at (node:internal/vm/module:1:2)'
 
-      const result = createExecutionError(error, {
-        ...module,
-        script: ''
-      }, { path: { pathname: '/real/path.html' } }, null, 'inst')
+      const result = createExecutionError(error, { ...module, script: '' }, { path: { pathname: '/real/path.html' } }, null, 'inst')
       assert.strictEqual(result.stackFile, '/real/path.html')
       assert.strictEqual(result.line, undefined)
     })
@@ -115,11 +112,7 @@ describe('utils/server/errors.js', () => {
       const error = new SyntaxError('Unexpected token')
       error.stack = ''
 
-      const result = createExecutionError(error, {
-        ...module,
-        script,
-        lineOffset: 10
-      }, moduleComponent, null, 'inst')
+      const result = createExecutionError(error, { ...module, script, lineOffset: 10 }, moduleComponent, null, 'inst')
       assert.strictEqual(result.line, 11)
       assert.strictEqual(result.column, 10)
     })
@@ -132,10 +125,7 @@ describe('utils/server/errors.js', () => {
       // @ts-ignore
       error.columnNumber = 3
 
-      const result = createExecutionError(error, {
-        ...module,
-        lineOffset: 5
-      }, moduleComponent, null, 'inst')
+      const result = createExecutionError(error, { ...module, lineOffset: 5 }, moduleComponent, null, 'inst')
       assert.strictEqual(result.line, 7)
       assert.strictEqual(result.column, 3)
     })

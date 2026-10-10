@@ -7,8 +7,8 @@ import {
   injectImportMap,
   removeElements,
   resolvePageQueue
-} from '../../../../../lib/server/utils/render.js'
-import { createCoraliteElement, createCoraliteComponent } from '../../../../../lib/server/utils/dom.js'
+} from '../../../../../lib/utils/server/render.js'
+import { createCoraliteElement, createCoraliteComponent } from '../../../../../lib/utils/server/dom.js'
 import { assertSame } from '../../../helpers.js'
 
 describe('render.js', () => {

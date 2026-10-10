@@ -1,0 +1,1363 @@
+import { CoraliteError } from './errors.js'
+import { classifyAttribute } from './tags.js'
+
+/**
+ * @import {
+ *   CoraliteModule,
+ *   CoraliteComponent,
+ *   CoraliteComponentResult,
+ *   CoraliteComponentOptions
+ * } from '../../types/index.js'
+ */
+
+export const NOOP_SIGNAL = new AbortController().signal
+
+export const isServer = typeof window === 'undefined'
+export const isClient = typeof window !== 'undefined'
+
+const KEBAB_REGEX = /[-|:]([a-z])/g
+const CAMEL_REGEX = /([a-z0-9])([A-Z])/g
+const MAX_STRING_CACHE_SIZE = 1000
+
+/** @type {Map<string, string>} */
+const kebabToCamelCache = new Map()
+/** @type {Map<string, string>} */
+const camelToKebabCache = new Map()
+
+/**
+ * Converts a kebab-case string to camelCase
+ * @param {string} str - The kebab-case string to convert
+ * @returns {string} - The camelCase version of the string
+ */
+export function kebabToCamel (str) {
+  if (typeof str !== 'string' || str.length === 0) {
+    return ''
+  }
+  const cached = kebabToCamelCache.get(str)
+  if (cached !== undefined) {
+    return cached
+  }
+  const result = str.replace(KEBAB_REGEX, function (match, letter) {
+    return letter.toUpperCase()
+  })
+  if (kebabToCamelCache.size >= MAX_STRING_CACHE_SIZE) {
+    const oldestKey = kebabToCamelCache.keys().next().value
+    kebabToCamelCache.delete(oldestKey)
+  }
+  kebabToCamelCache.set(str, result)
+  return result
+}
+
+/**
+ * Converts a camelCase string to kebab-case
+ * @param {string} str - The camelCase string to convert
+ * @returns {string} - The kebab-case version of the string
+ */
+export function camelToKebab (str) {
+  if (typeof str !== 'string' || str.length === 0) {
+    return ''
+  }
+  const cached = camelToKebabCache.get(str)
+  if (cached !== undefined) {
+    return cached
+  }
+  const result = str.replace(CAMEL_REGEX, '$1-$2').toLowerCase()
+  if (camelToKebabCache.size >= MAX_STRING_CACHE_SIZE) {
+    const oldestKey = camelToKebabCache.keys().next().value
+    camelToKebabCache.delete(oldestKey)
+  }
+  camelToKebabCache.set(str, result)
+  return result
+}
+
+/**
+ * Clears conversion cache maps for test environment resets
+ */
+export function _clearStringConversionCaches () {
+  kebabToCamelCache.clear()
+  camelToKebabCache.clear()
+}
+
+/**
+ * Normalizes CSS property keys for element style bindings.
+ * Custom CSS properties starting with '--' are preserved as-is.
+ * Standard properties are converted from camelCase to kebab-case.
+ *
+ * @param {string} key - The CSS property key name
+ * @returns {string} Normalized kebab-case or preserved custom property key
+ */
+export function normalizeStyleKey (key) {
+  if (typeof key !== 'string') {
+    return ''
+  }
+  if (key.startsWith('--')) {
+    return key
+  }
+  return camelToKebab(key)
+}
+
+/**
+ * Parses an inline style string (e.g. "color: red; margin: 10px;") into a Map of property-value pairs.
+ *
+ * @param {string} styleAttr - Raw inline style attribute value
+ * @returns {Map<string, string>} Parsed style map
+ */
+export function parseInlineStyle (styleAttr) {
+  const map = new Map()
+  if (!styleAttr || typeof styleAttr !== 'string') {
+    return map
+  }
+  const declarations = styleAttr.split(';')
+  for (const decl of declarations) {
+    const trimmed = decl.trim()
+    if (!trimmed) {
+      continue
+    }
+    const colonIdx = trimmed.indexOf(':')
+    if (colonIdx > 0) {
+      const propName = trimmed.slice(0, colonIdx).trim()
+      const propVal = trimmed.slice(colonIdx + 1).trim()
+      if (propName && propVal) {
+        map.set(normalizeStyleKey(propName), propVal)
+      }
+    }
+  }
+  return map
+}
+
+/**
+ * Formats a style Map into an inline style CSS string.
+ *
+ * @param {Map<string, string>} styleMap - Map of CSS property names to values
+ * @returns {string} Inline style CSS string
+ */
+export function formatInlineStyle (styleMap) {
+  if (!styleMap || styleMap.size === 0) {
+    return ''
+  }
+  const parts = []
+  for (const [key, val] of styleMap.entries()) {
+    if (val !== null && val !== undefined && val !== '') {
+      parts.push(`${key}: ${val};`)
+    }
+  }
+  return parts.join(' ')
+}
+
+/**
+ * Strips CSS/SCSS block comments in linear O(n) time, eliminating polynomial ReDoS vulnerabilities.
+ * Unterminated block comments consume through to the end of input per CSS Syntax Level 3.
+ * @param {string} [css] - Raw CSS content
+ * @returns {string} CSS content with comments removed
+ */
+export function stripCssComments (css) {
+  if (!css || typeof css !== 'string') {
+    return ''
+  }
+
+  let result = ''
+  let inComment = false
+  const len = css.length
+
+  for (let i = 0; i < len; i++) {
+    if (!inComment) {
+      if (css[i] === '/' && css[i + 1] === '*') {
+        inComment = true
+        i++
+      } else {
+        result += css[i]
+      }
+    } else if (css[i] === '*' && css[i + 1] === '/') {
+      inComment = false
+      i++
+    }
+  }
+
+  return result
+}
+
+/**
+ * Case-insensitive search on raw string without length-expanding lowercasing side-effects.
+ * @param {string} str - Source string
+ * @param {string} needle - Substring to find
+ * @param {number} [from=0] - Search start index
+ * @returns {number} Index of match or -1
+ */
+export function indexOfCI (str, needle, from = 0) {
+  if (!str || typeof str !== 'string' || !needle || typeof needle !== 'string') {
+    return -1
+  }
+  const nLow = needle.toLowerCase()
+  const n0 = nLow[0]
+  const limit = str.length - needle.length
+  for (let i = from; i <= limit; i++) {
+    if (str[i].toLowerCase() === n0 && str.slice(i, i + needle.length).toLowerCase() === nLow) {
+      return i
+    }
+  }
+  return -1
+}
+
+/**
+ * Deterministically extracts the first <template> block's inner content and its byte offsets in linear O(n) time.
+ * @param {string} [sourceCode] - Component source code
+ * @returns {{ content: string, start: number, end: number } | null} Template block info or null if not found
+ */
+export function extractTemplateBlock (sourceCode) {
+  if (!sourceCode || typeof sourceCode !== 'string') {
+    return null
+  }
+
+  let searchFrom = 0
+  while (searchFrom <= sourceCode.length - 9) {
+    const openTagStart = indexOfCI(sourceCode, '<template', searchFrom)
+    if (openTagStart === -1) {
+      return null
+    }
+
+    const charAfter = sourceCode[openTagStart + 9]
+    if (charAfter !== undefined && charAfter !== '>' && charAfter !== '/' && !/\s/.test(charAfter)) {
+      searchFrom = openTagStart + 9
+      continue
+    }
+
+    const openTagEnd = sourceCode.indexOf('>', openTagStart + 9)
+    if (openTagEnd === -1) {
+      return null
+    }
+
+    const closeTagStart = indexOfCI(sourceCode, '</template>', openTagEnd + 1)
+    if (closeTagStart === -1) {
+      return null
+    }
+
+    const contentStart = openTagEnd + 1
+    const contentEnd = closeTagStart
+    const content = sourceCode.slice(contentStart, contentEnd)
+
+    return {
+      content,
+      start: contentStart,
+      end: contentEnd
+    }
+  }
+
+  return null
+}
+
+/**
+ * Strips HTML comments in linear O(n) time, eliminating polynomial ReDoS vulnerabilities,
+ * while preserving original line numbers and character offsets by replacing comment contents with spaces.
+ * Unterminated comments consume through to the end of input per HTML standard parsing rules.
+ *
+ * @param {string} [html] - Raw HTML source code
+ * @returns {string} Cleaned HTML source code with comment contents replaced by spaces
+ */
+export function stripHtmlComments (html) {
+  if (!html || typeof html !== 'string') {
+    return ''
+  }
+  if (!html.includes('<!--')) {
+    return html
+  }
+
+  let result = ''
+  let inComment = false
+  const len = html.length
+
+  for (let i = 0; i < len; i++) {
+    if (!inComment) {
+      if (
+        html[i] === '<' &&
+        html[i + 1] === '!' &&
+        html[i + 2] === '-' &&
+        html[i + 3] === '-'
+      ) {
+        inComment = true
+        result += '    '
+        i += 3
+      } else {
+        result += html[i]
+      }
+    } else if (
+      html[i] === '-' &&
+      html[i + 1] === '-' &&
+      html[i + 2] === '>'
+    ) {
+      inComment = false
+      result += '   '
+      i += 2
+    } else {
+      const ch = html[i]
+      if (ch === '\r' || ch === '\n') {
+        result += ch
+      } else {
+        result += ' '
+      }
+    }
+  }
+
+  return result
+}
+
+
+
+/**
+ * Converts all keys in an object from kebab-case to camelCase
+ * @template T
+ * @param {Record<string, T>} object - The object with kebab-case keys
+ * @returns {Record<string, T>} - A new object with camelCase keys
+ */
+export function cleanKeys (object) {
+  /** @type {Record<string, T>} */
+  const result = {}
+
+  for (const [key, value] of Object.entries(object)) {
+    result[key] = value
+
+    const camelKey = kebabToCamel(key)
+    if (camelKey !== key) {
+      result[camelKey] = value
+    }
+  }
+
+  return result
+}
+
+/**
+ * Recursively clones an object or array and normalizes any function state
+ * it finds into a string representation that preserves standard function syntax,
+ * bypassing ES6 shorthand method serialization issues.
+ * @param {any} target - The object or array to normalize.
+ * @param {Function} [transform] - Optional transform function for each node.
+ * @param {WeakMap} [seen=new WeakMap()] - Map of seen objects to handle circular references.
+ * @returns {any} A deeply cloned object with normalized functions.
+ */
+export function normalizeObjectFunctions (target, transform = null, seen = new WeakMap()) {
+  if (typeof transform === 'function') {
+    const transformed = transform(target)
+    if (transformed !== target) {
+      return transformed
+    }
+  }
+
+  if (typeof target !== 'object' || target === null) {
+    return target
+  }
+
+  if (seen.has(target)) {
+    return seen.get(target)
+  }
+
+  if (Array.isArray(target)) {
+    const arr = []
+    seen.set(target, arr)
+    for (let i = 0; i < target.length; i++) {
+      arr.push(normalizeObjectFunctions(target[i], transform, seen))
+    }
+    return arr
+  }
+
+  const obj = {}
+  seen.set(target, obj)
+  for (const key in target) {
+    if (Object.hasOwn(target, key)) {
+      if (typeof target[key] === 'function') {
+        const normalizedString = normalizeFunction(target[key])
+        const originalFunction = target[key]
+
+        const wrapper = function () {
+          return originalFunction.apply(this, arguments)
+        }
+        wrapper.toString = () => normalizedString
+        obj[key] = wrapper
+      } else {
+        obj[key] = normalizeObjectFunctions(target[key], transform, seen)
+      }
+    }
+  }
+
+  return obj
+}
+
+/**
+ * Checks whether the given object is an object and has at least one own key.
+ * @param {any} obj - The object to check.
+ * @returns {boolean} True if the object is truthy and has keys, otherwise false.
+ */
+export function hasObjectKeys (obj) {
+  return obj && typeof obj === 'object' && Object.keys(obj).length > 0
+}
+
+/**
+ * Merges two arrays, returning a new array with unique items.
+ * Uses JSON.stringify for deep comparison of object elements, preserving object uniqueness correctly.
+ * @param {Array<any>} [arr1] - The first array.
+ * @param {Array<any>} [arr2] - The second array.
+ * @returns {Array<any>} A new array with unique values from both input arrays.
+ */
+export function mergeUniqueObjects (arr1, arr2) {
+  const all = [...(arr1 || []), ...(arr2 || [])]
+  const seen = new Set()
+  return all.filter(item => {
+    const key = typeof item === 'object' ? JSON.stringify(item) : item
+    if (seen.has(key)) {
+      return false
+    }
+    seen.add(key)
+    return true
+  })
+}
+
+/**
+ * Normalizes function declarations to ensure consistent formatting.
+ * Converts shorthand method syntax to full function declarations where needed,
+ * while preserving arrow functions and existing full declarations.
+ *
+ * @param {Function} func - The function to normalize
+ * @returns {string} The normalized function string representation
+ */
+export function normalizeFunction (func) {
+  const original = func.toString().trim()
+
+  const firstBrace = original.indexOf('{')
+  const firstArrow = original.indexOf('=>')
+
+  const isArrow = firstArrow !== -1 && (firstBrace === -1 || firstArrow < firstBrace)
+
+  if (isArrow) {
+    return original
+  }
+
+  // For non-arrows, extract header to check for shorthand
+  const header = firstBrace !== -1 ? original.slice(0, firstBrace).trim() : original
+
+  const isStandard = header.startsWith('function') || header.startsWith('async function')
+
+  if (isStandard) {
+    return original
+  }
+
+  // Handle Method Shorthand
+  if (header.startsWith('async ')) {
+    if (header.startsWith('async get ') || header.startsWith('async set ')) {
+      return original
+    }
+
+    return original.replace(/^async\s+([$\w]+)\s*\(/, 'async function(')
+  } else {
+    if (header.startsWith('get ') || header.startsWith('set ')) {
+      return original
+    }
+
+    return original.replace(/^([$\w]+)\s*\(/, 'function(')
+  }
+}
+
+
+/**
+ * Recursively clones an AST node and its children, ensuring that
+ * inner references (like parents and slots) point to the newly cloned nodes.
+ *
+ * @param {Map<Object, Object>} nodeMap - A map tracking original nodes to their newly cloned counterparts.
+ * @param {Object} node - The current AST node being cloned.
+ * @param {Object} [parent] - The parent node reference to assign to the clone.
+ * @returns {Object} The newly cloned node.
+ */
+export function cloneNode (nodeMap, node, parent) {
+  const newNode = Object.create(Object.getPrototypeOf(node))
+
+  // Copy all own enumerable properties
+  Object.assign(newNode, node)
+
+  // Defensively sanitize symbol proxy caches on cloned node
+  const syms = Object.getOwnPropertySymbols(newNode)
+  for (let i = 0; i < syms.length; i++) {
+    const description = syms[i].description
+    if (description === 'styleProxy' || description === 'datasetProxy' || description === 'listeners') {
+      delete newNode[syms[i]]
+    }
+  }
+
+  if (parent) {
+    newNode.parent = parent
+  }
+
+  if (newNode.attribs) {
+    newNode.attribs = { ...newNode.attribs }
+  }
+
+  // Register in map
+  nodeMap.set(node, newNode)
+
+  // Recursively clone children
+  if (node.children) {
+    const children = node.children
+    const length = children.length
+    const clonedChildren = new Array(length)
+    newNode.children = clonedChildren
+
+    for (let i = 0; i < length; i++) {
+      const clonedChild = cloneNode(nodeMap, children[i], newNode)
+      clonedChildren[i] = clonedChild
+      if (i > 0) {
+        clonedChild.prev = clonedChildren[i - 1]
+        clonedChildren[i - 1].next = clonedChild
+      }
+    }
+  }
+
+  // Update slot references to point to new cloned nodes
+  if (node.slots) {
+    const slots = node.slots
+    const length = slots.length
+    const clonedSlots = new Array(length)
+    for (let i = 0; i < length; i++) {
+      const slot = slots[i]
+      const clonedSlot = { ...slot }
+      if (slot.node) {
+        const clonedNode = nodeMap.get(slot.node)
+        if (clonedNode) {
+          clonedSlot.node = clonedNode
+        }
+      }
+      clonedSlots[i] = clonedSlot
+    }
+    newNode.slots = clonedSlots
+  }
+
+  // Preserve the enhanced flag without re-running enhanceNode
+  Object.defineProperty(newNode, '__coralite_enhanced__', {
+    value: true,
+    enumerable: false,
+    configurable: true
+  })
+
+  return newNode
+}
+
+/**
+ * Creates a shallow copy of a CoraliteModule with a deep clone of its DOM tree (template) and re-linked internal references to enable safe independent mutation.
+ *
+ * Top-level non-DOM state (id, path, script, isTemplate, lineOffset) are shallow copied. Nested objects within these state (e.g., path) remain shared references. Only DOM-related structures undergo deep cloning and reference re-linking to isolate mutations from the original module.
+ *
+ * @param {CoraliteModule} originalModule - Module to clone.
+ * @returns {CoraliteModule}
+ */
+export function cloneModuleInstance (originalModule) {
+  const nodeMap = new Map()
+
+  // Clone the main template tree
+  const newTemplate = cloneNode(nodeMap, originalModule.template, null)
+
+  // Reconstruct the 'values' object
+  const newValues = {
+    attributes: originalModule.values.attributes.map(item => ({
+      ...item,
+      element: nodeMap.get(item.element)
+    })),
+    textNodes: originalModule.values.textNodes.map(item => ({
+      ...item,
+      textNode: nodeMap.get(item.textNode)
+    })),
+    refs: originalModule.values.refs.map(item => ({
+      ...item,
+      element: nodeMap.get(item.element)
+    }))
+  }
+
+  // Reconstruct customElements list
+  const newCustomElements = originalModule.customElements.map(el => nodeMap.get(el))
+
+  // Reconstruct slotElements
+  const newSlotElements = {}
+  if (originalModule.slotElements) {
+    for (const modId in originalModule.slotElements) {
+      newSlotElements[modId] = {}
+      const slotGroup = originalModule.slotElements[modId]
+
+      for (const slotName in slotGroup) {
+        const slotItem = slotGroup[slotName]
+        newSlotElements[modId][slotName] = {
+          ...slotItem,
+          element: nodeMap.get(slotItem.element)
+        }
+      }
+    }
+  }
+
+  // Return the new module structure
+  return {
+    ...originalModule,
+    template: newTemplate,
+    values: newValues,
+    customElements: newCustomElements,
+    // @ts-ignore
+    slotElements: newSlotElements
+  }
+}
+
+/**
+ * Creates a deep copy of a CoraliteComponent with re-linked internal references to enable safe independent mutation.
+ *
+ * @param {CoraliteComponent & CoraliteComponentResult} originalDocument - Document to clone.
+ * @returns {CoraliteComponent & CoraliteComponentResult}
+ */
+export function cloneComponentInstance (originalDocument) {
+  const nodeMap = new Map()
+  const newRoot = cloneNode(nodeMap, originalDocument.root, null)
+
+  const newCustomElements = originalDocument.customElements.map(el => nodeMap.get(el))
+  const newTempElements = originalDocument.tempElements ? originalDocument.tempElements.map(el => nodeMap.get(el)) : []
+  const newSkipRenderElements = originalDocument.skipRenderElements ? originalDocument.skipRenderElements.map(el => nodeMap.get(el)) : []
+
+  return {
+    ...originalDocument,
+    state: { ...originalDocument.state },
+    root: newRoot,
+    customElements: newCustomElements,
+    tempElements: newTempElements,
+    skipRenderElements: newSkipRenderElements
+  }
+}
+
+/**
+ * Calculates the DOM path from a node to the root.
+ * @param {Object} node - The node to calculate the path for.
+ * @param {Object} root - The root node.
+ * @returns {Array<number>} An array of indices representing the path.
+ */
+export function getNodePath (node, root) {
+  const path = []
+  let current = node
+  while (current && current !== root) {
+    const parent = current.parent
+    if (!parent) {
+      break
+    }
+    const index = parent.children.indexOf(current)
+    if (index === -1) {
+      break
+    }
+    path.unshift(index)
+    current = parent
+  }
+  return path
+}
+
+/**
+ * Character-by-character template parser that extracts tokens and segments
+ * without regex overhead or size limits.
+ *
+ * @param {string} template - The template string to parse.
+ * @returns {{ tokens: string[], isSingleToken: boolean, singleTokenKey: string | undefined, segments: Array<[number, string]> | null }}
+ */
+export function parseTemplateSegments (template) {
+  if (!template || typeof template !== 'string') {
+    return {
+      tokens: [],
+      isSingleToken: false,
+      singleTokenKey: undefined,
+      segments: null
+    }
+  }
+
+  const tokens = []
+  /** @type {Array<[number, string]>} */
+  const segments = []
+  let cursor = 0
+  let i = 0
+  const len = template.length
+
+  while (i < len) {
+    if (template[i] === '{' && template[i + 1] === '{') {
+      const openStart = i
+      const contentStart = i + 2
+      let closeStart = -1
+
+      for (let j = contentStart; j < len - 1; j++) {
+        if (template[j] === '}' && template[j + 1] === '}') {
+          closeStart = j
+          break
+        }
+      }
+
+      if (closeStart !== -1) {
+        if (openStart > cursor) {
+          segments.push([0, template.slice(cursor, openStart)])
+        }
+
+        const tokenContent = template.slice(contentStart, closeStart).trim()
+        tokens.push(tokenContent)
+        segments.push([1, tokenContent])
+
+        cursor = closeStart + 2
+        i = cursor
+        continue
+      }
+    }
+    i++
+  }
+
+  if (cursor < len) {
+    segments.push([0, template.slice(cursor)])
+  }
+
+  const trimmed = template.trim()
+  const isSingleToken = tokens.length === 1 && (trimmed === `{{${tokens[0]}}}` || trimmed === `{{ ${tokens[0]} }}`)
+
+  return {
+    tokens,
+    isSingleToken,
+    singleTokenKey: tokens[0],
+    segments: isSingleToken || tokens.length === 0 ? null : segments
+  }
+}
+
+export { classifyAttribute }
+
+/**
+ * Generates an AST path map for dynamic text nodes, attributes, and refs.
+ *
+ * @param {Array<Object>} templateNodes - The component's template nodes.
+ * @param {Object} templateValues - The component's template values.
+ * @returns {Object} The hydration map.
+ */
+export function generateHydrationMap (templateNodes, templateValues) {
+  const map = {
+    texts: [],
+    attributes: [],
+    refs: [],
+    slots: [],
+    requiredTokens: [],
+    tokenBindings: {}
+  }
+
+  if (!templateNodes || !templateValues) {
+    return map
+  }
+
+  const root = templateNodes.length > 0 ? templateNodes[0].parent : { children: templateNodes }
+  const allTokensSet = new Set()
+  const tokenBindings = {}
+
+  const registerTokenBinding = (token, bindingIndex) => {
+    allTokensSet.add(token)
+    if (!tokenBindings[token]) {
+      tokenBindings[token] = []
+    }
+    if (!tokenBindings[token].includes(bindingIndex)) {
+      tokenBindings[token].push(bindingIndex)
+    }
+  }
+
+  let bindingCounter = 0
+
+  if (templateValues.textNodes) {
+    for (const item of templateValues.textNodes) {
+      if (item.textNode) {
+        const isHtml = item.type === 'html'
+        const targetNode = isHtml ? item.textNode.parent : item.textNode
+        const template = item.textNode.data
+        const parsed = parseTemplateSegments(template)
+
+        const currentIndex = bindingCounter++
+        for (const token of parsed.tokens) {
+          registerTokenBinding(token, currentIndex)
+        }
+
+        map.texts.push({
+          path: getNodePath(targetNode, root),
+          template,
+          type: isHtml ? 'html' : 'text',
+          tokens: parsed.tokens,
+          isSingleToken: parsed.isSingleToken,
+          singleTokenKey: parsed.singleTokenKey,
+          segments: parsed.segments
+        })
+      }
+    }
+  }
+
+  if (templateValues.attributes) {
+    for (const item of templateValues.attributes) {
+      if (item.element && item.element.attribs) {
+        const originalValue = item.element.attribs[item.name]
+        const parsed = parseTemplateSegments(originalValue)
+        const attrKind = classifyAttribute(item.name, parsed.isSingleToken)
+
+        const currentIndex = bindingCounter++
+        for (const token of parsed.tokens) {
+          registerTokenBinding(token, currentIndex)
+        }
+
+        map.attributes.push({
+          path: getNodePath(item.element, root),
+          name: item.name,
+          template: originalValue,
+          tokens: parsed.tokens,
+          isSingleToken: parsed.isSingleToken,
+          singleTokenKey: parsed.singleTokenKey,
+          segments: parsed.segments,
+          attrKind
+        })
+      }
+    }
+  }
+
+  if (templateValues.refs) {
+    for (const item of templateValues.refs) {
+      if (item.element) {
+        map.refs.push({
+          path: getNodePath(item.element, root),
+          name: item.name
+        })
+      }
+    }
+  }
+
+  // Collect direct <slot> elements (excluding slots inside nested custom elements)
+  const collectSlots = (nodes) => {
+    if (!nodes || !Array.isArray(nodes)) {
+      return
+    }
+    for (const node of nodes) {
+      if (node.type === 'tag') {
+        if (node.name === 'slot') {
+          map.slots.push({
+            name: node.attribs?.name || 'default',
+            path: getNodePath(node, root)
+          })
+        } else if (!node.name || !node.name.includes('-')) {
+          if (node.children) {
+            collectSlots(node.children)
+          }
+        }
+      }
+    }
+  }
+  collectSlots(templateNodes)
+
+  map.requiredTokens = Array.from(allTokensSet)
+  map.tokenBindings = tokenBindings
+
+  return map
+}
+
+/**
+ * Recursively adds a component and its dependencies to a tracking object.
+ *
+ * @param {string} componentId - The ID of the component to add.
+ * @param {Object.<string, boolean>} processed - The object tracking processed components.
+ * @param {Object.<string, any>} sharedFunctions - The map of shared component functions.
+ */
+export function addComponentAndDependencies (componentId, processed, sharedFunctions) {
+  if (!processed[componentId] && sharedFunctions[componentId]) {
+    processed[componentId] = true
+
+    // Add all dependencies of this component
+    const dependencies = sharedFunctions[componentId].components || []
+    for (const depId of dependencies) {
+      addComponentAndDependencies(depId, processed, sharedFunctions)
+    }
+  }
+}
+
+/**
+ * Recursively clones an AST node and its children, stripping circular references
+ * and assigning unique IDs for client-side hydration.
+ *
+ * @param {Array<Object>} nodes - The nodes to clean.
+ * @param {WeakMap} nodeMap - Map to track original nodes to their unique IDs.
+ * @param {Object} state - Object containing the current node counter.
+ * @returns {Array<Object>|null} The cleaned AST nodes.
+ */
+export function cleanAST (nodes, nodeMap, state) {
+  if (!nodes) {
+    return null
+  }
+
+  return nodes.map((node) => {
+    const cloned = { ...node }
+    // Assign unique ID for token mapping
+    const id = state.counter++
+    nodeMap.set(node, id)
+    cloned._id = id
+
+    // Remove circular references
+    delete cloned.parent
+    delete cloned.prev
+    delete cloned.next
+    delete cloned.slots
+
+    if (cloned.children) {
+      cloned.children = cleanAST(cloned.children, nodeMap, state)
+    }
+    return cloned
+  })
+}
+
+/**
+ * Cleans the template values object, mapping original node references to unique IDs.
+ *
+ * @param {Object} values - The values object to clean.
+ * @param {WeakMap} nodeMap - Map of original nodes to their unique IDs.
+ * @returns {Object|null} The cleaned values object.
+ */
+export function cleanValues (values, nodeMap) {
+  if (!values) {
+    return null
+  }
+
+  const result = { ...values }
+
+  if (result.attributes) {
+    result.attributes = result.attributes.map(item => {
+      const cloned = { ...item }
+      cloned.elementId = nodeMap.get(item.element)
+      delete cloned.element
+      return cloned
+    })
+  }
+
+  if (result.textNodes) {
+    result.textNodes = result.textNodes.map(item => {
+      const cloned = { ...item }
+      cloned.textNodeId = nodeMap.get(item.textNode)
+      delete cloned.textNode
+      return cloned
+    })
+  }
+
+  if (result.refs) {
+    result.refs = result.refs.map(item => {
+      const cloned = { ...item }
+      cloned.elementId = nodeMap.get(item.element)
+      delete cloned.element
+      return cloned
+    })
+  }
+  return result
+}
+
+/**
+ * Safely merges partial plugin updates into the main context object.
+ * Deeply merges plain objects and overwrites other types (arrays, primitives, etc.).
+ *
+ * @param {any} current - The current state object.
+ * @param {any} patch - The patch object containing updates.
+ * @returns {any} The newly merged state object.
+ */
+export function mergePluginState (current, patch) {
+  if (!patch || typeof patch !== 'object') {
+    return current
+  }
+
+  const result = { ...current }
+
+  for (const key of Object.keys(patch)) {
+    const patchValue = patch[key]
+    const currentValue = result[key]
+
+    // If both are plain objects, merge them deeply
+    if (
+      patchValue && typeof patchValue === 'object' && !Array.isArray(patchValue) &&
+      currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue)
+    ) {
+      result[key] = mergePluginState(currentValue, patchValue)
+    } else {
+      // Otherwise, overwrite (Arrays, strings, numbers, etc.)
+      result[key] = patchValue
+    }
+  }
+
+  return result
+}
+
+/**
+ * Creates a reactive proxy that triggers a callback on changes.
+ * Supports deep reactivity via lazy proxying of nested objects.
+ *
+ * @param {Object} target - The object to proxy.
+ * @param {Function} onChange - Callback triggered when a property is set or deleted.
+ * @param {WeakMap} [proxies=new WeakMap()] - Cache for existing proxies to handle circular references and identity.
+ * @returns {Proxy} The reactive proxy.
+ */
+export function createReactiveProxy (target, onChange, proxies = new WeakMap()) {
+  if (proxies.has(target)) {
+    return proxies.get(target)
+  }
+
+  const isArray = Array.isArray(target)
+
+  const handler = {
+    get (target, property, receiver) {
+      const value = Reflect.get(target, property, receiver)
+      if (isArray) {
+        return value
+      }
+
+      if (value !== null && typeof value === 'object' && !(typeof Node !== 'undefined' && value instanceof Node)) {
+        return createReactiveProxy(value, onChange, proxies)
+      }
+      return value
+    },
+    set (target, property, value, receiver) {
+      const oldValue = target[property]
+      if (oldValue === value && property in target) {
+        return true
+      }
+
+      const result = Reflect.set(target, property, value, receiver)
+      if (result) {
+        onChange({
+          property,
+          value,
+          oldValue,
+          target
+        })
+      }
+      return result
+    },
+    deleteProperty (target, property) {
+      const hadProperty = Object.prototype.hasOwnProperty.call(target, property)
+      const oldValue = target[property]
+      const result = Reflect.deleteProperty(target, property)
+      if (result && hadProperty) {
+        onChange({
+          property,
+          value: undefined,
+          oldValue,
+          target,
+          deleted: true
+        })
+      }
+      return result
+    }
+  }
+
+  const proxy = new Proxy(target, handler)
+  proxies.set(target, proxy)
+  return proxy
+}
+
+/**
+ * Creates a read-only proxy that throws on mutation attempts.
+ * Optimized for hot-path state reads inside getters, styles, and context.
+ *
+ * @param {Object} target - The object to proxy.
+ * @param {WeakMap} [proxies=new WeakMap()] - Cache for existing proxies.
+ * @param {Object|null} [tracker=null] - Optional dependency tracker.
+ * @returns {Proxy} The read-only proxy.
+ */
+export function createReadOnlyProxy (target, proxies = new WeakMap(), tracker = null) {
+  const cached = proxies.get(target)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const isArray = Array.isArray(target)
+  const hasTracker = tracker !== null
+
+  const handler = {
+    get (target, property) {
+      const value = target[property]
+
+      if (hasTracker && tracker.activeCollector && typeof property === 'string') {
+        tracker.activeCollector(property)
+      }
+
+      if (isArray || value === null || typeof value !== 'object') {
+        return value
+      }
+
+      if (value.nodeType !== undefined) {
+        return value
+      }
+
+      return createReadOnlyProxy(value, proxies, tracker)
+    },
+    set () {
+      throw new CoraliteError('Cannot mutate state inside a getter. State is read-only here.')
+    },
+    deleteProperty () {
+      throw new CoraliteError('Cannot delete state inside a getter. State is read-only here.')
+    }
+  }
+
+  const proxy = new Proxy(target, handler)
+
+  proxies.set(target, proxy)
+
+  return proxy
+}
+
+/**
+ * Defines a Coralite component with full IDE autocomplete and type inference.
+ * On the client, this acts as an identity function for type safety and HRM.
+ *
+ * @template {Record<string, any>} [TState=Record<string, any>]
+ * @param {CoraliteComponentOptions<TState>} options - Component options
+ * @returns {CoraliteComponentOptions<TState>} The component options
+ */
+/**
+ * Resolves component script-defined slot definitions from a component or module object.
+ * @param {any} component - Component document, module, or result object.
+ * @returns {Record<string, any>} Map of script slot definitions.
+ */
+export function resolveComponentSlots (component) {
+  if (!component || typeof component !== 'object') {
+    return {}
+  }
+  return component.__script__?.slots ||
+    component.script?.slots ||
+    component.result?.script?.slots ||
+    component.result?.slots ||
+    component.attributes?.slots ||
+    {}
+}
+
+/**
+ * Defines a Coralite component with full IDE autocomplete and type inference.
+ * On the client, this acts as an identity function for type safety and HRM.
+ *
+ * @template {Record<string, any>} [TState=Record<string, any>]
+ * @param {CoraliteComponentOptions<TState>} options - Component options
+ * @returns {CoraliteComponentOptions<TState>} The component options
+ */
+export function defineComponent (options) {
+  return options
+}
+
+/**
+ * An event fired by a context requester to signal it desires a named context.
+ * Conforms to the W3C Web Components Context Protocol.
+ * Dynamically wires its prototype to the active environment's Event class.
+ *
+ * @template [T=unknown]
+ */
+export class ContextRequestEvent {
+  /** @type {any} */
+  context
+  /** @type {Function} */
+  callback
+  /** @type {boolean} */
+  subscribe
+
+  /**
+   * @param {any} context - The requested context identifier.
+   * @param {Function} callback - Callback invoked when context is provided.
+   * @param {boolean} [subscribe=false] - Whether consumer desires continuous updates.
+   */
+  constructor (context, callback, subscribe = false) {
+    /** @type {any} */
+    const EventCtor = (typeof window !== 'undefined' && window.Event) || (typeof globalThis !== 'undefined' && globalThis.Event) || Event
+    if (Object.getPrototypeOf(ContextRequestEvent.prototype) !== EventCtor.prototype) {
+      Object.setPrototypeOf(ContextRequestEvent.prototype, EventCtor.prototype)
+    }
+    /** @type {any} */
+    const event = new EventCtor('context-request', {
+      bubbles: true,
+      composed: true
+    })
+    event.context = context
+    event.callback = callback
+    event.subscribe = Boolean(subscribe)
+    Object.setPrototypeOf(event, ContextRequestEvent.prototype)
+    return event
+  }
+}
+
+/**
+ * Creates a context key token for the W3C Context Protocol.
+ * @template ValueType
+ * @param {any} [key] - Key identifier. If undefined, a unique Symbol is generated.
+ * @returns {any} The context key.
+ */
+export function createContext (key) {
+  return key !== undefined ? key : Symbol()
+}
+
+const objectToString = Object.prototype.toString
+
+/**
+ * Checks whether a value is a Map instance or duck-typed context map across environments.
+ *
+ * @param {any} v - The value to check.
+ * @returns {boolean} True if the value is a Map.
+ */
+export function isContextMap (v) {
+  return Boolean(
+    v && (
+      v instanceof Map ||
+      objectToString.call(v) === '[object Map]' ||
+      (typeof v.get === 'function' && typeof v.has === 'function')
+    )
+  )
+}
+
+/**
+ * Checks whether a context provide configuration contains any active entries.
+ *
+ * @param {any} p - The provide configuration (Map or Object).
+ * @returns {boolean} True if the provide map or object has entries.
+ */
+export function hasContextEntries (p) {
+  if (!p) {
+    return false
+  }
+  if (isContextMap(p)) {
+    return typeof p.size === 'number' && p.size > 0
+  }
+  return Object.keys(p).length > 0 || Object.getOwnPropertySymbols(p).length > 0
+}
+
+/**
+ * Reads a value from a context source (Map or plain object) by strict key identity.
+ *
+ * @param {any} source - Context source: Map instance or plain object.
+ * @param {any} key - Context key token (string, symbol, or object).
+ * @returns {any} The resolved value or undefined when the key is absent.
+ */
+export function getContextValue (source, key) {
+  return isContextMap(source) ? source.get(key) : source[key]
+}
+
+/**
+ * Checks whether a context source (Map or plain object) provides a key under strict identity.
+ *
+ * @param {any} source - Context source: Map instance or plain object.
+ * @param {any} key - Context key token (string, symbol, or object).
+ * @returns {boolean} True if the source provides the key.
+ */
+export function hasContextValue (source, key) {
+  if (isContextMap(source)) {
+    return source.has(key)
+  }
+  if (typeof key === 'symbol') {
+    return key in source || Object.prototype.hasOwnProperty.call(source, key)
+  }
+  return Object.prototype.hasOwnProperty.call(source, key) || key in source
+}
+
+/**
+ * Normalizes a consume declaration into an array of consumer descriptor items.
+ * Strictly differentiates { context, default? } config objects from object tokens.
+ *
+ * @param {string[] | Record<string, any>} consume - The consume declaration.
+ * @returns {Array<{ prop: string, key: any, default: any, isArray: boolean }>}
+ */
+export function normalizeConsumerItems (consume) {
+  if (!consume) {
+    return []
+  }
+  if (Array.isArray(consume)) {
+    return consume.map(k => ({
+      prop: k,
+      key: k,
+      default: null,
+      isArray: true
+    }))
+  }
+  if (typeof consume === 'object') {
+    return Object.entries(consume).map(([prop, val]) => {
+      const isConfig = Boolean(
+        val &&
+        typeof val === 'object' &&
+        'context' in val &&
+        Object.keys(val).every(k => k === 'context' || k === 'default')
+      )
+      const key = isConfig ? val.context : val
+      const def = isConfig && 'default' in val ? val.default : null
+      return {
+        prop,
+        key,
+        default: def,
+        isArray: false
+      }
+    })
+  }
+  return []
+}
+
+/**
+ * Applies a consumed property and its optional camelCase alias to a state target.
+ *
+ * @param {Record<string, any>} target - State target object.
+ * @param {{ prop: string, isArray?: boolean }} item - Consumed descriptor.
+ * @param {any} value - Value to assign.
+ * @param {boolean} [onlyIfAbsent=false] - If true, only assign if property is not already present.
+ */
+export function applyConsumedState (target, item, value, onlyIfAbsent = false) {
+  if (onlyIfAbsent ? !(item.prop in target) : true) {
+    target[item.prop] = value
+  }
+  if (item.isArray && typeof item.prop === 'string') {
+    const camel = kebabToCamel(item.prop)
+    if (camel !== item.prop && (onlyIfAbsent ? !(camel in target) : true)) {
+      target[camel] = value
+    }
+  }
+}
+
+/**
+ * Safely invokes a callback, isolating errors using queueMicrotask.
+ *
+ * @param {Function} fn - Callback function to invoke.
+ * @param {...any} args - Arguments passed to the callback.
+ */
+export function safeInvoke (fn, ...args) {
+  try {
+    return fn(...args)
+  } catch (err) {
+    queueMicrotask(() => {
+      throw err
+    })
+  }
+}
+
+/**
+ * Recursively validates that an object contains only serializable data.
+ * Throws a CoraliteError if a function is encountered.
+ *
+ * @param {any} value - The value to validate.
+ * @param {string} [path='root'] - The current path in the object (for error reporting).
+ * @param {WeakSet} [seen=new WeakSet()] - Set of seen objects to handle circular references.
+ * @throws {CoraliteError} If a function is found.
+ */
+export function validateSerializable (value, path = 'root', seen = new WeakSet()) {
+  if (value === null || typeof value !== 'object') {
+    if (typeof value === 'function') {
+      throw new CoraliteError(`Function detected at "${path}". The "server()" block must only return serializable data (JSON-compatible plus Date, RegExp, Map, Set). Functions are not allowed.`, {
+        path
+      })
+    }
+
+    return
+  }
+
+  if (seen.has(value)) {
+    return
+  }
+
+  seen.add(value)
+
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) {
+      validateSerializable(value[i], `${path}[${i}]`, seen)
+    }
+  } else if (value instanceof Map) {
+    for (const [key, val] of value.entries()) {
+      validateSerializable(val, `${path}.get(${JSON.stringify(key)})`, seen)
+    }
+  } else if (value instanceof Set) {
+    let i = 0
+    for (const val of value) {
+      validateSerializable(val, `${path}.set[${i++}]`, seen)
+    }
+  } else {
+    for (const key of Object.keys(value)) {
+      validateSerializable(value[key], `${path}.${key}`, seen)
+    }
+  }
+}

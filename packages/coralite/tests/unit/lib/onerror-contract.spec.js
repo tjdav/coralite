@@ -2,15 +2,15 @@ import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import createCoralite, { defineConfig } from '../../../lib/index.js'
-import { parseHTML } from '../../../lib/server/utils/parse.js'
-import { formatComponentCss } from '../../../lib/server/utils/style.js'
-import { handleError, CoraliteError } from '../../../lib/shared/errors.js'
+import { parseHTML } from '../../../lib/utils/server/parse.js'
+import { formatComponentCss } from '../../../lib/utils/server/style.js'
+import { handleError, CoraliteError } from '../../../lib/utils/errors.js'
 
 /**
  * Asserts that invoking `invoke` with any invalid onError value rejects/throws a
  * CoraliteError carrying the expected message.
- * @param {(value: any) => any} invoke - Function to invoke with value.
- * @param {string} expectedMessage - Expected error message string.
+ * @param {(value: any) => any} invoke
+ * @param {string} expectedMessage
  */
 async function assertRejectsInvalidOnError (invoke, expectedMessage) {
   for (const value of ['invalid', 123, {}, true, null]) {
@@ -32,11 +32,7 @@ describe('onError Contract & Strict Validation', () => {
     it('should throw CoraliteError when onError is provided as a non-function', async () => {
       await assertRejectsInvalidOnError(
         // @ts-ignore
-        (onError) => createCoralite({
-          components: './components',
-          pages: './pages',
-          onError
-        }),
+        (onError) => createCoralite({ components: './components', pages: './pages', onError }),
         'createCoralite requires "onError" option to be a function if provided'
       )
     })
@@ -45,8 +41,7 @@ describe('onError Contract & Strict Validation', () => {
       let threw = false
       try {
         await createCoralite({
-          // Invalid components parameter to trigger handleError
-          components: 123,
+          components: 123, // Invalid components parameter to trigger handleError
           pages: './pages'
         })
       } catch (err) {
@@ -82,22 +77,14 @@ describe('onError Contract & Strict Validation', () => {
     it('should throw CoraliteError when onError in context is a non-function', async () => {
       await assertRejectsInvalidOnError(
         // @ts-ignore
-        (onError) => defineConfig({
-          components: 'c',
-          pages: 'p',
-          output: 'o'
-        }, { onError }),
+        (onError) => defineConfig({ components: 'c', pages: 'p', output: 'o' }, { onError }),
         'defineConfig requires "onError" option to be a function if provided'
       )
     })
 
     it('should default onError when context or context.onError is omitted', () => {
       assert.doesNotThrow(() => {
-        defineConfig({
-          components: 'c',
-          pages: 'p',
-          output: 'o'
-        })
+        defineConfig({ components: 'c', pages: 'p', output: 'o' })
       })
     })
 
@@ -109,13 +96,7 @@ describe('onError Contract & Strict Validation', () => {
           components: 'c',
           pages: 'p',
           output: 'o',
-          assets: [{
-            dest: 'app.css',
-            src: 'a.css'
-          }, {
-            dest: 'app.css',
-            src: 'b.css'
-          }]
+          assets: [{ dest: 'app.css', src: 'a.css' }, { dest: 'app.css', src: 'b.css' }]
         },
         {
           onError: (data) => {
@@ -180,13 +161,7 @@ describe('onError Contract & Strict Validation', () => {
     it('should throw CoraliteError when onErrorCallback is not a function', async () => {
       await assertRejectsInvalidOnError(
         // @ts-ignore
-        (onErrorCallback) => handleError({
-          onErrorCallback,
-          data: {
-            level: 'WARN',
-            message: 'test'
-          }
-        }),
+        (onErrorCallback) => handleError({ onErrorCallback, data: { level: 'WARN', message: 'test' } }),
         'handleError requires "onErrorCallback" to be a function'
       )
     })

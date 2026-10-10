@@ -1,8 +1,8 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { createCoraliteElement, createVirtualWindow } from '../../../lib/server/utils/index.js'
-import { cloneNode, isServer, isClient } from '../../../lib/shared/core.js'
-import { evaluateProduction } from '../../../lib/server/compiler.js'
+import { createCoraliteElement, createVirtualWindow } from '../../../lib/utils/server/index.js'
+import { cloneNode, isServer, isClient } from '../../../lib/utils/core.js'
+import { evaluateProduction } from '../../../lib/compiler.js'
 import { assertSame } from '../helpers.js'
 
 describe('Server-Client DOM Parity Hardening', () => {
@@ -39,10 +39,7 @@ describe('Server-Client DOM Parity Hardening', () => {
         session: { source: { contextInstances: {} } },
         noHydration: false,
         app: {},
-        source: {
-          plugins: [],
-          utils: {}
-        },
+        source: { plugins: [], utils: {} },
         bindPlugins: async () => ({}),
         defineComponent: (opts) => opts,
         createExecutionError: (err) => err,
@@ -62,14 +59,10 @@ describe('Server-Client DOM Parity Hardening', () => {
 
   describe('Non-enumerable Proxies & cloneNode Sanitization', () => {
     it('keeps style, dataset, and listener proxies non-enumerable on element', () => {
-      const el = createCoraliteElement({
-        type: 'tag',
-        name: 'div'
-      })
+      const el = createCoraliteElement({ type: 'tag', name: 'div' })
       el.style.color = 'red'
       el.dataset.foo = 'bar'
-      el.addEventListener('click', () => {
-      })
+      el.addEventListener('click', () => {})
 
       const symKeys = Object.getOwnPropertySymbols(el)
       for (const sym of symKeys) {
@@ -81,10 +74,7 @@ describe('Server-Client DOM Parity Hardening', () => {
     })
 
     it('sanitizes proxy symbol caches during cloneNode', () => {
-      const el = createCoraliteElement({
-        type: 'tag',
-        name: 'div'
-      })
+      const el = createCoraliteElement({ type: 'tag', name: 'div' })
       el.style.color = 'red'
       el.dataset.foo = 'bar'
 
@@ -103,29 +93,16 @@ describe('Server-Client DOM Parity Hardening', () => {
 
   describe('B4: Exact getElementById & Fail-Loud Selectors', () => {
     it('matches exact ID with dots via getElementById', () => {
-      const parent = createCoraliteElement({
-        type: 'tag',
-        name: 'div'
-      })
-      const child = createCoraliteElement({
-        type: 'tag',
-        name: 'span',
-        attribs: { id: 'a.b.c' }
-      })
+      const parent = createCoraliteElement({ type: 'tag', name: 'div' })
+      const child = createCoraliteElement({ type: 'tag', name: 'span', attribs: { id: 'a.b.c' } })
       parent.appendChild(child)
 
       assertSame(parent.getElementById('a.b.c'), child)
     })
 
     it('throws CoraliteError on unsupported combinators or pseudo-classes in server queries', () => {
-      const el = createCoraliteElement({
-        type: 'tag',
-        name: 'div'
-      })
-      const child = createCoraliteElement({
-        type: 'tag',
-        name: 'span'
-      })
+      const el = createCoraliteElement({ type: 'tag', name: 'div' })
+      const child = createCoraliteElement({ type: 'tag', name: 'span' })
       el.appendChild(child)
 
       assert.throws(() => el.querySelector('div > span'), /Unsupported CSS selector/)
@@ -135,19 +112,8 @@ describe('Server-Client DOM Parity Hardening', () => {
     })
 
     it('supports valid tag, class, ID, compound, and descendant selectors', () => {
-      const parent = createCoraliteElement({
-        type: 'tag',
-        name: 'div',
-        attribs: { class: 'container' }
-      })
-      const child = createCoraliteElement({
-        type: 'tag',
-        name: 'span',
-        attribs: {
-          id: 'sub',
-          'data-active': 'true'
-        }
-      })
+      const parent = createCoraliteElement({ type: 'tag', name: 'div', attribs: { class: 'container' } })
+      const child = createCoraliteElement({ type: 'tag', name: 'span', attribs: { id: 'sub', 'data-active': 'true' } })
       parent.appendChild(child)
 
       assertSame(parent.querySelector('span#sub[data-active=true]'), child)
@@ -159,10 +125,7 @@ describe('Server-Client DOM Parity Hardening', () => {
     it('virtual location and document.title reflect context page properties', () => {
       const context = {
         page: {
-          url: {
-            pathname: '/about',
-            href: 'http://localhost/about'
-          },
+          url: { pathname: '/about', href: 'http://localhost/about' },
           meta: { title: 'About Us' }
         }
       }
@@ -180,12 +143,8 @@ describe('Server-Client DOM Parity Hardening', () => {
       let winCount = 0
       let docCount = 0
 
-      const fnWin = () => {
-        winCount++
-      }
-      const fnDoc = () => {
-        docCount++
-      }
+      const fnWin = () => { winCount++ }
+      const fnDoc = () => { docCount++ }
 
       win.addEventListener('custom', fnWin)
       win.document.addEventListener('custom', fnDoc)
@@ -202,14 +161,8 @@ describe('Server-Client DOM Parity Hardening', () => {
     })
 
     it('dispatchEvent resets currentTarget to null after execution', () => {
-      const parent = createCoraliteElement({
-        type: 'tag',
-        name: 'div'
-      })
-      const child = createCoraliteElement({
-        type: 'tag',
-        name: 'span'
-      })
+      const parent = createCoraliteElement({ type: 'tag', name: 'div' })
+      const child = createCoraliteElement({ type: 'tag', name: 'span' })
       parent.appendChild(child)
 
       let capturedCurrentTarget = null
@@ -217,10 +170,7 @@ describe('Server-Client DOM Parity Hardening', () => {
         capturedCurrentTarget = e.currentTarget
       })
 
-      const evt = {
-        type: 'click',
-        bubbles: true
-      }
+      const evt = { type: 'click', bubbles: true }
       child.dispatchEvent(evt)
 
       assert.equal(capturedCurrentTarget, child)

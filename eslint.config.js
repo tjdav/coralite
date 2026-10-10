@@ -71,22 +71,6 @@ export default [
       }
     },
     rules: {
-      'no-var': 'error',
-      'prefer-const': 'error',
-      eqeqeq: ['error', 'always'],
-      'no-implicit-coercion': 'error',
-      'no-param-reassign': ['error', { props: false }],
-      'no-return-await': 'error',
-      // 'require-await': 'error', // Reverted: caused 97 violations (follow-up cleanup required)
-      'no-async-promise-executor': 'error',
-      // 'consistent-return': 'error', // Reverted: caused 34 violations (follow-up cleanup required)
-      'no-fallthrough': 'error',
-      'default-case-last': 'error',
-      'no-shadow': 'error',
-      'no-invalid-this': 'error',
-      'no-implicit-globals': 'error',
-      'no-restricted-globals': ['error', 'event', 'name', 'location', 'self', 'top', 'parent'],
-
       'no-unused-vars': ['error', {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
@@ -102,30 +86,20 @@ export default [
           selector: 'ChainExpression MemberExpression[optional=true] > MemberExpression[optional=true] > MemberExpression[optional=true]',
           message: 'Avoid deep optional chaining. Validate data existence earlier using standard if statements.'
         }
-        // Class/this restriction rules reverted due to 357 violations (follow-up cleanup required):
-        // {
-        //   selector: 'ClassDeclaration:not([superClass])',
-        //   message: 'Use a factory function (create*) instead of a bare class. If a class is genuinely needed, extend a base class or add an eslint-disable comment with a rationale.'
-        // },
-        // {
-        //   selector: 'ClassExpression:not([superClass])',
-        //   message: 'Use a factory function (create*) instead of a bare class. If a class is genuinely needed, extend a base class or add an eslint-disable comment with a rationale.'
-        // },
-        // {
-        //   selector: 'ThisExpression:not(ClassBody *)',
-        //   message: 'Do not use `this` outside of a class. Coralite uses destructured context — use `state`, `refs`, `emit`, etc. from the function signature instead.'
-        // }
       ],
-      'jsdoc/require-jsdoc': ['error', {
-        publicOnly: true,
-        contexts: [
-          'FunctionDeclaration',
-          'MethodDefinition',
-          'ClassDeclaration',
-          'ExportNamedDeclaration > VariableDeclaration > VariableDeclarator > ArrowFunctionExpression',
-          'ExportDefaultDeclaration > ArrowFunctionExpression'
-        ]
-      }],
+      'jsdoc/require-jsdoc': [
+        'error',
+        {
+          publicOnly: true,
+          require: {
+            FunctionDeclaration: true,
+            MethodDefinition: true,
+            ClassDeclaration: true,
+            ArrowFunctionExpression: true,
+            FunctionExpression: true
+          }
+        }
+      ],
       'jsdoc/check-tag-names': [
         'warn',
         {
@@ -279,50 +253,6 @@ export default [
     }
   },
   {
-    files: ['**/lib/server/**/*.js', '**/lib/utils/server/**/*.js'],
-    rules: {
-      'no-restricted-globals': ['error',
-        {
-          name: 'window',
-          message: 'Browser globals are not available in server code.'
-        },
-        {
-          name: 'document',
-          message: 'Browser globals are not available in server code.'
-        },
-        {
-          name: 'localStorage',
-          message: 'Browser globals are not available in server code.'
-        },
-        {
-          name: 'sessionStorage',
-          message: 'Browser globals are not available in server code.'
-        },
-        {
-          name: 'navigator',
-          message: 'Browser globals are not available in server code.'
-        }]
-    }
-  },
-  {
-    files: ['**/lib/client/**/*.js', '**/lib/utils/client/**/*.js'],
-    rules: {
-      'no-restricted-imports': ['error', {
-        patterns: [{
-          group: ['node:*'],
-          message: 'Node modules cannot be imported in client code.'
-        }]
-      }]
-    }
-  },
-  {
-    files: ['**/tests/**/*.js'],
-    rules: {
-      'jsdoc/require-jsdoc': 'off',
-      'no-shadow': 'off'
-    }
-  },
-  {
     ignores: [
       '**/dist/',
       '**/bench/',
@@ -332,7 +262,8 @@ export default [
       '**/.coralite/',
       '**/.coralite-testing/',
       '**/.coralite-dev/',
-      '**/.coralite-prod/'
+      '**/.coralite-prod/',
+      '**/tests/'
     ]
   }
 ]

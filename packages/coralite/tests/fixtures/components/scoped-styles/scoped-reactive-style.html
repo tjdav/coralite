@@ -25,8 +25,8 @@
       }
     },
     style: {
-      '--dynamic-bg': (state) => (state.isHighlighted ? 'rgb(255, 230, 150)' : 'rgb(240, 240, 240)'),
-      '--dynamic-color': (state) => (state.isHighlighted ? 'rgb(180, 50, 0)' : 'rgb(50, 50, 50)')
+      '--dynamic-bg': (state) => state.isHighlighted ? 'rgb(255, 230, 150)' : 'rgb(240, 240, 240)',
+      '--dynamic-color': (state) => state.isHighlighted ? 'rgb(180, 50, 0)' : 'rgb(50, 50, 50)'
     },
     client ({ state, refs }) {
       refs('toggleBtn').addEventListener('click', () => {

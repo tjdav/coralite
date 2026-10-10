@@ -33,10 +33,10 @@
         default: 0
       }
     },
-    async server () {
+    async server() {
       return {}
     },
-    client ({ state, refs, observe }) {
+    client({ state, refs, observe }) {
       const selectBtn = refs('selectBtn')
       const deselectBtn = refs('deselectBtn')
       const incrementBtn = refs('incrementBtn')
@@ -63,7 +63,7 @@
       state.disableSubmit = () => !state.canCreate || state.isCreating
 
       // Level 4: Another layer to test depth
-      state.buttonState = () => (state.disableSubmit ? 'disabled' : 'enabled')
+      state.buttonState = () => state.disableSubmit ? 'disabled' : 'enabled'
 
       // Level 5: Final derived status
       state.finalStatus = () => `Button is ${state.buttonState}`

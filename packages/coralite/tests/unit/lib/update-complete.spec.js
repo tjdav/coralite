@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it, beforeEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/client/element.js'
+import { createCoraliteClass } from '../../../lib/coralite-element.js'
 
 describe('updateComplete Contract', () => {
   let tagName
@@ -16,10 +16,7 @@ describe('updateComplete Contract', () => {
       templateHTML: '<div><span id="text">{{ msg }}</span></div>',
       defaultValues: { msg: 'idle' },
       hydrationMap: {
-        texts: [{
-          path: [0, 0, 0],
-          template: '{{ msg }}'
-        }]
+        texts: [{ path: [0, 0, 0], template: '{{ msg }}' }]
       }
     })
     customElements.define(tagName, Comp)
@@ -61,10 +58,7 @@ describe('updateComplete Contract', () => {
       templateHTML: '<div><span id="text">{{ message }}</span></div>',
       defaultValues: { message: 'hello' },
       hydrationMap: {
-        texts: [{
-          path: [0, 0, 0],
-          template: '{{ message }}'
-        }]
+        texts: [{ path: [0, 0, 0], template: '{{ message }}' }]
       }
     })
     customElements.define(tagName, Comp)
@@ -97,10 +91,7 @@ describe('updateComplete Contract', () => {
         message: { type: String }
       },
       hydrationMap: {
-        texts: [{
-          path: [0, 0, 0],
-          template: '{{ message }}'
-        }]
+        texts: [{ path: [0, 0, 0], template: '{{ message }}' }]
       }
     })
     customElements.define(tagName, Comp)
@@ -125,10 +116,7 @@ describe('updateComplete Contract', () => {
       templateHTML: '<div><span id="cnt">{{ count }}</span></div>',
       defaultValues: { count: 0 },
       hydrationMap: {
-        texts: [{
-          path: [0, 0, 0],
-          template: '{{ count }}'
-        }]
+        texts: [{ path: [0, 0, 0], template: '{{ count }}' }]
       }
     })
     customElements.define(tagName, Comp)
@@ -156,20 +144,11 @@ describe('updateComplete Contract', () => {
     const Comp = createCoraliteClass({
       componentId: 'cascade-uc',
       templateHTML: '<div><span id="s1">{{ step1 }}</span> - <span id="s2">{{ step2 }}</span></div>',
-      defaultValues: {
-        step1: 'a',
-        step2: 'a-chained'
-      },
+      defaultValues: { step1: 'a', step2: 'a-chained' },
       hydrationMap: {
         texts: [
-          {
-            path: [0, 0, 0],
-            template: '{{ step1 }}'
-          },
-          {
-            path: [0, 2, 0],
-            template: '{{ step2 }}'
-          }
+          { path: [0, 0, 0], template: '{{ step1 }}' },
+          { path: [0, 2, 0], template: '{{ step2 }}' }
         ]
       },
       client: ({ observe, state }) => {
@@ -204,10 +183,7 @@ describe('updateComplete Contract', () => {
       templateHTML: '<div><span id="val">{{ num }}</span></div>',
       defaultValues: { num: 10 },
       hydrationMap: {
-        texts: [{
-          path: [0, 0, 0],
-          template: '{{ num }}'
-        }]
+        texts: [{ path: [0, 0, 0], template: '{{ num }}' }]
       },
       client: ({ observe, updateComplete }) => {
         observe('num', async () => {
@@ -239,10 +215,7 @@ describe('updateComplete Contract', () => {
       templateHTML: '<div><span id="txt">{{ val }}</span></div>',
       defaultValues: { val: 'a' },
       hydrationMap: {
-        texts: [{
-          path: [0, 0, 0],
-          template: '{{ val }}'
-        }]
+        texts: [{ path: [0, 0, 0], template: '{{ val }}' }]
       }
     })
     customElements.define(tagName, Comp)
@@ -264,23 +237,16 @@ describe('updateComplete Contract', () => {
   it('8. Cascade Breaker Safety: resolves false when infinite reactivity loop trips breaker', async () => {
     const prevMode = window.__coralite__?.mode
     window.__coralite__ = window.__coralite__ || {}
-    // avoid throw in dev mode to test circuit breaker return
-    window.__coralite__.mode = 'production'
+    window.__coralite__.mode = 'production' // avoid throw in dev mode to test circuit breaker return
 
     let cascadeErrorEmitted = false
 
     const Comp = createCoraliteClass({
       componentId: 'cascade-breaker-uc',
       templateHTML: '<div><span id="txt">{{ ping }}</span></div>',
-      defaultValues: {
-        ping: 0,
-        pong: 0
-      },
+      defaultValues: { ping: 0, pong: 0 },
       hydrationMap: {
-        texts: [{
-          path: [0, 0, 0],
-          template: '{{ ping }}'
-        }]
+        texts: [{ path: [0, 0, 0], template: '{{ ping }}' }]
       },
       client: ({ observe, state }) => {
         // Cyclic mutation between ping and pong
@@ -321,10 +287,7 @@ describe('updateComplete Contract', () => {
       templateHTML: '<div><span id="txt">{{ msg }}</span></div>',
       defaultValues: { msg: 'start' },
       hydrationMap: {
-        texts: [{
-          path: [0, 0, 0],
-          template: '{{ msg }}'
-        }]
+        texts: [{ path: [0, 0, 0], template: '{{ msg }}' }]
       },
       client: async ({ state, updateComplete }) => {
         state.msg = 'changed in client'
@@ -360,10 +323,7 @@ describe('updateComplete Contract', () => {
       },
       hydrationMap: {
         texts: [
-          {
-            path: [0, 0, 0],
-            template: '{{ asyncVal }}'
-          }
+          { path: [0, 0, 0], template: '{{ asyncVal }}' }
         ]
       }
     })
