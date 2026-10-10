@@ -4,7 +4,7 @@ import {
   EMPTY_FUNCTION_SIGNATURE,
   isWhitespace,
   isEmptyFunction
-} from '../../../lib/server/script-manager.js'
+} from '../../../lib/script-manager.js'
 
 describe('script-manager: isEmptyFunction & isWhitespace', () => {
   describe('EMPTY_FUNCTION_SIGNATURE', () => {
@@ -113,31 +113,10 @@ describe('script-manager: isEmptyFunction & isWhitespace', () => {
 
       it('should match legacy regex parity across 150 randomized test cases', () => {
         const unicodeSpaces = [
-          ' ',
-          '\t',
-          '\n',
-          '\r',
-          '\v',
-          '\f',
-          '\u00A0',
-          '\u1680',
-          '\u2000',
-          '\u2001',
-          '\u2002',
-          '\u2003',
-          '\u2004',
-          '\u2005',
-          '\u2006',
-          '\u2007',
-          '\u2008',
-          '\u2009',
-          '\u200A',
-          '\u2028',
-          '\u2029',
-          '\u202F',
-          '\u205F',
-          '\u3000',
-          '\uFEFF'
+          ' ', '\t', '\n', '\r', '\v', '\f',
+          '\u00A0', '\u1680', '\u2000', '\u2001', '\u2002', '\u2003',
+          '\u2004', '\u2005', '\u2006', '\u2007', '\u2008', '\u2009',
+          '\u200A', '\u2028', '\u2029', '\u202F', '\u205F', '\u3000', '\uFEFF'
         ]
 
         const getRandomSpace = () => unicodeSpaces[Math.floor(Math.random() * unicodeSpaces.length)]
@@ -177,21 +156,11 @@ describe('script-manager: isEmptyFunction & isWhitespace', () => {
 
         // 4. Real-world snippets, edge cases
         const edgeCases = [
-          null,
-          undefined,
-          '',
-          ' ',
-          ' \t\n ',
-          'function(){}',
-          'function ( ) { }',
-          'function\n(\n)\n{\n}',
-          'function foo(){}',
-          '() => {}',
-          'function(){};',
-          'function(){ console.log(1); }',
-          'function(){ return true; }',
-          'const f = () => {}',
-          '/* empty */ function(){}'
+          null, undefined, '', ' ', ' \t\n ',
+          'function(){}', 'function ( ) { }', 'function\n(\n)\n{\n}',
+          'function foo(){}', '() => {}', 'function(){};',
+          'function(){ console.log(1); }', 'function(){ return true; }',
+          'const f = () => {}', '/* empty */ function(){}'
         ]
         testCases.push(...edgeCases)
 

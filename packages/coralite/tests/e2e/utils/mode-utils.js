@@ -2,7 +2,7 @@ import { test } from '@playwright/test'
 
 /**
  * Checks if the current test run is executing in production mode.
- * @param {import('@playwright/test').TestInfo} testInfo - Playwright test info object.
+ * @param {import('@playwright/test').TestInfo} testInfo
  * @returns {boolean}
  */
 export function isProduction (testInfo) {
@@ -11,7 +11,7 @@ export function isProduction (testInfo) {
 
 /**
  * Checks if the current test run is executing in development mode.
- * @param {import('@playwright/test').TestInfo} testInfo - Playwright test info object.
+ * @param {import('@playwright/test').TestInfo} testInfo
  * @returns {boolean}
  */
 export function isDevelopment (testInfo) {
@@ -20,7 +20,7 @@ export function isDevelopment (testInfo) {
 
 /**
  * Checks if the current test run is executing in testing mode.
- * @param {import('@playwright/test').TestInfo} testInfo - Playwright test info object.
+ * @param {import('@playwright/test').TestInfo} testInfo
  * @returns {boolean}
  */
 export function isTestingMode (testInfo) {
@@ -29,8 +29,8 @@ export function isTestingMode (testInfo) {
 
 /**
  * Skips the current test in production mode.
- * @param {import('@playwright/test').TestInfo} testInfo - Playwright test info object.
- * @param {string} [reason] - Reason for skipping.
+ * @param {import('@playwright/test').TestInfo} testInfo
+ * @param {string} [reason]
  */
 export function skipInProduction (testInfo, reason = 'Test is development/testing mode specific') {
   if (isProduction(testInfo)) {
@@ -40,8 +40,8 @@ export function skipInProduction (testInfo, reason = 'Test is development/testin
 
 /**
  * Skips the current test in development mode.
- * @param {import('@playwright/test').TestInfo} testInfo - Playwright test info object.
- * @param {string} [reason] - Reason for skipping.
+ * @param {import('@playwright/test').TestInfo} testInfo
+ * @param {string} [reason]
  */
 export function skipInDevelopment (testInfo, reason = 'Test is production mode specific') {
   if (isDevelopment(testInfo)) {
@@ -51,7 +51,7 @@ export function skipInDevelopment (testInfo, reason = 'Test is production mode s
 
 /**
  * Returns the output build directory corresponding to the test mode.
- * @param {import('@playwright/test').TestInfo} testInfo - Playwright test info object.
+ * @param {import('@playwright/test').TestInfo} testInfo
  * @returns {string}
  */
 export function getOutputDir (testInfo) {

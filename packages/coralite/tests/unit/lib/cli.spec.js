@@ -19,10 +19,7 @@ describe('CLI Integration Tests (coralite.js)', () => {
   })
 
   afterEach(() => {
-    rmSync(tmpDir, {
-      recursive: true,
-      force: true
-    })
+    rmSync(tmpDir, { recursive: true, force: true })
   })
 
   describe('coralite init-agent', () => {
@@ -91,10 +88,7 @@ describe('CLI Integration Tests (coralite.js)', () => {
 
       // Strict mode: exits with code 1 when warnings exist
       assert.throws(() => {
-        runCli('check --pages pages --strict', {
-          cwd: tmpDir,
-          stdio: 'pipe'
-        })
+        runCli('check --pages pages --strict', { cwd: tmpDir, stdio: 'pipe' })
       })
     })
 
@@ -108,10 +102,7 @@ describe('CLI Integration Tests (coralite.js)', () => {
 `)
 
       assert.throws(() => {
-        runCli('check -c components', {
-          cwd: tmpDir,
-          stdio: 'pipe'
-        })
+        runCli('check -c components', { cwd: tmpDir, stdio: 'pipe' })
       })
     })
   })
@@ -148,10 +139,7 @@ export default {
 `
       writeFileSync(plugPath, initialCode)
 
-      runCli('fix -p plugins', {
-        cwd: tmpDir,
-        stdio: 'pipe'
-      })
+      runCli('fix -p plugins', { cwd: tmpDir, stdio: 'pipe' })
       const fixedCode = readFileSync(plugPath, 'utf8')
       assert.match(fixedCode, /definePlugin/)
       assert.match(fixedCode, /\(ctx\) => \(instanceContext\)/)
@@ -212,10 +200,7 @@ export default {
 }
 `)
 
-      runCli('validate-plugins -p plugins --fix', {
-        cwd: tmpDir,
-        stdio: 'pipe'
-      })
+      runCli('validate-plugins -p plugins --fix', { cwd: tmpDir, stdio: 'pipe' })
       const fixedCode = readFileSync(plugPath, 'utf8')
       assert.match(fixedCode, /definePlugin/)
     })
@@ -242,10 +227,7 @@ export default {
 `)
       writeFileSync(join(pageDir, 'index.html'), '<!DOCTYPE html><html><body><hello-card></hello-card></body></html>')
 
-      runCli('build -c components -p pages -o dist', {
-        cwd: tmpDir,
-        stdio: 'pipe'
-      })
+      runCli('build -c components -p pages -o dist', { cwd: tmpDir, stdio: 'pipe' })
 
       const outFile = join(tmpDir, 'dist', 'index.html')
       assert.strictEqual(existsSync(outFile), true)

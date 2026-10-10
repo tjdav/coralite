@@ -12,8 +12,6 @@
     "strict": false,
     "noImplicitAny": false,
     "allowSyntheticDefaultImports": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
     "types": ["node"],
     "customConditions": ["development"],
     "paths": {

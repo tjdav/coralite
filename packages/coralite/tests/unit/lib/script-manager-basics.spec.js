@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { ScriptManager as OriginalScriptManager } from '../../../lib/server/script-manager.js'
+import { ScriptManager as OriginalScriptManager } from '../../../lib/script-manager.js'
 
 const activeManagers = []
 class ScriptManager extends OriginalScriptManager {
@@ -306,17 +306,11 @@ describe('ScriptManager Basics', () => {
 
       sm.registerComponent({
         id: 'c1',
-        script: {
-          content: '() => 1',
-          components: ['a', 'b']
-        }
+        script: { content: '() => 1', components: ['a', 'b'] }
       })
       sm.registerComponent({
         id: 'c1',
-        script: {
-          content: '() => 2',
-          components: ['b', 'c']
-        }
+        script: { content: '() => 2', components: ['b', 'c'] }
       })
 
       assert.deepStrictEqual(sm.sharedFunctions.c1.components, ['a', 'b', 'c'])
@@ -329,17 +323,11 @@ describe('ScriptManager Basics', () => {
 
       sm.registerComponent({
         id: 'c1',
-        script: {
-          content: '() => 1',
-          components: ['a', 'b']
-        }
+        script: { content: '() => 1', components: ['a', 'b'] }
       })
       sm.registerComponent({
         id: 'c1',
-        script: {
-          content: '() => 2',
-          components: ['c']
-        },
+        script: { content: '() => 2', components: ['c'] },
         override: true
       })
 

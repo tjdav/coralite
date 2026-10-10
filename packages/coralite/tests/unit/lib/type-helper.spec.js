@@ -19,7 +19,7 @@ import {
   isValidChildNode,
   isParentNode,
   isRemovableNode
-} from '../../../lib/shared/types.js'
+} from '../../../lib/utils/types.js'
 
 describe('type-helper.js', () => {
   describe('Core Type Guards', () => {

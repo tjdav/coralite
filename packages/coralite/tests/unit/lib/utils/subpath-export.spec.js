@@ -1,12 +1,12 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { createContext } from 'node:vm'
-import * as utils from '../../../../lib/shared/index.js'
-import * as serverUtilsBase from '../../../../lib/server/utils/index.js'
-import { isContextMap } from '../../../../lib/shared/core.js'
-import { enhanceNode, relinkChildren } from '../../../../lib/server/utils/dom.js'
-import { findAndExtractScript } from '../../../../lib/server/utils/server.js'
-import { createModuleLinker, evaluateProduction } from '../../../../lib/server/compiler.js'
+import * as utils from '../../../../lib/utils/index.js'
+import * as serverUtilsBase from '../../../../lib/utils/server/index.js'
+import { isContextMap } from '../../../../lib/utils/core.js'
+import { enhanceNode, relinkChildren } from '../../../../lib/utils/server/dom.js'
+import { findAndExtractScript } from '../../../../lib/utils/server/server.js'
+import { createModuleLinker, evaluateProduction } from '../../../../lib/compiler.js'
 
 describe('Subpath Exports & DOM Prototype Hardening', () => {
   it('coralite/utils entrypoint does not export parseHTML (isomorphic boundary)', () => {
@@ -23,8 +23,7 @@ describe('Subpath Exports & DOM Prototype Hardening', () => {
   })
 
   it('enhanceNode and relinkChildren safely reject non-objects and function nodes', () => {
-    const fnNode = function () {
-    }
+    const fnNode = function () {}
     const nullNode = null
     const strNode = 'string'
     const numNode = 42
@@ -71,23 +70,18 @@ describe('Subpath Exports & DOM Prototype Hardening', () => {
   it('createModuleLinker creates VM module with named exports for coralite/utils/server', async () => {
     const mergedServerUtils = {
       ...serverUtilsBase,
-      customAppWrapper: () => {
-      }
+      customAppWrapper: () => {}
     }
 
     const linker = createModuleLinker({
-      path: {
-        pathname: '/tmp/test.js',
-        dirname: '/tmp'
-      },
+      path: { pathname: '/tmp/test.js', dirname: '/tmp' },
       context: {},
       source: {
         utils: {
           customAppWrapper: mergedServerUtils.customAppWrapper
         }
       },
-      importModuleDynamically: async () => {
-      }
+      importModuleDynamically: async () => {}
     })
 
     const mockReferencingModule = {
@@ -112,12 +106,7 @@ describe('Subpath Exports & DOM Prototype Hardening', () => {
 
   it('isContextMap correctly identifies Map instances and resists prototype pollution', () => {
     assert.strictEqual(isContextMap(new Map()), true)
-    assert.strictEqual(isContextMap({
-      get: () => {
-      },
-      has: () => {
-      }
-    }), true)
+    assert.strictEqual(isContextMap({ get: () => {}, has: () => {} }), true)
     assert.strictEqual(isContextMap({}), false)
     assert.strictEqual(isContextMap(null), false)
     assert.strictEqual(isContextMap(undefined), false)
@@ -139,13 +128,9 @@ describe('Subpath Exports & DOM Prototype Hardening', () => {
   })
 
   it('evaluateProduction exposes merged serverUtils via customRequire', async () => {
-    const customAppWrapper = () => {
-    }
+    const customAppWrapper = () => {}
     const moduleComponent = {
-      path: {
-        pathname: '/tmp/test-comp.js',
-        dirname: '/tmp'
-      },
+      path: { pathname: '/tmp/test-comp.js', dirname: '/tmp' },
       result: {}
     }
 

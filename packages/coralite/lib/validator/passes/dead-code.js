@@ -1,4 +1,4 @@
-import { camelToKebab, kebabToCamel, stripCssComments } from '../../shared/core.js'
+import { camelToKebab, kebabToCamel, stripCssComments } from '../../utils/core.js'
 import {
   INTERACTIVE_TAGS,
   isRefUsedInSelector,

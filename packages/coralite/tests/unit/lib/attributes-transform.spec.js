@@ -1,9 +1,9 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/client/element.js'
-import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/server/component/setup.js'
-import { CoraliteError } from '../../../lib/shared/errors.js'
+import { createCoraliteClass } from '../../../lib/coralite-element.js'
+import { normalizeAndValidateAttributes, createComponentDefinition } from '../../../lib/component-setup.js'
+import { CoraliteError } from '../../../lib/utils/errors.js'
 
 describe('Component Attribute transform Pipeline', () => {
   describe('Definition-Time Validation', () => {
@@ -33,18 +33,12 @@ describe('Component Attribute transform Pipeline', () => {
 
   describe('SSR & Initial Attributes Pipeline', () => {
     it('applies transform on incoming attribute state during SSR', async () => {
-      const mockApp = {
-        createComponentElement: () => null,
-        options: {}
-      }
+      const mockApp = { createComponentElement: () => null, options: {} }
       const defineComponent = createComponentDefinition({ app: mockApp })
 
       const context = {
         state: { tag: '  Frontend Framework  ' },
-        module: {
-          id: 'tag-comp',
-          path: { pathname: '/tag.coral' }
-        },
+        module: { id: 'tag-comp', path: { pathname: '/tag.coral' } },
         root: null
       }
 
@@ -61,18 +55,12 @@ describe('Component Attribute transform Pipeline', () => {
     })
 
     it('applies transform to default values when attribute is omitted', async () => {
-      const mockApp = {
-        createComponentElement: () => null,
-        options: {}
-      }
+      const mockApp = { createComponentElement: () => null, options: {} }
       const defineComponent = createComponentDefinition({ app: mockApp })
 
       const context = {
         state: {},
-        module: {
-          id: 'tag-comp',
-          path: { pathname: '/tag.coral' }
-        },
+        module: { id: 'tag-comp', path: { pathname: '/tag.coral' } },
         root: null
       }
 
@@ -121,7 +109,7 @@ describe('Component Attribute transform Pipeline', () => {
         componentId: 'trans-err',
         attributes: {
           count: {
-            transform: (_val) => {
+            transform: (val) => {
               throw new Error('Custom transformation error')
             }
           }
@@ -143,18 +131,12 @@ describe('Component Attribute transform Pipeline', () => {
 
   describe('Transform Returning Undefined Behavior', () => {
     it('clears/deletes state property in SSR when transform returns undefined', async () => {
-      const mockApp = {
-        createComponentElement: () => null,
-        options: {}
-      }
+      const mockApp = { createComponentElement: () => null, options: {} }
       const defineComponent = createComponentDefinition({ app: mockApp })
 
       const context = {
         state: { tag: 'clear-me' },
-        module: {
-          id: 'undef-comp',
-          path: { pathname: '/undef.coral' }
-        },
+        module: { id: 'undef-comp', path: { pathname: '/undef.coral' } },
         root: null
       }
 
@@ -162,7 +144,7 @@ describe('Component Attribute transform Pipeline', () => {
         attributes: {
           tag: {
             type: String,
-            transform: (val) => (val === 'clear-me' ? undefined : val)
+            transform: (val) => val === 'clear-me' ? undefined : val
           }
         }
       }, context)
@@ -173,17 +155,11 @@ describe('Component Attribute transform Pipeline', () => {
 
     it('enforces 4-layer parity when transform returns undefined: SSR, _setupState, setAttribute, and proxy setter', async () => {
       // Layer 1: SSR (createComponentDefinition)
-      const mockApp = {
-        createComponentElement: () => null,
-        options: {}
-      }
+      const mockApp = { createComponentElement: () => null, options: {} }
       const defineComponent = createComponentDefinition({ app: mockApp })
       const ssrContext = {
         state: { badge: 'clear-me' },
-        module: {
-          id: 'parity-comp',
-          path: { pathname: '/parity.coral' }
-        },
+        module: { id: 'parity-comp', path: { pathname: '/parity.coral' } },
         root: null
       }
       const ssrResult = await defineComponent({
@@ -247,11 +223,11 @@ describe('Component Attribute transform Pipeline', () => {
         attributes: {
           userRole: {
             type: String,
-            transform: (val) => (val === 'guest' ? undefined : val)
+            transform: (val) => val === 'guest' ? undefined : val
           }
         },
         getters: {
-          roleUpper: ({ state }) => (state.userRole ? state.userRole.toUpperCase() : 'NONE')
+          roleUpper: ({ state }) => state.userRole ? state.userRole.toUpperCase() : 'NONE'
         }
       })
       customElements.define(tagName, UndefGetterComp)

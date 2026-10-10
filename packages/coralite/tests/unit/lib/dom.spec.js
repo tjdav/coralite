@@ -9,7 +9,7 @@ import {
   createCoraliteDirective,
   enhanceNode,
   relinkChildren
-} from '../../../lib/server/utils/dom.js'
+} from '../../../lib/utils/server/dom.js'
 
 describe('createCoraliteElement', () => {
   it('should enhance an element node with DOM state', () => {

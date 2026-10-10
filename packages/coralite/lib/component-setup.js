@@ -1,0 +1,881 @@
+import { createReadOnlyProxy, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL } from './utils/core.js'
+import { processTokenValue } from './parser.js'
+import { CoraliteError, handleError } from './utils/errors.js'
+import {
+  isCoraliteElement,
+  isCoraliteTextNode,
+  isCoraliteComment
+} from './utils/types.js'
+import { findAndExtractScript, extractComponentProperty } from './utils/server/server.js'
+import { formatComponentCss } from './utils/server/style.js'
+import { inferTypeFromValues, validateAttributeValue } from './utils/attributes.js'
+import { prepareAllComponentOps } from './utils/server/fragment.js'
+
+export { prepareAllComponentOps, createServerSlotsHelper }
+
+/**
+ * Creates the isomorphic slots helper object for a server component context.
+ * @param {Object|null} root - Server AST root node.
+ * @returns {Object} Server slots helper proxy.
+ */
+function createServerSlotsHelper (root) {
+  const filterNodes = (nodes) => {
+    return nodes.filter(node => {
+      if (!node) {
+        return false
+      }
+      if (isCoraliteComment(node) || node.type === 'comment') {
+        return false
+      }
+      if (isCoraliteTextNode(node) || node.type === 'text') {
+        let text = ''
+        if (typeof node.data === 'string') {
+          text = node.data
+        } else if (typeof node.content === 'string') {
+          text = node.content
+        }
+        if (!text.trim()) {
+          return false
+        }
+      }
+      return true
+    })
+  }
+
+  const getSlotNodes = (name = 'default') => {
+    if (!root || !Array.isArray(root.slots)) {
+      return []
+    }
+    const matching = root.slots.filter(s => (s.name || 'default') === name).map(s => s.node)
+    return filterNodes(matching)
+  }
+
+  return new Proxy({
+    has: (name = 'default') => getSlotNodes(name).length > 0,
+    get: (name = 'default') => getSlotNodes(name),
+    count: (name = 'default') => getSlotNodes(name).length,
+    get names () {
+      if (!root || !Array.isArray(root.slots)) {
+        return []
+      }
+      return Array.from(new Set(root.slots.map(s => s.name || 'default')))
+    }
+  }, {
+    get (target, prop) {
+      if (prop in target) {
+        return target[prop]
+      }
+      if (typeof prop === 'string') {
+        return getSlotNodes(prop)
+      }
+      return undefined
+    }
+  })
+}
+
+/**
+ * Normalizes and validates component attribute definitions at definition time.
+ * @param {Object} attributes - Raw component attributes option.
+ * @param {string} componentId - Component ID for error messages.
+ * @param {string} [filePath] - Optional file path for error options.
+ * @returns {Object} Normalized attributes dictionary.
+ */
+export function normalizeAndValidateAttributes (attributes, componentId, filePath) {
+  if (!attributes) {
+    return {}
+  }
+
+  const normalized = {}
+
+  for (const [key, rawSchema] of Object.entries(attributes)) {
+    let schemaObj
+    let values
+
+    if (Array.isArray(rawSchema)) {
+      values = rawSchema
+      schemaObj = { values: rawSchema }
+    } else if (rawSchema && typeof rawSchema === 'object' && 'values' in rawSchema) {
+      values = rawSchema.values
+      schemaObj = rawSchema
+    } else if (rawSchema === Object || rawSchema === Array || (rawSchema && (rawSchema.type === Object || rawSchema.type === Array))) {
+      const typeName = rawSchema.name || rawSchema.type?.name || 'Object/Array'
+      throw new CoraliteError(`Component "${componentId}" defines attribute "${key}" as ${typeName}. Object and Array types are blocked in attributes. Use server() for complex data.`, {
+        componentId,
+        filePath
+      })
+    } else if (typeof rawSchema === 'object' && rawSchema !== null) {
+      schemaObj = rawSchema
+      values = rawSchema.values
+    } else {
+      const type = rawSchema
+      const typeName = typeof type === 'function' ? type.name : String(type)
+      schemaObj = { type: typeName }
+    }
+
+    if ('validate' in schemaObj && schemaObj.validate !== undefined && typeof schemaObj.validate !== 'function') {
+      throw new CoraliteError(`Component "${componentId}" attribute "${key}" validate property must be a function.`, {
+        componentId,
+        filePath
+      })
+    }
+
+    if ('transform' in schemaObj && schemaObj.transform !== undefined && typeof schemaObj.transform !== 'function') {
+      throw new CoraliteError(`Component "${componentId}" attribute "${key}" transform property must be a function.`, {
+        componentId,
+        filePath
+      })
+    }
+
+    if (values !== undefined) {
+      if (!Array.isArray(values)) {
+        throw new CoraliteError(`Component "${componentId}" attribute "${key}" values must be an Array.`, {
+          componentId,
+          filePath
+        })
+      }
+
+      if (values.length === 0) {
+        throw new CoraliteError(`Component "${componentId}" attribute "${key}" values array cannot be empty.`, {
+          componentId,
+          filePath
+        })
+      }
+
+      for (const item of values) {
+        const itemType = typeof item
+        if (item === null || (itemType !== 'string' && itemType !== 'number' && itemType !== 'boolean')) {
+          throw new CoraliteError(`Component "${componentId}" attribute "${key}" values array contains non-primitive item: ${JSON.stringify(item)}. Only string, number, and boolean allowed.`, {
+            componentId,
+            filePath
+          })
+        }
+      }
+    }
+
+    const uniqueValues = Array.isArray(values) ? Array.from(new Set(values)) : undefined
+
+    const explicitType = schemaObj.type
+    if (explicitType === Object || explicitType === Array) {
+      throw new CoraliteError(`Component "${componentId}" defines attribute "${key}" as ${explicitType.name}. Object and Array types are blocked in attributes. Use server() for complex data.`, {
+        componentId,
+        filePath
+      })
+    }
+
+    const typeConstructor = explicitType || (uniqueValues ? inferTypeFromValues(uniqueValues) : String)
+    const typeName = typeof typeConstructor === 'function' ? typeConstructor.name : String(typeConstructor)
+
+    const normalizedSchema = {
+      type: typeName,
+      default: schemaObj.default,
+      required: Boolean(schemaObj.required)
+    }
+
+    if (schemaObj.required) {
+      if (schemaObj.default !== undefined) {
+        throw new CoraliteError(`Component "${componentId}" attribute "${key}" cannot be marked as required and define a default value.`, {
+          componentId,
+          filePath
+        })
+      }
+    }
+    if (uniqueValues) {
+      normalizedSchema.values = uniqueValues
+      if (schemaObj.default !== undefined && !uniqueValues.includes(schemaObj.default)) {
+        const formattedDefault = JSON.stringify(schemaObj.default)
+        const formattedExpected = uniqueValues.map(v => JSON.stringify(v)).join(', ')
+        throw new CoraliteError(`Component "${componentId}" attribute "${key}" default value ${formattedDefault} is not in allowed values. Expected one of: ${formattedExpected}.`, {
+          componentId,
+          filePath
+        })
+      }
+    }
+    if (typeof schemaObj.transform === 'function') {
+      normalizedSchema.transform = schemaObj.transform
+    }
+    if (typeof schemaObj.validate === 'function') {
+      normalizedSchema.validate = schemaObj.validate
+    }
+
+    if (normalizedSchema.default !== undefined) {
+      // Validate default value at component definition time
+      validateAttributeValue(normalizedSchema.default, normalizedSchema, key, componentId, { filePath })
+    }
+
+    normalized[key] = normalizedSchema
+  }
+
+  return normalized
+}
+
+/**
+ * @import {
+ *  CoralitePluginContext,
+ *  CoraliteInstance
+ * } from '../types/index.js'
+ */
+
+/**
+ * Validates the component style option.
+ *
+ * @param {Object|null|undefined} style - Style configuration object.
+ * @param {Object} module - Component module context.
+ */
+function _validateComponentStyle (style, module) {
+  if (style === undefined || style === null) {
+    return
+  }
+  if (typeof style !== 'object' || Array.isArray(style)) {
+    throw new CoraliteError(`Component "${module.id}" style property must be an object. Received: ${Array.isArray(style) ? 'Array' : typeof style}`, {
+      componentId: module.id,
+      filePath: module.path?.pathname
+    })
+  }
+  for (const [sKey, sVal] of Object.entries(style)) {
+    const valType = typeof sVal
+    if (valType !== 'function' && valType !== 'string' && valType !== 'number') {
+      throw new CoraliteError(`Component "${module.id}" style property "${sKey}" must be a function, string, or number. Received: ${valType}`, {
+        componentId: module.id,
+        filePath: module.path?.pathname
+      })
+    }
+  }
+}
+
+function _resolveContextConsumers (state, consume, contextFrames = []) {
+  if (!consume) {
+    return
+  }
+  const consumerItems = normalizeConsumerItems(consume)
+  for (const item of consumerItems) {
+    const key = item.key
+    let resolvedVal = item.default
+    for (let i = contextFrames.length - 1; i >= 0; i--) {
+      const frame = contextFrames[i]
+      if (frame && hasContextValue(frame, key)) {
+        resolvedVal = getContextValue(frame, key)
+        break
+      }
+    }
+    applyConsumedState(state, item, resolvedVal, false)
+  }
+}
+
+function _validateInitialAttributes (normalizedAttributes, state, app, module) {
+  for (const [key, schema] of Object.entries(normalizedAttributes)) {
+    const camelName = kebabToCamel(key)
+    const kebabName = camelToKebab(camelName)
+    const inputVal = state[camelName] !== undefined ? state[camelName] : state[kebabName]
+    const res = validateAttributeValue(inputVal, schema, camelName, module.id, {
+      filePath: module.path?.pathname,
+      graceful: true
+    })
+    if (res.error) {
+      state.errors[camelName] = res.error
+      state['error_' + camelName] = res.error
+      state['error_' + kebabName] = res.error
+
+      const warnMessage = `Component "${module.id}" attribute "${camelName}" validation failed: ${res.error}`
+      const isSuppressed = app?.options?.suppressValidationWarnings === true || app?.options?.mode === 'production'
+
+      if (app && typeof app.onError === 'function') {
+        app.onError({
+          level: 'WARN',
+          type: 'attribute_validation',
+          message: warnMessage,
+          componentId: module.id
+        })
+      } else if (!isSuppressed) {
+        handleError({
+          onErrorCallback: undefined,
+          data: {
+            level: 'WARN',
+            type: 'attribute_validation',
+            message: warnMessage,
+            componentId: module.id
+          }
+        })
+      }
+    }
+    if (res.value !== undefined) {
+      state[camelName] = res.value
+    } else if (res.error) {
+      state[camelName] = inputVal
+    } else {
+      delete state[camelName]
+    }
+  }
+}
+
+async function _executeServerFunction (server, state, context, initialState, app, module) {
+  let serverToExecute = server
+  if (app?.options?.mode === 'testing' && app.options.testing?.mocks?.components) {
+    const mock = app.options.testing.mocks.components[module.id]
+    if (mock && typeof mock.server === 'function') {
+      serverToExecute = mock.server
+    }
+  }
+
+  if (typeof serverToExecute !== 'function') {
+    return
+  }
+
+  const serverResult = await serverToExecute({
+    ...context,
+    ...initialState
+  })
+
+  if (serverResult) {
+    if (typeof serverResult !== 'object' || Array.isArray(serverResult)) {
+      throw new CoraliteError(`Component "${module.id}" server() function must return an object. Received: ${Array.isArray(serverResult) ? 'Array' : typeof serverResult}`, {
+        componentId: module.id,
+        filePath: module.path?.pathname
+      })
+    }
+
+    state.__script__.server = serverResult
+    Object.assign(state, serverResult)
+    if (state.__script__.defaultValues) {
+      Object.assign(state.__script__.defaultValues, serverResult)
+    }
+  }
+}
+
+async function _executeServerGetters (getters, state, root) {
+  if (!getters) {
+    return
+  }
+  const roState = createReadOnlyProxy(state)
+  const serverSlots = createServerSlotsHelper(root)
+  for (const [key, getter] of Object.entries(getters)) {
+    const serverContext = {
+      state: roState,
+      root: root || null,
+      refs: () => null,
+      slots: serverSlots,
+      signal: NOOP_SIGNAL
+    }
+    const result = getter(serverContext)
+    state[key] = (result && typeof result.then === 'function') ? await result : result
+    if (state.__script__ && state.__script__.state) {
+      state.__script__.state[key] = state[key]
+    }
+  }
+}
+
+async function _processServerSlots (slots, state, root, context, app, module) {
+  if (!slots) {
+    return
+  }
+  for (const name in slots) {
+    if (Object.prototype.hasOwnProperty.call(slots, name)) {
+      const computedSlot = slots[name]
+      const methodKey = `slots_method_${name}`
+      state.__script__.defaultValues[methodKey] = computedSlot
+      const slotContent = []
+      const elementSlots = []
+
+      if (root && 'slots' in root && Array.isArray(root.slots)) {
+        for (let j = 0; j < root.slots.length; j++) {
+          const slot = root.slots[j]
+
+          if (slot.name === name) {
+            slotContent.push(slot.node)
+          } else {
+            elementSlots.push(slot)
+          }
+        }
+      }
+
+      const slotContext = new Proxy({
+        state,
+        root: null,
+        refs: () => null,
+        slots: createServerSlotsHelper(root),
+        observe: () => () => {
+        },
+        emit: () => false,
+        signal: NOOP_SIGNAL,
+        // @ts-ignore
+        instanceId: context.instanceId || module.id,
+        ...context
+      }, {
+        get (target, prop, receiver) {
+          if (typeof prop === 'symbol') {
+            return Reflect.get(target, prop, receiver)
+          }
+          if (Reflect.has(target, prop)) {
+            return Reflect.get(target, prop, receiver)
+          }
+          if (state && prop in state) {
+            return state[prop]
+          }
+          return Reflect.get(target, prop, receiver)
+        },
+        has (target, prop) {
+          return Reflect.has(target, prop) || Boolean(state && prop in state)
+        },
+        ownKeys (target) {
+          const contextKeys = Reflect.ownKeys(target)
+          const stateKeys = state ? Object.keys(state) : []
+          return Array.from(new Set([...contextKeys, ...stateKeys]))
+        },
+        getOwnPropertyDescriptor (target, prop) {
+          if (Reflect.has(target, prop)) {
+            return Reflect.getOwnPropertyDescriptor(target, prop)
+          }
+          if (typeof prop === 'string' && state && prop in state) {
+            return {
+              enumerable: true,
+              configurable: true,
+              value: state[prop]
+            }
+          }
+          return undefined
+        }
+      })
+
+      let result
+      try {
+        result = computedSlot(slotContent, slotContext)
+        result = result && typeof result.then === 'function' ? await result : result
+      } catch {
+        // Gracefully catch browser-only API access or SSR errors, falling back to original slot content
+        result = slotContent
+      }
+
+      if (result === undefined) {
+        result = slotContent
+      }
+
+      if (result === null || result === '' || (Array.isArray(result) && result.length === 0)) {
+        if (root && 'slots' in root && Array.isArray(root.slots)) {
+          root.slots = root.slots.filter(s => s.name !== name)
+        }
+
+        continue
+      }
+
+      if (typeof result === 'string') {
+        const processedResult = await processTokenValue(result, {
+          ...context,
+          state,
+          createComponentElement: app.createComponentElement,
+          noHydration: context.noHydration
+        })
+        if (Array.isArray(processedResult)) {
+          for (let j = 0; j < processedResult.length; j++) {
+            elementSlots.push({
+              name,
+              node: processedResult[j]
+            })
+          }
+        } else {
+          elementSlots.push({
+            name,
+            node: {
+              type: 'text',
+              data: processedResult
+            }
+          })
+        }
+      } else if (Array.isArray(result)) {
+        for (let index = 0; index < result.length; index++) {
+          const node = result[index]
+          if (isCoraliteElement(node) || isCoraliteTextNode(node) || isCoraliteComment(node)) {
+            elementSlots.push({
+              name,
+              node
+            })
+          } else {
+            throw new CoraliteError(`Unexpected slot value in "${module.path.pathname}"`, {
+              componentId: module.id,
+              filePath: module.path.pathname
+            })
+          }
+        }
+      }
+
+      if (root && 'slots' in root && Array.isArray(root.slots)) {
+        root.slots = elementSlots
+      }
+    }
+  }
+}
+
+function _finalizeScriptState (state, options, module) {
+  const { attributes, server, getters, slots, client, style, provide, consume, onError } = options
+  const hasClient = typeof client === 'function'
+  const hasSlots = slots && Object.keys(slots).length > 0
+  const hasGetters = getters && Object.keys(getters).length > 0
+  const hasAttributes = attributes && Object.keys(attributes).length > 0
+  const hasServer = typeof server === 'function'
+  const hasStyles = module.styles && module.styles.length > 0
+  const hasComponentStyle = style && Object.keys(style).length > 0
+  const hasProvide = hasContextEntries(provide)
+  const hasConsume = Boolean(consume)
+  const hasOnError = typeof onError === 'function'
+
+  if (hasClient || hasSlots || hasGetters || hasAttributes || hasServer || hasStyles || hasComponentStyle || hasProvide || hasConsume || hasOnError) {
+    const args = {}
+    for (const key in state) {
+      if (!Object.hasOwn(state, key) || key === '__script__') {
+        continue
+      }
+
+      args[key] = state[key]
+    }
+    Object.assign(state.__script__.state, args)
+  } else {
+    delete state.__script__
+  }
+}
+
+/**
+ * Factory to create the component definition function.
+ *
+ * @param {Object} dependencies - The dependencies required to create the component definition.
+ * @param {CoraliteInstance} dependencies.app - The global Coralite app instance.
+ * @returns {Function}
+ */
+export function createComponentDefinition ({ app }) {
+  /**
+   * This function defines a component for the Coralite framework.
+   * @param {Object} options - Configuration options for the component
+   * @param {CoralitePluginContext} context - The evaluation context
+   * @returns {Promise<Object>}
+   */
+  return async (options, context) => {
+    const { attributes, server, getters, slots, style, provide, consume, formAssociated, onError } = options || {}
+    const { state: initialState, module, root } = context
+
+    if (formAssociated !== undefined && typeof formAssociated !== 'boolean') {
+      throw new CoraliteError(`Component "${module.id}": option "formAssociated" must be a boolean. Received: ${typeof formAssociated}`, {
+        componentId: module.id,
+        filePath: module.path?.pathname
+      })
+    }
+
+    if (onError !== undefined && typeof onError !== 'function') {
+      throw new CoraliteError(`Component "${module.id}": option "onError" must be a function. Received: ${typeof onError}`, {
+        componentId: module.id,
+        filePath: module.path?.pathname
+      })
+    }
+
+    if (options && typeof options === 'object') {
+      const allowedKeys = new Set([
+        'attributes',
+        'server',
+        'client',
+        'getters',
+        'slots',
+        'style',
+        'provide',
+        'consume',
+        'formAssociated',
+        'onError'
+      ])
+      for (const key of Object.keys(options)) {
+        if (!allowedKeys.has(key)) {
+          handleError({
+            onErrorCallback: app?.onError,
+            data: {
+              level: 'WARN',
+              type: 'unknown_option',
+              message: `Component "${module.id}" specifies unknown option "${key}". Valid options are: ${Array.from(allowedKeys).join(', ')}.`,
+              componentId: module.id
+            }
+          })
+        }
+      }
+    }
+
+    const normalizedAttributes = normalizeAndValidateAttributes(attributes, module.id, module.path?.pathname)
+
+    const state = Object.assign({}, initialState)
+
+    const scriptDefaultValues = {}
+    for (const [key, schema] of Object.entries(normalizedAttributes)) {
+      if (schema.default !== undefined) {
+        scriptDefaultValues[key] = schema.default
+      }
+    }
+
+    _validateComponentStyle(style, module)
+
+    state.errors = state.errors || {}
+
+    _resolveContextConsumers(state, consume, context.contextFrames)
+
+    for (const key of Object.keys(normalizedAttributes)) {
+      const camelName = kebabToCamel(key)
+      const kebabName = camelToKebab(camelName)
+      state['error_' + camelName] = ''
+      state['error_' + kebabName] = ''
+    }
+
+    state.__script__ = {
+      attributes: normalizedAttributes,
+      getters: getters || {},
+      state: {},
+      defaultValues: scriptDefaultValues,
+      slots: slots || {},
+      style: style || {},
+      provide: provide || {},
+      consume: consume || null,
+      formAssociated: Boolean(formAssociated),
+      onError: typeof onError === 'function' ? onError : null
+    }
+
+    _validateInitialAttributes(normalizedAttributes, state, app, module)
+    await _executeServerFunction(server, state, context, initialState, app, module)
+    await _executeServerGetters(getters, state, root)
+    await _processServerSlots(slots, state, root, context, app, module)
+
+    _finalizeScriptState(state, options, module)
+
+    return state
+  }
+}
+
+/**
+ * Helper to ensure a component is registered in the script manager with its styles and template.
+ * This is used as a fallback to ensure that even if script evaluation fails,
+ * the component's static assets (template and styles) are still available for bundling.
+ *
+ * @param {Object} component - The raw component document object from the parser.
+ * @param {any} scriptManager - The ScriptManager instance to register the component with.
+ * @param {Object|null} [scriptResultMeta=null] - Optional metadata resulting from component script evaluation (__script__).
+ * @returns {Promise<void>}
+ * @private
+ */
+async function _safeRegister (component, scriptManager, scriptResultMeta = null, onError = null) {
+  const templateAST = component.template?.children || []
+  const templateValues = component.values || {}
+
+  if (component.styles?.length && !component._processedCss) {
+    const rawCss = component.styles.join('\n')
+    component._processedCss = await formatComponentCss(component.id, rawCss, (err) => {
+      handleError({
+        onErrorCallback: onError,
+        data: {
+          level: 'ERR',
+          message: err?.message || String(err),
+          error: err instanceof Error ? err : new Error(String(err)),
+          componentId: component.id
+        }
+      })
+    })
+  }
+
+  const stylesHTML = component._processedCss || ''
+  const scriptMeta = scriptResultMeta || {
+    state: {},
+    slots: {},
+    defaultValues: {},
+    getters: {},
+    style: {},
+    formAssociated: false
+  }
+
+  const scriptObj = {
+    ...scriptMeta,
+    content: 'function(){}',
+    state: scriptMeta.state || {},
+    slots: scriptMeta.slots || {},
+    style: scriptMeta.style || {}
+  }
+
+  let defaultValues = scriptMeta.defaultValues || {}
+  let extractedComponents = []
+
+  if (component.script) {
+    if (!component._extractedClient) {
+      component._extractedClient = findAndExtractScript(component.script)
+    }
+    const extractedClient = component._extractedClient
+
+    if (extractedClient) {
+      scriptObj.content = extractedClient.content
+      scriptObj.lineOffset = (component.lineOffset || 0) + extractedClient.lineOffset
+      scriptObj.provideSource = extractedClient.provideSource
+      scriptObj.consumeSource = extractedClient.consumeSource
+      scriptObj.importStatements = extractedClient.importStatements
+      extractedComponents = extractedClient.components || []
+    }
+
+    if (!component._extractedServer) {
+      component._extractedServer = extractComponentProperty(component.script, 'server')
+    }
+    const extractedServer = component._extractedServer
+
+    if (extractedServer) {
+      scriptObj.stateContent = extractedServer.content
+      scriptObj.stateLineOffset = (component.lineOffset || 0) + extractedServer.lineOffset
+    }
+
+    // Attempt to extract getters, attributes, and slots from the script if they weren't provided
+    // This provides a fallback if registerBaseComponent evaluation fails.
+    if (!scriptResultMeta) {
+      const extractedGetters = extractComponentProperty(component.script, 'getters')
+      if (extractedGetters) {
+        try {
+          // Note: we can't easily evaluate the getters content here without a VM context,
+          // but we can at least pass the content through if it's an object expression.
+          if (extractedGetters.content.trim().startsWith('{')) {
+            scriptObj.getters = new Function(`return ${extractedGetters.content}`)()
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const extractedStyle = extractComponentProperty(component.script, 'style')
+      if (extractedStyle) {
+        try {
+          if (extractedStyle.content.trim().startsWith('{')) {
+            scriptObj.style = new Function(`return ${extractedStyle.content}`)()
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const extractedAttributes = extractComponentProperty(component.script, 'attributes')
+      if (extractedAttributes) {
+        try {
+          if (extractedAttributes.content.trim().startsWith('{')) {
+            const attrs = new Function(`return ${extractedAttributes.content}`)()
+            scriptObj.attributes = normalizeAndValidateAttributes(attrs, component.id, component.filePath || (component.path && component.path.pathname))
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const extractedSlots = extractComponentProperty(component.script, 'slots')
+      if (extractedSlots) {
+        try {
+          if (extractedSlots.content.trim().startsWith('{')) {
+            scriptObj.slots = new Function(`return ${extractedSlots.content}`)()
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const extractedOnError = extractComponentProperty(component.script, 'onError')
+      if (extractedOnError) {
+        try {
+          scriptObj.onError = new Function(`return ${extractedOnError.content}`)()
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  }
+
+  const declarativeComponents = (component.customElements || []).map(el => el.name)
+  const nestedComponents = [...new Set([...declarativeComponents, ...extractedComponents])]
+  scriptObj.components = nestedComponents
+
+  templateValues?.refs?.forEach(ref => {
+    const refKey = `ref_${ref.name}`
+    defaultValues[refKey] = ''
+    if (!scriptObj.state[refKey]) {
+      scriptObj.state[refKey] = ''
+    }
+  })
+  scriptObj.defaultValues = defaultValues
+
+  scriptManager.registerComponent({
+    id: component.id,
+    getters: scriptMeta.getters,
+    script: scriptObj,
+    filePath: component.filePath || (component.path && component.path.pathname),
+    templateAST,
+    templateValues,
+    defaultValues,
+    styles: stylesHTML,
+    slots: scriptMeta.slots,
+    style: scriptMeta.style,
+    provide: scriptMeta.provide,
+    consume: scriptMeta.consume,
+    formAssociated: Boolean(scriptMeta.formAssociated),
+    onError: scriptMeta.onError || scriptObj.onError || null,
+    override: true
+  })
+}
+
+/**
+ * Compiles fragment ops and freezes component template AST for fast-path SSR rendering.
+ *
+ * @param {Object} component - Component result object.
+ * @param {Object} app - Global Coralite app instance.
+ */
+/**
+ * Performs base evaluation and registers a component in the script manager.
+ * Used during discovery and updates to lock in the pristine component definition.
+ *
+ * @param {Object} options - The registration options.
+ * @param {any} options.component - The component document.
+ * @param {Function} options.evaluate - The evaluation function.
+ * @param {any} options.scriptManager - The script manager instance.
+ * @param {Function} options.createSession - The session creation function.
+ * @param {string} options.mode - The current build mode.
+ * @param {import('../types/index.js').CoraliteOnError} [options.onError] - Error handler callback.
+ * @param {any} [options.app] - Global Coralite app instance.
+ * @returns {Promise<void>}
+ */
+export async function registerBaseComponent ({
+  component,
+  evaluate,
+  scriptManager,
+  createSession,
+  mode,
+  onError,
+  app: _app
+}) {
+  if (!component) {
+    return
+  }
+
+  if (!component.script) {
+    await _safeRegister(component, scriptManager, null, onError)
+    return
+  }
+
+  const baseSession = createSession('base-evaluation')
+
+  try {
+    const scriptResult = await evaluate({
+      module: component,
+      state: {},
+      page: {
+        url: { pathname: component.path?.pathname || '' },
+        file: { pathname: component.path?.pathname || '' },
+        meta: {}
+      },
+      root: null,
+      contextId: `base-${component.id}`,
+      session: baseSession,
+      mode
+    })
+
+    await _safeRegister(component, scriptManager, scriptResult?.__script__, onError)
+  } catch (_err) {
+    const warnMessage = `Base evaluation for component "${component.id}" failed: ${_err.message}. Registering static fallback definition.`
+    handleError({
+      onErrorCallback: onError,
+      data: {
+        level: 'WARN',
+        type: 'base_evaluation',
+        message: warnMessage,
+        componentId: component.id,
+        error: _err
+      }
+    })
+    await _safeRegister(component, scriptManager, null, onError)
+  }
+}

@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it, beforeEach } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass } from '../../../lib/client/element.js'
+import { createCoraliteClass } from '../../../lib/coralite-element.js'
 import { assertSame } from '../helpers.js'
 
 describe('CoraliteElement', () => {
@@ -352,51 +352,49 @@ describe('CoraliteElement', () => {
   })
 
   it('should preserve live node identity and event listeners when computed slot transformer wraps nodes', (t, done) => {
-    const wrapperTag = 'wrapper-comp-' + Math.random().toString(36).substring(2, 9)
-    const WrapperComp = createCoraliteClass({
-      componentId: 'wrapper-comp',
-      templateHTML: '<div><slot name="actions"></slot></div>',
-      slots: {
-        actions (nodes) {
-          const wrapper = document.createElement('div')
-          wrapper.className = 'actions-wrapper'
-          wrapper.replaceChildren(...nodes)
-          return wrapper
+      const wrapperTag = 'wrapper-comp-' + Math.random().toString(36).substring(2, 9)
+      const WrapperComp = createCoraliteClass({
+        componentId: 'wrapper-comp',
+        templateHTML: '<div><slot name="actions"></slot></div>',
+        slots: {
+          actions (nodes) {
+            const wrapper = document.createElement('div')
+            wrapper.className = 'actions-wrapper'
+            wrapper.replaceChildren(...nodes)
+            return wrapper
+          }
         }
-      }
+      })
+      customElements.define(wrapperTag, WrapperComp)
+
+      const comp = document.createElement(wrapperTag)
+      document.body.appendChild(comp)
+
+      const btn = document.createElement('button')
+      btn.setAttribute('slot', 'actions')
+      btn.textContent = 'Save Action'
+      let clicked = false
+      btn.addEventListener('click', () => { clicked = true })
+
+      comp.appendChild(btn)
+
+      queueMicrotask(() => {
+        const slot = comp.querySelector('slot[name="actions"]')
+        assert.ok(slot)
+        assert.strictEqual(slot._originalNodes.length, 1)
+        assertSame(slot._originalNodes[0], btn)
+
+        const wrapperEl = slot.querySelector('.actions-wrapper')
+        assert.ok(wrapperEl)
+        assertSame(wrapperEl.firstElementChild, btn)
+
+        btn.click()
+        assert.strictEqual(clicked, true)
+
+        document.body.removeChild(comp)
+        done()
+      })
     })
-    customElements.define(wrapperTag, WrapperComp)
-
-    const comp = document.createElement(wrapperTag)
-    document.body.appendChild(comp)
-
-    const btn = document.createElement('button')
-    btn.setAttribute('slot', 'actions')
-    btn.textContent = 'Save Action'
-    let clicked = false
-    btn.addEventListener('click', () => {
-      clicked = true
-    })
-
-    comp.appendChild(btn)
-
-    queueMicrotask(() => {
-      const slot = comp.querySelector('slot[name="actions"]')
-      assert.ok(slot)
-      assert.strictEqual(slot._originalNodes.length, 1)
-      assertSame(slot._originalNodes[0], btn)
-
-      const wrapperEl = slot.querySelector('.actions-wrapper')
-      assert.ok(wrapperEl)
-      assertSame(wrapperEl.firstElementChild, btn)
-
-      btn.click()
-      assert.strictEqual(clicked, true)
-
-      document.body.removeChild(comp)
-      done()
-    })
-  })
 
   it('should auto-remove single-token aria-* attributes on falsy values, preserve 0 and "0", and handle truthy values', (t, done) => {
     const ariaTagName = 'aria-comp-' + Math.random().toString(36).substring(2, 9)
@@ -520,10 +518,7 @@ describe('CoraliteElement', () => {
       },
       client: ({ state, observe }) => {
         observe('score', (newVal, oldVal) => {
-          declaredCalledWith = {
-            newVal,
-            oldVal
-          }
+          declaredCalledWith = { newVal, oldVal }
         })
         observe('dynamicProp', (newVal) => {
           observedDynamic = newVal
@@ -757,13 +752,12 @@ describe('CoraliteElement', () => {
         isTrue: true
       },
       getters: {
-        computedGetter: ({ state }) => (state.isTrue ? 'value' : 'another value')
+        computedGetter: ({ state }) => state.isTrue ? 'value' : 'another value'
       },
       hydrationMap: {
         attributes: [
           {
-            // path to child-comp inside parent-comp in the pristine template
-            path: [0, 0],
+            path: [0, 0], // path to child-comp inside parent-comp in the pristine template
             name: 'name',
             template: '{{ computedGetter }}'
           }
@@ -859,10 +853,7 @@ describe('CoraliteElement', () => {
       const parentEl = document.createElement(parentTag)
       document.body.appendChild(parentEl)
 
-      return {
-        parentEl,
-        iconTag
-      }
+      return { parentEl, iconTag }
     }
 
     /**
@@ -1019,7 +1010,7 @@ describe('CoraliteElement', () => {
     const ChildElement = createCoraliteClass({
       componentId: childTag,
       slots: {
-        default (_nodes) {
+        default (nodes) {
           return '<span class="child-slot">Child Slot Content</span>'
         }
       }
@@ -1028,7 +1019,7 @@ describe('CoraliteElement', () => {
     const ParentElement = createCoraliteClass({
       componentId: parentTag,
       slots: {
-        default (_nodes) {
+        default (nodes) {
           return '<div class="parent-slot">Parent Slot Content</div>'
         }
       }
@@ -1152,10 +1143,7 @@ describe('CoraliteElement', () => {
       componentId: 'inner-ref-comp',
       templateHTML: '<div><button ref="btnElement">Inner Button</button></div>',
       hydrationMap: {
-        refs: [{
-          name: 'btnElement',
-          path: [0, 0]
-        }]
+        refs: [{ name: 'btnElement', path: [0, 0] }]
       }
     })
 
@@ -1163,10 +1151,7 @@ describe('CoraliteElement', () => {
       componentId: 'outer-ref-comp',
       templateHTML: `<div><button ref="btnElement">Outer Button</button><${innerTagName}></${innerTagName}></div>`,
       hydrationMap: {
-        refs: [{
-          name: 'btnElement',
-          path: [0, 0]
-        }]
+        refs: [{ name: 'btnElement', path: [0, 0] }]
       }
     })
 
@@ -1178,7 +1163,7 @@ describe('CoraliteElement', () => {
 
     queueMicrotask(() => {
       const innerEl = el.querySelector(innerTagName)
-
+      
       // Verify both resolved their own refs correctly even though they share the same ref name
       assert.ok(el[Symbol.for('coralite.testing')].refs.btnElement)
       assert.strictEqual(el[Symbol.for('coralite.testing')].refs.btnElement.textContent, 'Outer Button')
@@ -1258,18 +1243,14 @@ describe('CoraliteElement', () => {
   it('should resolve refs nested in foreign custom element boundaries via getNodeByPath fallback', (t, done) => {
     const parentTagName = 'foreign-fallback-parent-' + Math.random().toString(36).substring(2, 9)
     const foreignHostTag = 'foreign-fallback-host-' + Math.random().toString(36).substring(2, 9)
-    class ForeignHost extends HTMLElement {
-    }
+    class ForeignHost extends HTMLElement {}
     customElements.define(foreignHostTag, ForeignHost)
 
     const ParentElement = createCoraliteClass({
       componentId: 'foreign-fallback-parent',
       templateHTML: `<div><${foreignHostTag} data-cid="foreign-fallback-host-0"><button ref="foreignBtn">Click</button></${foreignHostTag}></div>`,
       hydrationMap: {
-        refs: [{
-          name: 'foreignBtn',
-          path: [0, 0, 0]
-        }]
+        refs: [{ name: 'foreignBtn', path: [0, 0, 0] }]
       }
     })
 
@@ -1346,10 +1327,7 @@ describe('CoraliteElement', () => {
           title: 'Hello Slot'
         },
         hydrationMap: {
-          refs: [{
-            name: 'btn',
-            path: [0, 1]
-          }]
+          refs: [{ name: 'btn', path: [0, 1] }]
         },
         slots: {
           content (nodes, context) {
@@ -1773,9 +1751,7 @@ describe('CoraliteElement', () => {
       btn.setAttribute('slot', 'action')
       btn.textContent = 'Interactive Button'
       let clicked = false
-      btn.addEventListener('click', () => {
-        clicked = true
-      })
+      btn.addEventListener('click', () => { clicked = true })
 
       comp.appendChild(btn)
 
@@ -2102,23 +2078,15 @@ describe('CoraliteElement', () => {
       const ConsumerComp = createCoraliteClass({
         componentId: 'ctx-consumer',
         templateHTML: '<div><span id="theme-display">{{ theme }}</span></div>',
-        consume: {
-          theme: {
-            context: 'theme',
-            default: 'light'
-          }
-        },
+        consume: { theme: { context: 'theme', default: 'light' } },
         hydrationMap: {
-          texts: [{
-            path: [0, 0],
-            template: '{{ theme }}'
-          }]
+          texts: [{ path: [0, 0], template: '{{ theme }}' }]
         }
       })
       customElements.define(tag, ConsumerComp)
 
       const provider1 = document.createElement('div')
-      const provider1Theme = 'dark'
+      let provider1Theme = 'dark'
       provider1.addEventListener('context-request', (e) => {
         const key = e.context || e.detail?.context
         const cb = e.callback || e.detail?.callback
@@ -2128,7 +2096,7 @@ describe('CoraliteElement', () => {
       })
 
       const provider2 = document.createElement('div')
-      const provider2Theme = 'blue'
+      let provider2Theme = 'blue'
       provider2.addEventListener('context-request', (e) => {
         const key = e.context || e.detail?.context
         const cb = e.callback || e.detail?.callback
@@ -2170,8 +2138,7 @@ describe('CoraliteElement', () => {
         getters: {
           asyncData ({ signal }) {
             getterSignal = signal
-            return new Promise(() => {
-            })
+            return new Promise(() => {}) // pending promise
           }
         }
       })
@@ -2181,7 +2148,7 @@ describe('CoraliteElement', () => {
       document.body.appendChild(el)
 
       // Trigger getter access
-      el._state.asyncData
+      const dummy = el._state.asyncData
 
       queueMicrotask(() => {
         assert.ok(getterSignal)
@@ -2204,10 +2171,7 @@ describe('CoraliteElement', () => {
         templateHTML: '<div><span id="num">{{ count }}</span></div>',
         defaultValues: { count: 0 },
         hydrationMap: {
-          texts: [{
-            path: [0, 0],
-            template: '{{ count }}'
-          }]
+          texts: [{ path: [0, 0], template: '{{ count }}' }]
         }
       })
       customElements.define(tag, OfflineComp)
@@ -2236,10 +2200,7 @@ describe('CoraliteElement', () => {
       const DedupComp = createCoraliteClass({
         componentId: 'dedup-slot',
         templateHTML: '<div><slot name="foo"></slot></div>',
-        defaultValues: {
-          a: 1,
-          b: 2
-        },
+        defaultValues: { a: 1, b: 2 },
         slots: {
           foo (nodes, { state }) {
             return `<span>${state.a} - ${state.b}</span>`
@@ -2276,10 +2237,7 @@ describe('CoraliteElement', () => {
       const RepeatComp = createCoraliteClass({
         componentId: 'repeat-reparent',
         templateHTML: '<div><button id="btn">Click</button><slot name="bar"></slot></div>',
-        defaultValues: {
-          x: 10,
-          items: []
-        },
+        defaultValues: { x: 10, items: [] },
         slots: {
           bar (nodes, { state }) {
             return `<span>${state.x}</span>`

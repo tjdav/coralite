@@ -72,11 +72,11 @@ if (typeof window.HTMLElement.prototype.attachInternals !== 'function') {
       return true
     }
 
-    setFormValue (value, _state) {
+    setFormValue (value, state) {
       this._formValue = value
     }
 
-    setValidity (flags = {}, message = '', _anchor) {
+    setValidity (flags = {}, message = '', anchor) {
       const hasError = Object.values(flags).some(Boolean)
       this._validity = {
         valid: !hasError,
@@ -126,9 +126,7 @@ if (OriginalFormData) {
         const customElements = form.querySelectorAll('*')
         for (let i = 0; i < customElements.length; i++) {
           const el = customElements[i]
-          if (el.closest && el.closest('form') !== form) {
-            continue
-          }
+          if (el.closest && el.closest('form') !== form) continue
           if (el.constructor.formAssociated && el._internals && el._internals._formValue !== null && el.name) {
             this.append(el.name, el._internals._formValue)
           }

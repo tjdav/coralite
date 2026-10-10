@@ -9,16 +9,15 @@ import {
   validatePluginsDir,
   formatPluginValidationReport,
   findOuterScopeReferences
-} from '../../../lib/server/plugin/validator.js'
+} from '../../../lib/plugin-validator.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 describe('plugin-validator.js', () => {
   describe('findOuterScopeReferences', () => {
     it('should detect free outer-scope references in functions when moduleBindings is provided', () => {
-      const outerHelper = () => {
-      }
-      function sampleFn (_ctx) {
+      const outerHelper = () => {}
+      function sampleFn (ctx) {
         const local = 123
         console.log(local)
         // @ts-ignore
@@ -47,12 +46,7 @@ describe('plugin-validator.js', () => {
         alert('hello')
         prompt('enter')
         const notif = new Notification('hi')
-        const enc = new VideoEncoder({
-          output: () => {
-          },
-          error: () => {
-          }
-        })
+        const enc = new VideoEncoder({ output: () => {}, error: () => {} })
         const dec = new TextDecoder()
         const err = new DOMException('msg')
         const encoded = btoa('text')
@@ -415,8 +409,7 @@ describe('plugin-validator.js', () => {
       const plugin = {
         name: 'bad-client-plugin',
         client: {
-          onConnected () {
-          }
+          onConnected () {}
         }
       }
       const result = validatePluginObject(plugin, 'bad-client.js')
@@ -428,8 +421,7 @@ describe('plugin-validator.js', () => {
       const plugin = {
         name: 'unknown-client-plugin',
         client: {
-          someUnknownHook () {
-          }
+          someUnknownHook () {}
         }
       }
       const result = validatePluginObject(plugin, 'unknown-client.js')

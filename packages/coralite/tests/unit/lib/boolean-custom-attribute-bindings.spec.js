@@ -1,7 +1,7 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
-import { createCoraliteClass, isBooleanCustomAttribute } from '../../../lib/client/element.js'
+import { createCoraliteClass, isBooleanCustomAttribute } from '../../../lib/coralite-element.js'
 
 describe('Boolean Custom Attribute Bindings', () => {
   it('isBooleanCustomAttribute utility tests', () => {

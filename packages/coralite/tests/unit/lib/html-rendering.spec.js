@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import { strict as assert } from 'node:assert'
 import '../setup.js'
-import { createCoraliteClass } from '../../../lib/client/element.js'
+import { createCoraliteClass } from '../../../lib/coralite-element.js'
 
 describe('Coralite HTML Rendering', () => {
   it('should render HTML content when a token contains HTML', async () => {
@@ -43,26 +43,10 @@ describe('Coralite HTML Rendering', () => {
       templateHTML: '<button aria-expanded="{{ isExpanded }}" aria-pressed="{{ isPressed }}" aria-checked="{{ isChecked }}" aria-selected="{{ isSelected }}"></button>',
       hydrationMap: {
         attributes: [
-          {
-            name: 'aria-expanded',
-            path: [0],
-            template: '{{ isExpanded }}'
-          },
-          {
-            name: 'aria-pressed',
-            path: [0],
-            template: '{{ isPressed }}'
-          },
-          {
-            name: 'aria-checked',
-            path: [0],
-            template: '{{ isChecked }}'
-          },
-          {
-            name: 'aria-selected',
-            path: [0],
-            template: '{{ isSelected }}'
-          }
+          { name: 'aria-expanded', path: [0], template: '{{ isExpanded }}' },
+          { name: 'aria-pressed', path: [0], template: '{{ isPressed }}' },
+          { name: 'aria-checked', path: [0], template: '{{ isChecked }}' },
+          { name: 'aria-selected', path: [0], template: '{{ isSelected }}' }
         ]
       },
       defaultValues: {

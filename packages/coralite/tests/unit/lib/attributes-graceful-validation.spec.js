@@ -1,8 +1,8 @@
 import '../setup.js'
 import { describe, it } from 'node:test'
 import assert from 'node:assert'
-import { createComponentDefinition } from '../../../lib/server/component/setup.js'
-import { createCoraliteClass } from '../../../lib/client/element.js'
+import { createComponentDefinition } from '../../../lib/component-setup.js'
+import { createCoraliteClass } from '../../../lib/coralite-element.js'
 
 describe('Graceful Attribute Validation & error_* Tokens', () => {
   const dummyApp = {
@@ -13,21 +13,12 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
   describe('Server-Side Rendering (createComponentDefinition)', () => {
     it('sets state.errors and error_* tokens without throwing on required attribute omission', async () => {
       const define = createComponentDefinition({ app: dummyApp })
-      const module = {
-        id: 'req-comp',
-        path: { pathname: '/req-comp.html' }
-      }
-      const context = {
-        state: {},
-        module
-      }
+      const module = { id: 'req-comp', path: { pathname: '/req-comp.html' } }
+      const context = { state: {}, module }
 
       const options = {
         attributes: {
-          username: {
-            type: String,
-            required: true
-          }
+          username: { type: String, required: true }
         }
       }
 
@@ -39,14 +30,8 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
 
     it('sets state.errors and error_* tokens on values enum mismatch and retains input value', async () => {
       const define = createComponentDefinition({ app: dummyApp })
-      const module = {
-        id: 'enum-comp',
-        path: { pathname: '/enum-comp.html' }
-      }
-      const context = {
-        state: { role: 'superadmin' },
-        module
-      }
+      const module = { id: 'enum-comp', path: { pathname: '/enum-comp.html' } }
+      const context = { state: { role: 'superadmin' }, module }
 
       const options = {
         attributes: {
@@ -62,18 +47,8 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
 
     it('sets state.errors and error_* tokens when validate returns false or custom string or throws', async () => {
       const define = createComponentDefinition({ app: dummyApp })
-      const module = {
-        id: 'val-comp',
-        path: { pathname: '/val-comp.html' }
-      }
-      const context = {
-        state: {
-          age: 15,
-          count: -5,
-          label: 'bad'
-        },
-        module
-      }
+      const module = { id: 'val-comp', path: { pathname: '/val-comp.html' } }
+      const context = { state: { age: 15, count: -5, label: 'bad' }, module }
 
       const options = {
         attributes: {
@@ -87,9 +62,7 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
           },
           label: {
             type: String,
-            validate: () => {
-              throw new Error('Invalid label format')
-            }
+            validate: () => { throw new Error('Invalid label format') }
           }
         }
       }
@@ -110,14 +83,8 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
 
     it('handles kebab-case attribute names creating both camelCase and kebab-case error_* aliases', async () => {
       const define = createComponentDefinition({ app: dummyApp })
-      const module = {
-        id: 'kebab-comp',
-        path: { pathname: '/kebab-comp.html' }
-      }
-      const context = {
-        state: { 'user-age': 12 },
-        module
-      }
+      const module = { id: 'kebab-comp', path: { pathname: '/kebab-comp.html' } }
+      const context = { state: { 'user-age': 12 }, module }
 
       const options = {
         attributes: {
@@ -137,10 +104,7 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
 
     it('ensures instance error isolation during concurrent component rendering', async () => {
       const define = createComponentDefinition({ app: dummyApp })
-      const module = {
-        id: 'concurrent-comp',
-        path: { pathname: '/concurrent-comp.html' }
-      }
+      const module = { id: 'concurrent-comp', path: { pathname: '/concurrent-comp.html' } }
 
       const options = {
         attributes: {
@@ -152,18 +116,9 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       }
 
       const tasks = [
-        define(options, {
-          state: { score: 20 },
-          module
-        }),
-        define(options, {
-          state: { score: 80 },
-          module
-        }),
-        define(options, {
-          state: { score: 10 },
-          module
-        })
+        define(options, { state: { score: 20 }, module }),
+        define(options, { state: { score: 80 }, module }),
+        define(options, { state: { score: 10 }, module })
       ]
 
       const [res1, res2, res3] = await Promise.all(tasks)
@@ -274,10 +229,7 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
 
     it('does not leak SSR validation errors across consecutive instances sharing component options and defaultValues', async () => {
       const define = createComponentDefinition({ app: dummyApp })
-      const module = {
-        id: 'leak-comp',
-        path: { pathname: '/leak-comp.html' }
-      }
+      const module = { id: 'leak-comp', path: { pathname: '/leak-comp.html' } }
 
       const options = {
         attributes: {
@@ -290,10 +242,7 @@ describe('Graceful Attribute Validation & error_* Tokens', () => {
       }
 
       // Instance 1: rendered with invalid attribute value
-      const context1 = {
-        state: { userAge: 12 },
-        module
-      }
+      const context1 = { state: { userAge: 12 }, module }
       const result1 = await define(options, context1)
       assert.strictEqual(result1.errors.userAge, 'Underage user.')
 
