@@ -1,6 +1,9 @@
 import render from 'dom-serializer'
+import { parse as parseJS } from 'acorn'
+import { simple as walkJS } from 'acorn-walk'
 import { parseHTML } from '../utils/parse.js'
 import { relinkChildren } from '../utils/dom.js'
+import { CoraliteError } from '../../shared/errors.js'
 
 /**
  * @import { CoraliteElement, CoraliteAnyNode, CoraliteComponentRoot, Attribute, CoraliteModule, CoraliteSession } from '../../../types/index.js'
@@ -107,4 +110,198 @@ export async function processTokenValue (value, context) {
   }
 
   return result.root.children
+}
+
+const ALLOWED_PAGE_BLOCKS = new Set([
+  'paths',
+  'server',
+  'getters',
+  'style',
+  'provide',
+  'client',
+  'onError'
+])
+
+const REJECTED_PAGE_BLOCKS = {
+  attributes: 'definePage does not support "attributes". Use "server" to fetch page data.',
+  slots: 'definePage does not support "slots". Pages are the outermost layer.',
+  consume: 'definePage does not support "consume". Pages are the root provider — use "provide".',
+  formAssociated: 'definePage does not support "formAssociated". Use a form-associated component instead.'
+}
+
+/**
+ * Parses and extracts definePage configuration from page HTML scripts.
+ *
+ * @param {string} content - Raw page HTML content
+ * @param {Object} [options={}] - Options containing filePath
+ * @returns {{ hasDefinePage: boolean, blocks: Record<string, any> | null, script: string | null }}
+ */
+export function extractPageScript (content, options = {}) {
+  const filePath = options.filePath || ''
+  if (!content || typeof content !== 'string') {
+    return {
+      hasDefinePage: false,
+      blocks: null,
+      script: null
+    }
+  }
+
+  const scriptRegex = /<script[\s\S]*?>([\s\S]*?)<\/script>/gi
+  let match
+  let scriptContent = null
+
+  while ((match = scriptRegex.exec(content)) !== null) {
+    if (match[1] !== undefined) {
+      scriptContent = match[1]
+      break
+    }
+  }
+
+  if (!scriptContent || !scriptContent.trim()) {
+    return {
+      hasDefinePage: false,
+      blocks: null,
+      script: null
+    }
+  }
+
+  let ast
+  try {
+    ast = parseJS(scriptContent, {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      locations: true
+    })
+  } catch {
+    return {
+      hasDefinePage: false,
+      blocks: null,
+      script: scriptContent
+    }
+  }
+
+  let definePageCall = null
+  let definePageArg = null
+  let hasBareExports = false
+
+  if (ast && ast.body) {
+    for (const node of ast.body) {
+      if (node.type === 'ExportNamedDeclaration') {
+        if (node.declaration) {
+          if (node.declaration.type === 'VariableDeclaration') {
+            for (const decl of node.declaration.declarations) {
+              if (decl.id && decl.id.type === 'Identifier') {
+                if (decl.id.name === 'paths' || decl.id.name === 'server') {
+                  hasBareExports = true
+                }
+              }
+            }
+          } else if (node.declaration.type === 'FunctionDeclaration') {
+            if (node.declaration.id && (node.declaration.id.name === 'paths' || node.declaration.id.name === 'server')) {
+              hasBareExports = true
+            }
+          }
+        }
+        if (node.specifiers) {
+          for (const spec of node.specifiers) {
+            let exportedName = ''
+            if (spec.exported) {
+              exportedName = spec.exported.type === 'Identifier' ? spec.exported.name : String(spec.exported.value)
+            } else if (spec.local) {
+              exportedName = spec.local.type === 'Identifier' ? spec.local.name : String(spec.local.value)
+            }
+            if (exportedName === 'paths' || exportedName === 'server') {
+              hasBareExports = true
+            }
+          }
+        }
+      }
+
+      if (node.type === 'ExportDefaultDeclaration') {
+        const decl = node.declaration
+        if (
+          decl &&
+          decl.type === 'CallExpression' &&
+          decl.callee &&
+          decl.callee.type === 'Identifier' &&
+          decl.callee.name === 'definePage'
+        ) {
+          definePageCall = decl
+          definePageArg = decl.arguments[0]
+        }
+      }
+    }
+
+    if (!definePageCall) {
+      walkJS(ast, {
+        CallExpression (node) {
+          if (
+            node.callee &&
+            node.callee.type === 'Identifier' &&
+            node.callee.name === 'definePage' &&
+            !definePageCall
+          ) {
+            definePageCall = node
+            definePageArg = node.arguments[0]
+          }
+        }
+      })
+    }
+  }
+
+  if (hasBareExports && !definePageCall) {
+    throw new CoraliteError('Page uses the deprecated bare-export shape. Use export default definePage({ ... }) instead.', {
+      code: 'CORALITE-E108',
+      filePath
+    })
+  }
+
+  if (!definePageCall || !definePageArg || definePageArg.type !== 'ObjectExpression') {
+    return {
+      hasDefinePage: false,
+      blocks: null,
+      script: scriptContent
+    }
+  }
+
+  const blocks = {}
+
+  for (const prop of definePageArg.properties) {
+    if (prop.type !== 'Property') {
+      continue
+    }
+
+    let keyName = ''
+    if (prop.key.type === 'Identifier') {
+      keyName = prop.key.name
+    } else if (prop.key.type === 'Literal') {
+      keyName = String(prop.key.value)
+    }
+
+    if (!keyName) {
+      continue
+    }
+
+    if (REJECTED_PAGE_BLOCKS[keyName]) {
+      throw new CoraliteError(REJECTED_PAGE_BLOCKS[keyName], {
+        code: 'CORALITE-E107',
+        filePath
+      })
+    }
+
+    if (!ALLOWED_PAGE_BLOCKS.has(keyName)) {
+      throw new CoraliteError(`Unknown block "${keyName}" in definePage. Valid blocks are: paths, server, getters, style, provide, client, onError.`, {
+        code: 'CORALITE-E107',
+        filePath
+      })
+    }
+
+    blocks[keyName] = prop
+  }
+
+  return {
+    hasDefinePage: true,
+    blocks,
+    script: scriptContent
+  }
 }
