@@ -21,12 +21,18 @@ describe('Live hydration store', () => {
   it('_setupState reads from window.__coralite_hydration__ at component init time', () => {
     const origWindowStore = globalThis.window.__coralite_hydration__
     globalThis.window.__coralite_hydration__ = {
-      'test-instance-1': { title: 'Live Title', items: [1, 2, 3] }
+      'test-instance-1': {
+        title: 'Live Title',
+        items: [1, 2, 3]
+      }
     }
 
     const CompClass = createCoraliteClass({
       componentId: 'test-comp',
-      defaultValues: { title: 'Default Title', items: [] }
+      defaultValues: {
+        title: 'Default Title',
+        items: []
+      }
     })
 
     const tag = 'test-hydration-live-elem'
@@ -85,10 +91,16 @@ describe('Live hydration store', () => {
     store.replace(newStore)
     assert.strictEqual(store.get(), newStore)
 
-    if (origCoralite) globalThis.window.__coralite__ = origCoralite
-    else delete globalThis.window.__coralite__
-    if (origHydration) globalThis.window.__coralite_hydration__ = origHydration
-    else delete globalThis.window.__coralite_hydration__
+    if (origCoralite) {
+      globalThis.window.__coralite__ = origCoralite
+    } else {
+      delete globalThis.window.__coralite__
+    }
+    if (origHydration) {
+      globalThis.window.__coralite_hydration__ = origHydration
+    } else {
+      delete globalThis.window.__coralite_hydration__
+    }
   })
 
   it('a component created after replace() reads from the new store while prior component is unaffected', () => {
@@ -141,7 +153,8 @@ describe('Live hydration store', () => {
     await sm.use({
       name: 'test-hydration-plugin',
       client: {
-        init () {}
+        init () {
+        }
       }
     })
 

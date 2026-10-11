@@ -40,6 +40,7 @@ export function generateClientRuntime ({
 
   window.__coralite_instanceCounters = window.__coralite_instanceCounters || ${instanceCounters};
   window.__coralite_hydration__ = window.__coralite_hydration__ || ${hydrationData};
+  window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${inlinedStyles});
   window.__coralite__ = window.__coralite__ || {};
   if (!window.__coralite__.hydrationStore) {
     window.__coralite__.hydrationStore = {
@@ -57,11 +58,108 @@ export function generateClientRuntime ({
     };
   }
 
+  const loadCache = {};
+
+  const loadComponent = (componentId) => {
+    const entry = componentManifest[componentId];
+    if (!entry) return Promise.resolve();
+    if (loadCache[componentId]) return loadCache[componentId];
+
+    loadCache[componentId] = (async () => {
+      const isDev = typeof entry === 'string' && entry.includes('-runtime');
+      const jsPath = typeof entry === 'string' ? entry : entry.js;
+      const cssPath = typeof entry === 'object' ? entry.css : null;
+
+      if (cssPath) {
+        const fullCssPath = '${base}assets/css/' + cssPath;
+        const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(componentId);
+
+        if (!document.querySelector('link[href="' + fullCssPath + '"]') && !isLoaded) {
+          const link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = fullCssPath;
+          document.head.appendChild(link);
+          if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(componentId);
+        }
+      }
+
+      const module = await import('${base}assets/js/' + jsPath);
+      if (module.default && module.default.componentId) {
+        const id = module.default.componentId;
+        if (!customElements.get(id)) {
+          if (module.default.styles && !cssPath) {
+            const styleId = 'coralite-style-' + id;
+            const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(id);
+
+            if (!document.getElementById(styleId) && !isLoaded) {
+              const style = document.createElement('style');
+              style.id = styleId;
+              const cssContent = module.default.styles;
+              const isAtRule = /^\\s*@(scope|layer|media|supports|keyframes|font-face|container)\\b/i.test(cssContent);
+              style.textContent = isAtRule ? cssContent : id + ' {\\n' + cssContent + '\\n}';
+              document.head.appendChild(style);
+              if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(id);
+            }
+          }
+          customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks));
+          if (typeof registerDevToolsComponent === 'function') {
+            registerDevToolsComponent(id);
+          }
+          if (window.__coralite__ && window.__coralite__.lifecycle) window.__coralite__.lifecycle._markDefined(id);
+        }
+      }
+    })();
+    return loadCache[componentId];
+  };
+
+  const getTag = (node) => (node && (node.tagName || node.localName || node.nodeName || node.tag) || '').toLowerCase();
+
+  const upgrade = async (root) => {
+    if (!root) return;
+    const tags = new Set();
+    const rootTag = getTag(root);
+    if (rootTag && componentManifest[rootTag]) {
+      tags.add(rootTag);
+    }
+    if (typeof root.querySelectorAll === 'function') {
+      const all = root.querySelectorAll('*');
+      for (let i = 0; i < all.length; i++) {
+        const tag = getTag(all[i]);
+        if (componentManifest[tag]) {
+          tags.add(tag);
+        }
+      }
+    }
+
+    if (tags.size > 0) {
+      await Promise.all(Array.from(tags).map(tag => loadComponent(tag)));
+    }
+
+    if (typeof customElements !== 'undefined' && typeof customElements.upgrade === 'function') {
+      if (rootTag && componentManifest[rootTag]) {
+        customElements.upgrade(root);
+      }
+      if (typeof root.querySelectorAll === 'function') {
+        for (const tag of tags) {
+          if (typeof root.matches === 'function' && root.matches(tag)) {
+            customElements.upgrade(root);
+          }
+          const els = root.querySelectorAll(tag);
+          for (let i = 0; i < els.length; i++) {
+            customElements.upgrade(els[i]);
+          }
+        }
+      }
+    }
+  };
+
+  window.__coralite__.loadComponent = loadComponent;
+  window.__coralite__.upgrade = upgrade;
+
   if (typeof initPlugins === 'function') {
     await initPlugins();
   }
   const declarativeTags = ${JSON.stringify(declarativeTags)};
-  window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${inlinedStyles});
 
   if (typeof setupDevTools === 'function') {
     setupDevTools();
@@ -125,60 +223,6 @@ export function generateClientRuntime ({
   globalThis.executableScripts = [];
   globalThis.globalAbortController = new AbortController();
 
-  const loadCache = {};
-
-  const loadComponent = (componentId) => {
-    const entry = componentManifest[componentId];
-    if (!entry) return Promise.resolve();
-    if (loadCache[componentId]) return loadCache[componentId];
-
-    loadCache[componentId] = (async () => {
-      const isDev = typeof entry === 'string' && entry.includes('-runtime');
-      const jsPath = typeof entry === 'string' ? entry : entry.js;
-      const cssPath = typeof entry === 'object' ? entry.css : null;
-
-      if (cssPath) {
-        const fullCssPath = '${base}assets/css/' + cssPath;
-        const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(componentId);
-
-        if (!document.querySelector('link[href="' + fullCssPath + '"]') && !isLoaded) {
-          const link = document.createElement('link');
-          link.rel = 'stylesheet';
-          link.href = fullCssPath;
-          document.head.appendChild(link);
-          if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(componentId);
-        }
-      }
-
-      const module = await import('${base}assets/js/' + jsPath);
-      if (module.default && module.default.componentId) {
-        const id = module.default.componentId;
-        if (!customElements.get(id)) {
-          if (module.default.styles && !cssPath) {
-            const styleId = 'coralite-style-' + id;
-            const isLoaded = window.__coralite_styles_loaded__ && window.__coralite_styles_loaded__.has(id);
-
-            if (!document.getElementById(styleId) && !isLoaded) {
-              const style = document.createElement('style');
-              style.id = styleId;
-              const cssContent = module.default.styles;
-              const isAtRule = /^\\s*@(scope|layer|media|supports|keyframes|font-face|container)\\b/i.test(cssContent);
-              style.textContent = isAtRule ? cssContent : id + ' {\\n' + cssContent + '\\n}';
-              document.head.appendChild(style);
-              if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(id);
-            }
-          }
-          customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks));
-          if (typeof registerDevToolsComponent === 'function') {
-            registerDevToolsComponent(id);
-          }
-          if (window.__coralite__ && window.__coralite__.lifecycle) window.__coralite__.lifecycle._markDefined(id);
-        }
-      }
-    })();
-    return loadCache[componentId];
-  };
-
   const loadPromises = declarativeTags.map(tagName => loadComponent(tagName));
   await Promise.all(loadPromises);
   document.documentElement.setAttribute('data-coralite-ready', 'true');
@@ -228,23 +272,9 @@ ${mode !== 'production' ? `
     return Array.from(tags);
   };
 
-  const upgradeMatchingElements = (container, tags) => {
-    if (!container || !tags || tags.length === 0) return;
-    const loadPromises = tags.map(tag => loadComponent(tag));
-    Promise.all(loadPromises).then(() => {
-      if (typeof customElements === 'undefined' || typeof customElements.upgrade !== 'function') return;
-      for (const tag of tags) {
-        if (typeof container.matches === 'function' && container.matches(tag)) {
-          customElements.upgrade(container);
-        }
-        if (typeof container.querySelectorAll === 'function') {
-          const matchingEls = container.querySelectorAll(tag);
-          for (let i = 0; i < matchingEls.length; i++) {
-            customElements.upgrade(matchingEls[i]);
-          }
-        }
-      }
-    });
+  const upgradeMatchingElements = (container) => {
+    if (!container) return;
+    upgrade(container);
   };
 
   const nativeInnerHTMLDesc = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
@@ -282,8 +312,7 @@ ${mode !== 'production' ? `
         const instanceId = resolveInstanceId(this);
         const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
         nativeInnerHTMLDesc.set.call(this, processedHtml);
-        const tags = getCustomElementTags(html);
-        upgradeMatchingElements(this, tags);
+        upgradeMatchingElements(this);
       }
     });
   }
@@ -302,8 +331,7 @@ ${mode !== 'production' ? `
         const instanceId = resolveInstanceId(this);
         const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
         shadowRootInnerHTMLDesc.set.call(this, processedHtml);
-        const tags = getCustomElementTags(html);
-        upgradeMatchingElements(this, tags);
+        upgradeMatchingElements(this);
       }
     });
   }
@@ -323,9 +351,8 @@ ${mode !== 'production' ? `
         const instanceId = resolveInstanceId(this);
         const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
         nativeOuterHTMLDesc.set.call(this, processedHtml);
-        const tags = getCustomElementTags(html);
         if (parent) {
-          upgradeMatchingElements(parent, tags);
+          upgradeMatchingElements(parent);
         }
       }
     });
@@ -340,12 +367,11 @@ ${mode !== 'production' ? `
       const instanceId = resolveInstanceId(this);
       const processedHtml = window.processHTML ? window.processHTML(html, instanceId) : html;
       nativeInsertAdjacentHTML.call(this, position, processedHtml);
-      const tags = getCustomElementTags(html);
       const container = (pos === 'afterbegin' || pos === 'beforeend')
         ? this
         : (this.parentElement || this.parentNode || (typeof this.getRootNode === 'function' ? this.getRootNode() : null));
       if (container) {
-        upgradeMatchingElements(container, tags);
+        upgradeMatchingElements(container);
       }
     };
   }
