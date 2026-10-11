@@ -38,12 +38,28 @@ export function generateClientRuntime ({
     import('${base}assets/js/manifest.js')
   ]);
 
+  window.__coralite_instanceCounters = window.__coralite_instanceCounters || ${instanceCounters};
+  window.__coralite_hydration__ = window.__coralite_hydration__ || ${hydrationData};
+  window.__coralite__ = window.__coralite__ || {};
+  if (!window.__coralite__.hydrationStore) {
+    window.__coralite__.hydrationStore = {
+      get() {
+        return window.__coralite_hydration__;
+      },
+      merge(next) {
+        if (next && typeof next === 'object') {
+          Object.assign(window.__coralite_hydration__, next);
+        }
+      },
+      replace(next) {
+        window.__coralite_hydration__ = next && typeof next === 'object' ? next : {};
+      }
+    };
+  }
+
   if (typeof initPlugins === 'function') {
     await initPlugins();
   }
-
-  window.__coralite_instanceCounters = window.__coralite_instanceCounters || ${instanceCounters};
-  const hydrationData = ${hydrationData};
   const declarativeTags = ${JSON.stringify(declarativeTags)};
   window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${inlinedStyles});
 
@@ -62,7 +78,8 @@ export function generateClientRuntime ({
 
       if ('${mode}' === 'testing' && isInitial) {
         const cid = el.getAttribute('data-cid');
-        if (cid && !hydrationData[cid]) {
+        const store = window.__coralite_hydration__ || {};
+        if (cid && !store[cid]) {
           const error = new Error('Coralite Hydration Mismatch: Component with data-cid "' + cid + '" (' + tagName + ') has no matching server hydration data.');
           if (typeof window['showCoraliteError'] === 'function') {
             window['showCoraliteError'](error);
@@ -151,7 +168,7 @@ export function generateClientRuntime ({
               if (window.__coralite_styles_loaded__) window.__coralite_styles_loaded__.add(id);
             }
           }
-          customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks, hydrationData));
+          customElements.define(id, createCoraliteClass(module.default, getClientContext, globalClientHooks));
           if (typeof registerDevToolsComponent === 'function') {
             registerDevToolsComponent(id);
           }
