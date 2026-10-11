@@ -1292,117 +1292,24 @@ export function createRenderer ({
     const pageExports = pageContext?.exports || originalDocument?.page?.exports || pageItem.result?.page?.exports || null
     const routeObj = pageContext.route || { path: pageContext.url?.pathname || '/' }
 
-    if (pageExports) {
-      if (typeof pageExports.server === 'function') {
-        const pageServerRes = await pageExports.server({
-          route: routeObj,
-          app,
-          session: mappedSessionObject,
-          signal: NOOP_SIGNAL
-        })
-        if (pageServerRes && typeof pageServerRes === 'object') {
-          Object.assign(activePageState, pageServerRes)
-        }
-      }
-
-      if (pageExports.getters && typeof pageExports.getters === 'object') {
-        const roState = createReadOnlyProxy(activePageState)
-        const getterCtx = {
-          state: roState,
-          route: routeObj,
-          root: mappedComponent.root,
-          refs: () => null,
-          signal: NOOP_SIGNAL
-        }
-        for (const [gKey, gFn] of Object.entries(pageExports.getters)) {
-          if (typeof gFn === 'function') {
-            Object.defineProperty(activePageState, gKey, {
-              get: () => gFn(getterCtx),
-              enumerable: true,
-              configurable: true
-            })
-          }
-        }
-      }
-
-      if (pageExports.style && typeof pageExports.style === 'object') {
-        const roState = createReadOnlyProxy(activePageState)
-        const computedStylesMap = new Map()
-        for (const [sKey, sValOrFn] of Object.entries(pageExports.style)) {
-          const normKey = normalizeStyleKey(sKey)
-          if (!normKey) continue
-          let sVal = typeof sValOrFn === 'function' ? sValOrFn(roState) : sValOrFn
-          if (sVal && typeof sVal.then === 'function') {
-            throw new CoraliteError(`Page style property "${sKey}" getter must be synchronous.`, {
-              filePath: pageItem.path?.pathname
-            })
-          }
-          if (sVal !== null && sVal !== undefined && sVal !== false && sVal !== '') {
-            computedStylesMap.set(normKey, String(sVal))
-          }
-        }
-        if (computedStylesMap.size > 0) {
-          const formatted = formatInlineStyle(computedStylesMap)
-          /** @type {any} */
-          let htmlNode = null
-          const findHtml = (n) => {
-            if (!n) return
-            if (n.type === 'tag' && n.name === 'html') { htmlNode = n; return }
-            if (n.children) { for (const c of n.children) { findHtml(c); if (htmlNode) return } }
-          }
-          findHtml(mappedComponent.root)
-          if (htmlNode) {
-            htmlNode.attribs = htmlNode.attribs || {}
-            const existingStyle = htmlNode.attribs.style
-            htmlNode.attribs.style = existingStyle ? `${existingStyle};${formatted}` : formatted
-          }
-        }
-      }
-    }
-
+    let isFallbackRender = false
     let pageContextFrames = []
-    if (pageExports?.provide && typeof pageExports.provide === 'object') {
-      const pageFrame = new Map()
-      const roState = createReadOnlyProxy(activePageState)
-      const pageProvCtx = {
-        state: roState,
-        route: routeObj,
-        root: mappedComponent.root,
-        refs: () => null,
-        slots: createServerSlotsHelper(mappedComponent.root),
-        signal: NOOP_SIGNAL
-      }
-      const entries = isContextMap(pageExports.provide)
-        ? Array.from(pageExports.provide.entries())
-        : [
-            ...Object.entries(pageExports.provide),
-            ...Object.getOwnPropertySymbols(pageExports.provide).map(sym => [sym, pageExports.provide[sym]])
-          ]
-      for (const [k, vOrFn] of entries) {
-        if (typeof vOrFn === 'function') {
-          try {
-            pageFrame.set(k, vOrFn(pageProvCtx))
-          } catch {
-            pageFrame.set(k, undefined)
-          }
-        } else {
-          pageFrame.set(k, vOrFn)
-        }
-      }
-      pageContextFrames = [pageFrame]
-    }
 
-    const resolveTokenKey = (key, stateObj, routeObj) => {
-      if (key === 'route') return routeObj
+    const resolveTokenKey = (key, stateObj, routeObjParam) => {
+      if (key === 'route') {
+        return routeObjParam
+      }
       if (key.startsWith('route.')) {
         const prop = key.slice(6)
-        return routeObj ? routeObj[prop] : undefined
+        return routeObjParam ? routeObjParam[prop] : undefined
       }
       if (key.includes('.')) {
         const parts = key.split('.')
         let curr = stateObj
         for (const p of parts) {
-          if (curr == null) return undefined
+          if (curr === null || curr === undefined) {
+            return undefined
+          }
           curr = curr[p]
         }
         return curr
@@ -1410,12 +1317,14 @@ export function createRenderer ({
       return stateObj ? stateObj[key] : undefined
     }
 
-    const replaceTokensInAST = (node, stateObj, routeObj) => {
-      if (!node) return
+    const replaceTokensInAST = (node, stateObj, routeObjParam) => {
+      if (!node) {
+        return
+      }
       if (node.type === 'text') {
         if (node.data && node.data.includes('{{')) {
           node.data = node.data.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
-            const val = resolveTokenKey(key, stateObj, routeObj)
+            const val = resolveTokenKey(key, stateObj, routeObjParam)
             return val !== undefined && val !== null ? String(val) : ''
           })
         }
@@ -1424,7 +1333,7 @@ export function createRenderer ({
           for (const [attrName, attrVal] of Object.entries(node.attribs)) {
             if (typeof attrVal === 'string' && attrVal.includes('{{')) {
               node.attribs[attrName] = attrVal.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
-                const val = resolveTokenKey(key, stateObj, routeObj)
+                const val = resolveTokenKey(key, stateObj, routeObjParam)
                 return val !== undefined && val !== null ? String(val) : ''
               })
             }
@@ -1432,13 +1341,173 @@ export function createRenderer ({
         }
         if (node.children) {
           for (const child of node.children) {
-            replaceTokensInAST(child, stateObj, routeObj)
+            replaceTokensInAST(child, stateObj, routeObjParam)
           }
         }
       }
     }
 
-    replaceTokensInAST(mappedComponent.root, activePageState, routeObj)
+    try {
+      if (pageExports) {
+        if (typeof pageExports.server === 'function') {
+          const pageServerRes = await pageExports.server({
+            route: routeObj,
+            app,
+            session: mappedSessionObject,
+            signal: NOOP_SIGNAL
+          })
+          if (pageServerRes && typeof pageServerRes === 'object') {
+            Object.assign(activePageState, pageServerRes)
+          }
+        }
+
+        if (pageExports.getters && typeof pageExports.getters === 'object') {
+          const roState = createReadOnlyProxy(activePageState)
+          const getterCtx = {
+            state: roState,
+            route: routeObj,
+            root: mappedComponent.root,
+            refs: () => null,
+            signal: NOOP_SIGNAL
+          }
+          for (const [gKey, gFn] of Object.entries(pageExports.getters)) {
+            if (typeof gFn === 'function') {
+              Object.defineProperty(activePageState, gKey, {
+                get: () => gFn(getterCtx),
+                enumerable: true,
+                configurable: true
+              })
+            }
+          }
+        }
+
+        if (pageExports.style && typeof pageExports.style === 'object') {
+          const roState = createReadOnlyProxy(activePageState)
+          const computedStylesMap = new Map()
+          for (const [sKey, sValOrFn] of Object.entries(pageExports.style)) {
+            const normKey = normalizeStyleKey(sKey)
+            if (!normKey) {
+              continue
+            }
+            const sVal = typeof sValOrFn === 'function' ? sValOrFn(roState) : sValOrFn
+            if (sVal && typeof sVal.then === 'function') {
+              throw new CoraliteError(`Page style property "${sKey}" getter must be synchronous.`, {
+                filePath: pageItem.path?.pathname
+              })
+            }
+            if (sVal !== null && sVal !== undefined && sVal !== false && sVal !== '') {
+              computedStylesMap.set(normKey, String(sVal))
+            }
+          }
+          if (computedStylesMap.size > 0) {
+            const formatted = formatInlineStyle(computedStylesMap)
+            /** @type {any} */
+            let htmlNode = null
+            const findHtml = (n) => {
+              if (!n) {
+                return
+              }
+              if (n.type === 'tag' && n.name === 'html') {
+                htmlNode = n
+                return
+              }
+              if (n.children) {
+                for (const c of n.children) {
+                  findHtml(c)
+                  if (htmlNode) {
+                    return
+                  }
+                }
+              }
+            }
+            findHtml(mappedComponent.root)
+            if (htmlNode) {
+              htmlNode.attribs = htmlNode.attribs || {}
+              const existingStyle = htmlNode.attribs.style
+              htmlNode.attribs.style = existingStyle ? `${existingStyle};${formatted}` : formatted
+            }
+          }
+        }
+
+        if (pageExports.provide && typeof pageExports.provide === 'object') {
+          const pageFrame = new Map()
+          const roState = createReadOnlyProxy(activePageState)
+          const pageProvCtx = {
+            state: roState,
+            route: routeObj,
+            root: mappedComponent.root,
+            refs: () => null,
+            slots: createServerSlotsHelper(mappedComponent.root),
+            signal: NOOP_SIGNAL
+          }
+          const entries = isContextMap(pageExports.provide)
+            ? Array.from(pageExports.provide.entries())
+            : [
+              ...Object.entries(pageExports.provide),
+              ...Object.getOwnPropertySymbols(pageExports.provide).map(sym => [sym, pageExports.provide[sym]])
+            ]
+          for (const [k, vOrFn] of entries) {
+            if (typeof vOrFn === 'function') {
+              try {
+                pageFrame.set(k, vOrFn(pageProvCtx))
+              } catch {
+                pageFrame.set(k, undefined)
+              }
+            } else {
+              pageFrame.set(k, vOrFn)
+            }
+          }
+          pageContextFrames = [pageFrame]
+        }
+      }
+
+      replaceTokensInAST(mappedComponent.root, activePageState, routeObj)
+    } catch (err) {
+      let pageBlocks = null
+      if (pageContext && pageContext.blocks) {
+        pageBlocks = pageContext.blocks
+      } else if (originalDocument && originalDocument.page && originalDocument.page.blocks) {
+        pageBlocks = originalDocument.page.blocks
+      }
+      const onErrorHook = (pageExports && pageExports.onError) || (pageBlocks ? pageBlocks.onError : null) || null
+      if (normalizedOptions.mode === 'production' && typeof onErrorHook === 'function') {
+        const fallbackRes = await onErrorHook({
+          error: err,
+          state: activePageState,
+          route: routeObj,
+          app
+        })
+
+        if (fallbackRes === null || fallbackRes === undefined) {
+          throw err
+        }
+
+        let fallbackTemplate = ''
+        if (typeof fallbackRes === 'string') {
+          fallbackTemplate = fallbackRes
+        } else if (fallbackRes && typeof fallbackRes === 'object') {
+          if (fallbackRes.state && typeof fallbackRes.state === 'object') {
+            Object.assign(activePageState, fallbackRes.state)
+          }
+          if (typeof fallbackRes.template === 'string') {
+            fallbackTemplate = fallbackRes.template
+          }
+        } else {
+          throw err
+        }
+
+        const fallbackParsed = parseHTML(fallbackTemplate, normalizedOptions.ignoreByAttribute, normalizedOptions.skipRenderByAttribute, handleError)
+        mappedComponent.root = fallbackParsed.root
+        mappedComponent.customElements = fallbackParsed.customElements
+        mappedComponent.tempElements = fallbackParsed.tempElements
+        mappedComponent.skipRenderElements = fallbackParsed.skipRenderElements
+
+        replaceTokensInAST(mappedComponent.root, activePageState, routeObj)
+        isFallbackRender = true
+      } else {
+        throw err
+      }
+    }
 
     removeElements(mappedComponent.tempElements, false)
 
@@ -1953,12 +2022,24 @@ export function createRenderer ({
             styleSource[k] = typeof v === 'function' ? v.toString() : v
           }
         }
+        const stateData = {}
+        for (const [k, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(activePageState))) {
+          if (!descriptor.get) {
+            stateData[k] = activePageState[k]
+          } else if (!isFallbackRender) {
+            try {
+              stateData[k] = activePageState[k]
+            } catch {
+              /* ignore getter errors during serialization */
+            }
+          }
+        }
         pageConfigObj = {
-          state: activePageState,
+          state: stateData,
           route: routeObj,
           getters: gettersSource,
           style: styleSource,
-          client: pageExports.client ? pageExports.client.toString() : null
+          client: (!isFallbackRender && pageExports.client) ? pageExports.client.toString() : null
         }
       }
 

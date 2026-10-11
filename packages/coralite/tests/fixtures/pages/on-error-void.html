@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>On Error Void</title>
+</head>
+<body>
+  <div id="content">Original content</div>
+  <script type="module">
+    import { definePage } from 'coralite'
+
+    export default definePage({
+      server: async () => {
+        throw new Error('Server build failed')
+      },
+      onError ({ error, state, route, app }) {
+        return null
+      }
+    })
+  </script>
+</body>
+</html>

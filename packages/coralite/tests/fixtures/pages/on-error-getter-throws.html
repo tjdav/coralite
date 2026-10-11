@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>On Error Getter Throws</title>
+</head>
+<body>
+  <div id="content">{{ badGetter }}</div>
+  <script type="module">
+    import { definePage } from 'coralite'
+
+    export default definePage({
+      server: async () => {
+        return { initial: 'ok' }
+      },
+      getters: {
+        badGetter ({ state }) {
+          throw new Error('Getter failed')
+        }
+      },
+      onError ({ error, state, route, app }) {
+        return {
+          template: '<div class="fallback-getter">Fallback from getter failure</div>',
+          state: {}
+        }
+      }
+    })
+  </script>
+</body>
+</html>
