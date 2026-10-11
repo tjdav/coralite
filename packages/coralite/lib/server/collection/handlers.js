@@ -4,7 +4,8 @@ import { parseHTML, parseModule } from '../utils/parse.js'
 import { extractPageScript } from '../parser/html.js'
 import { registerBaseComponent } from '../component/setup.js'
 import { prepareAllComponentOps } from '../utils/fragment.js'
-import { extractRouteParams, validateEnumeratedPaths } from '../page/route.js'
+import { extractRouteParams, validateEnumeratedPaths, buildRoute } from '../page/route.js'
+import { bindPlugins } from '../hooks.js'
 import { CoraliteError } from '../../shared/errors.js'
 
 /**
@@ -91,7 +92,10 @@ export function createPageHandlers ({
       enumeratedPaths: []
     }
 
-    if (parsedScript.blocks?.paths && evaluate) {
+    let pageExports = null
+    let pageModuleError = null
+
+    if ((parsedScript.blocks?.paths || parsedScript.blocks?.server) && evaluate) {
       try {
         const module = {
           id: data.path.pathname,
@@ -99,53 +103,210 @@ export function createPageHandlers ({
           path: data.path
         }
 
-        const pageExports = await evaluate({
+        pageExports = await evaluate({
           module,
           page,
           app,
           source: app.source || { utils: {} },
           mode: app.options.mode
         })
-
-        if (pageExports && typeof pageExports.paths === 'function') {
-          const rawPaths = await pageExports.paths({ app })
-          validateEnumeratedPaths(rawPaths, routeParams, data.path.pathname)
-          page.enumeratedPaths = rawPaths
-        }
       } catch (err) {
-        const pageErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
-          code: err.code || 'CORALITE-E402',
+        pageModuleError = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
+          code: err.code || 'CORALITE-E400',
           cause: err,
           filePath: data.path.pathname,
           line: err.line,
           column: err.column
         })
-        pageErr.filePath = pageErr.filePath || data.path.pathname
+        pageModuleError.filePath = pageModuleError.filePath || data.path.pathname
         page.failed = true
-        page.error = pageErr
+        page.error = pageModuleError
         page.enumeratedPaths = []
 
         try {
           if (typeof app.onError === 'function') {
             app.onError({
               level: 'ERR',
-              code: pageErr.code,
-              message: `Failed to evaluate paths block for page "${data.path.pathname}": ${pageErr.message}`,
-              error: pageErr,
+              code: pageModuleError.code,
+              message: `Failed to evaluate page module "${data.path.pathname}": ${pageModuleError.message}`,
+              error: pageModuleError,
               filePath: data.path.pathname
             })
           } else if (typeof handleError === 'function') {
             handleError({
               level: 'ERR',
-              code: pageErr.code,
-              message: `Failed to evaluate paths block for page "${data.path.pathname}": ${pageErr.message}`,
-              error: pageErr,
+              code: pageModuleError.code,
+              message: `Failed to evaluate page module "${data.path.pathname}": ${pageModuleError.message}`,
+              error: pageModuleError,
               filePath: data.path.pathname
             })
           }
         } catch {
           /* ignore throw to preserve collection loading */
         }
+      }
+    }
+
+    if (!pageModuleError) {
+      let rawPaths = []
+      let pathsEvaluated = false
+
+      if (pageExports && typeof pageExports.paths === 'function') {
+        try {
+          rawPaths = await pageExports.paths({ app })
+          validateEnumeratedPaths(rawPaths, routeParams, data.path.pathname)
+          pathsEvaluated = true
+        } catch (err) {
+          const pageErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
+            code: err.code || 'CORALITE-E402',
+            cause: err,
+            filePath: data.path.pathname,
+            line: err.line,
+            column: err.column
+          })
+          pageErr.filePath = pageErr.filePath || data.path.pathname
+          page.failed = true
+          page.error = pageErr
+          page.enumeratedPaths = []
+
+          try {
+            if (typeof app.onError === 'function') {
+              app.onError({
+                level: 'ERR',
+                code: pageErr.code,
+                message: `Failed to evaluate paths block for page "${data.path.pathname}": ${pageErr.message}`,
+                error: pageErr,
+                filePath: data.path.pathname
+              })
+            } else if (typeof handleError === 'function') {
+              handleError({
+                level: 'ERR',
+                code: pageErr.code,
+                message: `Failed to evaluate paths block for page "${data.path.pathname}": ${pageErr.message}`,
+                error: pageErr,
+                filePath: data.path.pathname
+              })
+            }
+          } catch {
+            /* ignore throw to preserve collection loading */
+          }
+        }
+      }
+
+      if (!page.failed) {
+        let entries = []
+        if (pathsEvaluated) {
+          entries = rawPaths
+        } else if (routeParams.length === 0) {
+          entries = [{}]
+        } else {
+          entries = []
+        }
+
+        const populatedPaths = []
+        const hasServerBlock = pageExports && typeof pageExports.server === 'function'
+        const session = typeof createSession === 'function' ? createSession() : (data.state?.session || {})
+        const signal = session?.signal || data.state?.signal || new AbortController().signal
+
+        for (const entryParams of entries) {
+          const route = buildRoute(relPath, entryParams)
+          let serverState = {}
+
+          if (hasServerBlock) {
+            const boundPlugins = bindPlugins({
+              pluginFactories: app.source?.plugins || {},
+              instanceContext: {
+                app,
+                page,
+                route,
+                session
+              },
+              app
+            })
+
+            const serverCtx = {
+              route,
+              app,
+              session,
+              signal,
+              ...boundPlugins
+            }
+
+            try {
+              const rawState = await pageExports.server(serverCtx)
+              if (!rawState || typeof rawState !== 'object' || Array.isArray(rawState)) {
+                /** @type {string} */
+                let typeDesc = typeof rawState
+                if (rawState === null) {
+                  typeDesc = 'null'
+                } else if (Array.isArray(rawState)) {
+                  typeDesc = 'array'
+                }
+                throw new CoraliteError(
+                  `Page "server" block must return a plain object, received ${typeDesc}.`,
+                  {
+                    code: 'CORALITE-E406',
+                    filePath: data.path.pathname
+                  }
+                )
+              }
+              serverState = rawState
+            } catch (err) {
+              const pageErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
+                code: err.code || 'CORALITE-E406',
+                cause: err,
+                filePath: data.path.pathname,
+                line: err.line,
+                column: err.column
+              })
+              pageErr.filePath = pageErr.filePath || data.path.pathname
+              page.failed = true
+              page.error = pageErr
+
+              try {
+                if (typeof app.onError === 'function') {
+                  app.onError({
+                    level: 'ERR',
+                    code: pageErr.code,
+                    message: `Failed to evaluate server block for page "${data.path.pathname}": ${pageErr.message}`,
+                    error: pageErr,
+                    filePath: data.path.pathname
+                  })
+                } else if (typeof handleError === 'function') {
+                  handleError({
+                    level: 'ERR',
+                    code: pageErr.code,
+                    message: `Failed to evaluate server block for page "${data.path.pathname}": ${pageErr.message}`,
+                    error: pageErr,
+                    filePath: data.path.pathname
+                  })
+                }
+              } catch {
+                /* ignore throw to preserve collection loading */
+              }
+
+              populatedPaths.push({
+                ...entryParams,
+                params: entryParams,
+                route,
+                state: {},
+                error: pageErr,
+                failed: true
+              })
+
+              continue
+            }
+          }
+
+          populatedPaths.push({
+            ...entryParams,
+            params: entryParams,
+            route,
+            state: serverState
+          })
+        }
+
+        page.enumeratedPaths = populatedPaths
       }
     }
 

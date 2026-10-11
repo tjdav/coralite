@@ -1,0 +1,17 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths () {
+      return [{ id: 'good' }, { id: 'bad' }]
+    },
+    server ({ route }) {
+      if (route.params.id === 'bad') {
+        throw new Error('Server evaluation failed for bad param')
+      }
+      return { status: 'ok', id: route.params.id }
+    }
+  })
+</script>
+
+<h1>Throwing Server Page</h1>

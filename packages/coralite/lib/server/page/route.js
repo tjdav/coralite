@@ -32,6 +32,52 @@ export function extractRouteParams (relPath) {
 }
 
 /**
+ * Builds a route object from a page relative path and enumerated parameter set.
+ *
+ * @param {string} relPath - Relative file path under pages directory (e.g. "posts/[id].html")
+ * @param {Record<string, string>} [params={}] - Enumerated parameter set
+ * @returns {{ path: string, pattern: string, params: Record<string, string>, dynamic: boolean }}
+ */
+export function buildRoute (relPath, params = {}) {
+  const normPath = (relPath || '').replace(/\\/g, '/')
+  const strippedPath = normPath.replace(/\.html?$/i, '')
+  let basePath = strippedPath
+
+  if (basePath.endsWith('/index')) {
+    basePath = basePath.slice(0, -6)
+  } else if (basePath === 'index') {
+    basePath = ''
+  }
+
+  if (!basePath.startsWith('/')) {
+    basePath = `/${basePath}`
+  }
+
+  if (basePath === '') {
+    basePath = '/'
+  }
+
+  const { routeParams } = extractRouteParams(normPath)
+  const dynamic = routeParams.length > 0
+
+  const pattern = basePath.replace(/\[(\.\.\.)?([^\]]+)\]/g, ':$2')
+
+  let concretePath = basePath
+  if (dynamic) {
+    concretePath = basePath.replace(/\[(\.\.\.)?([^\]]+)\]/g, (_, _dots, paramName) => {
+      return params && paramName in params ? String(params[paramName]) : ''
+    })
+  }
+
+  return {
+    path: concretePath,
+    pattern,
+    params: params || {},
+    dynamic
+  }
+}
+
+/**
  * Validates the return value of a page `paths()` execution against the page's route parameters.
  *
  * @param {any} rawPaths - Value returned by `paths()`

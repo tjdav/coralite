@@ -123,7 +123,9 @@ describe('Page route param extraction and paths validation', () => {
 
       const res = await handlers.onPageSet(data)
       assert.deepEqual(res.value.page.routeParams, ['id'])
-      assert.deepEqual(res.value.page.enumeratedPaths, [{ id: 'intro' }, { id: 'advanced' }])
+      assert.strictEqual(res.value.page.enumeratedPaths.length, 2)
+      assert.deepEqual(res.value.page.enumeratedPaths[0].params, { id: 'intro' })
+      assert.deepEqual(res.value.page.enumeratedPaths[1].params, { id: 'advanced' })
     })
 
     it('executes async paths block returning valid params', async () => {
@@ -157,7 +159,9 @@ describe('Page route param extraction and paths validation', () => {
       }
 
       const res = await handlers.onPageSet(data)
-      assert.deepEqual(res.value.page.enumeratedPaths, [{ id: '1' }, { id: '2' }])
+      assert.strictEqual(res.value.page.enumeratedPaths.length, 2)
+      assert.deepEqual(res.value.page.enumeratedPaths[0].params, { id: '1' })
+      assert.deepEqual(res.value.page.enumeratedPaths[1].params, { id: '2' })
     })
 
     it('handles paths returning []', async () => {
@@ -222,7 +226,8 @@ describe('Page route param extraction and paths validation', () => {
       }
 
       const res = await handlers.onPageSet(data)
-      assert.deepEqual(res.value.page.enumeratedPaths, [{ id: 'hello' }])
+      assert.strictEqual(res.value.page.enumeratedPaths.length, 1)
+      assert.deepEqual(res.value.page.enumeratedPaths[0].params, { id: 'hello' })
     })
 
     it('marks page as failed and emits error when paths throws', async () => {
@@ -267,7 +272,7 @@ describe('Page route param extraction and paths validation', () => {
       assert.strictEqual(handledError.level, 'ERR')
     })
 
-    it('defaults static pages (no paths block) to page.enumeratedPaths = []', async () => {
+    it('populates static pages (no paths block) with 1 default enumerated path', async () => {
       const mockApp = createMockApp()
       const handlers = createPageHandlers({
         app: mockApp,
@@ -289,7 +294,10 @@ describe('Page route param extraction and paths validation', () => {
 
       const res = await handlers.onPageSet(data)
       assert.deepStrictEqual(res.value.page.routeParams, [])
-      assert.deepStrictEqual(res.value.page.enumeratedPaths, [])
+      assert.strictEqual(res.value.page.enumeratedPaths.length, 1)
+      assert.strictEqual(res.value.page.enumeratedPaths[0].route.path, '/about')
+      assert.strictEqual(res.value.page.enumeratedPaths[0].route.dynamic, false)
+      assert.deepStrictEqual(res.value.page.enumeratedPaths[0].state, {})
     })
 
     it('emits CORALITE-W601 warning and treats [...slug] as slug for catch-all pattern', async () => {
@@ -332,7 +340,8 @@ describe('Page route param extraction and paths validation', () => {
       assert.strictEqual(warningData.code, 'CORALITE-W601')
       assert.strictEqual(warningData.level, 'WARN')
       assert.deepEqual(res.value.page.routeParams, ['slug'])
-      assert.deepEqual(res.value.page.enumeratedPaths, [{ slug: 'getting-started' }])
+      assert.strictEqual(res.value.page.enumeratedPaths.length, 1)
+      assert.deepEqual(res.value.page.enumeratedPaths[0].params, { slug: 'getting-started' })
     })
   })
 })

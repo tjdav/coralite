@@ -1,0 +1,15 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server ({ route }) {
+      return {
+        title: 'Static About Page',
+        routePath: route.path,
+        isDynamic: route.dynamic
+      }
+    }
+  })
+</script>
+
+<h1>Static Page</h1>

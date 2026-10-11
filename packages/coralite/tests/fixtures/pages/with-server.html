@@ -1,0 +1,24 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  const posts = [
+    { id: 'intro', title: 'Introduction', body: 'Welcome to Coralite.' },
+    { id: 'advanced', title: 'Advanced Topics', body: 'Deep dive into performance.' }
+  ]
+
+  export default definePage({
+    paths () {
+      return [{ id: 'intro' }, { id: 'advanced' }]
+    },
+    server ({ route }) {
+      const post = posts.find(p => String(p.id) === route.params.id)
+      if (!post) {
+        return { pageTitle: 'Not Found', body: '' }
+      }
+      return { pageTitle: post.title, body: post.body }
+    }
+  })
+</script>
+
+<h1>{{ pageTitle }}</h1>
+<p>{{ body }}</p>

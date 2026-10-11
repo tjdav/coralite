@@ -1,0 +1,18 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths () {
+      return [{ id: '1' }]
+    },
+    async server ({ route }) {
+      await Promise.resolve()
+      return {
+        id: route.params.id,
+        loaded: true
+      }
+    }
+  })
+</script>
+
+<h1>Async Page</h1>

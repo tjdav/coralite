@@ -332,7 +332,8 @@ export default [
       '**/.coralite/',
       '**/.coralite-testing/',
       '**/.coralite-dev/',
-      '**/.coralite-prod/'
+      '**/.coralite-prod/',
+      '**/tests/fixtures/**/*.html'
     ]
   }
 ]
