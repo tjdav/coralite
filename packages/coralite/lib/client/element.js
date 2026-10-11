@@ -4291,6 +4291,239 @@ export class CoraliteElement extends BaseElement {
  * @param {Object|null} [hydrationData=null] - Hydrated data passed from the server.
  * @returns {typeof CoraliteElement} A new CoraliteElement subclass.
  */
+/**
+ * Initializes client-side reactivity, style bindings, getters, observers,
+ * and client() controller execution for Coralite pages on document.documentElement.
+ *
+ * @param {Object} pageConfig - Page configuration containing state, getters, style, and client controller.
+ * @returns {Promise<void>}
+ */
+export async function setupPageRuntime (pageConfig) {
+  if (!pageConfig || typeof window === 'undefined' || typeof document === 'undefined') {
+    return
+  }
+
+  const parseFn = (fnOrStr) => {
+    if (typeof fnOrStr === 'function') {
+      return fnOrStr
+    }
+    if (typeof fnOrStr === 'string' && fnOrStr.trim()) {
+      try {
+        return (0, eval)(`(${fnOrStr})`)
+      } catch {
+        return null
+      }
+    }
+    return null
+  }
+
+  const rootEl = document.documentElement
+  const stateTarget = { ...(pageConfig.state || {}) }
+  const getterFns = pageConfig.getters || {}
+  const styleFns = pageConfig.style || {}
+  const routeObj = pageConfig.route || { path: window.location?.pathname || '/' }
+
+  const observersMap = new Map()
+  let isUpdatePending = false
+
+  const resolveTokenVal = (key) => {
+    if (key === 'route') {
+      return routeObj
+    }
+    if (key.startsWith('route.')) {
+      const prop = key.slice(6)
+      return routeObj ? routeObj[prop] : undefined
+    }
+    if (key.includes('.')) {
+      const parts = key.split('.')
+      let curr = stateProxy
+      for (const p of parts) {
+        if (curr == null) {
+          return undefined
+        }
+        curr = curr[p]
+      }
+      return curr
+    }
+    return stateProxy[key]
+  }
+
+  const applyPageStyles = () => {
+    if (!styleFns || Object.keys(styleFns).length === 0) {
+      return
+    }
+    const roState = createReadOnlyProxy(stateProxy)
+    for (const [key, valOrFn] of Object.entries(styleFns)) {
+      const normKey = normalizeStyleKey(key)
+      if (!normKey) {
+        continue
+      }
+      const parsedFn = parseFn(valOrFn)
+      const val = typeof parsedFn === 'function' ? parsedFn(roState) : valOrFn
+      if (val !== null && val !== undefined && val !== false && val !== '') {
+        rootEl.style.setProperty(normKey, String(val))
+      } else {
+        rootEl.style.removeProperty(normKey)
+      }
+    }
+  }
+
+  const updatePageTokens = (node = rootEl) => {
+    if (!node) {
+      return
+    }
+    /** @type {any} */
+    const n = node
+    if (n.nodeType === 3) {
+      if (n._rawTemplate === undefined) {
+        if (n.data && n.data.includes('{{')) {
+          n._rawTemplate = n.data
+        }
+      }
+      if (n._rawTemplate) {
+        n.data = n._rawTemplate.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, k) => {
+          const val = resolveTokenVal(k)
+          return val !== undefined && val !== null ? String(val) : ''
+        })
+      }
+    } else if (n.nodeType === 1) {
+      if (n.attributes) {
+        for (const attr of Array.from(n.attributes)) {
+          /** @type {any} */
+          const a = attr
+          if (a._rawTemplate === undefined) {
+            if (a.value && a.value.includes('{{')) {
+              a._rawTemplate = a.value
+            }
+          }
+          if (a._rawTemplate) {
+            a.value = a._rawTemplate.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, k) => {
+              const val = resolveTokenVal(k)
+              return val !== undefined && val !== null ? String(val) : ''
+            })
+          }
+        }
+      }
+      for (const child of Array.from(n.childNodes)) {
+        updatePageTokens(child)
+      }
+    }
+  }
+
+  const schedulePageFlush = (changedProp, oldVal, newVal) => {
+    if (changedProp && observersMap.has(changedProp)) {
+      for (const cb of Array.from(observersMap.get(changedProp))) {
+        try {
+          cb(newVal, oldVal)
+        } catch (err) {
+          console.error(`Coralite Page Observer Error for "${changedProp}":`, err)
+        }
+      }
+    }
+
+    if (isUpdatePending) {
+      return
+    }
+    isUpdatePending = true
+    queueMicrotask(() => {
+      isUpdatePending = false
+      applyPageStyles()
+      updatePageTokens(rootEl)
+    })
+  }
+
+  const getterAbortControllers = {}
+  for (const [key, rawGetterFn] of Object.entries(getterFns)) {
+    const getterFn = parseFn(rawGetterFn)
+    if (typeof getterFn === 'function') {
+      Object.defineProperty(stateTarget, key, {
+        get: () => {
+          if (getterAbortControllers[key]) {
+            getterAbortControllers[key].abort()
+          }
+          getterAbortControllers[key] = new AbortController()
+          const roState = createReadOnlyProxy(stateProxy)
+          return getterFn({
+            state: roState,
+            route: routeObj,
+            root: rootEl,
+            refs: (id) => rootEl.querySelector(`[ref="${id}"]`),
+            signal: getterAbortControllers[key].signal
+          })
+        },
+        enumerable: true,
+        configurable: true
+      })
+    }
+  }
+
+  const stateProxy = new Proxy(stateTarget, {
+    get (target, prop, receiver) {
+      return Reflect.get(target, prop, receiver)
+    },
+    set (target, prop, value) {
+      const oldVal = target[prop]
+      if (oldVal === value) {
+        return true
+      }
+      target[prop] = value
+      schedulePageFlush(prop, oldVal, value)
+      return true
+    },
+    has (target, prop) {
+      return Reflect.has(target, prop) || prop in getterFns || prop === 'route'
+    }
+  })
+
+  applyPageStyles()
+  updatePageTokens(rootEl)
+
+  const clientFn = parseFn(pageConfig.client)
+  if (typeof clientFn === 'function') {
+    const context = {
+      state: stateProxy,
+      route: routeObj,
+      root: rootEl,
+      refs (id) {
+        return rootEl.querySelector(`[ref="${id}"]`)
+      },
+      signal: new AbortController().signal,
+      emit (name, detail, options = {}) {
+        const CustomEventCtor = typeof window !== 'undefined' && window.CustomEvent ? window.CustomEvent : CustomEvent
+        const event = new CustomEventCtor(name, {
+          bubbles: true,
+          composed: true,
+          ...options,
+          detail: detail !== undefined ? detail : options?.detail
+        })
+        return rootEl.dispatchEvent(event)
+      },
+      observe (key, callback) {
+        if (!observersMap.has(key)) {
+          observersMap.set(key, new Set())
+        }
+        observersMap.get(key).add(callback)
+        return () => observersMap.get(key)?.delete(callback)
+      },
+      updateComplete: Promise.resolve(true)
+    }
+
+    await clientFn(context)
+  }
+}
+
+/**
+ * Factory function to create a Coralite element class.
+ * It dynamically defines the class, including observed attributes and hook initialization.
+ * @param {CoraliteComponentOptions} options - Component options and metadata.
+ * @param {Function|null} [contextGetter=null] - Optional function to retrieve client-side plugin context.
+ * @param {Object} [hooks={}] - Lifecycle hooks to register.
+ * @param {Array<CoraliteClientPluginBeforeComponentRenderCallback>} [hooks.onBeforeComponentRender] - Hooks to run before render.
+ * @param {Array<CoraliteClientPluginAfterComponentRenderCallback>} [hooks.onAfterComponentRender] - Hooks to run after render.
+ * @param {Array<CoraliteClientPluginDisconnectedCallback>} [hooks.onDisconnected] - Hooks to run after render.
+ * @param {Object|null} [hydrationData=null] - Hydrated data passed from the server.
+ * @returns {typeof CoraliteElement} A new CoraliteElement subclass.
+ */
 export function createCoraliteClass (options, contextGetter = null, hooks = {}, hydrationData = null) {
   const isFormAssociated = Boolean(options.formAssociated)
 

@@ -234,6 +234,7 @@ export function parseScriptAST (context) {
         ) {
           hasDefinePageCall = true
           const configObj = node.arguments[0]
+          context.configObj = configObj
 
           for (const prop of configObj.properties) {
             if (prop.type !== 'Property') {
@@ -243,6 +244,8 @@ export function parseScriptAST (context) {
             if (!keyName) {
               continue
             }
+
+            context.configProps.set(keyName, prop)
 
             if (REJECTED_PAGE_CONFIG_KEYS[keyName]) {
               const targetNode = prop.key || prop

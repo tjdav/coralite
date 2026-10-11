@@ -91,7 +91,7 @@ export function createPageHandlers ({
       enumeratedPaths: []
     }
 
-    if (parsedScript.blocks?.paths && evaluate) {
+    if (parsedScript.script && evaluate) {
       try {
         const module = {
           id: data.path.pathname,
@@ -107,10 +107,18 @@ export function createPageHandlers ({
           mode: app.options.mode
         })
 
-        if (pageExports && typeof pageExports.paths === 'function') {
-          const rawPaths = await pageExports.paths({ app })
-          validateEnumeratedPaths(rawPaths, routeParams, data.path.pathname)
-          page.enumeratedPaths = rawPaths
+        if (pageExports) {
+          Object.defineProperty(page, 'exports', {
+            value: pageExports,
+            enumerable: false,
+            writable: true,
+            configurable: true
+          })
+          if (typeof pageExports.paths === 'function') {
+            const rawPaths = await pageExports.paths({ app })
+            validateEnumeratedPaths(rawPaths, routeParams, data.path.pathname)
+            page.enumeratedPaths = rawPaths
+          }
         }
       } catch (err) {
         const pageErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {

@@ -10,6 +10,7 @@
  * @param {string} options.sharedChunkPath - The filename of the shared chunk.
  * @param {string[]} [options.declarativeTags=[]] - The declarative tags used.
  * @param {string} [options.hydrationData='{}'] - Serialized hydration data.
+ * @param {string} [options.pageConfig='null'] - Serialized page configuration object.
  * @param {string} [options.mode='production'] - Build mode.
  * @param {string} [options.instanceCounters='{}'] - Serialized instance counters map.
  * @param {string} [options.inlinedStyles='[]'] - Serialized inlined styles array.
@@ -21,6 +22,7 @@ export function generateClientRuntime ({
   sharedChunkPath,
   declarativeTags = [],
   hydrationData = '{}',
+  pageConfig = 'null',
   mode = 'production',
   instanceCounters = '{}',
   inlinedStyles = '[]',
@@ -31,7 +33,7 @@ export function generateClientRuntime ({
   return `
 (async () => {
   const [
-    { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, initPlugins },
+    { getClientContext, createCoraliteClass, globalClientHooks, setupDevTools, registerDevToolsComponent, initPlugins, setupPageRuntime },
     { default: componentManifest }
   ] = await Promise.all([
     import('${base}assets/js/${sharedChunkPath}'),
@@ -40,6 +42,7 @@ export function generateClientRuntime ({
 
   window.__coralite_instanceCounters = window.__coralite_instanceCounters || ${instanceCounters};
   window.__coralite_hydration__ = window.__coralite_hydration__ || ${hydrationData};
+  window.__coralite_page_config__ = window.__coralite_page_config__ || ${pageConfig};
   window.__coralite__ = window.__coralite__ || {};
   if (!window.__coralite__.hydrationStore) {
     window.__coralite__.hydrationStore = {
@@ -59,6 +62,9 @@ export function generateClientRuntime ({
 
   if (typeof initPlugins === 'function') {
     await initPlugins();
+  }
+  if (typeof setupPageRuntime === 'function' && window.__coralite_page_config__) {
+    await setupPageRuntime(window.__coralite_page_config__);
   }
   const declarativeTags = ${JSON.stringify(declarativeTags)};
   window.__coralite_styles_loaded__ = window.__coralite_styles_loaded__ || new Set(${inlinedStyles});

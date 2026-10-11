@@ -1089,7 +1089,7 @@ export function createRenderer ({
     }
   }
 
-  const _processCustomElementsInPage = async ({ mappedComponent, originalDocument, state, mappedSessionObject, pageContext }) => {
+  const _processCustomElementsInPage = async ({ mappedComponent, originalDocument, state, mappedSessionObject, pageContext, contextFrames = [] }) => {
     const customElementsList = mappedComponent.customElements || []
     const tasks = []
 
@@ -1143,7 +1143,7 @@ export function createRenderer ({
         index: i,
         session: mappedSessionObject,
         noHydration,
-        contextFrames: []
+        contextFrames
       }).then(componentElement => ({
         componentElement,
         customElement,
@@ -1289,6 +1289,157 @@ export function createRenderer ({
     const activePageState = mappedSession.state
     mappedSessionObject.mode = normalizedOptions.mode
 
+    const pageExports = pageContext?.exports || originalDocument?.page?.exports || pageItem.result?.page?.exports || null
+    const routeObj = pageContext.route || { path: pageContext.url?.pathname || '/' }
+
+    if (pageExports) {
+      if (typeof pageExports.server === 'function') {
+        const pageServerRes = await pageExports.server({
+          route: routeObj,
+          app,
+          session: mappedSessionObject,
+          signal: NOOP_SIGNAL
+        })
+        if (pageServerRes && typeof pageServerRes === 'object') {
+          Object.assign(activePageState, pageServerRes)
+        }
+      }
+
+      if (pageExports.getters && typeof pageExports.getters === 'object') {
+        const roState = createReadOnlyProxy(activePageState)
+        const getterCtx = {
+          state: roState,
+          route: routeObj,
+          root: mappedComponent.root,
+          refs: () => null,
+          signal: NOOP_SIGNAL
+        }
+        for (const [gKey, gFn] of Object.entries(pageExports.getters)) {
+          if (typeof gFn === 'function') {
+            Object.defineProperty(activePageState, gKey, {
+              get: () => gFn(getterCtx),
+              enumerable: true,
+              configurable: true
+            })
+          }
+        }
+      }
+
+      if (pageExports.style && typeof pageExports.style === 'object') {
+        const roState = createReadOnlyProxy(activePageState)
+        const computedStylesMap = new Map()
+        for (const [sKey, sValOrFn] of Object.entries(pageExports.style)) {
+          const normKey = normalizeStyleKey(sKey)
+          if (!normKey) continue
+          let sVal = typeof sValOrFn === 'function' ? sValOrFn(roState) : sValOrFn
+          if (sVal && typeof sVal.then === 'function') {
+            throw new CoraliteError(`Page style property "${sKey}" getter must be synchronous.`, {
+              filePath: pageItem.path?.pathname
+            })
+          }
+          if (sVal !== null && sVal !== undefined && sVal !== false && sVal !== '') {
+            computedStylesMap.set(normKey, String(sVal))
+          }
+        }
+        if (computedStylesMap.size > 0) {
+          const formatted = formatInlineStyle(computedStylesMap)
+          /** @type {any} */
+          let htmlNode = null
+          const findHtml = (n) => {
+            if (!n) return
+            if (n.type === 'tag' && n.name === 'html') { htmlNode = n; return }
+            if (n.children) { for (const c of n.children) { findHtml(c); if (htmlNode) return } }
+          }
+          findHtml(mappedComponent.root)
+          if (htmlNode) {
+            htmlNode.attribs = htmlNode.attribs || {}
+            const existingStyle = htmlNode.attribs.style
+            htmlNode.attribs.style = existingStyle ? `${existingStyle};${formatted}` : formatted
+          }
+        }
+      }
+    }
+
+    let pageContextFrames = []
+    if (pageExports?.provide && typeof pageExports.provide === 'object') {
+      const pageFrame = new Map()
+      const roState = createReadOnlyProxy(activePageState)
+      const pageProvCtx = {
+        state: roState,
+        route: routeObj,
+        root: mappedComponent.root,
+        refs: () => null,
+        slots: createServerSlotsHelper(mappedComponent.root),
+        signal: NOOP_SIGNAL
+      }
+      const entries = isContextMap(pageExports.provide)
+        ? Array.from(pageExports.provide.entries())
+        : [
+            ...Object.entries(pageExports.provide),
+            ...Object.getOwnPropertySymbols(pageExports.provide).map(sym => [sym, pageExports.provide[sym]])
+          ]
+      for (const [k, vOrFn] of entries) {
+        if (typeof vOrFn === 'function') {
+          try {
+            pageFrame.set(k, vOrFn(pageProvCtx))
+          } catch {
+            pageFrame.set(k, undefined)
+          }
+        } else {
+          pageFrame.set(k, vOrFn)
+        }
+      }
+      pageContextFrames = [pageFrame]
+    }
+
+    const resolveTokenKey = (key, stateObj, routeObj) => {
+      if (key === 'route') return routeObj
+      if (key.startsWith('route.')) {
+        const prop = key.slice(6)
+        return routeObj ? routeObj[prop] : undefined
+      }
+      if (key.includes('.')) {
+        const parts = key.split('.')
+        let curr = stateObj
+        for (const p of parts) {
+          if (curr == null) return undefined
+          curr = curr[p]
+        }
+        return curr
+      }
+      return stateObj ? stateObj[key] : undefined
+    }
+
+    const replaceTokensInAST = (node, stateObj, routeObj) => {
+      if (!node) return
+      if (node.type === 'text') {
+        if (node.data && node.data.includes('{{')) {
+          node.data = node.data.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
+            const val = resolveTokenKey(key, stateObj, routeObj)
+            return val !== undefined && val !== null ? String(val) : ''
+          })
+        }
+      } else if (node.type === 'tag' || node.type === 'root') {
+        if (node.attribs) {
+          for (const [attrName, attrVal] of Object.entries(node.attribs)) {
+            if (typeof attrVal === 'string' && attrVal.includes('{{')) {
+              node.attribs[attrName] = attrVal.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (_, key) => {
+                const val = resolveTokenKey(key, stateObj, routeObj)
+                return val !== undefined && val !== null ? String(val) : ''
+              })
+            }
+          }
+        }
+        if (node.children) {
+          for (const child of node.children) {
+            replaceTokensInAST(child, stateObj, routeObj)
+          }
+        }
+      }
+    }
+
+    replaceTokensInAST(mappedComponent.root, activePageState, routeObj)
+
     removeElements(mappedComponent.tempElements, false)
 
     await _processCustomElementsInPage({
@@ -1296,7 +1447,8 @@ export function createRenderer ({
       originalDocument,
       state: activePageState,
       mappedSessionObject,
-      pageContext
+      pageContext,
+      contextFrames: pageContextFrames
     })
 
     // Filter manifest to only include components used on this page (declarative + cascading imperative)
@@ -1732,8 +1884,8 @@ export function createRenderer ({
 
     }
 
-    if (mappedSessionObject.scripts.content[mappedComponent.path.pathname]) {
-      const scripts = mappedSessionObject.scripts.content[mappedComponent.path.pathname]
+    if (mappedSessionObject.scripts.content[mappedComponent.path.pathname] || pageExports) {
+      const scripts = mappedSessionObject.scripts.content[mappedComponent.path.pathname] || {}
       const instances = {}
       const declarativeTags = new Set()
       for (const key in scripts) {
@@ -1785,11 +1937,37 @@ export function createRenderer ({
         ? Array.from(mappedSessionObject.styles.keys())
         : []
 
+      let pageConfigObj = null
+      if (pageExports) {
+        const gettersSource = {}
+        if (pageExports.getters && typeof pageExports.getters === 'object') {
+          for (const [k, v] of Object.entries(pageExports.getters)) {
+            if (typeof v === 'function') {
+              gettersSource[k] = v.toString()
+            }
+          }
+        }
+        const styleSource = {}
+        if (pageExports.style && typeof pageExports.style === 'object') {
+          for (const [k, v] of Object.entries(pageExports.style)) {
+            styleSource[k] = typeof v === 'function' ? v.toString() : v
+          }
+        }
+        pageConfigObj = {
+          state: activePageState,
+          route: routeObj,
+          getters: gettersSource,
+          style: styleSource,
+          client: pageExports.client ? pageExports.client.toString() : null
+        }
+      }
+
       const scriptContent = generateClientRuntime({
         base,
         sharedChunkPath: scriptResult.manifest['coralite-runtime'],
         declarativeTags: Array.from(declarativeTags),
         hydrationData: serialize(hydrationData),
+        pageConfig: pageConfigObj ? serialize(pageConfigObj) : 'null',
         mode: normalizedOptions.mode,
         instanceCounters: serialize(mappedSessionObject.instanceCounters || {}),
         inlinedStyles: serialize(inlinedStyles),

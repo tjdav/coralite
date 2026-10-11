@@ -1,0 +1,12 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server: () => ({ initialCount: 0 }),
+    client: async ({ state, signal, emit, observe, route }) => {
+      document.documentElement.setAttribute('data-client-ran', 'true')
+    }
+  })
+</script>
+
+<h1>Client Page</h1>

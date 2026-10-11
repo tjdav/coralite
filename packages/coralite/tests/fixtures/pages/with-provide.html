@@ -1,0 +1,14 @@
+<script type="module">
+  import { definePage, createContext } from 'coralite'
+
+  export const themeContext = createContext('coralite:theme')
+
+  export default definePage({
+    server: () => ({ theme: { mode: 'dark', accent: '#60a5fa' } }),
+    provide: {
+      [themeContext]: ({ state }) => state.theme
+    }
+  })
+</script>
+
+<consume-page-provide></consume-page-provide>
