@@ -1,8 +1,11 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { extractPageScript } from '../../../../../lib/server/parser/html.js'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
 
 describe('html.js (extractPageScript)', () => {
   it('should return static page defaults when page has no script block', () => {
@@ -160,7 +163,7 @@ describe('html.js (extractPageScript)', () => {
   })
 
   it('should process created page fixtures from disk correctly', async () => {
-    const fixturesDir = resolve(process.cwd(), 'packages/coralite/tests/fixtures/pages')
+    const fixturesDir = resolve(__dirname, '../../../../fixtures/pages')
 
     const withDefinePageContent = await readFile(resolve(fixturesDir, 'with-define-page.html'), 'utf8')
     const withDefinePageResult = extractPageScript(withDefinePageContent)
