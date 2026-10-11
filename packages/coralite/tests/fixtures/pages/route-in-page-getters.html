@@ -1,0 +1,19 @@
+<script type="module">
+  import { definePage } from 'coralite'
+  export default definePage({
+    server: () => ({ name: 'Alice' }),
+    getters: {
+      greeting: ({ state, route }) => `${state.name} at ${route.path}`
+    }
+  })
+</script>
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Route in Getters</title>
+  </head>
+  <body>
+    <h1>{{ greeting }}</h1>
+  </body>
+</html>

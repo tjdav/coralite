@@ -7,14 +7,29 @@ import { evaluate } from '../../../../../lib/server/compiler.js'
 describe('Page route param extraction and paths validation', () => {
   describe('extractRouteParams', () => {
     it('extracts params from standard route filenames', () => {
-      assert.deepStrictEqual(extractRouteParams('about.html'), { routeParams: [], isCatchAll: false })
-      assert.deepStrictEqual(extractRouteParams('posts/[id].html'), { routeParams: ['id'], isCatchAll: false })
-      assert.deepStrictEqual(extractRouteParams('posts/[id]/index.html'), { routeParams: ['id'], isCatchAll: false })
-      assert.deepStrictEqual(extractRouteParams('[year]/[month].html'), { routeParams: ['year', 'month'], isCatchAll: false })
+      assert.deepStrictEqual(extractRouteParams('about.html'), {
+        routeParams: [],
+        isCatchAll: false
+      })
+      assert.deepStrictEqual(extractRouteParams('posts/[id].html'), {
+        routeParams: ['id'],
+        isCatchAll: false
+      })
+      assert.deepStrictEqual(extractRouteParams('posts/[id]/index.html'), {
+        routeParams: ['id'],
+        isCatchAll: false
+      })
+      assert.deepStrictEqual(extractRouteParams('[year]/[month].html'), {
+        routeParams: ['year', 'month'],
+        isCatchAll: false
+      })
     })
 
     it('recognizes catch-all pattern [...slug]', () => {
-      assert.deepStrictEqual(extractRouteParams('docs/[...slug].html'), { routeParams: ['slug'], isCatchAll: true })
+      assert.deepStrictEqual(extractRouteParams('docs/[...slug].html'), {
+        routeParams: ['slug'],
+        isCatchAll: true
+      })
     })
   })
 
@@ -48,7 +63,10 @@ describe('Page route param extraction and paths validation', () => {
 
     it('throws CORALITE-E402 if extra undeclared params are present', () => {
       assert.throws(() => {
-        validateEnumeratedPaths([{ id: 'intro', extra: 'x' }], ['id'], '/pages/posts/[id].html')
+        validateEnumeratedPaths([{
+          id: 'intro',
+          extra: 'x'
+        }], ['id'], '/pages/posts/[id].html')
       }, (err) => err.code === 'CORALITE-E402' && err.message.includes('contains undeclared param'))
     })
 
@@ -74,7 +92,8 @@ describe('Page route param extraction and paths validation', () => {
         directPageComponents: {},
         pageCustomElements: {}
       },
-      _refreshDependencyGraph: () => {},
+      _refreshDependencyGraph: () => {
+      },
       components: {
         getItem: () => null
       },
@@ -97,7 +116,8 @@ describe('Page route param extraction and paths validation', () => {
       const handlers = createPageHandlers({
         app: mockApp,
         triggerHook,
-        handleError: () => {},
+        handleError: () => {
+        },
         evaluate
       })
 
@@ -131,7 +151,8 @@ describe('Page route param extraction and paths validation', () => {
       const handlers = createPageHandlers({
         app: mockApp,
         triggerHook,
-        handleError: () => {},
+        handleError: () => {
+        },
         evaluate
       })
 
@@ -165,7 +186,8 @@ describe('Page route param extraction and paths validation', () => {
       const handlers = createPageHandlers({
         app: mockApp,
         triggerHook,
-        handleError: () => {},
+        handleError: () => {
+        },
         evaluate
       })
 
@@ -197,7 +219,8 @@ describe('Page route param extraction and paths validation', () => {
       const handlers = createPageHandlers({
         app: mockApp,
         triggerHook,
-        handleError: () => {},
+        handleError: () => {
+        },
         evaluate
       })
 
@@ -272,7 +295,8 @@ describe('Page route param extraction and paths validation', () => {
       const handlers = createPageHandlers({
         app: mockApp,
         triggerHook,
-        handleError: () => {},
+        handleError: () => {
+        },
         evaluate
       })
 

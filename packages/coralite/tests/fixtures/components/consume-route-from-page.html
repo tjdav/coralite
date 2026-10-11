@@ -1,0 +1,13 @@
+<template id="consume-route-from-page">
+  <p ref="output">{{ currentPath }}</p>
+</template>
+
+<script type="module">
+  import { defineComponent } from 'coralite'
+
+  export default defineComponent({
+    consume: {
+      currentPath: 'coralite:route'
+    }
+  })
+</script>

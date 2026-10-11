@@ -1381,6 +1381,7 @@ export function createRenderer ({
             route: routeObj,
             root: mappedComponent.root,
             refs: () => null,
+            slots: createServerSlotsHelper(mappedComponent.root),
             signal: NOOP_SIGNAL
           }
           for (const [gKey, gFn] of Object.entries(pageExports.getters)) {

@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { Window } from 'happy-dom'
-import { setupPageRuntime } from '../../../../lib/client/element.js'
+import { setupPageRuntime } from '../../../lib/client/element.js'
 
 describe('Page Client Runtime Execution', () => {
   let window
@@ -41,7 +41,10 @@ describe('Page Client Runtime Execution', () => {
     let observedCount = null
 
     const pageConfig = {
-      state: { name: 'Alice', count: 0 },
+      state: {
+        name: 'Alice',
+        count: 0
+      },
       route: { path: '/home' },
       getters: {
         greeting: ({ state, route }) => `Hello ${state.name} at ${route.path}`
@@ -49,10 +52,11 @@ describe('Page Client Runtime Execution', () => {
       style: {
         '--page-count': (state) => state.count
       },
-      client: async ({ state, signal, emit, observe, route }) => {
+      client: async ({ state, observe, route }) => {
         clientExecuted = true
         receivedState = state
         document.documentElement.setAttribute('data-client-ran', 'true')
+        document.documentElement.setAttribute('data-route-path', route.path)
 
         observe('count', (newVal) => {
           observedCount = newVal

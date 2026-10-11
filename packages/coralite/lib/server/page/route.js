@@ -8,7 +8,10 @@ import { CoraliteError } from '../../shared/errors.js'
  */
 export function extractRouteParams (relPath) {
   if (!relPath || typeof relPath !== 'string') {
-    return { routeParams: [], isCatchAll: false }
+    return {
+      routeParams: [],
+      isCatchAll: false
+    }
   }
 
   const normPath = relPath.replace(/\\/g, '/')
@@ -28,7 +31,10 @@ export function extractRouteParams (relPath) {
     }
   }
 
-  return { routeParams, isCatchAll }
+  return {
+    routeParams,
+    isCatchAll
+  }
 }
 
 /**
