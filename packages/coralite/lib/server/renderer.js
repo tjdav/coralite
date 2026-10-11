@@ -1290,7 +1290,20 @@ export function createRenderer ({
     mappedSessionObject.mode = normalizedOptions.mode
 
     const pageExports = pageContext?.exports || originalDocument?.page?.exports || pageItem.result?.page?.exports || null
-    const routeObj = pageContext.route || { path: pageContext.url?.pathname || '/' }
+    const rawRoute = pageContext.route
+    const routeObj = typeof rawRoute === 'object' && rawRoute !== null
+      ? {
+        path: rawRoute.path || pageContext.url?.pathname || '/',
+        pattern: rawRoute.pattern || rawRoute.path || pageContext.url?.pathname || '/',
+        params: rawRoute.params || {},
+        dynamic: Boolean(rawRoute.dynamic)
+      }
+      : {
+        path: typeof rawRoute === 'string' ? rawRoute : (pageContext.url?.pathname || '/'),
+        pattern: typeof rawRoute === 'string' ? rawRoute : (pageContext.url?.pathname || '/'),
+        params: {},
+        dynamic: false
+      }
 
     let isFallbackRender = false
     let pageContextFrames = []
@@ -1993,7 +2006,9 @@ export function createRenderer ({
         scriptHashes.push(calculateHash(mapContent, hashAlgo))
       }
 
-      const hydrationData = {}
+      const hydrationData = {
+        __route__: routeObj
+      }
 
       for (const [id, instance] of Object.entries(instances)) {
         if (instance.state && Object.keys(instance.state).length > 0) {
