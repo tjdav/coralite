@@ -8,6 +8,23 @@ import {
   createDiagnostic
 } from '../helpers.js'
 
+const ALLOWED_PAGE_CONFIG_KEYS = new Set([
+  'paths',
+  'server',
+  'getters',
+  'style',
+  'provide',
+  'client',
+  'onError'
+])
+
+const REJECTED_PAGE_CONFIG_KEYS = {
+  attributes: 'definePage does not support "attributes". Use "server" to fetch page data.',
+  slots: 'definePage does not support "slots". Pages are the outermost layer.',
+  consume: 'definePage does not support "consume". Pages are the root provider — use "provide".',
+  formAssociated: 'definePage does not support "formAssociated". Use a form-associated component instead.'
+}
+
 /**
  * Pass 1: Single Acorn AST parse of script content.
  * Discovers top-level imports, local declarations, locates defineComponent config object,
@@ -36,6 +53,10 @@ export function parseScriptAST (context) {
   if (!scriptContent) {
     return
   }
+
+  let hasDefinePageCall = false
+  let hasBarePageExports = false
+  let bareExportLoc = null
 
   try {
     const ast = parseJS(scriptContent, {
@@ -142,6 +163,40 @@ export function parseScriptAST (context) {
       })
 
       for (const node of ast.body) {
+        if (node.type === 'ExportNamedDeclaration') {
+          if (node.declaration) {
+            if (node.declaration.type === 'VariableDeclaration') {
+              for (const decl of node.declaration.declarations) {
+                if (decl.id && decl.id.type === 'Identifier') {
+                  if (decl.id.name === 'paths' || decl.id.name === 'server') {
+                    hasBarePageExports = true
+                    bareExportLoc = decl.loc
+                  }
+                }
+              }
+            } else if (node.declaration.type === 'FunctionDeclaration') {
+              if (node.declaration.id && (node.declaration.id.name === 'paths' || node.declaration.id.name === 'server')) {
+                hasBarePageExports = true
+                bareExportLoc = node.declaration.id.loc
+              }
+            }
+          }
+          if (node.specifiers) {
+            for (const spec of node.specifiers) {
+              let exportedName = ''
+              if (spec.exported) {
+                exportedName = spec.exported.type === 'Identifier' ? spec.exported.name : String(spec.exported.value)
+              } else if (spec.local) {
+                exportedName = spec.local.type === 'Identifier' ? spec.local.name : String(spec.local.value)
+              }
+              if (exportedName === 'paths' || exportedName === 'server') {
+                hasBarePageExports = true
+                bareExportLoc = spec.loc
+              }
+            }
+          }
+        }
+
         if (node.type === 'ImportDeclaration') {
           const source = node.source ? node.source.value : ''
           for (const spec of node.specifiers || []) {
@@ -171,6 +226,56 @@ export function parseScriptAST (context) {
 
     walkAncestorJS(ast, {
       CallExpression (node) {
+        if (
+          node.callee.type === 'Identifier' &&
+          node.callee.name === 'definePage' &&
+          node.arguments.length > 0 &&
+          node.arguments[0].type === 'ObjectExpression'
+        ) {
+          hasDefinePageCall = true
+          const configObj = node.arguments[0]
+
+          for (const prop of configObj.properties) {
+            if (prop.type !== 'Property') {
+              continue
+            }
+            const keyName = getPropKeyName(prop)
+            if (!keyName) {
+              continue
+            }
+
+            if (REJECTED_PAGE_CONFIG_KEYS[keyName]) {
+              const targetNode = prop.key || prop
+              const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
+              const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
+              context.diagnostics.push(createDiagnostic({
+                code: 'CORALITE-E107',
+                severity: 'error',
+                message: REJECTED_PAGE_CONFIG_KEYS[keyName],
+                filePath: context.filePath,
+                line,
+                column,
+                sourceCode: context.sourceCode,
+                cause: REJECTED_PAGE_CONFIG_KEYS[keyName]
+              }))
+            } else if (!ALLOWED_PAGE_CONFIG_KEYS.has(keyName)) {
+              const targetNode = prop.key || prop
+              const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
+              const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
+              context.diagnostics.push(createDiagnostic({
+                code: 'CORALITE-E107',
+                severity: 'error',
+                message: `Unknown block "${keyName}" in definePage. Valid blocks are: paths, server, getters, style, provide, client, onError.`,
+                filePath: context.filePath,
+                line,
+                column,
+                sourceCode: context.sourceCode,
+                cause: `Unknown block "${keyName}" in definePage.`
+              }))
+            }
+          }
+        }
+
         if (
           node.callee.type === 'Identifier' &&
           node.callee.name === 'defineComponent' &&
@@ -349,6 +454,21 @@ export function parseScriptAST (context) {
         }
       }
     })
+
+    if (hasBarePageExports && !hasDefinePageCall) {
+      const line = bareExportLoc ? bareExportLoc.start.line + scriptStartLine : scriptStartLine + 1
+      const column = bareExportLoc ? bareExportLoc.start.column + 1 : 1
+      context.diagnostics.push(createDiagnostic({
+        code: 'CORALITE-E108',
+        severity: 'error',
+        message: 'Page uses the deprecated bare-export shape. Use export default definePage({ ... }) instead.',
+        filePath: context.filePath,
+        line,
+        column,
+        sourceCode: context.sourceCode,
+        cause: 'Page uses deprecated bare exports ("paths", "server"). Use export default definePage({ ... }) instead.'
+      }))
+    }
   } catch {
     // Fallback for invalid script syntax
   }

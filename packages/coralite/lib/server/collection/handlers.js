@@ -1,6 +1,7 @@
 import { dirname, join, relative } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { parseHTML, parseModule } from '../utils/parse.js'
+import { extractPageScript } from '../parser/html.js'
 import { registerBaseComponent } from '../component/setup.js'
 import { prepareAllComponentOps } from '../utils/fragment.js'
 
@@ -35,6 +36,16 @@ export function createPageHandlers ({
     // @ts-ignore
     const rootPath = data.type === 'component' ? app.options.path.components : app.options.path.pages
     const urlPathname = pathToFileURL(join('/', relative(rootPath, data.path.pathname))).pathname
+
+    let parsedScript = {
+      hasDefinePage: false,
+      blocks: null,
+      script: null
+    }
+    if (data.content !== undefined) {
+      parsedScript = extractPageScript(data.content, { filePath: data.path.pathname })
+    }
+
     const page = {
       url: {
         pathname: urlPathname,
@@ -45,7 +56,10 @@ export function createPageHandlers ({
         dirname: data.path.dirname,
         filename: data.path.filename
       },
-      meta: data.state?.page?.meta || {}
+      meta: data.state?.page?.meta || {},
+      blocks: parsedScript.blocks,
+      hasDefinePage: parsedScript.hasDefinePage,
+      script: parsedScript.script
     }
 
     const state = {
@@ -125,6 +139,7 @@ export function createPageHandlers ({
     })
 
     newValue.result = mappedContext.elements
+    // eslint-disable-next-line no-param-reassign
     newValue = mappedContext.newValue
 
     const elements = parseHTML(newValue.content, app.options.ignoreByAttribute, app.options.skipRenderByAttribute, handleError)

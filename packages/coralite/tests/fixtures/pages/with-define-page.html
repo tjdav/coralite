@@ -1,0 +1,29 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    paths () {
+      return [{ params: { id: '1' } }]
+    },
+    server () {
+      return { title: 'Page Title' }
+    },
+    getters: {
+      formattedTitle: ({ state }) => state.title.toUpperCase()
+    },
+    style: {
+      '--page-color': 'blue'
+    },
+    provide: {
+      theme: 'dark'
+    },
+    client () {
+      console.log('client')
+    },
+    onError (err) {
+      console.error(err)
+    }
+  })
+</script>
+
+<h1>Define Page Test</h1>
