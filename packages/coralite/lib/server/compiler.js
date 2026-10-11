@@ -7,6 +7,7 @@ import { extractGlobals } from './utils/server.js'
 import * as serverUtilsBase from './utils/index.js'
 import { CoraliteError } from '../shared/errors.js'
 import { createContext as createContextUtil, ContextRequestEvent } from '../shared/core.js'
+import { definePage } from '../shared/page.js'
 
 /**
  * @import { CoraliteModule, CoraliteModuleDefinitions, CoralitePage, CoraliteSession, CoraliteFilePath, CoralitePluginContext } from '../../types/index.js'
@@ -81,6 +82,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
       }
 
       coraliteExports += 'export const defineComponent = globalThis.__coralite_define_component__;\n'
+      coraliteExports += 'export const definePage = globalThis.__coralite_define_page__;\n'
       coraliteExports += 'export const createCoraliteElement = globalThis.__coralite_create_coralite_element__;\n'
       coraliteExports += 'export const processHTML = globalThis.__coralite_process_html__;\n'
       coraliteExports += 'export const createContext = globalThis.__coralite_create_context__;\n'
@@ -206,12 +208,17 @@ export async function evaluateDevelopment ({
   context.window = virtualWindow
   context.document = virtualWindow.document
 
-  const cachedBoundPlugins = await bindPlugins(source.plugins, context)
+  const bindPluginsFn = bindPlugins || (async () => ({}))
+  const createExecutionErrorFn = createExecutionError || ((err) => err)
 
-  session.source.currentSourceContextId = contextId
-  session.source.contextInstances[contextId] = context
+  const cachedBoundPlugins = await bindPluginsFn(source?.plugins || {}, context)
 
-  const boundDefineComponent = (options) => defineComponent(options, symmetricalContext)
+  if (session && session.source) {
+    session.source.currentSourceContextId = contextId
+    session.source.contextInstances[contextId] = context
+  }
+
+  const boundDefineComponent = (options) => (defineComponent ? defineComponent(options, symmetricalContext) : options)
 
   const standardBuiltIns = new Set(['Object', 'Function', 'Array', 'String', 'Boolean', 'Number', 'Math', 'Date', 'RegExp', 'Error', 'EvalError', 'RangeError', 'ReferenceError', 'SyntaxError', 'TypeError', 'URIError', 'JSON', 'Promise', 'Proxy', 'Reflect', 'Map', 'Set', 'WeakMap', 'WeakSet', 'ArrayBuffer', 'SharedArrayBuffer', 'DataView', 'Atomics', 'Int8Array', 'Uint8Array', 'Uint8ClampedArray', 'Int16Array', 'Uint16Array', 'Int32Array', 'Uint32Array', 'Float32Array', 'Float64Array', 'BigInt', 'BigInt64Array', 'BigUint64Array', 'Symbol', 'Infinity', 'NaN', 'undefined', 'globalThis', 'decodeURI', 'decodeURIComponent', 'encodeURI', 'encodeURIComponent', 'escape', 'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'unescape'])
   if (!module._globalsCache) {
@@ -230,6 +237,7 @@ export async function evaluateDevelopment ({
     __coralite_utils__: source.utils,
     __coralite_server_utils__: serverUtils,
     __coralite_define_component__: boundDefineComponent,
+    __coralite_define_page__: definePage,
     __coralite_create_context__: createContextUtil,
     __coralite_context_request_event__: ContextRequestEvent,
     __coralite_create_coralite_element__: (tag, options) => {
@@ -254,7 +262,12 @@ export async function evaluateDevelopment ({
 
   const contextifiedObject = createContext(contextGlobals)
   contextifiedObject.globalThis = contextifiedObject
-  const moduleComponent = getComponent(module.id)
+  const targetItem = (getComponent && getComponent(module.id)) || null
+  const moduleComponent = targetItem || {
+    id: module.id,
+    result: module,
+    path: module.path
+  }
 
   let linker
 
@@ -291,7 +304,7 @@ export async function evaluateDevelopment ({
   try {
     await script.evaluate()
   } catch (error) {
-    throw createExecutionError(error, module, moduleComponent, page, contextId)
+    throw createExecutionErrorFn(error, module, moduleComponent, page, contextId)
   }
 
   // @ts-ignore
@@ -357,10 +370,17 @@ export async function evaluateProduction ({
     isClient: false
   }
 
-  session.source.currentSourceContextId = contextId
-  session.source.contextInstances[contextId] = context
+  if (session && session.source) {
+    session.source.currentSourceContextId = contextId
+    session.source.contextInstances[contextId] = context
+  }
 
-  const moduleComponent = getComponent(module.id)
+  const targetItem = (getComponent && getComponent(module.id)) || null
+  const moduleComponent = targetItem || {
+    id: module.id,
+    result: module,
+    path: module.path
+  }
 
   if (!moduleComponent.result._compiledCode) {
     const paddingCount = Math.max(0, (module.lineOffset - 1 || 0))
@@ -387,7 +407,10 @@ export async function evaluateProduction ({
   context.window = virtualWindow
   context.document = virtualWindow.document
 
-  const cachedBoundPlugins = await bindPlugins(source.plugins, context)
+  const bindPluginsFn = bindPlugins || (async () => ({}))
+  const createExecutionErrorFn = createExecutionError || ((err) => err)
+
+  const cachedBoundPlugins = await bindPluginsFn(source?.plugins || {}, context)
 
   const symmetricalContext = {
     ...context,
@@ -416,6 +439,7 @@ export async function evaluateProduction ({
         return {
           ...symmetricalContext,
           defineComponent: (options) => defineComponent(options, symmetricalContext),
+          definePage,
           createCoraliteElement,
           processHTML,
           createContext: createContextUtil,
@@ -423,6 +447,7 @@ export async function evaluateProduction ({
           default: {
             ...symmetricalContext,
             defineComponent: (options) => defineComponent(options, symmetricalContext),
+            definePage,
             createCoraliteElement,
             processHTML,
             createContext: createContextUtil,
@@ -466,7 +491,7 @@ export async function evaluateProduction ({
   try {
     await fn(moduleMock, moduleMock.exports, customRequire, symmetricalContext)
   } catch (error) {
-    throw createExecutionError(error, module, moduleComponent, page, contextId)
+    throw createExecutionErrorFn(error, module, moduleComponent, page, contextId)
   }
 
   if (moduleMock.exports.default != null) {

@@ -84,6 +84,7 @@
  * @typedef {Object} CoraliteErrorData
  * @property {'WARN'|'ERR'|'LOG'} level - The severity level.
  * @property {string} [type] - Optional warning/error type identifier.
+ * @property {string} [code] - Diagnostic error code.
  * @property {string} message - The message describing the error or warning.
  * @property {Error} [error] - Optional error object for tracing.
  * @property {string} [componentId] - The ID of the component where the error occurred.
