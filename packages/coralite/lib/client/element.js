@@ -4321,7 +4321,8 @@ export async function setupPageRuntime (pageConfig) {
   const stateTarget = { ...(pageConfig.state || {}) }
   const getterFns = pageConfig.getters || {}
   const styleFns = pageConfig.style || {}
-  const routeObj = pageConfig.route || { path: window.location?.pathname || '/' }
+  // @ts-ignore
+  const routeObj = (typeof window !== 'undefined' && window.__coralite_hydration__ && window.__coralite_hydration__.__route__) || pageConfig.route || { path: (typeof window !== 'undefined' && window.location ? window.location.pathname : '/') }
 
   const observersMap = new Map()
   let isUpdatePending = false

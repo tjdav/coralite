@@ -101,7 +101,10 @@ describe('Page Blocks - Build-Time Execution (getters, style, provide, client)',
 
   afterEach(async () => {
     if (projectDir) {
-      await rm(projectDir, { recursive: true, force: true })
+      await rm(projectDir, {
+        recursive: true,
+        force: true
+      })
     }
   })
 

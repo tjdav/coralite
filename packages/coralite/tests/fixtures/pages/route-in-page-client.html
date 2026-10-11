@@ -1,0 +1,19 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    client: ({ route }) => {
+      document.documentElement.dataset.routePath = route.path
+    }
+  })
+</script>
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Route in Client</title>
+  </head>
+  <body>
+    <h1>Client Test</h1>
+  </body>
+</html>

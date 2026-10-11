@@ -1,0 +1,19 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    provide: {
+      'coralite:route': ({ route }) => route.path
+    }
+  })
+</script>
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Route in Provide</title>
+  </head>
+  <body>
+    <c-consume-route-from-page></c-consume-route-from-page>
+  </body>
+</html>

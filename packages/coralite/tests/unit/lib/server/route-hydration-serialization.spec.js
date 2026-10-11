@@ -38,7 +38,10 @@ describe('Route Hydration Payload Serialization', () => {
   })
 
   afterEach(async () => {
-    await rm(TEST_DIR, { recursive: true, force: true })
+    await rm(TEST_DIR, {
+      recursive: true,
+      force: true
+    })
   })
 
   it('serializes __route__ into hydration payload for static pages', async () => {

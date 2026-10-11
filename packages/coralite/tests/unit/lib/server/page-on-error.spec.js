@@ -31,7 +31,10 @@ describe('Page onError block execution', () => {
     }
     activeApps = []
     if (projectDir) {
-      await rm(projectDir, { recursive: true, force: true })
+      await rm(projectDir, {
+        recursive: true,
+        force: true
+      })
     }
   })
 
