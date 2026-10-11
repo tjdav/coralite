@@ -51,6 +51,8 @@ describe('collection-handlers.js', () => {
     }
     const result = await handlers.onPageSet(data)
     assert.strictEqual(result.value.path.filename, 'index.html')
+    assert.deepEqual(result.value.page.routeParams, [])
+    assert.deepEqual(result.value.page.enumeratedPaths, [])
   })
 
   it('onPageUpdate should return result directly in production', async () => {

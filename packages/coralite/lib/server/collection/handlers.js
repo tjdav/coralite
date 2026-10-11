@@ -4,6 +4,8 @@ import { parseHTML, parseModule } from '../utils/parse.js'
 import { extractPageScript } from '../parser/html.js'
 import { registerBaseComponent } from '../component/setup.js'
 import { prepareAllComponentOps } from '../utils/fragment.js'
+import { extractRouteParams, validateEnumeratedPaths } from '../page/route.js'
+import { CoraliteError } from '../../shared/errors.js'
 
 /**
  * @import {
@@ -35,7 +37,32 @@ export function createPageHandlers ({
   const onFileSetLocal = async (data) => {
     // @ts-ignore
     const rootPath = data.type === 'component' ? app.options.path.components : app.options.path.pages
-    const urlPathname = pathToFileURL(join('/', relative(rootPath, data.path.pathname))).pathname
+    const relPath = relative(rootPath, data.path.pathname)
+    const urlPathname = pathToFileURL(join('/', relPath)).pathname
+
+    const { routeParams, isCatchAll } = extractRouteParams(relPath)
+
+    if (isCatchAll) {
+      try {
+        if (typeof app.onError === 'function') {
+          app.onError({
+            code: 'CORALITE-W601',
+            level: 'WARN',
+            message: `Catch-all route pattern detected in "${data.path.pathname}". Pattern parsing for catch-all is deferred to Phase 2.`,
+            filePath: data.path.pathname
+          })
+        } else if (typeof handleError === 'function') {
+          handleError({
+            code: 'CORALITE-W601',
+            level: 'WARN',
+            message: `Catch-all route pattern detected in "${data.path.pathname}". Pattern parsing for catch-all is deferred to Phase 2.`,
+            filePath: data.path.pathname
+          })
+        }
+      } catch {
+        /* ignore warning handler errors */
+      }
+    }
 
     let parsedScript = {
       hasDefinePage: false,
@@ -59,7 +86,67 @@ export function createPageHandlers ({
       meta: data.state?.page?.meta || {},
       blocks: parsedScript.blocks,
       hasDefinePage: parsedScript.hasDefinePage,
-      script: parsedScript.script
+      script: parsedScript.script,
+      routeParams,
+      enumeratedPaths: []
+    }
+
+    if (parsedScript.blocks?.paths && evaluate) {
+      try {
+        const module = {
+          id: data.path.pathname,
+          script: parsedScript.script,
+          path: data.path
+        }
+
+        const pageExports = await evaluate({
+          module,
+          page,
+          app,
+          source: app.source || { utils: {} },
+          mode: app.options.mode
+        })
+
+        if (pageExports && typeof pageExports.paths === 'function') {
+          const rawPaths = await pageExports.paths({ app })
+          validateEnumeratedPaths(rawPaths, routeParams, data.path.pathname)
+          page.enumeratedPaths = rawPaths
+        }
+      } catch (err) {
+        const pageErr = err instanceof CoraliteError ? err : new CoraliteError(err.message, {
+          code: err.code || 'CORALITE-E402',
+          cause: err,
+          filePath: data.path.pathname,
+          line: err.line,
+          column: err.column
+        })
+        pageErr.filePath = pageErr.filePath || data.path.pathname
+        page.failed = true
+        page.error = pageErr
+        page.enumeratedPaths = []
+
+        try {
+          if (typeof app.onError === 'function') {
+            app.onError({
+              level: 'ERR',
+              code: pageErr.code,
+              message: `Failed to evaluate paths block for page "${data.path.pathname}": ${pageErr.message}`,
+              error: pageErr,
+              filePath: data.path.pathname
+            })
+          } else if (typeof handleError === 'function') {
+            handleError({
+              level: 'ERR',
+              code: pageErr.code,
+              message: `Failed to evaluate paths block for page "${data.path.pathname}": ${pageErr.message}`,
+              error: pageErr,
+              filePath: data.path.pathname
+            })
+          }
+        } catch {
+          /* ignore throw to preserve collection loading */
+        }
+      }
     }
 
     const state = {
