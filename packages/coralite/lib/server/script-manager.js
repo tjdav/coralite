@@ -375,7 +375,26 @@ ScriptManager.prototype.compileComponents = async function (mode = 'production')
   };\n`)
 
   // Global context initialization
-  entryCodeParts.push('const globalContext = {};\n')
+  entryCodeParts.push(`if (typeof window !== 'undefined') {
+  window.__coralite__ = window.__coralite__ || {};
+  window.__coralite_hydration__ = window.__coralite_hydration__ || {};
+  if (!window.__coralite__.hydrationStore) {
+    window.__coralite__.hydrationStore = {
+      get() {
+        return window.__coralite_hydration__;
+      },
+      merge(next) {
+        if (next && typeof next === 'object') {
+          Object.assign(window.__coralite_hydration__, next);
+        }
+      },
+      replace(next) {
+        window.__coralite_hydration__ = next && typeof next === 'object' ? next : {};
+      }
+    };
+  }
+}\n`)
+  entryCodeParts.push('const globalContext = typeof window !== "undefined" && window.__coralite__ ? window.__coralite__ : {};\n')
 
   entryCodeParts.push(`const resolvedContextFactoriesPromise = (async () => {
     const factories = {};

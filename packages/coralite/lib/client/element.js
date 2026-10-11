@@ -1506,7 +1506,11 @@ export class CoraliteElement extends BaseElement {
     }
 
     // Hydrate data() block results from the SSR payload
-    if (this._hydrationData && this._hydrationData[this._instanceId]) {
+    // @ts-ignore
+    const store = typeof window !== 'undefined' ? window.__coralite_hydration__ : null
+    if (store && store[this._instanceId]) {
+      Object.assign(target, store[this._instanceId])
+    } else if (this._hydrationData && this._hydrationData[this._instanceId]) {
       Object.assign(target, this._hydrationData[this._instanceId])
     }
 
