@@ -1,0 +1,15 @@
+<template id="consume-page-provide">
+  <p data-testid="theme-mode">{{ theme.mode }}</p>
+</template>
+
+<script type="module">
+  import { defineComponent, createContext } from 'coralite'
+
+  const themeContext = createContext('coralite:theme')
+
+  export default defineComponent({
+    consume: {
+      theme: themeContext
+    }
+  })
+</script>

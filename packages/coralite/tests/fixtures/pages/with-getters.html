@@ -1,0 +1,15 @@
+<script type="module">
+  import { definePage } from 'coralite'
+
+  export default definePage({
+    server: () => ({ first: 'Alice', last: 'Smith' }),
+    getters: {
+      fullName: ({ state }) => `${state.first} ${state.last}`,
+      greeting: ({ state, route }) =>
+        route.path === '/' ? 'Welcome' : `Welcome back to ${route.path}`
+    }
+  })
+</script>
+
+<h1>{{ greeting }}</h1>
+<p>{{ fullName }}</p>

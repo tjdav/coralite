@@ -8,6 +8,12 @@ import { camelToKebab, stripHtmlComments } from '../../shared/core.js'
 import { createDiagnostic, formatDiagnosticTerminal, normalizeErrorCodes, matchesErrorCode, getLocForSubstring } from '../../shared/diagnostics.js'
 import { discoverHtmlFiles } from '../utils/html.js'
 import { getIgnoreAttributeMap, findAttributesToIgnore } from '../utils/parse.js'
+import {
+  createValidationContext,
+  parseScriptAST,
+  validateGetters,
+  validateStyle
+} from '../../validator/index.js'
 
 /**
  * @import {
@@ -351,6 +357,16 @@ export function validatePageSource (sourceCode, options = {}) {
  * @param {number} _scriptSearchOffset - Search index offset
  */
 function analyzeInlineScript (scriptContent, fullSourceCode, filePath, diagnostics, knownMap, _scriptSearchOffset) {
+  const scriptCtx = createValidationContext(scriptContent, filePath)
+  parseScriptAST(scriptCtx)
+  if (scriptCtx.configObj) {
+    validateGetters(scriptCtx)
+    validateStyle(scriptCtx)
+  }
+  if (scriptCtx.diagnostics && scriptCtx.diagnostics.length > 0) {
+    diagnostics.push(...scriptCtx.diagnostics)
+  }
+
   let ast
   try {
     ast = parseJS(scriptContent, {
