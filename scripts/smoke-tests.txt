@@ -1,0 +1,75 @@
+# Coralite smoke test suite
+# Core Build Pipeline & Collection
+packages/coralite/tests/unit/lib/collection.spec.js
+packages/coralite/tests/unit/lib/collection-handlers.spec.js
+packages/coralite/tests/unit/lib/config.spec.js
+packages/coralite/tests/unit/lib/core.spec.js
+packages/coralite/tests/unit/lib/path-population.spec.js
+
+# Parsers, AST & Compiler
+packages/coralite/tests/unit/lib/find-script.spec.js
+packages/coralite/tests/unit/lib/parse-tokens.spec.js
+packages/coralite/tests/unit/lib/parse-warnings.spec.js
+packages/coralite/tests/unit/lib/parser.spec.js
+packages/coralite/tests/unit/lib/utils/server/ast-cache.spec.js
+
+# Rendering & Server Output
+packages/coralite/tests/unit/lib/fragment-renderer.spec.js
+packages/coralite/tests/unit/lib/html-rendering.spec.js
+packages/coralite/tests/unit/lib/html.spec.js
+packages/coralite/tests/unit/lib/head-stripping.spec.js
+packages/coralite/tests/unit/lib/sanitize-token-attributes.spec.js
+packages/coralite/tests/unit/lib/utils/server/render.spec.js
+
+# Script Manager
+packages/coralite/tests/unit/lib/script-manager-basics.spec.js
+packages/coralite/tests/unit/lib/script-manager-empty-function.spec.js
+packages/coralite/tests/unit/lib/script-manager-integration.spec.js
+
+# Validators & Fixers
+packages/coralite/tests/unit/lib/component-validator.spec.js
+packages/coralite/tests/unit/lib/component-fixer.spec.js
+packages/coralite/tests/unit/lib/page-validator.spec.js
+packages/coralite/tests/unit/lib/plugin-validator.spec.js
+packages/coralite/tests/unit/lib/plugin-fixer.spec.js
+
+# Plugin System & Config Routing
+packages/coralite/tests/unit/lib/plugin.spec.js
+packages/coralite/tests/unit/lib/plugin-enforcement.spec.js
+packages/coralite/tests/unit/lib/plugin-serialization.spec.js
+packages/coralite/tests/unit/plugins/testing.spec.js
+packages/coralite/tests/unit/plugins/metadata-component.spec.js
+packages/coralite/tests/unit/plugins/static-assets.spec.js
+
+# Client Runtime, CoraliteElement & Hydration
+packages/coralite/tests/unit/lib/coralite-element.spec.js
+packages/coralite/tests/unit/lib/client-runtime.spec.js
+packages/coralite/tests/unit/lib/computed-slots-hydration.spec.js
+packages/coralite/tests/unit/lib/getters-context.spec.js
+packages/coralite/tests/unit/client/context-protocol.spec.js
+packages/coralite/tests/unit/client/slots-context.spec.js
+packages/coralite/tests/unit/client/reactive-loop-protection.spec.js
+packages/coralite/tests/unit/client/render-concurrency.spec.js
+
+# Component Attributes, Binding & Styles
+packages/coralite/tests/unit/lib/attribute-reflection.spec.js
+packages/coralite/tests/unit/lib/attributes-graceful-validation.spec.js
+packages/coralite/tests/unit/lib/attributes-required.spec.js
+packages/coralite/tests/unit/lib/attributes-state-parity.spec.js
+packages/coralite/tests/unit/lib/attributes-transform.spec.js
+packages/coralite/tests/unit/lib/attributes-validate.spec.js
+packages/coralite/tests/unit/lib/attributes-values.spec.js
+packages/coralite/tests/unit/lib/boolean-custom-attribute-bindings.spec.js
+packages/coralite/tests/unit/lib/styles-transform.spec.js
+
+# Subsystem Helpers & DOM Parity
+packages/coralite/tests/unit/lib/dom.spec.js
+packages/coralite/tests/unit/lib/dom-parity-hardening.spec.js
+packages/coralite/tests/unit/lib/emit.spec.js
+packages/coralite/tests/unit/lib/entity-handling.spec.js
+packages/coralite/tests/unit/lib/face.spec.js
+packages/coralite/tests/unit/lib/on-disconnected.spec.js
+packages/coralite/tests/unit/lib/update-complete.spec.js
+packages/coralite/tests/unit/lib/utils/server/manifest.spec.js
+packages/coralite/tests/unit/lib/utils/validate-serializable.spec.js
+packages/coralite/tests/unit/utils/server-dom-parity.spec.js
