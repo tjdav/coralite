@@ -303,8 +303,8 @@ export function parseScriptAST (context) {
               const targetNode = prop.key || prop
               const line = targetNode.loc ? targetNode.loc.start.line + scriptStartLine : 1
               const column = targetNode.loc ? targetNode.loc.start.column + 1 : 1
-              let message = `Component specifies unknown option '${keyName}'. Valid options are: ${Array.from(ALLOWED_COMPONENT_CONFIG_KEYS).join(', ')}.`
-              let cause = `Unknown property '${keyName}' found in defineComponent configuration.`
+              let message = `Unknown block "${keyName}" in defineComponent. Valid blocks are: ${Array.from(ALLOWED_COMPONENT_CONFIG_KEYS).join(', ')}.`
+              let cause = `Unknown block "${keyName}" in defineComponent.`
               if (keyName === 'state') {
                 message = "Component specifies deprecated top-level 'state'. Declare reactive state via 'attributes' schema or initialize in async server() block."
                 cause = "Top-level 'state' is deprecated in Coralite."

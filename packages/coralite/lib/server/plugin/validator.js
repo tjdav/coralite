@@ -18,6 +18,16 @@ import { validatePluginConfigBlocks, SUPPORTED_CONFIG_TYPES } from '../../shared
 
 const RESERVED_PLUGIN_NAMES = new Set(['testing', 'metadata', 'static-assets'])
 const VALID_PLUGIN_MODES = new Set(['development', 'testing', 'production'])
+const ALLOWED_PLUGIN_CONFIG_KEYS = new Set([
+  'name',
+  'config',
+  'server',
+  'client',
+  'dependencies',
+  'modes',
+  'rootDir',
+  'filePath'
+])
 const SERVER_HOOK_NAMES = new Set([
   'onBeforeBuild',
   'onAfterBuild',
@@ -717,6 +727,25 @@ export function validatePluginSource (sourceCode, filePath = '') {
 
     const properties = configObjNode.properties || []
 
+    for (const p of properties) {
+      if (p.type === 'Property') {
+        const keyName = p.key ? (p.key.name || p.key.value) : null
+        if (keyName && keyName !== 'depends' && !ALLOWED_PLUGIN_CONFIG_KEYS.has(keyName)) {
+          const line = p.loc ? p.loc.start.line : undefined
+          const column = p.loc ? p.loc.start.column + 1 : undefined
+          addIssueAndDiagnostic({
+            code: 'CORALITE-E107',
+            legacyCode: 'UNKNOWN_PLUGIN_OPTION',
+            severity: 'error',
+            message: `Unknown block "${keyName}" in definePlugin. Valid blocks are: ${Array.from(ALLOWED_PLUGIN_CONFIG_KEYS).join(', ')}.`,
+            line,
+            column,
+            cause: `Unknown block "${keyName}" in definePlugin.`
+          })
+        }
+      }
+    }
+
     /** @type {(p: any) => boolean} */
     const isNameProp = (p) => p.key && (p.key.name === 'name' || p.key.value === 'name')
     const nameProp = properties.find(isNameProp)
@@ -1365,6 +1394,18 @@ export function validatePluginObject (plugin, filePath = '') {
   }
 
   const pluginName = plugin.name || 'unknown'
+
+  for (const key of Object.keys(plugin)) {
+    if (key !== 'depends' && !key.startsWith('_') && !ALLOWED_PLUGIN_CONFIG_KEYS.has(key)) {
+      addIssueAndDiagnostic({
+        code: 'CORALITE-E107',
+        legacyCode: 'UNKNOWN_PLUGIN_OPTION',
+        severity: 'error',
+        message: `Unknown block "${key}" in definePlugin. Valid blocks are: ${Array.from(ALLOWED_PLUGIN_CONFIG_KEYS).join(', ')}.`,
+        cause: `Unknown block "${key}" in definePlugin.`
+      })
+    }
+  }
 
   if (typeof plugin.name !== 'string' || plugin.name.trim().length === 0) {
     addIssueAndDiagnostic({

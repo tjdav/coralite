@@ -10,12 +10,12 @@ export const COMPARISON_OPERATORS = new Set(['>', '<', '>=', '<=', '==', '===', 
 export const ALLOWED_COMPONENT_CONFIG_KEYS = new Set([
   'attributes',
   'server',
-  'client',
   'getters',
-  'slots',
   'style',
+  'slots',
   'provide',
   'consume',
+  'client',
   'formAssociated',
   'onError'
 ])
