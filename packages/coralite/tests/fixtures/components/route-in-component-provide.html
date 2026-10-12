@@ -1,0 +1,13 @@
+<template id="route-in-component-provide">
+  <div class="provider">
+    <slot></slot>
+  </div>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    provide: {
+      'component-route': ({ route }) => ({ path: route.path, pattern: route.pattern })
+    }
+  })
+</script>

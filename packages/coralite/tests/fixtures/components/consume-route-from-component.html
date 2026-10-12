@@ -1,0 +1,11 @@
+<template id="consume-route-from-component">
+  <span class="consumed-route">{{ routeInfo.path }}</span>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    consume: {
+      routeInfo: 'component-route'
+    }
+  })
+</script>

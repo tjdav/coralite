@@ -561,11 +561,13 @@ export async function emitFragment ({
       element,
       state: evaluationState,
       page,
+      route: page?.route,
       root: element || root,
       contextId,
       session,
       noHydration,
-      mode: app.options.mode
+      mode: app.options.mode,
+      contextFrames
     })
 
     if (scriptResult && scriptResult.__script__ != null) {

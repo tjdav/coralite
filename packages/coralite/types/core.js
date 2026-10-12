@@ -218,6 +218,7 @@
  * @property {string} file.dirname - The directory name of the file.
  * @property {string} file.filename - The filename.
  * @property {Object.<string, any>} meta - Extracted metadata from the page.
+ * @property {Object} [route] - The route object for the page.
  */
 
 /**

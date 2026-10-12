@@ -1,4 +1,4 @@
-import { createReadOnlyProxy, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL } from '../../shared/core.js'
+import { createReadOnlyProxy, cloneModuleInstance, hasContextEntries, normalizeConsumerItems, applyConsumedState, getContextValue, hasContextValue, kebabToCamel, camelToKebab, NOOP_SIGNAL } from '../../shared/core.js'
 import { processTokenValue } from '../parser/html.js'
 import { CoraliteError, handleError } from '../../shared/errors.js'
 import {
@@ -307,6 +307,17 @@ function _validateInitialAttributes (normalizedAttributes, state, app, module) {
   }
 }
 
+const DEFAULT_ROUTE = Object.freeze({
+  path: '',
+  pattern: '',
+  params: Object.freeze({}),
+  dynamic: false
+})
+
+function _getRouteFromContext (context) {
+  return context?.route || context?.page?.route || DEFAULT_ROUTE
+}
+
 async function _executeServerFunction (server, state, context, initialState, app, module) {
   let serverToExecute = server
   if (app?.options?.mode === 'testing' && app.options.testing?.mocks?.components) {
@@ -320,9 +331,11 @@ async function _executeServerFunction (server, state, context, initialState, app
     return
   }
 
+  const route = _getRouteFromContext(context)
   const serverResult = await serverToExecute({
     ...context,
-    ...initialState
+    ...initialState,
+    route
   })
 
   if (serverResult) {
@@ -341,15 +354,17 @@ async function _executeServerFunction (server, state, context, initialState, app
   }
 }
 
-async function _executeServerGetters (getters, state, root) {
+async function _executeServerGetters (getters, state, root, context) {
   if (!getters) {
     return
   }
+  const route = _getRouteFromContext(context)
   const roState = createReadOnlyProxy(state)
   const serverSlots = createServerSlotsHelper(root)
   for (const [key, getter] of Object.entries(getters)) {
     const serverContext = {
       state: roState,
+      route,
       root: root || null,
       refs: () => null,
       slots: serverSlots,
@@ -367,6 +382,7 @@ async function _processServerSlots (slots, state, root, context, app, module) {
   if (!slots) {
     return
   }
+  const route = _getRouteFromContext(context)
   for (const name in slots) {
     if (Object.prototype.hasOwnProperty.call(slots, name)) {
       const computedSlot = slots[name]
@@ -389,7 +405,8 @@ async function _processServerSlots (slots, state, root, context, app, module) {
 
       const slotContext = new Proxy({
         state,
-        root: null,
+        route,
+        root: root || null,
         refs: () => null,
         slots: createServerSlotsHelper(root),
         observe: () => () => {
@@ -630,7 +647,7 @@ export function createComponentDefinition ({ app }) {
 
     _validateInitialAttributes(normalizedAttributes, state, app, module)
     await _executeServerFunction(server, state, context, initialState, app, module)
-    await _executeServerGetters(getters, state, root)
+    await _executeServerGetters(getters, state, root, context)
     await _processServerSlots(slots, state, root, context, app, module)
 
     _finalizeScriptState(state, options, module)
@@ -850,7 +867,7 @@ export async function registerBaseComponent ({
 
   try {
     const scriptResult = await evaluate({
-      module: component,
+      module: cloneModuleInstance(component),
       state: {},
       page: {
         url: { pathname: component.path?.pathname || '' },

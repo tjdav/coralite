@@ -171,6 +171,16 @@ function isNodeConnected (node) {
   return typeof document !== 'undefined' && document.body ? document.body.contains(node) : false
 }
 
+function _getClientRoute () {
+  const hStore = typeof window !== 'undefined' ? window['__coralite_hydration__'] : null
+  return (hStore && hStore.__route__) || {
+    path: (typeof window !== 'undefined' && window.location ? window.location.pathname : '/'),
+    pattern: (typeof window !== 'undefined' && window.location ? window.location.pathname : '/'),
+    params: {},
+    dynamic: false
+  }
+}
+
 /** @type {typeof HTMLElement} */
 const BaseElement = typeof HTMLElement !== 'undefined' ? HTMLElement : FallbackElement
 
@@ -1595,6 +1605,7 @@ export class CoraliteElement extends BaseElement {
             const roState = this._getTrackedReadOnlyState(key, tracker)
             context = {
               state: roState,
+              route: _getClientRoute(),
               root: this,
               refs: getRef,
               slots: this._getSlotsHelper(),
@@ -1691,6 +1702,7 @@ export class CoraliteElement extends BaseElement {
               const roState = this._getReadOnlyState()
               const context = {
                 state: roState,
+                route: _getClientRoute(),
                 root: this,
                 refs: (id) => this._resolveRef(id),
                 slots: this._getSlotsHelper(),
@@ -3803,6 +3815,7 @@ export class CoraliteElement extends BaseElement {
     const baseCtx = this._resolvedClientContext || {
       instanceId: this._instanceId,
       state: this._state,
+      route: _getClientRoute(),
       root: this,
       slots: this._getSlotsHelper(),
       signal: this._abortController?.signal,
@@ -4010,6 +4023,7 @@ export class CoraliteElement extends BaseElement {
     let localContext = {
       instanceId: this._instanceId,
       state: this._state,
+      route: _getClientRoute(),
       errors: this._state.errors,
       root: this,
       slots: this._getSlotsHelper(),

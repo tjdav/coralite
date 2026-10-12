@@ -596,6 +596,7 @@ export function createRenderer ({
             element,
             state: evaluationState,
             page,
+            route: page?.route,
             root: element || root,
             contextId,
             session,
@@ -739,6 +740,7 @@ export function createRenderer ({
             try {
               const context = {
                 state: roState,
+                route: page?.route,
                 root: element || root,
                 refs: () => null,
                 slots: createServerSlotsHelper(element || root),
@@ -761,7 +763,7 @@ export function createRenderer ({
         const tokens = item.tokens
         for (let j = 0; j < tokens.length; j++) {
           const token = tokens[j]
-          let value = componentState[token.name]
+          let value = resolveTokenKey(token.name, componentState, page?.route)
           if (value == null) {
             value = ''
           }
@@ -781,7 +783,7 @@ export function createRenderer ({
         const tokens = item.tokens
         for (let j = 0; j < tokens.length; j++) {
           const token = tokens[j]
-          let value = componentState[token.name]
+          let value = resolveTokenKey(token.name, componentState, page?.route)
           if (value == null) {
             value = ''
           }
@@ -1289,6 +1291,7 @@ export function createRenderer ({
     const activePageState = mappedSession.state
     mappedSessionObject.mode = normalizedOptions.mode
 
+    pageContext = mappedSession.page || mappedComponent?.page || pageContext
     const pageExports = pageContext?.exports || originalDocument?.page?.exports || pageItem.result?.page?.exports || null
     const rawRoute = pageContext.route
     const routeObj = typeof rawRoute === 'object' && rawRoute !== null
@@ -1304,6 +1307,15 @@ export function createRenderer ({
         params: {},
         dynamic: false
       }
+    if (pageContext) {
+      pageContext.route = routeObj
+    }
+    if (activePageState && activePageState.page) {
+      activePageState.page.route = routeObj
+    }
+    if (mappedComponent) {
+      mappedComponent.page = pageContext
+    }
 
     let isFallbackRender = false
     let pageContextFrames = []
@@ -1352,7 +1364,7 @@ export function createRenderer ({
             }
           }
         }
-        if (node.children) {
+        if (node.children && !(node.type === 'tag' && (node.name.includes('-') || app?.components?.getItem(node.name)))) {
           for (const child of node.children) {
             replaceTokensInAST(child, stateObj, routeObjParam)
           }
@@ -3140,4 +3152,26 @@ export function createRenderer ({
     createComponentElement,
     build
   }
+}
+
+function resolveTokenKey (key, stateObj, routeObjParam) {
+  if (key === 'route') {
+    return routeObjParam
+  }
+  if (key.startsWith('route.')) {
+    const prop = key.slice(6)
+    return routeObjParam ? routeObjParam[prop] : undefined
+  }
+  if (key.includes('.')) {
+    const parts = key.split('.')
+    let curr = stateObj
+    for (const p of parts) {
+      if (curr === null || curr === undefined) {
+        return undefined
+      }
+      curr = curr[p]
+    }
+    return curr
+  }
+  return stateObj ? stateObj[key] : undefined
 }

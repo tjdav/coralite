@@ -1,0 +1,11 @@
+<template id="route-in-component-getters">
+  <span class="route-getter">{{ routePath }}</span>
+</template>
+<script type="module">
+  import { defineComponent } from 'coralite'
+  export default defineComponent({
+    getters: {
+      routePath: ({ route }) => route.path
+    }
+  })
+</script>

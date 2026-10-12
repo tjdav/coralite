@@ -146,6 +146,7 @@ export function createModuleLinker ({ path, context, source, importModuleDynamic
  * @param {CoraliteModule} options.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} options.state - Replacement tokens for the component
  * @param {CoralitePage} options.page - The global page object
+ * @param {Object} [options.route] - Route object
  * @param {any} options.root - The Coralite module to parse
  * @param {string} options.contextId - Context Id
  * @param {CoraliteSession} options.session - Render Context
@@ -164,6 +165,7 @@ export async function evaluateDevelopment ({
   module,
   state,
   page,
+  route,
   root,
   contextId,
   session,
@@ -188,6 +190,7 @@ export async function evaluateDevelopment ({
   const context = {
     state: state || {},
     page,
+    route: route || page?.route,
     root,
     module,
     id: contextId,
@@ -326,6 +329,7 @@ export async function evaluateDevelopment ({
  * @param {CoraliteModule} options.module - The Coralite module to parse
  * @param {CoraliteModuleDefinitions} options.state - Replacement tokens for the component
  * @param {CoralitePage} options.page - The global page object
+ * @param {Object} [options.route] - Route object
  * @param {any} options.root - The Coralite module to parse
  * @param {string} options.contextId - Context Id
  * @param {CoraliteSession} options.session - Render Context
@@ -344,6 +348,7 @@ export async function evaluateProduction ({
   module,
   state,
   page,
+  route,
   root,
   contextId,
   session,
@@ -359,6 +364,7 @@ export async function evaluateProduction ({
   const context = {
     state: state || {},
     page,
+    route: route || page?.route,
     root,
     module,
     id: contextId,
