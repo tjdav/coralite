@@ -1073,6 +1073,7 @@ export function createRenderer ({
         }
 
         const interpolatedTemplate = fallbackTemplate.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, prop) => {
+          // eslint-disable-next-line eqeqeq -- intentionally matches null and undefined
           return componentState[prop] != null ? String(componentState[prop]) : ''
         })
 

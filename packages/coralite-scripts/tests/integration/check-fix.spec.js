@@ -111,10 +111,12 @@ describe('check and fix commands', () => {
 `)
 
     const resNormal = await project.runCheck()
-    assert.strictEqual(resNormal.exitCode, 0) // Normal check passes with 0 for warnings
+    // Normal check passes with 0 for warnings
+    assert.strictEqual(resNormal.exitCode, 0)
 
     const resStrict = await project.runCheck(['--strict'])
-    assert.strictEqual(resStrict.exitCode, 1) // Strict check fails with 1
+    // Strict check fails with 1
+    assert.strictEqual(resStrict.exitCode, 1)
   })
 
   it('5. fix --dry-run prints unified diffs without modifying files on disk', async () => {
@@ -157,7 +159,7 @@ describe('check and fix commands', () => {
 `
     const filePath = await project.writeComponent('counter-btn.html', originalCode)
 
-    const res = await project.runFix()
+    const _res = await project.runFix()
     const contentAfterFix = await readFile(filePath, 'utf8')
     assert.notStrictEqual(contentAfterFix, originalCode)
     assert.ok(contentAfterFix.includes('countPlus1') || contentAfterFix.includes('getters'))

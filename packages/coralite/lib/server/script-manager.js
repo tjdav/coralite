@@ -44,15 +44,24 @@ export const isWhitespace = (char) => {
  */
 /**
  * Helper to extract client configuration from a script module or plugin.
- * @param {any} module
- * @returns {any}
+ * @param {any} module - Script module or plugin object.
+ * @returns {any} Resolved plugin config object or empty object fallback.
  */
 export function getPluginConfig (module) {
-  return module.client?.config !== undefined
-    ? module.client.config
-    : (module.config !== undefined ? module.config : {})
+  if (module?.client?.config !== undefined) {
+    return module.client.config
+  }
+  if (module?.config !== undefined) {
+    return module.config
+  }
+  return {}
 }
 
+/**
+ * Checks whether a script string represents an empty function.
+ * @param {string} [content] - The content of the function to check.
+ * @returns {boolean} True if empty or absent.
+ */
 export const isEmptyFunction = (content) => {
   if (!content) {
     return true
@@ -1035,7 +1044,7 @@ export default {
               const module = this.scriptModules[index]
               let contents = ''
 
-              const rawClientConfig = module.client?.config !== undefined ? module.client.config : (module.config !== undefined ? module.config : {})
+              const rawClientConfig = getPluginConfig(module)
               const configContent = `const pluginConfig = Object.freeze(${serialize(rawClientConfig)});`
 
               contents += configContent + '\n'
