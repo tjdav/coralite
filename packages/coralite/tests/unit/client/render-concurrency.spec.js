@@ -38,7 +38,7 @@ describe('Render Concurrency & Lock Isolation (BUG-01)', () => {
         }
       },
       slots: {
-        header: (nodes) => {
+        header: (_nodes) => {
           const div = document.createElement('div')
           div.className = 'header-content'
           div.textContent = 'Slotted Header'
@@ -163,7 +163,7 @@ describe('Render Concurrency & Lock Isolation (BUG-01)', () => {
       templateHTML: '<div><slot name="header"></slot></div>',
       defaultValues: { count: 0 },
       slots: {
-        header: (nodes, { observe }) => {
+        header: (_nodes, { observe }) => {
           observe('count', (val) => {
             if (val === 0) {
               return 'Initial Slot'

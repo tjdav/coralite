@@ -109,7 +109,7 @@ describe('Getters Context ({ root, refs, signal })', () => {
     const options = {
       componentId: 'test-signal-getter',
       getters: {
-        asyncData: async ({ state, signal, root, refs }) => {
+        asyncData: async ({ signal, root, refs }) => {
           capturedSignal = signal
           assert.ok(root)
           assert.equal(typeof refs, 'function')

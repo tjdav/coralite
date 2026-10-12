@@ -9,7 +9,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     window.__coralite__.mode = 'development'
   })
 
-  it('Tier 1: Direct self-mutation is aborted in Dev mode with warning and error log', (t, done) => {
+  it('Tier 1: Direct self-mutation is aborted in Dev mode with warning and error log', (_t, done) => {
     let warningEmitted = null
     let errorLogged = null
     const origWarn = console.warn
@@ -65,7 +65,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 1: Direct self-mutation is aborted in Prod mode without warn or throw, emitting coralite-error event', (t, done) => {
+  it('Tier 1: Direct self-mutation is aborted in Prod mode without warn or throw, emitting coralite-error event', (_t, done) => {
     window.__coralite__.mode = 'production'
 
     let warningEmitted = null
@@ -126,7 +126,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 1: All mutation traps are protected (set, deleteProperty, errors set, errors deleteProperty)', (t, done) => {
+  it('Tier 1: All mutation traps are protected (set, deleteProperty, errors set, errors deleteProperty)', (_t, done) => {
     const tag = 't1-traps-' + Math.random().toString(36).substring(2, 9)
     let deleteAttempted = false
 
@@ -174,7 +174,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 1: Non-cyclic mutations (a -> b) are permitted and settle cleanly', (t, done) => {
+  it('Tier 1: Non-cyclic mutations (a -> b) are permitted and settle cleanly', (_t, done) => {
     const tag = 't1-noncyclic-' + Math.random().toString(36).substring(2, 9)
     const Comp = createCoraliteClass({
       componentId: 't1-noncyclic',
@@ -207,7 +207,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 1: Async observer throws and rejected promises do not produce unhandled rejections', (t, done) => {
+  it('Tier 1: Async observer throws and rejected promises do not produce unhandled rejections', (_t, done) => {
     const tag = 't1-async-' + Math.random().toString(36).substring(2, 9)
     let errorLogged = null
     const origErr = console.error
@@ -221,7 +221,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     const Comp = createCoraliteClass({
       componentId: 't1-async',
       defaultValues: { x: 1 },
-      client ({ state, observe }) {
+      client ({ observe }) {
         observe('x', async () => {
           throw new Error('Async observer failure')
         })
@@ -247,7 +247,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 2: Indirect ping-pong cycle (a -> b -> a) trips depth breaker at 50, latches, renders final DOM, and resets on external mutation', (t, done) => {
+  it('Tier 2: Indirect ping-pong cycle (a -> b -> a) trips depth breaker at 50, latches, renders final DOM, and resets on external mutation', (_t, done) => {
     const tag = 't2-depth-' + Math.random().toString(36).substring(2, 9)
     let cascadeErrorLogged = null
     let errorEventFired = false
@@ -327,7 +327,7 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Tier 2: Deferred microtask loop trips rate watchdog at 100 flushes', (t, done) => {
+  it('Tier 2: Deferred microtask loop trips rate watchdog at 100 flushes', (_t, done) => {
     const tag = 't2-rate-' + Math.random().toString(36).substring(2, 9)
     let cascadeErrorLogged = null
 
@@ -375,14 +375,14 @@ describe('Reactive Loop Protection (Tier 1 & Tier 2)', () => {
     })
   })
 
-  it('Sibling Observers Isolation: Error in first observer does not prevent second observer from running', (t, done) => {
+  it('Sibling Observers Isolation: Error in first observer does not prevent second observer from running', (_t, done) => {
     const tag = 'sibling-obs-' + Math.random().toString(36).substring(2, 9)
     let secondObsRan = false
 
     const Comp = createCoraliteClass({
       componentId: 'sibling-obs',
       defaultValues: { score: 10 },
-      client ({ state, observe }) {
+      client ({ observe }) {
         observe('score', () => {
           throw new Error('First observer fault')
         })

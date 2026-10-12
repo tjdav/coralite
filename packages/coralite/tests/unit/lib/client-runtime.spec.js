@@ -81,7 +81,7 @@ describe('generateClientRuntime inlinedStyles initialization', () => {
         }
         return null
       },
-      querySelector (selector) {
+      querySelector (_selector) {
         return null
       },
       head: {

@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-imports -- Node test runner spec; requires node:* builtins */
 import '../../setup.js'
 import { describe, it, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'

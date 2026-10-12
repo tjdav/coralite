@@ -762,7 +762,8 @@ describe('CoraliteElement', () => {
       hydrationMap: {
         attributes: [
           {
-            path: [0, 0], // path to child-comp inside parent-comp in the pristine template
+            // path to child-comp inside parent-comp in the pristine template
+            path: [0, 0],
             name: 'name',
             template: '{{ computedGetter }}'
           }
@@ -951,21 +952,21 @@ describe('CoraliteElement', () => {
         iconName: String
       },
       slots: {
-        badge (originalNodes, state) {
+        badge (_nodes, state) {
           if (!state.badge) {
             return null
           }
-          if (originalNodes && originalNodes.length > 0) {
-            return originalNodes
+          if (_nodes && _nodes.length > 0) {
+            return _nodes
           }
           return `<span class="badge">${state.badge}</span>`
         },
-        icon (originalNodes, state) {
+        icon (_nodes, state) {
           if (!state.iconName) {
             return null
           }
-          if (originalNodes && originalNodes.length > 0) {
-            return originalNodes
+          if (_nodes && _nodes.length > 0) {
+            return _nodes
           }
           return `<i class="icon">${state.iconName}</i>`
         }
@@ -1018,7 +1019,7 @@ describe('CoraliteElement', () => {
     const ChildElement = createCoraliteClass({
       componentId: childTag,
       slots: {
-        default (nodes) {
+        default (_nodes) {
           return '<span class="child-slot">Child Slot Content</span>'
         }
       }
@@ -1027,7 +1028,7 @@ describe('CoraliteElement', () => {
     const ParentElement = createCoraliteClass({
       componentId: parentTag,
       slots: {
-        default (nodes) {
+        default (_nodes) {
           return '<div class="parent-slot">Parent Slot Content</div>'
         }
       }
@@ -1202,9 +1203,9 @@ describe('CoraliteElement', () => {
       componentId: 'child-interp-comp',
       templateHTML: '<div><slot></slot></div>',
       slots: {
-        default (nodes) {
+        default (_nodes) {
           // Return live projected nodes to preserve owner component binding references
-          return nodes
+          return _nodes
         }
       }
     })
@@ -1351,7 +1352,7 @@ describe('CoraliteElement', () => {
           }]
         },
         slots: {
-          content (nodes, context) {
+          content (_nodes, context) {
             receivedContext = context
             return `<div class="slot-title">${context.state.title}</div>`
           }
@@ -1392,7 +1393,7 @@ describe('CoraliteElement', () => {
           title: 'Legacy Title'
         },
         slots: {
-          default (nodes, state) {
+          default (_nodes, state) {
             readTitle = state.title
             return `<span>${state.title}</span>`
           }
@@ -1423,7 +1424,7 @@ describe('CoraliteElement', () => {
           count: 0
         },
         slots: {
-          default (nodes, { state, observe }) {
+          default (_nodes, { state, observe }) {
             outerFnCallCount++
             observe('count', (newVal) => {
               observerCallCount++
@@ -1510,7 +1511,7 @@ describe('CoraliteElement', () => {
           num: 1
         },
         slots: {
-          default (nodes, { observe }) {
+          default (_nodes, { observe }) {
             disposerFn = observe('num', (val) => {
               observeCount++
               return `<span>${val}</span>`
@@ -1562,7 +1563,7 @@ describe('CoraliteElement', () => {
           step: 1
         },
         slots: {
-          default (nodes, { state }) {
+          default (_nodes, { state }) {
             const delay = state.step === 1 ? 50 : 5
             const currentStep = state.step
             return new Promise(resolve => {
@@ -2169,8 +2170,9 @@ describe('CoraliteElement', () => {
         getters: {
           asyncData ({ signal }) {
             getterSignal = signal
+            // Pending promise
             return new Promise(() => {
-            }) // pending promise
+            })
           }
         }
       })
@@ -2180,7 +2182,7 @@ describe('CoraliteElement', () => {
       document.body.appendChild(el)
 
       // Trigger getter access
-      const dummy = el._state.asyncData
+      const _dummy = el._state.asyncData
 
       queueMicrotask(() => {
         assert.ok(getterSignal)
@@ -2240,7 +2242,7 @@ describe('CoraliteElement', () => {
           b: 2
         },
         slots: {
-          foo (nodes, { state }) {
+          foo (_nodes, { state }) {
             return `<span>${state.a} - ${state.b}</span>`
           }
         }
@@ -2280,7 +2282,7 @@ describe('CoraliteElement', () => {
           items: []
         },
         slots: {
-          bar (nodes, { state }) {
+          bar (_nodes, { state }) {
             return `<span>${state.x}</span>`
           }
         },
@@ -2346,7 +2348,7 @@ describe('CoraliteElement', () => {
         templateHTML: '<div><button id="revive-btn">Revive</button><slot name="computed"></slot></div>',
         defaultValues: { val: 'Initial' },
         slots: {
-          computed (nodes, { state }) {
+          computed (_nodes, { state }) {
             return `<span class="val">${state.val}</span>`
           }
         },
@@ -2448,4 +2450,3 @@ describe('CoraliteElement', () => {
     })
   })
 })
-

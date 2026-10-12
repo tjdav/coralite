@@ -91,7 +91,7 @@ describe('plugin-config-serialization.spec.js', () => {
             fn: () => {
             }
           },
-          context: (pluginContext) => () => ({})
+          context: (_pluginContext) => () => ({})
         }
       }
 

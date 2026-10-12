@@ -121,7 +121,7 @@ describe('Component Attribute transform Pipeline', () => {
         componentId: 'trans-err',
         attributes: {
           count: {
-            transform: (val) => {
+            transform: (_val) => {
               throw new Error('Custom transformation error')
             }
           }
