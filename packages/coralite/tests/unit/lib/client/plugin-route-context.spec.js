@@ -1,8 +1,9 @@
+/* eslint-disable no-restricted-imports -- Node test runner spec; requires node:* builtins */
 import '../../setup.js'
 import { describe, it, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { fileURLToPath } from 'node:url'
-import { resolve, join } from 'node:path'
+import { join } from 'node:path'
 import { mkdir, mkdtemp, writeFile, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { ScriptManager } from '#lib/server/script-manager.js'
@@ -17,7 +18,7 @@ async function importCompiledRuntime (scriptManager) {
   assert.ok(runtimeFile, 'coralite-runtime output file must exist')
 
   const b64 = Buffer.from(runtimeFile.text).toString('base64')
-  return await import(`data:text/javascript;base64,${b64}#${Math.random().toString(36).substring(2)}`)
+  return import(`data:text/javascript;base64,${b64}#${Math.random().toString(36).substring(2)}`)
 }
 
 describe('Plugin Route Context (client.init and client.context Phase 1)', () => {
@@ -117,6 +118,7 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
 
       assert.ok(pluginRoute)
       assert.equal(pluginRoute.path, '/dashboard.html')
+      assert.ok(instanceRoute)
       assert.equal(instanceRoute.path, '/dashboard.html')
     } finally {
       await scriptManager.disposeContext()
@@ -311,7 +313,10 @@ describe('Plugin Route Context (client.init and client.context Phase 1)', () => 
       assert.ok(hostResult, 'plugin-route-host.html page result must exist')
       assert.ok(hostResult.content.includes('Plugin Route Host Page'), 'HTML content should render successfully')
     } finally {
-      await rm(tempDir, { recursive: true, force: true })
+      await rm(tempDir, {
+        recursive: true,
+        force: true
+      })
     }
   })
 })

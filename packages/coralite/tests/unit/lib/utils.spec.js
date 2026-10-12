@@ -257,7 +257,7 @@ describe('normalizeFunction', () => {
       const obj = {
         async method () {
           const fn = async (x) => x * 2
-          return await fn(5)
+          return fn(5)
         }
       }
       const result = normalizeFunction(obj.method)

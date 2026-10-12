@@ -86,14 +86,18 @@ export function assertNotSame (actual, expected, message) {
  * Asserts that a node collection matches another node collection by order and
  * identity, reporting mismatches with index-level detail instead of dumping the
  * whole DOM graph.
- * @param {ArrayLike<unknown>|Iterable<unknown>} actual - Observed nodes.
- * @param {ArrayLike<unknown>|Iterable<unknown>} expected - Expected nodes.
+ * @param {Array<unknown>|{ length: number }} actual - Observed nodes collection or array.
+ * @param {Array<unknown>|{ length: number }} expected - Expected nodes collection or array.
  * @param {string} [message] - Optional failure message.
  * @returns {void}
  */
 export function assertSameNodes (actual, expected, message) {
-  const actualNodes = Array.from(/** @type {Iterable<unknown>} */ (actual))
-  const expectedNodes = Array.from(/** @type {Iterable<unknown>} */ (expected))
+  /** @type {any} */
+  const actualIterable = actual
+  /** @type {any} */
+  const expectedIterable = expected
+  const actualNodes = Array.from(actualIterable)
+  const expectedNodes = Array.from(expectedIterable)
   const prefix = message ? `${message}: ` : ''
 
   if (actualNodes.length !== expectedNodes.length) {
@@ -107,6 +111,7 @@ export function assertSameNodes (actual, expected, message) {
 
   for (let i = 0; i < actualNodes.length; i++) {
     if (actualNodes[i] !== expectedNodes[i]) {
+      // Inline comment moved above line
       throw new assert.AssertionError({
         message: `${prefix}node at index ${i} is not the expected reference (${label(actualNodes[i])} !== ${label(expectedNodes[i])})`,
         actual: label(actualNodes[i]),

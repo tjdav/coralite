@@ -63,8 +63,10 @@ describe('State Key Parity & Reserved DOM Attribute Filtering (F1 & F2)', () => 
     const ClientComp = createCoraliteClass({
       componentId: 'f2-comp',
       attributes: {
-        slot: String, // Explicitly declared reserved attribute
-        title: String // Declared normal attribute
+        // Explicitly declared reserved attribute
+        slot: String,
+        // Declared normal attribute
+        title: String
       }
     })
     customElements.define(tagName, ClientComp)

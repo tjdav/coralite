@@ -38,7 +38,7 @@ function createMockApp (pluginsList = []) {
 function createHooksHelper (app, serverGlobalContext, pluginHooksObj) {
   return {
     async trigger (name, initialData) {
-      return await triggerPluginHook({
+      return triggerPluginHook({
         app,
         hooks: pluginHooksObj,
         serverGlobalContext,
@@ -47,7 +47,7 @@ function createHooksHelper (app, serverGlobalContext, pluginHooksObj) {
       })
     },
     async triggerAggregate (name, contextData) {
-      return await triggerPluginAggregateHook({
+      return triggerPluginAggregateHook({
         app,
         hooks: pluginHooksObj,
         serverGlobalContext,
